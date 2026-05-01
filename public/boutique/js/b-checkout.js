@@ -376,7 +376,7 @@ function renderCheckoutCompact() {
   step1.style.display = 'block'; // toujours visible
   step1.innerHTML = '';
   step1.appendChild(makeInput('of-beneficiary-name', 'Nom *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-  step1.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone *', od, 'beneficiary_phone'));
+  step1.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
 
   body.appendChild(step1);
 
@@ -389,7 +389,7 @@ function renderCheckoutCompact() {
 
   const sRelais = document.createElement('div');
   sRelais.className = 'ck-label';
-  sRelais.textContent = 'Relais *';
+  sRelais.textContent = 'Île de retrait *';
   step2.appendChild(sRelais);
   const relayNote = document.createElement('div');
   relayNote.className = 'ck-relay-note';
@@ -403,7 +403,7 @@ function renderCheckoutCompact() {
 
   const s2 = document.createElement('div');
   s2.className = 'ck-label';
-  s2.textContent = 'Paiement';
+  s2.textContent = 'Mode de paiement';
   step2.appendChild(s2);
 
   const payGrid = document.createElement('div');
@@ -438,7 +438,7 @@ function renderCheckoutCompact() {
   const confirmBtn = document.createElement('button');
   confirmBtn.id = 'btn-confirm-order';
   confirmBtn.className = 'ck-confirm-btn';
-  confirmBtn.textContent = '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+  confirmBtn.innerHTML = '<span class="ck-confirm-main">Confirmer la commande</span><span class="ck-confirm-amount">' + fmt(cartTotal(), 'KMF') + '</span>';
   body.parentElement.appendChild(confirmBtn);
 
   function validateStep1() {
@@ -492,7 +492,9 @@ function renderCheckoutCompact() {
         });
       });
     }
-    confirmBtn.textContent = isStripe ? '💳 Payer ' + fmt(cartTotal(), 'KMF') : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    confirmBtn.innerHTML = isStripe
+      ? '<span class="ck-confirm-main">💳 Payer par carte</span><span class="ck-confirm-amount">' + fmt(cartTotal(), 'KMF') + '</span>'
+      : '<span class="ck-confirm-main">Confirmer la commande</span><span class="ck-confirm-amount">' + fmt(cartTotal(), 'KMF') + '</span>';
   }
 
   payGrid.addEventListener('change', updatePaymentUI);
@@ -526,13 +528,13 @@ export function renderCheckout() {
 
     renderFulfillmentSelector(body, od, refreshFulfillment);
 
-      body.appendChild(makeInput('of-beneficiary-name',  'Nom *',         'text', 'Prénom Nom',  od, 'beneficiary_name'));
-    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone *', od, 'beneficiary_phone'));
+      body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
+    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-label';
-    sRelais.textContent = 'Retrait *';
+    sRelais.textContent = 'Île de retrait *';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -544,7 +546,7 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-label';
-    s2.textContent = 'Paiement';
+    s2.textContent = 'Mode de paiement';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -569,7 +571,7 @@ export function renderCheckout() {
     cashHelper.id = 'ck-pay-cash-helper';
     cashHelper.className = 'ck-pay-helper';
     cashHelper.hidden = true;
-    cashHelper.textContent = 'Un code vous sera envoyé pour le relais.';
+    cashHelper.textContent = 'Un code de paiement vous sera envoyé pour régler au relais.';
     body.appendChild(cashHelper);
 
     // Stripe card wrap : inline dans le scroll, juste sous les chips paiement
@@ -1039,20 +1041,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
     wrap.appendChild(notices);
 
-    // Bouton "Payer en groupe" — uniquement pour cash_relais non encore payé
-    if (order.id && order.payment_mode === 'cash_relais') {
-      const groupBtn = document.createElement('button');
-      groupBtn.id = 'k-group-pay-btn';
-      groupBtn.innerHTML = '👥 Payer en groupe';
-      groupBtn.style.cssText = [
-        'width:100%', 'background:linear-gradient(135deg,var(--violet,#6c3fc5),var(--violet-dark,#4a2d9e))',
-        'color:#fff', 'border:none', 'border-radius:50px', 'padding:12px 16px',
-        'font-size:14px', 'font-weight:700', 'cursor:pointer', 'margin-bottom:8px',
-        'box-shadow:0 4px 14px var(--violet-light,rgba(108,63,197,.3))',
-      ].join(';');
-      wrap.appendChild(groupBtn);
-    }
-
     const actions = document.createElement('div');
     actions.className = 'k-confirm-actions';
     actions.innerHTML =
@@ -1074,39 +1062,6 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
           }
         });
       }
-      const groupPayBtn = document.getElementById('k-group-pay-btn');
-      if (groupPayBtn) {
-        groupPayBtn.addEventListener('click', async () => {
-          groupPayBtn.disabled = true;
-          groupPayBtn.textContent = '⏳ Activation...';
-          try {
-            const r = await apiPost('/api/shared-carts/from-order', {
-              order_id: order.id,
-              split_mode: 'free',
-              expiration_days: 7,
-            });
-            if (r && r.share_url) {
-              const lines = [
-                '👥 *Paiement groupé — ' + sanitize(order.reference || 'Commande Komerce') + '*',
-                '─────────────────────',
-                'Participez au financement de cette commande !',
-                '',
-                '💰 Total : ' + fmt(order.total_kmf || 0, 'KMF'),
-                '🔗 Voir et contribuer :',
-                r.share_url,
-              ];
-              window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
-              groupPayBtn.textContent = '✅ Lien partagé !';
-              showToast('Lien de paiement groupé créé !', 'success');
-            }
-          } catch (err) {
-            groupPayBtn.disabled = false;
-            groupPayBtn.innerHTML = '👥 Payer en groupe';
-            showToast(err.message || 'Erreur — réessayez', 'error');
-          }
-        });
-      }
-
       const closeBtn = document.getElementById('k-order-close-btn');
       if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
       const trackBtn = document.getElementById('k-order-track-btn');

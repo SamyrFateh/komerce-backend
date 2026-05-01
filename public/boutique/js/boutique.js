@@ -77,6 +77,24 @@ import {
 
 'use strict';
 
+// ── Desktop scroll fix : neutraliser style.top posé par setupMobile() ──
+(function resetDesktopScroll() {
+  function applyDesktopReset() {
+    if (window.innerWidth >= 900) {
+      var ps = document.getElementById('k-page-scroll');
+      if (ps) {
+        ps.style.top      = '';
+        ps.style.position = '';
+        ps.style.height   = '';
+        ps.style.overflow = '';
+      }
+    }
+  }
+  applyDesktopReset();
+  window.addEventListener('resize', applyDesktopReset);
+})();
+
+
 // ── CONSTANTES KOMERCE ──────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;

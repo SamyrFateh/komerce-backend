@@ -686,3 +686,29 @@ body {
   .k-grid, .k-sec-grid { gap: 18px; }
 
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP SCROLL FIX
+   body[data-layout="desktop"] est posé par boutique.js au load.
+   Il neutralise le style.top inline de setupMobile().
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html, body {
+    height: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Neutraliser tout overflow blocking hérité */
+  body.modal-open { overflow: hidden; }
+  body.cart-open  { overflow: hidden; }
+
+  /* #k-page-scroll desktop : flux normal, pas de fixed */
+  body:not(.modal-open):not(.cart-open) #k-page-scroll {
+    position: static;
+    height: auto;
+    overflow: visible;
+    width: 100%;
+    top: auto;
+  }
+}

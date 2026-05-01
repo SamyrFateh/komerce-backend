@@ -40,18 +40,23 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     var track = dom.modalCarouselTrack;
     var dots = dom.modalDots;
     var images = product.images || [product.image_url];
+    images = images.filter(Boolean);
+    if (!images.length) images = [product.image_url || ''];
 
+    // ── Slides principales ─────────────────────────────────────
     track.innerHTML = '';
     images.forEach(function(url, i) {
       var img = document.createElement('img');
       img.className = 'k-modal-slide';
-      img.src = optimizeImgUrl(url, 600);
+      img.src = optimizeImgUrl(url, 800);
       img.alt = product.name || '';
       img.draggable = false;
+      img.loading = i === 0 ? 'eager' : 'lazy';
       track.appendChild(img);
     });
     dom.modalImg = track.querySelector('.k-modal-slide');
 
+    // ── Dots mobile ────────────────────────────────────────────
     dots.innerHTML = '';
     if (images.length > 1) {
       images.forEach(function(_, i) {
@@ -60,6 +65,37 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         dot.addEventListener('click', function() { goToSlide(i); });
         dots.appendChild(dot);
       });
+    }
+
+    // ── Miniatures desktop (colonne gauche) ────────────────────
+    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    // Supprimer ancienne colonne miniatures
+    var oldThumbs = dom.modal.querySelector('.k-modal-thumbs');
+    if (oldThumbs) oldThumbs.remove();
+
+    if (images.length > 1) {
+      var thumbs = document.createElement('div');
+      thumbs.className = 'k-modal-thumbs';
+      images.forEach(function(url, i) {
+        var thumb = document.createElement('button');
+        thumb.className = 'k-modal-thumb' + (i === 0 ? ' is-active' : '');
+        thumb.setAttribute('aria-label', 'Image ' + (i + 1));
+        var tImg = document.createElement('img');
+        tImg.src = optimizeImgUrl(url, 120);
+        tImg.alt = '';
+        tImg.loading = 'lazy';
+        thumb.appendChild(tImg);
+        thumb.addEventListener('click', function() {
+          goToSlide(i);
+          // Sync active thumb
+          thumbs.querySelectorAll('.k-modal-thumb').forEach(function(t, j) {
+            t.classList.toggle('is-active', j === i);
+          });
+        });
+        thumbs.appendChild(thumb);
+      });
+      // Insérer avant le carousel
+      if (imgWrap) imgWrap.insertBefore(thumbs, imgWrap.firstChild);
     }
 
     state.carouselIndex = 0;
@@ -79,9 +115,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     var track = dom.modalCarouselTrack;
     track.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
     track.style.transform = 'translateX(-' + (index * 100) + '%)';
+    // Sync dots mobile
     var allDots = dom.modalDots.querySelectorAll('.k-modal-dot');
     allDots.forEach(function(d, i) {
       d.classList.toggle('is-active', i === index);
+    });
+    // Sync miniatures desktop
+    var allThumbs = dom.modal.querySelectorAll('.k-modal-thumb');
+    allThumbs.forEach(function(t, i) {
+      t.classList.toggle('is-active', i === index);
     });
   }
 
