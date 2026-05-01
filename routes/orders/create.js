@@ -6,9 +6,9 @@
  * Créer une commande (client authentifié).
  */
 
+const crypto = require('crypto');
 const express = require('express');
 const router  = express.Router();
-const { v4: uuidv4 } = require('uuid');
 const db      = require('../../db');
 const { authenticate }                   = require('../../middleware/auth');
 const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest');
@@ -262,7 +262,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $31,$32,$33
    ) RETURNING *`,
   [
-    uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
+    crypto.randomUUID(), reference, req.user.id, recipient_id, relais?.id || null,
     tracking_phone || null,
     total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
     payment_mode,
