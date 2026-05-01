@@ -146,37 +146,23 @@ let _zoomLens = null;
 let _zoomPreview = null;
 
 function setupZoom() {
-  if (!isDesktop()) return;
-
+  // PATCH #227: disabled. The desktop zoom lens created a visible target/crosshair
+  // and polluted the product modal UX.
   var imgWrap = dom.modal ? dom.modal.querySelector('.k-modal-img-wrap') : null;
   if (!imgWrap) return;
 
-  // Create lens
-  if (!_zoomLens) {
-    _zoomLens = document.createElement('div');
-    _zoomLens.className = 'k-modal-zoom-lens';
-  }
-
-  // Create preview
-  if (!_zoomPreview) {
-    _zoomPreview = document.createElement('div');
-    _zoomPreview.className = 'k-modal-zoom-preview';
-  }
-
-  // Ensure they're in the DOM
   var carousel = imgWrap.querySelector('.k-modal-carousel');
-  if (carousel && !_zoomLens.parentNode) {
-    carousel.appendChild(_zoomLens);
-  }
-  if (!_zoomPreview.parentNode) {
-    imgWrap.appendChild(_zoomPreview);
+  if (carousel) {
+    carousel.removeEventListener('mousemove', _onZoomMove);
+    carousel.removeEventListener('mouseleave', _onZoomLeave);
   }
 
-  // Mouse events on carousel
-  if (carousel) {
-    carousel.addEventListener('mousemove', _onZoomMove);
-    carousel.addEventListener('mouseleave', _onZoomLeave);
-  }
+  imgWrap.querySelectorAll('.k-modal-zoom-lens, .k-modal-zoom-preview').forEach(function(el) {
+    el.remove();
+  });
+
+  _zoomLens = null;
+  _zoomPreview = null;
 }
 
 function _onZoomMove(e) {
@@ -508,56 +494,10 @@ function setupScrollToTop() {
 // ═══════════════════════════════════════════════════════════════
 
 function setupCardHoverOverlay() {
+  // PATCH #227: disabled temporarily. The injected hover layer was causing
+  // focus/flicker artifacts on the homepage desktop grid.
   if (!isDesktop()) return;
-
-  document.addEventListener('mouseenter', function(e) {
-    var card = e.target.closest ? e.target.closest('.k-card') : null;
-    if (!card || card.querySelector('.k-card-hover-overlay')) return;
-
-    var pid = card.dataset.id;
-    if (!pid) return;
-
-    var product = state.products.find(function(p) { return String(p.id) === String(pid); });
-    if (!product) return;
-
-    var liked = isFav(product.id);
-
-    var overlay = document.createElement('div');
-    overlay.className = 'k-card-hover-overlay';
-    overlay.innerHTML =
-      '<div class="k-card-hover-name">' + (product.name || '') + '</div>' +
-      '<div class="k-card-hover-actions">' +
-        '<button class="k-card-quick-view" data-id="' + product.id + '">' +
-          '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
-          'Aperçu rapide' +
-        '</button>' +
-        '<button class="k-card-hover-fav' + (liked ? ' liked' : '') + '" data-id="' + product.id + '">' +
-          (liked ? '❤️' : '🤍') +
-        '</button>' +
-      '</div>';
-
-    card.appendChild(overlay);
-
-    // Quick view → open modal
-    overlay.querySelector('.k-card-quick-view').addEventListener('click', function(e) {
-      e.stopPropagation();
-      openModal(product.id);
-    });
-
-    // Fav toggle
-    overlay.querySelector('.k-card-hover-fav').addEventListener('click', function(e) {
-      e.stopPropagation();
-      bus.emit('fav:toggle', product.id);
-    });
-  }, true);
-
-  // Cleanup on mouseleave
-  document.addEventListener('mouseleave', function(e) {
-    var card = e.target.closest ? e.target.closest('.k-card') : null;
-    if (!card) return;
-    var overlay = card.querySelector('.k-card-hover-overlay');
-    if (overlay) overlay.remove();
-  }, true);
+  document.querySelectorAll('.k-card-hover-overlay').forEach(function(el) { el.remove(); });
 }
 
 // ═══════════════════════════════════════════════════════════════
