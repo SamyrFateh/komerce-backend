@@ -32,7 +32,7 @@
  * @param {object}  opts
  * @param {string}  opts.orderId    — UUID de la commande
  * @param {object}  opts.actor      — { id, role } de l'initiateur
- * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm'
+ * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm' | 'wallet_full_payment'
  * @param {object}  opts.dbClient   — Client de transaction actif (pool.connect())
  * @param {string}  [opts.note]     — Note optionnelle pour l'historique
  *
@@ -63,7 +63,9 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   const confirmNote = note
     || (source === 'stripe_webhook'
       ? 'Paiement Stripe reçu'
-      : 'Paiement espèces confirmé par agent relais');
+      : source === 'wallet_full_payment'
+        ? 'Paiement intégral par wallet'
+        : 'Paiement espèces confirmé par agent relais');
 
   const confirmResult = await transitionOrderStatus({
     orderId,
@@ -93,7 +95,9 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   // L'ordre est déjà confirmé — le stock doit quand même être traité.
   const orderedNote = source === 'stripe_webhook'
     ? 'Commande lancée automatiquement après paiement Stripe'
-    : 'Commande lancée après paiement cash';
+    : source === 'wallet_full_payment'
+      ? 'Commande lancée après paiement intégral par wallet'
+      : 'Commande lancée après paiement cash';
 
   const orderResult = await transitionOrderStatus({
     orderId,
