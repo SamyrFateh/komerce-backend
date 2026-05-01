@@ -4,6 +4,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
@@ -430,7 +431,6 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
     });
   }
 
-  const { v4: uuidv4 } = require('uuid');
   const { randomBytes } = require('crypto');
   const client = await db.getClient();
 
@@ -578,7 +578,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
     };
 
     for (const s of scenarios) {
-      const orderId = uuidv4();
+      const orderId = crypto.randomUUID();
       const cl = C[s.ci];
       const totalKmf = s.iq.reduce((sum, item) => sum + pickProduct(item.pi).price_kmf * item.q, 0);
       const totalEur = +(totalKmf / 492).toFixed(2);
@@ -603,7 +603,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
         [
           orderId, s.ref, cl.id, s.rid,
           totalKmf, totalEur, s.pm, s.ps,
-          cashRef, genPickup(), s.st, 'aucun', uuidv4(),
+          cashRef, genPickup(), s.st, 'aucun', crypto.randomUUID(),
           createdAt, s.ordered_at, s.preparation_at, s.shipped_at,
           s.available_at, s.collected_at, s.cancelled_at,
         ]
@@ -613,7 +613,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       const orderItemIds = [];
       for (const item of s.iq) {
         const prod = pickProduct(item.pi);
-        const oiId = uuidv4();
+        const oiId = crypto.randomUUID();
         await client.query(
           `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, scan_code)
            VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
@@ -640,7 +640,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       // ── CREATE PARCEL ────────────────────────────────────────────
       if (!s.pcl) continue;
 
-      const parcelId = uuidv4();
+      const parcelId = crypto.randomUUID();
       const parcelRef = genParcelRef();
       const totalItems = orderItemIds.length;
       const totalQty = orderItemIds.reduce((sum, oi) => sum + oi.qty, 0);
@@ -733,7 +733,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
                $11, $12, $13, $14
              )`,
             [
-              uuidv4(), parcelId, oi.id, oi.productId, oi.qty,
+              crypto.randomUUID(), parcelId, oi.id, oi.productId, oi.qty,
               oi.qty, oi.qty, oi.qty,
               isReceived  ? oi.qty : 0,
               isCollected ? oi.qty : 0,
@@ -849,7 +849,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
                $9, $10, $11::jsonb, $12, $13
              )`,
             [
-              uuidv4(), parcelId, orderId, scan.event_type,
+              crypto.randomUUID(), parcelId, orderId, scan.event_type,
               parcelRef, scan.actor_id, scan.actor_name, scan.actor_role,
               scan.location, scan.notes,
               JSON.stringify({ source: 'seed', device: 'system' }),
@@ -932,7 +932,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
                $13, $14::jsonb, $15, $16
              )`,
             [
-              uuidv4(), parcelId, orderId, incType, def.severity,
+              crypto.randomUUID(), parcelId, orderId, incType, def.severity,
               def.status, def.title, def.description, JSON.stringify(def.details),
               def.client_impact, false, detectedBy,
               def.detected_source,
@@ -972,7 +972,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
                $12, $13, $14, $15, $16
              )`,
           [
-              uuidv4(), invNum, orderId, parcelId,
+              crypto.randomUUID(), invNum, orderId, parcelId,
               cl.name, cl.phone, relaisNameOf[s.rid] || 'Relais',
               JSON.stringify(itemsSnapshot), totalKmf, 0, totalKmf,
               s.pm, s.ps, relaisNameOf[s.rid] || 'Relais', pTs.collected_at, pTs.collected_at,
