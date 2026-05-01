@@ -447,3 +447,242 @@ body {
     margin: 0;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP PREMIUM — @media (min-width: 900px)
+   Couche isolée. Aucun impact mobile.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* ── Page layout ─────────────────────────────────────────── */
+  html, body { overflow-x: hidden; }
+
+  #k-page-scroll {
+    position: static;
+    overflow: visible;
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #k-catalog-section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  /* ── Header premium ──────────────────────────────────────── */
+  .k-header {
+    height: 68px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+  }
+
+  .k-header-inner {
+    height: 68px;
+    max-width: var(--container);
+    margin: 0 auto;
+  }
+
+  /* Logo texte "Komerce" toujours visible */
+  .k-logo-text { display: block; font-size: 20px; }
+  .k-logo-icon { width: 36px; height: 36px; }
+
+  /* Barre recherche centrale large */
+  .k-search {
+    flex: 1 1 0;
+    max-width: 680px;
+    height: 44px;
+    border-radius: 999px;
+  }
+  .k-search input {
+    height: 44px;
+    font-size: 15px;
+    padding: 0 16px 0 44px;
+  }
+
+  /* Actions droite */
+  .k-header-actions { gap: 8px; }
+
+  .k-header-nav-btn {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+    gap: 6px;
+    border-radius: 999px;
+  }
+
+  /* Avatar panier — sans fond carré */
+  .k-cart-btn {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 4px;
+  }
+  .k-cart-avatar { width: 36px; height: 36px; }
+
+  /* Badge panier */
+  .k-cart-badge {
+    top: -2px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 10px;
+    z-index: 20;
+  }
+
+  /* Bnav caché desktop */
+  .k-bnav { display: none; }
+
+  /* ── Catégories desktop ───────────────────────────────────── */
+  .k-cats-shell { max-width: var(--container); margin: 0 auto; }
+
+  .k-cats {
+    padding: 10px clamp(16px, 3vw, 40px) 0;
+    gap: 8px;
+    flex-wrap: wrap;          /* chips sur 1-2 lignes selon nb catégories */
+    overflow: visible;
+    height: auto;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right { display: none; }  /* pas de fade desktop */
+
+  .k-chip {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+  }
+
+  .k-chip-photo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .k-chip.active {
+    background: var(--ocean-dark);
+    color: var(--white);
+  }
+
+  /* Section titre catégorie */
+  .k-sec-header {
+    padding: 18px 0 10px;
+    font-size: 1.15rem;
+  }
+
+  /* ── Grille produits desktop ─────────────────────────────── */
+  .k-section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  /* Cartes desktop — plus compactes et denses */
+  .k-card {
+    border-radius: 10px;
+    box-shadow: var(--elev-1);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .k-card:hover {
+    box-shadow: var(--elev-3);
+    transform: translateY(-2px);
+  }
+
+  .k-card-img-wrap { aspect-ratio: 1 / 1; border-radius: 10px 10px 0 0; }
+
+  .k-card-info { padding: 8px 10px 10px; }
+
+  .k-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    -webkit-line-clamp: 1;
+    min-height: 0;
+  }
+
+  .k-card-desc {
+    font-size: 11px;
+    -webkit-line-clamp: 1;
+    margin-top: 2px;
+  }
+
+  .k-card-price { font-size: 15px; font-weight: 800; }
+  .k-card-price-eur { font-size: 10px; }
+  .k-card-old-price { font-size: 11px; }
+
+  /* Bouton panier desktop — plus grand, hover visible */
+  .k-card-add {
+    width: 36px;
+    height: 36px;
+    bottom: 8px;
+    right: 8px;
+    background-size: 80%;
+    opacity: .85;
+    transition: opacity .15s, transform .15s;
+  }
+  .k-card-add:hover { opacity: 1; transform: scale(1.1); }
+
+  /* Favori desktop */
+  .k-card-fav {
+    width: 30px;
+    height: 30px;
+    top: 8px;
+    right: 8px;
+    font-size: 14px;
+    opacity: .7;
+    transition: opacity .15s;
+  }
+  .k-card-fav:hover, .k-card-fav.liked { opacity: 1; }
+
+  /* ── Panier drawer desktop ───────────────────────────────── */
+  .k-cart-drawer {
+    width: 420px;
+    max-width: 420px;
+    border-radius: 0;
+    box-shadow: var(--elev-4);
+  }
+
+  .k-cart-header {
+    padding: 18px 20px 14px;
+    font-size: 1rem;
+  }
+
+  .k-cart-body { padding: 12px 16px; }
+
+  .k-cart-item { padding: 10px 0; gap: 12px; }
+  .k-cart-item-img { width: 60px; height: 60px; border-radius: 8px; }
+  .k-cart-item-name { font-size: .88rem; }
+
+  .k-cart-footer { padding: 14px 20px 20px; }
+
+  /* ── Hero fixe desktop (pas de fixed) ───────────────────── */
+  #k-hero-fixed-wrap {
+    position: static;
+    width: 100%;
+  }
+
+  .k-hero-wrap { margin: 0; }
+
+}
+
+/* ── 1200px : raffinements supplémentaires ───────────────────── */
+@media (min-width: 1200px) {
+
+  .k-header { height: 72px; }
+  .k-header-inner { height: 72px; }
+  .k-logo-text { font-size: 22px; }
+  .k-search { height: 46px; max-width: 760px; }
+  .k-search input { height: 46px; font-size: 16px; }
+
+  .k-card-name { font-size: 13px; }
+  .k-card-price { font-size: 16px; }
+
+  /* 5 colonnes déjà dans products.css — juste affiner le gap */
+  .k-grid, .k-sec-grid { gap: 18px; }
+
+}

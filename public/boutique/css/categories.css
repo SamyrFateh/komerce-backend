@@ -391,3 +391,77 @@
 }
 .k-promo-rail-more:hover  { border-color: var(--coral); color: var(--coral); }
 .k-promo-card-prices { display: flex; flex-direction: column; gap: 1px; }
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP PREMIUM — catégories
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  .k-cats-shell {
+    border-bottom: 1px solid rgba(42,62,44,.07);
+    background: var(--sand-warm);
+    position: sticky;
+    top: 68px;       /* colle sous le header desktop */
+    z-index: 100;
+    padding-bottom: 10px;
+  }
+
+  .k-cats {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 10px clamp(16px, 3vw, 40px) 0;
+    gap: 8px;
+    flex-wrap: nowrap;     /* rail horizontal scrollable */
+    overflow-x: auto;
+    scrollbar-width: none;
+    height: auto;
+  }
+  .k-cats::-webkit-scrollbar { display: none; }
+
+  .k-chip {
+    height: 38px;
+    padding: 0 18px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-radius: 999px;
+    border: 1.5px solid rgba(42,62,44,.12);
+    background: var(--white);
+    color: var(--text);
+    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+    box-shadow: var(--elev-1);
+  }
+
+  .k-chip:hover {
+    border-color: var(--ocean);
+    color: var(--ocean-dark);
+    box-shadow: var(--elev-2);
+  }
+
+  .k-chip.active {
+    background: var(--ocean-dark);
+    color: var(--white);
+    border-color: var(--ocean-dark);
+    box-shadow: 0 4px 14px rgba(74,144,64,.28);
+  }
+
+  .k-chip-photo {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  /* Subcats desktop */
+  .k-subcats-rail {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 8px clamp(16px, 3vw, 40px) 0;
+  }
+
+}
+
+@media (min-width: 1200px) {
+  .k-cats-shell { top: 72px; }
+}

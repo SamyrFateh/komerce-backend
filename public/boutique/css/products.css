@@ -638,3 +638,64 @@
     padding: 4px 0 12px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP PREMIUM — cartes produits
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* Promo badge desktop */
+  .k-promo-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    top: 7px;
+    left: 7px;
+  }
+
+  /* Stepper inline dans la carte desktop */
+  .k-card-add.in-cart {
+    width: 100px;
+    border-radius: 20px;
+    background-color: var(--white);
+    box-shadow: var(--elev-2);
+  }
+
+  /* Section header desktop */
+  .k-sec-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0 12px;
+    border-bottom: 2px solid var(--sand-dark);
+    margin-bottom: 4px;
+  }
+
+  .k-sec-header-emoji { font-size: 1.3rem; }
+
+  .k-sec-header-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-family: var(--font-display);
+    color: var(--text);
+    letter-spacing: -.02em;
+  }
+
+  .k-sec-header-count {
+    margin-left: auto;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--sand-dark);
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+
+  /* Card hover reveal fav */
+  .k-card { position: relative; }
+  .k-card-fav { opacity: 0; }
+  .k-card:hover .k-card-fav { opacity: 1; }
+  .k-card-fav.liked { opacity: 1; }
+
+}

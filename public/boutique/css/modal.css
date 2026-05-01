@@ -403,3 +403,100 @@
 }
 .k-sug-add:active { transform: scale(.88); }
 .k-sug-add img { width: 28px; height: 28px; display: block; }
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP PREMIUM — modal produit
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  .k-modal-overlay {
+    align-items: center;
+    padding: 24px;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .k-modal {
+    width: min(92vw, 980px);
+    max-height: min(88vh, 780px);
+    border-radius: 16px;
+    box-shadow: var(--elev-4);
+  }
+
+  .k-modal-scroll {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+    max-height: min(88vh, 780px);
+    overflow: hidden;
+    padding-top: 0;
+  }
+
+  /* Topbar sur toute la largeur */
+  .k-modal-topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 52px;
+    padding: 0 16px;
+  }
+
+  /* Image gauche */
+  .k-modal-img-wrap {
+    grid-column: 1;
+    grid-row: 2;
+    height: auto;
+    min-height: 380px;
+    max-height: 100%;
+    border-radius: 0 0 0 16px;
+    overflow: hidden;
+    background: var(--sand);
+  }
+
+  /* Détails droite */
+  .k-modal-details {
+    grid-column: 2;
+    grid-row: 2;
+    overflow-y: auto;
+    padding: 20px 22px 0;
+  }
+
+  /* Actions droite bas */
+  .k-modal-actions {
+    grid-column: 2;
+    grid-row: 3;
+    position: sticky;
+    bottom: 0;
+    border-top: 1px solid rgba(0,0,0,.06);
+    padding: 12px 22px 20px;
+    background: var(--white);
+    border-radius: 0 0 16px 0;
+  }
+
+  /* Suggestions pleine largeur bas */
+  .k-modal-suggestions {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    border-top: 1px solid var(--sand-dark);
+    padding: 16px 20px 20px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .k-modal-name { font-size: 1.3rem; margin-bottom: 6px; }
+  .k-modal-price { font-size: 1.6rem; }
+
+  .k-buy-now-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    border-radius: 10px;
+    margin-top: 8px;
+  }
+
+}
