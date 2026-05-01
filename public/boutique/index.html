@@ -42,29 +42,6 @@ if('serviceWorker' in navigator){
   }
 }
 </script>
-<script>
-// Force SW update + cache purge (one-time)
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    regs.forEach(function(r){r.update()});
-  });
-  // Listener pour reload auto quand le SW se met à jour
-  navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data && e.data.type === 'sw-updated'){
-      console.log('[SW] Nouvelle version', e.data.version, '→ reload auto');
-      location.reload();
-    }
-  });
-  // Also clear all caches except current version
-  if(window.caches){
-    caches.keys().then(function(names){
-      names.forEach(function(n){
-        if(n.indexOf('komerce-v303')===-1) caches.delete(n);
-      });
-    });
-  }
-}
-</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
 <title>Komerce — Boutique en ligne</title>
