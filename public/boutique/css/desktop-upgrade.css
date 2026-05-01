@@ -736,3 +736,33 @@
     box-shadow: none;
   }
 }
+
+
+/* PATCH #227 — desktop runtime stabilization */
+
+@media (min-width: 900px) {
+  .k-modal-carousel {
+    cursor: default;
+  }
+
+  .k-modal-zoom-lens,
+  .k-modal-zoom-preview,
+  .k-card-hover-overlay {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .k-card:focus,
+  .k-card:focus-visible,
+  .k-card-img-wrap:focus,
+  .k-card-img-wrap:focus-visible,
+  .k-modal-carousel:focus,
+  .k-modal-carousel:focus-visible,
+  .k-modal-slide:focus,
+  .k-modal-slide:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
+

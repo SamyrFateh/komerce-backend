@@ -1051,3 +1051,99 @@
     font-size: 14px;
   }
 }
+
+
+/* PATCH #227 — desktop modal vertical suggestions */
+
+@media (min-width: 900px) {
+  .k-modal {
+    overflow: hidden;
+  }
+
+  .k-modal-scroll {
+    min-height: 0;
+    overflow: hidden;
+    grid-template-columns: minmax(0, 56%) minmax(0, 44%);
+  }
+
+  .k-modal-details {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .k-modal-suggestions {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 96px;
+  }
+
+  .k-modal-suggestions .k-sug-rail,
+  .k-modal-suggestions .k-sug-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .k-modal-suggestions .k-sug-card {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 12px;
+    background: var(--white);
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  .k-modal-suggestions .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 72px;
+    height: 72px;
+    aspect-ratio: auto;
+    border-radius: 10px;
+    background: var(--sand);
+  }
+
+  .k-modal-suggestions .k-sug-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  .k-modal-suggestions .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 8px 8px 0 0;
+    min-height: 0;
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+
+  .k-modal-suggestions .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px 8px 0;
+  }
+
+  .k-modal-suggestions .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+  }
+}
+
