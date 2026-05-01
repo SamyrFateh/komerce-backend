@@ -1226,3 +1226,77 @@
   }
 }
 
+
+
+/* PATCH #233 — force generated modal suggestions vertical list */
+
+@media (min-width: 900px) {
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    display: block;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    display: block;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    width: 100%;
+    min-width: 0;
+    gap: 8px 10px;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 12px;
+    background: var(--white);
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 78px;
+    height: 78px;
+    aspect-ratio: auto;
+    border-radius: 10px;
+    background: var(--sand);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 8px 10px 0 0;
+    min-height: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 10px 8px 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+  }
+}
+
