@@ -5,14 +5,14 @@
  * Gestion pager sous-catégories + swipe dans modal
  */
 
-import { bus }                                         from './b-bus.js';
-import { getSubcategories, getSubcategoryMeta, getNextSubcategoryKey } from './shop-schema.js';
+import { bus }           from './b-bus.js';
 import {
   state, dom, $, $$,
 }                         from './b-store.js';
 import {
   sanitize, fmt, bindCarouselDots,
 }                         from './b-utils.js';
+import { getSubcategories } from './shop-schema.js';
 import {
   showToast,
 }                         from './b-cart-core.js';
@@ -58,7 +58,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * @returns {Array<{label:string, slug:string, count:number}>}
    */
   function _subcatMeta(cat, subKey) {
-    var subs = getSubcategories(cat);
+    var subs = getSubcategories(cat) || [];
     for (var i = 0; i < subs.length; i++) {
       if (subs[i].key === subKey) return subs[i];
     }
@@ -74,7 +74,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    * @returns {string|null} Subcat suivante
    */
   function _nextSubcat(cat, currentSub) {
-    var subs = getSubcategories(cat);
+    var subs = getSubcategories(cat) || [];
     for (var i = 0; i < subs.length - 1; i++) {
       if (subs[i].key === currentSub) return subs[i + 1].key;
     }
@@ -120,7 +120,7 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
   function _renderFlatSubcat() {
     var fs = state.flatSubcat;
     if (!fs) return '';
-    var subs = getSubcategories(fs.cat);
+    var subs = getSubcategories(fs.cat) || [];
 
     // Chrome (header + tabs) — stocké pour _mountFlatSubcatChrome
     var headerHtml =

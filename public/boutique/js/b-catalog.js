@@ -15,7 +15,7 @@
 
 import { bus }           from './b-bus.js';
 import {
-  state, SUBCATS, dom, $, $$, PAGE_SIZE, scroll,
+  state, dom, $, $$, PAGE_SIZE, scroll,
 }                         from './b-store.js';
 import {
   optimizeImgUrl, sanitize, promoImgUrl, fmt, fmtPrice,

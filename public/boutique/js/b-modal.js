@@ -7,7 +7,7 @@
 
 import { bus }           from './b-bus.js';
 import {
-  state, SUBCATS, dom, $, $$,
+  state, dom, $, $$,
 }                         from './b-store.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,
