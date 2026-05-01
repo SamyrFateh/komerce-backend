@@ -7,6 +7,17 @@ const router = express.Router();
 const pool = require('../db');
 const { sendMagicLink } = require('../services/notification-service');
 
+function maskPhone(phone) {
+  if (!phone) return null;
+  const raw = String(phone);
+  if (raw.length <= 4) return '****';
+  return raw.slice(0, 4) + '******' + raw.slice(-2);
+}
+
+function canEchoMagicLink() {
+  return process.env.NODE_ENV === 'development' && process.env.MAGIC_LINK_DEV_ECHO === 'true';
+}
+
 /**
  * POST /api/auth/magic-link
  * Request a magic link — generates token and returns success
@@ -42,7 +53,10 @@ router.post('/magic-link', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const magicLink = `${baseUrl}/mon-compte?token=${magicToken}`;
 
-    console.log(`[magic-link] Generated for ${user.full_name} (${user.phone})`);
+    console.log('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
+    if (canEchoMagicLink()) {
+      console.log('[magic-link][dev] URL:', magicLink);
+    }
 
     // Envoyer le lien via WhatsApp (AuthKey)
     const waResult = await sendMagicLink({
@@ -52,8 +66,9 @@ router.post('/magic-link', async (req, res) => {
       expiryMin: 15,
     });
 
-    console.log(`[magic-link] Send result:`, {
-      phone: user.phone,
+    console.log('[magic-link] Send result:', {
+      userId: user.id,
+      phone: maskPhone(user.phone),
       success: waResult.success,
       channel: waResult.channel,
       reason: waResult.reason,
@@ -65,9 +80,7 @@ router.post('/magic-link', async (req, res) => {
         ? 'Lien de connexion envoyé par WhatsApp !'
         : 'Si ce numéro est enregistré, vous recevrez un lien de connexion.',
       // DEV ONLY : exposé uniquement en dev local explicite
-      _dev_link: (process.env.NODE_ENV === 'development' && process.env.MAGIC_LINK_DEV_ECHO === 'true')
-        ? magicLink
-        : undefined,
+      _dev_link: canEchoMagicLink() ? magicLink : undefined,
     });
   } catch (err) {
     console.error('Magic link request error:', err);
@@ -116,7 +129,7 @@ router.get('/magic-link/validate', async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
-    console.log(`✅ Magic link login: ${user.full_name} (${user.phone})`);
+    console.log('[magic-link] Login success', { userId: user.id, phone: maskPhone(user.phone) });
     res.redirect('/mon-compte');
   } catch (err) {
     console.error('Magic link validate error:', err);
