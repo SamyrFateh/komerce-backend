@@ -28,6 +28,7 @@ const {
   PARCEL_TRANSITIONS,
   PARCEL_SMS,
 } = require('../../services/parcel-service');
+const { transitionOrderStatus } = require('../../services/order-status-machine');
 
 // ─── POST /api/orders/:id/mark-availability ──────────────────────────────────
 // Marquer la disponibilité de chaque article au hub Dubai.
@@ -538,16 +539,15 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
       );
 
       if (allCollected) {
-        await client.query(
-          `UPDATE orders SET status = 'collected', collected_at = NOW(), updated_at = NOW()
-           WHERE id = $1`,
-          [parcel.parent_id]
-        );
-        await client.query(
-          `INSERT INTO order_status_history (order_id, status, note, changed_by)
-           VALUES ($1, 'collected', 'Tous les colis collectés — commande terminée', $2)`,
-          [parcel.parent_id, req.user.id]
-        );
+        // LOT 3: déléguer à la state machine (SSOT) — elle gère l'UPDATE + l'historique (D6)
+        await transitionOrderStatus({
+          orderId:   parcel.parent_id,
+          newStatus: 'collected',
+          actor:     { id: req.user?.id || null, role: req.user?.role || 'system' },
+          source:    'scan',
+          note:      'Tous les colis collectés — commande terminée',
+          dbClient:  client,
+        });
       }
     }
 

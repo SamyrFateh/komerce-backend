@@ -254,8 +254,8 @@ async function refundOrder(orderId, tracked) {
   });
 
   if (!result.success) {
-    // Fallback: direct update if state machine doesn't support refunded from collected
-    await db.query("UPDATE orders SET status = 'refunded', updated_at = NOW() WHERE id = $1", [orderId]);
+    // LOT 3: pas de fallback direct — si la transition est invalide, retourner l'erreur
+    return { success: false, from, to: from, error: 'refund: ' + (result.error || 'transition refusée par la state machine') };
   }
 
   // Credit wallet if user exists
