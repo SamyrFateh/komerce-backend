@@ -230,7 +230,6 @@ const inventoryApiRouter = require('./routes/inventory-api');
 const transitaireApiRouter = require('./routes/transitaire-api');
 const autoDistributeRouter = require('./routes/auto-distribute-api');
 const hubMarkOrderedRouter = require('./routes/hub-mark-ordered');
-const transitDashboardRoutes = require('./routes/transit-dashboard');
 const sharesRouter = require('./routes/shares');
 const metaWhatsAppRoutes = require('./routes/meta-whatsapp');
 const economicEngineRouter  = require('./routes/economic-engine');
@@ -247,7 +246,7 @@ const sharedCart                   = require('./routes/shared-cart');
 const adminRiskProvisionsRouter    = require('./routes/admin-risk-provisions');
 
 
-app.use('/api/transit-dashboard', transitDashboardRoutes);
+app.use('/api/transit-dashboard', transitDashRouter);
 app.use('/api/auth',       authRouter);
 app.use('/api/products',   productsRouter);
 app.use('/api/orders',     ordersRouter);

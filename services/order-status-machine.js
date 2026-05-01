@@ -43,7 +43,8 @@ const ORDER_STATUSES = Object.freeze([
 
 /** Rank for forward-only checks. Higher = further along. */
 const STATUS_RANK = Object.freeze({
-  pending:     0,   // ← NOUVEAU
+  pending:               0,   // ← NOUVEAU
+  pending_group_payment: 0,   // alternative à pending — LOT 4 (même rang, état latéral)
   confirmed:   1,
   ordered:     2,
   preparation: 3,
