@@ -203,7 +203,21 @@ export function getCategoryList() {
 }
 
 export function getRailCategories() {
-  return getCategoryList().filter(c => c.showInRail !== false);
+  return getCategoryList()
+    .filter(c => c.showInRail !== false)
+    .map(c => {
+      if (c.railBadge) return c;
+      // Fallback : calcul railBadge depuis iconSvg / sectionEmoji
+      // (utilisé quand la migration 061 n'est pas encore jouée en prod)
+      return {
+        ...c,
+        railBadge: c.iconSvg
+          ? { kind: 'svg', svg: c.iconSvg }
+          : c.sectionEmoji
+            ? { kind: 'text', text: c.sectionEmoji }
+            : null,
+      };
+    });
 }
 
 export function getCategoryByKey(key) {

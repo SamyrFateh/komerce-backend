@@ -160,7 +160,7 @@
   }
   .k-hero-img {
     width: 100%;
-    height: clamp(420px, 44vw, 600px);
+    height: clamp(280px, 32vw, 420px);
     object-fit: cover;
     object-position: 50% center;
     border-radius: 0;
@@ -172,10 +172,10 @@
     inset: 0;
     background: linear-gradient(
       95deg,
-      rgba(253,250,245,.92) 0%,
-      rgba(253,250,245,.80) 28%,
-      rgba(253,250,245,.30) 42%,
-      rgba(253,250,245,0)   52%
+      rgba(253,250,245,.88) 0%,
+      rgba(253,250,245,.72) 24%,
+      rgba(253,250,245,.22) 38%,
+      rgba(253,250,245,0)   44%
     );
     pointer-events: none;
     z-index: 1;
@@ -206,7 +206,7 @@
     font-size: clamp(1.8rem, 3.2vw, 3.2rem);
     font-weight: 900;
     line-height: 1.05;
-    color: var(--hero-red);
+    color: var(--ocean);
     display: block;
     margin-bottom: 18px;
   }
@@ -215,7 +215,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: var(--hero-red);
+    background: var(--coral);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -224,7 +224,7 @@
     padding: 5px 14px;
     border-radius: 20px;
     margin-bottom: 20px;
-    box-shadow: 0 3px 10px rgba(229,57,53,.28);
+    box-shadow: 0 3px 10px rgba(200,92,45,.28);
   }
   .k-hero-sub {
     display: block;
@@ -242,7 +242,7 @@
     margin-bottom: 22px;
   }
   .k-hero-cta-primary {
-    background: var(--hero-red);
+    background: var(--ocean);
     color: #fff;
     font-weight: 700;
     font-size: clamp(13px, 1.2vw, 15px);
@@ -251,14 +251,14 @@
     border: none;
     cursor: pointer;
     transition: background .2s, transform .15s, box-shadow .2s;
-    box-shadow: 0 4px 16px rgba(229,57,53,.32);
+    box-shadow: 0 4px 16px rgba(100,175,90,.32);
     white-space: nowrap;
     font-family: var(--font);
   }
   .k-hero-cta-primary:hover {
-    background: #c62828;
+    background: var(--ocean-dark);
     transform: translateY(-2px);
-    box-shadow: 0 6px 22px rgba(229,57,53,.42);
+    box-shadow: 0 6px 22px rgba(74,144,64,.42);
   }
   .k-hero-cta-primary:active { transform: scale(.97); }
   .k-hero-cta-ghost {
@@ -278,8 +278,8 @@
   }
   .k-hero-cta-ghost:hover {
     background: rgba(255,255,255,.95);
-    border-color: var(--hero-red);
-    color: var(--hero-red);
+    border-color: var(--ocean);
+    color: var(--ocean);
   }
   .k-hero-trust {
     display: flex;
@@ -305,7 +305,7 @@
 }
 
 @media (min-width: 1200px) {
-  .k-hero-img { height: clamp(480px, 46vw, 640px); object-position: 70% center; }
+  .k-hero-img { height: clamp(320px, 34vw, 460px); object-position: 70% center; }
   .k-hero-mini-slogan {
     width: 48%;
     padding-left: clamp(32px, 6vw, 100px);
