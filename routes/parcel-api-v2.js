@@ -482,10 +482,10 @@ router.get('/', async (req, res, next) => {
 
     
     if (req.user?.role === 'agent_relais') {
-      where.push(`COALESCE(p.relay_id, p.relais_id, o.relais_id) = `${idx++}`);
+      where.push(`COALESCE(p.relay_id, p.relais_id, o.relais_id) = $${idx++}`);
       params.push(req.agentRelaisId);
     }
-const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
 
     const sortCol = {
       reference: 'p.reference',
