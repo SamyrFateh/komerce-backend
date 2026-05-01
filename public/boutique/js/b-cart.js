@@ -9,7 +9,7 @@
 
 import { bus }           from './b-bus.js';
 import {
-  state, SUBCATS, dom, $, $$, scroll,
+  state, dom, $, $$, scroll,
 }                         from './b-store.js';
 import { scrollToCategorySection } from './b-catalog.js';
 import {
