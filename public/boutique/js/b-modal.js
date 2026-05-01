@@ -141,8 +141,13 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     // HOTFIX #213 — Reset la barre de recherche interne à chaque ouverture
     if (state._modalSearchInput) {
       state._modalSearchInput.value = '';
+      var _wrap = state._modalSearchInput.closest('.k-modal-inner-search');
+      if (_wrap) _wrap.classList.remove('has-value');
       document.getElementById('k-sug-rail') &&
         document.getElementById('k-sug-rail').querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+      // Fermer le dropdown résultats
+      var _dd = document.getElementById('k-modal-search-dropdown');
+      if (_dd) _dd.classList.remove('open');
     }
 
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
@@ -733,13 +738,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     }
 
 
-    // ── Barre de recherche interne (entre infos produit et suggestions) ──
-    // Injectée une seule fois — filtre les suggestions en live
-    // + sur Enter : ferme le modal et lance la recherche catalogue
+    // ── Barre de recherche interne — Sprint 1 : dropdown résultats live ──
+    // Recherche dans TOUS les produits (450+), dropdown avec images/prix,
+    // navigation intra-modal, état vide, bouton clear.
+    // + conserve le filtrage des suggestions existant (non-régression).
     (function setupModalInnerSearch() {
       const sugSection = document.getElementById('k-modal-suggestions');
       if (!sugSection || sugSection.previousElementSibling?.classList.contains('k-modal-inner-search')) return;
 
+      // ── Construction du markup ──
       const searchWrap = document.createElement('div');
       searchWrap.className = 'k-modal-inner-search';
       searchWrap.innerHTML =
@@ -748,56 +755,182 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         '</svg>' +
         '<input type="search" class="k-modal-inner-search-input" ' +
                'placeholder="Chercher un produit..." autocomplete="off" autocorrect="off">' +
-        '<span class="k-modal-inner-search-hint">↵ Chercher dans le catalogue</span>';
+        '<button class="k-modal-search-clear" aria-label="Effacer" type="button">\u00d7</button>' +
+        '<span class="k-modal-inner-search-hint">\u21b5 Catalogue</span>';
 
-      // Insérer juste avant la section suggestions
       sugSection.parentElement.insertBefore(searchWrap, sugSection);
 
+      // ── Dropdown container ──
+      var dropdown = document.createElement('div');
+      dropdown.className = 'k-modal-search-dropdown';
+      dropdown.id = 'k-modal-search-dropdown';
+      sugSection.parentElement.insertBefore(dropdown, sugSection);
+
       const searchInput = searchWrap.querySelector('.k-modal-inner-search-input');
-      // Stocker la référence pour reset à chaque openModal
+      const clearBtn = searchWrap.querySelector('.k-modal-search-clear');
       state._modalSearchInput = searchInput;
 
-      // Filtrage live des cartes suggestion
+      // ── Filtrage suggestions + dropdown résultats globaux ──
       searchInput.addEventListener('input', function() {
-        const q = searchInput.value.trim().toLowerCase();
-        const sugRailEl = document.getElementById('k-sug-rail');
-        if (!sugRailEl) return;
-        sugRailEl.querySelectorAll('.k-sug-card').forEach(function(card) {
-          if (q.length < 2) {
-            card.classList.remove('search-hidden');
-            return;
-          }
-          const pid = card.dataset.id;
-          const p = state.products.find(function(x) { return String(x.id) === String(pid); });
-          if (!p) { card.classList.add('search-hidden'); return; }
-          const match =
-            (p.name || '').toLowerCase().includes(q) ||
-            (p.category || '').toLowerCase().includes(q) ||
-            (p.description || '').toLowerCase().includes(q);
-          card.classList.toggle('search-hidden', !match);
-        });
+        var q = searchInput.value.trim().toLowerCase();
+        searchWrap.classList.toggle('has-value', q.length > 0);
+
+        // 1. Filtrage suggestions existantes (non-régression)
+        var sugRailEl = document.getElementById('k-sug-rail');
+        if (sugRailEl) {
+          sugRailEl.querySelectorAll('.k-sug-card').forEach(function(card) {
+            if (q.length < 2) { card.classList.remove('search-hidden'); return; }
+            var pid = card.dataset.id;
+            var p = state.products.find(function(x) { return String(x.id) === String(pid); });
+            if (!p) { card.classList.add('search-hidden'); return; }
+            var match =
+              (p.name || '').toLowerCase().includes(q) ||
+              (p.category || '').toLowerCase().includes(q) ||
+              (p.description || '').toLowerCase().includes(q);
+            card.classList.toggle('search-hidden', !match);
+          });
+        }
+
+        // 2. Dropdown résultats globaux (450+ produits)
+        clearTimeout(state._modalSearchTimeout);
+        if (q.length < 2) {
+          _closeDropdown();
+          return;
+        }
+        state._modalSearchTimeout = setTimeout(function() {
+          var results = state.products.filter(function(p) {
+            return (p.name || '').toLowerCase().includes(q) ||
+                   (p.category || '').toLowerCase().includes(q) ||
+                   (p.description || '').toLowerCase().includes(q);
+          });
+          _renderDropdown(results, q);
+        }, 200);
       });
 
-      // Enter → ferme modal + lance recherche dans le catalogue principal
+      // ── Clear button ──
+      clearBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        searchInput.value = '';
+        searchWrap.classList.remove('has-value');
+        _closeDropdown();
+        // Restaurer les suggestions
+        var sugRailEl = document.getElementById('k-sug-rail');
+        if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+        searchInput.focus();
+      });
+
+      // ── Enter → catalogue (existant, inchangé) ──
       searchInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
-        const q = searchInput.value.trim();
+        var q = searchInput.value.trim();
         if (q.length < 1) { e.preventDefault(); return; }
         e.preventDefault();
         searchInput.value = '';
+        searchWrap.classList.remove('has-value');
+        _closeDropdown();
         closeModal();
-        // Injecter dans la barre de recherche principale
-        const mainInput = dom.searchInput || document.getElementById('k-search-input');
+        var mainInput = dom.searchInput || document.getElementById('k-search-input');
         if (mainInput) {
           mainInput.value = q;
           mainInput.dispatchEvent(new Event('input', { bubbles: true }));
-          // Scroll doux vers le catalogue
           setTimeout(function() {
-            const pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+            var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
             if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
           }, 200);
         }
       });
+
+      // ── Fermer dropdown au clic hors zone ──
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.k-modal-inner-search') && !e.target.closest('.k-modal-search-dropdown')) {
+          _closeDropdown();
+        }
+      });
+
+      // ── Render dropdown ──
+      function _renderDropdown(results, query) {
+        if (!results.length) {
+          dropdown.innerHTML =
+            '<div class="k-msearch-empty">' +
+              '<div class="k-msearch-empty-icon">\ud83d\udd0d</div>' +
+              '<div>Aucun produit trouv\u00e9 pour \u00ab\u00a0' + sanitize(query) + '\u00a0\u00bb</div>' +
+            '</div>';
+          dropdown.classList.add('open');
+          return;
+        }
+
+        var shown = results.slice(0, 8);
+        var totalCount = results.length;
+
+        dropdown.innerHTML =
+          '<div class="k-msearch-count">' + totalCount + ' r\u00e9sultat' + (totalCount > 1 ? 's' : '') + '</div>' +
+          shown.map(function(p) {
+            var catLabel = p.category || '';
+            var promo = p.promo_pct ? '<span class="k-msearch-item-promo">-' + p.promo_pct + '%</span>' : '';
+            return '<div class="k-msearch-item" data-id="' + p.id + '">' +
+              '<img class="k-msearch-item-img" src="' + optimizeImgUrl(p.image_url, 88) + '" alt="" loading="lazy">' +
+              '<div class="k-msearch-item-info">' +
+                '<div class="k-msearch-item-name">' + sanitize(p.name) + '</div>' +
+                '<div class="k-msearch-item-cat">' + sanitize(catLabel) + '</div>' +
+              '</div>' +
+              '<div class="k-msearch-item-right">' +
+                '<span class="k-msearch-item-price">' + fmtPrice(p.price_kmf) + '</span>' +
+                promo +
+              '</div>' +
+            '</div>';
+          }).join('') +
+          (totalCount > 8
+            ? '<div class="k-msearch-footer" data-query="' + sanitize(query) + '">' +
+                '\u21b5 Voir les ' + totalCount + ' r\u00e9sultats dans le catalogue' +
+              '</div>'
+            : '<div class="k-msearch-footer" data-query="' + sanitize(query) + '">' +
+                '\u21b5 Chercher \u00ab\u00a0' + sanitize(query) + '\u00a0\u00bb dans le catalogue' +
+              '</div>'
+          );
+
+        dropdown.classList.add('open');
+
+        // ── Bind résultats : clic → switch produit intra-modal ──
+        dropdown.querySelectorAll('.k-msearch-item').forEach(function(item) {
+          item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var pid = item.dataset.id;
+            searchInput.value = '';
+            searchWrap.classList.remove('has-value');
+            _closeDropdown();
+            // Restaurer les suggestions
+            var sugRailEl = document.getElementById('k-sug-rail');
+            if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+            openModal(pid, false);
+          });
+        });
+
+        // ── Footer : lancer la recherche catalogue ──
+        var footer = dropdown.querySelector('.k-msearch-footer');
+        if (footer) {
+          footer.addEventListener('click', function() {
+            var q = footer.dataset.query || '';
+            searchInput.value = '';
+            searchWrap.classList.remove('has-value');
+            _closeDropdown();
+            closeModal();
+            var mainInput = dom.searchInput || document.getElementById('k-search-input');
+            if (mainInput) {
+              mainInput.value = q;
+              mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+              setTimeout(function() {
+                var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+                if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 200);
+            }
+          });
+        }
+      }
+
+      function _closeDropdown() {
+        dropdown.classList.remove('open');
+      }
     })();
 
         // ── Image zone: carousel swipe + pull-to-close (Temu-style)

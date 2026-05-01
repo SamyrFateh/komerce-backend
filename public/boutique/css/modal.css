@@ -208,6 +208,196 @@
 /* Carte cachée par le filtre search */
 .k-sug-card.search-hidden { display: none !important; }
 
+/* ── BOUTON CLEAR (Sprint 1) ────────────────────────────────── */
+.k-modal-search-clear {
+  display: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: var(--sand-dark);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .12s, color .12s, transform .12s;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.k-modal-search-clear:active {
+  transform: scale(.88);
+}
+.k-modal-inner-search.has-value .k-modal-search-clear {
+  display: flex;
+}
+.k-modal-inner-search.has-value .k-modal-inner-search-hint {
+  display: none;
+}
+
+/* ── DROPDOWN RÉSULTATS MODAL (Sprint 1) ─────────────────────── */
+.k-modal-search-dropdown {
+  display: none;
+  margin: 0 12px 8px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--elev-3);
+  max-height: 340px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 20;
+  position: relative;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  animation: k-msearch-drop-in .18s var(--ease);
+}
+.k-modal-search-dropdown.open {
+  display: block;
+}
+@keyframes k-msearch-drop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Compteur résultats */
+.k-msearch-count {
+  padding: 8px 14px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 1px solid var(--sand-dark);
+}
+
+/* Item résultat */
+.k-msearch-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-msearch-item + .k-msearch-item {
+  border-top: 1px solid var(--sand-dark);
+}
+.k-msearch-item:active {
+  background: var(--sand-dark);
+}
+
+/* Image produit */
+.k-msearch-item-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: var(--sand);
+  flex-shrink: 0;
+  padding: 3px;
+}
+
+/* Infos */
+.k-msearch-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.k-msearch-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.k-msearch-item-cat {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prix + promo */
+.k-msearch-item-right {
+  flex-shrink: 0;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.k-msearch-item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--coral);
+  white-space: nowrap;
+}
+.k-msearch-item-promo {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--white);
+  background: var(--coral);
+  padding: 1px 6px;
+  border-radius: 50px;
+}
+
+/* État vide */
+.k-msearch-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.k-msearch-empty-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  line-height: 1;
+  opacity: .6;
+}
+
+/* Footer : lien vers catalogue */
+.k-msearch-footer {
+  padding: 11px 14px;
+  border-top: 1px solid var(--sand-dark);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ocean-dark);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-msearch-footer:active {
+  background: var(--sand);
+}
+
+/* ── Desktop : dropdown dans la colonne droite ─────────────── */
+@media (min-width: 900px) {
+  .k-modal-search-dropdown {
+    margin: 0 0 8px;
+    max-height: 400px;
+  }
+  .k-msearch-item:hover {
+    background: var(--sand);
+  }
+  .k-msearch-footer:hover {
+    background: var(--sand);
+    color: var(--coral);
+  }
+  .k-modal-search-clear:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+}
+
 /* ── ACTIONS ─────────────────────────────────────────────────── */
 .k-modal-actions {
   display: grid;
