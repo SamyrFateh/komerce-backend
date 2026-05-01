@@ -1,0 +1,638 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — desktop-upgrade.css
+   Refonte desktop Temu-inspired (accueil + modal).
+   Desktop only (≥ 900px). Zéro impact mobile.
+   Chargé APRÈS modal.css et layout.css.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   1. HEADER DESKTOP — Enrichi Temu-style
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* Rendre les boutons Favoris / Suivi visibles en desktop */
+  .k-header-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background .15s var(--ease), border-color .15s, color .15s;
+    white-space: nowrap;
+  }
+  .k-header-nav-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+  .k-header-nav-btn:hover {
+    background: var(--sand-warm);
+    border-color: var(--border);
+  }
+  .k-header-nav-btn:active {
+    background: var(--sand-dark);
+  }
+
+  /* Séparateur subtil entre actions */
+  .k-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2. SIDEBAR MEGA-MENU — Panneau sous-catégories au hover
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* Container sidebar doit être position relative pour le mega panel */
+  .k-desktop-sidebar {
+    position: sticky;
+    overflow: visible;
+  }
+
+  /* Mega-panel sous-catégories (apparaît au hover d'une catégorie) */
+  .k-sidebar-mega {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 260px;
+    max-width: 340px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 0 12px 12px 0;
+    box-shadow: var(--elev-3);
+    padding: 16px 14px;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-8px);
+    transition: opacity .18s var(--ease), transform .18s var(--ease);
+  }
+
+  .k-desktop-sidebar:hover .k-sidebar-mega.is-visible,
+  .k-sidebar-mega.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .k-sidebar-mega-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--text-muted);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sand-dark);
+    margin-bottom: 10px;
+  }
+
+  .k-sidebar-mega-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .k-sidebar-mega-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    transition: background .12s var(--ease), color .12s;
+    border: none;
+    background: transparent;
+    text-align: left;
+    width: 100%;
+  }
+  .k-sidebar-mega-item:hover {
+    background: rgba(200,92,45,.06);
+    color: var(--coral);
+  }
+  .k-sidebar-mega-item-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* Indicateur flèche sur les catégories avec sous-catégories */
+  .k-sidebar-cat.has-subcats::after {
+    content: '›';
+    margin-left: auto;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color .12s, transform .12s;
+    flex-shrink: 0;
+  }
+  .k-sidebar-cat.has-subcats:hover::after {
+    color: var(--coral);
+    transform: translateX(2px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3. GRILLE PRODUITS — Hover riche style Temu
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* Overlay info au hover sur la carte */
+  .k-card {
+    position: relative;
+  }
+
+  .k-card-hover-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+      rgba(31,48,36,.85) 0%,
+      rgba(31,48,36,.4) 40%,
+      transparent 65%);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity .22s var(--ease);
+    pointer-events: none;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 12px;
+    gap: 6px;
+  }
+  .k-card:hover .k-card-hover-overlay {
+    opacity: 1;
+  }
+
+  .k-card-hover-name {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-shadow: 0 1px 4px rgba(0,0,0,.3);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .k-card-hover-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .k-card-quick-view {
+    flex: 1;
+    height: 34px;
+    background: rgba(255,255,255,.95);
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background .12s;
+    pointer-events: auto;
+  }
+  .k-card-quick-view:hover {
+    background: #fff;
+  }
+  .k-card-quick-view svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+
+  .k-card-hover-fav {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.9);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background .12s, transform .12s;
+    pointer-events: auto;
+    flex-shrink: 0;
+  }
+  .k-card-hover-fav:hover {
+    background: #fff;
+    transform: scale(1.1);
+  }
+  .k-card-hover-fav.liked {
+    color: var(--hero-red);
+  }
+
+  /* Prix EUR visible au hover sous le prix principal */
+  .k-card-price-eur-hover {
+    display: none;
+    font-size: 11px;
+    color: rgba(255,255,255,.8);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .k-card:hover .k-card-price-eur-hover {
+    display: block;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   4. MODAL DESKTOP — Zoom image + enrichissements Temu
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* ── Zoom image au hover (Temu-style lens) ─────────────── */
+  .k-modal-carousel {
+    cursor: crosshair;
+  }
+
+  .k-modal-zoom-lens {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border: 2px solid rgba(200,92,45,.4);
+    border-radius: 4px;
+    background: rgba(200,92,45,.08);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 5;
+    transition: opacity .12s;
+  }
+  .k-modal-img-wrap:hover .k-modal-zoom-lens {
+    opacity: 1;
+  }
+
+  .k-modal-zoom-preview {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 380px;
+    height: 380px;
+    margin-left: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white) no-repeat;
+    background-size: 300%;
+    box-shadow: var(--elev-4);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity .15s;
+    overflow: hidden;
+  }
+  .k-modal-img-wrap:hover .k-modal-zoom-preview.is-active {
+    opacity: 1;
+  }
+
+  /* ── Breadcrumb dans la topbar modal ─────────────────── */
+  .k-modal-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 12px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .k-modal-breadcrumb span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .k-modal-breadcrumb-sep {
+    color: var(--text-light);
+    flex-shrink: 0;
+  }
+  .k-modal-breadcrumb-cat {
+    cursor: pointer;
+    transition: color .12s;
+  }
+  .k-modal-breadcrumb-cat:hover {
+    color: var(--coral);
+  }
+  .k-modal-breadcrumb-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Panneau partage WhatsApp dans la modal ─────────── */
+  .k-modal-share-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 8px;
+  }
+  .k-modal-share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--sand);
+    color: var(--text);
+    transition: background .12s, border-color .12s;
+  }
+  .k-modal-share-btn:hover {
+    background: var(--sand-warm);
+    border-color: var(--coral);
+  }
+  .k-modal-share-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .k-modal-share-btn--wa {
+    background: var(--whatsapp);
+    color: #fff;
+    border-color: var(--whatsapp);
+  }
+  .k-modal-share-btn--wa:hover {
+    background: #20b858;
+    border-color: #20b858;
+  }
+
+  /* ── Accordéon spécifications côté droit ────────────── */
+  .k-modal-specs {
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .k-modal-spec-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    transition: color .12s;
+  }
+  .k-modal-spec-toggle:hover {
+    color: var(--coral);
+  }
+  .k-modal-spec-toggle-arrow {
+    width: 18px;
+    height: 18px;
+    transition: transform .2s var(--ease);
+    color: var(--text-muted);
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+  .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow {
+    transform: rotate(180deg);
+  }
+
+  .k-modal-spec-body {
+    display: none;
+    padding: 0 0 12px;
+  }
+  .k-modal-spec-body.is-open {
+    display: block;
+    animation: k-spec-reveal .2s var(--ease);
+  }
+  @keyframes k-spec-reveal {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .k-modal-spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .k-modal-spec-table tr:nth-child(even) {
+    background: var(--sand);
+  }
+  .k-modal-spec-table td {
+    padding: 7px 10px;
+  }
+  .k-modal-spec-table td:first-child {
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    width: 35%;
+  }
+
+  /* ── Trust badges dans la modal ────────────────────── */
+  .k-modal-trust {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 6px;
+  }
+  .k-modal-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .k-modal-trust-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--ocean);
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+
+  /* ── Actions modal — sticky buy bar plus visible ──── */
+  .k-modal-actions {
+    border-top: 2px solid var(--sand-dark);
+    padding: 14px 22px 18px;
+    gap: 12px;
+  }
+
+  /* Prix total en temps réel dans les actions */
+  .k-modal-subtotal {
+    font-size: 11px;
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+    text-align: right;
+    padding-right: 4px;
+  }
+  .k-modal-subtotal strong {
+    color: var(--coral);
+    font-weight: 700;
+    font-size: 13px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5. HERO DESKTOP — Bannière promotionnelle + CTA enrichis
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* Bannière promos horizontale sous le hero */
+  .k-promo-strip {
+    max-width: var(--container);
+    margin: 0 auto 8px;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  .k-promo-strip-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, rgba(200,92,45,.06) 0%, rgba(100,175,90,.04) 100%);
+    border: 1px solid rgba(200,92,45,.12);
+    border-radius: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .k-promo-strip-inner::-webkit-scrollbar { display: none; }
+
+  .k-promo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .15s var(--ease);
+    flex-shrink: 0;
+  }
+  .k-promo-chip--sale {
+    background: var(--coral);
+    color: #fff;
+  }
+  .k-promo-chip--sale:hover {
+    background: var(--coral-dark);
+  }
+  .k-promo-chip--trust {
+    background: var(--sand);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .k-promo-chip--trust:hover {
+    background: var(--sand-warm);
+  }
+  .k-promo-chip-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   6. ANIMATION D'ENTRÉE — Staggered reveal desktop
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  .k-card {
+    animation: k-card-in .35s var(--ease) backwards;
+  }
+
+  @keyframes k-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Stagger : les premières 20 cartes ont un délai progressif */
+  .k-card:nth-child(1)  { animation-delay: .02s; }
+  .k-card:nth-child(2)  { animation-delay: .04s; }
+  .k-card:nth-child(3)  { animation-delay: .06s; }
+  .k-card:nth-child(4)  { animation-delay: .08s; }
+  .k-card:nth-child(5)  { animation-delay: .10s; }
+  .k-card:nth-child(6)  { animation-delay: .12s; }
+  .k-card:nth-child(7)  { animation-delay: .14s; }
+  .k-card:nth-child(8)  { animation-delay: .16s; }
+  .k-card:nth-child(9)  { animation-delay: .18s; }
+  .k-card:nth-child(10) { animation-delay: .20s; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   7. SCROLL-TO-TOP — Bouton desktop
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  .k-scroll-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: var(--elev-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity .2s, transform .2s var(--ease), background .12s;
+  }
+  .k-scroll-top.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .k-scroll-top:hover {
+    background: var(--sand-warm);
+    box-shadow: var(--elev-3);
+  }
+  .k-scroll-top svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text);
+    fill: none;
+    stroke-width: 2;
+  }
+}

@@ -26,6 +26,15 @@ import './b-utils.js';        // helpers purs + window.KUtils compat
 import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
+import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
 
 // Expose bus globalement pour debug + devtools
-if (typeof window !== 'undefined') window._kbus = bus;
+if (typeof window !== 'undefined') {
+  window._kbus = bus;
+  // LOT 12 : init desktop upgrade après le boot
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setupDesktopUpgrade(); });
+  } else {
+    setupDesktopUpgrade();
+  }
+}

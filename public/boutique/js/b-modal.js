@@ -223,6 +223,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     const _scrollEl = document.querySelector('.k-modal-scroll');
     if (_scrollEl) _scrollEl.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
+    // LOT 12: notify desktop-upgrade module
+    bus.emit('modal:opened', product);
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = window.scrollY;
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
