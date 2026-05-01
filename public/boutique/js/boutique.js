@@ -106,7 +106,7 @@ import { setupDesktopSidebar } from './b-desktop-sidebar.js';
     // Le symptôme actuel : la page ne scroll qu'en tirant la scrollbar droite.
     // On force donc la molette à piloter le document principal en desktop.
     e.preventDefault();
-    window.scrollBy({ top: e.deltaY, left: 0, behavior: 'auto' });
+    window.scrollBy({ top: e.deltaY * 2.4, left: 0, behavior: 'auto' });
   }, { passive: false });
 })();
 

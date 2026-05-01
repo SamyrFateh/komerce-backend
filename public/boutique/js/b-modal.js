@@ -546,6 +546,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
     dom.sugRail.innerHTML = html;
+
+    // PATCH #233 — force desktop modal suggestions list
+    if (window.innerWidth >= 900) {
+      sugSection.classList.add('k-modal-suggestions--desktop-list');
+      dom.sugRail.classList.add('k-sug-rail--desktop-list');
+    } else {
+      sugSection.classList.remove('k-modal-suggestions--desktop-list');
+      dom.sugRail.classList.remove('k-sug-rail--desktop-list');
+    }
     // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
     const oldH3 = sugSection.querySelector('h3');
     if (oldH3) oldH3.classList.add('u-hidden');
