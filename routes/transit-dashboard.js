@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ─────────────────────────────────────────────
 // GET — colis prêts pour transit (shipped)
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
 // ─────────────────────────────────────────────
 // POST — passer en transit
 // ─────────────────────────────────────────────
-router.post('/:ref/transit', async (req, res) => {
+router.post('/:ref/transit', authenticate, requireAdmin, async (req, res) => {
   const { ref } = req.params;
 
   try {

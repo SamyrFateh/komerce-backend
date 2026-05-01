@@ -109,7 +109,7 @@ router.get('/magic-link/validate', async (req, res) => {
       { expiresIn: '30d' }
     );
 
-    res.cookie('token', jwtToken, {
+    res.cookie('kmrc_jwt', jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -131,7 +131,7 @@ router.get('/magic-link/validate', async (req, res) => {
 router.get('/orders', async (req, res) => {
   try {
     // Get user from JWT cookie
-    const token = req.cookies?.token;
+    const token = req.cookies?.kmrc_jwt;
     if (!token) return res.status(401).json({ error: 'Non authentifié' });
 
     let decoded;
@@ -194,7 +194,7 @@ router.get('/orders', async (req, res) => {
  */
 router.get('/invoices', async (req, res) => {
   try {
-    const token = req.cookies?.token;
+    const token = req.cookies?.kmrc_jwt;
     if (!token) return res.status(401).json({ error: 'Non authentifié' });
 
     let decoded;
