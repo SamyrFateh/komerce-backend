@@ -24,7 +24,6 @@
 'use strict';
 
 const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 const { getUniqueRef, generatePickupCode } = require('./order-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
@@ -846,7 +845,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     }
 
     // 5. Créer la commande complète
-    const orderId = uuidv4();
+    const orderId = crypto.randomUUID();
     const reference = await getUniqueRef(db);
     const pickupCode = generatePickupCode();
     const totalEur = parseFloat((totalKmf / 491.97).toFixed(2));
