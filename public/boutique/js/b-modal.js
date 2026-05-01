@@ -482,6 +482,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       return;
     }
     sugSection.classList.remove('u-hidden');
+    sugSection.classList.toggle('k-modal-suggestions--desktop-list', window.innerWidth >= 900);
     
     // Template carte suggestion — stepper −/qty/+ en bas
     const cardHTML = (p) => {
