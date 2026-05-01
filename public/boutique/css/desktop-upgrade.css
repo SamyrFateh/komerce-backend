@@ -700,3 +700,39 @@
   }
 }
 
+
+
+/* PATCH #227 — neutralize desktop zoom lens and flicker */
+@media (min-width: 900px) {
+  .k-modal-carousel {
+    cursor: default;
+  }
+
+  .k-modal-zoom-lens,
+  .k-modal-zoom-preview {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .k-card-hover-overlay {
+    will-change: opacity;
+    backface-visibility: hidden;
+  }
+
+  .k-card:hover {
+    transform: translateY(-1px);
+  }
+
+  .k-card:focus,
+  .k-card:focus-visible,
+  .k-card-img-wrap:focus,
+  .k-card-img-wrap:focus-visible,
+  .k-modal-carousel:focus,
+  .k-modal-carousel:focus-visible,
+  .k-modal-slide:focus,
+  .k-modal-slide:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+}
