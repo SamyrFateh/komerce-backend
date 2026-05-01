@@ -35,6 +35,7 @@ const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
+const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -275,6 +276,9 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
     next(err);
   }
 });
+
+// LOT 4: Créer un panier partagé depuis une commande existante (pending)
+router.post('/from-order', authenticate, fromOrderHandler);
 
 router.post('/from-basket', authenticate, async (req, res, next) => {
   try {
