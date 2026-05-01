@@ -386,3 +386,20 @@
   font-size: 13px; font-weight: 700; color: var(--coral);
   flex: 1; min-width: 0;
 }
+
+/* ── k-sug-add : panier sans fond blanc dans les suggestions ─── */
+.k-sug-add {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.k-sug-add:active { transform: scale(.88); }
+.k-sug-add img { width: 28px; height: 28px; display: block; }
