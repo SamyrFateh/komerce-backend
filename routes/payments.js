@@ -20,7 +20,8 @@ const { sendSMS }  = require('../utils/sms');
 const { getRates } = require('../utils/rates');
 const { triggerPurchasing } = require('./purchasing'); // Sourcing semi-automatisé v7.6
 const { validate } = require('../middleware/validate');
-const { transitionOrderStatus } = require('../services/order-status-machine');
+const { transitionOrderStatus } = require('../services/order-status-machine'); // conservé (utilisé indirectement via confirmPaymentCycle)
+const { confirmPaymentCycle }    = require('../services/order-payment-confirmation'); // LOT 1
 const { payments } = require('../validators');
 
 // Western Union model : émission du code secret au moment du paiement Stripe
@@ -171,81 +172,40 @@ router.post('/stripe/webhook',
       try {
         await client.query('BEGIN');
 
-        // Step 1: pending → confirmed (payment received)
-        const confirmResult = await transitionOrderStatus({
+        // ── CYCLE CENTRAL : confirmed + ordered + stock (LOT 1 — service centralisé) ──
+        const cycleResult = await confirmPaymentCycle({
           orderId,
-          newStatus: 'confirmed',
           actor:    { id: null, role: 'system' },
           source:   'stripe_webhook',
-          note:     'Paiement Stripe reçu',
           dbClient: client,
         });
-        // ── Si noop : transition déjà faite (idempotent), on COMMIT et return ──
-        if (confirmResult.noop) {
+
+        if (cycleResult.noop) {
           await client.query('COMMIT');
           await _markEventProcessed(event, { noop: 'confirm', order_id: orderId });
           return res.json({ received: true, idempotent: true });
         }
-        if (!confirmResult.success) {
-          console.error('[STRIPE] Machine rejected confirm:', confirmResult.error);
+        if (!cycleResult.success) {
+          console.error('[STRIPE] Cycle rejected:', cycleResult.error);
           await client.query('ROLLBACK');
-          await _markEventProcessed(event, { rejected: 'confirm', error: confirmResult.error, order_id: orderId });
+          await _markEventProcessed(event, { rejected: 'confirm', error: cycleResult.error, order_id: orderId });
           return res.json({ received: true, rejected: true });
         }
 
-        // Step 2: confirmed → ordered
-        const orderResult = await transitionOrderStatus({
-          orderId,
-          newStatus: 'ordered',
-          actor:    { id: null, role: 'system' },
-          source:   'system',
-          note:     'Commande lancée automatiquement après paiement Stripe',
-          dbClient: client,
-        });
-        if (!orderResult.success && !orderResult.noop) {
-          console.warn('[STRIPE] Machine rejected ordered (non-fatal):', orderResult.error);
-        }
-
-        // ── 4. STOCK GUARDED — pas de stock négatif possible ─────────────
-        const { rows: stripeItems } = await client.query(
-          `SELECT oi.product_id, oi.quantity, p.stock, p.name
-           FROM order_items oi
-           JOIN products p ON p.id = oi.product_id
-           WHERE oi.order_id = $1 AND p.stock IS NOT NULL
-           FOR UPDATE OF p`,
-          [orderId]
-        );
-
-        const insufficientItems = [];
-        for (const si of stripeItems) {
-          if (si.stock < si.quantity) {
-            // Stock épuisé entre commande et paiement
-            insufficientItems.push({
-              product_id: si.product_id,
-              product_name: si.name,
-              available: si.stock,
-              needed: si.quantity,
-            });
-          }
-        }
-
-        if (insufficientItems.length > 0) {
-          // ── 5. Stock insuffisant après paiement Stripe ─────────────────
-          // Le paiement a été encaissé, on ne peut pas rollback la transition.
-          // On marque la commande pour traitement manuel + alerte.
+        if (cycleResult.stockBlocked) {
+          // ── Stock insuffisant après paiement Stripe ────────────────────
+          // Le paiement Stripe est déjà encaissé → on ne peut pas ROLLBACK.
+          // On committe avec annotation + alerte pour traitement manuel admin.
           stockBlocked = true;
+          const insufficientItems = cycleResult.insufficientItems;
 
-          // Annoter la commande pour traçabilité
           const incidentNote = '\n[INCIDENT paid_but_stock_blocked] ' +
             insufficientItems.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
           await client.query(
-            `UPDATE orders
-               SET notes = COALESCE(notes,'') || $1
-             WHERE id = $2`,
+            `UPDATE orders SET notes = COALESCE(notes,'') || $1 WHERE id = $2`,
             [incidentNote, orderId]
           );
 
-          // Alerte exploitable côté admin
           try {
             await client.query(
               `INSERT INTO alerts (level, source, message, payload)
@@ -253,29 +213,20 @@ router.post('/stripe/webhook',
               [
                 `paid_but_stock_blocked — ${orderReference}`,
                 JSON.stringify({
-                  order_id: orderId,
-                  order_reference: orderReference,
-                  insufficient_items: insufficientItems,
-                  stripe_event_id: event.id,
+                  order_id:                orderId,
+                  order_reference:         orderReference,
+                  insufficient_items:      insufficientItems,
+                  stripe_event_id:         event.id,
                   stripe_payment_intent_id: intent.id,
                 }),
               ]
             );
           } catch (alertErr) {
-            // Ne PAS masquer l'incident : log explicite si alerts insère échoue
             console.error('[STRIPE-WEBHOOK] ⛔ FAILED TO INSERT ALERT for', orderReference, alertErr.message);
           }
 
           console.error(`[STRIPE-WEBHOOK] ⛔ paid_but_stock_blocked: ${orderReference} — ${insufficientItems.length} produit(s) en rupture`);
-          // Pas de décrément stock (on n'a pas le stock), pas de purchasing
-        } else {
-          // Stock OK partout → décrémenter
-          for (const si of stripeItems) {
-            await client.query(
-              'UPDATE products SET stock = stock - $1 WHERE id = $2',
-              [si.quantity, si.product_id]
-            );
-          }
+          // Pas de purchasing si stock bloqué
         }
 
         // ── Western Union : émission du code secret de retrait (inchangé) ─
@@ -536,62 +487,36 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
       }
     }
 
-    // Step 1: pending → confirmed (payment received)
-    // State machine auto-sets payment_status = 'paid'
-    const confirmResult = await transitionOrderStatus({
-      orderId:   order.id,
-      newStatus: 'confirmed',
-      actor:     { id: req.user.id, role: req.user.role },
-      source:    'cash_confirm',
-      note:      'Paiement espèces confirmé par agent relais',
-      dbClient:  client,
+    // ── CYCLE CENTRAL : confirmed + ordered + stock (LOT 1 — service centralisé) ──
+    const cycleResult = await confirmPaymentCycle({
+      orderId:  order.id,
+      actor:    { id: req.user.id, role: req.user.role },
+      source:   'cash_confirm',
+      dbClient: client,
     });
-    if (!confirmResult.success && !confirmResult.noop) {
+
+    if (!cycleResult.success && !cycleResult.noop) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: confirmResult.error });
+      return res.status(409).json({ error: cycleResult.error });
     }
 
-    // cash_paid_at — P0 FIX : COALESCE pour ne jamais réécrire un timestamp existant
-    // (cohérent avec la doctrine "timestamps set ONCE" de la state machine)
+    if (cycleResult.stockBlocked) {
+      // ── Stock insuffisant : cash pas encore pris → ROLLBACK + 409 ─────
+      // Contrairement au webhook Stripe, ici le paiement n'est pas encore
+      // encaissé → on peut sécuriser en annulant la transaction.
+      await client.query('ROLLBACK');
+      const first = cycleResult.insufficientItems[0];
+      return res.status(409).json({
+        error: `Stock insuffisant pour "${first.product_name}" — ${first.available} restant(s). Annuler ou ajuster la commande.`,
+      });
+    }
+
+    // cash_paid_at — positionné ONCE (COALESCE) après cycle nominal
+    // (doctrine "timestamps set ONCE" — jamais réécrits)
     await client.query(
       'UPDATE orders SET cash_paid_at = COALESCE(cash_paid_at, NOW()) WHERE id = $1',
       [order.id]
     );
-
-    // Step 2: confirmed → ordered (auto-launch purchasing)
-    const orderResult = await transitionOrderStatus({
-      orderId:   order.id,
-      newStatus: 'ordered',
-      actor:     { id: req.user.id, role: req.user.role },
-      source:    'system',
-      note:      'Commande lancée après paiement cash',
-      dbClient:  client,
-    });
-    if (!orderResult.success && !orderResult.noop) {
-      console.warn('[CASH] Machine rejected ordered (non-fatal):', orderResult.error);
-    }
-
-    // ── DÉCRÉMENTAGE STOCK — seul point pour cash relais (F19 fix) ───────────
-    const { rows: items } = await client.query(
-      'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
-      [order.id]
-    );
-    for (const item of items) {
-      const { rows: prod } = await client.query(
-        'SELECT stock, name FROM products WHERE id = $1 FOR UPDATE',
-        [item.product_id]
-      );
-      if (prod[0] && prod[0].stock < item.quantity) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({
-          error: `Stock insuffisant pour "${prod[0].name}" — ${prod[0].stock} restant(s). Annuler ou ajuster la commande.`,
-        });
-      }
-      await client.query(
-        'UPDATE products SET stock = stock - $1 WHERE id = $2',
-        [item.quantity, item.product_id]
-      );
-    }
 
     await client.query('COMMIT');
 
