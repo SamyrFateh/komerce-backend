@@ -162,41 +162,40 @@
     width: 100%;
     height: clamp(420px, 44vw, 600px);
     object-fit: cover;
-    object-position: 65% center;
+    object-position: 50% center;
     border-radius: 0;
   }
-  /* Voile latéral pour lisibilité du slogan */
+  /* Voile latéral léger — lisibilité sans masquer les personnages */
   .k-hero-media::after {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      100deg,
-      rgba(253,250,245,.98) 0%,
-      rgba(253,250,245,.95) 38%,
-      rgba(253,250,245,.70) 52%,
-      rgba(253,250,245,.15) 65%,
-      rgba(253,250,245,0) 78%
+      95deg,
+      rgba(253,250,245,.92) 0%,
+      rgba(253,250,245,.80) 28%,
+      rgba(253,250,245,.30) 42%,
+      rgba(253,250,245,0)   52%
     );
     pointer-events: none;
     z-index: 1;
   }
-  /* Panneau slogan gauche */
+  /* Panneau slogan gauche — 38% max pour laisser les personnages visibles */
   .k-hero-mini-slogan {
     display: flex;
     position: absolute;
     top: 0; bottom: 0; left: 0;
-    width: 52%;
+    width: 42%;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    padding: 48px 40px 48px clamp(24px,5vw,80px);
+    padding: 40px 20px 40px clamp(20px, 4vw, 60px);
     z-index: 10;
     background: none;
     gap: 0;
   }
   .k-hero-mini-slogan .k-line-1 {
-    font-size: clamp(2rem, 3.4vw, 3.4rem);
+    font-size: clamp(1.6rem, 2.8vw, 2.8rem);
     font-weight: 800;
     line-height: 1.15;
     color: #1a1a1a;
@@ -204,12 +203,12 @@
     margin-bottom: 4px;
   }
   .k-hero-mini-slogan .k-line-2 {
-    font-size: clamp(2.2rem, 3.8vw, 3.8rem);
+    font-size: clamp(1.8rem, 3.2vw, 3.2rem);
     font-weight: 900;
     line-height: 1.05;
     color: var(--hero-red);
     display: block;
-    margin-bottom: 22px;
+    margin-bottom: 18px;
   }
   /* Badge + sous-titre + CTA */
   .k-hero-badge {

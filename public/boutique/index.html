@@ -394,9 +394,16 @@ if('serviceWorker' in navigator){
 
   // ── MOBILE : tout le wrap est fixe, on mesure sa hauteur ──────────────────
   function setupMobile(){
+    if (!isMobile()) return;   // desktop : ne pas poser style.top
     var wrap = document.getElementById('k-hero-fixed-wrap');
     if (!wrap) return;
     function update(){
+      if (!isMobile()) {
+        // Desktop : remettre à zéro les styles inline posés par mobile
+        var scroll = document.getElementById('k-page-scroll');
+        if (scroll) { scroll.style.top = ''; scroll.style.position = ''; }
+        return;
+      }
       var h = wrap.offsetHeight;
       spacer.style.display = 'none'; // spacer not needed with fixed scroll
       var scroll = document.getElementById('k-page-scroll');
@@ -450,7 +457,29 @@ if('serviceWorker' in navigator){
         }
       };
     } catch(e) {}
-  } else { setupDesktop(); }
+  } else {
+    setupDesktop();
+    // Desktop : brancher les boutons hero CTA
+    var ctaPrimary = document.querySelector('.k-hero-cta-primary');
+    if (ctaPrimary) {
+      ctaPrimary.addEventListener('click', function() {
+        var catalog = document.getElementById('k-catalog-section');
+        if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    var ctaGhost = document.querySelector('.k-hero-cta-ghost');
+    if (ctaGhost) {
+      ctaGhost.addEventListener('click', function() {
+        // "Suivre ma commande" → tab track
+        var trackBtn = document.querySelector('.k-bnav-item[data-tab="track"]');
+        if (trackBtn) trackBtn.click();
+        else {
+          var trackNav = document.querySelector('[data-tab="track"]');
+          if (trackNav) trackNav.click();
+        }
+      });
+    }
+  }
 })();
 
   /* ══ Proverbe africain rotatif ══ */
