@@ -1147,3 +1147,82 @@
   }
 }
 
+
+
+/* PATCH #227 step 2 — modal desktop generated suggestions owner */
+
+@media (min-width: 900px) {
+  .k-modal-suggestions.k-modal-suggestions--desktop-list {
+    padding-bottom: 120px;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail {
+    display: block;
+    overflow: visible;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail > .k-sug-section {
+    display: block;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid.k-sug-grid--same,
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid.k-sug-grid--other {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 8px 10px;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 12px;
+    background: var(--white);
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 76px;
+    height: 76px;
+    aspect-ratio: auto;
+    border-radius: 10px;
+    background: var(--sand);
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 8px 10px 0 0;
+    min-height: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 10px 8px 0;
+  }
+
+  .k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+  }
+}
+

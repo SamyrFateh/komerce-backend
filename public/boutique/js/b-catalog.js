@@ -47,6 +47,7 @@ import {
   _scrollPagerToGhost,
   _reshuffleToutInDOM,
   _setupInfiniteLoop,
+  destroyMobilePager,
 }                         from './b-pager.js';
 import { openModal }      from './b-modal.js';
 import {
@@ -229,6 +230,27 @@ function _renderCard(p) {
 function renderGrid() {
   state.page = 0;
   const _isMobile = window.innerWidth < 900;
+
+  // PATCH #227 step 2 — Desktop must never keep the mobile Temu pager cage.
+  if (!_isMobile) {
+    destroyMobilePager();
+    const ps = document.getElementById('k-page-scroll');
+    if (ps) {
+      ps.classList.remove('k-pager-active');
+      ps.style.position = '';
+      ps.style.top = '';
+      ps.style.left = '';
+      ps.style.right = '';
+      ps.style.width = '';
+      ps.style.height = '';
+      ps.style.overflow = '';
+    }
+    if (dom.grid) {
+      dom.grid.classList.remove('k-grid-cat-pager', 'k-grid-flat-subcat');
+      ['transform', 'transition', 'width', 'height', 'position', 'overflow', 'willChange', 'display']
+        .forEach(function(p) { dom.grid.style[p] = ''; });
+    }
+  }
 
   // ── TEMU FLAT SUBCAT MODE (mobile only) ──
   if (_isMobile && state.flatSubcat) {
