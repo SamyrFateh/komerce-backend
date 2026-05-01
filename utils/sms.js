@@ -156,7 +156,7 @@ async function processCashRelaisReminders() {
      LEFT JOIN users u ON u.id = o.user_id
      WHERE o.payment_mode   = 'cash_relais'
        AND o.payment_status = 'pending'
-       AND o.status         = 'confirmed'
+       AND o.status         = 'pending'
        AND o.reminder_h12_sent = FALSE
        AND o.created_at <= NOW() - INTERVAL '1 hour' * $1`,
     [reminderH12Hours]
@@ -186,7 +186,7 @@ async function processCashRelaisReminders() {
      LEFT JOIN users u ON u.id = o.user_id
      WHERE o.payment_mode   = 'cash_relais'
        AND o.payment_status = 'pending'
-       AND o.status         = 'confirmed'
+       AND o.status         = 'pending'
        AND o.reminder_h36_sent = FALSE
        AND o.created_at <= NOW() - INTERVAL '1 hour' * $1`,
     [cashTimeoutHours]
