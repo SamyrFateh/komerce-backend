@@ -58,6 +58,158 @@ const SLA = {
   available_max_hours: 72,    // 3 jours avant rappel
   available_critical_hours: 168, // 7 jours = critique
 };
+    
+/**
+ * P0 security: agent_relais must never see another relay's parcels.
+ * This middleware resolves the agent's relais_id, strips pickup_code from
+ * every /api/v2/parcels response for relay agents, and fails closed when
+ * relay scope cannot be established.
+ */
+const RELAY_AGENT_FORBIDDEN_STATIC_PATHS = new Set([
+  '/alerts',
+  '/critical',
+  '/reconciliation',
+]);
+
+function stripPickupCodeDeep(value) {
+  if (Array.isArray(value)) return value.map(stripPickupCodeDeep);
+  if (!value || typeof value !== 'object') return value;
+
+  const out = {};
+  for (const [key, val] of Object.entries(value)) {
+    if (key === 'pickup_code') continue;
+    out[key] = stripPickupCodeDeep(val);
+  }
+  return out;
+}
+
+async function getAgentRelaisId(userId) {
+  const { rows: [agent] } = await db.query(
+    'SELECT relais_id FROM users WHERE id = $1',
+    [userId]
+  );
+  return agent?.relais_id || null;
+}
+
+async function parcelBelongsToRelais(parcelRef, relaisId) {
+  const { rows } = await db.query(`
+    SELECT 1
+    FROM parcels p
+    LEFT JOIN orders o ON o.id = p.order_id
+    WHERE p.reference = $1
+      AND COALESCE(p.relay_id, p.relais_id, o.relais_id) = $2
+    LIMIT 1
+  `, [parcelRef, relaisId]);
+  return rows.length > 0;
+}
+
+async function sendScopedRelayKpis(req, res) {
+  const relaisId = req.agentRelaisId;
+
+  const { rows: [kpi] } = await db.query(`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE p.status = 'draft')::int AS draft,
+      COUNT(*) FILTER (WHERE p.status = 'preparation')::int AS preparation,
+      COUNT(*) FILTER (WHERE p.status = 'shipped')::int AS shipped,
+      COUNT(*) FILTER (WHERE p.status = 'in_transit')::int AS in_transit,
+      COUNT(*) FILTER (WHERE p.status = 'available')::int AS available,
+      COUNT(*) FILTER (WHERE p.status = 'collected')::int AS collected,
+      COUNT(*) FILTER (WHERE p.status = 'cancelled')::int AS cancelled,
+      COUNT(*) FILTER (WHERE p.status NOT IN ('collected','cancelled'))::int AS active
+    FROM parcels p
+    LEFT JOIN orders o ON o.id = p.order_id
+    WHERE COALESCE(p.relay_id, p.relais_id, o.relais_id) = $1
+  `, [relaisId]);
+
+  const { rows: byIsland } = await db.query(`
+    SELECT p.destination_island AS island, p.status, COUNT(*)::int AS count
+    FROM parcels p
+    LEFT JOIN orders o ON o.id = p.order_id
+    WHERE p.status NOT IN ('collected','cancelled')
+      AND COALESCE(p.relay_id, p.relais_id, o.relais_id) = $1
+    GROUP BY p.destination_island, p.status
+    ORDER BY p.destination_island, p.status
+  `, [relaisId]);
+
+  const islands = {};
+  for (const r of byIsland) {
+    const island = r.island || 'Inconnu';
+    if (!islands[island]) islands[island] = {};
+    islands[island][r.status] = r.count;
+  }
+
+  return res.json({
+    parcels: {
+      total: kpi.total,
+      active: kpi.active,
+      by_status: {
+        draft: kpi.draft,
+        preparation: kpi.preparation,
+        shipped: kpi.shipped,
+        in_transit: kpi.in_transit,
+        available: kpi.available,
+        collected: kpi.collected,
+        cancelled: kpi.cancelled,
+      },
+      by_island: islands,
+    },
+    finance: null,
+    incidents: null,
+    scope: 'agent_relais',
+  });
+}
+
+router.use(async (req, res, next) => {
+  try {
+    if (req.user?.role !== 'agent_relais') return next();
+
+    const relaisId = await getAgentRelaisId(req.user.id);
+    if (!relaisId) {
+      return res.status(403).json({
+        error: 'Configuration agent incomplète — aucun relais associé',
+      });
+    }
+
+    req.agentRelaisId = relaisId;
+
+    const originalJson = res.json.bind(res);
+    res.json = (payload) => originalJson(stripPickupCodeDeep(payload));
+
+    // Scoped KPI response for relay agents.
+    if (req.method === 'GET' && req.path === '/kpis') {
+      return sendScopedRelayKpis(req, res);
+    }
+
+    // Fail closed for aggregate operational views until scoped versions are implemented.
+    if (req.method === 'GET' && RELAY_AGENT_FORBIDDEN_STATIC_PATHS.has(req.path)) {
+      return res.status(403).json({
+        error: 'Vue réservée au hub/admin — non disponible pour agent relais',
+        scope: 'agent_relais',
+      });
+    }
+
+    // Listing is handled by the existing route, but with an added relay WHERE clause below.
+    if (req.method === 'GET' && req.path === '/') return next();
+
+    // Dynamic parcel routes: /:ref, /:ref/timeline, /:ref/scan...
+    const match = req.path.match(/^\/([^/]+)/);
+    if (match) {
+      const parcelRef = decodeURIComponent(match[1]);
+      const allowed = await parcelBelongsToRelais(parcelRef, relaisId);
+      if (!allowed) {
+        return res.status(403).json({
+          error: 'Ce colis appartient à un autre relais',
+        });
+      }
+    }
+
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+});
+
 
 // ═══════════════════════════════════════════════════════════════════════
 // SYNC LOGIC — syncParcelToOrders
@@ -328,7 +480,12 @@ router.get('/', async (req, res, next) => {
       idx++;
     }
 
-    const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+    
+    if (req.user?.role === 'agent_relais') {
+      where.push(`COALESCE(p.relay_id, p.relais_id, o.relais_id) = ${idx++}`);
+      params.push(req.agentRelaisId);
+    }
+const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
 
     const sortCol = {
       reference: 'p.reference',
@@ -343,7 +500,7 @@ router.get('/', async (req, res, next) => {
       SELECT 
         p.id, p.reference, p.status, p.destination_island,
         p.recipient_name, p.recipient_phone,
-        p.weight_kg, p.eta, p.pickup_code,
+        p.weight_kg, p.eta,
         p.created_at, p.shipped_at, p.in_transit_at,
         p.available_at, p.collected_at,
         r.name AS relais_name, r.island AS relais_island,
@@ -377,7 +534,16 @@ router.get('/', async (req, res, next) => {
           COUNT(DISTINCT sub_o.user_id) AS nb_clients,
           COUNT(DISTINCT sub_o.id) AS nb_orders,
           SUM(pi.quantity) AS nb_items,
-          SUM(DISTINCT sub_o.total_kmf) AS total_kmf
+          (
+            SELECT COALESCE(SUM(order_totals.total_kmf), 0)
+            FROM (
+              SELECT DISTINCT sub_o2.id, sub_o2.total_kmf
+              FROM parcel_items pi2
+              JOIN order_items oi2 ON oi2.id = pi2.order_item_id
+              JOIN orders sub_o2 ON sub_o2.id = oi2.order_id
+              WHERE pi2.parcel_id = p.id
+            ) order_totals
+          ) AS total_kmf
         FROM parcel_items pi
         JOIN order_items oi ON oi.id = pi.order_item_id
         JOIN orders sub_o ON sub_o.id = oi.order_id
@@ -427,9 +593,7 @@ router.get('/', async (req, res, next) => {
         relais_name: p.relais_name,
         relais_island: p.relais_island,
         weight_kg: p.weight_kg ? Number(p.weight_kg) : null,
-        eta: p.eta,
-        pickup_code: p.pickup_code,
-        created_at: p.created_at,
+        eta: p.eta,        created_at: p.created_at,
         shipped_at: p.shipped_at,
         in_transit_at: p.in_transit_at,
         available_at: p.available_at,
