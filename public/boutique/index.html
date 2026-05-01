@@ -418,22 +418,6 @@ if('serviceWorker' in navigator){
 
   if (isMobile()) {
     setupMobile();
-    // Proxy window.scrollY and window.scrollTo → #k-page-scroll
-    try {
-      Object.defineProperty(window, 'scrollY', {
-        get: function(){ var s=document.getElementById('k-page-scroll'); return s?s.scrollTop:0; },
-        configurable: true
-      });
-      window.scrollTo = function(x, y){
-        var s = document.getElementById('k-page-scroll');
-        if (!s) return;
-        if (x !== null && typeof x === 'object') {
-          s.scrollTo({ top: x.top||0, behavior: x.behavior||'auto' });
-        } else {
-          s.scrollTop = (typeof y === 'number') ? y : 0;
-        }
-      };
-    } catch(e) {}
   } else {
     setupDesktop();
     // Desktop : brancher les boutons hero CTA
@@ -457,6 +441,35 @@ if('serviceWorker' in navigator){
       });
     }
   }
+
+  // ── Proxy window.scrollY / window.scrollTo — resize-safe ──────────────────
+  // Installé une fois ; réévalue isMobile() à chaque appel (pas au load).
+  // Mobile  → redirige vers #k-page-scroll (scroll container fixe)
+  // Desktop → délègue à la fonction native sauvegardée (_nativeScrollTo)
+  try {
+    var _nativeScrollTo = window.scrollTo.bind(window);
+    Object.defineProperty(window, 'scrollY', {
+      get: function(){
+        if (isMobile()) { var s=document.getElementById('k-page-scroll'); return s?s.scrollTop:0; }
+        return window.pageYOffset;
+      },
+      configurable: true
+    });
+    window.scrollTo = function(x, y){
+      if (isMobile()) {
+        var s = document.getElementById('k-page-scroll');
+        if (!s) return;
+        if (x !== null && typeof x === 'object') {
+          s.scrollTo({ top: x.top||0, behavior: x.behavior||'auto' });
+        } else {
+          s.scrollTop = (typeof y === 'number') ? y : 0;
+        }
+      } else {
+        if (x !== null && typeof x === 'object') { _nativeScrollTo(x); }
+        else { _nativeScrollTo(x, y); }
+      }
+    };
+  } catch(e) {}
 })();
 
   /* ══ Proverbe africain rotatif ══ */
