@@ -24,7 +24,11 @@
 'use strict';
 
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
+const { getUniqueRef, generatePickupCode } = require('./order-service');
+const { resolveRoutingFromRelais, RoutingError } = require('./routing');
+const { confirmPaymentCycle } = require('./order-payment-confirmation');
 
 // ─── Configuration ─────────────────────────────────────────────────────
 const CONFIG = {
@@ -729,129 +733,233 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       throw new Error('Ce panier est déjà finalisé');
     }
 
-    // 2. Reste à payer cash
+    // P0 stabilisation : ne pas créer de commande incomplète.
+    // Tant que le flux cash "mixed_shared_cart_cash" n'est pas industrialisé,
+    // la conversion n'est autorisée que lorsque le panier est entièrement financé.
     const prepaidKmf = r(cart.contributed_kmf);
-    const remainingCashKmf = r(cart.total_kmf_snapshot) - prepaidKmf;
+    const totalKmf = r(cart.total_kmf_snapshot);
+    const remainingCashKmf = Math.max(0, totalKmf - prepaidKmf);
 
-    // 3. Charger les items snapshot pour la commande
+    if (totalKmf <= 0) throw new Error('Total panier invalide');
+    if (remainingCashKmf > 0 || cart.status !== 'fully_funded') {
+      throw new Error('Impossible de finaliser : le panier partagé n\'est pas encore entièrement financé');
+    }
+
+    // 2. Charger les items snapshot
     const { rows: items } = await client.query(
-      `SELECT * FROM shared_cart_items WHERE shared_cart_id = $1`,
+      `SELECT * FROM shared_cart_items WHERE shared_cart_id = $1 ORDER BY created_at`,
       [sharedCartId]
     );
+    if (!items.length) throw new Error('Impossible de finaliser : panier sans articles');
 
-    // 4. Vérifier stock + prix sur products (re-check au moment de finaliser)
+    const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
+    if (productIds.length !== items.length) {
+      throw new Error('Impossible de finaliser : un article snapshot n\'a plus de product_id');
+    }
+
+    const { rows: products } = await client.query(
+      `SELECT id, name, stock, is_active FROM products WHERE id = ANY($1) FOR UPDATE`,
+      [productIds]
+    );
+    const productById = {};
+    products.forEach(p => { productById[p.id] = p; });
+
     const stockIssues = [];
     for (const it of items) {
-      if (!it.product_id) continue; // produit supprimé du catalogue → ignorer la check
-      const { rows: prodRows } = await client.query(
-        `SELECT id, name, stock, price_kmf, is_active FROM products WHERE id = $1`,
-        [it.product_id]
-      );
-      if (!prodRows.length || !prodRows[0].is_active) {
-        stockIssues.push({ name: it.product_name_snapshot, issue: 'unavailable' });
-      } else if (r(prodRows[0].stock) < r(it.quantity)) {
+      const p = productById[it.product_id];
+      if (!p || !p.is_active) {
         stockIssues.push({
-          name: it.product_name_snapshot,
-          issue: 'low_stock',
-          available: prodRows[0].stock,
-          requested: it.quantity,
+          product_id: it.product_id,
+          product_name: it.product_name_snapshot,
+          reason: 'product_inactive_or_missing',
+        });
+        continue;
+      }
+      if (p.stock !== null && Number(p.stock) < Number(it.quantity)) {
+        stockIssues.push({
+          product_id: it.product_id,
+          product_name: it.product_name_snapshot,
+          available: Number(p.stock),
+          needed: Number(it.quantity),
         });
       }
     }
-    if (stockIssues.length && !options.acceptStockIssues) {
-      throw new Error(JSON.stringify({ code: 'stock_issues', issues: stockIssues }));
+
+    if (stockIssues.length > 0 && !options.acceptStockIssues) {
+      throw new Error(JSON.stringify({
+        code: 'stock_issues',
+        message: 'Stock insuffisant pour finaliser le panier partagé',
+        items: stockIssues,
+      }));
     }
 
-    // 5. Créer la commande
-    // Colonnes retirées car inexistantes en DB (aucune migration) :
-    //   shared_cart_id, prepaid_amount_kmf, remaining_cash_kmf
-    // Le lien shared_cart → order est assuré par shared_carts.finalized_order_id (étape 6).
-    // status = 'pending' OBLIGATOIRE : le DEFAULT DB est 'confirmed' (schema.sql).
-    const reference = await generateOrderReference(client);
-    const paymentMode = (remainingCashKmf > 0)
-      ? 'mixed_shared_cart_cash'
-      : (prepaidKmf > 0 ? 'stripe_eur' : 'cash_relais');
-
-    const paymentStatus = (remainingCashKmf === 0 && prepaidKmf > 0)
-      ? 'paid'
-      : (prepaidKmf > 0 ? 'partially_paid' : 'pending');
-
+    // 3. Relais obligatoire pour produire une vraie commande routable
     const relayId = options.deliveryRelayId || cart.delivery_relay_id;
-    if (!relayId) throw new Error('Point relais requis pour finaliser');
+    if (!relayId) {
+      throw new Error('delivery_relay_id requis pour finaliser le panier partagé');
+    }
 
-    const { rows: orderRows } = await client.query(
+    const { rows: [relais] } = await client.query(
+      `SELECT * FROM relais WHERE id = $1 AND is_active = TRUE`,
+      [relayId]
+    );
+    if (!relais) throw new Error('Relais introuvable ou inactif');
+
+    let routing = { destination_island: null, routing_mode: null, transit_hub: null };
+    try {
+      routing = resolveRoutingFromRelais(relais);
+    } catch (e) {
+      if (e instanceof RoutingError) throw new Error(e.message);
+      throw e;
+    }
+
+    // 4. Bénéficiaire + recipient
+    const { rows: [user] } = await client.query(
+      `SELECT id, full_name, phone FROM users WHERE id = $1`,
+      [userId]
+    );
+    if (!user) throw new Error('Utilisateur introuvable');
+
+    let recipientId = null;
+    const recipientName = user.full_name || cart.beneficiary_name_snapshot || 'Bénéficiaire';
+    const recipientPhone = user.phone || cart.beneficiary_phone_snapshot;
+
+    if (recipientPhone) {
+      const { rows: [existingRecipient] } = await client.query(
+        `SELECT id FROM recipients
+          WHERE user_id = $1 AND phone = $2 AND relais_id = $3
+          LIMIT 1`,
+        [userId, recipientPhone, relais.id]
+      );
+
+      if (existingRecipient) {
+        recipientId = existingRecipient.id;
+      } else {
+        const { rows: [newRecipient] } = await client.query(
+          `INSERT INTO recipients (user_id, full_name, phone, relais_id, is_default)
+           VALUES ($1, $2, $3, $4, FALSE)
+           RETURNING id`,
+          [userId, recipientName, recipientPhone, relais.id]
+        );
+        recipientId = newRecipient.id;
+      }
+    }
+
+    // 5. Créer la commande complète
+    const orderId = uuidv4();
+    const reference = await getUniqueRef(db);
+    const pickupCode = generatePickupCode();
+    const totalEur = parseFloat((totalKmf / 491.97).toFixed(2));
+
+    const { rows: [order] } = await client.query(
       `INSERT INTO orders (
-         reference, user_id, basket_id, relais_id,
-         total_kmf, payment_mode, payment_status,
-         status
-       ) VALUES ($1, $2, $3, $4, $5, $6::payment_mode, $7::payment_status, 'pending')
+         id, reference, user_id, recipient_id, relais_id,
+         tracking_phone,
+         total_kmf, total_eur,
+         payment_mode, payment_status,
+         cash_ref_code, pickup_code,
+         status,
+         shared_cart_id, prepaid_amount_kmf, remaining_cash_kmf,
+         destination_island, routing_mode, transit_hub
+       ) VALUES (
+         $1, $2, $3, $4, $5,
+         $6,
+         $7, $8,
+         'mixed_shared_cart_cash', 'pending',
+         NULL, $9,
+         'pending',
+         $10, $11, 0,
+         $12, $13, $14
+       )
        RETURNING *`,
       [
-        reference, userId, cart.source_basket_id, relayId,
-        cart.total_kmf_snapshot, paymentMode, paymentStatus,
+        orderId, reference, userId, recipientId, relais.id,
+        recipientPhone || null,
+        totalKmf, totalEur,
+        pickupCode,
+        sharedCartId, prepaidKmf,
+        routing.destination_island,
+        routing.routing_mode,
+        routing.transit_hub,
       ]
     );
-    const order = orderRows[0];
 
-    // 5.1 — order_items depuis le snapshot panier partagé
-    // Nécessaire : la route /:id/finalize ne crée PAS les items (elle délègue tout à l'engine).
-    for (const it of items) {
-      await client.query(
-        `INSERT INTO order_items (
-           order_id, product_id, quantity, price_kmf,
-           module_type, module_fabric_id, module_fabric_type,
-           module_size, module_retouche, module_qty_meters, module_accessories
-         ) VALUES ($1, $2, $3, $4, NULL, NULL, NULL, NULL, FALSE, NULL, NULL)`,
-        [order.id, it.product_id, r(it.quantity), r(it.unit_price_kmf_snapshot)]
-      );
-    }
-
-    // 5.2 — Historique de statut (obligatoire pour audit + state machine)
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'pending', 'Commande créée via panier partagé', $2)`,
+       VALUES ($1, 'pending', 'Commande créée depuis panier partagé', $2)`,
       [order.id, userId]
     );
 
-    // 6. Marquer le panier comme converti
+    // 6. Créer les order_items depuis le snapshot figé
+    for (const it of items) {
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          order.id,
+          it.product_id,
+          r(it.quantity),
+          r(it.unit_price_kmf_snapshot),
+        ]
+      );
+    }
+
+    // 7. Panier 100% financé -> cycle central paiement + stock
+    const cycleResult = await confirmPaymentCycle({
+      orderId: order.id,
+      actor: { id: userId, role: 'system' },
+      source: 'shared_cart_full_payment',
+      dbClient: client,
+      note: 'Paiement intégral via panier partagé',
+    });
+
+    if (!cycleResult.success && !cycleResult.noop) {
+      throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
+    }
+
+    if (cycleResult.stockBlocked) {
+      throw new Error(JSON.stringify({
+        code: 'stock_issues',
+        message: 'Stock insuffisant pour finaliser le panier partagé',
+        items: cycleResult.insufficientItems,
+      }));
+    }
+
+    // 8. Marquer le panier comme converti
     await client.query(
       `UPDATE shared_carts
           SET status = 'converted_to_order',
-              finalized_at = NOW(),
               finalized_order_id = $1,
+              finalized_at = NOW(),
+              remaining_kmf = 0,
               updated_at = NOW()
         WHERE id = $2`,
       [order.id, sharedCartId]
     );
 
-    // 7. Audit
     await addEvent(client, sharedCartId, 'cart_converted_to_order',
       { type: 'user', id: userId },
       {
         order_id: order.id,
-        order_reference: reference,
+        order_reference: order.reference,
         prepaid_kmf: prepaidKmf,
-        remaining_cash_kmf: remainingCashKmf,
-        stock_issues: stockIssues.length ? stockIssues : undefined,
+        remaining_cash_kmf: 0,
       }
     );
 
-    return { sharedCart: cart, order, items, prepaidKmf, remainingCashKmf };
+    const { rows: [finalOrder] } = await client.query(
+      `SELECT * FROM orders WHERE id = $1`,
+      [order.id]
+    );
+
+    return {
+      sharedCart: { ...cart, status: 'converted_to_order', finalized_order_id: order.id },
+      order: finalOrder || order,
+      prepaidKmf,
+      remainingCashKmf: 0,
+    };
   });
 }
-
-async function generateOrderReference(client) {
-  const year = new Date().getFullYear();
-  const { rows } = await client.query(
-    `SELECT COUNT(*)::int + 1 AS n FROM orders WHERE reference LIKE $1`,
-    [`KOM-${year}-%`]
-  );
-  return `KOM-${year}-${String(rows[0].n).padStart(4, '0')}`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// 5. ANNULATION / EXPIRATION
-// ═══════════════════════════════════════════════════════════════════════
 
 async function cancelSharedCart(sharedCartId, userId, reason) {
   return withTransaction(async (client) => {

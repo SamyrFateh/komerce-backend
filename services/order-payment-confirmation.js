@@ -32,7 +32,7 @@
  * @param {object}  opts
  * @param {string}  opts.orderId    — UUID de la commande
  * @param {object}  opts.actor      — { id, role } de l'initiateur
- * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm' | 'wallet_full_payment'
+ * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm' | 'wallet_full_payment' | 'shared_cart_full_payment'
  * @param {object}  opts.dbClient   — Client de transaction actif (pool.connect())
  * @param {string}  [opts.note]     — Note optionnelle pour l'historique
  *
@@ -65,7 +65,9 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
       ? 'Paiement Stripe reçu'
       : source === 'wallet_full_payment'
         ? 'Paiement intégral par wallet'
-        : 'Paiement espèces confirmé par agent relais');
+        : source === 'shared_cart_full_payment'
+          ? 'Paiement intégral via panier partagé'
+          : 'Paiement espèces confirmé par agent relais');
 
   const confirmResult = await transitionOrderStatus({
     orderId,
@@ -97,7 +99,9 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
     ? 'Commande lancée automatiquement après paiement Stripe'
     : source === 'wallet_full_payment'
       ? 'Commande lancée après paiement intégral par wallet'
-      : 'Commande lancée après paiement cash';
+      : source === 'shared_cart_full_payment'
+        ? 'Commande lancée après financement complet du panier partagé'
+        : 'Commande lancée après paiement cash';
 
   const orderResult = await transitionOrderStatus({
     orderId,
