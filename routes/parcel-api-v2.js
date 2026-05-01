@@ -482,7 +482,7 @@ router.get('/', async (req, res, next) => {
 
     
     if (req.user?.role === 'agent_relais') {
-      where.push(`COALESCE(p.relay_id, p.relais_id, o.relais_id) = ${idx++}`);
+      where.push(`COALESCE(p.relay_id, p.relais_id, o.relais_id) = `${idx++}`);
       params.push(req.agentRelaisId);
     }
 const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
@@ -593,7 +593,8 @@ const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
         relais_name: p.relais_name,
         relais_island: p.relais_island,
         weight_kg: p.weight_kg ? Number(p.weight_kg) : null,
-        eta: p.eta,        created_at: p.created_at,
+        eta: p.eta,
+        created_at: p.created_at,
         shipped_at: p.shipped_at,
         in_transit_at: p.in_transit_at,
         available_at: p.available_at,
