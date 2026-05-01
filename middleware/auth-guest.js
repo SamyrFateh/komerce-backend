@@ -154,7 +154,7 @@ async function findOrCreateUser({ payerPhone, beneficiaryPhone, fullName }) {
   }
 
   // 3) Création du user
-  const newId = uuidv4();
+  const newId = crypto.randomUUID();
   const name = (fullName && String(fullName).trim()) || 'Client';
 
   const { rows: created } = await db.query(
