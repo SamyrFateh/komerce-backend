@@ -34,8 +34,9 @@ const { randomBytes } = require('crypto');
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ORDER_STATUSES = Object.freeze([
-  'pending',      // ← NOUVEAU: en attente de paiement
-  'confirmed',    // paiement reçu, prêt pour CT
+  'pending',               // en attente de paiement
+  'pending_group_payment', // en attente de financement groupé (LOT 4)
+  'confirmed',             // paiement reçu, prêt pour CT
   'ordered', 'preparation', 'shipped', 'in_transit',
   'available', 'collected', 'cancelled', 'refunded',
 ]);
@@ -55,7 +56,8 @@ const STATUS_RANK = Object.freeze({
 
 /** Strict transition matrix (for 'patch' source). */
 const VALID_TRANSITIONS = Object.freeze({
-  pending:     ['confirmed', 'cancelled'],  // ← NOUVEAU
+  pending:              ['confirmed', 'cancelled', 'pending_group_payment'],
+  pending_group_payment: ['confirmed', 'cancelled', 'pending'],  // LOT 4: retour possible si groupe abandonné
   confirmed:   ['ordered', 'cancelled'],
   ordered:     ['preparation', 'cancelled'],
   preparation: ['shipped', 'cancelled'],
@@ -69,7 +71,8 @@ const VALID_TRANSITIONS = Object.freeze({
 
 /** Role permissions per target status (for 'patch' source). */
 const TRANSITION_ROLES = Object.freeze({
-  confirmed:   ['admin', 'agent_relais', 'system'],  // ← NOUVEAU: paiement confirmé
+  pending_group_payment: ['admin', 'system'],        // LOT 4: activé par le créateur ou l'admin
+  confirmed:   ['admin', 'agent_relais', 'system'],  // paiement confirmé
   ordered:     ['admin', 'agent_hub'],
   preparation: ['admin', 'agent_hub'],
   shipped:     ['admin', 'agent_hub'],

@@ -26,9 +26,10 @@
 
 'use strict';
 
-const db     = require('../db');
-const engine = require('../services/shared-cart-engine');
-const crypto = require('crypto');
+const db                                         = require('../db');
+const engine                                     = require('../services/shared-cart-engine');
+const crypto                                     = require('crypto');
+const { transitionOrderStatus }                  = require('../services/order-status-machine');
 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
 
@@ -150,20 +151,19 @@ async function fromOrderHandler(req, res, next) {
       ? Math.ceil(totalKmf / safeNbParticipants)
       : null;
 
-    // ── Passer la commande en pending_group_payment ────────────────
-    await client.query(
-      `UPDATE orders
-       SET status     = 'pending_group_payment',
-           updated_at = NOW()
-       WHERE id = $1`,
-      [order_id]
-    );
-
-    await client.query(
-      `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'pending_group_payment', 'Paiement groupé activé par le créateur', $2)`,
-      [order_id, req.user.id]
-    );
+    // ── Passer la commande en pending_group_payment via la state machine ─
+    const groupTransition = await transitionOrderStatus({
+      orderId:   order_id,
+      newStatus: 'pending_group_payment',
+      actor:     { id: req.user.id, role: 'system' },
+      source:    'patch',
+      note:      'Paiement groupé activé par le créateur',
+      dbClient:  client,
+    });
+    if (!groupTransition.success) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: groupTransition.error || 'Transition pending_group_payment refusée' });
+    }
 
     // ── Créer le shared_cart ───────────────────────────────────────
     const token      = generateToken(16);
