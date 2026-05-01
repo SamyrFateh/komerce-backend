@@ -1,6 +1,6 @@
--- 023: Add whatsapp_phone column to users table
+-- Migration 023b: Add whatsapp_phone column to users table
+-- Renommé depuis 023_whatsapp_phone.sql (LOT 5 — résolution doublon numéro 023)
 -- Allows diaspora customers to receive WhatsApp notifications on their international number
--- while keeping the local +269 number for the beneficiary
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_phone TEXT;
 

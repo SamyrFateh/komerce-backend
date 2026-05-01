@@ -1,4 +1,5 @@
--- Migration 015: Customs enrichment on parcels
+-- Migration 015b: Customs enrichment on parcels
+-- Renommé depuis 015_customs_enrichment.sql (LOT 5 — résolution doublon numéro 015)
 -- Adds customs-related columns to parcels table for per-parcel customs tracking
 
 ALTER TABLE parcels ADD COLUMN IF NOT EXISTS customs_value_kmf NUMERIC(12,2);

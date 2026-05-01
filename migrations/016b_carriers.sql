@@ -1,4 +1,5 @@
--- Migration 016: Carriers table
+-- Migration 016b: Carriers table
+-- Renommé depuis 016_carriers.sql (LOT 5 — résolution doublon numéro 016)
 -- Stores carrier/transporter information for shipment management
 
 CREATE TABLE IF NOT EXISTS carriers (
