@@ -1039,6 +1039,20 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
       '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
     wrap.appendChild(notices);
 
+    // Bouton "Payer en groupe" — uniquement pour cash_relais non encore payé
+    if (order.id && order.payment_mode === 'cash_relais') {
+      const groupBtn = document.createElement('button');
+      groupBtn.id = 'k-group-pay-btn';
+      groupBtn.innerHTML = '👥 Payer en groupe';
+      groupBtn.style.cssText = [
+        'width:100%', 'background:linear-gradient(135deg,var(--violet,#6c3fc5),var(--violet-dark,#4a2d9e))',
+        'color:#fff', 'border:none', 'border-radius:50px', 'padding:12px 16px',
+        'font-size:14px', 'font-weight:700', 'cursor:pointer', 'margin-bottom:8px',
+        'box-shadow:0 4px 14px var(--violet-light,rgba(108,63,197,.3))',
+      ].join(';');
+      wrap.appendChild(groupBtn);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'k-confirm-actions';
     actions.innerHTML =
@@ -1060,6 +1074,39 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
           }
         });
       }
+      const groupPayBtn = document.getElementById('k-group-pay-btn');
+      if (groupPayBtn) {
+        groupPayBtn.addEventListener('click', async () => {
+          groupPayBtn.disabled = true;
+          groupPayBtn.textContent = '⏳ Activation...';
+          try {
+            const r = await apiPost('/api/shared-carts/from-order', {
+              order_id: order.id,
+              split_mode: 'free',
+              expiration_days: 7,
+            });
+            if (r && r.share_url) {
+              const lines = [
+                '👥 *Paiement groupé — ' + sanitize(order.reference || 'Commande Komerce') + '*',
+                '─────────────────────',
+                'Participez au financement de cette commande !',
+                '',
+                '💰 Total : ' + fmt(order.total_kmf || 0, 'KMF'),
+                '🔗 Voir et contribuer :',
+                r.share_url,
+              ];
+              window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+              groupPayBtn.textContent = '✅ Lien partagé !';
+              showToast('Lien de paiement groupé créé !', 'success');
+            }
+          } catch (err) {
+            groupPayBtn.disabled = false;
+            groupPayBtn.innerHTML = '👥 Payer en groupe';
+            showToast(err.message || 'Erreur — réessayez', 'error');
+          }
+        });
+      }
+
       const closeBtn = document.getElementById('k-order-close-btn');
       if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
       const trackBtn = document.getElementById('k-order-track-btn');

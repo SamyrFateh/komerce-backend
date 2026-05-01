@@ -240,6 +240,7 @@
     <div class="sc-progress-bar-bg">
       <div class="sc-progress-bar-fill" id="sc-progress-fill" style="width:0%"></div>
     </div>
+    <div id="sc-split-hint" hidden style="background:#ede7f6;color:#4a2d9e;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;margin:8px 0;text-align:center;"></div>
     <div class="sc-progress-labels">
       <span id="sc-progress-pct">0%</span>
       <span id="sc-progress-total"></span>
@@ -407,9 +408,12 @@
       status:          (cart.status === 'active' || cart.status === 'partially_funded') ? 'active' : cart.status,
       total_kmf:       cart.total_kmf_snapshot,
       contributed_kmf: cart.contributed_kmf,
-      remaining_kmf:   cart.remaining_kmf,
-      items:           items,
-      contributions:   contribs,
+      remaining_kmf:       cart.remaining_kmf,
+      split_mode:          cart.split_mode || 'free',
+      suggested_share_kmf: cart.suggested_share_kmf || null,
+      source_order_ref:    cart.source_order_reference || null,
+      items:               items,
+      contributions:       contribs,
     };
   }
 
@@ -427,11 +431,13 @@
     const isEvent = d.type === 'event';
 
     /* Hero */
-    document.getElementById('sc-hero-icon').textContent = isEvent ? '🎉' : '🧺';
+    document.getElementById('sc-hero-icon').textContent = d.source_order_ref ? '👥' : (isEvent ? '🎉' : '🧺');
     document.getElementById('sc-hero-label').textContent =
       d.event_label || (isEvent ? 'Événement collectif' : 'Panier partagé');
     document.getElementById('sc-hero-sub').textContent =
-      d.sharer_name ? 'Partagé par ' + d.sharer_name : '';
+      d.source_order_ref
+        ? 'Commande ' + d.source_order_ref + (d.sharer_name ? ' · ' + d.sharer_name : '')
+        : (d.sharer_name ? 'Partagé par ' + d.sharer_name : '');
     document.getElementById('sc-hero-expires').textContent = fmtExpires(d.expires_at);
 
     /* Progress (event only) */
@@ -445,6 +451,20 @@
       document.getElementById('sc-progress-fill').style.width = pct + '%';
       document.getElementById('sc-progress-pct').textContent = pct + '%';
       document.getElementById('sc-progress-total').textContent = 'Objectif : ' + fmt(d.total_kmf);
+
+      /* Part suggérée (mode equal) */
+      const splitHint = document.getElementById('sc-split-hint');
+      if (splitHint) {
+        if (d.split_mode === 'equal' && d.suggested_share_kmf) {
+          splitHint.hidden = false;
+          splitHint.textContent = 'Part suggérée : ' + fmt(d.suggested_share_kmf) + ' KMF';
+          // Pré-remplir le champ montant
+          const amtField = document.getElementById('sc-contrib-amount');
+          if (amtField && !amtField.value) amtField.value = d.suggested_share_kmf;
+        } else {
+          splitHint.hidden = true;
+        }
+      }
 
       /* Contributions list */
       renderContributions(d.contributions || []);
