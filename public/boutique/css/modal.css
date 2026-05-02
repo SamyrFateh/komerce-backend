@@ -1436,3 +1436,121 @@
 }
 /* ── END DESKTOP MODAL TEMU-LIKE SUGGESTION SCROLL ── */
 >>>>>>> 1a597310e2705d67a1fa626fdbbacf1f60a06d0b
+
+
+/* ── MOBILE MODAL NO HORIZONTAL SCROLL — SOURCE OF TRUTH ── */
+@media (max-width: 899px) {
+  /*
+    Sécurité mobile :
+    aucun enfant de la modal ne doit créer de largeur horizontale.
+    Desktop est géré séparément dans le bloc >=900px.
+  */
+
+  #k-modal-overlay,
+  #k-modal,
+  #k-modal *,
+  #k-modal *::before,
+  #k-modal *::after {
+    box-sizing: border-box;
+  }
+
+  #k-modal-overlay,
+  #k-modal {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-img-wrap,
+  #k-modal .k-modal-carousel,
+  #k-modal .k-modal-carousel-track,
+  #k-modal .k-modal-details,
+  #k-modal .k-modal-info,
+  #k-modal .k-modal-suggestions,
+  #k-modal #k-sug-rail,
+  #k-modal .k-sug-section,
+  #k-modal .k-modal-actions,
+  #k-modal .k-modal-topbar {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-slide {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  #k-modal .k-sug-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-sug-card,
+  #k-modal .k-sug-card-img,
+  #k-modal .k-sug-card-bottom,
+  #k-modal .k-sug-card-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-modal-info h2,
+  #k-modal .k-modal-desc,
+  #k-modal .k-sug-card-name,
+  #k-modal .k-msearch-item-name,
+  #k-modal .k-msearch-item-cat {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  #k-modal .k-modal-inner-search,
+  #k-modal .k-modal-search-dropdown {
+    width: auto;
+    max-width: calc(100% - 24px);
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  #k-modal .k-msearch-item,
+  #k-modal .k-msearch-item-info {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-modal-actions {
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  #k-modal .k-add-cart-btn,
+  #k-modal .k-modal-actions .k-buy-now-btn,
+  #k-modal .k-qty {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-add-cart-btn {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #k-modal .k-topbar-search-expanded {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+/* ── END MOBILE MODAL NO HORIZONTAL SCROLL ── */
