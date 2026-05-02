@@ -328,12 +328,14 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 600px) {
   .k-modal { width: min(90vw, 900px); max-height: 90vh; max-height: 90dvh; border-radius: 16px; margin: auto; align-self: center; }
-  .k-modal-scroll { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto auto; padding-bottom: 0; overflow-y: auto; padding-top: 0; }
-  .k-modal-img-wrap { grid-column: 1; grid-row: 1 / 3; height: auto; min-height: 300px; align-self: start; }
-  .k-modal-details { grid-column: 2; grid-row: 1; overflow-y: auto; }
+  .k-modal-scroll { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; padding-bottom: 0; overflow-y: auto; padding-top: 0; }
+  .k-modal-img-wrap { grid-column: 1; grid-row: 1; height: auto; min-height: 300px; align-self: start; }
+  .k-modal-details { grid-column: 2; grid-row: 1; overflow-y: auto; display: flex; flex-direction: column; }
   .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; }
-  .k-modal-actions { grid-column: 2; grid-row: 2; position: sticky; bottom: 0; align-self: end; z-index: 10; border-top: 1px solid rgba(0,0,0,.07); }
-  .k-modal-suggestions { grid-column: 1 / -1; grid-row: 3; }
+  /* .k-modal-actions est maintenant dans .k-modal-details (flex child), pas dans le grid */
+  .k-modal-actions { position: sticky; bottom: 0; z-index: 10; border-top: 1px solid rgba(0,0,0,.07); }
+  /* .k-modal-suggestions est aussi dans .k-modal-details */
+  .k-modal-suggestions { flex: 1 1 auto; }
   .k-modal-desc { -webkit-line-clamp: 2; overflow: hidden; }
   .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; }
 }
