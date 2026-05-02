@@ -20,6 +20,9 @@ import {
   addToCart, quickAdd, quickRemove, toggleFav, setQty,
   openCart, closeCart, markAllCartButtons,
 }                         from './b-cart.js';
+import {
+  normalizeCategoryKey, getCategorySectionEmoji,
+}                         from './shop-schema.js';
 
 'use strict';
 
@@ -482,7 +485,6 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       return;
     }
     sugSection.classList.remove('u-hidden');
-    sugSection.classList.toggle('k-modal-suggestions--desktop-list', window.innerWidth >= 900);
     
     // Template carte suggestion — stepper −/qty/+ en bas
     const cardHTML = (p) => {
@@ -546,15 +548,6 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
     dom.sugRail.innerHTML = html;
-
-    // PATCH #233 — force desktop modal suggestions list
-    if (window.innerWidth >= 900) {
-      sugSection.classList.add('k-modal-suggestions--desktop-list');
-      dom.sugRail.classList.add('k-sug-rail--desktop-list');
-    } else {
-      sugSection.classList.remove('k-modal-suggestions--desktop-list');
-      dom.sugRail.classList.remove('k-sug-rail--desktop-list');
-    }
     // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
     const oldH3 = sugSection.querySelector('h3');
     if (oldH3) oldH3.classList.add('u-hidden');
@@ -821,24 +814,94 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       clearBtn.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        searchInput.value = '';
-        searchWrap.classList.remove('has-value');
-        _closeDropdown();
-        // Restaurer les suggestions
-        var sugRailEl = document.getElementById('k-sug-rail');
-        if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+        _resetSearchState();
         searchInput.focus();
       });
 
-      // ── Enter → catalogue (existant, inchangé) ──
+      // ── Sprint 3 : Recherches récentes ──────────────────────────
+      var RECENTS_KEY = 'k_recent_searches';
+      var RECENTS_MAX = 5;
+
+      function _getRecents() {
+        try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'); }
+        catch(e) { return []; }
+      }
+
+      function _saveRecent(term) {
+        if (!term || term.length < 2) return;
+        var recents = _getRecents().filter(function(r) { return r !== term; });
+        recents.unshift(term);
+        if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
+        try { localStorage.setItem(RECENTS_KEY, JSON.stringify(recents)); } catch(e) {}
+      }
+
+      function _removeRecent(term) {
+        var recents = _getRecents().filter(function(r) { return r !== term; });
+        try { localStorage.setItem(RECENTS_KEY, JSON.stringify(recents)); } catch(e) {}
+      }
+
+      function _renderRecents() {
+        var recents = _getRecents();
+        if (!recents.length) { _closeDropdown(); return; }
+        dropdown.innerHTML =
+          '<div class="k-msearch-recents-header">' +
+            '<span>R\u00e9centes</span>' +
+            '<button class="k-msearch-recents-clear" type="button">Effacer tout</button>' +
+          '</div>' +
+          recents.map(function(term) {
+            return '<div class="k-msearch-recent-item" data-term="' + sanitize(term) + '">' +
+              '<svg class="k-msearch-recent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' +
+              '<span class="k-msearch-recent-label">' + sanitize(term) + '</span>' +
+              '<button class="k-msearch-recent-remove" data-term="' + sanitize(term) + '" type="button" aria-label="Supprimer">\u00d7</button>' +
+            '</div>';
+          }).join('');
+        dropdown.classList.add('open');
+
+        // Clic sur un terme récent → injecter et chercher
+        dropdown.querySelectorAll('.k-msearch-recent-item').forEach(function(item) {
+          item.addEventListener('click', function(e) {
+            if (e.target.closest('.k-msearch-recent-remove')) return;
+            var t = item.dataset.term;
+            searchInput.value = t;
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+          });
+        });
+
+        // Supprimer un terme
+        dropdown.querySelectorAll('.k-msearch-recent-remove').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            _removeRecent(btn.dataset.term);
+            _renderRecents();
+          });
+        });
+
+        // Effacer tout
+        var clearAll = dropdown.querySelector('.k-msearch-recents-clear');
+        if (clearAll) {
+          clearAll.addEventListener('click', function(e) {
+            e.stopPropagation();
+            try { localStorage.removeItem(RECENTS_KEY); } catch(e) {}
+            _closeDropdown();
+          });
+        }
+      }
+
+      // Focus sur la barre vide → afficher les récents
+      searchInput.addEventListener('focus', function() {
+        if (searchInput.value.trim().length < 2) {
+          _renderRecents();
+        }
+      });
+
+      // ── Enter → catalogue (existant + sauvegarde récent Sprint 3) ──
       searchInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
         var q = searchInput.value.trim();
         if (q.length < 1) { e.preventDefault(); return; }
         e.preventDefault();
-        searchInput.value = '';
-        searchWrap.classList.remove('has-value');
-        _closeDropdown();
+        _saveRecent(q);
+        _resetSearchState();
         closeModal();
         var mainInput = dom.searchInput || document.getElementById('k-search-input');
         if (mainInput) {
@@ -858,7 +921,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         }
       });
 
-      // ── Render dropdown ──
+      // ── Render dropdown — Sprint 2 : résultats catégorisés ──
       function _renderDropdown(results, query) {
         if (!results.length) {
           dropdown.innerHTML =
@@ -870,35 +933,64 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
           return;
         }
 
-        var shown = results.slice(0, 8);
         var totalCount = results.length;
 
-        dropdown.innerHTML =
-          '<div class="k-msearch-count">' + totalCount + ' r\u00e9sultat' + (totalCount > 1 ? 's' : '') + '</div>' +
-          shown.map(function(p) {
-            var catLabel = p.category || '';
+        // ── Grouper par catégorie ──
+        var groups = {};
+        var groupOrder = [];
+        results.forEach(function(p) {
+          var catKey = normalizeCategoryKey(p.category) || p.category || 'Autres';
+          if (!groups[catKey]) {
+            groups[catKey] = [];
+            groupOrder.push(catKey);
+          }
+          groups[catKey].push(p);
+        });
+
+        // ── Construire le HTML ──
+        var html = '<div class="k-msearch-count">' + totalCount + ' r\u00e9sultat' + (totalCount > 1 ? 's' : '') + '</div>';
+
+        groupOrder.forEach(function(catKey) {
+          var items = groups[catKey];
+          var emoji = getCategorySectionEmoji(catKey) || '';
+          var shown = items.slice(0, 3);
+          var remaining = items.length - shown.length;
+
+          html += '<div class="k-msearch-group" data-cat="' + sanitize(catKey) + '">';
+          html += '<div class="k-msearch-group-header">' +
+            '<span class="k-msearch-group-emoji">' + emoji + '</span>' +
+            '<span class="k-msearch-group-label">' + sanitize(catKey) + '</span>' +
+            '<span class="k-msearch-group-count">' + items.length + '</span>' +
+          '</div>';
+
+          html += shown.map(function(p) {
             var promo = p.promo_pct ? '<span class="k-msearch-item-promo">-' + p.promo_pct + '%</span>' : '';
             return '<div class="k-msearch-item" data-id="' + p.id + '">' +
               '<img class="k-msearch-item-img" src="' + optimizeImgUrl(p.image_url, 88) + '" alt="" loading="lazy">' +
               '<div class="k-msearch-item-info">' +
                 '<div class="k-msearch-item-name">' + sanitize(p.name) + '</div>' +
-                '<div class="k-msearch-item-cat">' + sanitize(catLabel) + '</div>' +
               '</div>' +
               '<div class="k-msearch-item-right">' +
                 '<span class="k-msearch-item-price">' + fmtPrice(p.price_kmf) + '</span>' +
                 promo +
               '</div>' +
             '</div>';
-          }).join('') +
-          (totalCount > 8
-            ? '<div class="k-msearch-footer" data-query="' + sanitize(query) + '">' +
-                '\u21b5 Voir les ' + totalCount + ' r\u00e9sultats dans le catalogue' +
-              '</div>'
-            : '<div class="k-msearch-footer" data-query="' + sanitize(query) + '">' +
-                '\u21b5 Chercher \u00ab\u00a0' + sanitize(query) + '\u00a0\u00bb dans le catalogue' +
-              '</div>'
-          );
+          }).join('');
 
+          if (remaining > 0) {
+            html += '<div class="k-msearch-group-more" data-cat="' + sanitize(catKey) + '" data-query="' + sanitize(query) + '">' +
+              'Voir ' + (remaining === 1 ? '1 autre' : 'les ' + remaining + ' autres') + ' dans ' + sanitize(catKey) + ' \u2192' +
+            '</div>';
+          }
+
+          html += '</div>';
+        });
+
+        html += '<div class="k-msearch-footer" data-query="' + sanitize(query) + '">' +
+          '\u21b5 Chercher \u00ab\u00a0' + sanitize(query) + '\u00a0\u00bb dans le catalogue' +
+        '</div>';
+
+        dropdown.innerHTML = html;
         dropdown.classList.add('open');
 
         // ── Bind résultats : clic → switch produit intra-modal ──
@@ -906,24 +998,43 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
           item.addEventListener('click', function(e) {
             e.stopPropagation();
             var pid = item.dataset.id;
-            searchInput.value = '';
-            searchWrap.classList.remove('has-value');
-            _closeDropdown();
-            // Restaurer les suggestions
-            var sugRailEl = document.getElementById('k-sug-rail');
-            if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+            _saveRecent(query);
+            _resetSearchState();
             openModal(pid, false);
           });
         });
 
-        // ── Footer : lancer la recherche catalogue ──
+        // ── "Voir les X autres dans Catégorie" → catalogue filtré par catégorie ──
+        dropdown.querySelectorAll('.k-msearch-group-more').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var cat = btn.dataset.cat;
+            var q = btn.dataset.query || '';
+            _saveRecent(q);
+            _resetSearchState();
+            closeModal();
+            // Filtrer le catalogue sur cette catégorie + le terme
+            state.activeCat = cat;
+            state.activeSubcat = null;
+            var mainInput = dom.searchInput || document.getElementById('k-search-input');
+            if (mainInput) {
+              mainInput.value = q;
+              mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            setTimeout(function() {
+              var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+              if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 200);
+          });
+        });
+
+        // ── Footer : lancer la recherche catalogue globale ──
         var footer = dropdown.querySelector('.k-msearch-footer');
         if (footer) {
           footer.addEventListener('click', function() {
             var q = footer.dataset.query || '';
-            searchInput.value = '';
-            searchWrap.classList.remove('has-value');
-            _closeDropdown();
+            _saveRecent(q);
+            _resetSearchState();
             closeModal();
             var mainInput = dom.searchInput || document.getElementById('k-search-input');
             if (mainInput) {
@@ -938,9 +1049,218 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         }
       }
 
+      // ── Helper : reset propre de l'état search ──
+      function _resetSearchState() {
+        searchInput.value = '';
+        searchWrap.classList.remove('has-value');
+        _closeDropdown();
+        var sugRailEl = document.getElementById('k-sug-rail');
+        if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+      }
+
       function _closeDropdown() {
         dropdown.classList.remove('open');
       }
+    })();
+
+    // ── Sprint 4 : Loupe mobile dans la topbar (collapse/expand) ──────
+    // Sur mobile, ajoute un bouton loupe dans la topbar qui, au tap,
+    // expand une barre de recherche pleine largeur dans la topbar.
+    // Synced avec le même input/dropdown que la barre inline.
+    (function setupTopbarSearch() {
+      if (window.innerWidth >= 900) return; // desktop only uses inline search
+
+      var topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
+      if (!topbar) return;
+
+      // Ne pas injecter 2 fois
+      if (topbar.querySelector('.k-topbar-search-trigger')) return;
+
+      // ── Bouton loupe trigger ──
+      var trigger = document.createElement('button');
+      trigger.className = 'k-topbar-search-trigger';
+      trigger.type = 'button';
+      trigger.setAttribute('aria-label', 'Rechercher');
+      trigger.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>' +
+        '</svg>';
+
+      // ── Barre expanded ──
+      var expandedBar = document.createElement('div');
+      expandedBar.className = 'k-topbar-search-expanded';
+      expandedBar.innerHTML =
+        '<button class="k-topbar-search-back" type="button" aria-label="Fermer la recherche">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>' +
+        '</button>' +
+        '<input type="search" class="k-topbar-search-input" placeholder="Chercher un produit\u2026" autocomplete="off" autocorrect="off">' +
+        '<button class="k-topbar-search-clear-btn" type="button" aria-label="Effacer">\u00d7</button>';
+
+      // Insert trigger before topbar-right
+      var topbarRight = topbar.querySelector('.k-modal-topbar-right');
+      if (topbarRight) {
+        topbar.insertBefore(trigger, topbarRight);
+      } else {
+        topbar.appendChild(trigger);
+      }
+      topbar.appendChild(expandedBar);
+
+      var tbInput = expandedBar.querySelector('.k-topbar-search-input');
+      var tbBack = expandedBar.querySelector('.k-topbar-search-back');
+      var tbClear = expandedBar.querySelector('.k-topbar-search-clear-btn');
+
+      function _expandSearch() {
+        expandedBar.classList.add('is-active');
+        topbar.classList.add('search-mode');
+        requestAnimationFrame(function() { tbInput.focus(); });
+      }
+
+      function _collapseSearch() {
+        expandedBar.classList.remove('is-active');
+        topbar.classList.remove('search-mode');
+        tbInput.value = '';
+        tbClear.classList.remove('is-visible');
+        // Also reset the main inline search + dropdown
+        if (state._modalSearchInput) {
+          state._modalSearchInput.value = '';
+          var wrap = state._modalSearchInput.closest('.k-modal-inner-search');
+          if (wrap) wrap.classList.remove('has-value');
+        }
+        var dd = document.getElementById('k-modal-search-dropdown');
+        if (dd) dd.classList.remove('open');
+        // Restore suggestions
+        var rail = document.getElementById('k-sug-rail');
+        if (rail) rail.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
+      }
+
+      trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        _expandSearch();
+      });
+
+      tbBack.addEventListener('click', function(e) {
+        e.stopPropagation();
+        _collapseSearch();
+      });
+
+      tbClear.addEventListener('click', function(e) {
+        e.stopPropagation();
+        tbInput.value = '';
+        tbClear.classList.remove('is-visible');
+        tbInput.focus();
+        // Sync : clear the inline search too
+        if (state._modalSearchInput) {
+          state._modalSearchInput.value = '';
+          state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+
+      // Sync typing → inject into the inline search (which does the real work)
+      tbInput.addEventListener('input', function() {
+        var q = tbInput.value;
+        tbClear.classList.toggle('is-visible', q.length > 0);
+        // Sync with the inline search input
+        if (state._modalSearchInput) {
+          state._modalSearchInput.value = q;
+          state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+
+      // Enter in topbar → same as inline Enter
+      tbInput.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        // Delegate to inline search Enter handler by syncing then firing
+        if (state._modalSearchInput) {
+          state._modalSearchInput.value = tbInput.value;
+          state._modalSearchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        }
+        _collapseSearch();
+      });
+
+      // Collapse on Escape
+      tbInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          _collapseSearch();
+        }
+      });
+    })();
+
+    // ── Sprint 5 : Recherche vocale (Web Speech API) ──────────────
+    // Bouton micro dans la barre inline. Feature-detected : masqué si non supporté.
+    (function setupVoiceSearch() {
+      var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      var searchWrapEl = document.querySelector('.k-modal-inner-search');
+      if (!searchWrapEl) return;
+      if (searchWrapEl.querySelector('.k-modal-search-mic')) return;
+
+      var mic = document.createElement('button');
+      mic.className = 'k-modal-search-mic';
+      mic.type = 'button';
+      mic.setAttribute('aria-label', '\u00c9couter');
+      mic.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+          '<rect x="9" y="1" width="6" height="12" rx="3"/>' +
+          '<path d="M5 10a7 7 0 0 0 14 0"/>' +
+          '<line x1="12" y1="17" x2="12" y2="21"/>' +
+          '<line x1="8" y1="21" x2="16" y2="21"/>' +
+        '</svg>';
+
+      var clearEl = searchWrapEl.querySelector('.k-modal-search-clear');
+      if (clearEl) {
+        searchWrapEl.insertBefore(mic, clearEl);
+      } else {
+        searchWrapEl.appendChild(mic);
+      }
+
+      var recognition = null;
+      var isListening = false;
+
+      mic.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isListening && recognition) {
+          recognition.stop();
+          return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.lang = 'fr-FR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        mic.classList.add('is-listening');
+        isListening = true;
+
+        recognition.addEventListener('result', function(event) {
+          var transcript = event.results[0][0].transcript.trim();
+          if (transcript && state._modalSearchInput) {
+            state._modalSearchInput.value = transcript;
+            state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            state._modalSearchInput.focus();
+          }
+        });
+
+        recognition.addEventListener('end', function() {
+          mic.classList.remove('is-listening');
+          isListening = false;
+        });
+
+        recognition.addEventListener('error', function() {
+          mic.classList.remove('is-listening');
+          isListening = false;
+        });
+
+        try { recognition.start(); } catch(err) {
+          mic.classList.remove('is-listening');
+          isListening = false;
+        }
+      });
     })();
 
         // ── Image zone: carousel swipe + pull-to-close (Temu-style)
