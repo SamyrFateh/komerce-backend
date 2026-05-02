@@ -5,8 +5,8 @@
 <script>
 /* Nuclear SW reset v302 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v314'))return;
-  localStorage.setItem('sw_reset_v314','1');
+  if(localStorage.getItem('sw_reset_v315'))return;
+  localStorage.setItem('sw_reset_v315','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
@@ -14,7 +14,7 @@
     }).then(function(keys){
       return Promise.all(keys.map(function(k){return caches.delete(k);}));
     }).then(function(){
-      console.log('[RESET v314] All SWs unregistered, all caches cleared. Reloading...');
+      console.log('[RESET v315] All SWs unregistered, all caches cleared. Reloading...');
       location.reload();
     });
   });
@@ -36,7 +36,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v314') === -1) caches.delete(n);
+        if(n.indexOf('komerce-v315') === -1) caches.delete(n);
       });
     });
   }
@@ -53,17 +53,17 @@ if('serviceWorker' in navigator){
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
 <!-- CSS Komerce v2 — refactorisé, 0 !important, encodage UTF-8 propre -->
-<link rel="stylesheet" href="/boutique/css/tokens.css?v=314">
-<link rel="stylesheet" href="/boutique/css/reset.css?v=314">
-<link rel="stylesheet" href="/boutique/css/layout.css?v=314">
-<link rel="stylesheet" href="/boutique/css/hero.css?v=314">
-<link rel="stylesheet" href="/boutique/css/categories.css?v=314">
-<link rel="stylesheet" href="/boutique/css/products.css?v=314">
-<link rel="stylesheet" href="/boutique/css/modal.css?v=314">
-<link rel="stylesheet" href="/boutique/css/cart.css?v=314">
-<link rel="stylesheet" href="/boutique/css/interactions.css?v=314">
-<link rel="stylesheet" href="/boutique/css/event.css?v=314">
-<link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=314">
+<link rel="stylesheet" href="/boutique/css/tokens.css?v=315">
+<link rel="stylesheet" href="/boutique/css/reset.css?v=315">
+<link rel="stylesheet" href="/boutique/css/layout.css?v=315">
+<link rel="stylesheet" href="/boutique/css/hero.css?v=315">
+<link rel="stylesheet" href="/boutique/css/categories.css?v=315">
+<link rel="stylesheet" href="/boutique/css/products.css?v=315">
+<link rel="stylesheet" href="/boutique/css/modal.css?v=315">
+<link rel="stylesheet" href="/boutique/css/cart.css?v=315">
+<link rel="stylesheet" href="/boutique/css/interactions.css?v=315">
+<link rel="stylesheet" href="/boutique/css/event.css?v=315">
+<link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=315">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -527,9 +527,9 @@ if('serviceWorker' in navigator){
     el.textContent = proverbes[idx];
   })();
 </script>
-<script src="/boutique/js/komerce-api.js?v=314"></script>
+<script src="/boutique/js/komerce-api.js?v=315"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=314"></script>
+<script type="module" src="/boutique/js/main.js?v=315"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
