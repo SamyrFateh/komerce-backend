@@ -637,23 +637,61 @@
   }
 }
 
-
-/* PATCH #227 — desktop Temu UX stabilization */
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP TEMU FEATURES — SOURCE OF TRUTH
+   Restores card hover overlay + clean modal zoom.
+   No orange crosshair/lens. No forced display:none.
+   ══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
-  /* Supprime la cible/lens orange visible dans la modal produit */
-  .k-modal-carousel {
-    cursor: default;
-  }
-
-  .k-modal-zoom-lens,
-  .k-modal-zoom-preview {
-    display: none;
+  .k-card-hover-overlay {
+    display: flex;
     opacity: 0;
     pointer-events: none;
+    will-change: opacity;
+    backface-visibility: hidden;
   }
 
-  /* Évite les rectangles/focus parasites sur desktop à la souris */
+  .k-card:hover .k-card-hover-overlay {
+    opacity: 1;
+  }
+
+  .k-card-quick-view {
+    pointer-events: auto;
+  }
+
+  .k-modal-carousel {
+    cursor: zoom-in;
+  }
+
+  .k-modal-zoom-lens {
+    display: none;
+  }
+
+  .k-modal-zoom-preview {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    left: auto;
+    width: 280px;
+    height: 280px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background-color: var(--white);
+    background-repeat: no-repeat;
+    background-size: 220% 220%;
+    box-shadow: var(--elev-4);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 80;
+    transition: opacity .16s var(--ease);
+    overflow: hidden;
+  }
+
+  .k-modal-zoom-preview.is-active {
+    opacity: 1;
+  }
+
   .k-card,
   .k-card *,
   .k-modal,
@@ -675,94 +713,10 @@
     box-shadow: none;
   }
 
-  /* Focus clavier conservé seulement sur vrais contrôles */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible {
     outline: 2px solid rgba(42,122,62,.45);
     outline-offset: 2px;
   }
-
-  /* Stabilise le hover overlay pour éviter scintillement */
-  .k-card-hover-overlay {
-    will-change: opacity;
-    backface-visibility: hidden;
-  }
-
-  .k-card:hover {
-    transform: translateY(-1px);
-  }
-
-  /* Évite que l’animation d’entrée se rejoue violemment au re-render */
-  .k-card {
-    animation-duration: .22s;
-    animation-fill-mode: both;
-  }
 }
-
-
-
-/* PATCH #227 — neutralize desktop zoom lens and flicker */
-@media (min-width: 900px) {
-  .k-modal-carousel {
-    cursor: default;
-  }
-
-  .k-modal-zoom-lens,
-  .k-modal-zoom-preview {
-    display: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .k-card-hover-overlay {
-    will-change: opacity;
-    backface-visibility: hidden;
-  }
-
-  .k-card:hover {
-    transform: translateY(-1px);
-  }
-
-  .k-card:focus,
-  .k-card:focus-visible,
-  .k-card-img-wrap:focus,
-  .k-card-img-wrap:focus-visible,
-  .k-modal-carousel:focus,
-  .k-modal-carousel:focus-visible,
-  .k-modal-slide:focus,
-  .k-modal-slide:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-}
-
-
-/* PATCH #227 — desktop runtime stabilization */
-
-@media (min-width: 900px) {
-  .k-modal-carousel {
-    cursor: default;
-  }
-
-  .k-modal-zoom-lens,
-  .k-modal-zoom-preview,
-  .k-card-hover-overlay {
-    display: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .k-card:focus,
-  .k-card:focus-visible,
-  .k-card-img-wrap:focus,
-  .k-card-img-wrap:focus-visible,
-  .k-modal-carousel:focus,
-  .k-modal-carousel:focus-visible,
-  .k-modal-slide:focus,
-  .k-modal-slide:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-}
-
