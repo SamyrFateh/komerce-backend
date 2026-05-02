@@ -1192,3 +1192,195 @@
   padding: 2px 6px; border-radius: 50px;
   pointer-events: none; z-index: 2;
 }
+\n\n/* ── DESKTOP PRODUCT MODAL LAYOUT — SOURCE OF TRUTH ── */
+@media (min-width: 900px) {
+  .k-modal-overlay.open {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .k-modal {
+    width: min(1280px, calc(100vw - 48px));
+    height: min(820px, calc(100vh - 48px));
+    max-height: calc(100vh - 48px);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .k-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 58%) minmax(380px, 42%);
+    padding: 0;
+  }
+
+  .k-modal-img-wrap {
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .k-modal-details {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    padding: 0 28px 0;
+    overscroll-behavior: contain;
+  }
+
+  .k-modal-info {
+    flex: 0 0 auto;
+    padding: 18px 0 12px;
+  }
+
+  .k-modal-inner-search {
+    flex: 0 0 auto;
+    margin: 10px 0 8px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    display: block;
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 0 0 150px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 10px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 10px;
+    scrollbar-width: thin;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 6px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 14px;
+    background: var(--white);
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 82px;
+    height: 82px;
+    aspect-ratio: auto;
+    border-radius: 12px;
+    background: var(--sand);
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 9px 12px 0 0;
+    min-width: 0;
+    min-height: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    padding: 0 12px 9px 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-actions {
+    flex-shrink: 0;
+  }
+
+  .k-modal-actions {
+    flex: 0 0 auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    margin: 0 -28px;
+    padding: 12px 28px 16px;
+    background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--sand-dark);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+/* ── END DESKTOP PRODUCT MODAL LAYOUT ── */\n

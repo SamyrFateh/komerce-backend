@@ -474,6 +474,20 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
    * @param {Object} product - Produit actif
    * @param {string|null} [subcatFilter=null] - Filtre sous-catégorie actif
    */
+  function applyModalDesktopSuggestionState() {
+    const sugSection = document.getElementById('k-modal-suggestions');
+    const sugRail = document.getElementById('k-sug-rail');
+    const isDesktop = window.innerWidth >= 900;
+
+    if (sugSection) {
+      sugSection.classList.toggle('k-modal-suggestions--desktop-list', isDesktop);
+    }
+
+    if (sugRail) {
+      sugRail.classList.toggle('k-sug-rail--desktop-list', isDesktop);
+    }
+  }
+
   function renderSuggestions(sameCat, otherCat, categoryName) {
         sameCat = sameCat || [];
     otherCat = otherCat || [];
@@ -548,6 +562,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
     dom.sugRail.innerHTML = html;
+    applyModalDesktopSuggestionState();
     // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
     const oldH3 = sugSection.querySelector('h3');
     if (oldH3) oldH3.classList.add('u-hidden');
