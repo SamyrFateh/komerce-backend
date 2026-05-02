@@ -909,6 +909,7 @@
     height: 22px;
     object-fit: contain;
     pointer-events: none;
+    mix-blend-mode: multiply;
   }
 
   .k-card-hover-fav:hover,

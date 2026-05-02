@@ -319,7 +319,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-view-active       { display:none; }
 .k-bnav-label        { font-size:10px; font-weight:600; color:var(--text-light); margin-top:2px; }
 .k-bnav-btn.active .k-bnav-label, .k-bnav-item.active .k-bnav-label { color:var(--ocean-dark); }
-.k-card-add-basket   { width:100%; height:100%; object-fit:contain; }
+.k-card-add-basket   { width:100%; height:100%; object-fit:contain; display:block; mix-blend-mode:multiply; }
 .k-card-basket-icon  { pointer-events:none; }
 
 /* Carousel mobile overlay fix */
@@ -372,7 +372,7 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-sug-add:active { transform: scale(.92); }
 .k-sug-add:hover { border-color: var(--ocean); box-shadow: var(--elev-2); }
-.k-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; }
+.k-sug-add img { width: 24px; height: 24px; object-fit: contain; display: block; pointer-events: none; mix-blend-mode: multiply; }
 .k-sug-arrow         { display:none; }
 .k-sug-card-actions  { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 8px; }
 .k-sug-card-bottom   { padding:4px 8px 8px; }
