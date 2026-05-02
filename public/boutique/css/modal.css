@@ -390,10 +390,18 @@
   .k-modal-zoom-preview.is-active { opacity: 1; }
 
   /* Col droite : flex column, PAS de scroll global — chaque zone scroll elle-même */
-  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; height: 100%; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: hidden; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
+  /* FIX: height:100% résolvait contre la hauteur TOTALE du grid (k-modal-scroll),
+     pas contre la row 1fr. Le débordement dans la row 2 (actions) clipait les
+     suggestions. On supprime height:100% — align-self:stretch (défaut) remplit
+     correctement la row 1fr = (hauteur scroll) - (hauteur actions). */
+  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: hidden; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
 
-  /* Infos dans col droite — scrolle si trop long, libère la place pour suggestions */
-  #k-modal .k-modal-info { flex: 0 0 auto; padding: 18px 0 12px; display: flex; flex-direction: column; }
+  /* Infos dans col droite — scrolle si trop long, libère la place pour suggestions.
+     FIX: flex:0 0 auto ne rétrécit jamais. Avec trust+specs+share injectés,
+     k-modal-info pouvait dépasser la hauteur disponible et écraser les suggestions
+     à 0px (min-height:0). On passe à flex:0 1 auto + max-height:58% pour
+     garantir que les suggestions aient toujours de la place. */
+  #k-modal .k-modal-info { flex: 0 1 auto; max-height: 58%; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 18px 0 12px; display: flex; flex-direction: column; }
   #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.12; font-weight: 650; letter-spacing: -.025em; }
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   #k-modal .k-modal-price-row { margin-top: 14px; gap: 12px; }
@@ -443,7 +451,8 @@
   /* ── SUGGESTIONS TEMU-LIKE : panneau scroll indépendant ────────────── */
   /* flex:1 1 auto → prend toute la hauteur restante après les infos prod    */
   /* overflow:hidden → le .k-sug-rail intérieur gère son propre scroll       */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 0; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
+  /* min-height:120px → garantit que les suggestions sont toujours visibles  */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 1 1 auto; min-height: 120px; overflow: hidden; display: flex; flex-direction: column; padding: 0; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
 
   /* Rail : scroll owner, scrollbar fine à droite */
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 1 1 auto; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; display: block; padding: 10px 6px 14px 0; scrollbar-width: thin; overscroll-behavior: contain; }

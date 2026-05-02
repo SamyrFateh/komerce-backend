@@ -956,12 +956,9 @@ body {
     cursor: default;
   }
 
-  .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-zoom-lens,
-  .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-zoom-preview {
-    display: none;
-    opacity: 0;
-    pointer-events: none;
-  }
+  /* Zoom lens/preview : géré par desktop-upgrade.css — pas de règles ici */
+  /* (les règles display:none / opacity:0 ont été retirées car elles avaient
+     une spécificité trop haute qui écrasait le zoom Temu de desktop-upgrade.css) */
 
   /* 5. Réduire scintillement/focus bizarre homepage */
   .k-card,
