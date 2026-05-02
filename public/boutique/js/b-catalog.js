@@ -315,6 +315,11 @@ function renderGrid() {
       var _ps2 = document.getElementById('k-page-scroll');
       if (_ps2) _ps2.classList.remove('k-pager-active');
       dom.grid.classList.remove('k-grid-cat-pager');
+
+      // PATCH #233 — late desktop pager cleanup
+      requestAnimationFrame(function() {
+        destroyMobilePager();
+      });
     }
     return;
   }
@@ -322,6 +327,12 @@ function renderGrid() {
   dom.grid.classList.remove('k-grid-has-sections');
   var _ps3 = document.getElementById('k-page-scroll');
   if (_ps3) _ps3.classList.remove('k-pager-active');
+
+  if (!_isMobile) {
+    requestAnimationFrame(function() {
+      destroyMobilePager();
+    });
+  }
 
   dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
 

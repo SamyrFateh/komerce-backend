@@ -17,6 +17,12 @@ import { state } from './b-store.js';
 // ── Variables CSS de la cage ──────────────────────────────────────
 
 function _recalcPagerVars() {
+  // PATCH #233 — no pager vars on desktop
+  if (window.innerWidth >= 900) {
+    destroyMobilePager();
+    return;
+  }
+
   const ps   = document.getElementById('k-page-scroll');
   const bnav = document.querySelector('.k-bnav');
   const wrap = document.getElementById('k-hero-fixed-wrap');
@@ -230,8 +236,19 @@ function _showNextHint(currentPage, nextPage) {
 
 // ── Setup principal ───────────────────────────────────────────────
 
+function _handlePagerResize() {
+  if (window.innerWidth >= 900) {
+    destroyMobilePager();
+    return;
+  }
+  _setupMobilePager();
+}
+
 function _setupMobilePager() {
-  if (window.innerWidth >= 900) return;
+  if (window.innerWidth >= 900) {
+    destroyMobilePager();
+    return;
+  }
   const grid = _getGrid();
   if (!grid) return;
   if (grid.classList.contains('k-grid-flat-subcat')) return;
@@ -240,7 +257,8 @@ function _setupMobilePager() {
   _setupScrollSync(grid);
 
   window.removeEventListener('resize', _setupMobilePager);
-  window.addEventListener('resize', _setupMobilePager);
+  window.removeEventListener('resize', _handlePagerResize);
+  window.addEventListener('resize', _handlePagerResize);
 }
 
 // ── Navigation externe (chip click) ──────────────────────────────
@@ -280,8 +298,32 @@ function destroyMobilePager() {
       .forEach(p => { grid.style[p] = ''; });
   }
   const ps = document.getElementById('k-page-scroll');
-  if (ps) ps.classList.remove('k-pager-active');
+  if (ps) {
+    ps.classList.remove('k-pager-active');
+    [
+      'position',
+      'top',
+      'left',
+      'right',
+      'bottom',
+      'width',
+      'height',
+      'maxWidth',
+      'overflow',
+      'overflowX',
+      'overflowY',
+      'transform',
+      'transition'
+    ].forEach(p => { ps.style[p] = ''; });
+  }
+
+  document.documentElement.style.removeProperty('--pager-top');
+  document.documentElement.style.removeProperty('--pager-h');
+  document.documentElement.style.removeProperty('--pager-w');
+  document.documentElement.style.removeProperty('--bnav-h');
+
   window.removeEventListener('resize', _setupMobilePager);
+  window.removeEventListener('resize', _handlePagerResize);
 }
 
 // ── Reshuffle Tout ────────────────────────────────────────────────
