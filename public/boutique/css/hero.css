@@ -429,3 +429,93 @@
   }
 }
 /* ── END DESKTOP HERO COMPRESSION ── */
+
+
+/* ── DESKTOP HERO MICRO-TUNING — SOURCE OF TRUTH ── */
+@media (min-width: 900px) {
+  .k-hero-img {
+    height: clamp(205px, 21.5vw, 285px);
+    object-position: 59% 10%;
+  }
+
+  .k-hero-mini-slogan {
+    width: 34%;
+    padding: 18px 16px 18px clamp(20px, 3.5vw, 56px);
+  }
+
+  .k-hero-badge {
+    margin-bottom: 8px;
+    padding: 4px 11px;
+    font-size: 10px;
+  }
+
+  .k-hero-mini-slogan .k-line-1 {
+    font-size: clamp(1.55rem, 2.3vw, 2.55rem);
+    line-height: 1.03;
+    margin-bottom: 0;
+  }
+
+  .k-hero-mini-slogan .k-line-2 {
+    font-size: clamp(1.9rem, 2.8vw, 3.15rem);
+    line-height: 0.98;
+    margin-bottom: 8px;
+  }
+
+  .k-hero-sub {
+    font-size: clamp(12px, 1vw, 14px);
+    line-height: 1.35;
+    margin-bottom: 12px;
+    max-width: 330px;
+  }
+
+  .k-hero-cta-row {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .k-hero-cta-primary,
+  .k-hero-cta-ghost {
+    min-height: 36px;
+    padding: 8px 16px;
+    font-size: 12.5px;
+  }
+
+  .k-hero-trust {
+    font-size: 10.5px;
+    gap: 5px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .k-hero-img {
+    height: clamp(220px, 22.5vw, 305px);
+    object-position: 60% 9%;
+  }
+
+  .k-hero-mini-slogan {
+    width: 35%;
+    padding-left: clamp(28px, 4.3vw, 74px);
+  }
+
+  .k-hero-mini-slogan .k-line-1 {
+    font-size: clamp(1.9rem, 2.7vw, 3rem);
+  }
+
+  .k-hero-mini-slogan .k-line-2 {
+    font-size: clamp(2.2rem, 3.1vw, 3.45rem);
+    margin-bottom: 10px;
+  }
+
+  .k-hero-sub {
+    font-size: 14px;
+    max-width: 345px;
+  }
+}
+
+@media (min-width: 1500px) {
+  .k-hero-img {
+    height: 310px;
+    object-position: 60% 8%;
+  }
+}
+/* ── END DESKTOP HERO MICRO-TUNING ── */
