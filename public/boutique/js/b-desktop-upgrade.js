@@ -451,7 +451,75 @@ function setupPromoStrip() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  9. SCROLL-TO-TOP BUTTON
+//  9. HOMEPAGE MERCHANDISING — blocs éditoriaux desktop
+// ═══════════════════════════════════════════════════════════════
+
+function setupHomepageMerchandising() {
+  if (!isDesktop()) return;
+  if (document.querySelector('.k-home-merch')) return;
+
+  var anchor = document.getElementById('k-desktop-catalog-wrap');
+  if (!anchor || !anchor.parentNode) return;
+
+  var merch = document.createElement('section');
+  merch.className = 'k-home-merch';
+  merch.innerHTML =
+    '<div class="k-home-merch-head">' +
+      '<div>' +
+        '<span class="k-home-merch-kicker">Sélections Komerce</span>' +
+        '<h2>Les raccourcis pour trouver vite et bien</h2>' +
+      '</div>' +
+      '<button class="k-home-merch-all" type="button" data-cat="all">Voir tout le catalogue →</button>' +
+    '</div>' +
+    '<div class="k-home-merch-grid">' +
+      '<button class="k-home-merch-card k-home-merch-card--hot" type="button" data-cat="Soldes">' +
+        '<span class="k-home-merch-icon">🏷️</span>' +
+        '<strong>Promos & bonnes affaires</strong>' +
+        '<small>Prix doux, arrivages malins, sélection rapide.</small>' +
+      '</button>' +
+      '<button class="k-home-merch-card" type="button" data-cat="Mode & Beauté">' +
+        '<span class="k-home-merch-icon">✨</span>' +
+        '<strong>Mode & beauté</strong>' +
+        '<small>Les indispensables à offrir ou à se faire livrer.</small>' +
+      '</button>' +
+      '<button class="k-home-merch-card" type="button" data-cat="Tech">' +
+        '<span class="k-home-merch-icon">📱</span>' +
+        '<strong>Tech utile</strong>' +
+        '<small>Accessoires, gadgets et produits pratiques.</small>' +
+      '</button>' +
+      '<button class="k-home-merch-card" type="button" data-cat="Maison">' +
+        '<span class="k-home-merch-icon">🏠</span>' +
+        '<strong>Maison & quotidien</strong>' +
+        '<small>Des produits concrets pour la famille.</small>' +
+      '</button>' +
+    '</div>';
+
+  anchor.parentNode.insertBefore(merch, anchor);
+
+  merch.querySelectorAll('[data-cat]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var cat = btn.dataset.cat || 'all';
+
+      state.activeCat = cat;
+      state.activeSubcat = null;
+      state.flatSubcat = null;
+
+      if (!state.sectionSubcats) state.sectionSubcats = {};
+      Object.keys(state.sectionSubcats).forEach(function(k) {
+        state.sectionSubcats[k] = null;
+      });
+
+      renderGrid();
+      bus.emit('catalog:cat-changed', cat);
+
+      var top = anchor.getBoundingClientRect().top + window.scrollY - 84;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  10. SCROLL-TO-TOP BUTTON
 // ═══════════════════════════════════════════════════════════════
 
 function setupScrollToTop() {
@@ -507,19 +575,29 @@ function setupCardHoverOverlay() {
     var id = card.dataset.id || '';
     var nameEl = card.querySelector('.k-card-name');
     var priceEl = card.querySelector('.k-card-price');
+    var descEl = card.querySelector('.k-card-desc');
     var name = nameEl ? nameEl.textContent.trim() : '';
     var price = priceEl ? priceEl.textContent.trim() : '';
+    var desc = descEl ? descEl.textContent.trim() : '';
+    var liked = !!card.querySelector('.k-card-fav.liked, .k-card-fav.is-liked');
 
     var overlay = document.createElement('div');
     overlay.className = 'k-card-hover-overlay';
     overlay.innerHTML =
-      '<div class="k-card-hover-name">' + esc(name) + '</div>' +
-      (price ? '<div class="k-card-price-eur-hover">' + esc(price) + '</div>' : '') +
-      '<div class="k-card-hover-actions">' +
-        '<button class="k-card-quick-view" type="button" data-id="' + esc(id) + '">' +
-          '<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>' +
-          'Aperçu rapide' +
-        '</button>' +
+      '<div class="k-card-hover-content">' +
+        '<div class="k-card-hover-name">' + esc(name) + '</div>' +
+        (desc ? '<div class="k-card-hover-desc">' + esc(desc) + '</div>' : '') +
+        (price ? '<div class="k-card-price-eur-hover">' + esc(price) + '</div>' : '') +
+        '<div class="k-card-hover-actions">' +
+          '<button class="k-card-quick-view" type="button" data-id="' + esc(id) + '">' +
+            '<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>' +
+            'Aperçu' +
+          '</button>' +
+          '<button class="k-card-hover-fav' + (liked ? ' liked' : '') + '" type="button" aria-label="Favori">♡</button>' +
+          '<button class="k-card-hover-add" type="button" aria-label="Ajouter au panier">' +
+            '<img src="/images/panier_tresse_vert.png" width="22" height="22" alt="">' +
+          '</button>' +
+        '</div>' +
       '</div>';
 
     card.appendChild(overlay);
@@ -527,16 +605,38 @@ function setupCardHoverOverlay() {
 
   if (!window.__komerceCardHoverOverlayBound) {
     window.__komerceCardHoverOverlayBound = true;
+
     document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.k-card-quick-view');
-      if (!btn) return;
+      var quick = e.target.closest('.k-card-quick-view');
+      var fav = e.target.closest('.k-card-hover-fav');
+      var add = e.target.closest('.k-card-hover-add');
+
+      if (!quick && !fav && !add) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      var card = btn.closest('.k-card');
-      var id = btn.dataset.id || (card && card.dataset.id);
-      if (id) openModal(id);
+      var card = e.target.closest('.k-card');
+      if (!card) return;
+
+      if (quick) {
+        var id = quick.dataset.id || card.dataset.id;
+        if (id) openModal(id);
+        return;
+      }
+
+      if (fav) {
+        var realFav = card.querySelector('.k-card-fav');
+        if (realFav) realFav.click();
+        fav.classList.toggle('liked');
+        return;
+      }
+
+      if (add) {
+        var realAdd = card.querySelector('.k-card-add');
+        if (realAdd) realAdd.click();
+        return;
+      }
     }, true);
   }
 }
@@ -599,6 +699,7 @@ export function setupDesktopUpgrade() {
   if (!isDesktop()) return;
 
   setupPromoStrip();
+  setupHomepageMerchandising();
   setupScrollToTop();
   setupCardHoverOverlay();
   setupCardHoverObserver();
