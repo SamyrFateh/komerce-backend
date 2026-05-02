@@ -25,14 +25,31 @@ function _recalcPagerVars() {
 
   const ps   = document.getElementById('k-page-scroll');
   const bnav = document.querySelector('.k-bnav');
-  const wrap = document.getElementById('k-hero-fixed-wrap');
 
-  const bnavH   = bnav ? bnav.offsetHeight : 56;
-  const wrapH   = wrap ? wrap.offsetHeight : 180;
-  const headerH = 44;
+  const bnavH = bnav ? bnav.offsetHeight : 56;
 
-  const pagerTop = wrapH + headerH;
-  const pagerH   = window.innerHeight - pagerTop - bnavH;
+  // Mesurer la position viewport réelle du bas du dernier élément
+  // qui précède la zone pager (header + hero + sticky-bar + chips).
+  // getBoundingClientRect().bottom = position bas relative au viewport.
+  let pagerTop = 0;
+  [
+    document.querySelector('.k-header'),
+    document.getElementById('k-hero-fixed-wrap'),
+    document.getElementById('k-sticky-bar'),
+    document.querySelector('.k-hero-cats-sticky'),
+    document.querySelector('.k-cats-shell'),
+  ].forEach(function(el) {
+    if (!el) return;
+    const b = el.getBoundingClientRect().bottom;
+    if (b > pagerTop) pagerTop = b;
+  });
+  // Fallback : si les éléments ne sont pas encore dans le DOM
+  if (pagerTop < 10) {
+    const wrap = document.getElementById('k-hero-fixed-wrap');
+    pagerTop = (wrap ? wrap.offsetHeight : 180) + 44;
+  }
+
+  const pagerH = window.innerHeight - pagerTop - bnavH;
 
   document.documentElement.style.setProperty('--pager-top', pagerTop + 'px');
   document.documentElement.style.setProperty('--pager-h',   Math.max(pagerH, 300) + 'px');
