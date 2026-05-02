@@ -124,6 +124,9 @@ export function installScrollOwner() {
     if (maxScroll <= 0) return;
 
     e.preventDefault();
-    window.scrollBy({ top: e.deltaY, left: 0, behavior: 'auto' });
+
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+    const speed = 2.35;
+    window.scrollBy({ top: e.deltaY * unit * speed, left: 0, behavior: 'auto' });
   }, { passive: false });
 }
