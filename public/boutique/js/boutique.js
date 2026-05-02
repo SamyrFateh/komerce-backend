@@ -75,6 +75,7 @@ import {
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
 import { setupDesktopSidebar } from './b-desktop-sidebar.js';
+import { installScrollOwner } from './b-scroll-owner.js';
 
 'use strict';
 
@@ -111,6 +112,7 @@ const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
  */
 function init() {
   initDom();
+  installScrollOwner();
   updateCartBadge();
   // Expose renderGrid sur window pour le listener délégué global (flat subcat)
   if (typeof window !== 'undefined') window.renderGrid = renderGrid;

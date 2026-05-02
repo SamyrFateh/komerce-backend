@@ -58,6 +58,7 @@ import {
 import { renderProductCard }  from './render/render-product-card.js';
 import { renderHomeSections } from './render/render-home-sections.js';
 import { setupHomeController as _setupHomeController } from './controllers/home-controller.js';
+import { ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
   setProducts, getAllProducts, getPromoProducts,
 }                             from './product-store.js';
@@ -319,6 +320,7 @@ function renderGrid() {
       // PATCH #233 — late desktop pager cleanup
       requestAnimationFrame(function() {
         destroyMobilePager();
+        ensureDesktopScrollOwner();
       });
     }
     return;
@@ -433,7 +435,7 @@ function _bindGridEvents() {
       const chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
       if (chip) { chip.classList.add('active'); centerActiveChip(chip); }
       renderGrid();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollPageToTop('smooth');
     });
   });
   if (typeof _renderFloatingIndex === 'function') _renderFloatingIndex();
@@ -452,14 +454,15 @@ export function scrollToCategorySection(cat) {
     }
     return;
   }
-  var scroller = document.getElementById('k-page-scroll');
-  if (!scroller) return;
-  if (!cat || cat === 'all') { scroller.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (!cat || cat === 'all') {
+    scrollPageToTop('smooth');
+    return;
+  }
   var anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
   var el = document.getElementById(anchorId);
   if (!el) return;
   scroll.scrollingToSection = true;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollPageToElement(el, -8, 'smooth');
   setTimeout(function() { scroll.scrollingToSection = false; }, 700);
 }
 

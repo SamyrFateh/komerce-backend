@@ -99,7 +99,7 @@ export function switchView(tab) {
   if (cartOverlay) cartOverlay.classList.remove('open');
   if (cartDrawer)  cartDrawer.classList.remove('open');
   document.body.classList.remove('cart-open');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  scrollPageToTop('smooth');
 }
 
 /**
@@ -132,10 +132,8 @@ export function setupSeeAll() {
       $$('.k-chip').forEach(c => c.classList.remove('active'));
       $$('.k-chip')[0].classList.add('active');
       renderGrid();
-      const s = document.getElementById('k-page-scroll');
       const g = document.querySelector('.k-grid');
-      if (s && g) s.scrollTo({ top: g.offsetTop - 8, behavior: 'smooth' });
-      else if (g) g.scrollIntoView({ behavior: 'smooth' });
+      if (g) scrollPageToElement(g, -8, 'smooth');
     });
   }
 }
