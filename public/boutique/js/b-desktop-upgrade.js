@@ -146,58 +146,51 @@ let _zoomLens = null;
 let _zoomPreview = null;
 
 function setupZoom() {
-  // PATCH #227: disabled. The desktop zoom lens created a visible target/crosshair
-  // and polluted the product modal UX.
+  if (!isDesktop()) return;
+
   var imgWrap = dom.modal ? dom.modal.querySelector('.k-modal-img-wrap') : null;
   if (!imgWrap) return;
 
   var carousel = imgWrap.querySelector('.k-modal-carousel');
-  if (carousel) {
-    carousel.removeEventListener('mousemove', _onZoomMove);
-    carousel.removeEventListener('mouseleave', _onZoomLeave);
-  }
+  if (!carousel) return;
 
   imgWrap.querySelectorAll('.k-modal-zoom-lens, .k-modal-zoom-preview').forEach(function(el) {
     el.remove();
   });
 
   _zoomLens = null;
-  _zoomPreview = null;
+
+  _zoomPreview = document.createElement('div');
+  _zoomPreview.className = 'k-modal-zoom-preview';
+  imgWrap.appendChild(_zoomPreview);
+
+  carousel.removeEventListener('mousemove', _onZoomMove);
+  carousel.removeEventListener('mouseleave', _onZoomLeave);
+  carousel.addEventListener('mousemove', _onZoomMove);
+  carousel.addEventListener('mouseleave', _onZoomLeave);
 }
 
 function _onZoomMove(e) {
-  if (!_zoomLens || !_zoomPreview) return;
+  if (!_zoomPreview) return;
+
   var carousel = e.currentTarget;
   var rect = carousel.getBoundingClientRect();
   var x = e.clientX - rect.left;
   var y = e.clientY - rect.top;
 
-  // Get current slide image
   var track = carousel.querySelector('.k-modal-carousel-track');
   if (!track) return;
+
   var slides = track.querySelectorAll('.k-modal-slide');
   var idx = state.carouselIndex || 0;
   var img = slides[idx];
-  if (!img) return;
+  if (!img || !img.src) return;
 
-  // Lens dimensions
-  var lw = 160, lh = 160;
-  var lx = Math.max(0, Math.min(x - lw/2, rect.width - lw));
-  var ly = Math.max(0, Math.min(y - lh/2, rect.height - lh));
+  var px = Math.max(0, Math.min(100, (x / rect.width) * 100));
+  var py = Math.max(0, Math.min(100, (y / rect.height) * 100));
 
-  _zoomLens.style.left = lx + 'px';
-  _zoomLens.style.top = ly + 'px';
-  _zoomLens.style.opacity = '1';
-
-  // Preview background
-  var imgSrc = img.src;
-  _zoomPreview.style.backgroundImage = 'url(' + imgSrc + ')';
-  var scaleX = _zoomPreview.offsetWidth / lw;
-  var scaleY = _zoomPreview.offsetHeight / lh;
-  var bgW = rect.width * scaleX;
-  var bgH = rect.height * scaleY;
-  _zoomPreview.style.backgroundSize = bgW + 'px ' + bgH + 'px';
-  _zoomPreview.style.backgroundPosition = (-lx * scaleX) + 'px ' + (-ly * scaleY) + 'px';
+  _zoomPreview.style.backgroundImage = 'url(' + img.src + ')';
+  _zoomPreview.style.backgroundPosition = px + '% ' + py + '%';
   _zoomPreview.classList.add('is-active');
 }
 
@@ -494,10 +487,75 @@ function setupScrollToTop() {
 // ═══════════════════════════════════════════════════════════════
 
 function setupCardHoverOverlay() {
-  // PATCH #227: disabled temporarily. The injected hover layer was causing
-  // focus/flicker artifacts on the homepage desktop grid.
   if (!isDesktop()) return;
-  document.querySelectorAll('.k-card-hover-overlay').forEach(function(el) { el.remove(); });
+
+  function esc(v) {
+    return String(v || '').replace(/[&<>"']/g, function(ch) {
+      return ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[ch];
+    });
+  }
+
+  document.querySelectorAll('.k-card').forEach(function(card) {
+    if (card.querySelector('.k-card-hover-overlay')) return;
+
+    var id = card.dataset.id || '';
+    var nameEl = card.querySelector('.k-card-name');
+    var priceEl = card.querySelector('.k-card-price');
+    var name = nameEl ? nameEl.textContent.trim() : '';
+    var price = priceEl ? priceEl.textContent.trim() : '';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'k-card-hover-overlay';
+    overlay.innerHTML =
+      '<div class="k-card-hover-name">' + esc(name) + '</div>' +
+      (price ? '<div class="k-card-price-eur-hover">' + esc(price) + '</div>' : '') +
+      '<div class="k-card-hover-actions">' +
+        '<button class="k-card-quick-view" type="button" data-id="' + esc(id) + '">' +
+          '<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>' +
+          'Aperçu rapide' +
+        '</button>' +
+      '</div>';
+
+    card.appendChild(overlay);
+  });
+
+  if (!window.__komerceCardHoverOverlayBound) {
+    window.__komerceCardHoverOverlayBound = true;
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.k-card-quick-view');
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      var card = btn.closest('.k-card');
+      var id = btn.dataset.id || (card && card.dataset.id);
+      if (id) openModal(id);
+    }, true);
+  }
+}
+
+function setupCardHoverObserver() {
+  if (!isDesktop()) return;
+
+  var grid = document.getElementById('k-grid');
+  if (!grid || grid.__komerceHoverObserver) return;
+
+  grid.__komerceHoverObserver = new MutationObserver(function() {
+    if (!isDesktop()) return;
+    requestAnimationFrame(setupCardHoverOverlay);
+  });
+
+  grid.__komerceHoverObserver.observe(grid, {
+    childList: true,
+    subtree: true
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -543,6 +601,7 @@ export function setupDesktopUpgrade() {
   setupPromoStrip();
   setupScrollToTop();
   setupCardHoverOverlay();
+  setupCardHoverObserver();
 
   // Mega-menu: needs sidebar to be built first (by b-desktop-sidebar.js)
   // Retry with RAF to ensure DOM is ready
