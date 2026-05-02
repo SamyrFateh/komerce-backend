@@ -93,21 +93,6 @@ import { setupDesktopSidebar } from './b-desktop-sidebar.js';
   }
   applyDesktopReset();
   window.addEventListener('resize', applyDesktopReset);
-
-  // PATCH #227 step 2 — desktop wheel bridge
-  window.addEventListener('wheel', function(e) {
-    if (window.innerWidth < 900) return;
-    if (document.body.classList.contains('modal-open') || document.body.classList.contains('cart-open')) return;
-    if (e.target.closest('input, textarea, select, .k-modal, .k-cart-drawer, .k-search-dropdown, .k-desktop-sidebar')) return;
-
-    var ps = document.getElementById('k-page-scroll');
-    if (!ps || !ps.contains(e.target)) return;
-
-    // Le symptôme actuel : la page ne scroll qu'en tirant la scrollbar droite.
-    // On force donc la molette à piloter le document principal en desktop.
-    e.preventDefault();
-    window.scrollBy({ top: e.deltaY * 2.4, left: 0, behavior: 'auto' });
-  }, { passive: false });
 })();
 
 
