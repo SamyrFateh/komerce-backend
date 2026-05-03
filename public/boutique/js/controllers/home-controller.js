@@ -5,9 +5,59 @@
 
 import { state, $$ } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
+import { getSubcategories }          from '../shop-schema.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
+}
+
+/**
+ * Affiche/masque le rail de sous-catégories sous les chips (desktop uniquement).
+ * Source unique de vérité pour #k-subcats-wrap.
+ */
+export function renderSubcatRail(catKey) {
+  if (window.innerWidth < 900) return;
+  const wrap = document.getElementById('k-subcats-wrap');
+  if (!wrap) return;
+
+  const subs = catKey && catKey !== 'all' ? getSubcategories(catKey) : [];
+  if (!subs.length) {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const activeSub = state.activeSubcat || null;
+  wrap.innerHTML =
+    '<div class="k-subcats-rail k-subcats-visible">' +
+      '<button class="k-subchip' + (!activeSub ? ' active' : '') + '" data-subcat="">' +
+        '<span class="k-subchip-label">Tout</span>' +
+      '</button>' +
+      subs.map(s =>
+        '<button class="k-subchip' + (activeSub === s.key ? ' active' : '') + '" data-subcat="' + s.key + '">' +
+          (s.icon ? '<span class="k-subchip-icon">' + s.icon + '</span>' : '') +
+          '<span class="k-subchip-label">' + s.label + '</span>' +
+        '</button>'
+      ).join('') +
+    '</div>';
+  wrap.style.display = 'block';
+
+  wrap.querySelectorAll('.k-subchip').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const sub = btn.dataset.subcat || null;
+      state.activeSubcat = sub || null;
+      wrap.querySelectorAll('.k-subchip').forEach(b => b.classList.toggle('active', b === btn));
+      import('../b-catalog.js').then(m => {
+        m.renderGrid();
+        const catalog = document.getElementById('k-catalog-section');
+        if (catalog) {
+          const top = catalog.getBoundingClientRect().top + window.scrollY - 130;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
+      });
+    });
+  });
 }
 
 export function centerRailChip(chip) {
