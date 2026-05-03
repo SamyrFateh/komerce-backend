@@ -10,7 +10,7 @@
 
 import { state }                             from './b-store.js';
 import { renderGrid }                        from './b-catalog.js';
-import { syncRailActiveState }               from './controllers/home-controller.js';
+import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import {
   getRailCategories,
   getCategorySectionEmoji,
@@ -67,10 +67,10 @@ function _buildSidebar(el) {
       state.activeSubcat = null;
       if (state.flatSubcat) state.flatSubcat = null;
 
-      // Sync chip rail (zéro duplication de logique)
       syncRailActiveState(cat, { center: false });
 
       renderGrid();
+      renderSubcatRail(cat);
       _syncSidebarActive(el);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
