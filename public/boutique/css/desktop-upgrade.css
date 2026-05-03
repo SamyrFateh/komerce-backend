@@ -262,6 +262,246 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   4. MODAL DESKTOP — Zoom image + enrichissements Temu
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* ── Zoom image au hover (Temu-style lens) ─────────────── */
+  .k-modal-carousel {
+    cursor: crosshair;
+  }
+
+  .k-modal-zoom-lens {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border: 2px solid rgba(200,92,45,.4);
+    border-radius: 4px;
+    background: rgba(200,92,45,.08);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 5;
+    transition: opacity .12s;
+  }
+  .k-modal-img-wrap:hover .k-modal-zoom-lens {
+    opacity: 1;
+  }
+
+  .k-modal-zoom-preview {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 380px;
+    height: 380px;
+    margin-left: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white) no-repeat;
+    background-size: 300%;
+    box-shadow: var(--elev-4);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: opacity .15s;
+    overflow: hidden;
+  }
+  .k-modal-img-wrap:hover .k-modal-zoom-preview.is-active {
+    opacity: 1;
+  }
+
+  /* ── Breadcrumb dans la topbar modal ─────────────────── */
+  .k-modal-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 12px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .k-modal-breadcrumb span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .k-modal-breadcrumb-sep {
+    color: var(--text-light);
+    flex-shrink: 0;
+  }
+  .k-modal-breadcrumb-cat {
+    cursor: pointer;
+    transition: color .12s;
+  }
+  .k-modal-breadcrumb-cat:hover {
+    color: var(--coral);
+  }
+  .k-modal-breadcrumb-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Panneau partage WhatsApp dans la modal ─────────── */
+  .k-modal-share-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 8px;
+  }
+  .k-modal-share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--sand);
+    color: var(--text);
+    transition: background .12s, border-color .12s;
+  }
+  .k-modal-share-btn:hover {
+    background: var(--sand-warm);
+    border-color: var(--coral);
+  }
+  .k-modal-share-btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .k-modal-share-btn--wa {
+    background: var(--whatsapp);
+    color: #fff;
+    border-color: var(--whatsapp);
+  }
+  .k-modal-share-btn--wa:hover {
+    background: #20b858;
+    border-color: #20b858;
+  }
+
+  /* ── Accordéon spécifications côté droit ────────────── */
+  .k-modal-specs {
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+
+  .k-modal-spec-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    transition: color .12s;
+  }
+  .k-modal-spec-toggle:hover {
+    color: var(--coral);
+  }
+  .k-modal-spec-toggle-arrow {
+    width: 18px;
+    height: 18px;
+    transition: transform .2s var(--ease);
+    color: var(--text-muted);
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+  .k-modal-spec-toggle.is-open .k-modal-spec-toggle-arrow {
+    transform: rotate(180deg);
+  }
+
+  .k-modal-spec-body {
+    display: none;
+    padding: 0 0 12px;
+  }
+  .k-modal-spec-body.is-open {
+    display: block;
+    animation: k-spec-reveal .2s var(--ease);
+  }
+  @keyframes k-spec-reveal {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .k-modal-spec-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .k-modal-spec-table tr:nth-child(even) {
+    background: var(--sand);
+  }
+  .k-modal-spec-table td {
+    padding: 7px 10px;
+  }
+  .k-modal-spec-table td:first-child {
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+    width: 35%;
+  }
+
+  /* ── Trust badges dans la modal ────────────────────── */
+  .k-modal-trust {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 6px;
+  }
+  .k-modal-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .k-modal-trust-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--ocean);
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+  }
+
+  /* ── Actions modal — sticky buy bar plus visible ──── */
+  .k-modal-actions {
+    border-top: 2px solid var(--sand-dark);
+    padding: 14px 22px 18px;
+    gap: 12px;
+  }
+
+  /* Prix total en temps réel dans les actions */
+  .k-modal-subtotal {
+    font-size: 11px;
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+    text-align: right;
+    padding-right: 4px;
+  }
+  .k-modal-subtotal strong {
+    color: var(--coral);
+    font-weight: 700;
+    font-size: 13px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    5. HERO DESKTOP — Bannière promotionnelle + CTA enrichis
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
@@ -669,7 +909,6 @@
     height: 22px;
     object-fit: contain;
     pointer-events: none;
-    mix-blend-mode: multiply;
   }
 
   .k-card-hover-fav:hover,
