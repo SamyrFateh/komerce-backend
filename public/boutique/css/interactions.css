@@ -223,7 +223,8 @@ body.modal-open .k-bnav { opacity: .7; }
 
 .k-modal-topbar-product { display:none; align-items:center; gap:10px; flex:1; min-width:0; opacity:0; transform:translateY(-6px); transition:opacity .25s ease, transform .25s ease; }
 .k-modal.is-scrolled .k-modal-back,
-.k-modal.is-scrolled .k-modal-nav { display:none; }
+.k-modal.is-scrolled #k-modal-nav { display:none; }
+.k-modal.is-scrolled .k-topbar-search-trigger { display:none; }
 .k-modal.is-scrolled .k-modal-topbar-product { display:flex; opacity:1; transform:translateY(0); }
 .k-modal.is-scrolled .k-modal-topbar-right   { display:flex; align-items:center; gap:8px; }
 
