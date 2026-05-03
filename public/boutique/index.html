@@ -281,6 +281,17 @@ if('serviceWorker' in navigator){
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
+            <!-- Vague 3 : sélecteur de variantes (taille, couleur, etc.).
+                 Rempli dynamiquement par renderVariants() dans b-modal.js.
+                 Caché si product.variants est absent ou vide. -->
+            <div class="k-modal-variants" id="k-modal-variants" hidden></div>
+            <!-- Vague 1.4 : encart délai estimé livraison.
+                 Rempli par b-modal.js en fonction de product.delivery_estimate
+                 si présent, sinon fallback par catégorie. -->
+            <div class="k-modal-delivery" id="k-modal-delivery" hidden>
+              <span class="k-modal-delivery-icon" aria-hidden="true">🚚</span>
+              <span class="k-modal-delivery-text" id="k-modal-delivery-text"></span>
+            </div>
           </div>
         </div>
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->

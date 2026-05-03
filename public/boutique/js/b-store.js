@@ -73,6 +73,11 @@ export const state = {
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
+  /** Variantes sélectionnées dans la modal courante.
+      Format: { "Taille": "M", "Couleur": "Bleu" }
+      Reset à chaque openModal. Lu par le checkout pour passer
+      la combo choisie à l'API. */
+  selectedVariants: {},
   /** Historique des produits vus (IDs), persisté en localStorage.
       Utilisé pour la section "Vu récemment" en desktop. */
   viewedHistory: JSON.parse(localStorage.getItem('k_viewed_history') || '[]'),
