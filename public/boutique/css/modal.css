@@ -101,11 +101,20 @@
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
-/* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
-/* Les enfants (img-wrap, details, actions, suggestions) participent
-   directement au flex de .k-modal-scroll. Desktop override en grid. */
+/* ── PRODUCT-ZONE : conteneur flex column sur mobile ──────────
+   ANCIEN : display: contents → bug Chrome Android sur le calcul
+            de hauteur du parent flex .k-modal-scroll, qui rendait
+            overflow-y:auto inopérant (scroll vertical bloqué).
+   NOUVEAU : vrai conteneur flex column transparent en taille,
+            qui participe au flex parent comme un item normal et
+            laisse ses enfants s'enchaîner verticalement.
+   Desktop override en grid (≥900px). */
 .k-modal-product-zone {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;        /* pas de stretch : la zone produit prend la hauteur de son contenu */
+  width: 100%;
+  min-height: 0;         /* autorise les enfants à shrinker proprement */
 }
 
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
@@ -280,11 +289,22 @@
   backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
   position: relative; z-index: 30;
 }
-/* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
-   order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
+/* Sur mobile, .k-modal-actions devient une barre sticky-bottom.
+   Toujours visible pendant le scroll → bouton "Acheter" tendance Temu.
+   Le bloc reste enfant DOM de .k-modal-product-zone (avant suggestions),
+   mais sa position:sticky le détache visuellement et le colle au bas
+   du scroll owner (.k-modal-scroll). */
 @media (max-width: 899px) {
-  .k-modal-actions { order: 3; flex-shrink: 0; }
-  .k-modal-suggestions { order: 2; }
+  .k-modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    flex-shrink: 0;
+    /* fond plein pour ne pas voir les suggestions transparaître */
+    background: var(--white);
+    box-shadow: 0 -8px 20px rgba(31,48,36,.06);
+  }
+  .k-modal-suggestions { /* reste après actions dans le DOM, donc affiché en-dessous */ }
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
