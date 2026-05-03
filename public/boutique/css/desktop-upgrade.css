@@ -929,3 +929,73 @@
 }
 
 /* ═════════ END DESKTOP HOMEPAGE MERCHANDISING ═════════ */
+
+
+/* ═════════ RECENTLY VIEWED — Section "Vu récemment" desktop ═════════
+   Affichée en bas de la modal scroll, après les suggestions.
+   Mobile : la section n'est pas injectée par JS donc rien à styler.
+*/
+@media (min-width: 900px) {
+  .k-modal-recent {
+    padding: 18px 24px 28px;
+    border-top: 1px solid var(--sand-dark);
+    background: var(--white);
+  }
+  .k-modal-recent-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 14px;
+    letter-spacing: -.01em;
+  }
+  .k-modal-recent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .k-modal-recent-card {
+    display: flex; flex-direction: column;
+    background: var(--white);
+    border: 1px solid rgba(31,48,36,.08);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .12s, border-color .12s, box-shadow .12s;
+    padding: 0;
+    text-align: left;
+    min-width: 0;
+  }
+  .k-modal-recent-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(200,92,45,.4);
+    box-shadow: 0 6px 16px rgba(31,48,36,.08);
+  }
+  .k-modal-recent-img {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #faf9f7, #f4f1ec);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .k-modal-recent-img img {
+    width: 100%; height: 100%;
+    object-fit: contain; padding: 6px;
+    display: block;
+  }
+  .k-modal-recent-name {
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--text);
+    padding: 6px 8px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 32px;
+  }
+  .k-modal-recent-price {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--coral);
+    padding: 4px 8px 8px;
+  }
+}

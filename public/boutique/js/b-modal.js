@@ -48,6 +48,9 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // ── Slides principales ─────────────────────────────────────
     track.innerHTML = '';
+    // Reset skeleton state — chaque ouverture redémarre le shimmer
+    var imgWrapForSkeleton = dom.modal.querySelector('.k-modal-img-wrap');
+    if (imgWrapForSkeleton) imgWrapForSkeleton.classList.remove('is-image-loaded');
     images.forEach(function(url, i) {
       var img = document.createElement('img');
       img.className = 'k-modal-slide';
@@ -55,19 +58,46 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       img.alt = product.name || '';
       img.draggable = false;
       img.loading = i === 0 ? 'eager' : 'lazy';
+      // Première image : on coupe le shimmer dès qu'elle est chargée
+      if (i === 0 && imgWrapForSkeleton) {
+        var killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
+        img.addEventListener('load', killShimmer, { once: true });
+        img.addEventListener('error', killShimmer, { once: true });
+        // Si l'image est déjà en cache (load déjà tiré), on rattrape
+        if (img.complete && img.naturalWidth > 0) killShimmer();
+      }
       track.appendChild(img);
     });
     dom.modalImg = track.querySelector('.k-modal-slide');
 
     // ── Dots mobile ────────────────────────────────────────────
+    // Au-delà de 5 images, les dots deviennent illisibles (largeur insuffisante)
+    // → on bascule sur un compteur "X/Y" (Temu-style) à droite de l'image.
+    var DOTS_MAX = 5;
+    var useCounter = images.length > DOTS_MAX;
     dots.innerHTML = '';
-    if (images.length > 1) {
+    if (images.length > 1 && !useCounter) {
       images.forEach(function(_, i) {
         var dot = document.createElement('span');
         dot.className = 'k-modal-dot' + (i === 0 ? ' is-active' : '');
         dot.addEventListener('click', function() { goToSlide(i); });
         dots.appendChild(dot);
       });
+    }
+
+    // ── Compteur "3/12" mobile (s'affiche si > DOTS_MAX images) ─
+    // Toujours créé/mis-à-jour pour pouvoir refléter l'état du carousel.
+    // Visibilité contrôlée par la classe .is-visible (CSS).
+    var imgWrapForCounter = dom.modal.querySelector('.k-modal-img-wrap');
+    var counter = imgWrapForCounter ? imgWrapForCounter.querySelector('.k-modal-counter') : null;
+    if (!counter && imgWrapForCounter) {
+      counter = document.createElement('div');
+      counter.className = 'k-modal-counter';
+      imgWrapForCounter.appendChild(counter);
+    }
+    if (counter) {
+      counter.textContent = '1/' + images.length;
+      counter.classList.toggle('is-visible', useCounter);
     }
 
     // ── Miniatures desktop (colonne gauche) ────────────────────
@@ -128,6 +158,9 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     allThumbs.forEach(function(t, i) {
       t.classList.toggle('is-active', i === index);
     });
+    // Sync compteur mobile "3/12"
+    var counter = dom.modal.querySelector('.k-modal-counter');
+    if (counter) counter.textContent = (index + 1) + '/' + state.carouselCount;
   }
 
   /**
@@ -231,6 +264,19 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     const _scrollEl = document.querySelector('.k-modal-scroll');
     if (_scrollEl) _scrollEl.scrollTop = 0;
     dom.modalOverlay.classList.add('open');
+
+    // PR-D 2.3 : historique des produits vus (persisté localStorage).
+    // On retire d'abord toute occurrence de l'id courant (déduplication),
+    // puis on push à la fin pour que "le plus récent" reste en queue.
+    // Limité à 30 entrées pour éviter l'inflation localStorage.
+    try {
+      var vh = state.viewedHistory.filter(function(x) { return x !== product.id; });
+      vh.push(product.id);
+      if (vh.length > 30) vh = vh.slice(-30);
+      state.viewedHistory = vh;
+      localStorage.setItem('k_viewed_history', JSON.stringify(vh));
+    } catch (_) { /* localStorage indispo : ignoré */ }
+
     // LOT 12: notify desktop-upgrade module
     bus.emit('modal:opened', product);
     // Lock body scroll — CSS handles layout via body.modal-open
@@ -1344,12 +1390,39 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         // ── Image zone: carousel swipe + pull-to-close (Temu-style)
     setupImageZoneTouch();
 
+    // ── Image zone desktop : click gauche/droite pour naviguer dans le carousel
+    setupImageZoneDesktopClick();
+
     // ── Navigation clavier ← → entre produits (desktop)
     document.addEventListener('keydown', (e) => {
       if (!dom.modalOverlay.classList.contains('open')) return;
       if (e.key === 'ArrowRight') navigateModal(1);
       if (e.key === 'ArrowLeft') navigateModal(-1);
       if (e.key === 'Escape') closeModal();
+    });
+  }
+
+  /**
+   * Desktop uniquement : zones cliquables gauche/droite sur l'image du modal
+   * pour naviguer dans le carousel sans devoir viser une miniature précise.
+   * Reste discret (cursor change, pas de bouton visible) pour ne pas casser
+   * le zoom-on-hover existant.
+   */
+  function setupImageZoneDesktopClick() {
+    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    if (!imgWrap) return;
+    imgWrap.addEventListener('click', function(e) {
+      if (window.innerWidth < 900) return;
+      if (state.carouselCount <= 1) return;
+      // Évite de tirer si le click est sur une miniature ou sur le zoom preview
+      if (e.target.closest('.k-modal-thumb, .k-modal-zoom-preview, .k-modal-zoom-lens')) return;
+      var rect = imgWrap.getBoundingClientRect();
+      var clickedLeft = (e.clientX - rect.left) < rect.width / 2;
+      if (clickedLeft && state.carouselIndex > 0) {
+        goToSlide(state.carouselIndex - 1);
+      } else if (!clickedLeft && state.carouselIndex < state.carouselCount - 1) {
+        goToSlide(state.carouselIndex + 1);
+      }
     });
   }
 
@@ -1422,7 +1495,101 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         } else {
           modal.style.transform = '';
         }
+      } else if (direction === null) {
+        // TAP court (pas de mouvement significatif) → fullscreen image avec pinch-zoom natif
+        openImageFullscreen(state.carouselIndex);
       }
+    });
+  }
+
+  /**
+   * Ouvre une image en plein écran (mobile).
+   * Le navigateur gère nativement le pinch-to-zoom grâce à touch-action.
+   * Tap simple ou bouton retour ferme le fullscreen.
+   * @param {number} startIndex - Index de l'image à afficher en premier
+   */
+  function openImageFullscreen(startIndex) {
+    if (!state.modalProduct) return;
+    var images = state.modalProduct.images || [state.modalProduct.image_url];
+    images = images.filter(Boolean);
+    if (!images.length) return;
+
+    // Réutilise un overlay existant si présent
+    var overlay = document.getElementById('k-modal-fullscreen');
+    if (overlay) overlay.remove();
+
+    overlay = document.createElement('div');
+    overlay.id = 'k-modal-fullscreen';
+    overlay.className = 'k-modal-fullscreen';
+    overlay.innerHTML =
+      '<button class="k-modal-fullscreen-close" aria-label="Fermer">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+      '</button>' +
+      '<div class="k-modal-fullscreen-counter"></div>' +
+      '<div class="k-modal-fullscreen-track">' +
+        images.map(function(url) {
+          return '<div class="k-modal-fullscreen-slide"><img src="' +
+            optimizeImgUrl(url, 1600) + '" alt="" draggable="false"></div>';
+        }).join('') +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    var track = overlay.querySelector('.k-modal-fullscreen-track');
+    var counter = overlay.querySelector('.k-modal-fullscreen-counter');
+    var idx = Math.max(0, Math.min(startIndex || 0, images.length - 1));
+
+    function updateCounter() {
+      counter.textContent = (idx + 1) + ' / ' + images.length;
+      counter.style.display = images.length > 1 ? 'block' : 'none';
+    }
+    function snapTo(i) {
+      idx = Math.max(0, Math.min(i, images.length - 1));
+      track.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
+      track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+      updateCounter();
+    }
+    snapTo(idx);
+    track.style.transition = 'none'; // pas d'anim sur l'ouverture initiale
+    track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+    setTimeout(function() { updateCounter(); }, 0);
+
+    // Ouverture animée
+    requestAnimationFrame(function() { overlay.classList.add('is-open'); });
+
+    // Fermeture
+    function close() {
+      overlay.classList.remove('is-open');
+      setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
+    }
+    overlay.querySelector('.k-modal-fullscreen-close').addEventListener('click', close);
+
+    // Swipe horizontal sur fullscreen pour changer d'image (sans bloquer le pinch-zoom)
+    var fsStartX = null, fsMoved = false, fsLocked = null;
+    track.addEventListener('touchstart', function(e) {
+      // Si plus d'un doigt = pinch-zoom, on n'intercepte rien
+      if (e.touches.length !== 1) { fsStartX = null; return; }
+      fsStartX = e.touches[0].clientX;
+      fsMoved = false;
+      fsLocked = null;
+    }, { passive: true });
+    track.addEventListener('touchmove', function(e) {
+      if (fsStartX == null || e.touches.length !== 1) return;
+      var dx = e.touches[0].clientX - fsStartX;
+      if (Math.abs(dx) > 6) fsMoved = true;
+    }, { passive: true });
+    track.addEventListener('touchend', function(e) {
+      if (fsStartX == null) { fsStartX = null; return; }
+      var dx = (e.changedTouches[0] || {}).clientX != null
+        ? e.changedTouches[0].clientX - fsStartX : 0;
+      if (!fsMoved) {
+        // tap simple → ferme
+        close();
+      } else if (images.length > 1) {
+        if (dx < -50) snapTo(idx + 1);
+        else if (dx > 50) snapTo(idx - 1);
+      }
+      fsStartX = null;
     });
   }
 

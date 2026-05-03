@@ -313,12 +313,14 @@ function injectSpecs() {
 
   var specs = document.createElement('div');
   specs.className = 'k-modal-specs';
+  // PR-D 2.1 : ouvert par défaut sur desktop (les specs sont la zone d'info
+  // technique, on évite à l'utilisateur de cliquer pour voir des données utiles).
   specs.innerHTML =
-    '<button class="k-modal-spec-toggle">' +
+    '<button class="k-modal-spec-toggle is-open">' +
       'Détails du produit' +
       '<svg class="k-modal-spec-toggle-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>' +
     '</button>' +
-    '<div class="k-modal-spec-body">' +
+    '<div class="k-modal-spec-body is-open">' +
       '<table class="k-modal-spec-table">' +
         '<tr><td>Catégorie</td><td>' + cat + '</td></tr>' +
         '<tr><td>Référence</td><td>#' + product.id + '</td></tr>' +
@@ -659,6 +661,66 @@ function setupCardHoverObserver() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  10. RECENTLY VIEWED — Section "Vu récemment" en bas du modal (desktop)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Affiche les 8 derniers produits vus (hors le courant) sous les suggestions.
+ * Desktop uniquement — sur mobile, garder la modal légère.
+ * Lecture depuis state.viewedHistory (alimenté dans b-modal.js openModal,
+ * persisté en localStorage).
+ */
+function injectRecentlyViewed() {
+  if (!isDesktop()) return;
+  var scrollEl = dom.modal ? dom.modal.querySelector('.k-modal-scroll') : null;
+  if (!scrollEl) return;
+  var product = state.modalProduct;
+  if (!product) return;
+
+  // Reconstruit la liste : IDs récents, hors le courant, croisés avec products dispo,
+  // puis on garde les 8 derniers (les plus récents en queue de viewedHistory).
+  var history = (state.viewedHistory || []).slice();
+  var recentIds = history.filter(function(id) { return id !== product.id; });
+  // On les renverse pour avoir le plus récent en premier
+  recentIds.reverse();
+  var recents = recentIds
+    .map(function(id) { return state.products.find(function(p) { return p.id === id; }); })
+    .filter(Boolean)
+    .slice(0, 8);
+
+  // Si rien à afficher, on retire l'éventuelle ancienne section
+  var old = scrollEl.querySelector('.k-modal-recent');
+  if (old) old.remove();
+  if (recents.length === 0) return;
+
+  var section = document.createElement('div');
+  section.className = 'k-modal-recent';
+  section.innerHTML =
+    '<h3 class="k-modal-recent-title">Vu récemment</h3>' +
+    '<div class="k-modal-recent-grid">' +
+      recents.map(function(p) {
+        return '<button class="k-modal-recent-card" data-pid="' + p.id + '" type="button">' +
+          '<div class="k-modal-recent-img">' +
+            '<img src="' + (p.image_url || '') + '" alt="" loading="lazy">' +
+          '</div>' +
+          '<div class="k-modal-recent-name">' + (p.name || '') + '</div>' +
+          '<div class="k-modal-recent-price">' + fmtPrice(p.price_kmf) + '</div>' +
+        '</button>';
+      }).join('') +
+    '</div>';
+
+  scrollEl.appendChild(section);
+
+  // Click → ouvrir la fiche du produit
+  section.querySelectorAll('.k-modal-recent-card').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = btn.getAttribute('data-pid');
+      if (id) openModal(id, true);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  ORCHESTRATION — Hook into modal open + init
 // ═══════════════════════════════════════════════════════════════
 
@@ -675,6 +737,7 @@ function _onModalOpened() {
     injectTrustBadges();
     injectSpecs();
     injectShareRow();
+    injectRecentlyViewed();
     updateSubtotal();
     setupZoom();
   });

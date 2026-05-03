@@ -111,7 +111,28 @@
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
 .k-modal-img-wrap {
   position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
-  background: linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
+  background:
+    linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
+}
+/* ── Skeleton shimmer pendant le chargement de l'image ───────
+   Couche pseudo-élément animée. Disparaît dès qu'une image
+   .k-modal-slide a la classe is-loaded (posée par b-modal.js
+   sur l'event load de l'image). */
+.k-modal-img-wrap::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(90deg,
+    rgba(244,241,236,0) 0%,
+    rgba(255,255,255,.55) 50%,
+    rgba(244,241,236,0) 100%);
+  background-size: 200% 100%;
+  animation: k-modal-shimmer 1.4s linear infinite;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.k-modal-img-wrap.is-image-loaded::before { opacity: 0; animation: none; }
+@keyframes k-modal-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 @media (max-width: 600px) {
   .k-modal-img-wrap { height: 40vh; max-height: 380px; }
@@ -121,13 +142,79 @@
 .k-modal-slide {
   flex: 0 0 100%; width: 100%; height: 100%;
   object-fit: contain; object-position: center;
-  display: block; background: transparent; padding: 16px; max-width: 100%; max-height: 100%;
+  display: block; background: transparent; padding: 0; max-width: 100%; max-height: 100%;
 }
 .k-modal-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2; }
 .k-modal-dots:empty { display: none; }
 .k-modal-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: all .2s; }
 .k-modal-dot.is-active { background: var(--white); transform: scale(1.3); }
 .k-modal-thumbs { display: none; } /* visible desktop uniquement */
+
+/* ── COMPTEUR "3/12" mobile (Temu-style) ─────────────────────
+   S'affiche en bas à droite de l'image quand le produit a > 5 images.
+   Plus lisible que des dots quand il y en a beaucoup. */
+.k-modal-counter {
+  display: none;
+  position: absolute; bottom: 10px; right: 10px; z-index: 3;
+  padding: 3px 10px; min-width: 38px; text-align: center;
+  background: rgba(0,0,0,.55); color: #fff;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  border-radius: 999px; backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.k-modal-counter.is-visible { display: block; }
+
+/* ── FULLSCREEN IMAGE (mobile, tap on image) ─────────────────
+   Overlay plein écran qui laisse le navigateur gérer le pinch-zoom
+   nativement (touch-action: pinch-zoom sur l'image).
+   Tap simple ferme. Swipe horizontal change d'image. */
+.k-modal-fullscreen {
+  position: fixed; inset: 0; z-index: 600;
+  background: #000;
+  opacity: 0; transition: opacity .2s var(--ease);
+  overflow: hidden;
+  display: flex; flex-direction: column; align-items: stretch; justify-content: center;
+}
+.k-modal-fullscreen.is-open { opacity: 1; }
+.k-modal-fullscreen-close {
+  position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,.92); color: #1a1a1a;
+  border: none; display: flex; align-items: center; justify-content: center;
+  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  -webkit-tap-highlight-color: transparent;
+}
+.k-modal-fullscreen-close svg { width: 18px; height: 18px; }
+.k-modal-fullscreen-counter {
+  position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px; background: rgba(0,0,0,.55);
+  color: #fff; font-size: 12px; font-weight: 600;
+  border-radius: 999px; z-index: 2; pointer-events: none;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.k-modal-fullscreen-track {
+  display: flex; width: 100%; height: 100%;
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.k-modal-fullscreen-slide {
+  flex: 0 0 100%; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.k-modal-fullscreen-slide img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; user-select: none;
+  /* pinch-zoom natif autorisé */
+  touch-action: pinch-zoom;
+  -webkit-user-drag: none;
+}
+
+/* Désactivé sur desktop : le zoom-on-hover existant suffit */
+@media (min-width: 900px) {
+  .k-modal-fullscreen { display: none !important; }
+}
 
 /* ── INFOS PRODUIT ───────────────────────────────────────────── */
 .k-modal-details {
@@ -488,6 +575,7 @@
   #k-modal .k-modal-carousel-track { height: 100%; }
   #k-modal .k-modal-slide { height: 100%; padding: 24px 30px 24px 92px; object-fit: contain; object-position: center; }
   #k-modal .k-modal-dots { display: none; }
+  #k-modal .k-modal-counter { display: none; }
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
   #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid rgba(31,48,36,.10); background: rgba(255,255,255,.78); box-shadow: 0 8px 18px rgba(31,48,36,.06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }

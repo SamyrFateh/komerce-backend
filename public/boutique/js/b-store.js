@@ -73,6 +73,9 @@ export const state = {
   modalSubcatFilter: null,
   modalQty: 1,
   modalHistory: [],
+  /** Historique des produits vus (IDs), persisté en localStorage.
+      Utilisé pour la section "Vu récemment" en desktop. */
+  viewedHistory: JSON.parse(localStorage.getItem('k_viewed_history') || '[]'),
   carouselIndex: 0,
   carouselCount: 1,
   searchTimeout: null,
