@@ -655,7 +655,6 @@
   #k-modal {
     max-width: 100vw;
     overflow-x: hidden;
-    overflow-y: clip; /* clip = pas de scroll context créé, laisse .k-modal-scroll scroller */
   }
 
   /* Forcer le scroll area en colonne simple — pas de grid sur mobile */

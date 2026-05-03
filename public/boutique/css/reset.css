@@ -40,12 +40,20 @@ img     { display: block; max-width: 100%; }
 a       { text-decoration: none; color: inherit; }
 ul, ol  { list-style: none; }
 
-/* Body lock : scroll bloqué quand modal ou panier ouvert */
+/* Body lock : scroll bloqué quand modal ou panier ouvert.
+   Mobile : PAS de position:fixed — la modal overlay est déjà fixed plein écran.
+   position:fixed sur body tue le scroll interne de .k-modal-scroll sur Chrome Android
+   car il crée un nouveau stacking context qui bride les enfants fixed/scroll. */
 body.modal-open {
   overflow: hidden;
-  position: fixed;
-  width: 100%;
-  top: var(--modal-scroll-y, 0);
+}
+@media (min-width: 900px) {
+  /* Desktop uniquement : fixe le fond pour qu'il ne scroll pas derrière la modal */
+  body.modal-open {
+    position: fixed;
+    width: 100%;
+    top: var(--modal-scroll-y, 0);
+  }
 }
 body.cart-open { overflow: hidden; }
 
