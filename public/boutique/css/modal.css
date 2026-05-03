@@ -347,15 +347,25 @@
      col droite        = .k-modal-details, overflow-y:auto = SCROLL OWNER
      .k-modal-actions  = sticky bottom DANS .k-modal-details (flex:0 0 auto)
    ══════════════════════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE
+   Architecture :
+     .k-modal            = flex column (topbar | scroll)
+     .k-modal-scroll     = flex column, overflow-y:auto = SEUL scroll owner
+     .k-modal-product-zone = grid 2 colonnes (image | détails + actions)
+     .k-modal-suggestions  = pleine largeur SOUS product-zone
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* Overlay */
+  /* ── Overlay ─────────────────────────────────────────────── */
   .k-modal-overlay.open { align-items: center; justify-content: center; padding: 22px; background: rgba(18,24,18,.52); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
-  /* Shell */
+  /* ── Shell ───────────────────────────────────────────────── */
   #k-modal.k-modal { width: min(1180px, calc(100vw - 48px)); height: min(760px, calc(100vh - 44px)); max-height: calc(100vh - 44px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px rgba(12,18,12,.34); animation: none; }
 
-  /* Topbar */
+  /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid rgba(31,48,36,.08); box-shadow: 0 8px 24px rgba(31,48,36,.05); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { margin-left: 10px; }
@@ -369,11 +379,44 @@
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
   .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
 
-  /* Grid scroll — overflow:hidden interdit le scroll global */
-  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; height: 100%; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); grid-template-rows: 1fr auto; padding: 0; background: var(--white); }
+  /* ── Scroll owner : flex column, overflow-y ici uniquement ─ */
+  #k-modal .k-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+    background: var(--white);
+  }
 
-  /* Col gauche : image fixe */
-  #k-modal .k-modal-img-wrap { grid-column: 1; grid-row: 1 / 3; height: 100%; min-height: 0; margin: 0; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%); }
+  /* ── Product-zone : grid 2 colonnes ─────────────────────── */
+  #k-modal .k-modal-product-zone {
+    display: grid;
+    grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
+    grid-template-rows: 1fr auto;
+    flex: 0 0 auto;
+    min-height: calc(min(760px, 100vh - 44px) - 58px);
+    width: 100%;
+    background: var(--white);
+  }
+
+  /* ── Image : col gauche, sticky ─────────────────────────── */
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    height: calc(min(760px, 100vh - 44px) - 58px);
+    position: sticky;
+    top: 0;
+    align-self: start;
+    overflow: hidden;
+    border-radius: 0;
+    margin: 0;
+    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
+                linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
+  }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
   #k-modal .k-modal-slide { height: 100%; padding: 24px 30px 24px 92px; object-fit: contain; object-position: center; }
@@ -389,19 +432,28 @@
   .k-modal-zoom-preview { position: absolute; top: 24px; right: 24px; left: auto; width: 280px; height: 280px; border: 1px solid var(--border); border-radius: 16px; background-color: var(--white); background-repeat: no-repeat; background-size: 220% 220%; box-shadow: var(--elev-4); opacity: 0; pointer-events: none; z-index: 80; transition: opacity .16s var(--ease); overflow: hidden; }
   .k-modal-zoom-preview.is-active { opacity: 1; }
 
-  /* Col droite : flex column, PAS de scroll global — chaque zone scroll elle-même */
-  /* FIX: height:100% résolvait contre la hauteur TOTALE du grid (k-modal-scroll),
-     pas contre la row 1fr. Le débordement dans la row 2 (actions) clipait les
-     suggestions. On supprime height:100% — align-self:stretch (défaut) remplit
-     correctement la row 1fr = (hauteur scroll) - (hauteur actions). */
-  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: visible; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }  /* overflow:visible — scroll handled by .k-modal-scroll */
+  /* ── Détails : col droite, row 1 ────────────────────────── */
+  #k-modal .k-modal-product-zone .k-modal-details {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    min-height: 0;
+    padding: 0 24px;
+    background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+  }
 
-  /* Infos dans col droite — scrolle si trop long, libère la place pour suggestions.
-     FIX: flex:0 0 auto ne rétrécit jamais. Avec trust+specs+share injectés,
-     k-modal-info pouvait dépasser la hauteur disponible et écraser les suggestions
-     à 0px (min-height:0). On passe à flex:0 1 auto + max-height:58% pour
-     garantir que les suggestions aient toujours de la place. */
-  #k-modal .k-modal-info { flex: 0 0 auto; max-height: none; overflow: visible; padding: 18px 0 12px; display: flex; flex-direction: column; }  /* no internal scroll — parent .k-modal-scroll handles it */
+  /* ── Infos produit ───────────────────────────────────────── */
+  #k-modal .k-modal-product-zone .k-modal-info {
+    flex: 0 0 auto;
+    overflow: visible;
+    max-height: none;
+    padding: 18px 0 12px;
+  }
   #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.12; font-weight: 650; letter-spacing: -.025em; }
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   #k-modal .k-modal-price-row { margin-top: 14px; gap: 12px; }
@@ -410,14 +462,14 @@
   #k-modal .k-modal-meta { margin-top: 10px; gap: 8px; }
   #k-modal .k-modal-meta span { padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(31,48,36,.06); }
 
-  /* Trust */
+  /* ── Trust ───────────────────────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
   .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid rgba(31,48,36,.06); }
 
-  /* Partage */
+  /* ── Partage ─────────────────────────────────────────────── */
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
@@ -427,7 +479,7 @@
   #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
 
-  /* Specs accordéon */
+  /* ── Specs accordéon ─────────────────────────────────────── */
   .k-modal-specs { border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
   .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
   .k-modal-spec-toggle:hover { color: var(--coral); }
@@ -442,58 +494,109 @@
   .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
   #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
-  /* Recherche */
+  /* ── Recherche interne ───────────────────────────────────── */
   #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
   .k-modal-inner-search-input { font-size: 14px; }
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── SUGGESTIONS TEMU-LIKE : panneau scroll indépendant ────────────── */
-  /* flex:1 1 auto → prend toute la hauteur restante après les infos prod    */
-  /* overflow:hidden → le .k-sug-rail intérieur gère son propre scroll       */
-  /* min-height:120px → garantit que les suggestions sont toujours visibles  */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 1 1 auto; min-height: 120px; overflow: hidden; display: flex; flex-direction: column; padding: 0; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
-
-  /* Rail : scroll owner, scrollbar fine à droite */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 1 1 auto; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; display: block; padding: 10px 6px 14px 0; scrollbar-width: thin; overscroll-behavior: contain; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar { width: 7px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar-thumb { background: rgba(31,48,36,.18); border-radius: 999px; }
-
-  /* Section */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section { display: block; width: 100%; margin: 0 0 14px; }
-
-  /* Titre sticky dans le rail */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 8px 0; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.94) 100%); border-bottom: 1px solid rgba(31,48,36,.06); font-size: 13px; font-weight: 850; color: var(--text); }
-
-  /* Chips sticky sous le titre */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: sticky; top: 38px; z-index: 2; background: rgba(255,255,255,.96); padding: 0 0 10px; margin-bottom: 8px; display: flex; gap: 7px; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips::-webkit-scrollbar { display: none; }
-
-  /* Grille → liste verticale */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { display: flex; flex-direction: column; gap: 9px; width: 100%; min-width: 0; overflow: visible; padding: 0; }
-
-  /* Carte liste horizontale (image | nom + prix) */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card { display: grid; grid-template-columns: 76px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 5px; width: 100%; min-width: 0; max-width: 100%; min-height: 82px; align-items: center; border: 1px solid rgba(31,48,36,.09); border-radius: 14px; background: rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(31,48,36,.045); overflow: hidden; transition: transform .14s, box-shadow .14s, border-color .14s; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-1px); border-color: rgba(200,92,45,.22); box-shadow: 0 12px 26px rgba(31,48,36,.075); }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { grid-column: 1; grid-row: 1 / span 2; width: 76px; height: 76px; aspect-ratio: auto; border-radius: 12px; background: var(--sand); overflow: hidden; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: 2; grid-row: 1; padding: 9px 12px 0 0; min-width: 0; font-size: 13px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: 2; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 9px; min-width: 0; padding: 0 12px 9px 0; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price { padding: 0; font-size: 14px; font-weight: 850; color: var(--coral); white-space: nowrap; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-add { width: 34px; height: 34px; border-radius: 11px; background: var(--white); border: 1px solid rgba(31,48,36,.08); box-shadow: 0 6px 14px rgba(31,48,36,.06); }
-
-  /* Actions — sticky en bas DANS .k-modal-details (flex:0 0 auto) */
-  #k-modal .k-modal-actions { grid-column: 2; grid-row: 2; position: relative; bottom: auto; z-index: 70; margin: 0; padding: 12px 24px 16px; background: rgba(255,255,255,.98); border-top: 1px solid rgba(31,48,36,.10); box-shadow: 0 -12px 28px rgba(31,48,36,.06); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); display: grid; grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr); grid-template-rows: auto; align-items: center; gap: 10px; }
-  #k-modal .k-qty { grid-column: 1; grid-row: 1; height: 42px; }
-  #k-modal .k-qty-btn { height: 42px; width: 38px; }
-  #k-modal .k-add-cart-btn { grid-column: 2; grid-row: 1; height: 42px; border-radius: 999px; }
-  #k-modal .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
-  #k-modal .k-modal-actions .k-buy-now-btn { grid-column: 3; grid-row: 1; height: 42px; border-radius: 999px; font-size: 14px; }
+  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    grid-column: 2;
+    grid-row: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 70;
+    margin: 0;
+    padding: 12px 24px 16px;
+    background: rgba(255,255,255,.98);
+    border-top: 1px solid rgba(31,48,36,.10);
+    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    display: grid;
+    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 10px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn { grid-column: 3; grid-row: 1; height: 42px; border-radius: 999px; font-size: 14px; }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 42px; }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn { grid-column: 2; grid-row: 1; height: 42px; border-radius: 999px; }
   #k-modal .k-modal-subtotal { grid-column: 1 / -1; grid-row: 2; text-align: right; padding: 0 2px; }
 
-  /* Hover états desktop */
+  /* ── Suggestions : pleine largeur SOUS product-zone ─────── */
+  #k-modal .k-modal-suggestions,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: unset;
+    display: block;
+    width: 100%;
+    padding: 28px 36px 48px;
+    border-top: 2px solid var(--sand-dark);
+    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%);
+    margin-top: 0;
+  }
+
+  /* Rail : scroll interne désactivé, tout visible */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    overflow: visible;
+    height: auto;
+    padding: 0;
+  }
+
+  /* Grilles : multi-colonnes pleine largeur */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    flex-direction: unset;
+    padding: 0;
+  }
+
+  /* Cartes : format vertical */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+    grid-template-rows: unset;
+    min-height: unset;
+    height: auto;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--white);
+    box-shadow: 0 4px 16px rgba(31,48,36,.07);
+    transition: transform .18s, box-shadow .18s;
+    cursor: pointer;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(31,48,36,.12);
+  }
+
+  /* Image carte : aspect-ratio carré */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    grid-column: unset;
+    grid-row: unset;
+    border-radius: 0;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: unset; grid-row: unset; padding: 0 10px 10px; }
+
+  /* Titres sections : statiques */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; margin-bottom: 16px; padding: 0 0 10px; border-bottom: 1px solid var(--sand-dark); background: none; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
+
+  /* ── Hover & focus ───────────────────────────────────────── */
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
   .k-msearch-item:hover { background: var(--sand); }
   .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
   .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
@@ -501,8 +604,6 @@
   .k-msearch-recent-item:hover { background: var(--sand); }
   .k-msearch-recent-remove:hover { background: var(--sand-dark); color: var(--text); }
   .k-msearch-recents-clear:hover { background: rgba(200,92,45,.06); }
-
-  /* Focus */
   .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
@@ -515,10 +616,12 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal { width: calc(100vw - 32px); }
-  #k-modal .k-modal-scroll { grid-template-columns: minmax(0, 52%) minmax(340px, 48%); }
-  #k-modal .k-modal-details { padding: 0 18px; }
-  #k-modal .k-modal-actions { margin: 0; padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
-  #k-modal .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; }
+  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 52%) minmax(340px, 48%); }
+  #k-modal .k-modal-product-zone .k-modal-details { padding: 0 18px; }
+  #k-modal .k-modal-product-zone .k-modal-actions { padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; }
+  #k-modal .k-modal-suggestions,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list { padding: 24px 24px 36px; }
 }
 
 
@@ -527,11 +630,12 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 1200px) {
   #k-modal.k-modal { width: min(1280px, calc(100vw - 48px)); }
-  #k-modal .k-modal-scroll { grid-template-columns: minmax(0, 58%) minmax(380px, 42%); }
+  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 58%) minmax(380px, 42%); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
 
-
-/* ── MOBILE MODAL NO HORIZONTAL SCROLL — SOURCE OF TRUTH ── */
 @media (max-width: 899px) {
   /*
     Sécurité mobile :
@@ -559,6 +663,8 @@
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden;
+    overflow-y: auto; /* FIX: explicite — spécificité #k-modal écrase la règle base */
+    -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
   }
@@ -722,245 +828,5 @@
 @media (min-width: 600px) and (max-width: 899px) {
   #k-modal .k-modal-scroll {
     grid-template-rows: 1fr auto auto; /* row 3 pour suggestions */
-  }
-}
-
-/* ── DESKTOP ≥900px : refonte Temu complète ──────────────────── */
-@media (min-width: 900px) {
-
-  /* Le scroll est le seul scroll owner, flex column */
-  #k-modal .k-modal-scroll {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    height: 100% !important;
-    padding: 0 !important;
-  }
-
-  /* product-zone : grid 2 colonnes, hauteur = fenêtre modale - topbar */
-  #k-modal .k-modal-product-zone {
-    display: grid !important; /* override display:contents */
-    grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
-    grid-template-rows: 1fr auto; /* details | actions */
-    flex: 0 0 auto;
-    min-height: calc(min(760px, 100vh - 44px) - 58px);
-    width: 100%;
-    background: var(--white);
-  }
-
-  /* Image : col gauche, couvre les 2 rows, sticky */
-  #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1;
-    grid-row: 1 / 3;
-    height: calc(min(760px, 100vh - 44px) - 58px);
-    position: sticky;
-    top: 0;
-    align-self: start;
-    overflow: hidden;
-    border-radius: 0;
-    margin: 0;
-    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
-                linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
-  }
-
-  /* Détails : col droite, row 1, scroll visible (pas de scroll interne) */
-  #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 2;
-    grid-row: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-    min-height: 0;
-    padding: 0 24px;
-    background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
-    border-radius: 0;
-    box-shadow: none;
-    margin: 0;
-  }
-
-  /* Infos produit : pas de max-height */
-  #k-modal .k-modal-product-zone .k-modal-info {
-    flex: 0 0 auto;
-    overflow: visible;
-    max-height: none;
-    padding: 18px 0 12px;
-  }
-
-  /* Actions : col droite, row 2, sticky bas dans product-zone */
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    grid-column: 2;
-    grid-row: 2;
-    position: sticky;
-    bottom: 0;
-    z-index: 70;
-    margin: 0;
-    padding: 12px 24px 16px;
-    background: rgba(255,255,255,.98);
-    border-top: 1px solid rgba(31,48,36,.10);
-    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
-    align-items: center;
-    gap: 10px;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 3;
-    grid-row: 1;
-    height: 42px;
-    border-radius: 999px;
-    font-size: 14px;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
-    grid-column: 1;
-    grid-row: 1;
-    height: 42px;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    grid-column: 2;
-    grid-row: 1;
-    height: 42px;
-    border-radius: 999px;
-  }
-
-  /* Suggestions : pleine largeur SOUS product-zone */
-  #k-modal .k-modal-suggestions,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-    min-height: unset !important;
-    display: block !important;
-    width: 100%;
-    padding: 28px 36px 48px !important;
-    border-top: 2px solid var(--sand-dark) !important;
-    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%) !important;
-    margin-top: 0 !important;
-  }
-
-  /* Rail : scroll interne désactivé, tout visible */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
-    overflow: visible !important;
-    height: auto !important;
-    padding: 0 !important;
-  }
-
-  /* Grilles : multi-colonnes pleine largeur */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
-    gap: 16px !important;
-    flex-direction: unset !important;
-    padding: 0 !important;
-  }
-
-  /* Cartes : format vertical */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
-    display: flex !important;
-    flex-direction: column !important;
-    grid-template-columns: unset !important;
-    grid-template-rows: unset !important;
-    min-height: unset !important;
-    height: auto !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-    background: var(--white) !important;
-    box-shadow: 0 4px 16px rgba(31,48,36,.07) !important;
-    transition: transform .18s, box-shadow .18s !important;
-    cursor: pointer;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 10px 28px rgba(31,48,36,.12) !important;
-  }
-
-  /* Image carte : aspect-ratio carré */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
-    width: 100% !important;
-    height: auto !important;
-    aspect-ratio: 1 !important;
-    grid-column: unset !important;
-    grid-row: unset !important;
-    border-radius: 0 !important;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important;
-    padding: 8px !important;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
-    grid-column: unset !important;
-    grid-row: unset !important;
-    padding: 8px 10px 4px !important;
-    font-size: 13px !important;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
-    grid-column: unset !important;
-    grid-row: unset !important;
-    padding: 0 10px 10px !important;
-  }
-
-  /* Titres sections : statiques (pas sticky, scroll owner = modal entier) */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
-    position: static !important;
-    margin-bottom: 16px !important;
-    padding: 0 0 10px !important;
-    border-bottom: 1px solid var(--sand-dark) !important;
-    background: none !important;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
-    position: static !important;
-    background: none !important;
-    padding: 0 0 16px !important;
-    margin-bottom: 0 !important;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section {
-    margin-top: 32px;
-  }
-
-  /* Hover états desktop */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
-    border-color: var(--ocean);
-    box-shadow: 0 0 0 3px rgba(100,175,90,.1);
-  }
-}
-
-/* ── DESKTOP INTERMÉDIAIRE 900–1120px ──────────────────────── */
-@media (min-width: 900px) and (max-width: 1120px) {
-  #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 52%) minmax(340px, 48%);
-  }
-  #k-modal .k-modal-product-zone .k-modal-details {
-    padding: 0 18px;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    padding-inline: 18px;
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-  #k-modal .k-modal-suggestions,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    padding: 24px 24px 36px !important;
-  }
-}
-
-/* ── DESKTOP LARGE ≥1200px ─────────────────────────────────── */
-@media (min-width: 1200px) {
-  #k-modal .k-modal-product-zone {
-    grid-template-columns: minmax(0, 58%) minmax(380px, 42%);
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
   }
 }
