@@ -339,13 +339,16 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE
-   Architecture :
-     .k-modal          = flex column (topbar | scroll | —)
+   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE (modal.css ONLY)
+   Architecture Temu :
+     .k-modal          = flex column (topbar fixe | grid)
      .k-modal-scroll   = grid 2 colonnes, overflow:hidden
      col gauche        = image fixe (ne scrolle pas)
-     col droite        = .k-modal-details, overflow-y:auto = SCROLL OWNER
-     .k-modal-actions  = sticky bottom DANS .k-modal-details (flex:0 0 auto)
+     col droite (row1) = .k-modal-details, overflow-y:auto = UNIQUE SCROLL
+                         → infos produit (flex:0 0 auto, hauteur naturelle)
+                         → recherche interne (flex:0 0 auto)
+                         → suggestions liste (flex:0 0 auto, scroll vers le bas)
+     col droite (row2) = .k-modal-actions sticky, hors du scroll
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -369,8 +372,8 @@
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
   .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
 
-  /* Grid scroll — overflow:hidden interdit le scroll global */
-  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; height: 100%; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); grid-template-rows: 1fr auto; padding: 0; background: var(--white); }
+  /* Grid scroll — overflow:hidden empêche le scroll global ; la col droite gère son propre scroll */
+  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); grid-template-rows: 1fr auto; padding: 0; background: var(--white); }
 
   /* Col gauche : image fixe */
   #k-modal .k-modal-img-wrap { grid-column: 1; grid-row: 1 / 3; height: 100%; min-height: 0; margin: 0; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%); }
@@ -389,19 +392,14 @@
   .k-modal-zoom-preview { position: absolute; top: 24px; right: 24px; left: auto; width: 280px; height: 280px; border: 1px solid var(--border); border-radius: 16px; background-color: var(--white); background-repeat: no-repeat; background-size: 220% 220%; box-shadow: var(--elev-4); opacity: 0; pointer-events: none; z-index: 80; transition: opacity .16s var(--ease); overflow: hidden; }
   .k-modal-zoom-preview.is-active { opacity: 1; }
 
-  /* Col droite : flex column, PAS de scroll global — chaque zone scroll elle-même */
-  /* FIX: height:100% résolvait contre la hauteur TOTALE du grid (k-modal-scroll),
-     pas contre la row 1fr. Le débordement dans la row 2 (actions) clipait les
-     suggestions. On supprime height:100% — align-self:stretch (défaut) remplit
-     correctement la row 1fr = (hauteur scroll) - (hauteur actions). */
-  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: hidden; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
+  /* ── Col droite : UNIQUE scroll owner — architecture Temu ────────────
+     Scroll unique dans .k-modal-details : infos produit → search → suggestions.
+     .k-modal-actions dans grid-row:2 = sticky en dehors du scroll.
+     Fini le double-scroll, fini le max-height sur k-modal-info.           */
+  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
 
-  /* Infos dans col droite — scrolle si trop long, libère la place pour suggestions.
-     FIX: flex:0 0 auto ne rétrécit jamais. Avec trust+specs+share injectés,
-     k-modal-info pouvait dépasser la hauteur disponible et écraser les suggestions
-     à 0px (min-height:0). On passe à flex:0 1 auto + max-height:58% pour
-     garantir que les suggestions aient toujours de la place. */
-  #k-modal .k-modal-info { flex: 0 1 auto; max-height: 58%; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 18px 0 12px; display: flex; flex-direction: column; }
+  /* Infos produit : hauteur naturelle complète, pas de scroll interne, pas de cap */
+  #k-modal .k-modal-info { flex: 0 0 auto; padding: 18px 0 12px; display: flex; flex-direction: column; }
   #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.12; font-weight: 650; letter-spacing: -.025em; }
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   #k-modal .k-modal-price-row { margin-top: 14px; gap: 12px; }
@@ -448,25 +446,23 @@
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── SUGGESTIONS TEMU-LIKE : panneau scroll indépendant ────────────── */
-  /* flex:1 1 auto → prend toute la hauteur restante après les infos prod    */
-  /* overflow:hidden → le .k-sug-rail intérieur gère son propre scroll       */
-  /* min-height:120px → garantit que les suggestions sont toujours visibles  */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 1 1 auto; min-height: 120px; overflow: hidden; display: flex; flex-direction: column; padding: 0; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
+  /* ── SUGGESTIONS TEMU-LIKE : liste verticale dans le scroll parent ─────────
+     flex:0 0 auto → hauteur naturelle (toutes les cartes visibles)
+     L'utilisateur scrolle dans .k-modal-details pour y accéder.
+     Plus besoin d'un rail avec overflow indépendant.                        */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 0 0 auto; min-height: 0; overflow: visible; display: flex; flex-direction: column; padding: 0 0 24px; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
 
-  /* Rail : scroll owner, scrollbar fine à droite */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 1 1 auto; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; display: block; padding: 10px 6px 14px 0; scrollbar-width: thin; overscroll-behavior: contain; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar { width: 7px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar-thumb { background: rgba(31,48,36,.18); border-radius: 999px; }
+  /* Rail : hauteur naturelle, plus besoin d'overflow propre */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 0 0 auto; overflow: visible; display: block; padding: 10px 0 0; }
 
   /* Section */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section { display: block; width: 100%; margin: 0 0 14px; }
 
-  /* Titre sticky dans le rail */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 8px 0; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.94) 100%); border-bottom: 1px solid rgba(31,48,36,.06); font-size: 13px; font-weight: 850; color: var(--text); }
+  /* Titre : sticky dans le scroll de .k-modal-details */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 10px 0 8px; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.96) 100%); border-bottom: 1px solid rgba(31,48,36,.06); font-size: 13px; font-weight: 850; color: var(--text); }
 
-  /* Chips sticky sous le titre */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: sticky; top: 38px; z-index: 2; background: rgba(255,255,255,.96); padding: 0 0 10px; margin-bottom: 8px; display: flex; gap: 7px; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  /* Chips : sticky sous le titre dans le scroll parent */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: sticky; top: 42px; z-index: 2; background: rgba(255,255,255,.97); padding: 0 0 10px; margin-bottom: 8px; display: flex; gap: 7px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips::-webkit-scrollbar { display: none; }
 
   /* Grille → liste verticale */
