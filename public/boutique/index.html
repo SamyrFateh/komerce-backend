@@ -258,34 +258,32 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-modal-scroll">
-      <div class="k-modal-img-wrap">
-        <div class="k-modal-carousel" id="k-modal-carousel">
-          <div class="k-modal-carousel-track" id="k-modal-carousel-track">
-            <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+      <!-- Zone produit : 2 colonnes image | détails (desktop) -->
+      <div class="k-modal-product-zone">
+        <div class="k-modal-img-wrap">
+          <div class="k-modal-carousel" id="k-modal-carousel">
+            <div class="k-modal-carousel-track" id="k-modal-carousel-track">
+              <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+            </div>
+          </div>
+          <div class="k-modal-dots" id="k-modal-dots"></div>
+          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
+        </div>
+        <div class="k-modal-details" id="k-modal-details">
+          <div class="k-modal-info">
+            <h2 id="k-modal-name"></h2>
+            <p class="k-modal-desc" id="k-modal-desc"></p>
+            <div class="k-modal-price-row">
+              <span class="k-modal-price" id="k-modal-price"></span>
+              <span class="k-modal-old-price" id="k-modal-old-price"></span>
+            </div>
+            <div class="k-modal-meta">
+              <span id="k-modal-cat"></span>
+              <span id="k-modal-stock"></span>
+            </div>
           </div>
         </div>
-        <div class="k-modal-dots" id="k-modal-dots"></div>
-        <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
-      </div>
-      <div class="k-modal-details" id="k-modal-details">
-        <div class="k-modal-info">
-          <h2 id="k-modal-name"></h2>
-          <p class="k-modal-desc" id="k-modal-desc"></p>
-          <div class="k-modal-price-row">
-            <span class="k-modal-price" id="k-modal-price"></span>
-            <span class="k-modal-old-price" id="k-modal-old-price"></span>
-          </div>
-          <div class="k-modal-meta">
-            <span id="k-modal-cat"></span>
-            <span id="k-modal-stock"></span>
-          </div>
-        </div>
-        <div class="k-modal-suggestions" id="k-modal-suggestions">
-          <h3>Vous aimerez aussi</h3>
-          <div class="k-sug-rail" id="k-sug-rail"></div>
-        </div>
-      </div>
-      <div class="k-modal-actions">
+        <div class="k-modal-actions">
         <div class="k-qty">
           <button class="k-qty-btn" id="k-qty-minus">−</button>
           <span class="k-qty-val" id="k-qty-val">1</span>
@@ -296,6 +294,12 @@ if('serviceWorker' in navigator){
           Ajouter
         </button>
         <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
+      </div>
+      </div><!-- end .k-modal-product-zone -->
+      <!-- Suggestions pleine largeur (mode Temu) -->
+      <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <h3>Vous aimerez aussi</h3>
+        <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
     </div>
   </div>

@@ -481,6 +481,14 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     if (sugSection) {
       sugSection.classList.toggle('k-modal-suggestions--desktop-list', isDesktop);
+      // Desktop: ensure suggestions are a direct child of .k-modal-scroll (after product-zone)
+      if (isDesktop) {
+        const scroll = dom.modal.querySelector('.k-modal-scroll');
+        const productZone = dom.modal.querySelector('.k-modal-product-zone');
+        if (scroll && productZone && sugSection.parentElement !== scroll) {
+          scroll.appendChild(sugSection);
+        }
+      }
     }
 
     if (sugRail) {
@@ -776,13 +784,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         '<button class="k-modal-search-clear" aria-label="Effacer" type="button">\u00d7</button>' +
         '<span class="k-modal-inner-search-hint">\u21b5 Catalogue</span>';
 
-      sugSection.parentElement.insertBefore(searchWrap, sugSection);
+      // Insert search bar inside .k-modal-details (desktop: suggestions are now outside)
+      var searchParent = dom.modal.querySelector('.k-modal-details') || sugSection.parentElement;
+      searchParent.appendChild(searchWrap);
 
       // ── Dropdown container ──
       var dropdown = document.createElement('div');
       dropdown.className = 'k-modal-search-dropdown';
       dropdown.id = 'k-modal-search-dropdown';
-      sugSection.parentElement.insertBefore(dropdown, sugSection);
+      searchParent.appendChild(dropdown);
 
       const searchInput = searchWrap.querySelector('.k-modal-inner-search-input');
       const clearBtn = searchWrap.querySelector('.k-modal-search-clear');

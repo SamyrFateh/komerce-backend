@@ -73,7 +73,7 @@
   background: transparent; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; overflow: visible;
 }
-.k-modal-cart-btn .k-cart-avatar { width: 36px; height: 36px; mix-blend-mode: multiply; }
+.k-modal-cart-btn .k-cart-avatar { width: 52px; height: 52px; mix-blend-mode: multiply; }
 .k-modal-cart-badge {
   position: absolute; top: -2px; right: -2px;
   min-width: 16px; height: 16px;
@@ -287,7 +287,7 @@
 .k-topbar-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-topbar-price { display: flex; align-items: center; gap: 6px; }
 .k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { display: none; } /* badge promo masqué dans la topbar — pas assez de place */
+.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 999px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
@@ -339,16 +339,13 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE (modal.css ONLY)
-   Architecture Temu :
-     .k-modal          = flex column (topbar fixe | grid)
+   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE
+   Architecture :
+     .k-modal          = flex column (topbar | scroll | —)
      .k-modal-scroll   = grid 2 colonnes, overflow:hidden
      col gauche        = image fixe (ne scrolle pas)
-     col droite (row1) = .k-modal-details, overflow-y:auto = UNIQUE SCROLL
-                         → infos produit (flex:0 0 auto, hauteur naturelle)
-                         → recherche interne (flex:0 0 auto)
-                         → suggestions liste (flex:0 0 auto, scroll vers le bas)
-     col droite (row2) = .k-modal-actions sticky, hors du scroll
+     col droite        = .k-modal-details, overflow-y:auto = SCROLL OWNER
+     .k-modal-actions  = sticky bottom DANS .k-modal-details (flex:0 0 auto)
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -372,8 +369,8 @@
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
   .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
 
-  /* Grid scroll — overflow:hidden empêche le scroll global ; la col droite gère son propre scroll */
-  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); grid-template-rows: 1fr auto; padding: 0; background: var(--white); }
+  /* Grid scroll — overflow:hidden interdit le scroll global */
+  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; height: 100%; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); grid-template-rows: 1fr auto; padding: 0; background: var(--white); }
 
   /* Col gauche : image fixe */
   #k-modal .k-modal-img-wrap { grid-column: 1; grid-row: 1 / 3; height: 100%; min-height: 0; margin: 0; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%); }
@@ -392,14 +389,19 @@
   .k-modal-zoom-preview { position: absolute; top: 24px; right: 24px; left: auto; width: 280px; height: 280px; border: 1px solid var(--border); border-radius: 16px; background-color: var(--white); background-repeat: no-repeat; background-size: 220% 220%; box-shadow: var(--elev-4); opacity: 0; pointer-events: none; z-index: 80; transition: opacity .16s var(--ease); overflow: hidden; }
   .k-modal-zoom-preview.is-active { opacity: 1; }
 
-  /* ── Col droite : UNIQUE scroll owner — architecture Temu ────────────
-     Scroll unique dans .k-modal-details : infos produit → search → suggestions.
-     .k-modal-actions dans grid-row:2 = sticky en dehors du scroll.
-     Fini le double-scroll, fini le max-height sur k-modal-info.           */
-  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
+  /* Col droite : flex column, PAS de scroll global — chaque zone scroll elle-même */
+  /* FIX: height:100% résolvait contre la hauteur TOTALE du grid (k-modal-scroll),
+     pas contre la row 1fr. Le débordement dans la row 2 (actions) clipait les
+     suggestions. On supprime height:100% — align-self:stretch (défaut) remplit
+     correctement la row 1fr = (hauteur scroll) - (hauteur actions). */
+  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow: visible; padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }  /* overflow:visible — scroll handled by .k-modal-scroll */
 
-  /* Infos produit : hauteur naturelle complète, pas de scroll interne, pas de cap */
-  #k-modal .k-modal-info { flex: 0 0 auto; padding: 18px 0 12px; display: flex; flex-direction: column; }
+  /* Infos dans col droite — scrolle si trop long, libère la place pour suggestions.
+     FIX: flex:0 0 auto ne rétrécit jamais. Avec trust+specs+share injectés,
+     k-modal-info pouvait dépasser la hauteur disponible et écraser les suggestions
+     à 0px (min-height:0). On passe à flex:0 1 auto + max-height:58% pour
+     garantir que les suggestions aient toujours de la place. */
+  #k-modal .k-modal-info { flex: 0 0 auto; max-height: none; overflow: visible; padding: 18px 0 12px; display: flex; flex-direction: column; }  /* no internal scroll — parent .k-modal-scroll handles it */
   #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.12; font-weight: 650; letter-spacing: -.025em; }
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   #k-modal .k-modal-price-row { margin-top: 14px; gap: 12px; }
@@ -446,23 +448,25 @@
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── SUGGESTIONS TEMU-LIKE : liste verticale dans le scroll parent ─────────
-     flex:0 0 auto → hauteur naturelle (toutes les cartes visibles)
-     L'utilisateur scrolle dans .k-modal-details pour y accéder.
-     Plus besoin d'un rail avec overflow indépendant.                        */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 0 0 auto; min-height: 0; overflow: visible; display: flex; flex-direction: column; padding: 0 0 24px; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
+  /* ── SUGGESTIONS TEMU-LIKE : panneau scroll indépendant ────────────── */
+  /* flex:1 1 auto → prend toute la hauteur restante après les infos prod    */
+  /* overflow:hidden → le .k-sug-rail intérieur gère son propre scroll       */
+  /* min-height:120px → garantit que les suggestions sont toujours visibles  */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 1 1 auto; min-height: 120px; overflow: hidden; display: flex; flex-direction: column; padding: 0; margin-top: 2px; border-top: 1px solid rgba(31,48,36,.08); }
 
-  /* Rail : hauteur naturelle, plus besoin d'overflow propre */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 0 0 auto; overflow: visible; display: block; padding: 10px 0 0; }
+  /* Rail : scroll owner, scrollbar fine à droite */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { flex: 1 1 auto; min-height: 0; height: 100%; overflow-y: auto; overflow-x: hidden; display: block; padding: 10px 6px 14px 0; scrollbar-width: thin; overscroll-behavior: contain; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar { width: 7px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar-thumb { background: rgba(31,48,36,.18); border-radius: 999px; }
 
   /* Section */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section { display: block; width: 100%; margin: 0 0 14px; }
 
-  /* Titre : sticky dans le scroll de .k-modal-details */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 10px 0 8px; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.96) 100%); border-bottom: 1px solid rgba(31,48,36,.06); font-size: 13px; font-weight: 850; color: var(--text); }
+  /* Titre sticky dans le rail */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: sticky; top: 0; z-index: 2; margin: 0 0 10px; padding: 8px 0; background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.94) 100%); border-bottom: 1px solid rgba(31,48,36,.06); font-size: 13px; font-weight: 850; color: var(--text); }
 
-  /* Chips : sticky sous le titre dans le scroll parent */
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: sticky; top: 42px; z-index: 2; background: rgba(255,255,255,.97); padding: 0 0 10px; margin-bottom: 8px; display: flex; gap: 7px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  /* Chips sticky sous le titre */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: sticky; top: 38px; z-index: 2; background: rgba(255,255,255,.96); padding: 0 0 10px; margin-bottom: 8px; display: flex; gap: 7px; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips::-webkit-scrollbar { display: none; }
 
   /* Grille → liste verticale */
@@ -660,3 +664,249 @@
   mix-blend-mode: multiply;
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   TEMU-STYLE LAYOUT PATCH
+   Mode 1 : fiche produit 2 colonnes (image | détails)
+   Mode 3 : suggestions pleine largeur SOUS la fiche
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── MOBILE : rien ne change, tout empilé ──────────────────── */
+.k-modal-product-zone {
+  display: contents; /* transparent sur mobile, laisse le layout actuel */
+}
+
+/* ── DESKTOP ≥900px : refonte Temu ────────────────────────── */
+@media (min-width: 900px) {
+
+  /* Le scroll est maintenant le seul scroll owner */
+  #k-modal .k-modal-scroll {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 100% !important;
+    padding: 0 !important;
+    /* Pas de grid global — on utilise le product-zone pour les 2 cols */
+  }
+
+  /* Zone produit : grid 2 colonnes, hauteur min = fenêtre modale visible */
+  #k-modal .k-modal-product-zone {
+    display: grid;
+    grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
+    grid-template-rows: 1fr auto; /* details | actions */
+    flex: 0 0 auto;
+    min-height: calc(min(760px, 100vh - 44px) - 58px); /* hauteur modale - topbar */
+    width: 100%;
+    background: var(--white);
+  }
+
+  /* Image : col gauche, spans les 2 rows, sticky dans la zone produit */
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    height: calc(min(760px, 100vh - 44px) - 58px);
+    position: sticky;
+    top: 0;
+    align-self: start;
+    overflow: hidden;
+    border-radius: 0;
+    margin: 0;
+    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
+  }
+
+  /* Détails : col droite, row 1, overflow visible (pas de scroll interne) */
+  #k-modal .k-modal-product-zone .k-modal-details {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* contenu s'étend naturellement */
+    min-height: 0;
+    padding: 0 24px;
+    background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  /* Infos produit : pas de max-height, s'étend naturellement */
+  #k-modal .k-modal-product-zone .k-modal-info {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding: 18px 0 12px;
+  }
+
+  /* Actions : col droite, row 2 — sticky en bas de la zone produit */
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    grid-column: 2;
+    grid-row: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 70;
+    margin: 0;
+    padding: 12px 24px 16px;
+    background: rgba(255,255,255,.98);
+    border-top: 1px solid rgba(31,48,36,.10);
+    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    display: grid;
+    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Suggestions : pleine largeur sous la zone produit */
+  #k-modal .k-modal-suggestions {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 24px 32px 40px;
+    border-top: 2px solid var(--sand-dark);
+    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%);
+  }
+
+  /* Override desktop-list mode : grille 4-6 colonnes pleine largeur */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    min-height: unset !important;
+    display: block !important;
+    padding: 24px 32px 40px !important;
+    border-top: 2px solid var(--sand-dark) !important;
+    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%) !important;
+    margin-top: 0 !important;
+  }
+
+  /* Rail : pas de scroll interne, tout visible */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* Grilles : multi-colonnes en pleine largeur */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 16px !important;
+    flex-direction: unset !important;
+    padding: 0 !important;
+  }
+
+  /* Cartes : format vertical (comme Temu) */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+    grid-template-rows: unset !important;
+    min-height: unset !important;
+    height: auto !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background: var(--white) !important;
+    box-shadow: 0 4px 16px rgba(31,48,36,.07) !important;
+    transition: transform .18s, box-shadow .18s !important;
+    cursor: pointer;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 28px rgba(31,48,36,.12) !important;
+  }
+
+  /* Image : aspect-ratio carré */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 !important;
+    grid-column: unset !important;
+    grid-row: unset !important;
+    border-radius: 0 !important;
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    padding: 8px !important;
+  }
+
+  /* Nom */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: unset !important;
+    grid-row: unset !important;
+    padding: 8px 10px 4px !important;
+    font-size: 13px !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  /* Bottom */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: unset !important;
+    grid-row: unset !important;
+    padding: 0 10px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  /* Titre section sticky dans le scroll de la page (pas dans un rail) */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    position: static !important; /* pas sticky : le scroll owner est la modal entière */
+    margin-bottom: 16px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid var(--sand-dark) !important;
+    background: none !important;
+  }
+
+  /* Chips */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    position: static !important;
+    top: unset !important;
+    background: none !important;
+    padding: 0 0 16px !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Section séparation */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section {
+    margin-top: 32px;
+    padding-top: 0;
+    border-top: none;
+  }
+
+}
+
+/* ── DESKTOP INTERMÉDIAIRE 900–1120px ──────────────────────── */
+@media (min-width: 900px) and (max-width: 1120px) {
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 52%) minmax(340px, 48%);
+  }
+  #k-modal .k-modal-product-zone .k-modal-details {
+    padding: 0 18px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    padding-inline: 18px;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* ── DESKTOP LARGE ≥1200px ─────────────────────────────────── */
+@media (min-width: 1200px) {
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 58%) minmax(380px, 42%);
+  }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+}
