@@ -40,14 +40,18 @@ img     { display: block; max-width: 100%; }
 a       { text-decoration: none; color: inherit; }
 ul, ol  { list-style: none; }
 
-/* Body lock : scroll bloqué quand modal ou panier ouvert */
-body.modal-open {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  top: var(--modal-scroll-y, 0);
+/* Body lock — DESKTOP uniquement.
+   Mobile : la modal est position:fixed plein écran, pas besoin de fixer le body.
+   position:fixed sur body tue overflow-y:auto des enfants sur Chrome Android. */
+@media (min-width: 900px) {
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: var(--modal-scroll-y, 0);
+  }
+  body.cart-open { overflow: hidden; }
 }
-body.cart-open { overflow: hidden; }
 
 /* Utilité globale */
 .u-hidden { display: none; }
