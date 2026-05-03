@@ -1,21 +1,18 @@
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — modal.css
-   ARCHITECTURE :
-     < 900px  = MOBILE   : modal plein écran, flex colonne, 1 scroll owner = .k-modal-scroll
-     ≥ 900px  = DESKTOP  : modal fenêtrée, image sticky gauche, détails droite, suggestions dessous
-
-   RÈGLE D'OR :
-     - Toute règle mobile est sans media query (base) ou dans @media (max-width:899px)
-     - Toute règle desktop est dans @media (min-width:900px)
-     - JAMAIS de règle tablette @media (min-width:600px) sans borne supérieure :
-       elle s'appliquerait aussi au desktop et créerait des conflits.
-     - Le bloc @media (max-width:899px) à haute spécificité (#k-modal) ne doit
-       JAMAIS omettre flex:1 / min-height:0 qu'il écrase depuis la base.
+   Modal produit + suggestions.
+   Mobile-first, zéro !important (sauf grille suggestions mobile).
+   Structure :
+     1. Base mobile
+     2. Tablette ≥600px
+     3. Desktop ≥900px  ← UNE SEULE SOURCE DE VÉRITÉ
+     4. Desktop intermédiaire 900–1120px
+     5. Desktop large ≥1200px
    ═══════════════════════════════════════════════════════════════ */
 
 
 /* ══════════════════════════════════════════════════════════════
-   1. BASE MOBILE (tous breakpoints, overridé par ≥900px)
+   1. BASE MOBILE
    ══════════════════════════════════════════════════════════════ */
 
 /* ── OVERLAY ─────────────────────────────────────────────────── */
@@ -76,7 +73,7 @@
   background: transparent; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; overflow: visible;
 }
-.k-modal-cart-btn .k-cart-avatar { width: 52px; height: 52px; mix-blend-mode: multiply; }
+.k-modal-cart-btn .k-cart-avatar { width: 52px; height: 52px; }
 .k-modal-cart-badge {
   position: absolute; top: -2px; right: -2px;
   min-width: 16px; height: 16px;
@@ -93,7 +90,7 @@
 }
 .k-modal-close:active { background: var(--sand); }
 
-/* ── SCROLL AREA (mobile : seul scroll owner) ────────────────── */
+/* ── SCROLL AREA ─────────────────────────────────────────────── */
 .k-modal-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
@@ -101,20 +98,10 @@
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
-/* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
-/* Les enfants (img-wrap, details, actions, suggestions) participent
-   directement au flex de .k-modal-scroll. Desktop override en grid. */
-.k-modal-product-zone {
-  display: contents;
-}
-
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
 .k-modal-img-wrap {
-  position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
+  position: relative; flex: 0 0 auto; height: 45vh;
   background: linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
-}
-@media (max-width: 600px) {
-  .k-modal-img-wrap { height: 40vh; max-height: 380px; }
 }
 .k-modal-carousel { width: 100%; height: 100%; overflow: hidden; }
 .k-modal-carousel-track { display: flex; height: 100%; transition: transform .3s cubic-bezier(.22,1,.36,1); }
@@ -270,7 +257,7 @@
 .k-modal-search-mic.is-listening svg { stroke: #fff; }
 @keyframes k-mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.35); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
 
-/* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
+/* ── ACTIONS ─────────────────────────────────────────────────── */
 .k-modal-actions {
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
@@ -279,12 +266,6 @@
   flex-shrink: 0; background: rgba(255,255,255,.96);
   backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
   position: relative; z-index: 30;
-}
-/* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
-   order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
-@media (max-width: 899px) {
-  .k-modal-actions { order: 3; flex-shrink: 0; }
-  .k-modal-suggestions { order: 2; }
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
@@ -323,7 +304,7 @@
 .k-sug-chips::-webkit-scrollbar { display: none; }
 .k-sug-chip { flex-shrink: 0; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: #555; cursor: pointer; transition: all .2s; white-space: nowrap; }
 .k-sug-chip.is-active { background: var(--hero-red); color: #fff; border-color: var(--hero-red); font-weight: 600; box-shadow: 0 2px 8px rgba(229,57,53,.3); }
-.k-sug-card.subcat-hidden { display: none !important; }
+.k-sug-card.subcat-hidden { display: none; }
 .k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
 .k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); border-radius: 10px 10px 0 0; }
@@ -338,102 +319,48 @@
 .k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; }
 .k-sug-add { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; }
 .k-sug-add:active { transform: scale(.88); }
-.k-sug-add img { width: 28px; height: 28px; display: block; mix-blend-mode: multiply; }
+.k-sug-add img { width: 28px; height: 28px; display: block; }
 .k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
-
-/* ── DIVERS ──────────────────────────────────────────────────── */
-.k-add-cart-btn img, .k-modal-actions img[src*="panier"] { mix-blend-mode: multiply; }
-.k-modal-trust { display: none; } /* visible desktop uniquement */
-.k-modal-share-row { display: none; } /* visible desktop uniquement */
-.k-modal-specs { display: none; } /* visible desktop uniquement */
-.k-modal-breadcrumb { display: none; } /* visible desktop uniquement */
-.k-modal-zoom-lens { display: none; }
-.k-modal-zoom-preview { display: none; }
 
 
 /* ══════════════════════════════════════════════════════════════
-   2. MOBILE GUARD @max-width:899px
-   Haute spécificité (#k-modal) pour contrecarrer d'éventuels conflits.
-   DOIT répéter flex:1 et min-height:0 car elle écrase la règle base.
+   2. TABLETTE ≥600px
    ══════════════════════════════════════════════════════════════ */
-@media (max-width: 899px) {
-  #k-modal-overlay, #k-modal { max-width: 100vw; overflow-x: hidden; }
-
-  /* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
-  #k-modal .k-modal-scroll {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;        /* OBLIGATOIRE : écrasé depuis la base par spécificité ID */
-    min-height: 0;      /* OBLIGATOIRE : idem */
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-    max-width: 100%;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
-  }
-
-  /* Pas de débordement horizontal sur aucun enfant */
-  #k-modal .k-modal-img-wrap,
-  #k-modal .k-modal-carousel,
-  #k-modal .k-modal-carousel-track,
-  #k-modal .k-modal-details,
-  #k-modal .k-modal-info,
-  #k-modal .k-modal-suggestions,
-  #k-modal #k-sug-rail,
-  #k-modal .k-sug-section,
-  #k-modal .k-modal-actions,
-  #k-modal .k-modal-topbar,
-  #k-modal .k-modal-meta,
-  #k-modal .k-modal-price-row,
-  #k-modal .k-modal-share-row,
-  #k-modal .k-modal-specs {
-    width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden;
-  }
-  #k-modal .k-modal-slide { max-width: 100%; min-width: 0; }
-  #k-modal .k-sug-grid {
-    width: 100%; max-width: 100%; min-width: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-x: hidden;
-  }
-  #k-modal .k-sug-card, #k-modal .k-sug-card-img,
-  #k-modal .k-sug-card-bottom, #k-modal .k-sug-card-actions { min-width: 0; max-width: 100%; }
-  #k-modal .k-modal-info h2, #k-modal .k-modal-desc,
-  #k-modal .k-sug-card-name, #k-modal .k-msearch-item-name,
-  #k-modal .k-msearch-item-cat { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
-  #k-modal .k-modal-inner-search, #k-modal .k-modal-search-dropdown {
-    width: auto; max-width: calc(100% - 24px); margin-left: 12px; margin-right: 12px;
-  }
-  #k-modal .k-msearch-item, #k-modal .k-msearch-item-info { min-width: 0; max-width: 100%; }
-  #k-modal .k-modal-actions { left: auto; right: auto; margin-left: 0; margin-right: 0; }
-  #k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
-  #k-modal .k-qty { min-width: 0; max-width: 100%; }
-  #k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
-  #k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
+@media (min-width: 600px) {
+  .k-modal { width: min(90vw, 900px); max-height: 90vh; max-height: 90dvh; border-radius: 16px; margin: auto; align-self: center; }
+  .k-modal-scroll { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto auto; padding-bottom: 0; overflow-y: auto; padding-top: 0; }
+  .k-modal-img-wrap { grid-column: 1; grid-row: 1 / 3; height: auto; min-height: 300px; align-self: start; }
+  .k-modal-details { grid-column: 2; grid-row: 1; overflow-y: auto; }
+  .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; }
+  .k-modal-actions { grid-column: 2; grid-row: 2; position: sticky; bottom: 0; align-self: end; z-index: 10; border-top: 1px solid rgba(0,0,0,.07); }
+  .k-modal-suggestions { grid-column: 1 / -1; grid-row: 3; }
+  .k-modal-desc { -webkit-line-clamp: 2; overflow: hidden; }
+  .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
    3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE
    Architecture :
-     .k-modal              = flex colonne (topbar fixe | scroll)
-     .k-modal-scroll       = flex colonne, overflow-y:auto (SEUL scroll owner)
-     .k-modal-product-zone = grid 2 colonnes (image sticky | détails+actions)
-     .k-modal-suggestions  = pleine largeur SOUS product-zone, overflow:visible
+     .k-modal          = flex column (topbar | scroll | —)
+     .k-modal-scroll   = grid 2 colonnes, overflow:hidden
+     col gauche        = image fixe (ne scrolle pas)
+     col droite        = .k-modal-details, overflow-y:auto = SCROLL OWNER
+     .k-modal-actions  = sticky bottom DANS .k-modal-details (flex:0 0 auto)
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Overlay ─────────────────────────────────────────────── */
+  /* Overlay */
   .k-modal-overlay.open { align-items: center; justify-content: center; padding: 22px; background: rgba(18,24,18,.52); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
-  /* ── Shell ───────────────────────────────────────────────── */
+  /* Shell */
   #k-modal.k-modal { width: min(1180px, calc(100vw - 48px)); height: min(760px, calc(100vh - 44px)); max-height: calc(100vh - 44px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px rgba(12,18,12,.34); animation: none; }
 
-  /* ── Topbar ──────────────────────────────────────────────── */
+  /* Topbar */
   #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid rgba(31,48,36,.08); box-shadow: 0 8px 24px rgba(31,48,36,.05); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { margin-left: 10px; }
-  #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
+  #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; }
   .k-topbar-search-trigger { display: none; }
   .k-topbar-search-expanded { display: none !important; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
@@ -443,55 +370,31 @@
   .k-modal-breadcrumb-cat:hover { color: var(--coral); }
   .k-modal-breadcrumb-name { font-weight: 600; color: var(--text); }
 
-  /* ── Scroll owner desktop ────────────────────────────────── */
-  #k-modal .k-modal-scroll {
-    flex: 1 1 auto; min-height: 0; height: 100%;
-    display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden;
-    padding: 0; background: var(--white);
-  }
+  /* Grid scroll — overflow:hidden interdit le scroll global */
+  #k-modal .k-modal-scroll { flex: 1 1 auto; min-height: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 56%) minmax(360px, 44%); padding: 0; background: var(--white); }
 
-  /* ── Product-zone : grid 2 colonnes (override display:contents) */
-  #k-modal .k-modal-product-zone {
-    display: grid;
-    grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
-    grid-template-rows: 1fr auto;
-    flex: 0 0 auto;
-    min-height: calc(min(760px, 100vh - 44px) - 58px);
-    width: 100%;
-    background: var(--white);
-  }
-
-  /* ── Image : col gauche sticky ───────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    grid-column: 1; grid-row: 1 / 3;
-    height: calc(min(760px, 100vh - 44px) - 58px);
-    position: sticky; top: 0; align-self: start;
-    overflow: hidden; border-radius: 0; margin: 0; max-height: none;
-    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
-                linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
-  }
+  /* Col gauche : image fixe */
+  #k-modal .k-modal-img-wrap { grid-column: 1; grid-row: 1; height: 100%; min-height: 0; margin: 0; border-radius: 0; overflow: hidden; display: flex; flex-direction: row; background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%); }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
   #k-modal .k-modal-slide { height: 100%; padding: 24px 30px 24px 92px; object-fit: contain; object-position: center; }
   #k-modal .k-modal-dots { display: none; }
+
+  /* Miniatures verticales */
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
   #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid rgba(31,48,36,.10); background: rgba(255,255,255,.78); box-shadow: 0 8px 18px rgba(31,48,36,.06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
   #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: rgba(200,92,45,.45); box-shadow: 0 10px 22px rgba(31,48,36,.10); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
-  .k-modal-zoom-preview { display: block; position: absolute; top: 24px; right: 24px; left: auto; width: 280px; height: 280px; border: 1px solid var(--border); border-radius: 16px; background-color: var(--white); background-repeat: no-repeat; background-size: 220% 220%; box-shadow: var(--elev-4); opacity: 0; pointer-events: none; z-index: 80; transition: opacity .16s var(--ease); overflow: hidden; }
+  .k-modal-zoom-lens { display: none; }
+  .k-modal-zoom-preview { position: absolute; top: 24px; right: 24px; left: auto; width: 280px; height: 280px; border: 1px solid var(--border); border-radius: 16px; background-color: var(--white); background-repeat: no-repeat; background-size: 220% 220%; box-shadow: var(--elev-4); opacity: 0; pointer-events: none; z-index: 80; transition: opacity .16s var(--ease); overflow: hidden; }
   .k-modal-zoom-preview.is-active { opacity: 1; }
 
-  /* ── Détails : col droite, row 1 ────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-details {
-    grid-column: 2; grid-row: 1;
-    display: flex; flex-direction: column;
-    overflow: visible; min-height: 0;
-    padding: 0 24px; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
-    border-radius: 0; box-shadow: none; margin: 0;
-  }
-  #k-modal .k-modal-product-zone .k-modal-info { flex: 0 0 auto; overflow: visible; max-height: none; padding: 18px 0 12px; }
+  /* Col droite : SCROLL OWNER unique */
+  #k-modal .k-modal-details { grid-column: 2; grid-row: 1; height: 100%; min-height: 0; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; padding: 0 24px; overscroll-behavior: contain; scrollbar-width: thin; background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%); }
+
+  /* Infos dans col droite */
+  #k-modal .k-modal-info { flex: 0 0 auto; padding: 18px 0 12px; display: flex; flex-direction: column; }
   #k-modal .k-modal-info h2 { font-size: clamp(21px, 1.65vw, 28px); line-height: 1.12; font-weight: 650; letter-spacing: -.025em; }
   #k-modal .k-modal-desc { margin-top: 8px; font-size: 13px; line-height: 1.45; color: var(--text-muted); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
   #k-modal .k-modal-price-row { margin-top: 14px; gap: 12px; }
@@ -500,12 +403,14 @@
   #k-modal .k-modal-meta { margin-top: 10px; gap: 8px; }
   #k-modal .k-modal-meta span { padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(31,48,36,.06); }
 
-  /* ── Trust, Partage, Specs ───────────────────────────────── */
+  /* Trust */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
   .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
   #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid rgba(31,48,36,.06); }
+
+  /* Partage */
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
@@ -514,7 +419,9 @@
   .k-modal-share-btn--wa:hover { background: #20b858; border-color: #20b858; }
   #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
-  .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
+
+  /* Specs accordéon */
+  .k-modal-specs { border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
   .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
   .k-modal-spec-toggle:hover { color: var(--coral); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
@@ -528,76 +435,50 @@
   .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
   #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
-  /* ── Recherche interne ───────────────────────────────────── */
+  /* Recherche */
   #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
   .k-modal-inner-search-input { font-size: 14px; }
   .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
   #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
-  /* ── Actions : col droite, row 2, sticky bas ─────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    order: unset; /* annule le order mobile */
-    grid-column: 2; grid-row: 2;
-    position: sticky; bottom: 0; z-index: 70;
-    margin: 0; padding: 12px 24px 16px;
-    background: rgba(255,255,255,.98);
-    border-top: 1px solid rgba(31,48,36,.10);
-    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    display: grid;
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
-    align-items: center; gap: 10px;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn { grid-column: 3; grid-row: 1; height: 42px; border-radius: 999px; font-size: 14px; }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 42px; }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn { grid-column: 2; grid-row: 1; height: 42px; border-radius: 999px; }
-  #k-modal .k-modal-subtotal { grid-column: 1 / -1; grid-row: 2; text-align: right; padding: 0 2px; }
-
-  /* ── Suggestions : pleine largeur SOUS product-zone ─────── */
-  #k-modal .k-modal-suggestions,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list {
-    order: unset; /* annule le order mobile */
-    flex: 0 0 auto; overflow: visible; min-height: unset;
-    display: block; width: 100%;
-    padding: 28px 36px 48px;
-    border-top: 2px solid var(--sand-dark);
-    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%);
-    margin-top: 0;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
-    overflow: visible; height: auto; padding: 0;
-  }
+  /* Suggestions — liste verticale dans col droite, scrolle avec elle */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list { flex: 0 0 auto; display: block; overflow: visible; padding: 0 0 20px; margin-top: 8px; border-top: 1px solid rgba(31,48,36,.08); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list { display: block; overflow: visible; padding: 12px 0 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section { display: block; width: 100%; margin: 0 0 16px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; padding: 0; font-size: 13px; font-weight: 850; color: var(--text); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { display: flex; gap: 7px; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 0 0 9px; margin-bottom: 10px; scrollbar-width: none; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips::-webkit-scrollbar { display: none; }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px; flex-direction: unset; padding: 0;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
-    display: flex; flex-direction: column;
-    grid-template-columns: unset; grid-template-rows: unset;
-    min-height: unset; height: auto; border-radius: 14px; overflow: hidden;
-    background: var(--white); box-shadow: 0 4px 16px rgba(31,48,36,.07);
-    transition: transform .18s, box-shadow .18s; cursor: pointer;
-  }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(31,48,36,.12); }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { width: 100%; height: auto; aspect-ratio: 1; grid-column: unset; grid-row: unset; border-radius: 0; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: unset; grid-row: unset; padding: 8px 10px 4px; font-size: 13px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: unset; grid-row: unset; padding: 0 10px 10px; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title { position: static; margin-bottom: 16px; padding: 0 0 10px; border-bottom: 1px solid var(--sand-dark); background: none; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips { position: static; background: none; padding: 0 0 16px; margin-bottom: 0; }
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section { margin-top: 32px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; overflow: visible; padding: 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card { display: grid; grid-template-columns: 76px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 5px; width: 100%; min-width: 0; max-width: 100%; min-height: 82px; align-items: center; border: 1px solid rgba(31,48,36,.09); border-radius: 14px; background: rgba(255,255,255,.92); box-shadow: 0 8px 20px rgba(31,48,36,.045); overflow: hidden; transition: transform .14s, box-shadow .14s, border-color .14s; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover { transform: translateY(-1px); border-color: rgba(200,92,45,.22); box-shadow: 0 12px 26px rgba(31,48,36,.075); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img { grid-column: 1; grid-row: 1 / span 2; width: 76px; height: 76px; aspect-ratio: auto; border-radius: 12px; background: var(--sand); overflow: hidden; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name { grid-column: 2; grid-row: 1; padding: 9px 12px 0 0; min-width: 0; font-size: 13px; font-weight: 700; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom { grid-column: 2; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 9px; min-width: 0; padding: 0 12px 9px 0; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price { padding: 0; font-size: 14px; font-weight: 850; color: var(--coral); white-space: nowrap; }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-add { width: 34px; height: 34px; border-radius: 11px; background: var(--white); border: 1px solid rgba(31,48,36,.08); box-shadow: 0 6px 14px rgba(31,48,36,.06); }
 
-  /* ── Hover & focus ───────────────────────────────────────── */
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+  /* Actions — sticky en bas de .k-modal-details (le scroll owner) */
+  #k-modal .k-modal-actions { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 70; margin: 0 -24px; padding: 12px 24px 16px; background: rgba(255,255,255,.98); border-top: 1px solid rgba(31,48,36,.10); box-shadow: 0 -12px 28px rgba(31,48,36,.06); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); display: grid; grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr); grid-template-rows: auto; align-items: center; gap: 10px; }
+  #k-modal .k-qty { grid-column: 1; grid-row: 1; height: 42px; }
+  #k-modal .k-qty-btn { height: 42px; width: 38px; }
+  #k-modal .k-add-cart-btn { grid-column: 2; grid-row: 1; height: 42px; border-radius: 999px; }
+  #k-modal .k-add-cart-btn:hover { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+  #k-modal .k-modal-actions .k-buy-now-btn { grid-column: 3; grid-row: 1; height: 42px; border-radius: 999px; font-size: 14px; }
+  #k-modal .k-modal-subtotal { grid-column: 1 / -1; grid-row: 2; text-align: right; padding: 0 2px; }
+
+  /* Hover états desktop */
   .k-msearch-item:hover { background: var(--sand); }
   .k-msearch-footer:hover { background: var(--sand); color: var(--coral); }
   .k-modal-search-clear:hover { background: var(--border); color: var(--text); }
   .k-msearch-group-more:hover { background: var(--sand); color: var(--coral-dark); }
   .k-msearch-recent-item:hover { background: var(--sand); }
   .k-msearch-recent-remove:hover { background: var(--sand-dark); color: var(--text); }
+  .k-msearch-recents-clear:hover { background: rgba(200,92,45,.06); }
+
+  /* Focus */
   .k-modal, .k-modal * { -webkit-tap-highlight-color: transparent; }
   .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
   .k-modal-slide:focus, .k-modal-slide:focus-visible { outline: none; box-shadow: none; }
@@ -610,12 +491,10 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal { width: calc(100vw - 32px); }
-  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 52%) minmax(340px, 48%); }
-  #k-modal .k-modal-product-zone .k-modal-details { padding: 0 18px; }
-  #k-modal .k-modal-product-zone .k-modal-actions { padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; }
-  #k-modal .k-modal-suggestions,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { padding: 24px 24px 36px; }
+  #k-modal .k-modal-scroll { grid-template-columns: minmax(0, 52%) minmax(340px, 48%); }
+  #k-modal .k-modal-details { padding: 0 18px; }
+  #k-modal .k-modal-actions { margin: 0 -18px; padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
+  #k-modal .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; }
 }
 
 
@@ -623,9 +502,1055 @@
    5. DESKTOP LARGE ≥1200px
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 1200px) {
+<<<<<<< HEAD
   #k-modal.k-modal { width: min(1280px, calc(100vw - 48px)); }
-  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 58%) minmax(380px, 42%); }
+  #k-modal .k-modal-scroll { grid-template-columns: minmax(0, 58%) minmax(380px, 42%); }
+}
+=======
+  .k-modal {
+    width: min(92vw, 1160px);
+  }
+  .k-modal-scroll {
+    grid-template-columns: 58% 42%;
+  }
+  /* 4 colonnes suggestions sur très grands écrans */
+  .k-sug-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   MINIATURES DESKTOP — colonne gauche Temu-style
+   Mobile : caché (dots horizontaux suffisent)
+   Desktop : colonne verticale à gauche de l'image principale
+   ══════════════════════════════════════════════════════════════ */
+
+/* Mobile : cacher les miniatures */
+.k-modal-thumbs { display: none; }
+
+@media (min-width: 900px) {
+
+  /* Conteneur image : flex row avec miniatures à gauche */
+  .k-modal-img-wrap {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+  }
+
+  /* Colonne miniatures */
+  .k-modal-thumbs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 8px 10px 10px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    width: 72px;
+    background: var(--sand);
+    scrollbar-width: none;
+  }
+  .k-modal-thumbs::-webkit-scrollbar { display: none; }
+
+  .k-modal-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background: var(--white);
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .k-modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .k-modal-thumb:hover {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 1px var(--coral);
+  }
+  .k-modal-thumb.is-active {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 2px rgba(200,92,45,.25);
+  }
+
+  /* Carousel principal prend le reste de la place */
+  .k-modal-carousel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Cacher les dots sur desktop (remplacés par miniatures) */
+  .k-modal-dots { display: none; }
+
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEPPER & ACTIONS SUGGESTIONS
+   ══════════════════════════════════════════════════════════════ */
+
+.k-sug-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  flex-shrink: 0;
+}
+.k-sug-step {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--sand);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: var(--ocean);
+  cursor: pointer; flex-shrink: 0;
+  transition: background .15s;
+}
+.k-sug-step:active { background: var(--sand-dark); transform: scale(.9); }
+.k-sug-qty {
+  min-width: 22px; text-align: center;
+  font-size: 13px; font-weight: 700; color: var(--ocean);
+  user-select: none;
+}
+.k-sug-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 8px;
+  gap: 4px;
+}
+.k-sug-card-price {
+  font-size: 13px; font-weight: 700; color: var(--coral);
+  flex: 1; min-width: 0;
+}
+
+/* k-sug-add : panier sans fond blanc dans les suggestions */
+.k-sug-add {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.k-sug-add:active { transform: scale(.88); }
+.k-sug-add img { width: 28px; height: 28px; display: block; }
+
+/* ── Promo badge sur les cartes suggestion ────────────────────── */
+.k-sug-promo-badge {
+  position: absolute;
+  top: 5px; left: 5px;
+  background: var(--coral); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 50px;
+  pointer-events: none; z-index: 2;
+}
+\n\n/* ── DESKTOP PRODUCT MODAL LAYOUT — SOURCE OF TRUTH ── */
+@media (min-width: 900px) {
+  .k-modal-overlay.open {
+    align-items: center;
+    justify-content: center;
+  }
+
+  .k-modal {
+    width: min(1280px, calc(100vw - 48px));
+    height: min(820px, calc(100vh - 48px));
+    max-height: calc(100vh - 48px);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .k-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 58%) minmax(380px, 42%);
+    padding: 0;
+  }
+
+  .k-modal-img-wrap {
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .k-modal-details {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    padding: 0 28px 0;
+    overscroll-behavior: contain;
+  }
+
+  .k-modal-info {
+    flex: 0 0 auto;
+    padding: 18px 0 12px;
+  }
+
+  .k-modal-inner-search {
+    flex: 0 0 auto;
+    margin: 10px 0 8px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    display: block;
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 0 0 150px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px 0 10px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    display: flex;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 10px;
+    scrollbar-width: thin;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 6px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid var(--sand-dark);
+    border-radius: 14px;
+    background: var(--white);
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 82px;
+    height: 82px;
+    aspect-ratio: auto;
+    border-radius: 12px;
+    background: var(--sand);
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 9px 12px 0 0;
+    min-width: 0;
+    min-height: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    padding: 0 12px 9px 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-actions {
+    flex-shrink: 0;
+  }
+
+  .k-modal-actions {
+    flex: 0 0 auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    margin: 0 -28px;
+    padding: 12px 28px 16px;
+    background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--sand-dark);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+/* ── END DESKTOP PRODUCT MODAL LAYOUT ── */\n
+
+
+/* ── DESKTOP PRODUCT MODAL POLISH — SOURCE OF TRUTH ── */
+@media (min-width: 900px) {
+  .k-modal-overlay.open {
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    background: rgba(18, 24, 18, .52);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  #k-modal.k-modal {
+    width: min(1180px, calc(100vw - 48px));
+    height: min(760px, calc(100vh - 44px));
+    max-height: calc(100vh - 44px);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 28px 80px rgba(12, 18, 12, .34);
+    animation: none;
+  }
+
+  #k-modal .k-modal-topbar {
+    min-height: 58px;
+    padding: 9px 18px;
+    background: rgba(253,250,245,.97);
+    border-bottom: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 8px 24px rgba(31,48,36,.05);
+  }
+
+  #k-modal .k-modal-back {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  #k-modal #k-modal-nav {
+    margin-left: 10px;
+  }
+
+  #k-modal .k-modal-cart-btn .k-cart-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  #k-modal .k-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
+    padding: 0;
+    background: var(--white);
+  }
+
+  #k-modal .k-modal-img-wrap {
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
+      linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
+    overflow: hidden;
+  }
+
+  #k-modal .k-modal-carousel {
+    width: 100%;
+    height: 100%;
+  }
+
+  #k-modal .k-modal-carousel-track {
+    height: 100%;
+  }
+
+  #k-modal .k-modal-slide {
+    height: 100%;
+    padding: 24px 30px 24px 92px;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  #k-modal .k-modal-thumbs {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    bottom: 16px;
+    z-index: 8;
+    width: 58px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  #k-modal .k-modal-thumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal .k-modal-thumb {
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
+    border-radius: 12px;
+    border: 1px solid rgba(31,48,36,.10);
+    background: rgba(255,255,255,.78);
+    box-shadow: 0 8px 18px rgba(31,48,36,.06);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .14s, border-color .14s, box-shadow .14s;
+  }
+
+  #k-modal .k-modal-thumb:hover,
+  #k-modal .k-modal-thumb.is-active {
+    transform: translateY(-1px);
+    border-color: rgba(200,92,45,.45);
+    box-shadow: 0 10px 22px rgba(31,48,36,.10);
+  }
+
+  #k-modal .k-modal-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 5px;
+  }
+
+  #k-modal .k-modal-details {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px;
+    background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  #k-modal .k-modal-info {
+    flex: 0 0 auto;
+    padding: 18px 0 12px;
+  }
+
+  #k-modal .k-modal-info h2 {
+    font-size: clamp(21px, 1.65vw, 28px);
+    line-height: 1.12;
+    font-weight: 650;
+    letter-spacing: -.025em;
+  }
+
+  #k-modal .k-modal-desc {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  #k-modal .k-modal-price-row {
+    margin-top: 14px;
+    gap: 12px;
+  }
+
+  #k-modal .k-modal-price {
+    font-size: clamp(24px, 2vw, 32px);
+    font-weight: 850;
+    color: var(--coral);
+  }
+
+  #k-modal .k-modal-old-price {
+    font-size: 14px;
+  }
+
+  #k-modal .k-modal-meta {
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  #k-modal .k-modal-meta span {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid rgba(31,48,36,.06);
+  }
+
+  #k-modal .k-modal-trust {
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 11px 0;
+  }
+
+  #k-modal .k-modal-trust-item {
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: var(--sand);
+    border: 1px solid rgba(31,48,36,.06);
+  }
+
+  #k-modal .k-modal-share-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  #k-modal .k-modal-share-btn {
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+
+  #k-modal .k-modal-specs {
+    margin-top: 8px;
+    border-top: 1px solid var(--sand-dark);
+  }
+
+  #k-modal .k-modal-inner-search {
+    margin: 10px 0 8px;
+    border-radius: 14px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    flex: 0 0 auto;
+    display: block;
+    min-height: 0;
+    overflow: visible;
+    padding: 0 0 18px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 16px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 10px;
+    font-size: 13px;
+    font-weight: 850;
+    color: var(--text);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    display: flex;
+    gap: 7px;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 9px;
+    scrollbar-width: none;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    row-gap: 5px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    border: 1px solid rgba(31,48,36,.09);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 8px 20px rgba(31,48,36,.045);
+    overflow: hidden;
+    transition: transform .14s, box-shadow .14s, border-color .14s;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(200,92,45,.22);
+    box-shadow: 0 12px 26px rgba(31,48,36,.075);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 76px;
+    height: 76px;
+    aspect-ratio: auto;
+    border-radius: 12px;
+    background: var(--sand);
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 9px 12px 0 0;
+    min-width: 0;
+    min-height: 0;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    min-width: 0;
+    padding: 0 12px 9px 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-price {
+    padding: 0;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--coral);
+    white-space: nowrap;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-add {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: var(--white);
+    border: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 6px 14px rgba(31,48,36,.06);
+  }
+
+  #k-modal .k-modal-actions {
+    display: grid;
+    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px 16px;
+    border-top: 1px solid rgba(31,48,36,.10);
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
+    z-index: 70;
+  }
+
+  #k-modal .k-qty {
+    grid-column: 1;
+    grid-row: 1;
+    height: 42px;
+  }
+
+  #k-modal .k-qty-btn {
+    height: 42px;
+    width: 38px;
+  }
+
+  #k-modal .k-add-cart-btn {
+    grid-column: 2;
+    grid-row: 1;
+    height: 42px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-modal-actions .k-buy-now-btn {
+    grid-column: 3;
+    grid-row: 1;
+    height: 42px;
+    border-radius: 999px;
+    font-size: 14px;
+  }
+
+  #k-modal .k-modal-subtotal {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: right;
+    padding: 0 2px;
+  }
+
+  #k-modal .k-modal-zoom-preview {
+    top: 18px;
+    right: 18px;
+    width: 250px;
+    height: 250px;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1120px) {
+  #k-modal.k-modal {
+    width: calc(100vw - 32px);
+  }
+
+  #k-modal .k-modal-scroll {
+    grid-template-columns: minmax(0, 52%) minmax(340px, 48%);
+  }
+
+  #k-modal .k-modal-details {
+    padding: 0 18px;
+  }
+
+  #k-modal .k-modal-actions {
+    padding-inline: 18px;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #k-modal .k-modal-actions .k-buy-now-btn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+/* ── END DESKTOP PRODUCT MODAL POLISH ── */
+
+
+/* ── DESKTOP MODAL TEMU-LIKE SUGGESTION SCROLL — SOURCE OF TRUTH ── */
+@media (min-width: 900px) {
+  /*
+    Architecture Temu-like :
+    - image fixe à gauche
+    - colonne droite non scroll globale
+    - suggestions/options scrollent verticalement dans leur propre panneau
+    - barre achat toujours visible en bas
+  */
+
+  #k-modal .k-modal-scroll {
+    overflow: hidden;
+  }
+
+  #k-modal .k-modal-details {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #k-modal .k-modal-info {
+    flex: 0 0 auto;
+    padding-bottom: 8px;
+  }
+
+  #k-modal .k-modal-inner-search {
+    flex: 0 0 auto;
+    margin: 8px 0 8px;
+  }
+
+  #k-modal .k-modal-search-dropdown {
+    flex: 0 0 auto;
+    max-height: 260px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-top: 2px;
+    border-top: 1px solid rgba(31,48,36,.08);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: block;
+    padding: 10px 6px 14px 0;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list::-webkit-scrollbar-thumb {
+    background: rgba(31,48,36,.18);
+    border-radius: 999px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section {
+    margin: 0 0 14px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 0 10px;
+    padding: 8px 0 8px;
+    background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,.94) 100%);
+    border-bottom: 1px solid rgba(31,48,36,.06);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
+    position: sticky;
+    top: 38px;
+    z-index: 2;
+    background: rgba(255,255,255,.96);
+    padding: 0 0 10px;
+    margin-bottom: 8px;
+  }
+
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
+    min-height: 82px;
+  }
+
+  #k-modal .k-modal-actions {
+    flex: 0 0 auto;
+    position: relative;
+    bottom: auto;
+    z-index: 20;
+    margin: 0 -24px;
+    padding: 12px 24px 14px;
+    background: rgba(255,255,255,.98);
+    border-top: 1px solid rgba(31,48,36,.10);
+    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
+  }
+
+  #k-modal .k-modal-actions::before {
+    content: none;
+  }
 }
+
+@media (min-width: 900px) and (max-width: 1120px) {
+  #k-modal .k-modal-actions {
+    margin: 0 -18px;
+    padding-inline: 18px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
+    padding-right: 4px;
+  }
+}
+/* ── END DESKTOP MODAL TEMU-LIKE SUGGESTION SCROLL ── */
+>>>>>>> 1a597310e2705d67a1fa626fdbbacf1f60a06d0b
+
+
+/* ── MOBILE MODAL NO HORIZONTAL SCROLL — SOURCE OF TRUTH ── */
+@media (max-width: 899px) {
+  /*
+    Sécurité mobile :
+    aucun enfant de la modal ne doit créer de largeur horizontale.
+    Desktop est géré séparément dans le bloc >=900px.
+  */
+
+  #k-modal-overlay,
+  #k-modal,
+  #k-modal *,
+  #k-modal *::before,
+  #k-modal *::after {
+    box-sizing: border-box;
+  }
+
+  #k-modal-overlay,
+  #k-modal {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-scroll {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-img-wrap,
+  #k-modal .k-modal-carousel,
+  #k-modal .k-modal-carousel-track,
+  #k-modal .k-modal-details,
+  #k-modal .k-modal-info,
+  #k-modal .k-modal-suggestions,
+  #k-modal #k-sug-rail,
+  #k-modal .k-sug-section,
+  #k-modal .k-modal-actions,
+  #k-modal .k-modal-topbar {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-modal-slide {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  #k-modal .k-sug-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: hidden;
+  }
+
+  #k-modal .k-sug-card,
+  #k-modal .k-sug-card-img,
+  #k-modal .k-sug-card-bottom,
+  #k-modal .k-sug-card-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-modal-info h2,
+  #k-modal .k-modal-desc,
+  #k-modal .k-sug-card-name,
+  #k-modal .k-msearch-item-name,
+  #k-modal .k-msearch-item-cat {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  #k-modal .k-modal-inner-search,
+  #k-modal .k-modal-search-dropdown {
+    width: auto;
+    max-width: calc(100% - 24px);
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  #k-modal .k-msearch-item,
+  #k-modal .k-msearch-item-info {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-modal-actions {
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  #k-modal .k-add-cart-btn,
+  #k-modal .k-modal-actions .k-buy-now-btn,
+  #k-modal .k-qty {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #k-modal .k-add-cart-btn {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #k-modal .k-topbar-search-expanded {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+/* ── END MOBILE MODAL NO HORIZONTAL SCROLL ── */
