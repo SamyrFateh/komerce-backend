@@ -283,20 +283,22 @@ if('serviceWorker' in navigator){
             </div>
           </div>
         </div>
+        <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
+        <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
         <div class="k-modal-actions">
-        <div class="k-qty">
-          <button class="k-qty-btn" id="k-qty-minus">−</button>
-          <span class="k-qty-val" id="k-qty-val">1</span>
-          <button class="k-qty-btn" id="k-qty-plus">+</button>
+          <div class="k-qty">
+            <button class="k-qty-btn" id="k-qty-minus">−</button>
+            <span class="k-qty-val" id="k-qty-val">1</span>
+            <button class="k-qty-btn" id="k-qty-plus">+</button>
+          </div>
+          <button class="k-add-cart-btn" id="k-add-cart-btn">
+            <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="">
+            Ajouter
+          </button>
+          <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
         </div>
-        <button class="k-add-cart-btn" id="k-add-cart-btn">
-          <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="">
-          Ajouter
-        </button>
-        <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
-      </div>
       </div><!-- end .k-modal-product-zone -->
-      <!-- Suggestions pleine largeur (mode Temu) -->
+      <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
       <div class="k-modal-suggestions" id="k-modal-suggestions">
         <h3>Vous aimerez aussi</h3>
         <div class="k-sug-rail" id="k-sug-rail"></div>
@@ -531,6 +533,8 @@ if('serviceWorker' in navigator){
     el.textContent = proverbes[idx];
   })();
 </script>
+<!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
+<script src="/boutique/js/mock-data.js"></script>
 <script src="/boutique/js/komerce-api.js?v=329"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
 <script type="module" src="/boutique/js/main.js?v=329"></script>

@@ -667,20 +667,68 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   TEMU-STYLE LAYOUT PATCH
-   Mode 1 : fiche produit 2 colonnes (image | détails)
-   Mode 3 : suggestions pleine largeur SOUS la fiche
+   TEMU-STYLE LAYOUT PATCH v2
+   Approche propre : product-zone = display:grid sur desktop uniquement
+   Mobile/tablette : structure HTML transparente via display:contents
+   Desktop ≥900px  : product-zone = grid 2 colonnes (image | détails)
+                      suggestions = pleine largeur SOUS product-zone
+                      actions = sticky bas DANS product-zone (col droite)
    ══════════════════════════════════════════════════════════════ */
 
-/* ── MOBILE : rien ne change, tout empilé ──────────────────── */
+/* ── BASE (tous breakpoints) : product-zone transparent ──────── */
 .k-modal-product-zone {
-  display: contents; /* transparent sur mobile, laisse le layout actuel */
+  display: contents; /* enfants participent au layout du parent */
 }
 
-/* ── DESKTOP ≥900px : refonte Temu ────────────────────────── */
+/* ── TABLETTE 600–899px : fix grid slots pour suggestions/actions ─ */
+/* Sur tablette, .k-modal-scroll est un grid 2 colonnes.
+   Avec display:contents, img-wrap et details sont bien placés.
+   Suggestions et actions doivent être dans la col droite. */
+@media (min-width: 600px) and (max-width: 899px) {
+  .k-modal-suggestions {
+    grid-column: 2;
+    grid-row: 3; /* sous details (row 1) et actions (row 2) */
+    overflow-y: auto;
+  }
+  .k-modal-actions {
+    grid-column: 2;
+    grid-row: 2;
+    position: sticky;
+    bottom: 0;
+    align-self: end;
+    z-index: 10;
+    border-top: 1px solid rgba(0,0,0,.07);
+  }
+}
+
+/* ── MOBILE <600px : order pour remettre suggestions avant actions ─ */
+/* display:contents place actions avant suggestions dans le DOM,
+   mais sur mobile on veut: img > details > suggestions > actions */
+@media (max-width: 599px) {
+  #k-modal .k-modal-scroll {
+    display: flex;
+    flex-direction: column;
+  }
+  #k-modal .k-modal-suggestions {
+    order: 1; /* suggestions avant actions */
+  }
+  #k-modal .k-modal-actions {
+    order: 2; /* actions en dernier */
+  }
+}
+
+/* ── TABLETTE 600–899px : même ordre + grid slot corrections ─── */
+/* (les règles grid-column/row sont déjà dans le bloc @media 600px) */
+@media (min-width: 600px) and (max-width: 899px) {
+  #k-modal .k-modal-scroll {
+    grid-template-rows: 1fr auto auto; /* row 3 pour suggestions */
+  }
+}
+
+/* ── DESKTOP ≥900px : refonte Temu complète ──────────────────── */
 @media (min-width: 900px) {
 
-  /* Le scroll est maintenant le seul scroll owner */
+  /* Le scroll est le seul scroll owner, flex column */
   #k-modal .k-modal-scroll {
     display: flex !important;
     flex-direction: column !important;
@@ -688,21 +736,20 @@
     overflow-x: hidden !important;
     height: 100% !important;
     padding: 0 !important;
-    /* Pas de grid global — on utilise le product-zone pour les 2 cols */
   }
 
-  /* Zone produit : grid 2 colonnes, hauteur min = fenêtre modale visible */
+  /* product-zone : grid 2 colonnes, hauteur = fenêtre modale - topbar */
   #k-modal .k-modal-product-zone {
-    display: grid;
+    display: grid !important; /* override display:contents */
     grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
     grid-template-rows: 1fr auto; /* details | actions */
     flex: 0 0 auto;
-    min-height: calc(min(760px, 100vh - 44px) - 58px); /* hauteur modale - topbar */
+    min-height: calc(min(760px, 100vh - 44px) - 58px);
     width: 100%;
     background: var(--white);
   }
 
-  /* Image : col gauche, spans les 2 rows, sticky dans la zone produit */
+  /* Image : col gauche, couvre les 2 rows, sticky */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     grid-column: 1;
     grid-row: 1 / 3;
@@ -713,16 +760,17 @@
     overflow: hidden;
     border-radius: 0;
     margin: 0;
-    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%), linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
+    background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
+                linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
   }
 
-  /* Détails : col droite, row 1, overflow visible (pas de scroll interne) */
+  /* Détails : col droite, row 1, scroll visible (pas de scroll interne) */
   #k-modal .k-modal-product-zone .k-modal-details {
     grid-column: 2;
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    overflow: visible; /* contenu s'étend naturellement */
+    overflow: visible;
     min-height: 0;
     padding: 0 24px;
     background: linear-gradient(180deg, #fff 0%, #fff 74%, #fffaf3 100%);
@@ -731,14 +779,15 @@
     margin: 0;
   }
 
-  /* Infos produit : pas de max-height, s'étend naturellement */
+  /* Infos produit : pas de max-height */
   #k-modal .k-modal-product-zone .k-modal-info {
     flex: 0 0 auto;
     overflow: visible;
+    max-height: none;
     padding: 18px 0 12px;
   }
 
-  /* Actions : col droite, row 2 — sticky en bas de la zone produit */
+  /* Actions : col droite, row 2, sticky bas dans product-zone */
   #k-modal .k-modal-product-zone .k-modal-actions {
     grid-column: 2;
     grid-row: 2;
@@ -758,36 +807,47 @@
     align-items: center;
     gap: 10px;
   }
-
-  /* Suggestions : pleine largeur sous la zone produit */
-  #k-modal .k-modal-suggestions {
-    flex: 0 0 auto;
-    width: 100%;
-    padding: 24px 32px 40px;
-    border-top: 2px solid var(--sand-dark);
-    background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%);
+  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
+    grid-column: 3;
+    grid-row: 1;
+    height: 42px;
+    border-radius: 999px;
+    font-size: 14px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
+    grid-column: 1;
+    grid-row: 1;
+    height: 42px;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
+    grid-column: 2;
+    grid-row: 1;
+    height: 42px;
+    border-radius: 999px;
   }
 
-  /* Override desktop-list mode : grille 4-6 colonnes pleine largeur */
+  /* Suggestions : pleine largeur SOUS product-zone */
+  #k-modal .k-modal-suggestions,
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     flex: 0 0 auto !important;
     overflow: visible !important;
     min-height: unset !important;
     display: block !important;
-    padding: 24px 32px 40px !important;
+    width: 100%;
+    padding: 28px 36px 48px !important;
     border-top: 2px solid var(--sand-dark) !important;
     background: linear-gradient(180deg, #faf9f6 0%, #f5f2ec 100%) !important;
     margin-top: 0 !important;
   }
 
-  /* Rail : pas de scroll interne, tout visible */
+  /* Rail : scroll interne désactivé, tout visible */
   #k-modal-suggestions.k-modal-suggestions--desktop-list #k-sug-rail.k-sug-rail--desktop-list {
     overflow: visible !important;
     height: auto !important;
     padding: 0 !important;
   }
 
-  /* Grilles : multi-colonnes en pleine largeur */
+  /* Grilles : multi-colonnes pleine largeur */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
@@ -798,7 +858,7 @@
     padding: 0 !important;
   }
 
-  /* Cartes : format vertical (comme Temu) */
+  /* Cartes : format vertical */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card {
     display: flex !important;
     flex-direction: column !important;
@@ -818,7 +878,7 @@
     box-shadow: 0 10px 28px rgba(31,48,36,.12) !important;
   }
 
-  /* Image : aspect-ratio carré */
+  /* Image carte : aspect-ratio carré */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-img {
     width: 100% !important;
     height: auto !important;
@@ -833,51 +893,41 @@
     object-fit: contain !important;
     padding: 8px !important;
   }
-
-  /* Nom */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-name {
     grid-column: unset !important;
     grid-row: unset !important;
     padding: 8px 10px 4px !important;
     font-size: 13px !important;
-    -webkit-line-clamp: 2 !important;
   }
-
-  /* Bottom */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-card-bottom {
     grid-column: unset !important;
     grid-row: unset !important;
     padding: 0 10px 10px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
   }
 
-  /* Titre section sticky dans le scroll de la page (pas dans un rail) */
+  /* Titres sections : statiques (pas sticky, scroll owner = modal entier) */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
-    position: static !important; /* pas sticky : le scroll owner est la modal entière */
+    position: static !important;
     margin-bottom: 16px !important;
     padding: 0 0 10px !important;
     border-bottom: 1px solid var(--sand-dark) !important;
     background: none !important;
   }
-
-  /* Chips */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-chips {
     position: static !important;
-    top: unset !important;
     background: none !important;
     padding: 0 0 16px !important;
     margin-bottom: 0 !important;
   }
-
-  /* Section séparation */
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-section + .k-sug-section {
     margin-top: 32px;
-    padding-top: 0;
-    border-top: none;
   }
 
+  /* Hover états desktop */
+  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
+    border-color: var(--ocean);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.1);
+  }
 }
 
 /* ── DESKTOP INTERMÉDIAIRE 900–1120px ──────────────────────── */
@@ -896,6 +946,10 @@
   #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+  #k-modal .k-modal-suggestions,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    padding: 24px 24px 36px !important;
   }
 }
 
