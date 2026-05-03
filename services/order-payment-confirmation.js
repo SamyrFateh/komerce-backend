@@ -32,7 +32,7 @@
  * @param {object}  opts
  * @param {string}  opts.orderId    — UUID de la commande
  * @param {object}  opts.actor      — { id, role } de l'initiateur
- * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm' | 'wallet_full_payment' | 'shared_cart_full_payment'
+ * @param {string}  opts.source     — 'stripe_webhook' | 'cash_confirm'
  * @param {object}  opts.dbClient   — Client de transaction actif (pool.connect())
  * @param {string}  [opts.note]     — Note optionnelle pour l'historique
  *
@@ -63,11 +63,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   const confirmNote = note
     || (source === 'stripe_webhook'
       ? 'Paiement Stripe reçu'
-      : source === 'wallet_full_payment'
-        ? 'Paiement intégral par wallet'
-        : source === 'shared_cart_full_payment'
-          ? 'Paiement intégral via panier partagé'
-          : 'Paiement espèces confirmé par agent relais');
+      : 'Paiement espèces confirmé par agent relais');
 
   const confirmResult = await transitionOrderStatus({
     orderId,
@@ -97,11 +93,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   // L'ordre est déjà confirmé — le stock doit quand même être traité.
   const orderedNote = source === 'stripe_webhook'
     ? 'Commande lancée automatiquement après paiement Stripe'
-    : source === 'wallet_full_payment'
-      ? 'Commande lancée après paiement intégral par wallet'
-      : source === 'shared_cart_full_payment'
-        ? 'Commande lancée après financement complet du panier partagé'
-        : 'Commande lancée après paiement cash';
+    : 'Commande lancée après paiement cash';
 
   const orderResult = await transitionOrderStatus({
     orderId,
@@ -123,11 +115,18 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   // produits concernés en une fois (évite les deadlocks par acquisition séquentielle).
   //
   // Produits avec stock IS NULL = stock non géré = on ne les vérifie pas.
+  //
+  // VAGUE 3 — Variantes :
+  //   Si oi.variant_combo est présent ET p.has_variants=true, on vérifie ET
+  //   décrémente aussi le stock des variantes constituantes, dans la MÊME
+  //   transaction (R5 préservé). Les variantes sont locked via FOR UPDATE.
   const { rows: items } = await dbClient.query(
     `SELECT
        oi.product_id,
        oi.quantity,
+       oi.variant_combo,
        p.stock,
+       p.has_variants,
        p.name AS product_name
      FROM order_items oi
      JOIN products p ON p.id = oi.product_id
@@ -137,7 +136,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
     [orderId]
   );
 
-  // Identifier les produits en rupture
+  // Identifier les produits en rupture (stock global)
   const insufficientItems = items
     .filter(i => i.stock < i.quantity)
     .map(i => ({
@@ -146,6 +145,37 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
       available:    i.stock,
       needed:       i.quantity,
     }));
+
+  // VAGUE 3 — Vérification stock par variante.
+  // Pour chaque item avec combo, on lock + vérifie chaque ligne product_variants.
+  // On ne fait cette boucle que si le produit est concerné (économie côté DB).
+  for (const item of items) {
+    if (!item.has_variants || !item.variant_combo) continue;
+    for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+      const { rows: [variant] } = await dbClient.query(
+        `SELECT id, stock
+           FROM product_variants
+          WHERE product_id = $1 AND variant_type = $2 AND variant_value = $3
+          FOR UPDATE`,
+        [item.product_id, vType, vValue]
+      );
+      // Variante introuvable → on alerte mais on ne bloque pas (la commande
+      // existe déjà, blocage à l'étape de création). C'est un état anormal.
+      if (!variant) {
+        console.warn(`[confirmPaymentCycle] ⚠ variante introuvable au paiement: ${item.product_id} ${vType}=${vValue} — order=${orderId}`);
+        continue;
+      }
+      // stock NULL = "non géré par cette variante" (retombe sur stock global déjà vérifié)
+      if (variant.stock !== null && variant.stock < item.quantity) {
+        insufficientItems.push({
+          product_id:   item.product_id,
+          product_name: `${item.product_name} (${vType}: ${vValue})`,
+          available:    variant.stock,
+          needed:       item.quantity,
+        });
+      }
+    }
+  }
 
   if (insufficientItems.length > 0) {
     // Retourner le flag — l'appelant décide :
@@ -160,11 +190,24 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   }
 
   // Stock suffisant pour tous les articles → décrémenter
+  // (D'abord stock global, puis stocks variantes — toujours dans la même TX).
   for (const item of items) {
     await dbClient.query(
       'UPDATE products SET stock = stock - $1 WHERE id = $2',
       [item.quantity, item.product_id]
     );
+    // VAGUE 3 — Décrémentation stocks variantes (mêmes conditions que vérif).
+    if (item.has_variants && item.variant_combo) {
+      for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+        await dbClient.query(
+          `UPDATE product_variants
+              SET stock = stock - $1
+            WHERE product_id = $2 AND variant_type = $3 AND variant_value = $4
+              AND stock IS NOT NULL`,
+          [item.quantity, item.product_id, vType, vValue]
+        );
+      }
+    }
   }
 
   return { success: true, noop: false, stockBlocked: false, insufficientItems: [] };

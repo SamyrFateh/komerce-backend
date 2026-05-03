@@ -6,9 +6,9 @@
  * Créer une commande (client authentifié).
  */
 
-const crypto = require('crypto');
 const express = require('express');
 const router  = express.Router();
+const { v4: uuidv4 } = require('uuid');
 const db      = require('../../db');
 const { authenticate }                   = require('../../middleware/auth');
 const { authenticateOrCreateGuest }      = require('../../middleware/auth-guest');
@@ -24,17 +24,6 @@ const { notifyOrderCreated }             = require('../../services/notification-
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
-
-function maskPhone(phone) {
-  if (!phone) return null;
-  const raw = String(phone);
-  if (raw.length <= 4) return '****';
-  return raw.slice(0, 4) + '******' + raw.slice(-2);
-}
-
-function canDebugOrderFlow() {
-  return process.env.NODE_ENV !== 'production' && process.env.DEBUG_ORDER_FLOW === '1';
-}
 
 router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req, res, next) => {
   const client = await db.getClient();
@@ -187,6 +176,45 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
         });
       }
 
+      // ── VAGUE 3 — Validation stock par variante ────────────────────────
+      // Si l'item porte un variant_combo, on vérifie le stock de chaque
+      // variante constituante. Le frontend ne devrait pas envoyer une combo
+      // si le produit n'a pas has_variants=true, mais on protège quand même.
+      if (item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)) {
+        if (!product.has_variants) {
+          // Combo envoyée mais le produit n'a pas de variantes → on ignore
+          // silencieusement (rétrocompat) plutôt que de planter une commande.
+          item.variant_combo = null;
+        } else {
+          for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+            if (typeof vType !== 'string' || typeof vValue !== 'string') {
+              await client.query('ROLLBACK');
+              return res.status(400).json({
+                error: `variant_combo invalide pour ${item.product_id} : ${vType}=${vValue}`,
+              });
+            }
+            const { rows: [variant] } = await client.query(
+              `SELECT stock FROM product_variants
+                WHERE product_id = $1 AND variant_type = $2 AND variant_value = $3`,
+              [item.product_id, vType, vValue]
+            );
+            if (!variant) {
+              await client.query('ROLLBACK');
+              return res.status(400).json({
+                error: `Variante inconnue pour ${product.name} : ${vType}=${vValue}`,
+              });
+            }
+            if (variant.stock !== null && variant.stock < qty) {
+              await client.query('ROLLBACK');
+              return res.status(409).json({
+                error: `Stock insuffisant pour ${product.name} — ${vType}: ${vValue} — disponible : ${variant.stock}`,
+                available_stock: variant.stock,
+              });
+            }
+          }
+        }
+      }
+
       total_kmf += product.price_kmf * qty;
 
       const fret_kmf = (product.weight_kg || 0.5) * qty * fretPerKg;
@@ -262,11 +290,11 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
      $31,$32,$33
    ) RETURNING *`,
   [
-    crypto.randomUUID(), reference, req.user.id, recipient_id, relais?.id || null,
+    uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
     tracking_phone || null,
     total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
     payment_mode,
-    'pending',
+    creditApplied > 0 && total_kmf === 0 ? 'paid' : 'pending',
     stripe_payment_intent || null,
     cash_ref_code,
     pickup_code,
@@ -323,8 +351,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
         `INSERT INTO order_items (
            order_id, product_id, quantity, price_kmf,
            module_type, module_fabric_id, module_fabric_type,
-           module_size, module_retouche, module_qty_meters, module_accessories
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+           module_size, module_retouche, module_qty_meters, module_accessories,
+           variant_combo
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [
           order.id,
           item.product_id,
@@ -337,6 +366,12 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           item.module_retouche || false,
           item.module_qty_meters || null,
           item.module_accessories ? JSON.stringify(item.module_accessories) : null,
+          // VAGUE 3 : combo de variantes choisie côté frontend (taille, couleur...)
+          // Stockée en jsonb pour rester autonome (= valide même si la variante
+          // est supprimée plus tard côté admin). Voir 063_product_variants.sql.
+          item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)
+            ? JSON.stringify(item.variant_combo)
+            : null,
         ]
       );
     }
@@ -418,20 +453,15 @@ const emailItems = items.map(i => {
   };
 });
 
-if (canDebugOrderFlow()) {
-  console.log('[DEBUG][ORDER-CREATED]', {
-    orderId: order.id,
-    reference: order.reference,
-    localPhone: maskPhone(localPhone),
-    diasporaPhone: maskPhone(diasporaPhone),
-    trackingPhone: maskPhone(tracking_phone),
-    smsPhoneCount: smsPhones.length,
-    userId: req.user?.id,
-    userPhone: maskPhone(req.user?.phone),
-    recipientPhone: maskPhone(recipient_phone),
-    hasTrackingPhone: Boolean(order.tracking_phone),
-  });
-}
+console.log('[DEBUG][ORDER-CREATED] localPhone =', localPhone);
+console.log('[DEBUG][ORDER-CREATED] diasporaPhone =', diasporaPhone);
+console.log('[DEBUG][ORDER-CREATED] tracking_phone =', tracking_phone);
+console.log('[DEBUG][ORDER-CREATED] smsPhones =', smsPhones);
+console.log('[DEBUG][ORDER-CREATED] req.user.id =', req.user?.id);
+console.log('[DEBUG][ORDER-CREATED] req.user.phone =', req.user?.phone);
+console.log('[DEBUG][ORDER-CREATED] recipient_phone =', recipient_phone);
+console.log('[DEBUG][ORDER-SAVED] order.tracking_phone =', order.tracking_phone);
+
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
   .catch(err => console.error('[ORDER-CREATED] ❌', err.message));

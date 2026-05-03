@@ -150,6 +150,10 @@ CT.api = {
   sourcingUpdateProduct: function(id, body) { return this.put('/api/admin/sourcing/products/' + id, body); },
   sourcingBulkRail: function(ids, rail) { return this.post('/api/admin/sourcing/bulk-rail', { product_ids: ids, rail: rail }); },
 
+  // Vague 3 — Variantes produit (taille, couleur, etc.)
+  sourcingGetVariants: function(productId) { return this.get('/api/admin/sourcing/products/' + productId + '/variants'); },
+  sourcingPutVariants: function(productId, variants) { return this.put('/api/admin/sourcing/products/' + productId + '/variants', { variants: variants || [] }); },
+
   // Loyalty admin
   loyaltyPending: function() { return this.get('/api/admin/loyalty/pending'); },
   loyaltyHistory: function() { return this.get('/api/admin/loyalty/history'); },

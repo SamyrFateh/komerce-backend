@@ -203,6 +203,68 @@
       .src-rail-bar .B { background: #f59e0b; }
       .src-rail-bar .C { background: #8b5cf6; }
       .src-rail-bar .D { background: #22c55e; }
+
+      /* ── Variantes (Vague 3) ─────────────────────────────── */
+      .src-variants {
+        margin-top: 16px; padding: 12px; background: #f8fafc;
+        border-radius: 8px; border: 1px dashed #cbd5e1;
+      }
+      .src-variants-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .src-variants-title {
+        font-size: 13px; font-weight: 700; color: #1e293b;
+      }
+      .src-variants-empty {
+        font-size: 12px; color: #64748b; padding: 8px 0;
+      }
+      .src-variant-group {
+        background: #fff; border-radius: 6px; padding: 10px;
+        margin-bottom: 8px; border: 1px solid #e2e8f0;
+      }
+      .src-variant-group-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+      }
+      .src-variant-group-type {
+        flex: 1; padding: 5px 8px; border: 1px solid #e2e8f0;
+        border-radius: 6px; font-size: 13px; font-weight: 600;
+      }
+      .src-variant-group-rm {
+        padding: 4px 10px; background: #fee2e2; color: #991b1b;
+        border: none; border-radius: 6px; font-size: 11px; cursor: pointer;
+      }
+      .src-variant-row {
+        display: grid; grid-template-columns: 1.4fr 0.7fr 1fr 2fr 36px; gap: 6px;
+        align-items: center; margin-bottom: 6px;
+      }
+      .src-variant-row input {
+        width: 100%; padding: 5px 7px; border: 1px solid #e2e8f0;
+        border-radius: 5px; font-size: 12px;
+      }
+      .src-variant-row input::placeholder { color: #94a3b8; font-size: 11px; }
+      .src-variant-row .rm {
+        padding: 5px; background: transparent; color: #94a3b8;
+        border: 1px solid #e2e8f0; border-radius: 5px; font-size: 14px;
+        cursor: pointer; line-height: 1;
+      }
+      .src-variant-row .rm:hover { color: #dc2626; border-color: #fecaca; }
+      .src-variant-add-row, .src-variant-add-group {
+        padding: 5px 10px; background: #ecfdf5; color: #065f46;
+        border: 1px dashed #6ee7b7; border-radius: 6px;
+        font-size: 12px; cursor: pointer; font-weight: 600;
+      }
+      .src-variant-add-row:hover, .src-variant-add-group:hover { background: #d1fae5; }
+      .src-variant-add-group { margin-top: 6px; }
+      .src-variants-actions {
+        display: flex; gap: 8px; margin-top: 10px;
+        padding-top: 10px; border-top: 1px solid #e2e8f0;
+      }
+      .src-variants-status {
+        font-size: 11px; color: #64748b; align-self: center; flex: 1;
+      }
+      .src-variants-status.ok { color: #065f46; }
+      .src-variants-status.err { color: #991b1b; }
     `;
     document.head.appendChild(s);
   }
@@ -657,6 +719,27 @@
       </div>
     `;
 
+    // ── Vague 3 — Section variantes (taille, couleur, etc.) ─────────────────
+    // Insérée à l'intérieur du formulaire, avant les boutons d'action principaux.
+    // Charge async les variantes existantes via l'API (GET puis PUT à la sauvegarde).
+    const variantsBox = document.createElement('div');
+    variantsBox.className = 'src-variants';
+    variantsBox.innerHTML = `
+      <div class="src-variants-header">
+        <span class="src-variants-title">🏷️ Variantes (taille, couleur, …)</span>
+        <span class="src-variants-status" data-variants-status>Chargement…</span>
+      </div>
+      <div data-variants-list></div>
+      <button type="button" class="src-variant-add-group" data-variants-add-group>
+        + Ajouter un type de variante
+      </button>
+      <div class="src-variants-actions">
+        <button type="button" class="src-btn src-btn-primary" data-variants-save>💾 Sauvegarder variantes</button>
+      </div>
+    `;
+    form.appendChild(variantsBox);
+    mountVariantsEditor(variantsBox, product.id);
+
     const actions = document.createElement('div');
     actions.className = 'src-edit-actions';
     actions.innerHTML = '<button class="src-btn src-btn-primary">💾 Sauvegarder</button><button class="src-btn src-btn-secondary">Annuler</button>';
@@ -704,6 +787,195 @@
         setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = '💾 Sauvegarder'; }, 2000);
       }
     };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Vague 3 — Éditeur de variantes (taille, couleur, etc.)
+  // ══════════════════════════════════════════════════════════════════════════
+  // Modèle interne : Array<{ type: string, options: Array<{value, stock, price_kmf, image_url, sku}> }>
+  // À la sauvegarde, on aplatit en Array<{ type, value, stock, price_kmf, ... }>
+  // que l'API consomme.
+
+  function mountVariantsEditor(box, productId) {
+    const listEl   = box.querySelector('[data-variants-list]');
+    const statusEl = box.querySelector('[data-variants-status]');
+    const addGroupBtn = box.querySelector('[data-variants-add-group]');
+    const saveBtn  = box.querySelector('[data-variants-save]');
+
+    // État local de l'éditeur (groupes / options)
+    let groups = [];
+
+    function setStatus(text, kind) {
+      statusEl.textContent = text || '';
+      statusEl.className = 'src-variants-status' + (kind ? ' ' + kind : '');
+    }
+
+    function render() {
+      if (groups.length === 0) {
+        listEl.innerHTML = '<div class="src-variants-empty">Aucune variante. Cliquez sur "+ Ajouter un type" pour commencer.</div>';
+        return;
+      }
+      let html = '';
+      groups.forEach((g, gi) => {
+        html += `
+          <div class="src-variant-group" data-gi="${gi}">
+            <div class="src-variant-group-header">
+              <input class="src-variant-group-type" data-group-type
+                     value="${esc(g.type)}" placeholder="Ex: Taille, Couleur, Matière…">
+              <button type="button" class="src-variant-group-rm" data-group-rm>Supprimer ce type</button>
+            </div>
+            <div data-rows>
+              ${(g.options || []).map((o, oi) => rowHtml(o, oi)).join('')}
+            </div>
+            <button type="button" class="src-variant-add-row" data-add-row>+ Ajouter une option</button>
+          </div>`;
+      });
+      listEl.innerHTML = html;
+    }
+
+    function rowHtml(o, oi) {
+      return `
+        <div class="src-variant-row" data-oi="${oi}">
+          <input data-row-value     value="${esc(o.value || '')}"     placeholder="Valeur (S, Bleu…)">
+          <input data-row-stock     value="${o.stock != null ? o.stock : ''}" placeholder="Stock"      type="number" min="0">
+          <input data-row-price     value="${o.price_kmf != null ? o.price_kmf : ''}" placeholder="Prix override (KMF)" type="number" min="0">
+          <input data-row-image     value="${esc(o.image_url || '')}" placeholder="URL image (optionnel)">
+          <button type="button" class="rm" data-row-rm title="Retirer">×</button>
+        </div>`;
+    }
+
+    // ── Chargement initial via API ─────────────────────────────────────────
+    setStatus('Chargement…');
+    CT.api.sourcingGetVariants(productId).then(data => {
+      // L'API renvoie une liste à plat ; on regroupe par type pour l'éditeur
+      const flat = (data && data.variants) ? data.variants : [];
+      const map = {};
+      flat.forEach(v => {
+        if (!map[v.variant_type]) map[v.variant_type] = [];
+        map[v.variant_type].push({
+          value:     v.variant_value,
+          stock:     v.stock,
+          price_kmf: v.price_kmf,
+          image_url: v.image_url,
+          sku:       v.sku,
+        });
+      });
+      groups = Object.keys(map).map(type => ({ type, options: map[type] }));
+      render();
+      setStatus(groups.length === 0 ? 'Aucune variante définie.' : `${flat.length} variante${flat.length > 1 ? 's' : ''} chargée${flat.length > 1 ? 's' : ''}.`, 'ok');
+    }).catch(err => {
+      groups = [];
+      render();
+      setStatus('Erreur chargement : ' + (err && err.message ? err.message : 'inconnue'), 'err');
+    });
+
+    // ── Délégation événements ──────────────────────────────────────────────
+    // (le DOM est régulièrement re-rendu, donc on délègue depuis la box stable)
+    box.addEventListener('input', (e) => {
+      const t = e.target;
+      if (t.matches('[data-group-type]')) {
+        const gi = Number(t.closest('[data-gi]').dataset.gi);
+        groups[gi].type = t.value;
+        return;
+      }
+      if (t.matches('[data-row-value], [data-row-stock], [data-row-price], [data-row-image]')) {
+        const gi = Number(t.closest('[data-gi]').dataset.gi);
+        const oi = Number(t.closest('[data-oi]').dataset.oi);
+        const opt = groups[gi].options[oi];
+        if (t.matches('[data-row-value]'))      opt.value     = t.value;
+        else if (t.matches('[data-row-stock]')) opt.stock     = t.value === '' ? null : Number(t.value);
+        else if (t.matches('[data-row-price]')) opt.price_kmf = t.value === '' ? null : Number(t.value);
+        else if (t.matches('[data-row-image]')) opt.image_url = t.value;
+      }
+    });
+
+    box.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.matches('[data-group-rm]')) {
+        const gi = Number(t.closest('[data-gi]').dataset.gi);
+        if (!confirm('Supprimer ce type de variante ?')) return;
+        groups.splice(gi, 1);
+        render();
+        return;
+      }
+      if (t.matches('[data-add-row]')) {
+        const gi = Number(t.closest('[data-gi]').dataset.gi);
+        groups[gi].options.push({ value: '', stock: null, price_kmf: null, image_url: null });
+        render();
+        // Focus le premier champ de la nouvelle ligne
+        setTimeout(() => {
+          const rows = listEl.querySelectorAll('[data-gi="' + gi + '"] [data-oi]');
+          const last = rows[rows.length - 1];
+          if (last) last.querySelector('[data-row-value]').focus();
+        }, 0);
+        return;
+      }
+      if (t.matches('[data-row-rm]')) {
+        const gi = Number(t.closest('[data-gi]').dataset.gi);
+        const oi = Number(t.closest('[data-oi]').dataset.oi);
+        groups[gi].options.splice(oi, 1);
+        render();
+        return;
+      }
+    });
+
+    addGroupBtn.addEventListener('click', () => {
+      groups.push({ type: '', options: [{ value: '', stock: null, price_kmf: null, image_url: null }] });
+      render();
+      // Focus sur le nouveau type
+      const all = listEl.querySelectorAll('[data-group-type]');
+      const last = all[all.length - 1];
+      if (last) last.focus();
+    });
+
+    // ── Sauvegarde via API ─────────────────────────────────────────────────
+    saveBtn.addEventListener('click', async () => {
+      // Aplatissage + nettoyage
+      const flat = [];
+      const errors = [];
+      groups.forEach((g, gi) => {
+        const type = (g.type || '').trim();
+        if (!type) {
+          errors.push(`Groupe ${gi + 1} : type manquant`);
+          return;
+        }
+        (g.options || []).forEach((o, oi) => {
+          const value = (o.value || '').toString().trim();
+          if (!value) {
+            errors.push(`${type} #${oi + 1} : valeur manquante`);
+            return;
+          }
+          flat.push({
+            type:      type,
+            value:     value,
+            stock:     o.stock,        // déjà null ou number
+            price_kmf: o.price_kmf,    // idem
+            image_url: o.image_url ? String(o.image_url).trim() : null,
+            sku:       o.sku || null,
+          });
+        });
+      });
+
+      if (errors.length > 0) {
+        setStatus(errors[0], 'err');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = '⏳ Sauvegarde…';
+      setStatus('Sauvegarde en cours…');
+      try {
+        const result = await CT.api.sourcingPutVariants(productId, flat);
+        setStatus(`${result.count} variante${result.count > 1 ? 's' : ''} enregistrée${result.count > 1 ? 's' : ''}.`, 'ok');
+        saveBtn.textContent = '✅ Sauvegardé';
+        setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = '💾 Sauvegarder variantes'; }, 1500);
+      } catch (err) {
+        const msg = (err && err.message) ? err.message : 'Erreur inconnue';
+        setStatus('Erreur : ' + msg, 'err');
+        saveBtn.textContent = '❌ Erreur';
+        setTimeout(() => { saveBtn.disabled = false; saveBtn.textContent = '💾 Sauvegarder variantes'; }, 2500);
+      }
+    });
   }
 
   // ══════════════════════════════════════════════════════════════════════════

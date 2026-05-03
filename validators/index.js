@@ -162,6 +162,13 @@ const orders = {
         module_retouche:   Joi.boolean(),
         module_qty_meters: posNum.max(1000),
         module_accessories: Joi.array().items(safeStr(100)).max(10),
+        // VAGUE 3 : combo de variantes choisies (taille, couleur, ...)
+        // Format libre {String: String}, validé plus finement côté checkout
+        // contre les variantes réelles du produit (cf. routes/orders/create.js).
+        variant_combo: Joi.object().pattern(
+          Joi.string().min(1).max(50),
+          Joi.string().min(1).max(50)
+        ).max(10).allow(null),
       })).min(1).required(),
       relais_id:             uuid,
       payment_mode:          Joi.string().valid('stripe_eur', 'cash_relais').required(),

@@ -98,6 +98,7 @@ router.get('/', async (req, res, next) => {
          p.requires_secure_transport,
          p.unsold_price_kmf,
          p.unsold_channel,
+         p.has_variants,
          p.created_at
        FROM products p
        WHERE ${where}
@@ -172,6 +173,7 @@ router.get('/subcategories', async (req, res, next) => {
 
 // ─── GET /api/products/:id ───────────────────────────────────────────────────
 // P0-003 fix: UUID validation + next(err)
+// VAGUE 3: charge product_variants si product.has_variants = true
 
 router.get('/:id', requireUUID, async (req, res, next) => {
   try {
@@ -180,7 +182,38 @@ router.get('/:id', requireUUID, async (req, res, next) => {
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Produit introuvable' });
-    res.json(rows[0]);
+
+    const product = rows[0];
+
+    // ── VAGUE 3 — Variantes ──────────────────────────────────────────────────
+    // On charge product_variants seulement si has_variants=true (économise
+    // un JOIN sur 95% des produits qui n'ont pas de variantes).
+    // Format retourné conforme au frontend déjà déployé (b-modal.js):
+    //   product.variants = { "Taille": [{value, stock, ...}, ...], "Couleur": [...] }
+    if (product.has_variants) {
+      const { rows: vRows } = await db.query(
+        `SELECT variant_type, variant_value, stock, price_kmf, image_url, sku, display_order
+           FROM product_variants
+          WHERE product_id = $1
+          ORDER BY variant_type, display_order ASC, variant_value ASC`,
+        [product.id]
+      );
+      // Regrouper par type pour matcher le format attendu côté frontend
+      const variants = {};
+      for (const v of vRows) {
+        if (!variants[v.variant_type]) variants[v.variant_type] = [];
+        variants[v.variant_type].push({
+          value:     v.variant_value,
+          stock:     v.stock,
+          price_kmf: v.price_kmf,
+          image_url: v.image_url,
+          sku:       v.sku,
+        });
+      }
+      product.variants = variants;
+    }
+
+    res.json(product);
   } catch (err) {
     next(err);
   }
