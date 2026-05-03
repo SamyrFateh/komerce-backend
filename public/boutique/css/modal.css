@@ -662,8 +662,13 @@
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    /* flex:1 + min-height:0 indispensables : la spécificité #k-modal écrase
+       .k-modal-scroll de base qui les posait. Sans eux, hauteur = auto
+       → overflow-y ne scrolle jamais (taille égale contenu). */
+    flex: 1 1 0;
+    min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto; /* FIX: explicite — spécificité #k-modal écrase la règle base */
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
