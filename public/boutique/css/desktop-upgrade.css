@@ -999,3 +999,32 @@
     padding: 4px 8px 8px;
   }
 }
+
+/* ── Hint clavier navigation modal ─────────────────────────── */
+@media (min-width: 900px) {
+  .k-modal-keyboard-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--muted, #888);
+    opacity: .7;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .k-modal-keyboard-hint kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 5px;
+    background: var(--surface-alt, #f3f3f1);
+    border: 1px solid var(--border, #ddd);
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  .k-modal-keyboard-hint span {
+    margin-right: 8px;
+  }
+}

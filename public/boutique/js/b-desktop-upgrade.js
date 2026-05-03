@@ -449,6 +449,9 @@ function setupPromoStrip() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     // Sync sidebar + chip rail
     bus.emit('catalog:cat-changed', 'Soldes');
+    document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
+      item.classList.toggle('is-active', item.dataset.cat === 'Soldes');
+    });
   });
 }
 
@@ -513,6 +516,10 @@ function setupHomepageMerchandising() {
 
       renderGrid();
       bus.emit('catalog:cat-changed', cat);
+      // Sync sidebar is-active
+      document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
+        item.classList.toggle('is-active', item.dataset.cat === cat);
+      });
 
       var top = anchor.getBoundingClientRect().top + window.scrollY - 84;
       window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });

@@ -11,6 +11,7 @@
 import { getCategorySectionEmoji, getSectionOrder } from '../shop-schema.js';
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
+import { state } from '../b-store.js';
 
 /**
  * Partitionne les items en ajoutant Soldes comme catégorie virtuelle.
@@ -110,8 +111,16 @@ export function renderHomeSections({
   }
 
   for (const category of desktopOrder) {
-    const products = byCategory[category];
+    let products = byCategory[category];
     if (!products || products.length === 0) continue;
+
+    // Appliquer le filtre sectionSubcats si actif pour cette catégorie (desktop)
+    const activeSub = state.sectionSubcats && state.sectionSubcats[category];
+    if (activeSub) {
+      const filtered = products.filter(p => p.subcategory === activeSub);
+      if (filtered.length > 0) products = filtered;
+    }
+
     const emoji = getCategorySectionEmoji(category);
     const total = totalByCategory[category] || products.length;
     const anchorId = 'k-sec-' + category.replace(/[^a-zA-Z0-9]/g, '-');

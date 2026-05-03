@@ -845,50 +845,8 @@ body {
 }
 
 
-/* PATCH #227 — desktop page scroll and sidebar stabilization */
 
-@media (min-width: 900px) {
-  html,
-  body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: clip;
-  }
-
-  #k-page-scroll,
-  #k-desktop-catalog-wrap,
-  #k-catalog-section {
-    max-width: 100%;
-    overflow-x: clip;
-  }
-
-  #k-desktop-catalog-wrap {
-    box-sizing: border-box;
-  }
-
-  .k-desktop-sidebar {
-    contain: layout paint;
-  }
-
-  .k-sidebar-mega {
-    max-height: calc(100vh - var(--header-h) - 40px);
-    overflow-y: auto;
-  }
-
-  .k-sidebar-cat {
-    outline: none;
-  }
-
-  .k-sidebar-cat:focus,
-  .k-sidebar-cat:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-}
-
-
-
-/* PATCH #227 — desktop Temu UX layout-only */
+/* PATCH #227 — desktop stabilization (consolidé) */
 @media (min-width: 900px) {
 
   /* 1. Stabilisation scroll desktop */
@@ -908,6 +866,7 @@ body {
     max-width: 100%;
   }
 
+  #k-page-scroll,
   #k-desktop-catalog-wrap,
   #k-catalog-section,
   .k-section,
@@ -917,7 +876,7 @@ body {
     box-sizing: border-box;
   }
 
-  /* 2. Menu catégories desktop stable */
+  /* 2. Sidebar desktop stable */
   .k-desktop-sidebar {
     width: 192px;
     min-width: 192px;
@@ -948,21 +907,12 @@ body {
     overscroll-behavior: contain;
   }
 
-  /* 3. Modal produit desktop : géré exclusivement par modal.css */
-
-  /* 4. Supprimer la cible orange / crosshair depuis layout.css */
+  /* 3. Zoom modal — géré par desktop-upgrade.js (ne pas masquer ici) */
   .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-carousel {
-    cursor: default;
+    cursor: crosshair;
   }
 
-  .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-zoom-lens,
-  .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-zoom-preview {
-    display: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  /* 5. Réduire scintillement/focus bizarre homepage */
+  /* 4. Supprimer tap highlight / focus parasite */
   .k-card,
   .k-card *,
   .k-modal,
@@ -991,6 +941,7 @@ body {
     outline-offset: 2px;
   }
 
+  /* 5. Perf cartes */
   .k-card-hover-overlay {
     will-change: opacity;
     backface-visibility: hidden;
@@ -1003,53 +954,5 @@ body {
   .k-card {
     animation-duration: .22s;
     animation-fill-mode: both;
-  }
-}
-
-
-/* PATCH #227 — desktop page/sidebar stabilization */
-@media (min-width: 900px) {
-  html,
-  body {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: clip;
-  }
-
-  body:not(.modal-open):not(.cart-open) #k-page-scroll {
-    position: static;
-    top: auto;
-    height: auto;
-    overflow: visible;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  #k-desktop-catalog-wrap,
-  #k-catalog-section,
-  .k-section,
-  .k-grid {
-    max-width: 100%;
-    overflow-x: clip;
-    box-sizing: border-box;
-  }
-
-  .k-desktop-sidebar {
-    width: 192px;
-    min-width: 192px;
-    max-width: 192px;
-    overflow: visible;
-  }
-
-  .k-sidebar-mega {
-    max-height: calc(100vh - var(--header-h) - 40px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .k-sidebar-cat:focus,
-  .k-sidebar-cat:focus-visible {
-    outline: none;
-    box-shadow: none;
   }
 }

@@ -1394,6 +1394,23 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     setupImageZoneDesktopClick();
 
     // ── Navigation clavier ← → entre produits (desktop)
+    // Hint visuel injecté une seule fois dans la topbar
+    (function setupKeyboardNavHint() {
+      if (window.innerWidth < 900) return;
+      if (document.getElementById('k-modal-keyboard-hint')) return;
+      var topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
+      if (!topbar) return;
+      var hint = document.createElement('div');
+      hint.id = 'k-modal-keyboard-hint';
+      hint.className = 'k-modal-keyboard-hint';
+      hint.innerHTML =
+        '<kbd>←</kbd><span>produit précédent</span>' +
+        '<kbd>→</kbd><span>produit suivant</span>';
+      var right = topbar.querySelector('.k-modal-topbar-right');
+      if (right) topbar.insertBefore(hint, right);
+      else topbar.appendChild(hint);
+    })();
+
     document.addEventListener('keydown', (e) => {
       if (!dom.modalOverlay.classList.contains('open')) return;
       if (e.key === 'ArrowRight') navigateModal(1);

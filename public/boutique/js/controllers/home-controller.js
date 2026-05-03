@@ -86,6 +86,14 @@ export function renderCategoryRail() {
   return catsEl;
 }
 
+/** Met à jour l'état actif de la sidebar desktop (sans toucher au mobile). */
+function syncDesktopSidebar(catKey) {
+  if (window.innerWidth < 900) return;
+  document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
+    item.classList.toggle('is-active', item.dataset.cat === catKey);
+  });
+}
+
 function handleCategorySelection(cat, deps) {
   const { renderGrid, scrollPagerToCat, scrollToCategorySection } = deps;
 
@@ -119,6 +127,10 @@ function handleCategorySelection(cat, deps) {
     state.activeSubcat = null;
     state.sectionSubcats = {};
     renderGrid();
+    if (window.innerWidth >= 900) {
+      renderSubcatRail(null);
+      syncDesktopSidebar('all');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
@@ -132,8 +144,13 @@ function handleCategorySelection(cat, deps) {
       renderGrid();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Desktop : scroll vers la section dans la grille "Tout"
-      scrollToCategorySection(cat);
+      // Desktop : filtrer la grille sur cette catégorie, afficher subcats, sync sidebar
+      state.activeCat = cat;
+      state.activeSubcat = null;
+      renderGrid();
+      renderSubcatRail(cat);
+      syncDesktopSidebar(cat);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     return;
   }
@@ -144,6 +161,10 @@ function handleCategorySelection(cat, deps) {
     state.activeSubcat = null;
     state.sectionSubcats = {};
     renderGrid();
+    if (window.innerWidth >= 900) {
+      renderSubcatRail(null);
+      syncDesktopSidebar('all');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
@@ -152,6 +173,10 @@ function handleCategorySelection(cat, deps) {
   state.activeCat = cat;
   state.activeSubcat = null;
   renderGrid();
+  if (window.innerWidth >= 900) {
+    renderSubcatRail(cat);
+    syncDesktopSidebar(cat);
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
