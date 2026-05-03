@@ -238,6 +238,39 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
 
+    // MOBILE SCROLL FIX — neutralise les styles inline posés par le pager
+    // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crée un
+    // stacking context sur Chrome Android qui bride le scroll de .k-modal-scroll).
+    // On garde la classe k-pager-active intacte (état logique) mais on efface
+    // les propriétés physiques bloquantes pour la durée de la modal.
+    if (window.innerWidth < 900) {
+      var _ps = document.getElementById('k-page-scroll');
+      if (_ps) {
+        state._savedPagerInlineStyles = {
+          position:  _ps.style.position,
+          top:       _ps.style.top,
+          left:      _ps.style.left,
+          right:     _ps.style.right,
+          bottom:    _ps.style.bottom,
+          width:     _ps.style.width,
+          height:    _ps.style.height,
+          overflow:  _ps.style.overflow,
+          overflowX: _ps.style.overflowX,
+          overflowY: _ps.style.overflowY,
+        };
+        _ps.style.position  = '';
+        _ps.style.top       = '';
+        _ps.style.left      = '';
+        _ps.style.right     = '';
+        _ps.style.bottom    = '';
+        _ps.style.width     = '';
+        _ps.style.height    = '';
+        _ps.style.overflow  = '';
+        _ps.style.overflowX = '';
+        _ps.style.overflowY = '';
+      }
+    }
+
     // Les actions restent hors du scroll : bouton Acheter toujours visible.
     // La topbar enrichie rappelle le produit ouvert pendant le scroll.
     setupModalFAB();
@@ -462,6 +495,26 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     const scrollY = state._savedCatalogScrollY || 0;
     document.body.classList.remove('modal-open');
     document.body.style.removeProperty('--modal-scroll-y');
+
+    // MOBILE SCROLL FIX — restaurer les styles inline du pager
+    if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
+      var _ps = document.getElementById('k-page-scroll');
+      if (_ps) {
+        var s = state._savedPagerInlineStyles;
+        _ps.style.position  = s.position  || '';
+        _ps.style.top       = s.top       || '';
+        _ps.style.left      = s.left      || '';
+        _ps.style.right     = s.right     || '';
+        _ps.style.bottom    = s.bottom    || '';
+        _ps.style.width     = s.width     || '';
+        _ps.style.height    = s.height    || '';
+        _ps.style.overflow  = s.overflow  || '';
+        _ps.style.overflowX = s.overflowX || '';
+        _ps.style.overflowY = s.overflowY || '';
+      }
+      state._savedPagerInlineStyles = null;
+    }
+
     window.scrollTo(0, scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
