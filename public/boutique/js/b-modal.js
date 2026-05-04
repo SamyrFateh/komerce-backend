@@ -199,6 +199,92 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     }
   });
 
+  /**
+   * Renders the variant picker (Taille / Couleur / Pointure / etc.)
+   * inside #k-modal-variants. Called after fetching /api/products/:id.
+   * Clicking a color variant with image_url updates the carousel first slide.
+   * @param {Object} variants - { "Taille": [{value, stock, price_kmf, image_url}], ... }
+   * @param {Object} product  - Full product object (for price_kmf fallback)
+   */
+  function _renderVariants(variants, product) {
+    var container = dom.modalVariants || document.getElementById('k-modal-variants');
+    if (!container) return;
+    container.innerHTML = '';
+
+    Object.keys(variants).forEach(function(type) {
+      var options = variants[type];
+      if (!options || !options.length) return;
+
+      var group = document.createElement('div');
+      group.className = 'k-variant-group';
+
+      var label = document.createElement('div');
+      label.className = 'k-variant-label';
+      label.textContent = type + '\u00a0:';
+      group.appendChild(label);
+
+      var pills = document.createElement('div');
+      pills.className = 'k-variant-pills';
+
+      options.forEach(function(opt) {
+        var btn = document.createElement('button');
+        var isOut = (opt.stock === 0);
+        var isColor = (type.toLowerCase().includes('couleur') && opt.image_url);
+
+        btn.className = 'k-variant-pill' +
+          (isOut ? ' k-variant-pill--out' : '') +
+          (isColor ? ' k-variant-pill--color' : '');
+        btn.type = 'button';
+        btn.disabled = isOut;
+        if (isOut) btn.title = 'Rupture de stock';
+
+        if (isColor) {
+          btn.style.backgroundImage = 'url(' + opt.image_url + ')';
+          btn.setAttribute('aria-label', opt.value);
+          // Color tooltip
+          var tip = document.createElement('span');
+          tip.className = 'k-variant-color-tip';
+          tip.textContent = opt.value;
+          btn.appendChild(tip);
+        } else {
+          btn.textContent = opt.value;
+        }
+
+        btn.addEventListener('click', function() {
+          // Deselect siblings in this group
+          pills.querySelectorAll('.k-variant-pill').forEach(function(b) {
+            b.classList.remove('k-variant-pill--active');
+          });
+          btn.classList.add('k-variant-pill--active');
+
+          // Update price if variant has its own price
+          if (opt.price_kmf) {
+            dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
+          } else {
+            dom.modalPrice.textContent = fmtPrice(product.price_kmf);
+          }
+
+          // If color variant has an image, rebuild carousel with that image first
+          if (opt.image_url) {
+            var baseImgs = (product.images && product.images.length)
+              ? product.images
+              : [product.image_url];
+            // Deduplicate and put variant image first
+            var reordered = [opt.image_url].concat(
+              baseImgs.filter(function(u) { return u !== opt.image_url; })
+            );
+            buildCarouselSlides(Object.assign({}, product, { images: reordered }));
+          }
+        });
+
+        pills.appendChild(btn);
+      });
+
+      group.appendChild(pills);
+      container.appendChild(group);
+    });
+  }
+
     function openModal(id, pushHistory) {
     const product = state.products.find(p => p.id === id);
     if (!product) return;
@@ -245,6 +331,24 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     _syncModalQtyUI();
 
     buildCarouselSlides(product);
+
+    // Variants — fetch full product if has_variants (lazy, non-blocking)
+    var _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
+    if (_variantContainer) _variantContainer.innerHTML = '';
+    if (product.has_variants) {
+      var _variantProductId = product.id;
+      fetch('/api/products/' + _variantProductId)
+        .then(function(r) { return r.json(); })
+        .then(function(full) {
+          // Guard: modal may have moved to another product by the time fetch returns
+          if (state.modalProduct && state.modalProduct.id !== _variantProductId) return;
+          if (full.variants && Object.keys(full.variants).length > 0) {
+            _renderVariants(full.variants, full);
+          }
+        })
+        .catch(function() { /* silently ignore network errors */ });
+    }
+
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);

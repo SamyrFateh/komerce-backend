@@ -160,6 +160,7 @@ export function initDom() {
     modalOldPrice:      $('#k-modal-old-price'),
     modalCat:           $('#k-modal-cat'),
     modalStock:         $('#k-modal-stock'),
+    modalVariants:      $('#k-modal-variants'),
     modalQtyVal:        $('#k-qty-val'),
     qtyMinus:           $('#k-qty-minus'),
     qtyPlus:            $('#k-qty-plus'),
