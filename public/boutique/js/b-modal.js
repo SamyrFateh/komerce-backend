@@ -69,6 +69,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         img.addEventListener('error', killShimmer, { once: true });
         // Si l'image est déjà en cache (load déjà tiré), on rattrape
         if (img.complete && img.naturalWidth > 0) killShimmer();
+        // Fallback Android Chrome : si load/error ne se déclenchent pas en 3s, on retire le shimmer
+        setTimeout(killShimmer, 3000);
       }
       track.appendChild(img);
     });
