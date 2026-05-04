@@ -268,16 +268,24 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
             dom.modalPrice.textContent = fmtPrice(product.price_kmf);
           }
 
-          // If color variant has an image, rebuild carousel with that image first
+          // If color variant has an image, snap carousel to its index (no rebuild = no flash)
           if (opt.image_url) {
             var baseImgs = (product.images && product.images.length)
               ? product.images
               : [product.image_url];
-            // Deduplicate and put variant image first
-            var reordered = [opt.image_url].concat(
-              baseImgs.filter(function(u) { return u !== opt.image_url; })
-            );
-            buildCarouselSlides(Object.assign({}, product, { images: reordered }));
+            var colorIdx = baseImgs.findIndex(function(u) {
+              // Compare without query params (Unsplash URLs can have extra params)
+              return u.split('?')[0] === opt.image_url.split('?')[0];
+            });
+            if (colorIdx >= 0) {
+              goToSlide(colorIdx);
+            } else {
+              // Fallback: image not in product.images, put it first and rebuild once
+              var reordered = [opt.image_url].concat(
+                baseImgs.filter(function(u) { return u !== opt.image_url; })
+              );
+              buildCarouselSlides(Object.assign({}, product, { images: reordered }));
+            }
           }
         });
 

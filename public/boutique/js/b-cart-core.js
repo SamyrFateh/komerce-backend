@@ -86,6 +86,9 @@ export function updateCartBadge() {
     badge.textContent = hasItems ? String(count) : '';
     badge.classList.toggle('show', hasItems);
   });
+
+  // Side cart + bnav total (implémenté dans b-cart.js, pas de circular import)
+  if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
 }
 
 // ──────────────────────────────────────────────

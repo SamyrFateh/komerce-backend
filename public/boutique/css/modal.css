@@ -111,7 +111,7 @@
 
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
 .k-modal-img-wrap {
-  position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
+  position: relative; flex: 0 0 auto; height: 38vh; max-height: 360px;
   background:
     linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
 }
@@ -136,7 +136,7 @@
   100% { background-position: -200% 0; }
 }
 @media (max-width: 600px) {
-  .k-modal-img-wrap { height: 40vh; max-height: 380px; }
+  .k-modal-img-wrap { height: 34vh; max-height: 300px; }
 }
 .k-modal-carousel { width: 100%; height: 100%; overflow: hidden; }
 .k-modal-carousel-track { display: flex; height: 100%; transition: transform .3s cubic-bezier(.22,1,.36,1); }

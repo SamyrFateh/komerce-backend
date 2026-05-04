@@ -1393,6 +1393,70 @@ function quickRemove(productId, btnEl) {
   /* ══════════════════════════════════════════════════════════════════ */
   // _pagerRaf declared in _syncChipToScroll block above
 
+// ══════════════════════════════════════════════════════════════════
+// SIDE CART — Aperçu permanent desktop + total mobile bnav
+// ══════════════════════════════════════════════════════════════════
+function renderSideCart() {
+  const sc       = document.getElementById('k-side-cart');
+  const bnavLbl  = document.getElementById('k-bnav-cart-label');
+  const items    = state.cart;
+  const hasItems = items.length > 0;
+
+  // Mobile bnav label : "Panier" → total ou retour
+  if (bnavLbl) {
+    if (hasItems) {
+      bnavLbl.textContent = fmtPrice(cartTotal());
+      bnavLbl.classList.add('has-total');
+    } else {
+      bnavLbl.textContent = 'Panier';
+      bnavLbl.classList.remove('has-total');
+    }
+  }
+
+  if (!sc) return;
+  sc.classList.toggle('has-items', hasItems);
+  if (!hasItems) return;
+
+  // Compteur
+  const qty     = cartQty();
+  const countEl = sc.querySelector('#k-sc-count');
+  if (countEl) countEl.textContent = qty + ' article' + (qty > 1 ? 's' : '');
+
+  // Total
+  const totalEl = sc.querySelector('#k-sc-total');
+  if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
+
+  // Articles (4 plus récents)
+  const itemsEl = sc.querySelector('#k-sc-items');
+  if (itemsEl) {
+    itemsEl.innerHTML = '';
+    [...items].reverse().slice(0, 4).forEach(item => {
+      const el   = document.createElement('div');
+      el.className = 'k-sc-item';
+      const imgSrc = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
+      const price  = fmtPrice((item.product.price_kmf || 0) * item.qty);
+      el.innerHTML =
+        `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
+        `<div class="k-sc-item-info">` +
+          `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
+          `<div class="k-sc-item-qty">×${item.qty}</div>` +
+        `</div>` +
+        `<div class="k-sc-item-price">${price}</div>`;
+      itemsEl.appendChild(el);
+    });
+  }
+
+  // Bouton "Voir le panier" → ouvre le tiroir (câblé une seule fois)
+  const cta = sc.querySelector('#k-sc-cta');
+  if (cta && !cta._wired) {
+    cta._wired = true;
+    cta.addEventListener('click', () => openCart());
+  }
+}
+
+// Hook global appelé par b-cart-core.js updateCartBadge()
+window.__kmrcSideCart = renderSideCart;
+
 export {
   addToCart, quickAdd, quickRemove, toggleFav, setQty,
   openCart, closeCart, openCartWithHighlight,
