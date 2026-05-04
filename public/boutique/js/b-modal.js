@@ -191,7 +191,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
       } else {
         dom.addCartBtn.classList.remove('in-cart');
-        dom.addCartBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Ajouter au panier';
+        /* FIX Bug 3: utiliser l'image panier_tresse_vert au lieu du SVG générique */
+        dom.addCartBtn.innerHTML = '<img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" style="pointer-events:none;flex-shrink:0"> Ajouter au panier';
       }
     }
   }
@@ -275,9 +276,16 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
             var baseImgs = (product.images && product.images.length)
               ? product.images
               : [product.image_url];
+            /* FIX Bug 4: normaliser les URLs Cloudinary avant comparaison.
+               Les transforms (/upload/f_auto,q_auto,w_400/) varient selon contexte
+               mais le public_id (après /upload/xxx/) reste identique. */
+            function _normUrl(u) {
+              if (!u) return '';
+              return u.split('?')[0].replace(/\/upload\/[^/]+\//, '/upload/');
+            }
+            var normOpt = _normUrl(opt.image_url);
             var colorIdx = baseImgs.findIndex(function(u) {
-              // Compare without query params (Unsplash URLs can have extra params)
-              return u.split('?')[0] === opt.image_url.split('?')[0];
+              return _normUrl(u) === normOpt;
             });
             if (colorIdx >= 0) {
               goToSlide(colorIdx);

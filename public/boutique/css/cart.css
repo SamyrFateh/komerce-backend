@@ -602,7 +602,18 @@ body.cart-open .k-wa-fab {
 
 /* Ring pulse bouton panier */
 @keyframes k-ring-pulse { 0% { box-shadow:0 0 0 0 rgba(255,90,70,.5); } 65% { box-shadow:0 0 0 12px rgba(255,90,70,0); } 100% { box-shadow:0 0 0 0 rgba(255,90,70,0); } }
-.k-cart-btn.ring-pulse { animation:k-ring-pulse .65s ease-out 2; border-radius:50%; }
+/* FIX Bug 1: l'animation CSS crée un compositing layer isolé qui casse mix-blend-mode sur .k-cart-avatar.
+   On applique l'animation sur un pseudo-element ::after au lieu du parent,
+   et on force mix-blend-mode:multiply sur l'avatar même pendant l'animation. */
+.k-cart-btn.ring-pulse { border-radius:50%; }
+.k-cart-btn.ring-pulse::after {
+  content:''; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+  animation:k-ring-pulse .65s ease-out 2;
+}
+.k-cart-btn.ring-pulse .k-cart-avatar,
+.k-cart-btn.avatar-wave .k-cart-avatar {
+  mix-blend-mode: multiply; /* re-forcer pendant les animations pour éviter le fond blanc */
+}
 
 /* Bouton ajouter "confirmed" */
 .k-add-cart-btn.confirmed { background:var(--ocean); color:#fff; font-size:13px; font-weight:700; justify-content:center; }
