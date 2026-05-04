@@ -97,6 +97,7 @@
 .k-modal-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
+  overscroll-behavior: contain;
   display: flex; flex-direction: column; padding-top: 0;
   padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
@@ -772,6 +773,6 @@
   .k-modal-actions .k-add-cart-btn,
   .k-modal-actions .k-buy-now-btn,
   .k-modal-actions .k-qty-btn {
-    touch-action: manipulation;
+    touch-action: none;
   }
 }
