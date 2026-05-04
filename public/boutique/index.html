@@ -53,17 +53,17 @@ if('serviceWorker' in navigator){
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
 <!-- CSS Komerce v2 — refactorisé, 0 !important, encodage UTF-8 propre -->
-<link rel="stylesheet" href="/boutique/css/tokens.css?v=337">
-<link rel="stylesheet" href="/boutique/css/reset.css?v=337">
-<link rel="stylesheet" href="/boutique/css/layout.css?v=337">
-<link rel="stylesheet" href="/boutique/css/hero.css?v=337">
-<link rel="stylesheet" href="/boutique/css/categories.css?v=337">
-<link rel="stylesheet" href="/boutique/css/products.css?v=337">
-<link rel="stylesheet" href="/boutique/css/modal.css?v=337">
-<link rel="stylesheet" href="/boutique/css/cart.css?v=337">
-<link rel="stylesheet" href="/boutique/css/interactions.css?v=337">
-<link rel="stylesheet" href="/boutique/css/event.css?v=337">
-<link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=337">
+<link rel="stylesheet" href="/boutique/css/tokens.css?v=338">
+<link rel="stylesheet" href="/boutique/css/reset.css?v=338">
+<link rel="stylesheet" href="/boutique/css/layout.css?v=338">
+<link rel="stylesheet" href="/boutique/css/hero.css?v=338">
+<link rel="stylesheet" href="/boutique/css/categories.css?v=338">
+<link rel="stylesheet" href="/boutique/css/products.css?v=338">
+<link rel="stylesheet" href="/boutique/css/modal.css?v=338">
+<link rel="stylesheet" href="/boutique/css/cart.css?v=338">
+<link rel="stylesheet" href="/boutique/css/interactions.css?v=338">
+<link rel="stylesheet" href="/boutique/css/event.css?v=338">
+<link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=338">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -373,9 +373,25 @@ if('serviceWorker' in navigator){
   <button class="k-bnav-item" data-tab="cart">
     <img src="/images/panier_tresse_vert.png" class="k-bnav-basket" width="24" height="24" alt="Panier">
     <span class="k-bnav-badge" id="k-bnav-cart-badge"></span>
-    <span>Panier</span>
+    <span id="k-bnav-cart-label">Panier</span>
   </button>
 </nav>
+
+<!-- ═══ SIDE CART — aperçu permanent desktop ═══ -->
+<aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
+  <div class="k-sc-header">
+    <span class="k-sc-title">🧺 Panier</span>
+    <span id="k-sc-count" class="k-sc-count"></span>
+  </div>
+  <div id="k-sc-items" class="k-sc-items"></div>
+  <div class="k-sc-footer">
+    <div class="k-sc-total-row">
+      <span>Total</span>
+      <strong id="k-sc-total"></strong>
+    </div>
+    <button id="k-sc-cta" class="k-sc-cta">Voir le panier →</button>
+  </div>
+</aside>
 
 <script>
 // Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop
@@ -540,9 +556,9 @@ if('serviceWorker' in navigator){
 </script>
 <!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
 <script src="/boutique/js/mock-data.js"></script>
-<script src="/boutique/js/komerce-api.js?v=337"></script>
+<script src="/boutique/js/komerce-api.js?v=338"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=337"></script>
+<script type="module" src="/boutique/js/main.js?v=338"></script>
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
