@@ -378,16 +378,13 @@
   .k-modal-actions {
     order: 3;
     flex-shrink: 0;
-    /* FIX bouton Acheter inaccessible mobile : avant, les actions étaient
-       en bas du contenu scrollable (après les suggestions). L'utilisateur
-       devait scroller toute la fiche pour atteindre "Ajouter / Acheter".
-       Le commentaire ligne 360 promettait "sticky bas" mais la règle
-       n'existait que dans @media (min-width:900px). Sticky dans le
-       scroll owner .k-modal-scroll → bouton toujours visible bas écran.
-       display:contents sur le parent .k-modal-product-zone est ignoré
-       par le sticky qui se mesure contre le scroll container. */
-    position: sticky;
+    /* FIX: sticky ne fonctionne pas quand display:contents est sur le parent
+       (.k-modal-product-zone) — les produits suggestions défilent dessous.
+       position:fixed sort du flux, fiable à 100%. */
+    position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 30;
   }
   .k-modal-suggestions { order: 2; }
