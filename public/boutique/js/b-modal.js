@@ -874,11 +874,14 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     }
 
     // ── FIX #3 : Bloquer scroll passthrough sur la barre d'actions ──
+    // passive:false + preventDefault() empêche le browser de scroller
+    // quand le doigt touche la barre sticky Ajouter/Acheter.
     const actionsBar = dom.modal.querySelector('.k-modal-actions');
     if (actionsBar) {
       actionsBar.addEventListener('touchmove', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-      }, { passive: true });
+      }, { passive: false });
     }
 
     // ── Bouton "⚡ Acheter" — ajout + transition douce vers le panier
@@ -947,7 +950,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       state._modalSearchInput = searchInput;
 
       // ── Filtrage suggestions + dropdown résultats globaux ──
-      searchInput.addEventListener('input', function() {
+      // Factorisé pour être appelé depuis input ET keyup (fallback mobile)
+      function _handleSearchInput() {
         var q = searchInput.value.trim().toLowerCase();
         searchWrap.classList.toggle('has-value', q.length > 0);
 
@@ -980,7 +984,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
                    (p.description || '').toLowerCase().includes(q);
           });
           _renderDropdown(results, q);
-        }, 200);
+        }, 150);
+      }
+
+      searchInput.addEventListener('input', _handleSearchInput);
+      // Fallback : certains claviers mobiles (composition/prédiction)
+      // ne déclenchent pas 'input' à chaque frappe → keyup rattrape.
+      searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') return; // déjà géré par keydown
+        _handleSearchInput();
       });
 
       // ── Clear button ──
