@@ -1095,7 +1095,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       });
 
       // ── Render dropdown — Sprint 2 : résultats catégorisés ──
+      /* FIX: .k-modal-details a z-index:2, ce qui emprisonne le dropdown
+         (z-index:50) sous .k-modal-actions (z-index:30).
+         On bump temporairement le z-index du parent quand le dropdown est ouvert. */
+      var _detailsEl = dom.modal.querySelector('.k-modal-details');
+      function _liftDetails()   { if (_detailsEl) _detailsEl.style.zIndex = '35'; }
+      function _unliftDetails() { if (_detailsEl) _detailsEl.style.zIndex = ''; }
+
       function _renderDropdown(results, query) {
+        _liftDetails();
         if (!results.length) {
           dropdown.innerHTML =
             '<div class="k-msearch-empty">' +
@@ -1233,6 +1241,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
       function _closeDropdown() {
         dropdown.classList.remove('open');
+        _unliftDetails();
       }
     })();
 
