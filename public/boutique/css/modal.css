@@ -270,11 +270,15 @@
 .k-modal-inner-search.has-value .k-modal-inner-search-hint { display: none; }
 
 /* ── DROPDOWN RÉSULTATS SEARCH ───────────────────────────────── */
+/* FIX: position:fixed + z-index:500 pour sortir du stacking context de
+   .k-modal-details (overflow-x:hidden sur mobile → overflow-y:auto implicite
+   piégeait le dropdown à l'intérieur). Positionné par JS sous l'input actif. */
 .k-modal-search-dropdown {
-  display: none; margin: 0 12px 8px;
+  display: none;
+  position: fixed; left: 12px; right: 12px; z-index: 500;
   background: var(--white); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: var(--elev-3); max-height: 340px;
-  overflow-y: auto; overflow-x: hidden; z-index: 50; position: relative;
+  box-shadow: var(--elev-3); max-height: min(340px, 50vh);
+  overflow-y: auto; overflow-x: hidden;
   scrollbar-width: thin; -webkit-overflow-scrolling: touch;
   animation: k-msearch-drop-in .18s var(--ease);
 }
@@ -647,8 +651,9 @@
   /* ── Recherche interne ───────────────────────────────────── */
   #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
   .k-modal-inner-search-input { font-size: 14px; }
-  .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
-  #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
+  /* position:fixed sur le dropdown → left/right gérés par la base, max-height réduit desktop */
+  .k-modal-search-dropdown { max-height: 260px; }
+  #k-modal .k-modal-search-dropdown { max-height: 260px; }
 
   /* ── Actions : col droite, row 2, sticky bas ─────────────── */
   #k-modal .k-modal-product-zone .k-modal-actions {

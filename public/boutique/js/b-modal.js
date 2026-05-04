@@ -943,7 +943,9 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       var dropdown = document.createElement('div');
       dropdown.className = 'k-modal-search-dropdown';
       dropdown.id = 'k-modal-search-dropdown';
-      searchParent.appendChild(dropdown);
+      /* FIX: attacher au modal root (pas à .k-modal-details) pour sortir
+         du stacking context + overflow clipping. position:fixed en CSS. */
+      dom.modal.appendChild(dropdown);
 
       const searchInput = searchWrap.querySelector('.k-modal-inner-search-input');
       const clearBtn = searchWrap.querySelector('.k-modal-search-clear');
@@ -1040,7 +1042,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
               '<button class="k-msearch-recent-remove" data-term="' + sanitize(term) + '" type="button" aria-label="Supprimer">\u00d7</button>' +
             '</div>';
           }).join('');
-        dropdown.classList.add('open');
+        _openDropdown();
 
         // Clic sur un terme récent → injecter et chercher
         dropdown.querySelectorAll('.k-msearch-recent-item').forEach(function(item) {
@@ -1107,22 +1109,48 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       });
 
       // ── Render dropdown — Sprint 2 : résultats catégorisés ──
-      /* FIX: .k-modal-details a z-index:2, ce qui emprisonne le dropdown
-         (z-index:50) sous .k-modal-actions (z-index:30).
-         On bump temporairement le z-index du parent quand le dropdown est ouvert. */
+      /* FIX: dropdown est maintenant position:fixed, attaché au modal root.
+         _positionDropdown() calcule la position sous l'input actif (inline ou topbar).
+         _liftDetails() garde le bump z-index en sécurité additionnelle. */
       var _detailsEl = dom.modal.querySelector('.k-modal-details');
       function _liftDetails()   { if (_detailsEl) _detailsEl.style.zIndex = '35'; }
       function _unliftDetails() { if (_detailsEl) _detailsEl.style.zIndex = ''; }
 
-      function _renderDropdown(results, query) {
+      function _positionDropdown() {
+        var topbarActive = document.querySelector('.k-topbar-search-expanded.is-active');
+        var refEl = topbarActive || searchWrap;
+        var rect = refEl.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + 4) + 'px';
+        // Sur desktop, aligner avec la barre de recherche
+        if (window.innerWidth >= 900) {
+          var searchRect = searchWrap.getBoundingClientRect();
+          dropdown.style.left = searchRect.left + 'px';
+          dropdown.style.right = (window.innerWidth - searchRect.right) + 'px';
+        }
+      }
+
+      function _openDropdown() {
         _liftDetails();
+        _positionDropdown();
+        dropdown.classList.add('open');
+      }
+
+      // Repositionner pendant le scroll
+      var _mScrollDropdown = dom.modal.querySelector('.k-modal-scroll');
+      if (_mScrollDropdown) {
+        _mScrollDropdown.addEventListener('scroll', function() {
+          if (dropdown.classList.contains('open')) _positionDropdown();
+        }, { passive: true });
+      }
+
+      function _renderDropdown(results, query) {
         if (!results.length) {
           dropdown.innerHTML =
             '<div class="k-msearch-empty">' +
               '<div class="k-msearch-empty-icon">\ud83d\udd0d</div>' +
               '<div>Aucun produit trouv\u00e9 pour \u00ab\u00a0' + sanitize(query) + '\u00a0\u00bb</div>' +
             '</div>';
-          dropdown.classList.add('open');
+          _openDropdown();
           return;
         }
 
@@ -1184,7 +1212,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         '</div>';
 
         dropdown.innerHTML = html;
-        dropdown.classList.add('open');
+        _openDropdown();
 
         // ── Bind résultats : clic → switch produit intra-modal ──
         dropdown.querySelectorAll('.k-msearch-item').forEach(function(item) {
