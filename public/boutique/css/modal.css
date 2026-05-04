@@ -362,8 +362,8 @@
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  touch-action: manipulation; border-top: 1px solid var(--sand-dark);
-  flex-shrink: 0; background: rgba(255,255,255,.96);
+  touch-action: none; border-top: 1px solid var(--sand-dark);
+  flex-shrink: 0; background: rgba(255,255,255,1);
   backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
   position: relative; z-index: 30;
 }
@@ -764,8 +764,14 @@
 /* ── FIX #3 : Empêcher scroll passthrough sur la barre actions ─ */
 @media (max-width: 899px) {
   .k-modal-actions {
-    /* Bloquer le scroll du container quand on touche la barre */
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: auto;
+    /* touch-action:none sur le conteneur bloque le scroll vertical
+       qui traversait la barre sticky. Les boutons enfants gardent
+       touch-action:manipulation pour le tap rapide. */
+    pointer-events: auto;
+  }
+  .k-modal-actions .k-add-cart-btn,
+  .k-modal-actions .k-buy-now-btn,
+  .k-modal-actions .k-qty-btn {
+    touch-action: manipulation;
   }
 }
