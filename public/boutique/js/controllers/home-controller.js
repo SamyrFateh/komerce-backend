@@ -112,6 +112,10 @@ function handleCategorySelection(cat, deps) {
   if (state.flatSubcat) {
     state.flatSubcat = null;
     renderGrid();
+    // FIX audit 3.2 : renderGrid monte le pager dans un requestAnimationFrame.
+    // On doit attendre la prochaine frame avant de tester pagerActive / lire offsetLeft.
+    requestAnimationFrame(() => handleCategorySelection(cat, deps));
+    return;
   }
 
   // Mode pager actif : scroll vers la page existante, pas de renderGrid

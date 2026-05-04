@@ -93,7 +93,7 @@ function writeCache(products) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(products));
 }
 
-export async function loadProducts() {
+export async function fetchProducts() {
   try {
     if (typeof K === 'undefined' || !K.products) {
       throw new Error('K non disponible');
