@@ -225,6 +225,14 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       dom.modalPromoBadge.classList.remove('show');
     }
 
+    // FIX #1 — Bouton favori dans la modal
+    const modalFavBtn = document.getElementById('k-modal-fav-btn');
+    if (modalFavBtn) {
+      const favState = state.favs.includes(product.id);
+      modalFavBtn.classList.toggle('liked', favState);
+      modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
+    }
+
     dom.modalCat.textContent = `${product.emoji || ''} ${product.category || ''}`;
     // Affichage stock intelligent : 3 états seulement
     // - Stock > 10 : "✓ Disponible"
@@ -845,6 +853,33 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
       addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
     });
+
+    // ── FIX #1 : Bouton favori dans la modal ──
+    const modalFavBtn = document.getElementById('k-modal-fav-btn');
+    if (modalFavBtn) {
+      modalFavBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!state.modalProduct) return;
+        toggleFav(state.modalProduct.id, modalFavBtn);
+        // Aussi mettre à jour le cœur sur la carte grille correspondante
+        const gridFavBtn = dom.grid
+          ? dom.grid.querySelector(`.k-card-fav[data-fav="${state.modalProduct.id}"]`)
+          : null;
+        if (gridFavBtn) {
+          const isNowFav = state.favs.includes(state.modalProduct.id);
+          gridFavBtn.classList.toggle('liked', isNowFav);
+          gridFavBtn.innerHTML = isNowFav ? '❤️' : '🤍';
+        }
+      });
+    }
+
+    // ── FIX #3 : Bloquer scroll passthrough sur la barre d'actions ──
+    const actionsBar = dom.modal.querySelector('.k-modal-actions');
+    if (actionsBar) {
+      actionsBar.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+    }
 
     // ── Bouton "⚡ Acheter" — ajout + transition douce vers le panier
     const buyNowBtn = document.getElementById('k-buy-now-btn');
