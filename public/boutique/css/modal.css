@@ -370,7 +370,21 @@
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
    order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
 @media (max-width: 899px) {
-  .k-modal-actions { order: 3; flex-shrink: 0; }
+  .k-modal-actions {
+    order: 3;
+    flex-shrink: 0;
+    /* FIX bouton Acheter inaccessible mobile : avant, les actions étaient
+       en bas du contenu scrollable (après les suggestions). L'utilisateur
+       devait scroller toute la fiche pour atteindre "Ajouter / Acheter".
+       Le commentaire ligne 360 promettait "sticky bas" mais la règle
+       n'existait que dans @media (min-width:900px). Sticky dans le
+       scroll owner .k-modal-scroll → bouton toujours visible bas écran.
+       display:contents sur le parent .k-modal-product-zone est ignoré
+       par le sticky qui se mesure contre le scroll container. */
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+  }
   .k-modal-suggestions { order: 2; }
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
