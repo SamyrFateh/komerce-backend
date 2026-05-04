@@ -102,9 +102,10 @@ export function installScrollOwner() {
   });
 
   // Desktop wheel owner:
-  // Si la molette tombe dans le wrapper boutique, on pilote le document.
-  // Cela évite le conflit historique où #k-page-scroll recevait la molette
-  // alors qu'il n'est plus le scroller desktop.
+  // Redirige la molette tombant dans #k-page-scroll vers le document scroller.
+  // FIX audit: passive: true (ne bloque plus le thread de rendu),
+  // plus de preventDefault(), plus de multiplicateur ×2.35 qui rendait
+  // le scroll nerveux et ignorait les préférences OS de l'utilisateur.
   window.addEventListener('wheel', function(e) {
     if (!isDesktop()) return;
     if (document.body.classList.contains('modal-open')) return;
@@ -123,10 +124,8 @@ export function installScrollOwner() {
     var maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     if (maxScroll <= 0) return;
 
-    e.preventDefault();
-
+    // Scroll natif : on respecte le deltaY du navigateur tel quel
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-    const speed = 2.35;
-    window.scrollBy({ top: e.deltaY * unit * speed, left: 0, behavior: 'auto' });
-  }, { passive: false });
+    window.scrollBy({ top: e.deltaY * unit, left: 0, behavior: 'auto' });
+  }, { passive: true });
 }
