@@ -388,7 +388,7 @@ function injectTrustBadges() {
 // ═══════════════════════════════════════════════════════════════
 
 function updateSubtotal() {
-  if (!isDesktop()) return;
+  // Visible sur mobile ET desktop : sous-total dynamique dans les actions modal
   var actions = dom.modal ? dom.modal.querySelector('.k-modal-actions') : null;
   if (!actions) return;
   var product = state.modalProduct;
