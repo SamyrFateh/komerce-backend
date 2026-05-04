@@ -170,6 +170,35 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
    * @param {string|number} id - ID du produit
    * @param {boolean} [pushHistory] - Pousser dans l'historique navigateur (retour natif)
    */
+
+  /* ── FIX: Sync qty stepper display with real cart contents ── */
+  function _syncModalQtyUI() {
+    if (!state.modalProduct) return;
+    const pid = String(state.modalProduct.id);
+    const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
+    state.modalQty = item ? item.qty : 0;
+    if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
+    // Update "Ajouter" button label
+    if (dom.addCartBtn) {
+      if (state.modalQty > 0) {
+        dom.addCartBtn.classList.add('in-cart');
+        dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
+      } else {
+        dom.addCartBtn.classList.remove('in-cart');
+        dom.addCartBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Ajouter au panier';
+      }
+    }
+  }
+
+  /* ── FIX: Back button = fermer modal au lieu de quitter le site ── */
+  let _modalHistoryPushed = false;
+  window.addEventListener('popstate', (e) => {
+    if (dom.modalOverlay && dom.modalOverlay.classList.contains('open')) {
+      _modalHistoryPushed = false;
+      closeModal();
+    }
+  });
+
     function openModal(id, pushHistory) {
     const product = state.products.find(p => p.id === id);
     if (!product) return;
@@ -189,6 +218,11 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
     if (!dom.modalOverlay.classList.contains('open')) {
       state._savedCatalogScrollY = window.scrollY;
+      // FIX: Push history state so browser back button closes modal
+      if (!_modalHistoryPushed) {
+        history.pushState({ kModal: true }, '');
+        _modalHistoryPushed = true;
+      }
     }
 
     if (pushHistory !== false && state.modalProduct) {
@@ -196,23 +230,25 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     }
 
     state.modalProduct = product;
-    state.modalQty = 1;
 
-    // Fix 1+2: reset "Ajouter" button — disabled, classes, confirmed state
+    // FIX: Stepper = panier direct. Affiche la quantité déjà dans le panier.
+    const _cartItem = state.cart.find(i => String(i.product?.id ?? i.id) === String(product.id));
+    state.modalQty = _cartItem ? _cartItem.qty : 0;
+
+    // Reset "Ajouter" button state
     if (dom.addCartBtn) {
       dom.addCartBtn.disabled = false;
       dom.addCartBtn.onclick = null;
-      if (dom.addCartBtn.classList.contains('confirmed') || dom.addCartBtn.querySelector('.k-btn-done')) {
-        dom.addCartBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> Ajouter au panier';
-      }
       dom.addCartBtn.classList.remove('added', 'in-cart', 'confirmed');
     }
+    // Sync stepper display with cart qty
+    _syncModalQtyUI();
 
     buildCarouselSlides(product);
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
-    dom.modalQtyVal.textContent = '1';
+    dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
 
     if (product.promo_pct) {
       const old = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
@@ -549,6 +585,11 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
    */
     function closeModal() {
     hideModalFAB();
+    // FIX: Pop history entry if we pushed one (don't pop if back button already did)
+    if (_modalHistoryPushed) {
+      _modalHistoryPushed = false;
+      history.back();
+    }
     dom.modalOverlay.classList.remove('open');
     // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
@@ -841,17 +882,25 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       if (e.target === dom.modalOverlay) closeModal();
     });
 
+    // FIX: Stepper +/− = ajout/retrait direct du panier (comme cartes suggestions)
     dom.qtyMinus.addEventListener('click', () => {
-      if (state.modalQty > 1) { state.modalQty--; dom.modalQtyVal.textContent = state.modalQty; }
+      if (!state.modalProduct) return;
+      const pid = String(state.modalProduct.id);
+      quickRemove(pid, dom.qtyMinus);
+      _syncModalQtyUI();
     });
     dom.qtyPlus.addEventListener('click', () => {
-      state.modalQty++;
-      dom.modalQtyVal.textContent = state.modalQty;
+      if (!state.modalProduct) return;
+      const pid = String(state.modalProduct.id);
+      quickAdd(pid, dom.qtyPlus);
+      _syncModalQtyUI();
     });
 
     dom.addCartBtn.addEventListener('click', () => {
       if (!state.modalProduct || dom.addCartBtn.disabled || dom.addCartBtn.classList.contains('confirmed')) return;
-      addToCart(state.modalProduct, state.modalQty, dom.addCartBtn);
+      // Si pas encore dans le panier, ajouter 1
+      addToCart(state.modalProduct, 1, dom.addCartBtn);
+      _syncModalQtyUI();
     });
 
     // ── FIX #1 : Bouton favori dans la modal ──

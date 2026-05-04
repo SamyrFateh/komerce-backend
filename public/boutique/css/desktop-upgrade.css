@@ -177,6 +177,13 @@
   }
   .k-card:hover .k-card-hover-overlay {
     opacity: 1;
+    pointer-events: auto;
+  }
+  /* FIX: Hide original fav + add buttons on hover to prevent duplicates */
+  .k-card:hover .k-card-fav,
+  .k-card:hover .k-card-add {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .k-card-hover-name {
@@ -654,6 +661,12 @@
 
   .k-card:hover .k-card-hover-overlay {
     opacity: 1;
+    pointer-events: auto;
+  }
+  .k-card:hover .k-card-fav,
+  .k-card:hover .k-card-add {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   .k-card-quick-view {
