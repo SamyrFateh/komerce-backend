@@ -48,16 +48,20 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // ── Slides principales ─────────────────────────────────────
     track.innerHTML = '';
-    // Reset skeleton state — chaque ouverture redémarre le shimmer
+    // Reset skeleton state — ne redémarre le shimmer que si la première image change
     var imgWrapForSkeleton = dom.modal.querySelector('.k-modal-img-wrap');
-    if (imgWrapForSkeleton) imgWrapForSkeleton.classList.remove('is-image-loaded');
+    var _existingFirstSrc = track.querySelector('.k-modal-slide') ? track.querySelector('.k-modal-slide').src : '';
+    var _newFirstSrc = optimizeImgUrl(images[0], 800);
+    if (imgWrapForSkeleton && _existingFirstSrc !== _newFirstSrc) {
+      imgWrapForSkeleton.classList.remove('is-image-loaded');
+    }
     images.forEach(function(url, i) {
       var img = document.createElement('img');
       img.className = 'k-modal-slide';
       img.src = optimizeImgUrl(url, 800);
       img.alt = product.name || '';
       img.draggable = false;
-      img.loading = i === 0 ? 'eager' : 'lazy';
+      img.loading = i < 3 ? 'eager' : 'lazy';
       // Première image : on coupe le shimmer dès qu'elle est chargée
       if (i === 0 && imgWrapForSkeleton) {
         var killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
@@ -351,6 +355,8 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     dom.modalName.textContent = product.name;
     dom.modalDesc.textContent = product.description || '';
+    dom.modalDesc.classList.remove('is-expanded'); // reset truncation on each open
+    dom.modalDesc.onclick = function() { dom.modalDesc.classList.toggle('is-expanded'); };
     dom.modalPrice.textContent = fmtPrice(product.price_kmf);
     dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
 
