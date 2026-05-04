@@ -97,9 +97,8 @@
 .k-modal-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
-  overscroll-behavior: contain;
   display: flex; flex-direction: column; padding-top: 0;
-  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 /* ── PRODUCT-ZONE : transparent sur mobile (display:contents) ── */
@@ -111,7 +110,7 @@
 
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
 .k-modal-img-wrap {
-  position: relative; flex: 0 0 auto; height: 38vh; max-height: 360px;
+  position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
   background:
     linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
 }
@@ -136,7 +135,7 @@
   100% { background-position: -200% 0; }
 }
 @media (max-width: 600px) {
-  .k-modal-img-wrap { height: 34vh; max-height: 300px; }
+  .k-modal-img-wrap { height: 40vh; max-height: 380px; }
 }
 .k-modal-carousel { width: 100%; height: 100%; overflow: hidden; }
 .k-modal-carousel-track { display: flex; height: 100%; transition: transform .3s cubic-bezier(.22,1,.36,1); }
@@ -165,6 +164,52 @@
   pointer-events: none;
 }
 .k-modal-counter.is-visible { display: block; }
+
+/* ── BOUTON FAVORI MODALE (top-right de l'image) ─────────────
+   FIX favori absent dans modale produit : bouton ❤️ universel
+   mobile + desktop, posé sur l'image. Même langage visuel que
+   les cartes (.k-card-fav.liked) pour cohérence. */
+.k-modal-fav-btn {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: 10px;
+  width: 42px; height: 42px;
+  background: rgba(253,250,245,.94);
+  border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1;
+  box-shadow: var(--elev-1);
+  cursor: pointer; z-index: 4;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1),
+              background .2s var(--ease),
+              box-shadow .2s var(--ease);
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.k-modal-fav-btn:active { transform: scale(1.12); }
+.k-modal-fav-btn.liked {
+  background: #e91e63;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px rgba(233,30,99,.35),
+    0 2px 10px rgba(233,30,99,.30);
+  transform: scale(1.05);
+}
+.k-modal-fav-btn.k-pop { animation: k-modal-fav-pop .3s var(--ease, ease); }
+@keyframes k-modal-fav-pop {
+  0%   { transform: scale(1.05); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1.05); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .k-modal-fav-btn:hover { transform: scale(1.08); box-shadow: var(--elev-2); }
+  .k-modal-fav-btn.liked:hover { transform: scale(1.10); }
+}
+@media (min-width: 900px) {
+  .k-modal-fav-btn { top: 14px; right: 14px; width: 46px; height: 46px; font-size: 22px; }
+}
 
 /* ── FULLSCREEN IMAGE (mobile, tap on image) ─────────────────
    Overlay plein écran qui laisse le navigateur gérer le pinch-zoom
@@ -236,10 +281,8 @@
   line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
   font-variation-settings: 'opsz' 18;
 }
-.k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; cursor: pointer; }
-.k-modal-desc.is-expanded { -webkit-line-clamp: unset; }
-
-.k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+.k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+.k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
 .k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
 .k-modal-old-price { font-size: 13px; color: var(--text-light); text-decoration: line-through; }
 .k-modal-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
@@ -272,15 +315,11 @@
 .k-modal-inner-search.has-value .k-modal-inner-search-hint { display: none; }
 
 /* ── DROPDOWN RÉSULTATS SEARCH ───────────────────────────────── */
-/* FIX: position:fixed + z-index:500 pour sortir du stacking context de
-   .k-modal-details (overflow-x:hidden sur mobile → overflow-y:auto implicite
-   piégeait le dropdown à l'intérieur). Positionné par JS sous l'input actif. */
 .k-modal-search-dropdown {
-  display: none;
-  position: fixed; left: 12px; right: 12px; z-index: 500;
+  display: none; margin: 0 12px 8px;
   background: var(--white); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: var(--elev-3); max-height: min(340px, 50vh);
-  overflow-y: auto; overflow-x: hidden;
+  box-shadow: var(--elev-3); max-height: 340px;
+  overflow-y: auto; overflow-x: hidden; z-index: 20; position: relative;
   scrollbar-width: thin; -webkit-overflow-scrolling: touch;
   animation: k-msearch-drop-in .18s var(--ease);
 }
@@ -369,10 +408,34 @@
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
   padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-  touch-action: none; border-top: 1px solid var(--sand-dark);
-  flex-shrink: 0; background: rgba(255,255,255,1);
-  backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--sand-dark);
+  flex-shrink: 0;
+  /* FIX scroll qui traverse le bouton Acheter mobile :
+     1. Fond passé de rgba(255,255,255,.96) → opaque pur. Le backdrop-filter
+        n'était pas appliqué de façon fiable sur Samsung Internet et Chrome
+        Android ancien quand l'élément est position:sticky dans un scrollable
+        → on voyait le contenu derrière transparaître.
+     2. touch-action: none sur le conteneur empêche le navigateur de
+        traduire un drag vertical en scroll du parent .k-modal-scroll
+        (= "scroll qui traverse"). Les boutons enfants gardent leur propre
+        touch-action et restent cliquables/tappables normalement.
+     3. pointer-events: auto explicite : aucun ancêtre ne pose none, mais
+        on est défensif. */
+  background: var(--white);
+  touch-action: none;
+  pointer-events: auto;
   position: relative; z-index: 30;
+}
+/* Restaurer un effet glass quand le navigateur le supporte ET qu'on n'est
+   pas en sticky (desktop column) — le rgba se réactive seulement là. */
+@media (min-width: 900px) {
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .k-modal-actions {
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+  }
 }
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
    order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
@@ -380,13 +443,16 @@
   .k-modal-actions {
     order: 3;
     flex-shrink: 0;
-    /* FIX: sticky ne fonctionne pas quand display:contents est sur le parent
-       (.k-modal-product-zone) — les produits suggestions défilent dessous.
-       position:fixed sort du flux, fiable à 100%. */
-    position: fixed;
+    /* FIX bouton Acheter inaccessible mobile : avant, les actions étaient
+       en bas du contenu scrollable (après les suggestions). L'utilisateur
+       devait scroller toute la fiche pour atteindre "Ajouter / Acheter".
+       Le commentaire ligne 360 promettait "sticky bas" mais la règle
+       n'existait que dans @media (min-width:900px). Sticky dans le
+       scroll owner .k-modal-scroll → bouton toujours visible bas écran.
+       display:contents sur le parent .k-modal-product-zone est ignoré
+       par le sticky qui se mesure contre le scroll container. */
+    position: sticky;
     bottom: 0;
-    left: 0;
-    right: 0;
     z-index: 30;
   }
   .k-modal-suggestions { order: 2; }
@@ -399,7 +465,7 @@
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
 .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; }
-.k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; grid-row: 3; text-align: right; padding-right: 4px; }
+.k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
@@ -475,7 +541,7 @@
     -webkit-overflow-scrolling: touch;
     width: 100%;
     max-width: 100%;
-    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
 
   /* Pas de débordement horizontal sur aucun enfant.
@@ -490,7 +556,6 @@
      Pour eux : juste max-width:100%, et on contraint les enfants. */
   #k-modal .k-modal-img-wrap,
   #k-modal .k-modal-carousel,
-  #k-modal .k-modal-carousel-track,
   #k-modal .k-modal-details,
   #k-modal .k-modal-info,
   #k-modal .k-modal-actions,
@@ -508,7 +573,7 @@
   #k-modal .k-sug-section {
     width: 100%; max-width: 100%; min-width: 0;
   }
-  #k-modal .k-modal-slide { max-width: 100%; min-width: 0; }
+  #k-modal .k-modal-slide { max-width: 100%; min-width: 100%; }
   #k-modal .k-sug-grid {
     width: 100%; max-width: 100%; min-width: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -650,9 +715,8 @@
   /* ── Recherche interne ───────────────────────────────────── */
   #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
   .k-modal-inner-search-input { font-size: 14px; }
-  /* position:fixed sur le dropdown → left/right gérés par la base, max-height réduit desktop */
-  .k-modal-search-dropdown { max-height: 260px; }
-  #k-modal .k-modal-search-dropdown { max-height: 260px; }
+  .k-modal-search-dropdown { margin: 0 0 8px; max-height: 260px; }
+  #k-modal .k-modal-search-dropdown { flex: 0 0 auto; max-height: 260px; }
 
   /* ── Actions : col droite, row 2, sticky bas ─────────────── */
   #k-modal .k-modal-product-zone .k-modal-actions {
@@ -748,118 +812,4 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-}
-
-/* ── FIX #1 : Bouton Favori dans la modal produit ──────────── */
-.k-modal-name-row { display: flex; align-items: flex-start; gap: 10px; }
-.k-modal-name-row h2 { flex: 1; min-width: 0; }
-.k-modal-fav-btn {
-  flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
-  background: var(--sand); border: 1.5px solid var(--sand-dark);
-  font-size: 20px; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform .2s var(--ease), background .2s, border-color .2s;
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-}
-.k-modal-fav-btn:active { transform: scale(.9); }
-.k-modal-fav-btn.liked { background: #fff0f0; border-color: #ffcdd2; }
-.k-modal-fav-btn.liked .k-pop { animation: k-fav-pop .35s var(--ease); }
-@keyframes k-fav-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
-
-/* ── FIX #3 : Empêcher scroll passthrough sur la barre actions ─ */
-@media (max-width: 899px) {
-  .k-modal-actions {
-    /* touch-action:none sur le conteneur bloque le scroll vertical
-       qui traversait la barre sticky. Les boutons enfants gardent
-       touch-action:manipulation pour le tap rapide. */
-    pointer-events: auto;
-  }
-  .k-modal-actions .k-add-cart-btn,
-  .k-modal-actions .k-buy-now-btn,
-  .k-modal-actions .k-qty-btn {
-    touch-action: none;
-  }
-}
-
-/* ── Variant picker (Taille / Couleur / Pointure) ───────────────────────── */
-.k-modal-variants {
-  margin-top: 6px;
-}
-.k-variant-group {
-  margin-bottom: 10px;
-}
-.k-variant-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #777;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  margin-bottom: 6px;
-}
-.k-variant-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-.k-variant-pill {
-  padding: 5px 13px;
-  border-radius: 20px;
-  border: 1.5px solid #ddd;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  color: #1a1a1a;
-  transition: border-color .14s, background .14s, color .14s;
-  white-space: nowrap;
-  line-height: 1;
-  position: relative;
-}
-.k-variant-pill:hover:not(:disabled) {
-  border-color: #2e7d32;
-  background: #f5fbf5;
-}
-.k-variant-pill--active {
-  border-color: #2e7d32 !important;
-  background: #edf7ed !important;
-  color: #1b5e20 !important;
-  font-weight: 700;
-}
-.k-variant-pill--out {
-  opacity: .4;
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
-.k-variant-pill--color {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border-radius: 50%;
-  background-size: cover;
-  background-position: center;
-  overflow: visible;
-  color: transparent;
-}
-.k-variant-pill--color.k-variant-pill--active {
-  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #2e7d32;
-}
-.k-variant-color-tip {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 7px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
-}
-.k-variant-pill--color:hover .k-variant-color-tip {
-  display: block;
 }
