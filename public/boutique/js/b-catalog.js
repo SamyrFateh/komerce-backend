@@ -57,7 +57,10 @@ import {
 }                         from './shop-schema.js';
 import { renderProductCard }  from './render/render-product-card.js';
 import { renderHomeSections } from './render/render-home-sections.js';
-import { setupHomeController as _setupHomeController } from './controllers/home-controller.js';
+import {
+  setupHomeController as _setupHomeController,
+  centerRailChip       as _centerRailChip,
+} from './controllers/home-controller.js';
 import { ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
   setProducts, getAllProducts, getPromoProducts,
@@ -70,6 +73,21 @@ const _normalizeCat = normalizeCategoryKey;
 
 // Pager → catalog : centrer la chip active (découplage circulaire)
 bus.on('chip:center', function(chip) { centerActiveChip(chip); });
+
+// Fix: écouter catalog:cat-changed émis par b-desktop-upgrade.js (merch cards, promo strip)
+// pour synchroniser le rail de chips ET la sidebar desktop.
+bus.on('catalog:cat-changed', function(cat) {
+  // Sync chip rail
+  $$('.k-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.cat === cat);
+  });
+  var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+  if (chip) centerActiveChip(chip);
+  // Sync sidebar desktop
+  document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
+    item.classList.toggle('is-active', item.dataset.cat === cat);
+  });
+});
 
 
 // ╔══════════════════════════════════════════════════════════════════╗
@@ -435,6 +453,15 @@ function _bindGridEvents() {
       const chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
       if (chip) { chip.classList.add('active'); centerActiveChip(chip); }
       renderGrid();
+      // Fix: sync subcats rail + sidebar desktop (était absent → orphelins desktop)
+      if (window.innerWidth >= 900) {
+        import('./controllers/home-controller.js').then(function(m) {
+          m.renderSubcatRail(cat);
+        });
+        document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
+          item.classList.toggle('is-active', item.dataset.cat === cat);
+        });
+      }
       scrollPageToTop('smooth');
     });
   });
@@ -478,24 +505,20 @@ function setupCats() {
 }
 
 function centerActiveChip(chip) {
-  // Délégué à home-controller via syncRailActiveState
-  var catsEl = document.getElementById('k-cats');
-  if (!chip || !catsEl || window.innerWidth >= 900) return;
-  var left = chip.offsetLeft - (catsEl.clientWidth / 2) + (chip.clientWidth / 2);
-  catsEl.scrollTo({ left: left, behavior: 'smooth' });
+  // FIX vérité unique : délégué à home-controller#centerRailChip.
+  // Avant : duplication à l'identique → maintenance double et risque de drift.
+  // Le bus 'chip:center' (ligne 72), syncRailActiveState et l'appel direct
+  // depuis b-cart passent tous par cette même fonction.
+  return _centerRailChip(chip);
 }
 
 function setupCatSwipeNav() {
-  if (window.innerWidth > 899) return;
-  var catsEl = document.getElementById('k-cats');
-  if (!catsEl) return;
-  catsEl.addEventListener('click', function(e) {
-    var chip = e.target.closest('.k-chip');
-    if (!chip) return;
-    requestAnimationFrame(function() { centerActiveChip(chip); });
-  });
-  var activeChip = catsEl.querySelector('.k-chip.active');
-  if (activeChip) centerActiveChip(activeChip);
+  // FIX balayage instable : ne plus poser de listener click ici.
+  // setupHomeController fait déjà la sélection + centrage via
+  // syncRailActiveState(cat, { center: true }) → centerRailChip.
+  // Empilement précédent : 1 listener par chip + 1 délégué ici + le bus
+  // 'chip:center' → centerActiveChip = 3 RAF de scrollTo concurrents.
+  // Conservé comme no-op pour ne pas casser les imports.
 }
 
 function setupSearch() {
@@ -504,12 +527,19 @@ function setupSearch() {
     const q = dom.searchInput.value.trim().toLowerCase();
     if (q.length < 2) {
       dom.searchDrop.classList.remove('open');
-      state.filtered = [...state.products];
+      // Fix: restaurer les produits de la catégorie active (pas tout le catalogue)
+      state.filtered = (state.activeCat && state.activeCat !== 'all' && window.innerWidth >= 900)
+        ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
+        : [...state.products];
       renderGrid();
       return;
     }
     state.searchTimeout = setTimeout(() => {
-      const results = state.products.filter(p =>
+      // Fix: sur desktop avec une catégorie active, recherche dans la cat courante
+      const pool = (window.innerWidth >= 900 && state.activeCat && state.activeCat !== 'all')
+        ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
+        : state.products;
+      const results = pool.filter(p =>
         p.name.toLowerCase().includes(q) ||
         (p.category || '').toLowerCase().includes(q) ||
         (p.description || '').toLowerCase().includes(q)

@@ -91,13 +91,29 @@ function _syncChip(cat) {
   if (activeChip) bus.emit('chip:center', activeChip);
 }
 
+// Verrou anti-boucle : pendant un scroll programmatique,
+// le listener scroll natif ne doit pas re-déclencher de navigation.
+let _isProgrammaticScroll = false;
+let _programmaticScrollTimer = null;
+
 function _scrollToIndex(grid, idx, behavior = 'smooth') {
-  const w    = grid.clientWidth || window.innerWidth;
+  const w = grid.clientWidth || window.innerWidth;
+  if (w <= 0) {
+    requestAnimationFrame(() => _scrollToIndex(grid, idx, behavior));
+    return;
+  }
   const left = idx * w;
+
+  _isProgrammaticScroll = true;
+  clearTimeout(_programmaticScrollTimer);
+
   grid.scrollTo({ left, behavior });
-  setTimeout(() => {
-    if (Math.abs(grid.scrollLeft - left) > 10) grid.scrollLeft = left;
-  }, 150);
+
+  // Verrou court : juste le temps d'éviter la boucle scroll→chip→scroll.
+  // On ne force plus la position ensuite — le scroll-snap CSS s'en charge.
+  _programmaticScrollTimer = setTimeout(() => {
+    _isProgrammaticScroll = false;
+  }, behavior === 'instant' ? 32 : 100);
 }
 
 // ── Ghost loop ────────────────────────────────────────────────────
@@ -151,6 +167,8 @@ function _setupScrollSync(grid) {
   let lastIdx = -1;
 
   grid._pagerScrollH = () => {
+    // Ne pas interférer pendant un scroll programmatique (évite la boucle scroll→chip→scroll)
+    if (_isProgrammaticScroll) return;
     if (state.modalOpen) return;
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => {
@@ -179,31 +197,67 @@ function _setupScrollSync(grid) {
 
 // ── Bounce vertical → page suivante ──────────────────────────────
 
+// Réinitialise l'état de scroll de toutes les pages (lastST, wasDown).
+// Appelé à modal:opened/closed pour que le scroll restauré par
+// window.scrollTo dans closeModal ne soit pas interprété comme un
+// "scroll bas" de l'utilisateur → plus de page-suivante parasite.
+function _resetAllPagesBounceState() {
+  const grid = _getGrid();
+  if (!grid) return;
+  _getPages(grid).forEach(p => {
+    if (p._bounceTimer) {
+      clearTimeout(p._bounceTimer);
+      p._bounceTimer = null;
+    }
+    p._bounceLastST  = p.scrollTop;
+    p._bounceWasDown = false;
+  });
+}
+
+// Listener bus : écouté une seule fois au boot du pager.
+// Couvre le cas où un timer de 350ms est armé juste avant l'ouverture
+// d'une modal et tirerait pendant/après son cycle.
+let _busModalBound = false;
+function _bindModalBusListeners() {
+  if (_busModalBound) return;
+  _busModalBound = true;
+  bus.on('modal:opened', _resetAllPagesBounceState);
+  bus.on('modal:closed', _resetAllPagesBounceState);
+}
+
 function _setupSectionAutoAdvance() {
   const grid = _getGrid();
   if (!grid || window.innerWidth >= 900) return;
 
+  _bindModalBusListeners();
+
   function _bindPage(page) {
     if (page._bounceH) page.removeEventListener('scroll', page._bounceH);
-
-    let lastST  = 0;
-    let wasDown = false;
-    let timer   = null;
+    if (page._bounceTimer) { clearTimeout(page._bounceTimer); page._bounceTimer = null; }
+    page._bounceLastST  = 0;
+    page._bounceWasDown = false;
 
     page._bounceH = () => {
       if (state.modalOpen) return;
       const st = page.scrollTop;
+      const lastST  = page._bounceLastST  || 0;
+      let   wasDown = page._bounceWasDown || false;
       if      (st > lastST + 2) wasDown = true;
       else if (st < lastST - 8) wasDown = false;
-      lastST = st;
+      page._bounceLastST  = st;
+      page._bounceWasDown = wasDown;
 
       const atBottom = page.scrollHeight <= page.clientHeight + 8
         || page.scrollTop + page.clientHeight >= page.scrollHeight - 32;
 
       if (wasDown && atBottom) {
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          if (!wasDown || state.modalOpen) return;
+        if (page._bounceTimer) clearTimeout(page._bounceTimer);
+        page._bounceTimer = setTimeout(() => {
+          page._bounceTimer = null;
+          // Re-test au moment de tirer : modal pu s'ouvrir entre temps,
+          // ou le pager a été détruit (resize → desktop).
+          if (!page._bounceWasDown || state.modalOpen) return;
+          if (window.innerWidth >= 900) return;
           const realPages = _getRealPages(grid);
           const currentIdx = _getCurrentIndex(grid);
           const total = realPages.length; // sans ghost
@@ -224,8 +278,9 @@ function _setupSectionAutoAdvance() {
           }
           _scrollToIndex(grid, nextIdx, 'smooth');
         }, 350);
-      } else {
-        clearTimeout(timer);
+      } else if (page._bounceTimer) {
+        clearTimeout(page._bounceTimer);
+        page._bounceTimer = null;
       }
     };
 
@@ -285,12 +340,14 @@ function _scrollPagerToCat(cat, behavior = 'smooth') {
   if (!grid || window.innerWidth >= 900) return;
   if (grid.classList.contains('k-grid-flat-subcat')) return;
 
-  const pages = _getRealPages(grid); // chercher dans les vraies pages
+  const pages = _getRealPages(grid);
   const idx   = pages.findIndex(p => p.dataset.cat === cat);
   if (idx < 0) return;
 
-  _scrollToIndex(grid, idx, behavior);
+  // Sync chip en premier pour éviter qu'un re-render perturbé par l'event
+  // ne décale le scroll qui suit
   _syncChip(cat);
+  _scrollToIndex(grid, idx, behavior);
 }
 
 function _scrollPagerToGhost() { _scrollPagerToCat('all'); }
@@ -298,15 +355,22 @@ function _scrollPagerToGhost() { _scrollPagerToCat('all'); }
 // ── Destroy ───────────────────────────────────────────────────────
 
 function destroyMobilePager() {
+  // Nettoyer le verrou de scroll programmatique
+  _isProgrammaticScroll = false;
+  clearTimeout(_programmaticScrollTimer);
+
   const grid = _getGrid();
   if (grid) {
     if (grid._pagerScrollH) {
       grid.removeEventListener('scroll', grid._pagerScrollH);
       grid._pagerScrollH = null;
     }
-    // Nettoyer bounces sur les pages
+    // Nettoyer bounces sur les pages (handler + timer pendant)
     _getPages(grid).forEach(p => {
       if (p._bounceH) { p.removeEventListener('scroll', p._bounceH); p._bounceH = null; }
+      if (p._bounceTimer) { clearTimeout(p._bounceTimer); p._bounceTimer = null; }
+      p._bounceLastST  = 0;
+      p._bounceWasDown = false;
     });
     // Supprimer ghost
     grid.querySelectorAll('[data-ghost]').forEach(g => g.remove());

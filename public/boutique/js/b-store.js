@@ -69,6 +69,11 @@ export const state = {
   sectionSubcats: {},
   /** Mode pager Temu — { cat: 'Mode', sub: 'Femme' } | null */
   flatSubcat: null,
+  /** Modal ouvert (vrai entre openModal et closeModal). Lu par b-pager.js
+   *  pour bloquer l'auto-advance pendant l'affichage d'une fiche produit.
+   *  AVANT le fix : déclaré nulle part, lu 3 fois → garde inerte → scroll
+   *  horizontal automatique parasite après fermeture de modal. */
+  modalOpen: false,
   modalProduct: null,
   modalSubcatFilter: null,
   modalQty: 1,

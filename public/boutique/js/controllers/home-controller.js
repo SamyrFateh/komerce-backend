@@ -24,6 +24,8 @@ export function renderSubcatRail(catKey) {
   if (!subs.length) {
     wrap.style.display = 'none';
     wrap.innerHTML = '';
+    // Fix: reset sidebar-top quand les subcats sont masquées
+    document.documentElement.style.removeProperty('--sidebar-top');
     return;
   }
 
@@ -41,6 +43,16 @@ export function renderSubcatRail(catKey) {
       ).join('') +
     '</div>';
   wrap.style.display = 'block';
+
+  // Fix: mettre à jour --sidebar-top pour que la sidebar reste sous le rail subcats
+  requestAnimationFrame(function() {
+    var wrapH = wrap.offsetHeight || 50;
+    var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 76;
+    // chips shell ≈ 58px (chips + padding), puis subcats wrap
+    var catsShell = document.querySelector('.k-cats-shell');
+    var catsH = catsShell ? catsShell.offsetHeight : 58;
+    document.documentElement.style.setProperty('--sidebar-top', (headerH + catsH + wrapH + 4) + 'px');
+  });
 
   wrap.querySelectorAll('.k-subchip').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -188,13 +200,11 @@ export function setupHomeController(deps) {
     chip.addEventListener('click', () => handleCategorySelection(chip.dataset.cat, deps));
   });
 
-  if (window.innerWidth < 900) {
-    catsEl.addEventListener('click', function(e) {
-      const chip = e.target.closest('.k-chip');
-      if (!chip) return;
-      requestAnimationFrame(function() { centerRailChip(chip); });
-    });
-  }
+  // FIX balayage instable : on ne pose PAS de second listener "click" délégué
+  // ici, ni dans b-catalog#setupCatSwipeNav. handleCategorySelection appelle
+  // syncRailActiveState(cat, { center: true }) qui centre déjà la chip via
+  // centerRailChip. Avoir 2 ou 3 RAF de centrage en parallèle créait des
+  // sursauts visuels et des chips non centrées franchement.
 
   const activeChip = catsEl.querySelector('.k-chip.active');
   if (activeChip) centerRailChip(activeChip);

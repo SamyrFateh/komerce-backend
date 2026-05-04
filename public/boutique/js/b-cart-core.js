@@ -6,9 +6,15 @@
  * Exports : showToast, cartQty, cartTotal, saveCart, updateCartBadge, isFav, saveFavs
  */
 
-import { state, dom } from './b-store.js';
+import { state, dom, CART_VERSION } from './b-store.js';
 
-const CART_VERSION = 3;
+// FIX vérité unique : CART_VERSION était redéfini ici en local (= 3) en plus
+// de b-store.js (export = 3). Si on bumpait l'un sans l'autre :
+// - _loadCart (b-store) lit avec une version
+// - saveCart (ici) écrit avec une autre
+// → écart silencieux : panier réécrit avec la mauvaise version, donc
+// rejeté au prochain reload. Désormais une seule constante, exportée
+// depuis b-store, importée partout.
 
 // ──────────────────────────────────────────────
 // TOAST
@@ -92,7 +98,8 @@ export function updateCartBadge() {
  * @returns {boolean}
  */
 export function isFav(id) {
-  return state.favs.includes(id);
+  const sid = String(id);
+  return state.favs.some(f => String(f) === sid);
 }
 
 /**

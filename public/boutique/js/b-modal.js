@@ -277,6 +277,11 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       localStorage.setItem('k_viewed_history', JSON.stringify(vh));
     } catch (_) { /* localStorage indispo : ignoré */ }
 
+    // FIX scroll auto post-modal : la garde state.modalOpen dans b-pager.js
+    // n'avait jamais été posée. On l'écrit AVANT d'émettre le bus pour que
+    // tout listener qui purgerait les timers le voie déjà à true.
+    state.modalOpen = true;
+
     // LOT 12: notify desktop-upgrade module
     bus.emit('modal:opened', product);
     // Lock body scroll — CSS handles layout via body.modal-open
@@ -560,6 +565,15 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       }
       state._savedPagerInlineStyles = null;
     }
+
+    // FIX scroll auto post-modal : on ferme le flag AVANT le window.scrollTo
+    // qui va déclencher un événement scroll sur la page interne du pager.
+    // Sans ça, le bounce vertical s'arme à la frame suivante alors que
+    // l'utilisateur n'a rien fait → page suivante en horizontal.
+    state.modalOpen = false;
+    // Notifier le pager pour qu'il purge ses timers de bounce en cours
+    // (un setTimeout(_, 350) peut être armé juste avant l'ouverture).
+    bus.emit('modal:closed');
 
     window.scrollTo(0, scrollY);
     state.modalProduct = null;
