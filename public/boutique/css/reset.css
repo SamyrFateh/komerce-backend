@@ -20,6 +20,11 @@ html {
   background: var(--sand);
 }
 
+/* Desktop : scroll natif instantané — smooth sur html ralentit toute la page */
+@media (min-width: 900px) {
+  html { scroll-behavior: auto; }
+}
+
 body {
   font-family: var(--font);
   background: var(--sand);
