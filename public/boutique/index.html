@@ -222,9 +222,6 @@ if('serviceWorker' in navigator){
 </div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer"></div>
 
-<!-- ═══ PROVERBE MOBILE (entre hero et catalogue) ═══ -->
-<div id="k-proverb-mobile" class="k-proverb-mobile" aria-live="polite"></div>
-
 <div id="k-page-scroll">
   <!-- ═══ PROVERBE SÉPARATEUR ═══ -->
   <div class="k-proverb-sep"></div>
@@ -570,27 +567,10 @@ if('serviceWorker' in navigator){
       "« Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux. » — Arthur Ashe",
       "« La seule façon de faire du bon travail, c'est d'aimer ce que vous faites. » — Steve Jobs",
     ];
+    var el = document.getElementById('k-proverb-text');
+    if (!el) return;
     var idx = Math.floor(Math.random() * proverbes.length);
-
-    // Desktop : injection unique dans le hero overlay
-    var elDesktop = document.getElementById('k-proverb-text');
-    if (elDesktop && window.innerWidth >= 900) {
-      elDesktop.textContent = proverbes[idx];
-    }
-
-    // Mobile : bandeau entre hero et catalogue, rotation toutes les 12s
-    var elMobile = document.getElementById('k-proverb-mobile');
-    if (elMobile && window.innerWidth < 900) {
-      elMobile.textContent = proverbes[idx];
-      setInterval(function() {
-        elMobile.classList.add('is-fading');
-        setTimeout(function() {
-          idx = (idx + 1) % proverbes.length;
-          elMobile.textContent = proverbes[idx];
-          elMobile.classList.remove('is-fading');
-        }, 400);
-      }, 12000);
-    }
+    el.textContent = proverbes[idx];
   })();
 
   /* ══ FABs — exclusion mutuelle WA FAB ↔ section-index ══
