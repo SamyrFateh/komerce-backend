@@ -1441,6 +1441,8 @@ function _scLoadPos() {
 function _scSnapAndSave(sc) {
   const vw = window.innerWidth;
   const cx = sc.getBoundingClientRect().left + sc.offsetWidth / 2;
+  // Annuler le transform CSS centré — on gère tout en JS après drag
+  sc.style.transform = 'none';
   // Snap au bord le plus proche
   if (cx < vw / 2) {
     sc.style.left  = SC_SNAP_MARGIN + 'px';
@@ -1457,6 +1459,10 @@ function _scSnapAndSave(sc) {
 function _scRestorePos(sc) {
   const saved = _scLoadPos();
   const maxY  = window.innerHeight - SC_BNAV_H - sc.offsetHeight - 8;
+  // Toujours annuler le transform CSS centré pour passer en gestion JS pure
+  sc.style.transform = 'none';
+  sc.style.left = 'auto';
+  sc.style.right = 'auto';
   if (saved) {
     const clampedY = Math.max(60, Math.min(saved.y, maxY));
     sc.style.top   = clampedY + 'px';
@@ -1470,6 +1476,12 @@ function _scRestorePos(sc) {
       sc.style.right = SC_SNAP_MARGIN + 'px';
       sc.style.left  = 'auto';
     }
+  } else {
+    // Pas de position sauvegardée → centrer proprement en JS
+    sc.style.bottom = 'auto';
+    sc.style.top = 'auto'; // laisse CSS gérer le bottom
+    // Centrer horizontalement : CSS left:50% + transform est géré par CSS
+    // On n'intervient pas → CSS prend le relais
   }
 }
 
