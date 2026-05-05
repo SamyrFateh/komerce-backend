@@ -131,13 +131,48 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
     let data;
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-    if (!response.ok || data.Status === 'error' || data.status === 'error') {
-      console.error('[authkey] ❌', { status: response.status, data, wid, country_code, mobile: cleanMobile });
-      return { ok: false, error: data.Message || data.message || `http_${response.status}`, data };
+    const providerStatus = String(data.Status ?? data.status ?? '').trim().toLowerCase();
+    const providerMessage = data.Message || data.message || data.Error || data.error || null;
+    const messageId = data.MessageID || data.messageId || data.LogID || data.logId || data.log_id || data.id || null;
+
+    const providerFailed =
+      ['error', 'fail', 'failed', 'failure'].includes(providerStatus) ||
+      /invalid authkey|insufficient balance/i.test(String(providerMessage || ''));
+
+    if (!response.ok || providerFailed) {
+      console.error('[authkey] ❌', {
+        status: response.status,
+        providerStatus,
+        providerMessage,
+        data,
+        wid,
+        country_code,
+        mobile: cleanMobile,
+      });
+
+      return {
+        ok: false,
+        error: providerMessage || `http_${response.status}`,
+        providerStatus,
+        messageId,
+        data,
+      };
     }
 
-    console.log('[authkey] ✅', { wid, country_code, mobile: cleanMobile, messageId: data.MessageID || data.messageId });
-    return { ok: true, messageId: data.MessageID || data.messageId, data };
+    console.log('[authkey] ✅', {
+      wid,
+      country_code,
+      mobile: cleanMobile,
+      messageId,
+      providerStatus,
+    });
+
+    return {
+      ok: true,
+      messageId,
+      providerStatus,
+      data,
+    };
   } catch (err) {
     console.error('[authkey] exception', err.message);
     return { ok: false, error: 'network_error', details: err.message };
