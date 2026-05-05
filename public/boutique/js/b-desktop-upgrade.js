@@ -30,7 +30,6 @@ import { cartQty }          from './b-cart-core.js';
 import { openModal }        from './b-modal.js';
 import { isFav }            from './b-cart-core.js';
 import {
-  getSubcategories,
   normalizeCategoryKey,
   getCategorySectionEmoji,
 }                           from './shop-schema.js';
@@ -45,108 +44,7 @@ function isDesktop() { return window.innerWidth >= 900; }
 //  1. MEGA-MENU — Sous-catégories au hover sidebar
 // ═══════════════════════════════════════════════════════════════
 
-let _megaPanel = null;
-let _megaTimer = null;
 
-function _createMegaPanel() {
-  if (_megaPanel) return _megaPanel;
-  _megaPanel = document.createElement('div');
-  _megaPanel.className = 'k-sidebar-mega';
-  _megaPanel.addEventListener('mouseenter', function() {
-    clearTimeout(_megaTimer);
-  });
-  _megaPanel.addEventListener('mouseleave', function() {
-    _megaTimer = setTimeout(function() { _hideMega(); }, 120);
-  });
-  return _megaPanel;
-}
-
-function _showMega(catKey, triggerEl) {
-  var subs = getSubcategories(catKey);
-  if (!subs || !subs.length) { _hideMega(); return; }
-
-  var panel = _createMegaPanel();
-  var emoji = getCategorySectionEmoji(catKey) || '';
-  var label = catKey;
-
-  panel.innerHTML =
-    '<div class="k-sidebar-mega-title">' + emoji + ' ' + label + '</div>' +
-    '<div class="k-sidebar-mega-grid">' +
-      subs.map(function(s) {
-        return '<button class="k-sidebar-mega-item" data-cat="' + catKey + '" data-sub="' + s.key + '">' +
-          '<span class="k-sidebar-mega-item-icon">' + (s.icon || '') + '</span>' +
-          '<span>' + s.label + '</span>' +
-        '</button>';
-      }).join('') +
-    '</div>';
-
-  // Position the panel next to the trigger
-  var sidebar = document.querySelector('.k-desktop-sidebar');
-  if (!sidebar) return;
-  if (!panel.parentNode) sidebar.appendChild(panel);
-
-  // Bug 4 fix : forcer un reflow synchrone pour que offsetHeight soit correct dès le premier rendu
-  void panel.offsetHeight;
-
-  // Align vertically with the hovered item
-  var sidebarRect = sidebar.getBoundingClientRect();
-  var triggerRect = triggerEl.getBoundingClientRect();
-  var top = triggerRect.top - sidebarRect.top;
-  // Clamp so panel doesn't overflow bottom
-  var maxTop = sidebar.offsetHeight - panel.offsetHeight - 10;
-  panel.style.top = Math.max(0, Math.min(top, maxTop)) + 'px';
-
-  clearTimeout(_megaTimer);
-  panel.classList.add('is-visible');
-
-  // Bind subcategory clicks
-  panel.querySelectorAll('.k-sidebar-mega-item').forEach(function(item) {
-    item.onclick = function() {
-      var cat = item.dataset.cat;
-      var sub = item.dataset.sub;
-      state.activeCat = cat;
-      state.activeSubcat = sub;
-      if (!state.sectionSubcats) state.sectionSubcats = {};
-      state.sectionSubcats[cat] = sub;
-      renderGrid();
-      // Bug 8 fix : sync chip rail + rail subcats + sidebar (étaient orphelins)
-      syncRailActiveState(cat, { center: false });
-      renderSubcatRail(cat);
-      document.querySelectorAll('.k-sidebar-cat').forEach(function(el) {
-        el.classList.toggle('is-active', el.dataset.cat === cat);
-      });
-      _hideMega();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-  });
-}
-
-function _hideMega() {
-  if (_megaPanel) _megaPanel.classList.remove('is-visible');
-}
-
-function setupMegaMenu() {
-  if (!isDesktop()) return;
-  var sidebar = document.querySelector('.k-desktop-sidebar');
-  if (!sidebar) return;
-
-  // Mark cats with subcategories
-  sidebar.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
-    var cat = item.dataset.cat;
-    if (cat === 'all') return;
-    var subs = getSubcategories(cat);
-    if (subs && subs.length) {
-      item.classList.add('has-subcats');
-      item.addEventListener('mouseenter', function() {
-        clearTimeout(_megaTimer);
-        _showMega(cat, item);
-      });
-      item.addEventListener('mouseleave', function() {
-        _megaTimer = setTimeout(function() { _hideMega(); }, 180);
-      });
-    }
-  });
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  2. ZOOM IMAGE — Loupe Temu dans la modal
@@ -780,12 +678,6 @@ export function setupDesktopUpgrade() {
   // setupCardHoverObserver() pose un MutationObserver qui l'appelle dès que les cartes apparaissent.
   setupCardHoverObserver();
 
-  // Mega-menu: needs sidebar to be built first (by b-desktop-sidebar.js)
-  // Retry with RAF to ensure DOM is ready
-  requestAnimationFrame(function() {
-    setupMegaMenu();
-  });
-
   // Bug 7 fix : _onModalOpened() était déclenché deux fois (MutationObserver + bus.on).
   // b-modal.js fait classList.add('open') puis bus.emit('modal:opened') de façon synchrone →
   // les deux fires étaient simultanés. On garde uniquement bus.on qui est la source de vérité.
@@ -793,11 +685,6 @@ export function setupDesktopUpgrade() {
 
   // Qty observer for subtotal
   _setupQtyObserver();
-
-  // Re-setup mega-menu when sidebar rebuilds (e.g. after category data loads)
-  bus.on('sidebar:built', function() {
-    requestAnimationFrame(setupMegaMenu);
-  });
 
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
   bus.on('view:changed', function(tab) {
