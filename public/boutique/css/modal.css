@@ -919,3 +919,183 @@
 .k-variant-pill--color:focus .k-variant-color-tip {
   display: block;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   VARIANTES v2 — Swatches rectangulaires + grille tailles
+   Classes : .k-vg / .k-vs / .k-vp
+   ══════════════════════════════════════════════════════════════ */
+
+/* Groupe variante */
+.k-vg {
+  padding: 0 0 4px;
+}
+
+/* Label "Couleur · Gris foncé" */
+.k-vg-label {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.k-vg-label-type {
+  font-weight: 700;
+  color: var(--text);
+}
+.k-vg-label-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.k-vg-label-val {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Swatches couleur rectangulaires (style AliExpress/Temu) ── */
+.k-vg-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.k-vs {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Image swatch */
+.k-vs img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  display: block;
+  transition: border-color .15s, transform .12s;
+}
+
+/* Nom de la couleur sous le swatch */
+.k-vs::after {
+  content: attr(aria-label);
+  font-size: 10px;
+  color: var(--text-muted);
+  max-width: 64px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Swatch couleur seule (sans image = fallback hex) */
+.k-vs:not(:has(img)) {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background-size: cover;
+  background-position: center;
+  flex-direction: row;
+}
+
+.k-vs:hover img {
+  border-color: var(--coral);
+  transform: scale(1.04);
+}
+
+.k-vs--active img {
+  border-color: var(--coral) !important;
+  box-shadow: 0 0 0 2px var(--coral);
+}
+
+.k-vs--active::after {
+  color: var(--coral-dark);
+  font-weight: 600;
+}
+
+/* Rupture stock : overlay diagonal */
+.k-vs--out {
+  opacity: .45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.k-vs-out-slash {
+  position: absolute;
+  top: 0; left: 0;
+  width: 64px; height: 64px;
+  border-radius: 8px;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 1px),
+    rgba(0,0,0,.35) calc(50% - 1px),
+    rgba(0,0,0,.35) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  pointer-events: none;
+}
+
+/* ── Grille tailles ─────────────────────────────────────────── */
+.k-vg-sizes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+}
+
+.k-vp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.k-vp:hover:not(:disabled) {
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 5%, var(--white));
+}
+
+.k-vp--active {
+  border-color: var(--coral) !important;
+  border-width: 2px;
+  background: color-mix(in srgb, var(--coral) 8%, var(--white));
+  color: var(--coral-dark);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--coral);
+}
+
+.k-vp--out {
+  opacity: .38;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* ── Desktop : swatches légèrement plus grands ─────────────── */
+@media (min-width: 768px) {
+  .k-vs img { width: 72px; height: 72px; }
+  .k-vs-out-slash { width: 72px; height: 72px; }
+  .k-vs::after { max-width: 72px; }
+  .k-vg-sizes { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .k-vp { height: 44px; font-size: 14px; }
+}

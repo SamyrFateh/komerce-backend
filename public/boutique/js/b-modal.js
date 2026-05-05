@@ -213,146 +213,128 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
    * @param {Object} variants - { "Taille": [{value, stock, price_kmf, image_url}], ... }
    * @param {Object} product  - Full product object (for price_kmf fallback)
    */
+  /**
+   * _renderVariants — Sélecteur de variantes simplifié.
+   * Couleurs  → swatches rectangulaires avec image produit
+   * Tailles   → grille de pills compactes
+   * Label dynamique "Type · valeur sélectionnée"
+   */
   function _renderVariants(variants, product) {
     var container = dom.modalVariants || document.getElementById('k-modal-variants');
     if (!container) return;
     container.innerHTML = '';
 
+    // Couleur fallback hex si pas d'image
+    var COLOR_MAP = {
+      'noir':'#111','black':'#111','blanc':'#FFF','white':'#FFF',
+      'beige':'#D4B896','bordeaux':'#6E1423','burgundy':'#6E1423',
+      'rouge':'#D32F2F','red':'#D32F2F','rose':'#E91E8C','pink':'#E91E8C',
+      'or':'#C9A84C','gold':'#C9A84C','argent':'#A8A9AD','silver':'#A8A9AD',
+      'bleu':'#1565C0','blue':'#1565C0','marine':'#0D2554','navy':'#0D2554',
+      'turquoise':'#00BCD4','vert':'#2E7D32','green':'#2E7D32',
+      'kaki':'#6B6B3A','khaki':'#6B6B3A','olive':'#6B6B3A',
+      'marron':'#5D4037','brown':'#5D4037','orange':'#E65100',
+      'jaune':'#F9A825','yellow':'#F9A825','violet':'#6A1B9A','purple':'#6A1B9A',
+      'gris':'#757575','grey':'#757575','gray':'#757575',
+      'multicolore':'linear-gradient(135deg,#e74c3c,#f39c12,#2ecc71,#3498db,#9b59b6)',
+    };
+    function _colorFallback(name) {
+      if (!name) return null;
+      var n = name.toLowerCase().trim();
+      if (COLOR_MAP[n]) return COLOR_MAP[n];
+      for (var k in COLOR_MAP) { if (n.includes(k)) return COLOR_MAP[k]; }
+      return null;
+    }
+    function _normUrl(u) {
+      return u ? u.split('?')[0].replace(/\/upload\/[^/]+\//, '/upload/') : '';
+    }
+
     Object.keys(variants).forEach(function(type) {
       var options = variants[type];
       if (!options || !options.length) return;
 
+      var isColor = /couleur|color|coloris|teinte/i.test(type);
+
       var group = document.createElement('div');
-      group.className = 'k-variant-group';
+      group.className = 'k-vg';
 
-      var label = document.createElement('div');
-      label.className = 'k-variant-label';
-      label.textContent = type + '\u00a0:';
-      group.appendChild(label);
+      // ── Label row ──────────────────────────────────────────
+      var labelRow = document.createElement('div');
+      labelRow.className = 'k-vg-label';
+      labelRow.innerHTML =
+        '<span class="k-vg-label-type">' + type + '</span>' +
+        '<span class="k-vg-label-sep">·</span>' +
+        '<span class="k-vg-label-val"></span>';
+      var labelVal = labelRow.querySelector('.k-vg-label-val');
+      group.appendChild(labelRow);
 
-      var pills = document.createElement('div');
-      pills.className = 'k-variant-pills';
-
-      /* FIX Bug 1: mapping nom de couleur → hex pour les variantes sans image_url.
-         Les noms viennent des données produit (FR + EN), insensibles à la casse. */
-      var COLOR_MAP = {
-        'noir': '#111111', 'black': '#111111',
-        'blanc': '#FFFFFF', 'white': '#FFFFFF',
-        'beige': '#D4B896',
-        'bordeaux': '#6E1423', 'burgundy': '#6E1423', 'bourgogne': '#6E1423',
-        'rouge': '#D32F2F', 'red': '#D32F2F',
-        'rose': '#E91E8C', 'pink': '#E91E8C', 'fuschia': '#E91E8C',
-        'or': '#C9A84C', 'gold': '#C9A84C', 'doré': '#C9A84C',
-        'argent': '#A8A9AD', 'silver': '#A8A9AD',
-        'bleu': '#1565C0', 'blue': '#1565C0',
-        'bleu marine': '#0D2554', 'marine': '#0D2554', 'navy': '#0D2554',
-        'bleu ciel': '#87CEEB', 'ciel': '#87CEEB',
-        'turquoise': '#00BCD4',
-        'vert': '#2E7D32', 'green': '#2E7D32',
-        'kaki': '#6B6B3A', 'khaki': '#6B6B3A', 'olive': '#6B6B3A',
-        'marron': '#5D4037', 'caramel': '#C17F24', 'brun': '#5D4037', 'brown': '#5D4037',
-        'orange': '#E65100',
-        'jaune': '#F9A825', 'yellow': '#F9A825',
-        'violet': '#6A1B9A', 'purple': '#6A1B9A', 'mauve': '#9C27B0',
-        'gris': '#757575', 'grey': '#757575', 'gray': '#757575',
-        'gris clair': '#BDBDBD', 'gris foncé': '#424242',
-        'multicolore': 'linear-gradient(135deg,#e74c3c,#f39c12,#2ecc71,#3498db,#9b59b6)',
-        'imprimé': 'linear-gradient(135deg,#ffeaa7,#dfe6e9,#fdcb6e)',
-      };
-      function _getColorHex(name) {
-        if (!name) return null;
-        var n = name.toLowerCase().trim();
-        if (COLOR_MAP[n]) return COLOR_MAP[n];
-        // Recherche partielle si le nom contient un mot connu
-        for (var k in COLOR_MAP) {
-          if (n.includes(k)) return COLOR_MAP[k];
-        }
-        return null;
-      }
+      // ── Options ────────────────────────────────────────────
+      var wrap = document.createElement('div');
+      wrap.className = isColor ? 'k-vg-swatches' : 'k-vg-sizes';
 
       options.forEach(function(opt) {
         var btn = document.createElement('button');
-        var isOut = (opt.stock === 0);
-        var colorHex = type.toLowerCase().includes('couleur') ? _getColorHex(opt.value) : null;
-        var isColor = (type.toLowerCase().includes('couleur') && (opt.image_url || colorHex));
-
-        btn.className = 'k-variant-pill' +
-          (isOut ? ' k-variant-pill--out' : '') +
-          (isColor ? ' k-variant-pill--color' : '');
         btn.type = 'button';
-        btn.disabled = isOut;
-        if (isOut) btn.title = 'Rupture de stock';
+        var isOut = (opt.stock === 0);
 
         if (isColor) {
+          btn.className = 'k-vs' + (isOut ? ' k-vs--out' : '');
+          btn.setAttribute('aria-label', opt.value);
           if (opt.image_url) {
-            btn.style.backgroundImage = 'url(' + opt.image_url + ')';
-          } else if (colorHex) {
-            /* Couleur sans image: fond coloré. Pour blanc, ajouter une bordure visible. */
-            if (colorHex.startsWith('linear-gradient')) {
-              btn.style.backgroundImage = colorHex;
+            var img = document.createElement('img');
+            img.src = optimizeImgUrl(opt.image_url, 120);
+            img.alt = opt.value;
+            img.loading = 'lazy';
+            btn.appendChild(img);
+          } else {
+            var hex = _colorFallback(opt.value);
+            if (hex && hex.startsWith('linear-gradient')) {
+              btn.style.backgroundImage = hex;
             } else {
-              btn.style.backgroundColor = colorHex;
-            }
-            if (opt.value.toLowerCase().includes('blanc') || opt.value.toLowerCase().includes('white')) {
-              btn.style.border = '2px solid #ccc';
+              btn.style.backgroundColor = hex || '#ccc';
             }
           }
-          btn.setAttribute('aria-label', opt.value);
-          // Color tooltip
-          var tip = document.createElement('span');
-          tip.className = 'k-variant-color-tip';
-          tip.textContent = opt.value;
-          btn.appendChild(tip);
+          if (isOut) {
+            var slash = document.createElement('span');
+            slash.className = 'k-vs-out-slash';
+            btn.appendChild(slash);
+          }
         } else {
+          btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
           btn.textContent = opt.value;
+          btn.disabled = isOut;
         }
 
         btn.addEventListener('click', function() {
-          // Deselect siblings in this group
-          pills.querySelectorAll('.k-variant-pill').forEach(function(b) {
-            b.classList.remove('k-variant-pill--active');
+          if (isOut) return;
+          // Deselect siblings
+          wrap.querySelectorAll(isColor ? '.k-vs' : '.k-vp').forEach(function(b) {
+            b.classList.remove(isColor ? 'k-vs--active' : 'k-vp--active');
           });
-          btn.classList.add('k-variant-pill--active');
-
-          // Update price if variant has its own price
-          if (opt.price_kmf) {
-            dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
-          } else {
-            dom.modalPrice.textContent = fmtPrice(product.price_kmf);
-          }
-
-          // If color variant has an image, snap carousel to its index (no rebuild = no flash)
-          if (opt.image_url) {
-            var baseImgs = (product.images && product.images.length)
-              ? product.images
-              : [product.image_url];
-            /* FIX Bug 4: normaliser les URLs Cloudinary avant comparaison.
-               Les transforms (/upload/f_auto,q_auto,w_400/) varient selon contexte
-               mais le public_id (après /upload/xxx/) reste identique. */
-            function _normUrl(u) {
-              if (!u) return '';
-              return u.split('?')[0].replace(/\/upload\/[^/]+\//, '/upload/');
-            }
+          btn.classList.add(isColor ? 'k-vs--active' : 'k-vp--active');
+          // Mettre à jour le label
+          labelVal.textContent = opt.value;
+          // Mettre à jour le prix
+          dom.modalPrice.textContent = fmtPrice(opt.price_kmf || product.price_kmf);
+          // Sync carousel sur les couleurs avec image
+          if (isColor && opt.image_url) {
+            var baseImgs = (product.images && product.images.length) ? product.images : [product.image_url];
             var normOpt = _normUrl(opt.image_url);
-            var colorIdx = baseImgs.findIndex(function(u) {
-              return _normUrl(u) === normOpt;
-            });
-            if (colorIdx >= 0) {
-              goToSlide(colorIdx);
+            var idx = baseImgs.findIndex(function(u) { return _normUrl(u) === normOpt; });
+            if (idx >= 0) {
+              goToSlide(idx);
             } else {
-              // Fallback: image not in product.images, put it first and rebuild once
-              var reordered = [opt.image_url].concat(
-                baseImgs.filter(function(u) { return u !== opt.image_url; })
-              );
-              buildCarouselSlides(Object.assign({}, product, { images: reordered }));
+              buildCarouselSlides(Object.assign({}, product, {
+                images: [opt.image_url].concat(baseImgs.filter(function(u) { return u !== opt.image_url; }))
+              }));
             }
           }
         });
 
-        pills.appendChild(btn);
+        wrap.appendChild(btn);
       });
 
-      group.appendChild(pills);
+      group.appendChild(wrap);
       container.appendChild(group);
     });
   }
