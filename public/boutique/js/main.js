@@ -37,4 +37,19 @@ if (typeof window !== 'undefined') {
   } else {
     setupDesktopUpgrade();
   }
+
+  // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
+  // Une seule fois grâce au flag, sans impact sur le mobile.
+  var _desktopUpgradeDone = window.innerWidth >= 900;
+  var _resizeTimer = null;
+  window.addEventListener('resize', function() {
+    if (_desktopUpgradeDone) return;
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function() {
+      if (window.innerWidth >= 900 && !_desktopUpgradeDone) {
+        _desktopUpgradeDone = true;
+        setupDesktopUpgrade();
+      }
+    }, 150);
+  }, { passive: true });
 }

@@ -35,6 +35,7 @@ import {
   getCategorySectionEmoji,
 }                           from './shop-schema.js';
 import { renderGrid }       from './b-catalog.js';
+import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 
 'use strict';
 
@@ -108,6 +109,12 @@ function _showMega(catKey, triggerEl) {
       if (!state.sectionSubcats) state.sectionSubcats = {};
       state.sectionSubcats[cat] = sub;
       renderGrid();
+      // Bug 8 fix : sync chip rail + rail subcats + sidebar (étaient orphelins)
+      syncRailActiveState(cat, { center: false });
+      renderSubcatRail(cat);
+      document.querySelectorAll('.k-sidebar-cat').forEach(function(el) {
+        el.classList.toggle('is-active', el.dataset.cat === cat);
+      });
       _hideMega();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -245,7 +252,9 @@ function injectBreadcrumb() {
         state.activeCat = normalizeCategoryKey(c) || c;
         state.activeSubcat = null;
         bus.emit('modal:close');
+        // Bug 9 fix : bus.emit synchronise chips + sidebar + rail subcats via le handler b-catalog.js
         renderGrid();
+        bus.emit('catalog:cat-changed', state.activeCat);
       }
     });
   });
@@ -730,8 +739,7 @@ function injectRecentlyViewed() {
 
 /**
  * Called after each modal open to inject desktop enhancements.
- * Listens on bus 'modal:opened' (to be emitted from b-modal.js openModal).
- * Fallback: MutationObserver on .k-modal-overlay.open
+ * Listens on bus 'modal:opened' emitted by b-modal.js after classList.add('open').
  */
 function _onModalOpened() {
   if (!isDesktop()) return;
@@ -768,7 +776,8 @@ export function setupDesktopUpgrade() {
   setupPromoStrip();
   setupHomepageMerchandising();
   setupScrollToTop();
-  setupCardHoverOverlay();
+  // Bug 12 fix : setupCardHoverOverlay() retiré ici — appelé à ce stade sur 0 cartes (loadProducts pas encore résolu).
+  // setupCardHoverObserver() pose un MutationObserver qui l'appelle dès que les cartes apparaissent.
   setupCardHoverObserver();
 
   // Mega-menu: needs sidebar to be built first (by b-desktop-sidebar.js)
@@ -777,22 +786,9 @@ export function setupDesktopUpgrade() {
     setupMegaMenu();
   });
 
-  // Modal enhancements: hook via MutationObserver on overlay
-  var overlay = document.getElementById('k-modal-overlay');
-  if (overlay) {
-    var obs = new MutationObserver(function(mutations) {
-      mutations.forEach(function(m) {
-        if (m.type === 'attributes' && m.attributeName === 'class') {
-          if (overlay.classList.contains('open')) {
-            _onModalOpened();
-          }
-        }
-      });
-    });
-    obs.observe(overlay, { attributes: true, attributeFilter: ['class'] });
-  }
-
-  // Also listen on bus if available
+  // Bug 7 fix : _onModalOpened() était déclenché deux fois (MutationObserver + bus.on).
+  // b-modal.js fait classList.add('open') puis bus.emit('modal:opened') de façon synchrone →
+  // les deux fires étaient simultanés. On garde uniquement bus.on qui est la source de vérité.
   bus.on('modal:opened', _onModalOpened);
 
   // Qty observer for subtotal

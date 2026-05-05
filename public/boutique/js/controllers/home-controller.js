@@ -6,6 +6,7 @@
 import { state, $$ } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories }          from '../shop-schema.js';
+import { renderGrid }                from '../b-catalog.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
@@ -60,14 +61,13 @@ export function renderSubcatRail(catKey) {
       const sub = btn.dataset.subcat || null;
       state.activeSubcat = sub || null;
       wrap.querySelectorAll('.k-subchip').forEach(b => b.classList.toggle('active', b === btn));
-      import('../b-catalog.js').then(m => {
-        m.renderGrid();
-        const catalog = document.getElementById('k-catalog-section');
-        if (catalog) {
-          const top = catalog.getBoundingClientRect().top + window.scrollY - 130;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      });
+      // Bug 10 fix : import statique en tête de fichier — plus d'import() dynamique avec risque de race condition
+      renderGrid();
+      const catalog = document.getElementById('k-catalog-section');
+      if (catalog) {
+        const top = catalog.getBoundingClientRect().top + window.scrollY - 130;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
     });
   });
 }
