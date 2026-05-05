@@ -257,19 +257,32 @@ router.post('/public/:publicToken/contributions', async (req, res) => {
   }
 });
 
-// DELETE /api/collective-workspaces/public/:publicToken/contributions/:id
-router.delete('/public/:publicToken/contributions/:id', async (req, res) => {
+// DELETE /api/collective-workspaces/:creatorToken/contributions/:id
+// Suppression sécurisée : seul le créateur peut annuler une intention avant finalisation.
+router.delete('/:creatorToken/contributions/:id', async (req, res) => {
   try {
-    const r = await engine.cancelContribution(req.params.publicToken, req.params.id);
-    res.json({ ...r, message: 'Intention annulée.' });
+    const r = await engine.cancelContributionByCreator(req.params.creatorToken, req.params.id);
+    res.json({ ...r, message: 'Intention annulée par le créateur.' });
   } catch (err) {
     const m = err.message;
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_open') return _err(res, 409, 'closed', 'Cet espace n\'accepte plus de modifications');
     if (m === 'contribution_not_found_or_already_handled') return _err(res, 404, 'not_found', 'Intention introuvable');
-    console.error('[CollectiveWS] cancel contribution error:', err);
+    console.error('[CollectiveWS] creator cancel contribution error:', err);
     _err(res, 500, 'server_error', 'Action impossible');
   }
+});
+
+// DELETE /api/collective-workspaces/public/:publicToken/contributions/:id
+// Sécurité : le lien public ne permet plus de supprimer une contribution.
+// Utiliser DELETE /api/collective-workspaces/:creatorToken/contributions/:id côté créateur.
+router.delete('/public/:publicToken/contributions/:id', async (req, res) => {
+  return _err(
+    res,
+    403,
+    'creator_token_required',
+    'La suppression publique est désactivée. Seul le créateur peut annuler une intention.'
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════
