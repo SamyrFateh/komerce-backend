@@ -969,15 +969,15 @@ body {
   position: fixed;
   right: 10px;
   bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 8px);
-  z-index: 89; /* sous modal/cart drawer (1100+), au-dessus des FABs (88) */
-  width: auto;
+  z-index: 89;
+  width: max-content;
+  max-width: calc(100vw - 24px);
   border-radius: 50px;
-  background: var(--ocean-dark, #1f4a26);
+  background: var(--coral, #c85c2d);
   color: #fff;
-  box-shadow: 0 4px 18px rgba(31,48,36,.28);
+  box-shadow: 0 4px 18px rgba(200,92,45,.32);
   overflow: hidden;
   transition: border-radius .3s var(--ease),
-              bottom .2s ease,
               box-shadow .2s ease,
               transform .25s cubic-bezier(.34,1.56,.64,1),
               opacity .25s ease;
@@ -1075,7 +1075,7 @@ body {
   display: block;
   width: 100%;
   padding: 10px 14px;
-  background: var(--ocean-dark, #1f4a26);
+  background: var(--coral, #c85c2d);
   color: #fff;
   border: none;
   border-radius: 50px;
@@ -1090,10 +1090,17 @@ body {
 }
 .k-sc-panel-cta:active { opacity: .85; }
 
-/* Masquer les éléments desktop sur mobile */
+/* Masquer les éléments desktop sur mobile — zéro contribution au layout */
 .k-sc-header,
 .k-sc-items,
-.k-sc-footer { display: none; }
+.k-sc-footer {
+  display: none;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
 
 /* Masqué quand drawer ou modal ouverts */
 body.cart-open  .k-side-cart,
