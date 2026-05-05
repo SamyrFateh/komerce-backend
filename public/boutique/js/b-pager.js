@@ -432,6 +432,7 @@ function _setupPagerDots()      { }
 
 export {
   _setupMobilePager,
+  _recalcPagerVars,
   _setupSectionAutoAdvance,
   _setupHorizontalWrap,
   _syncChipToScroll,

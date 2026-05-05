@@ -67,7 +67,7 @@ body {
 }
 .k-search:focus-within {
   border-color: rgba(42,122,62,.3);
-  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.08);
+  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.25);
 }
 .k-search input {
   width: 100%;
@@ -931,12 +931,6 @@ body {
     box-shadow: none;
   }
 
-  .k-sidebar-mega {
-    max-height: calc(100vh - var(--header-h) - 40px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
   /* 3. Zoom modal — géré par desktop-upgrade.js (ne pas masquer ici) */
   .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-carousel {
     cursor: crosshair;
@@ -993,18 +987,15 @@ body {
    Desktop (≥900px) : panneau fixe droit, discret, animé
    ══════════════════════════════════════════════════════════════ */
 
-/* ── SIDE CART MOBILE — pill flottante bas-droite ───────────── */
+/* ── SIDE CART MOBILE — pill flottante centrée ───────────────── */
 .k-side-cart {
   display: none; /* caché si panier vide */
   position: fixed;
-  /* Centré horizontalement, juste au-dessus de la bottom nav */
-  left: 50%;
-  transform: translateX(-50%);
-  right: auto;
+  right: 12px;
   bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 10px);
   z-index: 89;
   width: auto;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - 24px);
   min-width: 0;
   border-radius: 50px;
   background: var(--coral, #c85c2d);
@@ -1014,7 +1005,8 @@ body {
   overflow: hidden;
   transition: border-radius .3s var(--ease),
               box-shadow .2s ease,
-              opacity .25s ease;
+              opacity .25s ease,
+              transform .25s cubic-bezier(.34,1.56,.64,1);
 }
 
 /* Apparition initiale */
@@ -1025,8 +1017,8 @@ body {
 }
 
 @keyframes k-sc-pop-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(14px) scale(.88); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(14px) scale(.88); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Pill draggable */
@@ -1045,7 +1037,6 @@ body {
   opacity: .85;
   cursor: grabbing;
   box-shadow: 0 8px 32px rgba(31,48,36,.35);
-  transform: none; /* reset translateX(-50%) during drag — JS gère la position */
 }
 .k-sc-pill-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
 .k-sc-pill-qty  {
@@ -1076,7 +1067,6 @@ body {
 .k-side-cart.is-open {
   border-radius: 16px;
   box-shadow: 0 6px 28px rgba(31,48,36,.22);
-  transform: translateX(-50%);
 }
 .k-side-cart.is-open .k-sc-panel {
   max-height: 200px;
@@ -1144,7 +1134,7 @@ body.modal-open .k-side-cart,
 body.k-modal-open .k-side-cart {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateY(10px);
 }
 
 /* Mobile bnav : label cart devient le total quand panier non vide */
@@ -1155,7 +1145,12 @@ body.k-modal-open .k-side-cart {
 #k-bnav-cart-label.has-total {
   color: var(--coral);
   font-weight: 800;
-  font-size: 9px;
+  font-size: 11px;
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 
 @media (min-width: 900px) {

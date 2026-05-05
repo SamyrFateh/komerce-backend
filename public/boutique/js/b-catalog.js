@@ -39,6 +39,7 @@ import {
 }                              from './b-subcat.js';
 import {
   _setupMobilePager,
+  _recalcPagerVars,
   _setupSectionAutoAdvance,
   _setupHorizontalWrap,
   _syncChipToScroll,
@@ -329,6 +330,11 @@ function renderGrid() {
     _bindGridEvents();
     if (_isMobile) {
       var _ps = document.getElementById('k-page-scroll');
+      // Poser --pager-top/--pager-h AVANT k-pager-active (variables CSS requises
+      // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()
+      // — pas _setupMobilePager() entier — pour ne pas attacher les scroll
+      // listeners avant que _setupInfiniteLoop ait stabilisé le DOM.
+      _recalcPagerVars();
       if (_ps) _ps.classList.add('k-pager-active');
       dom.grid.classList.add('k-grid-cat-pager');
       requestAnimationFrame(function() {
