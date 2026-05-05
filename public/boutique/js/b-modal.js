@@ -233,10 +233,48 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       var pills = document.createElement('div');
       pills.className = 'k-variant-pills';
 
+      /* FIX Bug 1: mapping nom de couleur → hex pour les variantes sans image_url.
+         Les noms viennent des données produit (FR + EN), insensibles à la casse. */
+      var COLOR_MAP = {
+        'noir': '#111111', 'black': '#111111',
+        'blanc': '#FFFFFF', 'white': '#FFFFFF',
+        'beige': '#D4B896',
+        'bordeaux': '#6E1423', 'burgundy': '#6E1423', 'bourgogne': '#6E1423',
+        'rouge': '#D32F2F', 'red': '#D32F2F',
+        'rose': '#E91E8C', 'pink': '#E91E8C', 'fuschia': '#E91E8C',
+        'or': '#C9A84C', 'gold': '#C9A84C', 'doré': '#C9A84C',
+        'argent': '#A8A9AD', 'silver': '#A8A9AD',
+        'bleu': '#1565C0', 'blue': '#1565C0',
+        'bleu marine': '#0D2554', 'marine': '#0D2554', 'navy': '#0D2554',
+        'bleu ciel': '#87CEEB', 'ciel': '#87CEEB',
+        'turquoise': '#00BCD4',
+        'vert': '#2E7D32', 'green': '#2E7D32',
+        'kaki': '#6B6B3A', 'khaki': '#6B6B3A', 'olive': '#6B6B3A',
+        'marron': '#5D4037', 'caramel': '#C17F24', 'brun': '#5D4037', 'brown': '#5D4037',
+        'orange': '#E65100',
+        'jaune': '#F9A825', 'yellow': '#F9A825',
+        'violet': '#6A1B9A', 'purple': '#6A1B9A', 'mauve': '#9C27B0',
+        'gris': '#757575', 'grey': '#757575', 'gray': '#757575',
+        'gris clair': '#BDBDBD', 'gris foncé': '#424242',
+        'multicolore': 'linear-gradient(135deg,#e74c3c,#f39c12,#2ecc71,#3498db,#9b59b6)',
+        'imprimé': 'linear-gradient(135deg,#ffeaa7,#dfe6e9,#fdcb6e)',
+      };
+      function _getColorHex(name) {
+        if (!name) return null;
+        var n = name.toLowerCase().trim();
+        if (COLOR_MAP[n]) return COLOR_MAP[n];
+        // Recherche partielle si le nom contient un mot connu
+        for (var k in COLOR_MAP) {
+          if (n.includes(k)) return COLOR_MAP[k];
+        }
+        return null;
+      }
+
       options.forEach(function(opt) {
         var btn = document.createElement('button');
         var isOut = (opt.stock === 0);
-        var isColor = (type.toLowerCase().includes('couleur') && opt.image_url);
+        var colorHex = type.toLowerCase().includes('couleur') ? _getColorHex(opt.value) : null;
+        var isColor = (type.toLowerCase().includes('couleur') && (opt.image_url || colorHex));
 
         btn.className = 'k-variant-pill' +
           (isOut ? ' k-variant-pill--out' : '') +
@@ -246,7 +284,19 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         if (isOut) btn.title = 'Rupture de stock';
 
         if (isColor) {
-          btn.style.backgroundImage = 'url(' + opt.image_url + ')';
+          if (opt.image_url) {
+            btn.style.backgroundImage = 'url(' + opt.image_url + ')';
+          } else if (colorHex) {
+            /* Couleur sans image: fond coloré. Pour blanc, ajouter une bordure visible. */
+            if (colorHex.startsWith('linear-gradient')) {
+              btn.style.backgroundImage = colorHex;
+            } else {
+              btn.style.backgroundColor = colorHex;
+            }
+            if (opt.value.toLowerCase().includes('blanc') || opt.value.toLowerCase().includes('white')) {
+              btn.style.border = '2px solid #ccc';
+            }
+          }
           btn.setAttribute('aria-label', opt.value);
           // Color tooltip
           var tip = document.createElement('span');
