@@ -42,7 +42,7 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
       `INSERT INTO notification_log
          (order_ref, parcel_ref, channel, event, recipient, status, detail, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-      [orderRef || null, parcelRef || null, channel, event, recipient || null,
+      [orderRef || null, parcelRef || null, channel, event, recipient || 'system',
        status, detail ? (typeof detail === 'string' ? detail : JSON.stringify(detail)) : null]
     );
   } catch (err) {

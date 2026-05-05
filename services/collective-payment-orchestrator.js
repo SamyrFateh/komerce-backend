@@ -380,11 +380,11 @@ async function _createOrderFromSession(sessionId, options = {}) {
       `INSERT INTO orders (
          reference, user_id, recipient_id, relais_id,
          total_kmf, payment_mode, payment_status, status,
-         notes
+         tracking_phone, notes
        ) VALUES (
          $1, $2, NULL, $3,
          $4, $5, 'paid', 'confirmed',
-         $6
+         $6, $7
        )
        RETURNING id, reference, total_kmf`,
       [
@@ -393,6 +393,7 @@ async function _createOrderFromSession(sessionId, options = {}) {
         ws.relais_id,
         session.total_to_pay_kmf,
         paymentMode,
+        ws.creator_phone || ws.recipient_phone || null,
         'Panier collectif: ' + ws.event_name,
       ]
     );
