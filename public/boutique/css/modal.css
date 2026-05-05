@@ -175,7 +175,7 @@
    les cartes (.k-card-fav.liked) pour cohérence. */
 .k-modal-fav-btn {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top, 0px));
+  top: 10px;
   right: 10px;
   width: 42px; height: 42px;
   background: rgba(253,250,245,.94);

@@ -295,6 +295,18 @@ body.modal-open .k-bnav { opacity: .7; }
 body.modal-open #k-section-index,
 body.cart-open  #k-section-index { display:none; }
 
+/* FAB exclusion mutuelle : masquer section-index quand le WA FAB est affiché
+   (évite 4 éléments flottants simultanés sur petits écrans) */
+body.k-wa-fab-visible #k-section-index {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(.85);
+  transition: opacity .25s ease, transform .25s ease;
+}
+body:not(.k-wa-fab-visible) #k-section-index {
+  transition: opacity .25s ease, transform .25s ease;
+}
+
 @media (max-width:600px) {
   #k-section-index { right:4px; gap:2px; padding:4px 3px; }
   .k-section-index-btn { width:32px; height:32px; }

@@ -1394,8 +1394,66 @@ function quickRemove(productId, btnEl) {
   // _pagerRaf declared in _syncChipToScroll block above
 
 // ══════════════════════════════════════════════════════════════════
-// SIDE CART — Aperçu permanent desktop + total mobile bnav
+// SIDE CART — Aperçu permanent desktop + pill mobile
 // ══════════════════════════════════════════════════════════════════
+
+// Mobile pill : auto-collapse timer
+let _scAutoCollapseTimer = null;
+
+function _isMobileSC() { return window.innerWidth < 900; }
+
+function _openPill() {
+  const sc = document.getElementById('k-side-cart');
+  if (!sc) return;
+  sc.classList.add('is-open');
+  const pill = document.getElementById('k-sc-pill');
+  if (pill) pill.setAttribute('aria-expanded', 'true');
+}
+
+function _closePill() {
+  const sc = document.getElementById('k-side-cart');
+  if (!sc) return;
+  sc.classList.remove('is-open');
+  const pill = document.getElementById('k-sc-pill');
+  if (pill) pill.setAttribute('aria-expanded', 'false');
+}
+
+function _scheduleAutoCollapse() {
+  if (_scAutoCollapseTimer) clearTimeout(_scAutoCollapseTimer);
+  _scAutoCollapseTimer = setTimeout(_closePill, 4000);
+}
+
+// Câblage pill (une seule fois)
+let _scPillWired = false;
+function _wirePill() {
+  if (_scPillWired) return;
+  _scPillWired = true;
+
+  const pill = document.getElementById('k-sc-pill');
+  if (pill) {
+    pill.addEventListener('click', () => {
+      const sc = document.getElementById('k-side-cart');
+      if (!sc) return;
+      if (sc.classList.contains('is-open')) {
+        _closePill();
+        if (_scAutoCollapseTimer) clearTimeout(_scAutoCollapseTimer);
+      } else {
+        _openPill();
+        _scheduleAutoCollapse();
+      }
+    });
+  }
+
+  const panelCta = document.getElementById('k-sc-panel-cta');
+  if (panelCta && !panelCta._wired) {
+    panelCta._wired = true;
+    panelCta.addEventListener('click', () => openCart());
+  }
+}
+
+// Tracks whether this is the first item ever added this session
+let _scFirstAdd = true;
+
 function renderSideCart() {
   const sc       = document.getElementById('k-side-cart');
   const bnavLbl  = document.getElementById('k-bnav-cart-label');
@@ -1415,16 +1473,46 @@ function renderSideCart() {
 
   if (!sc) return;
   sc.classList.toggle('has-items', hasItems);
-  if (!hasItems) return;
 
+  if (!hasItems) {
+    _closePill();
+    _scFirstAdd = true;
+    return;
+  }
+
+  const qty   = cartQty();
+  const total = fmtPrice(cartTotal());
+
+  // ── Mobile pill ──
+  if (_isMobileSC()) {
+    _wirePill();
+
+    const pillQty   = document.getElementById('k-sc-pill-qty');
+    const pillTotal = document.getElementById('k-sc-pill-total');
+    const panelTotal = document.getElementById('k-sc-panel-total');
+
+    if (pillQty)    pillQty.textContent   = qty + ' art.';
+    if (pillTotal)  pillTotal.textContent = total;
+    if (panelTotal) panelTotal.textContent = total;
+
+    // Premier ajout : déplie automatiquement 2s après, puis replie après 4s
+    if (_scFirstAdd) {
+      _scFirstAdd = false;
+      setTimeout(() => {
+        _openPill();
+        _scheduleAutoCollapse();
+      }, 2000);
+    }
+  }
+
+  // ── Desktop ──
   // Compteur
-  const qty     = cartQty();
   const countEl = sc.querySelector('#k-sc-count');
   if (countEl) countEl.textContent = qty + ' article' + (qty > 1 ? 's' : '');
 
   // Total
   const totalEl = sc.querySelector('#k-sc-total');
-  if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
+  if (totalEl) totalEl.textContent = total;
 
   // Articles (4 plus récents)
   const itemsEl = sc.querySelector('#k-sc-items');
@@ -1446,7 +1534,7 @@ function renderSideCart() {
     });
   }
 
-  // Bouton "Voir le panier" → ouvre le tiroir (câblé une seule fois)
+  // Bouton "Voir le panier" desktop → ouvre le tiroir (câblé une seule fois)
   const cta = sc.querySelector('#k-sc-cta');
   if (cta && !cta._wired) {
     cta._wired = true;
