@@ -361,6 +361,23 @@ async function _createOrderFromSession(sessionId, options = {}) {
       throw new Error('missing_relais_id');
     }
 
+    const tokenPhone = (await client.query(
+      `SELECT contributor_phone
+       FROM collective_payment_tokens
+       WHERE session_id = $1
+         AND contributor_phone IS NOT NULL
+         AND contributor_phone <> ''
+       ORDER BY paid_at DESC NULLS LAST, authorized_at DESC NULLS LAST, created_at ASC
+       LIMIT 1`,
+      [sessionId]
+    )).rows[0]?.contributor_phone || null;
+
+    const resolvedTrackingPhone =
+      ws.creator_phone ||
+      ws.recipient_phone ||
+      tokenPhone ||
+      null;
+
     // Récupérer les items snapshots
     const items = (await client.query(
       `SELECT * FROM collective_workspace_items WHERE workspace_id = $1 ORDER BY created_at`,
@@ -393,7 +410,7 @@ async function _createOrderFromSession(sessionId, options = {}) {
         ws.relais_id,
         session.total_to_pay_kmf,
         paymentMode,
-        ws.creator_phone || ws.recipient_phone || null,
+        resolvedTrackingPhone,
         'Panier collectif: ' + ws.event_name,
       ]
     );
