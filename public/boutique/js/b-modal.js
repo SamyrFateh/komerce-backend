@@ -337,6 +337,22 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       group.appendChild(wrap);
       container.appendChild(group);
     });
+
+    // FIX scroll-dans-le-vide mobile : ajuster le padding-bottom de .k-modal-scroll
+    // à la hauteur réelle de la barre d'actions fixe, mesurée après rendu des variantes.
+    // Les swatches couleur (64px) sont bien plus hauts que les anciennes pills (36px)
+    // et allongeaient le scrollHeight sans que la compensation CSS suive.
+    if (window.innerWidth < 900) {
+      requestAnimationFrame(function() {
+        var actBar = document.querySelector('.k-modal-actions');
+        var scrollEl = document.querySelector('.k-modal-scroll');
+        if (actBar && scrollEl) {
+          var barH = actBar.offsetHeight;
+          scrollEl.style.paddingBottom =
+            'calc(' + (barH + 16) + 'px + env(safe-area-inset-bottom, 0px))';
+        }
+      });
+    }
   }
 
     function openModal(id, pushHistory) {
