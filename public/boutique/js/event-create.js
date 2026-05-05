@@ -41,9 +41,9 @@
     const fromCart = new URLSearchParams(window.location.search).get('from') === 'cart';
     const itemsList = pendingCart.slice(0, 5).map(i => '- ' + (i.name || 'Article') + ' - ' + new Intl.NumberFormat('fr-FR').format(i.price_kmf || 0) + ' KMF' + (i.qty > 1 ? ' x' + i.qty : '')).join('<br>');
     banner.innerHTML =
-      '<strong>Panier pre-charge</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
+      '<strong>Panier pré-chargé</strong> : ' + itemsCount + ' article' + (itemsCount > 1 ? 's' : '') +
       ' (' + new Intl.NumberFormat('fr-FR').format(Math.round(itemsTotal)) + ' KMF)' +
-      (fromCart ? '<br><em style="font-size:12px;color:#555;">Arrive depuis le panier boutique</em>' : '') +
+      (fromCart ? '<br><em style="font-size:12px;color:#555;">Arrivé depuis votre panier boutique</em>' : '') +
       '<div style="margin-top:8px;font-size:12px;color:#555;">' + itemsList + (pendingCart.length > 5 ? '<br>... et ' + (pendingCart.length - 5) + ' autre(s)' : '') + '</div>';
     if (form && form.parentElement) {
       form.parentElement.insertBefore(banner, form);
@@ -76,12 +76,12 @@
 
     if (!payload.creator_name) { showError('Votre nom est requis.'); return; }
     if (!payload.creator_phone && !payload.creator_email) {
-      showError('Indiquez au moins un telephone ou un email pour pouvoir retrouver votre lien.');
+      showError('Indiquez au moins un téléphone ou un email pour retrouver votre lien.');
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Creation en cours...';
+    submitBtn.textContent = 'Création en cours…';
 
     try {
       // 1. Creer le workspace
@@ -112,7 +112,7 @@
       // 3. P1.1 : si panier en attente, ajouter les items au workspace
       const cartItems = getPendingCart();
       if (cartItems && cartItems.length) {
-        submitBtn.textContent = 'Ajout des articles...';
+        submitBtn.textContent = 'Ajout des articles…';
         let patchFailed = false;
         let patchError = null;
         // Backend attend 1 item par appel PATCH
@@ -142,10 +142,10 @@
           }
         }
         if (patchFailed) {
-          showError('Liste creee, mais ajout des articles echoue : ' + patchError +
+          showError('Panier créé, mais l'ajout des articles a échoué : ' + patchError +
             ' - vous pouvez les ajouter manuellement depuis la page de gestion.');
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Creer le panier collectif';
+          submitBtn.textContent = '🛒 Créer le panier collectif';
           return;
         }
         sessionStorage.removeItem('komerce_event_pending_cart');
@@ -155,9 +155,9 @@
       window.location.href = '/event/manage/' + encodeURIComponent(data.creator_token);
     } catch (err) {
       console.error('Creation workspace echouee :', err);
-      showError(err.message || 'Erreur reseau. Reessayez.');
+      showError(err.message || 'Erreur réseau. Réessayez.');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Creer le panier collectif';
+      submitBtn.textContent = '🛒 Créer le panier collectif';
     }
   });
 })();

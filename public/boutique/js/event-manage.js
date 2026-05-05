@@ -105,14 +105,14 @@
   }
 
   function phaseLabel(phase) {
-    if (phase === 'collecting') return 'Collecte ouverte';
-    if (phase === 'reviewing') return 'Revue organisateur';
+    if (phase === 'collecting') return 'Collecte en cours';
+    if (phase === 'reviewing') return 'En cours de validation';
     if (phase === 'finalized' || phase === 'payment_pending') return 'Paiements en preparation';
     if (phase === 'partially_paid') return 'Paiements en cours';
-    if (phase === 'paid' || phase === 'order_created') return 'Commande confirmee';
-    if (phase === 'expired') return 'Session expiree';
-    if (phase === 'cancelled') return 'Evenement annule';
-    return 'Brouillon';
+    if (phase === 'paid' || phase === 'order_created') return 'Commande confirmée';
+    if (phase === 'expired') return 'Session expirée';
+    if (phase === 'cancelled') return 'Achat groupé annulé';
+    return 'En préparation';
   }
 
   function statusBadge(phase) {
@@ -136,22 +136,22 @@
     let html = '';
     html += '<div class="ev-card"><div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;"><div style="flex:1;min-width:200px;">';
     html += '<h2 class="ev-card-title">' + escHtml(workspace.event_name) + '</h2>';
-    if (workspace.recipient_name) html += '<div class="ev-card-sub">Destinataire : ' + escHtml(workspace.recipient_name) + '</div>';
+    if (workspace.recipient_name) html += '<div class="ev-card-sub">Organisateur : ' + escHtml(workspace.recipient_name) + '</div>';
     if (workspace.event_note) html += '<div style="font-size:13px;color:var(--ev-text-muted);margin-top:6px;font-style:italic;">&laquo; ' + escHtml(workspace.event_note) + ' &raquo;</div>';
-    html += '<div class="ev-card-sub" style="margin-top:8px;">Etape actuelle : <strong>' + escHtml(phaseLabel(phase)) + '</strong></div>';
+    html += '<div class="ev-card-sub" style="margin-top:8px;">Statut : <strong>' + escHtml(phaseLabel(phase)) + '</strong></div>';
     html += '</div><div>' + statusBadge(phase) + '</div></div></div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Partager avec la famille</h3><p class="ev-card-sub">Envoyez un seul lien simple. La famille peut proposer, mais vous restez seul a modifier la vraie liste.</p><div class="ev-share"><div class="ev-share-label">Lien famille a copier :</div><div class="ev-share-url">';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Partager le panier</h3><p class="ev-card-sub">Envoyez un seul lien simple. La famille peut proposer, mais vous restez seul a modifier la vraie liste.</p><div class="ev-share"><div class="ev-share-label">Lien à partager :</div><div class="ev-share-url">';
     html += '<input type="text" readonly value="' + escHtml(url) + '" id="ev-public-url-input">';
     html += '<button class="ev-btn ev-btn-secondary" id="ev-copy-btn"' + (canShare ? '' : ' disabled') + '>Copier</button></div>';
     if (canShare) {
-      html += '<div class="ev-share-actions"><a href="' + whatsappShareUrl(workspace.event_name, workspace.public_token) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp">Partager sur WhatsApp</a><a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-secondary">Voir comme un visiteur</a></div>';
+      html += '<div class="ev-share-actions"><a href="' + whatsappShareUrl(workspace.event_name, workspace.public_token) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp">Partager sur WhatsApp</a><a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-secondary">Voir le panier public</a></div>';
     } else {
       html += '<div class="ev-help" style="margin-top:8px;">Le lien public reste disponible sur l appareil qui a cree le panier.</div>';
     }
     html += '</div></div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Ma liste (' + items.length + ' article' + (items.length > 1 ? 's' : '') + ')</h3><p class="ev-card-sub">Vous etes le seul a modifier cette liste. Les proches ne font que proposer.</p>';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Panier collectif (' + items.length + ' article' + (items.length > 1 ? 's' : '') + ')</h3><p class="ev-card-sub">Vous etes le seul a modifier cette liste. Les proches ne font que proposer.</p>';
     if (!items.length) {
       html += '<div class="ev-empty">Votre liste est vide pour l instant.<br><a href="/" style="color:var(--ev-primary);">Parcourir la boutique</a> pour ajouter vos premiers articles.</div>';
     } else {
@@ -165,25 +165,25 @@
     }
     html += '</div>';
 
-    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Propositions de la famille (' + contribs.length + ')</h3><p class="ev-card-sub">Ces retours vous aident a preparer la liste finale. Ils ne modifient pas automatiquement vos articles.</p>';
+    html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Contributions (' + contribs.length + ')</h3><p class="ev-card-sub">Ces retours vous aident a preparer la liste finale. Ils ne modifient pas automatiquement vos articles.</p>';
     if (!contribs.length) {
       html += '<div class="ev-empty">Aucune proposition pour le moment. Partagez le lien famille pour commencer a recevoir des idees et des montants.</div>';
     } else {
       html += '<ul class="ev-list">';
       contribs.forEach((c) => {
-        html += '<li class="ev-list-item"><div class="ev-list-emoji">' + (c.kind === 'intention' ? '+' : '*') + '</div><div class="ev-list-content"><div class="ev-list-name">' + escHtml(c.contributor_name);
-        if (c.amount_kmf) html += ' <span style="color:var(--ev-success);font-weight:600;">+' + fmt(c.amount_kmf) + ' KMF</span>';
+        html += '<li class="ev-list-item">' + '<div class="ev-list-avatar">' + escHtml(c.contributor_name).trim().split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() + '</div>' + '<div class="ev-list-content"><div class="ev-list-name">' + escHtml(c.contributor_name);
+        if (c.amount_kmf) { html += '</div><div class="ev-list-right"><div class="ev-list-amount">' + fmt(c.amount_kmf) + ' KMF</div></div>'; } else {
         html += '</div>';
+        }
         if (c.message) html += '<div class="ev-list-meta">&laquo; ' + escHtml(c.message) + ' &raquo;</div>';
-        if (c.product_name || c.suggestion) html += '<div class="ev-list-meta">Suggere : ' + escHtml(c.product_name || c.suggestion) + '</div>';
-        html += '</div></li>';
-      });
+        if (c.product_name || c.suggestion) html += '<div class="ev-list-meta">Produit suggéré : ' + escHtml(c.product_name || c.suggestion) + '</div>';
+        html += '</li>';
       html += '</ul>';
     }
     html += '</div>';
 
     if (phase === 'draft' || phase === 'collecting' || phase === 'reviewing') {
-      html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Prochaine etape : finaliser la liste</h3><p class="ev-card-sub">Quand vous etes pret, vous figez la liste. Apres cela, on pourra demander les paiements sur la base de votre validation finale.</p><div class="ev-btn-row"><button class="ev-btn ev-btn-success" id="ev-finalize-btn"' + (items.length === 0 ? ' disabled' : '') + '>Finaliser la liste (' + fmt(total) + ' KMF)</button><a href="/" class="ev-btn ev-btn-secondary">Continuer a parcourir la boutique</a></div></div>';
+      html += '<div class="ev-card"><h3 class="ev-card-title" style="font-size:15px;">Prochaine etape : finaliser la liste</h3><p class="ev-card-sub">Quand vous etes pret, vous figez la liste. Apres cela, on pourra demander les paiements sur la base de votre validation finale.</p><div class="ev-btn-row"><button class="ev-btn ev-btn-success" id="ev-finalize-btn"' + (items.length === 0 ? ' disabled' : '') + '>Finaliser le panier (' + fmt(total) + ' KMF)</button><a href="/" class="ev-btn ev-btn-secondary">Continuer la boutique</a></div></div>';
     } else if (phase === 'finalized' || phase === 'payment_pending') {
       html += '<div class="ev-info">La liste est figee. Vous pouvez maintenant envoyer les liens de paiement aux participants retenus.</div>';
     } else if (phase === 'partially_paid') {
@@ -191,7 +191,7 @@
     } else if (phase === 'order_created' || phase === 'paid') {
       html += '<div class="ev-info">La commande a ete creee avec succes.</div>';
     } else if (phase === 'expired') {
-      html += '<div class="ev-warning">La session precedente a expire. Vous pouvez relancer une nouvelle finalisation quand vous etes pret.</div>';
+      html += '<div class="ev-warning">La session précédente a expiré. Vous pouvez relancer une nouvelle finalisation quand vous etes pret.</div>';
     }
 
     contentEl.innerHTML = html;
@@ -220,7 +220,7 @@
       finalizeBtn.addEventListener('click', async () => {
         if (!confirm('Finaliser la liste ? Cette action verrouille vos articles et prepare les liens de paiement individuels.')) return;
         finalizeBtn.disabled = true;
-        finalizeBtn.textContent = 'Finalisation...';
+        finalizeBtn.textContent = 'Finalisation en cours…';
         try {
           const reviewRes = await fetch('/api/collective-workspaces/' + encodeURIComponent(getCreatorToken()) + '/finalization-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
           if (!reviewRes.ok) {
@@ -236,7 +236,7 @@
         } catch (err) {
           alert('Erreur : ' + err.message);
           finalizeBtn.disabled = false;
-          finalizeBtn.textContent = 'Finaliser la liste';
+          finalizeBtn.textContent = 'Finaliser le panier';
         }
       });
     }
@@ -259,7 +259,7 @@
       const waUrl = whatsappDirectUrl(t.contributor_phone, waText);
       html += '<li class="ev-list-item" style="flex-direction:column;align-items:stretch;gap:6px;padding:14px 0;"><div style="display:flex;align-items:center;gap:10px;"><div class="ev-list-emoji">*</div><div class="ev-list-content"><div class="ev-list-name">' + escHtml(t.contributor_name) + ' <span style="color:var(--ev-success);font-weight:600;">' + fmt(t.amount_kmf) + ' KMF</span></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;"><input type="text" readonly value="' + escHtml(fullUrl) + '" id="ev-tok-url-' + idx + '" style="flex:1;min-width:0;font-size:11px;padding:6px 8px;font-family:monospace;border:1px solid var(--ev-border);border-radius:4px;"><button class="ev-btn ev-btn-secondary" data-copy-url="' + idx + '" style="padding:6px 10px;font-size:12px;">Copier</button><a href="' + waUrl + '" target="_blank" rel="noopener" class="ev-btn ev-btn-whatsapp" style="padding:6px 10px;font-size:12px;">WhatsApp</a></div></li>';
     });
-    html += '</ul></div><div class="ev-card" style="text-align:center;"><button class="ev-btn ev-btn-success" id="ev-tokens-ack" style="width:100%;">J ai envoye tous les liens - actualiser le statut</button></div>';
+    html += '</ul></div><div class="ev-card" style="text-align:center;"><button class="ev-btn ev-btn-success" id="ev-tokens-ack" style="width:100%;">J'ai envoyé tous les liens — actualiser</button></div>';
     contentEl.innerHTML = html;
     contentEl.style.display = 'block';
     loadingEl.style.display = 'none';

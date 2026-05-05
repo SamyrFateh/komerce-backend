@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Creer une liste evenement - Komerce</title>
+  <title>Achat groupé - Komerce</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,85 +15,144 @@
 <div class="ev-wrap">
 
   <header class="ev-header">
-    <a href="/" class="ev-header-back">&lt; Boutique</a>
-    <span class="ev-header-title">Nouvelle liste evenement</span>
+    <a href="/" class="ev-header-back">Boutique</a>
+    <span class="ev-header-title">Achat groupé</span>
   </header>
 
   <div class="ev-hero">
-    <div class="ev-hero-emoji">+</div>
-    <h1 class="ev-hero-title">Preparez votre evenement avec la famille</h1>
+    <div class="ev-hero-icon">🛒</div>
+    <h1 class="ev-hero-title">Créez votre panier collectif</h1>
     <p class="ev-hero-sub">
-      Partagez la liste a vos proches.<br>
-      Ils proposent, vous decidez, puis vous finalisez.
+      Invitez vos proches à participer.<br>
+      <strong>Chacun contribue à sa façon.</strong>
     </p>
   </div>
 
   <form id="ev-create-form" class="ev-card">
-    <h2 class="ev-card-title">Demarrage rapide</h2>
-    <p class="ev-card-sub">On cree la liste maintenant. Le point relais et la recuperation viendront ensuite.</p>
+    <h2 class="ev-card-title">Démarrage rapide</h2>
+    <p class="ev-card-sub">Créez votre panier collectif en quelques secondes. Vous pourrez partager le lien tout de suite après.</p>
 
     <div class="ev-field">
       <label class="ev-label" for="event_note">
-        Message a la famille
+        Message pour les participants
         <span class="ev-label-optional">(optionnel)</span>
       </label>
-      <textarea id="event_note" name="event_note" class="ev-textarea" rows="3"
-                placeholder="Ex : Voici notre liste pour l'evenement. Vous pouvez proposer vos idees ou votre participation."
-                maxlength="500"></textarea>
+      <textarea id="event_note" name="event_note" class="ev-textarea" rows="2"
+                placeholder="Ex : Voici notre panier pour les fêtes. Proposez votre participation !"
+                maxlength="500" id="ev-note-area"></textarea>
+      <div class="ev-char-count"><span id="ev-note-count">0</span>/500</div>
     </div>
 
-    <hr style="border: none; border-top: 1px solid var(--ev-border); margin: 20px 0;">
+    <hr class="ev-divider">
 
-    <h3 class="ev-card-title" style="font-size: 14px;">Vos coordonnees (organisateur)</h3>
+    <h3 class="ev-card-title" style="font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--ev-text-muted);font-weight:600;">Vos coordonnées (organisateur)</h3>
 
-    <div class="ev-field">
+    <div class="ev-field" style="margin-top:12px;">
       <label class="ev-label" for="creator_name">Votre nom</label>
       <input type="text" id="creator_name" name="creator_name" class="ev-input"
-             placeholder="Ex : Ali Said" required maxlength="80">
+             placeholder="Ex : Amina Said" required maxlength="80">
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_phone">
-        Telephone WhatsApp
-        <span class="ev-label-optional">(pour partager la liste facilement)</span>
+        Téléphone
+        <span class="ev-label-optional">(pour partager facilement via WhatsApp)</span>
       </label>
-      <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
-             placeholder="+33 6 12 34 56 78" maxlength="30">
-      <div class="ev-help">Format international avec +. Aucun appel ne vous sera passe.</div>
+      <div class="ev-phone-row">
+        <select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif pays">
+          <option value="+269">🇰🇲 +269</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+262">🇷🇪 +262</option>
+          <option value="+255">🇹🇿 +255</option>
+          <option value="+254">🇰🇪 +254</option>
+        </select>
+        <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
+               placeholder="Votre numéro" maxlength="25">
+      </div>
+      <div class="ev-help">Format international avec indicatif. Aucun appel ne vous sera passé.</div>
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_email">
         Email
-        <span class="ev-label-optional">(optionnel - pour retrouver votre lien)</span>
+        <span class="ev-label-optional">(pour retrouver votre lien)</span>
       </label>
       <input type="email" id="creator_email" name="creator_email" class="ev-input"
              placeholder="exemple@email.com" maxlength="120">
     </div>
 
-    <div class="ev-info">
-      <strong>Sans compte requis.</strong> Conservez bien votre lien organisateur :
-      c'est lui qui vous permet de gerer la liste, relire les propositions et finaliser.
-    </div>
-
-    <div class="ev-help" style="margin-top:12px;">
-      Le choix du point relais se fera plus tard selon le produit, y compris Paris pour certains envois diaspora.
+    <div class="ev-trust">
+      <span class="ev-trust-icon">🔒</span>
+      <span><strong>Sans compte requis.</strong> Conservez votre lien organisateur — il vous permet de gérer le panier et finaliser la commande.</span>
     </div>
 
     <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">
-      Creer la liste evenement
+      🛒 Créer le panier collectif
     </button>
 
     <div id="ev-error" class="ev-warning" style="display:none; margin-top:12px;"></div>
   </form>
 
+  <div class="ev-card">
+    <h3 class="ev-card-title">Comment ça marche ?</h3>
+    <div class="ev-steps">
+      <div class="ev-step">
+        <div class="ev-step-icon">🛒</div>
+        <div class="ev-step-label">Le panier<br>est créé</div>
+      </div>
+      <div class="ev-step">
+        <div class="ev-step-icon">👥</div>
+        <div class="ev-step-label">Les participants<br>rejoignent</div>
+      </div>
+      <div class="ev-step">
+        <div class="ev-step-icon">✅</div>
+        <div class="ev-step-label">Le panier<br>se complète</div>
+      </div>
+      <div class="ev-step">
+        <div class="ev-step-icon">🚚</div>
+        <div class="ev-step-label">Commande<br>& livraison</div>
+      </div>
+    </div>
+  </div>
+
   <p class="ev-doctrine">
-    Les retours de la famille sont des propositions, pas des modifications directes du panier.<br>
-    Le paiement ne commence qu'apres votre validation finale.
+    La commande ne sera lancée que lorsque le panier sera couvert à 100 %.<br>
+    Chaque participant paie sa propre part, en toute transparence.
   </p>
 
 </div>
 
+<script>
+// Char counter for note
+var noteArea = document.getElementById('event_note');
+var noteCount = document.getElementById('ev-note-count');
+if (noteArea && noteCount) {
+  noteArea.addEventListener('input', function() {
+    noteCount.textContent = noteArea.value.length;
+  });
+}
+// Phone prefix sync
+var prefixSel = document.getElementById('ev-prefix-select');
+var phoneInput = document.getElementById('creator_phone');
+if (prefixSel && phoneInput) {
+  // The phone field stores only the local number; event-create.js will read creator_phone
+  // We inject prefix into the input value on submit via hidden field approach
+  prefixSel.addEventListener('change', function() {});
+}
+// Patch submit to prepend prefix to phone value
+var origForm = document.getElementById('ev-create-form');
+if (origForm) {
+  origForm.addEventListener('submit', function(e) {
+    if (prefixSel && phoneInput && phoneInput.value.trim()) {
+      var prefix = prefixSel.value;
+      var num = phoneInput.value.trim().replace(/^\+\d+/, '');
+      if (!phoneInput.value.startsWith('+')) {
+        phoneInput.value = prefix + num.replace(/^0/, '');
+      }
+    }
+  }, true);
+}
+</script>
 <script src="/boutique/js/event-create.js"></script>
 </body>
 </html>
