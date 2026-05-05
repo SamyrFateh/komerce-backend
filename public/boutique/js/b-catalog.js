@@ -60,6 +60,7 @@ import { renderHomeSections } from './render/render-home-sections.js';
 import {
   setupHomeController as _setupHomeController,
   centerRailChip       as _centerRailChip,
+  renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
 import { ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
@@ -87,6 +88,10 @@ bus.on('catalog:cat-changed', function(cat) {
   document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
     item.classList.toggle('is-active', item.dataset.cat === cat);
   });
+  // Bug 2 fix : mettre à jour le rail de sous-catégories (desktop uniquement)
+  if (window.innerWidth >= 900) {
+    _renderSubcatRail(cat);
+  }
 });
 
 
@@ -107,7 +112,9 @@ function appendNextPage() {
 
   let list = state.activeCat === 'all'
     ? state.filtered
-    : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
+    : state.activeCat === 'Soldes'
+      ? state.filtered.filter(p => (p.promo_pct || 0) > 0)
+      : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
   if (state.activeSubcat) {
     const subF = list.filter(p => p.subcategory === state.activeSubcat);
     if (subF.length > 0) list = subF;
@@ -292,7 +299,9 @@ function renderGrid() {
 
   let list = (state.activeCat === 'all' || _isMobile)
     ? state.filtered
-    : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
+    : state.activeCat === 'Soldes'
+      ? state.filtered.filter(p => (p.promo_pct || 0) > 0)
+      : state.filtered.filter(p => _normalizeCat(p.category) === state.activeCat);
   if (!_isMobile && state.activeSubcat) {
     const subF = list.filter(p => p.subcategory === state.activeSubcat);
     if (subF.length > 0) list = subF;

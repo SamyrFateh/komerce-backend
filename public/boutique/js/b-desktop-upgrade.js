@@ -84,6 +84,9 @@ function _showMega(catKey, triggerEl) {
   if (!sidebar) return;
   if (!panel.parentNode) sidebar.appendChild(panel);
 
+  // Bug 4 fix : forcer un reflow synchrone pour que offsetHeight soit correct dès le premier rendu
+  void panel.offsetHeight;
+
   // Align vertically with the hovered item
   var sidebarRect = sidebar.getBoundingClientRect();
   var triggerRect = triggerEl.getBoundingClientRect();
@@ -447,11 +450,8 @@ function setupPromoStrip() {
     state.activeSubcat = null;
     renderGrid();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Sync sidebar + chip rail
+    // Bug 5 fix : bus.emit('catalog:cat-changed') suffit — le handler b-catalog.js synchera chips + sidebar
     bus.emit('catalog:cat-changed', 'Soldes');
-    document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
-      item.classList.toggle('is-active', item.dataset.cat === 'Soldes');
-    });
   });
 }
 
@@ -515,11 +515,8 @@ function setupHomepageMerchandising() {
       });
 
       renderGrid();
+      // Bug 5 fix : bus.emit('catalog:cat-changed') suffit — supprimer la sync manuelle en double
       bus.emit('catalog:cat-changed', cat);
-      // Sync sidebar is-active
-      document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
-        item.classList.toggle('is-active', item.dataset.cat === cat);
-      });
 
       var top = anchor.getBoundingClientRect().top + window.scrollY - 84;
       window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });

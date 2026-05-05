@@ -746,7 +746,7 @@ body {
     width: 176px;
     flex-shrink: 0;
     position: sticky;
-    top: calc(var(--header-h) + 10px);
+    top: var(--sidebar-top, calc(var(--header-h) + 10px));
     max-height: calc(100vh - var(--header-h) - 24px);
     overflow-y: auto;
     scrollbar-width: none;

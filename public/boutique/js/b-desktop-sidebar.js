@@ -9,6 +9,7 @@
  */
 
 import { state }                             from './b-store.js';
+import { bus }                               from './b-bus.js';
 import { renderGrid }                        from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import {
@@ -77,6 +78,9 @@ function _buildSidebar(el) {
     item.addEventListener('click', activate);
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
   });
+
+  // Bug 3 fix : notifier les modules qui attendent que la sidebar soit construite (ex: mega-menu)
+  bus.emit('sidebar:built');
 }
 
 /**
