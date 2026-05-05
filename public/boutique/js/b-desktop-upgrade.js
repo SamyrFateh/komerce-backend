@@ -798,4 +798,17 @@ export function setupDesktopUpgrade() {
   bus.on('sidebar:built', function() {
     requestAnimationFrame(setupMegaMenu);
   });
+
+  // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
+  bus.on('view:changed', function(tab) {
+    var isShop = tab === 'shop';
+    var sidebar  = document.getElementById('k-desktop-sidebar');
+    var merch    = document.querySelector('.k-home-merch');
+    var strip    = document.querySelector('.k-promo-strip');
+    var scrollTop = document.querySelector('.k-scroll-top');
+    if (sidebar)   sidebar.style.visibility   = isShop ? '' : 'hidden';
+    if (merch)     merch.style.display        = isShop ? '' : 'none';
+    if (strip)     strip.style.display        = isShop ? '' : 'none';
+    if (scrollTop) scrollTop.classList.toggle('is-visible', isShop && window.scrollY > 600);
+  });
 }

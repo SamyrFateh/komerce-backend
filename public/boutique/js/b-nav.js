@@ -84,6 +84,9 @@ export function switchView(tab) {
   if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
   if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
 
+  // Notifier les modules desktop (sidebar, merch cards, promo strip)
+  bus.emit('view:changed', tab);
+
   if (pageScroll) {
     pageScroll.dataset.tab = tab;
     if (tab !== 'shop') {
