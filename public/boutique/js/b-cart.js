@@ -1423,32 +1423,154 @@ function _scheduleAutoCollapse() {
   _scAutoCollapseTimer = setTimeout(_closePill, 4000);
 }
 
+// ── Pill draggable ────────────────────────────────────────────
+// Touch + mouse, snap au bord gauche/droit, position persistée
+// en localStorage. Distingue tap (<5px) de drag (≥5px).
+
+const SC_STORAGE_KEY = 'k-sc-pill-pos';
+const SC_SNAP_MARGIN = 12;        // px depuis le bord après snap
+const SC_BNAV_H      = 50 + 8;   // bnav 50px + gap
+
+function _scSavePos(x, y) {
+  try { localStorage.setItem(SC_STORAGE_KEY, JSON.stringify({ x, y })); } catch(_) {}
+}
+function _scLoadPos() {
+  try { return JSON.parse(localStorage.getItem(SC_STORAGE_KEY)); } catch(_) { return null; }
+}
+
+function _scSnapAndSave(sc) {
+  const vw = window.innerWidth;
+  const cx = sc.getBoundingClientRect().left + sc.offsetWidth / 2;
+  // Snap au bord le plus proche
+  if (cx < vw / 2) {
+    sc.style.left  = SC_SNAP_MARGIN + 'px';
+    sc.style.right = 'auto';
+    _scSavePos(SC_SNAP_MARGIN, parseInt(sc.style.top) || 0);
+  } else {
+    sc.style.right = SC_SNAP_MARGIN + 'px';
+    sc.style.left  = 'auto';
+    _scSavePos(vw - SC_SNAP_MARGIN - sc.offsetWidth, parseInt(sc.style.top) || 0);
+  }
+  sc.classList.remove('is-dragging');
+}
+
+function _scRestorePos(sc) {
+  const saved = _scLoadPos();
+  const maxY  = window.innerHeight - SC_BNAV_H - sc.offsetHeight - 8;
+  if (saved) {
+    const clampedY = Math.max(60, Math.min(saved.y, maxY));
+    sc.style.top   = clampedY + 'px';
+    sc.style.bottom = 'auto';
+    // Snap côté sauvegardé
+    const vw = window.innerWidth;
+    if (saved.x < vw / 2) {
+      sc.style.left  = SC_SNAP_MARGIN + 'px';
+      sc.style.right = 'auto';
+    } else {
+      sc.style.right = SC_SNAP_MARGIN + 'px';
+      sc.style.left  = 'auto';
+    }
+  }
+}
+
+function _scInitDrag(sc) {
+  let startX = 0, startY = 0;
+  let startLeft = 0, startTop = 0;
+  let dragging = false;
+  let moved = false;
+
+  function onStart(clientX, clientY) {
+    const rect = sc.getBoundingClientRect();
+    startX    = clientX;
+    startY    = clientY;
+    startLeft = rect.left;
+    startTop  = rect.top;
+    dragging  = true;
+    moved     = false;
+    sc.style.transition = 'none';
+    sc.style.left   = rect.left + 'px';
+    sc.style.right  = 'auto';
+    sc.style.top    = rect.top + 'px';
+    sc.style.bottom = 'auto';
+  }
+
+  function onMove(clientX, clientY) {
+    if (!dragging) return;
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    if (!moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+    moved = true;
+    sc.classList.add('is-dragging');
+    const maxY = window.innerHeight - SC_BNAV_H - sc.offsetHeight - 8;
+    sc.style.left = Math.max(0, Math.min(startLeft + dx, window.innerWidth - sc.offsetWidth)) + 'px';
+    sc.style.top  = Math.max(60, Math.min(startTop  + dy, maxY)) + 'px';
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    sc.style.transition = '';
+    if (moved) {
+      _scSnapAndSave(sc);
+    }
+    // Si pas de mouvement → c'est un tap, géré par le listener click
+  }
+
+  // Touch
+  sc.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    onStart(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    onMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchend', () => onEnd());
+
+  // Mouse (desktop fallback)
+  sc.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    onStart(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    onMove(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', () => onEnd());
+}
+
 // Câblage pill (une seule fois)
 let _scPillWired = false;
 function _wirePill() {
   if (_scPillWired) return;
   _scPillWired = true;
 
+  const sc   = document.getElementById('k-side-cart');
   const pill = document.getElementById('k-sc-pill');
-  if (pill) {
-    pill.addEventListener('click', () => {
-      const sc = document.getElementById('k-side-cart');
-      if (!sc) return;
-      if (sc.classList.contains('is-open')) {
-        _closePill();
-        if (_scAutoCollapseTimer) clearTimeout(_scAutoCollapseTimer);
-      } else {
-        _openPill();
-        _scheduleAutoCollapse();
-      }
-    });
-  }
+  if (!sc || !pill) return;
 
-  const panelCta = document.getElementById('k-sc-panel-cta');
-  if (panelCta && !panelCta._wired) {
-    panelCta._wired = true;
-    panelCta.addEventListener('click', () => openCart());
-  }
+  // Initialise drag
+  _scInitDrag(sc);
+
+  // Restaure position sauvegardée
+  requestAnimationFrame(() => _scRestorePos(sc));
+
+  // Tap sur la pill (toggle déplie/replie)
+  // On écoute sur le sc entier mais on ignore si c'était un drag
+  sc.addEventListener('click', e => {
+    if (sc.classList.contains('is-dragging')) return;
+    // Clic sur le panel CTA → ouvre le drawer
+    if (e.target.closest('#k-sc-panel-cta')) { openCart(); return; }
+    // Clic ailleurs → toggle
+    if (sc.classList.contains('is-open')) {
+      _closePill();
+      if (_scAutoCollapseTimer) clearTimeout(_scAutoCollapseTimer);
+    } else {
+      _openPill();
+      _scheduleAutoCollapse();
+    }
+  });
 }
 
 // Tracks whether this is the first item ever added this session

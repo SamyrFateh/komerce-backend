@@ -995,16 +995,22 @@ body {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Pill (état replié) */
+/* Pill draggable */
 .k-sc-pill {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px 10px 14px;
-  cursor: pointer;
+  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   white-space: nowrap;
+  touch-action: none;
+}
+.k-side-cart.is-dragging {
+  opacity: .85;
+  cursor: grabbing;
+  box-shadow: 0 8px 32px rgba(31,48,36,.35);
 }
 .k-sc-pill-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
 .k-sc-pill-qty  {
