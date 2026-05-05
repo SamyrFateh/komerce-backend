@@ -470,6 +470,61 @@ async function cancelContribution(publicToken, contributionId) {
  * Recalcule le total a partir des prix actuels (pas des snapshots).
  * Verifie disponibilites. Renvoie un rapport pour l'UI sans rien figer.
  */
+async function cancelContributionByCreator(creatorToken, contributionId) {
+  const hash = _hashToken(creatorToken);
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const wsRes = await client.query(
+      `SELECT id, status
+       FROM collective_workspaces
+       WHERE creator_token_hash = $1
+       FOR UPDATE`,
+      [hash]
+    );
+
+    if (!wsRes.rows.length) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+
+    const ws = wsRes.rows[0];
+
+    if (ws.status !== 'conception') {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_open');
+    }
+
+    const { rowCount } = await client.query(
+      `UPDATE collective_workspace_contributions
+         SET status = 'cancelled'
+       WHERE id = $1
+         AND workspace_id = $2
+         AND status = 'intention'`,
+      [contributionId, ws.id]
+    );
+
+    if (!rowCount) {
+      await client.query('ROLLBACK');
+      throw new Error('contribution_not_found_or_already_handled');
+    }
+
+    await logEvent(client, ws.id, 'contribution_cancelled_by_creator', 'creator', null, {
+      contribution_id: contributionId,
+    });
+
+    await client.query('COMMIT');
+    return { ok: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function finalizationReview(creatorToken) {
   const ws = await getWorkspaceByCreatorToken(creatorToken);
   if (!ws) throw new Error('workspace_not_found');
@@ -892,6 +947,7 @@ function deriveWorkspacePhase(workspace, opts = {}) {
 // ═══════════════════════════════════════════════════════════════════════
 
 module.exports = {
+  cancelContributionByCreator,
   // Helpers
   _generateToken, _hashToken, logEvent, CONFIG,
 
