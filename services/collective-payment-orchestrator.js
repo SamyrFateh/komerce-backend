@@ -313,7 +313,7 @@ async function _markTokensPaid(tokenIds) {
   );
 }
 
-async function _createOrderFromSession(sessionId) {
+async function _createOrderFromSession(sessionId, options = {}) {
   // PATCH P0 (sprint 3) — Alignement complet sur le cœur business :
   //   1. INSERT orders (statut 'confirmed', payment_status 'paid')
   //   2. INSERT order_items depuis snapshots
@@ -335,6 +335,7 @@ async function _createOrderFromSession(sessionId) {
   let createdOrderRef = null;
   let stockBlocked = false;
   let triggerPurchasingFor = null;
+  const paymentMode = options.paymentMode || 'stripe_eur';
 
   try {
     await client.query('BEGIN');
@@ -382,8 +383,8 @@ async function _createOrderFromSession(sessionId) {
          notes
        ) VALUES (
          $1, $2, NULL, $3,
-         $4, 'stripe_eur', 'paid', 'confirmed',
-         $5
+         $4, $5, 'paid', 'confirmed',
+         $6
        )
        RETURNING id, reference, total_kmf`,
       [
@@ -391,6 +392,7 @@ async function _createOrderFromSession(sessionId) {
         ws.creator_user_id || null,
         ws.relais_id,
         session.total_to_pay_kmf,
+        paymentMode,
         'Panier collectif: ' + ws.event_name,
       ]
     );
@@ -590,6 +592,181 @@ async function _createOrderFromSession(sessionId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// CONFIRMATION CASH COLLECTIVE
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Confirme une part collective payée en cash au relais.
+ *
+ * Doctrine :
+ * - Le contributeur ne peut pas s'auto-confirmer.
+ * - Seul admin / agent_relais authentifié confirme l'encaissement.
+ * - Pas de commande tant que 100% des parts ne sont pas sécurisées.
+ * - Aucun appel Stripe.
+ */
+async function confirmCashContribution(rawToken, actor = {}, note = null) {
+  const tokenInfo = await engine.getTokenInfo(rawToken);
+  if (!tokenInfo) throw new Error('token_not_found');
+
+  const client = await db.pool.connect();
+  let reached100 = false;
+  let securedSession = null;
+
+  try {
+    await client.query('BEGIN');
+
+    const token = (await client.query(
+      `SELECT *
+       FROM collective_payment_tokens
+       WHERE id = $1
+       FOR UPDATE`,
+      [tokenInfo.id]
+    )).rows[0];
+
+    if (!token) {
+      await client.query('ROLLBACK');
+      throw new Error('token_not_found');
+    }
+
+    const session = (await client.query(
+      `SELECT *
+       FROM collective_payment_sessions
+       WHERE id = $1
+       FOR UPDATE`,
+      [token.session_id]
+    )).rows[0];
+
+    if (!session) {
+      await client.query('ROLLBACK');
+      throw new Error('session_not_found');
+    }
+
+    const ws = (await client.query(
+      `SELECT *
+       FROM collective_workspaces
+       WHERE id = $1
+       FOR UPDATE`,
+      [session.workspace_id]
+    )).rows[0];
+
+    if (!ws) {
+      await client.query('ROLLBACK');
+      throw new Error('workspace_not_found');
+    }
+
+    // Idempotence simple : déjà payé.
+    if (token.status === 'paid') {
+      await client.query('COMMIT');
+      return {
+        ok: true,
+        idempotent: true,
+        token_status: 'paid',
+        reached_100: session.amount_secured_kmf >= session.total_to_pay_kmf,
+        amount_secured_kmf: session.amount_secured_kmf,
+        total_to_pay_kmf: session.total_to_pay_kmf,
+        order_id: ws.order_id || null,
+      };
+    }
+
+    if (token.status === 'authorized') throw new Error('token_already_authorized');
+    if (token.status === 'expired') throw new Error('token_expired');
+    if (token.status === 'cancelled') throw new Error('token_cancelled');
+    if (token.status !== 'active') throw new Error('token_not_active');
+
+    if (new Date(token.expires_at) < new Date() || new Date(session.expires_at) < new Date()) {
+      throw new Error('token_expired');
+    }
+
+    if (session.status === 'ended') throw new Error('session_ended');
+    if (session.status === 'failed') throw new Error('session_failed');
+    if (session.status !== 'open') throw new Error('session_not_open');
+
+    if (ws.status !== 'payment_pending') {
+      throw new Error('workspace_not_payment_pending');
+    }
+
+    if (actor.role === 'agent_relais') {
+      if (!actor.relais_id) throw new Error('agent_relais_not_configured');
+      if (!ws.relais_id || String(actor.relais_id) !== String(ws.relais_id)) {
+        throw new Error('cross_relais_forbidden');
+      }
+    }
+
+    await client.query(
+      `UPDATE collective_payment_tokens
+         SET status = 'paid',
+             paid_at = NOW()
+       WHERE id = $1
+         AND status = 'active'`,
+      [token.id]
+    );
+
+    const sessionRes = await client.query(
+      `UPDATE collective_payment_sessions
+         SET amount_secured_kmf = amount_secured_kmf + $1
+       WHERE id = $2
+         AND status = 'open'
+       RETURNING *`,
+      [token.amount_kmf, session.id]
+    );
+
+    if (!sessionRes.rows.length) {
+      throw new Error('session_not_open');
+    }
+
+    securedSession = sessionRes.rows[0];
+    reached100 = securedSession.amount_secured_kmf >= securedSession.total_to_pay_kmf;
+
+    await engine.logEvent(
+      client,
+      ws.id,
+      'cash_contribution_confirmed',
+      actor.role || 'system',
+      actor.id || actor.phone || null,
+      {
+        token_id: token.id,
+        session_id: session.id,
+        amount_kmf: token.amount_kmf,
+        actor_role: actor.role || null,
+        note: note || null,
+      }
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  if (reached100) {
+    const orderResult = await _createOrderFromSession(securedSession.id, {
+      paymentMode: 'cash_relais',
+      source: 'collective_cash',
+    });
+
+    return {
+      ok: true,
+      token_status: 'paid',
+      reached_100: true,
+      amount_secured_kmf: securedSession.amount_secured_kmf,
+      total_to_pay_kmf: securedSession.total_to_pay_kmf,
+      order_id: orderResult.order_id || null,
+      order_reference: orderResult.order_reference || null,
+    };
+  }
+
+  return {
+    ok: true,
+    token_status: 'paid',
+    reached_100: false,
+    amount_secured_kmf: securedSession.amount_secured_kmf,
+    total_to_pay_kmf: securedSession.total_to_pay_kmf,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // EXPIRATION (appelé par le cron)
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -735,6 +912,7 @@ function stopExpirationCron() {
 }
 
 module.exports = {
+  confirmCashContribution,
   createOrGetPaymentIntent,
   onPaymentAuthorized,
   captureAllAndCreateOrder,

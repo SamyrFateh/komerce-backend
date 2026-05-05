@@ -311,6 +311,73 @@ paymentsRouter.get('/:token', async (req, res) => {
   }
 });
 
+// POST /api/collective-payments/:token/confirm-cash
+// Confirmation cash par admin / agent_relais authentifié.
+// Le contributeur ne peut jamais confirmer lui-même.
+paymentsRouter.post(
+  '/:token/confirm-cash',
+  authenticate,
+  requireRole(['admin', 'agent_relais']),
+  async (req, res) => {
+    try {
+      const actor = {
+        id: req.user.id,
+        role: req.user.role,
+        phone: req.user.phone || null,
+        relais_id: null,
+      };
+
+      if (req.user.role === 'agent_relais') {
+        try {
+          const agent = (await db.query(
+            'SELECT relais_id FROM users WHERE id = $1',
+            [req.user.id]
+          )).rows[0];
+
+          if (!agent || !agent.relais_id) {
+            return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
+          }
+
+          actor.relais_id = agent.relais_id;
+        } catch (e) {
+          console.warn('[CollectivePay] agent relais config check failed:', e.message);
+          return _err(res, 403, 'agent_relais_not_configured', 'Configuration agent relais incomplète');
+        }
+      }
+
+      const result = await orchestrator.confirmCashContribution(
+        req.params.token,
+        actor,
+        req.body?.note || null
+      );
+
+      res.json({
+        ...result,
+        message: result.reached_100
+          ? 'Toutes les parts sont confirmées — commande créée.'
+          : 'Part cash confirmée.',
+      });
+    } catch (err) {
+      const m = err.message;
+
+      if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
+      if (m === 'token_already_paid') return _err(res, 409, 'already_paid', 'Cette part est déjà confirmée');
+      if (m === 'token_already_authorized') return _err(res, 409, 'already_authorized', 'Cette part est déjà préautorisée par carte');
+      if (m === 'token_expired') return _err(res, 410, 'expired', 'Cette session de paiement est terminée');
+      if (m === 'token_cancelled') return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
+      if (m === 'session_ended') return _err(res, 410, 'session_ended', 'Cette session est terminée');
+      if (m === 'session_failed') return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
+      if (m === 'session_not_open') return _err(res, 409, 'session_not_open', 'Cette session n\'est plus ouverte');
+      if (m === 'workspace_not_payment_pending') return _err(res, 409, 'wrong_state', 'Cet espace n\'est pas en attente de paiement');
+      if (m === 'cross_relais_forbidden') return _err(res, 403, 'cross_relais_forbidden', 'Cette part appartient à un autre relais');
+      if (m === 'agent_relais_not_configured') return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
+
+      console.error('[CollectivePay] confirm-cash error:', err);
+      _err(res, 500, 'server_error', 'Confirmation cash impossible');
+    }
+  }
+);
+
 // POST /api/collective-payments/:token/pay-card
 paymentsRouter.post('/:token/pay-card', async (req, res) => {
   try {
