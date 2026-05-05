@@ -29,6 +29,7 @@
 
 const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { authenticate, requireRole } = require('../middleware/auth');
 const engine  = require('../services/collective-workspace-engine');
 const orchestrator = require('../services/collective-payment-orchestrator');
 
