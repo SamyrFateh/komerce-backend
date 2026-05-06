@@ -8,8 +8,8 @@
 import { bus }                           from './b-bus.js';
 import { state, dom, $, $$ }            from './b-store.js';
 import { apiGet }                        from './b-utils.js';
-import { saveCart, showToast }           from './b-cart-core.js';
-import { openCart, closeCart, renderCart, shareCartWhatsApp, loadSharedCart } from './b-cart.js';
+import { showToast }           from './b-cart-core.js';
+import { openCart, closeCart, renderCart, clearCart, shareCartWhatsApp, loadSharedCart } from './b-cart.js';
 import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
@@ -27,9 +27,7 @@ export function setupDrawer() {
   dom.cartContinue.addEventListener('click', closeCart);
   dom.cartClear.addEventListener('click', () => {
     if (state.cart.length === 0) return;
-    state.cart = [];
-    saveCart();
-    renderCart();
+    clearCart();
     showToast('🗑 Panier vidé');
   });
   dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);

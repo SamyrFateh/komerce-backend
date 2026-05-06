@@ -23,11 +23,12 @@ import {
   renderProductCarousel, bindCarouselDots,
 }                         from './b-utils.js';
 import {
-  showToast, cartQty, updateCartBadge, isFav, saveCart,
+  showToast, cartQty, updateCartBadge, isFav,
 }                         from './b-cart-core.js';
 import {
   renderCartBody,
   toggleFav, quickAdd, quickRemove, markAllCartButtons,
+  pruneObsoleteCart,
 }                         from './b-cart.js';
 import {
   initFlatSubcat, renderSubcatChips,
@@ -204,16 +205,9 @@ async function loadProducts() {
   // Nettoyer le panier des produits obsolètes
   const validIds = new Set(state.products.map(p => String(p.id)));
   const before = state.cart.length;
-  state.cart = state.cart.filter(item => {
-    const ok = validIds.has(String(item.product.id));
-    if (!ok) console.warn('[cart] Produit obsolète retiré :', item.product.id, item.product.name);
-    return ok;
-  });
-  if (state.cart.length !== before) {
-    saveCart();
-    renderCartBody();
-    if (typeof updateCartBadge === 'function') updateCartBadge();
-    const removed = before - state.cart.length;
+  pruneObsoleteCart(validIds);
+  const removed = before - state.cart.length;
+  if (removed > 0) {
     showToast(`${removed} produit${removed > 1 ? 's' : ''} obsolète${removed > 1 ? 's' : ''} retiré${removed > 1 ? 's' : ''} du panier`, 'info');
   }
 }

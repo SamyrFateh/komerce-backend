@@ -1457,6 +1457,32 @@ function renderSideCart() {
 // Hook global appelé par b-cart-core.js updateCartBadge()
 window.__kmrcSideCart = renderSideCart;
 
+/* ── MUTATIONS CENTRALISÉES ─────────────────────────────────
+ * Toute écriture sur state.cart doit passer par ces fonctions
+ * pour garantir la cohérence saveCart() + rendu + badge.
+ * ──────────────────────────────────────────────────────────── */
+
+/**
+ * Vide complètement le panier.
+ * Remplace les patterns state.cart = []; saveCart(); renderCart();
+ */
+export function clearCart() {
+  state.cart = [];
+  saveCart();
+  renderCartBody();
+}
+
+/**
+ * Retire du panier les produits dont l'ID n'est plus dans validIdSet.
+ * Appelé après le chargement du catalogue pour nettoyer les items obsolètes.
+ * @param {Set<string>} validIdSet - Set des IDs produits valides (strings)
+ */
+export function pruneObsoleteCart(validIdSet) {
+  const before = state.cart.length;
+  state.cart = state.cart.filter(i => validIdSet.has(String(i.product.id)));
+  if (state.cart.length !== before) saveCart();
+}
+
 export {
   addToCart, quickAdd, quickRemove, toggleFav, setQty,
   openCart, closeCart, openCartWithHighlight,

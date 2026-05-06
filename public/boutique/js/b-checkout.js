@@ -8,8 +8,8 @@
 import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
-import { showToast, cartTotal, saveCart }   from './b-cart-core.js';
-import { openCart, closeCart, renderCart }  from './b-cart.js';
+import { showToast, cartTotal }   from './b-cart-core.js';
+import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 
 // Stripe globals (initialized on demand)
 let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
@@ -968,9 +968,7 @@ export async function submitOrder(btn) {
       state.pendingStripeOrderRef = null;
     }
 
-    state.cart = [];
-    saveCart();
-    renderCart();
+    clearCart();
     renderOrderSuccess(orderData, recipName, clientEmail, apiResult || orderData);
     showToast('Commande confirmée !', 'success');
     btn.dataset.busy = '0';
