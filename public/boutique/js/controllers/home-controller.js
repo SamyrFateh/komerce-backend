@@ -6,7 +6,7 @@
 import { state, $$ } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories }          from '../shop-schema.js';
-import { renderGrid, setActiveCat }      from '../b-catalog.js';
+import { renderGrid, setActiveCat, setActiveCatState } from '../b-catalog.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
@@ -126,8 +126,8 @@ function handleCategorySelection(cat, deps) {
     && document.getElementById('k-grid')?.classList.contains('k-grid-cat-pager');
 
   if (pagerActive) {
-    state.activeCat    = cat;
-    state.activeSubcat = null;
+    // Mutation sans renderGrid — le pager gère déjà l'affichage via scrollPagerToCat.
+    setActiveCatState(cat);
     syncRailActiveState(cat, { center: true });
     scrollPagerToCat(cat);
     return;

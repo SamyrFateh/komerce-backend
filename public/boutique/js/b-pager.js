@@ -11,6 +11,7 @@
 
 import { bus }   from './b-bus.js';
 import { state } from './b-store.js';
+import { setActiveCatState } from './b-catalog.js';
 
 'use strict';
 
@@ -80,8 +81,9 @@ function _getCurrentIndex(grid) {
 }
 
 function _syncChip(cat) {
-  state.activeCat    = cat;
-  state.activeSubcat = null;
+  // Mutation via setter centralisé (sans renderGrid — scroll context).
+  // setActiveCatState émet catalog:cat-changed → sidebar + chip rail synced.
+  setActiveCatState(cat);
   let activeChip = null;
   document.querySelectorAll('#k-cats .k-chip').forEach(chip => {
     const on = chip.dataset.cat === cat;

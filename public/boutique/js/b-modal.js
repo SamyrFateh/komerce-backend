@@ -24,6 +24,7 @@ import {
   normalizeCategoryKey, getCategorySectionEmoji,
 }                         from './shop-schema.js';
 import { isDesktop }      from './b-scroll-owner.js';
+import { setActiveCat }   from './b-catalog.js';
 
 'use strict';
 
@@ -1461,8 +1462,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
             _resetSearchState();
             closeModal();
             // Filtrer le catalogue sur cette catégorie + le terme
-            state.activeCat = cat;
-            state.activeSubcat = null;
+            setActiveCat(cat);
             var mainInput = dom.searchInput || document.getElementById('k-search-input');
             if (mainInput) {
               mainInput.value = q;

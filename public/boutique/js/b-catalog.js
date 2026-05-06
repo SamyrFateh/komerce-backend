@@ -275,6 +275,27 @@ export function setActiveCat(cat, sub = null) {
   bus.emit('catalog:cat-changed', cat);
 }
 
+/**
+ * Setter léger — mutation d'état + bus, SANS renderGrid().
+ *
+ * Réservé aux contextes scroll où le pager gère déjà l'affichage :
+ *   - b-pager._syncChip   (appelée depuis listener scroll natif / rAF)
+ *   - home-controller     (branche pagerActive — scrollPagerToCat gère le rendu)
+ *
+ * Appeler setActiveCat ici provoquerait renderGrid() pendant le scroll
+ * → boucle scroll → render → scroll, ou double rendu inutile.
+ *
+ * @param {string} cat
+ * @param {string|null} [sub=null]
+ */
+export function setActiveCatState(cat, sub = null) {
+  state.activeCat    = cat;
+  state.activeSubcat = sub;
+  state.flatSubcat   = null;
+  state.page         = 0;
+  bus.emit('catalog:cat-changed', cat);
+}
+
 function renderGrid() {
   state.page = 0;
   const _isMobile = window.innerWidth < 900;
