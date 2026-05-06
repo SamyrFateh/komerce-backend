@@ -1426,22 +1426,23 @@ function renderSideCart() {
   const totalEl = sc.querySelector('#k-sc-total');
   if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
 
-  // Articles (4 plus récents)
+  // Articles (tous, plus récents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
   if (itemsEl) {
     itemsEl.innerHTML = '';
-    [...items].reverse().slice(0, 4).forEach(item => {
-      const el   = document.createElement('div');
+    [...items].reverse().forEach(item => {
+      const el     = document.createElement('div');
       el.className = 'k-sc-item';
-      const imgSrc = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
-      const price  = fmtPrice((item.product.price_kmf || 0) * item.qty);
+      const imgSrc    = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
+      const unitPrice = fmtPrice(item.product.price_kmf || 0);
+      const linePrice = fmtPrice((item.product.price_kmf || 0) * item.qty);
       el.innerHTML =
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
         `<div class="k-sc-item-info">` +
           `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
           `<div class="k-sc-item-meta">` +
-            `<span class="k-sc-item-qty">×${item.qty}</span>` +
-            `<span class="k-sc-item-price">${price}</span>` +
+            `<span class="k-sc-item-qty">×${item.qty} · ${unitPrice}</span>` +
+            `<span class="k-sc-item-price">${linePrice}</span>` +
           `</div>` +
         `</div>`;
       itemsEl.appendChild(el);
