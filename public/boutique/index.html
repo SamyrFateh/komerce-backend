@@ -238,6 +238,22 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
+    <!-- Side cart desktop — 3ème colonne sticky (masquée mobile via CSS) -->
+    <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
+      <div class="k-sc-header">
+        <span class="k-sc-title">🧺 Panier</span>
+        <span id="k-sc-count" class="k-sc-count"></span>
+      </div>
+      <div id="k-sc-items" class="k-sc-items"></div>
+      <div class="k-sc-footer">
+        <div class="k-sc-total-row">
+          <span>Total</span>
+          <strong id="k-sc-total"></strong>
+        </div>
+        <button id="k-sc-checkout" class="k-sc-cta k-sc-cta--checkout">✅ Commander</button>
+        <button id="k-sc-cta" class="k-sc-cta k-sc-cta--secondary">Voir le panier →</button>
+      </div>
+    </aside>
   </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->
 
@@ -377,21 +393,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<!-- ═══ SIDE CART — aperçu permanent desktop ═══ -->
-<aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-  <div class="k-sc-header">
-    <span class="k-sc-title">🧺 Panier</span>
-    <span id="k-sc-count" class="k-sc-count"></span>
-  </div>
-  <div id="k-sc-items" class="k-sc-items"></div>
-  <div class="k-sc-footer">
-    <div class="k-sc-total-row">
-      <span>Total</span>
-      <strong id="k-sc-total"></strong>
-    </div>
-    <button id="k-sc-cta" class="k-sc-cta">Voir le panier →</button>
-  </div>
-</aside>
+<!-- side cart déplacé dans #k-desktop-catalog-wrap -->
 
 <script>
 // Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop

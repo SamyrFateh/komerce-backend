@@ -1439,9 +1439,11 @@ function renderSideCart() {
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
         `<div class="k-sc-item-info">` +
           `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
-          `<div class="k-sc-item-qty">×${item.qty}</div>` +
-        `</div>` +
-        `<div class="k-sc-item-price">${price}</div>`;
+          `<div class="k-sc-item-meta">` +
+            `<span class="k-sc-item-qty">×${item.qty}</span>` +
+            `<span class="k-sc-item-price">${price}</span>` +
+          `</div>` +
+        `</div>`;
       itemsEl.appendChild(el);
     });
   }
@@ -1451,6 +1453,13 @@ function renderSideCart() {
   if (cta && !cta._wired) {
     cta._wired = true;
     cta.addEventListener('click', () => openCart());
+  }
+
+  // Bouton "Commander" → checkout direct (câblé une seule fois)
+  const ctaCheckout = sc.querySelector('#k-sc-checkout');
+  if (ctaCheckout && !ctaCheckout._wired) {
+    ctaCheckout._wired = true;
+    ctaCheckout.addEventListener('click', () => bus.emit('cart:checkout'));
   }
 }
 
