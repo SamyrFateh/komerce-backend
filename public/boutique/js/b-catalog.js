@@ -275,27 +275,6 @@ export function setActiveCat(cat, sub = null) {
   bus.emit('catalog:cat-changed', cat);
 }
 
-/**
- * Setter léger — mutation d'état + bus, SANS renderGrid().
- *
- * Réservé aux contextes scroll où le pager gère déjà l'affichage :
- *   - b-pager._syncChip   (appelée depuis listener scroll natif / rAF)
- *   - home-controller     (branche pagerActive — scrollPagerToCat gère le rendu)
- *
- * Appeler setActiveCat ici provoquerait renderGrid() pendant le scroll
- * → boucle scroll → render → scroll, ou double rendu inutile.
- *
- * @param {string} cat
- * @param {string|null} [sub=null]
- */
-export function setActiveCatState(cat, sub = null) {
-  state.activeCat    = cat;
-  state.activeSubcat = sub;
-  state.flatSubcat   = null;
-  state.page         = 0;
-  bus.emit('catalog:cat-changed', cat);
-}
-
 function renderGrid() {
   state.page = 0;
   const _isMobile = window.innerWidth < 900;
@@ -303,7 +282,7 @@ function renderGrid() {
   // PATCH #227 step 2 — Desktop must never keep the mobile Temu pager cage.
   if (!_isMobile) {
     destroyMobilePager();
-    const ps = document.getElementById('k-page-scroll');
+    const ps = dom.pageScroll;
     if (ps) {
       ps.classList.remove('k-pager-active');
       ps.style.position = '';
@@ -330,7 +309,7 @@ function renderGrid() {
     _mountFlatSubcatChrome();
     _bindGridEvents();
     _bindFlatSubcatControls();
-    var _psf = document.getElementById('k-page-scroll');
+    var _psf = dom.pageScroll;
     if (_psf) _psf.classList.add('k-pager-active');
     _recalcPagerHeight();
     _setupFlatSubcatPager();
@@ -371,7 +350,7 @@ function renderGrid() {
     });
     _bindGridEvents();
     if (_isMobile) {
-      var _ps = document.getElementById('k-page-scroll');
+      var _ps = dom.pageScroll;
       // Poser --pager-top/--pager-h AVANT k-pager-active (variables CSS requises
       // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()
       // — pas _setupMobilePager() entier — pour ne pas attacher les scroll
@@ -388,7 +367,7 @@ function renderGrid() {
         }
       });
     } else {
-      var _ps2 = document.getElementById('k-page-scroll');
+      var _ps2 = dom.pageScroll;
       if (_ps2) _ps2.classList.remove('k-pager-active');
       dom.grid.classList.remove('k-grid-cat-pager');
 
@@ -402,7 +381,7 @@ function renderGrid() {
   }
 
   dom.grid.classList.remove('k-grid-has-sections');
-  var _ps3 = document.getElementById('k-page-scroll');
+  var _ps3 = dom.pageScroll;
   if (_ps3) _ps3.classList.remove('k-pager-active');
 
   if (!_isMobile) {
@@ -529,8 +508,8 @@ function _bindGridEvents() {
 /* ── SCROLL VERS SECTION ────────────────────────────────────────── */
 
 export function scrollToCategorySection(cat) {
-  if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
-      document.getElementById('k-page-scroll').classList.contains('k-pager-active')) {
+  if (window.innerWidth < 900 && dom.pageScroll &&
+      dom.pageScroll.classList.contains('k-pager-active')) {
     if (!cat || cat === 'all') {
       var _g = document.getElementById('k-grid');
       if (_g) _g.scrollTo({ left: 0, behavior: 'smooth' });

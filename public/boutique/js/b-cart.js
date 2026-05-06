@@ -1358,9 +1358,9 @@ function quickRemove(productId, btnEl) {
     // ── IntersectionObserver — sync pills with visible section (vertical scroll) ──
     if (_sectionObserver) _sectionObserver.disconnect();
     // Skip on mobile pager (horizontal scroll handles sync)
-    if (window.innerWidth < 900 && document.getElementById('k-page-scroll') &&
-        document.getElementById('k-page-scroll').classList.contains('k-pager-active')) return;
-    var scroller = document.getElementById('k-page-scroll');
+    if (window.innerWidth < 900 && dom.pageScroll &&
+        dom.pageScroll.classList.contains('k-pager-active')) return;
+    var scroller = dom.pageScroll;
     if (scroller) {
       _sectionObserver = new IntersectionObserver(function(entries) {
         if (scroll.scrollingToSection) return;

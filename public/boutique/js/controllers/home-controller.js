@@ -3,10 +3,10 @@
  * @brief Orchestration home/categories sans changer l'experience Komerce.
  */
 
-import { state, $$ } from '../b-store.js';
+import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories }          from '../shop-schema.js';
-import { renderGrid, setActiveCat, setActiveCatState } from '../b-catalog.js';
+import { renderGrid, setActiveCat } from '../b-catalog.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
@@ -119,7 +119,7 @@ function handleCategorySelection(cat, deps) {
   }
 
   // Mode pager actif : scroll vers la page existante, pas de renderGrid
-  const pageScroll = document.getElementById('k-page-scroll');
+  const pageScroll = dom.pageScroll;
   const pagerActive = window.innerWidth < 900
     && pageScroll
     && pageScroll.classList.contains('k-pager-active')

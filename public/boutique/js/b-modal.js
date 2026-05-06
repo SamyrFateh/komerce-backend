@@ -517,7 +517,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     // On garde la classe k-pager-active intacte (état logique) mais on efface
     // les propriétés physiques bloquantes pour la durée de la modal.
     if (window.innerWidth < 900) {
-      var _ps = document.getElementById('k-page-scroll');
+      var _ps = dom.pageScroll;
       if (_ps) {
         state._savedPagerInlineStyles = {
           position:  _ps.style.position,
@@ -776,7 +776,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
 
     // MOBILE SCROLL FIX — restaurer les styles inline du pager
     if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
-      var _ps = document.getElementById('k-page-scroll');
+      var _ps = dom.pageScroll;
       if (_ps) {
         var s = state._savedPagerInlineStyles;
         _ps.style.position  = s.position  || '';

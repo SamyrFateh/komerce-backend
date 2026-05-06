@@ -210,7 +210,7 @@ import { isDesktop }               from './b-scroll-owner.js';
         state.flatSubcat = null;
         state.page = 0;
         renderGrid();
-        var _sc = document.getElementById('k-page-scroll');
+        var _sc = dom.pageScroll;
         if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
       });
     }
@@ -614,7 +614,7 @@ import { isDesktop }               from './b-scroll-owner.js';
         state.flatSubcat = { cat: cat, sub: sub };
         state.page = 0;
         renderGrid();
-        var _sc = document.getElementById('k-page-scroll');
+        var _sc = dom.pageScroll;
         if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
       } else {
         if (!state.sectionSubcats) state.sectionSubcats = {};

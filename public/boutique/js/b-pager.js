@@ -9,9 +9,8 @@
  * 4. Sync chips — au scroll natif, chip active = page visible
  */
 
-import { bus }   from './b-bus.js';
-import { state } from './b-store.js';
-import { setActiveCatState } from './b-catalog.js';
+import { bus }                      from './b-bus.js';
+import { state, dom, setActiveCatState } from './b-store.js';
 
 'use strict';
 
@@ -24,7 +23,7 @@ function _recalcPagerVars() {
     return;
   }
 
-  const ps   = document.getElementById('k-page-scroll');
+  const ps   = dom.pageScroll;
   const bnav = document.querySelector('.k-bnav');
 
   const bnavH = bnav ? bnav.offsetHeight : 56;
@@ -380,7 +379,7 @@ function destroyMobilePager() {
     ['transform','transition','width','height','position','overflow','willChange','display']
       .forEach(p => { grid.style[p] = ''; });
   }
-  const ps = document.getElementById('k-page-scroll');
+  const ps = dom.pageScroll;
   if (ps) {
     ps.classList.remove('k-pager-active');
     [

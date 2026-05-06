@@ -73,7 +73,7 @@ export function switchView(tab) {
   const favView    = document.getElementById('k-fav-view');
   const trackView  = document.getElementById('k-track-view');
   const heroWrap   = document.getElementById('k-hero-fixed-wrap');
-  const pageScroll = document.getElementById('k-page-scroll');
+  const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
 
   if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');

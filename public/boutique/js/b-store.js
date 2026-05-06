@@ -12,6 +12,8 @@
 
  */
 
+import { bus } from './b-bus.js';
+
 /* ── CONSTANTES ──────────────────────────────────────────── */
 
 /** Version du panier — incrémenter pour forcer un reset localStorage */
@@ -128,6 +130,27 @@ export const scroll = {
 export const dom = {};
 
 /**
+ * Setter léger — mutation d'état + bus, SANS renderGrid().
+ *
+ * Réservé aux contextes scroll où le pager gère déjà l'affichage :
+ *   - b-pager._syncChip   (listener scroll natif / rAF)
+ *   - home-controller     (branche pagerActive — scrollPagerToCat gère le rendu)
+ *
+ * Placé ici (b-store) et non dans b-catalog pour éviter la dépendance
+ * circulaire b-catalog → b-pager → b-catalog.
+ *
+ * @param {string} cat
+ * @param {string|null} [sub=null]
+ */
+export function setActiveCatState(cat, sub = null) {
+  state.activeCat    = cat;
+  state.activeSubcat = sub;
+  state.flatSubcat   = null;
+  state.page         = 0;
+  bus.emit('catalog:cat-changed', cat);
+}
+
+/**
  * Peuple le cache DOM depuis le document.
  * Doit être appelé une seule fois dans main.js après DOMContentLoaded.
  */
@@ -187,6 +210,8 @@ export function initDom() {
     orderClose:         $('#k-order-close'),
     // Toast
     toast:              $('#k-toast'),
+    // Scroll container mobile (pager Temu + scroll infini)
+    pageScroll:         $('#k-page-scroll'),
   });
 }
 
@@ -198,7 +223,7 @@ export function updateMobileScrollTop() {
   if (window.innerWidth > 899) return;
   const doUpdate = () => {
     const w = document.getElementById('k-hero-fixed-wrap');
-    const s = document.getElementById('k-page-scroll');
+    const s = dom.pageScroll;
     if (w && s) s.style.top = (w.offsetHeight + 44) + 'px';
   };
   requestAnimationFrame(doUpdate);
