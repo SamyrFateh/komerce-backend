@@ -26,6 +26,7 @@ import './b-utils.js';        // helpers purs + window.KUtils compat
 import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
+import './b-cart-pill.js';    // Pill flottante panier (catalogue uniquement)
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
 
 // Expose bus globalement pour debug + devtools

@@ -88,7 +88,8 @@ export function updateCartBadge() {
   });
 
   // Side cart + bnav total (implémenté dans b-cart.js, pas de circular import)
-  if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
+  if (typeof window.__kmrcSideCart     === 'function') window.__kmrcSideCart();
+  if (typeof window.__kmrcCartPillSync === 'function') window.__kmrcCartPillSync();
 }
 
 // ──────────────────────────────────────────────
