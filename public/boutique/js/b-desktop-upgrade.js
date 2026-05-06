@@ -33,7 +33,7 @@ import {
   normalizeCategoryKey,
   getCategorySectionEmoji,
 }                           from './shop-schema.js';
-import { renderGrid }       from './b-catalog.js';
+import { setActiveCat }                   from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import { isDesktop }        from './b-scroll-owner.js';
 
@@ -144,12 +144,9 @@ function injectBreadcrumb() {
     el.addEventListener('click', function() {
       var c = el.dataset.cat;
       if (c) {
-        state.activeCat = normalizeCategoryKey(c) || c;
-        state.activeSubcat = null;
+        var _cat = normalizeCategoryKey(c) || c;
         bus.emit('modal:close');
-        // Bug 9 fix : bus.emit synchronise chips + sidebar + rail subcats via le handler b-catalog.js
-        renderGrid();
-        bus.emit('catalog:cat-changed', state.activeCat);
+        setActiveCat(_cat);
       }
     });
   });
@@ -350,12 +347,8 @@ function setupPromoStrip() {
 
   // Click on Soldes chip → navigate to Soldes category
   strip.querySelector('[data-action="soldes"]').addEventListener('click', function() {
-    state.activeCat = 'Soldes';
-    state.activeSubcat = null;
-    renderGrid();
+    setActiveCat('Soldes');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Bug 5 fix : bus.emit('catalog:cat-changed') suffit — le handler b-catalog.js synchera chips + sidebar
-    bus.emit('catalog:cat-changed', 'Soldes');
   });
 }
 
@@ -409,18 +402,12 @@ function setupHomepageMerchandising() {
     btn.addEventListener('click', function() {
       var cat = btn.dataset.cat || 'all';
 
-      state.activeCat = cat;
-      state.activeSubcat = null;
-      state.flatSubcat = null;
-
       if (!state.sectionSubcats) state.sectionSubcats = {};
       Object.keys(state.sectionSubcats).forEach(function(k) {
         state.sectionSubcats[k] = null;
       });
 
-      renderGrid();
-      // Bug 5 fix : bus.emit('catalog:cat-changed') suffit — supprimer la sync manuelle en double
-      bus.emit('catalog:cat-changed', cat);
+      setActiveCat(cat);
 
       var top = anchor.getBoundingClientRect().top + window.scrollY - 84;
       window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });

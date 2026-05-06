@@ -6,7 +6,7 @@
 import { state, $$ } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories }          from '../shop-schema.js';
-import { renderGrid }                from '../b-catalog.js';
+import { renderGrid, setActiveCat }      from '../b-catalog.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
@@ -139,10 +139,8 @@ function handleCategorySelection(cat, deps) {
       return;
     }
     syncRailActiveState('all', { center: true });
-    state.activeCat = 'all';
-    state.activeSubcat = null;
     state.sectionSubcats = {};
-    renderGrid();
+    setActiveCat('all');
     if (window.innerWidth >= 900) {
       renderSubcatRail(null);
       syncDesktopSidebar('all');
@@ -153,30 +151,19 @@ function handleCategorySelection(cat, deps) {
 
   if (state.activeCat === 'all') {
     syncRailActiveState(cat, { center: true });
-    if (window.innerWidth < 900) {
-      // Mobile : filtrer la grille ET scroller en haut
-      state.activeCat = cat;
-      state.activeSubcat = null;
-      renderGrid();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      // Desktop : filtrer la grille sur cette catégorie, afficher subcats, sync sidebar
-      state.activeCat = cat;
-      state.activeSubcat = null;
-      renderGrid();
+    setActiveCat(cat);
+    if (window.innerWidth >= 900) {
       renderSubcatRail(cat);
       syncDesktopSidebar(cat);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
 
   if (cat === state.activeCat) {
     syncRailActiveState('all', { center: true });
-    state.activeCat = 'all';
-    state.activeSubcat = null;
     state.sectionSubcats = {};
-    renderGrid();
+    setActiveCat('all');
     if (window.innerWidth >= 900) {
       renderSubcatRail(null);
       syncDesktopSidebar('all');
@@ -186,9 +173,7 @@ function handleCategorySelection(cat, deps) {
   }
 
   syncRailActiveState(cat, { center: true });
-  state.activeCat = cat;
-  state.activeSubcat = null;
-  renderGrid();
+  setActiveCat(cat);
   if (window.innerWidth >= 900) {
     renderSubcatRail(cat);
     syncDesktopSidebar(cat);

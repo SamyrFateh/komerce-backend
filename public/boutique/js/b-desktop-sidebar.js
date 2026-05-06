@@ -10,7 +10,7 @@
 
 import { state }                             from './b-store.js';
 import { bus }                               from './b-bus.js';
-import { renderGrid }                        from './b-catalog.js';
+import { setActiveCat }                              from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import {
   getRailCategories,
@@ -64,13 +64,10 @@ function _buildSidebar(el) {
   el.querySelectorAll('.k-sidebar-cat').forEach(item => {
     const activate = () => {
       const cat = item.dataset.cat;
-      state.activeCat    = cat;
-      state.activeSubcat = null;
-      if (state.flatSubcat) state.flatSubcat = null;
+      setActiveCat(cat);
 
       syncRailActiveState(cat, { center: false });
 
-      renderGrid();
       renderSubcatRail(cat);
       _syncSidebarActive(el);
       window.scrollTo({ top: 0, behavior: 'smooth' });

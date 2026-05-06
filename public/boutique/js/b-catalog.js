@@ -259,6 +259,22 @@ function _renderCard(p) {
   return renderProductCard(p);
 }
 
+/**
+ * Setter centralisé pour le changement de catégorie active.
+ * Garantit : state cohérent + renderGrid() + bus event en une seule passe.
+ *
+ * @param {string} cat  - Clé catégorie (ex: 'Mode', 'all')
+ * @param {string|null} [sub=null] - Sous-catégorie active (null = toutes)
+ */
+export function setActiveCat(cat, sub = null) {
+  state.activeCat    = cat;
+  state.activeSubcat = sub;
+  state.flatSubcat   = null;
+  state.page         = 0;
+  renderGrid();
+  bus.emit('catalog:cat-changed', cat);
+}
+
 function renderGrid() {
   state.page = 0;
   const _isMobile = window.innerWidth < 900;
@@ -603,6 +619,6 @@ function renderSearchDropdown(results) {
 export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts, _renderCard,
+  loadProducts, _renderCard, setActiveCat,
 };
 export { setupCats as initCats, setupSearch as initSearch };
