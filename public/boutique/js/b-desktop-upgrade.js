@@ -35,10 +35,7 @@ import {
 }                           from './shop-schema.js';
 import { renderGrid }       from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
-
-'use strict';
-
-function isDesktop() { return window.innerWidth >= 900; }
+import { isDesktop }        from './b-scroll-owner.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  1. MEGA-MENU — Sous-catégories au hover sidebar

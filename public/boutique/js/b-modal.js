@@ -23,6 +23,7 @@ import {
 import {
   normalizeCategoryKey, getCategorySectionEmoji,
 }                         from './shop-schema.js';
+import { isDesktop }      from './b-scroll-owner.js';
 
 'use strict';
 
@@ -815,12 +816,12 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
   function applyModalDesktopSuggestionState() {
     const sugSection = document.getElementById('k-modal-suggestions');
     const sugRail = document.getElementById('k-sug-rail');
-    const isDesktop = window.innerWidth >= 900;
+    const _isDesktop = isDesktop();
 
     if (sugSection) {
-      sugSection.classList.toggle('k-modal-suggestions--desktop-list', isDesktop);
+      sugSection.classList.toggle('k-modal-suggestions--desktop-list', _isDesktop);
       // Desktop: ensure suggestions are a direct child of .k-modal-scroll (after product-zone)
-      if (isDesktop) {
+      if (_isDesktop) {
         const scroll = dom.modal.querySelector('.k-modal-scroll');
         const productZone = dom.modal.querySelector('.k-modal-product-zone');
         if (scroll && productZone && sugSection.parentElement !== scroll) {
@@ -830,7 +831,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     }
 
     if (sugRail) {
-      sugRail.classList.toggle('k-sug-rail--desktop-list', isDesktop);
+      sugRail.classList.toggle('k-sug-rail--desktop-list', _isDesktop);
     }
   }
 

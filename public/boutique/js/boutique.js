@@ -36,7 +36,7 @@ import {
   isFav, saveFavs,
 }                              from './b-cart-core.js';
 import {
-  renderPromos, renderGrid, appendNextPage,
+  renderPromos, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
   loadProducts,
 }                              from './b-catalog.js';
@@ -114,8 +114,6 @@ function init() {
   initDom();
   installScrollOwner();
   updateCartBadge();
-  // Expose renderGrid sur window pour le listener délégué global (flat subcat)
-  if (typeof window !== 'undefined') window.renderGrid = renderGrid;
   setupCats();
   setupDesktopSidebar();
   setupCatSwipeNav();
@@ -142,31 +140,6 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
-
-// ── Listener global délégué : sous-cats (.k-sec-subchip) ──
-// Capture phase + stopImmediatePropagation — source unique
-document.addEventListener('click', function(e) {
-  var chip = e.target.closest('.k-sec-subchip');
-  if (!chip) return;
-  e.preventDefault();
-  e.stopPropagation();
-  e.stopImmediatePropagation();
-  var cat = chip.dataset.secCat;
-  var sub = chip.dataset.secSub;
-  if (!cat || !sub) return;
-  var _isMobile = window.innerWidth < 900;
-  if (_isMobile) {
-    state.flatSubcat = { cat: cat, sub: sub };
-    state.page = 0;
-    if (typeof window.renderGrid === 'function') window.renderGrid();
-    var _sc = document.getElementById('k-page-scroll');
-    if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
-  } else {
-    if (!state.sectionSubcats) state.sectionSubcats = {};
-    state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
-    if (typeof window.renderGrid === 'function') window.renderGrid();
-  }
-}, true);
 
 // ── Listener global délégué : modal carousel dots ──
 document.addEventListener('click', function(e) {

@@ -11,8 +11,10 @@
 
 'use strict';
 
-function isDesktop() {
-  return window.innerWidth >= 900;
+export const DESKTOP_BREAKPOINT = 900;
+
+export function isDesktop() {
+  return window.innerWidth >= DESKTOP_BREAKPOINT;
 }
 
 function clearInlinePagerStyles(el) {

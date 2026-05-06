@@ -23,6 +23,7 @@ import {
 import { _renderCard, renderGrid } from './b-catalog.js';
 import { openModal }               from './b-modal.js';
 import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
+import { isDesktop }               from './b-scroll-owner.js';
 
 
 'use strict';
@@ -590,6 +591,37 @@ import { toggleFav, quickAdd, quickRemove } from './b-cart.js';
    */
   function initFlatSubcat() {
     _setupFlatSubcatPager();
+    _installSubchipListener();
+  }
+
+  /**
+   * Listener délégué pour les chips .k-sec-subchip (flat subcat mode).
+   * Déplacé de boutique.js ici pour accéder à renderGrid par import direct
+   * (évite le pont window.renderGrid).
+   * Capture phase + stopImmediatePropagation — source unique, installé une seule fois.
+   */
+  function _installSubchipListener() {
+    document.addEventListener('click', function(e) {
+      var chip = e.target.closest('.k-sec-subchip');
+      if (!chip) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      var cat = chip.dataset.secCat;
+      var sub = chip.dataset.secSub;
+      if (!cat || !sub) return;
+      if (!isDesktop()) {
+        state.flatSubcat = { cat: cat, sub: sub };
+        state.page = 0;
+        renderGrid();
+        var _sc = document.getElementById('k-page-scroll');
+        if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
+      } else {
+        if (!state.sectionSubcats) state.sectionSubcats = {};
+        state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+        renderGrid();
+      }
+    }, true);
   }
 
   /**
