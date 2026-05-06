@@ -586,16 +586,17 @@
 
   .k-modal-zoom-preview {
     position: absolute;
-    top: 24px;
-    right: 24px;
-    left: auto;
-    width: 280px;
-    height: 280px;
+    top: 0;
+    left: 100%;
+    right: auto;
+    margin-left: 12px;
+    width: 380px;
+    height: 380px;
     border: 1px solid var(--border);
     border-radius: 16px;
     background-color: var(--white);
     background-repeat: no-repeat;
-    background-size: 220% 220%;
+    background-size: 300% 300%;
     box-shadow: var(--elev-4);
     opacity: 0;
     pointer-events: none;

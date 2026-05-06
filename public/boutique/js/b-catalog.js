@@ -78,6 +78,16 @@ bus.on('chip:center', function(chip) { centerActiveChip(chip); });
 
 // Fix: écouter catalog:cat-changed émis par b-desktop-upgrade.js (merch cards, promo strip)
 // pour synchroniser le rail de chips ET la sidebar desktop.
+// Catégories sans sidebar (navigation externe type Shein, etc.)
+var _NO_SIDEBAR_CATS = ['Shein', 'shein', 'SHEIN'];
+
+function _toggleSidebarForCat(cat) {
+  var sidebarEl = document.getElementById('k-desktop-sidebar');
+  if (!sidebarEl) return;
+  var hide = _NO_SIDEBAR_CATS.indexOf(cat) !== -1;
+  sidebarEl.style.display = hide ? 'none' : '';
+}
+
 bus.on('catalog:cat-changed', function(cat) {
   // Sync chip rail
   $$('.k-chip').forEach(function(c) {
@@ -85,7 +95,8 @@ bus.on('catalog:cat-changed', function(cat) {
   });
   var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
   if (chip) centerActiveChip(chip);
-  // Sync sidebar desktop
+  // Sync sidebar desktop + masquage pour catégories externes (ex: Shein)
+  _toggleSidebarForCat(cat);
   document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
     item.classList.toggle('is-active', item.dataset.cat === cat);
   });
@@ -469,6 +480,7 @@ function _bindGridEvents() {
       if (chip) { chip.classList.add('active'); centerActiveChip(chip); }
       renderGrid();
       // Fix: sync subcats rail + sidebar desktop (était absent → orphelins desktop)
+      _toggleSidebarForCat(cat);
       if (window.innerWidth >= 900) {
         import('./controllers/home-controller.js').then(function(m) {
           m.renderSubcatRail(cat);
