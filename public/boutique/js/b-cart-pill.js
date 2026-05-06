@@ -442,6 +442,7 @@ function _init() {
 // ─── Hook global ───────────────────────────────────────────────────────────
 // Appelé par updateCartBadge() via window.__kmrcCartPillSync
 window.__kmrcCartPillSync = function() {
+  if (window.innerWidth >= 900) return;  // pill mobile uniquement
   if (!_pillInited) _init();
   _renderPill();
   // Mettre à jour le popover si ouvert
@@ -451,22 +452,27 @@ window.__kmrcCartPillSync = function() {
 };
 
 // ─── Démarrage ─────────────────────────────────────────────────────────────
-// Uniquement sur le catalogue (index.html / page principale)
+// Uniquement sur le catalogue (index.html / page principale) ET mobile
 function _isCataloguePage() {
   // La page catalogue contient #k-grid
   return !!document.getElementById('k-grid') || !!document.getElementById('k-catalog-section');
 }
 
+function _shouldInit() {
+  return _isCataloguePage() && window.innerWidth < 900;
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
-    if (_isCataloguePage()) _init();
+    if (_shouldInit()) _init();
   });
 } else {
-  if (_isCataloguePage()) _init();
+  if (_shouldInit()) _init();
 }
 
 // Écouter les events bus pour se mettre à jour
 bus.on('cart:update', function() {
+  if (window.innerWidth >= 900) return;
   if (!_pillInited && _isCataloguePage()) _init();
   _renderPill();
 });

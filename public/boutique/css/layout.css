@@ -750,11 +750,18 @@ body {
     max-height: calc(100vh - var(--header-h) - 24px);
     overflow-y: auto;
     scrollbar-width: none;
-    background: var(--white);
+    background: transparent;
     border-radius: 12px;
-    border: 1px solid rgba(31,48,36,.07);
-    box-shadow: 0 2px 12px rgba(31,48,36,.04);
+    border: 1px solid transparent;
+    box-shadow: none;
     padding: 4px 0 8px;
+    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  /* Fond/bordure visibles seulement après hydratation JS (présence d'un enfant) */
+  .k-desktop-sidebar:not(:empty) {
+    background: var(--white);
+    border-color: rgba(31,48,36,.07);
+    box-shadow: 0 2px 12px rgba(31,48,36,.04);
   }
   .k-desktop-sidebar::-webkit-scrollbar { display: none; }
 
