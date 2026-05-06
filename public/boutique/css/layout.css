@@ -772,6 +772,7 @@ body {
     max-width: none;
     margin: 0;
     padding: 0;
+    overflow: hidden;
   }
 
   /* ── Titre sidebar ────────────────────────────────────────── */
@@ -993,6 +994,7 @@ body {
     position: sticky;
     top: calc(var(--header-h, 76px) + 12px);
     align-self: flex-start;
+    margin-left: auto;
     width: 268px;
     min-width: 268px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);

@@ -1460,7 +1460,7 @@ function renderSideCart() {
   const ctaCheckout = sc.querySelector('#k-sc-checkout');
   if (ctaCheckout && !ctaCheckout._wired) {
     ctaCheckout._wired = true;
-    ctaCheckout.addEventListener('click', () => bus.emit('cart:checkout'));
+    ctaCheckout.addEventListener('click', () => { if (typeof window.__kmrcCheckout === 'function') window.__kmrcCheckout(); });
   }
 }
 

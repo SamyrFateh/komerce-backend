@@ -141,6 +141,9 @@ if (document.readyState === 'loading') {
   init();
 }
 
+// ── Side cart checkout : pont window pour éviter la dépendance circulaire b-cart↔b-checkout ──
+window.__kmrcCheckout = checkoutCart;
+
 // ── Listener global délégué : modal carousel dots ──
 document.addEventListener('click', function(e) {
   var dot = e.target.closest('.k-modal-dot');
