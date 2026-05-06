@@ -36,11 +36,11 @@
 .k-cats::before,
 .k-cats::after { content: ""; flex: 0 0 12px; }
 
-/* ── CHIP (mobile-first : 44px) ──────────────────────────────── */
+/* ── CHIP (mobile-first : 38px) ──────────────────────────────── */
 .k-chip {
-  flex: 0 0 44px;
-  min-width: 44px;
-  min-height: 44px;
+  flex: 0 0 38px;
+  min-width: 38px;
+  max-width: 38px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -116,11 +116,11 @@
 
 /* Label */
 .k-chip-label {
-  font-size: 11px;
+  font-size: 8px;
   font-weight: 700;
   line-height: 1.1;
   width: 100%;
-  max-width: 44px;
+  max-width: 38px;
   margin: 0;
   padding: 0;
   white-space: nowrap;
@@ -146,43 +146,42 @@
 #k-bar-spacer   { display: none; }
 #k-subcats-wrap { display: none; }
 
-/* ── SOUS-CATÉGORIES ─────────────────────────────────────────── */
+/* ── SOUS-CATÉGORIES — Mobile base ───────────────────────────── */
 .k-subcats-rail {
   display: flex;
-  gap: 8px;
-  padding: 6px 16px 8px;
+  gap: 6px;
+  padding: 6px 14px 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
-  background: linear-gradient(to bottom, rgba(255,255,255,.98), rgba(253,250,245,.96));
-  border-top: 1px solid rgba(0,0,0,.03);
+  background: var(--white);
+  border-top: 1px solid rgba(0,0,0,.04);
 }
 .k-subcats-rail::-webkit-scrollbar { display: none; }
+
 .k-subchip {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   scroll-snap-align: start;
-  padding: 6px 10px;
-  background: #fff;
+  padding: 5px 11px;
+  background: var(--sand);
   border: 1px solid rgba(0,0,0,.06);
   border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.04);
   cursor: pointer;
-  transition: all .18s ease;
+  transition: all .16s ease;
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .k-subchip:active { transform: scale(.94); }
 .k-subchip-icon  { font-size: 12px; line-height: 1; }
-.k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .18s; }
+.k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
 .k-subchip.active {
   background: var(--ocean-dark);
   border-color: var(--ocean-dark);
-  box-shadow: 0 1px 4px rgba(74,144,64,.12);
 }
 .k-subchip.active .k-subchip-label { color: #fff; }
 
@@ -190,11 +189,91 @@
   from { opacity: 0; transform: translateX(-6px) scale(.94); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
-.k-subcats-visible .k-subchip               { animation: k-subchip-in .18s ease both; }
+.k-subcats-visible .k-subchip               { animation: k-subchip-in .16s ease both; }
 .k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .03s; }
 .k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .06s; }
 .k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
 .k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
+
+/* ── SOUS-CATÉGORIES — Desktop premium Shein-style ───────────── */
+@media (min-width: 900px) {
+
+  #k-subcats-wrap {
+    position: sticky;
+    top: var(--header-h, 64px);
+    z-index: 20;
+    background: rgba(255,255,255,.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(31,48,36,.07);
+    box-shadow: 0 2px 12px rgba(31,48,36,.05);
+  }
+
+  .k-subcats-rail {
+    gap: 5px;
+    padding: 9px 20px 9px;
+    background: transparent;
+    border-top: none;
+    max-width: var(--container);
+    margin: 0 auto;
+    /* hide scrollbar on desktop too */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  /* "Tout" pill — accent de largeur sur desktop */
+  .k-subchip:first-child {
+    font-weight: 800;
+  }
+
+  .k-subchip {
+    padding: 5px 14px;
+    background: transparent;
+    border: 1.5px solid rgba(31,48,36,.10);
+    border-radius: 999px;
+    gap: 5px;
+    transition: background .13s ease, border-color .13s ease, box-shadow .13s ease, transform .13s ease;
+  }
+
+  .k-subchip:hover {
+    background: rgba(200,92,45,.05);
+    border-color: rgba(200,92,45,.30);
+    box-shadow: 0 2px 8px rgba(200,92,45,.08);
+  }
+
+  .k-subchip-icon  { font-size: 13px; }
+  .k-subchip-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--text);
+  }
+
+  /* Active pill — coral accent */
+  .k-subchip.active {
+    background: var(--coral);
+    border-color: var(--coral);
+    box-shadow: 0 3px 10px rgba(200,92,45,.22);
+  }
+  .k-subchip.active .k-subchip-label { color: #fff; font-weight: 800; }
+  .k-subchip.active .k-subchip-icon  { filter: brightness(10); }
+
+  /* Stagger animation pour desktop */
+  @keyframes k-subchip-in-desk {
+    from { opacity: 0; transform: translateY(-4px) scale(.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .k-subcats-visible .k-subchip {
+    animation: k-subchip-in-desk .18s cubic-bezier(.22,.68,0,1.2) both;
+  }
+  .k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .04s; }
+  .k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .07s; }
+  .k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .10s; }
+  .k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .13s; }
+  .k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .16s; }
+  .k-subcats-visible .k-subchip:nth-child(7)  { animation-delay: .19s; }
+  .k-subcats-visible .k-subchip:nth-child(n+8){ animation-delay: .22s; }
+}
 
 /* Section subcats (dans chaque section catalogue) */
 .k-cat-section  { margin-bottom: 4px; }

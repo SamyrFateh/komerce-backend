@@ -67,7 +67,7 @@ body {
 }
 .k-search:focus-within {
   border-color: rgba(42,122,62,.3);
-  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.25);
+  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.08);
 }
 .k-search input {
   width: 100%;
@@ -901,6 +901,12 @@ body {
     box-shadow: none;
   }
 
+  .k-sidebar-mega {
+    max-height: calc(100vh - var(--header-h) - 40px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   /* 3. Zoom modal — géré par desktop-upgrade.js (ne pas masquer ici) */
   .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-carousel {
     cursor: crosshair;
@@ -957,155 +963,8 @@ body {
    Desktop (≥900px) : panneau fixe droit, discret, animé
    ══════════════════════════════════════════════════════════════ */
 
-/* ── SIDE CART MOBILE — pill flottante centrée ───────────────── */
-.k-side-cart {
-  display: none; /* caché si panier vide */
-  position: fixed;
-  right: 12px;
-  bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 10px);
-  z-index: 89;
-  width: auto;
-  max-width: calc(100vw - 24px);
-  min-width: 0;
-  border-radius: 50px;
-  background: var(--coral, #c85c2d);
-  color: #fff;
-  box-shadow: 0 4px 18px rgba(200,92,45,.38),
-              0 1px 4px rgba(0,0,0,.12);
-  overflow: hidden;
-  transition: border-radius .3s var(--ease),
-              box-shadow .2s ease,
-              opacity .25s ease,
-              transform .25s cubic-bezier(.34,1.56,.64,1);
-}
-
-/* Apparition initiale */
-.k-side-cart.has-items {
-  display: flex;
-  flex-direction: column;
-  animation: k-sc-pop-in .35s cubic-bezier(.34,1.56,.64,1) both;
-}
-
-@keyframes k-sc-pop-in {
-  from { opacity: 0; transform: translateY(14px) scale(.88); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Pill draggable */
-.k-sc-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 20px 11px 16px;
-  cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
-  white-space: nowrap;
-  touch-action: none;
-}
-.k-side-cart.is-dragging {
-  opacity: .85;
-  cursor: grabbing;
-  box-shadow: 0 8px 32px rgba(31,48,36,.35);
-}
-.k-sc-pill-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
-.k-sc-pill-qty  {
-  font-size: 12px; font-weight: 700;
-  background: rgba(255,255,255,.18);
-  border-radius: 50px;
-  padding: 1px 7px;
-  flex-shrink: 0;
-}
-.k-sc-pill-total {
-  font-size: 13px; font-weight: 800;
-  letter-spacing: .01em;
-}
-.k-sc-pill-chevron {
-  font-size: 10px; opacity: .7;
-  transition: transform .25s ease;
-  flex-shrink: 0;
-}
-
-/* Panneau déplié */
-.k-sc-panel {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height .3s ease;
-  background: #fff;
-  color: var(--text);
-}
-.k-side-cart.is-open {
-  border-radius: 16px;
-  box-shadow: 0 6px 28px rgba(31,48,36,.22);
-}
-.k-side-cart.is-open .k-sc-panel {
-  max-height: 200px;
-}
-.k-side-cart.is-open .k-sc-pill-chevron {
-  transform: rotate(180deg);
-}
-
-/* Contenu panneau */
-.k-sc-panel-inner {
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.k-sc-panel-total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(31,48,36,.07);
-}
-.k-sc-panel-total-val {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--coral);
-}
-.k-sc-panel-cta {
-  display: block;
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--coral, #c85c2d);
-  color: #fff;
-  border: none;
-  border-radius: 50px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  text-align: center;
-  font-family: var(--font);
-  transition: opacity .15s;
-  letter-spacing: .01em;
-  box-sizing: border-box;
-}
-.k-sc-panel-cta:active { opacity: .85; }
-
-/* Masquer les éléments desktop sur mobile — zéro contribution au layout */
-.k-sc-header,
-.k-sc-items,
-.k-sc-footer {
-  display: none;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  padding: 0;
-  margin: 0;
-}
-
-/* Masqué quand drawer ou modal ouverts */
-body.cart-open  .k-side-cart,
-body.modal-open .k-side-cart,
-body.k-modal-open .k-side-cart {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(10px);
-}
+/* Mobile : panneau masqué */
+.k-side-cart { display: none; }
 
 /* Mobile bnav : label cart devient le total quand panier non vide */
 #k-bnav-cart-label {
@@ -1115,23 +974,17 @@ body.k-modal-open .k-side-cart {
 #k-bnav-cart-label.has-total {
   color: var(--coral);
   font-weight: 800;
-  font-size: 11px;
-  max-width: 52px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: block;
+  font-size: 9px;
 }
 
 @media (min-width: 900px) {
-  /* Desktop : panneau fixe classique — réinitialise le mobile-first */
+  /* Panneau fixe droit */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: fixed;
     right: 16px;
     top: calc(var(--header-h) + 16px);
-    bottom: auto;
     width: 252px;
     max-height: calc(100vh - var(--header-h) - 80px);
     background: var(--white, #fff);
@@ -1140,34 +993,16 @@ body.k-modal-open .k-side-cart {
     box-shadow: 0 4px 28px rgba(31,48,36,.13);
     overflow: hidden;
     z-index: 50;
-    color: var(--text);
     /* Caché quand panier vide */
     opacity: 0;
     pointer-events: none;
     transform: translateX(12px);
     transition: opacity .25s ease, transform .25s ease;
-    animation: none;
   }
   .k-side-cart.has-items {
     opacity: 1;
     pointer-events: auto;
     transform: translateX(0);
-    animation: none;
-  }
-
-  /* Masquer le pill mobile, montrer les éléments desktop */
-  .k-sc-pill   { display: none; }
-  .k-sc-panel  { display: none; }
-  .k-sc-header { display: flex; }
-  .k-sc-items  { display: block; }
-  .k-sc-footer { display: block; }
-
-  body.cart-open  .k-side-cart,
-  body.modal-open .k-side-cart,
-  body.k-modal-open .k-side-cart {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(12px);
   }
 
   /* En-tête */

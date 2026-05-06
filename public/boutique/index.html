@@ -377,26 +377,8 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<!-- ═══ SIDE CART — aperçu permanent desktop + pill mobile ═══ -->
+<!-- ═══ SIDE CART — aperçu permanent desktop ═══ -->
 <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-  <!-- Pill mobile (replié) -->
-  <div class="k-sc-pill" id="k-sc-pill" role="button" aria-expanded="false" aria-controls="k-sc-panel">
-    <span class="k-sc-pill-icon">🧺</span>
-    <span class="k-sc-pill-qty" id="k-sc-pill-qty"></span>
-    <span class="k-sc-pill-total" id="k-sc-pill-total"></span>
-    <span class="k-sc-pill-chevron">▲</span>
-  </div>
-  <!-- Panneau déplié mobile -->
-  <div class="k-sc-panel" id="k-sc-panel">
-    <div class="k-sc-panel-inner">
-      <div class="k-sc-panel-total-row">
-        <span>Total</span>
-        <span class="k-sc-panel-total-val" id="k-sc-panel-total"></span>
-      </div>
-      <button class="k-sc-panel-cta" id="k-sc-panel-cta">Voir le panier →</button>
-    </div>
-  </div>
-  <!-- Éléments desktop (masqués mobile) -->
   <div class="k-sc-header">
     <span class="k-sc-title">🧺 Panier</span>
     <span id="k-sc-count" class="k-sc-count"></span>
@@ -435,8 +417,7 @@ if('serviceWorker' in navigator){
       spacer.style.display = 'none'; // spacer not needed with fixed scroll
       var scroll = document.getElementById('k-page-scroll');
       if (scroll && !scroll.classList.contains('k-pager-active')) {
-        var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
-        scroll.style.top = (h + headerH) + 'px';
+        scroll.style.top = (h + 44) + 'px'; // 44px = header height
       }
     }
     update();
@@ -571,29 +552,6 @@ if('serviceWorker' in navigator){
     if (!el) return;
     var idx = Math.floor(Math.random() * proverbes.length);
     el.textContent = proverbes[idx];
-  })();
-
-  /* ══ FABs — exclusion mutuelle WA FAB ↔ section-index ══
-     Pose body.k-wa-fab-visible dès que le WA FAB est rendu visible
-     (scroll > 120px) pour masquer le section-index et éviter 4 flottants
-     simultanés sur petits écrans. */
-  (function() {
-    var threshold = 120;
-    function syncFabVisibility() {
-      var scrollTop = 0;
-      var pageScroll = document.getElementById('k-page-scroll');
-      if (pageScroll && getComputedStyle(pageScroll).position === 'fixed') {
-        scrollTop = pageScroll.scrollTop;
-      } else {
-        scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      }
-      document.body.classList.toggle('k-wa-fab-visible', scrollTop > threshold);
-    }
-    window.addEventListener('scroll', syncFabVisibility, { passive: true });
-    document.addEventListener('DOMContentLoaded', function() {
-      var ps = document.getElementById('k-page-scroll');
-      if (ps) ps.addEventListener('scroll', syncFabVisibility, { passive: true });
-    });
   })();
 </script>
 <!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
