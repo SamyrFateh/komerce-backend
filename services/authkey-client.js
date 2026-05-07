@@ -261,11 +261,11 @@ async function notifyOrderShipped({ mobile, name, orderRef, relayPoint }) {
   });
 }
 
-async function notifyOrderDelivered({ mobile, name, orderRef }) {
+async function notifyOrderDelivered({ mobile, name, orderRef, relayPoint }) {
   return callAuthKey({
     wid: WID.orderdelivered,
     mobile,
-    variables: { name, order_ref: orderRef },
+    variables: { name, order_ref: orderRef, relay_point: relayPoint },
   });
 }
 
