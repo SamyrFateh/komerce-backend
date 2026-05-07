@@ -407,15 +407,16 @@ function _init() {
   document.body.appendChild(pill);
   document.body.appendChild(popover);
 
-  // Position initiale : droite, milieu
+  // Position initiale : droite, milieu — uniquement en pixels, jamais de valeur CSS relative
   const saved = _loadPos();
   if (saved) {
     pill.style.left = _clamp(saved.left, 0, window.innerWidth  - 120) + 'px';
-    pill.style.top  = _clamp(saved.top,  80, window.innerHeight - 80) + 'px';
+    pill.style.top  = _clamp(saved.top,  80, window.innerHeight - 80)  + 'px';
   } else {
-    pill.style.right  = SNAP_MARGIN + 'px';
-    pill.style.top    = '50vh';
-    pill.style.left   = (window.innerWidth - 140 - SNAP_MARGIN) + 'px';
+    // Calcul pixel direct — pas de '50vh' qui casse parseFloat au premier drag
+    pill.style.left = (window.innerWidth - 140 - SNAP_MARGIN) + 'px';
+    pill.style.top  = Math.round(window.innerHeight / 2) + 'px';
+    // Pas de pill.style.right : un seul axe à la fois pour éviter le conflit CSS
   }
 
   // Drag

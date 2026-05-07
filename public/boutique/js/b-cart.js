@@ -264,12 +264,9 @@ import {
     if (item) {
       item.qty = newQty;
       saveCart();
-      // FIX 1.3 : rafraîchit À LA FOIS le panier drawer ET tous les steppers catalogue/suggestions
-      if (typeof renderCartBody === 'function') renderCartBody();
-      if (typeof markAllCartButtons === 'function') markAllCartButtons();
-      if (typeof updateCartBadge === 'function') updateCartBadge();
       renderCartBody();
       markAllCartButtons();
+      updateCartBadge();
     }
   }
 
@@ -582,12 +579,6 @@ function quickRemove(productId, btnEl) {
       } else {
         dom.cartFooter.appendChild(_evtBtn);
       }
-      // CSS inline once
-      if (!document.getElementById('k-cart-event-css')) {
-        const _s = document.createElement('style'); _s.id = 'k-cart-event-css';
-        _s.textContent = '.k-cart-event-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--violet,#6c3fc5),var(--violet-dark,#4a2d9e));color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 14px var(--violet-light,rgba(108,63,197,.3));letter-spacing:.01em}';
-        document.head.appendChild(_s);
-      }
     }
 
     const qty = cartQty();
@@ -651,35 +642,6 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ======= SHARE CHOICE MODAL ======= */
-  /**
- * Injecte le CSS du modal de partage (une seule fois).
- */
-  function _injectShareModalCSS() {
-    if (document.getElementById('k-share-modal-css')) return;
-    var s = document.createElement('style');
-    s.id = 'k-share-modal-css';
-    var css = '';
-    css += '.k-share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center}';
-    css += '.k-share-sheet{background:#fff;border-radius:20px 20px 0 0;padding:28px 20px 36px;width:100%;max-width:480px;animation:kShareIn .3s ease}';
-    css += '@keyframes kShareIn{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}';
-    css += '.k-share-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:6px}';
-    css += '.k-share-sub{font-size:13px;color:#999;text-align:center;margin-bottom:22px}';
-    css += '.k-share-choices{display:flex;flex-direction:column;gap:12px}';
-    css += '.k-share-choice{display:flex;align-items:center;gap:14px;padding:16px;border:2px solid #e0e0e0;border-radius:14px;cursor:pointer;transition:border-color .2s;background:#fff}';
-    css += '.k-share-choice:active,.k-share-choice:hover{border-color:#e53935;background:#fff8f8}';
-    css += '.k-share-choice-icon{font-size:32px;flex-shrink:0}';
-    css += '.k-share-choice-label{font-size:15px;font-weight:700}';
-    css += '.k-share-choice-desc{font-size:12px;color:#757575;margin-top:2px}';
-    css += '.k-share-cancel{margin-top:16px;width:100%;padding:12px;border:none;background:none;color:#999;font-size:14px;cursor:pointer}';
-    css += '.k-family-total{font-size:19px;font-weight:800;text-align:center;color:#e53935;margin:8px 0 18px}';
-    css += '.k-share-sub-family{font-size:14px;color:#555;text-align:center;margin-bottom:16px;line-height:1.5}';
-    css += '.k-event-form label{font-size:13px;color:#757575;display:block;margin-bottom:4px;margin-top:14px}';
-    css += '.k-event-form input{width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box}';
-    css += '.k-event-form input:focus{border-color:#e53935}';
-    css += '.k-event-go{width:100%;padding:13px;background:#e53935;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-top:16px}';
-    s.textContent = css;
-    document.head.appendChild(s);
-  }
 
   /**
    * Ferme et détruit le bottom sheet de choix de partage panier.
@@ -705,7 +667,6 @@ function quickRemove(productId, btnEl) {
    */
   function _showFamilySheet() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-    _injectShareModalCSS();
 
     var total = cartTotal();
 
@@ -771,7 +732,6 @@ function quickRemove(productId, btnEl) {
 
   function showShareChoiceModal() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-    _injectShareModalCSS();
     var ov = document.createElement('div');
     ov.id = 'k-share-overlay';
     ov.className = 'k-share-overlay';
