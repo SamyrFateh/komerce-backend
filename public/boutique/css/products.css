@@ -709,10 +709,6 @@
     border-radius: 999px;
   }
 
-  /* Card hover reveal fav */
-  .k-card { position: relative; }
-  .k-card-fav { opacity: 0; }
-  .k-card:hover .k-card-fav { opacity: 1; }
-  .k-card-fav.liked { opacity: 1; }
+  /* Card fav opacity — source de vérité : desktop-upgrade.css section 3 */
 
 }

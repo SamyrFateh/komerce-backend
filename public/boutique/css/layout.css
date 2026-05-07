@@ -895,54 +895,8 @@ body {
     overscroll-behavior: contain;
   }
 
-  /* 3. Zoom modal — géré par desktop-upgrade.js (ne pas masquer ici) */
-  .k-modal-overlay.open .k-modal .k-modal-img-wrap .k-modal-carousel {
-    cursor: crosshair;
-  }
-
-  /* 4. Supprimer tap highlight / focus parasite */
-  .k-card,
-  .k-card *,
-  .k-modal,
-  .k-modal *,
-  .k-desktop-sidebar,
-  .k-desktop-sidebar * {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .k-card:focus,
-  .k-card:focus-visible,
-  .k-card-img-wrap:focus,
-  .k-card-img-wrap:focus-visible,
-  .k-modal-carousel:focus,
-  .k-modal-carousel:focus-visible,
-  .k-modal-slide:focus,
-  .k-modal-slide:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
-
-  button:focus-visible,
-  a:focus-visible,
-  input:focus-visible {
-    outline: 2px solid rgba(42,122,62,.45);
-    outline-offset: 2px;
-  }
-
-  /* 5. Perf cartes */
-  .k-card-hover-overlay {
-    will-change: opacity;
-    backface-visibility: hidden;
-  }
-
-  .k-card:hover {
-    transform: translateY(-1px);
-  }
-
-  .k-card {
-    animation-duration: .22s;
-    animation-fill-mode: both;
-  }
+  /* 3. Zoom modal — curseur zoom-in (source de vérité : desktop-upgrade.css s.4) */
+  /* Note : tap-highlight, focus, perf cartes → desktop-upgrade.css section 11 */
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1208,28 +1162,4 @@ body {
   #k-desktop-catalog-wrap { padding-right: 344px; }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   FIX DESKTOP — Carte géante / Hero overflow
-   Force le hero wrap et ses enfants à ne jamais dépasser
-   leur hauteur sur desktop.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  #k-hero-fixed-wrap {
-    max-height: 300px;
-    overflow: hidden;
-  }
-  #k-hero-fixed-wrap .k-hero {
-    max-height: 188px;
-    overflow: hidden;
-  }
-  #k-hero-fixed-wrap .k-hero-img {
-    height: clamp(140px, 14vw, 188px) !important;
-    max-height: 188px !important;
-    object-fit: cover;
-    display: block;
-  }
-  /* Spacer ne doit jamais créer de grand espace vide sur desktop */
-  #k-bar-spacer {
-    display: none !important;
-  }
-}
+/* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
