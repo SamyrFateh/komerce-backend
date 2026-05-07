@@ -971,10 +971,9 @@ body {
   .k-side-cart {
     display: flex;
     flex-direction: column;
-    position: sticky;
+    position: fixed;
     top: calc(var(--header-h, 76px) + 12px);
-    align-self: flex-start;
-    margin-left: auto;
+    right: clamp(16px, 2vw, 32px);
     width: 300px;
     min-width: 300px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
@@ -983,6 +982,7 @@ body {
     border: 1px solid var(--border);
     box-shadow: var(--elev-2);
     overflow: hidden;
+    z-index: 200;
     /* Invisible quand panier vide */
     opacity: 0;
     pointer-events: none;
@@ -993,6 +993,10 @@ body {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
+  }
+  /* Compenser l'espace pris par le panneau fixe à droite */
+  #k-desktop-catalog-wrap {
+    padding-right: 324px;
   }
 
   /* ── Header ─────────────────────────────────────────────── */

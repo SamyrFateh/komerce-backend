@@ -504,10 +504,36 @@
 .k-modal-suggestions { padding: 0 12px calc(16px + env(safe-area-inset-bottom, 0px)); } /* FIX Bug 2: padding porté ici depuis .k-modal-scroll */
 .k-sug-section { padding: 14px 0 6px; }
 .k-sug-section + .k-sug-section { margin-top: 6px; border-top: 1px solid var(--sand); padding-top: 16px; }
-.k-sug-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 0 2px; }
-.k-sug-title-icon { font-size: 15px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, rgba(224,90,72,.12), rgba(224,90,72,.06)); flex-shrink: 0; }
-.k-sug-title-text { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
-.k-sug-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, var(--sand-dark), transparent); }
+.k-sug-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(100,175,90,.10), rgba(100,175,90,.04));
+  border-left: 3px solid var(--ocean, #64AF5A);
+  border-radius: 0 10px 10px 0;
+}
+.k-sug-title-icon {
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(100,175,90,.20), rgba(100,175,90,.08));
+  flex-shrink: 0;
+}
+.k-sug-title-text {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text, #1F3024);
+}
+.k-sug-title::after { display: none; }
 .k-sug-chips { display: flex; gap: 6px; padding: 6px 0 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .k-sug-chips::-webkit-scrollbar { display: none; }
 .k-sug-chip { flex-shrink: 0; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: #555; cursor: pointer; transition: all .2s; white-space: nowrap; }

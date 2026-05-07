@@ -753,7 +753,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
   }
 
   /**
-   * Affiche les suggestions "Dans la catégorie" sous la fiche produit.
+   * Affiche les suggestions "🔍 Vous aimeriez vraiment" sous la fiche produit.
    * 20 produits, grille 2 colonnes, chips subcats filtrants.
    * IntersectionObserver sur sentinel → modal infini (v276).
    * @param {Object} product - Produit actif
@@ -835,7 +835,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         <div class="k-sug-section">
           <div class="k-sug-title">
             <span class="k-sug-title-icon">🔍</span>
-            <span class="k-sug-title-text">Dans la catégorie ${sanitize(catLabel)}</span>
+            <span class="k-sug-title-text">🔍 Vous aimeriez vraiment ${sanitize(catLabel)}</span>
           </div>
           ${chipsHTML}
           <div class="k-sug-grid k-sug-grid--same">${sameCat.map(cardHTML).join('')}</div>
@@ -847,7 +847,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
         <div class="k-sug-section">
           <div class="k-sug-title">
             <span class="k-sug-title-icon">✨</span>
-            <span class="k-sug-title-text">Vous aimerez peut-être aussi</span>
+            <span class="k-sug-title-text">✨ Cela peut vous plaire</span>
           </div>
           <div class="k-sug-grid k-sug-grid--other">${otherCat.map(cardHTML).join('')}</div>
         </div>`;

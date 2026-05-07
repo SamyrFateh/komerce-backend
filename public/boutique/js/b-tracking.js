@@ -245,7 +245,7 @@ export function renderTrackViewSearchMode(el) {
         <div class="k-track-phone-wrap">
           <select id="k-otp-country" class="k-track-country">
             <option value="+269">🇰🇲 +269</option>
-            <option value="+33">🇫🇷 +33</option>
+            <option value="+33" selected>🇫🇷 +33</option>
             <option value="+262">🇷🇪 +262</option>
             <option value="+32">🇧🇪 +32</option>
             <option value="+41">🇨🇭 +41</option>
