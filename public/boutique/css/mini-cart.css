@@ -5,8 +5,8 @@
    ========================================================= */
 
 :root {
-  --kmc-coral:       var(--cta-green, #2a7a3e);
-  --kmc-coral-dark:  #1e5c2e;
+  --kmc-coral:       #4caf6e;
+  --kmc-coral-dark:  #3a9058;
   --kmc-green:       var(--ocean-dark, #4A9040);
   --kmc-text:        var(--text, #1F3024);
   --kmc-muted:       var(--text-muted, #6B7B63);
@@ -22,7 +22,7 @@
 .kmc {
   position: fixed;
   right: auto;          /* neutralisé — le JS gère left */
-  bottom: var(--kmc-bottom);
+  bottom: auto;         /* neutralisé — le JS gère top */
   z-index: 9990;
   pointer-events: none;
   /* Desktop : masqué — le side-cart existe */
