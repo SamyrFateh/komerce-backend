@@ -336,39 +336,39 @@ function _handlePagerResize() {
 
 function _setupLeftEdgeSwipe(grid) {
   if (grid._leftSwipeTouchStart) grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
+  if (grid._leftSwipeTouchMove)  grid.removeEventListener('touchmove',  grid._leftSwipeTouchMove);
+  if (grid._leftSwipeTouchEnd)   grid.removeEventListener('touchend',   grid._leftSwipeTouchEnd);
   if (grid._leftSwipeScrollH)    grid.removeEventListener('scroll',     grid._leftSwipeScrollH);
 
   let _touchStartX    = 0;
   let _touchStartLeft = 0;
+  let _touchLastX     = 0; // suivi en temps réel via touchmove
   let _triggered      = false;
 
   grid._leftSwipeTouchStart = (e) => {
     _touchStartX    = e.touches[0].clientX;
+    _touchLastX     = e.touches[0].clientX;
     _touchStartLeft = grid.scrollLeft;
     _triggered      = false;
   };
 
-  // On écoute le scroll : si on est à idx=0 et que scrollLeft descend sous 0
-  // (overscroll) ou reste à 0 malgré un swipe gauche → téléportation
-  grid._leftSwipeScrollH = () => {
-    if (_isProgrammaticScroll || state.modalOpen || _triggered) return;
-    const idx = _getCurrentIndex(grid);
-    if (idx !== 0) return;
-    // scrollLeft ne peut pas être négatif nativement — mais on détecte
-    // que l'utilisateur a swipé à gauche depuis idx=0 en comparant touch
-    if (grid.scrollLeft === 0 && _touchStartLeft === 0) {
-      // Vérifier qu'on a bien un swipe gauche en cours
-      // (le scroll est à 0 mais le touch partait de 0 → blocage → c'est le bon moment)
-    }
+  // touchmove : capturer la position réelle même si le browser absorbe le geste
+  // (iOS Safari avec overscroll-behavior-x:none peut ne pas propager le delta au touchend)
+  grid._leftSwipeTouchMove = (e) => {
+    if (_triggered) return;
+    _touchLastX = e.touches[0].clientX;
   };
 
-  // Alternative plus fiable : touchend avec vérification position
+  // touchend : utiliser le dernier x connu (touchmove) ou changedTouches
   grid._leftSwipeTouchEnd = (e) => {
     if (_isProgrammaticScroll || state.modalOpen || _triggered) return;
-    const dx  = e.changedTouches[0].clientX - _touchStartX;
-    const idx = _getCurrentIndex(grid);
-    // Swipe gauche (dx négatif) depuis idx 0, et le grid n'a pas bougé
-    // (scrollLeft est toujours 0 = scroll-snap a bloqué le déplacement)
+    const endX  = e.changedTouches[0].clientX;
+    // Prendre le delta le plus grand entre changedTouches et touchmove
+    const dxEnd  = endX - _touchStartX;
+    const dxMove = _touchLastX - _touchStartX;
+    const dx     = Math.min(dxEnd, dxMove); // le plus négatif = swipe gauche le plus marqué
+    const idx    = _getCurrentIndex(grid);
+    // Swipe gauche (dx négatif) depuis idx 0, grid bloqué par scroll-snap
     if (dx < -30 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.1) {
       _triggered = true;
       const realPages = _getRealPages(grid);
@@ -387,6 +387,7 @@ function _setupLeftEdgeSwipe(grid) {
   };
 
   grid.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
+  grid.addEventListener('touchmove',  grid._leftSwipeTouchMove,  { passive: true });
   grid.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
 }
 
@@ -443,6 +444,10 @@ function destroyMobilePager() {
     if (grid._leftSwipeTouchStart) {
       grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
       grid._leftSwipeTouchStart = null;
+    }
+    if (grid._leftSwipeTouchMove) {
+      grid.removeEventListener('touchmove', grid._leftSwipeTouchMove);
+      grid._leftSwipeTouchMove = null;
     }
     if (grid._leftSwipeTouchEnd) {
       grid.removeEventListener('touchend', grid._leftSwipeTouchEnd);

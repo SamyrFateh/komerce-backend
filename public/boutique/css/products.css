@@ -618,7 +618,7 @@
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    overscroll-behavior-x: none; /* FIX ghost-gauche : contain bloquait le delta touch sur iOS */
     gap: 0;
     padding: 0;
     margin: 0;
