@@ -76,8 +76,13 @@
 }
 @media (min-width: 900px) {
   :root {
-    --header-h: 76px;
+    --header-h: 68px;   /* hauteur réelle du .k-header desktop (layout.css) */
     --pad-x: 28px;
+  }
+}
+@media (min-width: 1200px) {
+  :root {
+    --header-h: 72px;   /* layout.css bloc 1200px */
   }
 }
 @media (min-width: 1200px) {

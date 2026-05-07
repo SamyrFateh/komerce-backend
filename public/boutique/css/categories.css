@@ -458,38 +458,8 @@
     box-shadow: 0 3px 10px rgba(200,92,45,.25);
   }
 }
-@media (min-width: 900px) {
-  .k-chip {
-    flex: 1 1 0;
-    min-width: 88px;
-    max-width: none;
-    gap: 10px;
-    padding: 12px 8px;
-    border-radius: 16px;
-    background: #f0f7f2;
-    border: 1.5px solid var(--ocean-dark);
-  }
-  .k-chip.active {
-    background: var(--ocean-dark);
-    border-color: var(--ocean-dark);
-    box-shadow: 0 2px 6px rgba(0,0,0,.15);
-  }
-  .k-chip.active .k-chip-label { color: #fff; }
-  .k-chip-photo { width: 76px; height: 76px; min-width: 76px; }
-  .k-chip-photo > span { font-size: 18px; }
-  .k-chip-label { font-size: 12px; white-space: nowrap; max-width: none; }
-  .k-cats-wrap-fade-left,
-  .k-cats-wrap-fade-right { display: none; }
-  .k-subcats-rail { justify-content: center; padding: 6px 20px 8px; gap: 8px; }
-  .k-sec-header      { padding: 20px 0 10px; }
-  .k-sec-header-name { font-size: 18px; }
-  .k-sec-grid        { grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 8px 0 20px; }
-}
-@media (min-width: 1200px) {
-  .k-chip-photo  { width: 84px; height: 84px; min-width: 84px; }
-  .k-chip-label  { font-size: 13px; }
-  .k-sec-grid    { grid-template-columns: repeat(5, 1fr); gap: 16px; }
-}
+/* [supprimé] ancien bloc k-chip grille desktop — remplacé par le bloc pill L518 */
+/* [supprimé] k-chip-photo grille + k-sec-grid 1200px → voir products.css */
 @media (hover: hover) and (pointer: fine) {
   .k-chip:hover .k-chip-photo { transform: scale(1.06); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
   .k-subchip:hover { background: rgba(100,175,90,.08); border-color: var(--ocean); transform: translateY(-1px); }
@@ -521,7 +491,7 @@
     border-bottom: 1px solid rgba(42,62,44,.07);
     background: var(--sand-warm);
     position: sticky;
-    top: 68px;       /* colle sous le header desktop */
+    top: var(--header-h); /* tokens.css : 68px@900, 72px@1200 */
     z-index: 100;
     padding-bottom: 10px;
   }
@@ -582,5 +552,5 @@
 }
 
 @media (min-width: 1200px) {
-  .k-cats-shell { top: 72px; }
+  /* .k-cats-shell top → géré par var(--header-h) à 1200px via tokens.css */
 }

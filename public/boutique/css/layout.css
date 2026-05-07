@@ -372,28 +372,7 @@ body {
     align-items: center;
     gap: 10px;
   }
-  .k-header-nav-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 46px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(42,62,44,.1);
-    background: rgba(255,255,255,.9);
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 6px 16px rgba(31,48,36,.05);
-    transition: transform .15s, box-shadow .15s, border-color .15s, color .15s;
-  }
-  .k-header-nav-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-  .k-header-nav-btn:hover {
-    transform: translateY(-1px);
-    border-color: rgba(100,175,90,.25);
-    color: var(--ocean);
-  }
+  /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
   .k-bnav { display: none; }
 }
 
@@ -505,13 +484,7 @@ body {
   /* Actions droite */
   .k-header-actions { gap: 8px; }
 
-  .k-header-nav-btn {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 13px;
-    gap: 6px;
-    border-radius: 999px;
-  }
+  /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
 
   /* Avatar panier — sans fond carré */
   .k-cart-btn {
@@ -551,24 +524,7 @@ body {
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right { display: none; }  /* pas de fade desktop */
 
-  .k-chip {
-    height: 36px;
-    padding: 0 16px;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 999px;
-  }
-
-  .k-chip-photo {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-  }
-
-  .k-chip.active {
-    background: var(--coral);
-    color: var(--white);
-  }
+  /* .k-chip pill desktop → categories.css (source de vérité) */
 
   /* Section titre catégorie */
   .k-sec-header {
@@ -682,8 +638,7 @@ body {
   .k-card-name { font-size: 13px; }
   .k-card-price { font-size: 16px; }
 
-  /* 5 colonnes déjà dans products.css — juste affiner le gap */
-  .k-grid, .k-sec-grid { gap: 18px; }
+  /* .k-grid/.k-sec-grid gap → products.css L599 (source de vérité) */
 
 }
 
