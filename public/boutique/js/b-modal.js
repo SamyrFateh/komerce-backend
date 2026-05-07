@@ -226,103 +226,60 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     if (!container) return;
     container.innerHTML = '';
 
-    // Helper : normalise une URL Cloudinary pour comparer sans paramètres
-    function _normUrl(u) {
-      return u ? u.split('?')[0].replace(/\/upload\/[^/]+\//, '/upload/') : '';
-    }
-
     Object.keys(variants).forEach(function(type) {
       var options = variants[type];
       if (!options || !options.length) return;
 
-      var isColor = /couleur|color|coloris|teinte/i.test(type);
+      // Les couleurs sont portées par les SKUs/images produit — on ne les ré-affiche pas ici.
+      if (/couleur|color|coloris|teinte/i.test(type)) return;
+
+      var isTaille = /taille|pointure/i.test(type);
 
       var group = document.createElement('div');
       group.className = 'k-vg';
 
-      // Label dynamique "Couleur · Bleu"
+      // Label "Taille · M  [📏 Guide des tailles]"
       var labelRow = document.createElement('div');
       labelRow.className = 'k-vg-label';
+      var guideHTML = isTaille
+        ? '<button type="button" class="k-vg-size-guide" data-size-type="' +
+            (/pointure/i.test(type) ? 'shoes' : 'clothes') +
+            '">📏 Guide des tailles</button>'
+        : '';
       labelRow.innerHTML =
         '<span class="k-vg-label-type">' + type + '</span>' +
         '<span class="k-vg-label-sep">·</span>' +
-        '<span class="k-vg-label-val"></span>';
+        '<span class="k-vg-label-val"></span>' +
+        guideHTML;
       var labelVal = labelRow.querySelector('.k-vg-label-val');
+
+      var guideBtn = labelRow.querySelector('.k-vg-size-guide');
+      if (guideBtn) {
+        guideBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          openSizeGuide(guideBtn.dataset.sizeType);
+        });
+      }
+
       group.appendChild(labelRow);
 
       var wrap = document.createElement('div');
-      wrap.className = isColor ? 'k-vg-skus' : 'k-vg-sizes';
+      wrap.className = 'k-vg-sizes';
 
       options.forEach(function(opt) {
         var isOut = (opt.stock === 0);
         var btn   = document.createElement('button');
         btn.type  = 'button';
-
-        if (isColor) {
-          // ── SKU miniature couleur ──────────────────────────────
-          btn.className = 'k-sku' + (isOut ? ' k-sku--out' : '');
-          btn.setAttribute('aria-label', opt.value + (isOut ? ' (épuisé)' : ''));
-
-          if (opt.image_url) {
-            var img    = document.createElement('img');
-            img.src    = optimizeImgUrl(opt.image_url, 96);
-            img.alt    = opt.value;
-            img.loading = 'lazy';
-            img.decoding = 'async';
-            btn.appendChild(img);
-          }
-
-          var nameEl = document.createElement('span');
-          nameEl.className   = 'k-sku-name';
-          nameEl.textContent = opt.value;
-          btn.appendChild(nameEl);
-
-          if (isOut) {
-            var slash = document.createElement('span');
-            slash.className = 'k-sku-slash';
-            slash.setAttribute('aria-hidden', 'true');
-            btn.appendChild(slash);
-          }
-        } else {
-          // ── Pill texte taille / pointure ───────────────────────
-          btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
-          btn.textContent = opt.value;
-          btn.disabled    = isOut;
-        }
+        btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
+        btn.textContent = opt.value;
+        btn.disabled    = isOut;
 
         btn.addEventListener('click', function() {
           if (isOut) return;
-
-          // Désélectionner les autres
-          wrap.querySelectorAll(isColor ? '.k-sku' : '.k-vp').forEach(function(b) {
-            b.classList.remove(isColor ? 'k-sku--active' : 'k-vp--active');
-          });
-          btn.classList.add(isColor ? 'k-sku--active' : 'k-vp--active');
-
-          // Mettre à jour le label et le prix
+          wrap.querySelectorAll('.k-vp').forEach(function(b) { b.classList.remove('k-vp--active'); });
+          btn.classList.add('k-vp--active');
           labelVal.textContent = opt.value;
-          if (opt.price_kmf) {
-            dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
-          }
-
-          // Couleur avec image → synchroniser le carousel
-          if (isColor && opt.image_url) {
-            var baseImgs = (product.images && product.images.length)
-              ? product.images
-              : (product.image_url ? [product.image_url] : []);
-            var normOpt = _normUrl(opt.image_url);
-            var idx = baseImgs.findIndex(function(u) { return _normUrl(u) === normOpt; });
-            if (idx >= 0) {
-              goToSlide(idx);
-            } else {
-              // Image de la couleur pas encore dans le carousel → la mettre en 1er
-              buildCarouselSlides(Object.assign({}, product, {
-                images: [opt.image_url].concat(
-                  baseImgs.filter(function(u) { return u !== opt.image_url; })
-                )
-              }));
-            }
-          }
+          if (opt.price_kmf) dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
         });
 
         wrap.appendChild(btn);
@@ -1958,6 +1915,162 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
   }
 
   /* ══════════════════════════════════════════════════════════
+     GUIDE DES TAILLES — Overlay léger
+     ══════════════════════════════════════════════════════════ */
+
+  /**
+   * Ouvre l'overlay guide des tailles.
+   * @param {'clothes'|'shoes'|'kids'} type - Type de guide à afficher par défaut
+   */
+  function openSizeGuide(type) {
+    var overlay = document.getElementById('k-size-guide-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'k-size-guide-overlay';
+      overlay.className = 'k-sg-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-label', 'Guide des tailles');
+      overlay.innerHTML = [
+        '<div class="k-sg-panel">',
+          '<div class="k-sg-header">',
+            '<h2 class="k-sg-title">📏 Guide des tailles</h2>',
+            '<button type="button" class="k-sg-close" aria-label="Fermer">',
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+            '</button>',
+          '</div>',
+          '<div class="k-sg-tabs">',
+            '<button class="k-sg-tab is-active" data-tab="clothes">👗 Vêtements</button>',
+            '<button class="k-sg-tab" data-tab="shoes">👟 Chaussures</button>',
+            '<button class="k-sg-tab" data-tab="kids">🧒 Enfant</button>',
+          '</div>',
+          '<div class="k-sg-body">',
+
+            // ── Vêtements adulte ────────────────────────────────────
+            '<div class="k-sg-section" data-section="clothes">',
+              '<p class="k-sg-hint">Prenez vos mesures avec un mètre souple et choisissez la taille correspondant à <strong>votre tour de poitrine</strong> ou <strong>de hanches</strong> (la plus grande valeur).</p>',
+              '<div class="k-sg-table-wrap">',
+                '<table class="k-sg-table">',
+                  '<thead><tr>',
+                    '<th>Taille</th><th>Poitrine (cm)</th><th>Taille (cm)</th><th>Hanches (cm)</th>',
+                  '</tr></thead>',
+                  '<tbody>',
+                    '<tr><td>XS</td><td>80 – 84</td><td>60 – 64</td><td>86 – 90</td></tr>',
+                    '<tr><td>S</td><td>84 – 88</td><td>64 – 68</td><td>90 – 94</td></tr>',
+                    '<tr><td>M</td><td>88 – 92</td><td>68 – 72</td><td>94 – 98</td></tr>',
+                    '<tr><td>L</td><td>92 – 96</td><td>72 – 76</td><td>98 – 102</td></tr>',
+                    '<tr><td>XL</td><td>96 – 100</td><td>76 – 80</td><td>102 – 106</td></tr>',
+                    '<tr><td>XXL</td><td>100 – 106</td><td>80 – 86</td><td>106 – 112</td></tr>',
+                    '<tr><td>3XL</td><td>106 – 114</td><td>86 – 94</td><td>112 – 120</td></tr>',
+                    '<tr><td>4XL</td><td>114 – 122</td><td>94 – 102</td><td>120 – 128</td></tr>',
+                  '</tbody>',
+                '</table>',
+              '</div>',
+            '</div>',
+
+            // ── Chaussures ──────────────────────────────────────────
+            '<div class="k-sg-section u-hidden" data-section="shoes">',
+              '<p class="k-sg-hint">Mesurez votre pied en position debout, du talon à l\'extrémité du gros orteil. En cas de doute entre deux pointures, choisissez la <strong>taille supérieure</strong>.</p>',
+              '<div class="k-sg-table-wrap">',
+                '<table class="k-sg-table">',
+                  '<thead><tr>',
+                    '<th>EU</th><th>UK</th><th>US</th><th>Longueur (cm)</th>',
+                  '</tr></thead>',
+                  '<tbody>',
+                    '<tr><td>35</td><td>2.5</td><td>5</td><td>22.0</td></tr>',
+                    '<tr><td>36</td><td>3.5</td><td>6</td><td>22.7</td></tr>',
+                    '<tr><td>37</td><td>4</td><td>6.5</td><td>23.3</td></tr>',
+                    '<tr><td>38</td><td>5</td><td>7.5</td><td>24.0</td></tr>',
+                    '<tr><td>39</td><td>6</td><td>8</td><td>24.7</td></tr>',
+                    '<tr><td>40</td><td>6.5</td><td>8.5</td><td>25.3</td></tr>',
+                    '<tr><td>41</td><td>7</td><td>9</td><td>26.0</td></tr>',
+                    '<tr><td>42</td><td>8</td><td>10</td><td>26.7</td></tr>',
+                    '<tr><td>43</td><td>9</td><td>10.5</td><td>27.3</td></tr>',
+                    '<tr><td>44</td><td>9.5</td><td>11</td><td>28.0</td></tr>',
+                    '<tr><td>45</td><td>10.5</td><td>11.5</td><td>28.7</td></tr>',
+                    '<tr><td>46</td><td>11</td><td>12</td><td>29.3</td></tr>',
+                  '</tbody>',
+                '</table>',
+              '</div>',
+            '</div>',
+
+            // ── Enfant ──────────────────────────────────────────────
+            '<div class="k-sg-section u-hidden" data-section="kids">',
+              '<p class="k-sg-hint">Les tailles enfant sont basées sur l\'<strong>âge indicatif</strong> et la taille en cm. Mesurez votre enfant debout pour un résultat précis.</p>',
+              '<div class="k-sg-table-wrap">',
+                '<table class="k-sg-table">',
+                  '<thead><tr>',
+                    '<th>Taille label</th><th>Âge (indicatif)</th><th>Taille (cm)</th><th>Poitrine (cm)</th>',
+                  '</tr></thead>',
+                  '<tbody>',
+                    '<tr><td>3 – 6 M</td><td>3 – 6 mois</td><td>62 – 68</td><td>40 – 44</td></tr>',
+                    '<tr><td>6 – 12 M</td><td>6 – 12 mois</td><td>68 – 80</td><td>44 – 48</td></tr>',
+                    '<tr><td>12 – 18 M</td><td>12 – 18 mois</td><td>80 – 86</td><td>48 – 50</td></tr>',
+                    '<tr><td>2 ans</td><td>1.5 – 2.5 ans</td><td>86 – 92</td><td>50 – 52</td></tr>',
+                    '<tr><td>3 ans</td><td>2.5 – 3.5 ans</td><td>92 – 98</td><td>52 – 54</td></tr>',
+                    '<tr><td>4 ans</td><td>3.5 – 4.5 ans</td><td>98 – 104</td><td>54 – 56</td></tr>',
+                    '<tr><td>5 – 6 ans</td><td>5 – 6 ans</td><td>104 – 116</td><td>56 – 60</td></tr>',
+                    '<tr><td>7 – 8 ans</td><td>7 – 8 ans</td><td>116 – 128</td><td>60 – 66</td></tr>',
+                    '<tr><td>9 – 10 ans</td><td>9 – 10 ans</td><td>128 – 140</td><td>66 – 72</td></tr>',
+                    '<tr><td>11 – 12 ans</td><td>11 – 12 ans</td><td>140 – 152</td><td>72 – 78</td></tr>',
+                    '<tr><td>13 – 14 ans</td><td>13 – 14 ans</td><td>152 – 164</td><td>78 – 84</td></tr>',
+                  '</tbody>',
+                '</table>',
+              '</div>',
+            '</div>',
+
+          '</div>', // .k-sg-body
+          '<div class="k-sg-footer">',
+            '<span>En cas de doute, notre équipe vous conseille via le chat 💬</span>',
+          '</div>',
+        '</div>', // .k-sg-panel
+      ].join('');
+
+      document.body.appendChild(overlay);
+
+      // Fermeture
+      overlay.querySelector('.k-sg-close').addEventListener('click', closeSizeGuide);
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeSizeGuide();
+      });
+      document.addEventListener('keydown', function _sgKey(e) {
+        if (e.key === 'Escape') { closeSizeGuide(); document.removeEventListener('keydown', _sgKey); }
+      });
+
+      // Tabs
+      overlay.querySelectorAll('.k-sg-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          overlay.querySelectorAll('.k-sg-tab').forEach(function(t) { t.classList.remove('is-active'); });
+          overlay.querySelectorAll('.k-sg-section').forEach(function(s) { s.classList.add('u-hidden'); });
+          tab.classList.add('is-active');
+          var section = overlay.querySelector('.k-sg-section[data-section="' + tab.dataset.tab + '"]');
+          if (section) section.classList.remove('u-hidden');
+        });
+      });
+    }
+
+    // Activer le bon onglet
+    overlay.querySelectorAll('.k-sg-tab').forEach(function(t) { t.classList.remove('is-active'); });
+    overlay.querySelectorAll('.k-sg-section').forEach(function(s) { s.classList.add('u-hidden'); });
+    var activeTab = overlay.querySelector('.k-sg-tab[data-tab="' + (type || 'clothes') + '"]');
+    var activeSection = overlay.querySelector('.k-sg-section[data-section="' + (type || 'clothes') + '"]');
+    if (activeTab) activeTab.classList.add('is-active');
+    if (activeSection) activeSection.classList.remove('u-hidden');
+
+    // Ouvrir
+    overlay.classList.add('is-open');
+    document.body.classList.add('k-sg-open');
+  }
+
+  function closeSizeGuide() {
+    var overlay = document.getElementById('k-size-guide-overlay');
+    if (overlay) {
+      overlay.classList.remove('is-open');
+      document.body.classList.remove('k-sg-open');
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════
      CART DRAWER — Full mechanism
      ══════════════════════════════════════════════════════════ */
 
@@ -1965,4 +2078,5 @@ export {
   openModal, closeModal, modalGoBack, setupModal,
   buildCarouselSlides, goToSlide,
   renderSuggestions, setupImageZoneTouch, navigateModal,
+  openSizeGuide, closeSizeGuide,
 };

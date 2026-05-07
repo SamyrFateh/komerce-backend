@@ -998,3 +998,217 @@
   .k-vg-sizes   { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
   .k-vp         { height: 44px; font-size: 14px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   GUIDE DES TAILLES — Overlay
+   ══════════════════════════════════════════════════════════════ */
+
+/* Lien/bouton dans le label variante */
+.k-vg-size-guide {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ocean, #1a6fa0);
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .15s, background .15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.k-vg-size-guide:hover {
+  color: var(--ocean-dark, #0d4f74);
+  background: color-mix(in srgb, var(--ocean, #1a6fa0) 8%, transparent);
+}
+
+/* Overlay fond */
+.k-sg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100; /* au-dessus du modal produit */
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s var(--ease, ease);
+}
+.k-sg-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (min-width: 768px) {
+  .k-sg-overlay { align-items: center; }
+}
+
+/* Panel */
+.k-sg-panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  background: var(--white, #fff);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(32px);
+  transition: transform .25s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 -4px 32px rgba(0,0,0,.15);
+}
+.k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
+@media (min-width: 768px) {
+  .k-sg-panel {
+    border-radius: 18px;
+    max-height: 80dvh;
+    transform: scale(.96);
+  }
+  .k-sg-overlay.is-open .k-sg-panel { transform: scale(1); }
+}
+
+/* Header */
+.k-sg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border, #e8e8e8);
+  flex-shrink: 0;
+}
+.k-sg-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  margin: 0;
+}
+.k-sg-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: var(--surface, #f5f5f5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted, #888);
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.k-sg-close svg { width: 16px; height: 16px; }
+.k-sg-close:hover { background: var(--border, #e8e8e8); color: var(--text, #1a1a1a); }
+
+/* Tabs */
+.k-sg-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border, #e8e8e8);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.k-sg-tabs::-webkit-scrollbar { display: none; }
+
+.k-sg-tab {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-sg-tab.is-active {
+  color: var(--coral, #c85c2d);
+  border-bottom-color: var(--coral, #c85c2d);
+}
+
+/* Body scrollable */
+.k-sg-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 20px;
+}
+
+/* Hint */
+.k-sg-hint {
+  font-size: 12.5px;
+  color: var(--text-muted, #777);
+  line-height: 1.55;
+  margin: 0 0 14px;
+  background: color-mix(in srgb, var(--ocean, #1a6fa0) 6%, transparent);
+  border-left: 3px solid var(--ocean, #1a6fa0);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Table wrapper (scroll horizontal sur mobile) */
+.k-sg-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e8e8e8);
+}
+
+.k-sg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 260px;
+}
+.k-sg-table thead th {
+  background: var(--surface, #f7f7f7);
+  color: var(--text-muted, #666);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.k-sg-table tbody tr {
+  border-top: 1px solid var(--border, #eee);
+  transition: background .1s;
+}
+.k-sg-table tbody tr:hover { background: var(--surface, #fafafa); }
+.k-sg-table tbody td {
+  padding: 9px 12px;
+  color: var(--text, #222);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.k-sg-table tbody td:first-child {
+  font-weight: 700;
+  color: var(--coral-dark, #a0461e);
+}
+
+/* Footer */
+.k-sg-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border, #eee);
+  font-size: 12px;
+  color: var(--text-muted, #888);
+  text-align: center;
+  flex-shrink: 0;
+  background: var(--surface, #fafafa);
+}
+
+/* Prevent body scroll when guide open (stacks with modal-open) */
+body.k-sg-open { /* handled by overlay pointer-events */ }
