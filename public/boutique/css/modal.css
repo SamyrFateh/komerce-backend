@@ -488,7 +488,7 @@
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
-.k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
+/* .k-modal.is-scrolled .k-modal-topbar-product → interactions.css (source de vérité) */
 .k-topbar-thumb { width: 34px; height: 34px; border-radius: 10px; overflow: hidden; background: var(--sand); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { min-width: 0; display: flex; flex-direction: column; }

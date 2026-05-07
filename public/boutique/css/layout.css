@@ -330,51 +330,8 @@ body {
 .k-skeleton-title  { width: 72%; }
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */
-@media (min-width: 900px) {
-  .k-header {
-    background: rgba(255,253,249,.94);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 10px 28px rgba(31,48,36,.06);
-  }
-  .k-header-inner {
-    gap: 18px;
-    padding-inline: clamp(24px, 3vw, 32px);
-  }
-  .k-logo { min-width: 170px; }
-  .k-logo-text {
-    display: block;
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--ocean-dark);
-    letter-spacing: -.5px;
-  }
-  .k-logo-icon { width: 32px; height: 32px; }
-  .k-search {
-    flex: 1 1 560px;
-    max-width: 620px;
-    height: 46px;
-    border-radius: 999px;
-    border: 1px solid rgba(42,62,44,.12);
-    background: rgba(255,255,255,.98);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px rgba(42,62,44,.05);
-  }
-  .k-search input {
-    height: 46px;
-    padding: 0 18px 0 42px;
-    font-size: 16px;
-  }
-  .k-search-icon { left: 16px; }
-  .k-header-actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
-  .k-bnav { display: none; }
-}
+/* ── Header desktop visuel (backdrop, border, shadow) ──
+   Fusionné dans le bloc DESKTOP PREMIUM ci-dessous. */
 
 /* ── Coller la grille directement sous les chips (mobile) ───── */
 @media (max-width: 899px) {
@@ -450,22 +407,29 @@ body {
     padding: 0 clamp(16px, 3vw, 40px);
   }
 
-  /* ── Header premium ──────────────────────────────────────── */
+  /* ── Header desktop (fusionné) ───────────────────────────── */
   .k-header {
     height: 68px;
     position: sticky;
     top: 0;
     z-index: 200;
+    background: rgba(255,253,249,.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(42,62,44,.08);
+    box-shadow: 0 10px 28px rgba(31,48,36,.06);
   }
 
   .k-header-inner {
     height: 68px;
     max-width: var(--container);
     margin: 0 auto;
+    gap: 18px;
+    padding-inline: clamp(24px, 3vw, 32px);
   }
 
-  /* Logo texte "Komerce" toujours visible */
-  .k-logo-text { display: block; font-size: 20px; }
+  .k-logo { min-width: 170px; }
+  .k-logo-text { display: block; font-size: 20px; color: var(--ocean-dark); font-weight: 800; letter-spacing: -.5px; }
   .k-logo-icon { width: 36px; height: 36px; }
 
   /* Barre recherche centrale large */
@@ -474,15 +438,19 @@ body {
     max-width: 680px;
     height: 44px;
     border-radius: 999px;
+    border: 1px solid rgba(42,62,44,.12);
+    background: rgba(255,255,255,.98);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px rgba(42,62,44,.05);
   }
   .k-search input {
     height: 44px;
     font-size: 15px;
     padding: 0 16px 0 44px;
   }
+  .k-search-icon { left: 16px; }
 
-  /* Actions droite */
-  .k-header-actions { gap: 8px; }
+  /* Actions droite — gap final : desktop-upgrade.css (gap:4px) */
+  .k-header-actions { gap: 8px; } /* écrasé par desktop-upgrade.css → gap:4px */
 
   /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
 

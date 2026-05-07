@@ -200,7 +200,7 @@
 
   #k-subcats-wrap {
     position: sticky;
-    top: var(--header-h, 64px);
+    top: var(--header-h); /* tokens.css : 68px@900, 72px@1200 */
     z-index: 20;
     background: rgba(255,255,255,.97);
     backdrop-filter: blur(10px);
@@ -226,37 +226,7 @@
     font-weight: 800;
   }
 
-  .k-subchip {
-    padding: 5px 14px;
-    background: transparent;
-    border: 1.5px solid rgba(31,48,36,.10);
-    border-radius: 999px;
-    gap: 5px;
-    transition: background .13s ease, border-color .13s ease, box-shadow .13s ease, transform .13s ease;
-  }
-
-  .k-subchip:hover {
-    background: rgba(200,92,45,.05);
-    border-color: rgba(200,92,45,.30);
-    box-shadow: 0 2px 8px rgba(200,92,45,.08);
-  }
-
-  .k-subchip-icon  { font-size: 13px; }
-  .k-subchip-label {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: -.01em;
-    color: var(--text);
-  }
-
-  /* Active pill — coral accent */
-  .k-subchip.active {
-    background: var(--coral);
-    border-color: var(--coral);
-    box-shadow: 0 3px 10px rgba(200,92,45,.22);
-  }
-  .k-subchip.active .k-subchip-label { color: #fff; font-weight: 800; }
-  .k-subchip.active .k-subchip-icon  { filter: brightness(10); }
+  /* .k-subchip style → #k-subcats-wrap .k-subchip (source de vérité, bloc ci-dessous) */
 
   /* Stagger animation pour desktop */
   @keyframes k-subchip-in-desk {
@@ -288,7 +258,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 0 8px;
-  border-bottom: 2px solid var(--coral);
+  border-bottom: 2px solid var(--coral); /* mobile → écrasé desktop par products.css (var(--sand-dark)) */
   margin-bottom: 4px;
   position: relative;
   scroll-margin-top: 70px;
