@@ -359,8 +359,8 @@ function renderGrid() {
       if (_ps) _ps.classList.add('k-pager-active');
       dom.grid.classList.add('k-grid-cat-pager');
       requestAnimationFrame(function() {
-        _setupMobilePager();
-        _setupInfiniteLoop();      // ghost loop : clone Tout à la fin
+        _setupInfiniteLoop();      // ghost loop : clone Tout à la fin — DOIT être avant _setupMobilePager
+        _setupMobilePager();       // listeners scroll/touch — DOM ghost déjà stabilisé
         _setupSectionAutoAdvance(); // bounce bas → catégorie suivante
         if (state.activeCat !== 'all') {
           setTimeout(function() { _scrollPagerToCat(state.activeCat, 'instant'); }, 80);
