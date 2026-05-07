@@ -95,6 +95,51 @@ function parseMobile(raw) {
   };
 }
 
+// ─── Mapping variables templates AuthKey ────────────────────────────────
+// AuthKey requestjson.php attend les variables template dans bodyValues.var1,
+// bodyValues.var2, etc. Les helpers métier gardent des noms lisibles,
+// puis ce helper transforme dans l'ordre attendu par les templates.
+function toBodyValues(variables = {}) {
+  if (!variables || typeof variables !== 'object') return {};
+
+  if (variables.bodyValues && typeof variables.bodyValues === 'object') {
+    return variables.bodyValues;
+  }
+
+  const orderedKeys = [
+    'name',
+    'order_ref',
+    'amount',
+    'relay_point',
+    'item_count',
+    'code',
+    'otp',
+    'link',
+    'magic_link',
+    'url',
+    'expiry',
+  ];
+
+  const bodyValues = {};
+  let index = 1;
+
+  for (const key of orderedKeys) {
+    if (variables[key] !== undefined && variables[key] !== null && variables[key] !== '') {
+      bodyValues['var' + index] = String(variables[key]);
+      index++;
+    }
+  }
+
+  // Compat directe si un appelant fournit déjà var1/var2/var3.
+  for (const key of Object.keys(variables)) {
+    if (/^var\d+$/.test(key) && variables[key] !== undefined && variables[key] !== null) {
+      bodyValues[key] = String(variables[key]);
+    }
+  }
+
+  return bodyValues;
+}
+
 // ─── Appel générique ───────────────────────────────────────────────────
 async function callAuthKey({ wid, mobile, variables = {} }) {
   if (!API_KEY) {
@@ -109,13 +154,18 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
   }
 
+  const bodyValues = toBodyValues(variables);
+
   const body = {
     country_code,
     mobile: cleanMobile,
     wid: String(wid),
     type: 'text',
-    ...variables,
   };
+
+  if (Object.keys(bodyValues).length > 0) {
+    body.bodyValues = bodyValues;
+  }
 
   try {
     const response = await fetch(AUTHKEY_URL, {
