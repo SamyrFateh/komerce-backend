@@ -201,7 +201,7 @@ function _buildDOM() {
   el.innerHTML = `
     <!-- Pastille collapsed -->
     <button class="kmc__bubble" aria-label="Ouvrir le récapitulatif panier" type="button">
-      <img class="kmc__bubble-img" src="/images/panier_tresse_vert.png" alt="" aria-hidden="true">
+      <span class="kmc__bubble-icon" aria-hidden="true">🛒</span>
       <span class="kmc__badge" aria-live="polite">0</span>
     </button>
 

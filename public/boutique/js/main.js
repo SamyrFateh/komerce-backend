@@ -26,7 +26,7 @@ import './b-utils.js';        // helpers purs + window.KUtils compat
 import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
-import './b-cart-pill.js';        // Pill flottante panier — mobile catalogue uniquement
+// b-cart-pill.js désactivé — remplacé par b-mini-cart.js
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
 import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 

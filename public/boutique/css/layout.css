@@ -1170,3 +1170,16 @@ body {
 @media (min-width: 1200px) {
   .k-side-cart { width: 284px; min-width: 284px; }
 }
+
+/* ── Sidebar catégories desktop désactivée — mode rail uniquement ── */
+#k-desktop-sidebar {
+  display: none !important;
+}
+
+/* ── Side cart : largeur garantie sans la sidebar ── */
+@media (min-width: 900px) {
+  .k-side-cart {
+    width: 300px;
+    min-width: 300px;
+  }
+}
