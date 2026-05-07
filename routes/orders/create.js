@@ -453,8 +453,6 @@ const emailItems = items.map(i => {
   };
 });
 
-// NEW-05 fix: logs PII supprimés (phones, req.user.phone, recipient_phone)
-
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
   .catch(err => console.error('[ORDER-CREATED] ❌', err.message));

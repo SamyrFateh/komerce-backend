@@ -18,11 +18,12 @@ const { validate } = require('../middleware/validate');
 const { auth } = require('../validators');
 
 const router = express.Router();
-const _JWT_SECRET = process.env.JWT_SECRET;
-if (!_JWT_SECRET) {
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET manquant — démarrage impossible');
-  throw new Error('JWT_SECRET requis');
+  process.exit(1); // N7: pas de fallback autorisé, même en dev
 }
+const _JWT_SECRET = JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 const COOKIE_NAME = 'kmrc_jwt';

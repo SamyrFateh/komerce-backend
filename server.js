@@ -1177,15 +1177,6 @@ const server = app.listen(PORT, () => {
   });
 });
 
-// NEW-07 fix: handlers process pour éviter crash silencieux
-process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason);
-});
-process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err);
-  setTimeout(() => process.exit(1), 1000);
-});
-
 process.on('SIGTERM', () => {
   console.log('SIGTERM reçu — fermeture gracieuse...');
   server.close(() => {
@@ -1193,6 +1184,17 @@ process.on('SIGTERM', () => {
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10_000);
+});
+
+// NEW-07 — Crash guards : éviter qu'une promesse non catchée tue le process
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  // Sortir proprement — l'état du process est incertain après uncaughtException
+  setTimeout(() => process.exit(1), 500);
 });
 
 module.exports = app;
