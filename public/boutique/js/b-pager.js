@@ -283,6 +283,24 @@ function _setupSectionAutoAdvance() {
         clearTimeout(page._bounceTimer);
         page._bounceTimer = null;
       }
+      // ── Bounce vers le haut → catégorie précédente ───────────
+      const atTop = st === 0;
+
+      if (!wasDown && atTop && lastST === 0) {
+        if (page._bounceUpTimer) clearTimeout(page._bounceUpTimer);
+        page._bounceUpTimer = setTimeout(() => {
+          page._bounceUpTimer = null;
+          if (state.modalOpen || window.innerWidth >= 900) return;
+          const realPages = _getRealPages(grid);
+          const currentIdx = _getCurrentIndex(grid);
+          const prevIdx = currentIdx - 1 < 0 ? realPages.length - 1 : currentIdx - 1;
+          _showPrevHint(page, realPages[prevIdx]);
+          _scrollToIndex(grid, prevIdx, 'smooth');
+        }, 350);
+      } else if (page._bounceUpTimer) {
+        clearTimeout(page._bounceUpTimer);
+        page._bounceUpTimer = null;
+      }
     };
 
     page.addEventListener('scroll', page._bounceH, { passive: true });
@@ -307,6 +325,21 @@ function _showNextHint(currentPage, nextPage) {
   setTimeout(() => hint.remove(), 900);
 }
 
+function _showPrevHint(currentPage, prevPage) {
+  if (!prevPage) return;
+  const cat = prevPage.dataset.cat || 'Tout';
+  const label = document.querySelector(`#k-cats .k-chip[data-cat="${cat}"] .k-chip-label`)?.textContent || cat;
+
+  const existing = currentPage.querySelector('.k-pager-prev-hint');
+  if (existing) existing.remove();
+
+  const hint = document.createElement('div');
+  hint.className = 'k-pager-prev-hint';
+  hint.textContent = '← ' + label;
+  currentPage.appendChild(hint);
+  setTimeout(() => hint.remove(), 900);
+}
+
 // ── Setup principal ───────────────────────────────────────────────
 
 function _handlePagerResize() {
@@ -315,6 +348,44 @@ function _handlePagerResize() {
     return;
   }
   _setupMobilePager();
+}
+
+// ── Ghost gauche : swipe gauche depuis idx 0 → dernière catégorie ─
+
+function _setupLeftEdgeSwipe(grid) {
+  if (grid._leftSwipeTouchStart) grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
+  if (grid._leftSwipeTouchEnd)   grid.removeEventListener('touchend',   grid._leftSwipeTouchEnd);
+
+  let _touchStartX = 0;
+
+  grid._leftSwipeTouchStart = (e) => {
+    _touchStartX = e.touches[0].clientX;
+  };
+
+  grid._leftSwipeTouchEnd = (e) => {
+    if (_isProgrammaticScroll || state.modalOpen) return;
+    const dx = e.changedTouches[0].clientX - _touchStartX;
+    const idx = _getCurrentIndex(grid);
+    // Swipe vers la gauche (dx négatif) depuis la première page
+    if (dx < -40 && idx === 0) {
+      const realPages = _getRealPages(grid);
+      const lastIdx   = realPages.length - 1;
+      // Téléportation silencieuse : masquer, sauter, réafficher
+      grid.style.opacity    = '0';
+      grid.style.transition = 'none';
+      _scrollToIndex(grid, lastIdx, 'instant');
+      _syncChip(realPages[lastIdx].dataset.cat);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          grid.style.opacity    = '';
+          grid.style.transition = '';
+        });
+      });
+    }
+  };
+
+  grid.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
+  grid.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
 }
 
 function _setupMobilePager() {
@@ -328,6 +399,7 @@ function _setupMobilePager() {
 
   _recalcPagerVars();
   _setupScrollSync(grid);
+  _setupLeftEdgeSwipe(grid);
 
   window.removeEventListener('resize', _setupMobilePager);
   window.removeEventListener('resize', _handlePagerResize);
@@ -365,6 +437,15 @@ function destroyMobilePager() {
     if (grid._pagerScrollH) {
       grid.removeEventListener('scroll', grid._pagerScrollH);
       grid._pagerScrollH = null;
+    }
+    if (grid._leftSwipeTouchStart) {
+      grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
+      grid._leftSwipeTouchStart = null;
+    }
+    if (grid._leftSwipeTouchEnd) {
+      grid.removeEventListener('touchend', grid._leftSwipeTouchEnd);
+      grid._leftSwipeTouchEnd = null;
+    }
     }
     // Nettoyer bounces sur les pages (handler + timer pendant)
     _getPages(grid).forEach(p => {
