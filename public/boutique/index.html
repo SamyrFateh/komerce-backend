@@ -239,20 +239,29 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
-    <!-- Side cart desktop — 3ème colonne sticky (masquée mobile via CSS) -->
+    <!-- Side cart desktop Temu-style — panneau fixe droit -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <div class="k-sc-header">
-        <span class="k-sc-title">🧺 Panier</span>
-        <span id="k-sc-count" class="k-sc-count"></span>
-      </div>
-      <div id="k-sc-items" class="k-sc-items"></div>
-      <div class="k-sc-footer">
-        <div class="k-sc-total-row">
-          <span>Total</span>
-          <strong id="k-sc-total"></strong>
+      <!-- Sous-total header -->
+      <div class="k-sc-top">
+        <div class="k-sc-subtotal-row">
+          <span class="k-sc-subtotal-label">Sous-total</span>
+          <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
         </div>
-        <button id="k-sc-checkout" class="k-sc-cta k-sc-cta--checkout">✅ Commander</button>
-        <button id="k-sc-cta" class="k-sc-cta k-sc-cta--secondary">Voir le panier →</button>
+        <div class="k-sc-free-ship">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M1 6h10v6H1zM11 8h2l2 2v2h-4V8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4" cy="14" r="1.2" fill="currentColor"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></svg>
+          Livraison incluse aux Comores
+        </div>
+        <!-- Bouton Commander principal -->
+        <button id="k-sc-checkout" class="k-sc-btn-checkout">
+          Commander (<span id="k-sc-count-inline">0</span>)
+        </button>
+        <button id="k-sc-cta" class="k-sc-btn-cart">Voir le panier</button>
+      </div>
+      <!-- Liste articles -->
+      <div id="k-sc-items" class="k-sc-items"></div>
+      <!-- Footer count -->
+      <div class="k-sc-bottom">
+        <span id="k-sc-count" class="k-sc-count-label"></span>
       </div>
     </aside>
   </div><!-- /k-desktop-catalog-wrap -->

@@ -242,7 +242,16 @@ import {
       dom.addCartBtn.classList.add('confirmed');
       dom.addCartBtn.disabled = false;
       dom.addCartBtn.innerHTML = '✓ Ajouté';
-      dom.addCartBtn.onclick = function() { bus.emit('modal:close'); setTimeout(openCart, 150); };
+      dom.addCartBtn.onclick = function() {
+        bus.emit('modal:close');
+        // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
+        if (window.innerWidth >= 900) {
+          var sc = document.getElementById('k-side-cart');
+          if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+        } else {
+          setTimeout(openCart, 150);
+        }
+      };
     }, 700);
   } else if (sourceBtn) {
     // Toast de confirmation (grid / rail)
@@ -1384,50 +1393,80 @@ function renderSideCart() {
   sc.classList.toggle('has-items', hasItems);
   if (!hasItems) return;
 
-  // Compteur
-  const qty     = cartQty();
-  const countEl = sc.querySelector('#k-sc-count');
-  if (countEl) countEl.textContent = qty + ' article' + (qty > 1 ? 's' : '');
+  const qty = cartQty();
 
-  // Total
+  // Sous-total
   const totalEl = sc.querySelector('#k-sc-total');
   if (totalEl) totalEl.textContent = fmtPrice(cartTotal());
 
-  // Articles (tous, plus récents en premier)
+  // Compteur inline dans le bouton Commander
+  const countInline = sc.querySelector('#k-sc-count-inline');
+  if (countInline) countInline.textContent = qty;
+
+  // Compteur footer
+  const countEl = sc.querySelector('#k-sc-count');
+  if (countEl) countEl.textContent = qty + ' article' + (qty > 1 ? 's' : '') + ' dans votre panier';
+
+  // Articles (plus récents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
   if (itemsEl) {
     itemsEl.innerHTML = '';
     [...items].reverse().forEach(item => {
-      const el     = document.createElement('div');
-      el.className = 'k-sc-item';
-      const imgSrc    = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
-      const unitPrice = fmtPrice(item.product.price_kmf || 0);
+      const el       = document.createElement('div');
+      el.className   = 'k-sc-item';
+      const imgSrc   = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
       const linePrice = fmtPrice((item.product.price_kmf || 0) * item.qty);
+      const pid      = String(item.product.id || item.id || '');
+      el.dataset.pid = pid;
       el.innerHTML =
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
         `<div class="k-sc-item-info">` +
           `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
           `<div class="k-sc-item-meta">` +
-            `<span class="k-sc-item-qty">×${item.qty} · ${unitPrice}</span>` +
             `<span class="k-sc-item-price">${linePrice}</span>` +
+            `<div class="k-sc-item-stepper">` +
+              `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">−</button>` +
+              `<span class="k-sc-item-stepper-qty">${item.qty}</span>` +
+              `<button class="k-sc-step-plus" data-pid="${pid}" aria-label="Ajouter un">+</button>` +
+            `</div>` +
           `</div>` +
         `</div>`;
       itemsEl.appendChild(el);
     });
+
+    // Câbler les steppers (délégation sur itemsEl)
+    if (!itemsEl._scWired) {
+      itemsEl._scWired = true;
+      itemsEl.addEventListener('click', e => {
+        const minus = e.target.closest('.k-sc-step-minus');
+        const plus  = e.target.closest('.k-sc-step-plus');
+        const pid   = (minus || plus) ? (minus || plus).dataset.pid : null;
+        if (!pid) return;
+        const currentItem = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
+        if (!currentItem) return;
+        if (minus) {
+          setQty(pid, currentItem.qty - 1);
+        } else if (plus) {
+          setQty(pid, currentItem.qty + 1);
+        }
+      });
+    }
   }
 
-  // Bouton "Voir le panier" → ouvre le tiroir (câblé une seule fois)
+  // Bouton "Voir le panier"
   const cta = sc.querySelector('#k-sc-cta');
   if (cta && !cta._wired) {
     cta._wired = true;
     cta.addEventListener('click', () => openCart());
   }
 
-  // Bouton "Commander" → checkout direct (câblé une seule fois)
+  // Bouton "Commander"
   const ctaCheckout = sc.querySelector('#k-sc-checkout');
   if (ctaCheckout && !ctaCheckout._wired) {
     ctaCheckout._wired = true;
-    ctaCheckout.addEventListener('click', () => { if (typeof window.__kmrcCheckout === 'function') window.__kmrcCheckout(); });
+    ctaCheckout.addEventListener('click', () => {
+      if (typeof window.__kmrcCheckout === 'function') window.__kmrcCheckout();
+    });
   }
 }
 

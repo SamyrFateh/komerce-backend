@@ -946,12 +946,12 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SIDE CART — aperçu permanent desktop + total mobile bnav
+   SIDE CART — Temu-style checkout panel desktop
    Mobile : side cart caché, bnav label montre le total
-   Desktop (≥900px) : panneau fixe droit, discret, animé
+   Desktop (≥900px) : panneau fixe droit style Temu
    ══════════════════════════════════════════════════════════════ */
 
-/* Mobile : side cart masqué — géré via bnav tab "Panier" */
+/* Mobile : side cart masqué */
 .k-side-cart { display: none; }
 
 /* Mobile bnav : label cart devient le total quand panier non vide */
@@ -967,23 +967,22 @@ body {
 
 @media (min-width: 900px) {
 
-  /* ── Conteneur sticky ───────────────────────────────────── */
+  /* ── Conteneur sticky Temu ──────────────────────────────── */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: calc(var(--header-h, 76px) + 12px);
-    right: clamp(16px, 2vw, 32px);
-    width: 300px;
-    min-width: 300px;
+    top: calc(var(--header-h, 76px) + 16px);
+    right: clamp(12px, 2vw, 28px);
+    width: 312px;
+    min-width: 312px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
     background: var(--white);
-    border-radius: var(--radius);
+    border-radius: 12px;
     border: 1px solid var(--border);
-    box-shadow: var(--elev-2);
+    box-shadow: 0 2px 12px rgba(0,0,0,.10), 0 1px 3px rgba(0,0,0,.06);
     overflow: hidden;
     z-index: 200;
-    /* Invisible quand panier vide */
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px);
@@ -994,35 +993,97 @@ body {
     pointer-events: auto;
     transform: translateY(0);
   }
-  /* Compenser l'espace pris par le panneau fixe à droite */
   #k-desktop-catalog-wrap {
-    padding-right: 324px;
+    padding-right: 336px;
   }
 
-  /* ── Header ─────────────────────────────────────────────── */
-  .k-sc-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 13px 16px 11px;
+  /* ── Zone supérieure : sous-total + boutons ─────────────── */
+  .k-sc-top {
+    padding: 14px 14px 12px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     background: var(--white);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
-  .k-sc-title {
-    font-weight: 800;
-    font-size: 14px;
-    color: var(--text);
-    letter-spacing: -.01em;
+
+  /* Ligne sous-total */
+  .k-sc-subtotal-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
   }
-  .k-sc-count {
-    font-size: 11px;
-    color: var(--text-muted);
+  .k-sc-subtotal-label {
+    font-size: 13px;
     font-weight: 500;
-    background: var(--sand-dark);
-    padding: 2px 7px;
-    border-radius: 20px;
+    color: var(--text-muted);
   }
+  .k-sc-subtotal-amount {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -.02em;
+  }
+
+  /* Badge livraison */
+  .k-sc-free-ship {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a7a3e;
+    background: #e8f7ee;
+    border-radius: 6px;
+    padding: 5px 8px;
+    width: fit-content;
+  }
+  .k-sc-free-ship svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  /* Bouton Commander Temu-style orange */
+  .k-sc-btn-checkout {
+    display: block;
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #ff6900;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    font-family: var(--font);
+    letter-spacing: .01em;
+    transition: background .15s, transform .12s;
+    box-shadow: 0 2px 8px rgba(255,105,0,.30);
+  }
+  .k-sc-btn-checkout:hover { background: #e55f00; }
+  .k-sc-btn-checkout:active { transform: scale(.98); }
+
+  /* Bouton secondaire "Voir le panier" */
+  .k-sc-btn-cart {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    font-family: var(--font);
+    transition: background .12s, border-color .12s;
+  }
+  .k-sc-btn-cart:hover { background: var(--sand); border-color: var(--text-muted); }
 
   /* ── Liste articles ──────────────────────────────────────── */
   .k-sc-items {
@@ -1031,139 +1092,144 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
     min-height: 0;
-    padding: 4px 0;
+    padding: 6px 0 4px;
   }
   .k-sc-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
-    padding: 9px 16px;
+    padding: 10px 14px;
     transition: background .12s;
+    border-bottom: 1px solid rgba(0,0,0,.04);
   }
+  .k-sc-item:last-child { border-bottom: none; }
   .k-sc-item:hover { background: var(--sand); }
+
   .k-sc-item-img {
-    width: 52px;
-    height: 52px;
-    border-radius: var(--radius-sm);
-    object-fit: cover;
+    width: 60px;
+    height: 60px;
+    border-radius: 6px;
+    object-fit: contain;
     flex-shrink: 0;
-    background: var(--sand-dark);
+    background: var(--sand);
     border: 1px solid var(--border);
+    padding: 3px;
   }
   .k-sc-item-info {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
   }
   .k-sc-item-name {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
-    white-space: nowrap;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
   }
   .k-sc-item-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .k-sc-item-qty {
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--sand-dark);
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 500;
+    margin-top: 2px;
   }
   .k-sc-item-price {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 800;
-    color: var(--coral);
+    color: #cc4400;
+    letter-spacing: -.01em;
   }
 
-  /* ── Footer : total + actions ────────────────────────────── */
-  .k-sc-footer {
-    padding: 12px 16px 16px;
+  /* Stepper quantité inline style Temu */
+  .k-sc-item-stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--white);
+  }
+  .k-sc-item-stepper button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .1s;
+    font-family: var(--font);
+    padding: 0;
+    line-height: 1;
+  }
+  .k-sc-item-stepper button:hover { background: var(--sand-dark); }
+  .k-sc-item-stepper button:active { background: var(--border); }
+  .k-sc-item-stepper-qty {
+    min-width: 24px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0 2px;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    line-height: 24px;
+    user-select: none;
+  }
+
+  /* ── Footer : nombre d'articles ─────────────────────────── */
+  .k-sc-bottom {
+    padding: 8px 14px;
     border-top: 1px solid var(--border);
     background: var(--sand);
     flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
   }
-  .k-sc-total-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2px;
-  }
-  .k-sc-total-row span {
-    font-size: 12px;
-    font-weight: 600;
+  .k-sc-count-label {
+    font-size: 11px;
     color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-  .k-sc-total-row strong {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -.01em;
-  }
-  .k-sc-cta {
-    display: block;
-    width: 100%;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 50px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    text-align: center;
-    font-family: var(--font);
-    letter-spacing: .01em;
-    transition: opacity .15s, transform .12s;
-  }
-  .k-sc-cta:hover  { opacity: .88; }
-  .k-sc-cta:active { transform: scale(.98); }
-  .k-sc-cta--checkout {
-    background: var(--ocean);
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(100,175,90,.28);
-    font-size: 14px;
-    padding: 11px 14px;
-  }
-  .k-sc-cta--secondary {
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 12px;
     font-weight: 500;
-    padding: 4px;
-    text-decoration: underline;
-    text-underline-offset: 2px;
   }
-  .k-sc-cta--secondary:hover { opacity: 1; color: var(--text); }
 }
+
+/* ── Sidebar catégories desktop désactivée ── */
+#k-desktop-sidebar { display: none !important; }
 
 @media (min-width: 1200px) {
-  .k-side-cart { width: 284px; min-width: 284px; }
+  .k-side-cart { width: 320px; min-width: 320px; }
+  #k-desktop-catalog-wrap { padding-right: 344px; }
 }
 
-/* ── Sidebar catégories desktop désactivée — mode rail uniquement ── */
-#k-desktop-sidebar {
-  display: none !important;
-}
-
-/* ── Side cart : largeur garantie sans la sidebar ── */
+/* ══════════════════════════════════════════════════════════════
+   FIX DESKTOP — Carte géante / Hero overflow
+   Force le hero wrap et ses enfants à ne jamais dépasser
+   leur hauteur sur desktop.
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  .k-side-cart {
-    width: 300px;
-    min-width: 300px;
+  #k-hero-fixed-wrap {
+    max-height: 300px;
+    overflow: hidden;
+  }
+  #k-hero-fixed-wrap .k-hero {
+    max-height: 188px;
+    overflow: hidden;
+  }
+  #k-hero-fixed-wrap .k-hero-img {
+    height: clamp(140px, 14vw, 188px) !important;
+    max-height: 188px !important;
+    object-fit: cover;
+    display: block;
+  }
+  /* Spacer ne doit jamais créer de grand espace vide sur desktop */
+  #k-bar-spacer {
+    display: none !important;
   }
 }
