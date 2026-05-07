@@ -36,7 +36,7 @@ import {
   isFav, saveFavs,
 }                              from './b-cart-core.js';
 import {
-  renderPromos, appendNextPage,
+  renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
   loadProducts,
 }                              from './b-catalog.js';
@@ -144,6 +144,8 @@ if (document.readyState === 'loading') {
 
 // ── Side cart checkout : pont window pour éviter la dépendance circulaire b-cart↔b-checkout ──
 window.__kmrcCheckout = checkoutCart;
+// Expose renderGrid pour le listener délégué sous-cats (b-subcat.js + boutique.js)
+if (typeof window !== 'undefined') window.renderGrid = renderGrid;
 
 // ── Listener global délégué : modal carousel dots ──
 document.addEventListener('click', function(e) {
