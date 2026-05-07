@@ -5,8 +5,8 @@
    ========================================================= */
 
 :root {
-  --kmc-coral:       var(--coral, #C85C2D);
-  --kmc-coral-dark:  var(--coral-dark, #A84820);
+  --kmc-coral:       var(--cta-green, #2a7a3e);
+  --kmc-coral-dark:  #1e5c2e;
   --kmc-green:       var(--ocean-dark, #4A9040);
   --kmc-text:        var(--text, #1F3024);
   --kmc-muted:       var(--text-muted, #6B7B63);
@@ -21,7 +21,7 @@
 /* ── Conteneur racine ─────────────────────────────────────── */
 .kmc {
   position: fixed;
-  right: 12px;
+  right: auto;          /* neutralisé — le JS gère left */
   bottom: var(--kmc-bottom);
   z-index: 9990;
   pointer-events: none;

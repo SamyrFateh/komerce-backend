@@ -740,30 +740,10 @@ body {
     padding: 12px clamp(16px, 3vw, 40px) 0;
   }
 
-  /* ── Sidebar gauche ──────────────────────────────────────── */
+  /* ── Sidebar gauche — désactivée, mode rail uniquement ───── */
   .k-desktop-sidebar {
-    display: block;
-    width: 176px;
-    flex-shrink: 0;
-    position: sticky;
-    top: var(--sidebar-top, calc(var(--header-h) + 10px));
-    max-height: calc(100vh - var(--header-h) - 24px);
-    overflow-y: auto;
-    scrollbar-width: none;
-    background: transparent;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    box-shadow: none;
-    padding: 4px 0 8px;
-    transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    display: none;
   }
-  /* Fond/bordure visibles seulement après hydratation JS (présence d'un enfant) */
-  .k-desktop-sidebar:not(:empty) {
-    background: var(--white);
-    border-color: rgba(31,48,36,.07);
-    box-shadow: 0 2px 12px rgba(31,48,36,.04);
-  }
-  .k-desktop-sidebar::-webkit-scrollbar { display: none; }
 
   /* ── Catalogue : prend le reste de la largeur ─────────────── */
   #k-desktop-catalog-wrap #k-catalog-section {
@@ -995,8 +975,8 @@ body {
     top: calc(var(--header-h, 76px) + 12px);
     align-self: flex-start;
     margin-left: auto;
-    width: 268px;
-    min-width: 268px;
+    width: 300px;
+    min-width: 300px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
     background: var(--white);
     border-radius: var(--radius);

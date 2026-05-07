@@ -48,7 +48,7 @@
   font-family: var(--font-display);
   font-size: clamp(18px, 4.8vw, 24px);
   font-weight: 900;
-  color: var(--coral);
+  color: var(--cta-green, #2a7a3e);
   line-height: 1.05;
   text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,.9);
 }
@@ -133,13 +133,13 @@
     pointer-events: none;
   }
 
-  /* Accent coral vertical gauche */
+  /* Accent vert vertical gauche */
   .k-hero-media::after {
     content: '';
     position: absolute;
     top: 0; bottom: 0; left: 0;
     width: 3px;
-    background: var(--coral);
+    background: var(--cta-green, #2a7a3e);
     z-index: 3;
   }
 
@@ -160,14 +160,14 @@
     text-shadow: none;
   }
 
-  /* Badge "La boutique comorienne" — petit, sobre */
+  /* Badge "La boutique comorienne" — vert sobre */
   .k-hero-badge {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(200, 92, 45, .15);
-    border: 1px solid rgba(200, 92, 45, .35);
-    color: #e8906a;
+    background: rgba(42, 122, 62, .18);
+    border: 1px solid rgba(42, 122, 62, .4);
+    color: #6abf7a;
     font-size: 9px;
     font-weight: 700;
     letter-spacing: .1em;
@@ -177,12 +177,12 @@
     margin-bottom: 8px;
   }
 
-  /* Ligne 1 : "Qui cherche !" */
+  /* Ligne 1 : "Qui cherche !" — blanc pur, force */
   .k-hero-mini-slogan .k-line-1 {
     font-family: var(--font-display);
     font-size: clamp(1.4rem, 2.1vw, 2.2rem);
     font-weight: 700;
-    color: rgba(255,255,255,.9);
+    color: rgba(255,255,255,.92);
     line-height: 1.05;
     letter-spacing: -.025em;
     margin-bottom: 0;
@@ -190,12 +190,12 @@
     display: block;
   }
 
-  /* Ligne 2 : "Trouve !" — accent coral, grande */
+  /* Ligne 2 : "Trouve !" — coral, énergie et impulsion */
   .k-hero-mini-slogan .k-line-2 {
     font-family: var(--font-display);
     font-size: clamp(1.7rem, 2.6vw, 2.8rem);
     font-weight: 900;
-    color: var(--coral);
+    color: var(--coral, #C85C2D);
     line-height: 1.0;
     letter-spacing: -.03em;
     margin-bottom: 14px;
@@ -206,14 +206,14 @@
   /* Sous-titre : masqué — trop verbeux */
   .k-hero-sub { display: none; }
 
-  /* CTA row : un seul bouton sobre */
+  /* CTA row : bouton principal vert, action marque */
   .k-hero-cta-row {
     display: flex;
     gap: 8px;
     margin-bottom: 12px;
   }
   .k-hero-cta-primary {
-    background: var(--coral);
+    background: var(--cta-green, #2a7a3e);
     color: #fff;
     font-weight: 700;
     font-size: 12px;
@@ -225,8 +225,8 @@
     font-family: var(--font);
     transition: background .15s, transform .12s;
   }
-  .k-hero-cta-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
-  .k-hero-cta-ghost { display: none; } /* supprimé : trop de bruit */
+  .k-hero-cta-primary:hover { background: #1e5c2e; transform: translateY(-1px); }
+  .k-hero-cta-ghost { display: none; }
 
   /* Trust mini — 3 items, compact */
   .k-hero-trust {
