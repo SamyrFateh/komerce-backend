@@ -425,4 +425,199 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
   }
 });
 
+// ─── VAGUE 3 — Admin variantes ───────────────────────────────────────────────
+//
+// PUT  /api/products/:id/variants   — Remplace toutes les variantes d'un produit
+//                                     (atomique : DELETE + INSERT dans une TX)
+// GET  /api/products/:id/variants   — Liste brute des variantes (admin)
+// DELETE /api/products/:id/variants/:variantId — Supprimer une variante
+//
+// Note : has_variants est maintenu automatiquement par le trigger
+// trg_sync_has_variants côté DB — pas besoin de l'écrire manuellement.
+
+// GET /api/products/:id/variants — liste brute pour l'admin
+router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    const { rows: [product] } = await db.query(
+      'SELECT id, name, has_variants FROM products WHERE id = $1',
+      [req.params.id]
+    );
+    if (!product) return res.status(404).json({ error: 'Produit introuvable' });
+
+    const { rows: variants } = await db.query(
+      `SELECT id, variant_type, variant_value, sku, stock, price_kmf,
+              image_url, display_order, created_at, updated_at
+         FROM product_variants
+        WHERE product_id = $1
+        ORDER BY variant_type, display_order ASC, variant_value ASC`,
+      [req.params.id]
+    );
+
+    res.json({
+      product_id:   product.id,
+      product_name: product.name,
+      has_variants: product.has_variants,
+      variants,
+      count: variants.length,
+    });
+  } catch (err) { next(err); }
+});
+
+// PUT /api/products/:id/variants — remplace toutes les variantes (atomique)
+router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  const client = await db.getClient();
+  try {
+    const { variants } = req.body;
+
+    if (!Array.isArray(variants)) {
+      return res.status(400).json({ error: 'variants doit être un tableau' });
+    }
+    if (variants.length > 200) {
+      return res.status(400).json({ error: 'Maximum 200 variantes par produit' });
+    }
+
+    // Valider chaque variante
+    for (const v of variants) {
+      if (!v.type || typeof v.type !== 'string' || v.type.trim().length === 0) {
+        return res.status(400).json({ error: 'Chaque variante doit avoir un "type" (ex: "Taille")' });
+      }
+      if (!v.value || typeof v.value !== 'string' || v.value.trim().length === 0) {
+        return res.status(400).json({ error: 'Chaque variante doit avoir une "value" (ex: "M")' });
+      }
+      if (v.stock !== undefined && v.stock !== null && (typeof v.stock !== 'number' || v.stock < 0)) {
+        return res.status(400).json({ error: `stock invalide pour ${v.type}:${v.value} — entier >= 0 ou null` });
+      }
+      if (v.price_kmf !== undefined && v.price_kmf !== null && (typeof v.price_kmf !== 'number' || v.price_kmf < 0)) {
+        return res.status(400).json({ error: `price_kmf invalide pour ${v.type}:${v.value} — entier >= 0 ou null` });
+      }
+    }
+
+    await client.query('BEGIN');
+
+    // Vérifier que le produit existe
+    const { rows: [product] } = await client.query(
+      'SELECT id, name FROM products WHERE id = $1 FOR UPDATE',
+      [req.params.id]
+    );
+    if (!product) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Produit introuvable' });
+    }
+
+    // Vérifier qu'aucune variante n'est référencée dans des commandes pending
+    // (on interdit la suppression si des order_items pending y font référence)
+    if (variants.length === 0) {
+      const { rows: [pending] } = await client.query(
+        `SELECT COUNT(*)::int AS cnt
+           FROM order_items oi
+           JOIN orders o ON o.id = oi.order_id
+          WHERE oi.product_id = $1
+            AND oi.variant_combo IS NOT NULL
+            AND o.status NOT IN ('collected', 'cancelled', 'refunded')`,
+        [req.params.id]
+      );
+      if (pending.cnt > 0) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          error: `Impossible de supprimer les variantes : ${pending.cnt} commande(s) en cours y font référence`,
+          hint: 'Attendez que les commandes en cours soient finalisées ou annulées',
+        });
+      }
+    }
+
+    // Supprimer toutes les variantes existantes
+    await client.query('DELETE FROM product_variants WHERE product_id = $1', [req.params.id]);
+
+    // Insérer les nouvelles variantes
+    const inserted = [];
+    for (let i = 0; i < variants.length; i++) {
+      const v = variants[i];
+      const { rows: [row] } = await client.query(
+        `INSERT INTO product_variants
+           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          req.params.id,
+          v.type.trim(),
+          v.value.trim(),
+          v.sku    || null,
+          v.stock  !== undefined ? v.stock : 0,
+          v.price_kmf || null,
+          v.image_url || null,
+          v.display_order !== undefined ? v.display_order : i,
+        ]
+      );
+      inserted.push(row);
+    }
+
+    await client.query('COMMIT');
+
+    // Recharger le produit pour confirmer has_variants (mis à jour par trigger)
+    const { rows: [updated] } = await db.query(
+      'SELECT id, name, has_variants FROM products WHERE id = $1',
+      [req.params.id]
+    );
+
+    res.json({
+      message:      `${inserted.length} variante(s) enregistrée(s) pour "${product.name}"`,
+      product_id:   req.params.id,
+      has_variants: updated.has_variants,
+      count:        inserted.length,
+      variants:     inserted,
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    // Contrainte UNIQUE violation (type+value en double)
+    if (err.code === '23505') {
+      return res.status(409).json({
+        error: 'Doublon détecté — deux variantes ont le même type et la même valeur',
+        detail: err.detail,
+      });
+    }
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
+// DELETE /api/products/:id/variants/:variantId — supprimer une variante précise
+router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
+  try {
+    const { variantId } = req.params;
+
+    // Vérifier que la variante n'est pas dans une commande en cours
+    const { rows: [pending] } = await db.query(
+      `SELECT COUNT(*)::int AS cnt
+         FROM order_items oi
+         JOIN orders o ON o.id = oi.order_id
+         JOIN product_variants pv ON pv.product_id = oi.product_id
+        WHERE pv.id = $1
+          AND oi.variant_combo IS NOT NULL
+          AND oi.variant_combo ->> pv.variant_type = pv.variant_value
+          AND o.status NOT IN ('collected', 'cancelled', 'refunded')`,
+      [variantId]
+    );
+
+    if (pending.cnt > 0) {
+      return res.status(409).json({
+        error: `Impossible de supprimer : ${pending.cnt} commande(s) en cours référence cette variante`,
+        hint: 'Attendez que les commandes soient finalisées ou annulées',
+      });
+    }
+
+    const { rows } = await db.query(
+      'DELETE FROM product_variants WHERE id = $1 AND product_id = $2 RETURNING *',
+      [variantId, req.params.id]
+    );
+
+    if (!rows.length) return res.status(404).json({ error: 'Variante introuvable' });
+
+    res.json({
+      message: `Variante "${rows[0].variant_type}: ${rows[0].variant_value}" supprimée`,
+      deleted: rows[0],
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
