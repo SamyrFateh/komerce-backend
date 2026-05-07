@@ -289,8 +289,8 @@ async function notifyStatusChange(order, newStatus) {
         orderRef: order.reference,
       };
 
-      // Pour 'shipped', ajouter le point relais
-      if (newStatus === 'shipped') {
+      // Pour shipped/delivered/collected, ajouter le point relais
+      if (newStatus === 'shipped' || newStatus === 'delivered' || newStatus === 'collected') {
         params.relayPoint = order.relais_name || 'votre point relais';
       }
 
