@@ -5,8 +5,8 @@
    ========================================================= */
 
 :root {
-  --kmc-coral:       #4caf6e;
-  --kmc-coral-dark:  #3a9058;
+  --kmc-coral:       var(--ocean, #64AF5A);
+  --kmc-coral-dark:  var(--ocean-dark, #4A9040);
   --kmc-green:       var(--ocean-dark, #4A9040);
   --kmc-text:        var(--text, #1F3024);
   --kmc-muted:       var(--text-muted, #6B7B63);

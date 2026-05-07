@@ -48,7 +48,7 @@
   font-family: var(--font-display);
   font-size: clamp(18px, 4.8vw, 24px);
   font-weight: 900;
-  color: var(--cta-green, #2a7a3e);
+  color: var(--ocean, #64AF5A);
   line-height: 1.05;
   text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,.9);
 }
@@ -139,7 +139,7 @@
     position: absolute;
     top: 0; bottom: 0; left: 0;
     width: 3px;
-    background: var(--cta-green, #2a7a3e);
+    background: var(--ocean, #64AF5A);
     z-index: 3;
   }
 
@@ -213,7 +213,7 @@
     margin-bottom: 12px;
   }
   .k-hero-cta-primary {
-    background: var(--cta-green, #2a7a3e);
+    background: var(--ocean, #64AF5A);
     color: #fff;
     font-weight: 700;
     font-size: 12px;
@@ -225,7 +225,7 @@
     font-family: var(--font);
     transition: background .15s, transform .12s;
   }
-  .k-hero-cta-primary:hover { background: #1e5c2e; transform: translateY(-1px); }
+  .k-hero-cta-primary:hover { background: var(--ocean-dark, #4A9040); transform: translateY(-1px); }
   .k-hero-cta-ghost { display: none; }
 
   /* Trust mini — 3 items, compact */
