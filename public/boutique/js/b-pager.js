@@ -283,24 +283,6 @@ function _setupSectionAutoAdvance() {
         clearTimeout(page._bounceTimer);
         page._bounceTimer = null;
       }
-      // ── Bounce vers le haut → catégorie précédente ───────────
-      const atTop = st === 0;
-
-      if (!wasDown && atTop && lastST === 0) {
-        if (page._bounceUpTimer) clearTimeout(page._bounceUpTimer);
-        page._bounceUpTimer = setTimeout(() => {
-          page._bounceUpTimer = null;
-          if (state.modalOpen || window.innerWidth >= 900) return;
-          const realPages = _getRealPages(grid);
-          const currentIdx = _getCurrentIndex(grid);
-          const prevIdx = currentIdx - 1 < 0 ? realPages.length - 1 : currentIdx - 1;
-          _showPrevHint(page, realPages[prevIdx]);
-          _scrollToIndex(grid, prevIdx, 'smooth');
-        }, 350);
-      } else if (page._bounceUpTimer) {
-        clearTimeout(page._bounceUpTimer);
-        page._bounceUpTimer = null;
-      }
     };
 
     page.addEventListener('scroll', page._bounceH, { passive: true });
@@ -445,7 +427,6 @@ function destroyMobilePager() {
     if (grid._leftSwipeTouchEnd) {
       grid.removeEventListener('touchend', grid._leftSwipeTouchEnd);
       grid._leftSwipeTouchEnd = null;
-    }
     }
     // Nettoyer bounces sur les pages (handler + timer pendant)
     _getPages(grid).forEach(p => {
