@@ -389,14 +389,6 @@ function _setupLeftEdgeSwipe(grid) {
   grid.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
   grid.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
 }
-        });
-      });
-    }
-  };
-
-  grid.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
-  grid.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
-}
 
 function _setupMobilePager() {
   if (window.innerWidth >= 900) {
