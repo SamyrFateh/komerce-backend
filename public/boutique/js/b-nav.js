@@ -21,6 +21,12 @@ import { renderTrackView }               from './b-tracking.js';
  * Branche tous les listeners du drawer panier + modal commande.
  */
 export function setupDrawer() {
+  const _required = ['cartBtn','cartClose','cartOverlay','cartContinue','cartClear','cartWhatsapp','cartCheckout','orderClose','orderModal'];
+  const _missing = _required.filter(k => !dom[k]);
+  if (_missing.length) {
+    console.error('[b-nav] setupDrawer : éléments DOM manquants :', _missing.join(', '));
+    return;
+  }
   dom.cartBtn.addEventListener('click', openCart);
   dom.cartClose.addEventListener('click', closeCart);
   dom.cartOverlay.addEventListener('click', closeCart);

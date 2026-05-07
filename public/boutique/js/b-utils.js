@@ -187,10 +187,15 @@ export function bindCarouselDots(card) {
 }
 
 // ── API helpers (wrappers around window.K.request) ──
+function _assertApi() {
+  if (!window.K?.request) throw new Error('[Komerce] komerce-api.js manquant ou en erreur');
+}
 export function apiGet(path) {
+  _assertApi();
   return window.K.request(path, 'GET');
 }
 export function apiPost(path, body, options) {
+  _assertApi();
   return window.K.request(path, 'POST', body || null, 2, options || {});
 }
 
