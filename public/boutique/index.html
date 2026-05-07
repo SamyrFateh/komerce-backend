@@ -56,7 +56,7 @@ if('serviceWorker' in navigator){
 <link rel="stylesheet" href="/boutique/css/tokens.css?v=339">
 <link rel="stylesheet" href="/boutique/css/reset.css?v=339">
 <link rel="stylesheet" href="/boutique/css/layout.css?v=339">
-<link rel="stylesheet" href="/boutique/css/hero.css?v=340">
+<link rel="stylesheet" href="/boutique/css/hero.css?v=339">
 <link rel="stylesheet" href="/boutique/css/categories.css?v=339">
 <link rel="stylesheet" href="/boutique/css/products.css?v=339">
 <link rel="stylesheet" href="/boutique/css/modal.css?v=339">
@@ -64,7 +64,7 @@ if('serviceWorker' in navigator){
 <link rel="stylesheet" href="/boutique/css/interactions.css?v=339">
 <link rel="stylesheet" href="/boutique/css/event.css?v=339">
 <link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=339">
-<link rel="stylesheet" href="/boutique/css/desktop-mega-nav.css?v=340">
+<link rel="stylesheet" href="/boutique/css/mini-cart.css?v=339">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -139,22 +139,6 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 </section>
-
-<!-- ═══ TRUST BAR — desktop only (masquée mobile via CSS) ═══ -->
-<div class="k-hero-trust-bar" aria-hidden="true">
-  <div class="k-hero-trust-bar-item">
-    <svg viewBox="0 0 24 24"><path d="M5 12H3l9-9 9 9h-2v8H5v-8z"/></svg>
-    Retrait relais
-  </div>
-  <div class="k-hero-trust-bar-item">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-    Livraison 3 à 5 semaines
-  </div>
-  <div class="k-hero-trust-bar-item">
-    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
-    450+ produits
-  </div>
-</div>
 
 <!-- ═══ SENTINEL (invisible marker for IntersectionObserver) ═══ -->
 <div id="k-bar-sentinel"></div>
@@ -245,8 +229,8 @@ if('serviceWorker' in navigator){
 
   <!-- ═══ CATALOGUE PRODUITS ═══ -->
   <div id="k-desktop-catalog-wrap">
-    <!-- Sidebar supprimée (LOT 13) — navigation via mega-nav chips rail -->
-
+    <!-- Sidebar catégories desktop (LOT 11) — masquée mobile via CSS -->
+    <aside id="k-desktop-sidebar" class="k-desktop-sidebar" aria-label="Catégories"></aside>
     <section class="k-section" id="k-catalog-section">
       <div class="k-grid" id="k-grid">
         <!-- JS fills -->

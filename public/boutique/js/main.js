@@ -28,15 +28,20 @@ import './b-store.js';        // state + SUBCATS + dom (initDom appelé par bout
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
 // b-cart-pill.js supprimé — pill remplacée par le side cart desktop
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
+import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
   window._kbus = bus;
   // LOT 12 : init desktop upgrade après le boot
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { setupDesktopUpgrade(); });
+    document.addEventListener('DOMContentLoaded', function() {
+      setupDesktopUpgrade();
+      setupMiniCart();   // Mini-cart flottant mobile
+    });
   } else {
     setupDesktopUpgrade();
+    setupMiniCart();     // Mini-cart flottant mobile
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
