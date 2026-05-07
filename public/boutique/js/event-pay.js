@@ -63,85 +63,52 @@
 
     let html = '';
 
-    // ── Identité événement ─────────────────────────────────────
-    html += '<div class="ev-card">';
-    html += '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">';
-    html += '<div style="flex:1;min-width:200px;">';
-    html += '<h2 class="ev-card-title">' + escHtml(info.event_name || 'Panier événement') + '</h2>';
-    if (info.recipient_name) {
-      html += '<div class="ev-card-sub">📍 Pour ' + escHtml(info.recipient_name) + '</div>';
-    }
-    html += '<div class="ev-card-sub" style="margin-top:6px;">Bonjour <strong>' + escHtml(info.contributor_name) + '</strong></div>';
+    // ── Bloc unique : identité + montant + statut ──────────────
+    html += '<div class="ev-card" style="margin-bottom:12px;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
+    html += '<div>';
+    html += '<h2 class="ev-card-title" style="margin-bottom:2px;">' + escHtml(info.event_name || 'Panier événement') + '</h2>';
+    html += '<div class="ev-card-sub" style="margin:0;">Bonjour <strong>' + escHtml(info.contributor_name) + '</strong>';
+    if (info.recipient_name) html += ' · Pour ' + escHtml(info.recipient_name);
+    html += '</div>';
     html += '</div>';
     html += '<div>' + statusBadge(info.token_status) + '</div>';
     html += '</div>';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--ev-bg);border-radius:8px;">';
+    html += '<span style="font-size:13px;color:var(--ev-text-muted);">Votre part</span>';
+    html += '<span style="font-size:18px;font-weight:700;color:var(--ev-text);">' + fmt(info.amount_kmf) + ' KMF</span>';
     html += '</div>';
-
-    // ── Montant + compteur ─────────────────────────────────────
-    html += '<div class="ev-card">';
-    html += '<h3 class="ev-card-title" style="font-size:15px;">💳 Votre part</h3>';
-    html += '<div class="ev-totals">';
-    html += '<div class="ev-totals-row ev-totals-row--final">';
-    html += '<span>Montant à confirmer</span>';
-    html += '<span>' + fmt(info.amount_kmf) + ' KMF</span>';
-    html += '</div></div>';
-
-    // Compteur neutre (paiements confirmés / total)
     if (info.paiements_confirmes) {
-      html += '<div class="ev-help" style="margin-top:10px;text-align:center;">';
-      html += '🤝 Paiements confirmés : <strong>' + escHtml(info.paiements_confirmes) + '</strong>';
-      html += '</div>';
-    }
-
-    if (info.session_expires_at) {
-      const dt = new Date(info.session_expires_at);
-      html += '<div class="ev-help" style="margin-top:6px;text-align:center;">';
-      html += '📅 Session valable jusqu\'au <strong>' +
-        dt.toLocaleDateString('fr-FR') + ' ' +
-        dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '</strong>';
-      html += '</div>';
+      html += '<div class="ev-help" style="margin-top:8px;text-align:center;">🤝 ' + escHtml(info.paiements_confirmes) + ' confirmé(s)</div>';
     }
     html += '</div>';
 
-    // ── Statut spécifique ──────────────────────────────────────
+    // ── Statut final ───────────────────────────────────────────
     if (isPaid) {
-      html += '<div class="ev-info" style="background:#dcfce7;color:#166534;border-color:#86efac;">';
-      html += '✅ <strong>Merci pour votre participation !</strong><br>';
-      html += 'Votre paiement de ' + fmt(info.amount_kmf) + ' KMF est confirmé.';
+      html += '<div class="ev-info" style="background:#dcfce7;color:#166534;border-color:#86efac;text-align:center;">';
+      html += '✅ <strong>Paiement confirmé — Merci !</strong>';
       html += '</div>';
     } else if (info.token_status === 'expired') {
-      html += '<div class="ev-warning">';
-      html += '⏰ Cette session de paiement est terminée. Contactez le créateur du panier pour relancer.';
-      html += '</div>';
+      html += '<div class="ev-warning">⏰ Session expirée. Contactez le créateur du panier.</div>';
     } else if (info.token_status === 'cancelled') {
       html += '<div class="ev-warning">Ce paiement a été annulé.</div>';
     } else if (isAuthorized) {
-      html += '<div class="ev-info">';
-      html += '⏳ <strong>Votre carte a été préautorisée.</strong><br>';
-      html += 'Le débit aura lieu quand <em>tous</em> les contributeurs auront confirmé leur part.';
+      html += '<div class="ev-info" style="text-align:center;">';
+      html += '⏳ <strong>Carte préautorisée.</strong> Le débit aura lieu quand tous auront confirmé.';
       html += '</div>';
     }
 
-    // ── Formulaire Stripe ──────────────────────────────────────
+    // ── Formulaire Stripe (direct, sans titre superflu) ────────
     if (!isFinal && !isAuthorized) {
       html += '<div class="ev-card">';
-      html += '<h3 class="ev-card-title" style="font-size:15px;">🔒 Paiement sécurisé</h3>';
-      html += '<p class="ev-card-sub">Renseignez votre carte. ' +
-              'Aucun débit avant que toutes les parts soient confirmées.</p>';
-
-      html += '<div class="ev-field">';
-      html += '<label class="ev-label" for="ev-billing-name">Nom sur la carte</label>';
-      html += '<input type="text" id="ev-billing-name" class="ev-input" placeholder="Ex : ' + escHtml(info.contributor_name) + '">';
-      html += '</div>';
-
-      html += '<div class="ev-field">';
+      html += '<div class="ev-field" style="margin-bottom:10px;">';
       html += '<label class="ev-label">Carte bancaire</label>';
-      html += '<div id="ev-stripe-card" style="padding:12px;border:1px solid var(--ev-border);border-radius:6px;background:white;"></div>';
+      html += '<div id="ev-stripe-card" style="padding:12px;border:1.5px solid var(--ev-border);border-radius:10px;background:white;"></div>';
       html += '<div id="ev-stripe-error" class="ev-help" style="color:#dc2626;margin-top:6px;display:none;"></div>';
       html += '</div>';
-
-      html += '<button id="ev-pay-btn" class="ev-btn ev-btn-success ev-btn-block">' +
-              '💳 Confirmer ma part — ' + fmt(info.amount_kmf) + ' KMF</button>';
+      html += '<button id="ev-pay-btn" class="ev-btn ev-btn-success ev-btn-block" style="font-size:16px;padding:14px 20px;">' +
+              '🔒 Confirmer — ' + fmt(info.amount_kmf) + ' KMF</button>';
+      html += '<div class="ev-help" style="text-align:center;margin-top:8px;">Aucun débit avant que tous les contributeurs aient confirmé</div>';
       html += '</div>';
     }
 
@@ -149,7 +116,6 @@
     contentEl.style.display = 'block';
     loadingEl.style.display = 'none';
 
-    // ── Init Stripe si formulaire visible ──
     if (!isFinal && !isAuthorized) {
       initStripeForm(info);
     }
@@ -203,11 +169,22 @@
     payBtn.addEventListener('click', () => handlePay(info));
   }
 
+  async function waitForStatusChange(token, maxAttempts = 8, delayMs = 1500) {
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, delayMs));
+      try {
+        const r = await fetch('/api/collective-payments/' + encodeURIComponent(token));
+        if (!r.ok) break;
+        const data = await r.json();
+        if (data.token_status === 'authorized' || data.token_status === 'paid') break;
+      } catch (_) { break; }
+    }
+  }
+
   async function handlePay(info) {
     const btn = document.getElementById('ev-pay-btn');
     const errEl = document.getElementById('ev-stripe-error');
-    const nameInput = document.getElementById('ev-billing-name');
-    const billingName = (nameInput && nameInput.value || info.contributor_name || '').trim();
+    const billingName = (info.contributor_name || '').trim();
 
     if (!_stripe || !_stripeCard) {
       if (errEl) {
@@ -216,11 +193,6 @@
       }
       return;
     }
-    if (!billingName) {
-      if (errEl) { errEl.textContent = 'Indiquez le nom sur la carte.'; errEl.style.display = 'block'; }
-      return;
-    }
-
     btn.disabled = true;
     btn.textContent = '⏳ Sécurisation…';
     if (errEl) { errEl.style.display = 'none'; }
@@ -253,9 +225,10 @@
         throw new Error(result.error.message || 'Paiement refusé.');
       }
 
-      // ── Étape 3 : succès — recharger pour voir le nouveau statut ──
+      // ── Étape 3 : succès — attendre confirmation backend puis reload ──
       btn.textContent = '✅ Confirmé !';
-      setTimeout(() => window.location.reload(), 1200);
+      await waitForStatusChange(getPaymentToken());
+      window.location.reload();
     } catch (e) {
       console.error('handlePay:', e);
       if (errEl) { errEl.textContent = e.message || 'Échec du paiement.'; errEl.style.display = 'block'; }
