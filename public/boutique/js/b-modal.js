@@ -209,44 +209,24 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
   });
 
   /**
-   * Renders the variant picker (Taille / Couleur / Pointure / etc.)
-   * inside #k-modal-variants. Called after fetching /api/products/:id.
-   * Clicking a color variant with image_url updates the carousel first slide.
-   * @param {Object} variants - { "Taille": [{value, stock, price_kmf, image_url}], ... }
-   * @param {Object} product  - Full product object (for price_kmf fallback)
-   */
-  /**
-   * _renderVariants — Sélecteur de variantes simplifié.
-   * Couleurs  → swatches rectangulaires avec image produit
-   * Tailles   → grille de pills compactes
-   * Label dynamique "Type · valeur sélectionnée"
+   * _renderVariants — Rendu des variantes du produit.
+   *
+   * Couleur → rangée de SKUs miniatures : image réelle du produit + nom de couleur.
+   *   - Si opt.image_url est fourni par l'API : on l'affiche.
+   *   - Pas de fallback hex, pas de COLOR_MAP — si pas d'image, on affiche juste le nom en pill texte.
+   *   - Clic couleur : met à jour le carousel principal + le prix si différent.
+   *
+   * Autres types (Taille, Pointure…) → grille de pills texte compactes.
+   *
+   * @param {Object} variants  { "Couleur": [{value, stock, price_kmf, image_url}], "Taille": [...] }
+   * @param {Object} product   Produit complet (fallback price_kmf + images)
    */
   function _renderVariants(variants, product) {
     var container = dom.modalVariants || document.getElementById('k-modal-variants');
     if (!container) return;
     container.innerHTML = '';
 
-    // Couleur fallback hex si pas d'image
-    var COLOR_MAP = {
-      'noir':'#111','black':'#111','blanc':'#FFF','white':'#FFF',
-      'beige':'#D4B896','bordeaux':'#6E1423','burgundy':'#6E1423',
-      'rouge':'#D32F2F','red':'#D32F2F','rose':'#E91E8C','pink':'#E91E8C',
-      'or':'#C9A84C','gold':'#C9A84C','argent':'#A8A9AD','silver':'#A8A9AD',
-      'bleu':'#1565C0','blue':'#1565C0','marine':'#0D2554','navy':'#0D2554',
-      'turquoise':'#00BCD4','vert':'#2E7D32','green':'#2E7D32',
-      'kaki':'#6B6B3A','khaki':'#6B6B3A','olive':'#6B6B3A',
-      'marron':'#5D4037','brown':'#5D4037','orange':'#E65100',
-      'jaune':'#F9A825','yellow':'#F9A825','violet':'#6A1B9A','purple':'#6A1B9A',
-      'gris':'#757575','grey':'#757575','gray':'#757575',
-      'multicolore':'linear-gradient(135deg,#e74c3c,#f39c12,#2ecc71,#3498db,#9b59b6)',
-    };
-    function _colorFallback(name) {
-      if (!name) return null;
-      var n = name.toLowerCase().trim();
-      if (COLOR_MAP[n]) return COLOR_MAP[n];
-      for (var k in COLOR_MAP) { if (n.includes(k)) return COLOR_MAP[k]; }
-      return null;
-    }
+    // Helper : normalise une URL Cloudinary pour comparer sans paramètres
     function _normUrl(u) {
       return u ? u.split('?')[0].replace(/\/upload\/[^/]+\//, '/upload/') : '';
     }
@@ -260,7 +240,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       var group = document.createElement('div');
       group.className = 'k-vg';
 
-      // ── Label row ──────────────────────────────────────────
+      // Label dynamique "Couleur · Bleu"
       var labelRow = document.createElement('div');
       labelRow.className = 'k-vg-label';
       labelRow.innerHTML =
@@ -270,64 +250,76 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       var labelVal = labelRow.querySelector('.k-vg-label-val');
       group.appendChild(labelRow);
 
-      // ── Options ────────────────────────────────────────────
       var wrap = document.createElement('div');
-      wrap.className = isColor ? 'k-vg-swatches' : 'k-vg-sizes';
+      wrap.className = isColor ? 'k-vg-skus' : 'k-vg-sizes';
 
       options.forEach(function(opt) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
         var isOut = (opt.stock === 0);
+        var btn   = document.createElement('button');
+        btn.type  = 'button';
 
         if (isColor) {
-          btn.className = 'k-vs' + (isOut ? ' k-vs--out' : '');
-          btn.setAttribute('aria-label', opt.value);
+          // ── SKU miniature couleur ──────────────────────────────
+          btn.className = 'k-sku' + (isOut ? ' k-sku--out' : '');
+          btn.setAttribute('aria-label', opt.value + (isOut ? ' (épuisé)' : ''));
+
           if (opt.image_url) {
-            var img = document.createElement('img');
-            img.src = optimizeImgUrl(opt.image_url, 120);
-            img.alt = opt.value;
+            var img    = document.createElement('img');
+            img.src    = optimizeImgUrl(opt.image_url, 96);
+            img.alt    = opt.value;
             img.loading = 'lazy';
+            img.decoding = 'async';
             btn.appendChild(img);
-          } else {
-            var hex = _colorFallback(opt.value);
-            if (hex && hex.startsWith('linear-gradient')) {
-              btn.style.backgroundImage = hex;
-            } else {
-              btn.style.backgroundColor = hex || '#ccc';
-            }
           }
+
+          var nameEl = document.createElement('span');
+          nameEl.className   = 'k-sku-name';
+          nameEl.textContent = opt.value;
+          btn.appendChild(nameEl);
+
           if (isOut) {
             var slash = document.createElement('span');
-            slash.className = 'k-vs-out-slash';
+            slash.className = 'k-sku-slash';
+            slash.setAttribute('aria-hidden', 'true');
             btn.appendChild(slash);
           }
         } else {
+          // ── Pill texte taille / pointure ───────────────────────
           btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
           btn.textContent = opt.value;
-          btn.disabled = isOut;
+          btn.disabled    = isOut;
         }
 
         btn.addEventListener('click', function() {
           if (isOut) return;
-          // Deselect siblings
-          wrap.querySelectorAll(isColor ? '.k-vs' : '.k-vp').forEach(function(b) {
-            b.classList.remove(isColor ? 'k-vs--active' : 'k-vp--active');
+
+          // Désélectionner les autres
+          wrap.querySelectorAll(isColor ? '.k-sku' : '.k-vp').forEach(function(b) {
+            b.classList.remove(isColor ? 'k-sku--active' : 'k-vp--active');
           });
-          btn.classList.add(isColor ? 'k-vs--active' : 'k-vp--active');
-          // Mettre à jour le label
+          btn.classList.add(isColor ? 'k-sku--active' : 'k-vp--active');
+
+          // Mettre à jour le label et le prix
           labelVal.textContent = opt.value;
-          // Mettre à jour le prix
-          dom.modalPrice.textContent = fmtPrice(opt.price_kmf || product.price_kmf);
-          // Sync carousel sur les couleurs avec image
+          if (opt.price_kmf) {
+            dom.modalPrice.textContent = fmtPrice(opt.price_kmf);
+          }
+
+          // Couleur avec image → synchroniser le carousel
           if (isColor && opt.image_url) {
-            var baseImgs = (product.images && product.images.length) ? product.images : [product.image_url];
+            var baseImgs = (product.images && product.images.length)
+              ? product.images
+              : (product.image_url ? [product.image_url] : []);
             var normOpt = _normUrl(opt.image_url);
             var idx = baseImgs.findIndex(function(u) { return _normUrl(u) === normOpt; });
             if (idx >= 0) {
               goToSlide(idx);
             } else {
+              // Image de la couleur pas encore dans le carousel → la mettre en 1er
               buildCarouselSlides(Object.assign({}, product, {
-                images: [opt.image_url].concat(baseImgs.filter(function(u) { return u !== opt.image_url; }))
+                images: [opt.image_url].concat(
+                  baseImgs.filter(function(u) { return u !== opt.image_url; })
+                )
               }));
             }
           }
@@ -340,18 +332,14 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       container.appendChild(group);
     });
 
-    // FIX scroll-dans-le-vide mobile : ajuster le padding-bottom de .k-modal-scroll
-    // à la hauteur réelle de la barre d'actions fixe, mesurée après rendu des variantes.
-    // Les swatches couleur (64px) sont bien plus hauts que les anciennes pills (36px)
-    // et allongeaient le scrollHeight sans que la compensation CSS suive.
+    // Ajuster le padding-bottom du scroll pour la barre d'actions fixe
     if (window.innerWidth < 900) {
       requestAnimationFrame(function() {
-        var actBar = document.querySelector('.k-modal-actions');
+        var actBar  = document.querySelector('.k-modal-actions');
         var scrollEl = document.querySelector('.k-modal-scroll');
         if (actBar && scrollEl) {
-          var barH = actBar.offsetHeight;
           scrollEl.style.paddingBottom =
-            'calc(' + (barH + 16) + 'px + env(safe-area-inset-bottom, 0px))';
+            'calc(' + (actBar.offsetHeight + 16) + 'px + env(safe-area-inset-bottom, 0px))';
         }
       });
     }

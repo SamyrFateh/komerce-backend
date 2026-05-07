@@ -832,106 +832,12 @@
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   VARIANTES — Pills de couleur / taille / option
-   (styles manquants — Bug 1 fix)
-   ══════════════════════════════════════════════════════════════ */
-.k-variant-group {
-  padding: 0 14px 2px;
-}
-.k-variant-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  margin-bottom: 8px;
-}
-.k-variant-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 
-/* Pill texte (taille, matière…) */
-.k-variant-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 50px;
-  border: 1.5px solid var(--border);
-  background: var(--white);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s;
-  white-space: nowrap;
-  user-select: none;
-}
-.k-variant-pill:hover:not(:disabled) {
-  border-color: var(--coral);
-  background: color-mix(in srgb, var(--coral) 6%, var(--white));
-}
-.k-variant-pill--active {
-  border-color: var(--coral);
-  background: color-mix(in srgb, var(--coral) 10%, var(--white));
-  color: var(--coral-dark);
-  font-weight: 700;
-}
-.k-variant-pill--out {
-  opacity: .4;
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
-
-/* Pill couleur (swatch rond avec image ou couleur) */
-.k-variant-pill--color {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--sand-dark); /* fallback si image absente */
-  position: relative;
-  overflow: visible;
-}
-.k-variant-pill--color.k-variant-pill--active {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 25%, transparent);
-  background: unset; /* laisser backgroundImage inline prendre le dessus */
-  background-size: cover;
-  background-position: center;
-}
-/* Tooltip nom couleur */
-.k-variant-color-tip {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: var(--white);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 500;
-}
-.k-variant-pill--color:hover .k-variant-color-tip,
-.k-variant-pill--color:focus .k-variant-color-tip {
-  display: block;
-}
 
 /* ══════════════════════════════════════════════════════════════
-   VARIANTES v2 — Swatches rectangulaires + grille tailles
-   Classes : .k-vg / .k-vs / .k-vp
+   VARIANTES — SKUs couleur + grille tailles / pointures
+   Classes couleur : .k-vg / .k-vg-skus / .k-sku
+   Classes taille  : .k-vg / .k-vg-sizes / .k-vp
    ══════════════════════════════════════════════════════════════ */
 
 /* Groupe variante */
@@ -939,7 +845,7 @@
   padding: 0 0 4px;
 }
 
-/* Label "Couleur · Gris foncé" */
+/* Label "Couleur · Bleu" */
 .k-vg-label {
   display: flex;
   align-items: baseline;
@@ -950,111 +856,97 @@
   margin-bottom: 10px;
   line-height: 1;
 }
-.k-vg-label-type {
-  font-weight: 700;
-  color: var(--text);
-}
-.k-vg-label-sep {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-.k-vg-label-val {
-  color: var(--text-muted);
-  font-weight: 400;
-}
+.k-vg-label-type { font-weight: 700; color: var(--text); }
+.k-vg-label-sep  { color: var(--text-muted); font-size: 11px; }
+.k-vg-label-val  { color: var(--text-muted); font-weight: 400; }
 
-/* ── Swatches couleur rectangulaires (style AliExpress/Temu) ── */
-.k-vg-swatches {
+/* ── SKUs couleur ────────────────────────────────────────────── */
+.k-vg-skus {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 
-.k-vs {
-  position: relative;
+/* Bouton SKU : image produit + nom couleur en dessous */
+.k-sku {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  border: none;
-  background: none;
-  padding: 0;
+  gap: 5px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  padding: 3px 3px 6px;
   cursor: pointer;
+  width: 68px;
+  position: relative;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Image swatch */
-.k-vs img {
-  width: 64px;
-  height: 64px;
+.k-sku img {
+  width: 60px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 8px;
-  border: 2px solid var(--border);
+  border-radius: 7px;
   display: block;
-  transition: border-color .15s, transform .12s;
 }
 
-/* Nom de la couleur sous le swatch */
-.k-vs::after {
-  content: attr(aria-label);
+.k-sku-name {
   font-size: 10px;
+  font-weight: 600;
   color: var(--text-muted);
-  max-width: 64px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: center;
+  max-width: 62px;
   line-height: 1.2;
 }
 
-/* Swatch couleur seule (sans image = fallback hex) */
-.k-vs:not(:has(img)) {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  border: 2px solid var(--border);
-  background-size: cover;
-  background-position: center;
-  flex-direction: row;
-}
-
-.k-vs:hover img {
+/* Hover */
+.k-sku:hover:not(.k-sku--out) {
   border-color: var(--coral);
-  transform: scale(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(200, 92, 45, .18);
 }
 
-.k-vs--active img {
+/* Sélectionné */
+.k-sku--active {
   border-color: var(--coral) !important;
   box-shadow: 0 0 0 2px var(--coral);
 }
-
-.k-vs--active::after {
+.k-sku--active .k-sku-name {
   color: var(--coral-dark);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Rupture stock : overlay diagonal */
-.k-vs--out {
-  opacity: .45;
+/* Épuisé */
+.k-sku--out {
+  opacity: .42;
   cursor: not-allowed;
   pointer-events: none;
 }
-.k-vs-out-slash {
+
+/* Slash diagonale sur image épuisé */
+.k-sku-slash {
   position: absolute;
-  top: 0; left: 0;
-  width: 64px; height: 64px;
-  border-radius: 8px;
+  top: 3px;
+  left: 3px;
+  width: 60px;
+  height: 60px;
+  border-radius: 7px;
   background: linear-gradient(
     to bottom right,
     transparent calc(50% - 1px),
-    rgba(0,0,0,.35) calc(50% - 1px),
-    rgba(0,0,0,.35) calc(50% + 1px),
+    rgba(0,0,0,.3) calc(50% - 1px),
+    rgba(0,0,0,.3) calc(50% + 1px),
     transparent calc(50% + 1px)
   );
   pointer-events: none;
 }
 
-/* ── Grille tailles ─────────────────────────────────────────── */
+/* ── Grille tailles / pointures ──────────────────────────────── */
 .k-vg-sizes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
@@ -1079,12 +971,10 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
-
 .k-vp:hover:not(:disabled) {
   border-color: var(--coral);
   background: color-mix(in srgb, var(--coral) 5%, var(--white));
 }
-
 .k-vp--active {
   border-color: var(--coral) !important;
   border-width: 2px;
@@ -1093,18 +983,18 @@
   font-weight: 700;
   box-shadow: 0 0 0 1px var(--coral);
 }
-
 .k-vp--out {
   opacity: .38;
   cursor: not-allowed;
   text-decoration: line-through;
 }
 
-/* ── Desktop : swatches légèrement plus grands ─────────────── */
+/* ── Desktop : SKUs et pills légèrement plus grands ──────────── */
 @media (min-width: 768px) {
-  .k-vs img { width: 72px; height: 72px; }
-  .k-vs-out-slash { width: 72px; height: 72px; }
-  .k-vs::after { max-width: 72px; }
-  .k-vg-sizes { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
-  .k-vp { height: 44px; font-size: 14px; }
+  .k-sku        { width: 76px; }
+  .k-sku img    { width: 68px; height: 68px; }
+  .k-sku-name   { max-width: 70px; font-size: 11px; }
+  .k-sku-slash  { width: 68px; height: 68px; }
+  .k-vg-sizes   { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .k-vp         { height: 44px; font-size: 14px; }
 }
