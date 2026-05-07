@@ -15,11 +15,12 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-const adminOnly = [authenticate, requireRole(['admin'])];
+const adminOnly  = [authenticate, requireRole(['admin'])];
+const hubOrAdmin = [authenticate, requireRole(['admin', 'agent_hub'])];
 
-// ── GET / — List active carriers ─────────────────────────────────────────────
+// ── GET / — List active carriers (admin + hub pour sélection à l'expédition) ──
 
-router.get('/', ...adminOnly, async (req, res, next) => {
+router.get('/', ...hubOrAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT * FROM carriers

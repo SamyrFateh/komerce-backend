@@ -616,6 +616,133 @@ router.post('/orders/:id/create-parcel', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
+// ── POST /orders/:id/auto-prepare — Auto-split + assign articles (R2 compliant) ──
+// Crée automatiquement un colis et assigne tous les articles non-assignés.
+// Déclenché sur premier scan QR d'une commande. L'opérateur ne décide rien.
+router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Lock la commande
+    const { rows: [order] } = await client.query(
+      `SELECT id, reference, status FROM orders WHERE id = $1 FOR UPDATE`,
+      [req.params.id]
+    );
+    if (!order) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Commande introuvable' }); }
+
+    if (!['confirmed', 'ordered', 'preparation'].includes(order.status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: `Auto-prepare impossible — statut: ${order.status}`,
+        hint: 'La commande doit être confirmée, commandée ou en préparation'
+      });
+    }
+
+    // Articles non encore assignés à un colis actif
+    const { rows: unassigned } = await client.query(`
+      SELECT oi.id, oi.quantity, oi.product_id, p.name AS product_name, p.weight_kg
+      FROM order_items oi
+      LEFT JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM parcel_items pi
+          JOIN parcels pa ON pa.id = pi.parcel_id AND pa.status != 'cancelled'
+          WHERE pi.order_item_id = oi.id
+        )
+      ORDER BY oi.created_at ASC
+    `, [order.id]);
+
+    if (unassigned.length === 0) {
+      await client.query('ROLLBACK');
+      return res.json({
+        message: 'Tous les articles sont déjà assignés à un colis',
+        already_complete: true
+      });
+    }
+
+    // Passer en preparation si besoin
+    if (['confirmed', 'ordered'].includes(order.status)) {
+      await transitionOrderStatus({
+        orderId: order.id,
+        newStatus: 'preparation',
+        actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
+        source: 'hub_auto_prepare',
+        dbClient: client,
+      });
+    }
+
+    // Créer un colis unique pour tous les articles non-assignés
+    const reference = await generateParcelRef(client);
+
+    let external_code = null, seal_code = null;
+    try {
+      const security = require('../services/parcel-security');
+      external_code = security.generateExternalCode();
+      seal_code = security.generateSealCode();
+    } catch(e) { /* non-critique */ }
+
+    const insertQ = external_code
+      ? `INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, notes)
+         VALUES ($1, $2, $3, $4, 'standard', 'draft', $5) RETURNING *`
+      : `INSERT INTO parcels (reference, order_id, type, status, notes)
+         VALUES ($1, $2, 'standard', 'draft', $3) RETURNING *`;
+
+    const insertParams = external_code
+      ? [reference, external_code, seal_code, order.id, `Auto-créé sur scan QR — ${unassigned.length} article(s)`]
+      : [reference, order.id, `Auto-créé sur scan QR — ${unassigned.length} article(s)`];
+
+    const { rows: [parcel] } = await client.query(insertQ, insertParams);
+
+    // Assigner tous les articles non-assignés
+    for (const item of unassigned) {
+      await client.query(`
+        INSERT INTO parcel_items (parcel_id, order_item_id, quantity)
+        VALUES ($1, $2, $3)
+        ON CONFLICT DO NOTHING
+      `, [parcel.id, item.id, item.quantity]);
+    }
+
+    // Poids estimé total
+    const totalWeight = unassigned.reduce((s, i) => s + ((i.weight_kg || 0.5) * i.quantity), 0);
+    await client.query(
+      'UPDATE parcels SET weight_kg = $1 WHERE id = $2',
+      [Math.round(totalWeight * 100) / 100, parcel.id]
+    );
+
+    // Log scan + commentaire
+    try {
+      await client.query(`
+        INSERT INTO scans (order_id, step, scanned_by, notes)
+        VALUES ($1, 'preparation', $2, $3)
+      `, [order.id, req.user.id, `Auto-prepare: colis ${reference} créé, ${unassigned.length} article(s) assigné(s)`]);
+    } catch(e) { /* scans table peut varier */ }
+
+    await client.query(`
+      INSERT INTO order_comments (order_id, author_id, author_name, text)
+      VALUES ($1, $2, 'Hub', $3)
+    `, [order.id, req.user.id, `📦 Auto-prepare: colis ${reference} créé (${unassigned.length} article(s))`]);
+
+    await client.query('COMMIT');
+
+    // Fetch colis complet post-commit
+    const { rows: [fullParcel] } = await db.query('SELECT * FROM parcels WHERE id = $1', [parcel.id]);
+
+    res.status(201).json({
+      message: `Colis ${reference} créé automatiquement — ${unassigned.length} article(s) assigné(s)`,
+      parcel: fullParcel,
+      items_assigned: unassigned.length,
+      items: unassigned.map(i => ({ id: i.id, product_name: i.product_name, quantity: i.quantity })),
+      next_action: 'ready', // l'opérateur n'a plus qu'à marquer prêt
+    });
+  } catch(e) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(e);
+  } finally {
+    client.release();
+  }
+});
+
 // ── POST /parcels/:id/add-item — Ajouter article ───────────────────────────
 router.post('/parcels/:id/add-item', ...hubAuth, async (req, res, next) => {
   try {

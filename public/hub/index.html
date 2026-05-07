@@ -2,633 +2,427 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Komerce Hub — Logistique</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Hub · Komerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
-      min-height: 100vh;
+    :root {
+      --bg:#0d0d0d; --bg2:#161616; --bg3:#1f1f1f;
+      --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.15);
+      --text:#f0f0f0; --text2:#999; --text3:#555;
+      --green:#00e676; --green-dim:rgba(0,230,118,0.12);
+      --amber:#ffab40; --amber-dim:rgba(255,171,64,0.12);
+      --red:#ff5252; --red-dim:rgba(255,82,82,0.12);
+      --blue:#40c4ff; --blue-dim:rgba(64,196,255,0.10);
+      --mono:'IBM Plex Mono',monospace; --sans:'DM Sans',sans-serif;
+      --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
     }
-
-    .hub-header {
-      background: #d97706;
-      color: #fff;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .hub-header h1 { font-size: 18px; font-weight: 800; }
-    .hub-header .hub-sub { font-size: 13px; color: #fde68a; }
-    .hub-header .refresh-btn {
-      padding: 5px 12px;
-      border: 1px solid rgba(255,255,255,0.4);
-      border-radius: 6px;
-      background: transparent;
-      color: #fff;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .hub-content {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    /* ── KPI strip ─────────────────────────── */
-    .hub-kpis {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .hub-kpi {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .hub-kpi .number {
-      font-size: 26px;
-      font-weight: 800;
-    }
-    .hub-kpi .label {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-
-    /* ── Tabs ──────────────────────────────── */
-    .hub-tabs {
-      display: flex;
-      border-bottom: 2px solid #e5e7eb;
-      margin-bottom: 0;
-      background: #fff;
-      border-radius: 10px 10px 0 0;
-      overflow: hidden;
-    }
-    .hub-tab {
-      flex: 1;
-      padding: 12px 8px;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      color: #6b7280;
-      border-bottom: 3px solid transparent;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .hub-tab.active {
-      color: #d97706;
-      border-bottom-color: #d97706;
-      background: #fffbeb;
-    }
-    .hub-tab .badge {
-      display: inline-block;
-      background: #ef4444;
-      color: #fff;
-      border-radius: 8px;
-      padding: 1px 6px;
-      font-size: 11px;
-      margin-left: 4px;
-    }
-
-    /* ── Tab panels ────────────────────────── */
-    .hub-panel {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-top: none;
-      border-radius: 0 0 10px 10px;
-      padding: 12px;
-      margin-bottom: 16px;
-    }
-
-    /* ── Table ─────────────────────────────── */
-    .hub-table { width: 100%; border-collapse: collapse; }
-    .hub-table th {
-      padding: 6px 10px;
-      text-align: left;
-      font-size: 11px;
-      color: #9ca3af;
-      font-weight: 600;
-      text-transform: uppercase;
-      border-bottom: 1px solid #e5e7eb;
-      background: #f9fafb;
-    }
-    .hub-table td {
-      padding: 8px 10px;
-      font-size: 13px;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .hub-table tr:last-child td { border-bottom: none; }
-
-    .action-btn {
-      padding: 5px 12px;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ── Bottom grid ───────────────────────── */
-    .hub-bottom {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 4px;
-    }
-    .hub-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 14px;
-    }
-    .hub-card h4 {
-      margin: 0 0 10px;
-      font-size: 14px;
-    }
-
-    /* ── Alerts ────────────────────────────── */
-    .alert-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      margin-bottom: 6px;
-      font-size: 12px;
-    }
-
-    /* ── Distribution card ─────────────────── */
-    .dist-parcel {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 8px;
-    }
-    .dist-parcel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .hub-empty {
-      text-align: center;
-      padding: 32px;
-      color: #9ca3af;
-      font-size: 13px;
-    }
-
-    /* ── Toast ─────────────────────────────── */
-    #hub-toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #92400e;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      z-index: 9999;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      display: none;
-    }
-
-    @media (max-width: 600px) {
-      .hub-kpis { grid-template-columns: repeat(2, 1fr); }
-      .hub-bottom { grid-template-columns: 1fr; }
-      .hub-table td, .hub-table th { padding: 6px 6px; font-size: 12px; }
-    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overscroll-behavior:none}
+    #app{display:flex;flex-direction:column;height:100dvh}
+    #header{padding:calc(var(--safe-top) + 12px) 16px 12px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    #header-left{display:flex;flex-direction:column;gap:1px}
+    #header-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.12em;text-transform:uppercase}
+    #header-user{font-size:12px;color:var(--text3)}
+    #stats-bar{display:flex;gap:8px;font-family:var(--mono);font-size:11px}
+    .stat-chip{padding:3px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text2);display:flex;align-items:center;gap:4px}
+    .stat-chip.urgent{border-color:rgba(255,82,82,.4);color:var(--red);background:var(--red-dim)}
+    #tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+    .tab{flex:1;padding:10px 4px;font-size:11px;font-weight:500;color:var(--text3);text-align:center;cursor:pointer;border:none;background:none;position:relative;transition:color .2s;letter-spacing:.03em;user-select:none}
+    .tab.active{color:var(--text)}
+    .tab.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--green);border-radius:1px 1px 0 0}
+    .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;font-family:var(--mono);font-size:10px;font-weight:600;margin-left:4px}
+    .tab-badge.on{background:var(--red);color:#fff}
+    .tab-badge.off{background:var(--bg3);color:var(--text2)}
+    #panels{flex:1;overflow:hidden;position:relative}
+    .panel{position:absolute;inset:0;overflow-y:auto;display:none}
+    .panel.active{display:block}
+    .queue-list{padding:8px;display:flex;flex-direction:column;gap:6px}
+    .order-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:border-color .15s,background .15s;-webkit-user-select:none;user-select:none}
+    .order-card:active{background:var(--bg3);border-color:var(--border-strong)}
+    .order-card.urgent{border-color:rgba(255,82,82,.35)}
+    .order-card.incident{border-color:rgba(255,171,64,.4)}
+    .card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+    .card-ref{font-family:var(--mono);font-size:13px;font-weight:600}
+    .card-age{font-family:var(--mono);font-size:10px;color:var(--text3)}
+    .card-client{font-size:13px;color:var(--text2);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.02em;border:1px solid transparent}
+    .badge.green{background:var(--green-dim);color:var(--green);border-color:rgba(0,230,118,.2)}
+    .badge.amber{background:var(--amber-dim);color:var(--amber);border-color:rgba(255,171,64,.2)}
+    .badge.red{background:var(--red-dim);color:var(--red);border-color:rgba(255,82,82,.2)}
+    .badge.blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(64,196,255,.2)}
+    .badge.gray{background:var(--bg3);color:var(--text2)}
+    .search-wrap{padding:8px;position:sticky;top:0;background:var(--bg);z-index:2;border-bottom:1px solid var(--border)}
+    .search-input{width:100%;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--border-strong)}
+    .search-input::placeholder{color:var(--text3)}
+    .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--text3);font-size:13px;text-align:center}
+    .empty-icon{font-size:40px;opacity:.4}
+    #detail-panel{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+    #detail-panel.open{display:flex;transform:translateY(0)}
+    #detail-header{padding:calc(var(--safe-top) + 10px) 16px 10px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+    #btn-back{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    #detail-title{font-family:var(--mono);font-size:14px;font-weight:600}
+    #detail-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .section-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+    .section-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+    .info-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+    .info-label{color:var(--text3);flex-shrink:0}
+    .info-val{color:var(--text);text-align:right;font-family:var(--mono);font-size:12px;word-break:break-all}
+    .item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+    .item-row:last-child{border-bottom:none}
+    .item-qty{font-family:var(--mono);font-size:12px;color:var(--amber);min-width:28px}
+    .item-name{font-size:13px;flex:1}
+    .item-check{width:20px;height:20px;border:1px solid var(--border);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--green)}
+    .item-check.assigned{background:var(--green-dim);border-color:rgba(0,230,118,.3)}
+    .parcel-row{padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .parcel-row:last-child{border-bottom:none}
+    .parcel-ref{font-family:var(--mono);font-size:12px;color:var(--blue)}
+    .parcel-status{font-size:11px;color:var(--text3)}
+    #detail-actions{padding:12px 12px calc(12px + var(--safe-bot));background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    .btn{width:100%;padding:16px;border-radius:10px;border:none;cursor:pointer;font-family:var(--sans);font-size:16px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .1s;-webkit-user-select:none;user-select:none}
+    .btn:active{opacity:.85;transform:scale(.98)}
+    .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+    .btn-primary{background:var(--green);color:#000}
+    .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+    .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,82,82,.25)}
+    .btn-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,171,64,.25)}
+    .btn-row{display:flex;gap:8px}
+    .btn-row .btn{flex:1;padding:14px 8px;font-size:14px}
+    #ship-modal,#incident-modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.8);display:none;align-items:flex-end;justify-content:center}
+    #ship-modal.open,#incident-modal.open{display:flex}
+    #ship-sheet,#incident-sheet{background:var(--bg2);border-radius:18px 18px 0 0;border:1px solid var(--border);border-bottom:none;width:100%;max-width:480px;padding:20px 16px calc(16px + var(--safe-bot));display:flex;flex-direction:column;gap:14px}
+    .sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 8px}
+    .sheet-title{font-family:var(--mono);font-size:14px;font-weight:600}
+    .field-label{font-size:12px;color:var(--text3);margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase}
+    .field-input,.field-select{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--sans);font-size:15px;outline:none;appearance:none;transition:border-color .2s}
+    .field-input:focus,.field-select:focus{border-color:var(--border-strong)}
+    .field-select option{background:var(--bg3)}
+    .incident-types{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .incident-type-btn{padding:10px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s}
+    .incident-type-btn.selected{border-color:rgba(255,82,82,.5);background:var(--red-dim);color:var(--red)}
+    textarea.field-input{min-height:72px;resize:none;font-size:14px}
+    #toast{position:fixed;bottom:calc(20px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:14px;font-weight:500;color:var(--text);z-index:100;white-space:nowrap;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    #toast.success{border-color:rgba(0,230,118,.4);color:var(--green)}
+    #toast.error{border-color:rgba(255,82,82,.4);color:var(--red)}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-wrap{display:flex;align-items:center;justify-content:center;padding:40px}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px}
+    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 14px}
+    .stat-val{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;margin-bottom:4px}
+    .stat-lbl{font-size:11px;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
+    .stat-card.hl{border-color:rgba(0,230,118,.3)}
+    .stat-card.hl .stat-val{color:var(--green)}
   </style>
 </head>
 <body>
-
-  <div id="hub-toast"></div>
-
-  <header class="hub-header">
-    <div>
-      <h1>🏭 Hub Logistique</h1>
-      <div class="hub-sub">Commander · Répartir · Expédier</div>
+<div id="app">
+  <header id="header">
+    <div id="header-left">
+      <div id="header-title">HUB · Komerce</div>
+      <div id="header-user">—</div>
     </div>
-    <button class="refresh-btn" onclick="Hub.init()">🔄 Actualiser</button>
+    <div id="stats-bar">
+      <div class="stat-chip" id="chip-pending">chargement…</div>
+      <div class="stat-chip urgent" id="chip-urgent" style="display:none"></div>
+    </div>
   </header>
-
-  <div class="hub-content">
-    <!-- KPIs -->
-    <div class="hub-kpis" id="hub-kpis">
-      <div class="hub-kpi"><div class="number">—</div><div class="label">🛒 À commander</div></div>
-      <div class="hub-kpi"><div class="number">—</div><div class="label">📦 À emballer</div></div>
-      <div class="hub-kpi"><div class="number">—</div><div class="label">✈️ À expédier</div></div>
-      <div class="hub-kpi"><div class="number">—</div><div class="label">🚨 Alertes</div></div>
+  <nav id="tabs">
+    <button class="tab active" data-tab="queue" onclick="Hub.switchTab('queue')">À préparer <span class="tab-badge" id="bq"></span></button>
+    <button class="tab" data-tab="prep" onclick="Hub.switchTab('prep')">En cours <span class="tab-badge" id="bp"></span></button>
+    <button class="tab" data-tab="ship" onclick="Hub.switchTab('ship')">Expédier <span class="tab-badge" id="bs"></span></button>
+    <button class="tab" data-tab="stats" onclick="Hub.switchTab('stats')">Stats</button>
+  </nav>
+  <div id="panels">
+    <div class="panel active" id="panel-queue">
+      <div class="search-wrap"><input class="search-input" type="search" placeholder="Référence, client…" id="sq" oninput="Hub.onSearch(this.value)"></div>
+      <div class="queue-list" id="lq"><div class="loading-wrap"><div class="spinner"></div></div></div>
     </div>
-
-    <!-- Tabs -->
-    <div class="hub-tabs">
-      <button class="hub-tab active" id="tab-btn-h1" onclick="Hub.switchTab('h1')">🛒 Commander <span class="badge" id="badge-h1" style="display:none"></span></button>
-      <button class="hub-tab" id="tab-btn-h2" onclick="Hub.switchTab('h2')">📦 Répartir <span class="badge" id="badge-h2" style="display:none"></span></button>
-      <button class="hub-tab" id="tab-btn-h3" onclick="Hub.switchTab('h3')">✈️ Expédier <span class="badge" id="badge-h3" style="display:none"></span></button>
-    </div>
-
-    <!-- Panel 1: Commander -->
-    <div class="hub-panel" id="panel-h1">
-      <div id="panel-h1-content"><div class="hub-empty">⏳ Chargement...</div></div>
-    </div>
-
-    <!-- Panel 2: Répartir -->
-    <div class="hub-panel" id="panel-h2" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-        <span style="font-size:12px;color:#6b7280">Le système répartit automatiquement les commandes par destination</span>
-        <button id="btn-auto-distribute" class="action-btn" style="background:#3b82f6;color:#fff"
-          onclick="Hub.autoDistribute()">🤖 Répartir maintenant</button>
-      </div>
-      <div id="distribution-panel"><div class="hub-empty">⏳ Chargement répartition...</div></div>
-    </div>
-
-    <!-- Panel 3: Expédier -->
-    <div class="hub-panel" id="panel-h3" style="display:none">
-      <div id="panel-h3-content"><div class="hub-empty">⏳ Chargement...</div></div>
-    </div>
-
-    <!-- Bottom: Prévisionnel + Alertes -->
-    <div class="hub-bottom">
-      <div class="hub-card">
-        <h4 style="color:#6366f1">📋 Prévisionnel</h4>
-        <div id="hub-previsionnel">—</div>
-      </div>
-      <div class="hub-card">
-        <h4 style="color:#ef4444">🚨 Alertes</h4>
-        <div id="hub-alertes">—</div>
-      </div>
-    </div>
+    <div class="panel" id="panel-prep"><div class="queue-list" id="lp"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
+    <div class="panel" id="panel-ship"><div class="queue-list" id="ls"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
+    <div class="panel" id="panel-stats"><div class="stats-grid" id="sg"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
   </div>
+</div>
 
-  <script src="/dashboards/admin-legacy/js/ct-api.js"></script>
-  <script>
-  window.Hub = {};
-  Hub._orders = [];
-  Hub._parcels = [];
-  Hub._activeTab = 'h1';
+<div id="detail-panel">
+  <div id="detail-header">
+    <button id="btn-back" onclick="Hub.closeDetail()">←</button>
+    <div id="detail-title">—</div>
+    <div style="flex:1"></div>
+    <div id="detail-badges"></div>
+  </div>
+  <div id="detail-body"></div>
+  <div id="detail-actions"></div>
+</div>
 
-  // ── Toast ────────────────────────────────
-  Hub.toast = function(msg) {
-    var el = document.getElementById('hub-toast');
-    el.textContent = msg;
-    el.style.display = 'block';
-    clearTimeout(Hub._toastTimer);
-    Hub._toastTimer = setTimeout(function() { el.style.display = 'none'; }, 2800);
-  };
+<div id="ship-modal" onclick="if(event.target===this)Hub.closeShipModal()">
+  <div id="ship-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Expédier le colis</div>
+    <div><div class="field-label">Transporteur</div><select class="field-select" id="ship-carrier"><option>Chargement…</option></select></div>
+    <div><div class="field-label">N° de suivi (optionnel)</div><input class="field-input" type="text" id="ship-tracking" placeholder="ex: DHL123456789"></div>
+    <div><div class="field-label">Notes</div><input class="field-input" type="text" id="ship-notes" placeholder="Informations supplémentaires…"></div>
+    <button class="btn btn-primary" id="btn-confirm-ship" onclick="Hub.confirmShip()">✈️ Confirmer l'expédition</button>
+    <button class="btn btn-secondary" onclick="Hub.closeShipModal()">Annuler</button>
+  </div>
+</div>
 
-  // ── Tab switching ─────────────────────────
-  Hub.switchTab = function(tabId) {
-    Hub._activeTab = tabId;
-    ['h1','h2','h3'].forEach(function(id) {
-      document.getElementById('tab-btn-' + id).classList.toggle('active', id === tabId);
-      document.getElementById('panel-' + id).style.display = id === tabId ? 'block' : 'none';
-    });
-    if (tabId === 'h2') Hub.loadDistribution();
-  };
+<div id="incident-modal" onclick="if(event.target===this)Hub.closeIncidentModal()">
+  <div id="incident-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Signaler un incident</div>
+    <div><div class="field-label">Type d'incident</div>
+      <div class="incident-types">
+        <div class="incident-type-btn" data-type="stock" onclick="Hub.selInc(this)">Rupture stock</div>
+        <div class="incident-type-btn" data-type="colis_endommage" onclick="Hub.selInc(this)">Colis endommagé</div>
+        <div class="incident-type-btn" data-type="retard" onclick="Hub.selInc(this)">Retard fournisseur</div>
+        <div class="incident-type-btn" data-type="paiement" onclick="Hub.selInc(this)">Problème paiement</div>
+        <div class="incident-type-btn" data-type="blocage" onclick="Hub.selInc(this)">Blocage douane</div>
+        <div class="incident-type-btn" data-type="autre" onclick="Hub.selInc(this)">Autre</div>
+      </div>
+    </div>
+    <div><div class="field-label">Description</div><textarea class="field-input" id="inc-desc" placeholder="Décrivez la situation…"></textarea></div>
+    <button class="btn btn-danger" id="btn-confirm-inc" onclick="Hub.confirmIncident()">🚨 Envoyer le signalement</button>
+    <button class="btn btn-secondary" onclick="Hub.closeIncidentModal()">Annuler</button>
+  </div>
+</div>
 
-  // ── Helpers ──────────────────────────────
-  Hub.fmt = function(n) {
-    if (!n && n !== 0) return '—';
-    return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF';
-  };
-  Hub.ago = function(dt) {
-    if (!dt) return '—';
-    var diff = Date.now() - new Date(dt).getTime();
-    var h = Math.floor(diff / 3600000);
-    if (h < 1) return Math.floor(diff / 60000) + 'min';
-    if (h < 24) return h + 'h';
-    return Math.floor(h / 24) + 'j';
-  };
+<div id="toast"></div>
 
-  Hub.renderTable = function(headers, rows) {
-    if (!rows || rows.length === 0) {
-      return '<div class="hub-empty">✅ Rien à traiter</div>';
-    }
-    var h = '<div style="overflow-x:auto"><table class="hub-table">';
-    h += '<thead><tr>' + headers.map(function(hd) { return '<th>' + hd + '</th>'; }).join('') + '</tr></thead>';
-    h += '<tbody>' + rows.join('') + '</tbody></table></div>';
-    return h;
-  };
+<script>
+'use strict';
+const api={
+  get:u=>fetch(u,{credentials:'include'}).then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(e))),
+  post:(u,b)=>fetch(u,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json().then(d=>r.ok?d:Promise.reject(d)))
+};
+const Hub=(()=>{
+  let _tab='queue',_sq='',_sqt=null,_order=null,_parcelId=null,_incType=null,_carriers=[];
 
-  Hub.row = function(ref, client, info, age, btnLabel, btnAction, color) {
-    return '<tr>' +
-      '<td><strong style="color:#1e40af">' + ref + '</strong></td>' +
-      '<td>' + client + '</td>' +
-      '<td style="color:#6b7280;font-size:12px">' + info + '</td>' +
-      '<td style="color:#9ca3af;font-size:11px;white-space:nowrap">' + age + '</td>' +
-      '<td style="text-align:right">' +
-        (btnLabel ? '<button class="action-btn" data-action="' + btnAction + '" data-ref="' + ref + '" ' +
-          'style="background:' + color + '18;color:' + color + '">' + btnLabel + '</button>' : '') +
-      '</td></tr>';
-  };
+  function ago(dt){const h=(Date.now()-new Date(dt))/3600000;if(h<1)return Math.round(h*60)+'min';if(h<24)return Math.round(h)+'h';return Math.round(h/24)+'j';}
+  function slbl(s){return{confirmed:'confirmé',ordered:'commandé',preparation:'prépa',shipped:'expédié',in_transit:'transit',available:'dispo',collected:'retiré',cancelled:'annulé'}[s]||s;}
+  function ccls(c){return{complete:'green',partial:'amber',unassigned:'red',empty:'red'}[c]||'gray';}
+  function clbl(c){return{complete:'✓ complet',partial:'⚠ partiel',unassigned:'○ non-assigné',empty:'✗ vide'}[c]||c;}
+  function kmf(n){return Number(n||0).toLocaleString('fr-FR')+' KMF';}
 
-  // ── Init ──────────────────────────────────
-  Hub.init = async function() {
-    try {
-      var res = await Promise.all([
-        CT.api.v2Orders().catch(function() { return { orders: [] }; }),
-        CT.api.v2Parcels().catch(function() { return { parcels: [] }; })
-      ]);
-      Hub._orders = res[0].orders || [];
-      Hub._parcels = res[1].parcels || [];
-      Hub.render();
-    } catch(err) {
-      document.getElementById('panel-h1-content').innerHTML =
-        '<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur: ' + err.message + '</div>';
-    }
-  };
+  function toast(msg,type='',dur=3000){const e=document.getElementById('toast');e.textContent=msg;e.className='show '+(type||'');clearTimeout(e._t);e._t=setTimeout(()=>{e.className='';},dur);}
 
-  Hub.render = function() {
-    var orders  = Hub._orders;
-    var parcels = Hub._parcels;
+  async function init(){
+    try{
+      const me=await api.get('/api/auth/me');
+      document.getElementById('header-user').textContent=me.full_name||me.email||'Hub';
+      _carriers=await api.get('/api/carriers').then(r=>r.data||[]).catch(()=>[]);
+      await loadTab('queue');
+      await loadStats();
+    }catch(e){if(e&&(e.status===401||String(e.error||'').includes('onnect')))location.href='/';}
+  }
 
-    var confirmed  = orders.filter(function(o) { return o.status === 'confirmed'; });
-    var pending    = orders.filter(function(o) { return o.status === 'pending'; });
-    var ordered    = orders.filter(function(o) { return o.status === 'ordered'; });
-    var prepP      = parcels.filter(function(p) { return p.status === 'preparation'; });
-    var shippedP   = parcels.filter(function(p) { return p.status === 'shipped'; });
-    var transitP   = parcels.filter(function(p) { return p.status === 'in_transit'; });
+  function switchTab(tab){
+    _tab=tab;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+tab));
+    loadTab(tab);
+  }
 
-    // Commandes ordered sans colis → à emballer
-    var parcelRefs = new Set();
-    parcels.forEach(function(p) { if (p.main_order_ref) parcelRefs.add(p.main_order_ref); });
-    var readyParcel = ordered.filter(function(o) { return !parcelRefs.has(o.reference); });
+  async function loadTab(tab){
+    if(tab==='queue')await loadQ('to_prepare','lq','bq');
+    if(tab==='prep')await loadQ('preparation','lp','bp');
+    if(tab==='ship')await loadQ('ready','ls','bs');
+    if(tab==='stats')await loadStats();
+  }
 
-    // Alertes
-    var now = Date.now();
-    var stuck48h    = confirmed.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
-    var stuckOrd48h = ordered.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 48*3600000; });
-    var expired36h  = pending.filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 36*3600000; });
-    var critical7d  = ordered.concat(confirmed).filter(function(o) { return o.created_at && (now - new Date(o.created_at).getTime()) > 7*24*3600000; });
-    var alertCount  = stuck48h.length + stuckOrd48h.length + expired36h.length + critical7d.length;
-
-    // ── KPIs ──
-    document.getElementById('hub-kpis').innerHTML =
-      '<div class="hub-kpi"><div class="number" style="color:#e91e63">' + confirmed.length + '</div><div class="label">🛒 À commander</div></div>' +
-      '<div class="hub-kpi"><div class="number" style="color:#3b82f6">' + readyParcel.length + '</div><div class="label">📦 À emballer</div></div>' +
-      '<div class="hub-kpi"><div class="number" style="color:#8b5cf6">' + prepP.length + '</div><div class="label">✈️ À expédier</div></div>' +
-      '<div class="hub-kpi"><div class="number" style="color:' + (alertCount > 0 ? '#ef4444' : '#22c55e') + '">' + alertCount + '</div><div class="label">🚨 Alertes</div></div>';
-
-    // ── Badges ──
-    var badges = { h1: confirmed.length, h2: readyParcel.length, h3: prepP.length };
-    ['h1','h2','h3'].forEach(function(id) {
-      var el = document.getElementById('badge-' + id);
-      if (badges[id] > 0) { el.textContent = badges[id]; el.style.display = 'inline-block'; }
-      else { el.style.display = 'none'; }
-    });
-
-    // ── Auto-select tab ──
-    var autoTab = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
-    Hub.switchTab(autoTab);
-
-    // ── Panel 1: Commander ──
-    var rows1 = confirmed.map(function(o) {
-      var items = []; try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch(e) {}
-      var desc = (items.length || o.nb_items || 0) + ' art. · ' + Hub.fmt(o.total_kmf) + ' · ' + (o.relais_island || '—');
-      return Hub.row(o.reference, o.customer_name || 'Client', desc, Hub.ago(o.created_at), '🛒 Commander', 'hub-mark-ordered', '#b45309');
-    });
-    document.getElementById('panel-h1-content').innerHTML =
-      Hub.renderTable(['Réf', 'Client', 'Détails', 'Âge', ''], rows1);
-
-    // ── Panel 3: Expédier ──
-    var rows3 = prepP.map(function(p) {
-      var desc = (p.main_order_ref || '—') + ' · ' + (p.nb_items || 0) + ' art. · ' + (p.destination_island || p.relais_island || '—');
-      return Hub.row(p.reference, p.recipient_name || 'Client', desc, '', '✈️ Expédier', 'hub-ship', '#7c3aed');
-    });
-    document.getElementById('panel-h3-content').innerHTML =
-      Hub.renderTable(['Colis', 'Client', 'Détails', '', ''], rows3);
-
-    // ── Prévisionnel ──
-    var prev = '';
-    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:4px">⏳ En attente paiement (' + pending.length + ')</div>';
-    prev += Hub.miniTable(pending, [
-      function(o) { return '<strong>' + o.reference + '</strong>'; },
-      function(o) { return o.customer_name || '—'; },
-      function(o) { return o.payment_mode === 'stripe_eur' ? '💳' : '💰'; },
-      function(o) { return Hub.ago(o.created_at); }
-    ]);
-    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px">📋 À répartir (' + ordered.length + ')</div>';
-    prev += Hub.miniTable(ordered, [
-      function(o) { return '<strong>' + o.reference + '</strong>'; },
-      function(o) { return o.customer_name || '—'; },
-      function(o) { return (o.nb_items || '—') + ' art.'; },
-      function(o) { return Hub.ago(o.created_at); }
-    ]);
-    var enRoute = shippedP.concat(transitP);
-    prev += '<div style="font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px">🚀 En route (' + enRoute.length + ')</div>';
-    prev += Hub.miniTable(enRoute, [
-      function(p) { return '<strong>' + p.reference + '</strong>'; },
-      function(p) { return '🏝️ ' + (p.destination_island || '—'); },
-      function(p) { return Hub.ago(p.shipped_at || p.created_at); }
-    ]);
-    document.getElementById('hub-previsionnel').innerHTML = prev;
-
-    // ── Alertes ──
-    var al = '';
-    if (alertCount === 0) {
-      al = '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>';
-    } else {
-      if (expired36h.length)  al += Hub.alertBadge('💸', 'Paiements expirés >36h', expired36h.length, '#e91e63');
-      if (stuck48h.length)    al += Hub.alertBadge('🛒', 'À répartir >48h', stuck48h.length, '#ef4444');
-      if (stuckOrd48h.length) al += Hub.alertBadge('⏰', 'Ordered bloqué >48h', stuckOrd48h.length, '#ef4444');
-      if (critical7d.length)  al += Hub.alertBadge('🔴', 'Critique >7 jours', critical7d.length, '#dc2626');
-    }
-    document.getElementById('hub-alertes').innerHTML = al;
-
-    // ── Wire actions ──
-    Hub.wireActions();
-  };
-
-  Hub.miniTable = function(items, cols) {
-    if (!items || items.length === 0) return '<div style="color:#d1d5db;font-size:12px;padding:4px 0">—</div>';
-    var h = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-    items.slice(0, 8).forEach(function(item, i) {
-      h += '<tr style="border-bottom:1px solid #f8fafc' + (i % 2 ? ';background:#fafbfd' : '') + '">';
-      cols.forEach(function(c) { h += '<td style="padding:3px 6px">' + c(item) + '</td>'; });
-      h += '</tr>';
-    });
-    if (items.length > 8) h += '<tr><td colspan="99" style="padding:3px 6px;color:#9ca3af;font-size:11px">+ ' + (items.length - 8) + ' autres</td></tr>';
-    h += '</table>';
-    return h;
-  };
-
-  Hub.alertBadge = function(icon, label, count, color) {
-    return '<div class="alert-badge" style="background:' + color + '08;border:1px solid ' + color + '25">' +
-      '<span>' + icon + '</span><span style="flex:1">' + label + '</span>' +
-      '<strong style="color:' + color + '">' + count + '</strong></div>';
-  };
-
-  // ── Distribution ─────────────────────────────
-  Hub.loadDistribution = async function() {
-    var panel = document.getElementById('distribution-panel');
-    if (!panel) return;
-    panel.innerHTML = '<div class="hub-empty">⏳ Chargement...</div>';
-    try {
-      var data = await CT.api.getDistribution();
-      var parcels = data.parcels || [];
-      var unassigned = data.unassigned || [];
-      var saturated  = data.saturated || [];
-
-      var totalOrders = parcels.reduce(function(s,p) { return s + (p.orders_count || 0); }, 0);
-      var totalItems  = parcels.reduce(function(s,p) { return s + (p.items_count  || 0); }, 0);
-
-      var h = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
-      h += '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">📦 ' + parcels.length + ' colis</span>';
-      h += '<span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">🛍️ ' + totalOrders + ' cmd</span>';
-      h += '<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">📋 ' + totalItems + ' art.</span>';
-      if (unassigned.length) h += '<span style="background:#fce7f3;color:#831843;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600">⏳ ' + unassigned.length + ' non assigné(s)</span>';
-      h += '</div>';
-
-      if (parcels.length === 0 && unassigned.length === 0) {
-        h += '<div class="hub-empty">✅ Aucune commande à répartir</div>';
+  async function loadQ(filter,listId,badgeId){
+    const el=document.getElementById(listId);
+    el.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
+    try{
+      const p=new URLSearchParams({tab:filter,limit:50});
+      if(_sq&&filter==='to_prepare')p.set('search',_sq);
+      const d=await api.get('/api/hub-dash/queue?'+p);
+      const rows=d.data||[];
+      setBadge(badgeId,rows.length);
+      if(!rows.length){el.innerHTML='<div class="empty"><div class="empty-icon">📭</div>Aucune commande</div>';return;}
+      el.innerHTML=rows.map(o=>card(o)).join('');
+      el.querySelectorAll('.order-card').forEach(c=>c.addEventListener('click',()=>openDetail(c.dataset.id)));
+      if(filter==='to_prepare'){
+        const urg=rows.filter(o=>o.age_hours>48).length;
+        document.getElementById('chip-pending').textContent=rows.length+' en attente';
+        const cu=document.getElementById('chip-urgent');
+        if(urg>0){cu.textContent='⚡ '+urg+' urgent';cu.style.display='';}else cu.style.display='none';
       }
+    }catch(e){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>'+(e.error||'Erreur réseau')+'</div>';}
+  }
 
-      // Saturation alerts
-      saturated.forEach(function(s) {
-        h += '<div style="background:#fce4ec;border:2px solid #e91e63;border-radius:8px;padding:10px 14px;margin-bottom:10px">' +
-          '<strong style="color:#880e4f">🚨 ' + s.destination + ' — Capacité max atteinte</strong>' +
-          '<div style="font-size:12px;color:#c62828;margin-top:2px">✈️ Expédiez les colis en cours pour débloquer</div>' +
-          '</div>';
-      });
+  function setBadge(id,n){const b=document.getElementById(id);if(!b)return;b.textContent=n>0?n:'';b.className=n>0?'tab-badge on':'tab-badge off';}
 
-      // Parcel cards
-      parcels.forEach(function(p) {
-        var pStatus = p.status || p.parcel_status || 'draft';
-        var statusColors = { draft: 'fce4ec:#880e4f', preparation: 'dbeafe:#1e40af', shipped: 'd1fae5:#065f46' };
-        var sc = (statusColors[pStatus] || 'f1f5f9:#64748b').split(':');
-        var orders = []; try { orders = typeof p.orders === 'string' ? JSON.parse(p.orders) : (p.orders || []); } catch(e) {}
+  function card(o){
+    const urg=o.age_hours>48,inc=o.open_incidents>0;
+    return `<div class="order-card${inc?' incident':urg?' urgent':''}" data-id="${o.id}">
+      <div class="card-top"><div class="card-ref">${o.reference}</div><div class="card-age">${ago(o.created_at)}</div></div>
+      <div class="card-client">${o.client_name||'—'} · ${o.destination_island||'?'}</div>
+      <div class="card-meta">
+        <span class="badge ${ccls(o.completeness)}">${clbl(o.completeness)}</span>
+        <span class="badge gray">${o.items_qty||0} art.</span>
+        ${o.payment_status==='paid'?'<span class="badge green">payé</span>':'<span class="badge amber">paiement en attente</span>'}
+        ${inc?'<span class="badge red">⚠ incident</span>':''}
+        ${urg?'<span class="badge red">+48h</span>':''}
+      </div>
+    </div>`;
+  }
 
-        h += '<div class="dist-parcel">';
-        h += '<div class="dist-parcel-header">';
-        h += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-        h += '<strong style="color:#1e40af;font-size:14px">📦 ' + p.reference + '</strong>';
-        h += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">' + (p.relais_name || p.relais_island || p.destination || '—') + '</span>';
-        h += '<span style="color:#6b7280;font-size:11px">' + (p.orders_count || 0) + ' cmd · ' + (p.items_count || 0) + ' art. · ' + Hub.fmt(p.total_kmf || 0) + '</span>';
-        h += '</div>';
-        h += '<div style="display:flex;align-items:center;gap:6px">';
-        h += '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#' + sc[0] + ';color:#' + sc[1] + '">' + pStatus + '</span>';
-        if (pStatus === 'preparation') {
-          h += '<button class="action-btn" data-action="dist-ship" data-ref="' + p.reference + '" style="background:#7c3aed;color:#fff">✈️ Expédier</button>';
-        }
-        h += '</div></div>';
+  function onSearch(v){_sq=v.trim();clearTimeout(_sqt);_sqt=setTimeout(()=>loadQ('to_prepare','lq','bq'),350);}
 
-        // Orders inside parcel
-        if (orders.length > 0) {
-          h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-          orders.forEach(function(o) {
-            h += '<tr style="border-bottom:1px solid #f1f5f9">' +
-              '<td style="padding:3px 6px;font-weight:600;color:#1e40af">' + (o.ref || '—') + '</td>' +
-              '<td style="padding:3px 6px">' + (o.customer || '—') + '</td>' +
-              '<td style="padding:3px 6px;color:#6b7280">' + (o.items_count || o.items || '?') + ' art.</td>' +
-              '<td style="padding:3px 6px;text-align:right">' + Hub.fmt(o.total_kmf || o.total || 0) + '</td>' +
-              '</tr>';
-          });
-          h += '</table>';
-        }
-        h += '</div>';
-      });
+  async function loadStats(){
+    const g=document.getElementById('sg');
+    try{
+      const [kd,wk]=await Promise.all([api.get('/api/hub-dash/dashboard').catch(()=>({})),api.get('/api/hub/stats/week').catch(()=>({}))]);
+      const o=kd.orders||{},p=kd.parcels||{},i=kd.incidents||{},ws=wk.summary||{};
+      g.innerHTML=`
+        <div class="stat-card hl"><div class="stat-val">${p.shipped_today||0}</div><div class="stat-lbl">Expédiés aujourd'hui</div></div>
+        <div class="stat-card"><div class="stat-val">${(o.to_prepare||0)+(o.in_preparation||0)}</div><div class="stat-lbl">En attente</div></div>
+        <div class="stat-card"><div class="stat-val">${o.in_preparation||0}</div><div class="stat-lbl">En préparation</div></div>
+        <div class="stat-card"><div class="stat-val">${i.open||0}</div><div class="stat-lbl">Incidents ouverts</div></div>
+        <div class="stat-card" style="grid-column:1/-1"><div class="stat-val" style="font-size:20px">${ws.avg_processing_hours?ws.avg_processing_hours+'h':'—'}</div><div class="stat-lbl">Délai moyen traitement (7j)</div></div>`;
+    }catch(e){g.innerHTML='<div class="empty">Stats indisponibles</div>';}
+  }
 
-      // Unassigned
-      if (unassigned.length > 0) {
-        h += '<div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px;margin-top:8px">';
-        h += '<div style="font-size:12px;font-weight:600;color:#880e4f;margin-bottom:6px">⏳ ' + unassigned.length + ' commande(s) non assignée(s)</div>';
-        unassigned.forEach(function(o) {
-          h += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">' +
-            '<span><strong>' + o.reference + '</strong> — ' + (o.customer_name || '?') + '</span>' +
-            '<span style="color:#6b7280">' + (o.items_count || '?') + ' art. · ' + (o.relais_name || o.relais_island || '?') + '</span>' +
-            '</div>';
-        });
-        h += '<div style="margin-top:6px;font-size:11px;color:#880e4f">Cliquez "🤖 Répartir maintenant" pour les assigner</div>';
-        h += '</div>';
-      }
+  async function openDetail(id){
+    _order=null;
+    const dp=document.getElementById('detail-panel');
+    document.getElementById('detail-body').innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
+    document.getElementById('detail-actions').innerHTML='';
+    document.getElementById('detail-title').textContent='Chargement…';
+    dp.classList.add('open');
+    try{const d=await api.get('/api/hub-dash/orders/'+id);_order=d;renderDetail(d);}
+    catch(e){document.getElementById('detail-body').innerHTML='<div class="empty">'+(e.error||'Erreur')+'</div>';}
+  }
 
-      panel.innerHTML = h;
-      // Wire dist-ship buttons
-      panel.querySelectorAll('[data-action="dist-ship"]').forEach(function(btn) {
-        btn.addEventListener('click', async function() {
-          var ref = btn.dataset.ref;
-          if (!confirm('Fermer & expédier ' + ref + ' ?')) return;
-          btn.disabled = true; btn.textContent = '⏳...';
-          try {
-            await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub');
-            Hub.toast('✅ ' + ref + ' expédié ✈️');
-            Hub.init();
-          } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
-        });
-      });
+  function renderDetail(d){
+    const o=d.order,items=d.items||[],parcels=d.parcels||[];
+    document.getElementById('detail-title').textContent=o.reference;
+    document.getElementById('detail-badges').innerHTML=`<span class="badge ${o.payment_status==='paid'?'green':'amber'}">${o.payment_status==='paid'?'payé':'non payé'}</span>`;
+    const assigned=new Set((d.parcels||[]).flatMap(p=>(p.items||[]).map(i=>i.order_item_id)));
+    document.getElementById('detail-body').innerHTML=`
+      <div class="section"><div class="section-head">Commande</div><div class="section-body">
+        <div class="info-row"><span class="info-label">Client</span><span class="info-val">${o.client_name||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${o.client_phone||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Destination</span><span class="info-val">${o.destination_island||'—'} · ${o.routing_mode||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Relais</span><span class="info-val">${o.relais_name||'—'}</span></div>
+        <div class="info-row"><span class="info-label">Total</span><span class="info-val">${kmf(o.total_kmf)}</span></div>
+        <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${slbl(o.status)}</span></div>
+      </div></div>
+      <div class="section"><div class="section-head">Articles (${items.length})</div><div class="section-body" style="gap:0">
+        ${items.map(it=>`<div class="item-row"><div class="item-qty">×${it.quantity}</div><div class="item-name">${it.product_name||'Produit'}</div><div class="item-check ${assigned.has(it.id)?'assigned':''}">${assigned.has(it.id)?'✓':''}</div></div>`).join('')}
+      </div></div>
+      ${parcels.length?`<div class="section"><div class="section-head">Colis (${parcels.length})</div><div class="section-body" style="gap:0">
+        ${parcels.map(p=>`<div class="parcel-row"><div><div class="parcel-ref">${p.reference}</div><div class="parcel-status">${p.items?p.items.length:'?'} art. · ${slbl(p.status)}</div></div><span class="badge ${p.status==='shipped'?'green':p.status==='preparation'?'amber':'gray'}">${slbl(p.status)}</span></div>`).join('')}
+      </div></div>`:''}
+      ${(d.incidents||[]).filter(i=>i.status==='open').length?`<div class="section" style="border-color:rgba(255,171,64,.3)"><div class="section-head" style="color:var(--amber)">⚠ Incidents ouverts</div><div class="section-body">
+        ${d.incidents.filter(i=>i.status==='open').map(i=>`<div class="info-row"><span class="info-label">${i.type}</span><span class="info-val" style="color:var(--amber)">${i.description||'—'}</span></div>`).join('')}
+      </div></div>`:''}
+    `;
+    renderActions(o,items,parcels,assigned);
+  }
 
-    } catch(e) {
-      panel.innerHTML = '<div style="color:#ef4444;font-size:13px;padding:12px">❌ ' + e.message + '</div>';
+  function renderActions(o,items,parcels,assigned){
+    const el=document.getElementById('detail-actions');
+    const allOk=items.length>0&&assigned.size>=items.length;
+    const hasReady=parcels.some(p=>p.status==='preparation');
+    const hasDraft=parcels.some(p=>p.status==='draft');
+    const isPaid=o.payment_status==='paid';
+    let html='';
+    if(['confirmed','ordered'].includes(o.status)||(!allOk&&o.status==='preparation')){
+      html+=`<button class="btn btn-primary" id="bap" onclick="Hub.autoPrepare('${o.id}')">📦 Préparer automatiquement</button>`;
     }
-  };
+    if(hasDraft&&allOk&&!hasReady){
+      const dp=parcels.find(p=>p.status==='draft');
+      html+=`<button class="btn btn-amber" onclick="Hub.markReady('${dp.id}')">✓ Marquer colis prêt</button>`;
+    }
+    if(hasReady){
+      const rp=parcels.find(p=>p.status==='preparation');
+      _parcelId=rp.id;
+      html+=isPaid
+        ?`<button class="btn btn-primary" onclick="Hub.openShipModal('${rp.id}')">✈️ Expédier ${rp.reference}</button>`
+        :`<button class="btn btn-secondary" disabled>✈️ Expédier (paiement manquant)</button>`;
+    }
+    html+=`<div class="btn-row"><button class="btn btn-secondary" onclick="Hub.openIncidentModal()">🚨 Incident</button><button class="btn btn-secondary" onclick="Hub.backorder('${o.id}')">📋 Backorder</button></div>`;
+    el.innerHTML=html;
+  }
 
-  Hub.autoDistribute = async function() {
-    var btn = document.getElementById('btn-auto-distribute');
-    btn.disabled = true; btn.textContent = '⏳ Répartition...';
-    try {
-      var r = await CT.api.autoDistribute();
-      Hub.toast('✅ ' + (r.distributed || 0) + ' commande(s) répartie(s) 📦');
-      Hub.loadDistribution();
-      Hub.init();
-    } catch(e) { alert('❌ ' + e.message); }
-    btn.disabled = false; btn.textContent = '🤖 Répartir maintenant';
-  };
+  function closeDetail(){document.getElementById('detail-panel').classList.remove('open');_order=null;_parcelId=null;loadTab(_tab);}
 
-  // ── Wire action buttons ──────────────────────────
-  Hub.wireActions = function() {
-    // Commander
-    document.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        var ref = btn.dataset.ref;
-        if (!confirm('Passer en commande ' + ref + ' ?\nconfirmed → ordered')) return;
-        btn.disabled = true; btn.textContent = '⏳...';
-        try {
-          await CT.api.hubMarkOrdered(ref);
-          Hub.toast('✅ ' + ref + ' → commandé 📋');
-          Hub.init();
-        } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '🛒 Commander'; }
-      });
-    });
+  async function autoPrepare(id){
+    const b=document.getElementById('bap');
+    if(b){b.disabled=true;b.innerHTML='<div class="spinner"></div> Création du colis…';}
+    try{
+      const r=await api.post('/api/hub-dash/orders/'+id+'/auto-prepare',{});
+      toast(r.already_complete?'Articles déjà tous assignés':'✓ '+r.message,'success');
+      const d=await api.get('/api/hub-dash/orders/'+id);_order=d;renderDetail(d);
+    }catch(e){toast(e.error||'Erreur','error');if(b){b.disabled=false;b.innerHTML='📦 Préparer automatiquement';}}
+  }
 
-    // Expédier
-    document.querySelectorAll('[data-action="hub-ship"]').forEach(function(btn) {
-      btn.addEventListener('click', async function() {
-        var ref = btn.dataset.ref;
-        if (!confirm('Expédier ' + ref + ' ?\npreparation → shipped')) return;
-        btn.disabled = true; btn.textContent = '⏳...';
-        try {
-          await CT.api.v2Scan(ref, 'shipped', 'Expédié Hub');
-          Hub.toast('✅ ' + ref + ' expédié ✈️');
-          Hub.init();
-        } catch(e) { alert('❌ ' + e.message); btn.disabled = false; btn.textContent = '✈️ Expédier'; }
-      });
-    });
-  };
+  async function markReady(pid){
+    try{await api.post('/api/hub-dash/parcels/'+pid+'/ready',{});toast('✓ Colis prêt à expédier','success');const d=await api.get('/api/hub-dash/orders/'+_order.order.id);_order=d;renderDetail(d);}
+    catch(e){toast(e.error||'Erreur','error');}
+  }
 
-  // ── Start ──
-  Hub.init();
-  </script>
+  async function openShipModal(pid){
+    _parcelId=pid;
+    const sel=document.getElementById('ship-carrier');
+    sel.innerHTML=_carriers.length
+      ?'<option value="">— Transporteur —</option>'+_carriers.map(c=>`<option value="${c.id}" data-name="${c.name}">${c.name}${c.type?' · '+c.type:''}</option>`).join('')
+      :'<option value="">Aucun transporteur configuré</option>';
+    document.getElementById('ship-tracking').value='';
+    document.getElementById('ship-notes').value='';
+    document.getElementById('ship-modal').classList.add('open');
+  }
+  function closeShipModal(){document.getElementById('ship-modal').classList.remove('open');}
 
+  async function confirmShip(){
+    const b=document.getElementById('btn-confirm-ship');
+    const sel=document.getElementById('ship-carrier');
+    const cname=sel.selectedOptions[0]?.dataset.name||sel.value||'';
+    const tracking=document.getElementById('ship-tracking').value.trim();
+    const notes=document.getElementById('ship-notes').value.trim();
+    b.disabled=true;b.innerHTML='<div class="spinner"></div> En cours…';
+    try{
+      await api.post('/api/hub-dash/parcels/'+_parcelId+'/ship',{transport:[cname,tracking].filter(Boolean).join(' · ')||'non spécifié',carrier_id:sel.value||null,notes:notes||null});
+      closeShipModal();toast('✈️ Colis expédié !','success');
+      const d=await api.get('/api/hub-dash/orders/'+_order.order.id);_order=d;renderDetail(d);
+    }catch(e){toast(e.error||'Erreur expédition','error');}
+    finally{b.disabled=false;b.innerHTML='✈️ Confirmer l\'expédition';}
+  }
+
+  function openIncidentModal(){_incType=null;document.querySelectorAll('.incident-type-btn').forEach(b=>b.classList.remove('selected'));document.getElementById('inc-desc').value='';document.getElementById('incident-modal').classList.add('open');}
+  function closeIncidentModal(){document.getElementById('incident-modal').classList.remove('open');}
+  function selInc(el){document.querySelectorAll('.incident-type-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');_incType=el.dataset.type;}
+
+  async function confirmIncident(){
+    if(!_incType){toast('Sélectionnez un type','error');return;}
+    const desc=document.getElementById('inc-desc').value.trim();
+    if(!desc){toast('Décrivez l\'incident','error');return;}
+    const b=document.getElementById('btn-confirm-inc');b.disabled=true;b.innerHTML='<div class="spinner"></div>';
+    try{await api.post('/api/hub-dash/orders/'+_order.order.id+'/incident',{type:_incType,description:desc,priority:'normal'});closeIncidentModal();toast('🚨 Incident signalé','success');const d=await api.get('/api/hub-dash/orders/'+_order.order.id);_order=d;renderDetail(d);}
+    catch(e){toast(e.error||'Erreur','error');}
+    finally{b.disabled=false;b.innerHTML='🚨 Envoyer le signalement';}
+  }
+
+  async function backorder(id){
+    try{await api.post('/api/hub-dash/orders/'+id+'/backorder',{reason:'En attente fournisseur — hub'});toast('📋 Backorder signalé','success');}
+    catch(e){toast(e.error||'Erreur','error');}
+  }
+
+  return{init,switchTab,onSearch,openDetail,closeDetail,autoPrepare,markReady,openShipModal,closeShipModal,confirmShip,openIncidentModal,closeIncidentModal,selInc,confirmIncident,backorder};
+})();
+
+fetch('/api/auth/me',{credentials:'include'}).then(r=>{if(!r.ok)location.href='/';else Hub.init();}).catch(()=>location.href='/');
+</script>
 </body>
 </html>
