@@ -1025,7 +1025,10 @@ function quickRemove(productId, btnEl) {
       }
       window.history.replaceState({}, '', window.location.pathname);
     }, 200);
-    setTimeout(function() { clearInterval(checkProducts); }, 10000);
+    setTimeout(function() {
+      clearInterval(checkProducts);
+      if (state.cart.length === 0) showToast('⚠️ Panier partagé introuvable — réessayez depuis le lien d\'origine.', 'error');
+    }, 10000);
   }
 
   /**
@@ -1070,9 +1073,13 @@ function quickRemove(productId, btnEl) {
         }
         window.history.replaceState({}, '', window.location.pathname);
       }, 200);
-      setTimeout(function() { clearInterval(checkProducts); }, 10000);
+      setTimeout(function() {
+        clearInterval(checkProducts);
+        if (state.cart.length === 0) showToast('⚠️ Panier partagé introuvable — réessayez depuis le lien d\'origine.', 'error');
+      }, 10000);
     } catch(e) {
       console.warn('[share] API error:', e);
+      showToast('Impossible de charger le panier partagé.', 'error');
     }
   }
 
@@ -1135,7 +1142,7 @@ function quickRemove(productId, btnEl) {
 
     const pid = btn.dataset.add;
     if (!pid) return;
-    const item = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+    const item = state?.cart?.find(i => String(i.product.id) === String(pid));
     if (!item) return;
 
     // Vibration haptic sur iOS/Android si disponible
@@ -1158,7 +1165,7 @@ function quickRemove(productId, btnEl) {
     stepper.querySelector('.k-stepper-minus').addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
-      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+      const curItem = state?.cart?.find(i => String(i.product.id) === String(pid));
       if (!curItem) return closeActiveStepper();
       if (curItem.qty <= 1) {
         // Retirer du panier → ferme le stepper
@@ -1174,7 +1181,7 @@ function quickRemove(productId, btnEl) {
     stepper.querySelector('.k-stepper-plus').addEventListener('click', function(e) {
       e.stopPropagation();
       e.preventDefault();
-      const curItem = window.state?.cart?.find(i => String(i.product.id) === String(pid));
+      const curItem = state?.cart?.find(i => String(i.product.id) === String(pid));
       if (!curItem) return;
       document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: curItem.qty + 1 } }));
       stepper.querySelector('.k-stepper-qty').textContent = curItem.qty + 1;
