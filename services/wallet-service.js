@@ -247,8 +247,10 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
   );
   if (!order) throw new Error('Commande introuvable');
 
-  // Defense in depth: ownership check (la route doit déjà l'avoir fait)
-  if (String(order.user_id) !== String(userId)) throw new Error('FORBIDDEN_NOT_OWNER');
+  // Défense en profondeur — double vérification ownership (la route doit déjà avoir vérifié)
+  if (String(order.user_id) !== String(userId)) {
+    throw Object.assign(new Error('Cette commande ne vous appartient pas'), { statusCode: 403 });
+  }
 
   const wallet = await getOrCreateWallet(client, userId);
   const max    = Math.min(amountKmf || wallet.balance_kmf, wallet.balance_kmf, order.total_kmf);
