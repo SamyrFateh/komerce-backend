@@ -1177,6 +1177,15 @@ const server = app.listen(PORT, () => {
   });
 });
 
+// NEW-07 fix: handlers process pour éviter crash silencieux
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  setTimeout(() => process.exit(1), 1000);
+});
+
 process.on('SIGTERM', () => {
   console.log('SIGTERM reçu — fermeture gracieuse...');
   server.close(() => {

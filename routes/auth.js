@@ -18,12 +18,11 @@ const { validate } = require('../middleware/validate');
 const { auth } = require('../validators');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET manquant — démarrage impossible en production');
-  if (process.env.NODE_ENV === 'production') process.exit(1);
+const _JWT_SECRET = process.env.JWT_SECRET;
+if (!_JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET manquant — démarrage impossible');
+  throw new Error('JWT_SECRET requis');
 }
-const _JWT_SECRET = JWT_SECRET || 'komerce_secret_dev_UNSAFE';
 const JWT_EXPIRES = process.env.JWT_EXPIRES || '30d';
 
 const COOKIE_NAME = 'kmrc_jwt';

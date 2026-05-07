@@ -67,6 +67,20 @@ router.post('/apply', async (req, res, next) => {
     const { order_id, amount_kmf } = req.body;
     if (!order_id) return res.status(400).json({ error: 'order_id requis' });
 
+    // NEW-01 fix: ownership + state guard AVANT tout appel service
+    const { rows: [ord] } = await client.query(
+      'SELECT user_id, payment_status FROM orders WHERE id = $1', [order_id]
+    );
+    if (!ord) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Commande introuvable' }); }
+    if (String(ord.user_id) !== String(req.user.id)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
+    }
+    if (ord.payment_status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Commande déjà payée' });
+    }
+
     const result = await walletService.applyToOrder(client, {
       userId:    req.user.id,
       orderId:   order_id,
@@ -93,6 +107,16 @@ router.post('/remove', async (req, res, next) => {
     await client.query('BEGIN');
     const { order_id } = req.body;
     if (!order_id) return res.status(400).json({ error: 'order_id requis' });
+
+    // NEW-02 fix: ownership guard AVANT removeFromOrder
+    const { rows: [ord] } = await client.query(
+      'SELECT user_id FROM orders WHERE id = $1', [order_id]
+    );
+    if (!ord) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Commande introuvable' }); }
+    if (String(ord.user_id) !== String(req.user.id)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Cette commande ne vous appartient pas' });
+    }
 
     const result = await walletService.removeFromOrder(client, { orderId: order_id });
     await client.query('COMMIT');

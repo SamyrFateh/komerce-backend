@@ -37,7 +37,7 @@ function requireClientAuth(req, res, next) {
   }
 
   try {
-    req.client = jwt.verify(token, process.env.JWT_SECRET);
+    req.client = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     next();
   } catch (e) {
     return res.status(401).json({ error: 'Session expirée. Veuillez vous reconnecter.' });

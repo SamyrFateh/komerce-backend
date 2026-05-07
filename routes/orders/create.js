@@ -453,14 +453,7 @@ const emailItems = items.map(i => {
   };
 });
 
-console.log('[DEBUG][ORDER-CREATED] localPhone =', localPhone);
-console.log('[DEBUG][ORDER-CREATED] diasporaPhone =', diasporaPhone);
-console.log('[DEBUG][ORDER-CREATED] tracking_phone =', tracking_phone);
-console.log('[DEBUG][ORDER-CREATED] smsPhones =', smsPhones);
-console.log('[DEBUG][ORDER-CREATED] req.user.id =', req.user?.id);
-console.log('[DEBUG][ORDER-CREATED] req.user.phone =', req.user?.phone);
-console.log('[DEBUG][ORDER-CREATED] recipient_phone =', recipient_phone);
-console.log('[DEBUG][ORDER-SAVED] order.tracking_phone =', order.tracking_phone);
+// NEW-05 fix: logs PII supprimés (phones, req.user.phone, recipient_phone)
 
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)

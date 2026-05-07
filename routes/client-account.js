@@ -29,7 +29,7 @@ function requireClientAuth(req, res, next) {
     return res.status(401).json({ error: 'Non authentifié' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     req.clientUserId = decoded.userId;
     req.clientPhone = decoded.phone;
     next();
@@ -111,7 +111,7 @@ router.get('/magic-link/validate', async (req, res) => {
     // Verify JWT
     let decoded;
     try {
-      decoded = jwt.verify(token, JWT_SECRET);
+      decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
     } catch (err) {
       return res.status(400).send('Lien expiré ou invalide. Veuillez demander un nouveau lien.');
     }
