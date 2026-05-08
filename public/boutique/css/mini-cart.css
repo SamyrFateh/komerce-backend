@@ -2,6 +2,14 @@
    Komerce Floating Mini Cart  — b-mini-cart
    Pastille ronde → pill horizontal expansible
    Mobile uniquement (≥900px : side-cart desktop actif)
+
+   DÉPENDANCES :
+   - tokens.css : les --kmc-* sont des alias des tokens globaux
+     (ex. --kmc-coral → var(--ocean)). Tout renommage de token
+     global dans tokens.css doit être répercuté ici.
+   - b-mini-cart.js : gère le positionnement initial (left/top)
+     via style inline avant le premier rendu. Si le JS échoue,
+     .kmc se positionne en haut-gauche (right/bottom: auto).
    ========================================================= */
 
 :root {

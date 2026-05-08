@@ -142,7 +142,10 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-confirm-ref-label  { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#a06a1f; font-weight:600; margin-bottom:6px; }
 .k-confirm-ref-block .k-confirm-ref { font-size:26px; font-weight:700; letter-spacing:1px; font-family:'SF Mono',Menlo,monospace; color:#6b3e0e; margin:4px 0 12px; word-break:break-all; }
 .k-confirm-copy       { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; background:white; border:1.5px solid #e8c78a; border-radius:50px; color:#6b3e0e; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
-.k-confirm-copy:hover { background:#fff8ed; transform:translateY(-1px); }
+.k-confirm-copy:hover { background:#fff8ed; }
+@media (hover:hover) and (pointer:fine) {
+  .k-confirm-copy:hover { transform:translateY(-1px); }
+}
 .k-confirm-copy:active { transform:scale(.97); }
 
 .k-confirm-cash-block { background:#fdf4e8; border:2px dashed #e8a13a; border-radius:14px; padding:14px; margin:0 4px 18px; }
@@ -161,7 +164,10 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-confirm-actions           { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
 .k-confirm-btn               { display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; border-radius:50px; border:none; font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; width:100%; }
 .k-confirm-btn-primary       { background:linear-gradient(135deg,var(--cta-green),#1d5b2a); color:white; box-shadow:0 4px 14px rgba(42,122,62,.3); }
-.k-confirm-btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(42,122,62,.4); }
+.k-confirm-btn-primary:hover { box-shadow:0 6px 18px rgba(42,122,62,.4); }
+@media (hover:hover) and (pointer:fine) {
+  .k-confirm-btn-primary:hover { transform:translateY(-1px); }
+}
 .k-confirm-btn-secondary     { background:white; color:var(--text); border:1.5px solid var(--border); }
 .k-confirm-btn-secondary:hover { background:#faf6ed; border-color:#d4b87a; }
 
@@ -176,7 +182,10 @@ body.modal-open .k-bnav { opacity: .7; }
 
 .k-myorders-list  { display:flex; flex-direction:column; gap:10px; margin:0 0 20px; }
 .k-myorder-card   { display:flex; align-items:center; gap:12px; width:100%; padding:12px; background:white; border:1px solid var(--sand-dark); border-radius:12px; cursor:pointer; transition:all .15s; text-align:left; font:inherit; }
-.k-myorder-card:hover  { border-color:#d4b87a; background:#faf6ed; transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.05); }
+.k-myorder-card:hover  { border-color:#d4b87a; background:#faf6ed; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+@media (hover:hover) and (pointer:fine) {
+  .k-myorder-card:hover { transform:translateY(-1px); }
+}
 .k-myorder-card:active { transform:scale(.99); }
 .k-myorder-card.k-myorder-loading { opacity:.5; pointer-events:none; }
 
@@ -215,7 +224,10 @@ body.modal-open .k-bnav { opacity: .7; }
    La classe .k-fav-promo-active est posée sur #k-fav-view par b-favs.js.
    Sans promo → style ghost (voir définition base ~L38). */
 .k-fav-promo-active .k-fav-share-btn  { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px 16px; margin:0 0 18px; background:linear-gradient(135deg,var(--whatsapp),#128c7e); color:white; border:none; border-radius:50px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(37,211,102,.3); transition:all .15s; }
-.k-fav-promo-active .k-fav-share-btn:hover  { transform:translateY(-1px); box-shadow:0 5px 14px rgba(37,211,102,.4); }
+.k-fav-promo-active .k-fav-share-btn:hover  { box-shadow:0 5px 14px rgba(37,211,102,.4); }
+@media (hover:hover) and (pointer:fine) {
+  .k-fav-promo-active .k-fav-share-btn:hover { transform:translateY(-1px); }
+}
 .k-fav-promo-active .k-fav-share-btn:active { transform:scale(.98); }
 .k-fav-share-icon { font-size:16px; }
 .k-card-promo-fav { background:linear-gradient(135deg,#ff5e5e,#c73a3a); color:white; font-weight:700; font-size:11px; padding:4px 9px; border-radius:50px; box-shadow:0 2px 6px rgba(199,58,58,.4); animation:fav-promo-pulse 2.5s ease-in-out infinite; }
@@ -289,7 +301,10 @@ body.modal-open .k-bnav { opacity: .7; }
 #k-section-index { position:fixed; right:8px; top:50%; transform:translateY(-50%); z-index:50; display:flex; flex-direction:column; gap:4px; padding:6px 4px; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05); opacity:.88; transition:opacity .2s ease, transform .2s ease; }
 #k-section-index:hover, #k-section-index:focus-within { opacity:1; }
 .k-section-index-btn       { display:flex; align-items:center; justify-content:center; width:36px; height:36px; padding:0; border:none; background:transparent; border-radius:50%; cursor:pointer; transition:background .15s ease, transform .15s ease; position:relative; }
-.k-section-index-btn:hover { background:rgba(0,0,0,.05); transform:scale(1.08); }
+.k-section-index-btn:hover { background:rgba(0,0,0,.05); }
+@media (hover:hover) and (pointer:fine) {
+  .k-section-index-btn:hover { transform:scale(1.08); }
+}
 .k-section-index-btn:active { transform:scale(.94); }
 .k-section-index-btn.active { background:var(--coral); }
 .k-section-index-emoji { font-size:18px; line-height:1; }
@@ -333,10 +348,7 @@ body.cart-open  #k-section-index { display:none; }
 #k-sug-rail { display:block; }
 .k-modal-img-wrap { flex:0 0 auto; height:45vh; max-height:450px; position:relative; top:auto; z-index:1; background:var(--sand); }
 
-/* Cart overlay mobile full-width */
-@media (max-width:768px) {
-  .k-cart-drawer { width:100%; max-width:100%; border-radius:0; }
-}
+/* Cart overlay mobile full-width → cart.css @max-width:768px (migré) */
 @media (max-width:600px) {
   .k-modal-img-wrap { height:40vh; max-height:380px; }
 }

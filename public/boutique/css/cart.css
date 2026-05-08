@@ -389,6 +389,12 @@ body.cart-open .k-wa-fab {
 .k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
 .k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
 
+/* Drawer plein écran sous 768px — mobile étroit.
+   Migré depuis interactions.css (était isolé du reste des règles .k-cart-drawer). */
+@media (max-width: 768px) {
+  .k-cart-drawer { width: 100%; max-width: 100%; border-radius: 0; }
+}
+
 /* .k-cart-drawer max-width/width → layout.css @900px (source de vérité : 420px) */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
