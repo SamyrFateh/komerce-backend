@@ -455,6 +455,10 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     state._savedCatalogScrollY = window.scrollY;
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
+    // Signaler au CSS si le side-cart est visible (pour ajuster la largeur de la modal)
+    if (document.getElementById('k-side-cart')?.classList.contains('has-items')) {
+      document.body.classList.add('modal-has-cart');
+    }
 
     // MOBILE SCROLL FIX — neutralise les styles inline posés par le pager
     // (#k-page-scroll.k-pager-active = position:fixed + overflow:hidden crée un
@@ -717,6 +721,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     // Unlock body scroll — CSS class drives layout
     const scrollY = state._savedCatalogScrollY || 0;
     document.body.classList.remove('modal-open');
+    document.body.classList.remove('modal-has-cart');
     document.body.style.removeProperty('--modal-scroll-y');
 
     // MOBILE SCROLL FIX — restaurer les styles inline du pager

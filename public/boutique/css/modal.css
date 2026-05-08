@@ -663,6 +663,14 @@
   /* ── Shell ───────────────────────────────────────────────── */
   #k-modal.k-modal { width: min(1180px, calc(100vw - 48px)); height: min(760px, calc(100vh - 44px)); max-height: calc(100vh - 44px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px rgba(12,18,12,.34); animation: none; }
 
+  /* Quand le side-cart est visible, la modal se décale pour ne pas le chevaucher.
+     336px = width(312) + right-gap(24). Transition douce si le panier apparaît en cours. */
+  body.modal-has-cart #k-modal.k-modal {
+    width: min(1180px, calc(100vw - 48px - 336px));
+    margin-right: 336px;
+    transition: width .22s ease, margin-right .22s ease;
+  }
+
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid rgba(31,48,36,.08); box-shadow: 0 8px 24px rgba(31,48,36,.05); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
@@ -845,6 +853,10 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal { width: calc(100vw - 32px); }
+  body.modal-has-cart #k-modal.k-modal {
+    width: calc(100vw - 32px - 336px);
+    margin-right: 336px;
+  }
   #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 52%) minmax(340px, 48%); }
   #k-modal .k-modal-product-zone .k-modal-details { padding: 0 18px; }
   #k-modal .k-modal-product-zone .k-modal-actions { padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
@@ -859,6 +871,10 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 1200px) {
   #k-modal.k-modal { width: min(1280px, calc(100vw - 48px)); }
+  body.modal-has-cart #k-modal.k-modal {
+    width: min(1280px, calc(100vw - 48px - 348px));
+    margin-right: 348px;
+  }
   #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 58%) minmax(380px, 42%); }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
