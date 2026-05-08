@@ -38,9 +38,139 @@ import { syncRailActiveState, renderSubcatRail } from './controllers/home-contro
 import { isDesktop }        from './b-scroll-owner.js';
 
 // ═══════════════════════════════════════════════════════════════
-//  1. MEGA-MENU — Sous-catégories au hover sidebar
+//  1. MEGA-MENU — Dropdown sous-catégories au hover chip desktop
 // ═══════════════════════════════════════════════════════════════
 
+import { getSubcategories, getCategorySectionEmoji } from './shop-schema.js';
+
+let _megaEl      = null;
+let _megaTimer   = null;
+let _megaCurrent = null;
+
+function _getMegaEl() {
+  if (!_megaEl) {
+    _megaEl = document.createElement('div');
+    _megaEl.className = 'k-mega-dropdown';
+    _megaEl.setAttribute('role', 'menu');
+    document.body.appendChild(_megaEl);
+    _megaEl.addEventListener('mouseenter', _clearTimer);
+    _megaEl.addEventListener('mouseleave', _scheduleClose);
+  }
+  return _megaEl;
+}
+
+function _clearTimer() {
+  if (_megaTimer) { clearTimeout(_megaTimer); _megaTimer = null; }
+}
+
+function _scheduleClose(delay) {
+  _clearTimer();
+  _megaTimer = setTimeout(_close, typeof delay === 'number' ? delay : 180);
+}
+
+function _close() {
+  if (_megaEl) { _megaEl.classList.remove('is-open'); _megaEl.innerHTML = ''; }
+  _megaCurrent = null;
+  var catsShell = document.querySelector('.k-cats-shell');
+  if (catsShell) catsShell.classList.remove('k-mega-open');
+}
+
+function _openForChip(chip) {
+  if (!isDesktop()) return;
+  var cat = chip.dataset.cat;
+  if (!cat || cat === 'all') { _scheduleClose(80); return; }
+
+  var subcats = getSubcategories(cat);
+  if (!subcats || !subcats.length) { _scheduleClose(80); return; }
+
+  if (_megaCurrent === cat) { _clearTimer(); return; }
+  _megaCurrent = cat;
+  _clearTimer();
+
+  var el = _getMegaEl();
+
+  // Position : pleine largeur, collé sous le .k-cats-shell
+  var shell = document.querySelector('.k-cats-shell');
+  var shellRect = shell ? shell.getBoundingClientRect() : { bottom: 120, left: 0, width: window.innerWidth };
+  el.style.top   = (shellRect.bottom + window.scrollY) + 'px';
+  el.style.left  = shellRect.left + 'px';
+  el.style.width = shellRect.width + 'px';
+
+  var emoji = getCategorySectionEmoji(cat) || '';
+  var catLabel = chip.querySelector('.k-chip-label');
+  var label = catLabel ? catLabel.textContent.trim() : cat;
+
+  el.innerHTML =
+    '<div class="k-mega-inner">' +
+      '<div class="k-mega-head">' +
+        '<span class="k-mega-head-emoji" aria-hidden="true">' + emoji + '</span>' +
+        '<span class="k-mega-head-label">' + label + '</span>' +
+      '</div>' +
+      '<ul class="k-mega-list">' +
+        subcats.map(function(sc) {
+          var scLabel = sc.label || sc.key || String(sc);
+          var scKey   = sc.key   || scLabel;
+          var scEmoji = sc.emoji || '';
+          return '<li class="k-mega-item" role="menuitem" tabindex="0" data-cat="' + cat + '" data-subcat="' + scKey + '">' +
+            (scEmoji ? '<span class="k-mega-item-emoji" aria-hidden="true">' + scEmoji + '</span>' : '') +
+            '<span class="k-mega-item-label">' + scLabel + '</span>' +
+          '</li>';
+        }).join('') +
+      '</ul>' +
+    '</div>';
+
+  el.classList.add('is-open');
+  if (shell) shell.classList.add('k-mega-open');
+
+  el.querySelectorAll('.k-mega-item').forEach(function(item) {
+    var go = function() {
+      var c  = item.dataset.cat;
+      var sc = item.dataset.subcat;
+      setActiveCat(c);
+      syncRailActiveState(c, { center: true });
+      renderSubcatRail(c);
+      if (sc) bus.emit('subcat:select', { cat: c, subcat: sc });
+      _close();
+    };
+    item.addEventListener('click', go);
+    item.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+    });
+  });
+}
+
+function setupMegaMenu() {
+  if (!isDesktop()) return;
+
+  // Délégation sur .k-cats — fonctionne même si les chips sont re-rendues
+  var catsEl = document.querySelector('.k-cats');
+  if (!catsEl) return;
+
+  catsEl.addEventListener('mouseenter', function(e) {
+    var chip = e.target.closest('.k-chip');
+    if (chip) { _clearTimer(); _openForChip(chip); }
+  }, true);
+
+  catsEl.addEventListener('mouseleave', function(e) {
+    // Ne pas fermer si on entre dans le mega
+    var to = e.relatedTarget;
+    if (_megaEl && _megaEl.contains(to)) return;
+    _scheduleClose();
+  });
+
+  // Escape ferme
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') _close();
+  });
+
+  // Clic hors chips + mega → ferme
+  document.addEventListener('click', function(e) {
+    if (!_megaEl || !_megaEl.classList.contains('is-open')) return;
+    if (_megaEl.contains(e.target)) return;
+    if (e.target.closest('.k-cats')) return;
+    _close();
+  }, true);
+}
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -655,6 +785,7 @@ function _setupQtyObserver() {
 export function setupDesktopUpgrade() {
   if (!isDesktop()) return;
 
+  setupMegaMenu();
   setupPromoStrip();
   setupHomepageMerchandising();
   setupScrollToTop();

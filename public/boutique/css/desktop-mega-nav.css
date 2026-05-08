@@ -396,3 +396,111 @@
     flex-shrink: 0;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LOT 13 — MEGA DROPDOWN — panneau pleine largeur sous les chips
+   Position fixed calculée en JS.
+   ═══════════════════════════════════════════════════════════════ */
+
+.k-mega-dropdown {
+  display: none;
+  position: absolute;
+  z-index: 200;
+  left: 0;
+  background: var(--white);
+  border-top: 1px solid rgba(31,48,36,.07);
+  border-bottom: 1px solid rgba(31,48,36,.08);
+  box-shadow: 0 8px 28px rgba(31,48,36,.10);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .16s var(--ease), transform .16s var(--ease);
+}
+
+.k-mega-dropdown.is-open {
+  display: block;
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.k-mega-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 16px clamp(16px, 3vw, 40px) 20px;
+}
+
+.k-mega-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sand-dark);
+}
+
+.k-mega-head-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.k-mega-head-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.02em;
+}
+
+.k-mega-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.k-mega-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--sand);
+  border: 1px solid rgba(31,48,36,.08);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .13s var(--ease), border-color .13s, color .13s, transform .12s;
+  outline: none;
+}
+
+.k-mega-item:hover {
+  background: rgba(200,92,45,.07);
+  border-color: rgba(200,92,45,.25);
+  color: var(--coral);
+  transform: translateY(-1px);
+}
+
+.k-mega-item:focus-visible {
+  outline: 2px solid rgba(42,122,62,.4);
+  outline-offset: 2px;
+}
+
+.k-mega-item-emoji {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.k-mega-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* Ombre portée sur le shell quand le mega est ouvert */
+.k-cats-shell.k-mega-open {
+  box-shadow: none;
+}
