@@ -332,45 +332,46 @@ function _handlePagerResize() {
   _setupMobilePager();
 }
 
-// ── Ghost gauche : détection via touchstart à scrollLeft=0 + scroll ─
+// ── Ghost gauche : détection via listeners document-level ───────
+// Les listeners sont sur document (pas sur #k-grid) car :
+// - L'user touche .k-cat-section (overflow-y:auto), qui capture la séquence touch.
+// - Sur iOS, overscroll-behavior-x:none sur #k-grid bloque la propagation du delta
+//   horizontal au touchmove/end du grid quand scrollLeft=0.
+// - document reçoit toujours le bubble, même depuis un scroll container enfant.
 
 function _setupLeftEdgeSwipe(grid) {
-  if (grid._leftSwipeTouchStart) grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
-  if (grid._leftSwipeTouchMove)  grid.removeEventListener('touchmove',  grid._leftSwipeTouchMove);
-  if (grid._leftSwipeTouchEnd)   grid.removeEventListener('touchend',   grid._leftSwipeTouchEnd);
-  if (grid._leftSwipeScrollH)    grid.removeEventListener('scroll',     grid._leftSwipeScrollH);
+  // Nettoyer les anciens listeners document si déjà bindés
+  if (grid._leftSwipeTouchStart) document.removeEventListener('touchstart', grid._leftSwipeTouchStart);
+  if (grid._leftSwipeTouchMove)  document.removeEventListener('touchmove',  grid._leftSwipeTouchMove);
+  if (grid._leftSwipeTouchEnd)   document.removeEventListener('touchend',   grid._leftSwipeTouchEnd);
+  if (grid._leftSwipeScrollH)    grid.removeEventListener('scroll',         grid._leftSwipeScrollH);
 
-  let _touchStartX    = 0;
-  let _touchStartLeft = 0;
-  let _touchLastX     = 0; // suivi en temps réel via touchmove
-  let _triggered      = false;
+  let _touchStartX = 0;
+  let _touchLastX  = 0;
+  let _triggered   = false;
 
   grid._leftSwipeTouchStart = (e) => {
-    _touchStartX    = e.touches[0].clientX;
-    _touchLastX     = e.touches[0].clientX;
-    _touchStartLeft = grid.scrollLeft;
-    _triggered      = false;
+    // Ne s'active que si le touch est dans le grid
+    if (!grid.contains(e.target)) return;
+    _touchStartX = e.touches[0].clientX;
+    _touchLastX  = e.touches[0].clientX;
+    _triggered   = false;
   };
 
-  // touchmove : capturer la position réelle même si le browser absorbe le geste
-  // (iOS Safari avec overscroll-behavior-x:none peut ne pas propager le delta au touchend)
   grid._leftSwipeTouchMove = (e) => {
-    if (_triggered) return;
+    if (_triggered || !grid.contains(e.target)) return;
     _touchLastX = e.touches[0].clientX;
   };
 
-  // touchend : utiliser le dernier x connu (touchmove) ou changedTouches
   grid._leftSwipeTouchEnd = (e) => {
     if (_isProgrammaticScroll || state.modalOpen || _triggered) return;
+    if (!grid.contains(e.target)) return;
     const endX  = e.changedTouches[0].clientX;
-    // Prendre le delta le plus grand entre changedTouches et touchmove
-    const dxEnd  = endX - _touchStartX;
+    const dxEnd  = endX  - _touchStartX;
     const dxMove = _touchLastX - _touchStartX;
     const dx     = Math.min(dxEnd, dxMove); // le plus négatif = swipe gauche le plus marqué
     const idx    = _getCurrentIndex(grid);
-    // Swipe gauche (dx négatif) depuis idx 0, grid bloqué par scroll-snap.
-    // Seuil 0.15 (au lieu de 0.1) : absorbe les micro-décalages scroll-snap iOS
-    // qui empêchaient scrollLeft d'atteindre strictement 0 au touchend.
+    // Swipe gauche depuis idx 0 — déclenche la téléportation vers la dernière page
     if (dx < -30 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.15) {
       _triggered = true;
       const realPages = _getRealPages(grid);
@@ -392,9 +393,9 @@ function _setupLeftEdgeSwipe(grid) {
     }
   };
 
-  grid.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
-  grid.addEventListener('touchmove',  grid._leftSwipeTouchMove,  { passive: true });
-  grid.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
+  document.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
+  document.addEventListener('touchmove',  grid._leftSwipeTouchMove,  { passive: true });
+  document.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
 }
 
 function _setupMobilePager() {
@@ -448,15 +449,15 @@ function destroyMobilePager() {
       grid._pagerScrollH = null;
     }
     if (grid._leftSwipeTouchStart) {
-      grid.removeEventListener('touchstart', grid._leftSwipeTouchStart);
+      document.removeEventListener('touchstart', grid._leftSwipeTouchStart);
       grid._leftSwipeTouchStart = null;
     }
     if (grid._leftSwipeTouchMove) {
-      grid.removeEventListener('touchmove', grid._leftSwipeTouchMove);
+      document.removeEventListener('touchmove', grid._leftSwipeTouchMove);
       grid._leftSwipeTouchMove = null;
     }
     if (grid._leftSwipeTouchEnd) {
-      grid.removeEventListener('touchend', grid._leftSwipeTouchEnd);
+      document.removeEventListener('touchend', grid._leftSwipeTouchEnd);
       grid._leftSwipeTouchEnd = null;
     }
     if (grid._leftSwipeScrollH) {
