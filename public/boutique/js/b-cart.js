@@ -1391,6 +1391,15 @@ function renderSideCart() {
 
   if (!sc) return;
   sc.classList.toggle('has-items', hasItems);
+
+  // Vérité unique : --sc-width sur le body.
+  // Tous les éléments qui doivent céder la place au cart lisent cette variable dans leur propre CSS.
+  if (window.innerWidth >= 900) {
+    const cartW = hasItems ? (sc.offsetWidth || 312) : 0;
+    const gap   = hasItems ? (parseInt(getComputedStyle(sc).right) || 16) : 0;
+    document.documentElement.style.setProperty('--sc-offset', hasItems ? (cartW + gap + 8) + 'px' : '0px');
+    document.documentElement.classList.toggle('sc-open', hasItems);
+  }
   if (!hasItems) return;
 
   const qty = cartQty();

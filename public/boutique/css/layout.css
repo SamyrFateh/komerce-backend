@@ -846,10 +846,18 @@ body {
     pointer-events: auto;
     transform: translateY(0);
   }
-  /* Padding-right uniquement quand le panier est visible — sinon le contenu reste pleine largeur */
-  body:has(#k-side-cart.has-items) #k-desktop-catalog-wrap {
-    padding-right: 336px;
-    transition: padding-right .22s ease;
+  /* ── Side-cart offset : vérité unique ────────────────────────
+     --sc-offset est posé sur :root par b-cart.js renderSideCart().
+     Chaque zone qui doit céder la place au cart déclare ici
+     son padding-right. Zéro style inline, zéro duplication.
+     ─────────────────────────────────────────────────────────── */
+  :root { --sc-offset: 0px; }
+
+  html.sc-open #k-desktop-catalog-wrap,
+  html.sc-open .k-home-merch,
+  html.sc-open .k-promo-strip {
+    padding-right: calc(var(--sc-offset) + clamp(16px, 3vw, 40px));
+    transition: padding-right .22s var(--ease);
   }
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
@@ -1116,7 +1124,6 @@ body {
 
 @media (min-width: 1200px) {
   .k-side-cart { width: 320px; min-width: 320px; }
-  body:has(#k-side-cart.has-items) #k-desktop-catalog-wrap { padding-right: 344px; }
 }
 
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
