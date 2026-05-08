@@ -85,6 +85,10 @@ export function renderFavView() {
     ${promoBanner}${shareBtn}
     <div class="k-grid" id="k-fav-grid">${cardsHTML}</div>`;
 
+  // Active le style WA vert sur .k-fav-share-btn uniquement si des favoris sont en promo.
+  // Sans cette classe → style ghost (neutre, défini dans interactions.css ~L38).
+  el.classList.toggle('k-fav-promo-active', promoFavs.length > 0);
+
   const favGrid = document.getElementById('k-fav-grid');
   if (favGrid) {
     favGrid.querySelectorAll('.k-card').forEach(card => {

@@ -35,17 +35,17 @@
 }
 .k-fav-promo-banner-icon { font-size: 24px; flex-shrink: 0; }
 .k-fav-promo-banner-text { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.4; }
-/* NOTE : cette variante ghost n'est pas instanciée dans le HTML actuel (b-favs.js injecte
-   uniquement .k-fav-share-btn = WA vert, voir L211). Renommée pour éviter l'écrasement silencieux.
-   À utiliser si un bouton de partage neutre est ajouté : class="k-fav-share-btn--ghost" */
-.k-fav-share-btn--ghost {
+/* Style par défaut du bouton de partage — mobile, hors contexte promo (ghost neutre).
+   Quand des favoris sont en promo, b-favs.js pose .k-fav-promo-active sur #k-fav-view
+   → le style WA vert (~L216) prend le dessus via spécificité. */
+.k-fav-share-btn {
   width: 100%; padding: 12px; border-radius: 50px; margin-bottom: 16px;
   background: transparent; border: 1.5px solid var(--border);
   font-size: 14px; font-weight: 600; color: var(--text-muted);
   display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
   transition: all .15s;
 }
-.k-fav-share-btn--ghost:hover { background: var(--sand); color: var(--text); }
+.k-fav-share-btn:hover { background: var(--sand); color: var(--text); }
 .k-card-promo-badge-fav {
   position: absolute; bottom: 8px; left: 8px;
   background: var(--coral); color: #fff;
@@ -211,9 +211,12 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-fav-promo-text        { flex:1; display:flex; flex-direction:column; gap:2px; }
 .k-fav-promo-text strong { font-size:14px; font-weight:700; color:#6b3e0e; }
 .k-fav-promo-text span   { font-size:12px; color:#a06a1f; }
-.k-fav-share-btn  { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px 16px; margin:0 0 18px; background:linear-gradient(135deg,var(--whatsapp),#128c7e); color:white; border:none; border-radius:50px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(37,211,102,.3); transition:all .15s; }
-.k-fav-share-btn:hover  { transform:translateY(-1px); box-shadow:0 5px 14px rgba(37,211,102,.4); }
-.k-fav-share-btn:active { transform:scale(.98); }
+/* Style WA vert — actif uniquement quand des favoris sont en promo.
+   La classe .k-fav-promo-active est posée sur #k-fav-view par b-favs.js.
+   Sans promo → style ghost (voir définition base ~L38). */
+.k-fav-promo-active .k-fav-share-btn  { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px 16px; margin:0 0 18px; background:linear-gradient(135deg,var(--whatsapp),#128c7e); color:white; border:none; border-radius:50px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 3px 10px rgba(37,211,102,.3); transition:all .15s; }
+.k-fav-promo-active .k-fav-share-btn:hover  { transform:translateY(-1px); box-shadow:0 5px 14px rgba(37,211,102,.4); }
+.k-fav-promo-active .k-fav-share-btn:active { transform:scale(.98); }
 .k-fav-share-icon { font-size:16px; }
 .k-card-promo-fav { background:linear-gradient(135deg,#ff5e5e,#c73a3a); color:white; font-weight:700; font-size:11px; padding:4px 9px; border-radius:50px; box-shadow:0 2px 6px rgba(199,58,58,.4); animation:fav-promo-pulse 2.5s ease-in-out infinite; }
 @keyframes fav-promo-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.05); } }
