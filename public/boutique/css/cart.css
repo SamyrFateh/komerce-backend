@@ -155,6 +155,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
 .k-of-group input:focus { border-color: var(--coral); }
 
+/* 600px intentionnel : .k-order-modal uniquement — popup centré dès 480px de large,
+   indépendant du breakpoint layout. Ne pas aligner sur 900px. */
 @media (min-width: 600px) {
   .k-order-modal { max-width: 480px; height: auto; max-height: 92vh; border-radius: var(--radius-lg); }
   .k-order-overlay { align-items: center; }
@@ -264,7 +266,8 @@ body.cart-open .k-wa-fab {
   transform: translateY(8px) scale(.96);
 }
 
-@media (min-width: 1024px) {
+/* 900px aligné sur layout : bnav masquée à 900px, offset mobile bottom:calc(bnav-h+…) devient invalide */
+@media (min-width: 900px) {
   .k-wa-fab {
     bottom: 18px;
     right: 18px;
@@ -386,10 +389,7 @@ body.cart-open .k-wa-fab {
 .k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
 .k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
 
-/* ── DESKTOP ─────────────────────────────────────────────────── */
-@media (min-width: 768px) {
-  .k-cart-drawer { max-width: 420px; left: auto; }
-}
+/* .k-cart-drawer max-width/width → layout.css @900px (source de vérité : 420px) */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
   .k-card-add        { width: 46px; height: 46px; bottom: 10px; right: 10px; }
