@@ -292,14 +292,14 @@
 }
 
 /* ── PROMO RAIL ──────────────────────────────────────────────── */
+/* FIX ghost-droite : le rail utilise une animation CSS translateX (pas de scroll natif).
+   overflow:hidden contient le k-promo-rail-inner (width:max-content × 2) dans le viewport.
+   scroll-snap et overflow-x:auto retirés — ils exposaient la largeur totale du inner. */
 .k-promo-rail {
   display: flex;
   gap: 10px;
-  overflow-x: auto;
+  overflow: hidden;
   padding-bottom: 4px;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   position: relative;
   isolation: isolate;
 }

@@ -368,15 +368,21 @@ function _setupLeftEdgeSwipe(grid) {
     const dxMove = _touchLastX - _touchStartX;
     const dx     = Math.min(dxEnd, dxMove); // le plus négatif = swipe gauche le plus marqué
     const idx    = _getCurrentIndex(grid);
-    // Swipe gauche (dx négatif) depuis idx 0, grid bloqué par scroll-snap
-    if (dx < -30 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.1) {
+    // Swipe gauche (dx négatif) depuis idx 0, grid bloqué par scroll-snap.
+    // Seuil 0.15 (au lieu de 0.1) : absorbe les micro-décalages scroll-snap iOS
+    // qui empêchaient scrollLeft d'atteindre strictement 0 au touchend.
+    if (dx < -30 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.15) {
       _triggered = true;
       const realPages = _getRealPages(grid);
       const lastIdx   = realPages.length - 1;
+      const lastPage  = realPages[lastIdx];
       grid.style.opacity    = '0';
       grid.style.transition = 'none';
       _scrollToIndex(grid, lastIdx, 'instant');
-      _syncChip(realPages[lastIdx].dataset.cat);
+      _syncChip(lastPage.dataset.cat);
+      // Hint visuel "← catégorie" (symétrique du hint bas-de-page)
+      const currentPage = realPages[0];
+      if (currentPage) _showPrevHint(currentPage, lastPage);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           grid.style.opacity    = '';
