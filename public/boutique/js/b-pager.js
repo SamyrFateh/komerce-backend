@@ -366,13 +366,17 @@ function _setupLeftEdgeSwipe(grid) {
   grid._leftSwipeTouchEnd = (e) => {
     if (_isProgrammaticScroll || state.modalOpen || _triggered) return;
     if (!grid.contains(e.target)) return;
-    const endX  = e.changedTouches[0].clientX;
-    const dxEnd  = endX  - _touchStartX;
+    const endX   = e.changedTouches[0].clientX;
+    const dxEnd  = endX - _touchStartX;
     const dxMove = _touchLastX - _touchStartX;
-    const dx     = Math.min(dxEnd, dxMove); // le plus négatif = swipe gauche le plus marqué
-    const idx    = _getCurrentIndex(grid);
-    // Swipe gauche depuis idx 0 — déclenche la téléportation vers la dernière page
-    if (dx < -30 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.15) {
+    // Si touchmove n'a pas été dispatché (Samsung Internet absorbe le geste horizontal
+    // quand scrollLeft=0 + overscroll-behavior-x:none), _touchLastX === _touchStartX.
+    // Dans ce cas on se fie uniquement à dxEnd (changedTouches), toujours présent.
+    const dx = (_touchLastX === _touchStartX) ? dxEnd : Math.min(dxEnd, dxMove);
+    const idx = _getCurrentIndex(grid);
+    // Seuil -20px (au lieu de -30) : Samsung Internet absorbe une partie du delta
+    // avant de dispatcher touchend, le geste perçu est plus court.
+    if (dx < -20 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.15) {
       _triggered = true;
       const realPages = _getRealPages(grid);
       const lastIdx   = realPages.length - 1;
