@@ -144,7 +144,7 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* ── MODAL COMMANDE ─────────────────────────────────────────── */
 .k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: rgba(45,95,51,.55); justify-content: center; align-items: stretch; }
-.k-order-overlay.open { display: flex; }
+/* .k-order-overlay.open — source de vérité : voir L606 (structure flex complète + z-index) */
 /* BUG 4 FIX : overflow:clip au lieu de overflow:hidden — clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
 .k-order-modal { width: 100%; height: 100vh; height: 100dvh; background: var(--white); border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
@@ -630,6 +630,9 @@ body.cart-open .k-wa-fab {
 /* Bouton ajouter "confirmed" */
 .k-add-cart-btn.confirmed { background:var(--ocean); color:#fff; font-size:13px; font-weight:700; justify-content:center; }
 
+/* INTENTIONNEL @600px — complément du bloc L160 (.k-order-modal centré).
+   Fix Bug 4 : rétablit overflow:hidden pour le border-radius sur tablette/desktop,
+   compatible avec .ck-confirm-btn toujours visible (dernier enfant flex, hors scroll). */
 @media (min-width:600px) {
   .k-order-overlay.open .k-order-modal { height:auto; max-height:92vh; overflow:hidden; }
   /* Sur desktop le modal a une hauteur fixe (92vh) : on rétablit overflow:hidden pour

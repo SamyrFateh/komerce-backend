@@ -71,6 +71,7 @@
   --elev-4: 0 16px 40px rgba(31,48,36,.12), 0 8px 16px rgba(31,48,36,.08);
 }
 
+/* padding latéral tablette — intermédiaire entre mobile (16px) et desktop (28px) */
 @media (min-width: 768px) {
   :root { --pad-x: 24px; }
 }
@@ -83,8 +84,6 @@
 @media (min-width: 1200px) {
   :root {
     --header-h: 72px;   /* layout.css bloc 1200px */
+    --pad-x: 32px;
   }
-}
-@media (min-width: 1200px) {
-  :root { --pad-x: 32px; }
 }

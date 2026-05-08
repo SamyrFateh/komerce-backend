@@ -346,12 +346,9 @@ body.cart-open  #k-section-index { display:none; }
 
 /* Carousel mobile overlay fix */
 #k-sug-rail { display:block; }
-.k-modal-img-wrap { flex:0 0 auto; height:45vh; max-height:450px; position:relative; top:auto; z-index:1; background:var(--sand); }
+/* .k-modal-img-wrap — consolidé dans modal.css (source de vérité) */
 
 /* Cart overlay mobile full-width → cart.css @max-width:768px (migré) */
-@media (max-width:600px) {
-  .k-modal-img-wrap { height:40vh; max-height:380px; }
-}
 
 /* ═══════════════════════════════════════════════════════════════
    PATCH FINAL — classes résiduelles

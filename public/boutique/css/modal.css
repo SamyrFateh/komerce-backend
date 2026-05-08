@@ -113,10 +113,13 @@
 }
 
 /* ── IMAGE + CAROUSEL ────────────────────────────────────────── */
+/* Source de vérité unique pour .k-modal-img-wrap.
+   top:auto et z-index:1 consolidés depuis interactions.css (fix carousel overlay mobile).
+   background:var(--sand) retenu (interactions.css surchargeait le gradient — intentionnel). */
 .k-modal-img-wrap {
   position: relative; flex: 0 0 auto; height: 45vh; max-height: 450px;
-  background:
-    linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); overflow: hidden;
+  top: auto; z-index: 1;
+  background: var(--sand); overflow: hidden;
 }
 /* ── Skeleton shimmer pendant le chargement de l'image ───────
    Couche pseudo-élément animée. Disparaît dès qu'une image
@@ -138,6 +141,7 @@
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+/* INTENTIONNEL @600px — réduit la zone image sur mobile très étroit (source de vérité après suppression doublon interactions.css) */
 @media (max-width: 600px) {
   .k-modal-img-wrap { height: 40vh; max-height: 380px; }
 }

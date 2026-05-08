@@ -528,7 +528,8 @@
   opacity: .9;
 }
 
-/* ── DESKTOP ─────────────────────────────────────────────────── */
+/* INTENTIONNEL @600px — enrichissement carte produit sur mobile large/tablette,
+   avant layout desktop @900px. Affiche catégorie, prix EUR, disponibilité. */
 @media (min-width: 600px) {
   .k-card-category {
     display: block;
