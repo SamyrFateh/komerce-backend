@@ -261,10 +261,8 @@
 .k-hero img, .k-hero-card img, .k-hero-banner img { display: block; width: 100%; background: transparent; }
 /* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
 .k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
-@media (min-width: 900px) {
-  .k-hero-img { height: clamp(140px, 14vw, 188px); }
-  .k-hero-media { max-height: 188px; overflow: hidden; }
-}
+/* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
+/* @900px override final → desktop-upgrade.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,180px) !important) */
 
 /* Trust bar : desktop only (déclarée dans desktop-mega-nav.css) */
 .k-hero-trust-bar { display: none; }

@@ -429,7 +429,7 @@ body {
   }
 
   .k-logo { min-width: 170px; }
-  .k-logo-text { display: block; font-size: 20px; color: var(--ocean-dark); font-weight: 800; letter-spacing: -.5px; }
+  .k-logo-text { display: block; font-size: 20px; color: var(--ocean-dark); font-weight: 800; letter-spacing: -.5px; } /* source de vérité desktop — override 1200px au bloc @1200px ci-dessous */
   .k-logo-icon { width: 36px; height: 36px; }
 
   /* Barre recherche centrale large */
@@ -449,8 +449,7 @@ body {
   }
   .k-search-icon { left: 16px; }
 
-  /* Actions droite — gap final : desktop-upgrade.css (gap:4px) */
-  .k-header-actions { gap: 8px; } /* écrasé par desktop-upgrade.css → gap:4px */
+  /* .k-header-actions gap → desktop-upgrade.css (source de vérité : gap:4px) */
 
   /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
 
@@ -476,8 +475,7 @@ body {
   /* Bnav caché desktop */
   .k-bnav { display: none; }
 
-  /* ── Catégories desktop ───────────────────────────────────── */
-  .k-cats-shell { max-width: var(--container); margin: 0 auto; }
+  /* .k-cats-shell max-width/margin → categories.css bloc sticky (source de vérité) */
 
   .k-cats {
     padding: 10px clamp(16px, 3vw, 40px) 0;
@@ -539,29 +537,7 @@ body {
   .k-card-price-eur { font-size: 10px; }
   .k-card-old-price { font-size: 11px; }
 
-  /* Bouton panier desktop — plus grand, hover visible */
-  .k-card-add {
-    width: 36px;
-    height: 36px;
-    bottom: 8px;
-    right: 8px;
-    background-size: 80%;
-    opacity: .85;
-    transition: opacity .15s, transform .15s;
-  }
-  .k-card-add:hover { opacity: 1; transform: scale(1.1); }
-
-  /* Favori desktop */
-  .k-card-fav {
-    width: 30px;
-    height: 30px;
-    top: 8px;
-    right: 8px;
-    font-size: 14px;
-    opacity: .7;
-    transition: opacity .15s;
-  }
-  .k-card-fav:hover, .k-card-fav.liked { opacity: 1; }
+  /* .k-card-add / .k-card-fav → cart.css @900px (source de vérité : 46×46px / 32×32px) */
 
   /* ── Panier drawer desktop ───────────────────────────────── */
   .k-cart-drawer {
