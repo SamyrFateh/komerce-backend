@@ -1414,20 +1414,43 @@ function renderSideCart() {
     [...items].reverse().forEach(item => {
       const el       = document.createElement('div');
       el.className   = 'k-sc-item';
-      const imgSrc   = item.product.image_url ? optimizeImgUrl(item.product.image_url, 80) : '';
-      const linePrice = fmtPrice((item.product.price_kmf || 0) * item.qty);
+      const imgSrc   = item.product.image_url ? optimizeImgUrl(item.product.image_url, 120) : '';
+      const unitPrice = item.product.price_kmf || 0;
+      const linePrice = fmtPrice(unitPrice * item.qty);
       const pid      = String(item.product.id || item.id || '');
       el.dataset.pid = pid;
+
+      // Prix barré si promo
+      const promoPct = item.product.promo_pct || 0;
+      const oldPriceHtml = promoPct > 0
+        ? `<span class="k-sc-item-old-price">${fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>`
+        : '';
+
+      // Variant sélectionné (taille, couleur…)
+      const variant = item.variant_label || item.product.variant_label || '';
+      const variantHtml = variant
+        ? `<span class="k-sc-item-variant">${sanitize(variant)}</span>`
+        : '';
+
       el.innerHTML =
         `<img class="k-sc-item-img" src="${imgSrc}" alt="" loading="lazy">` +
         `<div class="k-sc-item-info">` +
           `<div class="k-sc-item-name">${sanitize(item.product.name || '')}</div>` +
+          variantHtml +
           `<div class="k-sc-item-meta">` +
-            `<span class="k-sc-item-price">${linePrice}</span>` +
-            `<div class="k-sc-item-stepper">` +
-              `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">−</button>` +
-              `<span class="k-sc-item-stepper-qty">${item.qty}</span>` +
-              `<button class="k-sc-step-plus" data-pid="${pid}" aria-label="Ajouter un">+</button>` +
+            `<div class="k-sc-item-price-wrap">` +
+              `<span class="k-sc-item-price">${linePrice}</span>` +
+              oldPriceHtml +
+            `</div>` +
+            `<div class="k-sc-item-actions">` +
+              `<div class="k-sc-item-stepper">` +
+                `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">−</button>` +
+                `<span class="k-sc-item-stepper-qty">${item.qty}</span>` +
+                `<button class="k-sc-step-plus" data-pid="${pid}" aria-label="Ajouter un">+</button>` +
+              `</div>` +
+              `<button class="k-sc-item-remove" data-pid="${pid}" aria-label="Supprimer l'article">` +
+                `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg>` +
+              `</button>` +
             `</div>` +
           `</div>` +
         `</div>`;
@@ -1438,9 +1461,12 @@ function renderSideCart() {
     if (!itemsEl._scWired) {
       itemsEl._scWired = true;
       itemsEl.addEventListener('click', e => {
-        const minus = e.target.closest('.k-sc-step-minus');
-        const plus  = e.target.closest('.k-sc-step-plus');
-        const pid   = (minus || plus) ? (minus || plus).dataset.pid : null;
+        const minus  = e.target.closest('.k-sc-step-minus');
+        const plus   = e.target.closest('.k-sc-step-plus');
+        const remove = e.target.closest('.k-sc-item-remove');
+        const pid    = (minus || plus || remove)
+          ? (minus || plus || remove).dataset.pid
+          : null;
         if (!pid) return;
         const currentItem = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
         if (!currentItem) return;
@@ -1448,6 +1474,8 @@ function renderSideCart() {
           setQty(pid, currentItem.qty - 1);
         } else if (plus) {
           setQty(pid, currentItem.qty + 1);
+        } else if (remove) {
+          setQty(pid, 0);
         }
       });
     }

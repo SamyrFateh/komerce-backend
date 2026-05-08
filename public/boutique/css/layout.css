@@ -859,6 +859,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
   }
 
   /* Ligne sous-total */
@@ -951,29 +954,29 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 10px 14px;
+    padding: 10px 12px;
     transition: background .12s;
     border-bottom: 1px solid rgba(0,0,0,.04);
   }
   .k-sc-item:last-child { border-bottom: none; }
   .k-sc-item:hover { background: var(--sand); }
 
+
   .k-sc-item-img {
-    width: 60px;
-    height: 60px;
-    border-radius: 6px;
-    object-fit: contain;
+    width: 68px;
+    height: 68px;
+    border-radius: 8px;
+    object-fit: cover;
     flex-shrink: 0;
     background: var(--sand);
     border: 1px solid var(--border);
-    padding: 3px;
   }
   .k-sc-item-info {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
   }
   .k-sc-item-name {
     font-size: 12px;
@@ -985,17 +988,47 @@ body {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  .k-sc-item-variant {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--sand);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    display: inline-block;
+    width: fit-content;
+  }
   .k-sc-item-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-top: 2px;
+    gap: 6px;
+  }
+  .k-sc-item-price-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    flex-wrap: wrap;
   }
   .k-sc-item-price {
     font-size: 13px;
     font-weight: 800;
     color: #cc4400;
     letter-spacing: -.01em;
+  }
+  .k-sc-item-old-price {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+  .k-sc-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
   }
 
   /* Stepper quantité inline style Temu */
@@ -1038,6 +1071,29 @@ body {
     line-height: 24px;
     user-select: none;
   }
+
+  /* Bouton suppression rapide ✕ */
+  .k-sc-item-remove {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .12s, color .12s, border-color .12s;
+    padding: 0;
+  }
+  .k-sc-item-remove:hover {
+    background: #fff0f0;
+    border-color: #ffbbbb;
+    color: #cc2200;
+  }
+  .k-sc-item-remove:active { background: #ffe0e0; }
 
   /* ── Footer : nombre d'articles ─────────────────────────── */
   .k-sc-bottom {
