@@ -33,7 +33,11 @@
   --ev-mono:           'Courier New',monospace;
 }
 *,*::before,*::after{box-sizing:border-box}
-body{font-family:var(--ev-font);margin:0;background:var(--ev-bg);color:var(--ev-text);line-height:1.55;-webkit-font-smoothing:antialiased}
+/* ⚠️ AUDIT C.2 — event.css est chargé dans index.html (bundle global).
+   Le body{} d'origine écrasait les styles globaux Komerce (font, bg, color).
+   Règles de base encapsulées dans .ev-wrap : toutes les pages event ont ce wrapper.
+   Si event.css est un jour isolé aux seules pages event → remonter ces règles sur body. */
+.ev-wrap{font-family:var(--ev-font);background:var(--ev-bg);color:var(--ev-text);line-height:1.55;-webkit-font-smoothing:antialiased}
 
 /* WRAPPER */
 .ev-wrap{max-width:680px;margin:0 auto;padding:12px 16px 48px}

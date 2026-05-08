@@ -35,14 +35,17 @@
 }
 .k-fav-promo-banner-icon { font-size: 24px; flex-shrink: 0; }
 .k-fav-promo-banner-text { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.4; }
-.k-fav-share-btn {
+/* NOTE : cette variante ghost n'est pas instanciée dans le HTML actuel (b-favs.js injecte
+   uniquement .k-fav-share-btn = WA vert, voir L211). Renommée pour éviter l'écrasement silencieux.
+   À utiliser si un bouton de partage neutre est ajouté : class="k-fav-share-btn--ghost" */
+.k-fav-share-btn--ghost {
   width: 100%; padding: 12px; border-radius: 50px; margin-bottom: 16px;
   background: transparent; border: 1.5px solid var(--border);
   font-size: 14px; font-weight: 600; color: var(--text-muted);
   display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
   transition: all .15s;
 }
-.k-fav-share-btn:hover { background: var(--sand); color: var(--text); }
+.k-fav-share-btn--ghost:hover { background: var(--sand); color: var(--text); }
 .k-card-promo-badge-fav {
   position: absolute; bottom: 8px; left: 8px;
   background: var(--coral); color: #fff;

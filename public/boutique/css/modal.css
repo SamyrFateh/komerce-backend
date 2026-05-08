@@ -558,6 +558,9 @@
 
 /* ── DIVERS ──────────────────────────────────────────────────── */
 .k-add-cart-btn img, .k-modal-actions img[src*="panier"] { mix-blend-mode: multiply; }
+/* base hors #k-modal — masqué mobile ; override via #k-modal dans le bloc @media 900px L651 :
+   - .k-modal-trust    → display:flex + layout pill (L732), puis gap/wrap via #k-modal (L735–736)
+   - .k-modal-share-row → display:flex + padding (L737), puis grid 2-col via #k-modal (L743) */
 .k-modal-trust { display: none; } /* visible desktop uniquement */
 .k-modal-share-row { display: none; } /* visible desktop uniquement */
 .k-modal-specs { display: none; } /* visible desktop uniquement */
@@ -1016,6 +1019,9 @@
 }
 
 /* ── Desktop : SKUs et pills légèrement plus grands ──────────── */
+/* INTENTIONNEL @768px — composant de sélection produit (dialogue) :
+   passe en style élargi avant le breakpoint layout global @900px,
+   même logique que .k-sg-overlay/.k-sg-panel ci-dessous et .k-order-modal dans cart.css @600px. */
 @media (min-width: 768px) {
   .k-sku        { width: 76px; }
   .k-sku img    { width: 68px; height: 68px; }
@@ -1071,6 +1077,8 @@
   opacity: 1;
   pointer-events: auto;
 }
+/* INTENTIONNEL @768px — .k-sg-overlay (guide des tailles) : composant de type dialogue,
+   passe en alignement centré avant le breakpoint layout @900px. Voir aussi .k-sku @768px ci-dessus. */
 @media (min-width: 768px) {
   .k-sg-overlay { align-items: center; }
 }
@@ -1090,6 +1098,8 @@
   box-shadow: 0 -4px 32px rgba(0,0,0,.15);
 }
 .k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
+/* INTENTIONNEL @768px — .k-sg-panel (guide des tailles) : panneau centré avec scale-in,
+   animation de type dialogue avant le layout desktop @900px. */
 @media (min-width: 768px) {
   .k-sg-panel {
     border-radius: 18px;
