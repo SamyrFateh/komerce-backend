@@ -32,6 +32,7 @@ import { isFav }            from './b-cart-core.js';
 import {
   normalizeCategoryKey,
   getCategorySectionEmoji,
+  getSubcategories,
 }                           from './shop-schema.js';
 import { setActiveCat }                   from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
@@ -41,7 +42,6 @@ import { isDesktop }        from './b-scroll-owner.js';
 //  1. MEGA-MENU — Dropdown sous-catégories au hover chip desktop
 // ═══════════════════════════════════════════════════════════════
 
-import { getSubcategories, getCategorySectionEmoji } from './shop-schema.js';
 
 let _megaEl      = null;
 let _megaTimer   = null;
