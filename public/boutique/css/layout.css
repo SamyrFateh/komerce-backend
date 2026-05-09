@@ -755,14 +755,20 @@ body {
     max-width: 100%;
   }
 
+  /* overflow-x:clip retiré de k-desktop-catalog-wrap : combiné avec overflow-y:visible,
+     le navigateur coerc overflow-y en auto → scroll container parasite → sticky cassé. */
   #k-page-scroll,
-  #k-desktop-catalog-wrap,
   #k-catalog-section,
   .k-section,
   .k-grid {
     max-width: 100%;
     overflow-x: clip;
     box-sizing: border-box;
+  }
+  #k-desktop-catalog-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: visible;
   }
 
   /* 2. Sidebar desktop stable */
