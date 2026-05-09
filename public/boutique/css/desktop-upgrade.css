@@ -817,3 +817,80 @@
   }
   .k-footer-legal-link:hover { color: rgba(255,255,255,.6); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   12. SECTION SUBCATS — chips Temu-style desktop (LOT 12)
+   Rail horizontal scrollable juste sous le header de chaque section.
+   Filtre les produits de la section sans recharger toute la page.
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  .k-sec-subcats {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 4px 0 14px;
+    margin: 0 0 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+    /* Fades latéraux pour signifier le scroll */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  }
+  .k-sec-subcats::-webkit-scrollbar { display: none; }
+
+  .k-sec-subchip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1.5px solid var(--sand-dark);
+    background: var(--white);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -.005em;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background .15s var(--ease), border-color .15s, color .15s, transform .12s;
+  }
+  .k-sec-subchip:hover {
+    background: var(--sand-warm);
+    border-color: var(--text-muted);
+  }
+  .k-sec-subchip:active { transform: scale(.96); }
+
+  .k-sec-subchip.active {
+    background: var(--coral);
+    color: #fff;
+    border-color: var(--coral);
+    box-shadow: 0 2px 8px rgba(200,92,45,.25);
+  }
+  .k-sec-subchip.active:hover {
+    background: var(--coral);
+    border-color: var(--coral);
+  }
+
+  .k-sec-subchip-icon {
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* La chip "Tout" : visuel un peu plus discret au repos pour ne pas voler la vedette */
+  .k-sec-subchip-all:not(.active) {
+    color: var(--text-muted);
+    border-color: var(--border);
+  }
+}

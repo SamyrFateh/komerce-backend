@@ -124,6 +124,7 @@ function init() {
   setupBnav();
   setupSeeAll();
   setupInfiniteScroll();
+  initFlatSubcat();
   loadProducts();
   loadRelais();
 }

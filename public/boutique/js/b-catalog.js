@@ -123,6 +123,15 @@ function appendNextPage() {
     return;
   }
 
+  // FIX bug "cartes géantes" : en mode sections (display:block), insérer des
+  // .k-card directement enfants de #k-grid les fait s'étirer pleine largeur
+  // avec aspect-ratio 1/1 → image gigantesque. Le rendu sections est déjà
+  // exhaustif (_balancedPick), donc rien à appendre dans ce cas.
+  if (dom.grid && dom.grid.classList.contains('k-grid-has-sections')) {
+    if (spinner) spinner.classList.remove('show');
+    return;
+  }
+
   let list = state.activeCat === 'all'
     ? state.filtered
     : state.activeCat === 'Soldes'
@@ -142,28 +151,12 @@ function appendNextPage() {
   const fragment = nextItems.map(p => renderProductCard(p)).join('');
   dom.grid.insertAdjacentHTML('beforeend', fragment);
 
-  // Re-bind events on new cards
+  // bindCarouselDots reste par-carte (touch listeners). Les clicks fav/add/card
+  // sont gérés par la délégation installée par _bindGridEvents.
+  _installGridDelegation();
   dom.grid.querySelectorAll('.k-card:not([data-bound])').forEach(card => {
     card.dataset.bound = '1';
     bindCarouselDots(card);
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') ||
-          e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-      if (card.dataset.justSwiped === '1') return;
-      openModal(card.dataset.id);
-    });
-  });
-  dom.grid.querySelectorAll('.k-card-fav:not([data-bound])').forEach(btn => {
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(btn.dataset.fav, btn); });
-  });
-  dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (e.target.closest('.k-add-minus')) quickRemove(btn.dataset.add, btn);
-      else quickAdd(btn.dataset.add, btn);
-    });
   });
   if (spinner) spinner.classList.remove('show');
 }
@@ -392,26 +385,8 @@ function renderGrid() {
 
   dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
 
-  dom.grid.querySelectorAll('.k-card').forEach(card => {
-    bindCarouselDots(card);
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') ||
-          e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-      if (card.dataset.justSwiped === '1') return;
-      openModal(card.dataset.id);
-    });
-  });
-  dom.grid.querySelectorAll('.k-card-fav').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(btn.dataset.fav, btn); });
-  });
-  dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (e.target.closest('.k-add-minus')) quickRemove(btn.dataset.add, btn);
-      else quickAdd(btn.dataset.add, btn);
-    });
-  });
+  _installGridDelegation();
+  dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));
 }
 
 /* ── HELPERS PAGINATION ─────────────────────────────────────────── */
@@ -457,28 +432,63 @@ function _balancedPick(list, pageSize) {
 
 /* ── GRID EVENTS ────────────────────────────────────────────────── */
 
-function _bindGridEvents() {
-  dom.grid.querySelectorAll('.k-card').forEach(card => {
-    bindCarouselDots(card);
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.k-card-fav') || e.target.closest('.k-card-add') ||
-          e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
-      if (card.dataset.justSwiped === '1') return;
-      openModal(card.dataset.id);
-    });
-  });
-  dom.grid.querySelectorAll('.k-card-fav').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(btn.dataset.fav, btn); });
-  });
-  dom.grid.querySelectorAll('.k-card-add:not([data-bound])').forEach(btn => {
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', (e) => {
+// Listener délégué unique (installé une seule fois) — résout les bugs de
+// re-binding manquant après re-render, doublons, ou cartes injectées plus
+// tard. Couvre fav/add/dots/card-click pour tout #k-grid + tout #k-fav-grid.
+let _gridDelegationInstalled = false;
+function _installGridDelegation() {
+  if (_gridDelegationInstalled) return;
+  _gridDelegationInstalled = true;
+
+  document.addEventListener('click', function(e) {
+    // Restreint aux zones que l'on veut couvrir : #k-grid (catalogue),
+    // #k-fav-grid (vue favoris), .k-cat-section (sections desktop).
+    const grid = e.target.closest('#k-grid, #k-fav-grid');
+    if (!grid) return;
+
+    const card = e.target.closest('.k-card');
+    if (!card) return;
+
+    // FAV ────────────────────────────────────────────────────────
+    const favBtn = e.target.closest('.k-card-fav');
+    if (favBtn) {
+      e.preventDefault();
       e.stopPropagation();
-      if (e.target.closest('.k-add-minus')) quickRemove(btn.dataset.add, btn);
-      else quickAdd(btn.dataset.add, btn);
-    });
+      const id = favBtn.dataset.fav || card.dataset.id;
+      if (id) toggleFav(id, favBtn);
+      return;
+    }
+
+    // ADD / STEPPER ──────────────────────────────────────────────
+    const addBtn = e.target.closest('.k-card-add');
+    if (addBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = addBtn.dataset.add || card.dataset.id;
+      if (!id) return;
+      if (e.target.closest('.k-add-minus')) quickRemove(id, addBtn);
+      else quickAdd(id, addBtn);
+      return;
+    }
+
+    // DOTS / TAB → on ignore (laisse le carousel gérer)
+    if (e.target.closest('.k-card-tab') || e.target.closest('.k-card-dots')) return;
+
+    // Click sur la carte → ouvrir modal (sauf après swipe)
+    if (card.dataset.justSwiped === '1') return;
+    if (card.dataset.id) openModal(card.dataset.id);
   });
+}
+
+function _bindGridEvents() {
+  _installGridDelegation();
+
+  // bindCarouselDots reste par-carte (touch listeners spécifiques au DOM)
+  dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));
+
   dom.grid.querySelectorAll('.k-sec-see-all').forEach(btn => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
     btn.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
       const cat = btn.dataset.seeCat;

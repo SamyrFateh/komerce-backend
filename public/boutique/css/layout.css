@@ -863,7 +863,6 @@ body {
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {
     padding: 14px 14px 12px;
-    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     background: var(--white);
     display: flex;
@@ -871,7 +870,6 @@ body {
     gap: 8px;
     position: relative;
     z-index: 1;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
   }
 
   /* Ligne sous-total */

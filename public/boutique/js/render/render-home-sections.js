@@ -8,7 +8,7 @@
  *   - Soldes filtré via getPromoProducts() dans partitionProductsByCategory
  */
 
-import { getCategorySectionEmoji, getSectionOrder } from '../shop-schema.js';
+import { getCategorySectionEmoji, getSectionOrder, getSubcategories } from '../shop-schema.js';
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
 import { state } from '../b-store.js';
@@ -114,6 +114,16 @@ export function renderHomeSections({
     let products = byCategory[category];
     if (!products || products.length === 0) continue;
 
+    // ── Calcul des sous-catégories à afficher ─────────────────────
+    // On ne garde que les subcats du schema qui ont au moins 1 produit dans
+    // cette catégorie (évite chips orphelines vides). On utilise `products`
+    // AVANT filtrage pour conserver toutes les chips quand une est active.
+    const schemaSubs = getSubcategories(category) || [];
+    const productSubKeys = new Set(
+      products.map(p => p.subcategory).filter(Boolean)
+    );
+    const availableSubs = schemaSubs.filter(s => productSubKeys.has(s.key));
+
     // Appliquer le filtre sectionSubcats si actif pour cette catégorie (desktop)
     const activeSub = state.sectionSubcats && state.sectionSubcats[category];
     if (activeSub) {
@@ -133,6 +143,26 @@ export function renderHomeSections({
       '<button class="k-sec-see-all" data-see-cat="' + sanitize(category) + '">Voir tout →</button>' +
       '</div>'
     );
+
+    // ── Rail subchips Temu-style (desktop uniquement, ≥2 subcats dispos) ──
+    if (availableSubs.length >= 2) {
+      const catAttr = sanitize(category);
+      let railHtml = '<div class="k-sec-subcats" data-cat="' + catAttr + '">';
+      // Chip "Tout" — toujours en premier, active si aucun filtre actif
+      railHtml += '<button class="k-sec-subchip k-sec-subchip-all' + (activeSub ? '' : ' active') +
+        '" type="button" data-sec-cat="' + catAttr + '" data-sec-sub-all="1">Tout</button>';
+      for (const s of availableSubs) {
+        const isActive = activeSub === s.key;
+        railHtml += '<button class="k-sec-subchip' + (isActive ? ' active' : '') +
+          '" type="button" data-sec-cat="' + catAttr + '" data-sec-sub="' + sanitize(s.key) + '">' +
+          (s.icon ? '<span class="k-sec-subchip-icon">' + s.icon + '</span>' : '') +
+          '<span class="k-sec-subchip-label">' + sanitize(s.label || s.key) + '</span>' +
+          '</button>';
+      }
+      railHtml += '</div>';
+      parts.push(railHtml);
+    }
+
     parts.push('<div class="k-sec-grid">');
     for (const product of products) parts.push(renderCard(product));
     parts.push('</div></div>');

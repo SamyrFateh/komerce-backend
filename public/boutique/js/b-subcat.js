@@ -609,8 +609,17 @@ import { isDesktop }               from './b-scroll-owner.js';
       e.stopImmediatePropagation();
       var cat = chip.dataset.secCat;
       var sub = chip.dataset.secSub;
-      if (!cat || !sub) return;
+      var isAll = chip.dataset.secSubAll === '1';
+      if (!cat) return;
+      if (!isAll && !sub) return;
       if (!isDesktop()) {
+        if (isAll) {
+          // Mobile : la chip "Tout" ferme le mode flat-subcat
+          state.flatSubcat = null;
+          state.page = 0;
+          renderGrid();
+          return;
+        }
         state.flatSubcat = { cat: cat, sub: sub };
         state.page = 0;
         renderGrid();
@@ -618,7 +627,11 @@ import { isDesktop }               from './b-scroll-owner.js';
         if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
       } else {
         if (!state.sectionSubcats) state.sectionSubcats = {};
-        state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+        if (isAll) {
+          state.sectionSubcats[cat] = null;
+        } else {
+          state.sectionSubcats[cat] = (state.sectionSubcats[cat] === sub) ? null : sub;
+        }
         renderGrid();
       }
     }, true);
