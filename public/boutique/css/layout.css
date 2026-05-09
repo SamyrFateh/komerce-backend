@@ -821,14 +821,17 @@ body {
 @media (min-width: 900px) {
 
   /* ── Conteneur sticky Temu ──────────────────────────────── */
+  /* position:sticky pour démarrer dans le flux (après le hero) et coller au
+     top du viewport au scroll. Évite tout chevauchement avec le hero. */
   .k-side-cart {
     display: flex;
     flex-direction: column;
-    position: fixed;
+    position: sticky;
     top: calc(var(--header-h, 76px) + 16px);
-    right: clamp(12px, 2vw, 28px);
-    width: 280px;
-    min-width: 280px;
+    align-self: flex-start;
+    flex: 0 0 290px;
+    width: 290px;
+    min-width: 290px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
     /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
     background: transparent;
@@ -841,25 +844,20 @@ body {
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
+    /* L'écart à droite vient du padding du wrapper parent — pas de right ici */
+  }
+  /* Sidecart vide : sortie du flex pour que le grid prenne toute la largeur */
+  .k-side-cart:not(.has-items) {
+    display: none;
   }
   .k-side-cart.has-items {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
   }
-  /* ── Side-cart offset : vérité unique ────────────────────────
-     --sc-offset est posé sur :root par b-cart.js renderSideCart().
-     Chaque zone qui doit céder la place au cart déclare ici
-     son padding-right. Zéro style inline, zéro duplication.
-     ─────────────────────────────────────────────────────────── */
-  :root { --sc-offset: 0px; }
-
-  html.sc-open #k-desktop-catalog-wrap,
-  html.sc-open .k-home-merch,
-  html.sc-open .k-promo-strip {
-    padding-right: calc(var(--sc-offset) + clamp(16px, 3vw, 40px));
-    transition: padding-right .22s var(--ease);
-  }
+  /* (--sc-offset / sc-open : plus utilisé depuis le passage en sticky.
+     Le sidecart est désormais in-flow dans le flex parent ; aucun élément
+     n'a besoin de céder la place via padding-right.) */
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {

@@ -1392,14 +1392,9 @@ function renderSideCart() {
   if (!sc) return;
   sc.classList.toggle('has-items', hasItems);
 
-  // Vérité unique : --sc-width sur le body.
-  // Tous les éléments qui doivent céder la place au cart lisent cette variable dans leur propre CSS.
-  if (window.innerWidth >= 900) {
-    const cartW = hasItems ? (sc.offsetWidth || 312) : 0;
-    const gap   = hasItems ? (parseInt(getComputedStyle(sc).right) || 16) : 0;
-    document.documentElement.style.setProperty('--sc-offset', hasItems ? (cartW + gap + 8) + 'px' : '0px');
-    document.documentElement.classList.toggle('sc-open', hasItems);
-  }
+  // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
+  // position: sticky dans le flex parent. Le sidecart prend sa place dans le
+  // flux, plus aucun élément n'a besoin de céder la place via padding-right.)
   if (!hasItems) return;
 
   const qty = cartQty();

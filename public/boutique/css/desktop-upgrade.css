@@ -68,26 +68,28 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   2. HERO DESKTOP — compact, catalogue visible vite
+   2. HERO DESKTOP — montre la scène complète (2 personnages + cadeau
+   central + store-front). Hauteur calibrée 240-280px pour cadrer la
+   zone d'intérêt (têtes → haut du store) avec object-position: center 40%.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   #k-hero-fixed-wrap {
-    max-height: 260px;
+    max-height: 360px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 180px;
+    max-height: 280px;
     overflow: hidden;
   }
 
-  /* object-position: center top pour garder les têtes des persos visibles */
   #k-hero-fixed-wrap .k-hero-img {
-    height: clamp(130px, 13vw, 180px) !important;
-    max-height: 180px !important;
+    height: clamp(240px, 16vw, 280px) !important;
+    max-height: 280px !important;
+    width: 100%;
     object-fit: cover;
-    object-position: center top;
+    object-position: center 40%;
     display: block;
   }
 
@@ -846,15 +848,15 @@
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 7px 14px;
-    height: 32px;
+    gap: 4px;
+    padding: 5px 11px;
+    height: 28px;
     border-radius: 999px;
     border: 1.5px solid var(--sand-dark);
     background: var(--white);
     color: var(--text);
     font-family: var(--font);
-    font-size: 12.5px;
+    font-size: 11.5px;
     font-weight: 600;
     line-height: 1;
     letter-spacing: -.005em;
@@ -882,7 +884,7 @@
   }
 
   .k-sec-subchip-icon {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
     display: inline-flex;
     align-items: center;

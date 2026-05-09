@@ -468,6 +468,10 @@ function updateSubtotal() {
 
 function setupPromoStrip() {
   if (!isDesktop()) return;
+  // [DÉSACTIVÉ] : la promo strip fait doublon avec le hero (qui contient déjà
+  // "450+ produits · Paiement cash · Retrait relais"). Page d'accueil simplifiée
+  // pour aller direct aux sections produits.
+  return;
   var existingStrip = document.querySelector('.k-promo-strip');
   if (existingStrip) return; // already mounted
 
@@ -510,6 +514,9 @@ function setupPromoStrip() {
 
 function setupHomepageMerchandising() {
   if (!isDesktop()) return;
+  // [DÉSACTIVÉ] : les 4 cartes raccourcis font doublon avec la nav par
+  // catégories (sticky bar) + les sections elles-mêmes. Page allégée.
+  return;
   if (document.querySelector('.k-home-merch')) return;
 
   var anchor = document.getElementById('k-desktop-catalog-wrap');
