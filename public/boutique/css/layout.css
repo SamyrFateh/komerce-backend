@@ -1560,3 +1560,183 @@ body {
     gap: 16px;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART V3 — Fixed desktop rail Komerce
+   Objectif : vrai panneau séparé type Temu, mais discret Komerce.
+   Desktop large uniquement. Mobile inchangé.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1180px) {
+
+  /* On réserve visuellement la place du rail fixe pour éviter qu'il couvre la grille. */
+  #k-desktop-catalog-wrap {
+    position: relative;
+    display: block;
+    max-width: min(var(--container), 100%);
+    margin: 0 auto;
+    padding-right: 212px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  #k-desktop-catalog-wrap #k-catalog-section {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  /* Rail fixe : séparé du flux, toujours visible pendant l'expérience catalogue. */
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    display: flex;
+    flex-direction: column;
+
+    position: fixed;
+    top: 88px;
+    right: max(16px, calc((100vw - var(--container)) / 2 + 24px));
+
+    width: 184px;
+    min-width: 184px;
+    max-width: 184px;
+    max-height: calc(100vh - 112px);
+
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 80;
+
+    border-radius: 18px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(42,62,44,.10);
+    box-shadow: 0 14px 34px rgba(31,48,36,.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .k-sc-top {
+    padding: 11px;
+    border-bottom: 1px solid rgba(42,62,44,.08);
+  }
+
+  .k-sc-subtotal-row {
+    display: grid;
+    gap: 3px;
+    margin-bottom: 8px;
+  }
+
+  .k-sc-subtotal-label {
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .k-sc-subtotal-amount {
+    font-size: 18px;
+    line-height: 1.05;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -.03em;
+  }
+
+  .k-sc-free-ship {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 7px 0 10px;
+    padding: 6px 7px;
+    border-radius: 11px;
+    background: rgba(100,175,90,.09);
+    color: var(--ocean-dark);
+    font-size: 10px;
+    line-height: 1.2;
+    font-weight: 750;
+  }
+
+  .k-sc-free-ship svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
+
+  .k-sc-btn-checkout,
+  .k-sc-btn-cart {
+    width: 100%;
+    min-height: 34px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: transform .14s var(--ease), box-shadow .14s, background .14s;
+  }
+
+  .k-sc-btn-checkout {
+    border: 0;
+    color: #fff;
+    background: var(--ocean-dark);
+    box-shadow: 0 8px 16px rgba(42,62,44,.16);
+  }
+
+  .k-sc-btn-checkout:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 11px 24px rgba(42,62,44,.20);
+  }
+
+  .k-sc-btn-cart {
+    margin-top: 7px;
+    border: 1px solid rgba(42,62,44,.12);
+    color: var(--text);
+    background: rgba(255,255,255,.88);
+  }
+
+  .k-sc-btn-cart:hover {
+    background: var(--sand-warm);
+  }
+
+  .k-sc-items {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px 8px 6px;
+  }
+
+  /* Le rail reste un aperçu : max 3 articles. */
+  .k-sc-items > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .k-sc-bottom {
+    padding: 7px 10px 10px;
+    border-top: 1px solid rgba(42,62,44,.08);
+  }
+
+  .k-sc-count-label {
+    display: block;
+    font-size: 10px;
+    line-height: 1.25;
+    color: var(--text-muted);
+    font-weight: 750;
+    text-align: center;
+  }
+
+  /* Évite que le WhatsApp FAB concurrence le rail. */
+  .k-wa-fab {
+    right: 24px;
+    bottom: 24px;
+  }
+}
+
+/* Desktop trop étroit : on garde le drawer, pas le rail. */
+@media (min-width: 900px) and (max-width: 1179px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    display: none;
+  }
+
+  #k-desktop-catalog-wrap {
+    padding-right: clamp(16px, 3vw, 40px);
+  }
+}
