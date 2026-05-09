@@ -391,7 +391,9 @@ body {
 @media (min-width: 900px) {
 
   /* ── Page layout ─────────────────────────────────────────── */
-  html, body { overflow-x: hidden; }
+  /* overflow-x:clip évite le scroll horizontal SANS créer de nouveau scroll
+     container — contrairement à hidden qui casse position:sticky. */
+  html, body { overflow-x: clip; }
 
   #k-page-scroll {
     position: static;
@@ -595,7 +597,7 @@ body {
   html, body {
     height: auto;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* Neutraliser tout overflow blocking hérité */
@@ -829,9 +831,9 @@ body {
     position: sticky;
     top: calc(var(--header-h, 76px) + 16px);
     align-self: flex-start;
-    flex: 0 0 290px;
-    width: 290px;
-    min-width: 290px;
+    flex: 0 0 220px;
+    width: 220px;
+    min-width: 220px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
     /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
     background: transparent;
@@ -1169,7 +1171,7 @@ body {
 #k-desktop-sidebar { display: none !important; }
 
 @media (min-width: 1200px) {
-  .k-side-cart { width: 290px; min-width: 290px; }
+  .k-side-cart { width: 220px; min-width: 220px; }
 }
 
 /* ── Side cart masqué hors onglet boutique ── */
