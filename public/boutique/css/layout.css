@@ -863,51 +863,53 @@ body {
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {
-    padding: 4px 4px 8px;
+    padding: 0 2px 6px;
     flex-shrink: 0;
     background: transparent;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     position: relative;
     z-index: 1;
   }
 
-  /* Ligne sous-total */
+  /* Ligne sous-total : compacte, label inline */
   .k-sc-subtotal-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
+    padding: 2px 2px 0;
   }
   .k-sc-subtotal-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-muted);
   }
   .k-sc-subtotal-amount {
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 800;
     color: var(--text);
     letter-spacing: -.02em;
   }
 
-  /* Badge livraison */
+  /* Badge livraison — pill discrète */
   .k-sc-free-ship {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 11px;
+    gap: 4px;
+    font-size: 10.5px;
     font-weight: 600;
     color: #1a7a3e;
     background: #e8f7ee;
-    border-radius: 6px;
-    padding: 5px 8px;
+    border-radius: 999px;
+    padding: 3px 8px;
     width: fit-content;
+    line-height: 1.4;
   }
   .k-sc-free-ship svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
   }
 
@@ -916,16 +918,17 @@ body {
     display: flex;
     gap: 6px;
     align-items: stretch;
+    margin-top: 2px;
   }
   .k-sc-btn-checkout {
     flex: 1 1 auto;
     display: block;
-    padding: 12px 14px;
+    padding: 11px 14px;
     border: none;
     border-radius: 8px;
     background: #ff6900;
     color: #fff;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     text-align: center;
@@ -937,49 +940,56 @@ body {
   .k-sc-btn-checkout:hover { background: #e55f00; }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
-  /* Bouton "En groupe" — violet (identité panier collectif) */
+  /* Bouton "En groupe" — icône carrée violet (action secondaire compacte) */
   .k-sc-btn-group {
-    flex: 0 0 auto;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 12px 12px;
     border: none;
     border-radius: 8px;
     background: #6c3fc5;
     color: #fff;
-    font-size: 13px;
-    font-weight: 700;
     cursor: pointer;
     font-family: var(--font);
-    letter-spacing: .01em;
     transition: background .15s, transform .12s;
     box-shadow: 0 2px 8px rgba(108,63,197,.28);
-    white-space: nowrap;
+    position: relative;
   }
   .k-sc-btn-group:hover { background: #5832a8; }
-  .k-sc-btn-group:active { transform: scale(.97); }
-  .k-sc-btn-group-emoji { font-size: 14px; line-height: 1; }
-  .k-sc-btn-group-label { line-height: 1; }
+  .k-sc-btn-group:active { transform: scale(.95); }
+  .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
+  /* Label caché visuellement mais accessible — l'icône suffit */
+  .k-sc-btn-group-label {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* Tooltip natif via attribut title — pas de CSS supplémentaire */
 
-  /* Bouton secondaire "Voir le panier" */
+  /* Lien "Voir le panier" — passe en lien texte discret sous les CTAs */
   .k-sc-btn-cart {
     display: block;
     width: 100%;
-    padding: 9px 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--white);
-    color: var(--text);
-    font-size: 13px;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
     font-family: var(--font);
-    transition: background .12s, border-color .12s;
+    text-decoration: underline;
+    text-decoration-color: rgba(107,123,99,.35);
+    text-underline-offset: 3px;
+    transition: color .12s;
   }
-  .k-sc-btn-cart:hover { background: var(--sand); border-color: var(--text-muted); }
+  .k-sc-btn-cart:hover { color: var(--text); }
 
   /* ── Liste articles ──────────────────────────────────────── */
   .k-sc-items {
@@ -1139,16 +1149,20 @@ body {
   }
   .k-sc-item-remove:active { background: #ffe0e0; }
 
-  /* ── Footer : nombre d'articles ─────────────────────────── */
+  /* ── Footer : nombre d'articles + lien Voir le panier ─── */
   .k-sc-bottom {
-    padding: 8px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--sand);
+    padding: 6px 4px 0;
+    border-top: 0;
+    background: transparent;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
   .k-sc-count-label {
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-light);
     font-weight: 500;
   }
 }

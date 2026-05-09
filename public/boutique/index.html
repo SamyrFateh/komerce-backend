@@ -242,7 +242,7 @@ if('serviceWorker' in navigator){
     </section>
     <!-- Side cart desktop Temu-style — panneau fixe droit -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- Sous-total header -->
+      <!-- Sous-total + CTAs -->
       <div class="k-sc-top">
         <div class="k-sc-subtotal-row">
           <span class="k-sc-subtotal-label">Sous-total</span>
@@ -262,12 +262,12 @@ if('serviceWorker' in navigator){
             <span class="k-sc-btn-group-label">En groupe</span>
           </button>
         </div>
-        <button id="k-sc-cta" class="k-sc-btn-cart">Voir le panier</button>
       </div>
-      <!-- Liste articles -->
+      <!-- Liste articles (scroll si dépasse) -->
       <div id="k-sc-items" class="k-sc-items"></div>
-      <!-- Footer count -->
+      <!-- Footer : count + lien Voir le panier -->
       <div class="k-sc-bottom">
+        <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
         <span id="k-sc-count" class="k-sc-count-label"></span>
       </div>
     </aside>
