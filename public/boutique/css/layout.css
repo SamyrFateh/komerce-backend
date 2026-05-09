@@ -827,13 +827,14 @@ body {
     position: fixed;
     top: calc(var(--header-h, 76px) + 16px);
     right: clamp(12px, 2vw, 28px);
-    width: 312px;
-    min-width: 312px;
+    width: 280px;
+    min-width: 280px;
     max-height: calc(100vh - var(--header-h, 76px) - 32px);
-    background: var(--white);
+    /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
+    background: transparent;
     border-radius: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,.10), 0 1px 3px rgba(0,0,0,.06);
+    border: 0;
+    box-shadow: none;
     overflow: hidden;
     z-index: 200;
     opacity: 0;
@@ -862,9 +863,9 @@ body {
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {
-    padding: 14px 14px 12px;
+    padding: 4px 4px 8px;
     flex-shrink: 0;
-    background: var(--white);
+    background: transparent;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -911,9 +912,14 @@ body {
   }
 
   /* Bouton Commander Temu-style orange */
+  .k-sc-cta-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+  }
   .k-sc-btn-checkout {
+    flex: 1 1 auto;
     display: block;
-    width: 100%;
     padding: 12px 14px;
     border: none;
     border-radius: 8px;
@@ -930,6 +936,32 @@ body {
   }
   .k-sc-btn-checkout:hover { background: #e55f00; }
   .k-sc-btn-checkout:active { transform: scale(.98); }
+
+  /* Bouton "En groupe" — violet (identité panier collectif) */
+  .k-sc-btn-group {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 12px 12px;
+    border: none;
+    border-radius: 8px;
+    background: #6c3fc5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: var(--font);
+    letter-spacing: .01em;
+    transition: background .15s, transform .12s;
+    box-shadow: 0 2px 8px rgba(108,63,197,.28);
+    white-space: nowrap;
+  }
+  .k-sc-btn-group:hover { background: #5832a8; }
+  .k-sc-btn-group:active { transform: scale(.97); }
+  .k-sc-btn-group-emoji { font-size: 14px; line-height: 1; }
+  .k-sc-btn-group-label { line-height: 1; }
 
   /* Bouton secondaire "Voir le panier" */
   .k-sc-btn-cart {
@@ -957,16 +989,20 @@ body {
     scrollbar-color: var(--border) transparent;
     min-height: 0;
     padding: 6px 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .k-sc-item {
     display: flex;
     align-items: flex-start;
     gap: 10px;
     padding: 10px 12px;
-    transition: background .12s;
-    border-bottom: 1px solid rgba(0,0,0,.04);
+    transition: background .12s, transform .12s;
+    background: var(--white);
+    border-radius: 10px;
+    border: 0;
   }
-  .k-sc-item:last-child { border-bottom: none; }
   .k-sc-item:hover { background: var(--sand); }
 
 
@@ -1121,7 +1157,7 @@ body {
 #k-desktop-sidebar { display: none !important; }
 
 @media (min-width: 1200px) {
-  .k-side-cart { width: 320px; min-width: 320px; }
+  .k-side-cart { width: 290px; min-width: 290px; }
 }
 
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */

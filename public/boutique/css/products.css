@@ -590,6 +590,11 @@
     padding: 8px 0 20px;
   }
 
+  /* Sections home desktop : 4 cartes pile (1 ligne par section, comme Temu) */
+  .k-grid.k-grid-has-sections .k-sec-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
   .k-card-img-wrap {
     aspect-ratio: 1 / 1;
   }

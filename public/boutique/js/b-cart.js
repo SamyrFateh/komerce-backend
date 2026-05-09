@@ -1505,6 +1505,26 @@ function renderSideCart() {
       if (typeof window.__kmrcCheckout === 'function') window.__kmrcCheckout();
     });
   }
+
+  // Bouton "En groupe" — démarre un panier collectif
+  const ctaGroup = sc.querySelector('#k-sc-group');
+  if (ctaGroup && !ctaGroup._wired) {
+    ctaGroup._wired = true;
+    ctaGroup.addEventListener('click', () => {
+      try {
+        // Snapshot du panier courant pour pré-charger le workspace après création
+        const pending = state.cart.map(it => ({
+          product_id: it.product.id,
+          name:       it.product.name,
+          price_kmf:  it.product.price_kmf || 0,
+          quantity:   it.qty,
+          qty:        it.qty,
+        }));
+        sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(pending));
+      } catch (_) {}
+      window.location.href = '/event/create?from=cart';
+    });
+  }
 }
 
 // Hook global appelé par b-cart-core.js updateCartBadge()

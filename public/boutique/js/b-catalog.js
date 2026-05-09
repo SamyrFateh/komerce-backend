@@ -325,7 +325,7 @@ function renderGrid() {
   const useSections = state.activeCat === 'all' || _isMobile;
   let pageItems;
   if (useSections) {
-    pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 48);
+    pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 48, 4);
   } else {
     pageItems = list.slice(0, state.pageSize);
   }
@@ -399,7 +399,7 @@ function _shuffle(arr) {
   return arr;
 }
 
-function _balancedPick(list, pageSize) {
+function _balancedPick(list, pageSize, maxPerCat) {
   const MIN_PER_SECTION = 4;
   const byCat = new Map();
   const order = [];
@@ -419,7 +419,11 @@ function _balancedPick(list, pageSize) {
 
   const nCats = rich.length || 1;
   const basePerCat = Math.floor(pageSize / nCats);
-  const perCat = basePerCat >= 2 ? (basePerCat % 2 === 0 ? basePerCat : basePerCat - 1) : 2;
+  let perCat = basePerCat >= 2 ? (basePerCat % 2 === 0 ? basePerCat : basePerCat - 1) : 2;
+  // Cap dur si l'appelant impose un max (ex : 4 cartes/section sur la home desktop)
+  if (typeof maxPerCat === 'number' && maxPerCat > 0) {
+    perCat = Math.min(perCat, maxPerCat);
+  }
   const flat = [];
   for (const section of rich) {
     _shuffle(section.prods);
