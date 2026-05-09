@@ -1,10 +1,10 @@
-/**
- * b-cart.js — Module ES · §7 CART INTERACTIONS + §10 CART PANEL & SHARE + §14 STEPPER
- * Extrait de boutique.js Sprint 2F — Option C
+﻿/**
+ * b-cart.js â€” Module ES Â· Â§7 CART INTERACTIONS + Â§10 CART PANEL & SHARE + Â§14 STEPPER
+ * Extrait de boutique.js Sprint 2F â€” Option C
  *
- * §7  : addToCart, setQty, fly animation, cart badge sync
- * §10 : tiroir panier, partage WhatsApp, shareCartWhatsApp, showShareChoiceModal
- * §14 : stepper +/- haptic, renderStepper (setupLongPressSteppers IIFE)
+ * Â§7  : addToCart, setQty, fly animation, cart badge sync
+ * Â§10 : tiroir panier, partage WhatsApp, shareCartWhatsApp, showShareChoiceModal
+ * Â§14 : stepper +/- haptic, renderStepper (setupLongPressSteppers IIFE)
  */
 
 import { bus }           from './b-bus.js';
@@ -22,16 +22,16 @@ import {
 
 'use strict';
 
-  // ║  §7 · CART INTERACTIONS — addToCart, setQty, fly animation       ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-cart.js
+  // â•‘  Â§7 Â· CART INTERACTIONS â€” addToCart, setQty, fly animation       â•‘
+  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  //  â†’ Futur module: b-cart.js
 
   /**
-   * Animation "fly to cart" — produit vole de la carte vers l'avatar panier.
-   * Clone l'image → arc de Bézier → burst sparkles → updateCartBadge.
-   * Exception légitime : animation frame-by-frame (rAF).
-   * @param {HTMLElement} btn - Bouton panier cliqué
-   * @param {number} productId - ID du produit ajouté
+   * Animation "fly to cart" â€” produit vole de la carte vers l'avatar panier.
+   * Clone l'image â†’ arc de BÃ©zier â†’ burst sparkles â†’ updateCartBadge.
+   * Exception lÃ©gitime : animation frame-by-frame (rAF).
+   * @param {HTMLElement} btn - Bouton panier cliquÃ©
+   * @param {number} productId - ID du produit ajoutÃ©
    */
   function flyToCart(sourceEl, product) {
     const cartIcon = dom.cartBtn;
@@ -94,7 +94,7 @@ import {
 
     /**
      * Frame d'animation rAF pour l'arc de vol panier (flyToCart).
-     * Calcule la position courbe via Bézier quadratique.
+     * Calcule la position courbe via BÃ©zier quadratique.
      * @param {DOMHighResTimeStamp} timestamp - Horodatage fourni par requestAnimationFrame
      */
     function animateArc(timestamp) {
@@ -157,10 +157,10 @@ import {
     setTimeout(() => requestAnimationFrame(animateArc), 350);
   }
 
-  /* ── ADD TO CART ────────────────────────────────────────── */
-  /* ── ADD TO CART ────────────────────────────────────────── */
+  /* â”€â”€ ADD TO CART â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* â”€â”€ ADD TO CART â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /**
- * Ajoute un produit au panier ou incrémente sa quantité.
+ * Ajoute un produit au panier ou incrÃ©mente sa quantitÃ©.
  * @param {number|string} id - ID produit
  * @param {Object} [opts] - { fromModal, qty }
  */
@@ -235,16 +235,16 @@ import {
   });
 
   if (isModalAdd) {
-    // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
+    // Fix 8 : modal button â†’ "âœ“ Dans le panier | Voir (N) â†’"
     setTimeout(() => {
       const count = cartQty();
       dom.addCartBtn.classList.remove('added');
       dom.addCartBtn.classList.add('confirmed');
       dom.addCartBtn.disabled = false;
-      dom.addCartBtn.innerHTML = '✓ Ajouté';
+      dom.addCartBtn.innerHTML = 'âœ“ AjoutÃ©';
       dom.addCartBtn.onclick = function() {
         bus.emit('modal:close');
-        // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
+        // Desktop : le side-cart est dÃ©jÃ  visible â€” on ne rouvre pas le tiroir
         if (window.innerWidth >= 900) {
           var sc = document.getElementById('k-side-cart');
           if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
@@ -255,16 +255,16 @@ import {
     }, 700);
   } else if (sourceBtn) {
     // Toast de confirmation (grid / rail)
-    showToast('✓ ' + (product.name || 'Produit') + ' ajouté', 'success');
+    showToast('âœ“ ' + (product.name || 'Produit') + ' ajoutÃ©', 'success');
   }
 }
 
   /**
-   * @brief setQty — Met à jour la quantité d'un article dans le panier
-   * Si newQty < 1 → supprime l'article (removeFromCart)
-   * Met à jour le DOM stepper + badge + localStorage
+   * @brief setQty â€” Met Ã  jour la quantitÃ© d'un article dans le panier
+   * Si newQty < 1 â†’ supprime l'article (removeFromCart)
+   * Met Ã  jour le DOM stepper + badge + localStorage
    * @param {string|number} productId - ID du produit
-   * @param {number} newQty - Nouvelle quantité cible
+   * @param {number} newQty - Nouvelle quantitÃ© cible
    */
     function setQty(productId, newQty) {
     const pid = String(productId);
@@ -280,37 +280,37 @@ import {
   }
 
   /**
-   * Synchronise l'état visuel de tous les boutons panier dans les grilles.
-   * 🧺 → stepper si produit dans le panier, reset sinon.
-   * Appelé après chaque modification du panier.
+   * Synchronise l'Ã©tat visuel de tous les boutons panier dans les grilles.
+   * ðŸ§º â†’ stepper si produit dans le panier, reset sinon.
+   * AppelÃ© aprÃ¨s chaque modification du panier.
    */
   function markAllCartButtons() {
     // IDs actuellement dans le panier
     const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
 
-    // OPTION C : panier tressé visuel + stepper "− qty +" visible dès ajout
+    // OPTION C : panier tressÃ© visuel + stepper "âˆ’ qty +" visible dÃ¨s ajout
     //            (plus besoin de long-press, le stepper est directement accessible)
     document.querySelectorAll('.k-card-add').forEach(btn => {
       const pid = String(btn.dataset.add);
       if (inCartIds.has(pid)) {
         const item = state.cart.find(i => String(i.product.id) === pid);
         btn.classList.add('in-cart');
-        // Stepper compact : − quantité + (tous cliquables indépendamment)
+        // Stepper compact : âˆ’ quantitÃ© + (tous cliquables indÃ©pendamment)
         btn.innerHTML =
-          '<span class="k-add-minus" data-pid="' + pid + '">−</span>' +
+          '<span class="k-add-minus" data-pid="' + pid + '">âˆ’</span>' +
           '<span class="k-add-qty">' + item.qty + '</span>' +
           '<span class="k-add-plus-ic">+</span>';
       } else {
-        // Produit plus dans le panier → remettre juste le "+"
+        // Produit plus dans le panier â†’ remettre juste le "+"
         btn.classList.remove('in-cart');
         btn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">';
       }
     });
   }
 
-  /* ── REMOVE FROM CART ───────────────────────────────────── */
+  /* â”€â”€ REMOVE FROM CART â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   /**
- * Retire complètement un produit du panier.
+ * Retire complÃ¨tement un produit du panier.
  * @param {number|string} id - ID produit
  */
   function removeFromCart(productId) {
@@ -321,11 +321,11 @@ import {
     markAllCartButtons();
   }
 
-  /* ── QUICK ADD FROM GRID ────────────────────────────────── */
+  /* â”€â”€ QUICK ADD FROM GRID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /**
- * Ajout rapide depuis une carte (bouton 🧺).
+ * Ajout rapide depuis une carte (bouton ðŸ§º).
  * @param {number|string} id - ID produit
- * @param {HTMLElement} btn - Bouton déclencheur
+ * @param {HTMLElement} btn - Bouton dÃ©clencheur
  */
   function quickAdd(productId, btnEl) {
   const pid = String(productId);
@@ -340,8 +340,8 @@ import {
 }
 
 /**
- * Supprime instantanément un produit du panier (swipe left sur mobile).
- * @param {number|string} productId - ID produit à supprimer
+ * Supprime instantanÃ©ment un produit du panier (swipe left sur mobile).
+ * @param {number|string} productId - ID produit Ã  supprimer
  */
 function quickRemove(productId, btnEl) {
     const pid = String(productId);
@@ -354,40 +354,40 @@ function quickRemove(productId, btnEl) {
     }
   }
 
-  /* ── TOGGLE FAV ─────────────────────────────────────────── */
+  /* â”€â”€ TOGGLE FAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   /**
  * Bascule un produit en favori / non favori.
  * @param {number|string} id - ID produit
- * @param {HTMLElement} [btn] - Bouton cœur
+ * @param {HTMLElement} [btn] - Bouton cÅ“ur
  */
   function toggleFav(id, btnEl) {
     const idx = state.favs.indexOf(id);
     if (idx >= 0) {
       state.favs.splice(idx, 1);
       btnEl.classList.remove('liked');
-      btnEl.innerHTML = '🤍';
-      showToast('Retiré des favoris');
+      btnEl.innerHTML = 'ðŸ¤';
+      showToast('RetirÃ© des favoris');
     } else {
       state.favs.push(id);
       btnEl.classList.add('liked');
-      btnEl.innerHTML = '❤️';
+      btnEl.innerHTML = 'â¤ï¸';
       btnEl.classList.add('k-pop');
       setTimeout(() => btnEl.classList.remove('k-pop'), 300);
-      showToast('❤️ Ajouté aux favoris');
+      showToast('â¤ï¸ AjoutÃ© aux favoris');
     }
     saveFavs();
   }
 
-  /* ── CATEGORIES ─────────────────────────────────────────── */
+  /* â”€â”€ CATEGORIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-  // ╔══════════════════════════════════════════════════════════════════╗
-  // ║  §10 · CART PANEL & SHARE — Tiroir panier + partage WhatsApp     ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-cart.js (même module §7)
+  // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+  // â•‘  Â§10 Â· CART PANEL & SHARE â€” Tiroir panier + partage WhatsApp     â•‘
+  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  //  â†’ Futur module: b-cart.js (mÃªme module Â§7)
 
   /**
-   * Ouvre le panneau panier latéral (slide-in depuis la droite).
-   * Met à jour le rendu complet + synchronise les badges.
+   * Ouvre le panneau panier latÃ©ral (slide-in depuis la droite).
+   * Met Ã  jour le rendu complet + synchronise les badges.
    */
   function openCart() {
     renderCartBody();
@@ -413,14 +413,14 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Ouvre le panneau panier et met en surbrillance un produit spécifique.
-   * @param {number|string} productId - ID du produit à mettre en avant
+   * Ouvre le panneau panier et met en surbrillance un produit spÃ©cifique.
+   * @param {number|string} productId - ID du produit Ã  mettre en avant
    */
   function openCartWithHighlight(productId) {
     renderCartBody(productId);
     // Celebrating header
     dom.cartHeader.classList.add('celebrating');
-    dom.cartHeaderTitle.textContent = '🎊 C\'est dans le panier !';
+    dom.cartHeaderTitle.textContent = 'ðŸŽŠ C\'est dans le panier !';
     setTimeout(() => {
       dom.cartHeader.classList.remove('celebrating');
       dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
@@ -439,13 +439,13 @@ function quickRemove(productId, btnEl) {
 
   /**
    * Re-rend le contenu du panneau panier (liste items + totaux + CTA).
-   * @param {number|string} [highlightId] - ID produit à mettre en évidence (optionnel)
+   * @param {number|string} [highlightId] - ID produit Ã  mettre en Ã©vidence (optionnel)
    */
   function renderCartBody(highlightId) {
     dom.cartBody.innerHTML = '';
 
     // FIX UX : marquer le body avec 'cart-empty' si panier vide
-    // → permet au CSS de garder la bnav visible pour naviguer
+    // â†’ permet au CSS de garder la bnav visible pour naviguer
     if (state.cart.length === 0) {
       document.body.classList.add('cart-empty');
     } else {
@@ -455,16 +455,16 @@ function quickRemove(productId, btnEl) {
     if (state.cart.length === 0) {
       dom.cartBody.innerHTML = `
         <div class="k-cart-empty">
-          <div class="k-cart-empty-icon">🧺</div>
+          <div class="k-cart-empty-icon">ðŸ§º</div>
           <p class="k-cart-empty-title">Votre panier est vide</p>
-          <p class="k-cart-empty-sub">Découvrez notre sélection de produits livrés aux Comores.</p>
+          <p class="k-cart-empty-sub">DÃ©couvrez notre sÃ©lection de produits livrÃ©s aux Comores.</p>
           <button type="button" class="k-cart-empty-cta" id="k-cart-empty-shop">
-            🛍️ Découvrir la boutique
+            ðŸ›ï¸ DÃ©couvrir la boutique
           </button>
         </div>`;
       dom.cartFooter.classList.add('u-hidden');
 
-      // Binding bouton découvrir
+      // Binding bouton dÃ©couvrir
       const shopBtn = document.getElementById('k-cart-empty-shop');
       if (shopBtn) {
         shopBtn.addEventListener('click', () => {
@@ -514,7 +514,7 @@ function quickRemove(productId, btnEl) {
       if (item.qty > 1) {
         const unitLine = document.createElement('div');
         unitLine.className = 'k-cart-item-unit';
-        unitLine.textContent = fmt(unitKmf, 'KMF') + ' × ' + item.qty;
+        unitLine.textContent = fmt(unitKmf, 'KMF') + ' Ã— ' + item.qty;
         info.appendChild(unitLine);
       }
 
@@ -529,7 +529,7 @@ function quickRemove(productId, btnEl) {
 
       const minusBtn = document.createElement('button');
       minusBtn.className = 'k-qty-btn';
-      minusBtn.textContent = '−';
+      minusBtn.textContent = 'âˆ’';
       minusBtn.addEventListener('click', () => setQty(p.id, item.qty - 1));
       qtyRow.appendChild(minusBtn);
 
@@ -546,11 +546,11 @@ function quickRemove(productId, btnEl) {
 
       info.appendChild(qtyRow);
 
-      // Ajouté badge
+      // AjoutÃ© badge
       if (isNew) {
         const badge = document.createElement('span');
         badge.className = 'k-cart-item-badge';
-        badge.textContent = '✨ Ajouté';
+        badge.textContent = 'âœ¨ AjoutÃ©';
         info.appendChild(badge);
       }
 
@@ -559,7 +559,7 @@ function quickRemove(productId, btnEl) {
       // Remove button
       const removeBtn = document.createElement('button');
       removeBtn.className = 'k-cart-item-remove';
-      removeBtn.textContent = '✕';
+      removeBtn.textContent = 'âœ•';
       removeBtn.title = 'Retirer';
       removeBtn.addEventListener('click', () => removeFromCart(p.id));
       row.appendChild(removeBtn);
@@ -570,14 +570,14 @@ function quickRemove(productId, btnEl) {
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
 
-    // Bouton événement collectif
+    // Bouton Ã©vÃ©nement collectif
     const _evtBtnExisting = document.getElementById('k-cart-event-btn');
     if (_evtBtnExisting) _evtBtnExisting.remove();
     const _evtBtn = document.createElement('button');
     _evtBtn.id = 'k-cart-event-btn';
     _evtBtn.type = 'button';
     _evtBtn.className = 'k-cart-event-btn';
-    _evtBtn.innerHTML = '👥 Payer en groupe';
+    _evtBtn.innerHTML = 'ðŸ‘¥ Payer en groupe';
     _evtBtn.addEventListener('click', () => {
       _showFamilySheet();
     });
@@ -593,7 +593,7 @@ function quickRemove(productId, btnEl) {
     const qty = cartQty();
     const total = cartTotal();
 
-    // Récap détaillé : nombre d'articles + sous-total
+    // RÃ©cap dÃ©taillÃ© : nombre d'articles + sous-total
     const itemCountEl = document.getElementById('k-cart-item-count');
     const itemPluralEl = document.getElementById('k-cart-item-plural');
     const subtotalEl = document.getElementById('k-cart-subtotal-val');
@@ -604,14 +604,14 @@ function quickRemove(productId, btnEl) {
     // Total
     dom.cartTotalVal.textContent = fmt(total, 'KMF');
     if (_currency === 'EUR') {
-      dom.cartTotalConv.textContent = '≈ ' + fmt(total, 'EUR');
+      dom.cartTotalConv.textContent = 'â‰ˆ ' + fmt(total, 'EUR');
     } else {
       dom.cartTotalConv.textContent = '';
     }
   }
 
-  /* ── SHARE CART WHATSAPP ────────────────────────────────── */
-  /* ── SHARED CART — API v2 ──────────────────────────────────── */
+  /* â”€â”€ SHARE CART WHATSAPP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* â”€â”€ SHARED CART â€” API v2 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
   /**
  * Construit l'URL de partage du panier via l'API.
@@ -638,12 +638,12 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Construit l'URL de partage de secours si l'API share échoue.
+   * Construit l'URL de partage de secours si l'API share Ã©choue.
    * Encode les items du panier en query string.
    * @returns {string} URL de partage fallback
    */
   function _buildFallbackCartURL() {
-    // Fallback legacy URL si l'API échoue
+    // Fallback legacy URL si l'API Ã©choue
     const items = state.cart.map(function(item) {
       return item.product.id + ':' + item.qty;
     });
@@ -653,7 +653,7 @@ function quickRemove(productId, btnEl) {
   /* ======= SHARE CHOICE MODAL ======= */
 
   /**
-   * Ferme et détruit le bottom sheet de choix de partage panier.
+   * Ferme et dÃ©truit le bottom sheet de choix de partage panier.
    */
   function _closeShareModal() {
     var ov = document.getElementById('k-share-overlay');
@@ -661,17 +661,17 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Affiche le bottom sheet "Simple / Événement collectif" pour le partage panier.
-   * Point d'entrée unique pour tout partage WhatsApp du panier.
+   * Affiche le bottom sheet "Simple / Ã‰vÃ©nement collectif" pour le partage panier.
+   * Point d'entrÃ©e unique pour tout partage WhatsApp du panier.
    */
 
-  /* ══════════════════════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      FAMILY PARTICIPATION SHEET
-     "Payer en groupe" — bottom sheet dédié
-     ══════════════════════════════════════════════════════════ */
+     "Payer en groupe" â€” bottom sheet dÃ©diÃ©
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   /**
-   * Ouvre le bottom sheet "👥 Payer en groupe".
+   * Ouvre le bottom sheet "ðŸ‘¥ Payer en groupe".
    * Remplace le redirect vers /event/create.
    */
   function _showFamilySheet() {
@@ -684,13 +684,13 @@ function quickRemove(productId, btnEl) {
     ov.className = 'k-share-overlay';
 
     var html = '<div class="k-share-sheet" id="k-share-sheet">'
-      + '<div class="k-share-title">👥 Payer en groupe</div>'
+      + '<div class="k-share-title">ðŸ‘¥ Payer en groupe</div>'
       + '<div class="k-share-sub-family">Plusieurs proches peuvent payer une partie<br>de ce panier.</div>'
       + '<div class="k-family-total">' + fmt(total, 'KMF') + '</div>'
       + '<div class="k-event-form">'
         + '<label>Nom du panier <span style="color:#bbb;font-weight:400;font-size:11px">(facultatif)</span></label>'
         + '<input id="k-event-label" type="text" placeholder="Ex : Ex : Famille, Cousins, Mariage" maxlength="80"/>'
-        + '<button class="k-event-go" id="k-family-go-btn">Créer le lien de participation</button>'
+        + '<button class="k-event-go" id="k-family-go-btn">CrÃ©er le lien de participation</button>'
       + '</div>'
       + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
       + '</div>';
@@ -710,7 +710,7 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Crée le lien de participation famille et l'envoie via WhatsApp.
+   * CrÃ©e le lien de participation famille et l'envoie via WhatsApp.
    */
   function _doFamilyShare() {
     var labelEl = document.getElementById('k-event-label');
@@ -733,7 +733,7 @@ function quickRemove(productId, btnEl) {
 
     _closeShareModal();
 
-    // Rediriger vers /event/create?from=cart (+ label pré-rempli si saisi)
+    // Rediriger vers /event/create?from=cart (+ label prÃ©-rempli si saisi)
     var url = '/event/create?from=cart';
     if (eventLabel) url += '&label=' + encodeURIComponent(eventLabel);
     window.location.href = url;
@@ -772,15 +772,15 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Affiche le formulaire de création d'événement collectif dans le bottom sheet de partage.
-   * Permet de saisir le libellé de l'événement et le nom du créateur.
+   * Affiche le formulaire de crÃ©ation d'Ã©vÃ©nement collectif dans le bottom sheet de partage.
+   * Permet de saisir le libellÃ© de l'Ã©vÃ©nement et le nom du crÃ©ateur.
    */
   function _showEventForm() {
     var sheet = document.getElementById('k-share-sheet');
     if (!sheet) return;
-    /* Refresh 28/04/26 — Vocabulaire spec V1 : "Paiement groupé" + ajout
-       champ téléphone obligatoire (utilisé par authenticateOrCreateGuest
-       pour créer le user à la volée si l'utilisateur n'est pas connecté). */
+    /* Refresh 28/04/26 â€” Vocabulaire spec V1 : "Paiement groupÃ©" + ajout
+       champ tÃ©lÃ©phone obligatoire (utilisÃ© par authenticateOrCreateGuest
+       pour crÃ©er le user Ã  la volÃ©e si l'utilisateur n'est pas connectÃ©). */
     var html = '<div class="k-share-title">&#127881; Payer en groupe</div>'
       + '<div class="k-share-sub">Cr&#233;e un lien pour que tes proches contribuent &#224; ce panier</div>'
       + '<div class="k-event-form">'
@@ -790,7 +790,7 @@ function quickRemove(productId, btnEl) {
         + '<input id="k-event-sharer" type="text" placeholder="ex: Fatima" maxlength="60"/>'
         + '<label>Ton num&#233;ro <span style="color:#999">(pour suivre les contributions)</span></label>'
         + '<input id="k-event-phone" type="tel" placeholder="ex: +269..." maxlength="20"/>'
-        + '<button class="k-event-go" id="k-event-go-btn">Créer le lien de groupe</button>'
+        + '<button class="k-event-go" id="k-event-go-btn">CrÃ©er le lien de groupe</button>'
       + '</div>'
       + '<button class="k-share-cancel" id="k-share-back-btn">&#8592; Retour</button>';
     sheet.innerHTML = html;
@@ -801,7 +801,7 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
- * Exécute le partage simple du panier via WhatsApp.
+ * ExÃ©cute le partage simple du panier via WhatsApp.
  */
   async function _doSimpleShare() {
     showToast('Generation du lien...', 'info');
@@ -825,12 +825,12 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
- * Exécute le partage événement collectif (mariage, fête…).
+ * ExÃ©cute le partage Ã©vÃ©nement collectif (mariage, fÃªteâ€¦).
  */
   async function _doEventShare() {
-    /* Refresh 28/04/26 — Bascule de l'ancienne route /api/shares vers
-       la nouvelle chaîne /api/shared-carts/from-cart-items qui apporte :
-       - paiement Stripe réel (vs déclaratif sur l'ancienne)
+    /* Refresh 28/04/26 â€” Bascule de l'ancienne route /api/shares vers
+       la nouvelle chaÃ®ne /api/shared-carts/from-cart-items qui apporte :
+       - paiement Stripe rÃ©el (vs dÃ©claratif sur l'ancienne)
        - idempotence et transactions
        - conversion automatique en order Komerce
        - compatible "paiement mixte cash relais" (mixed_shared_cart_cash) */
@@ -842,17 +842,17 @@ function quickRemove(productId, btnEl) {
     var sharerName = sharerEl ? sharerEl.value.trim() : '';
     var phone      = phoneEl  ? phoneEl.value.trim()  : '';
 
-    /* Phone obligatoire : c'est lui qui sert à authenticateOrCreateGuest
-       pour rattacher le panier à un user (existant ou créé à la volée). */
+    /* Phone obligatoire : c'est lui qui sert Ã  authenticateOrCreateGuest
+       pour rattacher le panier Ã  un user (existant ou crÃ©Ã© Ã  la volÃ©e). */
     if (!phone) {
-      showToast('Ton num&#233;ro est requis pour cr&#233;er le paiement groupé', 'error');
+      showToast('Ton num&#233;ro est requis pour cr&#233;er le paiement groupÃ©', 'error');
       return;
     }
 
     var btn = document.getElementById('k-event-go-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Cr&#233;ation...'; }
 
-    /* Construire le payload. Le backend re-vérifie tous les prix DB :
+    /* Construire le payload. Le backend re-vÃ©rifie tous les prix DB :
        on n'envoie que product_id + quantity, jamais de prix. */
     var payload = {
       cart_items: state.cart.map(function(item) {
@@ -864,21 +864,21 @@ function quickRemove(productId, btnEl) {
       title:            eventLabel || null,
       message:          sharerName ? ('De la part de ' + sharerName) : null,
       tracking_phone:   phone,    /* lu par authenticateOrCreateGuest */
-      recipient_phone:  phone,    /* le bénéficiaire = créateur en V1 */
+      recipient_phone:  phone,    /* le bÃ©nÃ©ficiaire = crÃ©ateur en V1 */
     };
 
     var response;
     try {
       response = await apiPost('/api/shared-carts/from-cart-items', payload);
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'CrÃ©er le lien de groupe'; }
       var msg = (err && err.message) ? err.message : 'Erreur lors de la cr&#233;ation';
       showToast(msg, 'error');
       return;
     }
 
     if (!response || !response.share_url) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'CrÃ©er le lien de groupe'; }
       showToast('R&#233;ponse serveur invalide', 'error');
       return;
     }
@@ -887,7 +887,7 @@ function quickRemove(productId, btnEl) {
 
     /* Composer le message WhatsApp. On garde la mise en forme actuelle qui
        fonctionne bien : titre, liste articles, total, lien, signature. */
-    var lines = ['👥 *' + (eventLabel || 'Paiement groupé') + '*', '--------------------', ''];
+    var lines = ['ðŸ‘¥ *' + (eventLabel || 'Paiement groupÃ©') + '*', '--------------------', ''];
     lines.push('Aide-moi &#224; financer ce panier - participe selon tes moyens !', '');
     state.cart.forEach(function(item, i) {
       var name = item.product.name || 'Produit';
@@ -905,14 +905,14 @@ function quickRemove(productId, btnEl) {
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
 
     /* Toast de confirmation + lien vers la page de suivi */
-    showToast('Paiement groupé créé - lien envoyé sur WhatsApp', 'success');
+    showToast('Paiement groupÃ© crÃ©Ã© - lien envoyÃ© sur WhatsApp', 'success');
 
-    /* Stocker le token pour accès rapide depuis la boutique */
+    /* Stocker le token pour accÃ¨s rapide depuis la boutique */
     try {
       var stored = JSON.parse(localStorage.getItem('k_group_carts') || '[]');
       stored.unshift({
         token: response.token,
-        title: eventLabel || 'Paiement groupé',
+        title: eventLabel || 'Paiement groupÃ©',
         total_kmf: response.total_kmf,
         share_url: response.share_url,
         created_at: new Date().toISOString(),
@@ -920,11 +920,11 @@ function quickRemove(productId, btnEl) {
       localStorage.setItem('k_group_carts', JSON.stringify(stored.slice(0, 10)));
     } catch(e) {}
 
-    /* Bouton de suivi affiché 3 secondes après */
+    /* Bouton de suivi affichÃ© 3 secondes aprÃ¨s */
     setTimeout(function() {
       var followBtn = document.createElement('div');
       followBtn.style.cssText = 'position:fixed;bottom:calc(var(--bnav-h,56px) + 12px);left:50%;transform:translateX(-50%);z-index:2000;background:var(--violet,#6c3fc5);color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(108,63,197,.4);white-space:nowrap;';
-      followBtn.textContent = '👥 Suivre mon panier groupe →';
+      followBtn.textContent = 'ðŸ‘¥ Suivre mon panier groupe â†’';
       followBtn.onclick = function() {
         window.location.href = '/boutique/shared-cart-account.html?phone=' + encodeURIComponent(phone);
       };
@@ -934,26 +934,26 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * @brief shareCartWhatsApp — Déclenche le flow de partage panier WhatsApp
+   * @brief shareCartWhatsApp â€” DÃ©clenche le flow de partage panier WhatsApp
    * Affiche le bottom sheet showShareChoiceModal() :
-   *   - Mode "Simple" : lien panier partagé
-   *   - Mode "Événement collectif" : flow contributions
+   *   - Mode "Simple" : lien panier partagÃ©
+   *   - Mode "Ã‰vÃ©nement collectif" : flow contributions
    */
     async function shareCartWhatsApp() {
-    // Partage direct WhatsApp — pas de modal intermédiaire
+    // Partage direct WhatsApp â€” pas de modal intermÃ©diaire
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     await _doSimpleShare();
   }
 
-  /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+  /* â”€â”€ AUTO-POPULATE CART FROM SHARED URL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   /**
- * Charge et affiche un panier partagé depuis un token URL.
+ * Charge et affiche un panier partagÃ© depuis un token URL.
  * @param {string} token - Token de partage
  */
   function loadSharedCart() {
     var params = new URLSearchParams(window.location.search);
 
-    // Nouveau : ?share=token → API
+    // Nouveau : ?share=token â†’ API
     var shareToken = params.get('share');
     if (shareToken) {
       state.shareToken = shareToken;
@@ -989,24 +989,24 @@ function quickRemove(productId, btnEl) {
           dom.cartDrawer.classList.add('open');
           dom.cartOverlay.classList.add('open');
           document.body.classList.add('cart-open');
-          showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
+          showToast('ðŸ§º Panier partagÃ© chargÃ© ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
       window.history.replaceState({}, '', window.location.pathname);
     }, 200);
     setTimeout(function() {
       clearInterval(checkProducts);
-      if (state.cart.length === 0) showToast('⚠️ Panier partagé introuvable — réessayez depuis le lien d\'origine.', 'error');
+      if (state.cart.length === 0) showToast('âš ï¸ Panier partagÃ© introuvable â€” rÃ©essayez depuis le lien d\'origine.', 'error');
     }, 10000);
   }
 
   /**
- * Appel API pour charger les données d'un panier partagé.
+ * Appel API pour charger les donnÃ©es d'un panier partagÃ©.
  * @param {string} token - Token de partage
- * @returns {Promise<Object>} Données du panier
+ * @returns {Promise<Object>} DonnÃ©es du panier
  */
   async function _loadSharedCartFromAPI(token) {
-    // GET /api/shares/:token → { sharer_name, items:[{product_id,qty,product:{...}}] }
+    // GET /api/shares/:token â†’ { sharer_name, items:[{product_id,qty,product:{...}}] }
     try {
       const data = await apiGet('/api/shares/' + encodeURIComponent(token));
 
@@ -1032,11 +1032,11 @@ function quickRemove(productId, btnEl) {
             document.body.classList.add('cart-open');
             var sharerName = data.sharer_name || data.shared_by || null;
             var msg = sharerName
-              ? '🎁 ' + sharerName + " t'a partagé son panier !"
-              : '🧺 Panier partagé chargé !';
+              ? 'ðŸŽ ' + sharerName + " t'a partagÃ© son panier !"
+              : 'ðŸ§º Panier partagÃ© chargÃ© !';
             showToast(msg, 'success');
             if (sharerName && dom.cartHeaderTitle) {
-              dom.cartHeaderTitle.textContent = '🎁 Panier de ' + sharerName;
+              dom.cartHeaderTitle.textContent = 'ðŸŽ Panier de ' + sharerName;
             }
           }, 500);
         }
@@ -1044,26 +1044,26 @@ function quickRemove(productId, btnEl) {
       }, 200);
       setTimeout(function() {
         clearInterval(checkProducts);
-        if (state.cart.length === 0) showToast('⚠️ Panier partagé introuvable — réessayez depuis le lien d\'origine.', 'error');
+        if (state.cart.length === 0) showToast('âš ï¸ Panier partagÃ© introuvable â€” rÃ©essayez depuis le lien d\'origine.', 'error');
       }, 10000);
     } catch(e) {
       console.warn('[share] API error:', e);
-      showToast('Impossible de charger le panier partagé.', 'error');
+      showToast('Impossible de charger le panier partagÃ©.', 'error');
     }
   }
 
-  /* ══════════════════════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      CHECKOUT / ORDER
-     ══════════════════════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 
-  // ╔══════════════════════════════════════════════════════════════════╗
-//  OPTION C : Long-press sur panier tressé → stepper flottant
+  // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+//  OPTION C : Long-press sur panier tressÃ© â†’ stepper flottant
 //  - Tap court : +1 au panier (comportement normal)
 //  - Long-press (400ms) : ouvre un stepper flottant [- qty +] au-dessus
 //  - Tap ailleurs : ferme le stepper
-//  - Pas d'activité 3s : ferme le stepper automatiquement
-// ═══════════════════════════════════════════════════════════════════════
+//  - Pas d'activitÃ© 3s : ferme le stepper automatiquement
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 (function setupLongPressSteppers() {
   const LONG_PRESS_MS = 400;
   const STEPPER_AUTOCLOSE_MS = 3000;
@@ -1073,13 +1073,13 @@ function quickRemove(productId, btnEl) {
   let isLongPress = false;
 
 
-  // ╔══════════════════════════════════════════════════════════════════╗
-  // ║  §14 · STEPPER — Bouton panier → stepper +/- avec haptic         ║
-  // ╚══════════════════════════════════════════════════════════════════╝
-  //  → Futur module: b-cart.js (même module §7)
+  // â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+  // â•‘  Â§14 Â· STEPPER â€” Bouton panier â†’ stepper +/- avec haptic         â•‘
+  // â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  //  â†’ Futur module: b-cart.js (mÃªme module Â§7)
 
   /**
-   * Ferme le stepper actuellement ouvert et remet le bouton 🧺 panier à sa place.
+   * Ferme le stepper actuellement ouvert et remet le bouton ðŸ§º panier Ã  sa place.
    */
   function closeActiveStepper() {
     if (!activeStepperBtn) return;
@@ -1094,7 +1094,7 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Remet à zéro le timer d'auto-fermeture du stepper (3s sans interaction).
+   * Remet Ã  zÃ©ro le timer d'auto-fermeture du stepper (3s sans interaction).
    */
   function resetAutoClose() {
     if (autoCloseTimer) clearTimeout(autoCloseTimer);
@@ -1103,7 +1103,7 @@ function quickRemove(productId, btnEl) {
 
   /**
    * Ouvre le stepper inline sur une carte produit et anime son apparition.
-   * @param {HTMLElement} btn - Bouton 🧺 qui déclenche l'ouverture
+   * @param {HTMLElement} btn - Bouton ðŸ§º qui dÃ©clenche l'ouverture
    */
   function openStepper(btn) {
     // Fermer tout autre stepper ouvert
@@ -1121,11 +1121,11 @@ function quickRemove(productId, btnEl) {
     const stepper = document.createElement('div');
     stepper.className = 'k-card-add-stepper';
     stepper.innerHTML =
-      '<button class="k-stepper-minus" aria-label="Moins">−</button>' +
+      '<button class="k-stepper-minus" aria-label="Moins">âˆ’</button>' +
       '<span class="k-stepper-qty">' + item.qty + '</span>' +
       '<button class="k-stepper-plus" aria-label="Plus">+</button>';
 
-    // Positionner au-dessus du panier tressé
+    // Positionner au-dessus du panier tressÃ©
     btn.appendChild(stepper);
     btn.classList.add('stepper-open');
     activeStepperBtn = btn;
@@ -1137,7 +1137,7 @@ function quickRemove(productId, btnEl) {
       const curItem = state?.cart?.find(i => String(i.product.id) === String(pid));
       if (!curItem) return closeActiveStepper();
       if (curItem.qty <= 1) {
-        // Retirer du panier → ferme le stepper
+        // Retirer du panier â†’ ferme le stepper
         document.dispatchEvent(new CustomEvent('cart:setqty', { detail: { pid: pid, qty: 0 } }));
         closeActiveStepper();
       } else {
@@ -1161,9 +1161,9 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Démarre le chrono de long-press sur un bouton stepper (−/+).
-   * Déclenche une répétition accélérée après 500ms.
-   * @param {Event} e - Événement pointerdown
+   * DÃ©marre le chrono de long-press sur un bouton stepper (âˆ’/+).
+   * DÃ©clenche une rÃ©pÃ©tition accÃ©lÃ©rÃ©e aprÃ¨s 500ms.
+   * @param {Event} e - Ã‰vÃ©nement pointerdown
    */
   function startPress(e) {
     const btn = e.target.closest('.k-card-add.in-cart');
@@ -1180,8 +1180,8 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Arrête la répétition du long-press et libère le pointeur.
-   * @param {Event} e - Événement pointerup/pointerleave
+   * ArrÃªte la rÃ©pÃ©tition du long-press et libÃ¨re le pointeur.
+   * @param {Event} e - Ã‰vÃ©nement pointerup/pointerleave
    */
   function endPress(e) {
     const btn = e.target.closest('.k-card-add.in-cart');
@@ -1191,7 +1191,7 @@ function quickRemove(productId, btnEl) {
       clearTimeout(pressTimer);
       pressTimer = null;
     }
-    // Si long-press déclenché, on bloque le click normal (qui ferait +1)
+    // Si long-press dÃ©clenchÃ©, on bloque le click normal (qui ferait +1)
     if (isLongPress) {
       e.preventDefault();
       e.stopPropagation();
@@ -1200,7 +1200,7 @@ function quickRemove(productId, btnEl) {
   }
 
   /**
-   * Annule le long-press en cours sans déclencher d'action répétée.
+   * Annule le long-press en cours sans dÃ©clencher d'action rÃ©pÃ©tÃ©e.
    */
   function cancelPress() {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
@@ -1220,17 +1220,17 @@ function quickRemove(productId, btnEl) {
   document.addEventListener('mouseleave', cancelPress);
   document.addEventListener('touchcancel', cancelPress);
 
-  // Click ailleurs → ferme le stepper
+  // Click ailleurs â†’ ferme le stepper
   document.addEventListener('click', function(e) {
     if (!activeStepperBtn) return;
     // Si on tape DANS le stepper, on ne ferme pas
     if (e.target.closest('.k-card-add-stepper')) return;
-    // Si on tape sur le panier tressé qui a le stepper, on ne ferme pas (géré par le bouton lui-même)
+    // Si on tape sur le panier tressÃ© qui a le stepper, on ne ferme pas (gÃ©rÃ© par le bouton lui-mÃªme)
     if (e.target.closest('.k-card-add.stepper-open')) return;
     closeActiveStepper();
   });
 
-  // Si un click normal sur .k-card-add se déclenche ET qu'un long-press vient de finir,
+  // Si un click normal sur .k-card-add se dÃ©clenche ET qu'un long-press vient de finir,
   // on bloque (sinon le +1 s'ajoute en plus du stepper ouvert)
   document.addEventListener('click', function(e) {
     const btn = e.target.closest('.k-card-add');
@@ -1240,18 +1240,18 @@ function quickRemove(productId, btnEl) {
     }
   }, true);  // capture phase pour intercepter avant le handler normal
 
-  // closeActiveStepper est exporté pour que d'autres modules puissent fermer le stepper
+  // closeActiveStepper est exportÃ© pour que d'autres modules puissent fermer le stepper
 })();
 
 
 
-// ═══════════════════════════════════════════════════════════════════════
-// Placeholder adaptatif sur la barre de recherche (évite troncature)
-// ═══════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Placeholder adaptatif sur la barre de recherche (Ã©vite troncature)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 (function adaptivePlaceholder() {
   /**
-   * Met à jour le texte placeholder de la barre de recherche selon la catégorie active.
-   * Utilise un cycle rotatif de suggestions thématiques.
+   * Met Ã  jour le texte placeholder de la barre de recherche selon la catÃ©gorie active.
+   * Utilise un cycle rotatif de suggestions thÃ©matiques.
    */
   const updatePlaceholder = () => {
     const input = document.getElementById('k-search-input');
@@ -1265,7 +1265,7 @@ function quickRemove(productId, btnEl) {
       input.placeholder = 'Rechercher un produit dans le catalogue...';
     }
   };
-  // À l'init et au redimensionnement
+  // Ã€ l'init et au redimensionnement
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', updatePlaceholder);
   } else {
@@ -1276,14 +1276,14 @@ function quickRemove(productId, btnEl) {
 
 
 
-  /* ── Capture-phase listener REMOVED — handled by setupCats v2 ── */
+  /* â”€â”€ Capture-phase listener REMOVED â€” handled by setupCats v2 â”€â”€ */
 
-    // ── Index flottant vertical à droite (sauts rapides entre sections) ──
-  // Apparaît uniquement en mode "Tout" (sections verticales actives).
-  // Se met à jour à chaque re-render de la grille sectionnée.
+    // â”€â”€ Index flottant vertical Ã  droite (sauts rapides entre sections) â”€â”€
+  // ApparaÃ®t uniquement en mode "Tout" (sections verticales actives).
+  // Se met Ã  jour Ã  chaque re-render de la grille sectionnÃ©e.
   /**
-   * Rend l'index flottant des catégories (visible sur desktop, masqué sur mobile).
-   * Génère les ancres de navigation rapide entre sections.
+   * Rend l'index flottant des catÃ©gories (visible sur desktop, masquÃ© sur mobile).
+   * GÃ©nÃ¨re les ancres de navigation rapide entre sections.
    */
   function _renderFloatingIndex() {
     const existing = document.getElementById('k-section-index');
@@ -1292,28 +1292,28 @@ function quickRemove(productId, btnEl) {
     // Uniquement en mode sections
     if (state.activeCat !== 'all' || state.activeSubcat) return;
 
-    // Récupérer toutes les sections actuellement dans le DOM
+    // RÃ©cupÃ©rer toutes les sections actuellement dans le DOM
     const headers = document.querySelectorAll('.k-sec-header');
     if (headers.length < 2) return; // inutile s'il n'y a qu'une section
 
     const EMOJI_CAT = {
-      'Mode': '👕',
-      'Beauté': '🌸',
-      'Tech': '📱',
-      'Enfant': '🧒',
-      'Maison': '🏠',
-      'Sport': '⚽',
-      'Sur-mesure': '✨',
-      'Autres': '📦',
+      'Mode': 'ðŸ‘•',
+      'BeautÃ©': 'ðŸŒ¸',
+      'Tech': 'ðŸ“±',
+      'Enfant': 'ðŸ§’',
+      'Maison': 'ðŸ ',
+      'Sport': 'âš½',
+      'Sur-mesure': 'âœ¨',
+      'Autres': 'ðŸ“¦',
     };
 
     const nav = document.createElement('nav');
     nav.id = 'k-section-index';
-    nav.setAttribute('aria-label', 'Index des catégories');
+    nav.setAttribute('aria-label', 'Index des catÃ©gories');
 
     headers.forEach(function(h) {
       const cat = h.getAttribute('data-cat');
-      const emoji = EMOJI_CAT[cat] || '📦';
+      const emoji = EMOJI_CAT[cat] || 'ðŸ“¦';
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'k-section-index-btn';
@@ -1331,7 +1331,7 @@ function quickRemove(productId, btnEl) {
 
     document.body.appendChild(nav);
 
-    // ── IntersectionObserver — sync pills with visible section (vertical scroll) ──
+    // â”€â”€ IntersectionObserver â€” sync pills with visible section (vertical scroll) â”€â”€
     if (_sectionObserver) _sectionObserver.disconnect();
     // Skip on mobile pager (horizontal scroll handles sync)
     if (window.innerWidth < 900 && dom.pageScroll &&
@@ -1364,21 +1364,21 @@ function quickRemove(productId, btnEl) {
   }
   let _sectionObserver = null;
 
-  /* ══════════════════════════════════════════════════════════════════ */
-  /* ── TEMU-STYLE MOBILE PAGER — horizontal category page sync ───── */
-  /* ══════════════════════════════════════════════════════════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* â”€â”€ TEMU-STYLE MOBILE PAGER â€” horizontal category page sync â”€â”€â”€â”€â”€ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   // _pagerRaf declared in _syncChipToScroll block above
 
-// ══════════════════════════════════════════════════════════════════
-// SIDE CART — Aperçu permanent desktop + total mobile bnav
-// ══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// SIDE CART â€” AperÃ§u permanent desktop + total mobile bnav
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 function renderSideCart() {
   const sc       = document.getElementById('k-side-cart');
   const bnavLbl  = document.getElementById('k-bnav-cart-label');
   const items    = state.cart;
   const hasItems = items.length > 0;
 
-  // Mobile bnav label : "Panier" → total ou retour
+  // Mobile bnav label : "Panier" â†’ total ou retour
   if (bnavLbl) {
     if (hasItems) {
       bnavLbl.textContent = fmtPrice(cartTotal());
@@ -1392,9 +1392,9 @@ function renderSideCart() {
   if (!sc) return;
   sc.classList.toggle('has-items', hasItems);
 
-  // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
+  // (--sc-offset / sc-open : plus utilisÃ©s depuis que .k-side-cart est en
   // position: sticky dans le flex parent. Le sidecart prend sa place dans le
-  // flux, plus aucun élément n'a besoin de céder la place via padding-right.)
+  // flux, plus aucun Ã©lÃ©ment n'a besoin de cÃ©der la place via padding-right.)
   if (!hasItems) return;
 
   const qty = cartQty();
@@ -1411,7 +1411,7 @@ function renderSideCart() {
   const countEl = sc.querySelector('#k-sc-count');
   if (countEl) countEl.textContent = qty + ' article' + (qty > 1 ? 's' : '') + ' dans votre panier';
 
-  // Articles (plus récents en premier)
+  // Articles (plus rÃ©cents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
   if (itemsEl) {
     itemsEl.innerHTML = '';
@@ -1424,13 +1424,13 @@ function renderSideCart() {
       const pid      = String(item.product.id || item.id || '');
       el.dataset.pid = pid;
 
-      // Prix barré si promo
+      // Prix barrÃ© si promo
       const promoPct = item.product.promo_pct || 0;
       const oldPriceHtml = promoPct > 0
         ? `<span class="k-sc-item-old-price">${fmtPrice(Math.round(unitPrice / (1 - promoPct / 100)) * item.qty)}</span>`
         : '';
 
-      // Variant sélectionné (taille, couleur…)
+      // Variant sÃ©lectionnÃ© (taille, couleurâ€¦)
       const variant = item.variant_label || item.product.variant_label || '';
       const variantHtml = variant
         ? `<span class="k-sc-item-variant">${sanitize(variant)}</span>`
@@ -1448,7 +1448,7 @@ function renderSideCart() {
             `</div>` +
             `<div class="k-sc-item-actions">` +
               `<div class="k-sc-item-stepper">` +
-                `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">−</button>` +
+                `<button class="k-sc-step-minus" data-pid="${pid}" aria-label="Retirer un">âˆ’</button>` +
                 `<span class="k-sc-item-stepper-qty">${item.qty}</span>` +
                 `<button class="k-sc-step-plus" data-pid="${pid}" aria-label="Ajouter un">+</button>` +
               `</div>` +
@@ -1461,7 +1461,7 @@ function renderSideCart() {
       itemsEl.appendChild(el);
     });
 
-    // Câbler les steppers (délégation sur itemsEl)
+    // CÃ¢bler les steppers (dÃ©lÃ©gation sur itemsEl)
     if (!itemsEl._scWired) {
       itemsEl._scWired = true;
       itemsEl.addEventListener('click', e => {
@@ -1501,13 +1501,13 @@ function renderSideCart() {
     });
   }
 
-  // Bouton "En groupe" — démarre un panier collectif
+  // Bouton "En groupe" â€” dÃ©marre un panier collectif
   const ctaGroup = sc.querySelector('#k-sc-group');
   if (ctaGroup && !ctaGroup._wired) {
     ctaGroup._wired = true;
     ctaGroup.addEventListener('click', () => {
       try {
-        // Snapshot du panier courant pour pré-charger le workspace après création
+        // Snapshot du panier courant pour prÃ©-charger le workspace aprÃ¨s crÃ©ation
         const pending = state.cart.map(it => ({
           product_id: it.product.id,
           name:       it.product.name,
@@ -1522,16 +1522,16 @@ function renderSideCart() {
   }
 }
 
-// Hook global appelé par b-cart-core.js updateCartBadge()
+// Hook global appelÃ© par b-cart-core.js updateCartBadge()
 window.__kmrcSideCart = renderSideCart;
 
-/* ── MUTATIONS CENTRALISÉES ─────────────────────────────────
- * Toute écriture sur state.cart doit passer par ces fonctions
- * pour garantir la cohérence saveCart() + rendu + badge.
- * ──────────────────────────────────────────────────────────── */
+/* â”€â”€ MUTATIONS CENTRALISÃ‰ES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * Toute Ã©criture sur state.cart doit passer par ces fonctions
+ * pour garantir la cohÃ©rence saveCart() + rendu + badge.
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /**
- * Vide complètement le panier.
+ * Vide complÃ¨tement le panier.
  * Remplace les patterns state.cart = []; saveCart(); renderCart();
  */
 export function clearCart() {
@@ -1542,7 +1542,7 @@ export function clearCart() {
 
 /**
  * Retire du panier les produits dont l'ID n'est plus dans validIdSet.
- * Appelé après le chargement du catalogue pour nettoyer les items obsolètes.
+ * AppelÃ© aprÃ¨s le chargement du catalogue pour nettoyer les items obsolÃ¨tes.
  * @param {Set<string>} validIdSet - Set des IDs produits valides (strings)
  */
 export function pruneObsoleteCart(validIdSet) {
@@ -1561,11 +1561,11 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
-/* ══════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SIDE CART RAIL GATE
-   Le rail panier desktop ne s'affiche que lorsque le catalogue est engagé.
-   Il reste caché sur le hero, dans la modal et dans le drawer.
-   ══════════════════════════════════════════════════════════════ */
+   Le rail panier desktop ne s'affiche que lorsque le catalogue est engagÃ©.
+   Il reste cachÃ© sur le hero, dans la modal et dans le drawer.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 (function installSideCartRailGate() {
   if (window.__komerceSideCartRailGate) return;
   window.__komerceSideCartRailGate = true;
@@ -1578,21 +1578,39 @@ export { renderCartBody as renderCart };
     var rail = document.getElementById('k-side-cart');
     var catalog = document.getElementById('k-desktop-catalog-wrap');
     var header = document.getElementById('k-header');
+    var footer = document.getElementById('k-footer') || document.querySelector('.k-footer');
 
     if (!rail || !catalog) return;
 
+    if (!isRailDesktop()) {
+      rail.classList.remove('is-rail-visible');
+      return;
+    }
+
     var headerH = header ? header.offsetHeight : 72;
-    var rect = catalog.getBoundingClientRect();
+    var topOffset = headerH + 14;
+    var catalogRect = catalog.getBoundingClientRect();
+    var footerRect = footer ? footer.getBoundingClientRect() : null;
+    var railH = Math.min(rail.offsetHeight || 420, window.innerHeight - topOffset - 24);
 
     var blocked =
       document.body.classList.contains('modal-open') ||
       document.body.classList.contains('cart-open');
 
+    /*
+      Visible quand le catalogue entre dans l'expérience,
+      mais caché sur le hero et avant de chevaucher le footer.
+    */
+    var catalogHasEntered = catalogRect.top <= (window.innerHeight - 220);
+    var catalogStillActive = catalogRect.bottom > (topOffset + 160);
+    var beforeFooter = !footerRect || footerRect.top > (topOffset + railH + 24);
+
     var visible =
       isRailDesktop() &&
       !blocked &&
-      rect.top <= headerH + 24 &&
-      rect.bottom > headerH + 260;
+      catalogHasEntered &&
+      catalogStillActive &&
+      beforeFooter;
 
     rail.classList.toggle('is-rail-visible', visible);
   }
@@ -1615,3 +1633,4 @@ export { renderCartBody as renderCart };
   setTimeout(requestUpdate, 250);
   setTimeout(requestUpdate, 1000);
 })();
+

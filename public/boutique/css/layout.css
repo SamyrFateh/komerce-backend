@@ -1941,3 +1941,89 @@ body {
     padding-right: clamp(16px, 3vw, 40px);
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART V5 — Rail compact + footer safe
+   Corrige : taille, position, intégration visuelle, footer overlap.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1180px) {
+  #k-desktop-catalog-wrap {
+    padding-right: 184px;
+  }
+
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    top: 84px;
+    right: max(24px, calc((100vw - var(--container, 1400px)) / 2 + 8px));
+
+    width: 158px;
+    min-width: 158px;
+    max-width: 158px;
+    max-height: min(520px, calc(100vh - 118px));
+
+    border-radius: 16px;
+    background: rgba(255,255,255,.965);
+    border: 1px solid rgba(42,62,44,.08);
+    box-shadow: 0 12px 30px rgba(31,48,36,.09);
+  }
+
+  .k-sc-top {
+    padding: 8px;
+  }
+
+  .k-sc-subtotal-label {
+    font-size: 8.5px;
+  }
+
+  .k-sc-subtotal-amount {
+    font-size: 14px;
+    line-height: 1.05;
+  }
+
+  .k-sc-free-ship {
+    font-size: 8.5px;
+    padding: 5px 6px;
+    margin: 5px 0 7px;
+    border-radius: 9px;
+  }
+
+  .k-sc-free-ship svg {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
+
+  .k-sc-btn-checkout,
+  .k-sc-btn-cart {
+    min-height: 30px;
+    font-size: 10px;
+  }
+
+  .k-sc-btn-cart {
+    margin-top: 5px;
+  }
+
+  .k-sc-items {
+    padding: 6px;
+  }
+
+  .k-sc-items > * {
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .k-sc-items img {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+  }
+
+  .k-sc-bottom {
+    padding: 5px 8px 8px;
+  }
+
+  .k-sc-count-label {
+    font-size: 8.8px;
+    line-height: 1.15;
+  }
+}
