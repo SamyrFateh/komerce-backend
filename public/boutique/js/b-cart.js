@@ -1561,3 +1561,57 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART RAIL GATE
+   Le rail panier desktop ne s'affiche que lorsque le catalogue est engagé.
+   Il reste caché sur le hero, dans la modal et dans le drawer.
+   ══════════════════════════════════════════════════════════════ */
+(function installSideCartRailGate() {
+  if (window.__komerceSideCartRailGate) return;
+  window.__komerceSideCartRailGate = true;
+
+  function isRailDesktop() {
+    return window.innerWidth >= 1180;
+  }
+
+  function updateSideCartRailVisibility() {
+    var rail = document.getElementById('k-side-cart');
+    var catalog = document.getElementById('k-desktop-catalog-wrap');
+    var header = document.getElementById('k-header');
+
+    if (!rail || !catalog) return;
+
+    var headerH = header ? header.offsetHeight : 72;
+    var rect = catalog.getBoundingClientRect();
+
+    var blocked =
+      document.body.classList.contains('modal-open') ||
+      document.body.classList.contains('cart-open');
+
+    var visible =
+      isRailDesktop() &&
+      !blocked &&
+      rect.top <= headerH + 24 &&
+      rect.bottom > headerH + 260;
+
+    rail.classList.toggle('is-rail-visible', visible);
+  }
+
+  var ticking = false;
+
+  function requestUpdate() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function() {
+      updateSideCartRailVisibility();
+      ticking = false;
+    });
+  }
+
+  window.addEventListener('scroll', requestUpdate, { passive: true });
+  window.addEventListener('resize', requestUpdate, { passive: true });
+  document.addEventListener('DOMContentLoaded', requestUpdate);
+
+  setTimeout(requestUpdate, 250);
+  setTimeout(requestUpdate, 1000);
+})();
