@@ -242,21 +242,21 @@ if('serviceWorker' in navigator){
     </section>
     <!-- Side cart desktop Temu-style — panneau fixe droit -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- Top : récap sous-total + livraison -->
-      <div class="k-sc-top">
-        <div class="k-sc-subtotal-row">
-          <span class="k-sc-subtotal-label">Sous-total</span>
-          <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
-        </div>
-        <div class="k-sc-free-ship">
-          <svg viewBox="0 0 16 16" fill="none"><path d="M1 6h10v6H1zM11 8h2l2 2v2h-4V8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4" cy="14" r="1.2" fill="currentColor"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></svg>
-          Livraison incluse aux Comores
-        </div>
-      </div>
       <!-- Liste articles (scroll si dépasse) -->
       <div id="k-sc-items" class="k-sc-items"></div>
-      <!-- Bottom : CTAs collés en bas + count -->
+      <!-- Bottom : prix + CTAs collés en bas + count -->
       <div class="k-sc-bottom">
+        <!-- Prix/sous-total juste avant le bouton Commander -->
+        <div class="k-sc-top">
+          <div class="k-sc-subtotal-row">
+            <span class="k-sc-subtotal-label">Sous-total</span>
+            <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
+          </div>
+          <div class="k-sc-free-ship">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M1 6h10v6H1zM11 8h2l2 2v2h-4V8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4" cy="14" r="1.2" fill="currentColor"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></svg>
+            Livraison incluse aux Comores
+          </div>
+        </div>
         <div class="k-sc-cta-row">
           <button id="k-sc-checkout" class="k-sc-btn-checkout">
             Commander (<span id="k-sc-count-inline">0</span>)

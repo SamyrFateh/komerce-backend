@@ -1172,4 +1172,12 @@ body {
   .k-side-cart { width: 290px; min-width: 290px; }
 }
 
+/* ── Side cart masqué hors onglet boutique ── */
+/* switchView() pose data-tab sur #k-page-scroll — on en profite pour cacher
+   le side cart sur les onglets suivi et favoris sans toucher au JS. */
+#k-page-scroll[data-tab="track"] .k-side-cart,
+#k-page-scroll[data-tab="fav"]   .k-side-cart {
+  display: none !important;
+}
+
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
