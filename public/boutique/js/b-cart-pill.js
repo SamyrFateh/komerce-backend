@@ -157,10 +157,17 @@ function _onDragStart(e) {
   _dragging= false;
   pill.style.transition = '';
 
-  document.addEventListener('mousemove', _onDragMove, { passive: false });
-  document.addEventListener('mouseup',   _onDragEnd);
-  document.addEventListener('touchmove', _onDragMove, { passive: false });
-  document.addEventListener('touchend',  _onDragEnd);
+  // FIX clic mobile : on n'attache PAS les listeners souris quand l'événement
+  // d'origine est un touch. Sinon le mouseup synthétique généré après touchend
+  // re-déclenche _onDragEnd → toggle le popover qu'on vient d'ouvrir.
+  if (e.type === 'touchstart') {
+    document.addEventListener('touchmove', _onDragMove, { passive: false });
+    document.addEventListener('touchend',  _onDragEnd);
+    document.addEventListener('touchcancel', _onDragEnd);
+  } else {
+    document.addEventListener('mousemove', _onDragMove, { passive: false });
+    document.addEventListener('mouseup',   _onDragEnd);
+  }
 }
 
 function _onDragMove(e) {
@@ -182,17 +189,22 @@ function _onDragMove(e) {
   }
 }
 
-function _onDragEnd() {
+function _onDragEnd(e) {
   document.removeEventListener('mousemove', _onDragMove);
   document.removeEventListener('mouseup',   _onDragEnd);
   document.removeEventListener('touchmove', _onDragMove);
   document.removeEventListener('touchend',  _onDragEnd);
+  document.removeEventListener('touchcancel', _onDragEnd);
 
   if (_dragging) {
     _dragging = false;
     _snapToEdge();
   } else {
-    // Clic = toggle popover
+    // Tap (sans drag) → empêcher la synthèse de mouse/click sur mobile,
+    // sinon le listener "fermer au clic ailleurs" referme aussitôt.
+    if (e && e.type === 'touchend' && e.cancelable) {
+      try { e.preventDefault(); } catch(_) {}
+    }
     if (popover.classList.contains('kpill-pop--open')) {
       _closePopover();
     } else {
