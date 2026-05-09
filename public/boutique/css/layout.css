@@ -1189,3 +1189,183 @@ body {
 }
 
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
+
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDE CART — PATCH STICKY + TEMU-LIKE REFINEMENTS
+   Objectifs :
+   1. sticky réel — le panneau colle dès le scroll (fix overflow)
+   2. plus élégant et compact — card blanche, ombre fine
+   3. largeur optimisée — 200px suffisent, sans scroll latéral
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* ── 1. FIX STICKY — supprimer overflow sur les ancêtres ─── */
+  /* L'overflow:clip sur #k-catalog-section crée un scroll-container
+     qui empêche position:sticky de remonter dans le DOM.
+     On isole uniquement les overflow nécessaires au clip horizontal. */
+  #k-desktop-catalog-wrap {
+    overflow: visible !important;  /* pas d'overflow → sticky actif */
+    align-items: stretch;          /* les colonnes s'étirent */
+  }
+
+  /* Le catalog prend la place disponible sans overflow vertical */
+  #k-desktop-catalog-wrap #k-catalog-section {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  /* ── 2. SIDE CART — compact & élégant ──────────────────────── */
+  .k-side-cart {
+    /* Sticky réel : l'ancêtre n'a plus d'overflow → ça marche */
+    position: sticky;
+    top: calc(var(--header-h, 68px) + 12px);
+    align-self: flex-start;        /* shrink à la hauteur du contenu */
+
+    /* Taille : plus compact, sans scroll latéral */
+    flex: 0 0 192px;
+    width: 192px;
+    min-width: 192px;
+    max-width: 192px;
+
+    /* Max-height avec scroll interne si panier chargé */
+    max-height: calc(100vh - var(--header-h, 68px) - 24px);
+
+    /* Apparence : card blanche légère, pas invisible */
+    background: var(--white, #fff);
+    border: 1px solid var(--border, #E3D9C9);
+    border-radius: 12px;
+    box-shadow:
+      0 2px 8px rgba(31, 48, 36, .06),
+      0 1px 2px rgba(31, 48, 36, .04);
+    overflow: hidden;
+    padding: 10px 10px 12px;
+
+    /* Animation d'apparition */
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition: opacity .22s var(--ease, ease), transform .22s var(--ease, ease);
+    z-index: 200;
+  }
+
+  .k-side-cart.has-items {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  /* ── 3. INTÉRIEUR — refinements Temu-like ───────────────────── */
+
+  /* Header implicite : sous-total dans la card, sobre */
+  .k-sc-top {
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--border, #E3D9C9);
+    margin-bottom: 8px;
+  }
+
+  .k-sc-subtotal-row {
+    padding: 0;
+    margin-bottom: 4px;
+  }
+
+  .k-sc-subtotal-label {
+    font-size: 11px;
+    color: var(--text-muted, #6B7B63);
+  }
+
+  .k-sc-subtotal-amount {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text, #1F3024);
+    letter-spacing: -.02em;
+  }
+
+  .k-sc-free-ship {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+
+  /* Items : images un peu plus petites */
+  .k-sc-item {
+    padding: 7px 8px;
+    gap: 8px;
+    border-radius: 8px;
+  }
+
+  .k-sc-item-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 6px;
+  }
+
+  .k-sc-item-name {
+    font-size: 11px;
+    -webkit-line-clamp: 2;
+  }
+
+  .k-sc-item-price {
+    font-size: 12px;
+  }
+
+  /* Stepper compact */
+  .k-sc-item-stepper button {
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+  }
+  .k-sc-item-stepper-qty {
+    min-width: 20px;
+    font-size: 11px;
+    line-height: 20px;
+  }
+  .k-sc-item-remove {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* CTA Commander */
+  .k-sc-btn-checkout {
+    font-size: 13px;
+    padding: 10px 10px;
+    border-radius: 8px;
+    letter-spacing: 0;
+  }
+
+  .k-sc-btn-group {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
+  .k-sc-btn-group-emoji { font-size: 15px; }
+
+  .k-sc-btn-cart {
+    font-size: 11px;
+    padding: 3px;
+  }
+
+  .k-sc-count-label {
+    font-size: 10px;
+  }
+
+  /* Scroll interne des items */
+  .k-sc-items {
+    max-height: calc(100vh - var(--header-h, 68px) - 220px);
+    overflow-y: auto;
+    padding: 0 0 4px;
+    gap: 6px;
+  }
+
+  /* ── 4. RESPONSIVE 1200px — un peu plus large ───────────────── */
+}
+
+@media (min-width: 1200px) {
+  .k-side-cart {
+    flex: 0 0 210px;
+    width: 210px;
+    min-width: 210px;
+    max-width: 210px;
+  }
+}
