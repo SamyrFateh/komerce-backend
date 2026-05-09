@@ -193,7 +193,10 @@ function setupZoom() {
     el.remove();
   });
 
-  _zoomLens = null;
+  // Lentille : carré semi-transparent qui suit le curseur sur l'image source
+  _zoomLens = document.createElement('div');
+  _zoomLens.className = 'k-modal-zoom-lens';
+  imgWrap.appendChild(_zoomLens);
 
   _zoomPreview = document.createElement('div');
   _zoomPreview.className = 'k-modal-zoom-preview';
@@ -221,16 +224,35 @@ function _onZoomMove(e) {
   var img = slides[idx];
   if (!img || !img.src) return;
 
+  // Toujours utiliser la version haute résolution pour le zoom (sinon flou)
+  // Cloudinary format : ,w_800/ → ,w_1600/
+  var zoomSrc = img.src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
+  if (zoomSrc === img.src && img.dataset.zoomSrc) zoomSrc = img.dataset.zoomSrc;
+
   var px = Math.max(0, Math.min(100, (x / rect.width) * 100));
   var py = Math.max(0, Math.min(100, (y / rect.height) * 100));
 
-  _zoomPreview.style.backgroundImage = 'url(' + img.src + ')';
+  _zoomPreview.style.backgroundImage = 'url(' + zoomSrc + ')';
   _zoomPreview.style.backgroundPosition = px + '% ' + py + '%';
   _zoomPreview.classList.add('is-active');
+
+  // Lentille : centrée sur le curseur, clampée dans le conteneur.
+  // Sa taille est 36% du wrap (cohérent avec --zoom-bg-size 280%).
+  if (_zoomLens) {
+    var lensW = rect.width  * 0.36;
+    var lensH = rect.height * 0.36;
+    var lx = Math.max(0, Math.min(rect.width  - lensW, x - lensW / 2));
+    var ly = Math.max(0, Math.min(rect.height - lensH, y - lensH / 2));
+    _zoomLens.style.width  = lensW + 'px';
+    _zoomLens.style.height = lensH + 'px';
+    _zoomLens.style.left   = lx + 'px';
+    _zoomLens.style.top    = ly + 'px';
+    _zoomLens.classList.add('is-active');
+  }
 }
 
 function _onZoomLeave() {
-  if (_zoomLens) _zoomLens.style.opacity = '0';
+  if (_zoomLens) _zoomLens.classList.remove('is-active');
   if (_zoomPreview) _zoomPreview.classList.remove('is-active');
 }
 
