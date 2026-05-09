@@ -7,26 +7,28 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Fraunces:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/boutique/css/event.css">
-  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
 <div class="ev-wrap">
 
   <header class="ev-header">
-    <a href="/" class="ev-header-back">← Boutique</a>
-    <span class="ev-header-title">Confirmer ma part</span>
+    <a href="/" class="ev-header-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Boutique
+    </a>
+    <span class="ev-step-pill"><span class="ev-step-dot"></span> Confirmation</span>
   </header>
 
   <div id="ev-loading" class="ev-empty">⏳ Chargement…</div>
   <div id="ev-content" style="display:none;"></div>
-  <div id="ev-error-block" class="ev-warning" style="display:none;"></div>
+  <div id="ev-error-block" class="ev-alert ev-alert-warn" style="display:none;"></div>
 
   <p class="ev-doctrine">
-    Aucun débit ne sera effectué avant que tous les contributeurs aient confirmé leur part.<br>
-    La commande sera créée seulement quand le panier sera entièrement sécurisé.
+    Aucun débit en ligne — vous paierez en <strong>cash au retrait</strong>.<br>
+    La commande sera créée seulement quand tous les contributeurs auront confirmé.
   </p>
 
 </div>

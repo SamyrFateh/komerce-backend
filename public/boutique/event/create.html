@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Achat groupé - Komerce</title>
+  <title>Panier collectif — Komerce</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Fraunces:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/boutique/css/event.css">
 </head>
 <body>
@@ -15,51 +15,52 @@
 <div class="ev-wrap">
 
   <header class="ev-header">
-    <a href="/" class="ev-header-back">Boutique</a>
-    <span class="ev-header-title">Achat groupé</span>
+    <a href="/" class="ev-header-back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Boutique
+    </a>
+    <span class="ev-step-pill"><span class="ev-step-dot"></span> Étape 1 · Créer</span>
   </header>
 
+  <!-- Hero violet (identité panier collectif) -->
   <div class="ev-hero">
-    <div class="ev-hero-icon">🛒</div>
-    <h1 class="ev-hero-title">Créez votre panier collectif</h1>
-    <p class="ev-hero-sub">
-      Invitez vos proches à participer.<br>
-      <strong>Chacun contribue à sa façon.</strong>
-    </p>
+    <div class="ev-hero-eyebrow">Sans compte requis</div>
+    <h1 class="ev-hero-title">Lancez votre <em>panier collectif</em></h1>
+    <p class="ev-hero-sub">Invitez vos proches à participer. <strong>Chacun paie sa part en cash au retrait.</strong></p>
   </div>
 
+  <!-- Bandeau dynamique : panier pré-chargé depuis la boutique -->
+  <div id="ev-pending-banner" style="display:none;"></div>
+
+  <!-- Formulaire création -->
   <form id="ev-create-form" class="ev-card">
-    <h2 class="ev-card-title">Démarrage rapide</h2>
-    <p class="ev-card-sub">Créez votre panier collectif en quelques secondes. Vous pourrez partager le lien tout de suite après.</p>
 
     <div class="ev-field">
       <label class="ev-label" for="event_note">
-        Message pour les participants
-        <span class="ev-label-optional">(optionnel)</span>
+        Message pour les participants <span class="ev-label-opt">(optionnel)</span>
       </label>
       <textarea id="event_note" name="event_note" class="ev-textarea" rows="2"
-                placeholder="Ex : Voici notre panier pour les fêtes. Proposez votre participation !"
-                maxlength="500" id="ev-note-area"></textarea>
+                placeholder="Ex : Voici notre panier pour les fêtes. Chacun apporte sa part !"
+                maxlength="500"></textarea>
       <div class="ev-char-count"><span id="ev-note-count">0</span>/500</div>
     </div>
 
     <hr class="ev-divider">
 
-    <h3 class="ev-card-title" style="font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--ev-text-muted);font-weight:600;">Vos coordonnées (organisateur)</h3>
+    <p class="ev-card-label">Vos coordonnées (organisateur)</p>
 
-    <div class="ev-field" style="margin-top:12px;">
+    <div class="ev-field">
       <label class="ev-label" for="creator_name">Votre nom</label>
       <input type="text" id="creator_name" name="creator_name" class="ev-input"
-             placeholder="Ex : Amina Said" required maxlength="80">
+             placeholder="Ex : Amina Saïd" required maxlength="80">
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_phone">
-        Téléphone
-        <span class="ev-label-optional">(pour partager facilement via WhatsApp)</span>
+        Téléphone <span class="ev-label-opt">(WhatsApp)</span>
       </label>
       <div class="ev-phone-row">
-        <select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif pays">
+        <select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif">
           <option value="+269">🇰🇲 +269</option>
           <option value="+33">🇫🇷 +33</option>
           <option value="+262">🇷🇪 +262</option>
@@ -69,13 +70,11 @@
         <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
                placeholder="Votre numéro" maxlength="25">
       </div>
-      <div class="ev-help">Format international avec indicatif. Aucun appel ne vous sera passé.</div>
     </div>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_email">
-        Email
-        <span class="ev-label-optional">(pour retrouver votre lien)</span>
+        Email <span class="ev-label-opt">(pour retrouver votre lien)</span>
       </label>
       <input type="email" id="creator_email" name="creator_email" class="ev-input"
              placeholder="exemple@email.com" maxlength="120">
@@ -83,76 +82,34 @@
 
     <div class="ev-trust">
       <span class="ev-trust-icon">🔒</span>
-      <span><strong>Sans compte requis.</strong> Conservez votre lien organisateur — il vous permet de gérer le panier et finaliser la commande.</span>
+      <span><strong>Conservez votre lien organisateur</strong> — il vous permet de gérer le panier et de finaliser quand tout le monde a confirmé.</span>
     </div>
 
-    <button type="submit" class="ev-btn ev-btn-primary ev-btn-block" id="ev-submit-btn">
+    <button type="submit" class="ev-btn ev-btn-violet ev-btn-block" id="ev-submit-btn" style="font-size:16px;padding:15px 20px;margin-top:6px;">
       🛒 Créer le panier collectif
     </button>
 
-    <div id="ev-error" class="ev-warning" style="display:none; margin-top:12px;"></div>
+    <div id="ev-error" class="ev-alert ev-alert-warn" style="display:none; margin-top:12px;"></div>
   </form>
 
+  <!-- Étapes -->
   <div class="ev-card">
-    <h3 class="ev-card-title">Comment ça marche ?</h3>
+    <p class="ev-card-label">Comment ça marche</p>
     <div class="ev-steps">
-      <div class="ev-step">
-        <div class="ev-step-icon">🛒</div>
-        <div class="ev-step-label">Le panier<br>est créé</div>
-      </div>
-      <div class="ev-step">
-        <div class="ev-step-icon">👥</div>
-        <div class="ev-step-label">Les participants<br>rejoignent</div>
-      </div>
-      <div class="ev-step">
-        <div class="ev-step-icon">✅</div>
-        <div class="ev-step-label">Le panier<br>se complète</div>
-      </div>
-      <div class="ev-step">
-        <div class="ev-step-icon">🚚</div>
-        <div class="ev-step-label">Commande<br>& livraison</div>
-      </div>
+      <div class="ev-step"><div class="ev-step-num">1</div><div class="ev-step-text">Le panier<br>est créé</div></div>
+      <div class="ev-step"><div class="ev-step-num">2</div><div class="ev-step-text">Les invités<br>confirment</div></div>
+      <div class="ev-step"><div class="ev-step-num">3</div><div class="ev-step-text">Commande<br>lancée</div></div>
+      <div class="ev-step"><div class="ev-step-num">4</div><div class="ev-step-text">Retrait + cash<br>au relais</div></div>
     </div>
   </div>
 
   <p class="ev-doctrine">
-    La commande ne sera lancée que lorsque le panier sera couvert à 100 %.<br>
-    Chaque participant paie sa propre part, en toute transparence.
+    La commande ne sera lancée que lorsque tous auront confirmé leur participation.<br>
+    Chacun paie sa part en espèces lors du retrait.
   </p>
 
 </div>
 
-<script>
-// Char counter for note
-var noteArea = document.getElementById('event_note');
-var noteCount = document.getElementById('ev-note-count');
-if (noteArea && noteCount) {
-  noteArea.addEventListener('input', function() {
-    noteCount.textContent = noteArea.value.length;
-  });
-}
-// Phone prefix sync
-var prefixSel = document.getElementById('ev-prefix-select');
-var phoneInput = document.getElementById('creator_phone');
-if (prefixSel && phoneInput) {
-  // The phone field stores only the local number; event-create.js will read creator_phone
-  // We inject prefix into the input value on submit via hidden field approach
-  prefixSel.addEventListener('change', function() {});
-}
-// Patch submit to prepend prefix to phone value
-var origForm = document.getElementById('ev-create-form');
-if (origForm) {
-  origForm.addEventListener('submit', function(e) {
-    if (prefixSel && phoneInput && phoneInput.value.trim()) {
-      var prefix = prefixSel.value;
-      var num = phoneInput.value.trim().replace(/^\+\d+/, '');
-      if (!phoneInput.value.startsWith('+')) {
-        phoneInput.value = prefix + num.replace(/^0/, '');
-      }
-    }
-  }, true);
-}
-</script>
 <script src="/boutique/js/event-create.js"></script>
 </body>
 </html>
