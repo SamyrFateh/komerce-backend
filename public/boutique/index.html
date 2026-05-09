@@ -242,7 +242,7 @@ if('serviceWorker' in navigator){
     </section>
     <!-- Side cart desktop Temu-style — panneau fixe droit -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- Sous-total + CTAs -->
+      <!-- Top : récap sous-total + livraison -->
       <div class="k-sc-top">
         <div class="k-sc-subtotal-row">
           <span class="k-sc-subtotal-label">Sous-total</span>
@@ -252,7 +252,11 @@ if('serviceWorker' in navigator){
           <svg viewBox="0 0 16 16" fill="none"><path d="M1 6h10v6H1zM11 8h2l2 2v2h-4V8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4" cy="14" r="1.2" fill="currentColor"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></svg>
           Livraison incluse aux Comores
         </div>
-        <!-- Boutons primaires : Commander seul OU panier collectif -->
+      </div>
+      <!-- Liste articles (scroll si dépasse) -->
+      <div id="k-sc-items" class="k-sc-items"></div>
+      <!-- Bottom : CTAs collés en bas + count -->
+      <div class="k-sc-bottom">
         <div class="k-sc-cta-row">
           <button id="k-sc-checkout" class="k-sc-btn-checkout">
             Commander (<span id="k-sc-count-inline">0</span>)
@@ -262,11 +266,6 @@ if('serviceWorker' in navigator){
             <span class="k-sc-btn-group-label">En groupe</span>
           </button>
         </div>
-      </div>
-      <!-- Liste articles (scroll si dépasse) -->
-      <div id="k-sc-items" class="k-sc-items"></div>
-      <!-- Footer : count + lien Voir le panier -->
-      <div class="k-sc-bottom">
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
         <span id="k-sc-count" class="k-sc-count-label"></span>
       </div>
@@ -409,19 +408,18 @@ if('serviceWorker' in navigator){
     </div>
     <div>
       <div class="k-footer-col-title">Boutique</div>
-      <a class="k-footer-col-link">Tous les produits</a>
-      <a class="k-footer-col-link">Soldes &amp; promotions</a>
-      <a class="k-footer-col-link">Sur-mesure</a>
-      <a class="k-footer-col-link">Nouveautés</a>
-      <a class="k-footer-col-link">Panier collectif</a>
+      <a class="k-footer-col-link" href="#" data-footer-cat="all">Tous les produits</a>
+      <a class="k-footer-col-link" href="#" data-footer-cat="Soldes">Soldes &amp; promotions</a>
+      <a class="k-footer-col-link" href="#" data-footer-cat="Sur-mesure">Sur-mesure</a>
+      <a class="k-footer-col-link" href="/event/create">Panier collectif</a>
     </div>
     <div>
       <div class="k-footer-col-title">Aide &amp; contact</div>
-      <a class="k-footer-col-link">Comment ça marche</a>
-      <a class="k-footer-col-link">Suivi de commande</a>
-      <a class="k-footer-col-link">Trouver un relais</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%20Komerce%2C%20comment%20%C3%A7a%20marche%20%3F" target="_blank" rel="noopener">Comment ça marche</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20je%20souhaite%20suivre%20ma%20commande" target="_blank" rel="noopener">Suivi de commande</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20o%C3%B9%20se%20trouve%20le%20relais%20le%20plus%20proche%20%3F" target="_blank" rel="noopener">Trouver un relais</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526" target="_blank" rel="noopener">Contact WhatsApp</a>
-      <a class="k-footer-col-link">FAQ</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20j%27ai%20une%20question" target="_blank" rel="noopener">FAQ</a>
     </div>
     <div>
       <div class="k-footer-col-title">Newsletter</div>
@@ -432,7 +430,7 @@ if('serviceWorker' in navigator){
   </div>
   <div class="k-footer-bottom">
     <span class="k-footer-copy">© 2026 Komerce · Tous droits réservés</span>
-    <nav class="k-footer-legal-links" aria-label="Liens légaux">
+    <nav class="k-footer-legal-links" aria-label="Liens légaux" style="display:none;">
       <a class="k-footer-legal-link">Mentions légales</a>
       <a class="k-footer-legal-link">CGV</a>
       <a class="k-footer-legal-link">Confidentialité</a>

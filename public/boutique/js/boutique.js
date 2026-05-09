@@ -125,8 +125,30 @@ function init() {
   setupSeeAll();
   setupInfiniteScroll();
   initFlatSubcat();
+  setupFooterLinks();
   loadProducts();
   loadRelais();
+}
+
+// Liens Boutique du footer → activent la catégorie + scroll au catalogue
+function setupFooterLinks() {
+  document.querySelectorAll('[data-footer-cat]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      var cat = a.dataset.footerCat;
+      var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+      if (chip) {
+        chip.click();
+      } else {
+        // Fallback : import dynamique de setActiveCat si chip absent
+        import('./b-catalog.js').then(function(m) {
+          if (m.setActiveCat) m.setActiveCat(cat);
+        });
+      }
+      var grid = document.getElementById('k-grid');
+      if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 // ── Boot ────────────────────────────────────────────────────

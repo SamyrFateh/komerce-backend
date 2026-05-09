@@ -56,6 +56,7 @@ import {
   normalizeCategoryKey,
   getSectionOrder,
   getCategorySectionEmoji,
+  getSubcategories,
 }                         from './shop-schema.js';
 import { renderProductCard }  from './render/render-product-card.js';
 import { renderHomeSections } from './render/render-home-sections.js';
@@ -383,7 +384,74 @@ function renderGrid() {
     });
   }
 
-  dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
+  // ── Header flat-cat (desktop, hors "all" et "Soldes") ───────────
+  // Breadcrumb retour + titre catégorie + subchips, pour ne pas laisser
+  // l'utilisateur bloqué dans une grille flat sans repère.
+  let flatHeader = '';
+  if (!_isMobile && state.activeCat && state.activeCat !== 'all') {
+    const cat = state.activeCat;
+    const emoji = getCategorySectionEmoji(cat) || '';
+    const totalCat = list.length;
+    flatHeader += '<div class="k-flatcat-header">';
+    flatHeader += '<button class="k-flatcat-back" type="button" data-back-all="1" aria-label="Retour à toutes les catégories">';
+    flatHeader += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+    flatHeader += '<span>Toutes les catégories</span>';
+    flatHeader += '</button>';
+    flatHeader += '<h2 class="k-flatcat-title"><span class="k-flatcat-emoji">' + emoji + '</span>' + sanitize(cat);
+    flatHeader += '<span class="k-flatcat-count">' + totalCat + '</span></h2>';
+    flatHeader += '</div>';
+
+    // Rail subchips de la catégorie active
+    if (cat !== 'Soldes') {
+      const schemaSubs = getSubcategories(cat) || [];
+      const presentKeys = new Set(list.map(p => p.subcategory).filter(Boolean));
+      const subs = schemaSubs.filter(s => presentKeys.has(s.key));
+      if (subs.length >= 2) {
+        const activeSub = state.activeSubcat;
+        flatHeader += '<div class="k-flatcat-subcats" data-cat="' + sanitize(cat) + '">';
+        flatHeader += '<button class="k-sec-subchip k-sec-subchip-all' + (activeSub ? '' : ' active') + '" type="button" data-flat-sub-all="1">Tout</button>';
+        for (const s of subs) {
+          const isActive = activeSub === s.key;
+          flatHeader += '<button class="k-sec-subchip' + (isActive ? ' active' : '') +
+            '" type="button" data-flat-sub="' + sanitize(s.key) + '">' +
+            (s.icon ? '<span class="k-sec-subchip-icon">' + s.icon + '</span>' : '') +
+            '<span class="k-sec-subchip-label">' + sanitize(s.label || s.key) + '</span>' +
+            '</button>';
+        }
+        flatHeader += '</div>';
+      }
+    }
+  }
+
+  dom.grid.innerHTML = flatHeader + pageItems.map(p => renderProductCard(p)).join('');
+
+  // Wire breadcrumb back
+  const backBtn = dom.grid.querySelector('[data-back-all="1"]');
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      state.activeCat = 'all';
+      state.activeSubcat = null;
+      $$('.k-chip').forEach(c => c.classList.remove('active'));
+      const allChip = document.querySelector('.k-chip[data-cat="all"]');
+      if (allChip) { allChip.classList.add('active'); centerActiveChip(allChip); }
+      renderGrid();
+      scrollPageToTop('smooth');
+    });
+  }
+  // Wire flat subchips
+  dom.grid.querySelectorAll('[data-flat-sub], [data-flat-sub-all]').forEach((chip) => {
+    chip.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (chip.dataset.flatSubAll === '1') {
+        state.activeSubcat = null;
+      } else {
+        const sub = chip.dataset.flatSub;
+        state.activeSubcat = (state.activeSubcat === sub) ? null : sub;
+      }
+      renderGrid();
+    });
+  });
 
   _installGridDelegation();
   dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));

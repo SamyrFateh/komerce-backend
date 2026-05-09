@@ -1147,21 +1147,21 @@ body {
   }
   .k-sc-item-remove:active { background: #ffe0e0; }
 
-  /* ── Footer : nombre d'articles + lien Voir le panier ─── */
+  /* ── Footer sticky : CTAs primaires + count ───────────── */
   .k-sc-bottom {
-    padding: 6px 4px 0;
+    padding: 8px 0 0;
     border-top: 0;
     background: transparent;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    gap: 6px;
   }
   .k-sc-count-label {
     font-size: 11px;
     color: var(--text-light);
     font-weight: 500;
+    text-align: center;
   }
 }
 
