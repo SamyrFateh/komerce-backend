@@ -1740,3 +1740,204 @@ body {
     padding-right: clamp(16px, 3vw, 40px);
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART V4 — Fixed rail gated by catalog
+   Le rail est autonome mais n'apparaît que dans l'expérience catalogue.
+   Il ne doit pas masquer le hero.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1180px) {
+
+  #k-desktop-catalog-wrap {
+    position: relative;
+    display: block;
+    max-width: min(var(--container), 100%);
+    margin: 0 auto;
+    padding-right: 196px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  #k-desktop-catalog-wrap #k-catalog-section {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    display: flex;
+    flex-direction: column;
+
+    position: fixed;
+    top: 86px;
+    right: clamp(18px, calc((100vw - var(--container, 1400px)) / 2 + 8px), 84px);
+
+    width: 168px;
+    min-width: 168px;
+    max-width: 168px;
+    max-height: calc(100vh - 110px);
+
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 82;
+
+    border-radius: 18px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(42,62,44,.09);
+    box-shadow: 0 14px 34px rgba(31,48,36,.10);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px) scale(.985);
+    transition: opacity .18s var(--ease), transform .18s var(--ease);
+  }
+
+  #k-side-cart.k-side-cart.is-rail-visible,
+  .k-side-cart.is-rail-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  body.modal-open #k-side-cart.k-side-cart,
+  body.cart-open #k-side-cart.k-side-cart {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .k-sc-top {
+    padding: 9px;
+    border-bottom: 1px solid rgba(42,62,44,.07);
+  }
+
+  .k-sc-subtotal-row {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 7px;
+  }
+
+  .k-sc-subtotal-label {
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .k-sc-subtotal-amount {
+    font-size: 16px;
+    line-height: 1.08;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -.03em;
+  }
+
+  .k-sc-free-ship {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 6px 0 8px;
+    padding: 6px 7px;
+    border-radius: 10px;
+    background: rgba(100,175,90,.08);
+    color: var(--ocean-dark);
+    font-size: 9.5px;
+    line-height: 1.18;
+    font-weight: 750;
+  }
+
+  .k-sc-free-ship svg {
+    width: 13px;
+    height: 13px;
+    flex: 0 0 13px;
+  }
+
+  .k-sc-btn-checkout,
+  .k-sc-btn-cart {
+    width: 100%;
+    min-height: 32px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: transform .14s var(--ease), box-shadow .14s, background .14s;
+  }
+
+  .k-sc-btn-checkout {
+    border: 0;
+    color: #fff;
+    background: var(--ocean-dark);
+    box-shadow: 0 8px 16px rgba(42,62,44,.14);
+  }
+
+  .k-sc-btn-checkout:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 11px 22px rgba(42,62,44,.18);
+  }
+
+  .k-sc-btn-cart {
+    margin-top: 6px;
+    border: 1px solid rgba(42,62,44,.12);
+    color: var(--text);
+    background: rgba(255,255,255,.88);
+  }
+
+  .k-sc-btn-cart:hover {
+    background: var(--sand-warm);
+  }
+
+  .k-sc-items {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 7px 7px 5px;
+  }
+
+  .k-sc-items > * {
+    font-size: 11px;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  .k-sc-items img {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .k-sc-items > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .k-sc-bottom {
+    padding: 6px 9px 9px;
+    border-top: 1px solid rgba(42,62,44,.07);
+  }
+
+  .k-sc-count-label {
+    display: block;
+    font-size: 9.5px;
+    line-height: 1.22;
+    color: var(--text-muted);
+    font-weight: 750;
+    text-align: center;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1179px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    display: none;
+  }
+
+  #k-desktop-catalog-wrap {
+    padding-right: clamp(16px, 3vw, 40px);
+  }
+}
