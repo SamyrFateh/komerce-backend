@@ -1369,3 +1369,194 @@ body {
     max-width: 210px;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART V2 — Compact sticky Komerce desktop
+   Objectif : mini résumé panier, discret, sticky, sans scroll horizontal.
+   Mobile inchangé : .k-side-cart reste masqué hors desktop.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* Le sticky du side cart dépend de parents non scroll-containers. */
+  #k-desktop-catalog-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+    max-width: min(var(--container), 100%);
+    margin: 0 auto;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  #k-desktop-catalog-wrap #k-catalog-section {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    overflow: visible;
+  }
+
+  #k-desktop-catalog-wrap .k-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Mini panneau permanent : aperçu, pas panier complet. */
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: calc(var(--header-h, 72px) + 12px);
+    align-self: flex-start;
+    flex: 0 0 176px;
+    width: 176px;
+    min-width: 176px;
+    max-width: 176px;
+    max-height: calc(100vh - var(--header-h, 72px) - 24px);
+    overflow: hidden;
+    box-sizing: border-box;
+
+    border-radius: 16px;
+    background: rgba(255,255,255,.94);
+    border: 1px solid rgba(42,62,44,.10);
+    box-shadow: 0 10px 26px rgba(31,48,36,.07);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .k-sc-top {
+    padding: 10px;
+    border-bottom: 1px solid rgba(42,62,44,.08);
+  }
+
+  .k-sc-subtotal-row {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .k-sc-subtotal-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .k-sc-subtotal-amount {
+    font-size: 17px;
+    line-height: 1.1;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -.02em;
+  }
+
+  .k-sc-free-ship {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 6px 0 9px;
+    padding: 6px 7px;
+    border-radius: 10px;
+    background: rgba(100,175,90,.08);
+    color: var(--ocean-dark);
+    font-size: 10px;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  .k-sc-free-ship svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+  }
+
+  .k-sc-btn-checkout,
+  .k-sc-btn-cart {
+    width: 100%;
+    min-height: 34px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+    transition: transform .14s var(--ease), box-shadow .14s, background .14s;
+  }
+
+  .k-sc-btn-checkout {
+    border: 0;
+    color: #fff;
+    background: var(--ocean-dark);
+    box-shadow: 0 8px 16px rgba(42,62,44,.14);
+  }
+
+  .k-sc-btn-checkout:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(42,62,44,.18);
+  }
+
+  .k-sc-btn-cart {
+    margin-top: 6px;
+    border: 1px solid rgba(42,62,44,.12);
+    color: var(--text);
+    background: rgba(255,255,255,.82);
+  }
+
+  .k-sc-btn-cart:hover {
+    background: var(--sand-warm);
+  }
+
+  .k-sc-items {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 8px 8px 6px;
+  }
+
+  /*
+    Le JS existant peut rendre plusieurs items.
+    CSS v1 : on garde le panneau compact en masquant au-delà du 3e rendu.
+    Lot 2 possible : limiter proprement dans b-cart.js avec "+X autres".
+  */
+  .k-sc-items > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .k-sc-items > * {
+    min-width: 0;
+  }
+
+  .k-sc-bottom {
+    padding: 7px 10px 10px;
+    border-top: 1px solid rgba(42,62,44,.08);
+  }
+
+  .k-sc-count-label {
+    display: block;
+    font-size: 10px;
+    line-height: 1.25;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* Le WhatsApp FAB et scroll-top ne doivent pas visuellement concurrencer le side cart. */
+  .k-wa-fab {
+    right: 24px;
+  }
+}
+
+/* Plus confortable à partir de 1200px, sans redevenir lourd. */
+@media (min-width: 1200px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    flex-basis: 184px;
+    width: 184px;
+    min-width: 184px;
+    max-width: 184px;
+  }
+
+  #k-desktop-catalog-wrap {
+    gap: 16px;
+  }
+}
