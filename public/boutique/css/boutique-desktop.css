@@ -262,13 +262,13 @@
 @media (min-width: 900px) {
 
   #k-hero-fixed-wrap {
-    max-height: 360px;
-    overflow: hidden;
+    max-height: none;       /* ne pas clipper : .k-cats-shell sticky est à l'intérieur */
+    overflow: visible;      /* overflow:hidden créait un stacking context qui masquait les chips */
   }
 
   #k-hero-fixed-wrap .k-hero {
     max-height: 280px;
-    overflow: hidden;
+    overflow: hidden;       /* seul le hero image est clippé, pas les chips */
   }
 
   #k-hero-fixed-wrap .k-hero-img {
