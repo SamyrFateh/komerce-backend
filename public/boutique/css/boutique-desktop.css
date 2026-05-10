@@ -1408,6 +1408,8 @@
 }
 
 /* ── 3. SOUS-CATÉGORIES — rail inline sous le mega-nav ──────── */
+/* Source de vérité pour #k-subcats-wrap .k-subchip desktop.
+   categories.css @900px ne conserve que position:sticky + z-index + backdrop-filter. */
 @media (min-width: 900px) {
 
   #k-subcats-wrap {

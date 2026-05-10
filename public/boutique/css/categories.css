@@ -195,54 +195,20 @@
 .k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
 .k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
 
-/* ── SOUS-CATÉGORIES — Desktop premium Shein-style ───────────── */
+/* ── SOUS-CATÉGORIES — Desktop : positionnement sticky ───────── */
+/* Styles visuels .k-subchip, .k-subcats-rail, @keyframes
+   → boutique-desktop.css #k-subcats-wrap .k-subchip (source de vérité) */
 @media (min-width: 900px) {
 
+  /* Positionnement uniquement — non couvert par boutique-desktop.css */
   #k-subcats-wrap {
     position: sticky;
     top: var(--header-h); /* tokens.css : 68px@900, 72px@1200 */
     z-index: 20;
-    background: rgba(255,255,255,.97);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(31,48,36,.07);
-    box-shadow: 0 2px 12px rgba(31,48,36,.05);
+    /* background / border / box-shadow → boutique-desktop.css LOT 13 */
   }
-
-  .k-subcats-rail {
-    gap: 5px;
-    padding: 9px 20px 9px;
-    background: transparent;
-    border-top: none;
-    max-width: var(--container);
-    margin: 0 auto;
-    /* hide scrollbar on desktop too */
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  /* "Tout" pill — accent de largeur sur desktop */
-  .k-subchip:first-child {
-    font-weight: 800;
-  }
-
-  /* .k-subchip style → #k-subcats-wrap .k-subchip (source de vérité, bloc ci-dessous) */
-
-  /* Stagger animation pour desktop */
-  @keyframes k-subchip-in-desk {
-    from { opacity: 0; transform: translateY(-4px) scale(.95); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .k-subcats-visible .k-subchip {
-    animation: k-subchip-in-desk .18s cubic-bezier(.22,.68,0,1.2) both;
-  }
-  .k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .04s; }
-  .k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .07s; }
-  .k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .10s; }
-  .k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .13s; }
-  .k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .16s; }
-  .k-subcats-visible .k-subchip:nth-child(7)  { animation-delay: .19s; }
-  .k-subcats-visible .k-subchip:nth-child(n+8){ animation-delay: .22s; }
 }
 
 /* Section subcats (dans chaque section catalogue) */
