@@ -762,12 +762,20 @@ body {
     max-width: 100%;
   }
 
-  #k-page-scroll,
+  /* overflow-x:clip sur #k-catalog-section, .k-section, .k-grid uniquement.
+     #k-page-scroll NE DOIT PAS avoir overflow-x:clip — cela crée un scroll container
+     qui casse position:sticky du side-cart. Le clip horizontal de page-scroll
+     est assuré par html/body (overflow-x:clip sur body). */
   #k-catalog-section,
   .k-section,
   .k-grid {
     max-width: 100%;
     overflow-x: clip;
+    box-sizing: border-box;
+  }
+  #k-page-scroll {
+    max-width: 100%;
+    overflow-x: visible;
     box-sizing: border-box;
   }
   /* Fix sticky side-cart: #k-desktop-catalog-wrap NE DOIT PAS avoir overflow-x:clip
