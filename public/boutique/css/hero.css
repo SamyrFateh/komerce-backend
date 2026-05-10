@@ -62,10 +62,7 @@
   box-shadow: none;
   margin-top: -42px;
   position: relative;
-  /* z-index doit être > .k-header (z-index:100 dans layout.css) pour ne pas
-     passer derrière le header lors du scroll. Valeur 110 = cohérente avec
-     .k-cats-shell @900px dans boutique-desktop.css (z-index:110). */
-  z-index: 110;
+  z-index: 5;
 }
 .k-hero-cats-sticky::after { content: ''; display: block; height: 4px; }
 .k-cats-shell {
@@ -76,6 +73,10 @@
   border-radius: 18px;
   box-shadow: 0 10px 20px rgba(31,48,36,.08);
   overflow: hidden;
+  /* FOUC-fix : évite le collapse visuel pendant le remplacement innerHTML par renderCategoryRail().
+     Hauteur = chip-photo 34px + gap 2px + chip-label 10px + padding vertical ~12px = 58px.
+     À ajuster si la hauteur des chips mobiles change dans categories.css. */
+  min-height: 62px;
 }
 
 /* ── EVENT BANNER ─────────────────────────────────────────────── */
@@ -97,6 +98,9 @@
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */
 @media (min-width: 900px) {
+
+  /* FOUC-fix : annuler le min-height mobile sur desktop (hauteur gérée par height:52px sur .k-cats) */
+  .k-cats-shell { min-height: 0; }
 
   /* ── Hero : image compressée, esprit Komerce ── */
   .k-hero { border-bottom: none; }
