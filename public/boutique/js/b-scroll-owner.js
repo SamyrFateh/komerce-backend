@@ -120,6 +120,11 @@ export function installScrollOwner() {
       return;
     }
 
+    // Ne pas intercepter la molette sur les rails de chips (scroll horizontal natif)
+    if (target.closest('.k-cats-shell, .k-subcats-wrap, #k-subcats-wrap, .k-sec-subcats')) {
+      return;
+    }
+
     var ps = document.getElementById('k-page-scroll');
     if (!ps || !ps.contains(target)) return;
 

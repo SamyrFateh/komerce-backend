@@ -391,9 +391,10 @@ body {
 @media (min-width: 900px) {
 
   /* ── Page layout ─────────────────────────────────────────── */
-  /* overflow-x:clip (pas hidden) — rogne visuellement mais ne crée pas de scroll
-     container sur html, donc la molette passe au window et non à html. */
-  html, body { overflow-x: clip; }
+  /* overflow-x:hidden nécessaire ici (pas clip) : clip sur html casse
+     position:sticky du side cart (html devient scroll container).
+     Le scroll wheel sur chips est géré par b-scroll-owner.js. */
+  html, body { overflow-x: hidden; }
 
   #k-page-scroll {
     position: static;
