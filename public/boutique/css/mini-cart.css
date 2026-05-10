@@ -13,6 +13,11 @@
    ========================================================= */
 
 :root {
+  /* Alias scoped --kmc-* uniquement.
+     Ne pas ajouter de variables générales ici.
+     Tokens globaux → tokens.css.
+     Ces variables sont des raccourcis locaux qui pointent vers les tokens
+     via var(--token, fallback) — aucune redéfinition de token global. */
   --kmc-coral:       var(--ocean, #64AF5A);
   --kmc-coral-dark:  var(--ocean-dark, #4A9040);
   --kmc-green:       var(--ocean-dark, #4A9040);

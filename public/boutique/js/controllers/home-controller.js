@@ -5,7 +5,7 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
-import { getSubcategories, getRailCategoryKeys } from '../shop-schema.js';
+import { getSubcategories }          from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 
 function getCatsEl() {
@@ -94,22 +94,7 @@ export function syncRailActiveState(categoryKey, options = {}) {
 export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
-
-  // FOUC fix : si les chips statiques (HTML inline) sont déjà synchronisées
-  // avec le schéma, éviter le innerHTML qui vide puis réécrit le DOM
-  // (même contenu identique → flash inutile à cause de l'instant blank).
-  const expectedMarkup = renderCategoryRailMarkup(state.activeCat);
-  const existingChips = Array.from(catsEl.querySelectorAll('.k-chip'));
-  const expectedKeys  = getRailCategoryKeys();
-
-  const alreadyInSync =
-    existingChips.length === expectedKeys.length &&
-    existingChips.every((chip, i) => chip.dataset.cat === expectedKeys[i]);
-
-  if (!alreadyInSync) {
-    catsEl.innerHTML = expectedMarkup;
-  }
-
+  catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
   return catsEl;
 }
 
@@ -142,13 +127,10 @@ function handleCategorySelection(cat, deps) {
 
   if (pagerActive) {
     // Mutation sans renderGrid — le pager gère déjà l'affichage via scrollPagerToCat.
-    // Si la page n'existe pas (catégorie vide, ex: Solaire sans produits encore),
-    // scrollPagerToCat retourne false → on bascule vers le mode renderGrid classique.
     setActiveCatState(cat);
     syncRailActiveState(cat, { center: true });
-    const scrolled = scrollPagerToCat(cat);
-    if (scrolled) return;
-    // Fallback : la page n'existe pas dans le pager — renderGrid en mode filtre classique
+    scrollPagerToCat(cat);
+    return;
   }
 
   if (cat === 'all') {
@@ -215,19 +197,4 @@ export function setupHomeController(deps) {
 
   const activeChip = catsEl.querySelector('.k-chip.active');
   if (activeChip) centerRailChip(activeChip);
-
-  // Fades scrollables : afficher/masquer le fade gauche et le chevron droit
-  // selon la position de scroll du rail — signale visuellement le contenu hors écran.
-  const shell = catsEl.closest('.k-cats-shell');
-  if (shell && window.innerWidth < 900) {
-    function _updateRailFades() {
-      const sl = catsEl.scrollLeft;
-      const maxSl = catsEl.scrollWidth - catsEl.clientWidth;
-      shell.classList.toggle('rail-scrolled-start', sl > 8);
-      shell.classList.toggle('rail-scrolled-end',   sl >= maxSl - 8);
-    }
-    catsEl.addEventListener('scroll', _updateRailFades, { passive: true });
-    // État initial (au cas où la chip active serait déjà centrée hors bord gauche)
-    _updateRailFades();
-  }
 }

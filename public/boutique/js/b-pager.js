@@ -29,24 +29,26 @@ function _recalcPagerVars() {
 
   const bnavH = bnav ? bnav.offsetHeight : 56;
 
-  // FIX #chip-ghost — Ne mesurer que les éléments qui contribuent vraiment
-  // à la hauteur visible. k-hero-cats-sticky, k-sticky-bar et k-cats-shell
-  // sont désormais display:none → getBoundingClientRect() retourne 0, inutiles.
-  // k-hero-fixed-wrap reste nécessaire pour que le pager commence sous le hero.
+  // Mesurer la position viewport réelle du bas du dernier élément
+  // qui précède la zone pager (header + hero + sticky-bar + chips + pavillons).
+  // getBoundingClientRect().bottom = position bas relative au viewport.
   let pagerTop = 0;
   [
     document.querySelector('.k-header'),
     document.getElementById('k-hero-fixed-wrap'),
+    document.getElementById('k-sticky-bar'),
+    document.querySelector('.k-hero-cats-sticky'),
+    document.querySelector('.k-cats-shell'),
     document.getElementById('k-pavilions'),
   ].forEach(function(el) {
     if (!el) return;
     const b = el.getBoundingClientRect().bottom;
     if (b > pagerTop) pagerTop = b;
   });
-  // Fallback : si le header n'est pas encore dans le DOM
+  // Fallback : si les éléments ne sont pas encore dans le DOM
   if (pagerTop < 10) {
     const wrap = document.getElementById('k-hero-fixed-wrap');
-    pagerTop = (wrap ? wrap.offsetHeight : 140) + 56;
+    pagerTop = (wrap ? wrap.offsetHeight : 180) + 44;
   }
 
   const pagerH = window.innerHeight - pagerTop - bnavH;
@@ -465,15 +467,14 @@ function _setupMobilePager() {
 
 function _scrollPagerToCat(cat, behavior = 'smooth') {
   const grid = _getGrid();
-  if (!grid || isDesktop()) return false;
+  if (!grid || isDesktop()) return;
   const idx   = _getPages(grid).findIndex(p => p.dataset.cat === cat);
-  if (idx < 0) return false;
+  if (idx < 0) return;
 
   // Sync chip en premier pour éviter qu'un re-render perturbé par l'event
   // ne décale le scroll qui suit
   _syncChip(cat);
   _scrollToIndex(grid, idx, behavior);
-  return true;
 }
 
 function _scrollPagerToGhost() { _scrollPagerToCat('all'); }
