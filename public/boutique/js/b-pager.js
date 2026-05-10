@@ -29,26 +29,23 @@ function _recalcPagerVars() {
 
   const bnavH = bnav ? bnav.offsetHeight : 56;
 
-  // Mesurer la position viewport réelle du bas du dernier élément
-  // qui précède la zone pager (header + hero + sticky-bar + chips + pavillons).
-  // getBoundingClientRect().bottom = position bas relative au viewport.
+  // FIX #chip-ghost — Ne mesurer QUE les éléments réellement position:fixed
+  // sur mobile. k-hero-fixed-wrap, k-sticky-bar, k-hero-cats-sticky et
+  // k-cats-shell sont dans le flux normal (ils scrollent avec la page) :
+  // les inclure faisait démarrer le pager SOUS les chips, qui restaient
+  // figées dans le viewport avec leur z-index:5, flottant par-dessus le pager.
   let pagerTop = 0;
   [
-    document.querySelector('.k-header'),
-    document.getElementById('k-hero-fixed-wrap'),
-    document.getElementById('k-sticky-bar'),
-    document.querySelector('.k-hero-cats-sticky'),
-    document.querySelector('.k-cats-shell'),
+    document.querySelector('.k-header'),   // seul élément vraiment fixed sur mobile
     document.getElementById('k-pavilions'),
   ].forEach(function(el) {
     if (!el) return;
     const b = el.getBoundingClientRect().bottom;
     if (b > pagerTop) pagerTop = b;
   });
-  // Fallback : si les éléments ne sont pas encore dans le DOM
+  // Fallback : si le header n'est pas encore dans le DOM
   if (pagerTop < 10) {
-    const wrap = document.getElementById('k-hero-fixed-wrap');
-    pagerTop = (wrap ? wrap.offsetHeight : 180) + 44;
+    pagerTop = 56; // hauteur header mobile par défaut
   }
 
   const pagerH = window.innerHeight - pagerTop - bnavH;
