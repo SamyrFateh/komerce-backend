@@ -742,7 +742,11 @@ body {
 @media (min-width: 900px) {
 
   /* 1. Stabilisation scroll desktop */
-  html,
+  html {
+    width: 100%;
+    max-width: 100%;
+    /* overflow-x sur html casse position:sticky — géré séparément ligne ~396 */
+  }
   body {
     width: 100%;
     max-width: 100%;
@@ -851,7 +855,9 @@ body {
     border-radius: 12px;
     border: 0;
     box-shadow: none;
-    overflow: hidden;
+    /* overflow:hidden retiré — cassait position:sticky sur certains navigateurs.
+       Le scroll interne est géré par .k-cart-body (overflow-y:auto). */
+    overflow: visible;
     z-index: 200;
     opacity: 0;
     pointer-events: none;
