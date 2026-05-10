@@ -208,86 +208,7 @@
 }
 
 
-/* ══════════════════════════════════════════════════════════════
-   MEGA DROPDOWN — panneau sous-catégories (injecté par JS desktop)
-   display:none par défaut → aucun impact visuel sur mobile.
-   Regroupé ici car le dropdown est dans le DOM même sur mobile
-   (le JS a un guard isDesktop() mais le nœud peut exister).
-   ══════════════════════════════════════════════════════════════ */
 
-.k-mega-dropdown {
-  display: none;
-  position: absolute;
-  z-index: 200;
-  left: 0;
-  background: var(--white);
-  border-top: 1px solid rgba(31,48,36,.07);
-  border-bottom: 1px solid rgba(31,48,36,.08);
-  box-shadow: 0 8px 28px rgba(31,48,36,.10);
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .16s var(--ease), transform .16s var(--ease);
-}
-.k-mega-dropdown.is-open {
-  display: block;
-  pointer-events: auto;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.k-mega-inner {
-  max-width: var(--container);
-  margin: 0 auto;
-  padding: 16px clamp(16px, 3vw, 40px) 20px;
-}
-
-.k-mega-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--sand-dark);
-}
-.k-mega-head-emoji { font-size: 18px; line-height: 1; }
-.k-mega-head-label { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
-
-.k-mega-list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0;
-  margin: 0;
-}
-
-.k-mega-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: var(--sand);
-  border: 1px solid rgba(31,48,36,.08);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  transition: background .13s var(--ease), border-color .13s, color .13s, transform .12s;
-  outline: none;
-}
-.k-mega-item:hover {
-  background: rgba(200,92,45,.07);
-  border-color: rgba(200,92,45,.25);
-  color: var(--coral);
-  transform: translateY(-1px);
-}
-.k-mega-item:focus-visible { outline: 2px solid rgba(42,122,62,.4); outline-offset: 2px; }
-.k-mega-item-emoji { font-size: 14px; line-height: 1; }
-.k-mega-item-label { font-size: 13px; font-weight: 500; line-height: 1; }
-
-.k-cats-shell.k-mega-open { box-shadow: none; }
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -1279,135 +1200,12 @@
   }
 }
 
-/* ── 2. CHIP RAIL → MEGA-NAV TEMU/SHEIN ─────────────────────── */
+/* ── Masquer le bloc chips/hero-cats-sticky sur desktop ────── */
 @media (min-width: 900px) {
-
-  /* Shell : bande pleine largeur collée sous le header */
-  .k-cats-shell {
-    position: sticky;
-    top: var(--header-h, 72px);
-    z-index: 110;
-    background: #fff;
-    border-bottom: 1px solid rgba(31,48,36,.08);
-    box-shadow: 0 2px 14px rgba(31,48,36,.06);
-    padding: 0;
-  }
-
-  /* Rail : flex horizontal centré, scrollable si débordement */
-  .k-cats {
-    max-width: var(--container, 1400px);
-    margin: 0 auto;
-    padding: 0 clamp(16px, 3vw, 40px);
-    gap: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    height: 52px;    /* Source de vérité hauteur chip rail desktop — layout.css délègue ici */
-    align-items: stretch;
-  }
-  .k-cats::-webkit-scrollbar { display: none; }
-
-  /* Chip = item de nav horizontal, plat, sans icône photo */
-  .k-chip {
-    flex: 0 0 auto;
-    min-width: 0;
-    max-width: none;
-    height: 52px;    /* Source de vérité hauteur chip desktop */
-    padding: 0 18px;
-    border-radius: 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    gap: 6px;
-    flex-direction: row;       /* icône + label côte-à-côte */
-    align-items: center;
-    white-space: nowrap;
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -.01em;
-    position: relative;
-    transition: color .15s var(--ease), background .15s;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;       /* chevauchement border-bottom shell */
-  }
-  .k-chip:hover {
-    color: var(--coral);
-    background: rgba(200,92,45,.04);
-  }
-
-  /* Icône photo — réduite, arrondie, intégrée inline */
-  .k-chip-photo {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    border-radius: 6px;
-    flex-shrink: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: none;
-  }
-  .k-chip-photo svg {
-    width: 14px;
-    height: 14px;
-    stroke: currentColor;
-  }
-  /* Pas de fond coloré sur l'icône en mode nav */
-  .k-chip[data-cat] .k-chip-photo { background: transparent; }
-
-  /* Label visible */
-  .k-chip-label {
-    font-size: 13.5px;
-    font-weight: 600;
-    color: inherit;
-    max-width: none;
-    overflow: visible;
-    white-space: nowrap;
-    text-overflow: clip;
-  }
-
-  /* État actif : soulignement coral Shein-style */
-  .k-chip.active {
-    color: var(--coral);
-    background: transparent;
-    border-bottom-color: var(--coral);
-    box-shadow: none;
-  }
-  .k-chip.active .k-chip-photo {
-    border-color: transparent;
-    box-shadow: none;
-    transform: none;
-  }
-  .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-  .k-chip.active .k-chip-label { color: var(--coral); font-weight: 700; }
-
-  /* Hover : sous-ligne subtile */
-  .k-chip:not(.active):hover {
-    border-bottom-color: rgba(200,92,45,.3);
-  }
-
-  /* Pas de fades latéraux desktop */
-  .k-cats-wrap-fade-left,
-  .k-cats-wrap-fade-right { display: none; }
-
-  /* Chip "Tout" : légèrement en gras pour ancrage visuel */
-  .k-chip[data-cat="all"] .k-chip-photo {
-    background: transparent;
-  }
-  .k-chip[data-cat="all"] .k-chip-photo > span {
-    font-size: 13px;
-    color: var(--text);
-  }
-  .k-chip[data-cat="all"].active .k-chip-photo > span {
-    color: var(--coral);
-  }
+  .k-hero-cats-sticky { display: none; }
 }
 
-/* ── 3. SOUS-CATÉGORIES — rail inline sous le mega-nav ──────── */
+/* ── 3. SOUS-CATÉGORIES — rail inline sous le header ──────── */
 /* Source de vérité pour #k-subcats-wrap .k-subchip desktop.
    categories.css @900px ne conserve que position:sticky + z-index + backdrop-filter. */
 @media (min-width: 900px) {
@@ -1472,18 +1270,7 @@
   }
 }
 
-/* ── 5. STICKY BAR : compenser le nouveau top du mega-nav ───── */
-@media (min-width: 900px) {
-  /* Le sticky-bar hero utilisait top:68px (header seul).
-     Maintenant le mega-nav fait 52px de plus → on pousse les
-     éléments ancrés en dessous du nouvel ensemble header+nav. */
-  :root {
-    --nav-bar-h: 52px;   /* hauteur du mega-nav chips */
-  }
-}
-@media (min-width: 1200px) {
-  :root { --nav-bar-h: 52px; }
-}
+
 
 /* ═══════════════════════════════════════════════════════════════
    LOT 13 — SOUS-CATÉGORIES SHEIN-STYLE
@@ -1500,7 +1287,7 @@
     box-shadow: 0 3px 12px rgba(31,48,36,.05);
   }
 
-  /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
+  /* Rail : flex aligné à gauche, padding cohérent avec le header */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
     align-items: center;
