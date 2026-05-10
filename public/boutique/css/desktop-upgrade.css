@@ -1087,7 +1087,9 @@
   text-align: center;
   font-family: var(--font);
   aspect-ratio: 1.15;
-  overflow: hidden;
+  /* overflow:clip (pas hidden) — rogne le badge positionné mais ne crée pas
+     de scroll context, donc la molette passe au document correctement */
+  overflow: clip;
   transition: transform .15s var(--ease), box-shadow .15s;
   -webkit-tap-highlight-color: transparent;
 }

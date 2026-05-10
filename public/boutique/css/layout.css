@@ -827,12 +827,13 @@ body {
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: calc(var(--header-h, 76px) + 16px);
+    /* --sc-sticky-top calculé par b-desktop-upgrade.js (header + cats + subcats + 16px) */
+    top: var(--sc-sticky-top, calc(var(--header-h, 76px) + 64px));
     align-self: flex-start;
     flex: 0 0 290px;
     width: 290px;
     min-width: 290px;
-    max-height: calc(100vh - var(--header-h, 76px) - 32px);
+    max-height: calc(100vh - var(--sc-sticky-top, calc(var(--header-h, 76px) + 64px)) - 16px);
     /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
     background: transparent;
     border-radius: 12px;

@@ -811,6 +811,22 @@ function _setupQtyObserver() {
 //  INIT — Point d'entrée unique
 // ═══════════════════════════════════════════════════════════════
 
+// ── Side cart sticky top — source de vérité unique ─────────────────────
+// Calcule --sc-sticky-top = hauteur des éléments sticky au-dessus du catalogue:
+//   header + k-cats-shell (chips) + k-subcats-wrap (rail subcats si visible) + 16px marge
+// Appelé au load, au resize, et quand k-subcats-wrap change (MutationObserver).
+function _updateSideCartStickyTop() {
+  if (!isDesktop()) return;
+  var header   = document.querySelector('.k-header');
+  var cats     = document.querySelector('.k-cats-shell');
+  var subcats  = document.getElementById('k-subcats-wrap');
+  var h = (header  ? header.offsetHeight  : 76)
+        + (cats    ? cats.offsetHeight    : 0)
+        + (subcats && subcats.offsetHeight && subcats.children.length ? subcats.offsetHeight : 0)
+        + 16;
+  document.documentElement.style.setProperty('--sc-sticky-top', h + 'px');
+}
+
 export function setupDesktopUpgrade() {
   if (!isDesktop()) return;
 
@@ -829,6 +845,18 @@ export function setupDesktopUpgrade() {
 
   // Qty observer for subtotal
   _setupQtyObserver();
+
+  // Fix side cart sticky: calcul initial + reactif resize + mutation subcats
+  _updateSideCartStickyTop();
+  window.addEventListener('resize', _updateSideCartStickyTop, { passive: true });
+  var _scSubcatsWrap = document.getElementById('k-subcats-wrap');
+  if (_scSubcatsWrap) {
+    new MutationObserver(_updateSideCartStickyTop).observe(_scSubcatsWrap, {
+      childList: true,
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+  }
 
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
   bus.on('view:changed', function(tab) {

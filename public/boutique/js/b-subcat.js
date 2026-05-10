@@ -604,6 +604,8 @@ import { isDesktop }               from './b-scroll-owner.js';
     document.addEventListener('click', function(e) {
       var chip = e.target.closest('.k-sec-subchip');
       if (!chip) return;
+      // Laisser passer les chips flat-cat (data-flat-sub) — gérées par b-catalog.js
+      if ('flatSub' in chip.dataset || 'flatSubAll' in chip.dataset) return;
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();

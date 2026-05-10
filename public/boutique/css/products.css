@@ -583,14 +583,15 @@
 }
 
 @media (min-width: 900px) {
+  /* Source de vérité grille desktop : 4 colonnes fixes (flat + sections home) */
   .k-grid,
   .k-sec-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     padding: 8px 0 20px;
   }
 
-  /* Sections home desktop : 4 cartes pile (1 ligne par section, comme Temu) */
+  /* Sections home : idem, 4 colonnes — propriété héritée, déclaration explicite */
   .k-grid.k-grid-has-sections .k-sec-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -603,7 +604,7 @@
 @media (min-width: 1200px) {
   .k-grid,
   .k-sec-grid {
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
   }
 }
