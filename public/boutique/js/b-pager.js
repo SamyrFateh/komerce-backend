@@ -11,6 +11,7 @@
 
 import { bus }                      from './b-bus.js';
 import { state, dom, setActiveCatState } from './b-store.js';
+import { isDesktop }               from './b-scroll-owner.js';
 
 'use strict';
 
@@ -18,7 +19,7 @@ import { state, dom, setActiveCatState } from './b-store.js';
 
 function _recalcPagerVars() {
   // PATCH #233 — no pager vars on desktop
-  if (window.innerWidth >= 900) {
+  if (isDesktop()) {
     destroyMobilePager();
     return;
   }
@@ -124,9 +125,7 @@ function _scrollToIndex(grid, idx, behavior = 'smooth') {
 
 function _setupInfiniteLoop() {
   const grid = _getGrid();
-  if (!grid || window.innerWidth >= 900) return;
-
-  // Supprimer l'ancien ghost
+  if (!grid || isDesktop()) return;
   grid.querySelectorAll('[data-ghost]').forEach(g => g.remove());
 
   const toutPage = grid.querySelector('.k-cat-section[data-cat="all"]:not([data-ghost])');
@@ -229,7 +228,7 @@ function _bindModalBusListeners() {
 
 function _setupSectionAutoAdvance() {
   const grid = _getGrid();
-  if (!grid || window.innerWidth >= 900) return;
+  if (!grid || isDesktop()) return;
 
   _bindModalBusListeners();
 
@@ -259,7 +258,7 @@ function _setupSectionAutoAdvance() {
           // Re-test au moment de tirer : modal pu s'ouvrir entre temps,
           // ou le pager a été détruit (resize → desktop).
           if (!page._bounceWasDown || state.modalOpen) return;
-          if (window.innerWidth >= 900) return;
+          if (isDesktop()) return;
           const realPages = _getRealPages(grid);
           const currentIdx = _getCurrentIndex(grid);
           const total = realPages.length; // sans ghost
@@ -294,7 +293,7 @@ function _setupSectionAutoAdvance() {
     if (page._bounceTouchEnd) page.removeEventListener('touchend', page._bounceTouchEnd);
     page._bounceTouchEnd = () => {
       if (state.modalOpen) return;
-      if (window.innerWidth >= 900) return;
+      if (isDesktop()) return;
       // Évaluer at-bottom avec un seuil plus tolérant (rubber-band peut déformer
       // les valeurs scrollTop/scrollHeight transitoirement sur iOS).
       const atBottom = page.scrollHeight <= page.clientHeight + 8
@@ -304,7 +303,7 @@ function _setupSectionAutoAdvance() {
       if (page._bounceTimer) clearTimeout(page._bounceTimer);
       page._bounceTimer = setTimeout(() => {
         page._bounceTimer = null;
-        if (state.modalOpen || window.innerWidth >= 900) return;
+        if (state.modalOpen || isDesktop()) return;
         const realPages = _getRealPages(grid);
         const currentIdx = _getCurrentIndex(grid);
         const total = realPages.length;
@@ -362,7 +361,7 @@ function _showPrevHint(currentPage, prevPage) {
 // ── Setup principal ───────────────────────────────────────────────
 
 function _handlePagerResize() {
-  if (window.innerWidth >= 900) {
+  if (isDesktop()) {
     destroyMobilePager();
     return;
   }
@@ -440,7 +439,7 @@ function _setupLeftEdgeSwipe(grid) {
 }
 
 function _setupMobilePager() {
-  if (window.innerWidth >= 900) {
+  if (isDesktop()) {
     destroyMobilePager();
     return;
   }
@@ -461,10 +460,7 @@ function _setupMobilePager() {
 
 function _scrollPagerToCat(cat, behavior = 'smooth') {
   const grid = _getGrid();
-  if (!grid || window.innerWidth >= 900) return;
-  if (grid.classList.contains('k-grid-flat-subcat')) return;
-
-  const pages = _getRealPages(grid);
+  if (!grid || isDesktop()) return;
   const idx   = pages.findIndex(p => p.dataset.cat === cat);
   if (idx < 0) return;
 

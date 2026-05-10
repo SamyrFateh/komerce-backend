@@ -19,6 +19,7 @@ import {
 import {
   showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
+import { isDesktop }     from './b-scroll-owner.js';
 
 'use strict';
 
@@ -245,7 +246,7 @@ import {
       dom.addCartBtn.onclick = function() {
         bus.emit('modal:close');
         // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
-        if (window.innerWidth >= 900) {
+        if (isDesktop()) {
           var sc = document.getElementById('k-side-cart');
           if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
         } else {
@@ -393,7 +394,7 @@ function quickRemove(productId, btnEl) {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     // Desktop : side cart Temu inline — le drawer mobile ne s'ouvre pas
-    if (window.innerWidth < 900) {
+    if (!isDesktop()) {
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
       scroll.savedY = window.scrollY;
@@ -430,7 +431,7 @@ function quickRemove(productId, btnEl) {
     }, 2400);
 
     // Desktop : side cart inline — pas de drawer ni cart-open
-    if (window.innerWidth < 900) {
+    if (!isDesktop()) {
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
       scroll.savedY = window.scrollY;
@@ -992,7 +993,7 @@ function quickRemove(productId, btnEl) {
         saveCart();
         renderCartBody();
         setTimeout(function() {
-          if (window.innerWidth < 900) {
+          if (!isDesktop()) {
             dom.cartDrawer.classList.add('open');
             dom.cartOverlay.classList.add('open');
             document.body.classList.add('cart-open');
@@ -1036,7 +1037,7 @@ function quickRemove(productId, btnEl) {
           renderCartBody();
           setTimeout(function() {
             var sharerName = data.sharer_name || data.shared_by || null;
-            if (window.innerWidth < 900) {
+            if (!isDesktop()) {
               dom.cartDrawer.classList.add('open');
               dom.cartOverlay.classList.add('open');
               document.body.classList.add('cart-open');
@@ -1344,7 +1345,7 @@ function quickRemove(productId, btnEl) {
     // ── IntersectionObserver — sync pills with visible section (vertical scroll) ──
     if (_sectionObserver) _sectionObserver.disconnect();
     // Skip on mobile pager (horizontal scroll handles sync)
-    if (window.innerWidth < 900 && dom.pageScroll &&
+    if (!isDesktop() && dom.pageScroll &&
         dom.pageScroll.classList.contains('k-pager-active')) return;
     var scroller = dom.pageScroll;
     if (scroller) {

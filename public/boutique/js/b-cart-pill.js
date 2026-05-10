@@ -13,6 +13,7 @@
  */
 
 import { bus }                         from './b-bus.js';
+import { isDesktop }               from './b-scroll-owner.js';
 import { state }                       from './b-store.js';
 import { cartQty, cartTotal }          from './b-cart-core.js';
 import { fmt }                         from './b-utils.js';
@@ -455,7 +456,7 @@ function _init() {
 // ─── Hook global ───────────────────────────────────────────────────────────
 // Appelé par updateCartBadge() via window.__kmrcCartPillSync
 window.__kmrcCartPillSync = function() {
-  if (window.innerWidth >= 900) return;  // pill mobile uniquement
+  if (isDesktop()) return;  // pill mobile uniquement
   if (!_pillInited) _init();
   _renderPill();
   // Mettre à jour le popover si ouvert
@@ -472,7 +473,7 @@ function _isCataloguePage() {
 }
 
 function _shouldInit() {
-  return _isCataloguePage() && window.innerWidth < 900;
+  return _isCataloguePage() && !isDesktop();
 }
 
 if (document.readyState === 'loading') {
@@ -485,7 +486,7 @@ if (document.readyState === 'loading') {
 
 // Écouter les events bus pour se mettre à jour
 bus.on('cart:update', function() {
-  if (window.innerWidth >= 900) return;
+  if (isDesktop()) return;
   if (!_pillInited && _isCataloguePage()) _init();
   _renderPill();
 });

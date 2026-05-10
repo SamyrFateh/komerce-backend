@@ -28,6 +28,7 @@ import './b-store.js';        // state + SUBCATS + dom (initDom appelé par bout
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
 // b-cart-pill.js désactivé — remplacé par b-mini-cart.js
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
+import { isDesktop }          from './b-scroll-owner.js';
 import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 
 // Expose bus globalement pour debug + devtools
@@ -46,13 +47,13 @@ if (typeof window !== 'undefined') {
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
   // Une seule fois grâce au flag, sans impact sur le mobile.
-  var _desktopUpgradeDone = window.innerWidth >= 900;
+  var _desktopUpgradeDone = isDesktop();
   var _resizeTimer = null;
   window.addEventListener('resize', function() {
     if (_desktopUpgradeDone) return;
     clearTimeout(_resizeTimer);
     _resizeTimer = setTimeout(function() {
-      if (window.innerWidth >= 900 && !_desktopUpgradeDone) {
+      if (isDesktop() && !_desktopUpgradeDone) {
         _desktopUpgradeDone = true;
         setupDesktopUpgrade();
       }

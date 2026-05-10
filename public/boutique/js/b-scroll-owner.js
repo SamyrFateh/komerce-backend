@@ -17,7 +17,7 @@ export function isDesktop() {
   return window.innerWidth >= DESKTOP_BREAKPOINT;
 }
 
-function clearInlinePagerStyles(el) {
+export function clearInlinePagerStyles(el) {
   if (!el) return;
   [
     'position',

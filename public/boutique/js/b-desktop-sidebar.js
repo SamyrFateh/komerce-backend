@@ -11,6 +11,7 @@
 import { state }                             from './b-store.js';
 import { bus }                               from './b-bus.js';
 import { setActiveCat }                              from './b-catalog.js';
+import { isDesktop }                                 from './b-scroll-owner.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import {
   getRailCategories,
@@ -97,7 +98,7 @@ function _syncSidebarActive(el) {
  * No-op si < 900px.
  */
 export function setupDesktopSidebar() {
-  if (window.innerWidth < 900) return;
+  if (!isDesktop()) return;
 
   _sidebarEl = document.getElementById('k-desktop-sidebar');
   if (!_sidebarEl) return;
@@ -113,7 +114,7 @@ export function setupDesktopSidebar() {
 
   // Sync au resize (si on repasse > 900px après un redimensionnement)
   window.addEventListener('resize', function() {
-    if (window.innerWidth >= 900 && _sidebarEl) {
+    if (isDesktop() && _sidebarEl) {
       _syncSidebarActive(_sidebarEl);
     }
   }, { passive: true });

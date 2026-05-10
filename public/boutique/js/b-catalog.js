@@ -65,7 +65,7 @@ import {
   centerRailChip       as _centerRailChip,
   renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
-import { ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
+import { isDesktop, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
   setProducts, getAllProducts, getPromoProducts,
 }                             from './product-store.js';
@@ -103,7 +103,7 @@ bus.on('catalog:cat-changed', function(cat) {
     item.classList.toggle('is-active', item.dataset.cat === cat);
   });
   // Bug 2 fix : mettre à jour le rail de sous-catégories (desktop uniquement)
-  if (window.innerWidth >= 900) {
+  if (isDesktop()) {
     _renderSubcatRail(cat);
   }
 });
@@ -119,7 +119,7 @@ bus.on('catalog:cat-changed', function(cat) {
 function appendNextPage() {
   const spinner = document.getElementById('k-load-more-spinner');
 
-  if (state.flatSubcat && window.innerWidth < 900) {
+  if (state.flatSubcat && !isDesktop()) {
     if (spinner) spinner.classList.remove('show');
     return;
   }
@@ -271,7 +271,7 @@ export function setActiveCat(cat, sub = null) {
 
 function renderGrid() {
   state.page = 0;
-  const _isMobile = window.innerWidth < 900;
+  const _isMobile = !isDesktop();
 
   // PATCH #227 step 2 — Desktop must never keep the mobile Temu pager cage.
   if (!_isMobile) {
@@ -573,7 +573,7 @@ function _bindGridEvents() {
       renderGrid();
       // Fix: sync subcats rail + sidebar desktop (était absent → orphelins desktop)
       _toggleSidebarForCat(cat);
-      if (window.innerWidth >= 900) {
+      if (isDesktop()) {
         import('./controllers/home-controller.js').then(function(m) {
           m.renderSubcatRail(cat);
         });
@@ -590,7 +590,7 @@ function _bindGridEvents() {
 /* ── SCROLL VERS SECTION ────────────────────────────────────────── */
 
 export function scrollToCategorySection(cat) {
-  if (window.innerWidth < 900 && dom.pageScroll &&
+  if (!isDesktop() && dom.pageScroll &&
       dom.pageScroll.classList.contains('k-pager-active')) {
     if (!cat || cat === 'all') {
       var _g = document.getElementById('k-grid');
@@ -647,7 +647,7 @@ function setupSearch() {
     if (q.length < 2) {
       dom.searchDrop.classList.remove('open');
       // Fix: restaurer les produits de la catégorie active (pas tout le catalogue)
-      state.filtered = (state.activeCat && state.activeCat !== 'all' && window.innerWidth >= 900)
+      state.filtered = (state.activeCat && state.activeCat !== 'all' && isDesktop())
         ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
         : [...state.products];
       renderGrid();
@@ -655,7 +655,7 @@ function setupSearch() {
     }
     state.searchTimeout = setTimeout(() => {
       // Fix: sur desktop avec une catégorie active, recherche dans la cat courante
-      const pool = (window.innerWidth >= 900 && state.activeCat && state.activeCat !== 'all')
+      const pool = (isDesktop() && state.activeCat && state.activeCat !== 'all')
         ? state.products.filter(p => _normalizeCat(p.category) === state.activeCat)
         : state.products;
       const results = pool.filter(p =>
