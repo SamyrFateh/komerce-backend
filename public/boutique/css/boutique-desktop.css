@@ -1,32 +1,298 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop-upgrade.css  (refactorisé)
-   Desktop only (≥ 900px). Zéro impact mobile.
-   Chargé APRÈS modal.css, layout.css, products.css.
-
-   INDEX :
-     1.  HEADER DESKTOP
-     2.  HERO DESKTOP  (compact)
-     3.  CARD HOVER OVERLAY  ← source de vérité unique
-     4.  MODAL ZOOM          ← transform-scale, pas de lens orange
-     5.  PROMO STRIP
-     6.  ANIMATION ENTRÉE CARTES
-     7.  SCROLL-TO-TOP
-     8.  HOMEPAGE MERCHANDISING
-     9.  RECENTLY VIEWED (modal bas)
-    10.  KEYBOARD HINT (modal)
-    11.  UTILITIES (focus, tap-highlight)
-
-   Fusionnés / supprimés vs ancienne version :
-     - "MODAL DESKTOP" (section 4 ancienne) : trust, share, specs,
-       breadcrumb, zoom-lens orange, actions override → dans modal.css ✓
-     - "DESKTOP TEMU FEATURES" : overlay + zoom → fusionnés sections 3+4
-     - 3e définition .k-card-hover-overlay (HOME MERCH) → fusionnée s.3
-     - .k-card-hover-actions défini 2× → une seule version grid
-     - .k-card-hover-fav défini 2× → une seule version
-     - .k-modal-zoom-lens : JS ne la crée jamais → supprimé
-     - Focus/tap-highlight déclarés 3× → section 11 unique
+   KOMERCE — boutique-desktop.css
+   Fichier unique : règles globales (mobile-first) + overrides desktop.
+   Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
+   Chargé sans attribut media — mobile-first par construction.
    ═══════════════════════════════════════════════════════════════ */
 
+
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 1 — RÈGLES GLOBALES (mobile-first, tous breakpoints)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — shared.css
+   Règles partagées mobile + desktop.
+   Chargé SANS attribut media — s'applique sur tous les breakpoints.
+   Extrait de desktop-upgrade.css et desktop-mega-nav.css pour corriger
+   le Bug #1 : chips desktop parasitant le mobile sur reload iOS Safari.
+   ═══════════════════════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   FOOTER — caché par défaut (le CSS desktop le montre à ≥900px)
+   ══════════════════════════════════════════════════════════════ */
+.k-footer { display: none; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PAVILLONS D'UNIVERS — 6 piliers Komerce sous le hero
+   Layout 2×3 mobile / 3×2 tablet / 6×1 desktop.
+   ══════════════════════════════════════════════════════════════ */
+
+.k-pavilions {
+  background: var(--page-bg, var(--sand, #FDFAF5));
+  padding: 14px 0 6px;
+}
+
+.k-pavilions-inner {
+  max-width: var(--container, 1400px);
+  margin: 0 auto;
+  padding: 0 clamp(12px, 3vw, 24px);
+}
+
+/* ── Filtres rapides (chips Soldes / Tendances) ─────────────── */
+.k-pavilions-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.k-pav-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
+}
+.k-pav-chip:hover {
+  background: var(--sand-warm);
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+.k-pav-chip:active { transform: scale(.96); }
+.k-pav-chip svg { stroke: currentColor; }
+
+.k-pav-chip--soldes {
+  background: #FAEEDA;
+  color: #854F0B;
+  border-color: #F5C68A;
+}
+.k-pav-chip--soldes:hover {
+  background: #FAC775;
+  border-color: #BA7517;
+  color: #412402;
+}
+
+/* ── Label section ──────────────────────────────────────────── */
+.k-pavilions-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  margin: 0 0 10px;
+}
+
+/* ── Grille pavillons : 2 col mobile → 3 col tablet → 6 col desktop */
+.k-pavilions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (min-width: 700px) {
+  .k-pavilions-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+/* ── Tuile ──────────────────────────────────────────────────── */
+.k-pav-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 14px;
+  border-radius: 16px;
+  border: 0;
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font);
+  aspect-ratio: 1.15;
+  overflow: clip;
+  transition: transform .15s var(--ease), box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-pav-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 48, 36, 0.08);
+}
+.k-pav-tile:active { transform: translateY(0) scale(.98); }
+
+@media (min-width: 700px) {
+  .k-pav-tile { aspect-ratio: 1.4; padding: 22px 16px; }
+}
+
+.k-pav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 4px;
+}
+.k-pav-icon svg { width: 100%; height: 100%; stroke: currentColor; }
+@media (min-width: 700px) {
+  .k-pav-icon { width: 44px; height: 44px; margin-bottom: 6px; }
+}
+
+.k-pav-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -.005em;
+  line-height: 1.2;
+  max-width: 100%;
+}
+@media (min-width: 700px) { .k-pav-label { font-size: 14px; } }
+
+.k-pav-sub {
+  font-size: 10.5px;
+  font-weight: 500;
+  opacity: .75;
+  line-height: 1.3;
+  max-width: 100%;
+  margin-top: 1px;
+}
+@media (min-width: 700px) { .k-pav-sub { font-size: 11px; } }
+
+.k-pav-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, .55);
+  color: #412402;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.k-pav-badge--violet {
+  background: rgba(255, 255, 255, .6);
+  color: #26215C;
+}
+
+/* ── Couleurs des 6 piliers ─────────────────────────────────── */
+.k-pav-tile--mode     { background: #FBEAF0; color: #72243E; }
+.k-pav-tile--maison   { background: #EAF3DE; color: #27500A; }
+.k-pav-tile--tech     { background: #E6F1FB; color: #0C447C; }
+.k-pav-tile--enfant   { background: #FAEEDA; color: #633806; }
+.k-pav-tile--solaire  { background: #FAEEDA; color: #633806; border: 2px solid #BA7517; }
+.k-pav-tile--creations{ background: #EEEDFE; color: #3C3489; }
+
+.k-pav-tile--mode:hover     { background: #F4C0D1; }
+.k-pav-tile--maison:hover   { background: #C0DD97; }
+.k-pav-tile--tech:hover     { background: #B5D4F4; }
+.k-pav-tile--enfant:hover   { background: #FAC775; }
+.k-pav-tile--solaire:hover  { background: #FAC775; }
+.k-pav-tile--creations:hover{ background: #CECBF6; }
+
+@media (min-width: 1200px) {
+  .k-pavilions { padding: 18px 0 10px; }
+  .k-pavilions-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .k-pav-tile { aspect-ratio: 1.05; padding: 18px 12px; }
+  .k-pav-sub { display: none; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   MEGA DROPDOWN — panneau sous-catégories (injecté par JS desktop)
+   display:none par défaut → aucun impact visuel sur mobile.
+   Regroupé ici car le dropdown est dans le DOM même sur mobile
+   (le JS a un guard isDesktop() mais le nœud peut exister).
+   ══════════════════════════════════════════════════════════════ */
+
+.k-mega-dropdown {
+  display: none;
+  position: absolute;
+  z-index: 200;
+  left: 0;
+  background: var(--white);
+  border-top: 1px solid rgba(31,48,36,.07);
+  border-bottom: 1px solid rgba(31,48,36,.08);
+  box-shadow: 0 8px 28px rgba(31,48,36,.10);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .16s var(--ease), transform .16s var(--ease);
+}
+.k-mega-dropdown.is-open {
+  display: block;
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.k-mega-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 16px clamp(16px, 3vw, 40px) 20px;
+}
+
+.k-mega-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--sand-dark);
+}
+.k-mega-head-emoji { font-size: 18px; line-height: 1; }
+.k-mega-head-label { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
+
+.k-mega-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.k-mega-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--sand);
+  border: 1px solid rgba(31,48,36,.08);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .13s var(--ease), border-color .13s, color .13s, transform .12s;
+  outline: none;
+}
+.k-mega-item:hover {
+  background: rgba(200,92,45,.07);
+  border-color: rgba(200,92,45,.25);
+  color: var(--coral);
+  transform: translateY(-1px);
+}
+.k-mega-item:focus-visible { outline: 2px solid rgba(42,122,62,.4); outline-offset: 2px; }
+.k-mega-item-emoji { font-size: 14px; line-height: 1; }
+.k-mega-item-label { font-size: 13px; font-weight: 500; line-height: 1; }
+
+.k-cats-shell.k-mega-open { box-shadow: none; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 2 — DESKTOP UPGRADE (≥ 900px)
+   ══════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════
    1. HEADER DESKTOP
@@ -662,7 +928,7 @@
    12. FOOTER RICHE — 4 colonnes desktop uniquement
    ══════════════════════════════════════════════════════════════ */
 
-.k-footer { display: none; }
+/* .k-footer { display: none; } → migré dans shared.css */
 
 @media (min-width: 900px) {
 
@@ -987,211 +1253,396 @@
   .k-flatcat-subcats::-webkit-scrollbar { display: none; }
 }
 
+/* ══ 14. PAVILLONS D'UNIVERS → migré dans shared.css ══ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 3 — MEGA-NAV DESKTOP (≥ 900px)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 1. NEUTRALISATION DES RÈGLES SIDEBAR ───────────────────── */
+@media (min-width: 900px) {
+
+  /* Les règles de layout.css allouaient 192px à la sidebar.
+     Sans le <aside>, le flex-item disparaît — la grille prend
+     automatiquement tout l'espace. On neutralise juste le gap. */
+  #k-desktop-catalog-wrap {
+    gap: 0;
+    padding-top: 0;
+  }
+
+  /* Grille pleine largeur — écrase le flex:1 hérité */
+  #k-desktop-catalog-wrap #k-catalog-section {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+}
+
+/* ── 2. CHIP RAIL → MEGA-NAV TEMU/SHEIN ─────────────────────── */
+@media (min-width: 900px) {
+
+  /* Shell : bande pleine largeur collée sous le header */
+  .k-cats-shell {
+    position: sticky;
+    top: var(--header-h, 72px);
+    z-index: 110;
+    background: #fff;
+    border-bottom: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 2px 14px rgba(31,48,36,.06);
+    padding: 0;
+  }
+
+  /* Rail : flex horizontal centré, scrollable si débordement */
+  .k-cats {
+    max-width: var(--container, 1400px);
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+    gap: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    height: 52px;
+    align-items: stretch;
+  }
+  .k-cats::-webkit-scrollbar { display: none; }
+
+  /* Chip = item de nav horizontal, plat, sans icône photo */
+  .k-chip {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: none;
+    height: 52px;
+    padding: 0 18px;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    gap: 6px;
+    flex-direction: row;       /* icône + label côte-à-côte */
+    align-items: center;
+    white-space: nowrap;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -.01em;
+    position: relative;
+    transition: color .15s var(--ease), background .15s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;       /* chevauchement border-bottom shell */
+  }
+  .k-chip:hover {
+    color: var(--coral);
+    background: rgba(200,92,45,.04);
+  }
+
+  /* Icône photo — réduite, arrondie, intégrée inline */
+  .k-chip-photo {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+  }
+  .k-chip-photo svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+  }
+  /* Pas de fond coloré sur l'icône en mode nav */
+  .k-chip[data-cat] .k-chip-photo { background: transparent; }
+
+  /* Label visible */
+  .k-chip-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: inherit;
+    max-width: none;
+    overflow: visible;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+
+  /* État actif : soulignement coral Shein-style */
+  .k-chip.active {
+    color: var(--coral);
+    background: transparent;
+    border-bottom-color: var(--coral);
+    box-shadow: none;
+  }
+  .k-chip.active .k-chip-photo {
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+  .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
+  .k-chip.active .k-chip-label { color: var(--coral); font-weight: 700; }
+
+  /* Hover : sous-ligne subtile */
+  .k-chip:not(.active):hover {
+    border-bottom-color: rgba(200,92,45,.3);
+  }
+
+  /* Pas de fades latéraux desktop */
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right { display: none; }
+
+  /* Chip "Tout" : légèrement en gras pour ancrage visuel */
+  .k-chip[data-cat="all"] .k-chip-photo {
+    background: transparent;
+  }
+  .k-chip[data-cat="all"] .k-chip-photo > span {
+    font-size: 13px;
+    color: var(--text);
+  }
+  .k-chip[data-cat="all"].active .k-chip-photo > span {
+    color: var(--coral);
+  }
+}
+
+/* ── 3. SOUS-CATÉGORIES — rail inline sous le mega-nav ──────── */
+@media (min-width: 900px) {
+
+  #k-subcats-wrap {
+    background: rgba(253,250,245,.97);
+    border-bottom: 1px solid rgba(31,48,36,.06);
+    box-shadow: none;
+  }
+
+  #k-subcats-wrap .k-subcats-rail {
+    max-width: var(--container, 1400px);
+    margin: 0 auto;
+    padding: 6px clamp(16px, 3vw, 40px) 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    justify-content: flex-start;
+  }
+
+  #k-subcats-wrap .k-subchip {
+    height: 30px;
+    padding: 0 13px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1.5px solid rgba(42,62,44,.12);
+    background: var(--white);
+    color: var(--text);
+    transition: border-color .14s, color .14s, box-shadow .14s, transform .14s;
+  }
+  #k-subcats-wrap .k-subchip:hover {
+    border-color: var(--coral);
+    color: var(--coral);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(200,92,45,.12);
+  }
+  #k-subcats-wrap .k-subchip.active {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(200,92,45,.25);
+  }
+}
+
+/* ── 4. GRILLE PRODUITS — 4 colonnes fixes (spec produit) ──── */
+@media (min-width: 900px) {
+  .k-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+@media (min-width: 1200px) {
+  .k-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+@media (min-width: 1440px) {
+  .k-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── 5. STICKY BAR : compenser le nouveau top du mega-nav ───── */
+@media (min-width: 900px) {
+  /* Le sticky-bar hero utilisait top:68px (header seul).
+     Maintenant le mega-nav fait 52px de plus → on pousse les
+     éléments ancrés en dessous du nouvel ensemble header+nav. */
+  :root {
+    --nav-bar-h: 52px;   /* hauteur du mega-nav chips */
+  }
+}
+@media (min-width: 1200px) {
+  :root { --nav-bar-h: 52px; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
-   14. PAVILLONS D'UNIVERS — 6 piliers Komerce sous le hero
-   Layout 2×3 mobile / 3×2 desktop. Style Temu/Shein avec icones
-   SVG sur fond pastel. Couleurs : Mode/rose · Maison/vert · Tech/bleu
-   · Enfant/ambre · Solaire/ambre+bordure · Créations/violet.
+   LOT 13 — SOUS-CATÉGORIES SHEIN-STYLE
+   Restyling des classes générées par renderSubcatRail()
+   dans home-controller.js. Aucun JS modifié.
    ═══════════════════════════════════════════════════════════════ */
 
-.k-pavilions {
-  background: var(--page-bg, var(--sand, #FDFAF5));
-  padding: 14px 0 6px;
-}
+@media (min-width: 900px) {
 
-.k-pavilions-inner {
-  max-width: var(--container, 1400px);
-  margin: 0 auto;
-  padding: 0 clamp(12px, 3vw, 24px);
-}
+  /* Wrap : bandeau plein largeur, fond blanc cassé, sticky sous les chips */
+  #k-subcats-wrap {
+    background: var(--sand-warm);
+    border-bottom: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 3px 12px rgba(31,48,36,.05);
+  }
 
-/* ── Filtres rapides (chips) ─────────────────────────────────── */
-.k-pavilions-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
+  /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
+  #k-subcats-wrap .k-subcats-rail {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 8px clamp(16px, 3vw, 40px) 9px;
+    background: transparent;
+    border-top: none;
+  }
+  #k-subcats-wrap .k-subcats-rail::-webkit-scrollbar { display: none; }
 
-.k-pav-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 13px;
-  border-radius: 999px;
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--white);
-  color: var(--text-muted);
-  border: 1.5px solid var(--border);
-  transition: background .15s, border-color .15s, color .15s, transform .12s;
-}
-.k-pav-chip:hover {
-  background: var(--sand-warm);
-  border-color: var(--text-muted);
-  color: var(--text);
-}
-.k-pav-chip:active { transform: scale(.96); }
-.k-pav-chip svg { stroke: currentColor; }
+  /* Label "catégorie active ›" en tête du rail — décoratif injecté par CSS */
+  /* (pas de JS : pseudo-element avant le premier subchip) */
+  #k-subcats-wrap .k-subcats-rail::before {
+    content: attr(data-cat-label);
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--coral);
+    white-space: nowrap;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
 
-/* Variant Soldes : coloré */
-.k-pav-chip--soldes {
-  background: #FAEEDA;
-  color: #854F0B;
-  border-color: #F5C68A;
-}
-.k-pav-chip--soldes:hover {
-  background: #FAC775;
-  border-color: #BA7517;
-  color: #412402;
-}
+  /* Pill subchip — style Shein : fond coloré, compact, pill pleine */
+  #k-subcats-wrap .k-subchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1.5px solid transparent;
+    background: rgba(31,48,36,.06);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background .14s var(--ease), border-color .14s, color .14s, transform .14s, box-shadow .14s;
+    letter-spacing: -.01em;
+  }
 
-/* ── Section label ───────────────────────────────────────────── */
-.k-pavilions-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--text-light);
-  margin: 0 0 10px;
-}
+  #k-subcats-wrap .k-subchip:hover {
+    background: rgba(200,92,45,.08);
+    border-color: rgba(200,92,45,.3);
+    color: var(--coral);
+    transform: translateY(-1px);
+  }
 
-/* ── Grille pavillons ────────────────────────────────────────── */
-.k-pavilions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
+  /* Actif : fond coral plein — signature Shein */
+  #k-subcats-wrap .k-subchip.active {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(200,92,45,.28);
+    transform: none;
+  }
+  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: #fff; font-weight: 700; }
+  #k-subcats-wrap .k-subchip.active .k-subchip-icon { filter: brightness(10); }
 
-@media (min-width: 700px) {
-  .k-pavilions-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+  /* Icône emoji — légèrement plus grande */
+  #k-subcats-wrap .k-subchip-icon {
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* Animation staggerée à l'apparition */
+  @keyframes k-subchip-shein-in {
+    from { opacity: 0; transform: translateY(-5px) scale(.94); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip {
+    animation: k-subchip-shein-in .18s cubic-bezier(.22,.68,0,1.2) both;
+  }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .03s; }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .06s; }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .15s; }
+  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(n+7){ animation-delay: .18s; }
+
+  /* Séparateur visuel entre "Tout" et les sous-catégories */
+  #k-subcats-wrap .k-subchip[data-subcat=""] {
+    background: var(--white);
+    border-color: rgba(31,48,36,.14);
+    margin-right: 4px;
+    padding-right: 15px;
+    position: relative;
+  }
+  #k-subcats-wrap .k-subchip[data-subcat=""]::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: var(--border);
+  }
+  #k-subcats-wrap .k-subchip[data-subcat=""].active {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
+  }
+
+  /* ── Bande trust sous le hero (LOT 13) ────────────────────── */
+  .k-hero-trust-bar {
+    display: flex;
+    align-items: center;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(16px, 3vw, 40px);
+    height: 38px;
+    gap: 0;
+  }
+  .k-hero-trust-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 18px;
+    flex: 1;
+    border-right: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .k-hero-trust-bar-item:first-child { padding-left: 0; }
+  .k-hero-trust-bar-item:last-child  { border-right: none; }
+  .k-hero-trust-bar-item svg {
+    width: 13px; height: 13px;
+    stroke: var(--coral); fill: none; stroke-width: 2;
+    flex-shrink: 0;
   }
 }
 
-/* ── Tuile ───────────────────────────────────────────────────── */
-.k-pav-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 18px 14px;
-  border-radius: 16px;
-  border: 0;
-  cursor: pointer;
-  text-align: center;
-  font-family: var(--font);
-  aspect-ratio: 1.15;
-  /* overflow:clip (pas hidden) — rogne le badge positionné mais ne crée pas
-     de scroll context, donc la molette passe au document correctement */
-  overflow: clip;
-  transition: transform .15s var(--ease), box-shadow .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.k-pav-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 48, 36, 0.08);
-}
-.k-pav-tile:active { transform: translateY(0) scale(.98); }
 
-@media (min-width: 700px) {
-  .k-pav-tile {
-    aspect-ratio: 1.4;
-    padding: 22px 16px;
-  }
-}
-
-.k-pav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  margin-bottom: 4px;
-}
-.k-pav-icon svg {
-  width: 100%;
-  height: 100%;
-  stroke: currentColor;
-}
-@media (min-width: 700px) {
-  .k-pav-icon { width: 44px; height: 44px; margin-bottom: 6px; }
-}
-
-.k-pav-label {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -.005em;
-  line-height: 1.2;
-  max-width: 100%;
-}
-@media (min-width: 700px) {
-  .k-pav-label { font-size: 14px; }
-}
-
-.k-pav-sub {
-  font-size: 10.5px;
-  font-weight: 500;
-  opacity: .75;
-  line-height: 1.3;
-  max-width: 100%;
-  margin-top: 1px;
-}
-@media (min-width: 700px) {
-  .k-pav-sub { font-size: 11px; }
-}
-
-/* Badge en haut à droite (pour Solaire et Créations) */
-.k-pav-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, .55);
-  color: #412402;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  padding: 3px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-}
-.k-pav-badge--violet {
-  background: rgba(255, 255, 255, .6);
-  color: #26215C;
-}
-
-/* ── Couleurs des 6 piliers ──────────────────────────────────── */
-.k-pav-tile--mode     { background: #FBEAF0; color: #72243E; }
-.k-pav-tile--maison   { background: #EAF3DE; color: #27500A; }
-.k-pav-tile--tech     { background: #E6F1FB; color: #0C447C; }
-.k-pav-tile--enfant   { background: #FAEEDA; color: #633806; }
-.k-pav-tile--solaire  { background: #FAEEDA; color: #633806; border: 2px solid #BA7517; }
-.k-pav-tile--creations{ background: #EEEDFE; color: #3C3489; }
-
-/* États hover plus marqués */
-.k-pav-tile--mode:hover     { background: #F4C0D1; }
-.k-pav-tile--maison:hover   { background: #C0DD97; }
-.k-pav-tile--tech:hover     { background: #B5D4F4; }
-.k-pav-tile--enfant:hover   { background: #FAC775; }
-.k-pav-tile--solaire:hover  { background: #FAC775; }
-.k-pav-tile--creations:hover{ background: #CECBF6; }
-
-/* ── Responsive desktop large : élargir et tasser hauteur ────── */
-@media (min-width: 1200px) {
-  .k-pavilions { padding: 18px 0 10px; }
-  .k-pavilions-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-  }
-  .k-pav-tile {
-    aspect-ratio: 1.05;
-    padding: 18px 12px;
-  }
-  /* Sub texte caché sur les très grandes écrans (libellé suffit, gain de place) */
-  .k-pav-sub { display: none; }
-}
+/* ══ MEGA DROPDOWN global rules → migré dans shared.css ══ */
