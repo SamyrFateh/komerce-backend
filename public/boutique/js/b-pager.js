@@ -29,7 +29,7 @@ function _recalcPagerVars() {
   const bnavH = bnav ? bnav.offsetHeight : 56;
 
   // Mesurer la position viewport réelle du bas du dernier élément
-  // qui précède la zone pager (header + hero + sticky-bar + chips).
+  // qui précède la zone pager (header + hero + sticky-bar + chips + pavillons).
   // getBoundingClientRect().bottom = position bas relative au viewport.
   let pagerTop = 0;
   [
@@ -38,6 +38,7 @@ function _recalcPagerVars() {
     document.getElementById('k-sticky-bar'),
     document.querySelector('.k-hero-cats-sticky'),
     document.querySelector('.k-cats-shell'),
+    document.getElementById('k-pavilions'),
   ].forEach(function(el) {
     if (!el) return;
     const b = el.getBoundingClientRect().bottom;

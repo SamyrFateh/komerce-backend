@@ -126,8 +126,52 @@ function init() {
   setupInfiniteScroll();
   initFlatSubcat();
   setupFooterLinks();
+  setupPavilions();
   loadProducts();
   loadRelais();
+}
+
+// Pavillons d'univers sous le hero : 6 piliers + filtres rapides Soldes/Tendances
+// Click sur un pavillon → active la cat correspondante + scroll vers le catalogue
+function setupPavilions() {
+  document.querySelectorAll('[data-pav-cat]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var cat = btn.dataset.pavCat;
+      var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+      if (chip) {
+        chip.click();
+      } else {
+        // Cat absente du rail (cas Solaire vide en DB) → activer via setActiveCat
+        import('./b-catalog.js').then(function(m) {
+          if (m.setActiveCat) m.setActiveCat(cat);
+        });
+      }
+      // Scroll vers le catalogue (juste après le bloc pavillons)
+      var grid = document.getElementById('k-grid') || document.getElementById('k-page-scroll');
+      if (grid) {
+        // Petit délai pour laisser le rendu se stabiliser avant le scroll
+        setTimeout(function() {
+          grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    });
+  });
+
+  // Bouton Tendances : pour l'instant, équivaut à "Tout" (placeholder).
+  // Quand tu auras un tri "tendance" côté API, on remplacera ici.
+  var tendanceBtn = document.querySelector('[data-pav-tendances]');
+  if (tendanceBtn) {
+    tendanceBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var allChip = document.querySelector('.k-chip[data-cat="all"]');
+      if (allChip) allChip.click();
+      var grid = document.getElementById('k-grid');
+      if (grid) setTimeout(function() {
+        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    });
+  }
 }
 
 // Liens Boutique du footer → activent la catégorie + scroll au catalogue

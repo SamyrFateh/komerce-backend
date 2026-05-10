@@ -20,75 +20,108 @@
 // Utilisé si GET /api/categories échoue ou est appelé avant résolution.
 
 const _ICON_SVGS = {
-  Soldes:         '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-  'Mode & Beauté':'<svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>',
-  Tech:           '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
-  Enfant:         '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="5"/><path d="M12 12v10M7 22h10"/></svg>',
-  Maison:         '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-  Sport:          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M6.5 6.5 17.5 17.5M4 12h.01M20 12h.01M12 4v.01M12 20v.01"/></svg>',
-  'Sur-mesure':   '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
+  Soldes:                   '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  'Mode & Beauté':          '<svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>',
+  Maison:                   '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  Tech:                     '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+  Enfant:                   '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="5"/><path d="M12 12v10M7 22h10"/></svg>',
+  Solaire:                  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>',
+  'Créations personnelles': '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
 };
 
 const _FALLBACK_CATEGORIES = [
-  { key: 'all',          label: 'Tout',         shortLabel: 'Tout',          sectionEmoji: '🔥',  iconSvg: null,                          dbKeys: [],                     filterType: null,    displayOrder: 0, showInRail: true,  showInSections: false, subcategories: [] },
-  { key: 'Soldes',       label: 'Soldes',        shortLabel: 'Soldes',        sectionEmoji: '🏷️', iconSvg: _ICON_SVGS['Soldes'],           dbKeys: [],                     filterType: 'promo', displayOrder: 1, showInRail: true,  showInSections: true,  subcategories: [] },
-  { key: 'Mode & Beauté',label: 'Mode & Beauté', shortLabel: 'Mode',          sectionEmoji: '👗',  iconSvg: _ICON_SVGS['Mode & Beauté'],    dbKeys: ['Mode', 'Beauté'],     filterType: null,    displayOrder: 2, showInRail: true,  showInSections: true,
+  // ── Filtre transverse "Tout" (pas un pilier) ─────────────────
+  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
+
+  // ── Filtre transverse "Soldes" (pas un pilier — chip-filter) ─
+  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS['Soldes'], dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
+
+  // ── PILIER 1 : Mode & Beauté (absorbe Sport) ─────────────────
+  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'],
+    dbKeys: ['Mode', 'Beauté', 'Sport'],   // ← Sport absorbé ici (rétrocompat produits existants)
+    filterType: null, displayOrder: 2, showInRail: true, showInSections: true,
     subcategories: [
       { key: 'Femme',      label: 'Femme',      shortLabel: 'Femme',      icon: '👗' },
       { key: 'Homme',      label: 'Homme',      shortLabel: 'Homme',      icon: '👔' },
       { key: 'Hijab',      label: 'Hijab',      shortLabel: 'Hijab',      icon: '🧕' },
       { key: 'Boubou',     label: 'Boubou',     shortLabel: 'Boubou',     icon: '👘' },
-      { key: 'Shoes',      label: 'Shoes',       shortLabel: 'Shoes',     icon: '👟' },
-      { key: 'Parfums',    label: 'Parfum',      shortLabel: 'Parfum',    icon: '🌸' },
-      { key: 'Soins',      label: 'Soin',        shortLabel: 'Soin',      icon: '🧴' },
-      { key: 'Cheveux',    label: 'Cheveux',     shortLabel: 'Cheveux',   icon: '💇' },
-      { key: 'Maquillage', label: 'Maquil.',     shortLabel: 'Maquil.',   icon: '💄' },
-      { key: 'Ongles',     label: 'Ongles',      shortLabel: 'Ongles',    icon: '💅' },
+      { key: 'Shoes',      label: 'Chaussures', shortLabel: 'Shoes',      icon: '👟' },
+      { key: 'Sport',      label: 'Sport',      shortLabel: 'Sport',      icon: '⚽' },
+      { key: 'Parfums',    label: 'Parfum',     shortLabel: 'Parfum',     icon: '🌸' },
+      { key: 'Soins',      label: 'Soin',       shortLabel: 'Soin',       icon: '🧴' },
+      { key: 'Cheveux',    label: 'Cheveux',    shortLabel: 'Cheveux',    icon: '💇' },
+      { key: 'Maquillage', label: 'Maquil.',    shortLabel: 'Maquil.',    icon: '💄' },
+      { key: 'Ongles',     label: 'Ongles',     shortLabel: 'Ongles',     icon: '💅' },
     ],
   },
-  { key: 'Tech',       label: 'Tech',       shortLabel: 'Tech',          sectionEmoji: '📱', iconSvg: _ICON_SVGS['Tech'],        dbKeys: ['Tech'],        filterType: null, displayOrder: 3, showInRail: true, showInSections: true,
+
+  // ── PILIER 2 : Maison ────────────────────────────────────────
+  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS['Maison'],
+    dbKeys: ['Maison'],
+    filterType: null, displayOrder: 3, showInRail: true, showInSections: true,
     subcategories: [
-      { key: 'Phones',  label: 'Tél.',    shortLabel: 'Tél.',   icon: '📱' },
-      { key: 'Ordi',    label: 'Ordi',    shortLabel: 'Ordi',   icon: '💻' },
-      { key: 'Audio',   label: 'Audio',   shortLabel: 'Audio',  icon: '🎧' },
-      { key: 'Montres', label: 'Montres', shortLabel: 'Montres',icon: '⌚' },
-      { key: 'Gaming',  label: 'Gaming',  shortLabel: 'Gaming', icon: '🎮' },
+      { key: 'Cuisine',   label: 'Cuisine',   shortLabel: 'Cuisine', icon: '🍳' },
+      { key: 'Salon',     label: 'Salon',     shortLabel: 'Salon',   icon: '🛋'  },
+      { key: 'Chambre',   label: 'Chambre',   shortLabel: 'Chambre', icon: '🛏'  },
+      { key: 'Déco',      label: 'Déco',      shortLabel: 'Déco',    icon: '🖼'  },
+      { key: 'Rangement', label: 'Rangement', shortLabel: 'Rangem.', icon: '📦' },
+      { key: 'Outdoor',   label: 'Outdoor',   shortLabel: 'Outdoor', icon: '🏕' },
     ],
   },
-  { key: 'Enfant',   label: 'Enfant',   shortLabel: 'Enfant',   sectionEmoji: '🧒', iconSvg: _ICON_SVGS['Enfant'],      dbKeys: ['Enfant'],      filterType: null, displayOrder: 4, showInRail: true, showInSections: true,
+
+  // ── PILIER 3 : Tech ──────────────────────────────────────────
+  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS['Tech'],
+    dbKeys: ['Tech'],
+    filterType: null, displayOrder: 4, showInRail: true, showInSections: true,
     subcategories: [
-      { key: 'Bébé',   label: 'Bébé',   shortLabel: 'Bébé',   icon: '🍼' },
-      { key: 'Garçon', label: 'Garçon', shortLabel: 'Garçon', icon: '👦' },
-      { key: 'Fille',  label: 'Fille',  shortLabel: 'Fille',  icon: '👧' },
-      { key: 'Jouets', label: 'Jouets', shortLabel: 'Jouets', icon: '🧸' },
-      { key: 'École',  label: 'École',  shortLabel: 'École',  icon: '📚' },
+      { key: 'Phones',  label: 'Téléphones', shortLabel: 'Tél.',    icon: '📱' },
+      { key: 'Audio',   label: 'Audio',      shortLabel: 'Audio',   icon: '🎧' },
+      { key: 'Ordi',    label: 'Ordi',       shortLabel: 'Ordi',    icon: '💻' },
+      { key: 'Montres', label: 'Montres',    shortLabel: 'Montres', icon: '⌚' },
+      { key: 'Gaming',  label: 'Gaming',     shortLabel: 'Gaming',  icon: '🎮' },
+      { key: 'Accessoires', label: 'Accessoires', shortLabel: 'Acces.', icon: '🔌' },
     ],
   },
-  { key: 'Maison',   label: 'Maison',   shortLabel: 'Maison',   sectionEmoji: '🏠', iconSvg: _ICON_SVGS['Maison'],      dbKeys: ['Maison'],      filterType: null, displayOrder: 5, showInRail: true, showInSections: true,
+
+  // ── PILIER 4 : Enfant & Famille ──────────────────────────────
+  { key: 'Enfant', label: 'Enfant & Famille', shortLabel: 'Enfant', sectionEmoji: '🧒', iconSvg: _ICON_SVGS['Enfant'],
+    dbKeys: ['Enfant'],
+    filterType: null, displayOrder: 5, showInRail: true, showInSections: true,
     subcategories: [
-      { key: 'Cuisine',   label: 'Cuisine', shortLabel: 'Cuisine', icon: '🍳' },
-      { key: 'Salon',     label: 'Salon',   shortLabel: 'Salon',   icon: '🛋'  },
-      { key: 'Chambre',   label: 'Chambre', shortLabel: 'Chambre', icon: '🛏'  },
-      { key: 'Déco',      label: 'Déco',    shortLabel: 'Déco',    icon: '🖼'  },
-      { key: 'Rangement', label: 'Rangem.', shortLabel: 'Rangem.', icon: '📦' },
+      { key: 'Bébé',          label: 'Bébé',          shortLabel: 'Bébé',     icon: '🍼' },
+      { key: 'Garçon',        label: 'Garçon',        shortLabel: 'Garçon',   icon: '👦' },
+      { key: 'Fille',         label: 'Fille',         shortLabel: 'Fille',    icon: '👧' },
+      { key: 'Jouets',        label: 'Jouets',        shortLabel: 'Jouets',   icon: '🧸' },
+      { key: 'École',         label: 'École',         shortLabel: 'École',    icon: '📚' },
+      { key: 'Puériculture',  label: 'Puériculture',  shortLabel: 'Puér.',    icon: '🚼' },
     ],
   },
-  { key: 'Sport',      label: 'Sport',      shortLabel: 'Sport',        sectionEmoji: '⚽', iconSvg: _ICON_SVGS['Sport'],       dbKeys: ['Sport'],       filterType: null, displayOrder: 6, showInRail: true, showInSections: true,
+
+  // ── PILIER 5 : Solaire (NOUVEAU — pour le délestage) ─────────
+  { key: 'Solaire', label: 'Solaire', shortLabel: 'Solaire', sectionEmoji: '☀️', iconSvg: _ICON_SVGS['Solaire'],
+    dbKeys: ['Solaire', 'Énergie'],
+    filterType: null, displayOrder: 6, showInRail: true, showInSections: true,
     subcategories: [
-      { key: 'Foot',     label: 'Foot',     shortLabel: 'Foot',     icon: '⚽' },
-      { key: 'Fitness',  label: 'Fitness',  shortLabel: 'Fitness',  icon: '💪' },
-      { key: 'Natation', label: 'Natation', shortLabel: 'Natation', icon: '🏊' },
-      { key: 'Yoga',     label: 'Yoga',     shortLabel: 'Yoga',     icon: '🧘' },
-      { key: 'Outdoor',  label: 'Outdoor',  shortLabel: 'Outdoor',  icon: '🏕' },
+      { key: 'Lampes',     label: 'Lampes & Lanternes', shortLabel: 'Lampes',  icon: '💡' },
+      { key: 'PowerBanks', label: 'Power banks',         shortLabel: 'Powerbk', icon: '🔋' },
+      { key: 'Panneaux',   label: 'Panneaux solaires',   shortLabel: 'Panneaux',icon: '🌞' },
+      { key: 'Ventilation',label: 'Ventilation',         shortLabel: 'Vent.',   icon: '🌀' },
+      { key: 'Frigo',      label: 'Frigo & Conservation',shortLabel: 'Frigo',   icon: '🧊' },
+      { key: 'Confort',    label: 'Maison & Confort',    shortLabel: 'Confort', icon: '🏡' },
     ],
   },
-  { key: 'Sur-mesure', label: 'Sur-mesure', shortLabel: 'Pour vous...', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Sur-mesure'],  dbKeys: ['Sur-mesure'],  filterType: null, displayOrder: 7, showInRail: true, showInSections: true,
+
+  // ── PILIER 6 : Créations personnelles (ex-Sur-mesure) ────────
+  { key: 'Créations personnelles', label: 'Créations personnelles', shortLabel: 'Créations', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'],
+    dbKeys: ['Sur-mesure', 'Créations'],   // ← rétrocompat produits "Sur-mesure"
+    filterType: null, displayOrder: 7, showInRail: true, showInSections: true,
     subcategories: [
-      { key: 'Couture',  label: 'Couture',  shortLabel: 'Couture',  icon: '🧵' },
-      { key: 'Design',   label: 'Design',   shortLabel: 'Design',   icon: '✏️'  },
-      { key: 'Mesure',   label: 'Mesure',   shortLabel: 'Mesure',   icon: '📏' },
-      { key: 'Broderie', label: 'Broderie', shortLabel: 'Broderie', icon: '🪡' },
-      { key: 'Premium',  label: 'Premium',  shortLabel: 'Premium',  icon: '⭐' },
+      { key: 'Couture',      label: 'Couture',           shortLabel: 'Couture',  icon: '🧵' },
+      { key: 'Broderie',     label: 'Broderie',          shortLabel: 'Brod.',    icon: '🪡' },
+      { key: 'Design',       label: 'Design',            shortLabel: 'Design',   icon: '✏️'  },
+      { key: 'Mesure',       label: 'Mesure',            shortLabel: 'Mesure',   icon: '📏' },
+      { key: 'Personnalisé', label: 'Cadeau personnalisé',shortLabel: 'Cadeau',  icon: '🎁' },
+      { key: 'Premium',      label: 'Premium',           shortLabel: 'Premium',  icon: '⭐' },
     ],
   },
 ];
@@ -164,10 +197,18 @@ async function _doFetch() {
 }
 
 // Démarrer le fetch immédiatement à l'import (parallèle au boot de la page)
-if (typeof window !== 'undefined' && typeof fetch !== 'undefined') {
+// FLAG TRANSITION : pendant la bascule 8→6 catégories, on peut forcer le
+// fallback pour ne pas dépendre de la migration backend. Mettre window.
+// KOMERCE_FORCE_FALLBACK_CATEGORIES=true (par défaut, vu que la table DB
+// n'est pas encore migrée). Une fois que la table DB aura été mise à jour
+// avec les 6 catégories, retirer ce flag pour repasser au DB-driven.
+const _FORCE_FALLBACK = (typeof window !== 'undefined') &&
+  (window.KOMERCE_FORCE_FALLBACK_CATEGORIES !== false);
+
+if (typeof window !== 'undefined' && typeof fetch !== 'undefined' && !_FORCE_FALLBACK) {
   _loadPromise = _doFetch();
 } else {
-  // SSR / tests — utiliser fallback directement
+  // SSR / tests / flag transition — utiliser fallback directement
   _categories = _FALLBACK_CATEGORIES;
   _byKey      = _buildIndex(_categories);
 }
