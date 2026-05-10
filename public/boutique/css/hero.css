@@ -62,7 +62,10 @@
   box-shadow: none;
   margin-top: -42px;
   position: relative;
-  z-index: 5;
+  /* z-index doit être > .k-header (z-index:100 dans layout.css) pour ne pas
+     passer derrière le header lors du scroll. Valeur 110 = cohérente avec
+     .k-cats-shell @900px dans boutique-desktop.css (z-index:110). */
+  z-index: 110;
 }
 .k-hero-cats-sticky::after { content: ''; display: block; height: 4px; }
 .k-cats-shell {

@@ -98,6 +98,9 @@
 .k-chip[data-cat="Maison"]      .k-chip-photo { background: #F3E7D3; }
 .k-chip[data-cat="Sport"]       .k-chip-photo { background: #E8E4F5; }
 .k-chip[data-cat="Sur-mesure"]  .k-chip-photo { background: #FCE8D4; }
+/* Nouvelles catégories — background mobile (sinon héritent du style desktop transparent) */
+.k-chip[data-cat="Solaire"]     .k-chip-photo { background: #FFF9D6; }
+.k-chip[data-cat="Creatio"]     .k-chip-photo { background: #EDE8FD; }
 
 /* Emoji variant */
 .k-chip-emoji {
