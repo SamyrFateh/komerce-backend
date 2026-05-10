@@ -98,6 +98,7 @@ function _syncChip(cat) {
 // le listener scroll natif ne doit pas re-déclencher de navigation.
 let _isProgrammaticScroll = false;
 let _programmaticScrollTimer = null;
+let _isSettingUpMobilePager = false; // guard réentrance — évite double-setup en rotation rapide
 
 function _scrollToIndex(grid, idx, behavior = 'smooth') {
   const w = grid.clientWidth || window.innerWidth;
@@ -443,17 +444,23 @@ function _setupMobilePager() {
     destroyMobilePager();
     return;
   }
-  const grid = _getGrid();
-  if (!grid) return;
-  if (grid.classList.contains('k-grid-flat-subcat')) return;
+  if (_isSettingUpMobilePager) return;
+  _isSettingUpMobilePager = true;
+  try {
+    const grid = _getGrid();
+    if (!grid) return;
+    if (grid.classList.contains('k-grid-flat-subcat')) return;
 
-  _recalcPagerVars();
-  _setupScrollSync(grid);
-  _setupLeftEdgeSwipe(grid);
+    _recalcPagerVars();
+    _setupScrollSync(grid);
+    _setupLeftEdgeSwipe(grid);
 
-  window.removeEventListener('resize', _setupMobilePager);
-  window.removeEventListener('resize', _handlePagerResize);
-  window.addEventListener('resize', _handlePagerResize);
+    window.removeEventListener('resize', _setupMobilePager);
+    window.removeEventListener('resize', _handlePagerResize);
+    window.addEventListener('resize', _handlePagerResize);
+  } finally {
+    _isSettingUpMobilePager = false;
+  }
 }
 
 // ── Navigation externe (chip click) ──────────────────────────────
