@@ -368,12 +368,6 @@ body.cart-open  #k-section-index { display:none; }
 .k-card-panel.active { display:-webkit-box; }
 
 /* Suggestions complémentaires */
-/* CONTEXTE : bouton "ajouter une suggestion" dans le rail catalogue (hors modale).
-   40×40px, rond, fond blanc avec bordure.
-   NE PAS CONFONDRE avec .k-sug-add dans modal.css (Phase 8) :
-   - modal.css = bouton ± quantité dans la modale produit (32×32, transparent, sans bordure)
-   - Ces deux définitions couvrent des contextes DOM disjoints — pas de conflit.
-   Source de vérité catalogue → ici. Source de vérité modale → modal.css L560. */
 .k-sug-wrap          { display:block; }
 .k-sug-rail          { display:flex; gap:10px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:4px 2px; }
 .k-sug-rail::-webkit-scrollbar { display:none; }
