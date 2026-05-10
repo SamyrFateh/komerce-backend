@@ -857,6 +857,13 @@ export function setupDesktopUpgrade() {
       attributeFilter: ['style'],
     });
   }
+  // Bug 4 fix : k-cats-shell est dans le DOM au DOMContentLoaded mais ses chips
+  // sont rendues de façon asynchrone → offsetHeight = 0 au premier calcul.
+  // ResizeObserver rappelle _updateSideCartStickyTop dès que la hauteur change.
+  var _scCatsShell = document.querySelector('.k-cats-shell');
+  if (_scCatsShell && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(_updateSideCartStickyTop).observe(_scCatsShell);
+  }
 
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
   bus.on('view:changed', function(tab) {

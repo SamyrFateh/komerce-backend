@@ -391,7 +391,9 @@ body {
 @media (min-width: 900px) {
 
   /* ── Page layout ─────────────────────────────────────────── */
-  html, body { overflow-x: hidden; }
+  /* overflow-x:clip (pas hidden) — rogne visuellement mais ne crée pas de scroll
+     container sur html, donc la molette passe au window et non à html. */
+  html, body { overflow-x: clip; }
 
   #k-page-scroll {
     position: static;

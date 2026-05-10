@@ -994,6 +994,24 @@
    · Enfant/ambre · Solaire/ambre+bordure · Créations/violet.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Fix Bug 3 — grille sections home : 4 colonnes desktop ────────────
+   interactions.css pose .k-grid.k-grid-has-sections { display:block } sans
+   media query, ce qui annule products.css. On rétablit display:grid + 4 col
+   ici (desktop-upgrade.css est chargé après interactions.css). */
+@media (min-width: 900px) {
+  .k-grid.k-grid-has-sections {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding: 8px 0 20px;
+  }
+}
+@media (min-width: 1200px) {
+  .k-grid.k-grid-has-sections {
+    gap: 16px;
+  }
+}
+
 .k-pavilions {
   background: var(--page-bg, var(--sand, #FDFAF5));
   padding: 14px 0 6px;
