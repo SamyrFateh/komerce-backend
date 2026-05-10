@@ -468,7 +468,7 @@ function _setupMobilePager() {
 function _scrollPagerToCat(cat, behavior = 'smooth') {
   const grid = _getGrid();
   if (!grid || isDesktop()) return;
-  const idx   = pages.findIndex(p => p.dataset.cat === cat);
+  const idx   = _getPages(grid).findIndex(p => p.dataset.cat === cat);
   if (idx < 0) return;
 
   // Sync chip en premier pour éviter qu'un re-render perturbé par l'event
