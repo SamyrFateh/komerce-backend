@@ -392,10 +392,13 @@ function quickRemove(productId, btnEl) {
   function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
-    dom.cartOverlay.classList.add('open');
-    dom.cartDrawer.classList.add('open');
-    scroll.savedY = window.scrollY;
-    document.body.classList.add('cart-open');
+    // Desktop : side cart Temu inline — le drawer mobile ne s'ouvre pas
+    if (window.innerWidth < 900) {
+      dom.cartOverlay.classList.add('open');
+      dom.cartDrawer.classList.add('open');
+      scroll.savedY = window.scrollY;
+      document.body.classList.add('cart-open');
+    }
   }
 
   /**
@@ -426,10 +429,13 @@ function quickRemove(productId, btnEl) {
       dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     }, 2400);
 
-    dom.cartOverlay.classList.add('open');
-    dom.cartDrawer.classList.add('open');
-    scroll.savedY = window.scrollY;
-    document.body.classList.add('cart-open');
+    // Desktop : side cart inline — pas de drawer ni cart-open
+    if (window.innerWidth < 900) {
+      dom.cartOverlay.classList.add('open');
+      dom.cartDrawer.classList.add('open');
+      scroll.savedY = window.scrollY;
+      document.body.classList.add('cart-open');
+    }
 
     setTimeout(() => {
       const newItem = dom.cartBody.querySelector('.k-cart-item.new-item');
@@ -986,9 +992,11 @@ function quickRemove(productId, btnEl) {
         saveCart();
         renderCartBody();
         setTimeout(function() {
-          dom.cartDrawer.classList.add('open');
-          dom.cartOverlay.classList.add('open');
-          document.body.classList.add('cart-open');
+          if (window.innerWidth < 900) {
+            dom.cartDrawer.classList.add('open');
+            dom.cartOverlay.classList.add('open');
+            document.body.classList.add('cart-open');
+          }
           showToast('🧺 Panier partagé chargé ! ' + state.cart.length + ' article(s)', 'success');
         }, 500);
       }
@@ -1027,10 +1035,12 @@ function quickRemove(productId, btnEl) {
           saveCart();
           renderCartBody();
           setTimeout(function() {
-            dom.cartDrawer.classList.add('open');
-            dom.cartOverlay.classList.add('open');
-            document.body.classList.add('cart-open');
             var sharerName = data.sharer_name || data.shared_by || null;
+            if (window.innerWidth < 900) {
+              dom.cartDrawer.classList.add('open');
+              dom.cartOverlay.classList.add('open');
+              document.body.classList.add('cart-open');
+            }
             var msg = sharerName
               ? '🎁 ' + sharerName + " t'a partagé son panier !"
               : '🧺 Panier partagé chargé !';
