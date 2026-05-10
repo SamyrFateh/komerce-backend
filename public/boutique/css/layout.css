@@ -651,7 +651,9 @@ body {
     max-width: none;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    /* overflow-x:clip au lieu de hidden: rogne sans créer de scroll container */
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   /* ── Titre sidebar ────────────────────────────────────────── */
@@ -754,13 +756,20 @@ body {
   }
 
   #k-page-scroll,
-  #k-desktop-catalog-wrap,
   #k-catalog-section,
   .k-section,
   .k-grid {
     max-width: 100%;
     overflow-x: clip;
     box-sizing: border-box;
+  }
+  /* Fix sticky side-cart: #k-desktop-catalog-wrap NE DOIT PAS avoir overflow-x:clip
+     car cela crée un scroll container qui casse position:sticky des enfants.
+     On utilise overflow-x:visible — le clip horizontal est géré par html/body. */
+  #k-desktop-catalog-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: visible;
   }
 
   /* 2. Sidebar desktop stable */
