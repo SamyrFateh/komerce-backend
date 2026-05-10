@@ -202,24 +202,22 @@
   }
 }
 
-/* ── 4. GRILLE PRODUITS — plus de colonnes sans la sidebar ─── */
+/* ── 4. GRILLE PRODUITS — 4 colonnes fixes (spec produit) ──── */
 @media (min-width: 900px) {
-  /* 5 colonnes dès 900px (était 4 avec sidebar) */
   .k-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
   }
 }
 @media (min-width: 1200px) {
-  /* 6 colonnes sur grand écran */
   .k-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
   }
 }
 @media (min-width: 1440px) {
   .k-grid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
