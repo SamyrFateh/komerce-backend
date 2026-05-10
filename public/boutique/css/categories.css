@@ -10,12 +10,39 @@
 .k-cats-wrap-fade-right {
   position: absolute;
   top: 0; bottom: 0;
-  width: 20px;
+  width: 36px;
   pointer-events: none;
   z-index: 2;
+  transition: opacity .2s ease;
 }
-.k-cats-wrap-fade-left  { left: 0;  background: linear-gradient(to right, var(--sand-warm) 35%, transparent); }
-.k-cats-wrap-fade-right { right: 0; background: linear-gradient(to left,  var(--sand-warm) 35%, transparent); }
+/* Fade gauche : masqué au départ, visible dès qu'on a scrollé */
+.k-cats-wrap-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--sand-warm) 40%, transparent);
+  opacity: 0;
+}
+.k-cats-shell.rail-scrolled-start .k-cats-wrap-fade-left { opacity: 1; }
+
+/* Fade droit : visible par défaut, masqué quand on atteint la fin */
+.k-cats-wrap-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--sand-warm) 40%, transparent);
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 3px;
+}
+/* Chevron indiquant qu'il y a du contenu à droite */
+.k-cats-wrap-fade-right::after {
+  content: "›";
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-muted, #6B7B63);
+  line-height: 1;
+  opacity: .7;
+}
+.k-cats-shell.rail-scrolled-end .k-cats-wrap-fade-right { opacity: 0; }
 
 /* ── CHIPS RAIL ─────────────────────────────────────────────── */
 .k-cats {

@@ -215,4 +215,19 @@ export function setupHomeController(deps) {
 
   const activeChip = catsEl.querySelector('.k-chip.active');
   if (activeChip) centerRailChip(activeChip);
+
+  // Fades scrollables : afficher/masquer le fade gauche et le chevron droit
+  // selon la position de scroll du rail — signale visuellement le contenu hors écran.
+  const shell = catsEl.closest('.k-cats-shell');
+  if (shell && window.innerWidth < 900) {
+    function _updateRailFades() {
+      const sl = catsEl.scrollLeft;
+      const maxSl = catsEl.scrollWidth - catsEl.clientWidth;
+      shell.classList.toggle('rail-scrolled-start', sl > 8);
+      shell.classList.toggle('rail-scrolled-end',   sl >= maxSl - 8);
+    }
+    catsEl.addEventListener('scroll', _updateRailFades, { passive: true });
+    // État initial (au cas où la chip active serait déjà centrée hors bord gauche)
+    _updateRailFades();
+  }
 }
