@@ -395,7 +395,10 @@ body.cart-open  #k-section-index { display:none; }
 .k-sug-grid--other   { grid-template-columns:repeat(2,1fr); gap:8px; }
 .k-sug-promo-badge   { position:absolute; top:6px; left:6px; background:var(--coral); color:#fff; font-size:9px; font-weight:700; padding:2px 6px; border-radius:50px; z-index:2; }
 .k-sug-qty           { font-size:11px; color:var(--text-muted); }
-.k-sug-step          { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); padding:4px 0; }
+/* Renommé phase7 : était .k-sug-step (conflit de nom avec modal.css).
+   Composant : ligne d'étape de commande (texte flex), sans lien avec les boutons ±.
+   Aucun usage HTML/JS trouvé au moment du renommage — règle préventive. */
+.k-sug-order-step    { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); padding:4px 0; }
 
 /* Misc divers */
 .k-cart-footer-secondary { display:flex; gap:8px; margin-top:8px; }
