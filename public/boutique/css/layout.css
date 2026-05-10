@@ -391,10 +391,10 @@ body {
 @media (min-width: 900px) {
 
   /* ── Page layout ─────────────────────────────────────────── */
-  /* overflow-x:hidden nécessaire ici (pas clip) : clip sur html casse
-     position:sticky du side cart (html devient scroll container).
-     Le scroll wheel sur chips est géré par b-scroll-owner.js. */
-  html, body { overflow-x: hidden; }
+  /* overflow-x sur html casse position:sticky (html devient scroll container).
+     On le retire de html en desktop — body seul clippe le débordement. */
+  html { overflow-x: visible; }
+  body { overflow-x: clip; }
 
   #k-page-scroll {
     position: static;
