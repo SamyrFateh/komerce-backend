@@ -5,7 +5,7 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
-import { getSubcategories }          from '../shop-schema.js';
+import { getSubcategories, getRailCategoryKeys } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 
 function getCatsEl() {
@@ -94,7 +94,19 @@ export function syncRailActiveState(categoryKey, options = {}) {
 export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
-  catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+
+  // FOUC fix : si les chips statiques HTML sont déjà en sync avec le schéma,
+  // on évite le innerHTML (qui vide puis réécrit le DOM → flash visuel).
+  const expectedKeys  = getRailCategoryKeys();
+  const existingChips = Array.from(catsEl.querySelectorAll('.k-chip'));
+  const alreadyInSync =
+    existingChips.length === expectedKeys.length &&
+    existingChips.every((chip, i) => chip.dataset.cat === expectedKeys[i]);
+
+  if (!alreadyInSync) {
+    catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+  }
+
   return catsEl;
 }
 
@@ -129,8 +141,9 @@ function handleCategorySelection(cat, deps) {
     // Mutation sans renderGrid — le pager gère déjà l'affichage via scrollPagerToCat.
     setActiveCatState(cat);
     syncRailActiveState(cat, { center: true });
-    scrollPagerToCat(cat);
-    return;
+    const scrolled = scrollPagerToCat(cat);
+    if (scrolled) return;
+    // Fallback : page absente du pager (ex: catégorie sans produits) → renderGrid classique
   }
 
   if (cat === 'all') {

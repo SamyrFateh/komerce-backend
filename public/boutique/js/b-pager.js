@@ -467,14 +467,15 @@ function _setupMobilePager() {
 
 function _scrollPagerToCat(cat, behavior = 'smooth') {
   const grid = _getGrid();
-  if (!grid || isDesktop()) return;
+  if (!grid || isDesktop()) return false;
   const idx   = _getPages(grid).findIndex(p => p.dataset.cat === cat);
-  if (idx < 0) return;
+  if (idx < 0) return false;
 
   // Sync chip en premier pour éviter qu'un re-render perturbé par l'event
   // ne décale le scroll qui suit
   _syncChip(cat);
   _scrollToIndex(grid, idx, behavior);
+  return true;
 }
 
 function _scrollPagerToGhost() { _scrollPagerToCat('all'); }

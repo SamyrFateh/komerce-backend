@@ -261,6 +261,15 @@ export function getRailCategories() {
     });
 }
 
+/** Version allégée de getRailCategories() — retourne uniquement les clés,
+ *  sans calculer les railBadge. Utilisée par le FOUC fix de home-controller
+ *  pour comparer les chips statiques HTML sans déclencher de rendu. */
+export function getRailCategoryKeys() {
+  return getCategoryList()
+    .filter(c => c.showInRail !== false)
+    .map(c => c.key);
+}
+
 export function getCategoryByKey(key) {
   return _idx().get(key) || null;
 }
