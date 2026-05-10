@@ -65,7 +65,7 @@ import {
   centerRailChip       as _centerRailChip,
   renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
-import { isDesktop, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
+import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
   setProducts, getAllProducts, getPromoProducts,
 }                             from './product-store.js';
@@ -274,23 +274,18 @@ function renderGrid() {
   const _isMobile = !isDesktop();
 
   // PATCH #227 step 2 — Desktop must never keep the mobile Temu pager cage.
+  // Factored: clearInlinePagerStyles() (b-scroll-owner) remplace les resets inline manuels.
+  // Timing intentionnel : reset pré-rendu, avant innerHTML — ne pas déplacer après.
   if (!_isMobile) {
     destroyMobilePager();
     const ps = dom.pageScroll;
     if (ps) {
       ps.classList.remove('k-pager-active');
-      ps.style.position = '';
-      ps.style.top = '';
-      ps.style.left = '';
-      ps.style.right = '';
-      ps.style.width = '';
-      ps.style.height = '';
-      ps.style.overflow = '';
+      clearInlinePagerStyles(ps);
     }
     if (dom.grid) {
       dom.grid.classList.remove('k-grid-cat-pager', 'k-grid-flat-subcat');
-      ['transform', 'transition', 'width', 'height', 'position', 'overflow', 'willChange', 'display']
-        .forEach(function(p) { dom.grid.style[p] = ''; });
+      clearInlinePagerStyles(dom.grid);
     }
   }
 
