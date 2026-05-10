@@ -261,6 +261,13 @@ export function getRailCategories() {
     });
 }
 
+/** Retourne uniquement les clés des catégories du rail (pour comparaison FOUC-free). */
+export function getRailCategoryKeys() {
+  return getCategoryList()
+    .filter(c => c.showInRail !== false)
+    .map(c => c.key);
+}
+
 export function getCategoryByKey(key) {
   return _idx().get(key) || null;
 }
