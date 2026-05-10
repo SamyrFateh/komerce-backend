@@ -479,7 +479,7 @@ body {
     gap: 8px;
     flex-wrap: wrap;          /* chips sur 1-2 lignes selon nb catégories */
     overflow: visible;
-    height: auto;
+    /* height : source de vérité → boutique-desktop.css .k-cats @900px (height:52px) */
     mask-image: none;
     -webkit-mask-image: none;
   }

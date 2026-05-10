@@ -1302,7 +1302,7 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
-    height: 52px;
+    height: 52px;    /* Source de vérité hauteur chip rail desktop — layout.css délègue ici */
     align-items: stretch;
   }
   .k-cats::-webkit-scrollbar { display: none; }
@@ -1312,7 +1312,7 @@
     flex: 0 0 auto;
     min-width: 0;
     max-width: none;
-    height: 52px;
+    height: 52px;    /* Source de vérité hauteur chip desktop */
     padding: 0 18px;
     border-radius: 0;
     border: none;
