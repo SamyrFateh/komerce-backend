@@ -27,7 +27,6 @@
      - Focus/tap-highlight déclarés 3× → section 11 unique
    ═══════════════════════════════════════════════════════════════ */
 
-
 /* ══════════════════════════════════════════════════════════════
    1. HEADER DESKTOP
    ══════════════════════════════════════════════════════════════ */
@@ -66,7 +65,6 @@
   }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    2. HERO DESKTOP — montre la scène complète (2 personnages + cadeau
    central + store-front). Hauteur calibrée 240-280px pour cadrer la
@@ -95,7 +93,6 @@
 
   #k-bar-spacer { display: none !important; }
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    3. CARD HOVER OVERLAY — SOURCE DE VÉRITÉ UNIQUE
@@ -250,7 +247,6 @@
   .k-card-fav.liked { opacity: 1; }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    4. MODAL ZOOM — scale sur l'image, pas de lens visible
    Le JS (b-desktop-upgrade.js setupZoom) gère backgroundPosition
@@ -272,7 +268,6 @@
     transform: scale(1.02);
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    5. PROMO STRIP — Bannière chips promotionnelles
@@ -325,7 +320,6 @@
   .k-promo-chip-icon { font-size: 14px; flex-shrink: 0; }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    6. ANIMATION ENTRÉE CARTES — stagger Temu-style
    ══════════════════════════════════════════════════════════════ */
@@ -354,7 +348,6 @@
   /* Lévitation hover plus discrète qu'en mobile */
   .k-card:hover { transform: translateY(-1px); }
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    7. SCROLL-TO-TOP — Bouton fixe bas droite
@@ -394,7 +387,6 @@
     stroke: var(--text); fill: none; stroke-width: 2;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    8. HOMEPAGE MERCHANDISING — blocs éditoriaux premium
@@ -522,7 +514,6 @@
   .k-home-merch-card { min-height: 122px; }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    9. RECENTLY VIEWED — Section en bas du scroll modal (desktop)
    ══════════════════════════════════════════════════════════════ */
@@ -596,7 +587,6 @@
   }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    10. KEYBOARD HINT — Navigation clavier dans la modal
    ══════════════════════════════════════════════════════════════ */
@@ -627,7 +617,6 @@
   .k-modal-keyboard-hint span { margin-right: 8px; }
 }
 
-
 /* ══════════════════════════════════════════════════════════════
    11. UTILITIES — Focus visible & tap-highlight (source unique)
    Supprime l'outline parasite sur les zones non-cliquables.
@@ -656,7 +645,6 @@
     outline-offset: 2px;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    12. FOOTER RICHE — 4 colonnes desktop uniquement
@@ -904,292 +892,9 @@
    ═══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  .k-flatcat-header,
-  .k-flatcat-subcats {
-    grid-column: 1 / -1;
-  }
-
-  .k-flatcat-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 6px 0 12px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-
-  .k-flatcat-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 999px;
-    background: var(--white);
-    color: var(--text-muted);
-    font-family: var(--font);
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s;
-    flex-shrink: 0;
-  }
-  .k-flatcat-back:hover {
-    background: var(--sand-warm);
-    border-color: var(--text-muted);
-    color: var(--text);
-  }
-  .k-flatcat-back svg {
-    width: 14px;
-    height: 14px;
-    stroke: currentColor;
-    fill: none;
-  }
-
-  .k-flatcat-title {
-    margin: 0;
-    font-family: var(--font-display, 'Fraunces', serif);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -.02em;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .k-flatcat-emoji {
-    font-size: 24px;
-    line-height: 1;
-  }
-  .k-flatcat-count {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--sand-warm);
-    padding: 3px 9px;
-    border-radius: 999px;
-    margin-left: 4px;
-  }
-
+  
+  
+      
+      
   /* Subchips du flat-cat : même style que dans les sections (réutilise .k-sec-subchip) */
-  .k-flatcat-subcats {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-    padding: 4px 0 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
-  }
-  .k-flatcat-subcats::-webkit-scrollbar { display: none; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   14. PAVILLONS D'UNIVERS — 6 piliers Komerce sous le hero
-   Layout 2×3 mobile / 3×2 desktop. Style Temu/Shein avec icones
-   SVG sur fond pastel. Couleurs : Mode/rose · Maison/vert · Tech/bleu
-   · Enfant/ambre · Solaire/ambre+bordure · Créations/violet.
-   ═══════════════════════════════════════════════════════════════ */
-
-.k-pavilions {
-  background: var(--page-bg, var(--sand, #FDFAF5));
-  padding: 14px 0 6px;
-}
-
-.k-pavilions-inner {
-  max-width: var(--container, 1400px);
-  margin: 0 auto;
-  padding: 0 clamp(12px, 3vw, 24px);
-}
-
-/* ── Filtres rapides (chips) ─────────────────────────────────── */
-.k-pavilions-chips {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-
-.k-pav-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 13px;
-  border-radius: 999px;
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--white);
-  color: var(--text-muted);
-  border: 1.5px solid var(--border);
-  transition: background .15s, border-color .15s, color .15s, transform .12s;
-}
-.k-pav-chip:hover {
-  background: var(--sand-warm);
-  border-color: var(--text-muted);
-  color: var(--text);
-}
-.k-pav-chip:active { transform: scale(.96); }
-.k-pav-chip svg { stroke: currentColor; }
-
-/* Variant Soldes : coloré */
-.k-pav-chip--soldes {
-  background: #FAEEDA;
-  color: #854F0B;
-  border-color: #F5C68A;
-}
-.k-pav-chip--soldes:hover {
-  background: #FAC775;
-  border-color: #BA7517;
-  color: #412402;
-}
-
-/* ── Section label ───────────────────────────────────────────── */
-.k-pavilions-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--text-light);
-  margin: 0 0 10px;
-}
-
-/* ── Grille pavillons ────────────────────────────────────────── */
-.k-pavilions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-@media (min-width: 700px) {
-  .k-pavilions-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-}
-
-/* ── Tuile ───────────────────────────────────────────────────── */
-.k-pav-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 18px 14px;
-  border-radius: 16px;
-  border: 0;
-  cursor: pointer;
-  text-align: center;
-  font-family: var(--font);
-  aspect-ratio: 1.15;
-  overflow: hidden;
-  transition: transform .15s var(--ease), box-shadow .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.k-pav-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 48, 36, 0.08);
-}
-.k-pav-tile:active { transform: translateY(0) scale(.98); }
-
-@media (min-width: 700px) {
-  .k-pav-tile {
-    aspect-ratio: 1.4;
-    padding: 22px 16px;
-  }
-}
-
-.k-pav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  margin-bottom: 4px;
-}
-.k-pav-icon svg {
-  width: 100%;
-  height: 100%;
-  stroke: currentColor;
-}
-@media (min-width: 700px) {
-  .k-pav-icon { width: 44px; height: 44px; margin-bottom: 6px; }
-}
-
-.k-pav-label {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -.005em;
-  line-height: 1.2;
-  max-width: 100%;
-}
-@media (min-width: 700px) {
-  .k-pav-label { font-size: 14px; }
-}
-
-.k-pav-sub {
-  font-size: 10.5px;
-  font-weight: 500;
-  opacity: .75;
-  line-height: 1.3;
-  max-width: 100%;
-  margin-top: 1px;
-}
-@media (min-width: 700px) {
-  .k-pav-sub { font-size: 11px; }
-}
-
-/* Badge en haut à droite (pour Solaire et Créations) */
-.k-pav-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, .55);
-  color: #412402;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  padding: 3px 8px;
-  border-radius: 999px;
-  text-transform: uppercase;
-}
-.k-pav-badge--violet {
-  background: rgba(255, 255, 255, .6);
-  color: #26215C;
-}
-
-/* ── Couleurs des 6 piliers ──────────────────────────────────── */
-.k-pav-tile--mode     { background: #FBEAF0; color: #72243E; }
-.k-pav-tile--maison   { background: #EAF3DE; color: #27500A; }
-.k-pav-tile--tech     { background: #E6F1FB; color: #0C447C; }
-.k-pav-tile--enfant   { background: #FAEEDA; color: #633806; }
-.k-pav-tile--solaire  { background: #FAEEDA; color: #633806; border: 2px solid #BA7517; }
-.k-pav-tile--creations{ background: #EEEDFE; color: #3C3489; }
-
-/* États hover plus marqués */
-.k-pav-tile--mode:hover     { background: #F4C0D1; }
-.k-pav-tile--maison:hover   { background: #C0DD97; }
-.k-pav-tile--tech:hover     { background: #B5D4F4; }
-.k-pav-tile--enfant:hover   { background: #FAC775; }
-.k-pav-tile--solaire:hover  { background: #FAC775; }
-.k-pav-tile--creations:hover{ background: #CECBF6; }
-
-/* ── Responsive desktop large : élargir et tasser hauteur ────── */
-@media (min-width: 1200px) {
-  .k-pavilions { padding: 18px 0 10px; }
-  .k-pavilions-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-  }
-  .k-pav-tile {
-    aspect-ratio: 1.05;
-    padding: 18px 12px;
-  }
-  /* Sub texte caché sur les très grandes écrans (libellé suffit, gain de place) */
-  .k-pav-sub { display: none; }
-}
+    }

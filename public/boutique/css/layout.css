@@ -731,8 +731,6 @@ body {
   #k-desktop-catalog-wrap { gap: 24px; }
 }
 
-
-
 /* PATCH #227 — desktop stabilization (consolidé) */
 @media (min-width: 900px) {
 
@@ -805,7 +803,6 @@ body {
    ══════════════════════════════════════════════════════════════ */
 
 /* Mobile : side cart masqué */
-.k-side-cart { display: none; }
 
 /* Mobile bnav : label cart devient le total quand panier non vide */
 #k-bnav-cart-label {
@@ -823,361 +820,44 @@ body {
   /* ── Conteneur sticky Temu ──────────────────────────────── */
   /* position:sticky pour démarrer dans le flux (après le hero) et coller au
      top du viewport au scroll. Évite tout chevauchement avec le hero. */
-  .k-side-cart {
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: calc(var(--header-h, 76px) + 16px);
-    align-self: flex-start;
-    flex: 0 0 290px;
-    width: 290px;
-    min-width: 290px;
-    max-height: calc(100vh - var(--header-h, 76px) - 32px);
-    /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
-    background: transparent;
-    border-radius: 12px;
-    border: 0;
-    box-shadow: none;
-    overflow: hidden;
-    z-index: 200;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(6px);
-    transition: opacity .22s var(--ease), transform .22s var(--ease);
-    /* L'écart à droite vient du padding du wrapper parent — pas de right ici */
-  }
-  /* Sidecart vide : sortie du flex pour que le grid prenne toute la largeur */
-  .k-side-cart:not(.has-items) {
-    display: none;
-  }
-  .k-side-cart.has-items {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-  }
-  /* (--sc-offset / sc-open : plus utilisé depuis le passage en sticky.
+    /* Sidecart vide : sortie du flex pour que le grid prenne toute la largeur */
+      /* (--sc-offset / sc-open : plus utilisé depuis le passage en sticky.
      Le sidecart est désormais in-flow dans le flex parent ; aucun élément
      n'a besoin de céder la place via padding-right.) */
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
-  .k-sc-top {
-    padding: 0 2px 6px;
-    flex-shrink: 0;
-    background: transparent;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative;
-    z-index: 1;
-  }
-
+  
   /* Ligne sous-total : compacte, label inline */
-  .k-sc-subtotal-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 2px 2px 0;
-  }
-  .k-sc-subtotal-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-  .k-sc-subtotal-amount {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -.02em;
-  }
-
+      
   /* Badge livraison — pill discrète */
-  .k-sc-free-ship {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #1a7a3e;
-    background: #e8f7ee;
-    border-radius: 999px;
-    padding: 3px 8px;
-    width: fit-content;
-    line-height: 1.4;
-  }
-  .k-sc-free-ship svg {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-  }
-
+    
   /* Bouton Commander Temu-style orange */
-  .k-sc-cta-row {
-    display: flex;
-    gap: 6px;
-    align-items: stretch;
-    margin-top: 2px;
-  }
-  .k-sc-btn-checkout {
-    flex: 1 1 auto;
-    display: block;
-    padding: 11px 14px;
-    border: none;
-    border-radius: 8px;
-    background: #ff6900;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    text-align: center;
-    font-family: var(--font);
-    letter-spacing: .01em;
-    transition: background .15s, transform .12s;
-    box-shadow: 0 2px 8px rgba(255,105,0,.30);
-  }
-  .k-sc-btn-checkout:hover { background: #e55f00; }
-  .k-sc-btn-checkout:active { transform: scale(.98); }
-
+        
   /* Bouton "En groupe" — icône carrée violet (action secondaire compacte) */
-  .k-sc-btn-group {
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 8px;
-    background: #6c3fc5;
-    color: #fff;
-    cursor: pointer;
-    font-family: var(--font);
-    transition: background .15s, transform .12s;
-    box-shadow: 0 2px 8px rgba(108,63,197,.28);
-    position: relative;
-  }
-  .k-sc-btn-group:hover { background: #5832a8; }
-  .k-sc-btn-group:active { transform: scale(.95); }
-  .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
-  /* Label caché visuellement mais accessible — l'icône suffit */
-  .k-sc-btn-group-label {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  /* Tooltip natif via attribut title — pas de CSS supplémentaire */
+          /* Label caché visuellement mais accessible — l'icône suffit */
+    /* Tooltip natif via attribut title — pas de CSS supplémentaire */
 
   /* Lien "Voir le panier" — passe en lien texte discret sous les CTAs */
-  .k-sc-btn-cart {
-    display: block;
-    width: 100%;
-    padding: 4px;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    font-family: var(--font);
-    text-decoration: underline;
-    text-decoration-color: rgba(107,123,99,.35);
-    text-underline-offset: 3px;
-    transition: color .12s;
-  }
-  .k-sc-btn-cart:hover { color: var(--text); }
-
+    
   /* ── Liste articles ──────────────────────────────────────── */
-  .k-sc-items {
-    flex: 1;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    min-height: 0;
-    padding: 6px 0 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .k-sc-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    transition: background .12s, transform .12s;
-    background: var(--white);
-    border-radius: 10px;
-    border: 0;
-  }
-  .k-sc-item:hover { background: var(--sand); }
+      
 
-
-  .k-sc-item-img {
-    width: 68px;
-    height: 68px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-    background: var(--sand);
-    border: 1px solid var(--border);
-  }
-  .k-sc-item-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .k-sc-item-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
-    line-height: 1.35;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .k-sc-item-variant {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: var(--sand);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 5px;
-    display: inline-block;
-    width: fit-content;
-  }
-  .k-sc-item-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 2px;
-    gap: 6px;
-  }
-  .k-sc-item-price-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-    flex-wrap: wrap;
-  }
-  .k-sc-item-price {
-    font-size: 13px;
-    font-weight: 800;
-    color: #cc4400;
-    letter-spacing: -.01em;
-  }
-  .k-sc-item-old-price {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-decoration: line-through;
-  }
-  .k-sc-item-actions {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-  }
-
+                  
   /* Stepper quantité inline style Temu */
-  .k-sc-item-stepper {
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    background: var(--white);
-  }
-  .k-sc-item-stepper button {
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .1s;
-    font-family: var(--font);
-    padding: 0;
-    line-height: 1;
-  }
-  .k-sc-item-stepper button:hover { background: var(--sand-dark); }
-  .k-sc-item-stepper button:active { background: var(--border); }
-  .k-sc-item-stepper-qty {
-    min-width: 24px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    padding: 0 2px;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    line-height: 24px;
-    user-select: none;
-  }
-
+          
   /* Bouton suppression rapide ✕ */
-  .k-sc-item-remove {
-    width: 24px;
-    height: 24px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background .12s, color .12s, border-color .12s;
-    padding: 0;
-  }
-  .k-sc-item-remove:hover {
-    background: #fff0f0;
-    border-color: #ffbbbb;
-    color: #cc2200;
-  }
-  .k-sc-item-remove:active { background: #ffe0e0; }
-
+      
   /* ── Footer sticky : CTAs primaires + count ───────────── */
-  .k-sc-bottom {
-    padding: 8px 0 0;
-    border-top: 0;
-    background: transparent;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .k-sc-count-label {
-    font-size: 11px;
-    color: var(--text-light);
-    font-weight: 500;
-    text-align: center;
-  }
-}
+    }
 
 /* ── Sidebar catégories desktop désactivée ── */
 #k-desktop-sidebar { display: none !important; }
 
 @media (min-width: 1200px) {
-  .k-side-cart { width: 290px; min-width: 290px; }
-}
+  }
 
 /* ── Side cart masqué hors onglet boutique ── */
 /* switchView() pose data-tab sur #k-page-scroll — on en profite pour cacher
    le side cart sur les onglets suivi et favoris sans toucher au JS. */
-#k-page-scroll[data-tab="track"] .k-side-cart,
-#k-page-scroll[data-tab="fav"]   .k-side-cart {
-  display: none !important;
-}
 
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
