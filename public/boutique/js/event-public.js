@@ -99,9 +99,12 @@
     }
     html += '</div>';
 
-    // ── Liste articles ────────────────────────────────────────
-    html += '<div class="ev-card">';
-    html += '<p class="ev-card-label">Le panier</p>';
+    // ── Liste articles (collapsible) ──────────────────────────
+    html += '<details class="ev-card ev-collapsible">';
+    html += '<summary class="ev-card-summary">';
+    html += '<span class="ev-card-label" style="margin:0;">Le panier (' + items.length + ' article' + (items.length > 1 ? 's' : '') + ')</span>';
+    html += '<span class="ev-card-summary-icon" aria-hidden="true">▾</span>';
+    html += '</summary>';
     if (!items.length) {
       html += '<div class="ev-empty">L\'organisateur prépare encore le panier.</div>';
     } else {
@@ -120,15 +123,15 @@
       });
       html += '</ul>';
     }
-    html += '</div>';
+    html += '</details>';
 
     // ── Formulaire de contribution ────────────────────────────
     if (isOpen) {
       html += '<div class="ev-card">';
       html += '<p class="ev-card-label">Votre proposition</p>';
-      html += '<p class="ev-card-sub">Proposez un montant ou un message. Aucun paiement maintenant — vous paierez en cash au retrait.</p>';
+      html += '<p class="ev-card-sub ev-compact-hide">Proposez un montant ou un message. Aucun paiement maintenant — vous paierez en cash au retrait.</p>';
 
-      html += '<form id="ev-contrib-form" style="margin-top:14px;">';
+      html += '<form id="ev-contrib-form" style="margin-top:8px;">';
 
       html += '<div class="ev-field">';
       html += '<label class="ev-label" for="contributor_name">Votre nom</label>';
@@ -172,14 +175,14 @@
       html += '<div id="ev-contrib-success" class="ev-alert ev-alert-success" style="display:none;margin-top:10px;"></div>';
       html += '</form>';
 
-      html += '<p class="ev-help" style="text-align:center;margin-top:12px;">🔒 Vos infos restent privées. Aucun débit automatique.</p>';
+      html += '<p class="ev-help ev-compact-hide" style="text-align:center;margin-top:12px;">🔒 Vos infos restent privées. Aucun débit automatique.</p>';
       html += '</div>';
     } else {
       html += '<div class="ev-alert ev-alert-warn">Ce panier n\'accepte plus de nouvelles propositions. L\'organisateur est passé à l\'étape suivante.</div>';
     }
 
-    // ── Inviter d'autres ──────────────────────────────────────
-    html += '<div class="ev-card" style="text-align:center;">';
+    // ── Inviter d'autres (caché en mode compact, déplacé dans le footer help) ─
+    html += '<div class="ev-card ev-compact-hide" style="text-align:center;">';
     html += '<p class="ev-card-label">Inviter d\'autres participants</p>';
     html += '<a href="' + whatsappShareUrl(ws.event_name) + '" target="_blank" rel="noopener" class="ev-btn ev-btn-wa ev-btn-block" style="margin-top:8px;">📱 Partager sur WhatsApp</a>';
     html += '</div>';

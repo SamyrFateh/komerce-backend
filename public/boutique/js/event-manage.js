@@ -171,8 +171,11 @@
     }
 
     // ── Articles ────────────────────────────────────────────
-    html += '<div class="ev-card">';
-    html += '<p class="ev-card-label">Articles du panier (' + items.length + ')</p>';
+    html += '<details class="ev-card ev-collapsible">';
+    html += '<summary class="ev-card-summary">';
+    html += '<span class="ev-card-label" style="margin:0;">Articles du panier (' + items.length + ')</span>';
+    html += '<span class="ev-card-summary-icon" aria-hidden="true">▾</span>';
+    html += '</summary>';
     if (!items.length) {
       html += '<div class="ev-empty">Votre liste est vide. <a href="/" style="color:var(--violet);">Ajoutez des articles depuis la boutique</a>.</div>';
     } else {
@@ -192,11 +195,14 @@
       html += '</ul>';
       html += '<a href="/" class="ev-btn ev-btn-ghost ev-btn-block" style="margin-top:10px;">+ Ajouter des articles</a>';
     }
-    html += '</div>';
+    html += '</details>';
 
     // ── Contributions ───────────────────────────────────────
-    html += '<div class="ev-card">';
-    html += '<p class="ev-card-label">Participants (' + contribs.length + ')</p>';
+    html += '<details class="ev-card ev-collapsible">';
+    html += '<summary class="ev-card-summary">';
+    html += '<span class="ev-card-label" style="margin:0;">Participants (' + contribs.length + ')</span>';
+    html += '<span class="ev-card-summary-icon" aria-hidden="true">▾</span>';
+    html += '</summary>';
     if (!contribs.length) {
       html += '<div class="ev-empty">Aucune proposition pour le moment. Partagez le lien pour commencer à recevoir des participations.</div>';
     } else {
@@ -217,7 +223,7 @@
       });
       html += '</ul>';
     }
-    html += '</div>';
+    html += '</details>';
 
     // ── Action : finaliser ──────────────────────────────────
     if (isOpen) {

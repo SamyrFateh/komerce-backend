@@ -86,8 +86,8 @@
 
     // ── Confirmation cash (cas normal, pas encore confirmé) ────
     if (!isFinal && !isAuthorized) {
-      // Bloc "comment ça marche"
-      html += '<div class="ev-card">';
+      // Bloc "comment ça marche" — masqué en mode compact (classe ev-compact-hide)
+      html += '<div class="ev-card ev-compact-hide">';
       html += '<p class="ev-card-label">Comment ça marche</p>';
       html += '<ul class="ev-list" style="list-style:none;padding-left:0;">';
       html += '<li class="ev-list-item"><div class="ev-list-emoji">1</div><div class="ev-list-content">';

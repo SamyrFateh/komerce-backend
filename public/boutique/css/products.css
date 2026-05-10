@@ -646,7 +646,10 @@
     scroll-snap-align: start;
     scroll-snap-stop: always;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+    /* PATCH iOS : "none" coupe le rubber-band qui simulait du scroll dans le
+       vide quand la liste de produits était courte. "contain" laissait passer
+       l'overscroll élastique de Safari. */
+    overscroll-behavior-y: none;
     box-sizing: border-box;
     padding: 0 12px 80px;
   }

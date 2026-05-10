@@ -286,6 +286,42 @@ function _setupSectionAutoAdvance() {
     };
 
     page.addEventListener('scroll', page._bounceH, { passive: true });
+
+    // PATCH iOS : le rubber-band bottom ne déclenche pas toujours un scroll
+    // event "atBottom" propre. Au touchend, on force une re-évaluation pour
+    // garantir le bounce quand l'utilisateur lâche le doigt après être en bas.
+    if (page._bounceTouchEnd) page.removeEventListener('touchend', page._bounceTouchEnd);
+    page._bounceTouchEnd = () => {
+      if (state.modalOpen) return;
+      if (window.innerWidth >= 900) return;
+      // Évaluer at-bottom avec un seuil plus tolérant (rubber-band peut déformer
+      // les valeurs scrollTop/scrollHeight transitoirement sur iOS).
+      const atBottom = page.scrollHeight <= page.clientHeight + 8
+        || page.scrollTop + page.clientHeight >= page.scrollHeight - 64;
+      if (!atBottom || !page._bounceWasDown) return;
+      // Force le bounce sans attendre le prochain scroll event
+      if (page._bounceTimer) clearTimeout(page._bounceTimer);
+      page._bounceTimer = setTimeout(() => {
+        page._bounceTimer = null;
+        if (state.modalOpen || window.innerWidth >= 900) return;
+        const realPages = _getRealPages(grid);
+        const currentIdx = _getCurrentIndex(grid);
+        const total = realPages.length;
+        const nextIdx = currentIdx + 1 >= total ? 0 : currentIdx + 1;
+        _showNextHint(page, realPages[nextIdx]);
+        if (nextIdx === 0) {
+          const allPages = _getPages(grid);
+          const ghostIdx = allPages.findIndex(p => p.dataset.ghost);
+          if (ghostIdx >= 0) {
+            _scrollToIndex(grid, ghostIdx, 'smooth');
+            return;
+          }
+        }
+        _scrollToIndex(grid, nextIdx, 'smooth');
+      }, 220);
+    };
+    page.addEventListener('touchend', page._bounceTouchEnd, { passive: true });
+    page.addEventListener('touchcancel', page._bounceTouchEnd, { passive: true });
   }
 
   // Binder toutes les vraies pages (pas le ghost)

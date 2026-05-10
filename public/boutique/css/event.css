@@ -694,3 +694,182 @@ body {
 .ev-list-amount { font-size: 14px; font-weight: 700; color: var(--violet); }
 .ev-list-right { margin-left: auto; }
 
+
+/* ════════════════════════════════════════════════════════════════
+   COMPACT MODE — réduire la hauteur des 4 pages event pour tenir
+   en 1 page sur mobile (390x844) et desktop (~800px de viewport).
+   Bloc en fin de fichier pour overrider les valeurs par défaut.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Wrap : padding réduit et plus bornes */
+.ev-wrap {
+  padding: 8px 14px 24px;
+  max-width: 640px;
+}
+
+/* Header : compact */
+.ev-header { padding: 6px 0 8px; margin-bottom: 8px; }
+
+/* Hero : compact */
+.ev-hero {
+  padding: 14px 16px 12px;
+  margin-bottom: 8px;
+}
+.ev-hero-eyebrow { font-size: 10px; margin-bottom: 4px; }
+.ev-hero-title   { font-size: 19px; line-height: 1.15; margin-bottom: 3px; }
+.ev-hero-sub     { font-size: 12px; line-height: 1.45; }
+.ev-hero-amount  { padding: 6px 10px; margin-top: 8px; }
+.ev-hero-amount-num { font-size: 22px; }
+.ev-hero-amount-cur { font-size: 11px; }
+.ev-hero-badge   { top: 10px; right: 10px; padding: 3px 8px; font-size: 10px; }
+.ev-hero::before { width: 110px; height: 110px; top: -32px; right: -20px; }
+.ev-hero::after  { width: 70px; height: 70px; bottom: -18px; left: -10px; }
+
+/* Cards : compact */
+.ev-card {
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+.ev-card-label { margin-bottom: 8px; font-size: 10.5px; }
+.ev-card-title { font-size: 15px; }
+.ev-card-sub   { font-size: 12.5px; line-height: 1.5; }
+
+/* Form fields : marges resserrées */
+.ev-field { margin-bottom: 9px; }
+.ev-label { font-size: 12px; margin-bottom: 4px; }
+.ev-label-opt, .ev-label-optional { font-size: 10.5px; }
+.ev-input, .ev-textarea { padding: 9px 12px; font-size: 13.5px; }
+.ev-textarea { min-height: 50px; }
+.ev-char-count { font-size: 10px; margin-top: 2px; }
+.ev-divider { margin: 10px 0; }
+
+/* Phone row : compact */
+.ev-phone-prefix { padding: 9px 6px; font-size: 12px; }
+
+/* Trust line (event-create) : compact */
+.ev-trust {
+  padding: 9px 11px; margin: 9px 0;
+  font-size: 11.5px; line-height: 1.45;
+  gap: 7px;
+}
+.ev-trust-icon { font-size: 14px; }
+
+/* Buttons : compact */
+.ev-btn { padding: 11px 14px; font-size: 14px; }
+.ev-btn-block { padding: 12px 16px; }
+
+/* Steps grid (4 colonnes) : compact */
+.ev-steps {
+  gap: 6px;
+}
+.ev-step { padding: 8px 6px; }
+.ev-step-num {
+  width: 22px; height: 22px; font-size: 11px;
+  margin-bottom: 4px;
+}
+.ev-step-text { font-size: 11px; line-height: 1.35; }
+
+/* Amounts grid (3 colonnes : Total / Confirmé / Restant) : compact */
+.ev-amounts { gap: 6px; margin: 10px 0; }
+.ev-amount-cell { padding: 9px 6px; }
+.ev-amount-label { font-size: 9.5px; margin-bottom: 2px; }
+.ev-amount-value { font-size: 15px; }
+.ev-amount-unit  { font-size: 10px; }
+
+/* Progress bar */
+.ev-progress-wrap { margin-top: 8px; }
+.ev-progress-bar  { height: 6px; }
+.ev-progress-label { font-size: 10.5px; margin-top: 4px; }
+
+/* Lists (articles, contributors) : items compacts */
+.ev-list-item {
+  padding: 8px 0;
+  gap: 9px;
+}
+.ev-list-emoji, .ev-list-avatar {
+  width: 30px; height: 30px;
+  font-size: 13px;
+}
+.ev-list-name { font-size: 13px; }
+.ev-list-meta { font-size: 11.5px; margin-top: 1px; }
+.ev-list-amount { font-size: 13px; }
+
+/* Share box : compact */
+.ev-share { margin: 8px 0; padding: 9px; }
+.ev-share-label { font-size: 10px; margin-bottom: 4px; }
+.ev-share-url   { padding: 6px 8px; font-size: 10.5px; }
+
+/* Doctrine footer text : compact */
+.ev-doctrine {
+  font-size: 11px; line-height: 1.5;
+  margin-top: 10px; padding: 0 6px;
+}
+
+/* Alerts */
+.ev-alert { padding: 10px 12px; font-size: 12.5px; line-height: 1.45; }
+
+/* Sur desktop large : pages event restent étroites mais cards ont un peu plus d'air */
+@media (min-width: 900px) {
+  .ev-wrap { padding: 14px 18px 30px; }
+  .ev-card { padding: 16px 18px; }
+  .ev-hero { padding: 20px 22px 18px; }
+  .ev-hero-title { font-size: 24px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   COMPACT MODE — Cache les blocs pédagogiques non-critiques pour
+   maximiser l'espace. L'utilisateur a déjà été informé sur l'index
+   ou par le contexte (lien WhatsApp, etc.).
+   ════════════════════════════════════════════════════════════════ */
+
+/* Cards taggées comme cachables en mode compact (cards "Comment ça marche") */
+.ev-compact-hide { display: none; }
+
+/* Doctrine footer : cachée dans toutes les pages event (info redondante) */
+.ev-doctrine { display: none; }
+
+/* Trust line : réduite davantage en compact */
+.ev-trust { display: none; }
+
+/* Banner pending cart : réduit à l'essentiel */
+.ev-alert-info { padding: 8px 11px; font-size: 12px; line-height: 1.4; }
+
+/* Hero spacing extra-compact pour pages avec form (create, public) */
+body[data-event-page="create"] .ev-hero,
+body[data-event-page="public"] .ev-hero {
+  padding: 12px 14px 11px;
+  margin-bottom: 6px;
+}
+
+/* Card spacing extra-compact */
+body[data-event-page="create"] .ev-card,
+body[data-event-page="public"] .ev-card {
+  padding: 12px 14px;
+  margin-bottom: 6px;
+}
+
+/* ─── Cards collapsibles (details/summary) ─── */
+.ev-collapsible {
+  padding: 0;
+}
+.ev-card-summary {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.ev-card-summary::-webkit-details-marker { display: none; }
+.ev-collapsible .ev-list,
+.ev-collapsible .ev-empty,
+.ev-collapsible > .ev-btn {
+  margin: 0 14px 12px;
+}
+.ev-card-summary-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: transform .2s;
+}
+.ev-collapsible[open] > .ev-card-summary > .ev-card-summary-icon {
+  transform: rotate(-180deg);
+}
