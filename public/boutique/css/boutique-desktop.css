@@ -1200,10 +1200,8 @@
   }
 }
 
-/* ── Masquer le bloc chips/hero-cats-sticky sur desktop ────── */
-@media (min-width: 900px) {
-  .k-hero-cats-sticky { display: none; }
-}
+/* ── Masquer le bloc chips/hero-cats-sticky partout ─────────── */
+.k-hero-cats-sticky { display: none; }
 
 /* ── 3. SOUS-CATÉGORIES — rail inline sous le header ──────── */
 /* Source de vérité pour #k-subcats-wrap .k-subchip desktop.
