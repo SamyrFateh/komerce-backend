@@ -75,6 +75,8 @@ export function setupInfiniteScroll() {
  * @param {string} tab - 'shop' | 'fav' | 'track'
  */
 export function switchView(tab) {
+  document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track');
+  document.body.classList.add('k-view-' + tab);
   const catalog    = document.getElementById('k-catalog-section');
   const favView    = document.getElementById('k-fav-view');
   const trackView  = document.getElementById('k-track-view');
@@ -158,5 +160,6 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
+
 
 
