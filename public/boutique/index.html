@@ -44,28 +44,6 @@ if('serviceWorker' in navigator){
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
-<style id="k-critical-mobile-pavilions-boot">
-@media (max-width: 899px) {
-  html:not(.k-mobile-ready) #k-pavilions {
-    visibility: hidden !important;
-    opacity: 0 !important;
-  }
-}
-</style>
-<script id="k-mobile-ready-boot">
-(function () {
-  function ready() {
-    document.documentElement.classList.add('k-mobile-ready');
-  }
-
-  if (document.readyState === 'complete') {
-    ready();
-  } else {
-    window.addEventListener('load', ready, { once: true });
-    setTimeout(ready, 1200);
-  }
-})();
-</script>
 <title>Komerce — Boutique en ligne</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://res.cloudinary.com">
@@ -729,7 +707,6 @@ if('serviceWorker' in navigator){
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
-
 
 
 
