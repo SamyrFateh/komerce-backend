@@ -1256,3 +1256,32 @@ body {
     contain: none;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART POLISH — No internal scroll
+   Le side cart desktop est un aperçu compact, pas le panier complet.
+   Le panier complet reste dans le drawer "Voir le panier".
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .k-sc-items {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Aperçu compact : éviter un scroll interne disgracieux. */
+  .k-sc-items > *:nth-child(n+5) {
+    display: none;
+  }
+
+  .k-sc-bottom {
+    margin-top: auto;
+  }
+}
