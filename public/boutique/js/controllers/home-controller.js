@@ -111,7 +111,7 @@ export function renderCategoryRail() {
 }
 
 /** Met à jour l'état actif de la sidebar desktop (sans toucher au mobile). */
-function syncDesktopSidebar(catKey) {
+export function syncDesktopSidebar(catKey) {
   if (window.innerWidth < 900) return;
   document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
     item.classList.toggle('is-active', item.dataset.cat === catKey);

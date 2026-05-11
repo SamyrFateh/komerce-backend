@@ -26,9 +26,9 @@
 import { bus }              from './b-bus.js';
 import { state, dom }       from './b-store.js';
 import { fmtPrice }         from './b-utils.js';
-import { cartQty }          from './b-cart-core.js';
-import { openModal }        from './b-modal.js';
-import { isFav }            from './b-cart-core.js';
+import { cartQty, showToast } from './b-cart-core.js';
+import { openModal }          from './b-modal.js';
+import { isFav }              from './b-cart-core.js';
 import {
   normalizeCategoryKey,
   getCategorySectionEmoji,
@@ -126,10 +126,11 @@ function _openForChip(chip) {
     var go = function() {
       var c  = item.dataset.cat;
       var sc = item.dataset.subcat;
-      setActiveCat(c);
+      // FIX Bug A — passer subcat directement à setActiveCat au lieu d'émettre
+      // un event 'subcat:select' qui n'avait aucun consommateur dans la codebase.
+      setActiveCat(c, sc || null);
       syncRailActiveState(c, { center: true });
       renderSubcatRail(c);
-      if (sc) bus.emit('subcat:select', { cat: c, subcat: sc });
       _close();
     };
     item.addEventListener('click', go);
@@ -344,7 +345,8 @@ function injectShareRow() {
   });
   row.querySelector('[data-action="copy"]').addEventListener('click', function() {
     navigator.clipboard.writeText(url).then(function() {
-      bus.emit('toast', '🔗 Lien copié !');
+      // FIX Bug E — bus.emit('toast') n'avait aucun listener ; appel direct comme partout ailleurs.
+      showToast('🔗 Lien copié !');
     });
   });
 }

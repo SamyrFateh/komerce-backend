@@ -76,10 +76,7 @@ function _buildSidebar(el) {
     item.addEventListener('click', activate);
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
   });
-
-  // Bug 3 fix : notifier les modules qui attendent que la sidebar soit construite (ex: mega-menu)
-  bus.emit('sidebar:built');
-}
+  // ORPHELIN F supprimé — bus.emit('sidebar:built') n'avait aucun listener dans la codebase.
 
 /**
  * Met à jour l'état actif des items sidebar selon state.activeCat.

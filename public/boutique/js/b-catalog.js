@@ -64,6 +64,7 @@ import {
   setupHomeController as _setupHomeController,
   centerRailChip       as _centerRailChip,
   renderSubcatRail     as _renderSubcatRail,
+  syncDesktopSidebar   as _syncDesktopSidebar,
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
@@ -430,6 +431,9 @@ function renderGrid() {
       $$('.k-chip').forEach(c => c.classList.remove('active'));
       const allChip = document.querySelector('.k-chip[data-cat="all"]');
       if (allChip) { allChip.classList.add('active'); centerActiveChip(allChip); }
+      // FIX Bug B — appels manquants : rail subcat + sidebar desktop restaient désynchronisés
+      _renderSubcatRail(null);
+      _syncDesktopSidebar('all');
       renderGrid();
       scrollPageToTop('smooth');
     });
