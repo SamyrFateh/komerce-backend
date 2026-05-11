@@ -1285,3 +1285,52 @@ body {
     margin-top: auto;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART PREVIEW POLISH
+   Le side cart desktop est un aperçu compact, pas le panier complet.
+   - pas de fixed
+   - pas de JS gate
+   - pas de scroll interne
+   - sticky naturel
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1180px) {
+
+  /*
+    Donne de l'air en fin de catalogue pour que le sticky sorte proprement
+    avant le footer, sans se tronquer brutalement.
+  */
+  #k-desktop-catalog-wrap {
+    padding-bottom: clamp(120px, 18vh, 220px);
+  }
+
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .k-sc-items {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /*
+    Aperçu premium : 3 articles visibles.
+    Le compteur en bas indique le total réel.
+    Le drawer reste la vue complète.
+  */
+  .k-sc-items > *:nth-child(n+4) {
+    display: none;
+  }
+
+  .k-sc-bottom {
+    margin-top: auto;
+  }
+
+  .k-sc-count-label {
+    display: block;
+  }
+}
