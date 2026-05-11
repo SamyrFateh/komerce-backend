@@ -857,21 +857,20 @@ body {
     flex: 0 0 290px;
     width: 290px;
     min-width: 290px;
+    /* max-height = viewport - sticky-top - 16px marge basse.
+       Le panneau est toujours entièrement visible dans le viewport (style Temu).
+       Le scroll interne est délégué à .k-sc-items uniquement. */
     max-height: calc(100vh - var(--sc-sticky-top, calc(var(--header-h, 76px) + 64px)) - 16px);
-    /* Aspect Temu : intégré au fond de page, sans bordure ni ombre */
     background: transparent;
     border-radius: 12px;
     border: 0;
     box-shadow: none;
-    /* overflow:hidden retiré — cassait position:sticky sur certains navigateurs.
-       Le scroll interne est géré par .k-cart-body (overflow-y:auto). */
     overflow: visible;
     z-index: 200;
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
-    /* L'écart à droite vient du padding du wrapper parent — pas de right ici */
   }
   /* Sidecart vide : sortie du flex pour que le grid prenne toute la largeur */
   .k-side-cart:not(.has-items) {
@@ -1018,11 +1017,15 @@ body {
 
   /* ── Liste articles ──────────────────────────────────────── */
   .k-sc-items {
-    flex: 1;
+    /* flex:1 + min-height:0 absorbait tout l'espace du panneau et forçait le
+       scroll interne en permanence — le side cart ne dépassait jamais son
+       max-height → sticky n'avait rien à faire. On laisse la hauteur naturelle
+       et on plafonne seulement quand le panier est très garni (~55vh). */
+    flex: 0 0 auto;
+    max-height: calc(55vh - var(--sc-sticky-top, 140px));
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
-    min-height: 0;
     padding: 6px 0 4px;
     display: flex;
     flex-direction: column;
@@ -1183,6 +1186,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    /* margin-top:auto pousse le bottom vers le bas quand la liste est courte
+       (panier avec 1-2 articles) — comportement Temu. */
+    margin-top: auto;
   }
   .k-sc-count-label {
     font-size: 11px;
