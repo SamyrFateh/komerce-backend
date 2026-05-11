@@ -1,8 +1,8 @@
-/**
+﻿/**
  * @module b-nav
- * @brief Navigation — switchView, setupBnav, setupDrawer, setupSeeAll, setupInfiniteScroll, loadRelais
+ * @brief Navigation â€” switchView, setupBnav, setupDrawer, setupSeeAll, setupInfiniteScroll, loadRelais
  *
- * Extrait de b-views.js — refacto v2
+ * Extrait de b-views.js â€” refacto v2
  */
 
 import { bus }                           from './b-bus.js';
@@ -24,7 +24,7 @@ export function setupDrawer() {
   const _required = ['cartBtn','cartClose','cartOverlay','cartContinue','cartClear','cartWhatsapp','cartCheckout','orderClose','orderModal'];
   const _missing = _required.filter(k => !dom[k]);
   if (_missing.length) {
-    console.error('[b-nav] setupDrawer : éléments DOM manquants :', _missing.join(', '));
+    console.error('[b-nav] setupDrawer : Ã©lÃ©ments DOM manquants :', _missing.join(', '));
     return;
   }
   dom.cartBtn.addEventListener('click', openCart);
@@ -34,7 +34,7 @@ export function setupDrawer() {
   dom.cartClear.addEventListener('click', () => {
     if (state.cart.length === 0) return;
     clearCart();
-    showToast('🗑 Panier vidé');
+    showToast('ðŸ—‘ Panier vidÃ©');
   });
   dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
   loadSharedCart();
@@ -81,12 +81,20 @@ export function switchView(tab) {
   const heroWrap   = document.getElementById('k-hero-fixed-wrap');
   const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
+  const pavilions  = document.getElementById('k-pavilions');
+  const pavilions  = document.getElementById('k-pavilions');
+  const pavilions  = document.getElementById('k-pavilions');
+  const pavilions  = document.getElementById('k-pavilions');
 
   if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
   if (favView)   favView.classList.toggle('show', tab === 'fav');
   if (trackView) trackView.classList.toggle('show', tab === 'track');
   if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
   if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
+  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
+  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
+  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
+  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
 
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
   bus.emit('view:changed', tab);
@@ -94,7 +102,7 @@ export function switchView(tab) {
   if (pageScroll) {
     pageScroll.dataset.tab = tab;
     if (tab !== 'shop') {
-      // Désactiver le pager cage quand on quitte la boutique
+      // DÃ©sactiver le pager cage quand on quitte la boutique
       pageScroll.style.top = '';
       pageScroll.classList.remove('k-pager-active');
     }
@@ -156,3 +164,4 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
+
