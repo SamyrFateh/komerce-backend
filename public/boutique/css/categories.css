@@ -493,3 +493,58 @@
 @media (min-width: 1200px) {
   /* .k-cats-shell top → géré par var(--header-h) à 1200px via tokens.css */
 }
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP CATEGORY CHIPS POLISH
+   Objectif :
+   - chips desktop plus compactes
+   - pas de piège de scroll quand la souris est dessus
+   - mobile inchangé
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+  .k-cats-shell {
+    padding-bottom: 6px;
+  }
+
+  .k-cats {
+    gap: 6px;
+    padding: 7px clamp(16px, 3vw, 40px) 0;
+
+    /*
+      Desktop : ne pas transformer la zone chips en rail qui capture la molette.
+      Les chips peuvent revenir à la ligne si nécessaire.
+    */
+    flex-wrap: wrap;
+    overflow: visible;
+    overflow-x: visible;
+    overflow-y: visible;
+    overscroll-behavior: auto;
+    scroll-snap-type: none;
+  }
+
+  .k-cats::before,
+  .k-cats::after {
+    display: none;
+  }
+
+  .k-chip {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 650;
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(31,48,36,.05);
+  }
+
+  .k-chip-photo {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+
+  .k-chip-label {
+    font-size: 12px;
+    max-width: none;
+  }
+}
