@@ -58,6 +58,19 @@ export function ensureDesktopScrollOwner() {
   document.documentElement.style.removeProperty('--pager-h');
   document.documentElement.style.removeProperty('--pager-w');
   document.documentElement.style.removeProperty('--bnav-h');
+
+  // Guard rAF : le pager peut réécrire des styles inline de façon asynchrone
+  // juste après ce cleanup synchrone (race condition au resize/transition de tab).
+  // On repasse un second nettoyage au frame suivant pour s'assurer que
+  // #k-page-scroll ne redevient pas scroll container et ne casse pas le sticky
+  // du side cart. Mobile non concerné (guard isDesktop() en entrée).
+  requestAnimationFrame(function() {
+    if (!isDesktop()) return;
+    var ps2 = document.getElementById('k-page-scroll');
+    var grid2 = document.getElementById('k-grid');
+    if (ps2) clearInlinePagerStyles(ps2);
+    if (grid2) clearInlinePagerStyles(grid2);
+  });
 }
 
 export function scrollPageToTop(behavior = 'smooth') {
