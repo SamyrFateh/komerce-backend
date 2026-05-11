@@ -38,7 +38,7 @@ import {
 import {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts,
+  loadProducts, setActiveCat,
 }                              from './b-catalog.js';
 import {
   initFlatSubcat, renderSubcatChips,
@@ -76,7 +76,7 @@ import {
 }                              from './b-pager.js';
 // setupDesktopSidebar désactivé — mode Temu/Shein = chips rail uniquement, pas de sidebar verticale
 // import { setupDesktopSidebar } from './b-desktop-sidebar.js';
-import { installScrollOwner } from './b-scroll-owner.js';
+import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
 
 'use strict';
 
@@ -101,6 +101,10 @@ import { installScrollOwner } from './b-scroll-owner.js';
 // ── CONSTANTES KOMERCE ──────────────────────────────────────
 const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
+
+const PAVILION_CATEGORY_ALIASES = {
+  'Créations personnelles': 'Sur-mesure',
+};
 
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║  §13 · INIT — Boot sequence, bnav, seeAll, global listeners      ║
@@ -131,47 +135,34 @@ function init() {
   loadRelais();
 }
 
-// Pavillons d'univers sous le hero : 6 piliers + filtres rapides Soldes/Tendances
-// Click sur un pavillon → active la cat correspondante + scroll vers le catalogue
+// Pavillons d'univers sous le hero : source de vérité = setActiveCat().
+// On ne masque pas le rail et on ne retarde pas le rendu : les pavillons restent du HTML statique.
 function setupPavilions() {
-  document.querySelectorAll('[data-pav-cat]').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      var cat = btn.dataset.pavCat;
-      var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
-      if (chip) {
-        chip.click();
-      } else {
-        // Cat absente du rail (cas Solaire vide en DB) → activer via setActiveCat
-        import('./b-catalog.js').then(function(m) {
-          if (m.setActiveCat) m.setActiveCat(cat);
-        });
-      }
-      // Scroll vers le catalogue (juste après le bloc pavillons)
-      var grid = document.getElementById('k-grid') || document.getElementById('k-page-scroll');
-      if (grid) {
-        // Petit délai pour laisser le rendu se stabiliser avant le scroll
-        setTimeout(function() {
-          grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }
-    });
-  });
+  var root = document.getElementById('k-pavilions');
+  if (!root || root.dataset.bound === '1') return;
+  root.dataset.bound = '1';
 
-  // Bouton Tendances : pour l'instant, équivaut à "Tout" (placeholder).
-  // Quand tu auras un tri "tendance" côté API, on remplacera ici.
-  var tendanceBtn = document.querySelector('[data-pav-tendances]');
-  if (tendanceBtn) {
-    tendanceBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      var allChip = document.querySelector('.k-chip[data-cat="all"]');
-      if (allChip) allChip.click();
-      var grid = document.getElementById('k-grid');
-      if (grid) setTimeout(function() {
-        grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    });
-  }
+  root.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-pav-cat], [data-pav-tendances]');
+    if (!btn || !root.contains(btn)) return;
+
+    e.preventDefault();
+
+    var cat = btn.dataset.pavCat || 'all';
+    if (btn.dataset.pavTendances === '1') cat = 'all';
+    cat = PAVILION_CATEGORY_ALIASES[cat] || cat;
+
+    setActiveCat(cat);
+
+    var target = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+    if (target) {
+      requestAnimationFrame(function() {
+        setTimeout(function() {
+          scrollPageToElement(target, -8, 'smooth');
+        }, 60);
+      });
+    }
+  });
 }
 
 // Liens Boutique du footer → activent la catégorie + scroll au catalogue
