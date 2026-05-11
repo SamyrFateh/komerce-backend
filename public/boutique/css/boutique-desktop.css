@@ -1867,8 +1867,10 @@
 }
 /* Mobile pavillons: cachés tant que la vue boutique n'est pas active */
 @media (max-width: 899px) {
-  body:not(.k-view-shop) #k-pavilions {
+  body:not(.k-view-shop) #k-pavilions,
+  body:not(.k-pavilions-ready) #k-pavilions {
     display: none;
   }
 }
+
 
