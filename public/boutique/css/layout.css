@@ -1334,3 +1334,15 @@ body {
     display: block;
   }
 }
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART ALIGNMENT — start with product grid
+   Le side cart commence au niveau visuel de la grille produits.
+   Il reste intégré + sticky naturel.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1180px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    margin-top: 64px;
+  }
+}
