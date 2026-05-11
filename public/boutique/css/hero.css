@@ -269,35 +269,3 @@
 
 /* Trust bar : desktop only (déclarée dans desktop-mega-nav.css) */
 .k-hero-trust-bar { display: none; }
-/* ══════════════════════════════════════════════════════════════
-   MOBILE CATEGORY RAIL FLASH FIX
-   Sur mobile, la navigation principale sous le hero est assurée par
-   les pavillons "Nos univers". On masque la barre catégories du hero
-   pour éviter le flash / débordement des grosses chips au chargement.
-   Desktop inchangé.
-   ══════════════════════════════════════════════════════════════ */
-
-@media (max-width: 899px) {
-  #k-sticky-bar.k-hero-cats-sticky,
-  #k-sticky-bar .k-hero-overlay,
-  #k-sticky-bar .k-cats-shell,
-  #k-sticky-bar #k-cats,
-  #k-sticky-bar #k-subcats-wrap {
-    display: none;
-  }
-
-  #k-sticky-bar.k-hero-cats-sticky {
-    height: 0;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: none;
-    border: 0;
-  }
-
-  #k-bar-spacer {
-    display: none;
-    height: 0;
-  }
-}
