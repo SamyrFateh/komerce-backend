@@ -1222,3 +1222,37 @@ body {
 }
 
 /* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP STICKY CONTEXT FIX
+   Source de vérité : side cart intégré + sticky naturel.
+   Ne pas transformer en fixed. Ne pas ajouter de JS gate.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+  html {
+    overflow-x: visible;
+    overflow-y: auto;
+  }
+
+  body {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  #k-page-scroll,
+  #k-desktop-catalog-wrap,
+  #k-catalog-section {
+    overflow: visible;
+  }
+
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    position: sticky;
+    top: calc(var(--header-h, 72px) + 12px);
+    align-self: flex-start;
+    transform: none;
+    will-change: auto;
+    contain: none;
+  }
+}
