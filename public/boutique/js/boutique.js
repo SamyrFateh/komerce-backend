@@ -118,6 +118,10 @@ const PAVILION_CATEGORY_ALIASES = {
 function init() {
   initDom();
   document.body.classList.add('k-view-shop');
+
+  requestAnimationFrame(function() {
+    document.body.classList.add('k-pavilions-ready');
+  });
   installScrollOwner();
   updateCartBadge();
   setupCats();
@@ -222,4 +226,5 @@ document.addEventListener('click', function(e) {
     d.classList.toggle('active', i === idx);
   });
 });
+
 
