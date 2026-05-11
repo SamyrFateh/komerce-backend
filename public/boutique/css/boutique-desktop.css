@@ -1650,3 +1650,108 @@
 
 
 /* ══ MEGA DROPDOWN global rules → migré dans shared.css ══ */
+
+
+/* ═══════════════════════════════════════════════════════════════
+   PATCH P0/P1 — Navigation desktop
+   Appliqué en fin de fichier pour garantir la priorité cascade.
+   Mobile (< 900px) : aucune règle ici → zéro régression.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* ── P0-A : RAIL CHIPS — plus compact, non-piégeur de molette ── */
+  /*
+     Le bloc "MEGA-NAV" plus haut fixait height:52px + overflow-x:auto
+     + flex-wrap:nowrap → le rail capturait la molette verticale.
+     On corrige ici avec la priorité de dernière déclaration.
+  */
+  .k-cats {
+    flex-wrap: wrap;           /* les chips reviennent à la ligne → pas de scroll horizontal */
+    overflow: visible;         /* libère la molette verticale */
+    overflow-x: visible;
+    overflow-y: visible;
+    overscroll-behavior: auto;
+    scroll-snap-type: none;
+    height: auto;              /* plus de hauteur fixe imposée */
+    padding: 6px clamp(16px, 3vw, 40px) 7px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  /* ── P0-B : CHIP individuelle — taille réduite ── */
+  /*
+     Était : height:52px, padding:0 18px, font-size:13.5px
+     Cible  : height:30px, padding:0 12px, font-size:12px
+  */
+  .k-chip {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    /* on garde border-radius:0 et border-bottom du mega-nav (style nav) */
+  }
+
+  /* ── P0-C : ICÔNE PHOTO chip — proportionnelle ── */
+  .k-chip-photo {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
+  }
+  .k-chip-photo svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* ── P0-D : LABEL chip — taille réduite ── */
+  .k-chip-label {
+    font-size: 12px;
+  }
+
+  /* ── P0-E : SOUS-CHIPS de section (k-sec-subcats) ──
+     Était : flex-wrap:nowrap + overflow-x:auto → piège molette.
+     Cible  : flex-wrap:wrap + overflow:visible
+  */
+  .k-sec-subcats {
+    flex-wrap: wrap;
+    overflow: visible;
+    overflow-x: visible;
+    overflow-y: visible;
+    /* retire le mask-image latéral qui n'a plus de sens sans scroll */
+    -webkit-mask-image: none;
+    mask-image: none;
+    overscroll-behavior: auto;
+    padding: 4px 0 10px;
+  }
+
+  /* ── P0-F : SOUS-CHIP de section — taille réduite ── */
+  .k-sec-subchip {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 11.5px;
+  }
+
+  /* ── P1-A : PAVILLONS — moins hauts sur desktop intermédiaire (900-1199px) ── */
+  .k-pav-tile {
+    aspect-ratio: 1.7;         /* était ~1.15 base ; plus large = moins haut */
+    padding: 14px 12px;        /* était 18px 14px */
+  }
+}
+
+/* ── P1-B : PAVILLONS — desktop large (≥ 1200px) ── */
+@media (min-width: 1200px) {
+  .k-pav-tile {
+    aspect-ratio: 1.6;         /* était 1.05 → beaucoup trop carré/haut */
+    padding: 14px 10px;        /* était 18px 12px */
+  }
+  /* .k-pav-sub reste display:none (existant) → OK */
+}
+
+/* ── P0-G : FADES LATÉRAUX du shell — inutiles sans scroll horizontal ── */
+@media (min-width: 900px) {
+  .k-cats-shell .k-cats-wrap-fade-left,
+  .k-cats-shell .k-cats-wrap-fade-right { display: none; }
+}
+
