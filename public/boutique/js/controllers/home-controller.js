@@ -7,9 +7,19 @@ import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories, getRailCategoryKeys } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
+import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
 
 function getCatsEl() {
   return document.getElementById('k-cats');
+}
+
+function isDesktop() {
+  return window.innerWidth >= 900;
+}
+
+function scrollToCatalog() {
+  const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+  if (catalog) scrollPageToElement(catalog, -120, 'smooth');
 }
 
 /**
@@ -63,11 +73,10 @@ export function renderSubcatRail(catKey) {
       wrap.querySelectorAll('.k-subchip').forEach(b => b.classList.toggle('active', b === btn));
       // Bug 10 fix : import statique en tête de fichier — plus d'import() dynamique avec risque de race condition
       renderGrid();
-      const catalog = document.getElementById('k-catalog-section');
-      if (catalog) {
-        const top = catalog.getBoundingClientRect().top + window.scrollY - 130;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-      }
+      requestAnimationFrame(function() {
+        renderSubcatRail(state.activeCat);
+        scrollToCatalog();
+      });
     });
   });
 }
@@ -148,7 +157,7 @@ function handleCategorySelection(cat, deps) {
 
   if (cat === 'all') {
     if (state.activeCat === 'all') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollPageToTop('smooth');
       return;
     }
     syncRailActiveState('all', { center: true });
@@ -158,7 +167,7 @@ function handleCategorySelection(cat, deps) {
       renderSubcatRail(null);
       syncDesktopSidebar('all');
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop('smooth');
     return;
   }
 
@@ -169,19 +178,21 @@ function handleCategorySelection(cat, deps) {
       renderSubcatRail(cat);
       syncDesktopSidebar(cat);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop('smooth');
     return;
   }
 
   if (cat === state.activeCat) {
+    if (window.innerWidth >= 900) {
+      renderSubcatRail(cat);
+      scrollToCatalog();
+      return;
+    }
+
     syncRailActiveState('all', { center: true });
     state.sectionSubcats = {};
     setActiveCat('all');
-    if (window.innerWidth >= 900) {
-      renderSubcatRail(null);
-      syncDesktopSidebar('all');
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop('smooth');
     return;
   }
 
@@ -191,12 +202,13 @@ function handleCategorySelection(cat, deps) {
     renderSubcatRail(cat);
     syncDesktopSidebar(cat);
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  scrollPageToTop('smooth');
 }
 
 export function setupHomeController(deps) {
   const catsEl = renderCategoryRail();
-  if (!catsEl) return;
+  if (!catsEl || catsEl.dataset.bound === '1') return;
+  catsEl.dataset.bound = '1';
 
   catsEl.querySelectorAll('.k-chip').forEach((chip) => {
     chip.addEventListener('click', () => handleCategorySelection(chip.dataset.cat, deps));
