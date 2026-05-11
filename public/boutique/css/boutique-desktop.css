@@ -1271,10 +1271,12 @@
     padding-top: 0;
   }
 
-  /* Grille pleine largeur — écrase le flex:1 hérité */
+  /* Grille : prend le reste de l'espace après le side cart.
+     flex-basis:0 (pas 100%) pour coexister avec .k-side-cart dans le flex row.
+     max-width:100% retiré — il écrasait le flex et éjectait le side cart. */
   #k-desktop-catalog-wrap #k-catalog-section {
-    flex: 1 1 100%;
-    max-width: 100%;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 0 clamp(16px, 3vw, 40px);
   }
 }
