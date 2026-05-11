@@ -1755,3 +1755,113 @@
   .k-cats-shell .k-cats-wrap-fade-right { display: none; }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════
+   PATCH P1-VISUEL — Navigation desktop (post P0)
+   Problèmes résolus :
+     1. "Voir tout →" trop discret sur desktop
+     2. Indicateur de catégorie active dans le chip-rail (fil d'Ariane léger)
+     3. Visibilité du bouton retour en vue flat-cat
+   Contraintes :
+     - CSS pur, aucun JS modifié
+     - Mobile (< 900px) : aucune règle ici → zéro régression
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── P1V-1 : BOUTON "VOIR TOUT →" — plus visible sur desktop ── */
+@media (min-width: 900px) {
+  /*
+    Base (mobile) : color:var(--ocean), font-size:12px, background:none, border:none
+    Desktop : on transforme en mini-bouton contrasté avec bordure et flèche animée
+  */
+  .k-sec-see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--coral);
+    background: rgba(200, 92, 45, .07);
+    border: 1.5px solid rgba(200, 92, 45, .25);
+    border-radius: 999px;
+    transition: background .15s, border-color .15s, transform .12s;
+    letter-spacing: -.01em;
+  }
+  .k-sec-see-all:hover {
+    background: rgba(200, 92, 45, .13);
+    border-color: var(--coral);
+    transform: translateX(2px);   /* légère translation → signal "aller vers" */
+  }
+  .k-sec-see-all:active {
+    background: rgba(200, 92, 45, .2);
+    transform: translateX(1px);
+  }
+}
+
+/* ── P1V-2 : INDICATEUR CATÉGORIE ACTIVE — fil d'Ariane léger ── */
+/*
+   Quand une .k-chip est active, le rail n'affiche pas explicitement
+   "vous êtes dans Mode". On ajoute un badge textuel discret sous le rail
+   via .k-cats-shell[data-active-cat] ::after (CSS pur, aucun JS).
+
+   Mais comme le HTML n'expose pas forcément data-active-cat sur le shell,
+   on utilise une autre approche : la chip active a déjà un style coral.
+   On renforce juste son signal visuel en mode wrap (post P0) avec
+   un léger fond pill coral pour être immédiatement identifiable.
+*/
+@media (min-width: 900px) {
+  /* En mode wrap (post P0), les chips ont border-radius:999px.
+     Active chip : fond coral solide, plus de border-bottom (mega-nav
+     style supprimé par le patch P0). */
+  .k-chip.active {
+    background: var(--coral) !important;
+    color: #fff !important;
+    border-color: var(--coral) !important;
+    box-shadow: 0 2px 8px rgba(200, 92, 45, .28) !important;
+    border-bottom-color: var(--coral) !important;
+  }
+  .k-chip.active .k-chip-label {
+    color: #fff !important;
+    font-weight: 700;
+  }
+  .k-chip.active .k-chip-photo {
+    /* photo légèrement voilée pour lisibilité sur coral */
+    opacity: .85;
+  }
+  .k-chip.active .k-chip-photo svg {
+    stroke: #fff !important;
+  }
+}
+
+/* ── P1V-3 : BOUTON RETOUR "k-flatcat-back" — plus visible ── */
+/*
+   Actuellement : border, background:white, color:text-muted — se noie dans le fond.
+   On renforce sans changer le HTML.
+*/
+@media (min-width: 900px) {
+  .k-flatcat-back {
+    background: var(--sand-warm);
+    border-color: rgba(42, 62, 44, .25);
+    color: var(--text);
+    font-weight: 700;
+    /* flèche SVG : on la renforce via un outline subtil */
+    box-shadow: 0 1px 4px rgba(31, 48, 36, .08);
+  }
+  .k-flatcat-back:hover {
+    background: #fff;
+    border-color: var(--coral);
+    color: var(--coral);
+    box-shadow: 0 2px 8px rgba(200, 92, 45, .15);
+  }
+  /* Titre du flat-cat : renforcer pour ancrage "vous êtes dans Mode" */
+  .k-flatcat-header {
+    background: linear-gradient(to right, rgba(200,92,45,.04), transparent 60%);
+    border-radius: 10px;
+    padding: 8px 12px 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .k-flatcat-title {
+    font-size: 20px;
+  }
+}
