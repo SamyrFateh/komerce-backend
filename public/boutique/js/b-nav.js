@@ -82,18 +82,12 @@ export function switchView(tab) {
   const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
   const pavilions  = document.getElementById('k-pavilions');
-  const pavilions  = document.getElementById('k-pavilions');
-  const pavilions  = document.getElementById('k-pavilions');
-  const pavilions  = document.getElementById('k-pavilions');
 
   if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
   if (favView)   favView.classList.toggle('show', tab === 'fav');
   if (trackView) trackView.classList.toggle('show', tab === 'track');
   if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
   if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
-  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
-  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
-  if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
   if (pavilions) pavilions.classList.toggle('u-hidden', tab !== 'shop');
 
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
@@ -164,4 +158,5 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
+
 
