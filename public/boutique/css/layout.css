@@ -602,10 +602,18 @@ body {
    Il neutralise le style.top inline de setupMobile().
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  html, body {
+  html {
     height: auto;
     overflow-y: auto;
-    overflow-x: hidden;
+    /* overflow-x:hidden sur html crée un scroll container et casse position:sticky.
+       On utilise visible ici — le clip horizontal est assuré par body (overflow-x:clip). */
+    overflow-x: visible;
+  }
+  body {
+    height: auto;
+    overflow-y: auto;
+    /* overflow-x:clip rogne sans créer de scroll container (≠ hidden). */
+    overflow-x: clip;
   }
 
   /* Neutraliser tout overflow blocking hérité */
