@@ -874,6 +874,29 @@ export function setupDesktopUpgrade() {
     new ResizeObserver(_updateSideCartStickyTop).observe(_scPavilions);
   }
 
+  // ── Fix : masquer le side cart quand le footer entre dans le viewport ──
+  // position:sticky ne connaît pas les limites du footer — sans ce fix,
+  // le side cart chevauche visuellement le footer au bas de page.
+  (function setupSideCartFooterGuard() {
+    var footer = document.getElementById('k-footer');
+    var sc     = document.getElementById('k-side-cart');
+    if (!footer || !sc || typeof IntersectionObserver === 'undefined') return;
+
+    var observer = new IntersectionObserver(function(entries) {
+      var footerVisible = entries[0].isIntersecting;
+      sc.style.transition = 'opacity .2s ease, transform .2s ease';
+      sc.style.opacity    = footerVisible ? '0'    : '';
+      sc.style.pointerEvents = footerVisible ? 'none' : '';
+      sc.style.transform  = footerVisible ? 'translateY(8px)' : '';
+    }, {
+      // Déclencher un peu avant que le footer soit complètement visible
+      rootMargin: '0px 0px -20px 0px',
+      threshold: 0,
+    });
+
+    observer.observe(footer);
+  })();
+
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
   bus.on('view:changed', function(tab) {
     var isShop = tab === 'shop';
