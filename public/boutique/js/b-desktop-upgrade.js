@@ -90,9 +90,10 @@ function _openForChip(chip) {
   var el = _getMegaEl();
 
   // Position : pleine largeur, collé sous le .k-cats-shell
+  // FIX Bug mega : position:fixed → coordonnées viewport (getBoundingClientRect suffit, pas de + scrollY)
   var shell = document.querySelector('.k-cats-shell');
   var shellRect = shell ? shell.getBoundingClientRect() : { bottom: 120, left: 0, width: window.innerWidth };
-  el.style.top   = (shellRect.bottom + window.scrollY) + 'px';
+  el.style.top   = shellRect.bottom + 'px';   /* viewport-relative, correct avec position:fixed */
   el.style.left  = shellRect.left + 'px';
   el.style.width = shellRect.width + 'px';
 

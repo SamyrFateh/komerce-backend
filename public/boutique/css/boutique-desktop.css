@@ -217,8 +217,8 @@
 
 .k-mega-dropdown {
   display: none;
-  position: absolute;
-  z-index: 200;
+  position: fixed;   /* FIX Bug mega : fixed ↔ viewport, pas page (cats-shell est sticky) */
+  z-index: 105;      /* sous header (200) et cats-shell (110) → s'ouvre SOUS les chips */
   left: 0;
   background: var(--white);
   border-top: 1px solid rgba(31,48,36,.07);
