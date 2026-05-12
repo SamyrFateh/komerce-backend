@@ -2177,3 +2177,23 @@
     margin-top: 52px;
   }
 }
+
+/* =========================================================
+   PATCH — Remove legacy pavilions on desktop
+   Les pavillons font doublon avec le rail catégories sticky.
+   On les garde mobile, on les supprime desktop.
+   ========================================================= */
+
+@media (min-width: 900px) {
+  .k-pavilions {
+    display: none;
+  }
+
+  .k-proverb-sep {
+    display: none;
+    height: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
