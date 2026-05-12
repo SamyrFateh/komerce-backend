@@ -1872,6 +1872,10 @@
   body:not(.k-pavilions-ready) #k-pavilions {
     display: none;
   }
+  /* Vue boutique active : pavillons masqués — navigation via chips uniquement */
+  body.k-view-shop.k-pavilions-ready #k-pavilions {
+    display: none;
+  }
 }
 
 
