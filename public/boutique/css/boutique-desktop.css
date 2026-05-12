@@ -2021,12 +2021,12 @@
 
   /* 1. Conteneur : hauteur premium */
   #k-hero-fixed-wrap {
-    max-height: 300px;
+    max-height: 340px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 300px;
+    max-height: 340px;
     overflow: hidden;
     background: #1F3024;
   }
@@ -2035,13 +2035,13 @@
   #k-hero-fixed-wrap .k-hero-img {
     display: block !important;
     width: 100%;
-    height: clamp(220px, 18vw, 280px) !important;
-    max-height: 280px !important;
+    height: clamp(260px, 22vw, 340px) !important;
+    max-height: 340px !important;
     object-fit: cover;
-    object-position: center 12%;
+    object-position: center 38%;
   }
 
-  /* 3. Voile dégradé gauche pour lisibilité slogan */
+  /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */
   #k-hero-fixed-wrap .k-hero-media::before {
     display: block;
     content: '';
@@ -2049,10 +2049,10 @@
     inset: 0;
     background: linear-gradient(
       100deg,
-      rgba(20,36,22,.88) 0%,
-      rgba(20,36,22,.60) 30%,
-      rgba(20,36,22,.15) 52%,
-      transparent 65%
+      rgba(20,36,22,.55) 0%,
+      rgba(20,36,22,.32) 28%,
+      rgba(20,36,22,.06) 50%,
+      transparent 62%
     );
     z-index: 1;
     pointer-events: none;
