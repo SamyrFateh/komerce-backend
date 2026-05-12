@@ -819,11 +819,13 @@ function _setupQtyObserver() {
 // Appelé au load, au resize, et quand k-subcats-wrap change (MutationObserver).
 function _updateSideCartStickyTop() {
   if (!isDesktop()) return;
-  var header   = document.querySelector('.k-header');
-  var cats     = document.querySelector('.k-cats-shell');
-  var subcats  = document.getElementById('k-subcats-wrap');
-  var h = (header  ? header.offsetHeight  : 76)
-        + (cats    ? cats.offsetHeight    : 0)
+  var header    = document.querySelector('.k-header');
+  var cats      = document.querySelector('.k-cats-shell');   // display:none desktop → 0
+  var pavilions = document.getElementById('k-pavilions');    // sticky en desktop, remplace les chips
+  var subcats   = document.getElementById('k-subcats-wrap');
+  var h = (header    ? header.offsetHeight    : 76)
+        + (cats      ? cats.offsetHeight      : 0)
+        + (pavilions ? pavilions.offsetHeight : 0)           // pavillons sticky sous le header
         + (subcats && subcats.offsetHeight && subcats.children.length ? subcats.offsetHeight : 0)
         + 16;
   document.documentElement.style.setProperty('--sc-sticky-top', h + 'px');
@@ -865,6 +867,11 @@ export function setupDesktopUpgrade() {
   var _scCatsShell = document.querySelector('.k-cats-shell');
   if (_scCatsShell && typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(_updateSideCartStickyTop).observe(_scCatsShell);
+  }
+  // Pavillons : sticky en desktop, remplacent les chips → observer leur hauteur aussi.
+  var _scPavilions = document.getElementById('k-pavilions');
+  if (_scPavilions && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(_updateSideCartStickyTop).observe(_scPavilions);
   }
 
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
