@@ -162,28 +162,24 @@ function handleCategorySelection(cat, deps) {
     }
     syncRailActiveState('all', { center: true });
     state.sectionSubcats = {};
+    // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
     setActiveCat('all');
-    if (window.innerWidth >= 900) {
-      renderSubcatRail(null);
-      syncDesktopSidebar('all');
-    }
     scrollPageToTop('smooth');
     return;
   }
 
   if (state.activeCat === 'all') {
     syncRailActiveState(cat, { center: true });
+    // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
     setActiveCat(cat);
-    if (window.innerWidth >= 900) {
-      renderSubcatRail(cat);
-      syncDesktopSidebar(cat);
-    }
     scrollPageToTop('smooth');
     return;
   }
 
   if (cat === state.activeCat) {
     if (window.innerWidth >= 900) {
+      // Même catégorie re-cliquée : setActiveCat n'est pas appelé, pas de bus event
+      // → appel direct nécessaire ici (seul endroit légitime)
       renderSubcatRail(cat);
       scrollToCatalog();
       return;
@@ -197,11 +193,8 @@ function handleCategorySelection(cat, deps) {
   }
 
   syncRailActiveState(cat, { center: true });
+  // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
   setActiveCat(cat);
-  if (window.innerWidth >= 900) {
-    renderSubcatRail(cat);
-    syncDesktopSidebar(cat);
-  }
   scrollPageToTop('smooth');
 }
 

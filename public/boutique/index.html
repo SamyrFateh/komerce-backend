@@ -133,7 +133,7 @@ if('serviceWorker' in navigator){
         <span class="k-line-2">Trouve&nbsp;!</span><!-- masqué desktop Option B via boutique-desktop.css -->
         <p class="k-hero-sub">Mode, tech, beauté — tout ce que vous aimez, livré aux Comores</p>
         <div class="k-hero-cta-row">
-          <button class="k-hero-cta-primary" onclick="document.getElementById('k-grid').scrollIntoView({behavior:'smooth'})">Découvrir le catalogue →</button>
+          <button class="k-hero-cta-primary">Découvrir le catalogue →</button>
           <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">📦 Suivre ma commande</button>
         </div>
         <div class="k-hero-trust">
@@ -524,6 +524,19 @@ if('serviceWorker' in navigator){
     });
   }
 
+  // Bouton "Découvrir le catalogue" : scroll vers le catalogue (mobile ET desktop).
+  // Note : le listener desktop ci-dessous (dans le bloc else) cible #k-catalog-section
+  // en priorité. Ce listener universel assure le fonctionnement mobile.
+  (function() {
+    var ctaP = document.querySelector('.k-hero-cta-primary');
+    if (ctaP) {
+      ctaP.addEventListener('click', function() {
+        var target = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  })();
+
   if (isMobile()) {
     setupMobile();
   } else {
@@ -532,7 +545,7 @@ if('serviceWorker' in navigator){
     var ctaPrimary = document.querySelector('.k-hero-cta-primary');
     if (ctaPrimary) {
       ctaPrimary.addEventListener('click', function() {
-        var catalog = document.getElementById('k-catalog-section');
+        var catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
         if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }

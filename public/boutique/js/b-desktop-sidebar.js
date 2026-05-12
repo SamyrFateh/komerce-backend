@@ -77,6 +77,7 @@ function _buildSidebar(el) {
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
   });
   // ORPHELIN F supprimé — bus.emit('sidebar:built') n'avait aucun listener dans la codebase.
+}
 
 /**
  * Met à jour l'état actif des items sidebar selon state.activeCat.

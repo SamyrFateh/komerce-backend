@@ -132,7 +132,9 @@ export function setupBnav() {
 }
 
 /**
- * Branche le bouton "Voir tout les promos".
+ * @deprecated MORT — #k-see-all-promos est absent de index.html.
+ * Le guard `if (btn)` rend cette fonction no-op silencieuse.
+ * À supprimer avec l'import correspondant dans boutique.js lors du prochain nettoyage.
  */
 export function setupSeeAll() {
   const btn = $('#k-see-all-promos');
