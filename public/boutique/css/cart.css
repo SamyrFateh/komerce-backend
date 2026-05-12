@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — cart.css
    Panier drawer, checkout, OTP, suivi, favoris, toast, WhatsApp FAB.
    Mobile-first, zéro !important.
@@ -899,3 +899,33 @@ body.cart-open .k-wa-fab {
   box-shadow: 0 4px 14px var(--violet-light, rgba(108,63,197,.3));
   letter-spacing: .01em;
 }
+
+/* =========================================================
+   PATCH — Desktop side cart attention + expanded state
+   Clic petite dame desktop :
+   - met le side cart en évidence
+   - déplie la preview si elle était collapsée
+   ========================================================= */
+
+@media (min-width: 900px) {
+  #k-side-cart.is-attention {
+    box-shadow:
+      0 0 0 3px rgba(200, 92, 45, .25),
+      0 14px 40px rgba(31, 48, 36, .18);
+    transform: translateY(-2px);
+    transition:
+      box-shadow .22s ease,
+      transform .22s ease;
+  }
+
+  #k-side-cart.is-expanded .k-sc-items > * {
+    display: flex;
+  }
+
+  #k-side-cart.is-expanded .k-sc-items {
+    max-height: calc(100dvh - var(--header-h, 72px) - 245px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
