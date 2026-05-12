@@ -1,4 +1,4 @@
-/**
+﻿/**
  * b-cart.js — Module ES · §7 CART INTERACTIONS + §10 CART PANEL & SHARE + §14 STEPPER
  * Extrait de boutique.js Sprint 2F — Option C
  *
@@ -400,19 +400,37 @@ function quickRemove(productId, btnEl) {
       scroll.savedY = window.scrollY;
       document.body.classList.add('cart-open');
     } else {
-      // Desktop : le side cart est en sticky dans le flux.
-      // Si le panier a des articles → scroll vers lui pour qu'il soit visible.
-      // Si vide → ouvrir le drawer comme fallback (UX : la dame doit toujours répondre).
+      // Desktop : la petite dame doit produire une action visible.
+      // Le side cart est déjà dans le flux sticky : on le rafraîchit,
+      // on le déplie et on le met brièvement en évidence.
       const sc = document.getElementById('k-side-cart');
-      if (cartQty() > 0 && sc) {
-        sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        // Panier vide : ouvrir le tiroir classique pour montrer l'état vide
-        dom.cartOverlay.classList.add('open');
-        dom.cartDrawer.classList.add('open');
-        scroll.savedY = window.scrollY;
-        document.body.classList.add('cart-open');
+
+      if (sc && cartQty() > 0) {
+        if (typeof window.__kmrcSideCart === 'function') {
+          window.__kmrcSideCart();
+        }
+
+        sc.classList.add('is-expanded');
+        sc.classList.add('is-attention');
+
+        sc.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        setTimeout(() => {
+          sc.classList.remove('is-attention');
+        }, 1200);
+
+        return;
       }
+
+      // Panier vide ou side cart absent : ouvrir le tiroir classique
+      // pour que le clic ait toujours une réponse visible.
+      dom.cartOverlay.classList.add('open');
+      dom.cartDrawer.classList.add('open');
+      scroll.savedY = window.scrollY;
+      document.body.classList.add('cart-open');
     }
   }
 
@@ -1595,3 +1613,4 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
+
