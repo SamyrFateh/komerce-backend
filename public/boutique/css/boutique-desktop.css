@@ -2021,12 +2021,12 @@
 
   /* 1. Conteneur : hauteur premium */
   #k-hero-fixed-wrap {
-    max-height: 340px;
+    max-height: 200px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 340px;
+    max-height: 200px;
     overflow: hidden;
     background: #1F3024;
   }
@@ -2035,10 +2035,10 @@
   #k-hero-fixed-wrap .k-hero-img {
     display: block !important;
     width: 100%;
-    height: clamp(260px, 22vw, 340px) !important;
-    max-height: 340px !important;
+    height: clamp(160px, 14vw, 200px) !important;
+    max-height: 200px !important;
     object-fit: cover;
-    object-position: center 38%;
+    object-position: center 28%;
   }
 
   /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */
