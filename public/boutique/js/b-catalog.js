@@ -103,6 +103,10 @@ bus.on('catalog:cat-changed', function(cat) {
   document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
     item.classList.toggle('is-active', item.dataset.cat === cat);
   });
+  // Sync pavillons — état actif via .is-active (CSS outline coral)
+  document.querySelectorAll('[data-pav-cat]').forEach(function(tile) {
+    tile.classList.toggle('is-active', tile.dataset.pavCat === cat);
+  });
   // Bug 2 fix : mettre à jour le rail de sous-catégories (desktop uniquement)
   if (isDesktop()) {
     _renderSubcatRail(cat);

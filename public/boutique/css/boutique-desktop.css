@@ -341,21 +341,21 @@
 @media (min-width: 900px) {
 
   #k-hero-fixed-wrap {
-    max-height: 360px;
+    max-height: 400px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 280px;
+    max-height: 320px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero-img {
-    height: clamp(240px, 16vw, 280px) !important;
-    max-height: 280px !important;
+    height: clamp(260px, 20vw, 320px) !important;
+    max-height: 320px !important;
     width: 100%;
     object-fit: cover;
-    object-position: center 30%;
+    object-position: center 8%;   /* remonte pour inclure les têtes */
     display: block;
   }
 
@@ -934,10 +934,11 @@
 
   .k-footer {
     display: block;
-    background: var(--text);
-    color: var(--white);
+    background: var(--sand-warm, #f6f0e3);
+    color: var(--text, #1F3024);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
+    border-top: 1px solid var(--border, #E3D9C9);
   }
 
   .k-footer-grid {
@@ -947,21 +948,21 @@
     max-width: var(--container);
     margin: 0 auto;
     padding-bottom: 32px;
-    border-bottom: 1px solid rgba(255,255,255,.1);
+    border-bottom: 1px solid rgba(31,48,36,.1);
   }
 
   .k-footer-brand-logo {
     font-family: var(--font-display);
     font-size: 22px;
     font-weight: 700;
-    color: var(--ocean-light);
+    color: var(--coral, #C85C2D);
     letter-spacing: -.5px;
     margin-bottom: 10px;
   }
 
   .k-footer-tagline {
     font-size: 12px;
-    color: rgba(255,255,255,.5);
+    color: var(--text-muted, #6B7B63);
     line-height: 1.65;
     max-width: 220px;
     margin-bottom: 16px;
@@ -976,9 +977,9 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    border: 1px solid rgba(255,255,255,.15);
-    background: transparent;
-    color: rgba(255,255,255,.55);
+    border: 1px solid rgba(31,48,36,.15);
+    background: var(--white);
+    color: var(--text-muted, #6B7B63);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -986,9 +987,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: rgba(255,255,255,.08);
-    border-color: rgba(255,255,255,.28);
-    color: var(--white);
+    background: var(--sand, #FDFAF5);
+    border-color: rgba(31,48,36,.3);
+    color: var(--text, #1F3024);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -1001,24 +1002,24 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: rgba(255,255,255,.38);
+    color: var(--text-light, #9EAC95);
     margin-bottom: 14px;
   }
 
   .k-footer-col-link {
     display: block;
     font-size: 13px;
-    color: rgba(255,255,255,.62);
+    color: var(--text-muted, #6B7B63);
     margin-bottom: 9px;
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-col-link:hover { color: var(--white); }
+  .k-footer-col-link:hover { color: var(--text, #1F3024); }
 
   .k-footer-newsletter-desc {
     font-size: 12px;
-    color: rgba(255,255,255,.42);
+    color: var(--text-muted, #6B7B63);
     line-height: 1.6;
     margin-bottom: 12px;
   }
@@ -1027,26 +1028,26 @@
     width: 100%;
     padding: 9px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255,255,255,.16);
-    background: rgba(255,255,255,.07);
-    color: var(--white);
+    border: 1px solid rgba(31,48,36,.15);
+    background: var(--white);
+    color: var(--text, #1F3024);
     font-size: 13px;
     font-family: var(--font);
     outline: none;
     margin-bottom: 8px;
     transition: border-color .15s, background .15s;
   }
-  .k-footer-newsletter-input::placeholder { color: rgba(255,255,255,.28); }
+  .k-footer-newsletter-input::placeholder { color: var(--text-light, #9EAC95); }
   .k-footer-newsletter-input:focus {
-    border-color: rgba(100,175,90,.5);
-    background: rgba(255,255,255,.10);
+    border-color: rgba(200,92,45,.35);
+    background: var(--white);
   }
 
   .k-footer-newsletter-btn {
     width: 100%;
     padding: 10px;
     border-radius: 8px;
-    background: var(--ocean);
+    background: var(--coral, #C85C2D);
     color: var(--white);
     font-size: 13px;
     font-weight: 700;
@@ -1055,7 +1056,7 @@
     cursor: pointer;
     transition: background .15s, transform .12s;
   }
-  .k-footer-newsletter-btn:hover { background: var(--ocean-dark); }
+  .k-footer-newsletter-btn:hover { background: var(--coral-dark, #A84820); }
   .k-footer-newsletter-btn:active { transform: scale(.98); }
 
   .k-footer-bottom {
@@ -1071,19 +1072,19 @@
 
   .k-footer-copy {
     font-size: 11px;
-    color: rgba(255,255,255,.28);
+    color: var(--text-light, #9EAC95);
   }
 
   .k-footer-legal-links { display: flex; gap: 16px; }
 
   .k-footer-legal-link {
     font-size: 11px;
-    color: rgba(255,255,255,.28);
+    color: var(--text-light, #9EAC95);
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-legal-link:hover { color: rgba(255,255,255,.6); }
+  .k-footer-legal-link:hover { color: var(--text, #1F3024); }
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1872,5 +1873,141 @@
     display: none;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN HARMONISATION — desktop
+   1. Chips rail + hero overlay → masqués, pavillons = nav primaire
+   2. Pavillons sticky sous le header
+   3. Pavillons compact (pill-row) à ≥1200px
+   4. Solaire — couleur propre (était identique à Enfant)
+   5. État actif pavillon — outline coral
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Masquer le rail de chips et le slogan hero en desktop ── */
+@media (min-width: 900px) {
+  /* Le rail de chips (categories) est redondant avec les pavillons */
+  .k-cats-shell { display: none; }
+
+  /* Le slogan/pills hero (k-hero-overlay) également */
+  .k-hero-overlay { display: none; }
+
+  /* Ajuster le padding interne du sticky bar sans le slogan */
+  .k-hero-cats-sticky {
+    padding-top: 0;
+  }
+
+  /* Retirer la variable --nav-bar-h désormais inutile — les subcats
+     s'ancrent directement sous les pavillons via categories.css sticky */
+  :root { --nav-bar-h: 0px; }
+}
+
+/* ── 2. Pavillons sticky sous le header ─────────────────────── */
+@media (min-width: 900px) {
+  #k-pavilions {
+    position: sticky;
+    top: var(--header-h, 68px);
+    z-index: 25;                          /* sous le header (z:100), au-dessus du catalogue */
+    background: var(--sand, #FDFAF5);
+    border-bottom: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 2px 12px rgba(31,48,36,.06);
+    padding: 8px 0 6px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Les subcats se positionneront sous les pavillons grâce à categories.css
+     qui utilise top: var(--header-h) — on corrige pour inclure les pavillons */
+  #k-subcats-wrap {
+    top: calc(var(--header-h, 68px) + 60px); /* header + barre pavillons compacte */
+  }
+
+  /* Chips filtres (Soldes / Tendances) : moins de marge en desktop */
+  .k-pavilions-chips { margin-bottom: 6px; }
+
+  /* Label "Nos univers" : discret mais lisible */
+  .k-pavilions-label {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+}
+
+@media (min-width: 1200px) {
+  #k-subcats-wrap {
+    top: calc(var(--header-h, 72px) + 56px);
+  }
+}
+
+/* ── 3. Pavillons compact pill-row à ≥1200px ────────────────── */
+@media (min-width: 1200px) {
+  .k-pavilions { padding: 6px 0 0; }
+
+  /* Masquer les filtres chips + label — la barre est trop compacte */
+  .k-pavilions-chips,
+  .k-pavilions-label { display: none; }
+
+  .k-pavilions-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+
+  /* Tuile en mode pill horizontal — icône + label côte à côte */
+  .k-pav-tile {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: auto;
+    height: 40px;
+    padding: 0 14px;
+    gap: 7px;
+    border-radius: 10px;
+  }
+
+  .k-pav-icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  .k-pav-icon svg { width: 18px; height: 18px; }
+
+  .k-pav-label { font-size: 12.5px; }
+
+  /* Sous-texte inutile en mode compact */
+  .k-pav-sub    { display: none; }
+
+  /* Badge : repositionné en haut-droite de la pill */
+  .k-pav-badge  {
+    top: 4px;
+    right: 6px;
+    font-size: 8.5px;
+    padding: 2px 5px;
+  }
+}
+
+/* ── 4. Solaire — couleur distincte de Enfant ───────────────── */
+/* Avant : background: #FAEEDA et color: #633806 — identiques à Enfant */
+.k-pav-tile--solaire {
+  background: #FFFBEB;
+  color: #412402;
+  border: 1.5px solid #BA7517;  /* inchangé — le trait doré est déjà une bonne signature */
+}
+.k-pav-tile--solaire:hover { background: #FEF3C7; }
+
+/* ── 5. État actif pavillon — outline coral + fond renforcé ─── */
+/* Le JS (b-catalog.js l.104 et l.580) pose .is-active via bus 'catalog:cat-changed' */
+.k-pav-tile.is-active {
+  outline: 2.5px solid var(--coral, #C85C2D);
+  outline-offset: 1px;
+  box-shadow: 0 4px 14px rgba(200,92,45,.15);
+}
+
+/* Renforcer les fonds hover de chaque couleur quand actif */
+.k-pav-tile--mode.is-active     { background: #F4C0D1; }
+.k-pav-tile--maison.is-active   { background: #C0DD97; }
+.k-pav-tile--tech.is-active     { background: #B5D4F4; }
+.k-pav-tile--enfant.is-active   { background: #FAC775; }
+.k-pav-tile--solaire.is-active  { background: #FDE68A; }
+.k-pav-tile--creations.is-active{ background: #CECBF6; }
 
 
