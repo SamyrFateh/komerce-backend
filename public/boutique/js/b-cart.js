@@ -1514,7 +1514,16 @@ function renderSideCart() {
   const cta = sc.querySelector('#k-sc-cta');
   if (cta && !cta._wired) {
     cta._wired = true;
-    cta.addEventListener('click', () => openCart());
+    cta.addEventListener('click', () => {
+      // Desktop : ouvrir le tiroir complet (le side cart est déjà visible,
+      // "Voir le panier" = accéder aux détails complets + WhatsApp + Commander)
+      renderCartBody();
+      dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
+      dom.cartOverlay.classList.add('open');
+      dom.cartDrawer.classList.add('open');
+      scroll.savedY = window.scrollY;
+      document.body.classList.add('cart-open');
+    });
   }
 
   // Bouton "Commander"

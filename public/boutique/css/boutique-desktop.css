@@ -984,6 +984,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    text-decoration: none;
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
