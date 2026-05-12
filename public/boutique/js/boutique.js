@@ -135,39 +135,8 @@ function init() {
   setupInfiniteScroll();
   initFlatSubcat();
   setupFooterLinks();
-  setupPavilions();
   loadProducts();
   loadRelais();
-}
-
-// Pavillons d'univers sous le hero : source de vÃ©ritÃ© = setActiveCat().
-// On ne masque pas le rail et on ne retarde pas le rendu : les pavillons restent du HTML statique.
-function setupPavilions() {
-  var root = document.getElementById('k-pavilions');
-  if (!root || root.dataset.bound === '1') return;
-  root.dataset.bound = '1';
-
-  root.addEventListener('click', function(e) {
-    var btn = e.target.closest('[data-pav-cat], [data-pav-tendances]');
-    if (!btn || !root.contains(btn)) return;
-
-    e.preventDefault();
-
-    var cat = btn.dataset.pavCat || 'all';
-    if (btn.dataset.pavTendances === '1') cat = 'all';
-    cat = PAVILION_CATEGORY_ALIASES[cat] || cat;
-
-    setActiveCat(cat);
-
-    var target = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
-    if (target) {
-      requestAnimationFrame(function() {
-        setTimeout(function() {
-          scrollPageToElement(target, -8, 'smooth');
-        }, 60);
-      });
-    }
-  });
 }
 
 // Liens Boutique du footer â†’ activent la catÃ©gorie + scroll au catalogue
@@ -226,5 +195,7 @@ document.addEventListener('click', function(e) {
     d.classList.toggle('active', i === idx);
   });
 });
+
+
 
 
