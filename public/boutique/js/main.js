@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module main
  * @brief Point d'entrée ES module de la boutique Komerce.
  *
@@ -27,10 +27,9 @@ import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
 // b-cart-pill.js désactivé — remplacé par b-mini-cart.js
-import { setupDesktopUpgrade }      from './b-desktop-upgrade.js';      // LOT 12 : refonte desktop Temu
-import { setupDesktopCatalogState } from './b-desktop-catalog-state.js'; // État visuel desktop catalogue
-import { isDesktop }                from './b-scroll-owner.js';
-import { setupMiniCart }             from './b-mini-cart.js';             // Mini-cart flottant mobile
+import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
+import { isDesktop }          from './b-scroll-owner.js';
+import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -39,13 +38,11 @@ if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       setupDesktopUpgrade();
-      setupDesktopCatalogState();
       setupMiniCart();   // Mini-cart flottant mobile
     });
   } else {
     setupDesktopUpgrade();
-      setupDesktopCatalogState();
-      setupMiniCart();     // Mini-cart flottant mobile
+    setupMiniCart();     // Mini-cart flottant mobile
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
@@ -63,4 +60,3 @@ if (typeof window !== 'undefined') {
     }, 150);
   }, { passive: true });
 }
-
