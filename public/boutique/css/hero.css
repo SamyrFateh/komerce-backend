@@ -19,7 +19,7 @@
   width: 100%;
   height: clamp(110px, 28vw, 140px);
   object-fit: cover;
-  object-position: 50% 12%;
+  object-position: 50% 0%;
   display: block;
 }
 .k-hero-mini-slogan {
@@ -115,7 +115,7 @@
     width: 100%;
     height: clamp(140px, 14vw, 188px);
     object-fit: cover;
-    object-position: 62% 18%;
+    object-position: 62% 0%;
     border-radius: 0;
     display: block;
   }
