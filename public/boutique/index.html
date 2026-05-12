@@ -51,7 +51,8 @@ if('serviceWorker' in navigator){
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
-<link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
+<link rel="preload" as="image" href="/images/Hero_1080x420.png"  media="(max-width: 899px)"  fetchpriority="high">
+<link rel="preload" as="image" href="/images/Hero_1600360.png"  media="(min-width: 900px)"   fetchpriority="high">
 <!-- CSS Komerce v2 — refactorisé, 0 !important, encodage UTF-8 propre -->
 <link rel="stylesheet" href="/boutique/css/tokens.css?v=339">
 <link rel="stylesheet" href="/boutique/css/reset.css?v=339">
@@ -121,7 +122,11 @@ if('serviceWorker' in navigator){
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <img class="k-hero-img" src="/images/hero_banner.png" width="1600" height="896" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      <picture>
+        <source media="(min-width: 900px)" srcset="/images/Hero_1600360.png" width="1600" height="360">
+        <source media="(max-width: 899px)"  srcset="/images/Hero_1080x420.png" width="1080" height="420">
+        <img class="k-hero-img" src="/images/Hero_1080x420.png" width="1080" height="420" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>
         <span class="k-line-1">Envoyez ce qui compte, partout aux Comores</span>
