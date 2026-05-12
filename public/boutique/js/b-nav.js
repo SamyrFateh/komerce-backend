@@ -9,7 +9,7 @@ import { bus }                           from './b-bus.js';
 import { state, dom, $, $$ }            from './b-store.js';
 import { apiGet }                        from './b-utils.js';
 import { showToast }           from './b-cart-core.js';
-import { openCart, closeCart, renderCart, clearCart, shareCartWhatsApp, loadSharedCart } from './b-cart.js';
+import { openCart, closeCart, renderCart, clearCart, shareCartWhatsApp, loadSharedCart, setupSideCartScrollLock } from './b-cart.js';
 import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
@@ -69,6 +69,7 @@ export function setupDrawer() {
   }
 
   loadSharedCart();
+  setupSideCartScrollLock();
 
   if (dom.orderClose && dom.orderClose.dataset.drawerBound !== '1') {
     dom.orderClose.addEventListener('click', closeOrderModal);
@@ -214,6 +215,7 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
+
 
 
 
