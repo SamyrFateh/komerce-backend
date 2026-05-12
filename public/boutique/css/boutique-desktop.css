@@ -1890,9 +1890,6 @@
 
 /* ── 1. Masquer le rail de chips et le slogan hero en desktop ── */
 @media (min-width: 900px) {
-  /* Le rail de chips (categories) est redondant avec les pavillons */
-  .k-cats-shell { display: none; }
-
   /* Le slogan/pills hero (k-hero-overlay) également */
   .k-hero-overlay { display: none; }
 
@@ -2196,4 +2193,5 @@
     padding: 0;
   }
 }
+
 

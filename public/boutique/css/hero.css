@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — hero.css  (LOT 13 refonte)
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
@@ -251,7 +251,7 @@
   /* Masquer les doublons mobile */
   .k-hero-overlay, .k-hero-pills, .k-hero-pill, .k-hero-right-col,
   .k-hero-proverb-inline, .k-hero-text-left, .k-hero-title,
-  .k-proverb-sep, .k-hero-bubble, .k-hero-cats-sticky { display: none; }
+  .k-proverb-sep, .k-hero-bubble { display: none; }
 }
 
 /* ── Fond hero transparent (tokens) ─────────────────────── */
@@ -269,3 +269,4 @@
 
 /* Trust bar : desktop only (déclarée dans desktop-mega-nav.css) */
 .k-hero-trust-bar { display: none; }
+
