@@ -390,7 +390,52 @@ function quickRemove(productId, btnEl) {
    * Ouvre le panneau panier latéral (slide-in depuis la droite).
    * Met à jour le rendu complet + synchronise les badges.
    */
-  function openCart() {
+  
+/**
+ * Empêche le scroll du side cart de propager au catalogue desktop.
+ * Quand le curseur est sur le panier sticky, la molette doit scroller
+ * uniquement la liste d'articles du panier.
+ */
+export function setupSideCartScrollLock() {
+  const sideCart = document.getElementById('k-side-cart');
+  const items = document.getElementById('k-sc-items');
+
+  if (!sideCart || !items) return;
+  if (sideCart.dataset.scrollLockBound === '1') return;
+
+  sideCart.dataset.scrollLockBound = '1';
+
+  sideCart.addEventListener('wheel', function(e) {
+    if (window.innerWidth < 900) return;
+
+    const maxScroll = items.scrollHeight - items.clientHeight;
+
+    if (maxScroll <= 0) {
+      e.preventDefault();
+      return;
+    }
+
+    const current = items.scrollTop;
+    const next = current + e.deltaY;
+
+    const atTop = current <= 0;
+    const atBottom = current >= maxScroll - 1;
+
+    if (e.deltaY < 0 && atTop) {
+      e.preventDefault();
+      return;
+    }
+
+    if (e.deltaY > 0 && atBottom) {
+      e.preventDefault();
+      return;
+    }
+
+    e.preventDefault();
+    items.scrollTop = next;
+  }, { passive: false });
+}
+function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     // Desktop : side cart Temu inline — pas de drawer
@@ -1613,4 +1658,5 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
+
 
