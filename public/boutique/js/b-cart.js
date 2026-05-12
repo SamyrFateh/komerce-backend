@@ -393,12 +393,26 @@ function quickRemove(productId, btnEl) {
   function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
-    // Desktop : side cart Temu inline — le drawer mobile ne s'ouvre pas
+    // Desktop : side cart Temu inline — pas de drawer
     if (!isDesktop()) {
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
       scroll.savedY = window.scrollY;
       document.body.classList.add('cart-open');
+    } else {
+      // Desktop : le side cart est en sticky dans le flux.
+      // Si le panier a des articles → scroll vers lui pour qu'il soit visible.
+      // Si vide → ouvrir le drawer comme fallback (UX : la dame doit toujours répondre).
+      const sc = document.getElementById('k-side-cart');
+      if (cartQty() > 0 && sc) {
+        sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        // Panier vide : ouvrir le tiroir classique pour montrer l'état vide
+        dom.cartOverlay.classList.add('open');
+        dom.cartDrawer.classList.add('open');
+        scroll.savedY = window.scrollY;
+        document.body.classList.add('cart-open');
+      }
     }
   }
 
