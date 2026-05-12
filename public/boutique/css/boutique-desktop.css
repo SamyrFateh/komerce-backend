@@ -2157,6 +2157,23 @@
 @media (min-width: 1180px) {
   #k-side-cart.k-side-cart,
   .k-side-cart {
-    margin-top: 0;
+    margin-top: 52px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART — Alignement vertical avec la grille produits
+   Le side cart démarre au bord du flex container (#k-desktop-catalog-wrap)
+   mais la grille a au-dessus d'elle : .k-sec-header (~46px) + subcats (~46px).
+   Sans compensation le side cart flotte en haut à droite dans le vide.
+   On ajoute un padding-top équivalent à la hauteur du .k-sec-header desktop
+   pour que le panier commence visuellement au niveau des premières cartes.
+   Valeur : 18px (padding-top header) + ~18px (line-height titre) + 10px (padding-bottom) + 6px gap = ~52px.
+   Les subcats varient — on accepte un léger décalage selon les catégories.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    margin-top: 52px;
   }
 }
