@@ -341,21 +341,21 @@
 @media (min-width: 900px) {
 
   #k-hero-fixed-wrap {
-    max-height: 400px;
+    max-height: 240px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 320px;
+    max-height: 240px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero-img {
-    height: clamp(260px, 20vw, 320px) !important;
-    max-height: 320px !important;
+    height: clamp(200px, 18vw, 240px) !important;
+    max-height: 240px !important;
     width: 100%;
     object-fit: cover;
-    object-position: center 8%;   /* remonte pour inclure les têtes */
+    object-position: center 40%;  /* cadre têtes + cadeau + scène complète */
     display: block;
   }
 
@@ -2021,12 +2021,12 @@
 
   /* 1. Conteneur : hauteur premium */
   #k-hero-fixed-wrap {
-    max-height: 200px;
+    max-height: 160px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 200px;
+    max-height: 160px;
     overflow: hidden;
     background: #1F3024;
   }
@@ -2035,10 +2035,10 @@
   #k-hero-fixed-wrap .k-hero-img {
     display: block !important;
     width: 100%;
-    height: clamp(160px, 14vw, 200px) !important;
-    max-height: 200px !important;
+    height: clamp(130px, 13vw, 160px) !important;
+    max-height: 160px !important;
     object-fit: cover;
-    object-position: center 28%;
+    object-position: center 40%;  /* même cadrage qu'à l'ouverture */
   }
 
   /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */
