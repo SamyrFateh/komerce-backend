@@ -21,29 +21,81 @@ import { renderTrackView }               from './b-tracking.js';
  * Branche tous les listeners du drawer panier + modal commande.
  */
 export function setupDrawer() {
-  const _required = ['cartBtn','cartClose','cartOverlay','cartContinue','cartClear','cartWhatsapp','cartCheckout','orderClose','orderModal'];
-  const _missing = _required.filter(k => !dom[k]);
-  if (_missing.length) {
-    console.error('[b-nav] setupDrawer : Ã©lÃ©ments DOM manquants :', _missing.join(', '));
+  // Le bouton panier du header est critique : il doit rester cliquable
+  // même si un élément secondaire du drawer manque.
+  if (!dom.cartBtn) {
+    console.error('[b-nav] setupDrawer : cartBtn manquant');
     return;
   }
-  dom.cartBtn.addEventListener('click', openCart);
-  dom.cartClose.addEventListener('click', closeCart);
-  dom.cartOverlay.addEventListener('click', closeCart);
-  dom.cartContinue.addEventListener('click', closeCart);
-  dom.cartClear.addEventListener('click', () => {
-    if (state.cart.length === 0) return;
-    clearCart();
-    showToast('ðŸ—‘ Panier vidÃ©');
-  });
-  dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
-  loadSharedCart();
-  dom.cartCheckout.addEventListener('click', checkoutCart);
 
-  dom.orderClose.addEventListener('click', closeOrderModal);
-  dom.orderModal.addEventListener('click', (e) => {
-    if (e.target === dom.orderModal) closeOrderModal();
-  });
+  // Anti double-binding si setupDrawer est rappelé après hot reload / re-init.
+  if (dom.cartBtn.dataset.drawerBound !== '1') {
+    dom.cartBtn.addEventListener('click', openCart);
+    dom.cartBtn.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartClose && dom.cartClose.dataset.drawerBound !== '1') {
+    dom.cartClose.addEventListener('click', closeCart);
+    dom.cartClose.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartOverlay && dom.cartOverlay.dataset.drawerBound !== '1') {
+    dom.cartOverlay.addEventListener('click', closeCart);
+    dom.cartOverlay.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartContinue && dom.cartContinue.dataset.drawerBound !== '1') {
+    dom.cartContinue.addEventListener('click', closeCart);
+    dom.cartContinue.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartClear && dom.cartClear.dataset.drawerBound !== '1') {
+    dom.cartClear.addEventListener('click', () => {
+      if (state.cart.length === 0) return;
+      clearCart();
+      showToast('🗑 Panier vidé');
+    });
+    dom.cartClear.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartWhatsapp && dom.cartWhatsapp.dataset.drawerBound !== '1') {
+    dom.cartWhatsapp.addEventListener('click', shareCartWhatsApp);
+    dom.cartWhatsapp.dataset.drawerBound = '1';
+  }
+
+  if (dom.cartCheckout && dom.cartCheckout.dataset.drawerBound !== '1') {
+    dom.cartCheckout.addEventListener('click', checkoutCart);
+    dom.cartCheckout.dataset.drawerBound = '1';
+  }
+
+  loadSharedCart();
+
+  if (dom.orderClose && dom.orderClose.dataset.drawerBound !== '1') {
+    dom.orderClose.addEventListener('click', closeOrderModal);
+    dom.orderClose.dataset.drawerBound = '1';
+  }
+
+  if (dom.orderModal && dom.orderModal.dataset.drawerBound !== '1') {
+    dom.orderModal.addEventListener('click', (e) => {
+      if (e.target === dom.orderModal) closeOrderModal();
+    });
+    dom.orderModal.dataset.drawerBound = '1';
+  }
+
+  const optionalMissing = [
+    ['cartClose', dom.cartClose],
+    ['cartOverlay', dom.cartOverlay],
+    ['cartContinue', dom.cartContinue],
+    ['cartClear', dom.cartClear],
+    ['cartWhatsapp', dom.cartWhatsapp],
+    ['cartCheckout', dom.cartCheckout],
+    ['orderClose', dom.orderClose],
+    ['orderModal', dom.orderModal],
+  ].filter(([, el]) => !el).map(([name]) => name);
+
+  if (optionalMissing.length) {
+    console.warn('[b-nav] setupDrawer : éléments optionnels manquants :', optionalMissing.join(', '));
+  }
 }
 
 /**
@@ -162,6 +214,7 @@ export async function loadRelais() {
     state.relais = [];
   }
 }
+
 
 
 
