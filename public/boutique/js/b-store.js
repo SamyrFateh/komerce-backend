@@ -222,9 +222,26 @@ export function initDom() {
 export function updateMobileScrollTop() {
   if (window.innerWidth > 899) return;
   const doUpdate = () => {
-    const w = document.getElementById('k-hero-fixed-wrap');
+    // Mesure cohérente avec _recalcPagerVars() dans b-pager.js :
+    // on prend le bas réel du dernier élément fixe (hero + chips).
+    let top = 0;
+    [
+      document.getElementById('k-hero-fixed-wrap'),
+      document.getElementById('k-sticky-bar'),
+      document.querySelector('.k-cats-shell'),
+    ].forEach(function(el) {
+      if (!el) return;
+      const b = el.getBoundingClientRect().bottom;
+      if (b > top) top = b;
+    });
+    // Fallback si éléments non encore rendus
+    if (top < 10) {
+      const w = document.getElementById('k-hero-fixed-wrap');
+      const headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
+      top = (w ? w.offsetHeight : 140) + headerH;
+    }
     const s = dom.pageScroll;
-    if (w && s) s.style.top = (w.offsetHeight + 44) + 'px';
+    if (s) s.style.top = top + 'px';
   };
   requestAnimationFrame(doUpdate);
   setTimeout(doUpdate, 400);

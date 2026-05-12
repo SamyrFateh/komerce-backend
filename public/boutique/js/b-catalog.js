@@ -349,10 +349,10 @@ function renderGrid() {
       // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()
       // — pas _setupMobilePager() entier — pour ne pas attacher les scroll
       // listeners avant que _setupInfiniteLoop ait stabilisé le DOM.
-      _recalcPagerVars();
       if (_ps) _ps.classList.add('k-pager-active');
       dom.grid.classList.add('k-grid-cat-pager');
       requestAnimationFrame(function() {
+        _recalcPagerVars();        // mesure APRÈS que le DOM (hero fixe + chips) soit stabilisé
         _setupInfiniteLoop();      // ghost loop : clone Tout à la fin — DOIT être avant _setupMobilePager
         _setupMobilePager();       // listeners scroll/touch — DOM ghost déjà stabilisé
         _setupSectionAutoAdvance(); // bounce bas → catégorie suivante

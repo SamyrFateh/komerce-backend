@@ -4,7 +4,9 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── HERO SHELL ─────────────────────────────────────────────── */
-.k-hero { position: relative; background: var(--sand-warm); overflow: hidden; }
+/* overflow:clip (≠ hidden) : coupe le débordement SANS créer de scroll container,
+   donc ne casse pas position:sticky des descendants. */
+.k-hero { position: relative; background: var(--sand-warm); overflow: clip; }
 .k-hero-inner { display: flex; flex-direction: column; max-width: var(--container); margin: 0 auto; }
 
 /* ── MOBILE : image arrondie ────────────────────────────────── */
