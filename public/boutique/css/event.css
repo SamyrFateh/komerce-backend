@@ -194,7 +194,7 @@ body {
 }
 .ev-amount-value.green  { color: var(--cta-green); }
 .ev-amount-value.coral  { color: var(--coral); }
-.ev-amount-value.violet { color: var(--violet); }
+.ev-amount-value.violet { color: var(--coral); }
 .ev-amount-unit { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-left: 1px; }
 
 /* ─── PROGRESS ─── */
@@ -205,7 +205,7 @@ body {
 }
 .ev-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--violet), var(--ocean));
+  background: linear-gradient(90deg, var(--ocean-dark), var(--ocean));
   border-radius: 999px;
   transition: width .7s cubic-bezier(.16,1,.3,1);
 }
@@ -213,7 +213,7 @@ body {
   display: flex; justify-content: space-between;
   margin-top: 7px; font-size: 12px; color: var(--text-muted);
 }
-.ev-progress-label strong { color: var(--violet); font-weight: 700; }
+.ev-progress-label strong { color: var(--ocean-dark); font-weight: 700; }
 
 /* ─── LIST ─── */
 .ev-list { list-style: none; padding: 0; margin: 0; }
@@ -337,12 +337,12 @@ body {
   letter-spacing: -0.1px;
 }
 .ev-btn:active { transform: scale(.98); }
-/* Violet : action principale panier collectif */
+/* Coral : action principale panier collectif */
 .ev-btn-violet {
-  background: var(--violet); color: white;
-  box-shadow: 0 2px 8px rgba(108,63,197,.3);
+  background: var(--coral); color: white;
+  box-shadow: 0 2px 8px rgba(200,92,45,.3);
 }
-.ev-btn-violet:hover { background: var(--violet-dark); }
+.ev-btn-violet:hover { background: var(--coral-dark); }
 .ev-btn-violet:disabled { background: var(--text-light); box-shadow: none; cursor: not-allowed; }
 /* Coral : CTA secondaire / invite (comme boutique) */
 .ev-btn-coral {
@@ -422,11 +422,11 @@ body {
 
 /* ─── SHARE ─── */
 .ev-share {
-  background: var(--violet-light); border: 1.5px solid var(--violet-mid);
+  background: var(--sand-warm); border: 1.5px solid var(--border);
   border-radius: var(--radius); padding: 14px; margin: 12px 0;
 }
 .ev-share-label {
-  font-size: 11px; font-weight: 700; color: var(--violet);
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
   margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px;
 }
 .ev-share-row { display: flex; gap: 6px; align-items: center; }
@@ -437,19 +437,19 @@ body {
   overflow: hidden; text-overflow: ellipsis; color: var(--text-muted);
   font-weight: 500;
 }
-.ev-share-row input:focus { outline: none; border-color: var(--violet); }
+.ev-share-row input:focus { outline: none; border-color: var(--coral); }
 
 /* ─── CTA CARD ─── */
 .ev-cta-card {
-  background: white; border: 2px solid var(--violet);
+  background: white; border: 2px solid var(--ocean-dark);
   border-radius: var(--ev-radius-lg); padding: 20px; margin-bottom: 12px;
-  box-shadow: 0 4px 20px rgba(108,63,197,.1);
+  box-shadow: 0 4px 20px rgba(74,144,64,.1);
 }
 .ev-cta-card--green {
   border-color: var(--cta-green);
   box-shadow: 0 4px 20px rgba(42,122,62,.1);
 }
-.ev-cta-card .ev-card-label { color: var(--violet); }
+.ev-cta-card .ev-card-label { color: var(--ocean-dark); }
 .ev-cta-card--green .ev-card-label { color: var(--cta-green); }
 
 /* ─── STEPS ─── */
@@ -561,9 +561,9 @@ body {
 /* Boutons : noms hérités → noms maquette */
 .ev-btn-primary { /* hérite via ev-btn déjà présent */ }
 .ev-btn-primary,
-.ev-btn-violet { background: var(--violet); color: #fff; border: none; }
+.ev-btn-violet { background: var(--coral); color: #fff; border: none; }
 .ev-btn-primary:hover,
-.ev-btn-violet:hover { background: var(--violet-dark); }
+.ev-btn-violet:hover { background: var(--coral-dark); }
 
 .ev-btn-success,
 .ev-btn-confirm { background: var(--cta-green); color: #fff; border: none; }
@@ -587,8 +587,8 @@ body {
   padding: 12px 14px; font-size: 13px; line-height: 1.5;
 }
 .ev-info {
-  background: var(--violet-light); color: var(--violet-dark);
-  border: 1.5px solid var(--violet-mid); border-radius: var(--radius);
+  background: var(--sand-warm); color: var(--coral-dark);
+  border: 1.5px solid rgba(200,92,45,.2); border-radius: var(--radius);
   padding: 12px 14px; font-size: 13px; line-height: 1.5;
 }
 .ev-empty {
@@ -623,7 +623,7 @@ body {
   padding-top: 8px; margin-top: 4px;
   border-top: 1px solid var(--sand-dark);
 }
-.ev-totals-row--final span:last-child { color: var(--violet); }
+.ev-totals-row--final span:last-child { color: var(--cta-green); }
 
 /* Champs hérités */
 .ev-textarea {
@@ -635,8 +635,8 @@ body {
   transition: border-color .15s, box-shadow .15s;
 }
 .ev-textarea:focus {
-  outline: none; border-color: var(--violet);
-  box-shadow: 0 0 0 3px var(--violet-light);
+  outline: none; border-color: var(--coral);
+  box-shadow: 0 0 0 3px rgba(200,92,45,.1);
 }
 
 /* Label optional inline (event-create) */
@@ -686,12 +686,12 @@ body {
 /* List item meta inline (event-manage / event-public) */
 .ev-list-emoji {
   width: 36px; height: 36px; border-radius: 50%;
-  background: var(--violet-light); color: var(--violet);
+  background: var(--sand); color: var(--text-muted);
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
 .ev-list-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-.ev-list-amount { font-size: 14px; font-weight: 700; color: var(--violet); }
+.ev-list-amount { font-size: 14px; font-weight: 700; color: var(--coral); }
 .ev-list-right { margin-left: auto; }
 
 
