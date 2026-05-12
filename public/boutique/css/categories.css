@@ -99,8 +99,12 @@
 .k-chip[data-cat="Sport"]       .k-chip-photo { background: #E8E4F5; }
 .k-chip[data-cat="Sur-mesure"]  .k-chip-photo { background: #FCE8D4; }
 /* Nouvelles catégories — background mobile (sinon héritent du style desktop transparent) */
-.k-chip[data-cat="Solaire"]     .k-chip-photo { background: #FFF9D6; }
-.k-chip[data-cat="Creatio"]     .k-chip-photo { background: #EDE8FD; }
+.k-chip[data-cat="Solaire"]                  .k-chip-photo { background: #FFF9D6; }
+.k-chip[data-cat="Creatio"]                  .k-chip-photo { background: #EDE8FD; }
+/* Architecture v2 — piliers Bricolage et Auto */
+.k-chip[data-cat="Bricolage"]                .k-chip-photo { background: #E8EDF0; }
+.k-chip[data-cat="Auto"]                     .k-chip-photo { background: #E8E4F5; }
+.k-chip[data-cat="Créations personnelles"]   .k-chip-photo { background: #FCE8D4; }
 
 /* Emoji variant */
 .k-chip-emoji {

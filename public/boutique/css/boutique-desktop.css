@@ -2015,3 +2015,148 @@
 .k-pav-tile--creations.is-active{ background: #CECBF6; }
 
 
+
+/* ══════════════════════════════════════════════════════════════
+   OPTION B — Hero réduit desktop (max 180px)
+   Surcharge les valeurs existantes de boutique-desktop.css @900px.
+   Mobile non touché — toutes les règles sont dans @min-width:900px.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* 1. Conteneur hero : hauteur fixée à 130px — sous la limite 180px */
+  #k-hero-fixed-wrap {
+    max-height: 130px;
+    overflow: hidden;
+  }
+
+  /* 2. Image hero masquée — Option B pas de grande bannière */
+  #k-hero-fixed-wrap .k-hero {
+    max-height: 130px;
+    overflow: hidden;
+    background: var(--sand-warm);
+  }
+
+  #k-hero-fixed-wrap .k-hero-img {
+    display: none !important;
+  }
+
+  /* Masquer les pseudo-éléments overlay/accent de hero.css @900px */
+  #k-hero-fixed-wrap .k-hero-media::before,
+  #k-hero-fixed-wrap .k-hero-media::after {
+    display: none;
+  }
+
+  /* 3. Conteneur media : fond neutre, centrage du slogan + search */
+  #k-hero-fixed-wrap .k-hero-media {
+    background: var(--sand-warm);
+    width: 100%;
+    height: 130px;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 4. Slogan centré, compact */
+  #k-hero-fixed-wrap .k-hero-mini-slogan {
+    position: static;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    gap: 8px;
+    text-shadow: none;
+    background: none;
+  }
+
+  /* Badge masqué en Option B */
+  #k-hero-fixed-wrap .k-hero-badge { display: none; }
+
+  /* Ligne 1 : phrase de contexte compacte */
+  #k-hero-fixed-wrap .k-hero-mini-slogan .k-line-1 {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0;
+    line-height: 1.3;
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  /* Ligne 2 masquée — pas de place en 130px */
+  #k-hero-fixed-wrap .k-hero-mini-slogan .k-line-2 { display: none; }
+
+  /* CTA et trust masqués */
+  #k-hero-fixed-wrap .k-hero-cta-row,
+  #k-hero-fixed-wrap .k-hero-trust { display: none; }
+
+  /* 5. Barre de recherche centrale Option B (#k-optionb-search injecté par JS) */
+  #k-optionb-search {
+    display: flex;
+    align-items: center;
+    width: min(520px, 80%);
+    height: 40px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--elev-2);
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  #k-optionb-search:focus-within {
+    border-color: var(--ocean);
+    box-shadow: 0 0 0 3px rgba(100,175,90,.15), var(--elev-2);
+  }
+  #k-optionb-search input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    padding: 0 16px;
+    height: 100%;
+  }
+  #k-optionb-search input::placeholder { color: var(--text-light); }
+  #k-optionb-search button {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--ocean);
+    border: none;
+    border-radius: 0 999px 999px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+  }
+  #k-optionb-search button:hover { background: var(--ocean-dark); }
+  #k-optionb-search button svg {
+    width: 16px; height: 16px;
+    stroke: #fff; fill: none;
+    stroke-width: 2.2; stroke-linecap: round;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   OPTION B — Correction position sticky du side cart
+   En Option B, le hero fait 130px (vs ~260–320px avant).
+   Le margin-top:64px de layout.css @1180px était calibré pour l'ancien
+   hero — il positionne maintenant le side cart trop haut.
+   Correction : annuler ce margin-top ; le side cart s'aligne naturellement
+   sur le flux de la grille via align-self:flex-start + sticky.
+   --sc-sticky-top (calculé par b-desktop-upgrade.js) reste la source de
+   vérité pour top: ; on n'y touche pas.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 1180px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    margin-top: 0;
+  }
+}

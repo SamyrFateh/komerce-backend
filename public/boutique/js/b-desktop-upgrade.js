@@ -880,3 +880,58 @@ export function setupDesktopUpgrade() {
     if (scrollTop) scrollTop.classList.toggle('is-visible', isShop && window.scrollY > 600);
   });
 }
+
+/* ── OPTION B — Injection barre de recherche hero desktop ──────
+   Extension ajoutée sans modifier le code existant ci-dessus.
+   Injecte #k-optionb-search dans .k-hero-media uniquement sur desktop.
+   La barre délègue la recherche au champ header existant (#k-search-input
+   ou l'input .k-header-search, selon ce qui est présent dans le DOM).
+   Mobile non touché : la div est masquée via display:none @<900px implicitement
+   (elle n'existe que dans .k-hero-media qui est display:none mobile). */
+(function initOptionBSearch() {
+  // Seulement en contexte desktop
+  if (window.innerWidth < 900) return;
+
+  var media = document.querySelector('#k-hero-fixed-wrap .k-hero-media');
+  if (!media) return;
+
+  // Éviter double-injection
+  if (document.getElementById('k-optionb-search')) return;
+
+  var wrap = document.createElement('div');
+  wrap.id = 'k-optionb-search';
+  wrap.setAttribute('role', 'search');
+  wrap.setAttribute('aria-label', 'Rechercher dans la boutique');
+
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Envoyez ce qui compte, partout aux Comores…';
+  input.setAttribute('autocomplete', 'off');
+  input.setAttribute('aria-label', 'Recherche produits');
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Lancer la recherche');
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+
+  wrap.appendChild(input);
+  wrap.appendChild(btn);
+  media.appendChild(wrap);
+
+  // Délégation : synchroniser avec le champ de recherche du header si présent
+  function _delegateSearch(val) {
+    var headerInput = document.getElementById('k-search-input') ||
+                      document.querySelector('.k-header-search input') ||
+                      document.querySelector('[data-search-input]');
+    if (headerInput) {
+      headerInput.value = val;
+      headerInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  input.addEventListener('input', function() { _delegateSearch(input.value); });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { _delegateSearch(input.value); input.blur(); }
+  });
+  btn.addEventListener('click', function() { _delegateSearch(input.value); });
+})();
