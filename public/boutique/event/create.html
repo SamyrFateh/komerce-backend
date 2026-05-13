@@ -19,7 +19,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       Boutique
     </a>
-    <span class="ev-step-pill"><span class="ev-step-dot"></span> Étape 1 · Créer</span>
+    <span class="ev-step-pill"><span class="ev-step-dot"></span> Étape 1 / 4 · Créer</span>
   </header>
 
   <!-- Hero violet (identité panier collectif) -->
@@ -35,24 +35,13 @@
   <!-- Formulaire création -->
   <form id="ev-create-form" class="ev-card">
 
-    <div class="ev-field">
-      <label class="ev-label" for="event_note">
-        Message pour les participants <span class="ev-label-opt">(optionnel)</span>
-      </label>
-      <textarea id="event_note" name="event_note" class="ev-textarea" rows="2"
-                placeholder="Ex : Voici notre panier pour les fêtes. Chacun apporte sa part !"
-                maxlength="500"></textarea>
-      <div class="ev-char-count"><span id="ev-note-count">0</span>/500</div>
-    </div>
-
-    <hr class="ev-divider">
-
     <p class="ev-card-label">Vos coordonnées (organisateur)</p>
 
     <div class="ev-field">
       <label class="ev-label" for="creator_name">Votre nom</label>
       <input type="text" id="creator_name" name="creator_name" class="ev-input"
-             placeholder="Ex : Amina Saïd" required maxlength="80">
+             placeholder="Ex : Amina Saïd" required maxlength="80"
+             autocomplete="name">
     </div>
 
     <div class="ev-field">
@@ -74,7 +63,19 @@
         Email <span class="ev-label-opt">(pour retrouver votre lien)</span>
       </label>
       <input type="email" id="creator_email" name="creator_email" class="ev-input"
-             placeholder="exemple@email.com" maxlength="120">
+             placeholder="exemple@email.com" maxlength="120" autocomplete="email">
+    </div>
+
+    <hr class="ev-divider">
+
+    <div class="ev-field">
+      <label class="ev-label" for="event_note">
+        Message pour les participants <span class="ev-label-opt">(optionnel)</span>
+      </label>
+      <textarea id="event_note" name="event_note" class="ev-textarea" rows="2"
+                placeholder="Ex : Voici notre panier pour les fêtes. Chacun apporte sa part !"
+                maxlength="500"></textarea>
+      <div class="ev-char-count"><span id="ev-note-count">0</span>/500</div>
     </div>
 
     <div class="ev-trust">
@@ -82,7 +83,7 @@
       <span><strong>Conservez votre lien organisateur</strong> — il vous permet de gérer le panier et de finaliser quand tout le monde a confirmé.</span>
     </div>
 
-    <button type="submit" class="ev-btn ev-btn-violet ev-btn-block" id="ev-submit-btn" style="font-size:16px;padding:15px 20px;margin-top:6px;">
+    <button type="submit" class="ev-btn ev-btn-violet ev-btn-block ev-btn-submit" id="ev-submit-btn">
       🛒 Créer le panier collectif
     </button>
 
