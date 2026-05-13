@@ -538,10 +538,17 @@
   color: var(--text, #1F3024);
 }
 .k-sug-title::after { display: none; }
-.k-sug-chips { display: flex; gap: 6px; padding: 6px 0 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-.k-sug-chips::-webkit-scrollbar { display: none; }
-.k-sug-chip { flex-shrink: 0; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: #555; cursor: pointer; transition: all .2s; white-space: nowrap; }
-.k-sug-chip.is-active { background: var(--hero-red); color: #fff; border-color: var(--hero-red); font-weight: 600; box-shadow: 0 2px 8px rgba(229,57,53,.3); }
+.k-sug-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 0 10px; }
+
+.k-sug-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: var(--text); cursor: pointer; transition: all .2s; white-space: nowrap; }
+.k-sug-chip.is-active { background: transparent; border-color: var(--coral); color: var(--text); font-weight: 700; }
+/* Fond couleur catégorie pour le chip actif — cohérence avec le rail principal */
+#k-modal-suggestions[data-cat="Mode & Beauté"] .k-sug-chip.is-active { background: #FDE8CD; }
+#k-modal-suggestions[data-cat="Maison"]         .k-sug-chip.is-active { background: #F3E7D3; }
+#k-modal-suggestions[data-cat="Tech"]           .k-sug-chip.is-active { background: #E0F0E8; }
+#k-modal-suggestions[data-cat="Bricolage"]      .k-sug-chip.is-active { background: #E8EDF0; }
+#k-modal-suggestions[data-cat="Créations personnelles"] .k-sug-chip.is-active { background: #FCE8D4; }
+#k-modal-suggestions[data-cat="Auto"]           .k-sug-chip.is-active { background: #E8E4F5; }
 .k-sug-card.subcat-hidden { display: none !important; }
 .k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }

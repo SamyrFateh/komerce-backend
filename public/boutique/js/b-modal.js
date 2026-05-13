@@ -797,6 +797,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
       return;
     }
     sugSection.classList.remove('u-hidden');
+    if (categoryName) sugSection.dataset.cat = categoryName;
     
     // Template carte suggestion — stepper −/qty/+ en bas
     const cardHTML = (p) => {
@@ -827,13 +828,18 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
     if (sameCat.length > 0) {
       const catLabel = categoryName ? categoryName.toLowerCase() : 'même catégorie';
       // ── Subcategory chips — "profond dedans" ──
-      const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort().slice(0, 5);
+      const uniqueSubcats = [...new Set(sameCat.map(p => p.subcategory).filter(Boolean))].sort().slice(0, 6);
       const activeFilter = state.modalSubcatFilter || null;
       let chipsHTML = '';
       if (uniqueSubcats.length >= 2) {
         chipsHTML = `<div class="k-sug-chips">
           <button class="k-sug-chip${!activeFilter ? ' is-active' : ''}" data-subcat="">Tout</button>
-          ${uniqueSubcats.map(s => `<button class="k-sug-chip${activeFilter === s ? ' is-active' : ''}" data-subcat="${sanitize(s)}">${sanitize(s)}</button>`).join('')}
+          ${uniqueSubcats.map(s => {
+            const meta = (typeof getSubcategoryMeta === 'function' && categoryName)
+              ? getSubcategoryMeta(categoryName, s) : null;
+            const icon = meta && meta.icon ? `<span style="font-size:12px;line-height:1">${meta.icon}</span>` : '';
+            return `<button class="k-sug-chip${activeFilter === s ? ' is-active' : ''}" data-subcat="${sanitize(s)}">${icon}${sanitize(s)}</button>`;
+          }).join('')}
         </div>`;
       }
       html += `

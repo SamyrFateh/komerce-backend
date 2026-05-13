@@ -53,7 +53,26 @@ export function renderSubcatRail(catKey) {
         '</button>'
       ).join('') +
     '</div>';
+  wrap.dataset.parentCat = catKey;  // ciblage CSS couleur catégorie active
+  wrap.dataset.parentCat = catKey;
   wrap.style.display = 'block';
+
+  // Compteur produits — injecté à droite du rail
+  (function() {
+    var rail = wrap.querySelector('.k-subcats-rail');
+    if (!rail) return;
+    var existing = wrap.querySelector('.k-subcat-count');
+    if (existing) existing.remove();
+    var total = (window._shopProducts || []).filter(function(p) {
+      return p.category === catKey || (p.dbCategory && p.dbCategory === catKey);
+    }).length;
+    if (total > 0) {
+      var counter = document.createElement('span');
+      counter.className = 'k-subcat-count';
+      counter.textContent = total + ' article' + (total > 1 ? 's' : '');
+      wrap.appendChild(counter);
+    }
+  }());
 
   // Fix: mettre à jour --sidebar-top pour que la sidebar reste sous le rail subcats
   requestAnimationFrame(function() {

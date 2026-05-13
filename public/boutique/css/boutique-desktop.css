@@ -1298,14 +1298,14 @@
     flex: 0 0 auto;
     min-width: 0;
     max-width: none;
-    height: 30px;     /* Valeur finale P0-B — ancienne 52px trop haute */
+    height: 30px;     /* Valeur finale P0-B */
     min-height: 30px;
     padding: 0 12px;
     border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
-    gap: 6px;
+    gap: 5px; /* espace emoji + label */
     flex-direction: row;
     align-items: center;
     white-space: nowrap;
@@ -1546,16 +1546,34 @@
     transform: translateY(-1px);
   }
 
-  /* Actif : fond coral plein â€” signature Shein */
+  /* Actif : fond couleur catégorie + bordure coral — cohérence mobile/desktop */
   #k-subcats-wrap .k-subchip.active {
-    background: var(--coral);
+    background: transparent;
     border-color: var(--coral);
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(200,92,45,.28);
+    color: var(--text);
+    box-shadow: none;
     transform: none;
+    font-weight: 700;
   }
-  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: #fff; font-weight: 700; }
-  #k-subcats-wrap .k-subchip.active .k-subchip-icon { filter: brightness(10); }
+  #k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: #FDE8CD; }
+  #k-subcats-wrap[data-parent-cat="Maison"]         .k-subchip.active { background: #F3E7D3; }
+  #k-subcats-wrap[data-parent-cat="Tech"]           .k-subchip.active { background: #E0F0E8; }
+  #k-subcats-wrap[data-parent-cat="Bricolage"]      .k-subchip.active { background: #E8EDF0; }
+  #k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: #FCE8D4; }
+  #k-subcats-wrap[data-parent-cat="Auto"]           .k-subchip.active { background: #E8E4F5; }
+  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: var(--text); font-weight: 700; }
+  #k-subcats-wrap .k-subchip.active .k-subchip-icon { filter: none; }
+
+  /* Compteur produits dans le rail subcat — injecté par JS */
+  #k-subcats-wrap .k-subcat-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-right: clamp(16px, 3vw, 40px);
+  }
 
   /* IcÃ´ne emoji â€” lÃ©gÃ¨rement plus grande */
   #k-subcats-wrap .k-subchip-icon {

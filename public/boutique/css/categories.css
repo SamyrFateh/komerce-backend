@@ -60,9 +60,9 @@
 /* Photo circle */
 .k-chip-photo {
   position: relative;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   margin: 0 auto;
   border-radius: 11px;
   overflow: hidden;
@@ -123,11 +123,11 @@
 
 /* Label */
 .k-chip-label {
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 700;
   line-height: 1.1;
   width: 100%;
-  max-width: 38px;
+  max-width: 42px;
   margin: 0;
   padding: 0;
   white-space: nowrap;
@@ -187,10 +187,24 @@
 .k-subchip-icon  { font-size: 12px; line-height: 1; }
 .k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
 .k-subchip.active {
-  background: var(--ocean-dark);
-  border-color: var(--ocean-dark);
+  background: transparent;
+  border-color: var(--coral);
 }
-.k-subchip.active .k-subchip-label { color: #fff; }
+.k-subchip.active .k-subchip-label { color: var(--text); font-weight: 800; }
+
+/* Fond couleur catégorie sur subchip actif — cohérence avec chip parente */
+.k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: #FDE8CD; }
+.k-chip[data-cat="Maison"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: #F3E7D3; }
+.k-chip[data-cat="Tech"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: #E0F0E8; }
+.k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: #E8EDF0; }
+.k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: #FCE8D4; }
+.k-chip[data-cat="Auto"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: #E8E4F5; }
 
 @keyframes k-subchip-in {
   from { opacity: 0; transform: translateX(-6px) scale(.94); }
