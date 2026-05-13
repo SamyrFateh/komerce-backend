@@ -831,9 +831,9 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SIDE CART — Temu-style checkout panel desktop
-   Mobile : side cart caché, bnav label montre le total
-   Desktop (≥900px) : panneau fixe droit style Temu
+   SIDE CART DESKTOP — Source unique de vérité (LOT 9)
+   Historique : fixed → sticky → sticky+clip → context fix → option B → consolidé.
+   Mobile : masqué (la pastille flottante b-mini-cart prend le relais)
    ══════════════════════════════════════════════════════════════ */
 
 /* Mobile : side cart masqué */
@@ -850,37 +850,51 @@ body {
   font-size: 9px;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   STICKY CONTEXT PRESERVATION
+   Ces règles existent UNIQUEMENT pour permettre au side-cart de rester sticky.
+   Ne pas modifier sans tester le side-cart à toutes les résolutions desktop.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html { overflow-x: visible; overflow-y: auto; }
+  body { overflow-x: clip;    overflow-y: visible; }
+  #k-page-scroll,
+  #k-desktop-catalog-wrap,
+  #k-catalog-section { overflow: visible; }
+}
+
 @media (min-width: 900px) {
 
-  /* ── Conteneur sticky Temu ──────────────────────────────── */
-  /* position:sticky pour démarrer dans le flux (après le hero) et coller au
-     top du viewport au scroll. Évite tout chevauchement avec le hero. */
+  /* ── Conteneur sticky ─────────────────────────────────────── */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: sticky;
-    /* --sc-sticky-top calculé par b-desktop-upgrade.js (header + cats + subcats + 16px) */
-    top: var(--sc-sticky-top, calc(var(--header-h, 76px) + 64px));
+    top: calc(var(--header-h, 72px) + 12px);
     align-self: flex-start;
+
     flex: 0 0 290px;
     width: 290px;
     min-width: 290px;
-    /* max-height = viewport - sticky-top - 16px marge basse.
-       Le panneau est toujours entièrement visible dans le viewport (style Temu).
-       Le scroll interne est délégué à .k-sc-items uniquement. */
-    max-height: calc(100vh - var(--sc-sticky-top, calc(var(--header-h, 76px) + 64px)) - 16px);
+
     background: transparent;
     border-radius: 12px;
     border: 0;
     box-shadow: none;
     overflow: visible;
+    max-height: none;
+
     z-index: 200;
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
+
+    /* Marge calibrée pour le hero compact 160px (Option B). */
+    margin-top: 52px;
   }
-  /* Sidecart vide : sortie du flex pour que le grid prenne toute la largeur */
+
+  /* Sidecart vide : sortie du flex pour que la grille prenne toute la largeur */
   .k-side-cart:not(.has-items) {
     display: none;
   }
@@ -889,9 +903,38 @@ body {
     pointer-events: auto;
     transform: translateY(0);
   }
-  /* (--sc-offset / sc-open : plus utilisé depuis le passage en sticky.
-     Le sidecart est désormais in-flow dans le flex parent ; aucun élément
-     n'a besoin de céder la place via padding-right.) */
+
+  /* ── Aperçu compact : max 4 articles visibles (900–1180px) ── */
+  .k-sc-items {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  .k-sc-items > *:nth-child(n+5) { display: none; }
+
+  .k-sc-bottom { margin-top: auto; }
+}
+
+@media (min-width: 1180px) {
+  /*
+    Donne de l'air en fin de catalogue pour que le sticky sorte proprement
+    avant le footer, sans se tronquer brutalement.
+  */
+  #k-desktop-catalog-wrap {
+    padding-bottom: clamp(120px, 18vh, 220px);
+  }
+
+  /*
+    Aperçu premium : 3 articles visibles seulement.
+    Le compteur en bas affiche le total réel.
+    Le drawer "Voir le panier" reste la vue complète.
+  */
+  .k-sc-items > *:nth-child(n+5) { display: revert; } /* annule la règle 900px */
+  .k-sc-items > *:nth-child(n+4) { display: none; }
+
+  .k-sc-count-label { display: block; }
+}
 
   /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {
@@ -1025,12 +1068,11 @@ body {
 
   /* ── Liste articles ──────────────────────────────────────── */
   .k-sc-items {
-    /* flex:1 + min-height:0 absorbait tout l'espace du panneau et forçait le
-       scroll interne en permanence — le side cart ne dépassait jamais son
-       max-height → sticky n'avait rien à faire. On laisse la hauteur naturelle
-       et on plafonne seulement quand le panier est très garni (~55vh). */
+    /* @note LOT 9 : max-height ici est écrasé par max-height:none dans le bloc
+       consolidé ci-dessous. Conservé pour traçabilité historique (ancien comportement
+       avant SIDE CART POLISH). Ne pas modifier sans lire le bloc LOT 9. */
     flex: 0 0 auto;
-    max-height: calc(55vh - var(--sc-sticky-top, 140px));
+    max-height: calc(55vh - 140px);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -1210,10 +1252,6 @@ body {
 /* ── Sidebar catégories desktop désactivée ── */
 #k-desktop-sidebar { display: none !important; }
 
-@media (min-width: 1200px) {
-  .k-side-cart { width: 290px; min-width: 290px; }
-}
-
 /* ── Side cart masqué hors onglet boutique ── */
 /* switchView() pose data-tab sur #k-page-scroll — on en profite pour cacher
    le side cart sur les onglets suivi et favoris sans toucher au JS. */
@@ -1223,119 +1261,7 @@ body {
 }
 
 /* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
-
-/* ══════════════════════════════════════════════════════════════
-   DESKTOP STICKY CONTEXT FIX
-   Source de vérité : side cart intégré + sticky naturel.
-   Ne pas transformer en fixed. Ne pas ajouter de JS gate.
-   ══════════════════════════════════════════════════════════════ */
-
-@media (min-width: 900px) {
-  html {
-    overflow-x: visible;
-    overflow-y: auto;
-  }
-
-  body {
-    overflow-x: clip;
-    overflow-y: visible;
-  }
-
-  #k-page-scroll,
-  #k-desktop-catalog-wrap,
-  #k-catalog-section {
-    overflow: visible;
-  }
-
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    position: sticky;
-    top: calc(var(--header-h, 72px) + 12px);
-    align-self: flex-start;
-    transform: none;
-    will-change: auto;
-    contain: none;
-  }
-}
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART POLISH — No internal scroll
-   Le side cart desktop est un aperçu compact, pas le panier complet.
-   Le panier complet reste dans le drawer "Voir le panier".
-   ══════════════════════════════════════════════════════════════ */
-
-@media (min-width: 900px) {
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    overflow: visible;
-    max-height: none;
-  }
-
-  .k-sc-items {
-    flex: 0 0 auto;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-  }
-
-  /* Aperçu compact : éviter un scroll interne disgracieux. */
-  .k-sc-items > *:nth-child(n+5) {
-    display: none;
-  }
-
-  .k-sc-bottom {
-    margin-top: auto;
-  }
-}
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART PREVIEW POLISH
-   Le side cart desktop est un aperçu compact, pas le panier complet.
-   - pas de fixed
-   - pas de JS gate
-   - pas de scroll interne
-   - sticky naturel
-   ══════════════════════════════════════════════════════════════ */
-
-@media (min-width: 1180px) {
-
-  /*
-    Donne de l'air en fin de catalogue pour que le sticky sorte proprement
-    avant le footer, sans se tronquer brutalement.
-  */
-  #k-desktop-catalog-wrap {
-    padding-bottom: clamp(120px, 18vh, 220px);
-  }
-
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    overflow: visible;
-    max-height: none;
-  }
-
-  .k-sc-items {
-    flex: 0 0 auto;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
-  }
-
-  /*
-    Aperçu premium : 3 articles visibles.
-    Le compteur en bas indique le total réel.
-    Le drawer reste la vue complète.
-  */
-  .k-sc-items > *:nth-child(n+4) {
-    display: none;
-  }
-
-  .k-sc-bottom {
-    margin-top: auto;
-  }
-
-  .k-sc-count-label {
-    display: block;
-  }
-}
-/* margin-top side-cart → source de vérité : boutique-desktop.css (52px @900px) */
+/* margin-top side-cart : 52px, intégré dans le bloc consolidé LOT 9 ci-dessus. */
 
 /* =========================================================
    PATCH — Side cart group payment CTA

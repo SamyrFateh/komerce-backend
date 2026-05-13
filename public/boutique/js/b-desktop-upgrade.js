@@ -823,19 +823,19 @@ function _setupQtyObserver() {
 //  INIT — Point d'entrée unique
 // ═══════════════════════════════════════════════════════════════
 
-// ── Side cart sticky top — source de vérité unique ─────────────────────
-// Calcule --sc-sticky-top = hauteur des éléments sticky au-dessus du catalogue:
-//   header + k-cats-shell (chips) + k-subcats-wrap (rail subcats si visible) + 16px marge
-// Appelé au load, au resize, et quand k-subcats-wrap change (MutationObserver).
+// ── Side cart sticky top ────────────────────────────────────────────────
+// @note LOT 9 : --sc-sticky-top n'est plus utilisé pour positionner le side-cart.
+// Le positionnement réel est assuré par le bloc "DESKTOP STICKY CONTEXT FIX"
+// dans layout.css (top: calc(var(--header-h, 72px) + 12px)).
+// La variable n'est conservée que par précaution (aucune règle CSS active ne la lit).
+// Peut être supprimée après audit complet si confirmé sans usage.
 function _updateSideCartStickyTop() {
   if (!isDesktop()) return;
-  var header    = document.querySelector('.k-header');
-  var cats      = document.querySelector('.k-cats-shell');   // display:none desktop → 0
-  var pavilions = document.getElementById('k-pavilions');    // sticky en desktop, remplace les chips
-  var subcats   = document.getElementById('k-subcats-wrap');
-  var h = (header    ? header.offsetHeight    : 76)
-        + (cats      ? cats.offsetHeight      : 0)
-        + (pavilions ? pavilions.offsetHeight : 0)           // pavillons sticky sous le header
+  var header  = document.querySelector('.k-header');
+  var cats    = document.querySelector('.k-cats-shell');
+  var subcats = document.getElementById('k-subcats-wrap');
+  var h = (header  ? header.offsetHeight  : 76)
+        + (cats    ? cats.offsetHeight    : 0)
         + (subcats && subcats.offsetHeight && subcats.children.length ? subcats.offsetHeight : 0)
         + 16;
   document.documentElement.style.setProperty('--sc-sticky-top', h + 'px');
@@ -878,12 +878,23 @@ export function setupDesktopUpgrade() {
   if (_scCatsShell && typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(_updateSideCartStickyTop).observe(_scCatsShell);
   }
-  // Pavillons : sticky en desktop, remplacent les chips → observer leur hauteur aussi.
-  var _scPavilions = document.getElementById('k-pavilions');
-  if (_scPavilions && typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(_updateSideCartStickyTop).observe(_scPavilions);
-  }
+  // @note LOT 9 : ResizeObserver sur #k-pavilions supprimé.
+  // Les pavillons sont masqués desktop (display:none @900px dans boutique-desktop.css).
+  // Leur offsetHeight est donc toujours 0 — observer inutile.
 
+  /**
+   * setupSideCartFooterGuard — masque le side-cart quand le footer entre dans le viewport.
+   *
+   * Pourquoi cette feature existe :
+   *   position:sticky ne connaît pas les limites du footer. Sans guard, le side-cart
+   *   chevauche visuellement le footer au bas de page.
+   *
+   * Implémentation : IntersectionObserver sur #k-footer → opacity 0 + pointerEvents none
+   *   + transform translateY(8px) quand visible. Restoration au retour.
+   *
+   * NE PAS REMPLACER par une solution CSS-only (margin-bottom, padding) : a été testé,
+   * ne fonctionne pas avec position:sticky dans un flex container.
+   */
   // ── Fix : masquer le side cart quand le footer entre dans le viewport ──
   // position:sticky ne connaît pas les limites du footer — sans ce fix,
   // le side cart chevauche visuellement le footer au bas de page.
