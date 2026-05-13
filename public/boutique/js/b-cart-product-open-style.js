@@ -1,6 +1,6 @@
 /**
  * @module b-cart-product-open-style
- * @brief Charge l'affordance visuelle des images produit cliquables dans le panier.
+ * @brief Charge les modules UX légers branchés au boot boutique.
  */
 
 export function setupCartProductOpenStyle() {
@@ -9,6 +9,14 @@ export function setupCartProductOpenStyle() {
     link.id = 'kmrc-cart-product-image-affordance-css';
     link.rel = 'stylesheet';
     link.href = '/boutique/css/cart-product-open.css?v=1';
+    document.head.appendChild(link);
+  }
+
+  if (!document.getElementById('kmrc-shared-followup-css')) {
+    const link = document.createElement('link');
+    link.id = 'kmrc-shared-followup-css';
+    link.rel = 'stylesheet';
+    link.href = '/boutique/css/shared-followup.css?v=1';
     document.head.appendChild(link);
   }
 
@@ -23,7 +31,7 @@ export function setupCartProductOpenStyle() {
       console.warn('[friendly-group-link] chargement impossible', err);
     });
 
-  // Bootstrap opportuniste de l'onglet Mes groupes sans alourdir main.js.
+  // Bootstrap opportuniste de l'onglet Mes paniers partagés sans alourdir main.js.
   import('./b-cart-groups-tab.js')
     .then(function(mod) {
       if (mod && typeof mod.setupCartGroupsTab === 'function') {
