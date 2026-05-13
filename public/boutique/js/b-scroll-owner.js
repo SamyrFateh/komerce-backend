@@ -133,6 +133,13 @@ export function installScrollOwner() {
       return;
     }
 
+    // Side cart déployé : il a son propre scroll interne (.k-sc-items overflow-y:auto).
+    // Ne pas rediriger la molette vers window — ça scrollerait le catalogue en même temps.
+    var sideCart = document.getElementById('k-side-cart');
+    if (sideCart && sideCart.classList.contains('is-expanded') && target.closest('#k-side-cart')) {
+      return;
+    }
+
     // Ne pas intercepter la molette sur les rails de chips (scroll horizontal natif)
     if (target.closest('.k-cats-shell, .k-subcats-wrap, #k-subcats-wrap, .k-sec-subcats')) {
       return;
