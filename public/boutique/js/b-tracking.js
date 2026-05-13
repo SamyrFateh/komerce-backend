@@ -1,10 +1,6 @@
 /**
  * @module b-tracking
- * @brief Suivi commandes — renderTrackView, renderMyOrdersList, renderOrderDetail,
- *        renderOrdersHistory, buildTimeline, getStatusDisplay, formatOrderDate,
- *        renderTrackViewSearchMode
- *
- * Extrait de b-views.js — refacto v2
+ * @brief Suivi commandes + paniers partagés.
  */
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';
@@ -13,7 +9,6 @@ import {
   PHONE_COUNTRIES,
   phoneBlockHTML,
   buildPhoneSelect,
-  readEventPhone,
   buildE164,
   digitsOnly,
   normalizeLocal,
@@ -29,11 +24,100 @@ const TRACK_STEPS = [
   { key: 'delivered',  label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' },
 ];
 
-/**
- * Construit le HTML de la timeline de statut.
- * @param {string} status
- * @returns {string}
- */
+function loadSharedCarts() {
+  try {
+    const raw = localStorage.getItem('kmrc_group_carts_v1');
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list.filter(g => g.status !== 'archived') : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveSharedCarts(groups) {
+  try { localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(groups.slice(0, 20))); } catch (_) {}
+}
+
+function renderSharedCartsPanel() {
+  const groups = loadSharedCarts();
+  if (!groups.length) {
+    return `
+      <section class="k-track-shared-panel">
+        <div class="k-track-panel-head">
+          <h2>👥 Mes paniers partagés</h2>
+          <p class="k-track-sub-hint">Vos paiements à plusieurs apparaîtront ici.</p>
+        </div>
+        <div class="k-search-empty">Aucun panier partagé pour le moment.</div>
+      </section>`;
+  }
+
+  return `
+    <section class="k-track-shared-panel">
+      <div class="k-track-panel-head">
+        <h2>👥 Mes paniers partagés</h2>
+        <p class="k-track-sub-hint">Suivez les paiements, copiez le lien, puis clôturez quand c'est complet.</p>
+      </div>
+      <div class="k-track-shared-list">
+        ${groups.map(g => {
+          const paid = g.status === 'paid';
+          const total = fmt(Number(g.total) || 0, 'KMF');
+          const participants = Array.isArray(g.participants) ? g.participants.length : 0;
+          return `
+            <article class="k-track-shared-card" data-shared-id="${sanitize(g.id || '')}">
+              <div class="k-track-shared-top">
+                <div>
+                  <div class="k-track-shared-title">${sanitize(g.title || 'Panier partagé')}</div>
+                  <div class="k-track-shared-meta">${participants} participant${participants > 1 ? 's' : ''} · ${sanitize(g.dateLabel || 'En cours')}</div>
+                </div>
+                <span class="k-track-shared-pill ${paid ? 'is-paid' : 'is-open'}">${paid ? 'Payé' : 'Ouvert'}</span>
+              </div>
+              <div class="k-track-shared-bottom">
+                <strong>${total}</strong>
+                <div class="k-track-shared-actions">
+                  <button type="button" data-shared-copy>🔗</button>
+                  <button type="button" data-shared-close>${paid ? '👁️' : '🔒'}</button>
+                </div>
+              </div>
+            </article>`;
+        }).join('')}
+      </div>
+    </section>`;
+}
+
+function bindSharedCartsPanel(el) {
+  el.querySelectorAll('[data-shared-copy]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('[data-shared-id]');
+      const group = loadSharedCarts().find(g => String(g.id) === String(card?.dataset.sharedId));
+      if (!group) return;
+      try {
+        await navigator.clipboard.writeText(group.url || window.location.href);
+        showToast('Lien copié', 'success');
+      } catch (_) {
+        showToast('Copie impossible', 'error');
+      }
+    });
+  });
+
+  el.querySelectorAll('[data-shared-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('[data-shared-id]');
+      const groups = loadSharedCarts();
+      const group = groups.find(g => String(g.id) === String(card?.dataset.sharedId));
+      if (!group) return;
+      if (group.status === 'paid') {
+        showToast('Détail du panier partagé', 'success');
+        return;
+      }
+      group.status = 'paid';
+      group.dateLabel = 'Clôturé aujourd’hui';
+      saveSharedCarts(groups);
+      renderTrackView();
+      showToast('Panier partagé clôturé', 'success');
+    });
+  });
+}
+
 export function buildTimeline(status) {
   const idx = TRACK_STEPS.findIndex(s => s.key === status);
   return TRACK_STEPS.map((s, i) => {
@@ -50,11 +134,6 @@ export function buildTimeline(status) {
   }).join('');
 }
 
-/**
- * @param {string} status
- * @param {string} [paymentStatus]
- * @returns {{ emoji: string, label: string, cls: string }}
- */
 export function getStatusDisplay(status, paymentStatus) {
   const map = {
     pending:     { emoji: '⏳', label: 'En attente',      cls: 'pending' },
@@ -72,11 +151,6 @@ export function getStatusDisplay(status, paymentStatus) {
   return map[status] || { emoji: '📦', label: status || 'Inconnu', cls: 'pending' };
 }
 
-/**
- * Formate une date ISO en libellé relatif (Aujourd'hui, Hier, Il y a N jours…).
- * @param {string} isoDate
- * @returns {string}
- */
 export function formatOrderDate(isoDate) {
   if (!isoDate) return '';
   try {
@@ -90,11 +164,6 @@ export function formatOrderDate(isoDate) {
   } catch(e) { return ''; }
 }
 
-/**
- * Rend une liste de commandes compactes dans un container.
- * @param {Array} orders
- * @param {Element} container
- */
 export function renderOrdersHistory(orders, container) {
   if (!orders.length) {
     container.innerHTML = '<div class="k-search-empty">Aucune commande trouvée.</div>';
@@ -111,11 +180,6 @@ export function renderOrdersHistory(orders, container) {
     </div>`).join('');
 }
 
-/**
- * Rend le détail d'une commande dans un container.
- * @param {Object} order
- * @param {Element} container
- */
 export function renderOrderDetail(order, container) {
   container.innerHTML = `
     <div class="k-order-card">
@@ -128,13 +192,8 @@ export function renderOrderDetail(order, container) {
     </div>`;
 }
 
-/**
- * Rend la liste "Mes commandes" avec navigation vers le détail.
- * @param {Element} el
- * @param {Array} orders
- */
 export function renderMyOrdersList(el, orders) {
-  const header = '<h2>📦 Mes commandes</h2>' +
+  const header = '<section class="k-track-orders-panel"><h2>📦 Mes commandes</h2>' +
     '<p class="k-track-sub-hint">' + orders.length + ' commande' + (orders.length > 1 ? 's' : '') +
     ' trouvée' + (orders.length > 1 ? 's' : '') + '</p>';
 
@@ -167,9 +226,11 @@ export function renderMyOrdersList(el, orders) {
     '</button>';
   }).join('');
 
-  el.innerHTML = header +
-    '<div class="k-myorders-list">' + cards + '</div>' +
-    '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button>';
+  el.innerHTML = '<div class="k-track-dashboard">' +
+    header + '<div class="k-myorders-list">' + cards + '</div>' +
+    '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button></section>' +
+    renderSharedCartsPanel() +
+    '</div>';
 
   el.querySelectorAll('.k-myorder-card').forEach(card => {
     card.addEventListener('click', async () => {
@@ -196,11 +257,9 @@ export function renderMyOrdersList(el, orders) {
 
   const searchBtn = el.querySelector('#k-myorders-search-other');
   if (searchBtn) searchBtn.addEventListener('click', () => renderTrackViewSearchMode(el));
+  bindSharedCartsPanel(el);
 }
 
-/**
- * Point d'entrée principal : charge les commandes ou bascule en mode recherche.
- */
 export function renderTrackView() {
   let el = document.getElementById('k-track-view');
   if (!el) {
@@ -225,56 +284,58 @@ export function renderTrackView() {
   })();
 }
 
-/**
- * Mode recherche par référence ou OTP téléphone.
- * @param {Element} el
- */
 export function renderTrackViewSearchMode(el) {
   const otpState = { phone: '' };
 
   el.innerHTML = `
-    <h2>📦 Suivi de commande</h2>
+    <div class="k-track-dashboard k-track-dashboard--search">
+      <section class="k-track-orders-panel">
+        <h2>📦 Suivi de commande</h2>
 
-    <div id="k-track-quick">
-      <p class="k-otp-hint">Entrez les 4 derniers chiffres de votre commande</p>
-      <div class="k-track-form">
-        <div class="k-track-ref-wrap">
-          <span class="k-track-ref-prefix">KMR-2025-</span>
-          <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="0042" maxlength="4" autocomplete="off">
+        <div id="k-track-quick">
+          <p class="k-otp-hint">Entrez les 4 derniers chiffres de votre commande</p>
+          <div class="k-track-form">
+            <div class="k-track-ref-wrap">
+              <span class="k-track-ref-prefix">KMR-2025-</span>
+              <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="0042" maxlength="4" autocomplete="off">
+            </div>
+            <button class="k-track-btn" id="k-track-quick-btn">🔍 Suivre</button>
+          </div>
+          <div class="k-otp-divider"><span>ou</span></div>
+          <button class="k-track-btn k-track-btn--ghost" id="k-track-history-toggle">📋 Voir tout mon historique</button>
         </div>
-        <button class="k-track-btn" id="k-track-quick-btn">🔍 Suivre</button>
-      </div>
-      <div class="k-otp-divider"><span>ou</span></div>
-      <button class="k-track-btn k-track-btn--ghost" id="k-track-history-toggle">📋 Voir tout mon historique</button>
-    </div>
 
-    <div id="k-track-otp" class="u-hidden">
-      <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
-      <div class="k-track-form">
-        <div class="k-track-phone-wrap">
-          ${phoneBlockHTML('k-otp-country', 'k-otp-phone', '+33')}
+        <div id="k-track-otp" class="u-hidden">
+          <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
+          <div class="k-track-form">
+            <div class="k-track-phone-wrap">
+              ${phoneBlockHTML('k-otp-country', 'k-otp-phone', '+33')}
+            </div>
+            <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
+          </div>
+          <button class="k-track-btn k-track-btn--ghost k-track-btn--mt" id="k-track-back-quick">← Suivi rapide</button>
         </div>
-        <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
-      </div>
-      <button class="k-track-btn k-track-btn--ghost k-track-btn--mt" id="k-track-back-quick">← Suivi rapide</button>
-    </div>
 
-    <div id="k-otp-step2" class="u-hidden">
-      <div class="k-otp-sent-banner">
-        📲 Code WhatsApp envoyé au <strong id="k-otp-phone-display"></strong><br>
-        <small>Vérifiez vos messages WhatsApp. Code valable 10 min.</small>
-      </div>
-      <input class="k-otp-code-input" id="k-otp-code" type="text" inputmode="numeric" placeholder="_ _ _ _ _ _" maxlength="6" autocomplete="one-time-code">
-      <button class="k-track-btn" id="k-otp-verify-btn">Vérifier</button>
-      <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
-    </div>
+        <div id="k-otp-step2" class="u-hidden">
+          <div class="k-otp-sent-banner">
+            📲 Code WhatsApp envoyé au <strong id="k-otp-phone-display"></strong><br>
+            <small>Vérifiez vos messages WhatsApp. Code valable 10 min.</small>
+          </div>
+          <input class="k-otp-code-input" id="k-otp-code" type="text" inputmode="numeric" placeholder="_ _ _ _ _ _" maxlength="6" autocomplete="one-time-code">
+          <button class="k-track-btn" id="k-otp-verify-btn">Vérifier</button>
+          <button class="k-otp-resend-btn" id="k-otp-resend-btn">Renvoyer le code</button>
+        </div>
 
-    <div id="k-otp-step3" class="u-hidden">
-      <div id="k-orders-list"></div>
-      <button class="k-otp-resend-btn k-otp-back-btn" id="k-otp-back-btn">← Nouvelle recherche</button>
+        <div id="k-otp-step3" class="u-hidden">
+          <div id="k-orders-list"></div>
+          <button class="k-otp-resend-btn k-otp-back-btn" id="k-otp-back-btn">← Nouvelle recherche</button>
+        </div>
+      </section>
+      ${renderSharedCartsPanel()}
     </div>`;
 
-  // ── Suivi rapide (4 chiffres) ──
+  bindSharedCartsPanel(el);
+
   const digitsInput = el.querySelector('#k-track-digits');
   digitsInput.addEventListener('input', () => {
     digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 4);
@@ -308,9 +369,7 @@ export function renderTrackViewSearchMode(el) {
     el.querySelector('#k-track-quick').classList.remove('u-hidden');
   });
 
-  // ── Init du select indicatif via b-phone ──
   buildPhoneSelect('k-otp-country', 'k-otp-phone', '+33', null);
-  // Appliquer la classe CSS spécifique au tracking sur le select généré
   const otpSel = el.querySelector('#k-otp-country');
   if (otpSel) otpSel.className = 'k-track-country';
   const otpInput = el.querySelector('#k-otp-phone');
@@ -331,7 +390,6 @@ export function renderTrackViewSearchMode(el) {
     return digits.length === country.digits;
   }
 
-  // ── OTP envoi ──
   el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
     if (!isPhoneValid()) { showToast('Entrez un numéro valide pour ce pays.', 'error'); return; }
     const phone  = getFullPhone();
@@ -350,7 +408,6 @@ export function renderTrackViewSearchMode(el) {
     }
   });
 
-  // ── OTP vérification ──
   el.querySelector('#k-otp-verify-btn').addEventListener('click', async () => {
     const code = el.querySelector('#k-otp-code').value.replace(/\s/g, '');
     if (code.length < 4) { showToast('Entrez le code complet.', 'error'); return; }
@@ -384,7 +441,6 @@ export function renderTrackViewSearchMode(el) {
     }
   });
 
-  // ── OTP renvoi avec countdown ──
   let resendTimer = null;
   el.querySelector('#k-otp-resend-btn').addEventListener('click', async () => {
     const btn = el.querySelector('#k-otp-resend-btn');
