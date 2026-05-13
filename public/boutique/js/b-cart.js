@@ -20,6 +20,7 @@ import {
   showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
 import { isDesktop }     from './b-scroll-owner.js';
+import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 
 'use strict';
 
@@ -1339,16 +1340,14 @@ function quickRemove(productId, btnEl) {
     const headers = document.querySelectorAll('.k-sec-header');
     if (headers.length < 2) return; // inutile s'il n'y a qu'une section
 
-    const EMOJI_CAT = {
-      'Mode': '👕',
-      'Beauté': '🌸',
-      'Tech': '📱',
-      'Enfant': '🧒',
-      'Maison': '🏠',
-      'Sport': '⚽',
-      'Sur-mesure': '✨',
-      'Autres': '📦',
-    };
+    // Emoji résolu depuis shop-schema — source de vérité unique.
+    // normalizeCategoryKey gère la rétrocompat dbKeys (Mode, Sur-mesure, etc.)
+    const EMOJI_CAT = new Proxy({}, {
+      get(_, cat) {
+        const key = normalizeCategoryKey(cat);
+        return getCategoryIcon(key) || '📦';
+      }
+    });
 
     const nav = document.createElement('nav');
     nav.id = 'k-section-index';

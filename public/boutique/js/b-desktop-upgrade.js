@@ -37,6 +37,7 @@ import {
 import { setActiveCat }                   from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import { isDesktop }        from './b-scroll-owner.js';
+import { getRailCategories, getCategorySectionEmoji } from './shop-schema.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  1. MEGA-MENU — Dropdown sous-catégories au hover chip desktop
@@ -527,6 +528,8 @@ function setupHomepageMerchandising() {
 
   var merch = document.createElement('section');
   merch.className = 'k-home-merch';
+
+  // Head — fixe
   merch.innerHTML =
     '<div class="k-home-merch-head">' +
       '<div>' +
@@ -534,29 +537,35 @@ function setupHomepageMerchandising() {
         '<h2>Les raccourcis pour trouver vite et bien</h2>' +
       '</div>' +
       '<button class="k-home-merch-all" type="button" data-cat="all">Voir tout le catalogue →</button>' +
-    '</div>' +
-    '<div class="k-home-merch-grid">' +
-      '<button class="k-home-merch-card k-home-merch-card--hot" type="button" data-cat="Soldes">' +
-        '<span class="k-home-merch-icon">🏷️</span>' +
-        '<strong>Promos & bonnes affaires</strong>' +
-        '<small>Prix doux, arrivages malins, sélection rapide.</small>' +
-      '</button>' +
-      '<button class="k-home-merch-card" type="button" data-cat="Mode & Beauté">' +
-        '<span class="k-home-merch-icon">✨</span>' +
-        '<strong>Mode & beauté</strong>' +
-        '<small>Les indispensables à offrir ou à se faire livrer.</small>' +
-      '</button>' +
-      '<button class="k-home-merch-card" type="button" data-cat="Tech">' +
-        '<span class="k-home-merch-icon">📱</span>' +
-        '<strong>Tech utile</strong>' +
-        '<small>Accessoires, gadgets et produits pratiques.</small>' +
-      '</button>' +
-      '<button class="k-home-merch-card" type="button" data-cat="Maison">' +
-        '<span class="k-home-merch-icon">🏠</span>' +
-        '<strong>Maison & quotidien</strong>' +
-        '<small>Des produits concrets pour la famille.</small>' +
-      '</button>' +
     '</div>';
+
+  // Grid — générée depuis shop-schema, source de vérité unique.
+  // Ajouter un pilier dans shop-schema suffit — aucune modif ici requise.
+  var _MERCH_DESC = {
+    'Soldes':                 'Prix doux, arrivages malins, sélection rapide.',
+    'Mode & Beauté':          'Les indispensables à offrir ou à se faire livrer.',
+    'Maison':                 'Des produits concrets pour la famille.',
+    'Tech':                   'Accessoires, gadgets et produits pratiques.',
+    'Bricolage':              'Outillage et quincaillerie introuvables à Moroni.',
+    'Créations personnelles': 'Tenues de cérémonie et cadeaux sur-mesure.',
+    'Auto':                   'Pièces légères Toyota & Moto, sourcing Dubaï.',
+  };
+  var _grid = document.createElement('div');
+  _grid.className = 'k-home-merch-grid';
+  getRailCategories()
+    .filter(function(c) { return c.key !== 'all'; })
+    .forEach(function(c) {
+      var btn = document.createElement('button');
+      btn.className = 'k-home-merch-card' + (c.filterType === 'promo' ? ' k-home-merch-card--hot' : '');
+      btn.type = 'button';
+      btn.dataset.cat = c.key;
+      btn.innerHTML =
+        '<span class="k-home-merch-icon">' + getCategorySectionEmoji(c.key) + '</span>' +
+        '<strong>' + c.label + '</strong>' +
+        '<small>' + (_MERCH_DESC[c.key] || c.label) + '</small>';
+      _grid.appendChild(btn);
+    });
+  merch.appendChild(_grid);
 
   anchor.parentNode.insertBefore(merch, anchor);
 

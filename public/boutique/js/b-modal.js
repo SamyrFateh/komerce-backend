@@ -1947,7 +1947,7 @@ bus.on('modal:close', function() { if (typeof closeModal === 'function') closeMo
           '<div class="k-sg-tabs">',
             '<button class="k-sg-tab is-active" data-tab="clothes">👗 Vêtements</button>',
             '<button class="k-sg-tab" data-tab="shoes">👟 Chaussures</button>',
-            '<button class="k-sg-tab" data-tab="kids">🧒 Enfant</button>',
+            '<button class="k-sg-tab" data-tab="kids">👶 Enfant & Bébé</button>',
           '</div>',
           '<div class="k-sg-body">',
 
