@@ -1,8 +1,8 @@
 /**
  * @module b-group-cart-flow
- * @brief Flux ultra court pour créer un panier collectif.
+ * @brief Flux ultra court pour créer un panier partagé.
  *
- * Panier → Payer à plusieurs → lien prêt → copier / WhatsApp.
+ * Panier → Payer à plusieurs → lien prêt → copier / WhatsApp → Suivi.
  */
 
 import { state } from './b-store.js';
@@ -23,6 +23,22 @@ function ensureCss() {
 
 function closeFlow() {
   document.getElementById('k-group-flow-overlay')?.remove();
+}
+
+function openTracking() {
+  closeFlow();
+  const cartOverlay = document.getElementById('k-cart-overlay');
+  const cartDrawer = document.getElementById('k-cart-drawer');
+  cartOverlay?.classList.remove('open');
+  cartDrawer?.classList.remove('open');
+  document.body.classList.remove('cart-open');
+
+  const trackBtn = document.querySelector('[data-tab="track"]');
+  if (trackBtn) {
+    trackBtn.click();
+  } else {
+    window.dispatchEvent(new CustomEvent('kmrc:open-tracking'));
+  }
 }
 
 function shell(inner) {
@@ -65,8 +81,8 @@ function ready(url) {
   shell(`
     <div class="k-group-flow-hero">
       <div class="k-group-flow-icon">✅</div>
-      <p class="k-group-flow-big">Groupe prêt</p>
-      <p class="k-group-flow-sub">Envoyez le lien. Chacun paie sa part.</p>
+      <p class="k-group-flow-big">Panier partagé prêt</p>
+      <p class="k-group-flow-sub">Envoyez le lien, puis suivez les paiements dans Suivi.</p>
     </div>
     <div class="k-group-flow-stats">
       <div class="k-group-flow-stat"><b>${qty}</b><span>articles</span></div>
@@ -77,7 +93,7 @@ function ready(url) {
     <div class="k-group-flow-actions">
       <button type="button" class="k-group-flow-btn k-group-flow-btn--primary" data-group-copy>Copier</button>
       <button type="button" class="k-group-flow-btn k-group-flow-btn--wa" data-group-wa>WhatsApp</button>
-      <button type="button" class="k-group-flow-btn k-group-flow-btn--ghost" data-group-flow-close>Voir mon panier</button>
+      <button type="button" class="k-group-flow-btn k-group-flow-btn--ghost" data-group-followup>Voir le suivi</button>
     </div>`);
 
   const ov = document.getElementById('k-group-flow-overlay');
@@ -85,6 +101,7 @@ function ready(url) {
   ov?.querySelector('[data-group-wa]')?.addEventListener('click', () => {
     window.open(shareUrlWhatsApp(url), '_blank', 'noopener');
   });
+  ov?.querySelector('[data-group-followup]')?.addEventListener('click', openTracking);
 }
 
 function fallbackUrl() {
@@ -107,7 +124,7 @@ async function createGroupCart() {
       price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0
     })),
     type: 'event',
-    event_label: 'Panier collectif',
+    event_label: 'Panier partagé',
     sharer_name: null
   };
 
@@ -122,7 +139,7 @@ async function createGroupCart() {
   if (!url) url = fallbackUrl();
 
   window.dispatchEvent(new CustomEvent('kmrc:group-cart-created', {
-    detail: { label: 'Panier collectif', url }
+    detail: { label: 'Panier partagé', url }
   }));
 
   ready(url);
