@@ -7,7 +7,7 @@
  *   - résolution produit robuste number/string,
  *   - fermeture sûre des surfaces panier,
  *   - ouverture de la fiche produit via l'API modal réelle,
- *   - délégation pour tiroir mobile + side-cart desktop.
+ *   - délégation image-only pour tiroir mobile + side-cart desktop.
  */
 
 import { bus }       from './b-bus.js';
@@ -77,20 +77,31 @@ export function openProductFromCart(productId) {
   return true;
 }
 
-function _extractProductIdFromCartClick(target) {
-  const explicit = target.closest('[data-open-product]');
-  if (explicit?.dataset.openProduct != null) return explicit.dataset.openProduct;
+function _extractProductIdFromCartImageClick(target) {
+  // Règle UX : seule l'image produit du panier ouvre la fiche produit.
+  // Le nom reste texte simple pour éviter les ouvertures accidentelles près des
+  // steppers, prix, suppression ou CTA.
 
-  const drawerItem = target.closest('.k-cart-item[data-pid]');
-  if (drawerItem && target.closest('.k-cart-item-img, .k-cart-item-name')) {
-    return drawerItem.dataset.pid;
+  const drawerImg = target.closest('.k-cart-item-img');
+  if (drawerImg) {
+    const drawerItem = drawerImg.closest('.k-cart-item[data-pid], [data-open-product]');
+    if (drawerItem) {
+      return drawerItem.dataset.openProduct || drawerItem.dataset.pid || null;
+    }
   }
 
-  const sideCart = target.closest('#k-side-cart');
-  if (sideCart) {
-    const sideItem = target.closest('[data-open-product], [data-pid], [data-product-id]');
+  const sideImg = target.closest([
+    '#k-side-cart .k-cart-item-img',
+    '#k-side-cart .k-side-cart-item-img',
+    '#k-side-cart .k-side-item-img',
+    '#k-side-cart .k-cart-product-thumb',
+    '#k-side-cart [data-open-product-img]'
+  ].join(','));
+
+  if (sideImg) {
+    const sideItem = sideImg.closest('[data-open-product], [data-pid], [data-product-id]');
     if (sideItem) {
-      return sideItem.dataset.openProduct || sideItem.dataset.pid || sideItem.dataset.productId;
+      return sideItem.dataset.openProduct || sideItem.dataset.pid || sideItem.dataset.productId || null;
     }
   }
 
@@ -98,7 +109,7 @@ function _extractProductIdFromCartClick(target) {
 }
 
 function _onDocumentClick(e) {
-  const productId = _extractProductIdFromCartClick(e.target);
+  const productId = _extractProductIdFromCartImageClick(e.target);
   if (productId == null) return;
 
   if (_isInteractiveCartControl(e.target)) return;
