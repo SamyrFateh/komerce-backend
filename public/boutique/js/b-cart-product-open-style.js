@@ -12,6 +12,17 @@ export function setupCartProductOpenStyle() {
     document.head.appendChild(link);
   }
 
+  // Compatibilité lien public court /g/:token → /event/w/:token.
+  import('./b-friendly-group-redirect.js')
+    .then(function(mod) {
+      if (mod && typeof mod.setupFriendlyGroupRedirect === 'function') {
+        mod.setupFriendlyGroupRedirect();
+      }
+    })
+    .catch(function(err) {
+      console.warn('[friendly-group-link] chargement impossible', err);
+    });
+
   // Bootstrap opportuniste de l'onglet Mes groupes sans alourdir main.js.
   import('./b-cart-groups-tab.js')
     .then(function(mod) {

@@ -49,6 +49,7 @@ function _err(res, code, error_code, message) {
 router.post('/', async (req, res) => {
   try {
     const result = await engine.createWorkspace(req.body || {});
+    const publicUrlPath = '/g/' + result.public_token;
     res.status(201).json({
       workspace_id: result.workspace.id,
       event_name: result.workspace.event_name,
@@ -56,8 +57,10 @@ router.post('/', async (req, res) => {
       // Tokens BRUTS — affichés une seule fois au créateur
       creator_token: result.creator_token,
       public_token: result.public_token,
-      // URLs construites côté client (le frontend sait le base URL)
-      public_url_path: '/k/' + result.public_token,   // page de partage
+      // URL publique canonique et courte. /event/w/:token reste compatible.
+      public_url_path: publicUrlPath,
+      public_url: publicUrlPath,
+      legacy_public_url_path: '/event/w/' + result.public_token,
       message: 'Espace créé. Le lien public peut être partagé librement (WhatsApp, SMS).',
     });
   } catch (err) {
@@ -343,6 +346,7 @@ paymentsRouter.post(
 
       if (req.user.role === 'agent_relais') {
         try {
+          const db = require('../db');
           const agent = (await db.query(
             'SELECT relais_id FROM users WHERE id = $1',
             [req.user.id]
