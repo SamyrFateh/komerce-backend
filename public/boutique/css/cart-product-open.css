@@ -1,0 +1,56 @@
+/*
+ * cart-product-open.css
+ * Affordance visuelle pour le contrat panier → fiche produit.
+ * Règle UX : seule l'image produit du panier est cliquable.
+ */
+
+.k-cart-item-img,
+#k-side-cart .k-cart-item-img,
+#k-side-cart .k-side-cart-item-img,
+#k-side-cart .k-side-item-img,
+#k-side-cart .k-cart-product-thumb,
+#k-side-cart [data-open-product-img] {
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, opacity .16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.k-cart-item-img img,
+#k-side-cart .k-cart-item-img img,
+#k-side-cart .k-side-cart-item-img img,
+#k-side-cart .k-side-item-img img,
+#k-side-cart .k-cart-product-thumb img,
+#k-side-cart [data-open-product-img] img {
+  transition: transform .16s ease;
+  pointer-events: none;
+}
+
+.k-cart-item-img:hover,
+#k-side-cart .k-cart-item-img:hover,
+#k-side-cart .k-side-cart-item-img:hover,
+#k-side-cart .k-side-item-img:hover,
+#k-side-cart .k-cart-product-thumb:hover,
+#k-side-cart [data-open-product-img]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+  border-color: var(--coral, #c85c2d);
+}
+
+.k-cart-item-img:hover img,
+#k-side-cart .k-cart-item-img:hover img,
+#k-side-cart .k-side-cart-item-img:hover img,
+#k-side-cart .k-side-item-img:hover img,
+#k-side-cart .k-cart-product-thumb:hover img,
+#k-side-cart [data-open-product-img]:hover img {
+  transform: scale(1.04);
+}
+
+.k-cart-item-img:active,
+#k-side-cart .k-cart-item-img:active,
+#k-side-cart .k-side-cart-item-img:active,
+#k-side-cart .k-side-item-img:active,
+#k-side-cart .k-cart-product-thumb:active,
+#k-side-cart [data-open-product-img]:active {
+  transform: scale(.96);
+  opacity: .88;
+}
