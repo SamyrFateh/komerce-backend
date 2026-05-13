@@ -1032,6 +1032,7 @@ body {
     flex: 0 0 auto;
     max-height: calc(55vh - var(--sc-sticky-top, 140px));
     overflow-y: auto;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
     padding: 6px 0 4px;
