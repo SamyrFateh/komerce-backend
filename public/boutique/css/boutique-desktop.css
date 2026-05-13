@@ -320,9 +320,8 @@
     flex-shrink: 0;
   }
   .k-header-nav-btn:hover {
-    background: rgba(100,175,90,.10);
-    border-color: rgba(100,175,90,.30);
-    color: var(--ocean-dark);
+    background: var(--sand-warm);
+    border-color: var(--border);
   }
   .k-header-nav-btn:active { background: var(--sand-dark); }
 
@@ -917,7 +916,7 @@
     color: var(--text, #1F3024);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
-    border-top: 2px solid rgba(100,175,90,.25);  /* accent ocean léger */
+    border-top: 1px solid var(--border, #E3D9C9);
   }
 
   .k-footer-grid {
@@ -967,9 +966,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: rgba(100,175,90,.10);
-    border-color: rgba(100,175,90,.35);
-    color: var(--ocean-dark, #4A9040);
+    background: var(--sand, #FDFAF5);
+    border-color: rgba(31,48,36,.3);
+    color: var(--text, #1F3024);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -982,7 +981,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--ocean-dark, #4A9040);
+    color: var(--text-light, #9EAC95);
     margin-bottom: 14px;
   }
 
@@ -1270,9 +1269,9 @@
     position: sticky;
     top: var(--header-h, 72px);
     z-index: 110;
-    background: rgba(100,175,90,.05);   /* vert ocean très pâle */
-    border-bottom: 2px solid rgba(200,92,45,.18);  /* fil coral discret */
-    box-shadow: 0 2px 8px rgba(31,48,36,.04);
+    background: #fff;
+    border-bottom: 1px solid rgba(31,48,36,.08);
+    box-shadow: 0 2px 14px rgba(31,48,36,.06);
     padding: 0;
   }
 
@@ -1320,8 +1319,8 @@
     margin-bottom: -1px;       /* chevauchement border-bottom shell */
   }
   .k-chip:hover {
-    color: var(--ocean-dark);
-    background: rgba(100,175,90,.08);
+    color: var(--coral);
+    background: rgba(200,92,45,.04);
   }
 
   /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
@@ -1373,10 +1372,9 @@
   .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
   .k-chip.active .k-chip-label { color: var(--coral); font-weight: 700; }
 
-  /* Hover : fond vert + sous-ligne coral */
+  /* Hover : sous-ligne subtile */
   .k-chip:not(.active):hover {
-    background: rgba(100,175,90,.08);
-    border-bottom-color: rgba(200,92,45,.25);
+    border-bottom-color: rgba(200,92,45,.3);
   }
 
   /* Pas de fades latÃ©raux desktop */
@@ -1965,26 +1963,26 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* 1. Conteneur : hauteur premium — relevée pour montrer les personnages */
+  /* 1. Conteneur : hauteur premium */
   #k-hero-fixed-wrap {
-    max-height: 200px;
+    max-height: 160px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 200px;
+    max-height: 160px;
     overflow: hidden;
-    background: transparent;
+    background: #1F3024;
   }
 
-  /* 2. Image visible — object-position ajusté pour cadrer les visages */
+  /* 2. Image visible, couvre toute la hauteur */
   #k-hero-fixed-wrap .k-hero-img {
     display: block !important;
     width: 100%;
-    height: clamp(160px, 16vw, 200px) !important;
-    max-height: 200px !important;
+    height: clamp(130px, 13vw, 160px) !important;
+    max-height: 160px !important;
     object-fit: cover;
-    object-position: center top;  /* image couvre tout, têtes en haut */
+    object-position: center 40%;  /* même cadrage qu'à l'ouverture */
   }
 
   /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */
@@ -2144,7 +2142,17 @@
   }
 }
 
-/* margin-top side-cart : 52px dans le bloc consolidé de layout.css (LOT 9) */
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART — Alignement vertical avec la grille produits (source de vérité)
+   52px = hauteur estimée du .k-sec-header desktop (~46px) + gap.
+   Remplace l'ancien 64px calibré pour le hero 320px (hero désormais 130px).
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  #k-side-cart.k-side-cart,
+  .k-side-cart {
+    margin-top: 52px;
+  }
+}
 
 /* =========================================================
    PATCH — Remove legacy pavilions on desktop
