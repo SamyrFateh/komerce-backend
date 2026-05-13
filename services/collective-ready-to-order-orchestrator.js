@@ -3,9 +3,6 @@
  *
  * Couche doctrinale au-dessus de collective-payment-orchestrator.js.
  *
- * Objectif : stopper la création automatique de commande à 100% sécurisé.
- * Le legacy reste disponible, mais les routes passent par ce wrapper.
- *
  * Doctrine :
  *   100% sécurisé → ready_to_order
  *   clôture organisateur → commande
@@ -16,6 +13,7 @@
 const db = require('../db');
 const engine = require('./collective-workspace-engine');
 const legacy = require('./collective-payment-orchestrator');
+const closeOrderService = require('./collective-close-order-service');
 
 async function markSessionReadyToOrder(sessionId, actor = {}) {
   const client = await db.pool.connect();
@@ -115,8 +113,6 @@ async function markSessionReadyToOrder(sessionId, actor = {}) {
 }
 
 async function onPaymentAuthorized(stripePaymentIntentId) {
-  // Version doctrinale du webhook card : autorise et sécurise la part,
-  // mais ne déclenche jamais la commande automatiquement.
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -190,8 +186,6 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
 }
 
 async function confirmCashContribution(rawToken, actor = {}, note = null) {
-  // Version doctrinale cash : encaissement réel au relais, puis ready_to_order
-  // si 100%, sans création de commande automatique.
   const tokenInfo = await engine.getTokenInfo(rawToken);
   if (!tokenInfo) throw new Error('token_not_found');
 
@@ -318,19 +312,7 @@ async function confirmCashContribution(rawToken, actor = {}, note = null) {
 }
 
 async function closeReadyToOrderByCreator(creatorToken, actor = {}) {
-  // V1 : garde-fou. La création de commande reste dans le legacy et sera exposée
-  // dans une PR suivante après validation du comportement ready_to_order.
-  const ws = await engine.getWorkspaceByCreatorToken(creatorToken);
-  if (!ws) throw new Error('workspace_not_found');
-  if (ws.order_id) return { ok: true, idempotent: true, order_id: ws.order_id };
-  if (ws.status !== 'ready_to_order') throw new Error('workspace_not_ready_to_order');
-
-  return {
-    ok: false,
-    ready_to_order: true,
-    close_requires_order_creation_patch: true,
-    message: 'Workspace prêt à commander. Création de commande explicite à brancher sur _createOrderFromSession dans la PR suivante.',
-  };
+  return closeOrderService.createOrderFromReadyWorkspace(creatorToken, actor);
 }
 
 module.exports = {
