@@ -1974,7 +1974,7 @@
   #k-hero-fixed-wrap .k-hero {
     max-height: 200px;
     overflow: hidden;
-    background: #111;
+    background: transparent;
   }
 
   /* 2. Image visible — object-position ajusté pour cadrer les visages */
@@ -1984,7 +1984,7 @@
     height: clamp(160px, 16vw, 200px) !important;
     max-height: 200px !important;
     object-fit: cover;
-    object-position: center 20%;  /* remonté : montre les têtes des personnages */
+    object-position: center top;  /* image couvre tout, têtes en haut */
   }
 
   /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */

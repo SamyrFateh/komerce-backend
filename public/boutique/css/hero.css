@@ -108,7 +108,7 @@
     width: 100%; flex: none;
     margin: 0; border-radius: 0;
     overflow: hidden;
-    background: #111;   /* fond photo neutre — pas vert */
+    background: transparent;
     position: relative;
   }
 
@@ -128,11 +128,10 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      100deg,
-      rgba(0, 0, 0, .52) 0%,
-      rgba(0, 0, 0, .24) 32%,
-      rgba(0, 0, 0, .04) 52%,
-      transparent          62%
+      90deg,
+      rgba(0, 0, 0, .38) 0%,
+      rgba(0, 0, 0, .10) 35%,
+      transparent          55%
     );
     z-index: 1;
     pointer-events: none;
