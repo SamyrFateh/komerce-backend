@@ -17,6 +17,27 @@ import { renderTrackView }               from './b-tracking.js';
 
 'use strict';
 
+function recalcMobilePagerAfterShopReturn() {
+  if (window.innerWidth >= 900) return;
+
+  import('./b-pager.js')
+    .then(function(mod) {
+      const recalc = function() {
+        if (window.innerWidth >= 900) return;
+        if (typeof mod._setupMobilePager === 'function') mod._setupMobilePager();
+        if (typeof mod._recalcPagerVars === 'function') mod._recalcPagerVars();
+      };
+
+      requestAnimationFrame(recalc);
+      requestAnimationFrame(function() { requestAnimationFrame(recalc); });
+      setTimeout(recalc, 120);
+      setTimeout(recalc, 450);
+    })
+    .catch(function(err) {
+      console.warn('[b-nav] recalc pager retour Accueil impossible', err);
+    });
+}
+
 /**
  * Branche tous les listeners du drawer panier + modal commande.
  */
@@ -154,6 +175,10 @@ export function switchView(tab) {
       pageScroll.style.top = '';
       pageScroll.classList.remove('k-pager-active');
     }
+  }
+
+  if (tab === 'shop') {
+    recalcMobilePagerAfterShopReturn();
   }
 
   // Fermer le panier si ouvert
