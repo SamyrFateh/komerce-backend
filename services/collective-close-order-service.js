@@ -2,6 +2,7 @@
 
 const db = require('../db');
 const engine = require('./collective-workspace-engine');
+const stockReservations = require('./collective-stock-reservation-service');
 
 function asInt(v) {
   return parseInt(v, 10) || 0;
@@ -12,6 +13,7 @@ async function createOrderFromReadyWorkspace(creatorToken, actor = {}) {
 
   try {
     await client.query('BEGIN');
+    await stockReservations.ensureTable(client);
 
     const wsPublic = await engine.getWorkspaceByCreatorToken(creatorToken);
     if (!wsPublic) throw new Error('workspace_not_found');
@@ -28,6 +30,18 @@ async function createOrderFromReadyWorkspace(creatorToken, actor = {}) {
     }
     if (ws.status !== 'ready_to_order') throw new Error('workspace_not_ready_to_order');
     if (!ws.relais_id) throw new Error('missing_relais_id');
+
+    const activeReservations = (await client.query(
+      `SELECT product_id, SUM(quantity)::int AS quantity
+         FROM collective_stock_reservations
+        WHERE workspace_id = $1
+          AND status = 'reserved'
+          AND reserved_until > NOW()
+        GROUP BY product_id`,
+      [ws.id]
+    )).rows;
+
+    if (!activeReservations.length) throw new Error('stock_reservation_missing_or_expired');
 
     const session = (await client.query(
       `SELECT * FROM collective_payment_sessions
@@ -98,18 +112,21 @@ async function createOrderFromReadyWorkspace(creatorToken, actor = {}) {
       [order.id]
     )).rows;
 
+    const reservationByProduct = new Map(activeReservations.map(r => [String(r.product_id), asInt(r.quantity)]));
+    const missingReserved = stockRows.filter(row => reservationByProduct.get(String(row.product_id)) < asInt(row.quantity));
     const insufficient = stockRows.filter(row => asInt(row.stock) < asInt(row.quantity));
-    const stockBlocked = insufficient.length > 0;
+    const stockBlocked = missingReserved.length > 0 || insufficient.length > 0;
 
     if (stockBlocked) {
       await client.query(
         'UPDATE orders SET notes = COALESCE(notes, \'\') || $1 WHERE id = $2',
-        ['\n[INCIDENT collective_close_stock_blocked]', order.id]
+        ['\n[INCIDENT collective_close_stock_blocked_or_reservation_missing]', order.id]
       );
     } else {
       for (const row of stockRows) {
         await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [row.quantity, row.product_id]);
       }
+      await stockReservations.consumeForWorkspace(ws.id, client);
     }
 
     await client.query(
@@ -131,6 +148,7 @@ async function createOrderFromReadyWorkspace(creatorToken, actor = {}) {
       order_reference: order.reference,
       session_id: session.id,
       stock_blocked: stockBlocked,
+      reservations_checked: activeReservations.length,
     });
 
     await client.query('COMMIT');
