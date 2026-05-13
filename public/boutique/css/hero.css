@@ -272,3 +272,43 @@
 /* Trust bar : desktop only (non utilisée actuellement) */
 .k-hero-trust-bar { display: none; }
 
+/* ── Mobile flow guard : le catalogue ne doit pas scroller sous le hero ── */
+@media (max-width: 899px) {
+  body.k-view-shop #k-hero-fixed-wrap,
+  body.k-view-shop .k-hero-fixed-wrap {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+  }
+
+  body.k-view-shop #k-bar-spacer {
+    display: none !important;
+    height: 0 !important;
+  }
+
+  body.k-view-shop #k-page-scroll {
+    position: relative !important;
+    overflow: visible !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  body.k-view-shop #k-desktop-catalog-wrap,
+  body.k-view-shop #k-catalog-section,
+  body.k-view-shop #k-grid {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  body.k-view-shop .k-category-rail,
+  body.k-view-shop .k-cat-rail,
+  body.k-view-shop [data-role="category-rail"] {
+    position: relative !important;
+    top: auto !important;
+    z-index: 3 !important;
+  }
+}
+
