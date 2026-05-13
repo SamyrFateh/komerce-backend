@@ -540,9 +540,12 @@ function quickRemove(productId, btnEl) {
       } else {
         imgBox.textContent = productEmoji(p);
       }
-      // Clic sur l'image → rouvrir la fiche produit
+      // Clic sur l'image → fermer le panier puis rouvrir la fiche produit
       imgBox.style.cursor = 'pointer';
-      imgBox.addEventListener('click', () => bus.emit('modal:open', { id: p.id }));
+      imgBox.addEventListener('click', () => {
+        closeCart();
+        bus.emit('modal:open', { id: p.id });
+      });
       row.appendChild(imgBox);
 
       // Info
@@ -552,6 +555,12 @@ function quickRemove(productId, btnEl) {
       const name = document.createElement('div');
       name.className = 'k-cart-item-name';
       name.textContent = p.name || 'Produit';
+      // Clic sur le nom → fermer le panier puis rouvrir la fiche produit
+      name.style.cursor = 'pointer';
+      name.addEventListener('click', () => {
+        closeCart();
+        bus.emit('modal:open', { id: p.id });
+      });
       info.appendChild(name);
 
       if (item.qty > 1) {
