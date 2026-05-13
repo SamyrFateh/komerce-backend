@@ -22,4 +22,15 @@ export function setupCartProductOpenStyle() {
     .catch(function(err) {
       console.warn('[cart-groups] chargement impossible', err);
     });
+
+  // Bootstrap du flux simplifié "Payer à plusieurs".
+  import('./b-group-cart-flow.js')
+    .then(function(mod) {
+      if (mod && typeof mod.setupGroupCartFlow === 'function') {
+        mod.setupGroupCartFlow();
+      }
+    })
+    .catch(function(err) {
+      console.warn('[group-cart-flow] chargement impossible', err);
+    });
 }
