@@ -1,0 +1,143 @@
+/**
+ * @module b-product-open-contract
+ * @brief Contrat unique d'ouverture produit depuis les surfaces panier.
+ *
+ * Objectif : éviter les rustines dispersées du type closeCart()+bus.emit()
+ * dans chaque rendu panier. Ce module centralise :
+ *   - résolution produit robuste number/string,
+ *   - fermeture sûre des surfaces panier,
+ *   - ouverture de la fiche produit via l'API modal réelle,
+ *   - délégation pour tiroir mobile + side-cart desktop.
+ */
+
+import { bus }       from './b-bus.js';
+import { state }     from './b-store.js';
+import { openModal } from './b-modal.js';
+
+let _installed = false;
+
+function _sameId(a, b) {
+  return String(a) === String(b);
+}
+
+function _findProductById(productId) {
+  const sid = String(productId);
+  return state.products.find(p => String(p.id) === sid) || null;
+}
+
+function _isInteractiveCartControl(target) {
+  return Boolean(target.closest([
+    '.k-qty-btn',
+    '.k-cart-item-remove',
+    '.k-cart-event-btn',
+    '.k-cart-checkout',
+    '#k-cart-checkout',
+    '.k-side-cart-remove',
+    '.k-side-cart-qty',
+    '.k-side-cart-action',
+    '.k-side-cart-checkout',
+    '[data-cart-action]',
+    '[data-no-product-open]',
+    'button',
+    'select',
+    'input',
+    'textarea'
+  ].join(',')));
+}
+
+function _closeCartSurfaces() {
+  document.getElementById('k-cart-overlay')?.classList.remove('open');
+  document.getElementById('k-cart-drawer')?.classList.remove('open');
+  document.body.classList.remove('cart-open', 'cart-empty');
+
+  // Desktop : le side-cart est inline/sticky. On ne le détruit pas ; on retire
+  // seulement les états transitoires pour que la modal prenne la main proprement.
+  const sideCart = document.getElementById('k-side-cart');
+  if (sideCart) {
+    sideCart.classList.remove('is-attention');
+  }
+}
+
+export function openProductFromCart(productId) {
+  const product = _findProductById(productId);
+
+  if (!product) {
+    console.warn('[cart→modal] Produit introuvable depuis le panier:', productId);
+    return false;
+  }
+
+  _closeCartSurfaces();
+
+  requestAnimationFrame(() => {
+    // Important : on passe l'id original du produit, pas String(id), car
+    // openModal compare encore certains chemins en strict equality.
+    openModal(product.id, false);
+  });
+
+  return true;
+}
+
+function _extractProductIdFromCartClick(target) {
+  const explicit = target.closest('[data-open-product]');
+  if (explicit?.dataset.openProduct != null) return explicit.dataset.openProduct;
+
+  const drawerItem = target.closest('.k-cart-item[data-pid]');
+  if (drawerItem && target.closest('.k-cart-item-img, .k-cart-item-name')) {
+    return drawerItem.dataset.pid;
+  }
+
+  const sideCart = target.closest('#k-side-cart');
+  if (sideCart) {
+    const sideItem = target.closest('[data-open-product], [data-pid], [data-product-id]');
+    if (sideItem) {
+      return sideItem.dataset.openProduct || sideItem.dataset.pid || sideItem.dataset.productId;
+    }
+  }
+
+  return null;
+}
+
+function _onDocumentClick(e) {
+  const productId = _extractProductIdFromCartClick(e.target);
+  if (productId == null) return;
+
+  if (_isInteractiveCartControl(e.target)) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation?.();
+
+  openProductFromCart(productId);
+}
+
+function _installBusSafetyNet() {
+  // Sécurité : si une ancienne surface émet encore modal:open avec un id numérique,
+  // on laisse d'abord le listener historique tenter sa chance, puis on corrige si
+  // la modal n'a pas réellement changé de produit.
+  bus.on('modal:open', function(payload) {
+    if (!payload || payload.id == null) return;
+
+    const wanted = String(payload.id);
+
+    requestAnimationFrame(() => {
+      if (state.modalProduct && _sameId(state.modalProduct.id, wanted)) return;
+
+      const product = _findProductById(payload.id);
+      if (!product) return;
+
+      openModal(product.id, false);
+    });
+  });
+}
+
+export function setupProductOpenContract() {
+  if (_installed) return;
+  _installed = true;
+
+  document.addEventListener('click', _onDocumentClick, true);
+  _installBusSafetyNet();
+
+  if (typeof window !== 'undefined') {
+    window.__kmrcOpenProductFromCart = openProductFromCart;
+  }
+}

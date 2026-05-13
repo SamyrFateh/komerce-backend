@@ -30,6 +30,7 @@ import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 I
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
 import { isDesktop }          from './b-scroll-owner.js';
 import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
+import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -39,10 +40,12 @@ if (typeof window !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {
       setupDesktopUpgrade();
       setupMiniCart();   // Mini-cart flottant mobile
+      setupProductOpenContract(); // Panier mobile/desktop → fiche produit
     });
   } else {
     setupDesktopUpgrade();
     setupMiniCart();     // Mini-cart flottant mobile
+    setupProductOpenContract();   // Panier mobile/desktop → fiche produit
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
