@@ -1,39 +1,396 @@
 ﻿/**
- * Empêche le scroll du side cart de propager au catalogue desktop.
- * Quand le curseur est dans #k-side-cart, la molette doit scroller
- * uniquement la liste d'articles du panier.
+ * b-cart.js — Module ES · §7 CART INTERACTIONS + §10 CART PANEL & SHARE + §14 STEPPER
+ * Extrait de boutique.js Sprint 2F — Option C
+ *
+ * §7  : addToCart, setQty, fly animation, cart badge sync
+ * §10 : tiroir panier, partage WhatsApp, shareCartWhatsApp, showShareChoiceModal
+ * §14 : stepper +/- haptic, renderStepper (setupLongPressSteppers IIFE)
  */
-export function setupSideCartScrollLock() {
-  if (typeof document === 'undefined') return;
-  if (document.documentElement.dataset.sideCartWheelLock === '1') return;
 
-  document.documentElement.dataset.sideCartWheelLock = '1';
+import { bus }           from './b-bus.js';
+import {
+  state, dom, $, $$, scroll,
+}                         from './b-store.js';
+import { scrollToCategorySection } from './b-catalog.js';
+import {
+  sanitize, fmt, fmtPrice, optimizeImgUrl,
+  productEmoji, _currency, apiGet, apiPost,
+}                         from './b-utils.js';
+import {
+  showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
+}                         from './b-cart-core.js';
+import { isDesktop }     from './b-scroll-owner.js';
 
-  document.addEventListener('wheel', function(e) {
-    if (window.innerWidth < 900) return;
+'use strict';
 
-    const sideCart = e.target.closest && e.target.closest('#k-side-cart');
-    if (!sideCart) return;
+  // ║  §7 · CART INTERACTIONS — addToCart, setQty, fly animation       ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart.js
 
-    const items = document.getElementById('k-sc-items');
+  /**
+   * Animation "fly to cart" — produit vole de la carte vers l'avatar panier.
+   * Clone l'image → arc de Bézier → burst sparkles → updateCartBadge.
+   * Exception légitime : animation frame-by-frame (rAF).
+   * @param {HTMLElement} btn - Bouton panier cliqué
+   * @param {number} productId - ID du produit ajouté
+   */
+  function flyToCart(sourceEl, product) {
+    const cartIcon = dom.cartBtn;
+    if (!cartIcon || !sourceEl) return;
+    const srcRect = sourceEl.getBoundingClientRect();
+    const dstRect = cartIcon.getBoundingClientRect();
+    const startX = srcRect.left + srcRect.width / 2;
+    const startY = srcRect.top + srcRect.height / 2;
+    const endX = dstRect.left + dstRect.width / 2;
+    const endY = dstRect.top + dstRect.height / 2;
 
-    // Si on est dans le side-cart, la page ne doit jamais prendre le scroll.
-    e.preventDefault();
-    e.stopPropagation();
+    // Main particle
+    const particle = document.createElement('div');
+    particle.style.cssText = [
+      'position:fixed', 'z-index:9999', 'pointer-events:none',
+      'border-radius:50%', 'background:var(--ocean)',
+      'width:56px', 'height:56px',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'font-size:1.5rem',
+      'box-shadow:0 4px 20px rgba(67,160,71,0.6)',
+      'overflow:hidden',
+      'left:' + startX + 'px', 'top:' + startY + 'px',
+      'transform:translate(-50%,-50%) scale(0)', 'opacity:0'
+    ].join(';');
 
-    if (!items) return;
+    if (product.image_url) {
+      const img = document.createElement('img');
+      img.src = optimizeImgUrl(product.image_url, 80);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+      particle.appendChild(img);
+    } else {
+      particle.textContent = productEmoji(product);
+    }
+    document.body.appendChild(particle);
 
-    const maxScroll = items.scrollHeight - items.clientHeight;
+    // Sparkle trail
+    const sparkles = [];
+    for (let s = 0; s < 6; s++) {
+      const sp = document.createElement('div');
+      sp.style.cssText = [
+        'position:fixed', 'z-index:9998', 'pointer-events:none',
+        'border-radius:50%', 'background:var(--coral)',
+        'width:8px', 'height:8px',
+        'left:' + startX + 'px', 'top:' + startY + 'px',
+        'transform:translate(-50%,-50%)', 'opacity:0'
+      ].join(';');
+      document.body.appendChild(sp);
+      sparkles.push(sp);
+    }
 
-    // Même s'il n'y a rien à scroller dans la liste,
-    // on garde le scroll capturé pour ne pas faire bouger le catalogue.
-    if (maxScroll <= 0) return;
+    // Phase 1: Pop-in
+    particle.getBoundingClientRect();
+    particle.style.transition = 'transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease-out';
+    particle.style.transform = 'translate(-50%,-50%) scale(1.15)';
+    particle.style.opacity = '1';
 
-    const next = Math.max(0, Math.min(maxScroll, items.scrollTop + e.deltaY));
-    items.scrollTop = next;
-  }, { passive: false, capture: true });
+    // Phase 2: Arc flight
+    const duration = 900;
+    let startTime = null;
+
+    /**
+     * Frame d'animation rAF pour l'arc de vol panier (flyToCart).
+     * Calcule la position courbe via Bézier quadratique.
+     * @param {DOMHighResTimeStamp} timestamp - Horodatage fourni par requestAnimationFrame
+     */
+    function animateArc(timestamp) {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const x = startX + (endX - startX) * ease;
+      const arcT = 1 - Math.pow(2 * t - 1, 2);
+      const y = startY + (endY - startY) * ease - arcT * 120;
+      const scale = 1.15 - (0.85 * ease);
+      const rot = ease * 360;
+
+      particle.style.transition = 'none';
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      particle.style.transform = 'translate(-50%,-50%) scale(' + scale + ') rotate(' + rot + 'deg)';
+      particle.style.opacity = String(1 - ease * 0.3);
+
+      for (let i = 0; i < sparkles.length; i++) {
+        const delay = i * 0.12;
+        const st = Math.max(0, t - delay);
+        if (st > 0 && st < 1) {
+          const sx = startX + (endX - startX) * st;
+          const sArc = 1 - Math.pow(2 * st - 1, 2);
+          const sy = startY + (endY - startY) * st - sArc * 120;
+          const scatter = (Math.random() - 0.5) * 16;
+          sparkles[i].style.transition = 'none';
+          sparkles[i].style.left = (sx + scatter) + 'px';
+          sparkles[i].style.top = (sy + scatter) + 'px';
+          sparkles[i].style.opacity = String(0.8 - st);
+          sparkles[i].style.transform = 'translate(-50%,-50%) scale(' + (1 - st * 0.7) + ')';
+        }
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(animateArc);
+      } else {
+        // Phase 3: Impact
+        particle.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
+        particle.style.transform = 'translate(-50%,-50%) scale(0)';
+        particle.style.opacity = '0';
+        cartIcon.style.transition = 'transform 0.15s ease-out';
+        cartIcon.style.transform = 'scale(1.3)';
+        setTimeout(() => {
+          cartIcon.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)';
+          cartIcon.style.transform = 'scale(1)';
+        }, 150);
+        setTimeout(() => {
+          particle.remove();
+          sparkles.forEach(sp => sp.remove());
+        }, 200);
+        // Badge bump
+        dom.cartBadge.classList.remove('bump');
+        void dom.cartBadge.offsetWidth;
+        dom.cartBadge.classList.add('bump');
+      }
+    }
+
+    setTimeout(() => requestAnimationFrame(animateArc), 350);
+  }
+
+  /* ── ADD TO CART ────────────────────────────────────────── */
+  /* ── ADD TO CART ────────────────────────────────────────── */
+/**
+ * Ajoute un produit au panier ou incrémente sa quantité.
+ * @param {number|string} id - ID produit
+ * @param {Object} [opts] - { fromModal, qty }
+ */
+  function addToCart(product, qty, sourceBtn) {
+  qty = qty || 1;
+
+  const existing = state.cart.find(i =>
+    String(i.product?.id ?? i.id) === String(product.id)
+  );
+
+  if (existing) {
+    existing.qty += qty;
+    if (!existing.product) existing.product = product;
+    if (!existing.id) existing.id = product.id;
+    if (!existing.name) existing.name = product.name;
+    if (existing.price == null) existing.price = product.price_kmf ?? product.price ?? 0;
+    if (!existing.image) existing.image = product.image_url || product.image || '';
+  } else {
+    state.cart.push({
+      product: product,
+      id: product.id,
+      name: product.name,
+      price: product.price_kmf ?? product.price ?? 0,
+      image: product.image_url || product.image || '',
+      qty: qty
+    });
+  }
+
+  // Fly animation
+  if (sourceBtn) {
+    flyToCart(sourceBtn, product);
+  }
+
+  saveCart();
+
+  const isModalAdd = sourceBtn === dom.addCartBtn;
+
+  // Mark button feedback (grid / rail buttons only)
+  if (sourceBtn && !isModalAdd) {
+    sourceBtn.classList.add('added');
+    sourceBtn.disabled = true;
+    setTimeout(() => {
+      sourceBtn.classList.remove('added');
+      sourceBtn.classList.add('in-cart');
+      sourceBtn.disabled = false;
+    }, 800);
+  }
+
+  // Mark all grid buttons for this product
+  markAllCartButtons();
+
+  // Animation "coucou" : la petite dame fait signe
+  // On cible LES DEUX dames (header catalogue + topbar modale) pour que
+  // l'animation soit toujours visible quel que soit le contexte.
+  const cartBtns = [
+    document.getElementById('k-cart-btn'),
+    document.getElementById('k-modal-cart-btn'),
+  ].filter(Boolean);
+
+  cartBtns.forEach(btn => {
+    // Ring pulse coral
+    btn.classList.remove('ring-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('ring-pulse');
+    setTimeout(() => btn.classList.remove('ring-pulse'), 1500);
+
+    // Animation "coucou" de l'avatar
+    btn.classList.remove('avatar-wave');
+    void btn.offsetWidth;
+    btn.classList.add('avatar-wave');
+    setTimeout(() => btn.classList.remove('avatar-wave'), 900);
+  });
+
+  if (isModalAdd) {
+    // Fix 8 : modal button → "✓ Dans le panier | Voir (N) →"
+    setTimeout(() => {
+      const count = cartQty();
+      dom.addCartBtn.classList.remove('added');
+      dom.addCartBtn.classList.add('confirmed');
+      dom.addCartBtn.disabled = false;
+      dom.addCartBtn.innerHTML = '✓ Ajouté';
+      dom.addCartBtn.onclick = function() {
+        bus.emit('modal:close');
+        // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
+        if (isDesktop()) {
+          var sc = document.getElementById('k-side-cart');
+          if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+        } else {
+          setTimeout(openCart, 150);
+        }
+      };
+    }, 700);
+  } else if (sourceBtn) {
+    // Toast de confirmation (grid / rail)
+    showToast('✓ ' + (product.name || 'Produit') + ' ajouté', 'success');
+  }
 }
-function openCart() {
+
+  /**
+   * @brief setQty — Met à jour la quantité d'un article dans le panier
+   * Si newQty < 1 → supprime l'article (removeFromCart)
+   * Met à jour le DOM stepper + badge + localStorage
+   * @param {string|number} productId - ID du produit
+   * @param {number} newQty - Nouvelle quantité cible
+   */
+    function setQty(productId, newQty) {
+    const pid = String(productId);
+    if (newQty < 1) { removeFromCart(pid); return; }
+    const item = state.cart.find(i => String(i.product.id) === pid);
+    if (item) {
+      item.qty = newQty;
+      saveCart();
+      renderCartBody();
+      markAllCartButtons();
+      updateCartBadge();
+    }
+  }
+
+  /**
+   * Synchronise l'état visuel de tous les boutons panier dans les grilles.
+   * 🧺 → stepper si produit dans le panier, reset sinon.
+   * Appelé après chaque modification du panier.
+   */
+  function markAllCartButtons() {
+    // IDs actuellement dans le panier
+    const inCartIds = new Set(state.cart.map(i => String(i.product.id)));
+
+    // OPTION C : panier tressé visuel + stepper "− qty +" visible dès ajout
+    //            (plus besoin de long-press, le stepper est directement accessible)
+    document.querySelectorAll('.k-card-add').forEach(btn => {
+      const pid = String(btn.dataset.add);
+      if (inCartIds.has(pid)) {
+        const item = state.cart.find(i => String(i.product.id) === pid);
+        btn.classList.add('in-cart');
+        // Stepper compact : − quantité + (tous cliquables indépendamment)
+        btn.innerHTML =
+          '<span class="k-add-minus" data-pid="' + pid + '">−</span>' +
+          '<span class="k-add-qty">' + item.qty + '</span>' +
+          '<span class="k-add-plus-ic">+</span>';
+      } else {
+        // Produit plus dans le panier → remettre juste le "+"
+        btn.classList.remove('in-cart');
+        btn.innerHTML = '<img src="/images/panier_tresse_vert.png" class="k-card-add-basket" alt="+" width="20" height="20">';
+      }
+    });
+  }
+
+  /* ── REMOVE FROM CART ───────────────────────────────────── */
+  /**
+ * Retire complètement un produit du panier.
+ * @param {number|string} id - ID produit
+ */
+  function removeFromCart(productId) {
+    const pid = String(productId);
+    state.cart = state.cart.filter(i => String(i.product.id) !== pid);
+    saveCart();
+    renderCartBody();
+    markAllCartButtons();
+  }
+
+  /* ── QUICK ADD FROM GRID ────────────────────────────────── */
+/**
+ * Ajout rapide depuis une carte (bouton 🧺).
+ * @param {number|string} id - ID produit
+ * @param {HTMLElement} btn - Bouton déclencheur
+ */
+  function quickAdd(productId, btnEl) {
+  const pid = String(productId);
+  const product = state.products.find(p => String(p.id) === pid);
+
+  if (!product) {
+    console.warn('[quickAdd] Produit introuvable:', productId);
+    return;
+  }
+
+  addToCart(product, 1, btnEl);
+}
+
+/**
+ * Supprime instantanément un produit du panier (swipe left sur mobile).
+ * @param {number|string} productId - ID produit à supprimer
+ */
+function quickRemove(productId, btnEl) {
+    const pid = String(productId);
+    const item = state.cart.find(i => String(i.product.id) === pid);
+    if (!item) return;
+    if (item.qty <= 1) {
+      removeFromCart(pid);
+    } else {
+      setQty(pid, item.qty - 1);
+    }
+  }
+
+  /* ── TOGGLE FAV ─────────────────────────────────────────── */
+  /**
+ * Bascule un produit en favori / non favori.
+ * @param {number|string} id - ID produit
+ * @param {HTMLElement} [btn] - Bouton cœur
+ */
+  function toggleFav(id, btnEl) {
+    const idx = state.favs.indexOf(id);
+    if (idx >= 0) {
+      state.favs.splice(idx, 1);
+      btnEl.classList.remove('liked');
+      btnEl.innerHTML = '🤍';
+      showToast('Retiré des favoris');
+    } else {
+      state.favs.push(id);
+      btnEl.classList.add('liked');
+      btnEl.innerHTML = '❤️';
+      btnEl.classList.add('k-pop');
+      setTimeout(() => btnEl.classList.remove('k-pop'), 300);
+      showToast('❤️ Ajouté aux favoris');
+    }
+    saveFavs();
+  }
+
+  /* ── CATEGORIES ─────────────────────────────────────────── */
+
+  // ╔══════════════════════════════════════════════════════════════════╗
+  // ║  §10 · CART PANEL & SHARE — Tiroir panier + partage WhatsApp     ║
+  // ╚══════════════════════════════════════════════════════════════════╝
+  //  → Futur module: b-cart.js (même module §7)
+
+  /**
+   * Ouvre le panneau panier latéral (slide-in depuis la droite).
+   * Met à jour le rendu complet + synchronise les badges.
+   */
+  function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     // Desktop : side cart Temu inline — pas de drawer
@@ -1256,6 +1613,4 @@ export {
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };
-
-
 
