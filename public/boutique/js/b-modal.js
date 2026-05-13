@@ -31,6 +31,9 @@ import { setActiveCat }   from './b-catalog.js';
 // Receive close-modal signal from b-cart (avoids circular dep)
 bus.on('modal:close', function() { if (typeof closeModal === 'function') closeModal(); });
 
+// Receive open-modal signal from cart (avoids circular dep — b-modal imports b-cart)
+bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') openModal(String(id)); });
+
   // ║  §9 · MODAL — Fiche produit, carousel, suggestions, subcat       ║
   // ╚══════════════════════════════════════════════════════════════════╝
   //  → Futur module: b-modal.js

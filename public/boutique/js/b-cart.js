@@ -540,6 +540,9 @@ function quickRemove(productId, btnEl) {
       } else {
         imgBox.textContent = productEmoji(p);
       }
+      // Clic sur l'image → rouvrir la fiche produit
+      imgBox.style.cursor = 'pointer';
+      imgBox.addEventListener('click', () => bus.emit('modal:open', { id: p.id }));
       row.appendChild(imgBox);
 
       // Info
