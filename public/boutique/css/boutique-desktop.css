@@ -2142,17 +2142,7 @@
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — Alignement vertical avec la grille produits (source de vérité)
-   52px = hauteur estimée du .k-sec-header desktop (~46px) + gap.
-   Remplace l'ancien 64px calibré pour le hero 320px (hero désormais 130px).
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    margin-top: 52px;
-  }
-}
+/* margin-top side-cart : 52px dans le bloc consolidé de layout.css (LOT 9) */
 
 /* =========================================================
    PATCH — Remove legacy pavilions on desktop
