@@ -1,8 +1,8 @@
 /**
  * @module b-cart-groups-tab
- * @brief Onglet "Mes groupes" dans le panier.
+ * @brief Onglet "Mes paniers partagés" dans le panier.
  *
- * V1 volontairement légère : lecture locale des paniers collectifs créés
+ * V1 volontairement légère : lecture locale des paniers partagés créés
  * depuis ce navigateur + UI visuelle rapide. Compatible sans backend dédié.
  */
 
@@ -56,7 +56,7 @@ function seedIfEmpty() {
   const seed = [
     {
       id: 'demo-open',
-      title: 'Commande famille',
+      title: 'Panier famille',
       status: 'open',
       dateLabel: 'Clôture le ' + todayLabel(3),
       total: 7000,
@@ -69,7 +69,7 @@ function seedIfEmpty() {
     },
     {
       id: 'demo-paid',
-      title: 'Cadeau mariage',
+      title: 'Panier cadeau mariage',
       status: 'paid',
       dateLabel: 'Clôturé le ' + todayLabel(-3),
       total: 12000,
@@ -110,7 +110,7 @@ function ensureTabs() {
   tabs.className = 'k-cart-tabs';
   tabs.innerHTML = `
     <button type="button" class="k-cart-tab is-active" data-cart-tab="cart">🧺 Panier</button>
-    <button type="button" class="k-cart-tab" data-cart-tab="groups">👥 Mes groupes <span class="k-cart-tab-badge" id="k-cart-groups-badge">0</span></button>
+    <button type="button" class="k-cart-tab" data-cart-tab="groups" title="Mes paniers partagés">👥 Partagés <span class="k-cart-tab-badge" id="k-cart-groups-badge">0</span></button>
   `;
 
   dom.cartHeader.insertAdjacentElement('afterend', tabs);
@@ -171,7 +171,7 @@ function cardHtml(group) {
   return `
     <article class="k-group-card" data-group-id="${safeText(group.id)}">
       <div class="k-group-head">
-        <div class="k-group-title">${safeText(group.title || 'Panier collectif')}</div>
+        <div class="k-group-title">${safeText(group.title || 'Panier partagé')}</div>
         ${statusPill(group.status)}
       </div>
       <p class="k-group-date">📅 ${safeText(group.dateLabel || 'En cours')}</p>
@@ -207,14 +207,17 @@ function renderGroups() {
     body.innerHTML = `
       <div class="k-group-empty">
         <div class="k-group-empty-icon">👥</div>
-        <p class="k-group-empty-title">Aucun groupe</p>
-        <p class="k-group-empty-sub">Ajoutez des produits au panier, puis lancez un paiement en groupe.</p>
+        <p class="k-group-empty-title">Aucun panier partagé</p>
+        <p class="k-group-empty-sub">Ajoutez des produits au panier, puis lancez un paiement à plusieurs.</p>
         <button type="button" class="k-group-empty-btn" data-group-back-cart>Voir mon panier</button>
       </div>`;
     return;
   }
 
-  body.innerHTML = groups.map(cardHtml).join('');
+  body.innerHTML = `
+    <div class="k-group-section-title">Mes paniers partagés</div>
+    ${groups.map(cardHtml).join('')}
+  `;
 }
 
 function updateBadge() {
@@ -228,7 +231,7 @@ function updateBadge() {
 function addGroupFromShare(detail) {
   const groups = loadGroups().filter(g => !String(g.id).startsWith('demo-'));
   const total = cartTotal();
-  const title = detail?.label || 'Panier collectif';
+  const title = detail?.label || 'Panier partagé';
   const url = detail?.url || window.location.href;
 
   const group = {
@@ -277,12 +280,12 @@ function bindActions() {
       group.dateLabel = 'Clôturé le ' + todayLabel(0);
       saveGroups(groups);
       renderGroups();
-      showToast('Groupe clôturé', 'success');
+      showToast('Panier partagé clôturé', 'success');
       return;
     }
 
     if (e.target.closest('[data-group-detail]')) {
-      showToast('Détail du groupe', 'success');
+      showToast('Détail du panier partagé', 'success');
     }
   });
 
@@ -326,7 +329,7 @@ export function setupCartGroupsTab() {
   bindActions();
   patchFetchForShareCreation();
 
-  // Si l'organisateur vient de créer un groupe, on l'envoie directement ici.
+  // Si l'organisateur vient de créer un panier partagé, on l'envoie directement ici.
   window.addEventListener('kmrc:group-cart-created', () => {
     ensureTabs();
     setActiveTab('groups');
