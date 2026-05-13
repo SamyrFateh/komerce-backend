@@ -267,8 +267,8 @@
 /* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
 .k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
 /* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
-/* @900px override final → desktop-upgrade.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,180px) !important) */
+/* @900px override final → boutique-desktop.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,160px) !important) */
 
-/* Trust bar : desktop only (déclarée dans desktop-mega-nav.css) */
+/* Trust bar : desktop only (non utilisée actuellement) */
 .k-hero-trust-bar { display: none; }
 

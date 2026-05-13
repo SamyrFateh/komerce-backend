@@ -1,4 +1,4 @@
-﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    KOMERCE â€” boutique-desktop.css
    Fichier unique : rÃ¨gles globales (mobile-first) + overrides desktop.
    Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
@@ -338,29 +338,7 @@
    central + store-front). Hauteur calibrÃ©e 240-280px pour cadrer la
    zone d'intÃ©rÃªt (tÃªtes â†’ haut du store) avec object-position: center 40%.
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-@media (min-width: 900px) {
-
-  #k-hero-fixed-wrap {
-    max-height: 240px;
-    overflow: hidden;
-  }
-
-  #k-hero-fixed-wrap .k-hero {
-    max-height: 240px;
-    overflow: hidden;
-  }
-
-  #k-hero-fixed-wrap .k-hero-img {
-    height: clamp(200px, 18vw, 240px) !important;
-    max-height: 240px !important;
-    width: 100%;
-    object-fit: cover;
-    object-position: center 40%;  /* cadre têtes + cadeau + scène complète */
-    display: block;
-  }
-
-  #k-bar-spacer { display: none !important; }
-}
+/* Bloc hero 240px supprimé — hauteur desktop source de vérité : BANDEAU PREMIUM ci-dessous (160px) */
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -1298,16 +1276,20 @@
   }
 
   /* Rail : flex horizontal centrÃ©, scrollable si dÃ©bordement */
+  /* Rail : wrap pour libérer la molette verticale (correction P0-A — valeurs finales).
+     L'ancienne version height:52px + nowrap + overflow-x:auto capturait la molette verticale. */
   .k-cats {
     max-width: var(--container, 1400px);
     margin: 0 auto;
-    padding: 0 clamp(16px, 3vw, 40px);
-    gap: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    padding: 6px clamp(16px, 3vw, 40px) 7px;
+    gap: 6px;
+    flex-wrap: wrap;
+    overflow: visible;
+    overscroll-behavior: auto;
+    scroll-snap-type: none;
     scrollbar-width: none;
-    height: 52px;    /* Source de vÃ©ritÃ© hauteur chip rail desktop â€” layout.css dÃ©lÃ¨gue ici */
-    align-items: stretch;
+    height: auto;    /* Source de vÃ©ritÃ© hauteur chip rail desktop â€” layout.css dÃ©lÃ¨gue ici */
+    align-items: center;
   }
   .k-cats::-webkit-scrollbar { display: none; }
 
@@ -1316,17 +1298,18 @@
     flex: 0 0 auto;
     min-width: 0;
     max-width: none;
-    height: 52px;    /* Source de vÃ©ritÃ© hauteur chip desktop */
-    padding: 0 18px;
+    height: 30px;     /* Valeur finale P0-B — ancienne 52px trop haute */
+    min-height: 30px;
+    padding: 0 12px;
     border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
     gap: 6px;
-    flex-direction: row;       /* icÃ´ne + label cÃ´te-Ã -cÃ´te */
+    flex-direction: row;
     align-items: center;
     white-space: nowrap;
-    font-size: 13.5px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text);
     letter-spacing: -.01em;
@@ -1342,10 +1325,10 @@
 
   /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
   .k-chip-photo {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    border-radius: 6px;
+    width: 18px;     /* Valeur finale P0-C */
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
     flex-shrink: 0;
     background: transparent;
     border: none;
@@ -1356,8 +1339,8 @@
     transform: none;
   }
   .k-chip-photo svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;     /* Valeur finale P0-C */
+    height: 12px;
     stroke: currentColor;
   }
   /* Pas de fond colorÃ© sur l'icÃ´ne en mode nav */
@@ -1365,7 +1348,7 @@
 
   /* Label visible */
   .k-chip-label {
-    font-size: 13.5px;
+    font-size: 12px;   /* Valeur finale P0-D */
     font-weight: 600;
     color: inherit;
     max-width: none;
@@ -1651,66 +1634,9 @@
 }
 
 
-/* â•â• MEGA DROPDOWN global rules â†’ migrÃ© dans shared.css â•â• */
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PATCH P0/P1 â€” Navigation desktop
-   AppliquÃ© en fin de fichier pour garantir la prioritÃ© cascade.
-   Mobile (< 900px) : aucune rÃ¨gle ici â†’ zÃ©ro rÃ©gression.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
 @media (min-width: 900px) {
 
-  /* â”€â”€ P0-A : RAIL CHIPS â€” plus compact, non-piÃ©geur de molette â”€â”€ */
-  /*
-     Le bloc "MEGA-NAV" plus haut fixait height:52px + overflow-x:auto
-     + flex-wrap:nowrap â†’ le rail capturait la molette verticale.
-     On corrige ici avec la prioritÃ© de derniÃ¨re dÃ©claration.
-  */
-  .k-cats {
-    flex-wrap: wrap;           /* les chips reviennent Ã  la ligne â†’ pas de scroll horizontal */
-    overflow: visible;         /* libÃ¨re la molette verticale */
-    overflow-x: visible;
-    overflow-y: visible;
-    overscroll-behavior: auto;
-    scroll-snap-type: none;
-    height: auto;              /* plus de hauteur fixe imposÃ©e */
-    padding: 6px clamp(16px, 3vw, 40px) 7px;
-    gap: 6px;
-    align-items: center;
-  }
 
-  /* â”€â”€ P0-B : CHIP individuelle â€” taille rÃ©duite â”€â”€ */
-  /*
-     Ã‰tait : height:52px, padding:0 18px, font-size:13.5px
-     Cible  : height:30px, padding:0 12px, font-size:12px
-  */
-  .k-chip {
-    height: 30px;
-    min-height: 30px;
-    padding: 0 12px;
-    font-size: 12px;
-    font-weight: 600;
-    /* on garde border-radius:0 et border-bottom du mega-nav (style nav) */
-  }
-
-  /* â”€â”€ P0-C : ICÃ”NE PHOTO chip â€” proportionnelle â”€â”€ */
-  .k-chip-photo {
-    width: 18px;
-    height: 18px;
-    min-width: 18px;
-    border-radius: 4px;
-  }
-  .k-chip-photo svg {
-    width: 12px;
-    height: 12px;
-  }
-
-  /* â”€â”€ P0-D : LABEL chip â€” taille rÃ©duite â”€â”€ */
-  .k-chip-label {
-    font-size: 12px;
-  }
 
   /* â”€â”€ P0-E : SOUS-CHIPS de section (k-sec-subcats) â”€â”€
      Ã‰tait : flex-wrap:nowrap + overflow-x:auto â†’ piÃ¨ge molette.
@@ -1816,22 +1742,21 @@
      Active chip : fond coral solide, plus de border-bottom (mega-nav
      style supprimÃ© par le patch P0). */
   .k-chip.active {
-    background: var(--coral) !important;
-    color: #fff !important;
-    border-color: var(--coral) !important;
-    box-shadow: 0 2px 8px rgba(200, 92, 45, .28) !important;
-    border-bottom-color: var(--coral) !important;
+    background: var(--coral);
+    color: #fff;
+    border-color: var(--coral);
+    box-shadow: 0 2px 8px rgba(200, 92, 45, .28);
+    border-bottom-color: var(--coral);
   }
   .k-chip.active .k-chip-label {
-    color: #fff !important;
+    color: #fff;
     font-weight: 700;
   }
   .k-chip.active .k-chip-photo {
-    /* photo lÃ©gÃ¨rement voilÃ©e pour lisibilitÃ© sur coral */
     opacity: .85;
   }
   .k-chip.active .k-chip-photo svg {
-    stroke: #fff !important;
+    stroke: #fff;
   }
 }
 
@@ -2200,31 +2125,9 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   OPTION B — Correction position sticky du side cart
-   En Option B, le hero fait 130px (vs ~260–320px avant).
-   Le margin-top:64px de layout.css @1180px était calibré pour l'ancien
-   hero — il positionne maintenant le side cart trop haut.
-   Correction : annuler ce margin-top ; le side cart s'aligne naturellement
-   sur le flux de la grille via align-self:flex-start + sticky.
-   --sc-sticky-top (calculé par b-desktop-upgrade.js) reste la source de
-   vérité pour top: ; on n'y touche pas.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 1180px) {
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    margin-top: 52px;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — Alignement vertical avec la grille produits
-   Le side cart démarre au bord du flex container (#k-desktop-catalog-wrap)
-   mais la grille a au-dessus d'elle : .k-sec-header (~46px) + subcats (~46px).
-   Sans compensation le side cart flotte en haut à droite dans le vide.
-   On ajoute un padding-top équivalent à la hauteur du .k-sec-header desktop
-   pour que le panier commence visuellement au niveau des premières cartes.
-   Valeur : 18px (padding-top header) + ~18px (line-height titre) + 10px (padding-bottom) + 6px gap = ~52px.
-   Les subcats varient — on accepte un léger décalage selon les catégories.
+   SIDE CART — Alignement vertical avec la grille produits (source de vérité)
+   52px = hauteur estimée du .k-sec-header desktop (~46px) + gap.
+   Remplace l'ancien 64px calibré pour le hero 320px (hero désormais 130px).
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   #k-side-cart.k-side-cart,

@@ -440,69 +440,7 @@
 
 @media (min-width: 900px) {
 
-  .k-cats-shell {
-    border-bottom: 1px solid rgba(42,62,44,.07);
-    background: var(--sand-warm);
-    position: sticky;
-    top: var(--header-h);
-    z-index: 100;
-    padding-bottom: 8px;
-  }
-
-  .k-cats {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 8px clamp(16px, 3vw, 40px) 0;
-    gap: 6px;
-    /* Wrap : chips reviennent à la ligne, pas de capture molette */
-    flex-wrap: wrap;
-    overflow: visible;
-    overscroll-behavior: auto;
-    scroll-snap-type: none;
-    scrollbar-width: none;
-    height: auto;
-  }
-  .k-cats::-webkit-scrollbar { display: none; }
-
-  .k-chip {
-    height: 32px;
-    min-height: 32px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 650;
-    white-space: nowrap;
-    flex-shrink: 0;
-    border-radius: 999px;
-    border: 1.5px solid rgba(42,62,44,.12);
-    background: var(--white);
-    color: var(--text);
-    transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
-    box-shadow: 0 1px 4px rgba(31,48,36,.05);
-  }
-
-  .k-chip:hover {
-    border-color: var(--coral);
-    color: var(--coral);
-    box-shadow: var(--elev-2);
-  }
-
-  .k-chip.active {
-    background: var(--coral);
-    color: var(--white);
-    border-color: var(--coral);
-    box-shadow: 0 4px 14px rgba(200,92,45,.28);
-  }
-
-  .k-chip-photo {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
-  }
-
-  .k-chip-label {
-    font-size: 12px;
-    max-width: none;
-  }
+  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (MEGA-NAV TEMU/SHEIN) */
 
   /* Subcats desktop */
   .k-subcats-rail {

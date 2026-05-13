@@ -457,9 +457,9 @@ body {
   }
   .k-search-icon { left: 16px; }
 
-  /* .k-header-actions gap → desktop-upgrade.css (source de vérité : gap:4px) */
+  /* .k-header-actions gap → boutique-desktop.css (source de vérité : gap:4px) */
 
-  /* .k-header-nav-btn → desktop-upgrade.css (source de vérité) */
+  /* .k-header-nav-btn → boutique-desktop.css (source de vérité) */
 
   /* Avatar panier — sans fond carré */
   .k-cart-btn {
@@ -826,8 +826,8 @@ body {
     overscroll-behavior: contain;
   }
 
-  /* 3. Zoom modal — curseur zoom-in (source de vérité : desktop-upgrade.css s.4) */
-  /* Note : tap-highlight, focus, perf cartes → desktop-upgrade.css section 11 */
+  /* 3. Zoom modal — curseur zoom-in (source de vérité : boutique-desktop.css) */
+  /* Note : tap-highlight, focus, perf cartes → boutique-desktop.css */
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1222,7 +1222,7 @@ body {
   display: none !important;
 }
 
-/* Hero desktop compact : voir desktop-upgrade.css section 2 (source de vérité). */
+/* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
 
 /* ══════════════════════════════════════════════════════════════
    DESKTOP STICKY CONTEXT FIX
@@ -1335,18 +1335,7 @@ body {
     display: block;
   }
 }
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART ALIGNMENT — start with product grid
-   Le side cart commence au niveau visuel de la grille produits.
-   Il reste intégré + sticky naturel.
-   ══════════════════════════════════════════════════════════════ */
-
-@media (min-width: 1180px) {
-  #k-side-cart.k-side-cart,
-  .k-side-cart {
-    margin-top: 64px;
-  }
-}
+/* margin-top side-cart → source de vérité : boutique-desktop.css (52px @900px) */
 
 /* =========================================================
    PATCH — Side cart group payment CTA

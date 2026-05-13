@@ -344,21 +344,6 @@ function _showNextHint(currentPage, nextPage) {
   setTimeout(() => hint.remove(), 900);
 }
 
-function _showPrevHint(currentPage, prevPage) {
-  if (!prevPage) return;
-  const cat = prevPage.dataset.cat || 'Tout';
-  const label = document.querySelector(`#k-cats .k-chip[data-cat="${cat}"] .k-chip-label`)?.textContent || cat;
-
-  const existing = currentPage.querySelector('.k-pager-prev-hint');
-  if (existing) existing.remove();
-
-  const hint = document.createElement('div');
-  hint.className = 'k-pager-prev-hint';
-  hint.textContent = '← ' + label;
-  currentPage.appendChild(hint);
-  setTimeout(() => hint.remove(), 900);
-}
-
 // ── Setup principal ───────────────────────────────────────────────
 
 function _handlePagerResize() {
@@ -367,76 +352,6 @@ function _handlePagerResize() {
     return;
   }
   _setupMobilePager();
-}
-
-// ── Ghost gauche : détection via listeners document-level ───────
-// Les listeners sont sur document (pas sur #k-grid) car :
-// - L'user touche .k-cat-section (overflow-y:auto), qui capture la séquence touch.
-// - Sur iOS, overscroll-behavior-x:none sur #k-grid bloque la propagation du delta
-//   horizontal au touchmove/end du grid quand scrollLeft=0.
-// - document reçoit toujours le bubble, même depuis un scroll container enfant.
-
-function _setupLeftEdgeSwipe(grid) {
-  // Nettoyer les anciens listeners document si déjà bindés
-  if (grid._leftSwipeTouchStart) document.removeEventListener('touchstart', grid._leftSwipeTouchStart);
-  if (grid._leftSwipeTouchMove)  document.removeEventListener('touchmove',  grid._leftSwipeTouchMove);
-  if (grid._leftSwipeTouchEnd)   document.removeEventListener('touchend',   grid._leftSwipeTouchEnd);
-  if (grid._leftSwipeScrollH)    grid.removeEventListener('scroll',         grid._leftSwipeScrollH);
-
-  let _touchStartX = 0;
-  let _touchLastX  = 0;
-  let _triggered   = false;
-
-  grid._leftSwipeTouchStart = (e) => {
-    // Ne s'active que si le touch est dans le grid
-    if (!grid.contains(e.target)) return;
-    _touchStartX = e.touches[0].clientX;
-    _touchLastX  = e.touches[0].clientX;
-    _triggered   = false;
-  };
-
-  grid._leftSwipeTouchMove = (e) => {
-    if (_triggered || !grid.contains(e.target)) return;
-    _touchLastX = e.touches[0].clientX;
-  };
-
-  grid._leftSwipeTouchEnd = (e) => {
-    if (_isProgrammaticScroll || state.modalOpen || _triggered) return;
-    if (!grid.contains(e.target)) return;
-    const endX   = e.changedTouches[0].clientX;
-    const dxEnd  = endX - _touchStartX;
-    const dxMove = _touchLastX - _touchStartX;
-    // Si touchmove n'a pas été dispatché (Samsung Internet absorbe le geste horizontal
-    // quand scrollLeft=0 + overscroll-behavior-x:none), _touchLastX === _touchStartX.
-    // Dans ce cas on se fie uniquement à dxEnd (changedTouches), toujours présent.
-    const dx = (_touchLastX === _touchStartX) ? dxEnd : Math.min(dxEnd, dxMove);
-    const idx = _getCurrentIndex(grid);
-    // Seuil -20px (au lieu de -30) : Samsung Internet absorbe une partie du delta
-    // avant de dispatcher touchend, le geste perçu est plus court.
-    if (dx < -20 && idx === 0 && grid.scrollLeft < grid.clientWidth * 0.15) {
-      _triggered = true;
-      const realPages = _getRealPages(grid);
-      const lastIdx   = realPages.length - 1;
-      const lastPage  = realPages[lastIdx];
-      grid.style.opacity    = '0';
-      grid.style.transition = 'none';
-      _scrollToIndex(grid, lastIdx, 'instant');
-      _syncChip(lastPage.dataset.cat);
-      // Hint visuel "← catégorie" (symétrique du hint bas-de-page)
-      const currentPage = realPages[0];
-      if (currentPage) _showPrevHint(currentPage, lastPage);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          grid.style.opacity    = '';
-          grid.style.transition = '';
-        });
-      });
-    }
-  };
-
-  document.addEventListener('touchstart', grid._leftSwipeTouchStart, { passive: true });
-  document.addEventListener('touchmove',  grid._leftSwipeTouchMove,  { passive: true });
-  document.addEventListener('touchend',   grid._leftSwipeTouchEnd,   { passive: true });
 }
 
 function _setupMobilePager() {
@@ -453,7 +368,6 @@ function _setupMobilePager() {
 
     _recalcPagerVars();
     _setupScrollSync(grid);
-    _setupLeftEdgeSwipe(grid);
 
     window.removeEventListener('resize', _setupMobilePager);
     window.removeEventListener('resize', _handlePagerResize);
