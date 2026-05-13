@@ -1,29 +1,5 @@
 /**
  * KOMERCE — Routes Panier Evenement Collectif (V1)
- * ═══════════════════════════════════════════════════════════════════
- *
- * Endpoints :
- *
- *   ── Workspace (créateur via creator_token) ──
- *   POST   /api/collective-workspaces                              Créer
- *   GET    /api/collective-workspaces/me/:creatorToken             Lecture créateur
- *   PATCH  /api/collective-workspaces/:creatorToken/items          Add/update/remove items
- *   POST   /api/collective-workspaces/:creatorToken/finalization-review
- *   POST   /api/collective-workspaces/:creatorToken/finalize
- *   POST   /api/collective-workspaces/:creatorToken/resume
- *   POST   /api/collective-workspaces/:creatorToken/close          Clôture explicite
- *
- *   ── Workspace (public via public_token) ──
- *   GET    /api/collective-workspaces/public/:publicToken          Lecture publique
- *   POST   /api/collective-workspaces/public/:publicToken/contributions
- *   DELETE /api/collective-workspaces/public/:publicToken/contributions/:id
- *
- *   ── Paiement (par token individuel) ──
- *   GET    /api/collective-payments/:token                         Info token
- *   POST   /api/collective-payments/:token/pay-card                Crée PaymentIntent
- *
- *   ── Webhook Stripe (mounté à part dans server.js, raw body) ──
- *   POST   /api/collective-payments/stripe/webhook
  */
 
 'use strict';
@@ -33,20 +9,17 @@ const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { authenticate, requireRole } = require('../middleware/auth');
 const engine  = require('../services/collective-workspace-engine');
 const orchestrator = require('../services/collective-ready-to-order-orchestrator');
+const stockReservations = require('../services/collective-stock-reservation-service');
 
 const router = express.Router();
 const paymentsRouter = express.Router();
 
-// ─── Helpers réponses ──────────────────────────────────────────────────
-function _err(res, code, error_code, message) {
-  return res.status(code).json({ error: error_code, message });
+function _err(res, code, error_code, message, extra = null) {
+  const body = { error: error_code, message };
+  if (extra) body.details = extra;
+  return res.status(code).json(body);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// WORKSPACE — CRÉATEUR (creator_token)
-// ═══════════════════════════════════════════════════════════════════════
-
-// POST /api/collective-workspaces
 router.post('/', async (req, res) => {
   try {
     const result = await engine.createWorkspace(req.body || {});
@@ -69,26 +42,28 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/collective-workspaces/me/:creatorToken — lecture créateur
 router.get('/me/:creatorToken', async (req, res) => {
   try {
     const ws = await engine.getWorkspaceByCreatorToken(req.params.creatorToken);
     if (!ws) return _err(res, 404, 'not_found', 'Espace introuvable');
 
     const db = require('../db');
-    const items = (await db.query(
-      `SELECT * FROM collective_workspace_items WHERE workspace_id = $1 ORDER BY created_at`, [ws.id]
-    )).rows;
-    const contributions = (await db.query(
-      `SELECT * FROM collective_workspace_contributions WHERE workspace_id = $1 ORDER BY created_at`, [ws.id]
-    )).rows;
+    const items = (await db.query('SELECT * FROM collective_workspace_items WHERE workspace_id = $1 ORDER BY created_at', [ws.id])).rows;
+    const contributions = (await db.query('SELECT * FROM collective_workspace_contributions WHERE workspace_id = $1 ORDER BY created_at', [ws.id])).rows;
     const session = (await db.query(
       `SELECT id, total_to_pay_kmf, amount_secured_kmf, status, expires_at, created_at, ended_at
        FROM collective_payment_sessions WHERE workspace_id = $1 ORDER BY created_at DESC LIMIT 1`, [ws.id]
     )).rows[0] || null;
-    const tokensCount = session ? (await db.query(
-      `SELECT status, COUNT(*) as n FROM collective_payment_tokens WHERE session_id = $1 GROUP BY status`, [session.id]
-    )).rows : [];
+    const tokensCount = session ? (await db.query('SELECT status, COUNT(*) as n FROM collective_payment_tokens WHERE session_id = $1 GROUP BY status', [session.id])).rows : [];
+
+    await stockReservations.ensureTable().catch(() => {});
+    const reservations = (await db.query(
+      `SELECT product_id, quantity, status, reserved_until, created_at, consumed_at, released_at, expired_at
+         FROM collective_stock_reservations
+        WHERE workspace_id = $1
+        ORDER BY created_at DESC`,
+      [ws.id]
+    ).catch(() => ({ rows: [] }))).rows;
 
     const phase = engine.deriveWorkspacePhase(ws, { items, contributions, session });
 
@@ -98,6 +73,7 @@ router.get('/me/:creatorToken', async (req, res) => {
       contributions,
       session,
       tokens_summary: tokensCount,
+      stock_reservations: reservations,
       phase,
     });
   } catch (err) {
@@ -106,20 +82,14 @@ router.get('/me/:creatorToken', async (req, res) => {
   }
 });
 
-// PATCH /api/collective-workspaces/:creatorToken/items
 router.patch('/:creatorToken/items', async (req, res) => {
   try {
     const { action, item_id, product_id, quantity } = req.body || {};
     let result;
-    if (action === 'add') {
-      result = await engine.addItem(req.params.creatorToken, { product_id, quantity });
-    } else if (action === 'update') {
-      result = await engine.updateItem(req.params.creatorToken, item_id, { quantity });
-    } else if (action === 'remove') {
-      result = await engine.removeItem(req.params.creatorToken, item_id);
-    } else {
-      return _err(res, 400, 'invalid_action', 'action doit être add/update/remove');
-    }
+    if (action === 'add') result = await engine.addItem(req.params.creatorToken, { product_id, quantity });
+    else if (action === 'update') result = await engine.updateItem(req.params.creatorToken, item_id, { quantity });
+    else if (action === 'remove') result = await engine.removeItem(req.params.creatorToken, item_id);
+    else return _err(res, 400, 'invalid_action', 'action doit être add/update/remove');
     res.json(result);
   } catch (err) {
     const map = {
@@ -135,15 +105,10 @@ router.patch('/:creatorToken/items', async (req, res) => {
   }
 });
 
-// POST /api/collective-workspaces/:creatorToken/finalization-review
 router.post('/:creatorToken/finalization-review', async (req, res) => {
   try {
     const review = await engine.finalizationReview(req.params.creatorToken);
-    res.json({
-      ...review,
-      phase: 'reviewing',
-      next_phase: review.can_finalize ? 'finalized' : 'reviewing',
-    });
+    res.json({ ...review, phase: 'reviewing', next_phase: review.can_finalize ? 'finalized' : 'reviewing' });
   } catch (err) {
     const map = {
       workspace_not_found: [404, 'not_found', 'Espace introuvable'],
@@ -157,20 +122,30 @@ router.post('/:creatorToken/finalization-review', async (req, res) => {
   }
 });
 
-// POST /api/collective-workspaces/:creatorToken/finalize
 router.post('/:creatorToken/finalize', async (req, res) => {
+  let reserved = null;
   try {
     const { duration_hours } = req.body || {};
+    reserved = await stockReservations.reserveForCreatorToken(req.params.creatorToken, { ttl_hours: duration_hours || 72 });
     const result = await engine.finalizeWorkspace(req.params.creatorToken, { duration_hours });
     res.status(201).json({
       ...result,
+      stock_reservation: reserved,
       phase: 'payment_pending',
-      message: 'Le panier est figé. Les contributeurs peuvent maintenant payer leur part.',
+      message: 'Le panier est figé et le stock est réservé temporairement. Les contributeurs peuvent maintenant payer leur part.',
     });
   } catch (err) {
+    if (reserved?.reservations?.length) {
+      try {
+        const ws = await engine.getWorkspaceByCreatorToken(req.params.creatorToken);
+        if (ws?.id) await stockReservations.releaseForWorkspace(ws.id, 'finalize_failed');
+      } catch (_) {}
+    }
     const m = err.message || '';
+    if (m === 'stock_reservation_shortage') return _err(res, 409, 'stock_reservation_shortage', 'Stock insuffisant pour garantir ce panier collectif', err.shortages || []);
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_in_conception') return _err(res, 409, 'wrong_state', 'Cet espace n\'est plus en conception');
+    if (m === 'workspace_not_reservable') return _err(res, 409, 'not_reservable', 'Ce panier ne peut pas réserver le stock');
     if (m === 'no_items') return _err(res, 400, 'empty_cart', 'Aucun article dans le panier');
     if (m === 'no_contributions') return _err(res, 400, 'no_contributions', 'Aucune intention de contribution');
     if (m.startsWith('product_inactive:')) return _err(res, 409, 'product_inactive', 'Un produit n\'est plus disponible');
@@ -181,15 +156,12 @@ router.post('/:creatorToken/finalize', async (req, res) => {
   }
 });
 
-// POST /api/collective-workspaces/:creatorToken/resume
 router.post('/:creatorToken/resume', async (req, res) => {
   try {
+    const ws = await engine.getWorkspaceByCreatorToken(req.params.creatorToken);
+    if (ws?.id) await stockReservations.releaseForWorkspace(ws.id, 'resume_workspace');
     const r = await engine.resumeWorkspace(req.params.creatorToken);
-    res.json({
-      ...r,
-      phase: 'reviewing',
-      message: 'Le panier peut être repris. Vous pouvez ajuster les parts et relancer une session.',
-    });
+    res.json({ ...r, phase: 'reviewing', message: 'Le panier peut être repris. Le stock réservé a été libéré.' });
   } catch (err) {
     if (err.message === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (err.message === 'workspace_locked_by_order') return _err(res, 409, 'locked_by_order', 'Une commande a déjà été créée pour cet espace. La reprise n\'est plus possible.');
@@ -199,13 +171,9 @@ router.post('/:creatorToken/resume', async (req, res) => {
   }
 });
 
-// POST /api/collective-workspaces/:creatorToken/close
 router.post('/:creatorToken/close', async (req, res) => {
   try {
-    const result = await orchestrator.closeReadyToOrderByCreator(req.params.creatorToken, {
-      role: 'creator',
-      source: 'creator_close',
-    });
+    const result = await orchestrator.closeReadyToOrderByCreator(req.params.creatorToken, { role: 'creator', source: 'creator_close' });
     res.status(result.ok ? 200 : 202).json(result);
   } catch (err) {
     const m = err.message || '';
@@ -216,24 +184,12 @@ router.post('/:creatorToken/close', async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// WORKSPACE — PUBLIC (public_token) — pas d'auth
-// ═══════════════════════════════════════════════════════════════════════
-
 router.get('/public/:publicToken', async (req, res) => {
   try {
     const data = await engine.getWorkspaceByPublicToken(req.params.publicToken);
     if (!data) return _err(res, 404, 'not_found', 'Espace introuvable');
-    const phase = engine.deriveWorkspacePhase(data.workspace, {
-      items: data.items,
-      contributions: data.contributions,
-      session: data.session,
-    });
-    res.json({
-      ...data,
-      workspace: { ...(data.workspace || {}), phase },
-      phase,
-    });
+    const phase = engine.deriveWorkspacePhase(data.workspace, { items: data.items, contributions: data.contributions, session: data.session });
+    res.json({ ...data, workspace: { ...(data.workspace || {}), phase }, phase });
   } catch (err) {
     console.error('[CollectiveWS] public read error:', err);
     _err(res, 500, 'server_error', 'Lecture impossible');
@@ -243,15 +199,9 @@ router.get('/public/:publicToken', async (req, res) => {
 router.post('/public/:publicToken/contributions', async (req, res) => {
   try {
     const body = Object.assign({}, req.body || {});
-    if (body.amount_kmf !== undefined && body.intended_amount_kmf === undefined) {
-      body.intended_amount_kmf = body.amount_kmf;
-    }
+    if (body.amount_kmf !== undefined && body.intended_amount_kmf === undefined) body.intended_amount_kmf = body.amount_kmf;
     const c = await engine.addContribution(req.params.publicToken, body);
-    res.status(201).json({
-      contribution: c,
-      phase: 'reviewing',
-      message: 'Votre intention a été enregistrée. Aucun paiement n\'est effectué maintenant.',
-    });
+    res.status(201).json({ contribution: c, phase: 'reviewing', message: 'Votre intention a été enregistrée. Aucun paiement n\'est effectué maintenant.' });
   } catch (err) {
     const m = err.message;
     if (m === 'contributor_name_required') return _err(res, 400, 'name_required', 'Nom requis');
@@ -282,10 +232,6 @@ router.delete('/public/:publicToken/contributions/:id', async (req, res) => {
   return _err(res, 403, 'creator_token_required', 'La suppression publique est désactivée. Seul le créateur peut annuler une intention.');
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// PAIEMENT — PAR TOKEN INDIVIDUEL
-// ═══════════════════════════════════════════════════════════════════════
-
 paymentsRouter.get('/:token', async (req, res) => {
   try {
     const t = await engine.getTokenInfo(req.params.token);
@@ -296,7 +242,6 @@ paymentsRouter.get('/:token', async (req, res) => {
        FROM collective_payment_tokens WHERE session_id = $1`,
       [t.session_id]
     )).rows[0];
-
     res.json({
       contributor_name: t.contributor_name,
       amount_kmf: t.amount_kmf,
@@ -321,7 +266,6 @@ paymentsRouter.get('/:token', async (req, res) => {
 paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
   try {
     const actor = { id: req.user.id, role: req.user.role, phone: req.user.phone || null, relais_id: null };
-
     if (req.user.role === 'agent_relais') {
       try {
         const db = require('../db');
@@ -333,15 +277,8 @@ paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 
         return _err(res, 403, 'agent_relais_not_configured', 'Configuration agent relais incomplète');
       }
     }
-
     const result = await orchestrator.confirmCashContribution(req.params.token, actor, req.body?.note || null);
-
-    res.json({
-      ...result,
-      message: result.reached_100
-        ? 'Toutes les parts sont confirmées — panier prêt à commander.'
-        : 'Part cash confirmée.',
-    });
+    res.json({ ...result, message: result.reached_100 ? 'Toutes les parts sont confirmées — panier prêt à commander.' : 'Part cash confirmée.' });
   } catch (err) {
     const m = err.message;
     if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
@@ -355,7 +292,6 @@ paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 
     if (m === 'workspace_not_payment_pending') return _err(res, 409, 'wrong_state', 'Cet espace n\'est pas en attente de paiement');
     if (m === 'cross_relais_forbidden') return _err(res, 403, 'cross_relais_forbidden', 'Cette part appartient à un autre relais');
     if (m === 'agent_relais_not_configured') return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
-
     console.error('[CollectivePay] confirm-cash error:', err);
     _err(res, 500, 'server_error', 'Confirmation cash impossible');
   }
@@ -364,13 +300,7 @@ paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 
 paymentsRouter.post('/:token/pay-card', async (req, res) => {
   try {
     const result = await orchestrator.createOrGetPaymentIntent(req.params.token);
-    res.json({
-      client_secret: result.client_secret,
-      amount_eur_cents: result.amount_eur_cents,
-      payment_intent_id: result.payment_intent_id,
-      stripe_status: result.status,
-      message: 'Authorisez le paiement. Le panier sera commandé après clôture.',
-    });
+    res.json({ client_secret: result.client_secret, amount_eur_cents: result.amount_eur_cents, payment_intent_id: result.payment_intent_id, stripe_status: result.status, message: 'Authorisez le paiement. Le panier sera commandé après clôture.' });
   } catch (err) {
     const m = err.message;
     if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
@@ -387,7 +317,6 @@ paymentsRouter.post('/:token/pay-card', async (req, res) => {
 async function stripeWebhookHandler(req, res) {
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_COLLECTIVE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
-
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
@@ -395,40 +324,19 @@ async function stripeWebhookHandler(req, res) {
     console.error('[CollectivePay webhook] signature verification failed:', err.message);
     return res.status(400).json({ error: 'invalid_signature' });
   }
-
   try {
-    if (await orchestrator.isStripeEventProcessed(event.id)) {
-      return res.json({ received: true, idempotent: true });
-    }
-
+    if (await orchestrator.isStripeEventProcessed(event.id)) return res.json({ received: true, idempotent: true });
     const t = event.type;
     const obj = event.data.object;
-
-    if (t === 'payment_intent.amount_capturable_updated' || t === 'payment_intent.requires_capture') {
-      if (obj.metadata && obj.metadata.collective_token_id) {
-        await orchestrator.onPaymentAuthorized(obj.id);
-      }
-    } else if (t === 'payment_intent.canceled') {
-      if (obj.metadata && obj.metadata.collective_token_id) {
-        const db = require('../db');
-        await db.query(
-          `UPDATE collective_payment_tokens
-             SET status = CASE WHEN status IN ('paid') THEN status ELSE 'cancelled' END,
-                 cancelled_at = COALESCE(cancelled_at, NOW())
-           WHERE stripe_payment_intent_id = $1`,
-          [obj.id]
-        );
-      }
-    } else if (t === 'payment_intent.payment_failed') {
-      if (obj.metadata && obj.metadata.collective_token_id) {
-        const db = require('../db');
-        await db.query(
-          `UPDATE collective_payment_tokens SET status = 'failed' WHERE stripe_payment_intent_id = $1 AND status = 'active'`,
-          [obj.id]
-        );
-      }
+    if ((t === 'payment_intent.amount_capturable_updated' || t === 'payment_intent.requires_capture') && obj.metadata && obj.metadata.collective_token_id) {
+      await orchestrator.onPaymentAuthorized(obj.id);
+    } else if (t === 'payment_intent.canceled' && obj.metadata && obj.metadata.collective_token_id) {
+      const db = require('../db');
+      await db.query(`UPDATE collective_payment_tokens SET status = CASE WHEN status IN ('paid') THEN status ELSE 'cancelled' END, cancelled_at = COALESCE(cancelled_at, NOW()) WHERE stripe_payment_intent_id = $1`, [obj.id]);
+    } else if (t === 'payment_intent.payment_failed' && obj.metadata && obj.metadata.collective_token_id) {
+      const db = require('../db');
+      await db.query(`UPDATE collective_payment_tokens SET status = 'failed' WHERE stripe_payment_intent_id = $1 AND status = 'active'`, [obj.id]);
     }
-
     await orchestrator.markStripeEventProcessed(event.id, event.type, { payment_intent_id: obj.id || null });
     return res.json({ received: true });
   } catch (err) {
