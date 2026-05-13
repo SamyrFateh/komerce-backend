@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    KOMERCE — hero.css  (LOT 13 refonte)
    Mobile-first, zéro !important.
    ═══════════════════════════════════════════════════════════════ */
@@ -108,7 +108,7 @@
     width: 100%; flex: none;
     margin: 0; border-radius: 0;
     overflow: hidden;
-    background: #1F3024;
+    background: var(--sand-warm, #f6f0e3);
     position: relative;
   }
 
@@ -129,9 +129,9 @@
     inset: 0;
     background: linear-gradient(
       100deg,
-      rgba(20, 36, 22, .50) 0%,
-      rgba(20, 36, 22, .28) 28%,
-      rgba(20, 36, 22, .05) 48%,
+      rgba(20, 36, 22, .32) 0%,
+      rgba(20, 36, 22, .12) 28%,
+      rgba(20, 36, 22, .02) 48%,
       transparent            58%
     );
     z-index: 1;
@@ -170,9 +170,9 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    background: rgba(42, 122, 62, .18);
-    border: 1px solid rgba(42, 122, 62, .4);
-    color: #6abf7a;
+    background: rgba(200, 92, 45, .12);
+    border: 1px solid rgba(200, 92, 45, .30);
+    color: var(--coral, #C85C2D);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: .1em;
@@ -242,7 +242,7 @@
   }
   .k-hero-trust > span {
     font-size: 10px;
-    color: rgba(255,255,255,.5);
+    color: rgba(255,255,255,.75);
     font-weight: 500;
     display: flex;
     align-items: center;

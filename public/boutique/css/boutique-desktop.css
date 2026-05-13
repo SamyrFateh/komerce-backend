@@ -320,8 +320,9 @@
     flex-shrink: 0;
   }
   .k-header-nav-btn:hover {
-    background: var(--sand-warm);
-    border-color: var(--border);
+    background: rgba(100,175,90,.10);
+    border-color: rgba(100,175,90,.30);
+    color: var(--ocean-dark);
   }
   .k-header-nav-btn:active { background: var(--sand-dark); }
 
@@ -916,7 +917,7 @@
     color: var(--text, #1F3024);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
-    border-top: 1px solid var(--border, #E3D9C9);
+    border-top: 2px solid rgba(100,175,90,.25);  /* accent ocean léger */
   }
 
   .k-footer-grid {
@@ -966,9 +967,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: var(--sand, #FDFAF5);
-    border-color: rgba(31,48,36,.3);
-    color: var(--text, #1F3024);
+    background: rgba(100,175,90,.10);
+    border-color: rgba(100,175,90,.35);
+    color: var(--ocean-dark, #4A9040);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -981,7 +982,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--text-light, #9EAC95);
+    color: var(--ocean-dark, #4A9040);
     margin-bottom: 14px;
   }
 
@@ -1269,9 +1270,9 @@
     position: sticky;
     top: var(--header-h, 72px);
     z-index: 110;
-    background: #fff;
-    border-bottom: 1px solid rgba(31,48,36,.08);
-    box-shadow: 0 2px 14px rgba(31,48,36,.06);
+    background: rgba(100,175,90,.05);   /* vert ocean très pâle */
+    border-bottom: 2px solid rgba(200,92,45,.18);  /* fil coral discret */
+    box-shadow: 0 2px 8px rgba(31,48,36,.04);
     padding: 0;
   }
 
@@ -1301,7 +1302,7 @@
     height: 30px;     /* Valeur finale P0-B */
     min-height: 30px;
     padding: 0 12px;
-    border-radius: 0;
+    border-radius: 999px;   /* pill léger */
     border: none;
     background: transparent;
     box-shadow: none;
@@ -1319,8 +1320,8 @@
     margin-bottom: -1px;       /* chevauchement border-bottom shell */
   }
   .k-chip:hover {
-    color: var(--coral);
-    background: rgba(200,92,45,.04);
+    color: var(--text);
+    background: rgba(100,175,90,.10);  /* vert ocean léger */
   }
 
   /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
@@ -1372,9 +1373,10 @@
   .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
   .k-chip.active .k-chip-label { color: var(--coral); font-weight: 700; }
 
-  /* Hover : sous-ligne subtile */
+  /* Hover : fond vert + sous-ligne coral */
   .k-chip:not(.active):hover {
-    border-bottom-color: rgba(200,92,45,.3);
+    background: rgba(100,175,90,.10);
+    border-bottom-color: rgba(200,92,45,.25);
   }
 
   /* Pas de fades latÃ©raux desktop */
@@ -1963,26 +1965,26 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* 1. Conteneur : hauteur premium */
+  /* 1. Conteneur : hauteur premium — relevée pour montrer les personnages */
   #k-hero-fixed-wrap {
-    max-height: 160px;
+    max-height: 200px;
     overflow: hidden;
   }
 
   #k-hero-fixed-wrap .k-hero {
-    max-height: 160px;
+    max-height: 200px;
     overflow: hidden;
-    background: #1F3024;
+    background: var(--sand-warm, #f6f0e3);
   }
 
-  /* 2. Image visible, couvre toute la hauteur */
+  /* 2. Image visible — object-position ajusté pour cadrer les visages */
   #k-hero-fixed-wrap .k-hero-img {
     display: block !important;
     width: 100%;
-    height: clamp(130px, 13vw, 160px) !important;
-    max-height: 160px !important;
+    height: clamp(160px, 16vw, 200px) !important;
+    max-height: 200px !important;
     object-fit: cover;
-    object-position: center 40%;  /* même cadrage qu'à l'ouverture */
+    object-position: center 20%;  /* remonté : montre les têtes des personnages */
   }
 
   /* 3. Voile dégradé gauche pour lisibilité slogan — allégé */
