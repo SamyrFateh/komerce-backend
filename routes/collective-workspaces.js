@@ -11,6 +11,7 @@
  *   POST   /api/collective-workspaces/:creatorToken/finalization-review
  *   POST   /api/collective-workspaces/:creatorToken/finalize
  *   POST   /api/collective-workspaces/:creatorToken/resume
+ *   POST   /api/collective-workspaces/:creatorToken/close          Clôture explicite
  *
  *   ── Workspace (public via public_token) ──
  *   GET    /api/collective-workspaces/public/:publicToken          Lecture publique
@@ -31,7 +32,7 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { authenticate, requireRole } = require('../middleware/auth');
 const engine  = require('../services/collective-workspace-engine');
-const orchestrator = require('../services/collective-payment-orchestrator');
+const orchestrator = require('../services/collective-ready-to-order-orchestrator');
 
 const router = express.Router();
 const paymentsRouter = express.Router();
@@ -54,10 +55,8 @@ router.post('/', async (req, res) => {
       workspace_id: result.workspace.id,
       event_name: result.workspace.event_name,
       status: result.workspace.status,
-      // Tokens BRUTS — affichés une seule fois au créateur
       creator_token: result.creator_token,
       public_token: result.public_token,
-      // URL publique canonique et courte. /event/w/:token reste compatible.
       public_url_path: publicUrlPath,
       public_url: publicUrlPath,
       legacy_public_url_path: '/event/w/' + result.public_token,
@@ -76,14 +75,6 @@ router.get('/me/:creatorToken', async (req, res) => {
     const ws = await engine.getWorkspaceByCreatorToken(req.params.creatorToken);
     if (!ws) return _err(res, 404, 'not_found', 'Espace introuvable');
 
-    // Renvoyer aussi items + contributions + session (vue privilégiée)
-    const fullView = await engine.getWorkspaceByPublicToken(
-      // Reconstruire avec public — récupération via id direct
-      // Petit détour : réutilise getWorkspaceByPublicToken via SELECT
-      null
-    ).catch(() => null);
-
-    // Plus simple : query directe pour la vue créateur
     const db = require('../db');
     const items = (await db.query(
       `SELECT * FROM collective_workspace_items WHERE workspace_id = $1 ORDER BY created_at`, [ws.id]
@@ -116,7 +107,6 @@ router.get('/me/:creatorToken', async (req, res) => {
 });
 
 // PATCH /api/collective-workspaces/:creatorToken/items
-// Body : { action: 'add'|'update'|'remove', item_id?, product_id?, quantity? }
 router.patch('/:creatorToken/items', async (req, res) => {
   try {
     const { action, item_id, product_id, quantity } = req.body || {};
@@ -181,7 +171,7 @@ router.post('/:creatorToken/finalize', async (req, res) => {
     const m = err.message || '';
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_in_conception') return _err(res, 409, 'wrong_state', 'Cet espace n\'est plus en conception');
-    if (m === 'no_items')       return _err(res, 400, 'empty_cart', 'Aucun article dans le panier');
+    if (m === 'no_items') return _err(res, 400, 'empty_cart', 'Aucun article dans le panier');
     if (m === 'no_contributions') return _err(res, 400, 'no_contributions', 'Aucune intention de contribution');
     if (m.startsWith('product_inactive:')) return _err(res, 409, 'product_inactive', 'Un produit n\'est plus disponible');
     if (m.startsWith('insufficient_intentions:')) return _err(res, 409, 'insufficient_intentions', 'Les intentions ne couvrent pas le total');
@@ -209,11 +199,27 @@ router.post('/:creatorToken/resume', async (req, res) => {
   }
 });
 
+// POST /api/collective-workspaces/:creatorToken/close
+router.post('/:creatorToken/close', async (req, res) => {
+  try {
+    const result = await orchestrator.closeReadyToOrderByCreator(req.params.creatorToken, {
+      role: 'creator',
+      source: 'creator_close',
+    });
+    res.status(result.ok ? 200 : 202).json(result);
+  } catch (err) {
+    const m = err.message || '';
+    if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
+    if (m === 'workspace_not_ready_to_order') return _err(res, 409, 'not_ready_to_order', 'Ce panier collectif n\'est pas encore prêt à commander');
+    console.error('[CollectiveWS] close error:', err);
+    _err(res, 500, 'server_error', 'Clôture impossible');
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 // WORKSPACE — PUBLIC (public_token) — pas d'auth
 // ═══════════════════════════════════════════════════════════════════════
 
-// GET /api/collective-workspaces/public/:publicToken
 router.get('/public/:publicToken', async (req, res) => {
   try {
     const data = await engine.getWorkspaceByPublicToken(req.params.publicToken);
@@ -234,10 +240,8 @@ router.get('/public/:publicToken', async (req, res) => {
   }
 });
 
-// POST /api/collective-workspaces/public/:publicToken/contributions
 router.post('/public/:publicToken/contributions', async (req, res) => {
   try {
-    // P1.2 : accepter alias amount_kmf (front) → intended_amount_kmf (engine)
     const body = Object.assign({}, req.body || {});
     if (body.amount_kmf !== undefined && body.intended_amount_kmf === undefined) {
       body.intended_amount_kmf = body.amount_kmf;
@@ -260,8 +264,6 @@ router.post('/public/:publicToken/contributions', async (req, res) => {
   }
 });
 
-// DELETE /api/collective-workspaces/:creatorToken/contributions/:id
-// Suppression sécurisée : seul le créateur peut annuler une intention avant finalisation.
 router.delete('/:creatorToken/contributions/:id', async (req, res) => {
   try {
     const r = await engine.cancelContributionByCreator(req.params.creatorToken, req.params.id);
@@ -276,33 +278,21 @@ router.delete('/:creatorToken/contributions/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/collective-workspaces/public/:publicToken/contributions/:id
-// Sécurité : le lien public ne permet plus de supprimer une contribution.
-// Utiliser DELETE /api/collective-workspaces/:creatorToken/contributions/:id côté créateur.
 router.delete('/public/:publicToken/contributions/:id', async (req, res) => {
-  return _err(
-    res,
-    403,
-    'creator_token_required',
-    'La suppression publique est désactivée. Seul le créateur peut annuler une intention.'
-  );
+  return _err(res, 403, 'creator_token_required', 'La suppression publique est désactivée. Seul le créateur peut annuler une intention.');
 });
 
 // ═══════════════════════════════════════════════════════════════════════
 // PAIEMENT — PAR TOKEN INDIVIDUEL
 // ═══════════════════════════════════════════════════════════════════════
 
-// GET /api/collective-payments/:token
 paymentsRouter.get('/:token', async (req, res) => {
   try {
     const t = await engine.getTokenInfo(req.params.token);
     if (!t) return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
-    // Anti dark-pattern : pas de "Untel attend ton paiement" — juste compteur neutre
     const db = require('../db');
     const totals = (await db.query(
-      `SELECT
-         COUNT(*) FILTER (WHERE status IN ('authorized','paid')) as confirmed_count,
-         COUNT(*) as total_count
+      `SELECT COUNT(*) FILTER (WHERE status IN ('authorized','paid')) as confirmed_count, COUNT(*) as total_count
        FROM collective_payment_tokens WHERE session_id = $1`,
       [t.session_id]
     )).rows[0];
@@ -319,7 +309,7 @@ paymentsRouter.get('/:token', async (req, res) => {
       paid_at: t.paid_at,
       message: t.status === 'paid' ? 'Merci pour votre participation.' :
                t.status === 'expired' ? 'Cette session de paiement est terminée.' :
-               t.status === 'authorized' ? 'Votre carte a été préautorisée. Le débit aura lieu quand le panier sera complet.' :
+               t.status === 'authorized' ? 'Votre carte a été préautorisée. Le panier sera commandé après clôture.' :
                'Vous pouvez confirmer votre part de ' + t.amount_kmf + ' KMF.',
     });
   } catch (err) {
@@ -328,75 +318,49 @@ paymentsRouter.get('/:token', async (req, res) => {
   }
 });
 
-// POST /api/collective-payments/:token/confirm-cash
-// Confirmation cash par admin / agent_relais authentifié.
-// Le contributeur ne peut jamais confirmer lui-même.
-paymentsRouter.post(
-  '/:token/confirm-cash',
-  authenticate,
-  requireRole(['admin', 'agent_relais']),
-  async (req, res) => {
-    try {
-      const actor = {
-        id: req.user.id,
-        role: req.user.role,
-        phone: req.user.phone || null,
-        relais_id: null,
-      };
+paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 'agent_relais']), async (req, res) => {
+  try {
+    const actor = { id: req.user.id, role: req.user.role, phone: req.user.phone || null, relais_id: null };
 
-      if (req.user.role === 'agent_relais') {
-        try {
-          const db = require('../db');
-          const agent = (await db.query(
-            'SELECT relais_id FROM users WHERE id = $1',
-            [req.user.id]
-          )).rows[0];
-
-          if (!agent || !agent.relais_id) {
-            return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
-          }
-
-          actor.relais_id = agent.relais_id;
-        } catch (e) {
-          console.warn('[CollectivePay] agent relais config check failed:', e.message);
-          return _err(res, 403, 'agent_relais_not_configured', 'Configuration agent relais incomplète');
-        }
+    if (req.user.role === 'agent_relais') {
+      try {
+        const db = require('../db');
+        const agent = (await db.query('SELECT relais_id FROM users WHERE id = $1', [req.user.id])).rows[0];
+        if (!agent || !agent.relais_id) return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
+        actor.relais_id = agent.relais_id;
+      } catch (e) {
+        console.warn('[CollectivePay] agent relais config check failed:', e.message);
+        return _err(res, 403, 'agent_relais_not_configured', 'Configuration agent relais incomplète');
       }
-
-      const result = await orchestrator.confirmCashContribution(
-        req.params.token,
-        actor,
-        req.body?.note || null
-      );
-
-      res.json({
-        ...result,
-        message: result.reached_100
-          ? 'Toutes les parts sont confirmées — commande créée.'
-          : 'Part cash confirmée.',
-      });
-    } catch (err) {
-      const m = err.message;
-
-      if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
-      if (m === 'token_already_paid') return _err(res, 409, 'already_paid', 'Cette part est déjà confirmée');
-      if (m === 'token_already_authorized') return _err(res, 409, 'already_authorized', 'Cette part est déjà préautorisée par carte');
-      if (m === 'token_expired') return _err(res, 410, 'expired', 'Cette session de paiement est terminée');
-      if (m === 'token_cancelled') return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
-      if (m === 'session_ended') return _err(res, 410, 'session_ended', 'Cette session est terminée');
-      if (m === 'session_failed') return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
-      if (m === 'session_not_open') return _err(res, 409, 'session_not_open', 'Cette session n\'est plus ouverte');
-      if (m === 'workspace_not_payment_pending') return _err(res, 409, 'wrong_state', 'Cet espace n\'est pas en attente de paiement');
-      if (m === 'cross_relais_forbidden') return _err(res, 403, 'cross_relais_forbidden', 'Cette part appartient à un autre relais');
-      if (m === 'agent_relais_not_configured') return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
-
-      console.error('[CollectivePay] confirm-cash error:', err);
-      _err(res, 500, 'server_error', 'Confirmation cash impossible');
     }
-  }
-);
 
-// POST /api/collective-payments/:token/pay-card
+    const result = await orchestrator.confirmCashContribution(req.params.token, actor, req.body?.note || null);
+
+    res.json({
+      ...result,
+      message: result.reached_100
+        ? 'Toutes les parts sont confirmées — panier prêt à commander.'
+        : 'Part cash confirmée.',
+    });
+  } catch (err) {
+    const m = err.message;
+    if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
+    if (m === 'token_already_paid') return _err(res, 409, 'already_paid', 'Cette part est déjà confirmée');
+    if (m === 'token_already_authorized') return _err(res, 409, 'already_authorized', 'Cette part est déjà préautorisée par carte');
+    if (m === 'token_expired') return _err(res, 410, 'expired', 'Cette session de paiement est terminée');
+    if (m === 'token_cancelled') return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
+    if (m === 'session_ended') return _err(res, 410, 'session_ended', 'Cette session est terminée');
+    if (m === 'session_failed') return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
+    if (m === 'session_not_open') return _err(res, 409, 'session_not_open', 'Cette session n\'est plus ouverte');
+    if (m === 'workspace_not_payment_pending') return _err(res, 409, 'wrong_state', 'Cet espace n\'est pas en attente de paiement');
+    if (m === 'cross_relais_forbidden') return _err(res, 403, 'cross_relais_forbidden', 'Cette part appartient à un autre relais');
+    if (m === 'agent_relais_not_configured') return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
+
+    console.error('[CollectivePay] confirm-cash error:', err);
+    _err(res, 500, 'server_error', 'Confirmation cash impossible');
+  }
+});
+
 paymentsRouter.post('/:token/pay-card', async (req, res) => {
   try {
     const result = await orchestrator.createOrGetPaymentIntent(req.params.token);
@@ -405,30 +369,21 @@ paymentsRouter.post('/:token/pay-card', async (req, res) => {
       amount_eur_cents: result.amount_eur_cents,
       payment_intent_id: result.payment_intent_id,
       stripe_status: result.status,
-      message: 'Authorisez le paiement. Aucun débit ne sera effectué tant que le panier n\'est pas complet.',
+      message: 'Authorisez le paiement. Le panier sera commandé après clôture.',
     });
   } catch (err) {
     const m = err.message;
-    if (m === 'token_not_found')     return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
-    if (m === 'token_already_paid')  return _err(res, 409, 'already_paid', 'Ce paiement est déjà confirmé');
-    if (m === 'token_expired')       return _err(res, 410, 'expired', 'Cette session de paiement est terminée');
-    if (m === 'token_cancelled')     return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
-    if (m === 'session_ended')       return _err(res, 410, 'session_ended', 'Cette session est terminée');
-    if (m === 'session_failed')      return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
+    if (m === 'token_not_found') return _err(res, 404, 'not_found', 'Lien de paiement introuvable');
+    if (m === 'token_already_paid') return _err(res, 409, 'already_paid', 'Ce paiement est déjà confirmé');
+    if (m === 'token_expired') return _err(res, 410, 'expired', 'Cette session de paiement est terminée');
+    if (m === 'token_cancelled') return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
+    if (m === 'session_ended') return _err(res, 410, 'session_ended', 'Cette session est terminée');
+    if (m === 'session_failed') return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
     console.error('[CollectivePay] pay error:', err);
     _err(res, 500, 'server_error', 'Initialisation paiement impossible');
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// WEBHOOK STRIPE (raw body — mounté à part dans server.js)
-// ═══════════════════════════════════════════════════════════════════════
-
-/**
- * Handler du webhook Stripe.
- * IMPORTANT : doit être appelé avec un body raw (Buffer), pas du JSON parsé.
- * Voir server.js : app.post('/api/collective-payments/stripe/webhook', express.raw(...), webhookHandler)
- */
 async function stripeWebhookHandler(req, res) {
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_COLLECTIVE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
@@ -442,7 +397,6 @@ async function stripeWebhookHandler(req, res) {
   }
 
   try {
-    // Idempotence : ne pas traiter 2x le même évènement
     if (await orchestrator.isStripeEventProcessed(event.id)) {
       return res.json({ received: true, idempotent: true });
     }
@@ -451,13 +405,10 @@ async function stripeWebhookHandler(req, res) {
     const obj = event.data.object;
 
     if (t === 'payment_intent.amount_capturable_updated' || t === 'payment_intent.requires_capture') {
-      // Carte autorisée et capturable
-      // Filtre : on ne traite QUE les PI liés à un token collective (présence metadata)
       if (obj.metadata && obj.metadata.collective_token_id) {
         await orchestrator.onPaymentAuthorized(obj.id);
       }
     } else if (t === 'payment_intent.canceled') {
-      // PaymentIntent annulé : marquer le token (best effort)
       if (obj.metadata && obj.metadata.collective_token_id) {
         const db = require('../db');
         await db.query(
@@ -477,22 +428,13 @@ async function stripeWebhookHandler(req, res) {
         );
       }
     }
-    // Les autres events (succeeded, etc.) sont ignorés en V1 : la capture est gérée en flux atomique
 
-    await orchestrator.markStripeEventProcessed(event.id, event.type, {
-      payment_intent_id: obj.id || null,
-    });
-
+    await orchestrator.markStripeEventProcessed(event.id, event.type, { payment_intent_id: obj.id || null });
     return res.json({ received: true });
   } catch (err) {
     console.error('[CollectivePay webhook] handler error:', err);
-    // Renvoyer 500 pour que Stripe retry
     return res.status(500).json({ error: 'handler_error' });
   }
 }
 
-module.exports = {
-  router,
-  paymentsRouter,
-  stripeWebhookHandler,
-};
+module.exports = { router, paymentsRouter, stripeWebhookHandler };
