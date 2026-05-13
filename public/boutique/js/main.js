@@ -31,6 +31,7 @@ import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refont
 import { isDesktop }          from './b-scroll-owner.js';
 import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
+import { setupCartProductOpenStyle } from './b-cart-product-open-style.js'; // Affordance image panier cliquable
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -41,11 +42,13 @@ if (typeof window !== 'undefined') {
       setupDesktopUpgrade();
       setupMiniCart();   // Mini-cart flottant mobile
       setupProductOpenContract(); // Panier mobile/desktop → fiche produit
+      setupCartProductOpenStyle(); // Indication visuelle image cliquable
     });
   } else {
     setupDesktopUpgrade();
     setupMiniCart();     // Mini-cart flottant mobile
     setupProductOpenContract();   // Panier mobile/desktop → fiche produit
+    setupCartProductOpenStyle();  // Indication visuelle image cliquable
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
