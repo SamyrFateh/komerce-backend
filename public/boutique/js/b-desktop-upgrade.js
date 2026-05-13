@@ -33,11 +33,11 @@ import {
   normalizeCategoryKey,
   getCategorySectionEmoji,
   getSubcategories,
+  getRailCategories,
 }                           from './shop-schema.js';
 import { setActiveCat }                   from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import { isDesktop }        from './b-scroll-owner.js';
-import { getRailCategories, getCategorySectionEmoji } from './shop-schema.js';
 
 // ═══════════════════════════════════════════════════════════════
 //  1. MEGA-MENU — Dropdown sous-catégories au hover chip desktop
