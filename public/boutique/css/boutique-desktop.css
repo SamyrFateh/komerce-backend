@@ -1302,7 +1302,7 @@
     height: 30px;     /* Valeur finale P0-B */
     min-height: 30px;
     padding: 0 12px;
-    border-radius: 999px;   /* pill léger */
+    border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
@@ -1320,8 +1320,8 @@
     margin-bottom: -1px;       /* chevauchement border-bottom shell */
   }
   .k-chip:hover {
-    color: var(--text);
-    background: rgba(100,175,90,.10);  /* vert ocean léger */
+    color: var(--ocean-dark);
+    background: rgba(100,175,90,.08);
   }
 
   /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
@@ -1375,7 +1375,7 @@
 
   /* Hover : fond vert + sous-ligne coral */
   .k-chip:not(.active):hover {
-    background: rgba(100,175,90,.10);
+    background: rgba(100,175,90,.08);
     border-bottom-color: rgba(200,92,45,.25);
   }
 
@@ -1974,7 +1974,7 @@
   #k-hero-fixed-wrap .k-hero {
     max-height: 200px;
     overflow: hidden;
-    background: var(--sand-warm, #f6f0e3);
+    background: #111;
   }
 
   /* 2. Image visible — object-position ajusté pour cadrer les visages */
