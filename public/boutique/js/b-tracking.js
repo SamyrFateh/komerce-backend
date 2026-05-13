@@ -28,7 +28,25 @@ function loadSharedCarts() {
   try {
     const raw = localStorage.getItem('kmrc_group_carts_v1');
     const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list.filter(g => g.status !== 'archived') : [];
+    if (!Array.isArray(list)) return [];
+
+    const cleaned = list.filter(g => {
+      if (!g || g.status === 'archived') return false;
+      if (String(g.id || '').startsWith('demo-')) return false;
+      const total = Number(g.total) || 0;
+      const hasRealUrl = Boolean(g.url && !String(g.url).endsWith('/boutique/'));
+      const hasParticipants = Array.isArray(g.participants) && g.participants.length > 0;
+      return total > 0 || hasRealUrl || hasParticipants;
+    });
+
+    // Dédupliquer les créations de test rapides : même url + même titre.
+    const seen = new Set();
+    return cleaned.filter(g => {
+      const key = String(g.url || '') + '|' + String(g.title || '') + '|' + String(g.total || '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   } catch (_) {
     return [];
   }
@@ -38,6 +56,17 @@ function saveSharedCarts(groups) {
   try { localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(groups.slice(0, 20))); } catch (_) {}
 }
 
+function sharedProgress(group) {
+  const total = Number(group.total) || 0;
+  const participants = Array.isArray(group.participants) ? group.participants : [];
+  const collected = participants.reduce((sum, p) => {
+    if (p.status !== 'paid') return sum;
+    return sum + (Number(p.amount) || 0);
+  }, 0);
+  const pct = total > 0 ? Math.max(0, Math.min(100, Math.round((collected / total) * 100))) : 0;
+  return { total, collected, pct, participants };
+}
+
 function renderSharedCartsPanel() {
   const groups = loadSharedCarts();
   if (!groups.length) {
@@ -45,37 +74,54 @@ function renderSharedCartsPanel() {
       <section class="k-track-shared-panel">
         <div class="k-track-panel-head">
           <h2>👥 Mes paniers partagés</h2>
-          <p class="k-track-sub-hint">Vos paiements à plusieurs apparaîtront ici.</p>
+          <p class="k-track-sub-hint">Créez un panier depuis le panier, puis suivez ici les participations.</p>
         </div>
-        <div class="k-search-empty">Aucun panier partagé pour le moment.</div>
+        <div class="k-track-shared-empty">
+          <div class="k-track-shared-empty-icon">👥</div>
+          <strong>Aucun panier partagé actif</strong>
+          <span>Ils apparaîtront ici après partage.</span>
+        </div>
       </section>`;
   }
 
   return `
     <section class="k-track-shared-panel">
-      <div class="k-track-panel-head">
-        <h2>👥 Mes paniers partagés</h2>
-        <p class="k-track-sub-hint">Suivez les paiements, copiez le lien, puis clôturez quand c'est complet.</p>
+      <div class="k-track-panel-head k-track-panel-head--row">
+        <div>
+          <h2>👥 Mes paniers partagés</h2>
+          <p class="k-track-sub-hint">Suivi des paiements à plusieurs.</p>
+        </div>
+        <span class="k-track-shared-count">${groups.length}</span>
       </div>
       <div class="k-track-shared-list">
         ${groups.map(g => {
           const paid = g.status === 'paid';
-          const total = fmt(Number(g.total) || 0, 'KMF');
-          const participants = Array.isArray(g.participants) ? g.participants.length : 0;
+          const { total, collected, pct, participants } = sharedProgress(g);
+          const totalLabel = total > 0 ? fmt(total, 'KMF') : 'Montant à confirmer';
+          const collectedLabel = collected > 0 ? fmt(collected, 'KMF') : '0 KMF';
+          const participantCount = participants.length;
+          const firstNames = participants.slice(0, 3).map(p => sanitize(p.name || 'Moi')).join(', ');
           return `
             <article class="k-track-shared-card" data-shared-id="${sanitize(g.id || '')}">
               <div class="k-track-shared-top">
                 <div>
                   <div class="k-track-shared-title">${sanitize(g.title || 'Panier partagé')}</div>
-                  <div class="k-track-shared-meta">${participants} participant${participants > 1 ? 's' : ''} · ${sanitize(g.dateLabel || 'En cours')}</div>
+                  <div class="k-track-shared-meta">${participantCount} participant${participantCount > 1 ? 's' : ''}${firstNames ? ' · ' + firstNames : ''}</div>
                 </div>
-                <span class="k-track-shared-pill ${paid ? 'is-paid' : 'is-open'}">${paid ? 'Payé' : 'Ouvert'}</span>
+                <span class="k-track-shared-pill ${paid ? 'is-paid' : 'is-open'}">${paid ? 'Clôturé' : 'Ouvert'}</span>
+              </div>
+              <div class="k-track-shared-money">
+                <span>${collectedLabel}</span>
+                <strong>${totalLabel}</strong>
+              </div>
+              <div class="k-track-shared-progress" aria-label="Progression ${pct}%">
+                <span style="width:${pct}%"></span>
               </div>
               <div class="k-track-shared-bottom">
-                <strong>${total}</strong>
+                <span>${sanitize(g.dateLabel || 'En cours')}</span>
                 <div class="k-track-shared-actions">
-                  <button type="button" data-shared-copy>🔗</button>
-                  <button type="button" data-shared-close>${paid ? '👁️' : '🔒'}</button>
+                  <button type="button" data-shared-copy title="Copier le lien">🔗</button>
+                  <button type="button" data-shared-close title="${paid ? 'Voir le détail' : 'Clôturer'}">${paid ? '👁️' : '🔒'}</button>
                 </div>
               </div>
             </article>`;
