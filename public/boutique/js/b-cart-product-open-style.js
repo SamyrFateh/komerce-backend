@@ -20,14 +20,6 @@ export function setupCartProductOpenStyle() {
     document.head.appendChild(link);
   }
 
-  if (!document.getElementById('kmrc-mobile-hero-flow-css')) {
-    const link = document.createElement('link');
-    link.id = 'kmrc-mobile-hero-flow-css';
-    link.rel = 'stylesheet';
-    link.href = '/boutique/css/mobile-hero-flow.css?v=1';
-    document.head.appendChild(link);
-  }
-
   // Compatibilité lien public court /g/:token → /event/w/:token.
   import('./b-friendly-group-redirect.js')
     .then(function(mod) {
