@@ -140,16 +140,11 @@
 
       html += '<div class="ev-field">';
       html += '<label class="ev-label" for="contributor_phone">Téléphone <span class="ev-label-opt">(WhatsApp)</span></label>';
-      html += '<div class="ev-phone-row">';
-      html += '<select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif">';
-      html += '<option value="+269">🇰🇲 +269</option>';
-      html += '<option value="+33">🇫🇷 +33</option>';
-      html += '<option value="+262">🇷🇪 +262</option>';
-      html += '<option value="+255">🇹🇿 +255</option>';
-      html += '<option value="+254">🇰🇪 +254</option>';
-      html += '</select>';
-      html += '<input type="tel" id="contributor_phone" name="contributor_phone" class="ev-input" maxlength="25" placeholder="Votre numéro">';
+      html += '<div class="ev-phone-row" id="ev-phone-row-wrap">';
+      html += '<select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif"></select>';
+      html += '<input type="tel" id="contributor_phone" name="contributor_phone" class="ev-input" inputmode="numeric" autocomplete="tel" maxlength="18" placeholder="Votre numéro">';
       html += '</div>';
+      html += '<div id="ev-phone-help" style="font-size:11px;color:var(--coral,#C85C2D);margin-top:3px;min-height:14px;"></div>';
       html += '</div>';
 
       html += '<div class="ev-field">';

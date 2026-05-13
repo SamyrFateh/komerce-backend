@@ -10,25 +10,27 @@ import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
+import {
+  PHONE_COUNTRIES,
+  digitsOnly as _digitsOnly,
+  normalizeLocal as _normalizeLocal,
+  prettifyLocal as _prettifyLocal,
+  buildE164 as _buildE164,
+  isValidLocalLength,
+} from './b-phone.js';
 
 // Stripe globals (initialized on demand)
 let _stripe = (typeof window !== 'undefined' && window.Stripe) ? null : null;
 let _stripeCard = null;
 let _stripeElements = null;
 
-const PHONE_COUNTRIES = [
-  { code: '+269', flag: '🇰🇲', name: 'Comores', digits: 7, max: 7, ph: '321 12 34' },
-  { code: '+33',  flag: '🇫🇷', name: 'France', digits: 9, max: 10, ph: '06 12 34 56 78' },
-  { code: '+262', flag: '🇷🇪', name: 'Réunion', digits: 9, max: 10, ph: '0692 12 34 56' },
-  { code: '+32',  flag: '🇧🇪', name: 'Belgique', digits: 9, max: 10, ph: '0470 12 34 56' },
-  { code: '+41',  flag: '🇨🇭', name: 'Suisse', digits: 9, max: 10, ph: '076 123 45 67' },
-  { code: '+44',  flag: '🇬🇧', name: 'Royaume-Uni', digits: 10, max: 11, ph: '07911 123456' },
-  { code: '+1',   flag: '🇺🇸', name: 'USA / Canada', digits: 10, max: 10, ph: '202 555 0147' },
-  { code: '+971', flag: '🇦🇪', name: 'Émirats', digits: 9, max: 10, ph: '050 123 4567' },
-  { code: '+966', flag: '🇸🇦', name: 'Arabie Saoudite', digits: 9, max: 10, ph: '055 123 4567' },
-  { code: '+60',  flag: '🇲🇾', name: 'Malaisie', digits: 9, max: 10, ph: '012 345 6789' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc', digits: 9, max: 10, ph: '0612 345678' },
-];
+// ── Helpers téléphone — délégués à b-phone.js (source de vérité) ─
+export function digitsOnly(v)           { return _digitsOnly(v); }
+export function normalizeLocal(c, d)    { return _normalizeLocal(c, d); }
+export function prettifyLocal(r, co)    { return _prettifyLocal(r, co); }
+export function buildE164(code, raw)    { return _buildE164(code, raw); }
+
+
 
 async function ensureStripe() {
   if (_stripe) return _stripe;
@@ -61,46 +63,6 @@ async function ensureStripe() {
    * Prérequis : panier non vide (sinon toast error)
    * Ferme le tiroir panier, initialise state.orderData, affiche renderCheckout()
    */
-export function digitsOnly(v) {
-    return String(v || '').replace(/\D+/g, '');
-  }
-
-export function normalizeLocal(code, digits) {
-    // On accepte le 0 national saisi par l'utilisateur pour certains pays
-    if (
-      ['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(code) &&
-      digits.startsWith('0')
-    ) {
-      return digits.slice(1);
-    }
-    return digits;
-  }
-
-export function prettifyLocal(raw, country) {
-    const d = digitsOnly(raw).slice(0, country.max);
-    if (!d) return '';
-    // formatage léger visuel seulement
-    if (country.code === '+33' || country.code === '+262' || country.code === '+32' || country.code === '+41') {
-      return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
-    }
-    if (country.code === '+44') {
-      return d.replace(/(\d{5})(\d{0,6})/, function(_, a, b){ return b ? a + ' ' + b : a; }).trim();
-    }
-    if (country.code === '+1') {
-      return d.replace(/(\d{3})(\d{0,3})(\d{0,4})/, function(_, a, b, c){
-        return [a, b, c].filter(Boolean).join(' ');
-      }).trim();
-    }
-    return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-  }
-
-export function buildE164(code, raw) {
-    let digits = digitsOnly(raw);
-    if (!digits) return '';
-    digits = normalizeLocal(code, digits);
-    return code + digits;
-  }
-
 export function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
     closeCart();
@@ -257,13 +219,14 @@ function _renderRelaisForIle(listEl, relaisList, od) {
 }
 
 function readIntlPhoneValue(id, fallbackValue) {
-  const input = document.getElementById(id);
+  const input      = document.getElementById(id);
   const countrySel = document.getElementById(id + '-country');
   if (!input || !countrySel) return (fallbackValue || '').trim();
   const country = PHONE_COUNTRIES.find(c => c.code === countrySel.value);
-  const digits = normalizeLocal(countrySel.value, digitsOnly(input.value));
-  if (!country || !digits || digits.length !== country.digits) return '';
-  return buildE164(countrySel.value, digits);
+  const digits  = _normalizeLocal(countrySel.value, _digitsOnly(input.value));
+  // Validation stricte : on refuse si le nombre de chiffres ne correspond pas au pays
+  if (!country || !digits || !isValidLocalLength(countrySel.value, input.value)) return '';
+  return _buildE164(countrySel.value, digits);
 }
 
 function renderFulfillmentSelector(container, od, onChange) {
@@ -297,11 +260,20 @@ function getDefaultPhoneCodeForZone(zone) {
   return zone === 'france' ? '+33' : '+269';
 }
 
+/** Le champ "suivi expéditeur" est toujours côté diaspora → +33 par défaut. */
+function getDefaultSenderPhoneCode() {
+  return '+33';
+}
+
 function setIntlPhoneDefault(id, zone, force) {
-  const sel = document.getElementById(id + '-country');
+  const sel   = document.getElementById(id + '-country');
   const input = document.getElementById(id);
   if (!sel) return;
-  const nextCode = getDefaultPhoneCodeForZone(zone);
+  // Le champ suivi (of-sender-phone) est toujours présumé diaspora (+33),
+  // indépendamment de la zone de livraison.
+  const nextCode = (id === 'of-sender-phone')
+    ? getDefaultSenderPhoneCode()
+    : getDefaultPhoneCodeForZone(zone);
   const hasValue = !!String(input?.value || '').trim();
   if (force || !hasValue) {
     sel.value = nextCode;
@@ -598,16 +570,26 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   function sync() {
     const country = currentCountry();
     input.placeholder = country.ph;
+    input.maxLength   = country.max + 3; // +3 pour les espaces visuels
 
-    let rawDigits = digitsOnly(input.value).slice(0, country.max);
-    input.value = prettifyLocal(rawDigits, country);
+    let rawDigits = _digitsOnly(input.value).slice(0, country.max);
+    input.value = _prettifyLocal(rawDigits, country);
 
-    const e164 = buildE164(country.code, rawDigits);
+    const e164 = _buildE164(country.code, rawDigits);
     dataObj[key] = e164 || '';
+
+    // Feedback de validation live
+    const valid = isValidLocalLength(country.code, rawDigits);
+    if (rawDigits.length > 0) {
+      help.textContent = valid ? '' : `Format attendu : ${country.ph}`;
+      help.style.color = valid ? '' : 'var(--coral)';
+    } else {
+      help.textContent = '';
+    }
   }
 
   sel.addEventListener('change', function() {
-    const c = currentCountry();
+    input.value = '';
     help.textContent = '';
     sync();
   });
@@ -622,7 +604,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     if (found) {
       sel.value = found.code;
       const local = existing.slice(found.code.length);
-      input.value = prettifyLocal(local, found);
+      input.value = _prettifyLocal(local, found);
     }
   }
 
@@ -631,7 +613,6 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   group.appendChild(wrap);
   group.appendChild(help);
 
-  // Sync initial
   sync();
 
   return group;

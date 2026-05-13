@@ -9,6 +9,15 @@
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';
 import { showToast }                                       from './b-cart-core.js';
+import {
+  PHONE_COUNTRIES,
+  phoneBlockHTML,
+  buildPhoneSelect,
+  readEventPhone,
+  buildE164,
+  digitsOnly,
+  normalizeLocal,
+} from './b-phone.js';
 
 'use strict';
 
@@ -243,18 +252,7 @@ export function renderTrackViewSearchMode(el) {
       <p class="k-otp-hint">Entrez votre numéro pour recevoir un code WhatsApp et voir toutes vos commandes.</p>
       <div class="k-track-form">
         <div class="k-track-phone-wrap">
-          <select id="k-otp-country" class="k-track-country">
-            <option value="+269">🇰🇲 +269</option>
-            <option value="+33" selected>🇫🇷 +33</option>
-            <option value="+262">🇷🇪 +262</option>
-            <option value="+32">🇧🇪 +32</option>
-            <option value="+41">🇨🇭 +41</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+971">🇦🇪 +971</option>
-            <option value="+212">🇲🇦 +212</option>
-          </select>
-          <input class="k-track-input k-track-input--phone" id="k-otp-phone" type="tel" placeholder="321 12 34" autocomplete="tel" inputmode="tel">
+          ${phoneBlockHTML('k-otp-country', 'k-otp-phone', '+33')}
         </div>
         <button class="k-track-btn" id="k-otp-request-btn">📲 Envoyer le code</button>
       </div>
@@ -310,20 +308,33 @@ export function renderTrackViewSearchMode(el) {
     el.querySelector('#k-track-quick').classList.remove('u-hidden');
   });
 
+  // ── Init du select indicatif via b-phone ──
+  buildPhoneSelect('k-otp-country', 'k-otp-phone', '+33', null);
+  // Appliquer la classe CSS spécifique au tracking sur le select généré
+  const otpSel = el.querySelector('#k-otp-country');
+  if (otpSel) otpSel.className = 'k-track-country';
+  const otpInput = el.querySelector('#k-otp-phone');
+  if (otpInput) otpInput.className = 'k-track-input k-track-input--phone';
+
   function getFullPhone() {
-    const code   = el.querySelector('#k-otp-country').value;
-    let digits   = (el.querySelector('#k-otp-phone').value || '').replace(/\D/g, '');
-    if (['+33','+262','+32','+41','+44','+971','+212'].includes(code) && digits.startsWith('0')) {
-      digits = digits.slice(1);
-    }
-    return code + digits;
+    const code = el.querySelector('#k-otp-country')?.value || '+33';
+    const raw  = el.querySelector('#k-otp-phone')?.value || '';
+    return buildE164(code, raw);
+  }
+
+  function isPhoneValid() {
+    const code = el.querySelector('#k-otp-country')?.value || '+33';
+    const raw  = el.querySelector('#k-otp-phone')?.value || '';
+    const country = PHONE_COUNTRIES.find(c => c.code === code);
+    if (!country) return false;
+    const digits = normalizeLocal(code, digitsOnly(raw));
+    return digits.length === country.digits;
   }
 
   // ── OTP envoi ──
   el.querySelector('#k-otp-request-btn').addEventListener('click', async () => {
+    if (!isPhoneValid()) { showToast('Entrez un numéro valide pour ce pays.', 'error'); return; }
     const phone  = getFullPhone();
-    const digits = phone.replace(/^\+\d+/, '');
-    if (!digits || digits.length < 6) { showToast('Entrez un numéro valide.', 'error'); return; }
     const btn = el.querySelector('#k-otp-request-btn');
     btn.disabled = true; btn.textContent = '⏳ Envoi…';
     try {

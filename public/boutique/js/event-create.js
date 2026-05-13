@@ -80,14 +80,50 @@
     return 'Panier collectif';
   }
 
+  // ── Init champ téléphone via b-phone ──────────────────────────
+  // b-phone.js est chargé en module ES dans la même page via l'import dynamique ci-dessous.
+  // On stocke la valeur E.164 validée dans phoneState.
+  const phoneState = { e164: null, valid: false };
+
+  import('/boutique/js/b-phone.js').then(({ PHONE_COUNTRIES, buildPhoneSelect }) => {
+    const ctrl = buildPhoneSelect('ev-prefix-select', 'creator_phone', '+269', (e164, valid) => {
+      phoneState.e164  = e164 || null;
+      phoneState.valid = valid;
+      const helpEl = document.getElementById('ev-phone-help');
+      if (helpEl) {
+        const code    = document.getElementById('ev-prefix-select')?.value || '+269';
+        const country = PHONE_COUNTRIES.find(c => c.code === code);
+        const raw     = document.getElementById('creator_phone')?.value || '';
+        helpEl.textContent = (!valid && raw.length > 0) ? `Format attendu : ${country?.ph || ''}` : '';
+      }
+    });
+    // Appliquer les classes CSS event sur les éléments générés
+    if (ctrl) {
+      ctrl.select.className = 'ev-phone-prefix';
+      ctrl.input.className  = 'ev-input';
+    }
+  }).catch(() => {
+    // Fallback si import dynamique échoue : comportement original
+  });
+
   function combinePhone() {
-    const sel = document.getElementById('ev-prefix-select');
+    // Si b-phone a validé : on utilise le E.164 calculé
+    if (phoneState.e164) return phoneState.e164;
+    // Fallback legacy
+    const sel   = document.getElementById('ev-prefix-select');
     const phone = document.getElementById('creator_phone');
     if (!phone || !phone.value.trim()) return null;
     const raw = phone.value.trim();
     if (raw.startsWith('+')) return raw;
     const prefix = sel ? sel.value : '+269';
     return prefix + raw.replace(/^0/, '');
+  }
+
+  function isPhoneEnteredAndInvalid() {
+    const phone = document.getElementById('creator_phone');
+    const raw   = (phone?.value || '').trim();
+    // Si le champ est rempli ET que b-phone dit invalide → bloquer
+    return raw.length > 0 && !phoneState.valid && !phoneState.e164;
   }
 
   form.addEventListener('submit', async (e) => {
@@ -106,6 +142,11 @@
     payload.event_name = buildEventName(payload);
 
     if (!payload.creator_name) { showError('Votre nom est requis.'); return; }
+    if (isPhoneEnteredAndInvalid()) {
+      const code    = document.getElementById('ev-prefix-select')?.value || '+269';
+      showError('Numéro de téléphone invalide pour l\'indicatif ' + code + '.');
+      return;
+    }
     if (!payload.creator_phone && !payload.creator_email) {
       showError('Indiquez au moins un téléphone ou un email pour retrouver votre lien.');
       return;

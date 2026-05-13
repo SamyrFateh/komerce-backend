@@ -61,15 +61,12 @@
       </label>
       <div class="ev-phone-row">
         <select class="ev-phone-prefix" id="ev-prefix-select" aria-label="Indicatif">
-          <option value="+269">🇰🇲 +269</option>
-          <option value="+33">🇫🇷 +33</option>
-          <option value="+262">🇷🇪 +262</option>
-          <option value="+255">🇹🇿 +255</option>
-          <option value="+254">🇰🇪 +254</option>
+          <!-- peuplé dynamiquement par b-phone.js -->
         </select>
         <input type="tel" id="creator_phone" name="creator_phone" class="ev-input"
-               placeholder="Votre numéro" maxlength="25">
+               placeholder="Votre numéro" inputmode="numeric" autocomplete="tel" maxlength="18">
       </div>
+      <div id="ev-phone-help" style="font-size:11px;color:var(--coral,#C85C2D);margin-top:3px;min-height:14px;"></div>
     </div>
 
     <div class="ev-field">
