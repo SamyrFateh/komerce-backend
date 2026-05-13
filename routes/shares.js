@@ -3,6 +3,24 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 
+let cartSharesSchemaReady = false;
+
+async function ensureCartSharesSchema() {
+  if (cartSharesSchemaReady) return;
+
+  await db.query(`
+    ALTER TABLE cart_shares
+      ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS contributed_kmf INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'simple',
+      ADD COLUMN IF NOT EXISTS event_label TEXT,
+      ADD COLUMN IF NOT EXISTS sharer_name TEXT
+  `);
+
+  cartSharesSchemaReady = true;
+}
+
 /* ── helpers ─────────────────────────────────────── */
 function genToken(len = 8) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -39,6 +57,8 @@ async function enrichItems(items) {
 /* ── POST /api/shares — créer un lien (simple ou événement) ── */
 router.post('/', async (req, res) => {
   try {
+    await ensureCartSharesSchema();
+
     const {
       cart_items,
       type        = 'simple',   // 'simple' | 'event'
@@ -93,6 +113,8 @@ router.post('/', async (req, res) => {
 /* ── GET /api/shares/:token — lire un panier partagé ── */
 router.get('/:token', async (req, res) => {
   try {
+    await ensureCartSharesSchema();
+
     const { token } = req.params;
     const { rows } = await db.query(
       `SELECT * FROM cart_shares WHERE share_token = $1`, [token]
@@ -153,6 +175,8 @@ router.get('/:token', async (req, res) => {
 /* ── POST /api/shares/:token/contributions — pledger ── */
 router.post('/:token/contributions', async (req, res) => {
   try {
+    await ensureCartSharesSchema();
+
     const { token } = req.params;
     const {
       contributor_name,
@@ -214,6 +238,8 @@ router.post('/:token/contributions', async (req, res) => {
 /* ── PATCH /api/shares/:token/contributions/:id — confirmer paiement (admin) ── */
 router.patch('/:token/contributions/:id', async (req, res) => {
   try {
+    await ensureCartSharesSchema();
+
     const { token, id } = req.params;
     const { status } = req.body; // 'paid' | 'cancelled'
     if (!['paid', 'cancelled'].includes(status)) return res.status(400).json({ error: 'status invalide' });
