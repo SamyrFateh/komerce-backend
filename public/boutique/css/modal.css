@@ -708,7 +708,7 @@
   /* ── Product-zone : grid 2 colonnes (override display:contents) */
   #k-modal .k-modal-product-zone {
     display: grid;
-    grid-template-columns: minmax(0, 46%) minmax(380px, 54%);
+    grid-template-columns: minmax(0, 52%) minmax(340px, 48%);
     grid-template-rows: 1fr auto;
     flex: 0 0 auto;
     min-height: calc(min(880px, 100vh - 44px) - 58px);
@@ -727,7 +727,7 @@
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
-  #k-modal .k-modal-slide { height: 100%; padding: 24px 30px 24px 92px; object-fit: contain; object-position: center; }
+  #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 16px 82px; object-fit: contain; object-position: center; width: 100%; }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
