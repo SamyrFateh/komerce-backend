@@ -36,6 +36,12 @@ function _isInteractiveCartControl(target) {
     '.k-side-cart-qty',
     '.k-side-cart-action',
     '.k-side-cart-checkout',
+    '.k-sc-btn-checkout',
+    '.k-sc-btn-group',
+    '.k-sc-btn-cart',
+    '.k-sc-remove',
+    '.k-sc-qty',
+    '.k-sc-action',
     '[data-cart-action]',
     '[data-no-product-open]',
     'button',
@@ -95,14 +101,28 @@ function _extractProductIdFromCartImageClick(target) {
     '#k-side-cart .k-side-cart-item-img',
     '#k-side-cart .k-side-item-img',
     '#k-side-cart .k-cart-product-thumb',
+    '#k-side-cart .k-sc-item-img',
+    '#k-side-cart .k-sc-item-image',
+    '#k-side-cart .k-sc-product-img',
+    '#k-side-cart .k-sc-product-image',
+    '#k-side-cart .k-sc-thumb',
+    '#k-side-cart .k-sc-media',
     '#k-side-cart [data-open-product-img]'
   ].join(','));
 
   if (sideImg) {
-    const sideItem = sideImg.closest('[data-open-product], [data-pid], [data-product-id]');
+    const sideItem = sideImg.closest('[data-open-product], [data-pid], [data-product-id], .k-sc-item');
     if (sideItem) {
       return sideItem.dataset.openProduct || sideItem.dataset.pid || sideItem.dataset.productId || null;
     }
+  }
+
+  // Défense en profondeur : certains rendus side-cart peuvent ne pas avoir une
+  // classe image dédiée, mais placer directement un <img> dans .k-sc-item.
+  const sideRawImg = target.closest('#k-side-cart .k-sc-item img');
+  if (sideRawImg) {
+    const item = sideRawImg.closest('.k-sc-item[data-product-id], .k-sc-item[data-pid], .k-sc-item[data-open-product]');
+    if (item) return item.dataset.productId || item.dataset.pid || item.dataset.openProduct || null;
   }
 
   return null;
