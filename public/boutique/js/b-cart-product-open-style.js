@@ -33,4 +33,16 @@ export function setupCartProductOpenStyle() {
     .catch(function(err) {
       console.warn('[group-cart-flow] chargement impossible', err);
     });
+
+  // Desktop : la petite dame doit toujours ouvrir un vrai panier,
+  // même dans Favoris/Suivi où le side-cart peut être invisible.
+  import('./b-desktop-global-cart-access.js')
+    .then(function(mod) {
+      if (mod && typeof mod.setupDesktopGlobalCartAccess === 'function') {
+        mod.setupDesktopGlobalCartAccess();
+      }
+    })
+    .catch(function(err) {
+      console.warn('[desktop-cart-access] chargement impossible', err);
+    });
 }
