@@ -39,44 +39,29 @@
   border: 1px solid rgba(42, 62, 44, .055);
 }
 
+/* Do not re-enable the historical mobile hero overlay: it contains old titles/pills. */
 .k-hero-overlay {
-  display: flex;
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 2px;
-  z-index: 115;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.k-hero-text-left,
-.k-hero-pills,
-.k-hero-pill,
-.k-hero-title,
-.k-hero-right-col {
-  display: contents;
+  display: none;
 }
 
 .k-proverb-inline,
-#k-proverb-text {
-  display: inline-flex;
+#k-proverb-text.k-proverb-in-cats {
+  display: flex;
   align-items: center;
   justify-content: center;
-  max-width: min(78vw, 360px);
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 252, 244, .9);
-  border: 1px solid rgba(198, 168, 93, .26);
-  color: rgba(32, 51, 37, .72);
-  font-size: 9.5px;
+  max-width: calc(100% - 20px);
+  margin: 0 10px 6px;
+  padding: 4px 10px 0;
+  border-top: 1px solid rgba(42, 62, 44, .055);
+  color: rgba(32, 51, 37, .58);
+  font-size: 9px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: .01em;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 2px 8px rgba(31, 48, 36, .07);
 }
 
 #k-proverb-text:empty {
@@ -102,7 +87,7 @@
 
 .k-cats {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 6px 8px 6px;
+  padding: 6px 8px 5px;
   gap: 5px 6px;
 }
 
