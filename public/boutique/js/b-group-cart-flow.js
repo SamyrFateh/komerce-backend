@@ -1,13 +1,13 @@
 /**
  * @module b-group-cart-flow
- * @brief Flux ultra court pour créer un panier partagé.
+ * @brief Flux ultra court pour lancer un panier partagé.
  *
- * Panier → Payer à plusieurs → lien prêt → copier / WhatsApp → Suivi.
+ * Panier → Payer à plusieurs → formulaire collectif public préchargé.
  */
 
 import { state } from './b-store.js';
 import { cartQty, cartTotal, showToast } from './b-cart-core.js';
-import { apiPost, fmt } from './b-utils.js';
+import { fmt } from './b-utils.js';
 
 let installed = false;
 let lastClickAt = 0;
@@ -23,22 +23,6 @@ function ensureCss() {
 
 function closeFlow() {
   document.getElementById('k-group-flow-overlay')?.remove();
-}
-
-function openTracking() {
-  closeFlow();
-  const cartOverlay = document.getElementById('k-cart-overlay');
-  const cartDrawer = document.getElementById('k-cart-drawer');
-  cartOverlay?.classList.remove('open');
-  cartDrawer?.classList.remove('open');
-  document.body.classList.remove('cart-open');
-
-  const trackBtn = document.querySelector('[data-tab="track"]');
-  if (trackBtn) {
-    trackBtn.click();
-  } else {
-    window.dispatchEvent(new CustomEvent('kmrc:open-tracking'));
-  }
 }
 
 function shell(inner) {
@@ -57,92 +41,58 @@ function shell(inner) {
   document.body.appendChild(ov);
 }
 
-function loading() {
-  shell('<div class="k-group-flow-loading"><span class="k-group-flow-spin"></span><span>Création du lien…</span></div>');
+function savePendingCartForEvent() {
+  const items = state.cart.map(item => {
+    const product = item.product || item;
+    return {
+      product_id: product.id || item.id,
+      quantity: Number(item.qty) || 1,
+      qty: Number(item.qty) || 1,
+      name: product.name || item.name || 'Article',
+      price_kmf: product.promo_price_kmf || product.price_kmf || item.price || 0,
+      image_url: product.image_url || product.image || null
+    };
+  }).filter(item => item.product_id);
+
+  sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(items));
+  return items;
 }
 
-function shareUrlWhatsApp(url) {
-  const text = 'Voici le panier Komerce à payer ensemble 👥 ' + url;
-  return 'https://wa.me/?text=' + encodeURIComponent(text);
-}
-
-async function copyLink(url) {
-  try {
-    await navigator.clipboard.writeText(url);
-    showToast('Lien copié', 'success');
-  } catch (_) {
-    showToast('Copie impossible', 'error');
-  }
-}
-
-function ready(url) {
-  const qty = cartQty();
-  const total = cartTotal();
-  shell(`
-    <div class="k-group-flow-hero">
-      <div class="k-group-flow-icon">✅</div>
-      <p class="k-group-flow-big">Panier partagé prêt</p>
-      <p class="k-group-flow-sub">Envoyez le lien, puis suivez les paiements dans Suivi.</p>
-    </div>
-    <div class="k-group-flow-stats">
-      <div class="k-group-flow-stat"><b>${qty}</b><span>articles</span></div>
-      <div class="k-group-flow-stat"><b>${fmt(total, 'KMF')}</b><span>panier</span></div>
-      <div class="k-group-flow-stat"><b>👥</b><span>partage</span></div>
-    </div>
-    <div class="k-group-flow-link"><span>${url}</span></div>
-    <div class="k-group-flow-actions">
-      <button type="button" class="k-group-flow-btn k-group-flow-btn--primary" data-group-copy>Copier</button>
-      <button type="button" class="k-group-flow-btn k-group-flow-btn--wa" data-group-wa>WhatsApp</button>
-      <button type="button" class="k-group-flow-btn k-group-flow-btn--ghost" data-group-followup>Voir le suivi</button>
-    </div>`);
-
-  const ov = document.getElementById('k-group-flow-overlay');
-  ov?.querySelector('[data-group-copy]')?.addEventListener('click', () => copyLink(url));
-  ov?.querySelector('[data-group-wa]')?.addEventListener('click', () => {
-    window.open(shareUrlWhatsApp(url), '_blank', 'noopener');
-  });
-  ov?.querySelector('[data-group-followup]')?.addEventListener('click', openTracking);
-}
-
-function fallbackUrl() {
-  const items = state.cart.map(item => item.product.id + ':' + item.qty).join(',');
-  return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items);
-}
-
-async function createGroupCart() {
+function openEventCreateForm() {
   if (!state.cart.length) {
     showToast('Panier vide', 'error');
     return;
   }
 
-  loading();
-
-  const payload = {
-    cart_items: state.cart.map(item => ({
-      product_id: item.product.id,
-      qty: item.qty,
-      price_kmf: item.product.promo_price_kmf || item.product.price_kmf || 0
-    })),
-    type: 'event',
-    event_label: 'Panier partagé',
-    sharer_name: null
-  };
-
-  let url;
-  try {
-    const res = await apiPost('/api/shares', payload);
-    url = res?.url || res?.share_url;
-  } catch (err) {
-    console.warn('[group-cart-flow] API share indisponible, fallback local', err);
+  const items = savePendingCartForEvent();
+  if (!items.length) {
+    showToast('Aucun article valide dans le panier', 'error');
+    return;
   }
 
-  if (!url) url = fallbackUrl();
+  const qty = cartQty();
+  const total = cartTotal();
 
-  window.dispatchEvent(new CustomEvent('kmrc:group-cart-created', {
-    detail: { label: 'Panier partagé', url }
-  }));
+  shell(`
+    <div class="k-group-flow-hero">
+      <div class="k-group-flow-icon">👥</div>
+      <p class="k-group-flow-big">Créer le panier partagé</p>
+      <p class="k-group-flow-sub">On va ouvrir le vrai formulaire collectif avec votre panier préchargé.</p>
+    </div>
+    <div class="k-group-flow-stats">
+      <div class="k-group-flow-stat"><b>${qty}</b><span>articles</span></div>
+      <div class="k-group-flow-stat"><b>${fmt(total, 'KMF')}</b><span>panier</span></div>
+      <div class="k-group-flow-stat"><b>🔗</b><span>lien public</span></div>
+    </div>
+    <div class="k-group-flow-actions">
+      <button type="button" class="k-group-flow-btn k-group-flow-btn--primary" data-group-open-form>Continuer</button>
+      <button type="button" class="k-group-flow-btn k-group-flow-btn--ghost" data-group-flow-close>Annuler</button>
+    </div>`);
 
-  ready(url);
+  const ov = document.getElementById('k-group-flow-overlay');
+  ov?.querySelector('[data-group-open-form]')?.addEventListener('click', () => {
+    window.location.href = '/boutique/event/create.html?from=cart';
+  });
 }
 
 function shouldIntercept(target) {
@@ -160,7 +110,7 @@ function onClick(e) {
   e.stopPropagation();
   e.stopImmediatePropagation?.();
 
-  createGroupCart();
+  openEventCreateForm();
 }
 
 export function setupGroupCartFlow() {
