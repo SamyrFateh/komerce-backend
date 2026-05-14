@@ -1,7 +1,24 @@
 /**
- * @module render-categories
- * @brief Renderer unique du rail categories Komerce.
- * LOT images — les chips affichent de vraies images catégorie.
+ * @component Boutique / Category Rail Renderer
+ * @owner render-categories.js
+ *
+ * Responsibility:
+ * - Render the HTML markup for category chips only.
+ * - Use shop-schema.js as the only category data source.
+ * - Provide resilient image fallback markup for category chips.
+ *
+ * Must not:
+ * - Bind click handlers.
+ * - Mutate state.activeCat or any catalog state.
+ * - Scroll or center the category rail.
+ * - Recalculate mobile pager variables.
+ * - Duplicate category data already owned by shop-schema.js.
+ *
+ * Consumers:
+ * - home-controller.js mounts and binds the rendered rail.
+ *
+ * See:
+ * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
  */
 
 import { sanitize } from '../b-utils.js';
