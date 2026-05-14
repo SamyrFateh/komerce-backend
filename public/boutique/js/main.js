@@ -32,6 +32,7 @@ import { isDesktop }          from './b-scroll-owner.js';
 import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js'; // Affordance image panier cliquable
+import { setupBoutiqueWowStyle } from './b-boutique-wow-style.js'; // Couche polish visuelle réversible
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -43,12 +44,14 @@ if (typeof window !== 'undefined') {
       setupMiniCart();   // Mini-cart flottant mobile
       setupProductOpenContract(); // Panier mobile/desktop → fiche produit
       setupCartProductOpenStyle(); // Indication visuelle image cliquable
+      setupBoutiqueWowStyle(); // Polish visuel isolé
     });
   } else {
     setupDesktopUpgrade();
     setupMiniCart();     // Mini-cart flottant mobile
     setupProductOpenContract();   // Panier mobile/desktop → fiche produit
     setupCartProductOpenStyle();  // Indication visuelle image cliquable
+    setupBoutiqueWowStyle();      // Polish visuel isolé
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
