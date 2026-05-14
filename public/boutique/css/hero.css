@@ -55,7 +55,8 @@
   text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,.9);
 }
 
-/* Avatar panier mobile : source CSS initiale, sans dépendre du loader wow. */
+/* Bulle hero mobile : conteneur neutre.
+   L'avatar panier appartient à hero-cart-proxy.css quand JS ajoute .k-hero-cart-proxy. */
 .k-hero-bubble {
   display: flex;
   position: absolute;
@@ -67,7 +68,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255,252,244,.90) url('/images/avatar_seule.png') center / cover no-repeat;
+  background: rgba(255,252,244,.90);
   border: 1px solid rgba(198,168,93,.24);
   box-shadow: 0 4px 12px rgba(31,48,36,.10);
   overflow: hidden;
