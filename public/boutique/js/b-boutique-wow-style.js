@@ -25,7 +25,7 @@
 const WOW_STYLE_ID = 'k-boutique-wow-style';
 const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=8';
 const HERO_CART_PROXY_STYLE_ID = 'k-hero-cart-proxy-style';
-const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=3';
+const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=4';
 const DESKTOP_COMMERCE_STYLE_ID = 'k-desktop-commerce-skeleton-style';
 const DESKTOP_COMMERCE_STYLE_HREF = '/boutique/css/desktop-commerce-skeleton.css?v=1';
 const DESKTOP_HORIZONTAL_NAV_STYLE_ID = 'k-desktop-horizontal-nav-style';
@@ -69,9 +69,18 @@ function setupReloadProverb() {
   node.setAttribute('aria-live', 'polite');
 }
 
+function detachCartProxyFromHeroImage(proxy) {
+  const heroWrap = document.getElementById('k-hero-fixed-wrap');
+  if (!heroWrap || !proxy) return;
+  if (proxy.parentElement === heroWrap) return;
+  heroWrap.appendChild(proxy);
+}
+
 function setupHeroCartProxy() {
   const proxy = document.querySelector('.k-hero-bubble');
   if (!proxy) return;
+
+  detachCartProxyFromHeroImage(proxy);
 
   proxy.classList.add('k-hero-cart-proxy');
   proxy.removeAttribute('aria-hidden');
