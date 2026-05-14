@@ -833,7 +833,7 @@ body {
 /* ══════════════════════════════════════════════════════════════
    SIDE CART DESKTOP — Source unique de vérité (LOT 9)
    Historique : fixed → sticky → sticky+clip → context fix → option B → consolidé.
-   Mobile : masqué (la pastille flottante b-mini-cart prend le relais)
+   Mobile : masqué (le panier mobile passe par la bottom nav)
    ══════════════════════════════════════════════════════════════ */
 
 /* Mobile : side cart masqué */

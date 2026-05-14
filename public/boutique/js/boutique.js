@@ -74,8 +74,6 @@ import {
   _setupMobilePager, _setupSectionAutoAdvance,
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
-// setupDesktopSidebar dÃ©sactivÃ© â€” mode Temu/Shein = chips rail uniquement, pas de sidebar verticale
-// import { setupDesktopSidebar } from './b-desktop-sidebar.js';
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
 
 'use strict';
@@ -122,7 +120,6 @@ function init() {
   installScrollOwner();
   updateCartBadge();
   setupCats();
-  // setupDesktopSidebar(); â€” dÃ©sactivÃ©, mode rail uniquement
   setupCatSwipeNav();
   setupSearch();
   setupModal();

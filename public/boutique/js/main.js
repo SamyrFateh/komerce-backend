@@ -26,12 +26,10 @@ import './b-utils.js';        // helpers purs + window.KUtils compat
 import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
-// b-cart-pill.js et b-mini-cart.js désactivés côté mobile : le panier est porté par la bottom nav.
-import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
+import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // Orchestrateur enhancers desktop
 import { isDesktop }          from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js'; // Affordance image panier cliquable
-import { setupBoutiqueWowStyle } from './b-boutique-wow-style.js'; // Couche polish visuelle réversible
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -42,13 +40,11 @@ if (typeof window !== 'undefined') {
       setupDesktopUpgrade();
       setupProductOpenContract(); // Panier mobile/desktop → fiche produit
       setupCartProductOpenStyle(); // Indication visuelle image cliquable
-      setupBoutiqueWowStyle(); // Polish visuel isolé
     });
   } else {
     setupDesktopUpgrade();
     setupProductOpenContract();   // Panier mobile/desktop → fiche produit
     setupCartProductOpenStyle();  // Indication visuelle image cliquable
-    setupBoutiqueWowStyle();      // Polish visuel isolé
   }
 
   // Bug 11 fix : si chargement en mobile puis resize → desktop, initialiser setupDesktopUpgrade()
