@@ -30,31 +30,43 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOBILE / BASE — category chips, cards, micro-premium
+   MOBILE / BASE — visibility-first category strip
    No #k-page-scroll / pager mechanics touched.
    ═══════════════════════════════════════════════════════════════ */
 .k-cats-shell {
-  background: rgba(255, 252, 244, .72);
-  box-shadow: 0 4px 14px rgba(31, 48, 36, .055);
-  border: 1px solid rgba(42, 62, 44, .055);
+  background: linear-gradient(180deg, rgba(255, 252, 244, .58), rgba(255, 252, 244, .34));
+  box-shadow: 0 2px 8px rgba(31, 48, 36, .04);
+  border: 1px solid rgba(42, 62, 44, .045);
 }
 
 .k-cats {
-  padding: 8px 7px 7px;
-  gap: 2px 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 6px 8px 6px;
+  gap: 5px 6px;
 }
 
 .k-chip {
-  gap: 3px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 5px;
+  padding: 3px 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .42);
+  border: 1px solid rgba(42, 62, 44, .055);
+  box-shadow: 0 1px 4px rgba(31, 48, 36, .035);
 }
 
 .k-chip-photo {
-  width: 52px;
-  height: 38px;
-  min-width: 52px;
-  border-radius: 15px;
-  border-width: 1.5px;
-  box-shadow: 0 1px 5px rgba(31, 48, 36, .08);
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  margin: 0;
+  border-radius: 9px;
+  border-width: 1px;
+  box-shadow: none;
 }
 
 .k-chip-photo img {
@@ -62,14 +74,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 13px;
+  border-radius: 8px;
 }
 
 .k-chip-photo--img {
   background: linear-gradient(145deg, #fff8ea, #edf6e9);
-  box-shadow:
-    0 1px 6px rgba(31, 48, 36, .09),
-    inset 0 0 0 1px rgba(255, 255, 255, .64);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .54);
 }
 
 .k-chip-photo--img::after {
@@ -78,7 +88,7 @@
   inset: 0;
   z-index: 2;
   border-radius: inherit;
-  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,.44), transparent 40%);
+  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,.34), transparent 42%);
   pointer-events: none;
 }
 
@@ -100,19 +110,33 @@
 }
 
 .k-chip-label {
-  font-size: 9.5px;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  font-size: 10px;
+  font-weight: 800;
   line-height: 1.05;
+  color: rgba(32, 51, 37, .82);
+  text-align: left;
+  letter-spacing: -.01em;
+}
+
+.k-chip.active {
+  background: rgba(255, 248, 232, .88);
+  border-color: rgba(198, 168, 93, .55);
+  box-shadow: 0 3px 10px rgba(198, 168, 93, .12);
 }
 
 .k-chip.active .k-chip-photo--img {
   border-color: rgba(198, 168, 93, .9);
-  box-shadow:
-    0 0 0 1.5px rgba(198, 168, 93, .55),
-    0 5px 12px rgba(47, 107, 63, .13);
+  box-shadow: 0 0 0 1.5px rgba(198, 168, 93, .42);
+  transform: none;
 }
 
 .k-chip.active .k-chip-label {
-  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+  color: #b6652a;
+  text-shadow: none;
 }
 
 .k-card {
@@ -217,6 +241,21 @@
     -webkit-backdrop-filter: blur(12px);
   }
 
+  .k-cats {
+    display: flex;
+    gap: 8px;
+  }
+
+  .k-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
   .k-chip-photo--img {
     width: 44px;
     height: 44px;
@@ -226,6 +265,10 @@
 
   .k-chip-photo--img img {
     border-radius: 50%;
+  }
+
+  .k-chip-label {
+    text-align: center;
   }
 
   .k-chip:hover .k-chip-photo--img {
