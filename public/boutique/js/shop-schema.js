@@ -6,20 +6,34 @@
  * chargées depuis GET /api/categories (table boutique_categories +
  * boutique_subcategories). L'admin peut les modifier sans toucher au JS.
  *
+ * NAV v2 — le schema expose aussi la distinction navigation :
+ *   - universe : famille métier, ex. Mode, Maison, Tech ;
+ *   - commercial_filter : filtre transversal, ex. Soldes / Promos ;
+ *   - system : entrée technique, ex. Tout.
+ *
  * Stratégie de chargement:
  *   1. Fetch démarré immédiatement à l'import du module (parallèle au boot).
  *   2. loadShopSchema() attendue dans boutique init avant le premier rendu.
  *   3. Si l'API échoue (pré-migration, réseau) → fallback hardcodé identique
  *      à l'ancienne version (0 régression).
  *
- * Tous les exports publics restent identiques: getCategoryList(),
+ * Tous les exports publics restent compatibles: getCategoryList(),
  * getSubcategories(), normalizeCategoryKey(), etc.
+ *
+ * See:
+ * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
  */
 
 // ─── Fallback hardcodé — architecture v2 (marché comorien / diaspora) ────────
 // Utilisé si GET /api/categories échoue ou est appelé avant résolution.
 // Labels, icônes et sous-catégories modifiables via backoffice (/api/categories)
 // sans toucher à ce fichier. Seuls `key`, `dbKeys` et `filterType` sont stables.
+
+const NAV_TYPES = {
+  SYSTEM: 'system',
+  UNIVERSE: 'universe',
+  COMMERCIAL_FILTER: 'commercial_filter',
+};
 
 const _ICON_SVGS = {
   Soldes:                   '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
@@ -43,36 +57,36 @@ const _CATEGORY_IMAGES = {
 };
 
 const _FALLBACK_CATEGORIES = [
-  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
-  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
-  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, displayOrder: 2, showInRail: true, showInSections: true, subcategories: [
+  { key: 'all', label: 'Tout', shortLabel: 'Tout', type: NAV_TYPES.SYSTEM, sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, filter: null, displayOrder: 0, showInRail: true, showInSections: false, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [] },
+  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true }, displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [] },
+  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', type: NAV_TYPES.UNIVERSE, sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, filter: null, displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Femme', label: 'Femme', shortLabel: 'Femme', icon: '👗' },
     { key: 'Homme', label: 'Homme', shortLabel: 'Homme', icon: '👔' },
     { key: 'Enfant', label: 'Enfant & Bébé', shortLabel: 'Enfant', icon: '🍼' },
     { key: 'Beauté', label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄' },
   ] },
-  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, displayOrder: 3, showInRail: true, showInSections: true, subcategories: [
+  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, filter: null, displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Confort', label: 'Confort & Énergie', shortLabel: 'Confort', icon: '🔋' },
     { key: 'Cuisine', label: 'Cuisine', shortLabel: 'Cuisine', icon: '🍳' },
     { key: 'Déco', label: 'Déco & Rangement', shortLabel: 'Déco', icon: '🖼️' },
     { key: 'Enfants', label: 'Enfants & Scolaire', shortLabel: 'Enfants', icon: '🧸' },
   ] },
-  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, displayOrder: 4, showInRail: true, showInSections: true, subcategories: [
+  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, filter: null, displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Phones', label: 'Téléphones', shortLabel: 'Tél.', icon: '📱' },
     { key: 'Audio', label: 'Audio & Accessoires', shortLabel: 'Audio', icon: '🎧' },
     { key: 'Montres', label: 'Montres & Gadgets', shortLabel: 'Montres', icon: '⌚' },
   ] },
-  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, displayOrder: 5, showInRail: true, showInSections: true, subcategories: [
+  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, filter: null, displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Outillage', label: 'Outils & Fixation', shortLabel: 'Outils', icon: '🔧' },
     { key: 'Electricité', label: 'Électricité & Plomberie', shortLabel: 'Élec.', icon: '⚡' },
     { key: 'Sécurité', label: 'Serrures & Sécurité', shortLabel: 'Sécu.', icon: '🔐' },
   ] },
-  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, displayOrder: 6, showInRail: true, showInSections: true, subcategories: [
+  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, filter: null, displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Cérémonie', label: 'Tenues de cérémonie', shortLabel: 'Cérémo.', icon: '👑' },
     { key: 'Cadeau', label: 'Cadeaux personnalisés', shortLabel: 'Cadeau', icon: '🎁' },
     { key: 'Impression', label: 'Impression & Design', shortLabel: 'Imprim.', icon: '🖨️' },
   ] },
-  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, displayOrder: 7, showInRail: true, showInSections: true, subcategories: [
+  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, filter: null, displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
     { key: 'Filtres', label: 'Filtres & Entretien', shortLabel: 'Filtres', icon: '🔧' },
     { key: 'Freinage', label: 'Freinage & Sécurité', shortLabel: 'Frein.', icon: '🛑' },
     { key: 'Éclairage', label: 'Éclairage & Électrique', shortLabel: 'Éclai.', icon: '💡' },
@@ -84,27 +98,50 @@ let _categories = null;
 let _byKey = null;
 let _loadPromise = null;
 
+function _inferNavType(row) {
+  if (row.type) return row.type;
+  if (row.key === 'all') return NAV_TYPES.SYSTEM;
+  if (row.filter_type) return NAV_TYPES.COMMERCIAL_FILTER;
+  return NAV_TYPES.UNIVERSE;
+}
+
+function _buildFilter(row) {
+  if (row.filter && typeof row.filter === 'object') return row.filter;
+  if (row.filter_json && typeof row.filter_json === 'object') return row.filter_json;
+  if (row.filter_type === 'promo') return { promo: true };
+  if (row.filter_type) return { type: row.filter_type };
+  return null;
+}
+
 function _buildFromRows(rows) {
-  const cats = rows.map(row => ({
-    key:            row.key,
-    label:          row.label,
-    shortLabel:     row.short_label || row.label,
-    sectionEmoji:   row.section_emoji || '📦',
-    iconSvg:        row.icon_svg || null,
-    image:          row.image || _CATEGORY_IMAGES[row.key] || null,
-    dbKeys:         Array.isArray(row.db_keys) ? row.db_keys : [],
-    filterType:     row.filter_type || null,
-    displayOrder:   row.display_order || 0,
-    showInRail:     row.show_in_rail !== false,
-    showInSections: row.show_in_sections !== false,
-    railBadge:      row.icon_svg ? { kind: 'svg', svg: row.icon_svg } : row.section_emoji ? { kind: 'text', text: row.section_emoji } : null,
-    subcategories:  Array.isArray(row.subcategories) ? row.subcategories.map(s => ({
-      key:        s.key,
-      label:      s.label,
-      shortLabel: s.short_label || s.label,
-      icon:       s.icon || '✨',
-    })) : [],
-  }));
+  const cats = rows.map(row => {
+    const type = _inferNavType(row);
+    return {
+      key:            row.key,
+      label:          row.label,
+      shortLabel:     row.short_label || row.shortLabel || row.label,
+      type,
+      sectionEmoji:   row.section_emoji || row.sectionEmoji || '📦',
+      iconSvg:        row.icon_svg || row.iconSvg || null,
+      image:          row.image || _CATEGORY_IMAGES[row.key] || null,
+      dbKeys:         Array.isArray(row.db_keys) ? row.db_keys : Array.isArray(row.dbKeys) ? row.dbKeys : [],
+      filterType:     row.filter_type || row.filterType || null,
+      filter:         _buildFilter(row),
+      displayOrder:   row.display_order || row.displayOrder || 0,
+      showInRail:     row.show_in_rail !== false && row.showInRail !== false,
+      showInSections: row.show_in_sections !== false && row.showInSections !== false,
+      showInMobileRail: row.show_in_mobile_rail !== false && row.showInMobileRail !== false && row.show_in_rail !== false,
+      showInDesktopUniverses: row.show_in_desktop_universes !== false && row.showInDesktopUniverses !== false && row.show_in_rail !== false,
+      railBadge:      row.icon_svg ? { kind: 'svg', svg: row.icon_svg } : row.section_emoji ? { kind: 'text', text: row.section_emoji } : null,
+      subcategories:  Array.isArray(row.subcategories) ? row.subcategories.map(s => ({
+        key:        s.key,
+        label:      s.label,
+        shortLabel: s.short_label || s.shortLabel || s.label,
+        icon:       s.icon || '✨',
+        dbKeys:     Array.isArray(s.db_keys) ? s.db_keys : Array.isArray(s.dbKeys) ? s.dbKeys : [s.key],
+      })) : [],
+    };
+  });
   return cats;
 }
 
@@ -159,22 +196,31 @@ export function getRailCategories() {
     return { ...c, railBadge: c.iconSvg ? { kind: 'svg', svg: c.iconSvg } : c.sectionEmoji ? { kind: 'text', text: c.sectionEmoji } : null };
   });
 }
+export function getMobileRailCategories() { return getRailCategories().filter(c => c.showInMobileRail !== false); }
+export function getDesktopUniverseCategories() { return getCategoryList().filter(c => c.showInDesktopUniverses !== false); }
+export function getUniverseCategories() { return getCategoryList().filter(c => c.type === NAV_TYPES.UNIVERSE); }
+export function getCommercialFilters() { return getCategoryList().filter(c => c.type === NAV_TYPES.COMMERCIAL_FILTER); }
 export function getRailCategoryKeys() { return getCategoryList().filter(c => c.showInRail !== false).map(c => c.key); }
 export function getCategoryByKey(key) { return _idx().get(key) || null; }
+export function getCategoryType(key) { return getCategoryByKey(key)?.type || null; }
+export function isCommercialFilter(key) { return getCategoryType(key) === NAV_TYPES.COMMERCIAL_FILTER; }
+export function isUniverseCategory(key) { return getCategoryType(key) === NAV_TYPES.UNIVERSE; }
 export function getSectionOrder() { return getCategoryList().filter(c => c.showInSections).map(c => c.key); }
 export function getCategoryLabel(key) { const c = getCategoryByKey(key); return c ? c.label : key; }
 export function getCategoryIcon(key) { const c = getCategoryByKey(key); return c?.railBadge || null; }
 export function getCategorySectionEmoji(key) { const c = getCategoryByKey(key); return c?.sectionEmoji || '📦'; }
 export function getCategoryImage(key) { const c = getCategoryByKey(key); return c?.image || _CATEGORY_IMAGES[key] || null; }
+export function getCategoryFilter(key) { return getCategoryByKey(key)?.filter || null; }
 export function normalizeCategoryKey(rawCategory) { if (!rawCategory) return rawCategory; const c = _idx().get(rawCategory); return c ? c.key : rawCategory; }
 export function getDbKeysForCategory(categoryKey) { const c = getCategoryByKey(categoryKey); if (!c) return [categoryKey]; if (Array.isArray(c.dbKeys) && c.dbKeys.length) return [...c.dbKeys]; return [c.key]; }
 export function getSubcategories(categoryKey) { const c = _idx().get(categoryKey); return c?.subcategories ? [...c.subcategories] : []; }
-export function getSubcategoryMeta(categoryKey, subcategoryKey) { const list = getSubcategories(categoryKey); return list.find(s => s.key === subcategoryKey) || { key: subcategoryKey, label: subcategoryKey, shortLabel: subcategoryKey, icon: '✨' }; }
+export function getSubcategoryMeta(categoryKey, subcategoryKey) { const list = getSubcategories(categoryKey); return list.find(s => s.key === subcategoryKey) || { key: subcategoryKey, label: subcategoryKey, shortLabel: subcategoryKey, icon: '✨', dbKeys: [subcategoryKey] }; }
 export function getNextSubcategoryKey(categoryKey, currentSubcategoryKey) { const list = getSubcategories(categoryKey); for (let i = 0; i < list.length - 1; i++) { if (list[i].key === currentSubcategoryKey) return list[i + 1].key; } return null; }
+export function createDefaultNavigationState() { return { activeUniverse: 'all', activeSubcategory: null, activeCommercialFilter: null, searchQuery: '', sort: 'recommended' }; }
 export function getLegacySubcatsMap() {
   const map = {};
   _cats().forEach(c => {
-    if (c.key === 'all' || c.key === 'Soldes') return;
+    if (c.key === 'all' || c.type === NAV_TYPES.COMMERCIAL_FILTER) return;
     map[c.key] = c.subcategories || [];
     (c.dbKeys || []).forEach(dbKey => { if (!map[dbKey]) map[dbKey] = c.subcategories || []; });
   });
@@ -189,5 +235,13 @@ export const SHOP_SCHEMA = {
     { k: 'favorites', label: 'Favoris', icon: 'heart' },
     { k: 'cart', label: 'Panier', icon: 'basket' },
   ],
+  navigation: {
+    types: NAV_TYPES,
+    createDefaultState: createDefaultNavigationState,
+  },
   get categories() { return getCategoryList(); },
+  get universes() { return getUniverseCategories(); },
+  get commercialFilters() { return getCommercialFilters(); },
 };
+
+export { NAV_TYPES };
