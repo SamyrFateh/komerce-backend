@@ -1,6 +1,28 @@
 /**
- * @module home-controller
- * @brief Orchestration home/categories sans changer l'experience Komerce.
+ * @component Boutique / Home Controller
+ * @owner home-controller.js
+ *
+ * Responsibility:
+ * - Mount the category rail rendered by render-categories.js.
+ * - Orchestrate category selection on the home/catalog experience.
+ * - Sync active category state between chips, desktop sidebar and subcategory rail.
+ * - Own the desktop subcategory rail under #k-subcats-wrap.
+ *
+ * Must not:
+ * - Define category or subcategory data.
+ * - Duplicate category chip markup.
+ * - Render product cards.
+ * - Own mobile pager internals.
+ * - Patch hero/category CSS to compensate pager state bugs.
+ *
+ * Depends on:
+ * - shop-schema.js for category/subcategory metadata.
+ * - render-categories.js for category rail markup.
+ * - b-catalog.js for renderGrid()/setActiveCat().
+ * - b-pager.js indirectly through injected scrollPagerToCat().
+ *
+ * See:
+ * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
  */
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
