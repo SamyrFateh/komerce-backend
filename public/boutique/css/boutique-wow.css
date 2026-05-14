@@ -33,6 +33,21 @@
    MOBILE / BASE — category chips, cards, micro-premium
    No #k-page-scroll / pager mechanics touched.
    ═══════════════════════════════════════════════════════════════ */
+.k-chip {
+  gap: 4px;
+}
+
+.k-chip-photo {
+  width: 56px;
+  height: 46px;
+  min-width: 56px;
+  border-radius: 18px;
+}
+
+.k-chip-photo img {
+  border-radius: 16px;
+}
+
 .k-chip-photo--img {
   background: linear-gradient(145deg, #fff8ea, #edf6e9);
   box-shadow:
@@ -174,6 +189,11 @@
     width: 44px;
     height: 44px;
     min-width: 44px;
+    border-radius: 50%;
+  }
+
+  .k-chip-photo--img img {
+    border-radius: 50%;
   }
 
   .k-chip:hover .k-chip-photo--img {
