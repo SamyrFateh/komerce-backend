@@ -6,6 +6,7 @@
  * - Load the reversible wow-polish CSS layer.
  * - Keep the polish isolated from core pager, catalog and cart logic.
  * - Activate the existing hidden hero proverb slot with a reload-rotated proverb.
+ * - Turn the existing hero bubble into a cart proxy on mobile.
  *
  * Must not:
  * - Mutate catalog/cart state.
@@ -19,7 +20,9 @@
 'use strict';
 
 const WOW_STYLE_ID = 'k-boutique-wow-style';
-const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=6';
+const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=7';
+const HERO_CART_PROXY_STYLE_ID = 'k-hero-cart-proxy-style';
+const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=1';
 
 const KOMERCE_PROVERBS = [
   'Celui qui cherche trouve son trésor.',
@@ -31,6 +34,15 @@ const KOMERCE_PROVERBS = [
   'Le bon choix traverse la mer.',
   'Quand le cœur choisit, le panier suit.'
 ];
+
+function ensureStyle(id, href) {
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = href;
+  document.head.appendChild(link);
+}
 
 function pickReloadProverb() {
   return KOMERCE_PROVERBS[Math.floor(Math.random() * KOMERCE_PROVERBS.length)];
@@ -53,16 +65,39 @@ function setupReloadProverb() {
   node.setAttribute('aria-live', 'polite');
 }
 
+function setupHeroCartProxy() {
+  const proxy = document.querySelector('.k-hero-bubble');
+  if (!proxy) return;
+
+  proxy.classList.add('k-hero-cart-proxy');
+  proxy.removeAttribute('aria-hidden');
+  proxy.setAttribute('role', 'button');
+  proxy.setAttribute('tabindex', '0');
+  proxy.setAttribute('aria-label', 'Ouvrir le panier');
+  proxy.textContent = '';
+
+  if (proxy.dataset.boundCartProxy === '1') return;
+  proxy.dataset.boundCartProxy = '1';
+
+  const openCart = function() {
+    const cartButton = document.getElementById('k-cart-btn');
+    if (cartButton) cartButton.click();
+  };
+
+  proxy.addEventListener('click', openCart);
+  proxy.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    openCart();
+  });
+}
+
 export function setupBoutiqueWowStyle() {
   if (typeof document === 'undefined') return;
 
-  if (!document.getElementById(WOW_STYLE_ID)) {
-    const link = document.createElement('link');
-    link.id = WOW_STYLE_ID;
-    link.rel = 'stylesheet';
-    link.href = WOW_STYLE_HREF;
-    document.head.appendChild(link);
-  }
+  ensureStyle(WOW_STYLE_ID, WOW_STYLE_HREF);
+  ensureStyle(HERO_CART_PROXY_STYLE_ID, HERO_CART_PROXY_STYLE_HREF);
 
   setupReloadProverb();
+  setupHeroCartProxy();
 }
