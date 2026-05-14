@@ -27,7 +27,7 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
-import { getSubcategories, getRailCategoryKeys } from '../shop-schema.js';
+import { getSubcategories } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
 
@@ -145,17 +145,11 @@ export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
 
-  // FOUC fix : si les chips statiques HTML sont déjà en sync avec le schéma,
-  // on évite le innerHTML (qui vide puis réécrit le DOM → flash visuel).
-  const expectedKeys  = getRailCategoryKeys();
-  const existingChips = Array.from(catsEl.querySelectorAll('.k-chip'));
-  const alreadyInSync =
-    existingChips.length === expectedKeys.length &&
-    existingChips.every((chip, i) => chip.dataset.cat === expectedKeys[i]);
-
-  if (!alreadyInSync) {
-    catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
-  }
+  // Source de vérité runtime : render-categories.js.
+  // Les chips éventuellement présentes dans index.html ne sont qu'un fallback de boot/FOUC,
+  // jamais la vérité effective. Cela garantit les chemins images, aria-labels et fallbacks
+  // pilotés par shop-schema.js + render-categories.js.
+  catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
 
   return catsEl;
 }
