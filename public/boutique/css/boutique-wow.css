@@ -1,0 +1,240 @@
+/**
+ * @component Boutique / Wow Polish Layer
+ * @owner boutique-wow.css
+ *
+ * Responsibility:
+ * - Add a reversible visual polish layer for the boutique.
+ * - Improve perceived premium quality on category chips, product cards, desktop hero and side-cart.
+ * - Respect the mobile pager architecture owned by b-pager.js.
+ *
+ * Must not:
+ * - Change #k-page-scroll mobile cage mechanics.
+ * - Override b-pager.js sizing variables.
+ * - Fix mobile hero overlap from CSS.
+ * - Use !important to fight component ownership.
+ *
+ * See:
+ * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   BASE TOKENS — scoped, visual only
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --wow-ink: #203325;
+  --wow-leaf: #2f6b3f;
+  --wow-gold: #c6a85d;
+  --wow-cream: rgba(255, 252, 244, .86);
+  --wow-card-shadow: 0 10px 26px rgba(31, 48, 36, .10);
+  --wow-soft-shadow: 0 8px 20px rgba(31, 48, 36, .08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE / BASE — category chips, cards, micro-premium
+   No #k-page-scroll / pager mechanics touched.
+   ═══════════════════════════════════════════════════════════════ */
+.k-chip-photo--img {
+  background: linear-gradient(145deg, #fff8ea, #edf6e9);
+  box-shadow:
+    0 2px 8px rgba(31, 48, 36, .10),
+    inset 0 0 0 1px rgba(255, 255, 255, .72);
+}
+
+.k-chip-photo--img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,.58), transparent 42%);
+  pointer-events: none;
+}
+
+.k-chip-fallback {
+  display: none;
+}
+
+.k-chip-photo.is-img-error .k-chip-fallback {
+  display: flex;
+}
+
+.k-chip.active .k-chip-photo--img {
+  border-color: rgba(198, 168, 93, .95);
+  box-shadow:
+    0 0 0 2px rgba(198, 168, 93, .62),
+    0 8px 18px rgba(47, 107, 63, .16);
+}
+
+.k-chip.active .k-chip-label {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+.k-card {
+  border-color: rgba(42, 62, 44, .08);
+  box-shadow: 0 3px 12px rgba(31, 48, 36, .055);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
+}
+
+.k-card:active {
+  transform: scale(.985);
+}
+
+.k-card-img-wrap,
+.k-card-media {
+  background: linear-gradient(145deg, rgba(255,252,244,.96), rgba(240,247,235,.86));
+}
+
+.k-card-price,
+.k-card-price-main,
+.k-modal-price {
+  letter-spacing: -.03em;
+}
+
+.k-card-add {
+  box-shadow: 0 5px 14px rgba(47, 107, 63, .14);
+}
+
+.k-sec-header {
+  border-bottom-color: rgba(198, 168, 93, .55);
+}
+
+.k-sec-header-name {
+  letter-spacing: -.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE MODAL — tactile polish, no lifecycle change
+   ═══════════════════════════════════════════════════════════════ */
+.k-modal {
+  box-shadow: 0 -18px 44px rgba(31, 48, 36, .18);
+}
+
+.k-modal-img-wrap {
+  background: linear-gradient(145deg, rgba(255,252,244,.92), rgba(240,247,235,.78));
+}
+
+.k-add-cart-btn,
+.k-buy-now-btn {
+  box-shadow: 0 10px 22px rgba(31, 48, 36, .14);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP WOW — isolated at >=900px
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  body.k-view-shop {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(198, 168, 93, .10), transparent 28%),
+      radial-gradient(circle at 88% 12%, rgba(47, 107, 63, .08), transparent 30%),
+      var(--page-bg, #fdfaf5);
+  }
+
+  .k-header {
+    box-shadow: 0 8px 26px rgba(31, 48, 36, .07);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+
+  .k-search {
+    box-shadow: inset 0 0 0 1px rgba(42, 62, 44, .06), 0 6px 18px rgba(31, 48, 36, .045);
+  }
+
+  .k-hero-media {
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 22px 48px rgba(31, 48, 36, .16);
+  }
+
+  .k-hero-media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(19, 43, 27, .32), transparent 46%),
+      radial-gradient(circle at 15% 18%, rgba(255,255,255,.18), transparent 28%);
+  }
+
+  .k-hero-mini-slogan--premium {
+    background: rgba(255, 252, 244, .76);
+    border: 1px solid rgba(255, 255, 255, .54);
+    box-shadow: 0 18px 42px rgba(31, 48, 36, .14);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .k-cats-shell {
+    background: rgba(255, 252, 244, .82);
+    border-bottom: 1px solid rgba(42, 62, 44, .08);
+    box-shadow: 0 8px 24px rgba(31, 48, 36, .055);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .k-chip-photo--img {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+
+  .k-chip:hover .k-chip-photo--img {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 10px 20px rgba(31, 48, 36, .13);
+  }
+
+  #k-desktop-catalog-wrap {
+    gap: 18px;
+  }
+
+  .k-desktop-sidebar,
+  .k-side-cart {
+    background: rgba(255, 252, 244, .86);
+    border: 1px solid rgba(42, 62, 44, .08);
+    box-shadow: var(--wow-soft-shadow);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .k-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(198, 168, 93, .34);
+    box-shadow: var(--wow-card-shadow);
+  }
+
+  .k-card:hover .k-card-img,
+  .k-card:hover .k-card-image {
+    transform: scale(1.025);
+  }
+
+  .k-card-img,
+  .k-card-image {
+    transition: transform .22s var(--ease);
+  }
+
+  .k-sc-btn-checkout,
+  .kcf-primary,
+  .k-buy-now-btn {
+    background: linear-gradient(135deg, var(--wow-leaf), #224d31);
+    box-shadow: 0 12px 26px rgba(47, 107, 63, .22);
+  }
+
+  .k-sc-btn-group,
+  .kcf-whatsapp {
+    box-shadow: 0 10px 22px rgba(31, 48, 36, .10);
+  }
+
+  .k-footer {
+    background:
+      radial-gradient(circle at 16% 0%, rgba(198, 168, 93, .18), transparent 30%),
+      linear-gradient(135deg, #203325, #162319);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-card,
+  .k-card-img,
+  .k-card-image,
+  .k-chip,
+  .k-chip-photo {
+    transition: none;
+  }
+}
