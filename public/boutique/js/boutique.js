@@ -119,9 +119,6 @@ function init() {
   initDom();
   document.body.classList.add('k-view-shop');
 
-  requestAnimationFrame(function() {
-    document.body.classList.add('k-pavilions-ready');
-  });
   installScrollOwner();
   updateCartBadge();
   setupCats();

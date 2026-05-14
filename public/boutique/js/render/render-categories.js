@@ -6,7 +6,6 @@
  * - Render the HTML markup for category chips only.
  * - Use shop-schema.js as the only category data source.
  * - Provide resilient image fallback markup for category chips.
- * - Render desktop universe chips from the navigation v2 schema.
  *
  * Must not:
  * - Bind click handlers.
@@ -24,7 +23,7 @@
  */
 
 import { sanitize } from '../b-utils.js';
-import { getRailCategories, getDesktopUniverseCategories } from '../shop-schema.js';
+import { getRailCategories } from '../shop-schema.js';
 
 function fallbackBadge(category) {
   const badge = category.railBadge || {};
@@ -53,11 +52,3 @@ export function renderCategoryRailMarkup(activeCategoryKey) {
   `).join('');
 }
 
-export function renderDesktopUniverseRailMarkup(activeCategoryKey) {
-  return getDesktopUniverseCategories().map((category) => `
-    <button class="k-desktop-universe${category.key === activeCategoryKey ? ' is-active' : ''}" data-cat="${sanitize(category.key)}" aria-label="${sanitize(category.label)}">
-      <span class="k-desktop-universe-icon">${fallbackBadge(category)}</span>
-      <span class="k-desktop-universe-label">${sanitize(category.shortLabel || category.label)}</span>
-    </button>
-  `).join('');
-}

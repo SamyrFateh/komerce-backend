@@ -205,24 +205,14 @@
    → boutique-desktop.css #k-subcats-wrap .k-subchip (source de vérité) */
 @media (min-width: 900px) {
 
-  /* Positionnement uniquement — non couvert par boutique-desktop.css.
-     Les pavillons sont désormais sticky (z:25) à top: var(--header-h).
-     En desktop les chips sont masquées → les pavillons mesurent ~60px.
-     Les subcats se posent donc sous header + pavillons. */
+  /* Positionnement uniquement — non couvert par boutique-desktop.css. */
   #k-subcats-wrap {
     position: sticky;
-    top: calc(var(--header-h) + 60px); /* header + barre pavillons normale */
+    top: var(--header-h);
     z-index: 20;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     /* background / border / box-shadow → boutique-desktop.css LOT 13 */
-  }
-}
-
-@media (min-width: 1200px) {
-  /* En mode compact (pill-row) les pavillons font 40px + padding 6px+6px = ~52px */
-  #k-subcats-wrap {
-    top: calc(var(--header-h) + 52px);
   }
 }
 

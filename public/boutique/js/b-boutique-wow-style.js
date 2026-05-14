@@ -27,8 +27,6 @@ const HERO_CART_PROXY_STYLE_ID = 'k-hero-cart-proxy-style';
 const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=5';
 const DESKTOP_COMMERCE_STYLE_ID = 'k-desktop-commerce-skeleton-style';
 const DESKTOP_COMMERCE_STYLE_HREF = '/boutique/css/desktop-commerce-skeleton.css?v=1';
-const DESKTOP_HORIZONTAL_NAV_STYLE_ID = 'k-desktop-horizontal-nav-style';
-const DESKTOP_HORIZONTAL_NAV_STYLE_HREF = '/boutique/css/desktop-horizontal-nav.css?v=1';
 
 const KOMERCE_PROVERBS = [
   'Celui qui cherche trouve son trésor.',
@@ -74,7 +72,5 @@ export function setupBoutiqueWowStyle() {
   ensureStyle(WOW_STYLE_ID, WOW_STYLE_HREF);
   ensureStyle(HERO_CART_PROXY_STYLE_ID, HERO_CART_PROXY_STYLE_HREF);
   ensureStyle(DESKTOP_COMMERCE_STYLE_ID, DESKTOP_COMMERCE_STYLE_HREF);
-  ensureStyle(DESKTOP_HORIZONTAL_NAV_STYLE_ID, DESKTOP_HORIZONTAL_NAV_STYLE_HREF);
-
   setupReloadProverb();
 }

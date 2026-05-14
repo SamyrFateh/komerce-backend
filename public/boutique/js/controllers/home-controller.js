@@ -27,7 +27,7 @@
  */
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
-import { renderCategoryRailMarkup, renderDesktopUniverseRailMarkup } from '../render/render-categories.js';
+import { renderCategoryRailMarkup } from '../render/render-categories.js';
 import { getSubcategories, getRailCategories } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
@@ -43,29 +43,6 @@ function isDesktop() {
 function scrollToCatalog() {
   const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
   if (catalog) scrollPageToElement(catalog, -120, 'smooth');
-}
-
-function ensureDesktopUniverseNav(catsEl) {
-  if (!catsEl || !catsEl.parentNode || document.getElementById('k-desktop-universe-nav')) return null;
-
-  const nav = document.createElement('div');
-  nav.id = 'k-desktop-universe-nav';
-  nav.className = 'k-desktop-universe-nav';
-  nav.setAttribute('aria-label', 'Univers boutique');
-  catsEl.parentNode.insertBefore(nav, catsEl);
-  return nav;
-}
-
-function syncDesktopUniverseNav(categoryKey, deps) {
-  if (!isDesktop()) return;
-  const catsEl = getCatsEl();
-  const nav = document.getElementById('k-desktop-universe-nav') || ensureDesktopUniverseNav(catsEl);
-  if (!nav) return;
-
-  nav.innerHTML = renderDesktopUniverseRailMarkup(categoryKey);
-  nav.querySelectorAll('.k-desktop-universe').forEach((btn) => {
-    btn.addEventListener('click', () => handleCategorySelection(btn.dataset.cat, deps));
-  });
 }
 
 /**
@@ -163,8 +140,6 @@ export function renderCategoryRail() {
     catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
   }
 
-  ensureDesktopUniverseNav(catsEl);
-
   return catsEl;
 }
 
@@ -246,15 +221,9 @@ export function setupHomeController(deps) {
   if (!catsEl || catsEl.dataset.bound === '1') return;
   catsEl.dataset.bound = '1';
 
-  syncDesktopUniverseNav(state.activeCat, deps);
-
   catsEl.querySelectorAll('.k-chip').forEach((chip) => {
     chip.addEventListener('click', () => handleCategorySelection(chip.dataset.cat, deps));
   });
-
-  window.addEventListener('resize', function() {
-    syncDesktopUniverseNav(state.activeCat, deps);
-  }, { passive: true });
 
   const activeChip = catsEl.querySelector('.k-chip.active');
   if (activeChip) centerRailChip(activeChip);

@@ -44,7 +44,6 @@ function _recalcPagerVars() {
       document.getElementById('k-hero-fixed-wrap'),
       document.getElementById('k-sticky-bar'),
       document.querySelector('.k-hero-cats-sticky'),
-      document.getElementById('k-pavilions'),
     ].forEach(function(el) {
       if (!el) return;
       const b = el.getBoundingClientRect().bottom;

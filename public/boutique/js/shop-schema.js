@@ -57,36 +57,36 @@ const _CATEGORY_IMAGES = {
 };
 
 const _FALLBACK_CATEGORIES = [
-  { key: 'all', label: 'Tout', shortLabel: 'Tout', type: NAV_TYPES.SYSTEM, sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, filter: null, displayOrder: 0, showInRail: true, showInSections: false, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [] },
-  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true }, displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [] },
-  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', type: NAV_TYPES.UNIVERSE, sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, filter: null, displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'all', label: 'Tout', shortLabel: 'Tout', type: NAV_TYPES.SYSTEM, sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, filter: null, displayOrder: 0, showInRail: true, showInSections: false, showInMobileRail: true, subcategories: [] },
+  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true }, displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [] },
+  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', type: NAV_TYPES.UNIVERSE, sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, filter: null, displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Femme', label: 'Femme', shortLabel: 'Femme', icon: '👗' },
     { key: 'Homme', label: 'Homme', shortLabel: 'Homme', icon: '👔' },
     { key: 'Enfant', label: 'Enfant & Bébé', shortLabel: 'Enfant', icon: '🍼' },
     { key: 'Beauté', label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄' },
   ] },
-  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, filter: null, displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, filter: null, displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Confort', label: 'Confort & Énergie', shortLabel: 'Confort', icon: '🔋' },
     { key: 'Cuisine', label: 'Cuisine', shortLabel: 'Cuisine', icon: '🍳' },
     { key: 'Déco', label: 'Déco & Rangement', shortLabel: 'Déco', icon: '🖼️' },
     { key: 'Enfants', label: 'Enfants & Scolaire', shortLabel: 'Enfants', icon: '🧸' },
   ] },
-  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, filter: null, displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, filter: null, displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Phones', label: 'Téléphones', shortLabel: 'Tél.', icon: '📱' },
     { key: 'Audio', label: 'Audio & Accessoires', shortLabel: 'Audio', icon: '🎧' },
     { key: 'Montres', label: 'Montres & Gadgets', shortLabel: 'Montres', icon: '⌚' },
   ] },
-  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, filter: null, displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, filter: null, displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Outillage', label: 'Outils & Fixation', shortLabel: 'Outils', icon: '🔧' },
     { key: 'Electricité', label: 'Électricité & Plomberie', shortLabel: 'Élec.', icon: '⚡' },
     { key: 'Sécurité', label: 'Serrures & Sécurité', shortLabel: 'Sécu.', icon: '🔐' },
   ] },
-  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, filter: null, displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, filter: null, displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Cérémonie', label: 'Tenues de cérémonie', shortLabel: 'Cérémo.', icon: '👑' },
     { key: 'Cadeau', label: 'Cadeaux personnalisés', shortLabel: 'Cadeau', icon: '🎁' },
     { key: 'Impression', label: 'Impression & Design', shortLabel: 'Imprim.', icon: '🖨️' },
   ] },
-  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, filter: null, displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true, showInDesktopUniverses: true, subcategories: [
+  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, filter: null, displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
     { key: 'Filtres', label: 'Filtres & Entretien', shortLabel: 'Filtres', icon: '🔧' },
     { key: 'Freinage', label: 'Freinage & Sécurité', shortLabel: 'Frein.', icon: '🛑' },
     { key: 'Éclairage', label: 'Éclairage & Électrique', shortLabel: 'Éclai.', icon: '💡' },
@@ -131,7 +131,6 @@ function _buildFromRows(rows) {
       showInRail:     row.show_in_rail !== false && row.showInRail !== false,
       showInSections: row.show_in_sections !== false && row.showInSections !== false,
       showInMobileRail: row.show_in_mobile_rail !== false && row.showInMobileRail !== false && row.show_in_rail !== false,
-      showInDesktopUniverses: row.show_in_desktop_universes !== false && row.showInDesktopUniverses !== false && row.show_in_rail !== false,
       railBadge:      row.icon_svg ? { kind: 'svg', svg: row.icon_svg } : row.section_emoji ? { kind: 'text', text: row.section_emoji } : null,
       subcategories:  Array.isArray(row.subcategories) ? row.subcategories.map(s => ({
         key:        s.key,
@@ -197,7 +196,6 @@ export function getRailCategories() {
   });
 }
 export function getMobileRailCategories() { return getRailCategories().filter(c => c.showInMobileRail !== false); }
-export function getDesktopUniverseCategories() { return getCategoryList().filter(c => c.showInDesktopUniverses !== false); }
 export function getUniverseCategories() { return getCategoryList().filter(c => c.type === NAV_TYPES.UNIVERSE); }
 export function getCommercialFilters() { return getCategoryList().filter(c => c.type === NAV_TYPES.COMMERCIAL_FILTER); }
 export function getRailCategoryKeys() { return getCategoryList().filter(c => c.showInRail !== false).map(c => c.key); }
