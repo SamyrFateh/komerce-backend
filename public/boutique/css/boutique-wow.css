@@ -33,15 +33,28 @@
    MOBILE / BASE — category chips, cards, micro-premium
    No #k-page-scroll / pager mechanics touched.
    ═══════════════════════════════════════════════════════════════ */
+.k-cats-shell {
+  background: rgba(255, 252, 244, .72);
+  box-shadow: 0 4px 14px rgba(31, 48, 36, .055);
+  border: 1px solid rgba(42, 62, 44, .055);
+}
+
+.k-cats {
+  padding: 8px 7px 7px;
+  gap: 2px 0;
+}
+
 .k-chip {
-  gap: 4px;
+  gap: 3px;
 }
 
 .k-chip-photo {
-  width: 56px;
-  height: 46px;
-  min-width: 56px;
-  border-radius: 18px;
+  width: 52px;
+  height: 38px;
+  min-width: 52px;
+  border-radius: 15px;
+  border-width: 1.5px;
+  box-shadow: 0 1px 5px rgba(31, 48, 36, .08);
 }
 
 .k-chip-photo img {
@@ -49,14 +62,14 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 13px;
 }
 
 .k-chip-photo--img {
   background: linear-gradient(145deg, #fff8ea, #edf6e9);
   box-shadow:
-    0 2px 8px rgba(31, 48, 36, .10),
-    inset 0 0 0 1px rgba(255, 255, 255, .72);
+    0 1px 6px rgba(31, 48, 36, .09),
+    inset 0 0 0 1px rgba(255, 255, 255, .64);
 }
 
 .k-chip-photo--img::after {
@@ -65,7 +78,7 @@
   inset: 0;
   z-index: 2;
   border-radius: inherit;
-  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,.58), transparent 42%);
+  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,.44), transparent 40%);
   pointer-events: none;
 }
 
@@ -86,11 +99,16 @@
   z-index: 1;
 }
 
+.k-chip-label {
+  font-size: 9.5px;
+  line-height: 1.05;
+}
+
 .k-chip.active .k-chip-photo--img {
-  border-color: rgba(198, 168, 93, .95);
+  border-color: rgba(198, 168, 93, .9);
   box-shadow:
-    0 0 0 2px rgba(198, 168, 93, .62),
-    0 8px 18px rgba(47, 107, 63, .16);
+    0 0 0 1.5px rgba(198, 168, 93, .55),
+    0 5px 12px rgba(47, 107, 63, .13);
 }
 
 .k-chip.active .k-chip-label {
