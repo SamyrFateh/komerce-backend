@@ -1,20 +1,21 @@
 /**
- * @component Boutique / Wow Polish Style Loader
+ * @component Boutique / Polish Bootstrap
  * @owner b-boutique-wow-style.js
  *
  * Responsibility:
- * - Load the reversible wow-polish CSS layer.
- * - Keep the polish isolated from core pager, catalog and cart logic.
- * - Activate the existing hidden hero proverb slot with a reload-rotated proverb.
+ * - Load temporary polish layers while they are being migrated/stabilized.
+ * - Activate the existing hero proverb slot with a reload-rotated proverb.
  * - Turn the existing hero bubble into a cart proxy on mobile.
  *
  * Must not:
  * - Mutate catalog/cart state.
  * - Patch b-pager.js behavior.
  * - Render product or category markup.
+ * - Add supplier-specific styling.
  *
  * See:
  * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
+ * - docs/BOUTIQUE_DESKTOP_REDESIGN_BRIEF.md
  */
 
 'use strict';
@@ -23,6 +24,8 @@ const WOW_STYLE_ID = 'k-boutique-wow-style';
 const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=8';
 const HERO_CART_PROXY_STYLE_ID = 'k-hero-cart-proxy-style';
 const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=2';
+const DESKTOP_COMMERCE_STYLE_ID = 'k-desktop-commerce-skeleton-style';
+const DESKTOP_COMMERCE_STYLE_HREF = '/boutique/css/desktop-commerce-skeleton.css?v=1';
 
 const KOMERCE_PROVERBS = [
   'Celui qui cherche trouve son trésor.',
@@ -53,9 +56,6 @@ function setupReloadProverb() {
   const catsShell = document.querySelector('.k-cats-shell');
   if (!node || !catsShell) return;
 
-  // Le slot existe dans .k-hero-overlay, mais cet overlay doit rester masqué en mobile
-  // pour éviter de faire réapparaître les anciens titres/pills du hero.
-  // On déplace donc le vrai node prévu dans le bloc catégories, sans créer de faux contenu CSS.
   if (!node.classList.contains('k-proverb-in-cats')) {
     node.classList.add('k-proverb-in-cats');
     catsShell.appendChild(node);
@@ -125,6 +125,7 @@ export function setupBoutiqueWowStyle() {
 
   ensureStyle(WOW_STYLE_ID, WOW_STYLE_HREF);
   ensureStyle(HERO_CART_PROXY_STYLE_ID, HERO_CART_PROXY_STYLE_HREF);
+  ensureStyle(DESKTOP_COMMERCE_STYLE_ID, DESKTOP_COMMERCE_STYLE_HREF);
 
   setupReloadProverb();
   setupHeroCartProxy();
