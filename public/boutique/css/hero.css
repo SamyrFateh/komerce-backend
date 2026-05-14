@@ -55,6 +55,30 @@
   text-shadow: 0 0 12px rgba(255,255,255,1), 0 0 24px rgba(255,255,255,.9);
 }
 
+/* Avatar panier mobile : source CSS initiale, sans dépendre du loader wow. */
+.k-hero-bubble {
+  display: flex;
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  z-index: 12;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255,252,244,.90) url('/images/avatar_seule.png') center / cover no-repeat;
+  border: 1px solid rgba(198,168,93,.24);
+  box-shadow: 0 4px 12px rgba(31,48,36,.10);
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-hero-bubble:active { transform: scale(.94); }
+
 /* Éléments masqués mobile */
 .k-hero-overlay, .k-hero-badge, .k-hero-sub, .k-hero-cta-row,
 .k-hero-trust, .k-hero-pills, .k-hero-text-left, .k-hero-tag { display: none; }
