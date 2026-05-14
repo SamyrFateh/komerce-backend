@@ -316,20 +316,9 @@
     margin: 16px auto 0;
     padding: 0 20px 28px;
     display: grid;
-    grid-template-columns: 224px minmax(0, 1fr) 286px;
+    grid-template-columns: minmax(0, 1fr) 286px;
     gap: 18px;
     align-items: start;
-  }
-
-  .k-desktop-sidebar {
-    position: sticky;
-    top: 150px;
-    max-height: calc(100vh - 170px);
-    overflow: auto;
-    border-radius: 22px;
-    background: rgba(255,252,244,.88);
-    border: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 10px 26px rgba(31,48,36,.06);
   }
 
   #k-catalog-section {
@@ -422,7 +411,7 @@
 
 @media (min-width: 1200px) {
   #k-desktop-catalog-wrap {
-    grid-template-columns: 244px minmax(0, 1fr) 306px;
+    grid-template-columns: minmax(0, 1fr) 306px;
   }
 }
 

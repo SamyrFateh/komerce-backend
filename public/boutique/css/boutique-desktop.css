@@ -152,14 +152,6 @@
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   2. HERO DESKTOP â€” montre la scÃ¨ne complÃ¨te (2 personnages + cadeau
-   central + store-front). Hauteur calibrÃ©e 240-280px pour cadrer la
-   zone d'intÃ©rÃªt (tÃªtes â†’ haut du store) avec object-position: center 40%.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/* Bloc hero 240px supprimé — hauteur desktop source de vérité : BANDEAU PREMIUM ci-dessous (160px) */
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    3. CARD HOVER OVERLAY â€” SOURCE DE VÃ‰RITÃ‰ UNIQUE
    Overlay sombre en bas de carte : nom + desc + actions.
    Le JS injecte .k-card-hover-overlay une seule fois par carte.
@@ -337,58 +329,6 @@
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   5. PROMO STRIP â€” BanniÃ¨re chips promotionnelles
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-@media (min-width: 900px) {
-
-  .k-promo-strip {
-    max-width: var(--container);
-    margin: 0 auto 8px;
-    padding: 0 clamp(16px, 3vw, 40px);
-  }
-
-  .k-promo-strip-inner {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px 18px;
-    background: linear-gradient(135deg,
-      rgba(200,92,45,.06) 0%,
-      rgba(100,175,90,.04) 100%);
-    border: 1px solid rgba(200,92,45,.12);
-    border-radius: 12px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .k-promo-strip-inner::-webkit-scrollbar { display: none; }
-
-  .k-promo-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all .15s var(--ease);
-    flex-shrink: 0;
-  }
-  .k-promo-chip--sale { background: var(--coral); color: #fff; }
-  .k-promo-chip--sale:hover { background: var(--coral-dark); }
-  .k-promo-chip--trust {
-    background: var(--sand);
-    color: var(--text);
-    border-color: var(--border);
-  }
-  .k-promo-chip--trust:hover { background: var(--sand-warm); }
-  .k-promo-chip-icon { font-size: 14px; flex-shrink: 0; }
-}
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    6. ANIMATION ENTRÃ‰E CARTES â€” stagger Temu-style
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 @media (min-width: 900px) {
@@ -455,133 +395,6 @@
     width: 20px; height: 20px;
     stroke: var(--text); fill: none; stroke-width: 2;
   }
-}
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   8. HOMEPAGE MERCHANDISING â€” blocs Ã©ditoriaux premium
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-@media (min-width: 900px) {
-
-  .k-home-merch {
-    max-width: var(--container);
-    margin: 0 auto 14px;
-    padding: 0 clamp(16px, 3vw, 40px);
-  }
-
-  .k-home-merch-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 18px;
-    margin: 12px 0 10px;
-  }
-
-  .k-home-merch-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--coral);
-  }
-
-  .k-home-merch-head h2 {
-    margin: 2px 0 0;
-    font-family: var(--font-display);
-    font-size: clamp(22px, 2.2vw, 30px);
-    font-weight: 650;
-    line-height: 1.1;
-    color: var(--text);
-    letter-spacing: -.02em;
-  }
-
-  .k-home-merch-all {
-    flex-shrink: 0;
-    height: 38px;
-    padding: 0 16px;
-    border-radius: 999px;
-    background: var(--white);
-    border: 1px solid rgba(42,62,44,.12);
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 750;
-    box-shadow: 0 8px 18px rgba(31,48,36,.05);
-    cursor: pointer;
-    transition: transform .15s, border-color .15s, color .15s, box-shadow .15s;
-  }
-  .k-home-merch-all:hover {
-    transform: translateY(-1px);
-    border-color: rgba(200,92,45,.28);
-    color: var(--coral);
-    box-shadow: 0 12px 24px rgba(31,48,36,.08);
-  }
-
-  .k-home-merch-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .k-home-merch-card {
-    position: relative;
-    min-height: 112px;
-    padding: 16px 16px 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(42,62,44,.09);
-    background:
-      radial-gradient(circle at top right, rgba(100,175,90,.14), transparent 34%),
-      linear-gradient(135deg, rgba(255,255,255,.98), rgba(253,250,245,.96));
-    box-shadow: 0 10px 26px rgba(31,48,36,.06);
-    text-align: left;
-    cursor: pointer;
-    overflow: hidden;
-    transition: transform .16s var(--ease), box-shadow .16s, border-color .16s;
-  }
-  .k-home-merch-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(200,92,45,.22);
-    box-shadow: 0 16px 34px rgba(31,48,36,.10);
-  }
-  .k-home-merch-card--hot {
-    background:
-      radial-gradient(circle at top right, rgba(200,92,45,.22), transparent 35%),
-      linear-gradient(135deg, rgba(255,252,246,.98), rgba(255,244,232,.96));
-  }
-
-  .k-home-merch-icon {
-    display: inline-flex;
-    width: 34px; height: 34px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: rgba(255,255,255,.78);
-    box-shadow: inset 0 0 0 1px rgba(42,62,44,.06);
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-
-  .k-home-merch-card strong {
-    display: block;
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 850;
-    line-height: 1.2;
-    margin-bottom: 5px;
-  }
-  .k-home-merch-card small {
-    display: block;
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1.35;
-  }
-}
-
-@media (min-width: 1200px) {
-  .k-home-merch-grid { gap: 14px; }
-  .k-home-merch-card { min-height: 122px; }
 }
 
 
@@ -698,8 +511,7 @@
 @media (min-width: 900px) {
 
   .k-card,  .k-card  *,
-  .k-modal, .k-modal *,
-  .k-desktop-sidebar, .k-desktop-sidebar * {
+  .k-modal, .k-modal * {
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -1057,28 +869,7 @@
    PARTIE 3 â€” MEGA-NAV DESKTOP (â‰¥ 900px)
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* â”€â”€ 1. NEUTRALISATION DES RÃˆGLES SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-@media (min-width: 900px) {
-
-  /* Les rÃ¨gles de layout.css allouaient 192px Ã  la sidebar.
-     Sans le <aside>, le flex-item disparaÃ®t â€” la grille prend
-     automatiquement tout l'espace. On neutralise juste le gap. */
-  #k-desktop-catalog-wrap {
-    gap: 0;
-    padding-top: 0;
-  }
-
-  /* Grille : prend le reste de l'espace aprÃ¨s le side cart.
-     flex-basis:0 (pas 100%) pour coexister avec .k-side-cart dans le flex row.
-     max-width:100% retirÃ© â€” il Ã©crasait le flex et Ã©jectait le side cart. */
-  #k-desktop-catalog-wrap #k-catalog-section {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 0 clamp(16px, 3vw, 40px);
-  }
-}
-
-/* â”€â”€ 2. CHIP RAIL â†’ MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ 1. CHIP RAIL â†’ MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
 
   /* Shell : bande pleine largeur collÃ©e sous le header */
