@@ -32,117 +32,57 @@ const _ICON_SVGS = {
 };
 
 const _CATEGORY_IMAGES = {
-  all:                       '/boutique/images/categories/all.jpg',
-  Soldes:                    '/boutique/images/categories/soldes.jpg',
-  'Mode & Beauté':           '/boutique/images/categories/mode.jpg',
-  Maison:                    '/boutique/images/categories/maison.jpg',
-  Tech:                      '/boutique/images/categories/tech.jpg',
-  Bricolage:                 '/boutique/images/categories/bricolage.jpg',
-  'Créations personnelles':  '/boutique/images/categories/creations.jpg',
-  Auto:                      '/boutique/images/categories/auto.jpg',
+  all:                       '/boutique/categories/all.jpg',
+  Soldes:                    '/boutique/categories/soldes.jpg',
+  'Mode & Beauté':           '/boutique/categories/mode.jpg',
+  Maison:                    '/boutique/categories/maison.jpg',
+  Tech:                      '/boutique/categories/tech.jpg',
+  Bricolage:                 '/boutique/categories/bricolage.jpg',
+  'Créations personnelles':  '/boutique/categories/creations.jpg',
+  Auto:                      '/boutique/categories/auto.jpg',
 };
 
 const _FALLBACK_CATEGORIES = [
-  // ── Filtre transverse "Tout" ──────────────────────────────────
-  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES['all'], dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
-
-  // ── Filtre transverse "Soldes" (chip-filter promo) ────────────
-  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS['Soldes'], image: _CATEGORY_IMAGES['Soldes'], dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
-
-  // ── PILIER 1 : Mode & Beauté ──────────────────────────────────
-  // Ancrage culturel n°1. Absorbe : Sport (rétrocompat), Beauté, Enfant/Bébé.
-  // Logique : achat féminin/familial groupé — tenue + soins + bébé dans un seul colis.
-  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'],
-    dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'],  // ← Enfant + Sport : rétrocompat produits existants
-    filterType: null, displayOrder: 2, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Femme',   label: 'Femme',           shortLabel: 'Femme',  icon: '👗' },  // Hijab, Boubou, Shoes, Parfum inclus
-      { key: 'Homme',   label: 'Homme',           shortLabel: 'Homme',  icon: '👔' },  // Boubou homme, Shoes inclus
-      { key: 'Enfant',  label: 'Enfant & Bébé',   shortLabel: 'Enfant', icon: '🍼' },  // Bébé, Garçon, Fille, Puériculture inclus
-      { key: 'Beauté',  label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄' }, // Soins, Cheveux, Maquillage, Vitamines, Parapharmacie inclus
-    ],
-  },
-
-  // ── PILIER 2 : Maison ─────────────────────────────────────────
-  // Le foyer au sens large. Absorbe : Solaire léger, Énergie, Jouets, Scolaire.
-  // Logique : la diaspora équipe la maison ET les enfants dans le même colis.
-  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS['Maison'], image: _CATEGORY_IMAGES['Maison'],
-    dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'],  // ← rétrocompat anciens piliers
-    filterType: null, displayOrder: 3, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Confort',  label: 'Confort & Énergie', shortLabel: 'Confort', icon: '🔋' }, // Lampes, power banks, ventilateurs inclus
-      { key: 'Cuisine',  label: 'Cuisine',            shortLabel: 'Cuisine', icon: '🍳' },
-      { key: 'Déco',     label: 'Déco & Rangement',   shortLabel: 'Déco',    icon: '🖼️' }, // Salon, Chambre, Rangement inclus
-      { key: 'Enfants',  label: 'Enfants & Scolaire', shortLabel: 'Enfants', icon: '🧸' }, // Jouets, cahiers, cartables inclus
-    ],
-  },
-
-  // ── PILIER 3 : Tech ───────────────────────────────────────────
-  // Téléphonie absorbée — la diaspora envoie des téléphones, c'est quasi culturel.
-  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS['Tech'], image: _CATEGORY_IMAGES['Tech'],
-    dbKeys: ['Tech', 'Phones', 'Téléphonie'],
-    filterType: null, displayOrder: 4, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Phones',   label: 'Téléphones',       shortLabel: 'Tél.',    icon: '📱' },
-      { key: 'Audio',    label: 'Audio & Accessoires', shortLabel: 'Audio', icon: '🎧' }, // Câbles, chargeurs inclus
-      { key: 'Montres',  label: 'Montres & Gadgets', shortLabel: 'Montres', icon: '⌚' },
-    ],
-  },
-
-  // ── PILIER 4 : Bricolage ──────────────────────────────────────
-  // Quincaillerie locale aléatoire aux Comores — fort besoin diaspora.
-  // Frontière stricte : léger + installable sans technicien.
-  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', sectionEmoji: '🔧', iconSvg: _ICON_SVGS['Bricolage'], image: _CATEGORY_IMAGES['Bricolage'],
-    dbKeys: ['Bricolage', 'Quincaillerie'],
-    filterType: null, displayOrder: 5, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Outillage',   label: 'Outils & Fixation',       shortLabel: 'Outils',  icon: '🔧' },
-      { key: 'Electricité', label: 'Électricité & Plomberie', shortLabel: 'Élec.',   icon: '⚡' },
-      { key: 'Sécurité',    label: 'Serrures & Sécurité',     shortLabel: 'Sécu.',   icon: '🔐' },
-    ],
-  },
-
-  // ── PILIER 5 : Créations personnelles ────────────────────────
-  // Grand Mariage comorien — demande groupée, haute valeur émotionnelle.
-  // Modèle : print-on-demand (Printify/Gelato) + atelier Moroni pour l'urgence.
-  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'],
-    dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'],  // ← rétrocompat
-    filterType: null, displayOrder: 6, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Cérémonie',  label: 'Tenues de cérémonie',   shortLabel: 'Cérémo.', icon: '👑' },
-      { key: 'Cadeau',     label: 'Cadeaux personnalisés',  shortLabel: 'Cadeau',  icon: '🎁' },
-      { key: 'Impression', label: 'Impression & Design',    shortLabel: 'Imprim.', icon: '🖨️' },
-    ],
-  },
-
-  // ── PILIER 6 : Auto ───────────────────────────────────────────
-  // Parc concentré sur Toyota (Vitz, Hilux, Hiace, Land Cruiser).
-  // Sourcing : Valeo Service Middle East — Jebel Ali Free Zone, Dubaï.
-  // Frontière stricte : pièces légères uniquement.
-  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', sectionEmoji: '🔩', iconSvg: _ICON_SVGS['Auto'], image: _CATEGORY_IMAGES['Auto'],
-    dbKeys: ['Auto', 'Moto', 'Pièces'],
-    filterType: null, displayOrder: 7, showInRail: true, showInSections: true,
-    subcategories: [
-      { key: 'Filtres',   label: 'Filtres & Entretien',    shortLabel: 'Filtres', icon: '🔧' },
-      { key: 'Freinage',  label: 'Freinage & Sécurité',    shortLabel: 'Frein.',  icon: '🛑' },
-      { key: 'Éclairage', label: 'Éclairage & Électrique', shortLabel: 'Éclai.', icon: '💡' },
-      { key: 'Moto',      label: 'Moto',                   shortLabel: 'Moto',    icon: '🏍️' },
-    ],
-  },
+  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
+  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
+  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, displayOrder: 2, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Femme', label: 'Femme', shortLabel: 'Femme', icon: '👗' },
+    { key: 'Homme', label: 'Homme', shortLabel: 'Homme', icon: '👔' },
+    { key: 'Enfant', label: 'Enfant & Bébé', shortLabel: 'Enfant', icon: '🍼' },
+    { key: 'Beauté', label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄' },
+  ] },
+  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, displayOrder: 3, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Confort', label: 'Confort & Énergie', shortLabel: 'Confort', icon: '🔋' },
+    { key: 'Cuisine', label: 'Cuisine', shortLabel: 'Cuisine', icon: '🍳' },
+    { key: 'Déco', label: 'Déco & Rangement', shortLabel: 'Déco', icon: '🖼️' },
+    { key: 'Enfants', label: 'Enfants & Scolaire', shortLabel: 'Enfants', icon: '🧸' },
+  ] },
+  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, displayOrder: 4, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Phones', label: 'Téléphones', shortLabel: 'Tél.', icon: '📱' },
+    { key: 'Audio', label: 'Audio & Accessoires', shortLabel: 'Audio', icon: '🎧' },
+    { key: 'Montres', label: 'Montres & Gadgets', shortLabel: 'Montres', icon: '⌚' },
+  ] },
+  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, displayOrder: 5, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Outillage', label: 'Outils & Fixation', shortLabel: 'Outils', icon: '🔧' },
+    { key: 'Electricité', label: 'Électricité & Plomberie', shortLabel: 'Élec.', icon: '⚡' },
+    { key: 'Sécurité', label: 'Serrures & Sécurité', shortLabel: 'Sécu.', icon: '🔐' },
+  ] },
+  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, displayOrder: 6, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Cérémonie', label: 'Tenues de cérémonie', shortLabel: 'Cérémo.', icon: '👑' },
+    { key: 'Cadeau', label: 'Cadeaux personnalisés', shortLabel: 'Cadeau', icon: '🎁' },
+    { key: 'Impression', label: 'Impression & Design', shortLabel: 'Imprim.', icon: '🖨️' },
+  ] },
+  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, displayOrder: 7, showInRail: true, showInSections: true, subcategories: [
+    { key: 'Filtres', label: 'Filtres & Entretien', shortLabel: 'Filtres', icon: '🔧' },
+    { key: 'Freinage', label: 'Freinage & Sécurité', shortLabel: 'Frein.', icon: '🛑' },
+    { key: 'Éclairage', label: 'Éclairage & Électrique', shortLabel: 'Éclai.', icon: '💡' },
+    { key: 'Moto', label: 'Moto', shortLabel: 'Moto', icon: '🏍️' },
+  ] },
 ];
 
-// ─── État interne ─────────────────────────────────────────────────────────────
-
-/** @type {Array|null} Liste de catégories chargée depuis l'API */
 let _categories = null;
-
-/** @type {Map<string,Object>|null} Index par key (display + db_keys) */
 let _byKey = null;
-
-/** @type {Promise<void>|null} Promise unique de chargement */
 let _loadPromise = null;
-
-// ─── Construction depuis données API ─────────────────────────────────────────
 
 function _buildFromRows(rows) {
   const cats = rows.map(row => ({
@@ -157,12 +97,7 @@ function _buildFromRows(rows) {
     displayOrder:   row.display_order || 0,
     showInRail:     row.show_in_rail !== false,
     showInSections: row.show_in_sections !== false,
-    // Compatibilité descendante shop-schema
-    railBadge:      row.icon_svg
-                      ? { kind: 'svg', svg: row.icon_svg }
-                      : row.section_emoji
-                        ? { kind: 'text', text: row.section_emoji }
-                        : null,
+    railBadge:      row.icon_svg ? { kind: 'svg', svg: row.icon_svg } : row.section_emoji ? { kind: 'text', text: row.section_emoji } : null,
     subcategories:  Array.isArray(row.subcategories) ? row.subcategories.map(s => ({
       key:        s.key,
       label:      s.label,
@@ -177,15 +112,10 @@ function _buildIndex(cats) {
   const map = new Map();
   cats.forEach(c => {
     map.set(c.key, c);
-    // Indexer aussi par db_keys pour normalizeCategoryKey + getSubcategories
-    (c.dbKeys || []).forEach(dbKey => {
-      if (!map.has(dbKey)) map.set(dbKey, c);
-    });
+    (c.dbKeys || []).forEach(dbKey => { if (!map.has(dbKey)) map.set(dbKey, c); });
   });
   return map;
 }
-
-// ─── Fetch API ────────────────────────────────────────────────────────────────
 
 async function _doFetch() {
   try {
@@ -202,183 +132,62 @@ async function _doFetch() {
   }
 }
 
-// Démarrer le fetch immédiatement à l'import (parallèle au boot de la page)
-// FLAG TRANSITION : pendant la bascule 8→6 catégories, on peut forcer le
-// fallback pour ne pas dépendre de la migration backend. Mettre window.
-// KOMERCE_FORCE_FALLBACK_CATEGORIES=true (par défaut, vu que la table DB
-// n'est pas encore migrée). Une fois que la table DB aura été mise à jour
-// avec les 6 catégories, retirer ce flag pour repasser au DB-driven.
-const _FORCE_FALLBACK = (typeof window !== 'undefined') &&
-  (window.KOMERCE_FORCE_FALLBACK_CATEGORIES !== false);
-
+const _FORCE_FALLBACK = (typeof window !== 'undefined') && (window.KOMERCE_FORCE_FALLBACK_CATEGORIES !== false);
 if (typeof window !== 'undefined' && typeof fetch !== 'undefined' && !_FORCE_FALLBACK) {
   _loadPromise = _doFetch();
 } else {
-  // SSR / tests / flag transition — utiliser fallback directement
   _categories = _FALLBACK_CATEGORIES;
   _byKey      = _buildIndex(_categories);
 }
 
-// ─── API publique ─────────────────────────────────────────────────────────────
-
-/**
- * Attend que le schéma soit chargé depuis l'API.
- * À appeler dans boutique init (DOMContentLoaded) avant tout rendu.
- */
 export async function loadShopSchema() {
   if (_categories) return;
   if (_loadPromise) await _loadPromise;
-  // Sécurité: si toujours null (erreur totale)
   if (!_categories) {
     _categories = _FALLBACK_CATEGORIES;
     _byKey      = _buildIndex(_categories);
   }
 }
 
-/** Accès direct aux données brutes (pour admin, debug) */
-export function getRawCategories() {
-  return _categories || _FALLBACK_CATEGORIES;
-}
-
-// ─── Helpers (identiques à l'ancienne API publique) ──────────────────────────
-
+export function getRawCategories() { return _categories || _FALLBACK_CATEGORIES; }
 function _cats() { return _categories || _FALLBACK_CATEGORIES; }
 function _idx()  { return _byKey      || _buildIndex(_FALLBACK_CATEGORIES); }
-
-export function getCategoryList() {
-  return [..._cats()].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-}
-
+export function getCategoryList() { return [..._cats()].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)); }
 export function getRailCategories() {
-  return getCategoryList()
-    .filter(c => c.showInRail !== false)
-    .map(c => {
-      if (c.railBadge) return c;
-      // Fallback : calcul railBadge depuis iconSvg / sectionEmoji
-      // (utilisé quand la migration 061 n'est pas encore jouée en prod)
-      return {
-        ...c,
-        railBadge: c.iconSvg
-          ? { kind: 'svg', svg: c.iconSvg }
-          : c.sectionEmoji
-            ? { kind: 'text', text: c.sectionEmoji }
-            : null,
-      };
-    });
+  return getCategoryList().filter(c => c.showInRail !== false).map(c => {
+    if (c.railBadge) return c;
+    return { ...c, railBadge: c.iconSvg ? { kind: 'svg', svg: c.iconSvg } : c.sectionEmoji ? { kind: 'text', text: c.sectionEmoji } : null };
+  });
 }
-
-/** Version allégée de getRailCategories() — retourne uniquement les clés,
- *  sans calculer les railBadge. Utilisée par le FOUC fix de home-controller
- *  pour comparer les chips statiques HTML sans déclencher de rendu. */
-export function getRailCategoryKeys() {
-  return getCategoryList()
-    .filter(c => c.showInRail !== false)
-    .map(c => c.key);
-}
-
-export function getCategoryByKey(key) {
-  return _idx().get(key) || null;
-}
-
-export function getSectionOrder() {
-  return getCategoryList().filter(c => c.showInSections).map(c => c.key);
-}
-
-export function getCategoryLabel(key) {
-  const c = getCategoryByKey(key);
-  return c ? c.label : key;
-}
-
-export function getCategoryIcon(key) {
-  const c = getCategoryByKey(key);
-  return c?.railBadge || null;
-}
-
-export function getCategorySectionEmoji(key) {
-  const c = getCategoryByKey(key);
-  return c?.sectionEmoji || '📦';
-}
-
-export function getCategoryImage(key) {
-  const c = getCategoryByKey(key);
-  return c?.image || _CATEGORY_IMAGES[key] || null;
-}
-
-export function normalizeCategoryKey(rawCategory) {
-  if (!rawCategory) return rawCategory;
-  // Chercher d'abord par clé directe, puis par dbKey
-  const c = _idx().get(rawCategory);
-  return c ? c.key : rawCategory;
-}
-
-export function getDbKeysForCategory(categoryKey) {
-  const c = getCategoryByKey(categoryKey);
-  if (!c) return [categoryKey];
-  if (Array.isArray(c.dbKeys) && c.dbKeys.length) return [...c.dbKeys];
-  return [c.key];
-}
-
-/**
- * Retourne les sous-catégories d'une catégorie.
- * Accepte la clé d'affichage ('Mode & Beauté') OU la clé DB ('Mode', 'Beauté').
- */
-export function getSubcategories(categoryKey) {
-  const c = _idx().get(categoryKey);
-  return c?.subcategories ? [...c.subcategories] : [];
-}
-
-export function getSubcategoryMeta(categoryKey, subcategoryKey) {
-  const list = getSubcategories(categoryKey);
-  return list.find(s => s.key === subcategoryKey) || {
-    key:        subcategoryKey,
-    label:      subcategoryKey,
-    shortLabel: subcategoryKey,
-    icon:       '✨',
-  };
-}
-
-export function getNextSubcategoryKey(categoryKey, currentSubcategoryKey) {
-  const list = getSubcategories(categoryKey);
-  for (let i = 0; i < list.length - 1; i++) {
-    if (list[i].key === currentSubcategoryKey) return list[i + 1].key;
-  }
-  return null;
-}
-
-/**
- * Compatibilité descendante — retourne un objet { dbKey: subcats[] }
- * comme l'ancien SUBCATS de b-store.js.
- * Utilisé par les modules non encore migrés.
- */
+export function getRailCategoryKeys() { return getCategoryList().filter(c => c.showInRail !== false).map(c => c.key); }
+export function getCategoryByKey(key) { return _idx().get(key) || null; }
+export function getSectionOrder() { return getCategoryList().filter(c => c.showInSections).map(c => c.key); }
+export function getCategoryLabel(key) { const c = getCategoryByKey(key); return c ? c.label : key; }
+export function getCategoryIcon(key) { const c = getCategoryByKey(key); return c?.railBadge || null; }
+export function getCategorySectionEmoji(key) { const c = getCategoryByKey(key); return c?.sectionEmoji || '📦'; }
+export function getCategoryImage(key) { const c = getCategoryByKey(key); return c?.image || _CATEGORY_IMAGES[key] || null; }
+export function normalizeCategoryKey(rawCategory) { if (!rawCategory) return rawCategory; const c = _idx().get(rawCategory); return c ? c.key : rawCategory; }
+export function getDbKeysForCategory(categoryKey) { const c = getCategoryByKey(categoryKey); if (!c) return [categoryKey]; if (Array.isArray(c.dbKeys) && c.dbKeys.length) return [...c.dbKeys]; return [c.key]; }
+export function getSubcategories(categoryKey) { const c = _idx().get(categoryKey); return c?.subcategories ? [...c.subcategories] : []; }
+export function getSubcategoryMeta(categoryKey, subcategoryKey) { const list = getSubcategories(categoryKey); return list.find(s => s.key === subcategoryKey) || { key: subcategoryKey, label: subcategoryKey, shortLabel: subcategoryKey, icon: '✨' }; }
+export function getNextSubcategoryKey(categoryKey, currentSubcategoryKey) { const list = getSubcategories(categoryKey); for (let i = 0; i < list.length - 1; i++) { if (list[i].key === currentSubcategoryKey) return list[i + 1].key; } return null; }
 export function getLegacySubcatsMap() {
   const map = {};
   _cats().forEach(c => {
     if (c.key === 'all' || c.key === 'Soldes') return;
-    // Indexer par clé d'affichage
     map[c.key] = c.subcategories || [];
-    // Indexer aussi par chaque db_key
-    (c.dbKeys || []).forEach(dbKey => {
-      if (!map[dbKey]) map[dbKey] = c.subcategories || [];
-    });
+    (c.dbKeys || []).forEach(dbKey => { if (!map[dbKey]) map[dbKey] = c.subcategories || []; });
   });
   return map;
 }
 
-// ─── Export SHOP_SCHEMA (compat descendante) ──────────────────────────────────
-// Certains modules importent SHOP_SCHEMA directement.
-// On l'expose comme un proxy live sur _cats().
-
 export const SHOP_SCHEMA = {
-  brand: {
-    name:      'Komerce',
-    tagline:   'Qui cherche bien trouve bien !',
-    heroImage: '/images/hero_banner.png',
-  },
+  brand: { name: 'Komerce', tagline: 'Qui cherche bien trouve bien !', heroImage: '/images/hero_banner.png' },
   nav: [
-    { k: 'home',      label: 'Accueil',  icon: 'home'    },
-    { k: 'tracking',  label: 'Suivi',    icon: 'map-pin' },
-    { k: 'favorites', label: 'Favoris',  icon: 'heart'   },
-    { k: 'cart',      label: 'Panier',   icon: 'basket'  },
+    { k: 'home', label: 'Accueil', icon: 'home' },
+    { k: 'tracking', label: 'Suivi', icon: 'map-pin' },
+    { k: 'favorites', label: 'Favoris', icon: 'heart' },
+    { k: 'cart', label: 'Panier', icon: 'basket' },
   ],
   get categories() { return getCategoryList(); },
 };
