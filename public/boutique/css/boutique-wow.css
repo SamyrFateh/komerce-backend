@@ -34,6 +34,7 @@
    No #k-page-scroll / pager mechanics touched.
    ═══════════════════════════════════════════════════════════════ */
 .k-cats-shell {
+  margin-top: 5px;
   background: linear-gradient(180deg, rgba(255, 252, 244, .88), rgba(255, 252, 244, .76));
   box-shadow: 0 3px 10px rgba(31, 48, 36, .055);
   border: 1px solid rgba(42, 62, 44, .055);
@@ -286,6 +287,7 @@
   }
 
   .k-cats-shell {
+    margin-top: 0;
     background: rgba(255, 252, 244, .82);
     border-bottom: 1px solid rgba(42, 62, 44, .08);
     box-shadow: 0 8px 24px rgba(31, 48, 36, .055);
