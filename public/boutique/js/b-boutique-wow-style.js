@@ -19,7 +19,7 @@
 'use strict';
 
 const WOW_STYLE_ID = 'k-boutique-wow-style';
-const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=5';
+const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=6';
 
 const KOMERCE_PROVERBS = [
   'Celui qui cherche trouve son trésor.',
@@ -38,7 +38,17 @@ function pickReloadProverb() {
 
 function setupReloadProverb() {
   const node = document.getElementById('k-proverb-text');
-  if (!node) return;
+  const catsShell = document.querySelector('.k-cats-shell');
+  if (!node || !catsShell) return;
+
+  // Le slot existe dans .k-hero-overlay, mais cet overlay doit rester masqué en mobile
+  // pour éviter de faire réapparaître les anciens titres/pills du hero.
+  // On déplace donc le vrai node prévu dans le bloc catégories, sans créer de faux contenu CSS.
+  if (!node.classList.contains('k-proverb-in-cats')) {
+    node.classList.add('k-proverb-in-cats');
+    catsShell.appendChild(node);
+  }
+
   node.textContent = pickReloadProverb();
   node.setAttribute('aria-live', 'polite');
 }
