@@ -18,7 +18,7 @@
 'use strict';
 
 const WOW_STYLE_ID = 'k-boutique-wow-style';
-const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=1';
+const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=2';
 
 export function setupBoutiqueWowStyle() {
   if (typeof document === 'undefined') return;
