@@ -12,6 +12,7 @@
  * - Patch b-pager.js behavior.
  * - Render product or category markup.
  * - Add supplier-specific styling.
+ * - Force visual styles inline: avatar visuals belong to hero-cart-proxy.css.
  *
  * See:
  * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
@@ -24,7 +25,7 @@
 const WOW_STYLE_ID = 'k-boutique-wow-style';
 const WOW_STYLE_HREF = '/boutique/css/boutique-wow.css?v=8';
 const HERO_CART_PROXY_STYLE_ID = 'k-hero-cart-proxy-style';
-const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=2';
+const HERO_CART_PROXY_STYLE_HREF = '/boutique/css/hero-cart-proxy.css?v=3';
 const DESKTOP_COMMERCE_STYLE_ID = 'k-desktop-commerce-skeleton-style';
 const DESKTOP_COMMERCE_STYLE_HREF = '/boutique/css/desktop-commerce-skeleton.css?v=1';
 const DESKTOP_HORIZONTAL_NAV_STYLE_ID = 'k-desktop-horizontal-nav-style';
@@ -68,30 +69,6 @@ function setupReloadProverb() {
   node.setAttribute('aria-live', 'polite');
 }
 
-function forceHeroCartProxyVisible(proxy) {
-  if (!proxy || window.innerWidth >= 900) return;
-
-  Object.assign(proxy.style, {
-    display: 'flex',
-    position: 'absolute',
-    right: '14px',
-    top: '12px',
-    zIndex: '12',
-    width: '34px',
-    height: '34px',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '999px',
-    background: "rgba(255, 252, 244, .90) url('/images/avatar_seule.png') center / cover no-repeat",
-    border: '1px solid rgba(198, 168, 93, .24)',
-    boxShadow: '0 4px 12px rgba(31, 48, 36, .10)',
-    overflow: 'hidden',
-    cursor: 'pointer',
-    fontSize: '0',
-    WebkitTapHighlightColor: 'transparent'
-  });
-}
-
 function setupHeroCartProxy() {
   const proxy = document.querySelector('.k-hero-bubble');
   if (!proxy) return;
@@ -102,10 +79,6 @@ function setupHeroCartProxy() {
   proxy.setAttribute('tabindex', '0');
   proxy.setAttribute('aria-label', 'Ouvrir le panier');
   proxy.textContent = '';
-
-  forceHeroCartProxyVisible(proxy);
-  requestAnimationFrame(function() { forceHeroCartProxyVisible(proxy); });
-  setTimeout(function() { forceHeroCartProxyVisible(proxy); }, 250);
 
   if (proxy.dataset.boundCartProxy === '1') return;
   proxy.dataset.boundCartProxy = '1';
