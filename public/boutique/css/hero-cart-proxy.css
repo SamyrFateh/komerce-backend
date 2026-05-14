@@ -93,4 +93,17 @@
   .k-hero-bubble.k-hero-cart-proxy {
     display: none;
   }
+
+  /* Filet de sécurité desktop : l'avatar dame est toujours visible. */
+  .k-header .k-cart-btn,
+  .k-cart-btn.k-header-action {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .k-header .k-cart-avatar {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }

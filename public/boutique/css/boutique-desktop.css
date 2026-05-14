@@ -1432,7 +1432,7 @@
     font-weight: 500;
     border-radius: 999px;
     border: 1.5px solid rgba(42,62,44,.12);
-    background: var(--white);
+    background: rgba(31,48,36,.04);
     color: var(--text);
     transition: border-color .14s, color .14s, box-shadow .14s, transform .14s;
   }

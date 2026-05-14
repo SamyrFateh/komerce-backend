@@ -28,7 +28,7 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup, renderDesktopUniverseRailMarkup } from '../render/render-categories.js';
-import { getSubcategories } from '../shop-schema.js';
+import { getSubcategories, getRailCategories } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
 
@@ -151,7 +151,18 @@ export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
 
-  catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+  // Anti-FOUC : si le DOM statique correspond déjà au markup JS attendu
+  // (même nombre de chips et même ordre de data-cat), on NE re-render PAS.
+  const expectedKeys = getRailCategories().map(c => c.key);
+  const existingChips = Array.from(catsEl.querySelectorAll('.k-chip'));
+  const alreadyInSync =
+    existingChips.length === expectedKeys.length &&
+    existingChips.every((chip, i) => chip.dataset.cat === expectedKeys[i]);
+
+  if (!alreadyInSync) {
+    catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+  }
+
   ensureDesktopUniverseNav(catsEl);
 
   return catsEl;

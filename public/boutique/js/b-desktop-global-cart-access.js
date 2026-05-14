@@ -19,16 +19,12 @@ function applyMobileCartAccessVisibility() {
   const cartBtn = document.getElementById('k-cart-btn');
   if (!cartBtn) return;
 
-  if (isDesktopViewport()) {
-    cartBtn.style.removeProperty('display');
-    cartBtn.removeAttribute('aria-hidden');
-    cartBtn.removeAttribute('tabindex');
-    return;
-  }
-
-  cartBtn.style.display = 'none';
-  cartBtn.setAttribute('aria-hidden', 'true');
-  cartBtn.setAttribute('tabindex', '-1');
+  // L'avatar header est toujours visible (mobile et desktop).
+  // hero-cart-proxy.css gère la visibilité via CSS — on ne masque jamais
+  // le bouton en JS pour ne pas écraser les règles CSS avec un style inline.
+  cartBtn.style.removeProperty('display');
+  cartBtn.removeAttribute('aria-hidden');
+  cartBtn.removeAttribute('tabindex');
 }
 
 function isVisible(el) {
