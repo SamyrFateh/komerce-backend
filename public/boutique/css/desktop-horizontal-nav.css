@@ -1,0 +1,194 @@
+/**
+ * @component Boutique / Desktop Horizontal Navigation
+ * @owner desktop-horizontal-nav.css
+ *
+ * Responsibility:
+ * - Replace the heavy permanent category sidebar with a lighter desktop navigation shell.
+ * - Show a horizontal universe bar and contextual rayon strip on desktop.
+ * - Keep mobile untouched.
+ *
+ * Must not:
+ * - Affect mobile below 900px.
+ * - Touch b-pager.js mechanics.
+ * - Add supplier-specific styling.
+ * - Own product card rendering.
+ *
+ * See:
+ * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
+ */
+
+@media (min-width: 900px) {
+  /* Hide the old desktop category sidebar for now.
+     It will return later only as an advanced filters panel. */
+  #k-desktop-sidebar,
+  .k-desktop-sidebar {
+    display: none;
+  }
+
+  #k-desktop-catalog-wrap {
+    grid-template-columns: minmax(0, 1fr) 306px;
+  }
+
+  /* Keep the legacy mobile/category rail available for JS compatibility,
+     but visually replace it on desktop with the universe nav below. */
+  .k-cats {
+    display: none;
+  }
+
+  .k-cats-shell {
+    padding: 8px 20px 10px;
+  }
+
+  .k-desktop-universe-nav {
+    max-width: 1480px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .k-desktop-universe-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-desktop-universe {
+    min-width: 92px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(42, 62, 44, .08);
+    background: rgba(255,255,255,.70);
+    color: rgba(32,51,37,.76);
+    font-family: var(--font, system-ui, sans-serif);
+    font-size: 12px;
+    font-weight: 850;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(31,48,36,.035);
+    transition: background .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease), box-shadow .16s var(--ease);
+    white-space: nowrap;
+  }
+
+  .k-desktop-universe:hover {
+    transform: translateY(-1px);
+    background: #fff;
+    border-color: rgba(198,168,93,.32);
+    box-shadow: 0 7px 16px rgba(31,48,36,.07);
+  }
+
+  .k-desktop-universe.is-active {
+    background: #fff7e4;
+    color: #9a552a;
+    border-color: rgba(198,168,93,.62);
+    box-shadow: 0 8px 18px rgba(198,168,93,.14);
+  }
+
+  .k-desktop-universe-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .k-desktop-universe-icon svg {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+  }
+
+  .k-desktop-universe-label {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  #k-subcats-wrap {
+    max-width: 1480px;
+    margin: 8px auto 0;
+    padding: 0 20px 10px;
+    background: transparent;
+  }
+
+  .k-desktop-rayons-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .k-desktop-rayons-title {
+    color: rgba(32,51,37,.86);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: -.01em;
+  }
+
+  .k-desktop-rayons-hint {
+    color: rgba(32,51,37,.46);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .k-desktop-rayons-rail,
+  .k-subcats-rail.k-desktop-rayons-rail {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    padding: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .k-desktop-rayons-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-desktop-rayons-rail .k-subchip {
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.76);
+    border: 1px solid rgba(42,62,44,.08);
+    color: rgba(32,51,37,.70);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .k-desktop-rayons-rail .k-subchip:hover {
+    background: #fff;
+    border-color: rgba(198,168,93,.28);
+  }
+
+  .k-desktop-rayons-rail .k-subchip.active {
+    background: rgba(47,107,63,.10);
+    color: #2f6b3f;
+    border-color: rgba(47,107,63,.28);
+  }
+
+  .k-desktop-rayons-rail .k-subchip-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
+}
+
+@media (min-width: 1500px) {
+  .k-desktop-universe-nav,
+  #k-subcats-wrap {
+    max-width: 1540px;
+  }
+}
