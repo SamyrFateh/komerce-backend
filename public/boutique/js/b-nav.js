@@ -17,37 +17,6 @@ import { renderTrackView }               from './b-tracking.js';
 
 'use strict';
 
-function restoreMobilePagerAfterShopReturn() {
-  if (window.innerWidth >= 900) return;
-
-  import('./b-pager.js')
-    .then(function(mod) {
-      const restorePager = function() {
-        if (window.innerWidth >= 900) return;
-        const pageScroll = dom.pageScroll || document.getElementById('k-page-scroll');
-        const grid = document.getElementById('k-grid');
-        if (!pageScroll || !grid) return;
-        if (grid.classList.contains('k-grid-flat-subcat')) return;
-
-        pageScroll.classList.add('k-pager-active');
-        grid.classList.add('k-grid-cat-pager');
-
-        if (typeof mod._recalcPagerVars === 'function') mod._recalcPagerVars();
-        if (typeof mod._setupInfiniteLoop === 'function') mod._setupInfiniteLoop();
-        if (typeof mod._setupMobilePager === 'function') mod._setupMobilePager();
-        if (typeof mod._setupSectionAutoAdvance === 'function') mod._setupSectionAutoAdvance();
-      };
-
-      requestAnimationFrame(restorePager);
-      requestAnimationFrame(function() { requestAnimationFrame(restorePager); });
-      setTimeout(restorePager, 120);
-      setTimeout(restorePager, 450);
-    })
-    .catch(function(err) {
-      console.warn('[b-nav] restauration pager retour Accueil impossible', err);
-    });
-}
-
 /**
  * Branche tous les listeners du drawer panier + modal commande.
  */
@@ -182,10 +151,6 @@ export function switchView(tab) {
       pageScroll.style.top = '';
       pageScroll.classList.remove('k-pager-active');
     }
-  }
-
-  if (tab === 'shop') {
-    restoreMobilePagerAfterShopReturn();
   }
 
   // Fermer le panier si ouvert

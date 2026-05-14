@@ -6,60 +6,76 @@
 
 /* ── CHIPS SHELL + FADES ─────────────────────────────────────── */
 .k-cats-shell { position: relative; }
-/* Fades : masquées en grille mobile, inutiles */
 .k-cats-wrap-fade-left,
 .k-cats-wrap-fade-right {
-  display: none;
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 2;
 }
+.k-cats-wrap-fade-left  { left: 0;  background: linear-gradient(to right, var(--sand-warm) 35%, transparent); }
+.k-cats-wrap-fade-right { right: 0; background: linear-gradient(to left,  var(--sand-warm) 35%, transparent); }
 
-/* ── CHIPS GRILLE 2×4 (mobile-first) ────────────────────────── */
+/* ── CHIPS RAIL ─────────────────────────────────────────────── */
 .k-cats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px 0;
-  padding: 10px 6px 8px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 12px;
+  scrollbar-width: none;
+  padding: 8px 4px;
+  align-items: stretch;
+  overscroll-behavior-x: contain;
   background: transparent;
 }
-/* Pseudo-éléments sentinels inutiles en grille */
+.k-cats::-webkit-scrollbar { display: none; }
 .k-cats::before,
-.k-cats::after { display: none; }
+.k-cats::after { content: ""; flex: 0 0 12px; }
 
-/* ── CHIP ────────────────────────────────────────────────────── */
+/* ── CHIP (mobile-first : 38px) ──────────────────────────────── */
 .k-chip {
-  display: flex;
+  flex: 0 0 38px;
+  min-width: 38px;
+  max-width: 38px;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   padding: 0;
   background: transparent;
   border: none;
+  border-radius: 16px;
   cursor: pointer;
   text-align: center;
   transition: transform .18s ease, opacity .18s ease;
-  overflow: visible;
-  -webkit-tap-highlight-color: transparent;
+  scroll-snap-align: start;
+  overflow: hidden;
 }
 .k-chip:active { transform: scale(.95); }
 
 /* Photo circle */
 .k-chip-photo {
   position: relative;
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   margin: 0 auto;
-  border-radius: 50%;
+  border-radius: 11px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 2px solid rgba(0,0,0,.08);
+  border: 1px solid rgba(0,0,0,.06);
   background: #f8f8f8;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
-  transition: box-shadow .2s var(--ease), transform .2s var(--ease), border-color .2s var(--ease);
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
 .k-chip-photo > span {
   display: flex;
   align-items: center;
@@ -107,11 +123,11 @@
 
 /* Label */
 .k-chip-label {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 700;
   line-height: 1.1;
   width: 100%;
-  max-width: 72px;
+  max-width: 42px;
   margin: 0;
   padding: 0;
   white-space: nowrap;
@@ -123,8 +139,8 @@
 /* État actif mobile */
 .k-chip.active .k-chip-photo {
   border-color: var(--coral);
-  box-shadow: 0 0 0 2px var(--coral);
-  transform: scale(1.06);
+  box-shadow: 0 0 0 2.5px var(--coral), var(--elev-2);
+  transform: scale(1.05);
 }
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: #fff; }
@@ -375,15 +391,15 @@
     gap: 8px;
   }
   #k-subcats-wrap .k-subchip {
-    height: 24px;
-    padding: 0 10px;
-    font-size: 11px;
-    font-weight: 500;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
     border-radius: 999px;
     border: 1.5px solid rgba(42,62,44,.15);
     background: var(--white);
     color: var(--text);
-    box-shadow: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
     transition: border-color .14s, color .14s, transform .14s, box-shadow .14s;
   }
   #k-subcats-wrap .k-subchip:hover {
@@ -443,4 +459,7 @@
   /* .k-cats-shell top → géré par var(--header-h) à 1200px via tokens.css */
 }
 
-/* Desktop — fades : déjà masquées en mobile, rien à faire ici */
+/* Desktop — fades latéraux inutiles en mode wrap */
+@media (min-width: 900px) {
+  .k-cats-wrap-fade-left, .k-cats-wrap-fade-right { display: none; }
+}
