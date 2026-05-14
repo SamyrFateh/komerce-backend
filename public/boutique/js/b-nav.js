@@ -17,24 +17,34 @@ import { renderTrackView }               from './b-tracking.js';
 
 'use strict';
 
-function recalcMobilePagerAfterShopReturn() {
+function restoreMobilePagerAfterShopReturn() {
   if (window.innerWidth >= 900) return;
 
   import('./b-pager.js')
     .then(function(mod) {
-      const recalc = function() {
+      const restorePager = function() {
         if (window.innerWidth >= 900) return;
-        if (typeof mod._setupMobilePager === 'function') mod._setupMobilePager();
+        const pageScroll = dom.pageScroll || document.getElementById('k-page-scroll');
+        const grid = document.getElementById('k-grid');
+        if (!pageScroll || !grid) return;
+        if (grid.classList.contains('k-grid-flat-subcat')) return;
+
+        pageScroll.classList.add('k-pager-active');
+        grid.classList.add('k-grid-cat-pager');
+
         if (typeof mod._recalcPagerVars === 'function') mod._recalcPagerVars();
+        if (typeof mod._setupInfiniteLoop === 'function') mod._setupInfiniteLoop();
+        if (typeof mod._setupMobilePager === 'function') mod._setupMobilePager();
+        if (typeof mod._setupSectionAutoAdvance === 'function') mod._setupSectionAutoAdvance();
       };
 
-      requestAnimationFrame(recalc);
-      requestAnimationFrame(function() { requestAnimationFrame(recalc); });
-      setTimeout(recalc, 120);
-      setTimeout(recalc, 450);
+      requestAnimationFrame(restorePager);
+      requestAnimationFrame(function() { requestAnimationFrame(restorePager); });
+      setTimeout(restorePager, 120);
+      setTimeout(restorePager, 450);
     })
     .catch(function(err) {
-      console.warn('[b-nav] recalc pager retour Accueil impossible', err);
+      console.warn('[b-nav] restauration pager retour Accueil impossible', err);
     });
 }
 
@@ -178,7 +188,7 @@ export function switchView(tab) {
   }
 
   if (tab === 'shop') {
-    recalcMobilePagerAfterShopReturn();
+    restoreMobilePagerAfterShopReturn();
   }
 
   // Fermer le panier si ouvert
