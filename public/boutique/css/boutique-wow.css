@@ -34,9 +34,35 @@
    No #k-page-scroll / pager mechanics touched.
    ═══════════════════════════════════════════════════════════════ */
 .k-cats-shell {
-  background: linear-gradient(180deg, rgba(255, 252, 244, .58), rgba(255, 252, 244, .34));
-  box-shadow: 0 2px 8px rgba(31, 48, 36, .04);
-  border: 1px solid rgba(42, 62, 44, .045);
+  background: linear-gradient(180deg, rgba(255, 252, 244, .88), rgba(255, 252, 244, .76));
+  box-shadow: 0 3px 10px rgba(31, 48, 36, .055);
+  border: 1px solid rgba(42, 62, 44, .055);
+}
+
+.k-proverb-inline,
+#k-proverb-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(78vw, 360px);
+  margin-top: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 252, 244, .82);
+  border: 1px solid rgba(198, 168, 93, .22);
+  color: rgba(32, 51, 37, .72);
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(31, 48, 36, .055);
+}
+
+#k-proverb-text:empty {
+  display: none;
 }
 
 .k-cats {
@@ -54,8 +80,8 @@
   gap: 5px;
   padding: 3px 4px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, .42);
-  border: 1px solid rgba(42, 62, 44, .055);
+  background: rgba(255, 255, 255, .66);
+  border: 1px solid rgba(42, 62, 44, .07);
   box-shadow: 0 1px 4px rgba(31, 48, 36, .035);
 }
 
@@ -123,8 +149,8 @@
 }
 
 .k-chip.active {
-  background: rgba(255, 248, 232, .88);
-  border-color: rgba(198, 168, 93, .55);
+  background: rgba(255, 248, 232, .96);
+  border-color: rgba(198, 168, 93, .6);
   box-shadow: 0 3px 10px rgba(198, 168, 93, .12);
 }
 
@@ -231,6 +257,11 @@
     box-shadow: 0 18px 42px rgba(31, 48, 36, .14);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+  }
+
+  .k-proverb-inline,
+  #k-proverb-text {
+    display: none;
   }
 
   .k-cats-shell {
