@@ -8,6 +8,14 @@ La boutique ne doit plus être modifiée comme une page monolithique. Chaque zon
 
 Cette règle sert à éviter les patchs contradictoires, les refactorisations sauvages et les corrections faites au mauvais endroit par un agent IA ou un développeur.
 
+## Documents liés
+
+```txt
+docs/BOUTIQUE_WOW_LAYER_ARCHITECTURE.md
+```
+
+Ce document lié précise le statut temporaire de `boutique-wow.css`, la stratégie anti-FOUC, et le chemin de migration vers les fichiers propriétaires après validation visuelle.
+
 ## Règle fondamentale
 
 ```txt
@@ -37,6 +45,7 @@ Pas de JS qui recrée ce qu'un renderer sait déjà faire.
 | Produits base/mobile | `public/boutique/css/products.css` | cartes produit base/mobile, sections produit | layout desktop global, panier, modal |
 | Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, sidebar, side-cart, hero desktop, grille desktop, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager |
 | Mini-cart / accès panier | `public/boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
+| Couche wow temporaire | `public/boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
 
 ## Contrats par composant
 
@@ -154,6 +163,25 @@ Do not use !important to fight mobile/base CSS.
 Do not fix mobile hero overlap from desktop CSS.
 ```
 
+### `boutique-wow.css`
+
+Responsabilité : porter une couche de test visuel réversible pendant la phase d'itération.
+
+Interdictions :
+
+```txt
+Do not make boutique-wow.css the permanent owner of stable component styles.
+Do not change pager mechanics from CSS.
+Do not hide structural bugs with visual patches.
+Do not keep it indefinitely without migrating validated rules.
+```
+
+Voir aussi :
+
+```txt
+docs/BOUTIQUE_WOW_LAYER_ARCHITECTURE.md
+```
+
 ## Règle spécifique au rail catégories
 
 La chaîne de vérité cible est :
@@ -236,6 +264,7 @@ Avant de merger une PR UI boutique :
 [ ] Les cartes produit restent pilotées par render-product-card.js.
 [ ] Les changements CSS sont dans le bon fichier et le bon media query.
 [ ] Aucun !important n'a été ajouté pour masquer un conflit d'architecture.
+[ ] Si boutique-wow.css est modifié, le changement est expérimental, réversible et documenté.
 ```
 
 ## Prompts de garde pour agents IA
@@ -244,9 +273,11 @@ Avant de merger une PR UI boutique :
 
 ```txt
 Tu dois respecter la doctrine docs/BOUTIQUE_COMPONENT_OWNERSHIP.md.
+Lis aussi docs/BOUTIQUE_WOW_LAYER_ARCHITECTURE.md si tu touches au polish visuel.
 Ne modifie que le fichier propriétaire du problème.
 Ne crée pas de doublon de markup ou de logique.
 Ne casse pas le moteur mobile hero fixe + #k-page-scroll + b-pager.js.
 Si tu dois corriger le rail catégories, passe par shop-schema.js, render-categories.js ou home-controller.js selon la nature du problème.
 Si tu dois corriger le desktop, isole le changement dans boutique-desktop.css ou un module desktop dédié.
+Si tu modifies boutique-wow.css, considère-le comme temporaire et prépare la migration future vers les fichiers propriétaires.
 ```
