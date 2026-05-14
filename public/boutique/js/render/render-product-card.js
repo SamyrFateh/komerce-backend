@@ -1,17 +1,21 @@
 /**
  * @module render-product-card
  * @brief Renderer unique des cartes produit Komerce.
+ *
+ * The renderer consumes ProductCardViewModel so sourcing/design variability
+ * is translated before HTML rendering.
+ *
+ * See:
+ * - docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md
  */
 
 import { state } from '../b-store.js';
 import {
   sanitize,
-  fmt,
-  fmtPrice,
-  optimizeImgUrl,
   renderProductCarousel,
 } from '../b-utils.js';
 import { isFav } from '../b-cart-core.js';
+import { buildProductCardViewModel } from '../view-models/product-card-view-model.js';
 
 function getCartQty(productId) {
   const inCart = state.cart.find((item) => String(item.product.id) === String(productId));
@@ -33,26 +37,28 @@ function renderAddControl(productId, qty, variant) {
 }
 
 function renderGridCard(product, qty) {
+  const vm = buildProductCardViewModel(product, { variant: 'grid', imageSize: 400 });
+
   return `
-    <div class="k-card" data-id="${product.id}">
+    <div class="k-card ${vm.cssClassName}" data-id="${vm.id}">
       <div class="k-card-img-wrap">
-        ${renderProductCarousel(product, 400)}
-        ${product.promo_pct ? `<span class="k-card-promo">-${product.promo_pct}%</span>` : ''}
-        <button class="k-card-fav${isFav(product.id) ? ' liked' : ''}" data-fav="${product.id}" aria-label="Favori">
-          ${isFav(product.id) ? '❤️' : '🤍'}
+        ${renderProductCarousel(vm.raw, 400)}
+        ${vm.promoLabel ? `<span class="k-card-promo">${vm.promoLabel}</span>` : ''}
+        <button class="k-card-fav${isFav(vm.id) ? ' liked' : ''}" data-fav="${vm.id}" aria-label="Favori">
+          ${isFav(vm.id) ? '❤️' : '🤍'}
         </button>
       </div>
       <div class="k-card-info">
-        <div class="k-card-name">${sanitize(product.name)}</div>
-        ${product.description ? `<div class="k-card-desc">${sanitize(product.description)}</div>` : ''}
+        <div class="k-card-name">${vm.safeName}</div>
+        ${vm.safeDescription ? `<div class="k-card-desc">${vm.safeDescription}</div>` : ''}
         <div class="k-card-bottom k-card-prices-row">
           <div class="k-card-price-col">
-            <span class="k-card-price">${fmtPrice(product.price_kmf)}</span>
-            <span class="k-card-price-eur">≈ ${fmt(product.price_kmf, 'EUR')}</span>
-            ${product.promo_pct ? `<span class="k-card-old-price">${fmtPrice(Math.round(product.price_kmf / (1 - product.promo_pct / 100)))}</span>` : ''}
+            <span class="k-card-price">${vm.priceLabel}</span>
+            ${vm.priceEurLabel ? `<span class="k-card-price-eur">${vm.priceEurLabel}</span>` : ''}
+            ${vm.oldPriceLabel ? `<span class="k-card-old-price">${vm.oldPriceLabel}</span>` : ''}
           </div>
-          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${product.id}" aria-label="Ajouter">
-            ${renderAddControl(product.id, qty, 'grid')}
+          <button class="k-card-add${qty > 0 ? ' in-cart' : ''}" data-add="${vm.id}" aria-label="Ajouter">
+            ${renderAddControl(vm.id, qty, 'grid')}
           </button>
         </div>
       </div>
@@ -60,17 +66,19 @@ function renderGridCard(product, qty) {
 }
 
 function renderSuggestionCard(product, qty) {
+  const vm = buildProductCardViewModel(product, { variant: 'suggestion', imageSize: 200 });
+
   return `
-    <div class="k-sug-card" data-id="${product.id}" data-subcat="${sanitize(product.subcategory || '')}">
+    <div class="k-sug-card ${vm.cssClassName}" data-id="${vm.id}" data-subcat="${sanitize(vm.raw.subcategory || '')}">
       <div class="k-sug-card-img">
-        <img src="${optimizeImgUrl(product.image_url, 200)}" alt="${sanitize(product.name)}" loading="lazy" decoding="async">
-        ${product.promo_pct ? `<span class="k-sug-promo-badge">-${product.promo_pct}%</span>` : ''}
+        <img src="${vm.optimizedImageUrl}" alt="${vm.imageAlt}" loading="lazy" decoding="async">
+        ${vm.promoLabel ? `<span class="k-sug-promo-badge">${vm.promoLabel}</span>` : ''}
       </div>
-      <div class="k-sug-card-name">${sanitize(product.name)}</div>
+      <div class="k-sug-card-name">${vm.safeName}</div>
       <div class="k-sug-card-bottom">
-        <div class="k-sug-card-price">${fmtPrice(product.price_kmf)}</div>
+        <div class="k-sug-card-price">${vm.priceLabel}</div>
         <div class="k-sug-card-actions">
-          ${renderAddControl(product.id, qty, 'suggestion')}
+          ${renderAddControl(vm.id, qty, 'suggestion')}
         </div>
       </div>
     </div>`;
