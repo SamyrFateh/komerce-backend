@@ -483,7 +483,7 @@
   .k-card-hover-fav.liked { color: var(--hero-red); }
 
   .k-card-hover-add img {
-    width: 22px; height: 22px;
+    width: 22px; height: 26px;
     object-fit: contain;
     pointer-events: none;
   }
@@ -1294,29 +1294,32 @@
   .k-cats::-webkit-scrollbar { display: none; }
 
   /* Chip = item de nav horizontal, plat, sans icÃ´ne photo */
+  /* Chip = nav horizontal avec image ronde inline
+     HIÉRARCHIE : catégories = 36px / 13px / image 26px
+                  sous-cats  = 24px / 11px (voir #k-subcats-wrap) */
   .k-chip {
     flex: 0 0 auto;
     min-width: 0;
     max-width: none;
-    height: 30px;     /* Valeur finale P0-B */
-    min-height: 30px;
-    padding: 0 12px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 14px;
     border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
-    gap: 5px; /* espace emoji + label */
+    gap: 7px;
     flex-direction: row;
     align-items: center;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text);
     letter-spacing: -.01em;
     position: relative;
     transition: color .15s var(--ease), background .15s;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;       /* chevauchement border-bottom shell */
+    border-bottom: 2.5px solid transparent;
+    margin-bottom: -1px;
   }
   .k-chip:hover {
     color: var(--coral);
@@ -1325,18 +1328,25 @@
 
   /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
   .k-chip-photo {
-    width: 18px;     /* Valeur finale P0-C */
-    height: 18px;
-    min-width: 18px;
-    border-radius: 4px;
+    width: 26px;     /* Valeur finale — images rondes inline */
+    height: 22px;
+    min-width: 26px;
+    border-radius: 50%;
     flex-shrink: 0;
     background: transparent;
-    border: none;
+    border: 1.5px solid rgba(0,0,0,.08);
     box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: none;
+    overflow: hidden;
+  }
+  .k-chip-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
   }
   .k-chip-photo svg {
     width: 12px;     /* Valeur finale P0-C */
@@ -1348,7 +1358,7 @@
 
   /* Label visible */
   .k-chip-label {
-    font-size: 12px;   /* Valeur finale P0-D */
+    font-size: 13px;
     font-weight: 600;
     color: inherit;
     max-width: none;
@@ -1365,7 +1375,7 @@
     box-shadow: none;
   }
   .k-chip.active .k-chip-photo {
-    border-color: transparent;
+    border-color: var(--coral);
     box-shadow: none;
     transform: none;
   }
@@ -1416,10 +1426,10 @@
   }
 
   #k-subcats-wrap .k-subchip {
-    height: 30px;
-    padding: 0 13px;
-    font-size: 12px;
-    font-weight: 600;
+    height: 24px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 500;
     border-radius: 999px;
     border: 1.5px solid rgba(42,62,44,.12);
     background: var(--white);

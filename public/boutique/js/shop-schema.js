@@ -31,17 +31,28 @@ const _ICON_SVGS = {
   Auto:                     '<svg viewBox="0 0 24 24"><path d="M14 16H9m10 0h3v-3.15a2 2 0 0 0-1.1-1.8l-2.5-1.25A4 4 0 0 0 15.75 9H8.25a4 4 0 0 0-2.65 1.8L3.1 12.05A2 2 0 0 0 2 13.85V16h2m14 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>',
 };
 
+const _CATEGORY_IMAGES = {
+  all:                       '/boutique/images/categories/all.jpg',
+  Soldes:                    '/boutique/images/categories/soldes.jpg',
+  'Mode & Beauté':           '/boutique/images/categories/mode.jpg',
+  Maison:                    '/boutique/images/categories/maison.jpg',
+  Tech:                      '/boutique/images/categories/tech.jpg',
+  Bricolage:                 '/boutique/images/categories/bricolage.jpg',
+  'Créations personnelles':  '/boutique/images/categories/creations.jpg',
+  Auto:                      '/boutique/images/categories/auto.jpg',
+};
+
 const _FALLBACK_CATEGORIES = [
   // ── Filtre transverse "Tout" ──────────────────────────────────
-  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
+  { key: 'all', label: 'Tout', shortLabel: 'Tout', sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES['all'], dbKeys: [], filterType: null, displayOrder: 0, showInRail: true, showInSections: false, subcategories: [] },
 
   // ── Filtre transverse "Soldes" (chip-filter promo) ────────────
-  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS['Soldes'], dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
+  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', sectionEmoji: '🏷️', iconSvg: _ICON_SVGS['Soldes'], image: _CATEGORY_IMAGES['Soldes'], dbKeys: [], filterType: 'promo', displayOrder: 1, showInRail: true, showInSections: true, subcategories: [] },
 
   // ── PILIER 1 : Mode & Beauté ──────────────────────────────────
   // Ancrage culturel n°1. Absorbe : Sport (rétrocompat), Beauté, Enfant/Bébé.
   // Logique : achat féminin/familial groupé — tenue + soins + bébé dans un seul colis.
-  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'],
+  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'],
     dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'],  // ← Enfant + Sport : rétrocompat produits existants
     filterType: null, displayOrder: 2, showInRail: true, showInSections: true,
     subcategories: [
@@ -55,7 +66,7 @@ const _FALLBACK_CATEGORIES = [
   // ── PILIER 2 : Maison ─────────────────────────────────────────
   // Le foyer au sens large. Absorbe : Solaire léger, Énergie, Jouets, Scolaire.
   // Logique : la diaspora équipe la maison ET les enfants dans le même colis.
-  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS['Maison'],
+  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', sectionEmoji: '🏠', iconSvg: _ICON_SVGS['Maison'], image: _CATEGORY_IMAGES['Maison'],
     dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'],  // ← rétrocompat anciens piliers
     filterType: null, displayOrder: 3, showInRail: true, showInSections: true,
     subcategories: [
@@ -68,7 +79,7 @@ const _FALLBACK_CATEGORIES = [
 
   // ── PILIER 3 : Tech ───────────────────────────────────────────
   // Téléphonie absorbée — la diaspora envoie des téléphones, c'est quasi culturel.
-  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS['Tech'],
+  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', sectionEmoji: '📱', iconSvg: _ICON_SVGS['Tech'], image: _CATEGORY_IMAGES['Tech'],
     dbKeys: ['Tech', 'Phones', 'Téléphonie'],
     filterType: null, displayOrder: 4, showInRail: true, showInSections: true,
     subcategories: [
@@ -81,7 +92,7 @@ const _FALLBACK_CATEGORIES = [
   // ── PILIER 4 : Bricolage ──────────────────────────────────────
   // Quincaillerie locale aléatoire aux Comores — fort besoin diaspora.
   // Frontière stricte : léger + installable sans technicien.
-  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', sectionEmoji: '🔧', iconSvg: _ICON_SVGS['Bricolage'],
+  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', sectionEmoji: '🔧', iconSvg: _ICON_SVGS['Bricolage'], image: _CATEGORY_IMAGES['Bricolage'],
     dbKeys: ['Bricolage', 'Quincaillerie'],
     filterType: null, displayOrder: 5, showInRail: true, showInSections: true,
     subcategories: [
@@ -94,7 +105,7 @@ const _FALLBACK_CATEGORIES = [
   // ── PILIER 5 : Créations personnelles ────────────────────────
   // Grand Mariage comorien — demande groupée, haute valeur émotionnelle.
   // Modèle : print-on-demand (Printify/Gelato) + atelier Moroni pour l'urgence.
-  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'],
+  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'],
     dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'],  // ← rétrocompat
     filterType: null, displayOrder: 6, showInRail: true, showInSections: true,
     subcategories: [
@@ -108,7 +119,7 @@ const _FALLBACK_CATEGORIES = [
   // Parc concentré sur Toyota (Vitz, Hilux, Hiace, Land Cruiser).
   // Sourcing : Valeo Service Middle East — Jebel Ali Free Zone, Dubaï.
   // Frontière stricte : pièces légères uniquement.
-  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', sectionEmoji: '🔩', iconSvg: _ICON_SVGS['Auto'],
+  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', sectionEmoji: '🔩', iconSvg: _ICON_SVGS['Auto'], image: _CATEGORY_IMAGES['Auto'],
     dbKeys: ['Auto', 'Moto', 'Pièces'],
     filterType: null, displayOrder: 7, showInRail: true, showInSections: true,
     subcategories: [
@@ -140,6 +151,7 @@ function _buildFromRows(rows) {
     shortLabel:     row.short_label || row.label,
     sectionEmoji:   row.section_emoji || '📦',
     iconSvg:        row.icon_svg || null,
+    image:          row.image || _CATEGORY_IMAGES[row.key] || null,
     dbKeys:         Array.isArray(row.db_keys) ? row.db_keys : [],
     filterType:     row.filter_type || null,
     displayOrder:   row.display_order || 0,
@@ -285,6 +297,11 @@ export function getCategoryIcon(key) {
 export function getCategorySectionEmoji(key) {
   const c = getCategoryByKey(key);
   return c?.sectionEmoji || '📦';
+}
+
+export function getCategoryImage(key) {
+  const c = getCategoryByKey(key);
+  return c?.image || _CATEGORY_IMAGES[key] || null;
 }
 
 export function normalizeCategoryKey(rawCategory) {
