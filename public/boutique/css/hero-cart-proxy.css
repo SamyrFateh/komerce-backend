@@ -23,11 +23,19 @@
     align-items: center;
     flex-shrink: 0;
     gap: 0;
+    visibility: visible;
+    opacity: 1;
   }
 
   .k-header .k-cart-btn,
-  .k-cart-btn.k-header-action {
+  .k-cart-btn.k-header-action,
+  .k-header .k-cart-btn.is-empty,
+  .k-cart-btn.k-header-action.is-empty,
+  .k-header .k-cart-btn.hidden,
+  .k-cart-btn.k-header-action.hidden {
     display: flex;
+    visibility: visible;
+    opacity: 1;
     width: 42px;
     height: 42px;
     margin-left: 2px;
@@ -39,11 +47,18 @@
     border: 0;
     box-shadow: none;
     overflow: visible;
+    pointer-events: auto;
   }
 
   .k-header .k-cart-avatar,
-  .k-cart-btn.k-header-action .k-cart-avatar {
+  .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
     display: block;
+    visibility: visible;
+    opacity: 1;
     width: 38px;
     height: 38px;
     object-fit: contain;
@@ -62,6 +77,14 @@
     font-size: 9px;
     border-width: 2px;
     z-index: 20;
+  }
+
+  /* Empty cart: hide only the badge, never the avatar. */
+  .k-header .k-cart-btn.is-empty .k-cart-badge,
+  .k-cart-btn.k-header-action.is-empty .k-cart-badge,
+  .k-header .k-cart-badge:not(.show),
+  .k-cart-btn.k-header-action .k-cart-badge:not(.show) {
+    display: none;
   }
 }
 
