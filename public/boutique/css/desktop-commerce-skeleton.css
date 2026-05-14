@@ -1,0 +1,432 @@
+/**
+ * @component Boutique / Desktop Commerce Skeleton
+ * @owner desktop-commerce-skeleton.css
+ *
+ * Responsibility:
+ * - Start the desktop redesign direction without touching mobile.
+ * - Make desktop feel like a real commerce workspace, not enlarged mobile.
+ * - Improve structure: header/search, compact hero, 3-zone catalog, useful side cart.
+ *
+ * Must not:
+ * - Affect mobile below 900px.
+ * - Touch b-pager.js mechanics.
+ * - Add supplier-specific product styling.
+ * - Recreate product rendering logic.
+ *
+ * See:
+ * - docs/BOUTIQUE_DESKTOP_REDESIGN_BRIEF.md
+ * - docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md
+ */
+
+@media (min-width: 900px) {
+  body.k-view-shop {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(198, 168, 93, .08), transparent 26%),
+      radial-gradient(circle at 86% 10%, rgba(47, 107, 63, .07), transparent 28%),
+      #fdfaf5;
+  }
+
+  /* Header = outil d'achat */
+  .k-header {
+    position: sticky;
+    top: 0;
+    z-index: 220;
+    background: rgba(255, 252, 244, .92);
+    border-bottom: 1px solid rgba(42, 62, 44, .08);
+    box-shadow: 0 8px 24px rgba(31, 48, 36, .06);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .k-header-inner {
+    max-width: 1480px;
+    min-height: 68px;
+    gap: 18px;
+  }
+
+  .k-logo {
+    min-width: 170px;
+  }
+
+  .k-logo-text {
+    font-size: 22px;
+    letter-spacing: -.04em;
+  }
+
+  .k-search {
+    flex: 1 1 auto;
+    max-width: 760px;
+    height: 44px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(42, 62, 44, .10);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 8px 22px rgba(31,48,36,.045);
+  }
+
+  .k-search input {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .k-header-actions {
+    gap: 8px;
+  }
+
+  .k-header-nav-btn {
+    height: 38px;
+    padding: 0 13px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.58);
+    border: 1px solid rgba(42, 62, 44, .08);
+  }
+
+  .k-header-nav-btn:hover {
+    background: #fff;
+    border-color: rgba(198, 168, 93, .38);
+  }
+
+  .k-cart-btn.k-header-action {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(198, 168, 93, .32);
+    box-shadow: 0 8px 18px rgba(31,48,36,.08);
+  }
+
+  /* Hero compact : crédibilité, pas démo visuelle */
+  #k-hero-fixed-wrap {
+    position: relative;
+    background: transparent;
+  }
+
+  .k-hero {
+    background: transparent;
+  }
+
+  .k-hero-inner {
+    max-width: 1480px;
+    padding: 14px 20px 0;
+  }
+
+  .k-hero-media {
+    height: 172px;
+    border-radius: 26px;
+    overflow: hidden;
+    border: 1px solid rgba(42, 62, 44, .08);
+    box-shadow: 0 18px 42px rgba(31, 48, 36, .12);
+    background: #203325;
+  }
+
+  .k-hero-img {
+    height: 172px;
+    object-fit: cover;
+    object-position: 64% 0%;
+  }
+
+  .k-hero-media::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(20,36,22,.64), rgba(20,36,22,.34) 34%, rgba(20,36,22,.08) 56%, transparent 74%),
+      radial-gradient(circle at 16% 18%, rgba(255,255,255,.16), transparent 26%);
+  }
+
+  .k-hero-mini-slogan,
+  .k-hero-mini-slogan--premium {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 42%;
+    padding: 0 24px 0 clamp(26px, 4vw, 64px);
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+    background: none;
+    box-shadow: none;
+    border: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .k-hero-badge {
+    display: inline-flex;
+    margin-bottom: 9px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.13);
+    border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.82);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+  }
+
+  .k-hero-mini-slogan .k-line-1 {
+    color: rgba(255,255,255,.96);
+    font-size: clamp(24px, 2.2vw, 34px);
+    font-weight: 800;
+    line-height: .96;
+    text-shadow: none;
+  }
+
+  .k-hero-mini-slogan .k-line-2 {
+    color: #f0bf67;
+    font-size: clamp(32px, 3vw, 46px);
+    font-weight: 900;
+    line-height: .96;
+    letter-spacing: -.04em;
+    text-shadow: none;
+  }
+
+  .k-hero-sub {
+    display: block;
+    max-width: 360px;
+    margin: 9px 0 0;
+    color: rgba(255,255,255,.72);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .k-hero-cta-row {
+    display: flex;
+    gap: 9px;
+    margin-top: 13px;
+  }
+
+  .k-hero-cta-primary {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: #f0bf67;
+    color: #203325;
+    font-size: 12px;
+    font-weight: 900;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .k-hero-cta-ghost {
+    display: inline-flex;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.12);
+    color: rgba(255,255,255,.88);
+    border: 1px solid rgba(255,255,255,.16);
+  }
+
+  .k-hero-trust {
+    display: flex;
+    gap: 9px;
+    margin-top: 10px;
+    color: rgba(255,255,255,.60);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Categories strip : univers lisibles, pas rails gadgets */
+  .k-hero-cats-sticky {
+    margin-top: 10px;
+    position: sticky;
+    top: 68px;
+    z-index: 180;
+    background: transparent;
+  }
+
+  .k-cats-shell {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 8px 20px;
+    border-radius: 0;
+    background: rgba(255, 252, 244, .90);
+    border-top: 1px solid rgba(42,62,44,.06);
+    border-bottom: 1px solid rgba(42,62,44,.07);
+    box-shadow: 0 10px 24px rgba(31,48,36,.045);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .k-cats {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+  }
+
+  .k-chip {
+    min-width: 94px;
+    height: 54px;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(42,62,44,.08);
+    box-shadow: 0 3px 10px rgba(31,48,36,.035);
+  }
+
+  .k-chip-photo,
+  .k-chip-photo--img {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 12px;
+  }
+
+  .k-chip-photo img,
+  .k-chip-photo--img img {
+    border-radius: 11px;
+  }
+
+  .k-chip-label {
+    font-size: 12px;
+    font-weight: 850;
+    text-align: left;
+    color: rgba(32,51,37,.84);
+  }
+
+  .k-chip.active {
+    background: #fff7e4;
+    border-color: rgba(198,168,93,.60);
+    box-shadow: 0 7px 16px rgba(198,168,93,.12);
+  }
+
+  /* Desktop commerce workspace */
+  #k-page-scroll {
+    position: relative;
+    inset: auto;
+    height: auto;
+    overflow: visible;
+    background: transparent;
+  }
+
+  #k-desktop-catalog-wrap {
+    max-width: 1480px;
+    margin: 16px auto 0;
+    padding: 0 20px 28px;
+    display: grid;
+    grid-template-columns: 224px minmax(0, 1fr) 286px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .k-desktop-sidebar {
+    position: sticky;
+    top: 150px;
+    max-height: calc(100vh - 170px);
+    overflow: auto;
+    border-radius: 22px;
+    background: rgba(255,252,244,.88);
+    border: 1px solid rgba(42,62,44,.08);
+    box-shadow: 0 10px 26px rgba(31,48,36,.06);
+  }
+
+  #k-catalog-section {
+    min-width: 0;
+  }
+
+  .k-section {
+    padding: 0;
+  }
+
+  .k-grid {
+    gap: 14px;
+  }
+
+  .k-card {
+    border-radius: 18px;
+    border: 1px solid rgba(42,62,44,.075);
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(31,48,36,.045);
+  }
+
+  .k-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(198,168,93,.32);
+    box-shadow: 0 12px 28px rgba(31,48,36,.10);
+  }
+
+  /* Side cart = aide achat, pas simple bloc vide */
+  .k-side-cart {
+    position: sticky;
+    top: 150px;
+    max-height: calc(100vh - 170px);
+    border-radius: 24px;
+    background: rgba(255,252,244,.92);
+    border: 1px solid rgba(42,62,44,.08);
+    box-shadow: 0 12px 30px rgba(31,48,36,.075);
+    overflow: hidden;
+  }
+
+  .k-sc-bottom {
+    background: linear-gradient(180deg, rgba(255,252,244,.88), #fff);
+    border-top: 1px solid rgba(42,62,44,.07);
+  }
+
+  .k-sc-subtotal-label {
+    color: rgba(32,51,37,.62);
+    font-weight: 800;
+  }
+
+  .k-sc-subtotal-amount {
+    color: #203325;
+    font-size: 18px;
+    letter-spacing: -.035em;
+  }
+
+  .k-sc-free-ship {
+    color: rgba(32,51,37,.66);
+    background: rgba(47,107,63,.07);
+    border-radius: 999px;
+    padding: 6px 9px;
+  }
+
+  .k-sc-btn-checkout {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2f6b3f, #224d31);
+    box-shadow: 0 12px 24px rgba(47,107,63,.22);
+  }
+
+  .k-sc-btn-group,
+  .k-sc-btn-cart {
+    border-radius: 999px;
+  }
+
+  /* Modal desktop: neutraliser l'effet gadget, préparer commerce modal. */
+  .k-modal {
+    max-width: min(1040px, calc(100vw - 56px));
+    border-radius: 26px;
+    box-shadow: 0 30px 80px rgba(31,48,36,.24);
+  }
+
+  .k-modal-img-wrap {
+    cursor: default;
+  }
+
+  .k-modal-img-wrap:hover .k-modal-slide,
+  .k-modal-img-wrap:hover #k-modal-img {
+    transform: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  #k-desktop-catalog-wrap {
+    grid-template-columns: 244px minmax(0, 1fr) 306px;
+  }
+}
+
+@media (min-width: 1500px) {
+  #k-desktop-catalog-wrap,
+  .k-header-inner,
+  .k-hero-inner,
+  .k-cats-shell {
+    max-width: 1540px;
+  }
+}
