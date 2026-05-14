@@ -26,10 +26,9 @@ import './b-utils.js';        // helpers purs + window.KUtils compat
 import { bus } from './b-bus.js';
 import './b-store.js';        // state + SUBCATS + dom (initDom appelé par boutique.js §13)
 import './boutique.js';       // Phase 2 : IIFE retiré — §3 à §15 + §13 INIT
-// b-cart-pill.js désactivé — remplacé par b-mini-cart.js
+// b-cart-pill.js et b-mini-cart.js désactivés côté mobile : le panier est porté par la bottom nav.
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // LOT 12 : refonte desktop Temu
 import { isDesktop }          from './b-scroll-owner.js';
-import { setupMiniCart }       from './b-mini-cart.js';       // Mini-cart flottant mobile
 import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js'; // Affordance image panier cliquable
 import { setupBoutiqueWowStyle } from './b-boutique-wow-style.js'; // Couche polish visuelle réversible
@@ -41,14 +40,12 @@ if (typeof window !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       setupDesktopUpgrade();
-      setupMiniCart();   // Mini-cart flottant mobile
       setupProductOpenContract(); // Panier mobile/desktop → fiche produit
       setupCartProductOpenStyle(); // Indication visuelle image cliquable
       setupBoutiqueWowStyle(); // Polish visuel isolé
     });
   } else {
     setupDesktopUpgrade();
-    setupMiniCart();     // Mini-cart flottant mobile
     setupProductOpenContract();   // Panier mobile/desktop → fiche produit
     setupCartProductOpenStyle();  // Indication visuelle image cliquable
     setupBoutiqueWowStyle();      // Polish visuel isolé

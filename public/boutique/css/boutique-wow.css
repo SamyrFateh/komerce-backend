@@ -39,17 +39,35 @@
   border: 1px solid rgba(42, 62, 44, .055);
 }
 
+.k-hero-overlay {
+  display: flex;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  z-index: 115;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.k-hero-text-left,
+.k-hero-pills,
+.k-hero-pill,
+.k-hero-title,
+.k-hero-right-col {
+  display: contents;
+}
+
 .k-proverb-inline,
 #k-proverb-text {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   max-width: min(78vw, 360px);
-  margin-top: 5px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 252, 244, .82);
-  border: 1px solid rgba(198, 168, 93, .22);
+  background: rgba(255, 252, 244, .9);
+  border: 1px solid rgba(198, 168, 93, .26);
   color: rgba(32, 51, 37, .72);
   font-size: 9.5px;
   font-weight: 800;
@@ -58,11 +76,28 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 2px 8px rgba(31, 48, 36, .055);
+  box-shadow: 0 2px 8px rgba(31, 48, 36, .07);
 }
 
 #k-proverb-text:empty {
   display: none;
+}
+
+.k-hero-bubble {
+  display: flex;
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  z-index: 12;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 252, 244, .86);
+  border: 1px solid rgba(198, 168, 93, .26);
+  box-shadow: 0 4px 12px rgba(31, 48, 36, .10);
+  font-size: 15px;
 }
 
 .k-cats {
@@ -259,6 +294,7 @@
     -webkit-backdrop-filter: blur(10px);
   }
 
+  .k-hero-overlay,
   .k-proverb-inline,
   #k-proverb-text {
     display: none;
