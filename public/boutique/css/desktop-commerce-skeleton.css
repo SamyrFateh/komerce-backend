@@ -94,7 +94,8 @@
     box-shadow: 0 8px 18px rgba(31,48,36,.08);
   }
 
-  /* Hero compact : crédibilité, pas démo visuelle */
+  /* Hero desktop : compact mais sans casser les personnages.
+     La version précédente utilisait cover dans un cadre trop bas, ce qui rognait l'image. */
   #k-hero-fixed-wrap {
     position: relative;
     background: transparent;
@@ -110,18 +111,21 @@
   }
 
   .k-hero-media {
-    height: 172px;
+    height: clamp(210px, 16vw, 248px);
     border-radius: 26px;
     overflow: hidden;
     border: 1px solid rgba(42, 62, 44, .08);
     box-shadow: 0 18px 42px rgba(31, 48, 36, .12);
-    background: #203325;
+    background:
+      linear-gradient(90deg, #203325 0%, #243c2a 38%, #f7efdc 70%, #fdf7e9 100%);
   }
 
   .k-hero-img {
-    height: 172px;
-    object-fit: cover;
-    object-position: 64% 0%;
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+    object-position: right center;
+    background: transparent;
   }
 
   .k-hero-media::before {
@@ -131,8 +135,8 @@
     z-index: 1;
     pointer-events: none;
     background:
-      linear-gradient(90deg, rgba(20,36,22,.64), rgba(20,36,22,.34) 34%, rgba(20,36,22,.08) 56%, transparent 74%),
-      radial-gradient(circle at 16% 18%, rgba(255,255,255,.16), transparent 26%);
+      linear-gradient(90deg, rgba(20,36,22,.70), rgba(20,36,22,.42) 31%, rgba(20,36,22,.12) 52%, transparent 78%),
+      radial-gradient(circle at 16% 18%, rgba(255,255,255,.14), transparent 26%);
   }
 
   .k-hero-mini-slogan,
