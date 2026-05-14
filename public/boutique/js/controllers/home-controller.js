@@ -5,8 +5,8 @@
  * Responsibility:
  * - Mount the category rail rendered by render-categories.js.
  * - Orchestrate category selection on the home/catalog experience.
- * - Sync active category state between chips, desktop sidebar and subcategory rail.
- * - Own the desktop subcategory rail under #k-subcats-wrap.
+ * - Sync active category state between chips and desktop horizontal navigation.
+ * - Own the desktop contextual rayon rail under #k-subcats-wrap.
  *
  * Must not:
  * - Define category or subcategory data.
@@ -23,10 +23,11 @@
  *
  * See:
  * - docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
+ * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
  */
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
-import { renderCategoryRailMarkup } from '../render/render-categories.js';
+import { renderCategoryRailMarkup, renderDesktopUniverseRailMarkup } from '../render/render-categories.js';
 import { getSubcategories } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
@@ -44,9 +45,32 @@ function scrollToCatalog() {
   if (catalog) scrollPageToElement(catalog, -120, 'smooth');
 }
 
+function ensureDesktopUniverseNav(catsEl) {
+  if (!catsEl || !catsEl.parentNode || document.getElementById('k-desktop-universe-nav')) return null;
+
+  const nav = document.createElement('div');
+  nav.id = 'k-desktop-universe-nav';
+  nav.className = 'k-desktop-universe-nav';
+  nav.setAttribute('aria-label', 'Univers boutique');
+  catsEl.parentNode.insertBefore(nav, catsEl);
+  return nav;
+}
+
+function syncDesktopUniverseNav(categoryKey, deps) {
+  if (!isDesktop()) return;
+  const catsEl = getCatsEl();
+  const nav = document.getElementById('k-desktop-universe-nav') || ensureDesktopUniverseNav(catsEl);
+  if (!nav) return;
+
+  nav.innerHTML = renderDesktopUniverseRailMarkup(categoryKey);
+  nav.querySelectorAll('.k-desktop-universe').forEach((btn) => {
+    btn.addEventListener('click', () => handleCategorySelection(btn.dataset.cat, deps));
+  });
+}
+
 /**
- * Affiche/masque le rail de sous-catégories sous les chips (desktop uniquement).
- * Source unique de vérité pour #k-subcats-wrap.
+ * Affiche/masque le rail de rayons contextuels desktop.
+ * Mobile garde sa logique pager/rail compact.
  */
 export function renderSubcatRail(catKey) {
   if (window.innerWidth < 900) return;
@@ -57,16 +81,19 @@ export function renderSubcatRail(catKey) {
   if (!subs.length) {
     wrap.style.display = 'none';
     wrap.innerHTML = '';
-    // Fix: reset sidebar-top quand les subcats sont masquées
     document.documentElement.style.removeProperty('--sidebar-top');
     return;
   }
 
   const activeSub = state.activeSubcat || null;
   wrap.innerHTML =
-    '<div class="k-subcats-rail k-subcats-visible">' +
+    '<div class="k-desktop-rayons-head">' +
+      '<span class="k-desktop-rayons-title">Rayons</span>' +
+      '<span class="k-desktop-rayons-hint">Affiner l’univers sélectionné</span>' +
+    '</div>' +
+    '<div class="k-subcats-rail k-subcats-visible k-desktop-rayons-rail">' +
       '<button class="k-subchip' + (!activeSub ? ' active' : '') + '" data-subcat="">' +
-        '<span class="k-subchip-label">Tout</span>' +
+        '<span class="k-subchip-label">Tout voir</span>' +
       '</button>' +
       subs.map(s =>
         '<button class="k-subchip' + (activeSub === s.key ? ' active' : '') + '" data-subcat="' + s.key + '">' +
@@ -75,32 +102,12 @@ export function renderSubcatRail(catKey) {
         '</button>'
       ).join('') +
     '</div>';
-  wrap.dataset.parentCat = catKey;  // ciblage CSS couleur catégorie active
   wrap.dataset.parentCat = catKey;
   wrap.style.display = 'block';
 
-  // Compteur produits — injecté à droite du rail
-  (function() {
-    var rail = wrap.querySelector('.k-subcats-rail');
-    if (!rail) return;
-    var existing = wrap.querySelector('.k-subcat-count');
-    if (existing) existing.remove();
-    var total = (window._shopProducts || []).filter(function(p) {
-      return p.category === catKey || (p.dbCategory && p.dbCategory === catKey);
-    }).length;
-    if (total > 0) {
-      var counter = document.createElement('span');
-      counter.className = 'k-subcat-count';
-      counter.textContent = total + ' article' + (total > 1 ? 's' : '');
-      wrap.appendChild(counter);
-    }
-  }());
-
-  // Fix: mettre à jour --sidebar-top pour que la sidebar reste sous le rail subcats
   requestAnimationFrame(function() {
     var wrapH = wrap.offsetHeight || 50;
     var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 76;
-    // chips shell ≈ 58px (chips + padding), puis subcats wrap
     var catsShell = document.querySelector('.k-cats-shell');
     var catsH = catsShell ? catsShell.offsetHeight : 58;
     document.documentElement.style.setProperty('--sidebar-top', (headerH + catsH + wrapH + 4) + 'px');
@@ -112,7 +119,6 @@ export function renderSubcatRail(catKey) {
       const sub = btn.dataset.subcat || null;
       state.activeSubcat = sub || null;
       wrap.querySelectorAll('.k-subchip').forEach(b => b.classList.toggle('active', b === btn));
-      // Bug 10 fix : import statique en tête de fichier — plus d'import() dynamique avec risque de race condition
       renderGrid();
       requestAnimationFrame(function() {
         renderSubcatRail(state.activeCat);
@@ -145,16 +151,13 @@ export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
 
-  // Source de vérité runtime : render-categories.js.
-  // Les chips éventuellement présentes dans index.html ne sont qu'un fallback de boot/FOUC,
-  // jamais la vérité effective. Cela garantit les chemins images, aria-labels et fallbacks
-  // pilotés par shop-schema.js + render-categories.js.
   catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+  ensureDesktopUniverseNav(catsEl);
 
   return catsEl;
 }
 
-/** Met à jour l'état actif de la sidebar desktop (sans toucher au mobile). */
+/** Met à jour l'état actif de l'ancienne sidebar desktop si elle existe encore. */
 export function syncDesktopSidebar(catKey) {
   if (window.innerWidth < 900) return;
   document.querySelectorAll('.k-sidebar-cat').forEach(function(item) {
@@ -168,13 +171,10 @@ function handleCategorySelection(cat, deps) {
   if (state.flatSubcat) {
     state.flatSubcat = null;
     renderGrid();
-    // FIX audit 3.2 : renderGrid monte le pager dans un requestAnimationFrame.
-    // On doit attendre la prochaine frame avant de tester pagerActive / lire offsetLeft.
     requestAnimationFrame(() => handleCategorySelection(cat, deps));
     return;
   }
 
-  // Mode pager actif : scroll vers la page existante, pas de renderGrid
   const pageScroll = dom.pageScroll;
   const pagerActive = window.innerWidth < 900
     && pageScroll
@@ -182,12 +182,10 @@ function handleCategorySelection(cat, deps) {
     && document.getElementById('k-grid')?.classList.contains('k-grid-cat-pager');
 
   if (pagerActive) {
-    // Mutation sans renderGrid — le pager gère déjà l'affichage via scrollPagerToCat.
     setActiveCatState(cat);
     syncRailActiveState(cat, { center: true });
     const scrolled = scrollPagerToCat(cat);
     if (scrolled) return;
-    // Fallback : page absente du pager (ex: catégorie sans produits) → renderGrid classique
   }
 
   if (cat === 'all') {
@@ -197,7 +195,7 @@ function handleCategorySelection(cat, deps) {
     }
     syncRailActiveState('all', { center: true });
     state.sectionSubcats = {};
-    // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
+    state.activeSubcat = null;
     setActiveCat('all');
     scrollPageToTop('smooth');
     return;
@@ -205,7 +203,7 @@ function handleCategorySelection(cat, deps) {
 
   if (state.activeCat === 'all') {
     syncRailActiveState(cat, { center: true });
-    // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
+    state.activeSubcat = null;
     setActiveCat(cat);
     scrollPageToTop('smooth');
     return;
@@ -213,8 +211,6 @@ function handleCategorySelection(cat, deps) {
 
   if (cat === state.activeCat) {
     if (window.innerWidth >= 900) {
-      // Même catégorie re-cliquée : setActiveCat n'est pas appelé, pas de bus event
-      // → appel direct nécessaire ici (seul endroit légitime)
       renderSubcatRail(cat);
       scrollToCatalog();
       return;
@@ -222,13 +218,14 @@ function handleCategorySelection(cat, deps) {
 
     syncRailActiveState('all', { center: true });
     state.sectionSubcats = {};
+    state.activeSubcat = null;
     setActiveCat('all');
     scrollPageToTop('smooth');
     return;
   }
 
   syncRailActiveState(cat, { center: true });
-  // setActiveCat émet catalog:cat-changed → b-catalog.js listener gère renderSubcatRail + sidebar sync
+  state.activeSubcat = null;
   setActiveCat(cat);
   scrollPageToTop('smooth');
 }
@@ -238,15 +235,15 @@ export function setupHomeController(deps) {
   if (!catsEl || catsEl.dataset.bound === '1') return;
   catsEl.dataset.bound = '1';
 
+  syncDesktopUniverseNav(state.activeCat, deps);
+
   catsEl.querySelectorAll('.k-chip').forEach((chip) => {
     chip.addEventListener('click', () => handleCategorySelection(chip.dataset.cat, deps));
   });
 
-  // FIX balayage instable : on ne pose PAS de second listener "click" délégué
-  // ici, ni dans b-catalog#setupCatSwipeNav. handleCategorySelection appelle
-  // syncRailActiveState(cat, { center: true }) qui centre déjà la chip via
-  // centerRailChip. Avoir 2 ou 3 RAF de centrage en parallèle créait des
-  // sursauts visuels et des chips non centrées franchement.
+  window.addEventListener('resize', function() {
+    syncDesktopUniverseNav(state.activeCat, deps);
+  }, { passive: true });
 
   const activeChip = catsEl.querySelector('.k-chip.active');
   if (activeChip) centerRailChip(activeChip);
