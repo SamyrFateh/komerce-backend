@@ -2,6 +2,9 @@
  * @module b-desktop-global-cart-access
  * @brief Sur desktop, la petite dame reste l'accès global au vrai panier.
  *
+ * Mobile : pas de pilule/petite dame flottante. Le panier mobile passe par
+ * la bottom nav, qui est plus claire et ne parasite pas le catalogue.
+ *
  * Si le side-cart n'est pas réellement visible dans la vue courante
  * (favoris, suivi, groupes, etc.), on force le drawer panier comme fallback.
  */
@@ -10,6 +13,22 @@ let installed = false;
 
 function isDesktopViewport() {
   return window.matchMedia && window.matchMedia('(min-width: 900px)').matches;
+}
+
+function applyMobileCartAccessVisibility() {
+  const cartBtn = document.getElementById('k-cart-btn');
+  if (!cartBtn) return;
+
+  if (isDesktopViewport()) {
+    cartBtn.style.removeProperty('display');
+    cartBtn.removeAttribute('aria-hidden');
+    cartBtn.removeAttribute('tabindex');
+    return;
+  }
+
+  cartBtn.style.display = 'none';
+  cartBtn.setAttribute('aria-hidden', 'true');
+  cartBtn.setAttribute('tabindex', '-1');
 }
 
 function isVisible(el) {
@@ -52,5 +71,10 @@ function onCartClick(e) {
 export function setupDesktopGlobalCartAccess() {
   if (installed) return;
   installed = true;
+
+  applyMobileCartAccessVisibility();
+  window.addEventListener('resize', applyMobileCartAccessVisibility);
+  window.addEventListener('orientationchange', applyMobileCartAccessVisibility);
+
   document.addEventListener('click', onCartClick, false);
 }
