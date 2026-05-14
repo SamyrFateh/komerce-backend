@@ -65,7 +65,12 @@ function _recalcPagerVars() {
   document.documentElement.style.setProperty('--pager-w',   window.innerWidth + 'px');
   document.documentElement.style.setProperty('--bnav-h',    bnavH + 'px');
 
-  if (ps) { ps.style.left = '0'; ps.style.right = '0'; ps.style.width = '100vw'; }
+  if (ps) {
+    ps.style.top = pagerTop + 'px';
+    ps.style.left = '0';
+    ps.style.right = '0';
+    ps.style.width = '100vw';
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
