@@ -892,11 +892,11 @@
     margin: 14px auto 0;
     padding: 12px 20px 14px;
     border-radius: 28px;
-    border: 1px solid rgba(42,62,44,.055);
-    background: linear-gradient(180deg, rgba(255,252,244,.88), rgba(255,252,244,.72));
-    box-shadow: 0 12px 32px rgba(31,48,36,.07);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .k-cats {
@@ -932,11 +932,12 @@
     gap: 9px;
     padding: 10px 10px 9px;
     border-radius: 24px;
-    border: 1px solid rgba(42,62,44,.075);
-    border-bottom-color: rgba(42,62,44,.075);
-    background: rgba(255,255,255,.64);
-    color: rgba(32,51,37,.82);
-    box-shadow: 0 4px 12px rgba(31,48,36,.035);
+    border: 1px solid rgba(255,255,255,.28);
+    background: rgba(255,255,255,.18);
+    color: rgba(32,51,37,.88);
+    box-shadow: 0 4px 18px rgba(31,48,36,.06), inset 0 1px 0 rgba(255,255,255,.55);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
     cursor: pointer;
     text-align: center;
     overflow: hidden;
@@ -945,10 +946,10 @@
   }
 
   .k-chip:hover {
-    transform: translateY(-2px);
-    background: #fff;
-    border-color: rgba(198,168,93,.36);
-    box-shadow: 0 12px 24px rgba(31,48,36,.085);
+    transform: translateY(-3px);
+    background: rgba(255,255,255,.42);
+    border-color: rgba(255,255,255,.55);
+    box-shadow: 0 16px 32px rgba(31,48,36,.10), inset 0 1px 0 rgba(255,255,255,.8);
     color: #203325;
   }
 
@@ -959,9 +960,9 @@
     min-width: 54px;
     margin: 0;
     border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.72);
-    background: rgba(253,250,245,.92);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px rgba(31,48,36,.08);
+    border: 1px solid rgba(255,255,255,.45);
+    background: rgba(255,255,255,.30);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 4px 12px rgba(31,48,36,.06);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -1006,12 +1007,14 @@
   }
 
   .k-chip.active {
-    transform: translateY(-1px);
-    background: linear-gradient(180deg, #fff8e7, #fffdf7);
-    color: #9a552a;
-    border-color: rgba(198,168,93,.62);
-    border-bottom-color: rgba(198,168,93,.62);
-    box-shadow: 0 12px 26px rgba(198,168,93,.16);
+    transform: translateY(-2px);
+    background: rgba(200,92,45,.18);
+    color: #9a4a20;
+    border-color: rgba(200,92,45,.35);
+    border-bottom-color: rgba(200,92,45,.35);
+    box-shadow: 0 12px 28px rgba(200,92,45,.14), inset 0 1px 0 rgba(255,255,255,.6);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
   }
 
   .k-chip.active .k-chip-photo {
@@ -1057,24 +1060,31 @@
     gap: 6px;
     padding: 0 13px;
     border-radius: 999px;
-    background: rgba(255,255,255,.74);
-    border: 1px solid rgba(42,62,44,.08);
-    color: rgba(32,51,37,.70);
+    background: rgba(255,255,255,.20);
+    border: 1px solid rgba(255,255,255,.32);
+    color: rgba(32,51,37,.78);
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    box-shadow: 0 2px 8px rgba(31,48,36,.04), inset 0 1px 0 rgba(255,255,255,.5);
+    transition: background .14s, border-color .14s, transform .14s, box-shadow .14s;
   }
 
   .k-desktop-rayons-rail .k-subchip:hover {
-    background: #fff;
-    border-color: rgba(198,168,93,.30);
+    background: rgba(255,255,255,.42);
+    border-color: rgba(255,255,255,.6);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(31,48,36,.08), inset 0 1px 0 rgba(255,255,255,.8);
   }
 
   .k-desktop-rayons-rail .k-subchip.active {
-    background: rgba(47,107,63,.10);
-    color: #2f6b3f;
-    border-color: rgba(47,107,63,.28);
+    background: rgba(200,92,45,.18);
+    color: #9a4a20;
+    border-color: rgba(200,92,45,.35);
+    box-shadow: 0 4px 14px rgba(200,92,45,.12), inset 0 1px 0 rgba(255,255,255,.5);
   }
 
   .k-desktop-rayons-rail .k-subchip[data-subcat=""] {
