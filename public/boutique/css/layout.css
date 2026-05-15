@@ -504,38 +504,8 @@ body {
     padding: 0 clamp(16px, 3vw, 40px);
   }
 
-  /* Cartes desktop — plus compactes et denses */
-  .k-card {
-    border-radius: 10px;
-    box-shadow: var(--elev-1);
-    transition: box-shadow .2s, transform .2s;
-  }
-  .k-card:hover {
-    box-shadow: var(--elev-3);
-    transform: translateY(-2px);
-  }
-
-  .k-card-img-wrap { aspect-ratio: 1 / 1; border-radius: 10px 10px 0 0; }
-
-  .k-card-info { padding: 8px 10px 10px; }
-
-  .k-card-name {
-    font-size: 13px;
-    font-weight: 600;
-    -webkit-line-clamp: 1;
-    min-height: 0;
-  }
-
-  .k-card-desc {
-    font-size: 11px;
-    -webkit-line-clamp: 1;
-    margin-top: 2px;
-  }
-
-  .k-card-price { font-size: 15px; font-weight: 800; }
-  .k-card-price-eur { font-size: 10px; }
-  .k-card-old-price { font-size: 11px; }
-
+  /* .k-card desktop → source de vérité : products.css (base) + desktop-commerce-skeleton.css (overrides)
+     Règles supprimées de layout.css (P3 ownership audit 2026-05-15) — étaient réécrites après dans la cascade. */
   /* .k-card-add / .k-card-fav → cart.css @900px (source de vérité : 46×46px / 32×32px) */
 
   /* ── Panier drawer desktop ───────────────────────────────── */
