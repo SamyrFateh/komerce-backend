@@ -166,7 +166,7 @@
   #k-subcats-wrap {
     max-width: 1480px;
     margin: 12px auto 0;
-    padding: 0 20px 10px;
+    padding: 0 20px 8px;
     background: transparent;
   }
 
@@ -202,6 +202,38 @@
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
+  }
+
+  .k-desktop-rayons-rail .k-subchip:hover {
+    background: #fff;
+    border-color: rgba(198,168,93,.30);
+  }
+
+  .k-desktop-rayons-rail .k-subchip.active {
+    background: rgba(47,107,63,.10);
+    color: #2f6b3f;
+    border-color: rgba(47,107,63,.28);
+  }
+
+  /* Desktop cleanup: keep one secondary navigation only.
+     The first generated subchip is the generic "Tout voir" reset; on desktop it
+     creates a heavy empty-looking pill and duplicates the main category rail. */
+  .k-desktop-rayons-rail .k-subchip[data-subcat=""] {
+    display: none;
+  }
+
+  /* render-home-sections also injects per-section subchips below the title.
+     Those are useful on mobile/legacy flows, but duplicate the desktop rayon rail. */
+  .k-sec-subcats {
+    display: none;
+  }
+
+  .k-sec-see-all {
+    display: none;
+  }
+
+  .k-sec-header {
+    margin-top: 4px;
   }
 }
 
