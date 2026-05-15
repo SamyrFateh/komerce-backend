@@ -865,205 +865,249 @@
 
 
 
+
+
 /* ══════════════════════════════════════════════════════════════
-   PARTIE 3 — MEGA-NAV DESKTOP (≥ 900px)
+   CATÉGORIES DESKTOP — CARTES VISUELLES (source de vérité unique)
+   Transféré depuis desktop-horizontal-nav.css.
+   Remplace l'ancien bloc MEGA-NAV TEMU/SHEIN.
    ══════════════════════════════════════════════════════════════ */
 
-/* â”€â”€ 1. CHIP RAIL → MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
 
-  /* FIX : annuler le margin-top:-42px mobile (overlap hero) — inutile et nuisible desktop */
+  /* Sticky wrapper : c'est .k-hero-cats-sticky qui est sticky, pas .k-cats-shell */
   .k-hero-cats-sticky {
-    margin-top: 0;
-  }
-
-  /* Shell : bande pleine largeur collée sous le header */
-  .k-cats-shell {
     position: sticky;
-    top: var(--header-h, 72px);
-    z-index: 110;
-    background: #fff;
-    border-bottom: 1px solid rgba(31,48,36,.08);
-    box-shadow: 0 2px 14px rgba(31,48,36,.06);
-    padding: 0;
+    top: 68px;
+    z-index: 180;
+    margin-top: 0;
+    background: transparent;
   }
 
-  /* Rail : flex horizontal centré, scrollable si débordement */
-  /* Rail : wrap pour libérer la molette verticale (correction P0-A — valeurs finales).
-     L'ancienne version height:52px + nowrap + overflow-x:auto capturait la molette verticale. */
+  .k-cats-shell {
+    position: relative;
+    top: auto;
+    z-index: 120;
+    max-width: 1480px;
+    margin: 14px auto 0;
+    padding: 12px 20px 14px;
+    border-radius: 28px;
+    border: 1px solid rgba(42,62,44,.055);
+    background: linear-gradient(180deg, rgba(255,252,244,.88), rgba(255,252,244,.72));
+    box-shadow: 0 12px 32px rgba(31,48,36,.07);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+  }
+
   .k-cats {
-    max-width: var(--container, 1400px);
-    margin: 0 auto;
-    padding: 6px clamp(16px, 3vw, 40px) 7px;
-    gap: 6px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(92px, 1fr));
+    gap: 12px;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
     overflow: visible;
-    overscroll-behavior: auto;
+    align-items: stretch;
     scroll-snap-type: none;
-    scrollbar-width: none;
-    height: auto;    /* Source de vérité hauteur chip rail desktop — layout.css délègue ici */
-    align-items: center;
   }
-  .k-cats::-webkit-scrollbar { display: none; }
 
-  /* Chip = item de nav horizontal, plat, sans icône photo */
+  .k-cats::before,
+  .k-cats::after,
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none;
+  }
+
   .k-chip {
-    flex: 0 0 auto;
     min-width: 0;
     max-width: none;
-    height: 30px;     /* Valeur finale P0-B */
-    min-height: 30px;
-    padding: 0 12px;
-    border-radius: 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-    gap: 5px; /* espace emoji + label */
-    flex-direction: row;
+    width: 100%;
+    height: 106px;
+    min-height: 106px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    white-space: nowrap;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -.01em;
-    position: relative;
-    transition: color .15s var(--ease), background .15s;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;       /* chevauchement border-bottom shell */
-  }
-  .k-chip:hover {
-    color: var(--coral);
-    background: rgba(200,92,45,.04);
+    justify-content: center;
+    gap: 9px;
+    padding: 10px 10px 9px;
+    border-radius: 24px;
+    border: 1px solid rgba(42,62,44,.075);
+    border-bottom-color: rgba(42,62,44,.075);
+    background: rgba(255,255,255,.64);
+    color: rgba(32,51,37,.82);
+    box-shadow: 0 4px 12px rgba(31,48,36,.035);
+    cursor: pointer;
+    text-align: center;
+    overflow: hidden;
+    white-space: normal;
+    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
   }
 
-  /* Icône photo — réduite, arrondie, intégrée inline */
-  .k-chip-photo {
-    width: 18px;     /* Valeur finale P0-C */
-    height: 18px;
-    min-width: 18px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
+  .k-chip:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    border-color: rgba(198,168,93,.36);
+    box-shadow: 0 12px 24px rgba(31,48,36,.085);
+    color: #203325;
+  }
+
+  .k-chip-photo,
+  .k-chip-photo.k-chip-photo--img {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    margin: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.72);
+    background: rgba(253,250,245,.92);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px rgba(31,48,36,.08);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     transform: none;
   }
-  .k-chip-photo svg {
-    width: 12px;     /* Valeur finale P0-C */
-    height: 12px;
-    stroke: currentColor;
-  }
-  /* Pas de fond coloré sur l'icône en mode nav */
-  .k-chip[data-cat] .k-chip-photo { background: transparent; }
 
-  /* Label visible */
+  .k-chip-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 17px;
+  }
+
+  .k-chip-fallback {
+    display: none;
+  }
+
+  .k-chip-photo.is-img-error .k-chip-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 900;
+    background: #203325;
+  }
+
   .k-chip-label {
-    font-size: 12px;   /* Valeur finale P0-D */
-    font-weight: 600;
+    max-width: 100%;
     color: inherit;
-    max-width: none;
-    overflow: visible;
+    font-size: 13.5px;
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-    text-overflow: clip;
   }
 
-  /* État actif : soulignement coral Shein-style */
   .k-chip.active {
-    color: var(--coral);
-    background: transparent;
-    border-bottom-color: var(--coral);
-    box-shadow: none;
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #fff8e7, #fffdf7);
+    color: #9a552a;
+    border-color: rgba(198,168,93,.62);
+    border-bottom-color: rgba(198,168,93,.62);
+    box-shadow: 0 12px 26px rgba(198,168,93,.16);
   }
+
   .k-chip.active .k-chip-photo {
-    border-color: transparent;
-    box-shadow: none;
-    transform: none;
-  }
-  .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-  .k-chip.active .k-chip-label { color: var(--coral); font-weight: 700; }
-
-  /* Hover : sous-ligne subtile */
-  .k-chip:not(.active):hover {
-    border-bottom-color: rgba(200,92,45,.3);
+    border-color: rgba(198,168,93,.74);
+    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
+    opacity: 1;
   }
 
-  /* Pas de fades latéraux desktop */
-  .k-cats-wrap-fade-left,
-  .k-cats-wrap-fade-right { display: none; }
-
-  /* Chip "Tout" : légèrement en gras pour ancrage visuel */
-  .k-chip[data-cat="all"] .k-chip-photo {
-    background: transparent;
+  .k-chip.active .k-chip-label {
+    color: #9a552a;
+    font-weight: 900;
   }
-  .k-chip[data-cat="all"] .k-chip-photo > span {
-    font-size: 13px;
-    color: var(--text);
-  }
-  .k-chip[data-cat="all"].active .k-chip-photo > span {
-    color: var(--coral);
-  }
-}
-
-/* â”€â”€ 3. SOUS-CATÉGORIES — rail inline sous le mega-nav â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* Source de vérité pour #k-subcats-wrap .k-subchip desktop.
-   categories.css @900px ne conserve que position:sticky + z-index + backdrop-filter. */
-@media (min-width: 900px) {
 
   #k-subcats-wrap {
-    background: rgba(253,250,245,.97);
-    border-bottom: 1px solid rgba(31,48,36,.06);
-    box-shadow: none;
+    max-width: 1480px;
+    margin: 12px auto 0;
+    padding: 0 20px 8px;
+    background: transparent;
   }
 
-  #k-subcats-wrap .k-subcats-rail {
-    max-width: var(--container, 1400px);
-    margin: 0 auto;
-    padding: 6px clamp(16px, 3vw, 40px) 8px;
+  .k-desktop-rayons-head {
+    display: none;
+  }
+
+  .k-desktop-rayons-rail,
+  .k-subcats-rail.k-desktop-rayons-rail {
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+    padding: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .k-desktop-rayons-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .k-desktop-rayons-rail .k-subchip {
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
-    overflow-x: visible;
-    justify-content: flex-start;
-  }
-
-  #k-subcats-wrap .k-subchip {
-    height: 30px;
     padding: 0 13px;
-    font-size: 12px;
-    font-weight: 600;
     border-radius: 999px;
-    border: 1.5px solid rgba(42,62,44,.12);
-    background: var(--white);
-    color: var(--text);
-    transition: border-color .14s, color .14s, box-shadow .14s, transform .14s;
+    background: rgba(255,255,255,.74);
+    border: 1px solid rgba(42,62,44,.08);
+    color: rgba(32,51,37,.70);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
   }
-  #k-subcats-wrap .k-subchip:hover {
-    border-color: var(--coral);
-    color: var(--coral);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(200,92,45,.12);
+
+  .k-desktop-rayons-rail .k-subchip:hover {
+    background: #fff;
+    border-color: rgba(198,168,93,.30);
   }
-  #k-subcats-wrap .k-subchip.active {
-    background: var(--coral);
-    border-color: var(--coral);
-    color: #fff;
-    box-shadow: 0 3px 10px rgba(200,92,45,.25);
+
+  .k-desktop-rayons-rail .k-subchip.active {
+    background: rgba(47,107,63,.10);
+    color: #2f6b3f;
+    border-color: rgba(47,107,63,.28);
+  }
+
+  .k-desktop-rayons-rail .k-subchip[data-subcat=""] {
+    display: none;
+  }
+
+  .k-sec-subcats {
+    display: none;
+  }
+
+  .k-sec-see-all {
+    display: none;
+  }
+
+  .k-sec-header {
+    margin-top: 4px;
+  }
+
+  /* Sidebar + universe nav masqués en desktop horizontal */
+  #k-desktop-sidebar,
+  .k-desktop-sidebar {
+    display: none;
+  }
+
+  .k-desktop-universe-nav {
+    display: none;
   }
 }
 
-/* â”€â”€ 5. STICKY BAR : compenser le nouveau top du mega-nav â”€â”€â”€â”€â”€ */
-@media (min-width: 900px) {
-  /* Le sticky-bar hero utilisait top:68px (header seul).
-     Maintenant le mega-nav fait 52px de plus → on pousse les
-     éléments ancrés en dessous du nouvel ensemble header+nav. */
-  :root {
-    --nav-bar-h: 52px;   /* hauteur du mega-nav chips */
+@media (min-width: 900px) and (max-width: 1180px) {
+  .k-cats {
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
   }
-}
-@media (min-width: 1200px) {
-  :root { --nav-bar-h: 52px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1321,41 +1365,6 @@
     transform: translateX(1px);
   }
 }
-
-/* â”€â”€ P1V-2 : INDICATEUR CATÉGORIE ACTIVE — fil d'Ariane léger â”€â”€ */
-/*
-   Quand une .k-chip est active, le rail n'affiche pas explicitement
-   "vous êtes dans Mode". On ajoute un badge textuel discret sous le rail
-   via .k-cats-shell[data-active-cat] ::after (CSS pur, aucun JS).
-
-   Mais comme le HTML n'expose pas forcément data-active-cat sur le shell,
-   on utilise une autre approche : la chip active a déjà un style coral.
-   On renforce juste son signal visuel en mode wrap (post P0) avec
-   un léger fond pill coral pour être immédiatement identifiable.
-*/
-@media (min-width: 900px) {
-  /* En mode wrap (post P0), les chips ont border-radius:999px.
-     Active chip : fond coral solide, plus de border-bottom (mega-nav
-     style supprimé par le patch P0). */
-  .k-chip.active {
-    background: var(--coral);
-    color: #fff;
-    border-color: var(--coral);
-    box-shadow: 0 2px 8px rgba(200, 92, 45, .28);
-    border-bottom-color: var(--coral);
-  }
-  .k-chip.active .k-chip-label {
-    color: #fff;
-    font-weight: 700;
-  }
-  .k-chip.active .k-chip-photo {
-    opacity: .85;
-  }
-  .k-chip.active .k-chip-photo svg {
-    stroke: #fff;
-  }
-}
-
 /* â”€â”€ P1V-3 : BOUTON RETOUR "k-flatcat-back" — plus visible â”€â”€ */
 /*
    Actuellement : border, background:white, color:text-muted — se noie dans le fond.

@@ -96,10 +96,14 @@
     box-shadow: 0 8px 18px rgba(31,48,36,.08);
   }
 
-  /* Hero desktop : compact mais sans casser les personnages.
-     La version précédente utilisait cover dans un cadre trop bas, ce qui rognait l'image. */
+  /* Hero desktop : reset complet du fixed mobile — position relative pour contenir hero + sticky */
   #k-hero-fixed-wrap {
     position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: auto;
+    width: 100%;
     background: transparent;
   }
 
@@ -235,15 +239,7 @@
     font-weight: 700;
   }
 
-  /* Categories strip : univers lisibles, pas rails gadgets */
-  .k-hero-cats-sticky {
-    margin-top: 10px;
-    position: sticky;
-    top: 68px;
-    z-index: 180;
-    background: transparent;
-  }
-
+  /* .k-hero-cats-sticky → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
 
   /* Desktop commerce workspace */
   #k-page-scroll {

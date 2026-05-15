@@ -471,51 +471,15 @@
 }
 
 /* ── DESKTOP ─────────────────────────────────────────────────── */
+/* #k-subcats-wrap visuel (background, border, rail, subchip) → source de vérité : boutique-desktop.css */
+/* Animation d'entrée conservée ici car non couverte par boutique-desktop.css */
 @media (min-width: 900px) {
-  /* Sous-catégories desktop — visibles via JS (display:block posé par renderSubcatRail) */
-  #k-subcats-wrap {
-    background: var(--white);
-    border-bottom: 1px solid rgba(42,62,44,.07);
-    animation: k-subcats-slide-in .16s ease both;
-  }
   @keyframes k-subcats-slide-in {
     from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  #k-subcats-wrap .k-subcats-rail {
-    max-width: var(--container, 1400px);
-    margin: 0 auto;
-    padding: 8px clamp(16px, 3vw, 40px) 10px;
-    flex-wrap: wrap;
-    overflow-x: visible;
-    background: transparent;
-    border-top: none;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-  #k-subcats-wrap .k-subchip {
-    height: 32px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 999px;
-    border: 1.5px solid rgba(42,62,44,.15);
-    background: var(--white);
-    color: var(--text);
-    box-shadow: 0 1px 3px rgba(0,0,0,.05);
-    transition: border-color .14s, color .14s, transform .14s, box-shadow .14s;
-  }
-  #k-subcats-wrap .k-subchip:hover {
-    border-color: var(--coral);
-    color: var(--coral);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(200,92,45,.12);
-  }
-  #k-subcats-wrap .k-subchip.active {
-    background: var(--coral);
-    border-color: var(--coral);
-    color: #fff;
-    box-shadow: 0 3px 10px rgba(200,92,45,.25);
+  #k-subcats-wrap {
+    animation: k-subcats-slide-in .16s ease both;
   }
 }
 /* [supprimé] ancien bloc k-chip grille desktop — remplacé par le bloc pill L518 */
@@ -547,7 +511,7 @@
 
 @media (min-width: 900px) {
 
-  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (MEGA-NAV TEMU/SHEIN) */
+  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
 
   /* Subcats desktop */
   .k-subcats-rail {

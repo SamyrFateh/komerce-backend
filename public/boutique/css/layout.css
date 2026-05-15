@@ -483,22 +483,13 @@ body {
   /* Bnav caché desktop */
   .k-bnav { display: none; }
 
-  /* .k-cats-shell max-width/margin → categories.css bloc sticky (source de vérité) */
+  /* .k-cats, .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
 
-  .k-cats {
-    padding: 10px clamp(16px, 3vw, 40px) 0;
-    gap: 8px;
-    flex-wrap: wrap;          /* chips sur 1-2 lignes selon nb catégories */
-    overflow: visible;
-    /* height : source de vérité → boutique-desktop.css .k-cats @900px (height:52px) */
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-
+  /* .k-cats-wrap fades : masqués desktop */
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right { display: none; }  /* pas de fade desktop */
 
-  /* .k-chip pill desktop → categories.css (source de vérité) */
+  /* .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
 
   /* Section titre catégorie */
   .k-sec-header {
