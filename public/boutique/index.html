@@ -45,6 +45,13 @@ if('serviceWorker' in navigator){
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
 <title>Komerce — Boutique en ligne</title>
+<meta name="description" content="La boutique en ligne des Comores. Mode, tech, maison, beauté — commandez depuis l'Europe, retirez en cash chez votre relais local.">
+<meta property="og:title" content="Komerce — La boutique comorienne">
+<meta property="og:description" content="Mode, tech, maison, beauté — livré aux Comores. Paiement cash, retrait relais.">
+<meta property="og:image" content="/images/og-cover.jpg">
+<meta property="og:url" content="https://komerce.fr">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,6 +127,7 @@ if('serviceWorker' in navigator){
 <div id="k-hero-fixed-wrap">
 
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
+<h1 class="sr-only">Komerce — La boutique en ligne des Comores</h1>
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
@@ -173,54 +181,51 @@ if('serviceWorker' in navigator){
   <div class="k-cats-wrap-fade-left"></div>
   <nav class="k-cats" id="k-cats">
     <!-- Rail v2 — 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
-    <button class="k-chip active" data-cat="all">
+    <button class="k-chip active" data-cat="all" aria-label="Toutes les catégories">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/all.jpg" alt="Tout" loading="eager" width="80" height="80">
+        <img src="/boutique/images/categories/all.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Tout</span>
     </button>
-    <button class="k-chip" data-cat="Soldes">
+    <button class="k-chip" data-cat="Soldes" aria-label="Soldes">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/soldes.jpg" alt="Soldes" loading="eager" width="80" height="80">
+        <img src="/boutique/images/categories/soldes.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Soldes</span>
     </button>
-    <button class="k-chip" data-cat="Mode & Beauté">
+    <button class="k-chip" data-cat="Mode & Beauté" aria-label="Mode et Beauté">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/mode.jpg" alt="Mode & Beauté" loading="eager" width="80" height="80">
+        <img src="/boutique/images/categories/mode.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Mode</span>
     </button>
-    <button class="k-chip" data-cat="Maison">
+    <button class="k-chip" data-cat="Maison" aria-label="Maison">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/maison.jpg" alt="Maison" loading="eager" width="80" height="80">
+        <img src="/boutique/images/categories/maison.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Maison</span>
     </button>
-    <button class="k-chip" data-cat="Tech">
+    <button class="k-chip" data-cat="Tech" aria-label="Tech">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/tech.jpg" alt="Tech" loading="eager" width="80" height="80">
+        <img src="/boutique/images/categories/tech.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Tech</span>
     </button>
-    <!-- Pilier 4 : Bricolage — nouveau dans le rail v2 -->
-    <button class="k-chip" data-cat="Bricolage">
+    <button class="k-chip" data-cat="Bricolage" aria-label="Bricolage">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/bricolage.jpg" alt="Bricolage" loading="lazy" width="80" height="80">
+        <img src="/boutique/images/categories/bricolage.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Bricolage</span>
     </button>
-    <!-- Pilier 5 : Créations personnelles -->
-    <button class="k-chip" data-cat="Créations personnelles">
+    <button class="k-chip" data-cat="Créations personnelles" aria-label="Créations personnelles">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/creations.jpg" alt="Personnalisé" loading="lazy" width="80" height="80">
+        <img src="/boutique/images/categories/creations.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Perso.</span>
     </button>
-    <!-- Pilier 6 : Auto — nouveau dans le rail v2 -->
-    <button class="k-chip" data-cat="Auto">
+    <button class="k-chip" data-cat="Auto" aria-label="Auto et Moto">
       <span class="k-chip-photo">
-        <img src="/boutique/images/categories/auto.jpg" alt="Auto & Moto" loading="lazy" width="80" height="80">
+        <img src="/boutique/images/categories/auto.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Auto</span>
     </button>
@@ -336,7 +341,7 @@ if('serviceWorker' in navigator){
             <button class="k-qty-btn" id="k-qty-plus">+</button>
           </div>
           <button class="k-add-cart-btn" id="k-add-cart-btn">
-            <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="">
+            <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
             Ajouter
           </button>
           <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
@@ -415,9 +420,9 @@ if('serviceWorker' in navigator){
     </div>
     <div>
       <div class="k-footer-col-title">Boutique</div>
-      <a class="k-footer-col-link" href="#" data-footer-cat="all">Tous les produits</a>
-      <a class="k-footer-col-link" href="#" data-footer-cat="Soldes">Soldes &amp; promotions</a>
-      <a class="k-footer-col-link" href="#" data-footer-cat="Sur-mesure">Sur-mesure</a>
+      <button class="k-footer-col-link" data-footer-cat="all">Tous les produits</button>
+      <button class="k-footer-col-link" data-footer-cat="Soldes">Soldes &amp; promotions</button>
+      <button class="k-footer-col-link" data-footer-cat="Sur-mesure">Sur-mesure</button>
       <a class="k-footer-col-link" href="/event/create">Panier collectif</a>
     </div>
     <div>
@@ -431,8 +436,10 @@ if('serviceWorker' in navigator){
     <div>
       <div class="k-footer-col-title">Newsletter</div>
       <p class="k-footer-newsletter-desc">Nouveautés et promos exclusives, avant tout le monde.</p>
-      <input class="k-footer-newsletter-input" type="email" placeholder="votre@email.com" aria-label="Adresse e-mail newsletter">
-      <button class="k-footer-newsletter-btn" type="button">S'inscrire</button>
+      <form class="k-footer-newsletter-form" novalidate>
+        <input class="k-footer-newsletter-input" type="email" placeholder="votre@email.com" aria-label="Adresse e-mail newsletter" required>
+        <button class="k-footer-newsletter-btn" type="submit">S'inscrire</button>
+      </form>
     </div>
   </div>
   <div class="k-footer-bottom">

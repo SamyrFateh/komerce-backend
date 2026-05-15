@@ -61,6 +61,18 @@ ul, ol  { list-style: none; }
 /* Utilité globale */
 .u-hidden { display: none; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ── MODE PAGER TEMU : le document reste toujours cadré ──────
    Le rail horizontal est #k-grid uniquement.
    html/body ne doivent jamais devenir scrollables horizontalement. */
