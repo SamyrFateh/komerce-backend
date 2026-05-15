@@ -1599,3 +1599,19 @@
 /* SIDE CART — margin-top 52px intégré dans le bloc consolidé LOT 9 (layout.css). */
 
 
+/* ══════════════════════════════════════════════════════════════
+   POLISH — Desktop flat category header only
+   Option 2 : le header catalogue garde le breadcrumb/titre/compteur.
+   Les sous-catégories répétées sous le header sont masquées en desktop pour
+   éviter le doublon avec les pastilles principales et alléger l'entrée grille.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  .k-flatcat-subcats {
+    display: none;
+  }
+
+  .k-flatcat-header {
+    margin-bottom: 14px;
+  }
+}
+
