@@ -889,9 +889,9 @@
     top: auto;
     z-index: 120;
     max-width: 1480px;
-    margin: 14px auto 0;
-    padding: 12px 20px 14px;
-    border-radius: 28px;
+    margin: 28px auto 0;
+    padding: 0 20px;
+    border-radius: 0;
     border: none;
     background: transparent;
     box-shadow: none;
@@ -932,12 +932,11 @@
     gap: 9px;
     padding: 10px 10px 9px;
     border-radius: 24px;
-    border: 1px solid rgba(255,255,255,.28);
-    background: rgba(255,255,255,.18);
-    color: rgba(32,51,37,.88);
-    box-shadow: 0 4px 18px rgba(31,48,36,.06), inset 0 1px 0 rgba(255,255,255,.55);
-    backdrop-filter: blur(12px) saturate(140%);
-    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid rgba(42,62,44,.075);
+    border-bottom-color: rgba(42,62,44,.075);
+    background: rgba(255,255,255,.64);
+    color: rgba(32,51,37,.82);
+    box-shadow: 0 4px 12px rgba(31,48,36,.035);
     cursor: pointer;
     text-align: center;
     overflow: hidden;
@@ -946,10 +945,10 @@
   }
 
   .k-chip:hover {
-    transform: translateY(-3px);
-    background: rgba(255,255,255,.42);
-    border-color: rgba(255,255,255,.55);
-    box-shadow: 0 16px 32px rgba(31,48,36,.10), inset 0 1px 0 rgba(255,255,255,.8);
+    transform: translateY(-2px);
+    background: #fff;
+    border-color: rgba(198,168,93,.36);
+    box-shadow: 0 12px 24px rgba(31,48,36,.085);
     color: #203325;
   }
 
@@ -960,9 +959,9 @@
     min-width: 54px;
     margin: 0;
     border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.45);
-    background: rgba(255,255,255,.30);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 4px 12px rgba(31,48,36,.06);
+    border: 1px solid rgba(255,255,255,.72);
+    background: rgba(253,250,245,.92);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px rgba(31,48,36,.08);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -1007,14 +1006,12 @@
   }
 
   .k-chip.active {
-    transform: translateY(-2px);
-    background: rgba(200,92,45,.18);
-    color: #9a4a20;
-    border-color: rgba(200,92,45,.35);
-    border-bottom-color: rgba(200,92,45,.35);
-    box-shadow: 0 12px 28px rgba(200,92,45,.14), inset 0 1px 0 rgba(255,255,255,.6);
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #fff8e7, #fffdf7);
+    color: #9a552a;
+    border-color: rgba(198,168,93,.62);
+    border-bottom-color: rgba(198,168,93,.62);
+    box-shadow: 0 12px 26px rgba(198,168,93,.16);
   }
 
   .k-chip.active .k-chip-photo {
@@ -1030,8 +1027,8 @@
 
   #k-subcats-wrap {
     max-width: 1480px;
-    margin: 8px auto 0;
-    padding: 0 20px 10px;
+    margin: 12px auto 0;
+    padding: 0 20px 8px;
     background: transparent;
   }
 
@@ -1060,31 +1057,24 @@
     gap: 6px;
     padding: 0 13px;
     border-radius: 999px;
-    background: rgba(255,255,255,.20);
-    border: 1px solid rgba(255,255,255,.32);
-    color: rgba(32,51,37,.78);
+    background: rgba(255,255,255,.74);
+    border: 1px solid rgba(42,62,44,.08);
+    color: rgba(32,51,37,.70);
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
-    backdrop-filter: blur(10px) saturate(130%);
-    -webkit-backdrop-filter: blur(10px) saturate(130%);
-    box-shadow: 0 2px 8px rgba(31,48,36,.04), inset 0 1px 0 rgba(255,255,255,.5);
-    transition: background .14s, border-color .14s, transform .14s, box-shadow .14s;
   }
 
   .k-desktop-rayons-rail .k-subchip:hover {
-    background: rgba(255,255,255,.42);
-    border-color: rgba(255,255,255,.6);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(31,48,36,.08), inset 0 1px 0 rgba(255,255,255,.8);
+    background: #fff;
+    border-color: rgba(198,168,93,.30);
   }
 
   .k-desktop-rayons-rail .k-subchip.active {
-    background: rgba(200,92,45,.18);
-    color: #9a4a20;
-    border-color: rgba(200,92,45,.35);
-    box-shadow: 0 4px 14px rgba(200,92,45,.12), inset 0 1px 0 rgba(255,255,255,.5);
+    background: rgba(47,107,63,.10);
+    color: #2f6b3f;
+    border-color: rgba(47,107,63,.28);
   }
 
   .k-desktop-rayons-rail .k-subchip[data-subcat=""] {
@@ -1128,93 +1118,109 @@
 
 @media (min-width: 900px) {
 
-  /* Wrap : intégré au rail principal, sans bandeau flottant blanc. */
+  /* Wrap : transparent, sans cadre — les chips suffisent */
   #k-subcats-wrap {
     background: transparent;
-    border-bottom: 0;
+    border-bottom: none;
     box-shadow: none;
   }
 
-  /* Rail : compact, centré, dans la continuité des grandes pastilles. */
+  /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     max-width: var(--container);
     margin: 0 auto;
-    padding: 0 clamp(16px, 3vw, 40px) 8px;
+    padding: 8px clamp(16px, 3vw, 40px) 9px;
     background: transparent;
     border-top: none;
   }
   #k-subcats-wrap .k-subcats-rail::-webkit-scrollbar { display: none; }
 
+  /* Label "catégorie active ›" en tête du rail — décoratif injecté par CSS */
+  /* (pas de JS : pseudo-element avant le premier subchip) */
   #k-subcats-wrap .k-subcats-rail::before {
     content: attr(data-cat-label);
     display: flex;
     align-items: center;
     font-size: 10px;
-    font-weight: 850;
-    letter-spacing: .09em;
+    font-weight: 800;
+    letter-spacing: .1em;
     text-transform: uppercase;
-    color: rgba(32,51,37,.44);
+    color: var(--coral);
     white-space: nowrap;
-    margin-right: 2px;
+    margin-right: 4px;
     flex-shrink: 0;
   }
 
+  /* Pill subchip — style Shein : fond coloré, compact, pill pleine */
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    height: 32px;
-    padding: 0 14px;
+    height: 28px;
+    padding: 0 13px;
     border-radius: 999px;
-    border: 1px solid rgba(42,62,44,.08);
-    background: rgba(255,255,255,.64);
-    color: rgba(32,51,37,.74);
+    border: 1.5px solid transparent;
+    background: rgba(31,48,36,.06);
+    color: var(--text);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 600;
     white-space: nowrap;
     flex-shrink: 0;
     cursor: pointer;
     transition: background .14s var(--ease), border-color .14s, color .14s, transform .14s, box-shadow .14s;
     letter-spacing: -.01em;
-    box-shadow: 0 4px 12px rgba(31,48,36,.035);
   }
 
   #k-subcats-wrap .k-subchip:hover {
-    background: #fff;
-    border-color: rgba(198,168,93,.34);
-    color: #203325;
+    background: rgba(200,92,45,.08);
+    border-color: rgba(200,92,45,.3);
+    color: var(--coral);
     transform: translateY(-1px);
   }
 
+  /* Actif : fond couleur catégorie + bordure coral — cohérence mobile/desktop */
   #k-subcats-wrap .k-subchip.active {
-    background: linear-gradient(180deg, #fff8e7, #fffdf7);
-    border-color: rgba(198,168,93,.56);
-    color: #9a552a;
-    box-shadow: 0 8px 18px rgba(198,168,93,.13);
+    background: transparent;
+    border-color: var(--coral);
+    color: var(--text);
+    box-shadow: none;
     transform: none;
-    font-weight: 900;
+    font-weight: 700;
   }
-
-  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: inherit; font-weight: 900; }
+  #k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: #FDE8CD; }
+  #k-subcats-wrap[data-parent-cat="Maison"]         .k-subchip.active { background: #F3E7D3; }
+  #k-subcats-wrap[data-parent-cat="Tech"]           .k-subchip.active { background: #E0F0E8; }
+  #k-subcats-wrap[data-parent-cat="Bricolage"]      .k-subchip.active { background: #E8EDF0; }
+  #k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: #FCE8D4; }
+  #k-subcats-wrap[data-parent-cat="Auto"]           .k-subchip.active { background: #E8E4F5; }
+  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: var(--text); font-weight: 700; }
   #k-subcats-wrap .k-subchip.active .k-subchip-icon { filter: none; }
 
+  /* Compteur produits dans le rail subcat — injecté par JS */
   #k-subcats-wrap .k-subcat-count {
-    display: none;
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-right: clamp(16px, 3vw, 40px);
   }
 
+  /* Icône emoji — légèrement plus grande */
   #k-subcats-wrap .k-subchip-icon {
     font-size: 13px;
     line-height: 1;
     flex-shrink: 0;
   }
 
+  /* Animation staggerée à l'apparition */
   @keyframes k-subchip-shein-in {
     from { opacity: 0; transform: translateY(-5px) scale(.94); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -1229,8 +1235,27 @@
   #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .15s; }
   #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(n+7){ animation-delay: .18s; }
 
+  /* Séparateur visuel entre "Tout" et les sous-catégories */
   #k-subcats-wrap .k-subchip[data-subcat=""] {
-    display: none;
+    background: var(--white);
+    border-color: rgba(31,48,36,.14);
+    margin-right: 4px;
+    padding-right: 15px;
+    position: relative;
+  }
+  #k-subcats-wrap .k-subchip[data-subcat=""]::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: var(--border);
+  }
+  #k-subcats-wrap .k-subchip[data-subcat=""].active {
+    background: var(--text);
+    border-color: var(--text);
+    color: #fff;
   }
 
   /* â”€â”€ Bande trust sous le hero (LOT 13) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -1360,10 +1385,16 @@
     color: var(--coral);
     box-shadow: 0 2px 8px rgba(200, 92, 45, .15);
   }
-  /* Titre du flat-cat : masqué avec le header flat en desktop. */
-  .k-flatcat-header,
-  .k-flatcat-subcats {
-    display: none;
+  /* Titre du flat-cat : renforcer pour ancrage "vous êtes dans Mode" */
+  .k-flatcat-header {
+    background: linear-gradient(to right, rgba(200,92,45,.04), transparent 60%);
+    border-radius: 10px;
+    padding: 8px 12px 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .k-flatcat-title {
+    font-size: 20px;
   }
 }
 
@@ -1568,139 +1599,3 @@
 /* SIDE CART — margin-top 52px intégré dans le bloc consolidé LOT 9 (layout.css). */
 
 
-/* ══════════════════════════════════════════════════════════════
-   POLISH — Desktop contextual rail restored
-   Le rail contextuel #k-subcats-wrap redevient la navigation secondaire.
-   Le flat header catalogue est masqué en desktop pour éviter deux systèmes.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  .k-flatcat-header,
-  .k-flatcat-subcats {
-    display: none;
-  }
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   RAIL DESKTOP — Fusionné depuis desktop-horizontal-nav.css
-   Était chargé via @import dans desktop-commerce-skeleton.css,
-   ce qui lui donnait une priorité de cascade incorrecte sur ce fichier.
-   Source de vérité unique : boutique-desktop.css (BOUTIQUE_COMPONENT_OWNERSHIP.md).
-   Note : margin -28px conservé provisoirement — valeur à revoir visuellement.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  .k-hero-cats-sticky {
-    max-width: 1480px;
-    margin: -28px auto 0;
-    padding: 0 20px 10px;
-    border-radius: 30px;
-    background: linear-gradient(180deg, rgba(255,252,244,.54), rgba(255,252,244,.30));
-    border: 1px solid rgba(42,62,44,.040);
-    box-shadow: 0 18px 42px rgba(31,48,36,.055);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
-  }
-
-  .k-cats-shell {
-    max-width: none;
-    margin: 0;
-    padding: 12px 0 8px;
-    border-radius: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  .k-chip {
-    background: rgba(255,255,255,.30);
-    border-color: rgba(42,62,44,.050);
-    box-shadow: 0 3px 10px rgba(31,48,36,.025);
-  }
-
-  .k-chip:hover {
-    background: rgba(255,255,255,.50);
-    border-color: rgba(198,168,93,.28);
-    box-shadow: 0 8px 18px rgba(31,48,36,.055);
-  }
-
-  .k-chip.active {
-    background: linear-gradient(180deg, rgba(255,248,231,.62), rgba(255,253,247,.42));
-    border-color: rgba(198,168,93,.50);
-    box-shadow: 0 8px 20px rgba(198,168,93,.105);
-  }
-
-  .k-chip-photo,
-  .k-chip-photo.k-chip-photo--img {
-    background: rgba(253,250,245,.50);
-    border-color: rgba(255,255,255,.52);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.42), 0 5px 12px rgba(31,48,36,.055);
-  }
-
-  #k-subcats-wrap {
-    max-width: none;
-    margin: 0;
-    padding: 0 0 6px;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-  }
-
-  #k-subcats-wrap .k-subcats-rail {
-    max-width: none;
-    min-height: 32px;
-    margin: 0;
-    padding: 0 8px 0;
-    justify-content: center;
-    gap: 8px;
-    border-top: 1px solid rgba(42,62,44,.035);
-    background: transparent;
-  }
-
-  #k-subcats-wrap .k-subcats-rail::before {
-    margin-right: 4px;
-    color: rgba(32,51,37,.38);
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: .08em;
-  }
-
-  #k-subcats-wrap .k-subchip {
-    height: 29px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.24);
-    border-color: rgba(42,62,44,.050);
-    color: rgba(32,51,37,.68);
-    box-shadow: none;
-  }
-
-  #k-subcats-wrap .k-subchip:hover {
-    background: rgba(255,255,255,.44);
-    border-color: rgba(198,168,93,.25);
-  }
-
-  #k-subcats-wrap .k-subchip.active {
-    background: rgba(255,248,231,.58);
-    border-color: rgba(198,168,93,.44);
-    color: #9a552a;
-    box-shadow: 0 4px 10px rgba(198,168,93,.075);
-  }
-
-  #k-desktop-catalog-wrap {
-    margin-top: 18px;
-    align-items: start;
-  }
-
-  .k-side-cart {
-    top: 210px;
-    margin-top: 0;
-  }
-}
-
-@media (min-width: 1500px) {
-  .k-hero-cats-sticky {
-    max-width: 1540px;
-  }
-}
