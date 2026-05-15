@@ -36,7 +36,7 @@
 .k-cats::before,
 .k-cats::after { content: ""; flex: 0 0 12px; }
 
-/* ── CHIP (mobile-first : 38px) ──────────────────────────────── */
+/* ── CHIP (mobile-first : legacy horizontal rail fallback) ───── */
 .k-chip {
   flex: 0 0 38px;
   min-width: 38px;
@@ -56,6 +56,60 @@
   overflow: hidden;
 }
 .k-chip:active { transform: scale(.95); }
+
+/* Mobile target state — compact 2×4 pill grid, image left + label right. */
+@media (max-width: 899px) {
+  .k-cats-shell {
+    margin-top: 0;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255, 252, 244, .88), rgba(255, 252, 244, .76));
+    border: 1px solid rgba(42, 62, 44, .055);
+    box-shadow: 0 3px 10px rgba(31, 48, 36, .055);
+    overflow: hidden;
+  }
+
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none;
+  }
+
+  .k-cats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px 8px;
+    padding: 8px 10px 7px;
+    overflow: visible;
+    scroll-snap-type: none;
+    scroll-padding-left: 0;
+    align-items: stretch;
+  }
+
+  .k-cats::before,
+  .k-cats::after {
+    display: none;
+  }
+
+  .k-chip {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    flex: none;
+    display: grid;
+    grid-template-columns: 29px minmax(0, 1fr);
+    align-items: center;
+    justify-content: start;
+    gap: 6px;
+    min-height: 38px;
+    padding: 4px 7px 4px 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .64);
+    border: 1px solid rgba(42, 62, 44, .08);
+    box-shadow: 0 1px 4px rgba(31, 48, 36, .035);
+    overflow: hidden;
+    text-align: left;
+    scroll-snap-align: none;
+  }
+}
 
 /* Photo circle */
 .k-chip-photo {
@@ -88,6 +142,22 @@
 }
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
 .k-chip-photo svg { width: 15px; height: 15px; stroke: #2A3E2C; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 899px) {
+  .k-chip-photo {
+    width: 29px;
+    height: 29px;
+    min-width: 29px;
+    margin: 0;
+    border-radius: 12px;
+    border-width: 1px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.52);
+  }
+
+  .k-chip-photo img {
+    border-radius: 11px;
+  }
+}
 
 /* Fond par catégorie */
 .k-chip[data-cat="all"]         .k-chip-photo { background: var(--ocean-dark); }
@@ -136,6 +206,21 @@
   color: var(--text-muted);
 }
 
+@media (max-width: 899px) {
+  .k-chip-label {
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -.015em;
+    color: rgba(32, 51, 37, .82);
+    text-align: left;
+  }
+}
+
 /* État actif mobile */
 .k-chip.active .k-chip-photo {
   border-color: var(--coral);
@@ -147,6 +232,24 @@
 .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
 .k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: #fff; }
 .k-chip.active .k-chip-label { color: var(--coral); font-weight: 800; }
+
+@media (max-width: 899px) {
+  .k-chip.active {
+    background: rgba(255, 248, 232, .96);
+    border-color: rgba(198, 168, 93, .60);
+    box-shadow: 0 3px 10px rgba(198, 168, 93, .12);
+  }
+
+  .k-chip.active .k-chip-photo {
+    border-color: rgba(198, 168, 93, .90);
+    box-shadow: 0 0 0 1.5px rgba(198, 168, 93, .42);
+    transform: none;
+  }
+
+  .k-chip.active .k-chip-label {
+    color: #b6652a;
+  }
+}
 
 /* Sentinel spacer */
 #k-bar-sentinel { height: 0; margin: 0; padding: 0; }
