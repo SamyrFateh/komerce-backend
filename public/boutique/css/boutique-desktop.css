@@ -1037,8 +1037,10 @@
     display: none;
   }
 
+  /* Titre de section catalogue (emoji + nom catégorie) masqué en desktop :
+     la chip catégorie active dans le rail du haut suffit comme contexte */
   .k-sec-header {
-    margin-top: 4px;
+    display: none;
   }
 
   /* Sidebar + universe nav masqués en desktop horizontal */
