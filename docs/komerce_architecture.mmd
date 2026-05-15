@@ -1,0 +1,100 @@
+%% Komerce architecture — version documentaire consolidée
+%% Dernière consolidation : 15 mai 2026
+%% Source : komerce_architecture_v4.mmd + server.js actuel
+%% Objectif : schéma de compréhension, pas inventaire exhaustif de toutes les routes.
+
+flowchart TD
+
+  subgraph CLIENTS[Clients]
+    DIA[Diaspora\nFrance / Europe]
+    LOC[Clients locaux\nComores]
+    REC[Destinataires\nFamille / proches]
+  end
+
+  subgraph FRONT[Surfaces publiques]
+    BOUTIQUE[Boutique canonique\n/boutique\n/Komerce_Boutique.html]
+    TRACK[Suivi client\n/s/:token\n/api/tracking]
+    ACCOUNT[Compte client\n/mon-compte]
+    EVENTS[Panier partagé / événement\n/cart/shared\n/event/*]
+  end
+
+  subgraph API[Backend Express]
+    AUTH[/api/auth\n/api/client\n/api/auth/otp]
+    CATALOG[/api/products\n/api/categories\n/api/modules]
+    ORDERS[/api/orders\n/api/v2/orders]
+    PAY[/api/payments\n/api/cash\n/api/invoices]
+    WALLET[/api/wallet]
+    SHARED[/api/shared-carts\n/api/collective-workspaces\n/api/collective-payments]
+    PARCELS[/api/parcels\n/api/v2/parcels\n/api/scans]
+    LOGISTICS[/api/logistics\n/api/hub\n/api/transitaire\n/api/carriers]
+    PRICING[/api/pricing\n/api/pricing/strategy\n/api/admin/economic]
+    ADMIN[/api/admin/*\n/api/dashboard\nControl Tower]
+  end
+
+  subgraph SERVICES[Services critiques]
+    STATUS[order-status-machine\ntransitionOrderStatus]
+    PRICE[pricing-engine\n4 prix + santé + décision]
+    WALLET_S[wallet-service\ntransactions immutables\nFIFO]
+    ROUTING[routing\nrelais / îles / hub]
+    SECURITY[parcel-security\npickup / collecte]
+  end
+
+  subgraph DB[PostgreSQL]
+    USERS[(users / recipients)]
+    PRODUCTS[(products / categories)]
+    ORDERS_DB[(orders / order_items\norder_status_history)]
+    PARCELS_DB[(parcels / parcel_items\nparcel_events)]
+    FINANCE[(wallets\nwallet_transactions\nwallet_credit_lots\nwallet_consumptions)]
+    ECON[(finance_config\ncustoms_categories\ncost_components\nrisk_provisions\ncharges)]
+    OPS[(shipments\nrelais\nscans\nsms_log)]
+  end
+
+  subgraph OPS_FLOW[Flux opérationnel]
+    DUBAI[Sourcing Dubai\nFournisseur / Hub]
+    FREIGHT[Fret / groupage]
+    CUSTOMS[Douane / coût réel]
+    RELAY[Relais local\nscan + remise]
+  end
+
+  DIA --> BOUTIQUE
+  LOC --> BOUTIQUE
+  REC --> TRACK
+  BOUTIQUE --> AUTH
+  BOUTIQUE --> CATALOG
+  BOUTIQUE --> ORDERS
+  EVENTS --> SHARED
+  ACCOUNT --> WALLET
+  TRACK --> PARCELS
+
+  ORDERS --> STATUS
+  PAY --> STATUS
+  SHARED --> STATUS
+  PARCELS --> STATUS
+  ORDERS --> PRICE
+  CATALOG --> PRICE
+  PAY --> WALLET_S
+  ORDERS --> WALLET_S
+  LOGISTICS --> ROUTING
+  PARCELS --> SECURITY
+
+  AUTH --> USERS
+  CATALOG --> PRODUCTS
+  ORDERS --> ORDERS_DB
+  STATUS --> ORDERS_DB
+  PARCELS --> PARCELS_DB
+  LOGISTICS --> OPS
+  WALLET_S --> FINANCE
+  PRICE --> ECON
+
+  ORDERS_DB --> DUBAI
+  DUBAI --> FREIGHT
+  FREIGHT --> CUSTOMS
+  CUSTOMS --> RELAY
+  RELAY --> PARCELS_DB
+  RELAY --> REC
+
+  ADMIN --> ORDERS_DB
+  ADMIN --> PARCELS_DB
+  ADMIN --> FINANCE
+  ADMIN --> ECON
+  ADMIN --> OPS
