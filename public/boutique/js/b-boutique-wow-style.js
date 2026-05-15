@@ -69,7 +69,8 @@ function setupReloadProverb() {
 export function setupBoutiqueWowStyle() {
   if (typeof document === 'undefined') return;
 
-  ensureStyle(WOW_STYLE_ID, WOW_STYLE_HREF);
+  // boutique-wow.css supprimé — styles migrés vers les fichiers propriétaires
+  // ensureStyle(WOW_STYLE_ID, WOW_STYLE_HREF);
   ensureStyle(HERO_CART_PROXY_STYLE_ID, HERO_CART_PROXY_STYLE_HREF);
   ensureStyle(DESKTOP_COMMERCE_STYLE_ID, DESKTOP_COMMERCE_STYLE_HREF);
   setupReloadProverb();
