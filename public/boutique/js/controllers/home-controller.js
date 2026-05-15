@@ -128,13 +128,17 @@ export function renderCategoryRail() {
   const catsEl = getCatsEl();
   if (!catsEl) return null;
 
-  // Anti-FOUC : si le DOM statique correspond déjà au markup JS attendu
-  // (même nombre de chips et même ordre de data-cat), on NE re-render PAS.
-  const expectedKeys = getRailCategories().map(c => c.key);
+  const expectedCategories = getRailCategories();
+  const expectedKeys = expectedCategories.map(c => c.key);
   const existingChips = Array.from(catsEl.querySelectorAll('.k-chip'));
   const alreadyInSync =
     existingChips.length === expectedKeys.length &&
-    existingChips.every((chip, i) => chip.dataset.cat === expectedKeys[i]);
+    existingChips.every((chip, i) => {
+      if (chip.dataset.cat !== expectedKeys[i]) return false;
+      const img = chip.querySelector('.k-chip-photo img');
+      const expectedImage = expectedCategories[i].image || '';
+      return !expectedImage || (img && img.getAttribute('src') === expectedImage);
+    });
 
   if (!alreadyInSync) {
     catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
