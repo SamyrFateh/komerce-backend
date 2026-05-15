@@ -242,65 +242,6 @@
     background: transparent;
   }
 
-  .k-cats-shell {
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 8px 20px;
-    border-radius: 0;
-    background: rgba(255, 252, 244, .90);
-    border-top: 1px solid rgba(42,62,44,.06);
-    border-bottom: 1px solid rgba(42,62,44,.07);
-    box-shadow: 0 10px 24px rgba(31,48,36,.045);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  .k-cats {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    padding: 0;
-  }
-
-  .k-chip {
-    min-width: 94px;
-    height: 54px;
-    display: grid;
-    grid-template-columns: 36px minmax(0, 1fr);
-    gap: 8px;
-    align-items: center;
-    padding: 7px 10px;
-    border-radius: 16px;
-    background: rgba(255,255,255,.72);
-    border: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 3px 10px rgba(31,48,36,.035);
-  }
-
-  .k-chip-photo,
-  .k-chip-photo--img {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 12px;
-  }
-
-  .k-chip-photo img,
-  .k-chip-photo--img img {
-    border-radius: 11px;
-  }
-
-  .k-chip-label {
-    font-size: 12px;
-    font-weight: 850;
-    text-align: left;
-    color: rgba(32,51,37,.84);
-  }
-
-  .k-chip.active {
-    background: #fff7e4;
-    border-color: rgba(198,168,93,.60);
-    box-shadow: 0 7px 16px rgba(198,168,93,.12);
-  }
 
   /* Desktop commerce workspace */
   #k-page-scroll {
@@ -329,10 +270,6 @@
     padding: 0;
   }
 
-  .k-grid {
-    gap: 14px;
-  }
-
   .k-card {
     border-radius: 18px;
     border: 1px solid rgba(42,62,44,.075);
@@ -341,7 +278,6 @@
   }
 
   .k-card:hover {
-    transform: translateY(-2px);
     border-color: rgba(198,168,93,.32);
     box-shadow: 0 12px 28px rgba(31,48,36,.10);
   }
