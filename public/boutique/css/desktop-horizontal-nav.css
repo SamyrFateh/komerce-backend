@@ -3,23 +3,12 @@
  * @owner desktop-horizontal-nav.css
  *
  * Responsibility:
- * - Replace the heavy permanent category sidebar with a lighter desktop navigation shell.
- * - Show a horizontal universe bar and contextual rayon strip on desktop.
+ * - Desktop visual navigation for category and rayon rails.
  * - Keep mobile untouched.
- *
- * Must not:
- * - Affect mobile below 900px.
- * - Touch b-pager.js mechanics.
- * - Add supplier-specific styling.
- * - Own product card rendering.
- *
- * See:
- * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
+ * - Do not own product cards, cart, hero, or mobile pager.
  */
 
 @media (min-width: 900px) {
-  /* Hide the old desktop category sidebar for now.
-     It will return later only as an advanced filters panel. */
   #k-desktop-sidebar,
   .k-desktop-sidebar {
     display: none;
@@ -29,121 +18,167 @@
     grid-template-columns: minmax(0, 1fr) 306px;
   }
 
-  /* Keep the legacy mobile/category rail available for JS compatibility,
-     but visually replace it on desktop with the universe nav below. */
-  .k-cats {
+  .k-desktop-universe-nav {
     display: none;
   }
 
   .k-cats-shell {
-    padding: 8px 20px 10px;
-  }
-
-  .k-desktop-universe-nav {
+    position: relative;
+    top: auto;
+    z-index: 120;
     max-width: 1480px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
+    margin: 14px auto 0;
+    padding: 12px 20px 14px;
+    border-radius: 28px;
+    border: 1px solid rgba(42,62,44,.055);
+    background: linear-gradient(180deg, rgba(255,252,244,.88), rgba(255,252,244,.72));
+    box-shadow: 0 12px 32px rgba(31,48,36,.07);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
   }
 
-  .k-desktop-universe-nav::-webkit-scrollbar {
+  .k-cats {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(92px, 1fr));
+    gap: 12px;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    align-items: stretch;
+    scroll-snap-type: none;
+  }
+
+  .k-cats::before,
+  .k-cats::after,
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
     display: none;
   }
 
-  .k-desktop-universe {
-    min-width: 92px;
-    height: 42px;
-    display: inline-flex;
+  .k-chip {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    height: 106px;
+    min-height: 106px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    padding: 0 13px;
-    border-radius: 999px;
-    border: 1px solid rgba(42, 62, 44, .08);
-    background: rgba(255,255,255,.70);
-    color: rgba(32,51,37,.76);
-    font-family: var(--font, system-ui, sans-serif);
-    font-size: 12px;
-    font-weight: 850;
+    gap: 9px;
+    padding: 10px 10px 9px;
+    border-radius: 24px;
+    border: 1px solid rgba(42,62,44,.075);
+    border-bottom-color: rgba(42,62,44,.075);
+    background: rgba(255,255,255,.64);
+    color: rgba(32,51,37,.82);
+    box-shadow: 0 4px 12px rgba(31,48,36,.035);
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(31,48,36,.035);
-    transition: background .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease), box-shadow .16s var(--ease);
+    text-align: center;
+    overflow: hidden;
+    white-space: normal;
+    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+  }
+
+  .k-chip:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    border-color: rgba(198,168,93,.36);
+    box-shadow: 0 12px 24px rgba(31,48,36,.085);
+    color: #203325;
+  }
+
+  .k-chip-photo,
+  .k-chip-photo.k-chip-photo--img {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    margin: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.72);
+    background: rgba(253,250,245,.92);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px rgba(31,48,36,.08);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+  }
+
+  .k-chip-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 17px;
+  }
+
+  .k-chip-fallback {
+    display: none;
+  }
+
+  .k-chip-photo.is-img-error .k-chip-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 900;
+    background: #203325;
+  }
+
+  .k-chip-label {
+    max-width: 100%;
+    color: inherit;
+    font-size: 13.5px;
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .k-desktop-universe:hover {
+  .k-chip.active {
     transform: translateY(-1px);
-    background: #fff;
-    border-color: rgba(198,168,93,.32);
-    box-shadow: 0 7px 16px rgba(31,48,36,.07);
-  }
-
-  .k-desktop-universe.is-active {
-    background: #fff7e4;
+    background: linear-gradient(180deg, #fff8e7, #fffdf7);
     color: #9a552a;
     border-color: rgba(198,168,93,.62);
-    box-shadow: 0 8px 18px rgba(198,168,93,.14);
+    border-bottom-color: rgba(198,168,93,.62);
+    box-shadow: 0 12px 26px rgba(198,168,93,.16);
   }
 
-  .k-desktop-universe-icon {
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
+  .k-chip.active .k-chip-photo {
+    border-color: rgba(198,168,93,.74);
+    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
+    opacity: 1;
   }
 
-  .k-desktop-universe-icon svg {
-    width: 17px;
-    height: 17px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 1.8;
-  }
-
-  .k-desktop-universe-label {
-    display: inline-flex;
-    align-items: center;
+  .k-chip.active .k-chip-label {
+    color: #9a552a;
+    font-weight: 900;
   }
 
   #k-subcats-wrap {
     max-width: 1480px;
-    margin: 8px auto 0;
+    margin: 12px auto 0;
     padding: 0 20px 10px;
     background: transparent;
   }
 
   .k-desktop-rayons-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 7px;
-  }
-
-  .k-desktop-rayons-title {
-    color: rgba(32,51,37,.86);
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: -.01em;
-  }
-
-  .k-desktop-rayons-hint {
-    color: rgba(32,51,37,.46);
-    font-size: 11px;
-    font-weight: 700;
+    display: none;
   }
 
   .k-desktop-rayons-rail,
   .k-subcats-rail.k-desktop-rayons-rail {
     display: flex;
     justify-content: center;
-    gap: 7px;
+    gap: 9px;
     padding: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -154,13 +189,13 @@
   }
 
   .k-desktop-rayons-rail .k-subchip {
-    height: 34px;
+    height: 36px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 0 12px;
+    padding: 0 13px;
     border-radius: 999px;
-    background: rgba(255,255,255,.76);
+    background: rgba(255,255,255,.74);
     border: 1px solid rgba(42,62,44,.08);
     color: rgba(32,51,37,.70);
     font-size: 12px;
@@ -168,27 +203,30 @@
     cursor: pointer;
     white-space: nowrap;
   }
+}
 
-  .k-desktop-rayons-rail .k-subchip:hover {
-    background: #fff;
-    border-color: rgba(198,168,93,.28);
-  }
-
-  .k-desktop-rayons-rail .k-subchip.active {
-    background: rgba(47,107,63,.10);
-    color: #2f6b3f;
-    border-color: rgba(47,107,63,.28);
-  }
-
-  .k-desktop-rayons-rail .k-subchip-icon {
-    font-size: 14px;
-    line-height: 1;
+@media (min-width: 900px) and (max-width: 1180px) {
+  .k-cats {
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
   }
 }
 
 @media (min-width: 1500px) {
+  .k-cats-shell,
   .k-desktop-universe-nav,
   #k-subcats-wrap {
     max-width: 1540px;
+  }
+
+  .k-chip {
+    height: 112px;
+    min-height: 112px;
+  }
+
+  .k-chip-photo,
+  .k-chip-photo.k-chip-photo--img {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
   }
 }
