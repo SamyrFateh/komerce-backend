@@ -20,7 +20,19 @@
 
 ---
 
-## 2. ADR conservées
+## 2. Documents complémentaires durables
+
+Ces documents complètent la panoplie fondamentale. Ils ne remplacent pas la vérité du code, mais conservent la vision métier, le lancement et la compréhension visuelle.
+
+| Document | Rôle |
+|---|---|
+| [`VISION_MARCHE_KOMERCE.md`](./VISION_MARCHE_KOMERCE.md) | Vision marché, proposition de valeur, segments clients, barrières et doctrine de confiance. |
+| [`PLAN_LANCEMENT_OPERATIONNEL.md`](./PLAN_LANCEMENT_OPERATIONNEL.md) | Plan de lancement terrain : bloquants, commandes pilotes, critères de validation, risques. |
+| [`komerce_architecture.mmd`](./komerce_architecture.mmd) | Schéma Mermaid de l'architecture cible actuelle, utile pour visualiser les grands flux. |
+
+---
+
+## 3. ADR conservées
 
 Les ADR restent utiles lorsqu'elles expliquent une décision d'architecture durable. Elles ne doivent pas être lues comme des plans projet à jour, mais comme des décisions de fond.
 
@@ -40,7 +52,7 @@ Les ADR restent utiles lorsqu'elles expliquent une décision d'architecture dura
 
 ---
 
-## 3. Documents historiques / audits
+## 4. Documents historiques / audits
 
 Les audits accumulés ont servi à construire cette documentation. Leur valeur principale est historique : ils montrent le chemin, mais ils peuvent être dépassés par le code actuel.
 
@@ -50,7 +62,7 @@ Les documents très ciblés, temporaires ou déjà remplacés par une version co
 
 ---
 
-## 4. Vérités vérifiées dans le code
+## 5. Vérités vérifiées dans le code
 
 ### Runtime
 
@@ -86,7 +98,7 @@ Le backend actuel ne se limite plus à l'ancien périmètre 18/19 routes. `serve
 
 ---
 
-## 5. Règle de maintenance documentaire
+## 6. Règle de maintenance documentaire
 
 Avant de modifier la documentation :
 
@@ -98,16 +110,18 @@ Avant de modifier la documentation :
 
 ---
 
-## 6. Lecture recommandée
+## 7. Lecture recommandée
 
 Pour reprendre le projet sans se perdre :
 
 1. `docs/README.md` ;
 2. `docs/SYNOPTIQUE_KOMERCE.md` ;
-3. `docs/DOCTRINE_ECONOMIQUE_KOMERCE.md` ;
-4. `docs/CARTOGRAPHY_360.md` ;
-5. `docs/ZONE_IMPACT.md` ;
-6. `server.js` ;
-7. `services/order-status-machine.js` ;
-8. `services/pricing-engine.js` ;
-9. `services/wallet-service.js`.
+3. `docs/VISION_MARCHE_KOMERCE.md` ;
+4. `docs/DOCTRINE_ECONOMIQUE_KOMERCE.md` ;
+5. `docs/CARTOGRAPHY_360.md` ;
+6. `docs/ZONE_IMPACT.md` ;
+7. `docs/PLAN_LANCEMENT_OPERATIONNEL.md` ;
+8. `server.js` ;
+9. `services/order-status-machine.js` ;
+10. `services/pricing-engine.js` ;
+11. `services/wallet-service.js`.
