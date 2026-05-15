@@ -566,3 +566,31 @@
 @media (min-width: 900px) {
   .k-cats-wrap-fade-left, .k-cats-wrap-fade-right { display: none; }
 }
+
+/* ── MOBILE POLISH — entrée catalogue sous rail catégories ───── */
+@media (max-width: 899px) {
+  .k-sec-header {
+    padding: 10px 0 6px;
+    margin-bottom: 2px;
+    border-bottom: 1.5px solid rgba(200, 92, 45, .72);
+  }
+
+  .k-sec-header-emoji {
+    font-size: 17px;
+  }
+
+  .k-sec-header-name {
+    font-size: 15.5px;
+    letter-spacing: -.02em;
+  }
+
+  .k-sec-header-count {
+    font-size: 11.5px;
+    padding: 1px 8px;
+    background: rgba(31, 48, 36, .045);
+  }
+
+  .k-sec-grid {
+    padding-top: 2px;
+  }
+}
