@@ -1396,10 +1396,16 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* 1. Conteneur : hauteur premium */
+  /* 1. Conteneur : pas de contrainte de hauteur — le wrap doit pouvoir contenir
+     l'image hero (max 160px) PUIS la sticky bar catégories en dessous.
+     La contrainte de 160px ne s'applique qu'à .k-hero (l'image elle-même). */
   #k-hero-fixed-wrap {
-    max-height: 160px;
-    overflow: hidden;
+    /* max-height retirée : le wrap est un conteneur layout, pas un clip-zone.
+       overflow retiré : empêchait position:sticky de .k-cats-shell de fonctionner
+       correctement (un ancêtre overflow:hidden crée un scroll container qui
+       désactive le sticky par-dessus le header).
+       Cf. Lot N-bis du AUDIT_NETTOYAGE.md */
+    position: relative;
   }
 
   #k-hero-fixed-wrap .k-hero {
