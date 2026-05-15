@@ -1,1421 +1,302 @@
-# 🗺️ CARTOGRAPHY_360.md — Cartographie Complète Komerce
+# Cartographie 360 Komerce
 
-> **Version** : 15.15 — 07/04/2026 (v15.14 + Plan Logistique V2.0: 3 vagues, règles R1/R2, violations identifiées)
-> **Statut** : Source de vérité architecture — MIROIR EXACT du repo
-> **Repo** : `SamyrFateh/komerce-backend`
-> **Dernière vérification** : 07/04/2026 13:46 UTC — governance auto-sync (3 deltas applied)
-> 📊 **19 fichiers route** (+2 planifiés) · **~130 endpoints** · **31+ tables** · **3 vues** · **9 services externes**
-
----
-
-> 🔄 **v15.13** — Mise à jour post-audit code-vs-truth (7 avril 2026)
-> Corrections : refonte parcel-centric documentée, 8 endpoints ajoutés, SHA mis à jour, section dépendances corrigée.
-
-## 📑 Table des matières
-
-1. [Métriques Globales](#1--métriques-globales)
-2. [Arbre Complet du Projet](#2--arbre-complet-du-projet)
-3. [Vue d'ensemble architecture](#3--vue-densemble-architecture)
-4. [Carte des routes (endpoints)](#4--carte-des-routes)
-5. [Schéma de base de données](#5--schéma-de-base-de-données)
-6. [Middleware & sécurité](#6--middleware--sécurité)
-7. [Dépendances inter-routes](#7--dépendances-inter-routes)
-8. [Chaîne de traitement des commandes](#8--chaîne-de-traitement-des-commandes)
-9. [Services externes](#9--services-externes)
-10. [Utilitaires](#10--utilitaires)
-11. [Validators](#11--validators)
-12. [Frontend — Architecture Monolithique (`public/`)](#12--frontend--architecture-monolithique-public)
-13. [Dashboard App — Tasklet Instant App](#13--dashboard-app--tasklet-instant-app)
-14. [Scripts](#14--scripts)
-15. [Documentation (`docs/`)](#15--documentation-docs)
-16. [CI/CD — GitHub Actions](#16--cicd--github-actions)
-17. [Fichiers Racine](#17--fichiers-racine)
-18. [Audit de sécurité](#18--audit-de-sécurité)
-19. [Stack technique](#19--stack-technique)
-20. [Points de vigilance](#20--points-de-vigilance)
-21. [Statistiques finales](#21--statistiques-finales)
-22. [Règle de Mise à Jour (DELTA)](#22--règle-de-mise-à-jour-delta)
+> **Statut** : cartographie documentaire canonique  
+> **Dernière consolidation** : 15 mai 2026  
+> **Méthode** : ancienne cartographie v15 remplacée par une version maintenable, vérifiée contre `server.js` et les services critiques.  
+> **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes.
 
 ---
 
-## 1. 📊 Métriques Globales
+## 1. Résumé d'architecture
 
-| Métrique | Valeur |
-|----------|--------|
-| **Fichiers totaux** | ~105 |
-| **Dossiers** | 14 |
-| **Routes API** | 19 fichiers |
-| **Middlewares** | 4 |
-| **Utilitaires** | 8 |
-| **Validators** | 1 |
-| **Fichiers DB** | 3 + 10 migrations |
-| **Frontend (public/)** | 16 HTML + 3 JS + 2 images |
-| **Dashboard App** | 20 fichiers (React/TSX) |
-| **Scripts** | 4 |
-| **Docs** | 15 + 11 audit + _pending/ |
-| **CI/CD Workflows** | 3 |
-| **Taille totale estimée** | ~3.2 MB (hors package-lock.json) |
+Komerce est un backend Express/PostgreSQL déployé sur Railway. Il sert :
+
+1. une boutique publique ;
+2. des flux de commande et paiement ;
+3. une logistique colis-first ;
+4. un suivi client ;
+5. un back-office / Control Tower ;
+6. des moteurs économiques : pricing, sourcing, coût, risque, wallet.
+
+Le point d'entrée applicatif est `server.js`.
 
 ---
 
-## 2. 🌳 Arbre Complet du Projet
+## 2. Points de vérité
 
-```
-komerce-backend/
-├── .cursorrules                          (2.3 KB)  [5638f005]
-├── .env.example                          (1.9 KB)  [6568d664]
-├── .gitignore                            (258 B)   [61e13d23]
-├── CONTRIBUTING.md                       (3.1 KB)  [a18b88a6]
-├── README.md                             (3.9 KB)  [1c05bc68]
-├── db.js                                 (770 B)   [08d9e6c6]
-├── package.json                          (923 B)   [f7944e67]
-├── package-lock.json                     (113.9 KB)[3bb09e87]
-├── railway.toml                          (644 B)   [fa81b056]
-├── server.js                             (43.7 KB) [654521a0]
-│
-├── routes/                               (19 fichiers)
-│   ├── admin.js                          (24.3 KB) [6bb443fe]
-│   ├── auth.js                           (18.5 KB) [cef6b0d4]
-│   ├── baskets.js                        (11.7 KB) [6f41e7a1]
-│   ├── config.js                         (7.3 KB)  [1b3f634f]
-│   ├── dashboard.js                      (53.3 KB) [cd349fa3]
-│   ├── finance.js                        (13.7 KB) [a919836e]
-│   ├── health.js                         (1.4 KB)  [e29fabcb]
-│   ├── logistics.js                      (9.7 KB)  [f78d7537]
-│   ├── loyalty.js                        (5.6 KB)  [c454e300]
-│   ├── modules.js                        (20.6 KB) [3ea6fa01]
-│   ├── orders.js                         (100.9 KB) [5bfeaf26]
-│   ├── payments.js                       (12.0 KB) [1ba52974]
-│   ├── pilotage.js                       (1.2 KB)  [9af27985]
-│   ├── pricing.js                        (3.5 KB)  [a3b26f39]
-│   ├── products.js                       (12.0 KB) [11f09636]
-│   ├── purchasing.js                     (32.6 KB) [a17bb100]
-│   ├── relais.js                         (1.7 KB)  [d6e93c3c]
-│   ├── scans.js                          (23.0 KB) [c5ba1e1e]
-│   └── unsold.js                         (6.7 KB)  [215dd595]
-│
-├── middleware/                            (4 fichiers)
-│   ├── auth.js                           (4.5 KB)  [b84255eb]
-│   ├── rate-limit.js                     (3.2 KB)  [061f0e94]
-│   ├── upload.js                         (1.5 KB)  [5ea7f1af]
-│   └── validate.js                       (5.6 KB)  [4c671ec0]
-│
-├── utils/                                (8 fichiers)
-│   ├── email.js                          (6.7 KB)  [daf607c3]
-│   ├── pricing.js                        (5.2 KB)  [ff3e82e2]
-│   ├── rates.js                          (1.1 KB)  [5fdacfb4]
-│   ├── reference.js                      (2.5 KB)  [d8e0cb5e]
-│   ├── refunds.js                        (4.1 KB)  [25a80509]
-│   ├── rules.js                          (9.0 KB)  [6a679773]
-│   ├── sms.js                            (12.1 KB) [1d17abd6]
-│   └── store-credits.js                  (3.4 KB)  [58e8b8e4]
-│
-├── validators/                           (1 fichier)
-│   └── index.js                          (15.4 KB) [5dd674f3]
-│
-├── db/                                   (3 + 10 migrations)
-│   ├── schema.sql                        (19.2 KB) [31333f3c]
-│   ├── schema_extension.sql              (3.8 KB)  [45f80c47]
-│   ├── seed.sql                          (7.8 KB)  [2bfe8cf2]
-│   └── migrations/
-│       ├── 004_fix_order_status_enum.sql  (3.9 KB)  [c4cdffa2]
-│       ├── 005_add_in_transit_status.sql  (2.8 KB)  [47121f39]
-│       ├── 006_dashboard_columns.sql      (2.8 KB)  [5701835e]
-│       ├── 007_business_rules.sql         (10.9 KB) [0971318d]
-│       ├── 008_pricing_rules.sql          (2.3 KB)  [6de70417]
-│       ├── 009_partial_shipping.sql       (4.7 KB)  [113d16d4]
-│       ├── 010_parcels_foundation.sql    (10.4 KB) [9b04a127]
-│       ├── 011_parcels_dual_write.sql    (1.7 KB)  [405e6756]
-│       ├── 012_parcels_trigger_migration.sql (5.2 KB) [35c58302]
-│       └── 013_legacy_cleanup.sql        (2.4 KB)  [43071e8a]
-│
-├── public/                               (16 HTML + 3 JS + 2 images)
-│   ├── index.html                        (143.9 KB)[c925b4b8]
-│   ├── Komerce_Admin.html                (121.4 KB)[d8e57998]
-│   ├── Komerce_Admin_Users.html          (31.5 KB) [9059161a]
-│   ├── Komerce_Backend.html              (512.6 KB)[f02590ab]
-│   ├── Komerce_Backoffice_Admin_v2.html  (68.2 KB) [3eafa998]
-│   ├── Komerce_Dashboard.html            (75.8 KB) [4d455c1a]  # +Phase5.2: annulations KPI, parcels KPI
-│   ├── Komerce_Hub.html                  (~1 KB)   [redirect→dashboard-app]
-│   ├── Komerce_Mobile.html               (53.9 KB) [d0348e70]
-│   ├── Komerce_Pilotage_v2.html          (~1 KB)   [redirect→dashboard-app]
-│   ├── Komerce_Pipeline.html             (~1 KB)   [redirect→dashboard-app]
-│   ├── Komerce_QR_Print.html             (9.4 KB)  [e9a09169]
-│   ├── Komerce_Relais.html               (~1 KB)   [redirect→dashboard-app]
-│   ├── Komerce_Config.html             (33.9 KB) [NEW — Admin business_rules]
-│   ├── Komerce_Simulateur.html           (106.1 KB)[1f74411d]
-│   ├── Komerce_Tests.html                (147.0 KB)[f053cfc0]
-│   ├── Komerce_Web.html                  (81.1 KB) [caa83c27]
-│   ├── portal.html                       (15.8 KB) [8a511d9e]
-│   ├── chart.umd.min.js                  (200.8 KB)[ebfe8019]
-│   ├── komerce-api.js                    (127.8 KB)[400380df]
-│   ├── sw.js                             (6.5 KB)  [f4238e4d]
-│   └── images/
-│       ├── avatar_panier.png             (13.3 KB) [8ed44a7c]
-│       └── hero_banner.jpg               (139.1 KB)[b486987e]
-│
-├── dashboard-app/                        (20 fichiers — React/TSX)
-│   ├── app.tsx                           (5.9 KB)  [2e2d8920]
-│   ├── index.html                        (2.7 KB)  [40a99817]
-│   ├── styles.css                        (505 B)   [1a1807c6]
-│   ├── tasklet.config.json               (184 B)   [eed57f48]
-│   ├── types.ts                          (7.1 KB)  [e86643d0]
-│   ├── components/                        (11 fichiers)
-│   │   ├── CatalogueView.tsx             (8.9 KB)  [c47e8c75]
-│   │   ├── ClientsView.tsx               (8.5 KB)  [6383d2a2]
-│   │   ├── FinanceView.tsx               (11.2 KB) [df4382a6]
-│   │   ├── HubDubaiView.tsx              (10.5 KB) [fbe66418]
-│   │   ├── LoadingError.tsx              (1.7 KB)  [5108f6d1]
-│   │   ├── OverviewView.tsx              (10.3 KB) [be16d0ef]
-│   │   ├── PipelineView.tsx              (4.5 KB)  [5b346aa9]
-│   │   ├── RelaisView.tsx                (12.6 KB) [672b1e71]
-│   │   ├── RetardsView.tsx               (7.4 KB)  [bc6b115a]
-│   │   ├── StatCard.tsx                  (889 B)   [8dcabbaf]
-│   │   └── TendancesView.tsx             (10.5 KB) [9b16b6a5]
-│   ├── data/
-│   │   └── mockData.ts                   (30.2 KB) [07646943]
-│   └── utils/
-│       ├── api.ts                        (2.4 KB)  [ae6efd22]
-│       ├── formatters.ts                 (2.8 KB)  [edd50898]
-│       └── useApi.ts                     (2.0 KB)  [777baa92]
-│
-├── scripts/                              (4 fichiers)
-│   ├── impact-check.js                   (25.5 KB) [d0fef162]
-│   ├── impact-config.json                (8.4 KB)  [e81e48fd]
-│   ├── setup-hooks.sh                    (4.5 KB)  [1d4ba37f]
-│   └── test_e2e_full.sh                  (11.7 KB) [f2e5fdf8]
-│
-├── docs/                                 (13 fichiers + audit/ + _pending/)
-│   ├── AUDIT_REPORT.md                   (8.5 KB)  [c13adc79]
-│   ├── AUDIT_CONFORMITE_GOUVERNANCE.md   (6.8 KB)  [20e8b386]
-│   ├── CARTOGRAPHY_360.md                (CE FICHIER)
-│   ├── DASHBOARD_REDESIGN.md             (8.3 KB)  [0f46d18f]
-│   ├── DEPLOYMENT.md                     (19.7 KB) [9ac4d5c1]
-│   ├── GOVERNANCE_BOOTSTRAP.md            (3.0 KB)  [6f68fb3b]
-│   ├── IMPACT_SYSTEM.md                  (14.2 KB) [005e6ce8]
-│   ├── PLAN_LOGISTIQUE_V2.md             (~20 KB)  [NEW — Plan 3 vagues parcel-centric]
-│   ├── README.md                         (8.6 KB)  [914fef23]
-│   ├── REPRISE_SESSION.md                (2.8 KB)  [e6aa4f6d]
-│   ├── ROADMAP_KOMERCE.md                (22.8 KB) [81d66b08]
-│   ├── VALIDATION_GUIDE.md               (3.4 KB)  [e657ab19]
-│   ├── analyse-dashboard-pilotage.md     (5.8 KB)  [ae4e10c6]
-│   ├── komerce-point6-gouvernance-operationnelle.md (37.1 KB) [062f19ed]
-│   ├── CHANGES_PHASE2_MIGRATION.md       (9.2 KB)  [29e6f652]
-│   ├── _pending/                          (dossier delta governance)
-│   │   └── README.md                     (85 B)    [0d3bffec]
-│   └── audit/                            (11 fichiers)
-│       ├── AUDIT_BUGS.md                 (7.9 KB)  [92fa541a]
-│       ├── AUDIT_CODE_INTEGRITY.md       (10.9 KB) [2ce96aec]
-│       ├── FRONTEND_AUDIT.md             (21.3 KB) [2dbbfde5]
-│       ├── SECURITY_CHECKLIST.md         (2.5 KB)  [f9480b40]
-│       ├── batch_2.md                    (17.3 KB) [3c94ffd2]
-│       ├── batch_3.md                    (15.0 KB) [b82bc77b]
-│       ├── batch_5.md                    (16.6 KB) [6b0b6d31]
-│       ├── batch_6.md                    (14.4 KB) [19a32efb]
-│       ├── db_audit.md                   (15.1 KB) [7ee3d48a]
-│       ├── middleware_audit.md           (12.5 KB) [f3533515]
-│       └── utils_audit.md               (15.9 KB) [cc2b9d7a]
-│
-└── .github/                              (2 fichiers + workflows/)
-    ├── copilot-instructions.md           (1.4 KB)  [a6a92e74]
-    ├── pull_request_template.md          (1.2 KB)  [2f34087a]
-    └── workflows/                        (3 fichiers)
-        ├── auto-cartography.yml          (4.7 KB)  [be8f81c8]
-        ├── carto-guard.yml              (3.5 KB)  [c02ea302]
-        └── impact-check.yml             (5.2 KB)  [9358686c]
+| Sujet | Source de vérité |
+|---|---|
+| Boot serveur et montage des routes | `server.js` |
+| Runtime Node | `package.json` (`engines.node >=20.0.0`) |
+| Transitions commande | `services/order-status-machine.js` |
+| Pricing | `services/pricing-engine.js` |
+| Wallet / avoirs | `services/wallet-service.js` |
+| Routage logistique | `services/routing.js` |
+| Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
+| Boutique canonique | `public/boutique/index.html` |
+| Admin moderne | `public/dashboards/admin/index.html` |
+
+---
+
+## 3. Domaines API montés
+
+### Authentification et session
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/auth` | Auth utilisateurs/admins + client auth selon route montée. |
+| `/api/auth/otp` | OTP. |
+| `/api/client` | Auth/client endpoints compatibles côté client. |
+
+### Catalogue et boutique
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/products` | Produits. |
+| `/api/categories` | Catégories boutique. |
+| `/api/admin/boutique-categories` | Admin catégories boutique. |
+| `/api/modules` | Modules spécialisés. |
+| `/api/baskets` | Paniers historiques / boutique. |
+| `/api/shares` | Partage. |
+
+### Commandes, paiements, factures
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/orders` | Commandes. |
+| `/api/v2/orders` | API order-first moderne compatible colis-first. |
+| `/api/payments` | Paiements et webhooks Stripe principaux. |
+| `/api/cash` | Flux cash. |
+| `/api/invoices` | Factures / mini-factures. |
+| `/api/wallet` | Wallet client. |
+
+### Paniers partagés et collectifs
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/shared-carts` | Panier partagé MVP. |
+| `/api/admin/shared-carts` | Administration paniers partagés. |
+| `/api/shared-carts/stripe/webhook` | Webhook Stripe panier partagé, body brut. |
+| `/api/collective-workspaces` | Workspace collectif / événement. |
+| `/api/collective-payments` | Contributions et paiements collectifs. |
+| `/api/collective-payments/stripe/webhook` | Webhook Stripe collectif, body brut. |
+
+### Logistique colis-first
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/parcels` | Parcels historiques / compatibilité. |
+| `/api/v2/parcels` | API colis-first moderne. |
+| `/api/v2/notifications` | Notifications API v2. |
+| `/api/v2` | Ops API v2. |
+| `/api/logistics` | Logistique historique. |
+| `/api/hub` | Hub Dubai et opérations associées. |
+| `/api/hub/inventory` | Inventaire hub. |
+| `/api/transitaire` | Transitaire. |
+| `/api/carriers` | Transporteurs. |
+| `/api/scans` | Scans terrain et collecte. |
+| `/api/relay` | Dashboard relais. |
+| `/api/hub-dash` | Dashboard hub. |
+| `/api/transit` et `/api/transit-dashboard` | Dashboard transit. |
+
+### Suivi client et pickup
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/tracking` | Suivi. |
+| `/api/client/tracking` | Suivi côté client. |
+| `/api/pickup` | Secret/code retrait. |
+| `/s/:token` | URL courte suivi. |
+| `/c/:token` | URL courte panier partagé vers boutique. |
+
+### Admin, Control Tower, économie
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/admin` | Admin général. |
+| `/api/admin/dashboard` | Dashboard admin. |
+| `/api/admin/pilotage`, `/api/admin/stats`, `/api/dashboard` | Pilotage et statistiques. |
+| `/api/admin/rules` | Business rules. |
+| `/api/admin/radar` | Radar/alertes. |
+| `/api/admin/economic` | Moteur économique. |
+| `/api/admin/finance`, `/api/finance` | Finance ; `/api/finance` redirige vers `/api/admin/finance`. |
+| `/api/admin/finance-config` | Configuration finance. |
+| `/api/admin/loyalty` | Fidélité. |
+| `/api/admin/sourcing` | Sourcing engine + scanner. |
+| `/api/admin/signals` | Signaux. |
+| `/api/admin/pricing-matrices` | Matrices pricing. |
+| `/api/admin/pricing-components` | Composantes pricing. |
+| `/api/admin/cost-components` | Composantes de coûts. |
+| `/api/admin/risk-provisions` | Provisions risques. |
+| `/api/admin/customs-shipments` | Douane shipments. |
+| `/api/admin/customs-categories` | Catégories douane. |
+| `/api/admin/costing` | Costing. |
+
+### Pricing public/interne
+
+| Préfixe | Rôle |
+|---|---|
+| `/api/pricing` | Recommandations pricing. |
+| `/api/pricing/strategy` | Stratégie pricing avancée. |
+| `/api/simulator` | Simulateur. |
+
+---
+
+## 4. Surfaces HTML servies
+
+| Chemin | Fichier servi |
+|---|---|
+| `/boutique`, `/Komerce_Boutique.html` | `public/boutique/index.html` |
+| fallback non-API | `public/boutique/index.html` |
+| `/mon-compte` | `public/mon-compte.html` |
+| `/cart/shared`, `/cart/shared/:token` | `public/boutique/shared-cart-public.html` |
+| `/account/shared-carts` | `public/boutique/shared-cart-account.html` |
+| `/relais`, `/Komerce_Relais.html` | `public/relais/index.html` |
+| `/hub` | `public/hub/index.html` |
+| `/event/create` | `public/boutique/event/create.html` |
+| `/event/manage/:creatorToken` | `public/boutique/event/manage.html` |
+| `/event/w/:publicToken` | `public/boutique/event/public.html` |
+| `/event/pay/:paymentToken` | `public/boutique/event/pay.html` |
+| `/control-tower.html` | `public/dashboards/admin-legacy/control-tower.html` |
+| `/admin/*` chemins modernes | `public/dashboards/admin/index.html` |
+
+---
+
+## 5. Middlewares et sécurité
+
+Actifs dans `server.js` :
+
+- `helmet` avec CSP ;
+- `cors` avec origine contrôlée ;
+- `cookie-parser` ;
+- `express.json` limité à 1 MB ;
+- `requestIdMiddleware` ;
+- rate limiting global `/api/` ;
+- rate limiting spécialisé pour login/register, cash confirm, scans collect, création commande, dashboard et admin ;
+- webhooks Stripe en `express.raw` avant parser JSON.
+
+Variables critiques au boot :
+
+- `DATABASE_URL` ;
+- `JWT_SECRET`.
+
+Variables recommandées :
+
+- `ADMIN_PASSWORD` ;
+- `STRIPE_SECRET_KEY`.
+
+---
+
+## 6. Machine à états commande
+
+Source : `services/order-status-machine.js`.
+
+Statuts :
+
+```text
+pending
+pending_group_payment
+confirmed
+ordered
+preparation
+shipped
+in_transit
+available
+collected
+cancelled
+refunded
 ```
 
----
+Sources de transition reconnues :
 
-## 3. 🏗️ Vue d'ensemble architecture
+- `patch` ;
+- `scan` ;
+- `system` ;
+- `stripe_webhook` ;
+- `cash_confirm` ;
+- `wallet_full_payment` ;
+- `shared_cart_full_payment`.
 
-### Architecture générale
+Garanties :
 
-**Komerce** est une API e-commerce Node.js/Express + PostgreSQL, déployée sur **Railway**, servant de backend pour une marketplace Comores ↔ Dubai.
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT (Web / Mobile)                              │
-└──────────────────────────────────┬──────────────────────────────────────────────┘
-                                   │
-                                   ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          server.js (Express v4)                                 │
-│                                                                                 │
-│  Helmet (CSP) · CORS · cookie-parser · express.json (1MB)                      │
-│                                                                                 │
-│  Rate Limiters (6) :                                                            │
-│  ├─ globalLimiter        → /api/*              (100 req/15min)                  │
-│  ├─ authLimiter          → /api/auth/login,register (5 req/15min)              │
-│  ├─ cashConfirmLimiter   → /api/payments/cash/confirm (3 req/min)              │
-│  ├─ scanCollectLimiter   → /api/scans/collect  (5 req/min)                     │
-│  ├─ orderCreateLimiter   → POST /api/orders    (10 req/min, POST uniquement)   │
-│  └─ dashboardLimiter     → /api/dashboard      (30 req/min)                    │
-└──────────────────────────────────┬──────────────────────────────────────────────┘
-                                   │
-                   ┌───────────────┼────────────────────────┐
-                   ▼               ▼                        ▼
-         ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-         │  Middleware   │  │  Middleware   │  │  Middleware   │  │  Middleware   │
-         │ authenticate │  │ requireRole  │  │upload(multer)│  │validate(Joi) │
-         │  (JWT)       │  │(admin/hub/   │  │              │  │              │
-         │              │  │ agent_relais)│  │              │  │              │
-         └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-                │                 │                  │                 │
-                ▼                 ▼                  ▼                 ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           ROUTES (18 fichiers)                                  │
-│                                                                                 │
-│  🔐 Auth & Users           📦 Commandes & Paiements    📊 Admin & Pilotage     │
-│  ├─ /api/auth              ├─ /api/orders               ├─ /api/admin           │
-│  ├─ /api/loyalty           ├─ /api/payments             ├─ /api/dashboard       │
-│  └─ /api/relais            ├─ /api/purchasing           ├─ /api/admin/finance   │
-│                            ├─ /api/scans                └─ /api/finance         │
-│  🛍️ Produits & Modules     └─ /api/logistics                                    │
-│  ├─ /api/products                                       🔧 Utilitaires          │
-│  ├─ /api/modules           🛒 Paniers & Invendus        ├─ /api/pricing         │
-│  └─ /api/pricing           ├─ /api/baskets              └─ /health              │
-│                            └─ /api/unsold                                       │
-└──────────────────────────────────┬──────────────────────────────────────────────┘
-                                   │
-              ┌────────────────────┼──────────────────────┐
-              ▼                    ▼                      ▼
-┌───────────────────┐  ┌───────────────────┐  ┌────────────────────────────────┐
-│   PostgreSQL DB   │  │ Services externes │  │   Fichiers / Uploads           │
-│   (Railway)       │  │                   │  │                                │
-│   27+ tables      │  │  Stripe           │  │  Multer → /uploads/            │
-│   3 vues          │  │  Africa's Talking │  │  PDFKit → rapports/étiquettes  │
-│   6 triggers      │  │  Nodemailer       │  │  QRCode → codes retrait        │
-│   2 fonctions     │  │  WhatsApp         │  │                                │
-└───────────────────┘  └───────────────────┘  └────────────────────────────────┘
-```
-
-### Connexion PostgreSQL (`db.js`)
-
-- Pool `pg` avec SSL conditionnel, 10 connexions max
-- `idleTimeoutMillis: 30_000`, `connectionTimeoutMillis: 5_000`
-- Toutes les requêtes utilisent des **requêtes paramétrées** (`$1`, `$2`, etc.) — protection injection SQL
-
-### Variables d'environnement
-
-| Variable | Obligatoire | Description |
-|----------|:-----------:|-------------|
-| `DATABASE_URL` | ✅ | Connexion PostgreSQL (Railway) |
-| `JWT_SECRET` | ✅ | Clé de signature JWT |
-| `ADMIN_PASSWORD` | ⚠️ | Mot de passe admin (recommandé) |
-| `STRIPE_SECRET_KEY` | ⚠️ | Clé API Stripe (recommandé) |
-| `STRIPE_WEBHOOK_SECRET` | ⚠️ | Secret webhook Stripe |
-| `FRONTEND_URL` | — | URL frontend pour CORS |
-| `NODE_ENV` | — | Environnement (`production`/`development`) |
-| `JWT_EXPIRES` | — | Expiration JWT (défaut `30d`) |
-| `PORT` | — | Port serveur (défaut `3000`) |
+- transition idempotente si le statut cible est déjà présent ;
+- paiement strictement `pending → confirmed` ;
+- scans/système forward-only ;
+- insertion dans `order_status_history` ;
+- timestamps posés une seule fois par `COALESCE` ;
+- génération du `pickup_code` au passage `available` si absent ;
+- annulation avec restauration stock et contrepassation wallet.
 
 ---
 
-## 4. 🗂️ Carte des routes (endpoints)
+## 7. Pricing et économie
 
-### ⬜ Planned — `routes/parcels.js` (Vague 1) + `routes/hub.js` (Vague 2)
+Source : `services/pricing-engine.js`.
 
-> Voir `docs/PLAN_LOGISTIQUE_V2.md` pour le détail des 7 endpoints parcels et 6 endpoints hub.
+Le moteur calcule :
 
-### 📁 auth.js — `/api/auth` (5 endpoints)
+- `survival_price` ;
+- `minimum_safe_price` ;
+- `recommended_price` ;
+- `test_market_price` ;
+- `health_status` ;
+- `market_confidence` ;
+- `sourcing_decision`.
 
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/auth/register` | ❌ | — | Création de compte (phone obligatoire, MDP min 6 chars) |
-| 2 | `POST` | `/api/auth/login` | ❌ | — | Connexion, retourne JWT + cookie httpOnly `kmrc_jwt` |
-| 3 | `POST` | `/api/auth/logout` | ✅ | — | Déconnexion, supprime le cookie JWT |
-| 4 | `GET` | `/api/auth/me` | ✅ | — | Profil utilisateur connecté |
-| 5 | `PUT` | `/api/auth/me` | ✅ | — | Mise à jour profil |
+Sources DB attendues :
 
-> **Sécurité** : Cookie httpOnly (`kmrc_jwt`), `sameSite: Strict`, `secure: true` en production. Validation Joi sur register/login. Rate-limité par `authLimiter` (5 req/15min).
+- `finance_config` ;
+- `customs_categories` ;
+- `cost_components` avec fallback `pricing_components` ;
+- `risk_provisions` ;
+- `charges` ;
+- `products` ;
+- `orders` ;
+- `order_items`.
 
-### 📁 orders.js — `/api/orders` (17 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/orders` | ✅ | client | Créer une commande (transaction DB, stock FOR UPDATE) |
-| 2 | `GET` | `/api/orders` | ✅ | client | Liste commandes du client connecté (paginée) |
-| 3 | `GET` | `/api/orders/relais` | ✅ | admin, agent_relais | Commandes du relais (available, shipped, cash pending) |
-| 4 | `GET` | `/api/orders/problems` | ✅ | admin, agent_relais, agent_hub | Détection commandes problématiques (10 règles) |
-| 5 | `POST` | `/api/orders/:id/qr-token` | ✅ | admin, agent_relais | Générer token QR retrait (expirant) |
-| 6 | `GET` | `/api/orders/retrait/:token` | ❌ | public | Page retrait par token QR (vérification expiration) |
-| 7 | `GET` | `/api/orders/:ref` | ✅ | — | Détail commande + suivi par référence |
-| 8 | `PATCH` | `/api/orders/:id/status` | ✅ | admin, agent_relais, agent_hub | Changement statut (matrice transitions valides) |
-| 9 | `PATCH` | `/api/orders/:id/cost` | ✅ | admin | Saisie coût réel (supplier_name, invoice_url) |
-| 10 | `GET` | `/api/orders/:id/history` | ✅ | — | Historique statuts de la commande |
-| 11 | `POST` | `/api/orders/:id/cancel` | ✅ | client / admin | Annuler une commande avec remboursement (Stripe refund ou crédit boutique) |
-| 12 | `GET` | `/api/orders/credits` | ✅ | client / admin | Consulter crédits boutique disponibles |
-| 13 | `POST` | `/api/orders/:id/mark-availability` | ✅ | admin, agent_hub | Marquer la disponibilité des articles (available / delayed / backorder) |
-| 14 | `POST` | `/api/orders/:id/partial-ship` | ✅ | admin, agent_hub | Créer une expédition partielle + backorder |
-| 15 | `GET` | `/api/orders/:id/sub-orders` | ✅ | admin, agent_hub, agent_relais, owner | Lister les sous-commandes d'une commande |
-| 16 | `PATCH` | `/api/orders/sub-orders/:subId/status` | ✅ | admin, agent_hub, agent_relais | Changer le statut d'une sous-commande |
-| 17 | `POST` | `/api/orders/:id/cancel-backorder` | ✅ | admin, agent_hub, owner | Annuler un backorder (remboursement/crédit) |
-
-> **Pipeline** : 9 statuts — `confirmed → ordered → preparation → shipped → in_transit → available → collected` + `cancelled` / `refunded`.  
-> **Transitions** : Matrice `VALID_TRANSITIONS` + `TRANSITION_ROLES` — seuls les rôles autorisés peuvent effectuer chaque transition.  
-> **Référence** : Format `K` + 6 chars alphanumériques crypto-safe (randomBytes, rejet biais modulo).  
-> **Code cash** : 6 chiffres numériques (ex: `482917`) — dictable oralement.  
-> **Stripe** : `const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)` — refund lors de `POST /cancel`.  
-> **Helper** : `getAvailableCredits(dbClient, userId)` — crédits boutique FIFO.  
-> **Colis (Parcel-Centric)** : Support expédition partielle via tables `parcels` / `parcel_items` (Refonte Parcel-Centric v2.0). Source de vérité : `utils/parcelSync.js` → `computeOrderStatus()`.
-
-### 📁 products.js — `/api/products` (8 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/products` | ❌ | — | Liste paginée + filtres (category, search, prix, stock) |
-| 2 | `GET` | `/api/products/categories` | ❌ | — | Liste catégories avec compteurs |
-| 3 | `GET` | `/api/products/:id` | ❌ | — | Détail produit (is_active = TRUE) |
-| 4 | `POST` | `/api/products` | ✅ | admin | Créer un produit (validation Joi) |
-| 5 | `PUT` | `/api/products/:id` | ✅ | admin | Modifier un produit |
-| 6 | `DELETE` | `/api/products/:id` | ✅ | admin | Désactiver produit (soft delete via is_active) |
-| 7 | `POST` | `/api/products/:id/image` | ✅ | admin | Upload image principale (multer) |
-| 8 | `POST` | `/api/products/:id/images` | ✅ | admin | Upload images multiples |
-
-> **Filtres** : `category`, `search` (ILIKE), `min_price`, `max_price`, `in_stock`. Tri par `sort_order ASC, created_at DESC`.
-
-### 📁 payments.js — `/api/payments` (5 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/payments/stripe/intent` | ✅ | — | Créer PaymentIntent Stripe (EUR, centimes) |
-| 2 | `POST` | `/api/payments/stripe/webhook` | — | — | Webhook Stripe (signature vérifiée, raw body) |
-| 3 | `POST` | `/api/payments/cash/confirm` | ✅ | agent_relais, admin | Confirmer réception espèces (cash_ref_code) |
-| 4 | `GET` | `/api/payments/rates` | ✅ | — | Taux de change actuels (EUR/KMF, AED/KMF) |
-| 5 | `GET` | `/api/payments/config` | ✅ | — | Configuration paiement (modes disponibles) |
-
-> **Flux Stripe** : `stripe/intent` → client paie côté front → `stripe/webhook` confirme → `triggerPurchasing()`.  
-> **Flux cash** : Commande créée → client va au relais → agent confirme via `cash/confirm` → `triggerPurchasing()`.  
-> **Idempotence** : Vérification `payment_status === 'paid'` avant traitement webhook.
-
-### 📁 admin.js — `/api/admin` (14 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/admin/orders` | ✅ | admin | Toutes les commandes + filtres avancés |
-| 2 | `DELETE` | `/api/admin/orders/:id` | ✅ | admin | Supprimer une commande par ID |
-| 3 | `GET` | `/api/admin/customs` | ✅ | admin | Historique douane |
-| 4 | `GET` | `/api/admin/partners` | ✅ | admin | Liste partenaires / relais |
-| 5 | `POST` | `/api/admin/partners` | ✅ | admin | Créer un partenaire |
-| 6 | `PUT` | `/api/admin/partners/:id` | ✅ | admin | Modifier un partenaire |
-| 7 | `GET` | `/api/admin/users` | ✅ | admin | Liste utilisateurs + filtres |
-| 8 | `POST` | `/api/admin/users` | ✅ | admin | Créer un utilisateur (avec rôle) |
-| 9 | `PUT` | `/api/admin/users/:id/role` | ✅ | admin | Changer le rôle d'un utilisateur |
-| 10 | `PUT` | `/api/admin/users/:id/password` | ✅ | admin | Réinitialiser mot de passe |
-| 11 | `DELETE` | `/api/admin/users/:id` | ✅ | admin | Supprimer utilisateur (soft/hard) |
-| 12 | `GET` | `/api/admin/counts` | ✅ | admin | Compteurs globaux |
-| 13 | `POST` | `/api/admin/reset` | ✅ | admin | ⚠️ Reset base de données (dangereux) |
-| 14 | `POST` | `/api/admin/seed-test` | ✅ | admin | Seed données de test |
-
-> **Rôles DB** : `user_role` enum = `('client', 'admin', 'agent_relais', 'agent_hub')`.  
-> ⚠️ Endpoints dashboard déplacés vers `/api/dashboard/*` (v11.0) : `/dashboard`, `/margins`, `/alerts`.
-
-### 📁 dashboard.js — `/api/dashboard` (14 endpoints) — Dashboard unifié v11
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/dashboard/ops` | ✅ | admin | Vue opérationnelle quotidienne (SLA, alertes, activité) |
-| 2 | `GET` | `/api/dashboard/finance` | ✅ | admin | KPIs financiers (CA, marges, paiements, devises) |
-| 3 | `GET` | `/api/dashboard/pilotage` | ✅ | admin | Vue stratégique coûts & marges par produit |
-| 4 | `GET` | `/api/dashboard/pipeline` | ✅ | admin | Kanban pipeline commandes (compteurs par statut) |
-| 5 | `GET` | `/api/dashboard/retards` | ✅ | admin | Clients en retard SLA + compensations |
-| 6 | `GET` | `/api/dashboard/forecast` | ✅ | admin | Projections CA/marge |
-| 7 | `GET` | `/api/dashboard/clients` | ✅ | admin | Analyse comportement clients |
-| 8 | `GET` | `/api/dashboard/history` | ✅ | admin | Historique mensuel (données graphiques) |
-| 9 | `GET` | `/api/dashboard/hub-dubai` | ✅ | admin | Vue opérationnelle Hub Dubai (réceptions, expéditions, stocks) |
-| 10 | `GET` | `/api/dashboard/relais` | ✅ | admin | Analyse performance réseau relais |
-| 11 | `GET` | `/api/dashboard/annulations-parcels` | ✅ | admin | Suivi annulations et raisons par colis |
-| 11a | `GET` | `/api/dashboard/annulations-parcels/kpi` | ✅ | admin | KPIs annulations, remboursements Stripe/crédits |
-| 11b | `GET` | `/api/dashboard/annulations-parcels/recentes` | ✅ | admin | Annulations récentes détaillées |
-| 11c | `GET` | `/api/dashboard/annulations-parcels/parcels-actifs` | ✅ | admin | Expéditions partielles et backorders actifs |
-
-> **Cache** : Mémoire TTL 30s (`_cache` Map, max 100 entrées).  
-> **Taux** : EUR/KMF dynamiques via `getRates()`, jamais hardcodé.  
-> **SLA** : Warning 35j, Late 42j, Blocked 56j, Inactif 7j.  
-> **Compensations** : Préventif 28j, Avoir 35j, Remise 42j, Remboursement 56j.  
-> **Auth** : `router.use(authenticate, requireRole(['admin']))` appliqué globalement.
-
-### 📁 finance.js — `/api/finance` (4 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/finance/summary` | ✅ | admin | ⚠️ **DÉPLACÉ** → `301` vers `/api/dashboard/finance` |
-| 2 | `GET` | `/api/finance/export` | ✅ | admin | Export CSV transactions du mois (?month, ?year) |
-| 3 | `GET` | `/api/finance/stripe-proofs` | ✅ | admin | Liste PaymentIntents Stripe confirmés du mois |
-| 4 | `GET` | `/api/finance/report` | ✅ | admin | Rapport PDF mensuel (PDFKit, A4, synthèse CA/marges) |
-
-> **Alias** : `/api/admin/finance` pointe vers le même routeur `financeRouter`.  
-> **CSV** : BOM UTF-8 pour Excel, taux figés via `LATERAL JOIN exchange_rates`.
-
-### 📁 logistics.js — `/api/logistics` (7 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/logistics/shipments` | ✅ | admin | Créer expédition (carrier, container_ref, ETA) |
-| 2 | `GET` | `/api/logistics/shipments` | ✅ | admin | Liste expéditions (20 dernières, nb commandes) |
-| 3 | `PATCH` | `/api/logistics/shipments/:id` | ✅ | admin | MAJ expédition (arrivée → commandes `available` + SMS batch) |
-| 4 | `POST` | `/api/logistics/parcels` | ✅ | admin | Créer colis |
-| 5 | `POST` | `/api/logistics/parcels/:id/photo` | ✅ | admin | Photo colis agent Dubai |
-| 6 | `GET` | `/api/logistics/labels/:shipment_id` | ✅ | admin | Étiquettes PDF A6 (QR codes, infos retrait) |
-| 7 | `GET` | `/api/logistics/manifest/:shipment_id` | ✅ | admin | Manifeste PDF expédition (tableau commandes) |
-
-> **Automatisation** : Quand `arrived_at + customs_cleared_at` sont renseignés, les commandes passent automatiquement en `available` et un SMS batch est envoyé.
-> ⚠️ **VIOLATION R1** : `PATCH /:id` fait `UPDATE orders SET status` directement — à corriger Vague 1 (1.3). SMS batch couplé au conteneur, pas au colis.
-
-### 📁 scans.js — `/api/scans` (6 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/scans` | ✅ | admin, agent_hub, agent_relais | Scan générique (step: preparation, shipped, in_transit, relais_received) |
-| 2 | `POST` | `/api/scans/collect` | ✅ | admin, agent_relais | Scan collecte (pickup_code vérifié) → statut `collected` |
-| 3 | `POST` | `/api/scans/hub/receive` | ✅ | admin, agent_hub | Réception hub |
-| 4 | `GET` | `/api/scans/hub/pending` | ✅ | admin, agent_hub | Commandes en attente au hub |
-| 5 | `POST` | `/api/scans/verify-qr` | ✅ | admin, agent_relais | Vérification QR token retrait |
-| 6 | `GET` | `/api/scans/:order_id` | ✅ | — | Historique scans d'une commande |
-
-> **Sécurité v8.3** : Le statut `collected` a été retiré du `POST /api/scans` générique → uniquement via `/collect` ou `/verify-qr`.
-> ⚠️ **VIOLATION R2** : `POST /hub/receive` ne crée pas automatiquement de parcel — à corriger Vague 2 (2.1).
-
-### 📁 purchasing.js — `/api/purchasing` (10 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/purchasing` | ✅ | admin | Liste bons de commande fournisseur |
-| 2 | `GET` | `/api/purchasing/suppliers` | ✅ | admin | Liste fournisseurs |
-| 3 | `POST` | `/api/purchasing/suppliers` | ✅ | admin | Créer fournisseur |
-| 4 | `POST` | `/api/purchasing/suppliers/:id/map` | ✅ | admin | Mapper produit → fournisseur |
-| 5 | `DELETE` | `/api/purchasing/suppliers/:id` | ✅ | admin | Supprimer fournisseur |
-| 6 | `GET` | `/api/purchasing/order/:order_id/completeness` | ✅ | admin | Vérifier complétude achat |
-| 7 | `GET` | `/api/purchasing/:order_id` | ✅ | admin | Détail bon de commande |
-| 8 | `POST` | `/api/purchasing/:order_id/confirm` | ✅ | admin | Confirmer bon de commande |
-| 9 | `POST` | `/api/purchasing/:id/receive` | ✅ | admin | Réception marchandise → `triggerScan3()` |
-| 10 | `DELETE` | `/api/purchasing/po/:po_id` | ✅ | admin | Supprimer bon de commande |
-
-> **Fonction exportée** : `triggerPurchasing(orderId)` — appelée par `payments.js` après confirmation de paiement.
-
-### 📁 baskets.js — `/api/baskets` (endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| — | CRUD | `/api/baskets/*` | ✅ | — | Paniers partagés (standard, gift, shared) |
-
-> Tables : `baskets`, `basket_items`. Validation Joi.
-
-### 📁 modules.js — `/api/modules` (7 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/modules` | ✅ | — | Liste modules disponibles |
-| 2 | `GET` | `/api/modules/:type` | ✅ | — | Détail module par type |
-| 3 | `GET` | `/api/modules/fabrics` | ✅ | — | Liste tissus |
-| 4 | `GET` | `/api/modules/models` | ✅ | — | Liste modèles |
-| 5 | `POST` | `/api/modules/price` | ✅ | — | Calcul prix module |
-| 6 | `POST` | `/api/modules/fabrics` | ✅ | admin | Créer tissu |
-| 7 | `POST` | `/api/modules/models` | ✅ | admin | Créer modèle |
-
-> Tables : `fabrics`, `garment_models`, `products`.
-
-### 📁 loyalty.js — `/api/loyalty` (7 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/loyalty/tiers` | ✅ | admin | Liste paliers fidélité |
-| 2 | `GET` | `/api/loyalty/me` | ✅ | — | Niveau fidélité du client connecté |
-| 3 | `GET` | `/api/loyalty/users` | ✅ | admin | Classement fidélité utilisateurs |
-| 4 | `GET` | `/api/loyalty/stats` | ✅ | admin | Statistiques fidélité |
-| 5 | `PUT` | `/api/loyalty/tiers/:id` | ✅ | admin | Modifier palier |
-| 6 | `POST` | `/api/loyalty/recalculate/:user_id` | ✅ | admin | Recalculer fidélité d'un utilisateur |
-| 7 | `POST` | `/api/loyalty/recalculate-all` | ✅ | admin | Recalculer fidélité de tous |
-
-> **Fonctions exportées** : `getLoyaltyDiscount(db, userId)`, `recalculateLoyalty(db, userId)`.  
-> **Paliers** : Bronze (0 cmd, 0%), Silver (3 cmd, 2%), Gold (10 cmd, 5%), Platinum (25 cmd, 8%).
-
-### 📁 unsold.js — `/api/unsold` (7 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/unsold` | ✅ | admin | Liste articles invendus |
-| 2 | `POST` | `/api/unsold/scan` | ✅ | admin | Scanner article invendu |
-| 3 | `GET` | `/api/unsold/:id` | ✅ | admin | Détail invendu |
-| 4 | `PATCH` | `/api/unsold/:id` | ✅ | admin | Modifier invendu |
-| 5 | `POST` | `/api/unsold/:id/resolve` | ✅ | admin | Résoudre invendu |
-| 6 | `GET` | `/api/unsold/:id/whatsapp` | ✅ | admin | Lien WhatsApp notification |
-| 7 | `GET` | `/api/unsold/stats/summary` | ✅ | admin | Statistiques invendus |
-
-### 📁 pricing.js — `/api/pricing` (4 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `POST` | `/api/pricing/calculate` | ✅ | — | Calcul prix (marge, fret, douane) |
-| 2 | `POST` | `/api/pricing/couture` | ✅ | — | Calcul prix couture |
-| 3 | `GET` | `/api/pricing/rates` | ✅ | — | Taux de change actuels |
-| 4 | `PUT` | `/api/pricing/rates` | ✅ | admin | Mettre à jour taux de change |
-
-### 📁 relais.js — `/api/relais` (3 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/relais` | ❌ | — | Liste tous les relais actifs |
-| 2 | `GET` | `/api/relais/public` | ❌ | — | Liste relais (vue publique) |
-| 3 | `GET` | `/api/relais/:id` | ❌ | — | Détail relais |
-
-> ⚠️ Aucune authentification requise — routes publiques intentionnelles.
-
-
-### 📁 config.js — `/api/config` (5 endpoints) — Administration business rules
-
-> 🔑 Toutes les routes requièrent `authenticate` + rôle `admin`.
-> Dépendances : `utils/rules.js`, `validators/index.js` (configSchemas)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/config/rules` | ✅ | admin | Liste toutes les règles groupées par catégorie |
-| 2 | `GET` | `/api/config/rules/:key` | ✅ | admin | Détail d'une règle + historique récent |
-| 3 | `PUT` | `/api/config/rules/:key` | ✅ | admin | Modifier une règle (+ raison optionnelle) |
-| 4 | `POST` | `/api/config/rules/:key/reset` | ✅ | admin | Reset à la valeur par défaut |
-| 5 | `GET` | `/api/config/rules/:key/history` | ✅ | admin | Historique des modifications |
-
-### 📁 health.js — `/health` (2 endpoints)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/health` | ❌ | — | Healthcheck Railway (readiness probe) |
-| 2 | `GET` | `/health/ready` | ❌ | — | Ready check |
-
-> **Endpoint caché** : `GET /api/health` défini directement dans `server.js` — retourne version, latence DB, timestamp, env.
-
-### 📁 pilotage.js — `/api/pilotage` ⚠️ DEPRECATED (3 redirections)
-
-| # | Méthode | Chemin | Auth | Rôles | Description |
-|---|---------|--------|:----:|-------|-------------|
-| 1 | `GET` | `/api/pilotage` | ✅ | admin | ⚠️ `301` → `/api/dashboard/pilotage` |
-| 2 | `GET` | `/api/pilotage/history` | ✅ | admin | ⚠️ `301` → `/api/dashboard/history` |
-| 3 | `GET` | `/api/pilotage/clients` | ✅ | admin | ⚠️ `301` → `/api/dashboard/clients` |
-
-> **Note** : Ce fichier est conservé uniquement pour rétro-compatibilité. Tous les endpoints pilotage ont été absorbés dans `dashboard.js` (v11.0). Le routeur est commenté dans `server.js`.
-
-### Alias de routes (`server.js`)
-
-| Alias | Cible | Description |
-|-------|-------|-------------|
-| `/api/admin/finance` | `financeRouter` | Alias rétro-compatibilité |
-| `/api/admin/pilotage` | `dashboardRouter` | Redirection v11 |
-| `/api/admin/stats` | `dashboardRouter` | Redirection v11 |
+Voir [`DOCTRINE_ECONOMIQUE_KOMERCE.md`](./DOCTRINE_ECONOMIQUE_KOMERCE.md).
 
 ---
 
-## 5. 🗄️ Schéma de base de données
+## 8. Wallet
 
-### Tables principales (31+)
+Source : `services/wallet-service.js`.
 
-| # | Table | Source | Trigger | Description |
-|---|-------|--------|---------|-------------|
-| 1 | `users` | schema.sql | `trg_users_updated` | Utilisateurs (clients, admins, agents hub/relais) |
-| 2 | `relais` | schema.sql | — | Points relais de collecte (5 par défaut aux Comores) |
-| 3 | `products` | schema.sql | `trg_products_updated` | Catalogue produits (20 articles seed) |
-| 4 | `orders` | schema.sql | `trg_orders_updated` | Commandes principales |
-| 5 | `order_items` | schema.sql | — | Articles de commande |
-| 6 | `order_status_history` | schema.sql | — | Historique changements de statut |
-| 7 | `recipients` | schema.sql | — | Destinataires des commandes |
-| 8 | `shipments` | schema.sql | `trg_shipments_updated` | Expéditions groupées |
-| 9 | `scans` | schema.sql | `trg_scan_sync_status` | Scans de suivi (shipped, received, collected) |
-| 10 | `exchange_rates` | schema.sql | — | Taux de change EUR/KMF, AED/KMF |
-| 11 | `sms_log` | schema.sql | — | Journal des SMS envoyés |
-| 12 | `disputes` | schema.sql | `trg_disputes_updated` | Litiges et réclamations |
-| 13 | `baskets` | schema.sql | — | Paniers partagés |
-| 14 | `basket_items` | schema.sql | — | Articles dans les paniers |
-| 15 | `partners` | server.js (auto-migration) | — | Partenaires commerciaux |
-| 16 | `loyalty_tiers` | server.js (auto-migration) | — | Niveaux fidélité |
-| 17 | `customs_history` | Supabase/DB | — | Historique douane |
-| 18 | `fabrics` | Supabase/DB | — | Tissus (modules couture) |
-| 19 | `garment_models` | Supabase/DB | — | Modèles vêtement |
-| 20 | `product_suppliers` | Supabase/DB | — | Mapping produit → fournisseur |
-| 21 | `purchase_orders` | Supabase/DB | — | Bons de commande fournisseur |
-| 22 | `suppliers` | Supabase/DB | — | Fournisseurs |
-| 23 | `unsold_items` | Supabase/DB | — | Articles invendus |
-| 24 | `ceremony_fabrics` | schema_extension.sql | — | Tissus cérémonie (legacy) |
-| 25 | `ceremony_models` | schema_extension.sql | — | Modèles cérémonie (legacy) |
-| 26 | `ceremony_order_items` | schema_extension.sql | — | Articles cérémonie (legacy) |
-| 27 | `store_credits` | migration 007 | — | Crédits boutique (remboursement annulation cash) |
-| 28 | `refunds` | migration 007 | — | Historique des remboursements (Stripe + crédits) |
-| 29 | `parcels` | migration 010 | order_id→orders, shipment_id→shipments, relais_id→relais | **Unité logistique principale** — remplace sub_orders (refonte parcel-centric) |
-| 30 | `parcel_items` | migration 010 | parcel_id→parcels, order_item_id→order_items, product_id→products | Mapping articles → colis (remplace sub_order_items) |
+Tables :
 
-### Vues (3)
+- `wallets` ;
+- `wallet_transactions` ;
+- `wallet_credit_lots` ;
+- `wallet_consumptions`.
 
-| # | Vue | Source | Description |
-|---|-----|--------|-------------|
-| 1 | `v_loyalty_summary` | Supabase | Résumé fidélité |
-| 2 | `v_unsold_pipeline` | Supabase | Pipeline invendus |
-| 3 | `customs_taux_mensuel` | server.js | Taux douaniers mensuels (AVG customs_delta_pct) |
+Principes :
 
-### Enums PostgreSQL (7)
-
-| Enum | Valeurs |
-|------|---------|
-| `user_role` | `client`, `admin`, `agent_relais`, `agent_hub` |
-| `order_status` | `confirmed`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded` |
-| `payment_mode` | `stripe_eur`, `cash_relais` |
-| `payment_status` | `pending`, `paid`, `partial`, `refunded` |
-| `basket_type` | `standard`, `gift`, `shared` |
-| `scan_step` | `preparation`, `shipped`, `in_transit`, `relais_received`, `collected` |
-| `parcel_status` | draft, preparation, shipped, in_transit, arrived, available, collected, cancelled |
-
-### Fonctions PostgreSQL (1)
-
-| Fonction | Description |
-|----------|-------------|
-| `set_updated_at()` | Met à jour `updated_at` automatiquement via triggers |
-| ~~`sync_order_status_from_scan()`~~ | ❌ **SUPPRIMÉE** — Remplacée par `utils/parcelSync.js` → `computeOrderStatus()` |
-
-### Triggers (6)
-
-| Trigger | Table | Événement | Fonction |
-|---------|-------|-----------|----------|
-| `trg_users_updated` | `users` | BEFORE UPDATE | `set_updated_at()` |
-| `trg_products_updated` | `products` | BEFORE UPDATE | `set_updated_at()` |
-| `trg_orders_updated` | `orders` | BEFORE UPDATE | `set_updated_at()` |
-| `trg_shipments_updated` | `shipments` | BEFORE UPDATE | `set_updated_at()` |
-| ~~`trg_scan_sync_status`~~ | ~~`scans`~~ | ~~AFTER INSERT~~ | ❌ **SUPPRIMÉ** — Remplacé par `parcelSync.js` |
-| `trg_parcels_updated` | `parcels` | BEFORE UPDATE | `set_updated_at()` — Auto-update timestamp |
-| `trg_disputes_updated` | `disputes` | BEFORE UPDATE | `set_updated_at()` |
-
-### Criticité des tables
-
-```
-Table                   │ Nb routes │ Criticité
-────────────────────────┼───────────┼──────────────────
-products                │    13     │ █████████████ 🔴
-users                   │    11     │ ███████████░░ 🔴
-orders                  │    10     │ ██████████░░░ 🔴
-order_items             │     9     │ █████████░░░░ 🔴
-relais                  │     9     │ █████████░░░░ 🔴
-recipients              │     5     │ █████░░░░░░░░ 🔴
-exchange_rates          │     5     │ █████░░░░░░░░ 🔴
-order_status_history    │     4     │ ████░░░░░░░░░ 🟠
-loyalty_tiers           │     3     │ ███░░░░░░░░░░ 🟠
-scans                   │     2     │ ██░░░░░░░░░░░ 🟡
-```
-
-### Diagramme entité-relation simplifié
-
-```
-┌──────────┐     ┌────────────┐     ┌──────────────┐     ┌───────────┐
-│  users   │────▶│   orders   │────▶│ order_items   │────▶│ products  │
-│          │     │            │     │              │     │           │
-│ id       │     │ id         │     │ order_id     │     │ id        │
-│ email    │     │ user_id    │     │ product_id   │     │ name      │
-│ role     │     │ status     │     │ qty          │     │ price_kmf │
-│ loyalty_ │     │ relais_id  │     │ price_kmf    │     │           │
-│  tier_id │     │ total_kmf  │     └──────────────┘     └─────┬─────┘
-└────┬─────┘     └──────┬─────┘                                │
-     │                  │                                      │
-     │                  ├──▶ order_status_history               │
-     │                  ├──▶ recipients                         │
-     │                  ├──▶ scans                              │
-     │                  ├──▶ relais                              │
-     │                  └──▶ shipments                           │
-     │                                                          │
-     └──▶ loyalty_tiers       purchase_orders ──▶ order_items   │
-                              suppliers ◄── product_suppliers ◄─┘
-```
+- 1 wallet par user ;
+- création lazy ;
+- transactions immutables ;
+- consommation FIFO des lots ;
+- idempotence sur les créations automatiques ;
+- contrepassation plutôt que suppression.
 
 ---
 
-## 6. 🛡️ Middleware & sécurité
+## 9. Dette documentaire détectée
 
-### Middleware applicatifs
+Ces divergences sont connues et ne doivent pas contaminer les docs de référence :
 
-| Middleware | Fichier | Dépendances | Rôle |
-|------------|---------|-------------|------|
-| `authenticate` | `middleware/auth.js` | `jsonwebtoken`, `db` | Vérifie JWT (cookie httpOnly `kmrc_jwt` OU header `Authorization: Bearer`) |
-| `requireRole` | `middleware/auth.js` | — | Vérifie le rôle utilisateur (admin, agent_hub, agent_relais) |
-| `upload` | `middleware/upload.js` | `multer`, `crypto`, `fs` | Gestion uploads fichiers (images produits, photos colis) |
-| `validate` | `middleware/validate.js` | `joi` | Validation Joi centralisée + sanitisation anti-XSS / proto-pollution |
-
-### Matrice middleware par route
-
-| Route | authenticate | requireRole | validate | upload | rate-limit |
-|-------|:-----------:|:-----------:|:--------:|:------:|:----------:|
-| auth.js | ✅ (partiel) | — | ✅ | — | ✅ authLimiter |
-| orders.js | ✅ | ✅ | ✅ (7 schémas) | — | ✅ orderCreateLimiter (POST) |
-| products.js | ✅ (partiel) | ✅ (admin) | ✅ | ✅ | — |
-| payments.js | ✅ (partiel) | ✅ | ✅ | — | ✅ cashConfirmLimiter |
-| admin.js | ✅ | ✅ (admin) | ✅ | — | — |
-| dashboard.js | ✅ | ✅ (admin) | — | — | ✅ dashboardLimiter |
-| finance.js | ✅ | ✅ (admin) | — | — | — |
-| logistics.js | ✅ | ✅ (admin) | ✅ | — | — |
-| scans.js | ✅ | ✅ | ✅ | — | ✅ scanCollectLimiter |
-| purchasing.js | ✅ | ✅ (admin) | — | — | — |
-| loyalty.js | ✅ | ✅ (admin) | — | — | — |
-| modules.js | ✅ | ✅ | ✅ | — | — |
-| baskets.js | ✅ | — | ✅ | — | — |
-| unsold.js | ✅ | ✅ (admin) | — | — | — |
-| pricing.js | ✅ | ✅ (admin pour PUT) | — | — | — |
-| pilotage.js | ✅ | ✅ (admin) | — | — | — |
-| relais.js | ❌ | — | — | — | — |
-| health.js | ❌ | — | — | — | — |
-
-### Rate Limiters détaillés (6)
-
-| Limiter | Route | Limite | Description |
-|---------|-------|--------|-------------|
-| `globalLimiter` | `/api/*` | 100 req/15min | Protection globale |
-| `authLimiter` | `/api/auth/login`, `/api/auth/register` | 5 req/15min | Anti brute-force |
-| `cashConfirmLimiter` | `/api/payments/cash/confirm` | 3 req/min | Anti-abus confirmation cash |
-| `scanCollectLimiter` | `/api/scans/collect` | 5 req/min | Anti-abus scan QR |
-| `orderCreateLimiter` | `POST /api/orders` | 10 req/min | Anti-spam commandes (POST uniquement) |
-| `dashboardLimiter` | `/api/dashboard` | 30 req/min | Anti-DoS requêtes lourdes |
-
-### Headers de sécurité (Helmet)
-
-- **CSP** : `script-src 'unsafe-inline'`, CDN autorisés (cdnjs, unpkg, jsdelivr), Google Fonts
-- **Frame ancestors** : `'none'` (anti-clickjacking)
-- **Object-src** : `'none'`
-- **Base-uri** : `'self'`
-
-### CORS
-
-- Origines autorisées : `localhost:*`, `*.up.railway.app`, `FRONTEND_URL`
-- Méthodes : GET, POST, PUT, PATCH, DELETE, OPTIONS
-- `credentials: true` (cookies cross-origin)
+1. `package.json` indique `10.6.1`, `server.js` annonce v12.4, `/api/health` retourne `12.3`.
+2. Plusieurs audits du 7 avril et du 8 mai parlent de nombres de routes/endpoints devenus obsolètes.
+3. Des documents temporaires de prompts/roadmaps Sonnet/Temu/mobile ont été retirés de l'index principal ou doivent être archivés/supprimés dans une passe dédiée.
+4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
 
 ---
 
-## 7. 🔗 Dépendances inter-routes
-
-### Appels croisés
-
-> ⚠️ **MISE À JOUR v2.0 — Refonte Parcel-Centric** : Le trigger DB `trg_scan_sync_status` est **SUPPRIMÉ**. La source de vérité pour `orders.status` est désormais `utils/parcelSync.js` → `computeOrderStatus()`.
-
-| Source | Cible | Via | Description |
-|--------|-------|-----|-------------|
-| `orders.js` | `loyalty.js` | `getLoyaltyDiscount()` | Calcul remise fidélité |
-| `orders.js` | `loyalty.js` | `recalculateLoyalty()` | Recalcul points |
-| `scans.js` | `parcelSync.js` | `safeSyncScanToParcels()` | 🆕 **SOURCE DE VÉRITÉ** — sync statut parcels → orders |
-| `scans.js` | `purchasing.js` | `triggerScan3()` | Déclenchement scan étape 3 |
-| `payments.js` | `purchasing.js` | `triggerPurchasing()` | Déclenchement achat post-paiement |
-| `parcelSync.js` | `parcels.js` | `computeOrderStatus()` | Agrégation statuts colis → statut commande |
-| `loyalty.js` | `scans.js` | `recalculateLoyalty()` | Recalcul après scan |
-
-### Graphe de dépendances
-
-```
-                    ┌────────────┐
-                    │  orders.js │
-                    └─────┬──────┘
-                          │
-              ┌───────────┴───────────┐
-              │ getLoyaltyDiscount()   │ recalculateLoyalty()
-              ▼                       ▼
-        ┌────────────┐         ┌─────────────┐
-        │ loyalty.js │◄────────│  scans.js   │
-        └────────────┘         └──────┬──────┘
-                                      │
-                           ┌──────────┤ safeSyncScanToParcels()
-                           ▼          │ triggerScan3()
-                    ┌──────────────┐  │
-                    │parcelSync.js │  │
-                    └──────┬───────┘  │
-                           │          │
-                           ▼          ▼
-                    ┌──────────────┐  ┌──────────────┐
-                    │ parcels.js   │  │purchasing.js │
-                    └──────────────┘  └──────▲───────┘
-                                             │ triggerPurchasing()
-                                      ┌──────┴───────┐
-                                      │ payments.js  │
-                                      └──────────────┘
-```
-
-### Flux complet
-
-
-
-```
-orders.js ──payment──▶ payments.js ──trigger──▶ purchasing.js ──trigger──▶ scans.js ──recalc──▶ loyalty.js
-    │                                                                                              ▲
-    └──────────────── getLoyaltyDiscount() / recalculateLoyalty() ──────────────────────────────────┘
-```
-
-> ⚠️ **Couplage fort** : La chaîne `payments → purchasing → scans → loyalty` est une dépendance linéaire critique. Une panne sur un maillon bloque le flux entier.
-
----
-
-
-## 8. 🔄 Chaîne de traitement des commandes
-
-### Cycle de vie complet
-
-```
-confirmed ──▶ ordered ──▶ preparation ──▶ shipped ──▶ in_transit ──▶ available ──▶ collected
-                                                                                      │
-                         cancelled (admin à tout moment) ◄────────────────────────────┤
-                         refunded (après cancelled) ◄─────────────────────────────────┘
-```
-
-### Détail des étapes
-
-| # | Étape | Route | Endpoint | Statut | Tables modifiées | Notification |
-|---|-------|-------|----------|--------|------------------|-------------|
-| 1 | 🛒 Création | `orders.js` | `POST /api/orders` | `confirmed` | orders, order_items, recipients | SMS + Email |
-| 2a | 💳 Stripe | `payments.js` | `stripe/webhook` | `ordered` | orders, order_status_history | SMS |
-| 2b | 💵 Cash | `payments.js` | `cash/confirm` | `ordered` | orders, order_status_history, products | SMS |
-| 3 | 📋 Achat | `purchasing.js` | `triggerPurchasing()` | — | purchase_orders, order_items | SMS + WhatsApp |
-| 4 | 📦 Réception hub | `purchasing.js` | `:id/receive` | `preparation` | purchase_orders, orders | SMS |
-| 5 | 📦 Transitaire | `scans.js` | `POST /` (step=shipped) | `shipped` | scans, order_status_history | SMS |
-| 6 | 🚢 Embarquement | `scans.js` | `POST /` (step=in_transit) | `in_transit` | scans, order_status_history | SMS |
-| 7 | 📍 Relais | `scans.js` | `POST /` (step=relais_received) | `available` | scans, order_status_history | SMS |
-| 8 | ✅ Collecte | `scans.js` | `/collect` ou `/verify-qr` | `collected` | scans, order_status_history | SMS |
-| 9 | ⭐ Fidélité | `loyalty.js` | `recalculateLoyalty()` | — | users, loyalty_tiers | — |
-
-### SMS par statut
-
-| Statut | Message |
-|--------|---------|
-| `ordered` | Commande lancée, article en cours de traitement |
-| `preparation` | Colis reçu au Hub, contrôle qualité |
-| `shipped` | Colis remis au transitaire à Dubai |
-| `in_transit` | Colis embarqué sur le bateau 🚢 (ETA 3-5 semaines) |
-| `available` | Disponible au relais, code retrait |
-| `collected` | Remise effectuée, merci ! 🎉 |
-
----
-
-## 9. 🌐 Services externes
-
-| # | Service | Type | Dépendance npm | Routes | Usage |
-|---|---------|------|---------------|--------|-------|
-| 1 | **Stripe** | 💳 Paiement | `stripe` | payments, finance, admin, **orders** | PaymentIntents, webhooks, preuves, **refunds (cancel)** |
-| 2 | **Africa's Talking** | 📱 SMS | `africastalking` | orders, payments, scans, logistics, purchasing, baskets, dashboard | Notifications transactionnelles |
-| 3 | **Nodemailer** | 📧 Email | `nodemailer` | orders | Confirmation commande |
-| 4 | **WhatsApp** | 💬 Messagerie | — | baskets, orders, purchasing, unsold | Notifications paniers, achats, invendus |
-| 5 | **PDFKit** | 📄 PDF | `pdfkit` | finance, logistics | Rapports financiers, étiquettes, manifestes |
-| 6 | **QRCode** | 📲 QR | `qrcode` | logistics, orders | Codes retrait, étiquettes |
-| 7 | **bcryptjs** | 🔒 Hashing | `bcryptjs` | auth, admin | Hachage mots de passe (coût 10) |
-| 8 | **jsonwebtoken** | 🔐 JWT | `jsonwebtoken` | auth, middleware | Tokens d'authentification (30d) |
-| 9 | **Joi** | ✅ Validation | `joi` | validators | Schémas de validation centralisés |
-
----
-
-## 10. 🛠️ Utilitaires
-
-| Fichier | Rôle |
-|---------|------|
-| `utils/sms.js` | Envoi SMS via Africa's Talking + `processCashRelaisReminders()` (cron 1h) + templates partial_ship/backorder + `processBackorderReminders()` (cron 6h) |
-| `utils/email.js` | Emails transactionnels via Nodemailer (confirmation commande) |
-| `utils/rates.js` | Taux de change EUR/KMF, AED/KMF (table `exchange_rates`) — fallback via `getRuleNumber('RATE_EUR_KMF_DEFAULT')` |
-| `utils/pricing.js` | Moteur v6.5 async — 10 paramètres configurables via `getRuleNumber()` (marge, fret, douane estimée) |
-| `utils/reference.js` | Génération de références expédition (`generateShipmentRef()`) |
-│   ├── parcels.js                       (13.4 KB) [NEW — Moteur parcel-centric]
-│   ├── parcelSync.js                    (11.2 KB) [NEW — Sync engine SOURCE DE VÉRITÉ]
-| `utils/refunds.js` | Gestion des remboursements (Stripe refund + crédits boutique) |
-| `utils/rules.js` | Moteur de règles métier — `getRuleNumber()`, `getRuleString()` (cache TTL + fallback, table `business_rules`) |
-| `utils/store-credits.js` | Gestion des crédits boutique (FIFO, consultation, attribution) |
-| `validators/index.js` | Schémas Joi centralisés : auth, orders, products, payments, logistics, etc. |
-
-### `utils/parcels.js` (13.4 KB) [NEW — Refonte Parcel-Centric]
-
-> 🆕 **Moteur Parcel-Centric** — Gestion complète des colis
-
-| Fonction | Description |
-|----------|-------------|
-| `splitOrderIntoParcels()` | Découpage commande en colis selon les STRATEGIES |
-| `computeOrderStatus()` | Agrégation statuts parcels → statut commande |
-| `generateParcelRef()` | Génération référence KOM-P-YYYY-NNNNNN |
-| Registre `STRATEGIES` | Stratégies de split configurables via business_rules |
-
-### `utils/parcelSync.js` (11.2 KB) [NEW — SOURCE DE VÉRITÉ]
-
-> 🚨 **SOURCE DE VÉRITÉ pour `orders.status`** — Remplace le trigger DB `trg_scan_sync_status`
-
-| Fonction | Description |
-|----------|-------------|
-| `safeSyncScanToParcels()` | Sync scan → parcels → orders.status (atomique) |
-| Gestion `order_status_history` | Enregistre scanned_by/notes dans l'historique |
-| Réconciliation multi-parcels | Gère les commandes avec plusieurs colis |
-
-### Cron intégré
-
-- **Cash relais reminders** : `setInterval` toutes les heures, avec verrou anti-concurrence (`cronRunning`).
-- **Backorder checker** : `setInterval` toutes les 6 heures — détecte les backorders expirés, envoie SMS de proposition d'annulation au client.
-
-### Auto-migrations au démarrage (`server.js`)
-
-1. `fixAdminHash()` — Corrige le hash admin bcrypt (migration one-time)
-2. `fixMissingSchema()` — Colonnes customs_history, table partners, table loyalty_tiers, vue customs_taux_mensuel, seed loyalty_tiers
-3. `seedProducts()` — 20 articles par défaut
-4. `seedRelais()` — 5 relais Comores
-5. `fixProductEncoding()` — Fix UTF-8 produits
-6. `fixProductImages()` — URLs images Unsplash
-
----
-
-## 11. ✅ Validators (1 fichier)
-
-### `validators/index.js` (15.4 KB) [5dd674f3]
-**Schémas Joi centralisés**
-- Validation utilisateur (register, login)
-- Validation produit
-- Validation commande
-- Validation paiement
-- Validation expédition partielle (markAvailability, partialShip, subOrderStatus, cancelBackorder)
-- Export de tous les schémas
-
----
-
-## 12. 🖥️ Frontend — Architecture Monolithique (`public/`)
-
-### ⚠️ ARCHITECTURE CRITIQUE À CONNAÎTRE
-
-> **CHAQUE fichier HTML est un monolithe autonome (50-512 KB) avec CSS + JS inline.**
-> Pas de framework. Pas de build. Pas de bundler. Pas de composants partagés (sauf `komerce-api.js`).
-
-### Fichier partagé : `komerce-api.js` (127.8 KB) [400380df]
-Client API JavaScript vanille — 128 KB monolithique :
-- Toutes les fonctions d'appel API (fetch wrappers)
-- Gestion du token JWT (localStorage)
-- Importé par tous les HTML via `<script src="/komerce-api.js">`
-
-### Fichier partagé : `chart.umd.min.js` (200.8 KB) [ebfe8019]
-Chart.js UMD bundle — copie locale (pas CDN)
-- Utilisé par les dashboards et pages statistiques
-
-### Service Worker : `sw.js` (6.5 KB) [f4238e4d]
-PWA Service Worker :
-- Cache des assets statiques
-- Stratégie cache-first pour les images
-- Network-first pour les API calls
-
-### CDN et dépendances externes :
-
-| Librairie | Version | Source | Utilisé par |
-|-----------|---------|--------|-------------|
-| DOMPurify | v3.1.0 | `cdnjs.cloudflare.com` | Tous les HTML (sanitization XSS) |
-| Google Fonts (Poppins) | - | `fonts.googleapis.com` | Tous les HTML (typographie) |
-| QR Code Generator | - | `cdn.jsdelivr.net` + `unpkg.com` | QR_Print, Scans |
-| Chart.js | bundlé | Local (`chart.umd.min.js`) | Dashboards, Stats |
-
-### Pages Frontend :
-
-| Fichier | Taille | SHA | Rôle | Accès |
-|---------|--------|-----|------|-------|
-| `index.html` | 143.9 KB | c925b4b8 | 🏪 **Boutique principale** (route `/`) | Public |
-| `Komerce_Admin.html` | 121.4 KB | d8e57998 | 👑 Panel admin principal | Admin |
-| `Komerce_Admin_Users.html` | 32.2 KB | 90591618 | 👥 Gestion utilisateurs | Admin |
-| `Komerce_Backend.html` | 512.6 KB | f02590ab | ⚙️ **Backend admin complet** (512 KB !) | Admin |
-| `Komerce_Backoffice_Admin_v2.html` | 68.2 KB | 3eafa998 | 🏢 Backoffice admin v2 | Admin |
-| `Komerce_Dashboard.html` | 75.8 KB | 4d455c1a | 📊 Dashboard admin | Admin |
-| `Komerce_Hub.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
-| `Komerce_Mobile.html` | 53.9 KB | d0348e70 | 📱 Version mobile PWA | Public |
-| `Komerce_Pilotage_v2.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Admin |
-| `Komerce_Pipeline.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Vendeur |
-| `Komerce_QR_Print.html` | 9.4 KB | e9a09169 | 🏷️ Impression QR codes | Vendeur/Relais |
-| `Komerce_Relais.html` | ~1 KB | redirect | ↩️ Redirect → dashboard-app (déprécié PR #98) | Relais |
-| `Komerce_Simulateur.html` | 106.1 KB | 1f74411d | 🧮 Simulateur tarifs/livraison | Public |
-| `Komerce_Tests.html` | 147.0 KB | f053cfc0 | 🧪 Page de tests | Dev |
-| `Komerce_Web.html` | 81.1 KB | caa83c27 | 🌐 Version web classique | Public |
-| `portal.html` | 15.8 KB | 8a511d9e | 🚪 Portail d'entrée | Public |
-
-### 🆕 `Komerce_Config.html` (33.9 KB) — Admin Business Rules
-
-> Page d'administration pour gérer les `business_rules` via l'API `/api/config/rules`.
-> Permet la modification, le reset et la consultation de l'historique des règles métier.
-> Dépend de `routes/config.js` et `utils/rules.js`.
-
-### Images :
-
-| Fichier | Taille | SHA |
-|---------|--------|-----|
-| `images/avatar_panier.png` | 13.3 KB | 8ed44a7c |
-| `images/hero_banner.jpg` | 139.1 KB | b486987e |
-
----
-
-## 13. 📊 Dashboard App — Tasklet Instant App (`dashboard-app/`)
-
-### Architecture
-
-L'application **Komerce Pilotage** est une instant app Tasklet avec 5 vues, alimentée par les endpoints `/api/dashboard/*`.
-
-### 9 Vues + 1 composant utilitaire
-
-| # | Vue | Endpoint source | Description |
-|---|-----|----------------|-------------|
-| 1 | **Overview** | `/api/dashboard/ops` | Vue d'ensemble — KPIs principaux |
-| 2 | **Finance** | `/api/dashboard/finance` | CA total, marges, répartition cash/Stripe, devises |
-| 3 | **Pipeline** | `/api/dashboard/pipeline` | Kanban visuel des commandes par statut |
-| 4 | **Retards** | `/api/dashboard/retards` | Clients en retard SLA, compensations automatiques |
-| 5 | **Clients** | `/api/dashboard/clients` | Comportement, fidélité, top clients |
-| 6 | **Catalogue** | `/api/products` | Vue catalogue produits |
-| 7 | **Hub Dubai** | `/api/dashboard/ops` | Vue opérations hub Dubai |
-| 8 | **Relais** | `/api/relais` | Vue réseau de relais |
-| 9 | **Tendances** | `/api/dashboard/history` + `/forecast` | Graphiques mensuels, projections |
-
-### Structure données (mock)
-
-```json
-{
-  "ops": {
-    "commandes_aujourd_hui": 5,
-    "commandes_en_cours": 23,
-    "commandes_bloquees": 2,
-    "livrees_aujourd_hui": 3,
-    "livrees_30j": 45,
-    "sla": { "on_time": 18, "warning": 3, "late": 1, "blocked": 1 }
-  },
-  "finance": {
-    "ca_kmf": 1250000,
-    "ca_eur": 2540,
-    "marge_moy_pct": 32.5,
-    "ca_cash_kmf": 850000,
-    "ca_stripe_eur": 1200
-  }
-}
-```
-
-### Fichiers (`dashboard-app/`)
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `app.tsx` | 5.9 KB | 2e2d8920 | Composant principal — routing 9 vues + Settings modal API URL |
-| `index.html` | 2.7 KB | 40a99817 | Point d'entrée HTML |
-| `styles.css` | 505 B | 1a1807c6 | Styles additionnels |
-| `tasklet.config.json` | 184 B | eed57f48 | Config Tasklet (displayName, description) |
-| `types.ts` | 7.1 KB | e86643d0 | Types TypeScript partagés (9 vues) |
-
-### Composants (`components/`) — 11 fichiers :
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `CatalogueView.tsx` | 8.9 KB | c47e8c75 | Vue catalogue — navigation produits (3 useApi hooks) |
-| `ClientsView.tsx` | 8.5 KB | 6383d2a2 | Vue clients — comportement, fidélité (1 useApi hook) |
-| `FinanceView.tsx` | 11.2 KB | df4382a6 | Vue finance — CA, marges, devises (1 useApi hook) |
-| `HubDubaiView.tsx` | 10.5 KB | fbe66418 | Vue hub Dubai — opérations hub |
-| `LoadingError.tsx` | 1.7 KB | 5108f6d1 | Composant UI loading/erreur réutilisable |
-| `OverviewView.tsx` | 10.3 KB | be16d0ef | Vue d'ensemble — KPIs principaux (3 useApi hooks) |
-| `PipelineView.tsx` | 4.5 KB | 5b346aa9 | Vue pipeline — kanban commandes (1 useApi hook) |
-| `RelaisView.tsx` | 12.6 KB | 672b1e71 | Vue relais — réseau de points relais |
-| `RetardsView.tsx` | 7.4 KB | bc6b115a | Vue retards — SLA, compensations (1 useApi hook) |
-| `StatCard.tsx` | 889 B | 8dcabbaf | Composant carte statistique réutilisable |
-| `TendancesView.tsx` | 10.5 KB | 9b16b6a5 | Vue tendances — graphiques, projections (2 useApi hooks) |
-
-### Données (`data/`) :
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `mockData.ts` | 30.2 KB | 07646943 | Données mock pour développement (9 vues) |
-
-### Utilitaires (`utils/`) — 3 fichiers :
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `api.ts` | 2.4 KB | ae6efd22 | Service API typé — fetch wrapper avec base URL configurable |
-| `formatters.ts` | 2.8 KB | edd50898 | Formatage nombres, dates, devises (KMF) |
-| `useApi.ts` | 2.0 KB | 777baa92 | Hook React — loading/error/auto-refresh (15s) |
-
-
-## 14. ⚙️ Scripts (4 fichiers)
-
-### `scripts/impact-check.js` (25.5 KB) [d0fef162]
-**Analyse d'impact des modifications**
-- Scanne les fichiers modifiés
-- Calcule un score de risque
-- Identifie les dépendances impactées
-- Utilisé par le workflow CI/CD `auto-cartography.yml`
-
-### `scripts/impact-config.json` (8.4 KB) [e81e48fd]
-**Configuration de l'analyse d'impact**
-- Mapping routes → tables → middlewares
-- Services externes référencés
-- Seuils d'alerte
-
-### `scripts/setup-hooks.sh` (4.5 KB) [1d4ba37f]
-**Installation des git hooks**
-- Pre-commit : lint, validation
-- Pre-push : vérification carto
-
-### `scripts/test_e2e_full.sh` (11.7 KB) [f2e5fdf8]
-**Tests end-to-end complets**
-- Scénario complet : inscription → commande → paiement → livraison
-- Vérifie chaque endpoint
-- Rapport de résultat
-
----
-
-## 15. 📚 Documentation (`docs/`)
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `AUDIT_REPORT.md` | 8.5 KB | c13adc79 | 📋 Rapport d'audit principal |
-| `AUDIT_CONFORMITE_GOUVERNANCE.md` | 6.8 KB | 20e8b386 | 📋 Audit de conformité gouvernance |
-| `CARTOGRAPHY_360.md` | - | (v14.0) | 🗺️ CE fichier |
-| `DASHBOARD_REDESIGN.md` | 8.3 KB | 0f46d18f | 📐 Specs redesign dashboard |
-| `DEPLOYMENT.md` | 19.7 KB | 9ac4d5c1 | 🚀 Guide de déploiement |
-| `GOVERNANCE.md` | ~7.5 KB | [v2.3] | ⚖️ Gouvernance v2.3 — 10 règles + R1/R2 logistique |
-| `GOVERNANCE_BOOTSTRAP.md` | 3.0 KB | 6f68fb3b | 🤖 Bootstrap gouvernance automatique |
-| `IMPACT_SYSTEM.md` | 14.2 KB | 005e6ce8 | 💥 Documentation système d'impact |
-| `README.md` | 8.6 KB | 914fef23 | 📖 Documentation technique |
-| `REPRISE_SESSION.md` | 2.8 KB | e6aa4f6d | 🔄 Guide reprise de session |
-| `ROADMAP_KOMERCE.md` | 22.8 KB | 81d66b08 | 📋 Roadmap v15 — source de vérité |
-| `VALIDATION_GUIDE.md` | 3.4 KB | e657ab19 | ✅ Guide de validation |
-| `analyse-dashboard-pilotage.md` | 5.8 KB | ae4e10c6 | 📊 Analyse dashboard pilotage |
-| `CHANGES_PHASE2_MIGRATION.md` | 9.2 KB | 29e6f652 | 📝 Changelog détaillé Phase 2 migration constantes |
-
-### Gouvernance & Agent (`docs/`)
-
-| Fichier | Taille | Description |
-|---------|--------|-------------|
-| `AGENT_CONFIG.md` | 8.9 KB | Configuration agent IA — bootstrap, outils, connexions |
-| `AGENT_SUBAGENTS.md` | 4.6 KB | Instructions sous-agents (governance-autocommit) |
-| `GOVERNANCE.md` | 7.1 KB | Gouvernance opérationnelle v2.3 (8 règles) |
-| `GOVERNANCE_BOOTSTRAP.md` | 3.1 KB | Processus de bootstrap agent |
-| `_agent/` | dir | Fichiers internes agent |
-| `_logs/` | dir | Logs d'exécution |
-| `_work/` | dir | Travaux en cours |
-| `_pending/` | dir | Deltas gouvernance en attente |
-
-### Audit (`docs/audit/`) — 11 fichiers
-
-| Fichier | Taille | SHA | Contenu |
-|---------|--------|-----|---------|
-| `AUDIT_BUGS.md` | 7.9 KB | 92fa541a | Bugs identifiés par audit |
-| `AUDIT_CODE_INTEGRITY.md` | 10.9 KB | 2ce96aec | Intégrité code — imports/exports |
-| `FRONTEND_AUDIT.md` | 21.3 KB | 2dbbfde5 | Audit complet du frontend |
-| `SECURITY_CHECKLIST.md` | 2.5 KB | f9480b40 | Checklist sécurité pré-Go-Live |
-| `batch_2.md` | 17.3 KB | 3c94ffd2 | Audit lot 2 |
-| `batch_3.md` | 15.0 KB | b82bc77b | Audit lot 3 |
-| `batch_5.md` | 16.6 KB | 6b0b6d31 | Audit lot 5 |
-| `batch_6.md` | 14.4 KB | 19a32efb | Audit lot 6 |
-| `db_audit.md` | 15.1 KB | 7ee3d48a | Audit base de données |
-| `middleware_audit.md` | 12.5 KB | f3533515 | Audit middlewares |
-| `utils_audit.md` | 15.9 KB | cc2b9d7a | Audit utilitaires |
-
----
-
-## 16. 🤖 CI/CD — GitHub Actions (`.github/`)
-
-### Fichiers de configuration `.github/`
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `copilot-instructions.md` | 1.4 KB | a6a92e74 | Instructions pour GitHub Copilot |
-| `pull_request_template.md` | 1.2 KB | 2f34087a | Template de pull request |
-
-### `auto-cartography.yml` (~5 KB) [v2.0]
-**Métriques automatiques de la cartographie**
-- Trigger : push sur `main` (paths étendus à public/, scripts/, dashboard-app/, validators/, .github/)
-- Action : exécute `impact-check.js` et met à jour la section métriques en fin de carto
-- ⚠️ Ne régénère PAS le contenu complet — les agents doivent faire la mise à jour DELTA manuellement
-
-### `carto-guard.yml` (~3.5 KB) [v2.0]
-**Vérification coffre-fort dans les PR**
-- Trigger : pull_request (opened, synchronize)
-- Paths surveillés : routes/, middleware/, utils/, validators/, db/, scripts/, public/, dashboard-app/, server.js, db.js, package.json, .github/workflows/
-- Commente la PR si la carto n'est pas à jour — avec instructions DELTA
-
-### `impact-check.yml` (~5.2 KB) [9358686c]
-**Analyse d'impact automatique**
-- Trigger : push sur `main`
-- Exécute `scripts/impact-check.js` pour évaluer le risque des modifications
-- Calcule un score de risque et identifie les dépendances impactées
-
----
-
-## 17. 📁 Fichiers Racine
-
-| Fichier | Taille | SHA | Rôle |
-|---------|--------|-----|------|
-| `.cursorrules` | 1.4 KB | 3dd2643a | Règles pour l'éditeur Cursor |
-| `.env.example` | 1.9 KB | 6568d664 | Template variables d'environnement |
-| `.gitignore` | 258 B | 61e13d23 | Fichiers exclus de Git |
-| `CONTRIBUTING.md` | 3.2 KB | a18b88a6 | Guide de contribution |
-| `railway.toml` | 644 B | fa81b056 | Config Railway — watch patterns (filtre déploiements docs-only) |
-| `README.md` | 3.9 KB | 1c05bc68 | README principal |
-
----
-
-## 18. 🔐 Audit de sécurité
-
-### Issues critiques (#71–#76) — STATUT : 🔴 OPEN
-
-| # | Issue | Sévérité | Description | Fichier |
-|---|-------|----------|-------------|---------|
-| #71 | Injection SQL potentielle | 🔴 Critique | ⚠️ Partiellement corrigé (PR #106/#108 : orders.js + sms.js). Reste : admin.js, dashboard.js, products.js, logistics.js | Plusieurs routes |
-| #72 | JWT secret faible en dev | 🔴 Critique | Fallback `komerce_secret_dev_UNSAFE` si JWT_SECRET manquant | `auth.js:26` |
-| #73 | Admin password reset non sécurisé | 🔴 Critique | Pas de vérification ancien MDP pour `/api/admin/users/:id/password` | `admin.js` |
-| #74 | CORS trop permissif | 🔴 Critique | `*.up.railway.app` autorise tous les sous-domaines Railway | `server.js:66` |
-| #75 | Rate limiting insuffisant | 🔴 Critique | Certaines routes admin sans rate limiting | `server.js` |
-| #76 | `POST /api/admin/reset` en production | 🔴 Critique | Endpoint de reset DB accessible en production | `admin.js` |
-
-### Issues majeures (#77–#84) — STATUT : 🔴 OPEN
-
-| # | Issue | Sévérité | Description | Fichier |
-|---|-------|----------|-------------|---------|
-| #77 | `unsafe-inline` dans CSP | 🟠 Majeur | Scripts inline autorisés par CSP | `server.js:94` |
-| #78 | Pas de HTTPS forcé | 🟠 Majeur | `secure: isProd` sur cookie mais pas de redirection HTTPS | `auth.js:50` |
-| #79 | Stock race condition | 🟠 Majeur | `FOR UPDATE` ajouté (BUG-008) mais vérifier edge cases | `orders.js:270` |
-| #80 | SMS sans rate-limit | 🟠 Majeur | Les SMS sont envoyés en fire-and-forget, pas de throttling | Plusieurs routes |
-| #81 | Stripe webhook sans idempotency key | 🟠 Majeur | Check `payment_status` mais pas d'idempotency key Stripe | `payments.js:109` |
-| #82 | Données sensibles dans logs | 🟠 Majeur | `console.error` peut exposer des données sensibles | Partout |
-| #83 | Multer sans validation de type | 🟠 Majeur | Vérifier que les uploads sont bien filtrés par type MIME | `middleware/upload.js` |
-| #84 | Pas de pagination max | 🟠 Majeur | `limit` accepte des valeurs arbitraires (LIMIT 999999) | `products.js`, `orders.js` |
-
-### Patterns SQL sécurisés utilisés
-
-- ✅ **Requêtes paramétrées** : `$1`, `$2`, ... partout
-- ✅ **FOR UPDATE** : Verrouillage stock lors des commandes (BUG-008)
-- ✅ **Transactions** : `BEGIN` / `COMMIT` / `ROLLBACK` pour création commande
-- ✅ **COALESCE** : Mises à jour partielles sécurisées
-- ⚠️ **Construction dynamique** : Quelques requêtes construisent le WHERE dynamiquement (paramétré, mais à surveiller)
-
----
-
-## 19. 🔧 Stack technique
-
-### Dépendances production
-
-| Package | Version | Usage |
-|---------|---------|-------|
-| `express` | ^4.19.2 | Framework HTTP |
-| `pg` | ^8.12.0 | Client PostgreSQL |
-| `bcryptjs` | ^2.4.3 | Hachage mots de passe |
-| `jsonwebtoken` | ^9.0.2 | Tokens JWT |
-| `stripe` | ^15.11.0 | Paiements en ligne |
-| `helmet` | ^8.0.0 | Headers de sécurité |
-| `cors` | ^2.8.5 | Cross-Origin Resource Sharing |
-| `express-rate-limit` | ^7.3.1 | Rate limiting |
-| `joi` | ^17.13.3 | Validation de données |
-| `multer` | ^1.4.5-lts.1 | Upload de fichiers |
-| `cookie-parser` | ^1.4.7 | Parsing cookies (JWT httpOnly) |
-| `pdfkit` | ^0.14.0 | Génération PDF |
-| `qrcode` | ^1.5.4 | Génération QR codes |
-| `nodemailer` | ^6.9.14 | Envoi d'emails |
-| `africastalking` | ^0.7.2 | Envoi SMS |
-| `dotenv` | ^16.4.5 | Variables d'environnement |
-| `uuid` | ^10.0.0 | Génération UUID v4 |
-
-### Dépendances développement
-
-| Package | Version | Usage |
-|---------|---------|-------|
-| `nodemon` | ^3.1.4 | Rechargement automatique |
-
-### Override sécurité
-
-| Package | Version | Raison |
-|---------|---------|--------|
-| `lodash` | ^4.17.21 | Fix vulnérabilité prototype pollution |
-
-### Environnement
-
-- **Node.js** : >= 18.0.0
-- **PostgreSQL** : Railway managed (SSL conditionnel)
-- **Déploiement** : Railway (PORT via env, trust proxy 1)
-
----
-
-## 20. ⚠️ Points de vigilance
-
-### 🔴 Tables à risque (points de défaillance unique)
-
-- **`products`** — 13 routes dépendantes
-- **`users`** — 11 routes dépendantes
-- **`orders`** — 10 routes dépendantes
-- **`order_items`** — 9 routes dépendantes
-- **`relais`** — 9 routes dépendantes
-
-### 🔴 Routes les plus complexes
-
-| Route | Endpoints | Tables | Appels croisés | Services ext. | Score |
-|-------|-----------|--------|---------------|---------------|-------|
-| `orders.js` | 17 | 8 | 2 | 5 | **84** |
-| `admin.js` | 14 | 9 | 0 | 2 | **53** |
-| `purchasing.js` | 10 | 8 | 1 | 2 | **53** |
-| `scans.js` | 6 | 7 | 1 | 1 | **52** |
-| `dashboard.js` | 8 | 5 | 0 | 1 | **42** |
-
-### 🟡 Routes sans authentification
-
-- **`health.js`** (`/health`) — 2 endpoints publics
-- **`relais.js`** (`/api/relais`) — 3 endpoints publics
-- **`products.js`** — GET endpoints publics (liste, catégories, détail)
-- **`orders.js`** — `GET /api/orders/retrait/:token` (page publique retrait QR)
-
-### Recommandations
-
-| # | Priorité | Recommandation |
-|---|----------|---------------|
-| 1 | 🔴 | Ajouter index DB sur colonnes FK les plus sollicitées |
-| 2 | 🔴 | Découpler la chaîne payments→purchasing→scans (file de messages) |
-| 3 | 🔴 | Corriger les issues de sécurité #71–#76 |
-| 4 | 🟠 | Refactorer `orders.js` en sous-modules |
-| 5 | 🟠 | Ajouter tests d'intégration |
-| 6 | 🟡 | Extraire fonctions partagées en service dédié |
-
----
-
-## 21. 📊 Statistiques finales
-
-| Métrique | Valeur |
-|----------|--------|
-| Fichiers route | **19** |
-| Endpoints totaux | **~127** |
-| Tables PostgreSQL | **31+** |
-| Vues | **3** |
-| Fonctions DB | **2** |
-| Triggers DB | **6** |
-| Enums | **6** |
-| Services externes | **9** |
-| Middleware | **4** (authenticate, rate-limit, upload, validate) |
-| Rate limiters | **6** |
-| Appels inter-routes | **5** |
-| Tables critiques (5+ routes) | **7** |
-| Issues sécurité critiques | **6** (OPEN) |
-| Issues sécurité majeures | **8** (OPEN) |
-| Route la plus complexe | `orders.js` (17 endpoints, ~71 Ko) |
-| Dépendances production | **17** |
-
----
-
-## 22. 📝 Règle de Mise à Jour (DELTA)
-
-> **Chaque commit modifiant du code DOIT mettre à jour cette cartographie — UNIQUEMENT les lignes impactées.**
->
-> | Action | Mise à jour |
-> |--------|------------|
-> | Ajout/suppression de fichier | Arbre + section concernée |
-> | Modification de fichier | SHA dans l'arbre |
-> | Ajout/modification d'endpoint | Section routes |
-> | Modification table/vue | Section BDD |
->
-> **❌ INTERDIT de régénérer toute la carto à chaque commit**
-> **✅ OBLIGATOIRE de ne modifier que les lignes impactées**
-
-
----
-
-> 📝 *Cartographie 360° — Version v15.15 — 7 avril 2026*
-> *Fusion v12 (profondeur d'analyse) + v14 (couverture structurelle)*
-> *Source de vérité architecture : consulter avant toute modification de code.*
-> *Roadmap & Issues → voir `docs/ROADMAP_KOMERCE.md`*
-> *Mise à jour : approche DELTA (ne modifier que les lignes impactées)*
-
----
-
-## 🤖 Dernière analyse automatique
-
-> Mise à jour : 2026-04-09 07:45:51 UTC
-
-| Métrique | Valeur |
-|----------|--------|
-| Routes | 28 fichiers |
-| Middlewares | 5 fichiers |
-| Utilitaires | 11 fichiers |
-| Frontend (public/) | 27 fichiers |
-| Dashboard App | 20 fichiers |
-| Score de risque | 100/100 |
-
-*Métriques auto-générées — workflow auto-cartography v2.0*
-*⚠️ Complète la carto mais ne remplace pas la mise à jour DELTA manuelle.*
+## 10. Règle de mise à jour
+
+Pour maintenir cette cartographie :
+
+1. lire `server.js` ;
+2. mettre à jour les domaines, pas seulement les chiffres ;
+3. vérifier les services critiques ;
+4. ne pas recopier un audit ancien sans confrontation au code ;
+5. documenter toute divergence code/doc dans cette section.
