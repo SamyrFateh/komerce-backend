@@ -14,6 +14,8 @@ import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
+import { destroyMobilePager }            from './b-pager.js';
+import { scrollPageToTop }               from './b-scroll-owner.js';
 
 'use strict';
 
@@ -127,6 +129,15 @@ export function setupInfiniteScroll() {
  * @param {string} tab - 'shop' | 'fav' | 'track'
  */
 export function switchView(tab) {
+  const wasShop = document.body.classList.contains('k-view-shop');
+
+  // Si on quitte la boutique, détruire le pager mobile AVANT de masquer le DOM.
+  // Sinon #k-grid / .k-cat-section / ghost pages / listeners / scrollLeft restent
+  // partiellement vivants et perturbent le retour Boutique.
+  if (wasShop && tab !== 'shop') {
+    destroyMobilePager();
+  }
+
   document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track');
   document.body.classList.add('k-view-' + tab);
   const catalog    = document.getElementById('k-catalog-section');
@@ -147,7 +158,8 @@ export function switchView(tab) {
   if (pageScroll) {
     pageScroll.dataset.tab = tab;
     if (tab !== 'shop') {
-      // Désactiver le pager cage quand on quitte la boutique
+      // Le vrai nettoyage a déjà été fait par destroyMobilePager().
+      // On garde ce garde-fou pour le cas où la vue initiale n'était pas shop.
       pageScroll.style.top = '';
       pageScroll.classList.remove('k-pager-active');
     }
@@ -159,7 +171,20 @@ export function switchView(tab) {
   if (cartOverlay) cartOverlay.classList.remove('open');
   if (cartDrawer)  cartDrawer.classList.remove('open');
   document.body.classList.remove('cart-open');
-  scrollPageToTop('smooth');
+
+  if (tab === 'shop') {
+    // Recréer le DOM catalogue une fois la vue Boutique redevenue visible.
+    // renderGrid() remontera ensuite le pager mobile via b-catalog.js :
+    // _recalcPagerVars → _setupInfiniteLoop → _setupMobilePager → _setupSectionAutoAdvance.
+    requestAnimationFrame(function() {
+      renderGrid();
+      requestAnimationFrame(function() {
+        scrollPageToTop('auto');
+      });
+    });
+  } else {
+    scrollPageToTop('smooth');
+  }
 }
 
 /**
