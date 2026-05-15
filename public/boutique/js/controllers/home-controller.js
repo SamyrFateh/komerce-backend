@@ -6,7 +6,7 @@
  * - Mount the category rail rendered by render-categories.js.
  * - Orchestrate category selection on the home/catalog experience.
  * - Sync active category state between chips and desktop horizontal navigation.
- * - Own the desktop contextual rayon rail under #k-subcats-wrap.
+ * - Own desktop category selection; desktop subcategory filters are shown in the catalog flat header.
  *
  * Must not:
  * - Define category or subcategory data.
@@ -46,63 +46,23 @@ function scrollToCatalog() {
 }
 
 /**
- * Affiche/masque le rail de rayons contextuels desktop.
- * Mobile garde sa logique pager/rail compact.
+ * Neutralise l'ancien rail desktop intermédiaire #k-subcats-wrap.
+ *
+ * Doctrine desktop retenue : les sous-catégories vivent dans le flat header du
+ * catalogue rendu par b-catalog.js. Cela évite le doublon :
+ * grandes pastilles → rail intermédiaire → titre catégorie → sous-catégories.
+ *
+ * Mobile reste inchangé : cette fonction ne participe pas au pager mobile.
  */
 export function renderSubcatRail(catKey) {
   if (window.innerWidth < 900) return;
   const wrap = document.getElementById('k-subcats-wrap');
   if (!wrap) return;
 
-  const subs = catKey && catKey !== 'all' ? getSubcategories(catKey) : [];
-  if (!subs.length) {
-    wrap.style.display = 'none';
-    wrap.innerHTML = '';
-    document.documentElement.style.removeProperty('--sidebar-top');
-    return;
-  }
-
-  const activeSub = state.activeSubcat || null;
-  wrap.innerHTML =
-    '<div class="k-desktop-rayons-head">' +
-      '<span class="k-desktop-rayons-title">Rayons</span>' +
-      '<span class="k-desktop-rayons-hint">Affiner l’univers sélectionné</span>' +
-    '</div>' +
-    '<div class="k-subcats-rail k-subcats-visible k-desktop-rayons-rail">' +
-      '<button class="k-subchip' + (!activeSub ? ' active' : '') + '" data-subcat="">' +
-        '<span class="k-subchip-label">Tout voir</span>' +
-      '</button>' +
-      subs.map(s =>
-        '<button class="k-subchip' + (activeSub === s.key ? ' active' : '') + '" data-subcat="' + s.key + '">' +
-          (s.icon ? '<span class="k-subchip-icon">' + s.icon + '</span>' : '') +
-          '<span class="k-subchip-label">' + s.label + '</span>' +
-        '</button>'
-      ).join('') +
-    '</div>';
-  wrap.dataset.parentCat = catKey;
-  wrap.style.display = 'block';
-
-  requestAnimationFrame(function() {
-    var wrapH = wrap.offsetHeight || 50;
-    var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 76;
-    var catsShell = document.querySelector('.k-cats-shell');
-    var catsH = catsShell ? catsShell.offsetHeight : 58;
-    document.documentElement.style.setProperty('--sidebar-top', (headerH + catsH + wrapH + 4) + 'px');
-  });
-
-  wrap.querySelectorAll('.k-subchip').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const sub = btn.dataset.subcat || null;
-      state.activeSubcat = sub || null;
-      wrap.querySelectorAll('.k-subchip').forEach(b => b.classList.toggle('active', b === btn));
-      renderGrid();
-      requestAnimationFrame(function() {
-        renderSubcatRail(state.activeCat);
-        scrollToCatalog();
-      });
-    });
-  });
+  wrap.style.display = 'none';
+  wrap.innerHTML = '';
+  delete wrap.dataset.parentCat;
+  document.documentElement.style.removeProperty('--sidebar-top');
 }
 
 export function centerRailChip(chip) {
