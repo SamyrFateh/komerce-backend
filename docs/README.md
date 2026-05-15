@@ -1,253 +1,113 @@
-# 🛒 Komerce Backend
+# Documentation Komerce
 
-<!-- Logo placeholder -->
-<p align="center">
-  <img src="assets/komerce-logo.png" alt="Komerce Logo" width="200" />
-</p>
-
-<p align="center">
-  <strong>Backend e-commerce pour l'Union des Comores</strong><br/>
-  <em>Connecter la diaspora comorienne à ses îles, un colis à la fois.</em>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white" alt="Railway" />
-  <img src="https://img.shields.io/badge/API-v12.0-blue" alt="API Version" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
-</p>
+> **Statut** : index documentaire canonique — mis à jour le 15 mai 2026  
+> **Méthode** : consolidation des audits existants + vérification contre le code réel (`server.js`, `package.json`, `services/order-status-machine.js`, `services/pricing-engine.js`, `services/wallet-service.js`).  
+> **Objectif** : garder uniquement les documents utiles pour comprendre, maintenir et piloter Komerce.
 
 ---
 
-## 🤖 Agents IA — LIRE EN PREMIER
+## 1. Documents fondamentaux
 
-> **⚠️ [`../AGENT_RULES.md`](../AGENT_RULES.md) → [`AGENTS_PROTOCOL.md`](./AGENTS_PROTOCOL.md)**
->
-> Tout agent IA doit lire le protocole de gouvernance AVANT toute modification.
-
----
-
-## 📋 Table des matières
-
-- [Présentation](#-présentation)
-- [Fonctionnalités](#-fonctionnalités)
-- [Stack technique](#-stack-technique)
-- [Démarrage rapide](#-démarrage-rapide)
-- [Endpoints API](#-endpoints-api)
-- [Structure du projet](#-structure-du-projet)
-- [Sécurité](#-sécurité)
-- [Coffre-fort (Vault)](#-coffre-fort-vault)
-- [Documentation](#-documentation)
-- [Contribuer](#-contribuer)
-- [Licence](#-licence)
+| Document | Rôle |
+|---|---|
+| [`SYNOPTIQUE_KOMERCE.md`](./SYNOPTIQUE_KOMERCE.md) | Vue métier et technique rapide : ce que Komerce fait, pour qui, et comment les grands blocs s'enchaînent. |
+| [`DOCTRINE_ECONOMIQUE_KOMERCE.md`](./DOCTRINE_ECONOMIQUE_KOMERCE.md) | Doctrine de pricing, marges, coût complet, risque, confiance marché et décisions de sourcing. |
+| [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) | Cartographie opérationnelle vérifiée : routes, domaines, services critiques et points de vérité. |
+| [`ZONE_IMPACT.md`](./ZONE_IMPACT.md) | Invariants d'impact : ce qu'il ne faut jamais casser dans les flux sensibles. |
+| [`DEPLOYMENT.md`](./DEPLOYMENT.md) | Déploiement Railway, variables d'environnement et points d'exploitation. |
+| [`GOVERNANCE.md`](./GOVERNANCE.md) | Règles de gouvernance projet et discipline de modification. |
+| [`IMPACT_SYSTEM.md`](./IMPACT_SYSTEM.md) | Documentation du système d'impact / coffre-fort si utilisé dans les PR. |
 
 ---
 
-## 🌍 Présentation
+## 2. ADR conservées
 
-**Komerce** est un backend e-commerce spécialement conçu pour les Comores (Moroni, Anjouan, Mohéli). Il permet à la **diaspora comorienne** (principalement en France) de commander et payer des produits en **EUR via Stripe**, tandis que les clients locaux paient en **KMF** (franc comorien) en espèces.
+Les ADR restent utiles lorsqu'elles expliquent une décision d'architecture durable. Elles ne doivent pas être lues comme des plans projet à jour, mais comme des décisions de fond.
 
-Les colis sont livrés via un réseau de **5 points relais** répartis sur les 3 îles, avec un suivi complet par **QR code** et des notifications par **SMS** et **WhatsApp**.
-
-### Pourquoi Komerce ?
-
-- 🇰🇲 Adapté aux réalités logistiques comoriennes (pas de Chronopost ici !)
-- 💶 Double devise EUR / KMF avec taux de change dynamique
-- 📱 Notifications SMS via Africa's Talking (réseau local)
-- 📦 Suivi QR code de bout en bout
-- 🎁 Système de cadeaux et paniers partagés
-
----
-
-## ✨ Fonctionnalités
-
-| Domaine | Description |
-|---------|-------------|
-| 🛍️ **Catalogue** | 20 produits : électronique, mode, cosmétique, bijoux |
-| 📦 **Commandes** | Cycle complet : pending → paid → purchasing → hub → shipped → relais → collected |
-| 💳 **Paiements** | Stripe (EUR diaspora) + cash (KMF local) |
-| 📍 **Points relais** | 5 relais sur Grande Comore, Anjouan et Mohéli |
-| 📱 **Notifications** | SMS (Africa's Talking) + WhatsApp |
-| ⭐ **Fidélité** | 4 niveaux : Bronze → Silver → Gold → Platinum |
-| 📷 **QR Tracking** | Scan QR à chaque étape du parcours colis |
-| ✂️ **Couture** | Module sur-mesure : tissus + modèles de vêtements |
-| 🧺 **Paniers partagés** | Commandes groupées et système de cadeaux |
-| 📊 **Dashboards** | Admin ops, ventes, délais, prévisions, pipeline |
-| 🏭 **Achats** | Gestion fournisseurs et bons de commande |
-| 📄 **Rapports PDF** | Rapports financiers générés via PDFKit |
+| ADR | Sujet |
+|---|---|
+| [`ADR-001-customs-shipments.md`](./ADR-001-customs-shipments.md) | Douane et shipments. |
+| [`ADR-002-sales-analytics-v2.md`](./ADR-002-sales-analytics-v2.md) | Analytics ventes. |
+| [`ADR-003-accounting-v2.md`](./ADR-003-accounting-v2.md) | Comptabilité / finance. |
+| [`ADR-004-customs-rate-coherence.md`](./ADR-004-customs-rate-coherence.md) | Cohérence des taux douane. |
+| [`ADR-005-suppliers-unifies.md`](./ADR-005-suppliers-unifies.md) | Fournisseurs unifiés. |
+| [`ADR-006-clients-view.md`](./ADR-006-clients-view.md) | Vue clients. |
+| [`ADR-007-finance-bo-hygiene.md`](./ADR-007-finance-bo-hygiene.md) | Hygiène back-office finance. |
+| [`ADR-008-pilotage-split-and-sante.md`](./ADR-008-pilotage-split-and-sante.md) | Séparation pilotage / santé. |
+| [`ADR-009-source-verite-unifiee.md`](./ADR-009-source-verite-unifiee.md) | Source de vérité unifiée. |
+| [`ADR-010-pricing-reads-db.md`](./ADR-010-pricing-reads-db.md) | Pricing lu depuis la DB. |
+| [`ADR-011-pricing-extensible-3-niveaux.md`](./ADR-011-pricing-extensible-3-niveaux.md) | Pricing extensible en 3 niveaux. |
 
 ---
 
-## 🔧 Stack technique
+## 3. Documents historiques / audits
 
-| Composant | Technologie |
-|-----------|-------------|
-| **Runtime** | Node.js 18+ / Express.js |
-| **Base de données** | PostgreSQL (27 tables, 2 vues, 6 triggers) |
-| **Authentification** | JWT + bcrypt (cookies httpOnly) |
-| **Paiements** | Stripe |
-| **SMS** | Africa's Talking / Orange |
-| **Messagerie** | WhatsApp |
-| **Email** | Mailjet |
-| **Fichiers** | Multer + Cloudinary |
-| **PDF** | PDFKit |
-| **QR Code** | QRCode |
-| **Sécurité** | Helmet, CORS, 6 rate-limiters |
-| **Déploiement** | Railway |
-| **CI/CD** | GitHub Actions |
+Les audits accumulés ont servi à construire cette documentation. Leur valeur principale est historique : ils montrent le chemin, mais ils peuvent être dépassés par le code actuel.
+
+Règle : lorsqu'un audit contredit `server.js`, une route active, une migration ou un service applicatif, **le code gagne**. Les conclusions encore vraies doivent être remontées dans les documents fondamentaux ci-dessus.
+
+Les documents très ciblés, temporaires ou déjà remplacés par une version consolidée doivent être supprimés ou sortis de l'index principal.
 
 ---
 
-## 🚀 Démarrage rapide
+## 4. Vérités vérifiées dans le code
 
-### Prérequis
+### Runtime
 
-- **Node.js** 18+ ([télécharger](https://nodejs.org/))
-- **PostgreSQL** 15+ ([télécharger](https://www.postgresql.org/))
-- **npm** ou **yarn**
-- Un compte **Stripe** (pour les paiements)
+- Le dépôt démarre avec `node server.js`.
+- Le package exige Node `>=20.0.0`.
+- `package.json` porte encore la version npm `10.6.1`, tandis que `server.js` annonce une API v12.4 et le healthcheck `/api/health` retourne `12.3`. Cette divergence est documentaire/metadata et ne doit pas servir de vérité fonctionnelle.
 
-### Installation
+### Sécurité et middlewares
 
-```bash
-# 1. Cloner le dépôt
-git clone https://github.com/SamyrFateh/komerce-backend.git
-cd komerce-backend
+- Variables critiques au boot : `DATABASE_URL`, `JWT_SECRET`.
+- Variables fortement recommandées : `ADMIN_PASSWORD`, `STRIPE_SECRET_KEY`.
+- Middlewares actifs : `helmet`, `cors`, `cookie-parser`, `express.json`, `requestIdMiddleware`, rate-limiters globaux et spécialisés.
+- Les webhooks Stripe doivent recevoir un body brut avant `express.json`.
 
-# 2. Installer les dépendances
-npm install
+### Routes majeures montées
 
-# 3. Configurer les variables d'environnement
-cp .env.example .env
-# Éditer .env avec vos valeurs (voir DEPLOYMENT.md)
+Le backend actuel ne se limite plus à l'ancien périmètre 18/19 routes. `server.js` monte notamment :
 
-# 4. Initialiser la base de données
-npm run db:migrate
-npm run db:seed
+- boutique/catalogue : `/api/products`, `/api/categories`, `/api/modules`, `/api/baskets` ;
+- commandes et paiements : `/api/orders`, `/api/payments`, `/api/cash`, `/api/invoices`, `/api/wallet` ;
+- paniers avancés : `/api/shared-carts`, `/api/collective-workspaces`, `/api/collective-payments` ;
+- logistique : `/api/parcels`, `/api/v2/parcels`, `/api/v2/orders`, `/api/logistics`, `/api/hub`, `/api/transitaire`, `/api/carriers`, `/api/scans` ;
+- suivi client : `/api/tracking`, `/api/client/tracking`, `/api/pickup`, URLs courtes `/s/:token`, `/c/:token` ;
+- pilotage/admin : `/api/admin/*`, `/api/dashboard`, `/api/pricing`, `/api/pricing/strategy`, `/api/admin/economic`, `/api/admin/sourcing`, `/api/admin/signals`, `/api/admin/risk-provisions`, `/api/admin/pricing-components`, `/api/admin/cost-components`.
 
-# 5. Lancer le serveur
-npm run dev
-```
+### Invariants critiques
 
-Le serveur démarre sur `http://localhost:3000` par défaut.
-
-### Vérification
-
-```bash
-curl http://localhost:3000/health
-# { "status": "ok", "version": "12.0", "timestamp": "..." }
-```
+- Les changements de statut commande doivent passer par `services/order-status-machine.js::transitionOrderStatus()`.
+- Les paiements Stripe, cash, wallet et panier partagé confirment uniquement `pending → confirmed`.
+- Les opérations de scan/système sont forward-only et idempotentes.
+- Le wallet remplace progressivement `store_credits` et repose sur transactions immutables + lots FIFO.
+- Le moteur de pricing lit la DB : `finance_config`, `customs_categories`, `cost_components`/`pricing_components`, `risk_provisions`, `charges`, `products`, `orders`, `order_items`.
 
 ---
 
-## 📡 Endpoints API
+## 5. Règle de maintenance documentaire
 
-**18 fichiers de routes — 118 endpoints au total**
+Avant de modifier la documentation :
 
-Voir [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) pour la liste complète.
-
-### Dépendances inter-routes
-
-```
-orders ──→ loyalty (calcul réduction, recalcul fidélité)
-payments ──→ purchasing (déclenchement achat fournisseur)
-purchasing ──→ scans (déclenchement scan étape 3)
-scans ──→ loyalty (recalcul fidélité à la collecte)
-```
+1. vérifier le code réel ;
+2. ne pas recopier un audit ancien sans validation ;
+3. déplacer les décisions durables vers les ADR ou documents fondamentaux ;
+4. supprimer les roadmaps temporaires une fois absorbées ;
+5. éviter les chiffres figés d'endpoints, tables ou fichiers sauf s'ils sont régénérés automatiquement.
 
 ---
 
-## 📁 Structure du projet
+## 6. Lecture recommandée
 
-```
-komerce-backend/
-├── server.js                 # Point d'entrée
-├── package.json
-├── .env.example
-├── AGENT_RULES.md            # ⚠️ Point d'entrée agents IA
-│
-├── routes/                   # 18 fichiers de routes (118 endpoints)
-├── middleware/               # authenticate, requireRole, requireAdmin, rateLimiter, upload
-├── utils/                    # db, sms, whatsapp, email, qrcode, pdf
-├── scripts/                  # Coffre-fort + hooks
-├── .github/workflows/        # CI/CD
-│
-├── docs/                     # Documentation
-│   ├── AGENTS_PROTOCOL.md    # 🔗 Protocole de gouvernance
-│   ├── CARTOGRAPHY_360.md    # 🗺️ Pilier 1 — La Carte
-│   ├── ROADMAP_KOMERCE.md    # 📋 Pilier 2 — Le Plan
-│   ├── AUDIT_REPORT.md       # 🔒 Pilier 3 — Le Bouclier
-│   ├── audit/                # Rapports d'audit détaillés
-│   ├── DEPLOYMENT.md         # Guide de déploiement
-│   ├── IMPACT_SYSTEM.md      # Système coffre-fort
-│   ├── VALIDATION_GUIDE.md   # Guide validation Joi
-│   └── README.md             # Présentation complète
-│
-├── public/                   # Frontend
-└── uploads/                  # Fichiers uploadés
-```
+Pour reprendre le projet sans se perdre :
 
----
-
-## 🔐 Sécurité
-
-Voir [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) et le dossier [`audit/`](./audit/) pour le détail complet.
-
-- **JWT** avec cookies **httpOnly**
-- **Helmet** + **CORS** + **6 Rate Limiters**
-- **14 issues de sécurité ouvertes** (#71-#84) — voir la roadmap
-- Système **coffre-fort** (analyse d'impact automatique sur chaque PR)
-
----
-
-## 🏰 Coffre-fort (Vault)
-
-Voir [`IMPACT_SYSTEM.md`](./IMPACT_SYSTEM.md) pour la documentation complète.
-
-| Fichier | Rôle |
-|---------|------|
-| `scripts/impact-config.json` | Règles et graphe de dépendances |
-| `scripts/impact-check.js` | Moteur d'analyse |
-| `.github/workflows/impact-check.yml` | Action GitHub sur PR |
-| `.github/workflows/auto-cartography.yml` | Cartographie auto au merge |
-| `scripts/setup-hooks.sh` | Hook git pre-push local |
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [`AGENTS_PROTOCOL.md`](./AGENTS_PROTOCOL.md) | 🔗 Protocole de gouvernance — **LIRE EN PREMIER** |
-| [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) | 🗺️ Cartographie 360° — source de vérité |
-| [`ROADMAP_KOMERCE.md`](./ROADMAP_KOMERCE.md) | 📋 Roadmap unique de référence |
-| [`AUDIT_REPORT.md`](./AUDIT_REPORT.md) | 🔒 Rapport d'audit sécurité |
-| [`DEPLOYMENT.md`](./DEPLOYMENT.md) | 🚀 Guide de déploiement Railway |
-| [`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md) | ✅ Guide validation Joi |
-| [`IMPACT_SYSTEM.md`](./IMPACT_SYSTEM.md) | 🛡️ Documentation coffre-fort |
-
----
-
-## 🤝 Contribuer
-
-1. **Lire** `AGENT_RULES.md` → `docs/AGENTS_PROTOCOL.md`
-2. **Fork** le dépôt
-3. **Créer** une branche (`git checkout -b feature/ma-fonctionnalite`)
-4. **Installer** le hook pre-push : `bash scripts/setup-hooks.sh`
-5. **Commiter** vos changements (`git commit -m "feat: description"`)
-6. **Pousser** et ouvrir une **Pull Request**
-
-> ⚠️ Le système d'analyse d'impact commentera automatiquement votre PR.
-
----
-
-## 📄 Licence
-
-**MIT** — Voir [LICENSE](LICENSE)
-
----
-
-<p align="center">
-  Fait avec ❤️ pour les Comores 🇰🇲
-</p>
+1. `docs/README.md` ;
+2. `docs/SYNOPTIQUE_KOMERCE.md` ;
+3. `docs/DOCTRINE_ECONOMIQUE_KOMERCE.md` ;
+4. `docs/CARTOGRAPHY_360.md` ;
+5. `docs/ZONE_IMPACT.md` ;
+6. `server.js` ;
+7. `services/order-status-machine.js` ;
+8. `services/pricing-engine.js` ;
+9. `services/wallet-service.js`.
