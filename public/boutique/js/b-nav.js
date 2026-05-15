@@ -1,8 +1,8 @@
 ﻿/**
  * @module b-nav
- * @brief Navigation â€” switchView, setupBnav, setupDrawer, setupSeeAll, setupInfiniteScroll, loadRelais
+ * @brief Navigation — switchView, setupBnav, setupDrawer, setupInfiniteScroll, loadRelais
  *
- * Extrait de b-views.js â€” refacto v2
+ * Extrait de b-views.js — refacto v2
  */
 
 import { bus }                           from './b-bus.js';
@@ -147,7 +147,7 @@ export function switchView(tab) {
   if (pageScroll) {
     pageScroll.dataset.tab = tab;
     if (tab !== 'shop') {
-      // DÃ©sactiver le pager cage quand on quitte la boutique
+      // Désactiver le pager cage quand on quitte la boutique
       pageScroll.style.top = '';
       pageScroll.classList.remove('k-pager-active');
     }
@@ -178,26 +178,6 @@ export function setupBnav() {
       switchView('shop');
     });
   });
-}
-
-/**
- * @deprecated MORT — #k-see-all-promos est absent de index.html.
- * Le guard `if (btn)` rend cette fonction no-op silencieuse.
- * À supprimer avec l'import correspondant dans boutique.js lors du prochain nettoyage.
- */
-export function setupSeeAll() {
-  const btn = $('#k-see-all-promos');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      state.filtered = state.products.filter(p => p.promo_pct > 0);
-      state.activeCat = 'all';
-      $$('.k-chip').forEach(c => c.classList.remove('active'));
-      $$('.k-chip')[0].classList.add('active');
-      renderGrid();
-      const g = document.querySelector('.k-grid');
-      if (g) scrollPageToElement(g, -8, 'smooth');
-    });
-  }
 }
 
 /**

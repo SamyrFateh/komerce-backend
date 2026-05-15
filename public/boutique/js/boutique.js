@@ -1,24 +1,24 @@
 ﻿/**
  * @module boutique
- * @brief Komerce boutique â€” Â§13 INIT (orchestrateur)
+ * @brief Komerce boutique — Â§13 INIT (orchestrateur)
  *
- * Â§1  UTILS        â†’ b-utils.js      âœ…
- * Â§2  STATE & DOM  â†’ b-store.js      âœ…
- * Â§3  CART CORE    â†’ b-cart-core.js  âœ…
- * Â§4  CATALOG      â†’ b-catalog.js    âœ…
- * Â§5  FLAT SUBCAT  â†’ b-subcat.js     âœ…
- * Â§6  GRID SECTIONSâ†’ b-catalog.js    âœ…
- * Â§7  CART INTER.  â†’ b-cart.js       âœ…
- * Â§8  CATS & SEARCHâ†’ b-catalog.js    âœ…
- * Â§9  MODAL        â†’ b-modal.js      âœ…
- * Â§10 CART PANEL   â†’ b-cart.js       âœ…
- * Â§11 CHECKOUT     â†’ b-checkout.js   âœ…
- * Â§12 VIEWS        â†’ b-nav.js        âœ… (navigation)
- *                  â†’ b-favs.js       âœ… (favoris)
- *                  â†’ b-tracking.js   âœ… (suivi commandes)
- * Â§13 INIT         â†’ ici (orchestrateur) âœ…
- * Â§14 STEPPER      â†’ b-cart.js       âœ…
- * Â§15 PAGER TEMU   â†’ b-pager.js      âœ…
+ * Â§1  UTILS        → b-utils.js      âœ…
+ * Â§2  STATE & DOM  → b-store.js      âœ…
+ * Â§3  CART CORE    → b-cart-core.js  âœ…
+ * Â§4  CATALOG      → b-catalog.js    âœ…
+ * Â§5  FLAT SUBCAT  → b-subcat.js     âœ…
+ * Â§6  GRID SECTIONS→ b-catalog.js    âœ…
+ * Â§7  CART INTER.  → b-cart.js       âœ…
+ * Â§8  CATS & SEARCH→ b-catalog.js    âœ…
+ * Â§9  MODAL        → b-modal.js      âœ…
+ * Â§10 CART PANEL   → b-cart.js       âœ…
+ * Â§11 CHECKOUT     → b-checkout.js   âœ…
+ * Â§12 VIEWS        → b-nav.js        âœ… (navigation)
+ *                  → b-favs.js       âœ… (favoris)
+ *                  → b-tracking.js   âœ… (suivi commandes)
+ * Â§13 INIT         → ici (orchestrateur) âœ…
+ * Â§14 STEPPER      → b-cart.js       âœ…
+ * Â§15 PAGER TEMU   → b-pager.js      âœ…
  */
 
 import { bus }                from './b-bus.js';
@@ -60,7 +60,7 @@ import {
 }                              from './b-checkout.js';
 import {
   setupDrawer, setupInfiniteScroll,
-  switchView, setupBnav, setupSeeAll, loadRelais,
+  switchView, setupBnav, loadRelais,
 }                              from './b-nav.js';
 import {
   renderFavView, updateFavPromoBadge, shareWishlistWhatsApp,
@@ -78,7 +78,7 @@ import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
 
 'use strict';
 
-// â”€â”€ Desktop scroll fix : neutraliser style.top posÃ© par setupMobile() â”€â”€
+// â”€â”€ Desktop scroll fix : neutraliser style.top posé par setupMobile() â”€â”€
 (function resetDesktopScroll() {
   function applyDesktopReset() {
     if (window.innerWidth >= 900) {
@@ -101,17 +101,17 @@ const KOMERCE_WA = '33699272526';
 const KOMERCE_WA_URL = 'https://wa.me/' + KOMERCE_WA;
 
 const PAVILION_CATEGORY_ALIASES = {
-  'CrÃ©ations personnelles': 'Sur-mesure',
+  'Créations personnelles': 'Sur-mesure',
 };
 
-// â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
-// â•‘  Â§13 Â· INIT â€” Boot sequence, bnav, seeAll, global listeners      â•‘
-// â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â•”══════════════════════════════════════════════════════════════════â•—
+// â•‘  Â§13 Â· INIT — Boot sequence, bnav, seeAll, global listeners      â•‘
+// â•š══════════════════════════════════════════════════════════════════â•
 
 /**
- * Point d'entrÃ©e principal â€” initialise l'application Komerce boutique.
+ * Point d'entrée principal — initialise l'application Komerce boutique.
  * Charge les produits, configure les vues, branche tous les listeners.
- * AppelÃ©e une seule fois au DOMContentLoaded.
+ * Appelée une seule fois au DOMContentLoaded.
  */
 function init() {
   initDom();
@@ -125,7 +125,6 @@ function init() {
   setupModal();
   setupDrawer();
   setupBnav();
-  setupSeeAll();
   setupInfiniteScroll();
   initFlatSubcat();
   setupFooterLinks();
@@ -133,7 +132,7 @@ function init() {
   loadRelais();
 }
 
-// Liens Boutique du footer â†’ activent la catÃ©gorie + scroll au catalogue
+// Liens Boutique du footer → activent la catégorie + scroll au catalogue
 function setupFooterLinks() {
   document.querySelectorAll('[data-footer-cat]').forEach(function(a) {
     a.addEventListener('click', function(e) {
@@ -156,7 +155,7 @@ function setupFooterLinks() {
 
 // â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (document.readyState === 'loading') {
-  // Listener global cart:setqty (stepper) â€” enregistrÃ© UNE SEULE FOIS
+  // Listener global cart:setqty (stepper) — enregistré UNE SEULE FOIS
   document.addEventListener('cart:setqty', function(e) {
     var d = e.detail || {};
     if (d.pid !== undefined && d.qty !== undefined) {
@@ -168,12 +167,12 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// â”€â”€ Side cart checkout : pont window pour Ã©viter la dÃ©pendance circulaire b-cartâ†”b-checkout â”€â”€
+// â”€â”€ Side cart checkout : pont window pour éviter la dépendance circulaire b-cartâ†”b-checkout â”€â”€
 window.__kmrcCheckout = checkoutCart;
-// Expose renderGrid pour le listener dÃ©lÃ©guÃ© sous-cats (b-subcat.js + boutique.js)
+// Expose renderGrid pour le listener délégué sous-cats (b-subcat.js + boutique.js)
 if (typeof window !== 'undefined') window.renderGrid = renderGrid;
 
-// â”€â”€ Listener global dÃ©lÃ©guÃ© : modal carousel dots â”€â”€
+// â”€â”€ Listener global délégué : modal carousel dots â”€â”€
 document.addEventListener('click', function(e) {
   var dot = e.target.closest('.k-modal-dot');
   if (!dot) return;

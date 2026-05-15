@@ -1,37 +1,37 @@
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   KOMERCE â€” boutique-desktop.css
-   Fichier unique : rÃ¨gles globales (mobile-first) + overrides desktop.
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — boutique-desktop.css
+   Fichier unique : règles globales (mobile-first) + overrides desktop.
    Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
-   ChargÃ© sans attribut media â€” mobile-first par construction.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   Chargé sans attribut media — mobile-first par construction.
+   ═══════════════════════════════════════════════════════════════ */
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PARTIE 1 â€” RÃˆGLES GLOBALES (mobile-first, tous breakpoints)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 1 — RÈGLES GLOBALES (mobile-first, tous breakpoints)
+   ══════════════════════════════════════════════════════════════ */
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   KOMERCE â€” shared.css
-   RÃ¨gles partagÃ©es mobile + desktop.
-   ChargÃ© SANS attribut media â€” s'applique sur tous les breakpoints.
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — shared.css
+   Règles partagées mobile + desktop.
+   Chargé SANS attribut media — s'applique sur tous les breakpoints.
    Extrait de desktop-upgrade.css et desktop-mega-nav.css pour corriger
    le Bug #1 : chips desktop parasitant le mobile sur reload iOS Safari.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ═══════════════════════════════════════════════════════════════ */
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   FOOTER â€” cachÃ© par dÃ©faut (le CSS desktop le montre Ã  â‰¥900px)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   FOOTER — caché par défaut (le CSS desktop le montre à ≥900px)
+   ══════════════════════════════════════════════════════════════ */
 .k-footer { display: none; }
 
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MEGA DROPDOWN â€” panneau sous-catÃ©gories (injectÃ© par JS desktop)
-   display:none par dÃ©faut â†’ aucun impact visuel sur mobile.
-   RegroupÃ© ici car le dropdown est dans le DOM mÃªme sur mobile
+/* ══════════════════════════════════════════════════════════════
+   MEGA DROPDOWN — panneau sous-catégories (injecté par JS desktop)
+   display:none par défaut → aucun impact visuel sur mobile.
+   Regroupé ici car le dropdown est dans le DOM même sur mobile
    (le JS a un guard isDesktop() mais le nÅ“ud peut exister).
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════════ */
 
 .k-mega-dropdown {
   display: none;
@@ -108,13 +108,13 @@
 .k-cats-shell.k-mega-open { box-shadow: none; }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PARTIE 2 â€” DESKTOP UPGRADE (â‰¥ 900px)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 2 — DESKTOP UPGRADE (≥ 900px)
+   ══════════════════════════════════════════════════════════════ */
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════════
    1. HEADER DESKTOP
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-header-nav-btn {
@@ -151,11 +151,11 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   3. CARD HOVER OVERLAY â€” SOURCE DE VÃ‰RITÃ‰ UNIQUE
+/* ══════════════════════════════════════════════════════════════
+   3. CARD HOVER OVERLAY — SOURCE DE VÉRITÉ UNIQUE
    Overlay sombre en bas de carte : nom + desc + actions.
    Le JS injecte .k-card-hover-overlay une seule fois par carte.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card { position: relative; }
@@ -188,7 +188,7 @@
     pointer-events: auto;
   }
 
-  /* Masquer les boutons natifs pour Ã©viter le doublon visuel */
+  /* Masquer les boutons natifs pour éviter le doublon visuel */
   .k-card:hover .k-card-fav,
   .k-card:hover .k-card-add {
     opacity: 0 !important;
@@ -298,25 +298,25 @@
     pointer-events: none;
   }
 
-  /* Fav natif : masquÃ© par dÃ©faut, rÃ©vÃ©lÃ© au hover, toujours visible si likÃ© */
+  /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
   .k-card-fav.liked { opacity: 1; }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   4. MODAL ZOOM â€” scale sur l'image, pas de lens visible
-   Le JS (b-desktop-upgrade.js setupZoom) gÃ¨re backgroundPosition
-   sur .k-modal-zoom-preview. La preview est dimensionnÃ©e/positionnÃ©e
-   dans modal.css (source de vÃ©ritÃ©). Aucune lens orange ici.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   4. MODAL ZOOM — scale sur l'image, pas de lens visible
+   Le JS (b-desktop-upgrade.js setupZoom) gère backgroundPosition
+   sur .k-modal-zoom-preview. La preview est dimensionnée/positionnée
+   dans modal.css (source de vérité). Aucune lens orange ici.
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   /* Curseur signalant le mode zoom */
   #k-modal .k-modal-carousel { cursor: zoom-in; }
 
-  /* LÃ©gÃ¨re Ã©chelle de l'image au survol pour feedback immÃ©diat */
+  /* Légère échelle de l'image au survol pour feedback immédiat */
   #k-modal .k-modal-slide {
     transition: transform .25s var(--ease);
   }
@@ -328,9 +328,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   6. ANIMATION ENTRÃ‰E CARTES â€” stagger Temu-style
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   6. ANIMATION ENTRÉE CARTES — stagger Temu-style
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card {
@@ -353,14 +353,14 @@
   .k-card:nth-child(9)  { animation-delay: .18s; }
   .k-card:nth-child(10) { animation-delay: .20s; }
 
-  /* LÃ©vitation hover plus discrÃ¨te qu'en mobile */
+  /* Lévitation hover plus discrète qu'en mobile */
   .k-card:hover { transform: translateY(-1px); }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   7. SCROLL-TO-TOP â€” Bouton fixe bas droite
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   7. SCROLL-TO-TOP — Bouton fixe bas droite
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-scroll-top {
@@ -398,9 +398,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   9. RECENTLY VIEWED â€” Section en bas du scroll modal (desktop)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   9. RECENTLY VIEWED — Section en bas du scroll modal (desktop)
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-modal-recent {
@@ -472,9 +472,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   10. KEYBOARD HINT â€” Navigation clavier dans la modal
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   10. KEYBOARD HINT — Navigation clavier dans la modal
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-modal-keyboard-hint {
@@ -503,11 +503,11 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   11. UTILITIES â€” Focus visible & tap-highlight (source unique)
+/* ══════════════════════════════════════════════════════════════
+   11. UTILITIES — Focus visible & tap-highlight (source unique)
    Supprime l'outline parasite sur les zones non-cliquables.
-   RÃ©tablit un outline accessible sur boutons/liens/inputs.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   Rétablit un outline accessible sur boutons/liens/inputs.
+   ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card,  .k-card  *,
@@ -532,11 +532,11 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   12. FOOTER RICHE â€” 4 colonnes desktop uniquement
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   12. FOOTER RICHE — 4 colonnes desktop uniquement
+   ══════════════════════════════════════════════════════════════ */
 
-/* .k-footer { display: none; } â†’ migrÃ© dans shared.css */
+/* .k-footer { display: none; } → migré dans shared.css */
 
 @media (min-width: 900px) {
 
@@ -696,11 +696,11 @@
   .k-footer-legal-link:hover { color: var(--text, #1F3024); }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   12. SECTION SUBCATS â€” chips Temu-style desktop (LOT 12)
+/* ═══════════════════════════════════════════════════════════════
+   12. SECTION SUBCATS — chips Temu-style desktop (LOT 12)
    Rail horizontal scrollable juste sous le header de chaque section.
    Filtre les produits de la section sans recharger toute la page.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ═══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-sec-subcats {
@@ -714,7 +714,7 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
-    /* Fades latÃ©raux pour signifier le scroll */
+    /* Fades latéraux pour signifier le scroll */
     -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
     mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
   }
@@ -773,11 +773,11 @@
   }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   13. FLAT-CAT HEADER â€” quand on clique "Voir tout" sur une catÃ©gorie,
+/* ═══════════════════════════════════════════════════════════════
+   13. FLAT-CAT HEADER — quand on clique "Voir tout" sur une catégorie,
    afficher un header propre (breadcrumb retour + titre + subchips)
    pour ne pas laisser l'utilisateur perdu dans une grille flat.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ═══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-flatcat-header,
@@ -848,7 +848,7 @@
     margin-left: 4px;
   }
 
-  /* Subchips du flat-cat : mÃªme style que dans les sections (rÃ©utilise .k-sec-subchip) */
+  /* Subchips du flat-cat : même style que dans les sections (réutilise .k-sec-subchip) */
   .k-flatcat-subcats {
     display: flex;
     flex-wrap: nowrap;
@@ -865,14 +865,14 @@
 
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PARTIE 3 â€” MEGA-NAV DESKTOP (â‰¥ 900px)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════
+   PARTIE 3 — MEGA-NAV DESKTOP (≥ 900px)
+   ══════════════════════════════════════════════════════════════ */
 
-/* â”€â”€ 1. CHIP RAIL â†’ MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* â”€â”€ 1. CHIP RAIL → MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
 
-  /* Shell : bande pleine largeur collÃ©e sous le header */
+  /* Shell : bande pleine largeur collée sous le header */
   .k-cats-shell {
     position: sticky;
     top: var(--header-h, 72px);
@@ -883,7 +883,7 @@
     padding: 0;
   }
 
-  /* Rail : flex horizontal centrÃ©, scrollable si dÃ©bordement */
+  /* Rail : flex horizontal centré, scrollable si débordement */
   /* Rail : wrap pour libérer la molette verticale (correction P0-A — valeurs finales).
      L'ancienne version height:52px + nowrap + overflow-x:auto capturait la molette verticale. */
   .k-cats {
@@ -896,12 +896,12 @@
     overscroll-behavior: auto;
     scroll-snap-type: none;
     scrollbar-width: none;
-    height: auto;    /* Source de vÃ©ritÃ© hauteur chip rail desktop â€” layout.css dÃ©lÃ¨gue ici */
+    height: auto;    /* Source de vérité hauteur chip rail desktop — layout.css délègue ici */
     align-items: center;
   }
   .k-cats::-webkit-scrollbar { display: none; }
 
-  /* Chip = item de nav horizontal, plat, sans icÃ´ne photo */
+  /* Chip = item de nav horizontal, plat, sans icône photo */
   .k-chip {
     flex: 0 0 auto;
     min-width: 0;
@@ -931,7 +931,7 @@
     background: rgba(200,92,45,.04);
   }
 
-  /* IcÃ´ne photo â€” rÃ©duite, arrondie, intÃ©grÃ©e inline */
+  /* Icône photo — réduite, arrondie, intégrée inline */
   .k-chip-photo {
     width: 18px;     /* Valeur finale P0-C */
     height: 18px;
@@ -951,7 +951,7 @@
     height: 12px;
     stroke: currentColor;
   }
-  /* Pas de fond colorÃ© sur l'icÃ´ne en mode nav */
+  /* Pas de fond coloré sur l'icône en mode nav */
   .k-chip[data-cat] .k-chip-photo { background: transparent; }
 
   /* Label visible */
@@ -965,7 +965,7 @@
     text-overflow: clip;
   }
 
-  /* Ã‰tat actif : soulignement coral Shein-style */
+  /* État actif : soulignement coral Shein-style */
   .k-chip.active {
     color: var(--coral);
     background: transparent;
@@ -985,11 +985,11 @@
     border-bottom-color: rgba(200,92,45,.3);
   }
 
-  /* Pas de fades latÃ©raux desktop */
+  /* Pas de fades latéraux desktop */
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right { display: none; }
 
-  /* Chip "Tout" : lÃ©gÃ¨rement en gras pour ancrage visuel */
+  /* Chip "Tout" : légèrement en gras pour ancrage visuel */
   .k-chip[data-cat="all"] .k-chip-photo {
     background: transparent;
   }
@@ -1002,8 +1002,8 @@
   }
 }
 
-/* â”€â”€ 3. SOUS-CATÃ‰GORIES â€” rail inline sous le mega-nav â”€â”€â”€â”€â”€â”€â”€â”€ */
-/* Source de vÃ©ritÃ© pour #k-subcats-wrap .k-subchip desktop.
+/* â”€â”€ 3. SOUS-CATÉGORIES — rail inline sous le mega-nav â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Source de vérité pour #k-subcats-wrap .k-subchip desktop.
    categories.css @900px ne conserve que position:sticky + z-index + backdrop-filter. */
 @media (min-width: 900px) {
 
@@ -1048,7 +1048,7 @@
   }
 }
 
-/* â”€â”€ 4. GRILLE PRODUITS â€” 4 colonnes fixes (spec produit) â”€â”€â”€â”€ */
+/* â”€â”€ 4. GRILLE PRODUITS — 4 colonnes fixes (spec produit) â”€â”€â”€â”€ */
 @media (min-width: 900px) {
   .k-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1070,8 +1070,8 @@
 /* â”€â”€ 5. STICKY BAR : compenser le nouveau top du mega-nav â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
   /* Le sticky-bar hero utilisait top:68px (header seul).
-     Maintenant le mega-nav fait 52px de plus â†’ on pousse les
-     Ã©lÃ©ments ancrÃ©s en dessous du nouvel ensemble header+nav. */
+     Maintenant le mega-nav fait 52px de plus → on pousse les
+     éléments ancrés en dessous du nouvel ensemble header+nav. */
   :root {
     --nav-bar-h: 52px;   /* hauteur du mega-nav chips */
   }
@@ -1080,22 +1080,22 @@
   :root { --nav-bar-h: 52px; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   LOT 13 â€” SOUS-CATÃ‰GORIES SHEIN-STYLE
-   Restyling des classes gÃ©nÃ©rÃ©es par renderSubcatRail()
-   dans home-controller.js. Aucun JS modifiÃ©.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════════════════════════════
+   LOT 13 — SOUS-CATÉGORIES SHEIN-STYLE
+   Restyling des classes générées par renderSubcatRail()
+   dans home-controller.js. Aucun JS modifié.
+   ═══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* Wrap : bandeau plein largeur, fond blanc cassÃ©, sticky sous les chips */
+  /* Wrap : bandeau plein largeur, fond blanc cassé, sticky sous les chips */
   #k-subcats-wrap {
     background: var(--sand-warm);
     border-bottom: 1px solid rgba(31,48,36,.08);
     box-shadow: 0 3px 12px rgba(31,48,36,.05);
   }
 
-  /* Rail : flex alignÃ© Ã  gauche, padding cohÃ©rent avec le mega-nav */
+  /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
     align-items: center;
@@ -1111,7 +1111,7 @@
   }
   #k-subcats-wrap .k-subcats-rail::-webkit-scrollbar { display: none; }
 
-  /* Label "catÃ©gorie active â€º" en tÃªte du rail â€” dÃ©coratif injectÃ© par CSS */
+  /* Label "catégorie active ›" en tête du rail — décoratif injecté par CSS */
   /* (pas de JS : pseudo-element avant le premier subchip) */
   #k-subcats-wrap .k-subcats-rail::before {
     content: attr(data-cat-label);
@@ -1127,7 +1127,7 @@
     flex-shrink: 0;
   }
 
-  /* Pill subchip â€” style Shein : fond colorÃ©, compact, pill pleine */
+  /* Pill subchip — style Shein : fond coloré, compact, pill pleine */
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
@@ -1183,14 +1183,14 @@
     padding-right: clamp(16px, 3vw, 40px);
   }
 
-  /* IcÃ´ne emoji â€” lÃ©gÃ¨rement plus grande */
+  /* Icône emoji — légèrement plus grande */
   #k-subcats-wrap .k-subchip-icon {
     font-size: 13px;
     line-height: 1;
     flex-shrink: 0;
   }
 
-  /* Animation staggerÃ©e Ã  l'apparition */
+  /* Animation staggerée à l'apparition */
   @keyframes k-subchip-shein-in {
     from { opacity: 0; transform: translateY(-5px) scale(.94); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -1205,7 +1205,7 @@
   #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .15s; }
   #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(n+7){ animation-delay: .18s; }
 
-  /* SÃ©parateur visuel entre "Tout" et les sous-catÃ©gories */
+  /* Séparateur visuel entre "Tout" et les sous-catégories */
   #k-subcats-wrap .k-subchip[data-subcat=""] {
     background: var(--white);
     border-color: rgba(31,48,36,.14);
@@ -1265,7 +1265,7 @@
 
 
   /* â”€â”€ P0-E : SOUS-CHIPS de section (k-sec-subcats) â”€â”€
-     Ã‰tait : flex-wrap:nowrap + overflow-x:auto â†’ piÃ¨ge molette.
+     Était : flex-wrap:nowrap + overflow-x:auto → piège molette.
      Cible  : flex-wrap:wrap + overflow:visible
   */
   .k-sec-subcats {
@@ -1273,43 +1273,43 @@
     overflow: visible;
     overflow-x: visible;
     overflow-y: visible;
-    /* retire le mask-image latÃ©ral qui n'a plus de sens sans scroll */
+    /* retire le mask-image latéral qui n'a plus de sens sans scroll */
     -webkit-mask-image: none;
     mask-image: none;
     overscroll-behavior: auto;
     padding: 4px 0 10px;
   }
 
-  /* â”€â”€ P0-F : SOUS-CHIP de section â€” taille rÃ©duite â”€â”€ */
+  /* â”€â”€ P0-F : SOUS-CHIP de section — taille réduite â”€â”€ */
   .k-sec-subchip {
     height: 28px;
     padding: 0 10px;
     font-size: 11.5px;
   }
 
-/* â”€â”€ P0-G : FADES LATÃ‰RAUX du shell â€” inutiles sans scroll horizontal â”€â”€ */
+/* â”€â”€ P0-G : FADES LATÉRAUX du shell — inutiles sans scroll horizontal â”€â”€ */
 @media (min-width: 900px) {
   .k-cats-shell .k-cats-wrap-fade-left,
   .k-cats-shell .k-cats-wrap-fade-right { display: none; }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PATCH P1-VISUEL â€” Navigation desktop (post P0)
-   ProblÃ¨mes rÃ©solus :
-     1. "Voir tout â†’" trop discret sur desktop
-     2. Indicateur de catÃ©gorie active dans le chip-rail (fil d'Ariane lÃ©ger)
-     3. VisibilitÃ© du bouton retour en vue flat-cat
+/* ═══════════════════════════════════════════════════════════════
+   PATCH P1-VISUEL — Navigation desktop (post P0)
+   Problèmes résolus :
+     1. "Voir tout →" trop discret sur desktop
+     2. Indicateur de catégorie active dans le chip-rail (fil d'Ariane léger)
+     3. Visibilité du bouton retour en vue flat-cat
    Contraintes :
-     - CSS pur, aucun JS modifiÃ©
-     - Mobile (< 900px) : aucune rÃ¨gle ici â†’ zÃ©ro rÃ©gression
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+     - CSS pur, aucun JS modifié
+     - Mobile (< 900px) : aucune règle ici → zéro régression
+   ═══════════════════════════════════════════════════════════════ */
 
-/* â”€â”€ P1V-1 : BOUTON "VOIR TOUT â†’" â€” plus visible sur desktop â”€â”€ */
+/* â”€â”€ P1V-1 : BOUTON "VOIR TOUT →" — plus visible sur desktop â”€â”€ */
 @media (min-width: 900px) {
   /*
     Base (mobile) : color:var(--ocean), font-size:12px, background:none, border:none
-    Desktop : on transforme en mini-bouton contrastÃ© avec bordure et flÃ¨che animÃ©e
+    Desktop : on transforme en mini-bouton contrasté avec bordure et flèche animée
   */
   .k-sec-see-all {
     display: inline-flex;
@@ -1328,7 +1328,7 @@
   .k-sec-see-all:hover {
     background: rgba(200, 92, 45, .13);
     border-color: var(--coral);
-    transform: translateX(2px);   /* lÃ©gÃ¨re translation â†’ signal "aller vers" */
+    transform: translateX(2px);   /* légère translation → signal "aller vers" */
   }
   .k-sec-see-all:active {
     background: rgba(200, 92, 45, .2);
@@ -1336,21 +1336,21 @@
   }
 }
 
-/* â”€â”€ P1V-2 : INDICATEUR CATÃ‰GORIE ACTIVE â€” fil d'Ariane lÃ©ger â”€â”€ */
+/* â”€â”€ P1V-2 : INDICATEUR CATÉGORIE ACTIVE — fil d'Ariane léger â”€â”€ */
 /*
    Quand une .k-chip est active, le rail n'affiche pas explicitement
-   "vous Ãªtes dans Mode". On ajoute un badge textuel discret sous le rail
+   "vous êtes dans Mode". On ajoute un badge textuel discret sous le rail
    via .k-cats-shell[data-active-cat] ::after (CSS pur, aucun JS).
 
-   Mais comme le HTML n'expose pas forcÃ©ment data-active-cat sur le shell,
-   on utilise une autre approche : la chip active a dÃ©jÃ  un style coral.
+   Mais comme le HTML n'expose pas forcément data-active-cat sur le shell,
+   on utilise une autre approche : la chip active a déjà un style coral.
    On renforce juste son signal visuel en mode wrap (post P0) avec
-   un lÃ©ger fond pill coral pour Ãªtre immÃ©diatement identifiable.
+   un léger fond pill coral pour être immédiatement identifiable.
 */
 @media (min-width: 900px) {
   /* En mode wrap (post P0), les chips ont border-radius:999px.
      Active chip : fond coral solide, plus de border-bottom (mega-nav
-     style supprimÃ© par le patch P0). */
+     style supprimé par le patch P0). */
   .k-chip.active {
     background: var(--coral);
     color: #fff;
@@ -1370,9 +1370,9 @@
   }
 }
 
-/* â”€â”€ P1V-3 : BOUTON RETOUR "k-flatcat-back" â€” plus visible â”€â”€ */
+/* â”€â”€ P1V-3 : BOUTON RETOUR "k-flatcat-back" — plus visible â”€â”€ */
 /*
-   Actuellement : border, background:white, color:text-muted â€” se noie dans le fond.
+   Actuellement : border, background:white, color:text-muted — se noie dans le fond.
    On renforce sans changer le HTML.
 */
 @media (min-width: 900px) {
@@ -1381,7 +1381,7 @@
     border-color: rgba(42, 62, 44, .25);
     color: var(--text);
     font-weight: 700;
-    /* flÃ¨che SVG : on la renforce via un outline subtil */
+    /* flèche SVG : on la renforce via un outline subtil */
     box-shadow: 0 1px 4px rgba(31, 48, 36, .08);
   }
   .k-flatcat-back:hover {
@@ -1390,7 +1390,7 @@
     color: var(--coral);
     box-shadow: 0 2px 8px rgba(200, 92, 45, .15);
   }
-  /* Titre du flat-cat : renforcer pour ancrage "vous Ãªtes dans Mode" */
+  /* Titre du flat-cat : renforcer pour ancrage "vous êtes dans Mode" */
   .k-flatcat-header {
     background: linear-gradient(to right, rgba(200,92,45,.04), transparent 60%);
     border-radius: 10px;
