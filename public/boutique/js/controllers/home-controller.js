@@ -6,7 +6,7 @@
  * - Mount the category rail rendered by render-categories.js.
  * - Orchestrate category selection on the home/catalog experience.
  * - Sync active category state between chips and desktop horizontal navigation.
- * - Own desktop category selection; desktop subcategory filters are shown in the catalog flat header.
+ * - Own the desktop contextual subcategory rail rendered below the image pills.
  *
  * Must not:
  * - Define category or subcategory data.
@@ -40,29 +40,82 @@ function isDesktop() {
   return window.innerWidth >= 900;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function scrollToCatalog() {
   const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
   if (catalog) scrollPageToElement(catalog, -120, 'smooth');
 }
 
 /**
- * Neutralise l'ancien rail desktop intermédiaire #k-subcats-wrap.
+ * Rail contextuel desktop sous les grandes pastilles imagées.
  *
- * Doctrine desktop retenue : les sous-catégories vivent dans le flat header du
- * catalogue rendu par b-catalog.js. Cela évite le doublon :
- * grandes pastilles → rail intermédiaire → titre catégorie → sous-catégories.
+ * Doctrine desktop retenue :
+ * - le rail principal choisit l'univers ;
+ * - ce rail contextuel affine l'univers ;
+ * - le flat header catalogue est masqué en desktop par CSS pour éviter doublon.
  *
  * Mobile reste inchangé : cette fonction ne participe pas au pager mobile.
  */
 export function renderSubcatRail(catKey) {
-  if (window.innerWidth < 900) return;
+  if (!isDesktop()) return;
+
   const wrap = document.getElementById('k-subcats-wrap');
   if (!wrap) return;
 
-  wrap.style.display = 'none';
-  wrap.innerHTML = '';
-  delete wrap.dataset.parentCat;
-  document.documentElement.style.removeProperty('--sidebar-top');
+  const subcats = catKey && catKey !== 'all' ? getSubcategories(catKey) : [];
+  if (!catKey || catKey === 'all' || !subcats.length) {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    delete wrap.dataset.parentCat;
+    document.documentElement.style.removeProperty('--sidebar-top');
+    return;
+  }
+
+  wrap.style.display = '';
+  wrap.dataset.parentCat = catKey;
+
+  const activeSubcat = state.activeSubcat || '';
+  const buttons = [
+    `<button type="button" class="k-subchip ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(catKey)}">
+      <span class="k-subchip-label">Tout voir</span>
+    </button>`,
+    ...subcats.map((sub) => {
+      const key = escapeHtml(sub.key);
+      const label = escapeHtml(sub.shortLabel || sub.label || sub.key);
+      const icon = escapeHtml(sub.icon || '✨');
+      const active = activeSubcat === sub.key ? ' active' : '';
+      return `<button type="button" class="k-subchip${active}" data-subcat="${key}">
+        <span class="k-subchip-icon" aria-hidden="true">${icon}</span>
+        <span class="k-subchip-label">${label}</span>
+      </button>`;
+    }),
+  ].join('');
+
+  wrap.innerHTML = `
+    <div class="k-subcats-rail k-desktop-rayons-rail k-subcats-visible" data-cat-label="${escapeHtml(catKey)}">
+      ${buttons}
+    </div>
+  `;
+
+  wrap.querySelectorAll('.k-subchip').forEach((chip) => {
+    chip.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const subcat = chip.dataset.subcat || null;
+      state.activeSubcat = subcat || null;
+      renderSubcatRail(catKey);
+      renderGrid();
+      scrollToCatalog();
+    });
+  });
 }
 
 export function centerRailChip(chip) {
@@ -147,6 +200,7 @@ function handleCategorySelection(cat, deps) {
     state.sectionSubcats = {};
     state.activeSubcat = null;
     setActiveCat('all');
+    renderSubcatRail(null);
     scrollPageToTop('smooth');
     return;
   }
@@ -155,6 +209,7 @@ function handleCategorySelection(cat, deps) {
     syncRailActiveState(cat, { center: true });
     state.activeSubcat = null;
     setActiveCat(cat);
+    renderSubcatRail(cat);
     scrollPageToTop('smooth');
     return;
   }
@@ -177,6 +232,7 @@ function handleCategorySelection(cat, deps) {
   syncRailActiveState(cat, { center: true });
   state.activeSubcat = null;
   setActiveCat(cat);
+  renderSubcatRail(cat);
   scrollPageToTop('smooth');
 }
 
