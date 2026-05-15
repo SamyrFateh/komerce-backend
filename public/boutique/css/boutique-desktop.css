@@ -1034,7 +1034,10 @@
     background: transparent;
   }
 
-  .k-desktop-rayons-head {
+  .k-desktop-rayons-head,
+  #k-subcats-wrap [class*="-head"],
+  #k-subcats-wrap [class*="-title"],
+  #k-subcats-wrap [class*="-label"]:not(.k-subchip-label):not(.k-subchip-icon) {
     display: none;
   }
 
@@ -1126,13 +1129,18 @@
 
 @media (min-width: 900px) {
 
-  /* Wrap : transparent, sans cadre — les chips suffisent */
+  /* Wrap + tous ses enfants directs : fond page, zéro cadre */
   #k-subcats-wrap {
     background: var(--page-bg);
     border-bottom: none;
     box-shadow: none;
     padding-top: 8px;
     padding-bottom: 8px;
+  }
+  #k-subcats-wrap > * {
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
   /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
