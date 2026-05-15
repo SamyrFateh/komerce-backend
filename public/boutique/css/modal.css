@@ -22,7 +22,7 @@
 .k-modal-overlay {
   display: none;
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,.4);
+  background: var(--overlay-dark-sm);
   justify-content: center; align-items: stretch;
 }
 .k-modal-overlay.open { display: flex; }
@@ -46,11 +46,11 @@
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 400;
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
-  background: rgba(253,250,245,.96);
+  background: var(--surface-sand-96);
   backdrop-filter: blur(20px) saturate(200%);
   -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border-bottom: 1px solid rgba(0,0,0,.07);
-  box-shadow: 0 2px 12px rgba(31,48,36,.06);
+  border-bottom: 1px solid var(--overlay-black-sm);
+  box-shadow: 0 2px 12px var(--border-text-06);
   flex-shrink: 0;
 }
 .k-modal-back {
@@ -154,7 +154,7 @@
 }
 .k-modal-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2; }
 .k-modal-dots:empty { display: none; }
-.k-modal-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: all .2s; }
+.k-modal-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--overlay-white-50); transition: all .2s; }
 .k-modal-dot.is-active { background: var(--white); transform: scale(1.3); }
 .k-modal-thumbs { display: none; } /* visible desktop uniquement */
 
@@ -165,7 +165,7 @@
   display: none;
   position: absolute; bottom: 10px; right: 10px; z-index: 3;
   padding: 3px 10px; min-width: 38px; text-align: center;
-  background: rgba(0,0,0,.55); color: #fff;
+  background: var(--overlay-dark-md); color: #fff;
   font-size: 11px; font-weight: 600; letter-spacing: .02em;
   border-radius: 999px; backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -182,7 +182,7 @@
   top: calc(10px + env(safe-area-inset-top, 0px));
   right: 10px;
   width: 42px; height: 42px;
-  background: rgba(253,250,245,.94);
+  background: var(--surface-sand-94);
   border: none; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; line-height: 1;
@@ -198,7 +198,7 @@
 }
 .k-modal-fav-btn:active { transform: scale(1.12); }
 .k-modal-fav-btn.liked {
-  background: #e91e63;
+  background: var(--pink);
   box-shadow:
     0 0 0 2px #fff,
     0 0 0 4px rgba(233,30,99,.35),
@@ -225,7 +225,7 @@
    Tap simple ferme. Swipe horizontal change d'image. */
 .k-modal-fullscreen {
   position: fixed; inset: 0; z-index: 600;
-  background: #000;
+  background: var(--text);
   opacity: 0; transition: opacity .2s var(--ease);
   overflow: hidden;
   display: flex; flex-direction: column; align-items: stretch; justify-content: center;
@@ -234,16 +234,16 @@
 .k-modal-fullscreen-close {
   position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px;
   width: 38px; height: 38px; border-radius: 50%;
-  background: rgba(255,255,255,.92); color: #1a1a1a;
+  background: var(--surface-white-92); color: var(--text);
   border: none; display: flex; align-items: center; justify-content: center;
-  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  z-index: 2; cursor: pointer; box-shadow: 0 2px 12px var(--overlay-black-lg);
   -webkit-tap-highlight-color: transparent;
 }
 .k-modal-fullscreen-close svg { width: 18px; height: 18px; }
 .k-modal-fullscreen-counter {
   position: fixed; top: calc(20px + env(safe-area-inset-top)); left: 50%;
   transform: translateX(-50%);
-  padding: 4px 14px; background: rgba(0,0,0,.55);
+  padding: 4px 14px; background: var(--overlay-dark-md);
   color: #fff; font-size: 12px; font-weight: 600;
   border-radius: 999px; z-index: 2; pointer-events: none;
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
@@ -275,7 +275,7 @@
   flex: 0 0 auto; overflow: visible; min-height: 0;
   background: var(--white); border-radius: 20px 20px 0 0;
   margin-top: -20px; position: relative; z-index: 2;
-  box-shadow: 0 -2px 16px rgba(31,48,36,.06);
+  box-shadow: 0 -2px 16px var(--border-text-06);
 }
 .k-modal-promo-badge {
   display: none; position: absolute; top: 6px; left: 6px;
@@ -379,7 +379,7 @@
 .k-topbar-search-trigger:active { transform: scale(.9); background: var(--sand-dark); }
 .k-topbar-search-expanded {
   display: none; position: absolute; inset: 0; z-index: 410;
-  background: rgba(253,250,245,.98);
+  background: var(--surface-sand-96);
   backdrop-filter: blur(20px) saturate(200%); -webkit-backdrop-filter: blur(20px) saturate(200%);
   padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
   align-items: center; gap: 8px; animation: k-topbar-search-in .2s var(--ease);
@@ -419,7 +419,7 @@
   border-top: 1px solid var(--sand-dark);
   flex-shrink: 0;
   /* FIX scroll qui traverse le bouton Acheter mobile :
-     1. Fond passé de rgba(255,255,255,.96) → opaque pur. Le backdrop-filter
+     1. Fond passé de var(--surface-white-96) → opaque pur. Le backdrop-filter
         n'était pas appliqué de façon fiable sur Samsung Internet et Chrome
         Android ancien quand l'élément est position:sticky dans un scrollable
         → on voyait le contenu derrière transparaître.
@@ -439,7 +439,7 @@
 @media (min-width: 900px) {
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .k-modal-actions {
-      background: rgba(255,255,255,.96);
+      background: var(--surface-white-96);
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
     }
@@ -470,7 +470,7 @@
     right: 0;
     z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
     border-radius: 0; /* pleine largeur en fixed */
-    box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+    box-shadow: 0 -2px 12px var(--overlay-black-sm);
   }
   /* Compensation: éviter que le contenu scrollable disparaisse derrière la barre fixe.
      Hauteur estimée = qty(44) + buy(48) + gap(10) + padding-top(10) + padding-bottom(10+safe-area) */
@@ -543,16 +543,16 @@
 .k-sug-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: var(--text); cursor: pointer; transition: all .2s; white-space: nowrap; }
 .k-sug-chip.is-active { background: transparent; border-color: var(--coral); color: var(--text); font-weight: 700; }
 /* Fond couleur catégorie pour le chip actif — cohérence avec le rail principal */
-#k-modal-suggestions[data-cat="Mode & Beauté"] .k-sug-chip.is-active { background: #FDE8CD; }
-#k-modal-suggestions[data-cat="Maison"]         .k-sug-chip.is-active { background: #F3E7D3; }
-#k-modal-suggestions[data-cat="Tech"]           .k-sug-chip.is-active { background: #E0F0E8; }
-#k-modal-suggestions[data-cat="Bricolage"]      .k-sug-chip.is-active { background: #E8EDF0; }
-#k-modal-suggestions[data-cat="Créations personnelles"] .k-sug-chip.is-active { background: #FCE8D4; }
-#k-modal-suggestions[data-cat="Auto"]           .k-sug-chip.is-active { background: #E8E4F5; }
+#k-modal-suggestions[data-cat="Mode & Beauté"] .k-sug-chip.is-active { background: var(--cat-mode-bg); }
+#k-modal-suggestions[data-cat="Maison"]         .k-sug-chip.is-active { background: var(--cat-maison-bg); }
+#k-modal-suggestions[data-cat="Tech"]           .k-sug-chip.is-active { background: var(--cat-tech-bg); }
+#k-modal-suggestions[data-cat="Bricolage"]      .k-sug-chip.is-active { background: var(--cat-brico-bg); }
+#k-modal-suggestions[data-cat="Créations personnelles"] .k-sug-chip.is-active { background: var(--cat-perso-bg); }
+#k-modal-suggestions[data-cat="Auto"]           .k-sug-chip.is-active { background: var(--cat-auto-bg); }
 .k-sug-card.subcat-hidden { display: none !important; }
 .k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
-.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, #faf9f7 0%, #f4f1ec 100%); border-radius: 10px 10px 0 0; }
+.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--sand) 0%, #f4f1ec 100%); border-radius: 10px 10px 0 0; }
 .k-sug-grid .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 6px; display: block; }
 .k-sug-grid .k-sug-card-name { font-size: 13px; line-height: 1.3; padding: 6px 8px 2px; color: var(--text); font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
 .k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
@@ -670,10 +670,10 @@
 @media (min-width: 900px) {
 
   /* ── Overlay ─────────────────────────────────────────────── */
-  .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: rgba(12,18,12,.62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .k-modal-overlay.open { align-items: center; justify-content: center; padding: 28px; background: var(--overlay-dark-md); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   /* ── Shell ───────────────────────────────────────────────── */
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px rgba(12,18,12,.40); animation: none; }
+  #k-modal.k-modal { width: min(1280px, calc(100vw - 56px)); height: min(880px, calc(100vh - 56px)); max-height: calc(100vh - 56px); border-radius: 20px; overflow: hidden; box-shadow: 0 28px 80px var(--overlay-dark-sm); animation: none; }
 
   /* Quand le side-cart est visible, la modal se décale pour ne pas le chevaucher.
      336px = width(312) + right-gap(24). Transition douce si le panier apparaît en cours. */
@@ -684,7 +684,7 @@
   }
 
   /* ── Topbar ──────────────────────────────────────────────── */
-  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid rgba(31,48,36,.08); box-shadow: 0 8px 24px rgba(31,48,36,.05); flex-shrink: 0; }
+  #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
   #k-modal #k-modal-nav { margin-left: 10px; }
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
@@ -723,7 +723,7 @@
     position: sticky; top: 0; align-self: start;
     overflow: hidden; border-radius: 0; margin: 0; max-height: none;
     background: radial-gradient(circle at 70% 20%, rgba(100,175,90,.08), transparent 30%),
-                linear-gradient(135deg, #fbfaf7 0%, #f2ecdf 100%);
+                linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
@@ -732,7 +732,7 @@
   #k-modal .k-modal-counter { display: none; }
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
   #k-modal .k-modal-thumbs::-webkit-scrollbar { display: none; }
-  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid rgba(31,48,36,.10); background: rgba(255,255,255,.78); box-shadow: 0 8px 18px rgba(31,48,36,.06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
+  #k-modal .k-modal-thumb { width: 56px; height: 56px; flex: 0 0 56px; border-radius: 12px; border: 1px solid rgba(31,48,36,.10); background: var(--overlay-white-78); box-shadow: 0 8px 18px var(--border-text-06); overflow: hidden; cursor: pointer; transition: transform .14s, border-color .14s, box-shadow .14s; }
   #k-modal .k-modal-thumb:hover, #k-modal .k-modal-thumb.is-active { transform: translateY(-1px); border-color: rgba(200,92,45,.45); box-shadow: 0 10px 22px rgba(31,48,36,.10); }
   #k-modal .k-modal-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
   .k-modal-zoom-preview {
@@ -779,14 +779,14 @@
   #k-modal .k-modal-price { font-size: clamp(24px, 2vw, 32px); font-weight: 850; color: var(--coral); }
   #k-modal .k-modal-old-price { font-size: 14px; }
   #k-modal .k-modal-meta { margin-top: 10px; gap: 8px; }
-  #k-modal .k-modal-meta span { padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(31,48,36,.06); }
+  #k-modal .k-modal-meta span { padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1px solid var(--border-text-06); }
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
   .k-modal-trust-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
   .k-modal-trust-item svg { width: 16px; height: 16px; color: var(--ocean); stroke: currentColor; fill: none; stroke-width: 2; flex-shrink: 0; }
   #k-modal .k-modal-trust { gap: 10px; flex-wrap: wrap; padding: 11px 0; }
-  #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid rgba(31,48,36,.06); }
+  #k-modal .k-modal-trust-item { padding: 6px 9px; border-radius: 999px; background: var(--sand); border: 1px solid var(--border-text-06); }
   .k-modal-share-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--sand-dark); margin-top: 8px; }
   .k-modal-share-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--sand); color: var(--text); transition: background .12s, border-color .12s; }
   .k-modal-share-btn:hover { background: var(--sand-warm); border-color: var(--coral); }
@@ -823,7 +823,7 @@
     margin: 0; padding: 12px 24px 16px;
     background: rgba(255,255,255,.98);
     border-top: 1px solid rgba(31,48,36,.10);
-    box-shadow: 0 -12px 28px rgba(31,48,36,.06);
+    box-shadow: 0 -12px 28px var(--border-text-06);
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     display: grid;
     grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
@@ -1026,8 +1026,8 @@
   background: linear-gradient(
     to bottom right,
     transparent calc(50% - 1px),
-    rgba(0,0,0,.3) calc(50% - 1px),
-    rgba(0,0,0,.3) calc(50% + 1px),
+    var(--overlay-black-lg) calc(50% - 1px),
+    var(--overlay-black-lg) calc(50% + 1px),
     transparent calc(50% + 1px)
   );
   pointer-events: none;
@@ -1101,7 +1101,7 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--ocean, #1a6fa0);
+  color: var(--ocean, var(--blue-dark));
   background: none;
   border: none;
   padding: 2px 6px;
@@ -1115,7 +1115,7 @@
 }
 .k-vg-size-guide:hover {
   color: var(--ocean-dark, #0d4f74);
-  background: color-mix(in srgb, var(--ocean, #1a6fa0) 8%, transparent);
+  background: color-mix(in srgb, var(--ocean, var(--blue-dark)) 8%, transparent);
 }
 
 /* Overlay fond */
@@ -1123,7 +1123,7 @@
   position: fixed;
   inset: 0;
   z-index: 2100; /* au-dessus du modal produit */
-  background: rgba(0,0,0,.55);
+  background: var(--overlay-dark-md);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1153,7 +1153,7 @@
   overflow: hidden;
   transform: translateY(32px);
   transition: transform .25s cubic-bezier(.22,1,.36,1);
-  box-shadow: 0 -4px 32px rgba(0,0,0,.15);
+  box-shadow: 0 -4px 32px var(--overlay-black-md);
 }
 .k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
 /* INTENTIONNEL @768px — .k-sg-panel (guide des tailles) : panneau centré avec scale-in,
@@ -1173,13 +1173,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--border, #e8e8e8);
+  border-bottom: 1px solid var(--border, var(--border));
   flex-shrink: 0;
 }
 .k-sg-title {
   font-size: 17px;
   font-weight: 700;
-  color: var(--text, #1a1a1a);
+  color: var(--text, var(--text));
   margin: 0;
 }
 .k-sg-close {
@@ -1198,14 +1198,14 @@
   flex-shrink: 0;
 }
 .k-sg-close svg { width: 16px; height: 16px; }
-.k-sg-close:hover { background: var(--border, #e8e8e8); color: var(--text, #1a1a1a); }
+.k-sg-close:hover { background: var(--border, var(--border)); color: var(--text, var(--text)); }
 
 /* Tabs */
 .k-sg-tabs {
   display: flex;
   gap: 0;
   padding: 0 16px;
-  border-bottom: 1px solid var(--border, #e8e8e8);
+  border-bottom: 1px solid var(--border, var(--border));
   flex-shrink: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -1246,8 +1246,8 @@
   color: var(--text-muted, #777);
   line-height: 1.55;
   margin: 0 0 14px;
-  background: color-mix(in srgb, var(--ocean, #1a6fa0) 6%, transparent);
-  border-left: 3px solid var(--ocean, #1a6fa0);
+  background: color-mix(in srgb, var(--ocean, var(--blue-dark)) 6%, transparent);
+  border-left: 3px solid var(--ocean, var(--blue-dark));
   padding: 8px 12px;
   border-radius: 0 8px 8px 0;
 }
@@ -1257,7 +1257,7 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border-radius: 10px;
-  border: 1px solid var(--border, #e8e8e8);
+  border: 1px solid var(--border, var(--border));
 }
 
 .k-sg-table {
@@ -1281,7 +1281,7 @@
   border-top: 1px solid var(--border, #eee);
   transition: background .1s;
 }
-.k-sg-table tbody tr:hover { background: var(--surface, #fafafa); }
+.k-sg-table tbody tr:hover { background: var(--surface, var(--sand)); }
 .k-sg-table tbody td {
   padding: 9px 12px;
   color: var(--text, #222);
@@ -1301,7 +1301,7 @@
   color: var(--text-muted, #888);
   text-align: center;
   flex-shrink: 0;
-  background: var(--surface, #fafafa);
+  background: var(--surface, var(--sand));
 }
 
 /* Prevent body scroll when guide open (stacks with modal-open) */

@@ -121,8 +121,8 @@
   border-radius: 11px;
   overflow: hidden;
   flex-shrink: 0;
-  border: 1px solid rgba(0,0,0,.06);
-  background: #f8f8f8;
+  border: 1px solid var(--overlay-black-xs);
+  background: var(--sand-dark);
   box-shadow: var(--elev-1);
   transition: box-shadow .2s var(--ease), transform .2s var(--ease);
   display: flex;
@@ -161,20 +161,20 @@
 
 /* Fond par catégorie */
 .k-chip[data-cat="all"]         .k-chip-photo { background: var(--ocean-dark); }
-.k-chip[data-cat="Mode"]        .k-chip-photo { background: #FDE8CD; }
-.k-chip[data-cat="Beauté"]      .k-chip-photo { background: #FDE5F0; }
-.k-chip[data-cat="Tech"]        .k-chip-photo { background: #E0F0E8; }
-.k-chip[data-cat="Enfant"]      .k-chip-photo { background: #FDE5E5; }
-.k-chip[data-cat="Maison"]      .k-chip-photo { background: #F3E7D3; }
-.k-chip[data-cat="Sport"]       .k-chip-photo { background: #E8E4F5; }
-.k-chip[data-cat="Sur-mesure"]  .k-chip-photo { background: #FCE8D4; }
+.k-chip[data-cat="Mode"]        .k-chip-photo { background: var(--cat-mode-bg); }
+.k-chip[data-cat="Beauté"]      .k-chip-photo { background: var(--cat-beaute-bg); }
+.k-chip[data-cat="Tech"]        .k-chip-photo { background: var(--cat-tech-bg); }
+.k-chip[data-cat="Enfant"]      .k-chip-photo { background: var(--red-bg); }
+.k-chip[data-cat="Maison"]      .k-chip-photo { background: var(--cat-maison-bg); }
+.k-chip[data-cat="Sport"]       .k-chip-photo { background: var(--cat-auto-bg); }
+.k-chip[data-cat="Sur-mesure"]  .k-chip-photo { background: var(--cat-perso-bg); }
 /* Nouvelles catégories — background mobile (sinon héritent du style desktop transparent) */
-.k-chip[data-cat="Solaire"]                  .k-chip-photo { background: #FFF9D6; }
-.k-chip[data-cat="Creatio"]                  .k-chip-photo { background: #EDE8FD; }
+.k-chip[data-cat="Solaire"]                  .k-chip-photo { background: var(--cat-solaire-bg); }
+.k-chip[data-cat="Creatio"]                  .k-chip-photo { background: var(--cat-creatio-bg); }
 /* Architecture v2 — piliers Bricolage et Auto */
-.k-chip[data-cat="Bricolage"]                .k-chip-photo { background: #E8EDF0; }
-.k-chip[data-cat="Auto"]                     .k-chip-photo { background: #E8E4F5; }
-.k-chip[data-cat="Créations personnelles"]   .k-chip-photo { background: #FCE8D4; }
+.k-chip[data-cat="Bricolage"]                .k-chip-photo { background: var(--cat-brico-bg); }
+.k-chip[data-cat="Auto"]                     .k-chip-photo { background: var(--cat-auto-bg); }
+.k-chip[data-cat="Créations personnelles"]   .k-chip-photo { background: var(--cat-perso-bg); }
 
 /* Emoji variant */
 .k-chip-emoji {
@@ -186,8 +186,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #f8f8f8;
-  border: 1.5px solid #d4d4d4;
+  background: var(--sand-dark);
+  border: 1.5px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -216,7 +216,7 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -.025em;
-    color: rgba(32, 51, 37, .82);
+    color: var(--text-alpha-82);
     text-align: left;
   }
 }
@@ -247,7 +247,7 @@
   }
 
   .k-chip.active .k-chip-label {
-    color: #b6652a;
+    color: var(--coral-dark);
   }
 }
 
@@ -267,7 +267,7 @@
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   background: var(--white);
-  border-top: 1px solid rgba(0,0,0,.04);
+  border-top: 1px solid var(--overlay-black-xs);
 }
 .k-subcats-rail::-webkit-scrollbar { display: none; }
 
@@ -278,7 +278,7 @@
   scroll-snap-align: start;
   padding: 5px 11px;
   background: var(--sand);
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid var(--overlay-black-xs);
   border-radius: 999px;
   cursor: pointer;
   transition: all .16s ease;
@@ -297,17 +297,17 @@
 
 /* Fond couleur catégorie sur subchip actif — cohérence avec chip parente */
 .k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: #FDE8CD; }
+#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
 .k-chip[data-cat="Maison"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: #F3E7D3; }
+#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: var(--cat-maison-bg); }
 .k-chip[data-cat="Tech"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: #E0F0E8; }
+#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: var(--cat-tech-bg); }
 .k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: #E8EDF0; }
+#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: var(--cat-brico-bg); }
 .k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: #FCE8D4; }
+#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
 .k-chip[data-cat="Auto"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: #E8E4F5; }
+#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
 
 @keyframes k-subchip-in {
   from { opacity: 0; transform: translateX(-6px) scale(.94); }
@@ -357,7 +357,7 @@
 .k-sec-header-name  { font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
 .k-sec-header-count {
   font-size: 12px; font-weight: 500; color: var(--text-muted);
-  padding: 2px 8px; background: rgba(0,0,0,.04); border-radius: 20px;
+  padding: 2px 8px; background: var(--overlay-black-xs); border-radius: 20px;
   flex-shrink: 0; white-space: nowrap;
 }
 .k-sec-see-all {
@@ -449,7 +449,7 @@
   background: var(--coral); color: var(--white);
   font-size: 9px; font-weight: 700;
   padding: 2px 6px; border-radius: 50px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  box-shadow: 0 1px 4px var(--overlay-black-md);
 }
 .k-promo-card-info { padding: 4px 2px 0; background: none; min-width: 0; }
 .k-promo-card-name {

@@ -34,7 +34,7 @@ body {
   height: var(--header-h);
   padding: 0 var(--pad-x);
   background: var(--sand-warm);
-  border-bottom: 1px solid rgba(31,48,36,.07);
+  border-bottom: 1px solid var(--border-text-07);
 }
 
 .k-header-inner {
@@ -71,8 +71,8 @@ body {
   position: relative;
   height: 32px;
   border-radius: 16px;
-  background: rgba(255,255,255,.96);
-  border: 1px solid rgba(31,48,36,.08);
+  background: var(--surface-white-96);
+  border: 1px solid var(--border-text-08);
   box-shadow: var(--elev-1);
   transition: box-shadow .2s var(--ease), border-color .2s;
 }
@@ -89,8 +89,8 @@ body {
   color: var(--text);
   border-radius: 21px;
 }
-.k-search input::placeholder { color: rgba(0,0,0,.35); }
-.k-search input:focus { background: rgba(255,255,255,1); }
+.k-search input::placeholder { color: var(--overlay-black-lg); }
+.k-search input:focus { background: var(--white); }
 .k-search-icon {
   position: absolute;
   left: 12px;
@@ -98,7 +98,7 @@ body {
   transform: translateY(-50%);
   width: 18px;
   height: 18px;
-  color: rgba(0,0,0,.35);
+  color: var(--overlay-black-lg);
   pointer-events: none;
 }
 .k-search-dropdown {
@@ -168,7 +168,7 @@ body {
   border: 2px solid var(--page-bg);
   transform: scale(0);
   transition: transform .3s cubic-bezier(.34,1.56,.64,1);
-  box-shadow: 0 2px 6px rgba(0,0,0,.22);
+  box-shadow: 0 2px 6px var(--overlay-black-md);
   line-height: 1;
   z-index: 20;
   pointer-events: none;
@@ -254,10 +254,10 @@ body {
   right: 0;
   z-index: 90;
   height: var(--bnav-h);
-  background: rgba(253,250,245,.97);
+  background: var(--surface-sand-97);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
-  border-top: 1px solid rgba(31,48,36,.07);
+  border-top: 1px solid var(--border-text-07);
   display: flex;
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom);
@@ -319,7 +319,7 @@ body {
 .k-skel-line,
 .k-skeleton-title,
 .k-skeleton-price {
-  background: linear-gradient(90deg, #EDE5D8 25%, #F5EDE0 50%, #EDE5D8 75%);
+  background: linear-gradient(90deg, var(--sand-dark) 25%, var(--sand-warm) 50%, var(--sand-dark) 75%);
   background-size: 200% 100%;
   animation: k-shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius);
@@ -329,7 +329,7 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--white);
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  box-shadow: 0 1px 4px var(--overlay-black-xs);
 }
 .k-skel-img,
 .k-skeleton-img { width: 100%; aspect-ratio: 1/1; border-radius: 0; }
@@ -421,11 +421,11 @@ body {
     position: sticky;
     top: 0;
     z-index: 200;
-    background: rgba(255,253,249,.94);
+    background: var(--surface-sand-94);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 10px 28px rgba(31,48,36,.06);
+    border-bottom: 1px solid var(--border-text-08);
+    box-shadow: 0 10px 28px var(--border-text-06);
   }
 
   .k-header-inner {
@@ -446,9 +446,9 @@ body {
     max-width: 680px;
     height: 44px;
     border-radius: 999px;
-    border: 1px solid rgba(42,62,44,.12);
-    background: rgba(255,255,255,.98);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px rgba(42,62,44,.05);
+    border: 1px solid var(--border-text-12);
+    background: var(--white);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px var(--border-text-06);
   }
   .k-search input {
     height: 44px;
@@ -818,8 +818,8 @@ body {
     gap: 4px;
     font-size: 10.5px;
     font-weight: 600;
-    color: #1a7a3e;
-    background: #e8f7ee;
+    color: var(--green-text);
+    background: var(--green-bg);
     border-radius: 999px;
     padding: 3px 8px;
     width: fit-content;
@@ -844,8 +844,8 @@ body {
     padding: 11px 14px;
     border: none;
     border-radius: 8px;
-    background: #ff6900;
-    color: #fff;
+    background: var(--orange);
+    color: var(--white);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -853,9 +853,9 @@ body {
     font-family: var(--font);
     letter-spacing: .01em;
     transition: background .15s, transform .12s;
-    box-shadow: 0 2px 8px rgba(255,105,0,.30);
+    box-shadow: 0 2px 8px var(--orange-shadow);
   }
-  .k-sc-btn-checkout:hover { background: #e55f00; }
+  .k-sc-btn-checkout:hover { background: var(--orange-dark); }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
   /* Bouton "En groupe" — icône carrée violet (action secondaire compacte) */
@@ -868,15 +868,15 @@ body {
     justify-content: center;
     border: none;
     border-radius: 8px;
-    background: #6c3fc5;
-    color: #fff;
+    background: var(--violet);
+    color: var(--white);
     cursor: pointer;
     font-family: var(--font);
     transition: background .15s, transform .12s;
     box-shadow: 0 2px 8px rgba(108,63,197,.28);
     position: relative;
   }
-  .k-sc-btn-group:hover { background: #5832a8; }
+  .k-sc-btn-group:hover { background: var(--violet-dark); }
   .k-sc-btn-group:active { transform: scale(.95); }
   .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
   /* Label caché visuellement mais accessible — l'icône suffit */
@@ -991,7 +991,7 @@ body {
   .k-sc-item-price {
     font-size: 13px;
     font-weight: 800;
-    color: #cc4400;
+    color: var(--red-text-md);
     letter-spacing: -.01em;
   }
   .k-sc-item-old-price {
@@ -1065,11 +1065,11 @@ body {
     padding: 0;
   }
   .k-sc-item-remove:hover {
-    background: #fff0f0;
-    border-color: #ffbbbb;
-    color: #cc2200;
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    color: var(--red-text);
   }
-  .k-sc-item-remove:active { background: #ffe0e0; }
+  .k-sc-item-remove:active { background: var(--red-bg-hover); }
 
   /* ── Footer sticky : CTAs primaires + count ───────────── */
   .k-sc-bottom {
