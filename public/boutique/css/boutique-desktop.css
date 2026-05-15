@@ -898,6 +898,7 @@
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    overflow: visible;
   }
 
   .k-cats {
