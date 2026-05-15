@@ -1,18 +1,17 @@
 /**
- * b-boutique-wow-style.js — DÉSACTIVÉ (P2 ownership audit 2026-05-15)
+ * @component Boutique / Polish Bootstrap
+ * @owner b-boutique-wow-style.js
  *
- * Ce fichier était un export orphelin : setupBoutiqueWowStyle() n'était
- * jamais importé ni appelé. Les CSS qu'il chargeait dynamiquement
- * (hero-cart-proxy.css, desktop-commerce-skeleton.css) sont déjà chargés
- * statiquement dans index.html (lignes 68-69).
+ * DÉSACTIVÉ — couche wow supprimée.
+ * boutique-wow.css vidé. Styles migrés dans boutique-desktop.css.
+ * hero-cart-proxy.css et desktop-commerce-skeleton.css chargés
+ * directement via <link> dans index.html.
  *
- * La logique de proverbe est gérée par le script inline dans <body>.
- *
- * Ce fichier est conservé vide pour éviter une erreur d'import si une
- * référence résiduelle existe dans un bundle ou un cache.
+ * Voir docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
  */
 
 'use strict';
 
-// Export vide pour compatibilité — ne fait rien
-export function setupBoutiqueWowStyle() {}
+export function setupBoutiqueWowStyle() {
+  // no-op — wow layer removed
+}
