@@ -1027,70 +1027,7 @@
     font-weight: 900;
   }
 
-  #k-subcats-wrap {
-    max-width: 1480px;
-    margin: 12px auto 0;
-    padding: 0 20px 8px;
-    background: transparent;
-  }
-
-  .k-desktop-rayons-head,
-  #k-subcats-wrap [class*="-head"],
-  #k-subcats-wrap [class*="-title"],
-  #k-subcats-wrap [class*="-label"]:not(.k-subchip-label):not(.k-subchip-icon) {
-    display: none;
-  }
-
-  /* Pas de pseudo-label CSS — trop fragile sans data-cat-label posé */
-  #k-subcats-wrap .k-subcats-rail::before {
-    display: none;
-    content: none;
-  }
-
-  .k-desktop-rayons-rail,
-  .k-subcats-rail.k-desktop-rayons-rail {
-    display: flex;
-    justify-content: center;
-    gap: 9px;
-    padding: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .k-desktop-rayons-rail::-webkit-scrollbar {
-    display: none;
-  }
-
-  .k-desktop-rayons-rail .k-subchip {
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 13px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.74);
-    border: 1px solid rgba(42,62,44,.08);
-    color: rgba(32,51,37,.70);
-    font-size: 12px;
-    font-weight: 800;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .k-desktop-rayons-rail .k-subchip:hover {
-    background: #fff;
-    border-color: rgba(198,168,93,.30);
-  }
-
-  .k-desktop-rayons-rail .k-subchip.active {
-    background: rgba(47,107,63,.10);
-    color: #2f6b3f;
-    border-color: rgba(47,107,63,.28);
-  }
-
-  .k-desktop-rayons-rail .k-subchip[data-subcat=""] {
-    display: none;
-  }
+  /* #k-subcats-wrap → source unique : bloc SOUS-CATEGORIES DESKTOP ci-dessous */
 
   .k-sec-subcats {
     display: none;
@@ -1120,194 +1057,115 @@
     grid-template-columns: repeat(4, minmax(120px, 1fr));
   }
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   LOT 13 — SOUS-CATÉGORIES SHEIN-STYLE
-   Restyling des classes générées par renderSubcatRail()
-   dans home-controller.js. Aucun JS modifié.
-   ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   SOUS-CATÉGORIES DESKTOP — pills simples sous les catégories
+   Pas de titre, pas de cadre, proportionnées aux chips.
+   ══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* Wrap + tous ses enfants directs : fond page, zéro cadre */
+  /* Wrap : transparent, centré sous les chips */
   #k-subcats-wrap {
-    background: var(--page-bg);
-    border-bottom: none;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 10px 20px 6px;
+    background: transparent;
+    border: none;
     box-shadow: none;
-    padding-top: 8px;
-    padding-bottom: 8px;
   }
+
+  /* Masquer tout header/titre injecté */
+  #k-subcats-wrap > [class*="-head"],
+  #k-subcats-wrap > [class*="-title"],
+  #k-subcats-wrap .k-subcats-rail::before {
+    display: none;
+  }
+
+  /* Reset enfants directs — pas de fond blanc hérité */
   #k-subcats-wrap > * {
     background: transparent;
     border: none;
     box-shadow: none;
   }
 
-  /* Rail : flex aligné à gauche, padding cohérent avec le mega-nav */
+  /* Rail : flex centré, pas de scroll */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
     align-items: center;
-    gap: 6px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    max-width: var(--container);
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding: 0;
     margin: 0 auto;
-    padding: 8px clamp(16px, 3vw, 40px) 9px;
+    max-width: 100%;
     background: transparent;
-    border-top: none;
-    border-radius: 0;
+    border: none;
     box-shadow: none;
   }
-  #k-subcats-wrap .k-subcats-rail::-webkit-scrollbar { display: none; }
 
-  /* Label "catégorie active ›" en tête du rail — décoratif injecté par CSS */
-  /* (pas de JS : pseudo-element avant le premier subchip) */
-  #k-subcats-wrap .k-subcats-rail::before {
-    content: attr(data-cat-label);
-    display: flex;
-    align-items: center;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--coral);
-    white-space: nowrap;
-    margin-right: 4px;
-    flex-shrink: 0;
-  }
-
-  /* Pill subchip — style Shein : fond coloré, compact, pill pleine */
+  /* Pills : même famille que les chips cat, en plus petit */
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    height: 28px;
-    padding: 0 13px;
-    border-radius: 999px;
-    border: 1.5px solid transparent;
-    background: rgba(31,48,36,.06);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 600;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(42,62,44,.075);
+    background: rgba(255,255,255,.64);
+    color: rgba(32,51,37,.82);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: -.015em;
     white-space: nowrap;
-    flex-shrink: 0;
     cursor: pointer;
-    transition: background .14s var(--ease), border-color .14s, color .14s, transform .14s, box-shadow .14s;
-    letter-spacing: -.01em;
+    box-shadow: 0 2px 8px rgba(31,48,36,.03);
+    transition: transform .14s ease, background .14s, border-color .14s, color .14s;
   }
 
   #k-subcats-wrap .k-subchip:hover {
-    background: rgba(200,92,45,.08);
-    border-color: rgba(200,92,45,.3);
-    color: var(--coral);
     transform: translateY(-1px);
+    background: #fff;
+    border-color: rgba(198,168,93,.36);
+    box-shadow: 0 6px 16px rgba(31,48,36,.06);
+    color: #203325;
   }
 
-  /* Actif : fond couleur catégorie + bordure coral — cohérence mobile/desktop */
+  /* Actif : même ton doré que les chips catégories actives */
   #k-subcats-wrap .k-subchip.active {
-    background: transparent;
-    border-color: var(--coral);
-    color: var(--text);
-    box-shadow: none;
-    transform: none;
-    font-weight: 700;
-  }
-  #k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: #FDE8CD; }
-  #k-subcats-wrap[data-parent-cat="Maison"]         .k-subchip.active { background: #F3E7D3; }
-  #k-subcats-wrap[data-parent-cat="Tech"]           .k-subchip.active { background: #E0F0E8; }
-  #k-subcats-wrap[data-parent-cat="Bricolage"]      .k-subchip.active { background: #E8EDF0; }
-  #k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: #FCE8D4; }
-  #k-subcats-wrap[data-parent-cat="Auto"]           .k-subchip.active { background: #E8E4F5; }
-  #k-subcats-wrap .k-subchip.active .k-subchip-label { color: var(--text); font-weight: 700; }
-  #k-subcats-wrap .k-subchip.active .k-subchip-icon { filter: none; }
-
-  /* Compteur produits dans le rail subcat — injecté par JS */
-  #k-subcats-wrap .k-subcat-count {
-    margin-left: auto;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-    white-space: nowrap;
-    flex-shrink: 0;
-    padding-right: clamp(16px, 3vw, 40px);
+    background: linear-gradient(180deg, #fff8e7, #fffdf7);
+    color: #9a552a;
+    border-color: rgba(198,168,93,.5);
+    box-shadow: 0 4px 12px rgba(198,168,93,.12);
+    font-weight: 800;
   }
 
-  /* Icône emoji — légèrement plus grande */
+  /* "Tout voir" masqué — il n'apporte rien en desktop */
+  #k-subcats-wrap .k-subchip[data-subcat=""] {
+    display: none;
+  }
+
+  /* Icône emoji */
   #k-subcats-wrap .k-subchip-icon {
     font-size: 13px;
     line-height: 1;
-    flex-shrink: 0;
   }
 
-  /* Animation staggerée à l'apparition */
-  @keyframes k-subchip-shein-in {
-    from { opacity: 0; transform: translateY(-5px) scale(.94); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+  /* Animation d'apparition douce */
+  @keyframes k-subchip-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip {
-    animation: k-subchip-shein-in .18s cubic-bezier(.22,.68,0,1.2) both;
+    animation: k-subchip-in .15s ease both;
   }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .03s; }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .06s; }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(6)  { animation-delay: .15s; }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip:nth-child(n+7){ animation-delay: .18s; }
-
-  /* Séparateur visuel entre "Tout" et les sous-catégories */
-  #k-subcats-wrap .k-subchip[data-subcat=""] {
-    background: var(--white);
-    border-color: rgba(31,48,36,.14);
-    margin-right: 4px;
-    padding-right: 15px;
-    position: relative;
-  }
-  #k-subcats-wrap .k-subchip[data-subcat=""]::after {
-    content: '';
-    position: absolute;
-    right: -7px;
-    top: 20%;
-    height: 60%;
-    width: 1px;
-    background: var(--border);
-  }
-  #k-subcats-wrap .k-subchip[data-subcat=""].active {
-    background: var(--text);
-    border-color: var(--text);
-    color: #fff;
-  }
-
-  /* â”€â”€ Bande trust sous le hero (LOT 13) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  .k-hero-trust-bar {
-    display: flex;
-    align-items: center;
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    padding: 0 clamp(16px, 3vw, 40px);
-    height: 38px;
-    gap: 0;
-  }
-  .k-hero-trust-bar-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0 18px;
-    flex: 1;
-    border-right: 1px solid var(--border);
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
-  .k-hero-trust-bar-item:first-child { padding-left: 0; }
-  .k-hero-trust-bar-item:last-child  { border-right: none; }
-  .k-hero-trust-bar-item svg {
-    width: 13px; height: 13px;
-    stroke: var(--coral); fill: none; stroke-width: 2;
-    flex-shrink: 0;
-  }
+  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(2) { animation-delay: .03s; }
+  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(3) { animation-delay: .06s; }
+  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(4) { animation-delay: .08s; }
+  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(5) { animation-delay: .10s; }
 }
+
 
 
 @media (min-width: 900px) {
@@ -1321,5 +1179,4 @@
   /* P0-E/F supprimés â .k-sec-subcats masqué en desktop (rail sticky #k-subcats-wrap suffit) */
   .k-sec-subcats { display: none; }
   .k-sec-subchip { display: none; }
-
-
+}
