@@ -1138,6 +1138,8 @@
     padding: 8px clamp(16px, 3vw, 40px) 9px;
     background: transparent;
     border-top: none;
+    border-radius: 0;
+    box-shadow: none;
   }
   #k-subcats-wrap .k-subcats-rail::-webkit-scrollbar { display: none; }
 
