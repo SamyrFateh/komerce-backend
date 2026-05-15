@@ -872,6 +872,11 @@
 /* â”€â”€ 1. CHIP RAIL → MEGA-NAV TEMU/SHEIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (min-width: 900px) {
 
+  /* FIX : annuler le margin-top:-42px mobile (overlap hero) — inutile et nuisible desktop */
+  .k-hero-cats-sticky {
+    margin-top: 0;
+  }
+
   /* Shell : bande pleine largeur collée sous le header */
   .k-cats-shell {
     position: sticky;
@@ -1401,6 +1406,12 @@
     max-height: 160px;
     overflow: hidden;
     background: #1F3024;
+    /* FIX : position:relative + z-index bas pour que le .k-cats-shell sticky
+       (z-index:110) glisse PAR-DESSUS l'image hero lors du scroll,
+       plutôt que de passer dessous (comportement par défaut quand le hero
+       suit le cats-shell dans le DOM). */
+    position: relative;
+    z-index: 1;
   }
 
   /* 2. Image visible, couvre toute la hauteur */

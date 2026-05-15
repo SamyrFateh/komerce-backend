@@ -42,8 +42,10 @@ Pas de JS qui recrée ce qu'un renderer sait déjà faire.
 | Modal produit | `public/boutique/js/b-modal.js` | cycle d'ouverture/fermeture modal, rendu détail produit | correction pager, correction hero, navigation globale |
 | Styles catégories base/mobile | `public/boutique/css/categories.css` | visuel base/mobile des chips et subchips | mega-nav desktop complet, correction JS pager |
 | Hero base/mobile | `public/boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation de la cage pager mobile |
-| Produits base/mobile | `public/boutique/css/products.css` | cartes produit base/mobile, sections produit | layout desktop global, panier, modal |
-| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, sidebar, side-cart, hero desktop, grille desktop, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager |
+| Grille produits + cartes (toutes tailles) | `public/boutique/css/products.css` | `.k-grid`, `.k-sec-grid`, `.k-card` base et overrides desktop — source de vérité unique | layout desktop global, panier, modal |
+| Chips catégories desktop (mega-nav) | `public/boutique/css/boutique-desktop.css` | `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` desktop — bloc P0 + patch P1V-2 | redéclarer le layout chip dans un fichier chargé après |
+| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, mega-nav catégories, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
+| Overrides desktop `.k-card` | `public/boutique/css/desktop-commerce-skeleton.css` | `border-radius`, `border`, `box-shadow` desktop de `.k-card` ; side-cart sticky ; largeurs max ≥1200px | layout `.k-chip`, `.k-cats-shell`, `.k-cats` — propriété de `boutique-desktop.css` |
 | Mini-cart / accès panier | `public/boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
 | Couche wow temporaire | `public/boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
 
@@ -150,9 +152,23 @@ Do not mutate cart or favorite state here.
 Do not decide pagination here.
 ```
 
+### `products.css`
+
+Responsabilité : être la source de vérité unique pour `.k-grid`, `.k-sec-grid` et `.k-card` — mobile-first, toutes tailles d'écran.
+
+Interdictions :
+
+```txt
+Do not declare .k-chip or .k-cats layout here.
+Do not own desktop-only layout (side-cart, mega-nav, hero desktop).
+Do not duplicate .k-grid or .k-card rules in other files.
+```
+
+Note : les overrides desktop de `.k-card` (border-radius, box-shadow, border hover) sont dans `desktop-commerce-skeleton.css` — c'est légitime car ils enrichissent sans contredire `products.css`.
+
 ### `boutique-desktop.css`
 
-Responsabilité : porter uniquement l'expérience desktop premium.
+Responsabilité : porter uniquement l'expérience desktop premium, dont le mega-nav catégories (`.k-chip`, `.k-cats-shell`, `.k-cats`).
 
 Interdictions :
 
@@ -161,6 +177,28 @@ Do not override mobile pager mechanics.
 Do not change #k-page-scroll mobile fixed cage behavior.
 Do not use !important to fight mobile/base CSS.
 Do not fix mobile hero overlap from desktop CSS.
+Do not redeclare .k-grid columns or gap — source of truth is products.css.
+```
+
+Propriété du mega-nav chip :
+
+```txt
+Source de vérité unique pour .k-chip desktop : bloc P0 (≥900px) + patch P1V-2 (.k-chip.active fond coral).
+Tout fichier CSS chargé après boutique-desktop.css (ex: desktop-commerce-skeleton.css)
+ne doit pas redéclarer .k-chip, .k-chip-photo, .k-chip-label, .k-chip.active, .k-cats-shell, .k-cats.
+Un tel redéclaration écraserait silencieusement le mega-nav et rendrait le rail catégories invisible.
+```
+
+### `desktop-commerce-skeleton.css`
+
+Responsabilité : overrides desktop de `.k-card` (aspect visuel enrichi) et contraintes de largeur max du workspace.
+
+Interdictions :
+
+```txt
+Do not redeclare .k-chip or any chip/cats variant here — boutique-desktop.css owns it.
+Do not redeclare .k-grid gap or columns here — products.css owns it.
+Do not redeclare .k-card:hover transform here — products.css owns it.
 ```
 
 ### `boutique-wow.css`
@@ -201,6 +239,14 @@ shop-schema.js
 
 Si des chips statiques sont conservées temporairement pour éviter le FOUC, elles doivent être strictement synchrones avec `shop-schema.js` et considérées comme une optimisation de boot, pas comme la vérité.
 
+### Ordre de chargement CSS et propriété du mega-nav
+
+L'ordre de chargement est : `categories.css` → `boutique-desktop.css` → `desktop-commerce-skeleton.css`.
+
+`desktop-commerce-skeleton.css` est chargé en dernier et gagne toujours la cascade. Toute règle `.k-chip*`, `.k-cats-shell` ou `.k-cats` dans ce fichier écrase silencieusement le mega-nav de `boutique-desktop.css`. Ce type de conflit a causé l'invisibilité du rail catégories en production (corrigé Lot J).
+
+Règle : **seul `boutique-desktop.css` déclare le layout des chips desktop.**
+
 ## Règle spécifique au mobile
 
 Le mobile repose sur l'architecture suivante :
@@ -236,7 +282,7 @@ Le desktop peut améliorer :
 ```txt
 - hero premium
 - grille dense
-- sidebar catégories
+- mega-nav catégories
 - side-cart droit
 - sous-catégories sticky
 - footer riche
@@ -264,6 +310,8 @@ Avant de merger une PR UI boutique :
 [ ] Les cartes produit restent pilotées par render-product-card.js.
 [ ] Les changements CSS sont dans le bon fichier et le bon media query.
 [ ] Aucun !important n'a été ajouté pour masquer un conflit d'architecture.
+[ ] Aucune règle .k-chip / .k-cats n'a été ajoutée dans desktop-commerce-skeleton.css.
+[ ] Aucune règle .k-grid / .k-card de base n'a été dupliquée hors products.css.
 [ ] Si boutique-wow.css est modifié, le changement est expérimental, réversible et documenté.
 ```
 
@@ -280,4 +328,6 @@ Ne casse pas le moteur mobile hero fixe + #k-page-scroll + b-pager.js.
 Si tu dois corriger le rail catégories, passe par shop-schema.js, render-categories.js ou home-controller.js selon la nature du problème.
 Si tu dois corriger le desktop, isole le changement dans boutique-desktop.css ou un module desktop dédié.
 Si tu modifies boutique-wow.css, considère-le comme temporaire et prépare la migration future vers les fichiers propriétaires.
+N'ajoute jamais de règle .k-chip, .k-cats-shell ou .k-cats dans desktop-commerce-skeleton.css — boutique-desktop.css en est le seul propriétaire.
+N'ajoute jamais de règle .k-grid ou .k-card de base hors de products.css.
 ```
