@@ -1,4 +1,4 @@
-/* @import desktop-horizontal-nav.css — supprimé. Regles fusionnées dans boutique-desktop.css (P1 ownership audit 2026-05-15). */
+/* @import desktop-horizontal-nav.css â€” supprimÃ©. Regles fusionnÃ©es dans boutique-desktop.css (P1 ownership audit 2026-05-15). */
 
 /**
  * @component Boutique / Desktop Commerce Skeleton
@@ -96,7 +96,7 @@
     box-shadow: 0 8px 18px rgba(31,48,36,.08);
   }
 
-  /* Hero desktop : reset complet du fixed mobile — position relative pour contenir hero + sticky */
+  /* Hero desktop : reset complet du fixed mobile â€” position relative pour contenir hero + sticky */
   #k-hero-fixed-wrap {
     position: relative;
     top: auto;
@@ -239,7 +239,7 @@
     font-weight: 700;
   }
 
-  /* .k-hero-cats-sticky → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+  /* .k-hero-cats-sticky â†’ source de vÃ©ritÃ© : boutique-desktop.css (bloc CARTES VISUELLES) */
 
   /* Desktop commerce workspace */
   #k-page-scroll {
@@ -280,53 +280,9 @@
     box-shadow: 0 12px 28px rgba(31,48,36,.10);
   }
 
-  /* Side cart = aide achat, pas simple bloc vide */
-  .k-side-cart {
-    position: sticky;
-    top: 150px;
-    max-height: calc(100vh - 170px);
-    border-radius: 24px;
-    background: rgba(255,252,244,.92);
-    border: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 12px 30px rgba(31,48,36,.075);
-    overflow: hidden;
-  }
+  /* Side cart desktop : styles visuels déplacés dans boutique-desktop.css (Lot 3). */
 
-  .k-sc-bottom {
-    background: linear-gradient(180deg, rgba(255,252,244,.88), #fff);
-    border-top: 1px solid rgba(42,62,44,.07);
-  }
-
-  .k-sc-subtotal-label {
-    color: rgba(32,51,37,.62);
-    font-weight: 800;
-  }
-
-  .k-sc-subtotal-amount {
-    color: #203325;
-    font-size: 18px;
-    letter-spacing: -.035em;
-  }
-
-  .k-sc-free-ship {
-    color: rgba(32,51,37,.66);
-    background: rgba(47,107,63,.07);
-    border-radius: 999px;
-    padding: 6px 9px;
-  }
-
-  .k-sc-btn-checkout {
-    border-radius: 999px;
-    background: linear-gradient(135deg, #2f6b3f, #224d31);
-    box-shadow: 0 12px 24px rgba(47,107,63,.22);
-  }
-
-  .k-sc-btn-group,
-  .k-sc-btn-cart {
-    border-radius: 999px;
-  }
-
-  /* Modal desktop: neutraliser l'effet gadget, préparer commerce modal. */
+  /* Modal desktop: neutraliser l'effet gadget, prÃ©parer commerce modal. */
   .k-modal {
     max-width: min(1040px, calc(100vw - 56px));
     border-radius: 26px;
