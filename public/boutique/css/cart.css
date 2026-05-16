@@ -1,10 +1,10 @@
-﻿/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — cart.css
+/* ---------------------------------------------------------------
+   KOMERCE � cart.css
    Panier drawer, checkout, OTP, suivi, favoris, toast, WhatsApp FAB.
-   Mobile-first, zéro !important.
-   ═══════════════════════════════════════════════════════════════ */
+   Mobile-first, z�ro !important.
+   --------------------------------------------------------------- */
 
-/* ── OVERLAY PANIER ──────────────────────────────────────────── */
+/* -- OVERLAY PANIER -------------------------------------------- */
 .k-cart-overlay {
   display: none;
   position: fixed; inset: 0; z-index: 1100;
@@ -14,12 +14,12 @@
 }
 .k-cart-overlay.open { display: block; opacity: 1; }
 
-/* Bloquer scroll derrière */
+/* Bloquer scroll derri�re */
 body.cart-open .k-modal-overlay,
 body.cart-open .k-cats,
 body.cart-open .k-hero { pointer-events: none; }
 
-/* ── DRAWER ─────────────────────────────────────────────────── */
+/* -- DRAWER --------------------------------------------------- */
 .k-cart-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%; max-width: 400px; z-index: 1150;
@@ -67,7 +67,7 @@ body.cart-open .k-hero { pointer-events: none; }
 }
 .k-cart-continue-shop:hover { background: var(--sand); border-style: solid; color: var(--text); }
 
-/* ── ITEMS ─────────────────────────────────────────────────── */
+/* -- ITEMS --------------------------------------------------- */
 .k-cart-item {
   display: flex; gap: 8px; padding: 8px 10px; margin-bottom: 4px;
   border-radius: 12px; background: var(--white);
@@ -94,7 +94,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-item-remove { background: none; color: var(--text-muted); font-size: .85rem; align-self: flex-start; padding: 2px 4px; transition: all .2s; cursor: pointer; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; }
 .k-cart-item-remove:hover { background: #fef2f2; color: var(--red); transform: scale(1.1); }
 
-/* ── FOOTER PANIER ──────────────────────────────────────────── */
+/* -- FOOTER PANIER -------------------------------------------- */
 .k-cart-footer {
   border-top: none; padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
   background: var(--white); box-shadow: 0 -4px 16px rgba(0,0,0,.06);
@@ -142,10 +142,10 @@ body.cart-open .k-hero { pointer-events: none; }
   #k-cart-whatsapp svg { width: 14px; height: 14px; }
 }
 
-/* ── MODAL COMMANDE ─────────────────────────────────────────── */
+/* -- MODAL COMMANDE ------------------------------------------- */
 .k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: center; align-items: stretch; }
-/* .k-order-overlay.open — source de vérité : voir L606 (structure flex complète + z-index) */
-/* BUG 4 FIX : overflow:clip au lieu de overflow:hidden — clippe visuellement
+/* .k-order-overlay.open � source de v�rit� : voir L606 (structure flex compl�te + z-index) */
+/* BUG 4 FIX : overflow:clip au lieu de overflow:hidden � clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
 .k-order-modal { width: 100%; height: 100vh; height: 100dvh; background: var(--white); border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
 .k-order-header { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: var(--ocean-dark); color: var(--white); flex-shrink: 0; font-weight: 700; font-size: .96rem; }
@@ -155,14 +155,14 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
 .k-of-group input:focus { border-color: var(--coral); }
 
-/* 600px intentionnel : .k-order-modal uniquement — popup centré dès 480px de large,
-   indépendant du breakpoint layout. Ne pas aligner sur 900px. */
+/* 600px intentionnel : .k-order-modal uniquement � popup centr� d�s 480px de large,
+   ind�pendant du breakpoint layout. Ne pas aligner sur 900px. */
 @media (min-width: 600px) {
   .k-order-modal { max-width: 480px; height: auto; max-height: 92vh; border-radius: var(--radius-lg); }
   .k-order-overlay { align-items: center; }
 }
 
-/* ── OTP + SUIVI ────────────────────────────────────────────── */
+/* -- OTP + SUIVI ---------------------------------------------- */
 .k-otp-hint { font-size: .82rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px; }
 .k-otp-sent-banner { background: var(--whatsapp-bg-hover); border-left: 3px solid #aaa; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: .82rem; line-height: 1.5; color: var(--text); margin-bottom: 16px; }
 .k-otp-code-input { display: block; width: 100%; max-width: 200px; margin: 0 auto 16px; padding: 14px 8px; font-size: 1.6rem; font-weight: 700; letter-spacing: .25em; text-align: center; border: 2px solid var(--overlay-black-md); border-radius: 10px; background: var(--white); outline: none; }
@@ -202,7 +202,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-track-steps--compact .k-track-step-dot { width: 22px; height: 22px; font-size: .65rem; }
 .k-track-steps--compact .k-track-step-sub { display: none; }
 
-/* ── TOAST ───────────────────────────────────────────────────── */
+/* -- TOAST ----------------------------------------------------- */
 .k-toast {
   position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
   background: var(--text); color: var(--white);
@@ -225,7 +225,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-toast-cta    { flex-shrink: 0; background: var(--coral); color: var(--white); border-radius: 20px; padding: 6px 11px; font-size: 11px; font-weight: 700; white-space: nowrap; transition: opacity .15s; }
 .k-toast-cta:active { opacity: .8; }
 
-/* ── WHATSAPP FAB ────────────────────────────────────────────── */
+/* -- WHATSAPP FAB ---------------------------------------------- */
 .k-wa-fab {
   position: fixed;
   right: 10px;
@@ -266,7 +266,7 @@ body.cart-open .k-wa-fab {
   transform: translateY(8px) scale(.96);
 }
 
-/* 900px aligné sur layout : bnav masquée à 900px, offset mobile bottom:calc(bnav-h+…) devient invalide */
+/* 900px align� sur layout : bnav masqu�e � 900px, offset mobile bottom:calc(bnav-h+�) devient invalide */
 @media (min-width: 900px) {
   .k-wa-fab {
     bottom: 18px;
@@ -284,7 +284,7 @@ body.cart-open .k-wa-fab {
   }
 }
 
-/* ── BOTTOM NAV (cart badge) ─────────────────────────────────── */
+/* -- BOTTOM NAV (cart badge) ----------------------------------- */
 .k-bnav-basket { width: 24px; height: 24px; object-fit: contain; mix-blend-mode: multiply; filter: drop-shadow(0 1px 2px var(--overlay-black-sm)); }
 .k-bnav-item[data-tab="cart"] { position: relative; overflow: visible; }
 .k-bnav-badge {
@@ -301,7 +301,7 @@ body.cart-open .k-wa-fab {
 .k-bnav-badge.show { transform: scale(1); }
 .k-bnav-item.active .k-bnav-basket { filter: drop-shadow(0 1px 2px var(--overlay-black-sm)) brightness(0.9); transform: scale(1.1); }
 
-/* ── SCROLL / ANIMATIONS GLOBALES ─────────────────────────── */
+/* -- SCROLL / ANIMATIONS GLOBALES --------------------------- */
 #k-scroll-sentinel { height: 1px; margin-top: 8px; }
 .k-load-more-spinner { text-align: center; padding: 20px; display: none; color: var(--text-muted); font-size: 13px; }
 .k-load-more-spinner.show { display: block; }
@@ -315,19 +315,17 @@ body.cart-open .k-wa-fab {
 @keyframes fadeIn       { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .k-pop { animation: k-pop .3s ease; }
 
-/* ══════════════════════════════════════════════════════════════
-   PAGER TEMU — scroll biaxial (horizontal catégories + vertical produits)
-   ══════════════════════════════════════════════════════════════ */
+/* --------------------------------------------------------------
+   PAGER TEMU � scroll biaxial (horizontal cat�gories + vertical produits)
+   -------------------------------------------------------------- */
 @media (max-width: 899px) {
 
-  /* ── Variable hauteur pager (calculée par JS dans _setupMobilePager) ── */
-  :root { --pager-h: calc(100dvh - 180px); }
 
-  /* ── PAGER SLIDE — pas de layout spécial, juste animations ─── */
-  /* Le swipe change de catégorie via animation CSS slide            */
+  /* -- PAGER SLIDE � pas de layout sp�cial, juste animations --- */
+  /* Le swipe change de cat�gorie via animation CSS slide            */
   /* Pas de position:absolute, pas d'overflow:hidden sur les parents */
 
-  /* ── Indicateur bounce bas → catégorie suivante ─────────────── */
+  /* -- Indicateur bounce bas ? cat�gorie suivante --------------- */
   @keyframes k-pager-bounce-hint {
     0%   { transform: translateY(0);   opacity: 0; }
     20%  { opacity: 1; }
@@ -353,9 +351,9 @@ body.cart-open .k-wa-fab {
     animation: k-pager-bounce-hint .8s var(--ease) forwards;
     z-index: 5;
   }
-  .k-pager-next-hint::after { content: '→'; font-size: 14px; }
+  .k-pager-next-hint::after { content: '?'; font-size: 14px; }
 
-  /* ── Animations slide horizontal (chip → section) ────────────── */
+  /* -- Animations slide horizontal (chip ? section) -------------- */
   @keyframes k-pager-in-right  {
     from { opacity: .4; transform: translateX(20px);  }
     to   { opacity: 1;  transform: translateX(0); }
@@ -367,13 +365,13 @@ body.cart-open .k-wa-fab {
   .k-pager-slide-in-right { animation: k-pager-in-right .28s var(--ease) both; }
   .k-pager-slide-in-left  { animation: k-pager-in-left  .28s var(--ease) both; }
 
-  /* ── Carousel dans le pager : désactiver scroll-snap horizontal ── */
+  /* -- Carousel dans le pager : d�sactiver scroll-snap horizontal -- */
   #k-page-scroll.k-pager-active .k-card-carousel {
     overflow-x: hidden;
     scroll-snap-type: none;
   }
 
-  /* ── Flat subcat legacy ─────────────────────────────────────── */
+  /* -- Flat subcat legacy --------------------------------------- */
   .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
     flex: 0 0 100vw; width: 100vw; min-width: 100vw; max-width: 100vw;
     overflow-y: auto; overflow-x: hidden;
@@ -384,22 +382,22 @@ body.cart-open .k-wa-fab {
   #k-page-scroll { padding-bottom: 0; }
 }
 
-/* ── PHONE INPUT COMPACT ────────────────────────────────────── */
+/* -- PHONE INPUT COMPACT -------------------------------------- */
 .k-ck-phone-wrap { max-width: 100%; height: 34px; align-items: stretch; }
 .k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
 .k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
 
-/* Drawer plein écran sous 768px — mobile étroit.
-   Migré depuis interactions.css (était isolé du reste des règles .k-cart-drawer). */
+/* Drawer plein �cran sous 768px � mobile �troit.
+   Migr� depuis interactions.css (�tait isol� du reste des r�gles .k-cart-drawer). */
 @media (max-width: 768px) {
   .k-cart-drawer { width: 100%; max-width: 100%; border-radius: 0; }
 }
 
-/* .k-cart-drawer max-width/width → layout.css @900px (source de vérité : 420px)
+/* .k-cart-drawer max-width/width ? layout.css @900px (source de v�rit� : 420px)
    Note Phase 8 : ce bloc @900px n'est PAS un doublon de layout.css.
-   layout.css définit .k-cart-drawer width/max-width (420px).
-   Ce bloc gère body padding-bottom + sizing .k-card-add/.k-card-fav.
-   Les deux coexistent légitimement — propriétés disjointes. */
+   layout.css d�finit .k-cart-drawer width/max-width (420px).
+   Ce bloc g�re body padding-bottom + sizing .k-card-add/.k-card-fav.
+   Les deux coexistent l�gitimement � propri�t�s disjointes. */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
   .k-card-add        { width: 46px; height: 46px; bottom: 10px; right: 10px; }
@@ -407,9 +405,9 @@ body.cart-open .k-wa-fab {
   .k-card-fav        { width: 32px; height: 32px; top: 10px; right: 10px; font-size: 15px; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CHECKOUT COMPACT — .ck-* (tunnel de commande)
-   ═══════════════════════════════════════════════════════════════ */
+/* ---------------------------------------------------------------
+   CHECKOUT COMPACT � .ck-* (tunnel de commande)
+   --------------------------------------------------------------- */
 
 .ck-summary { display:flex; align-items:center; gap:6px; padding:2px 0 4px; border-bottom:1px solid var(--overlay-black-sm); margin-bottom:6px; font-size:.8rem; color:var(--text-muted); }
 .ck-sum-qty   { font-size:.8rem; color:var(--text-muted); }
@@ -527,7 +525,7 @@ body.cart-open .k-wa-fab {
 .ck-track-details summary { list-style:none; cursor:pointer; padding:9px 11px; font-size:.8rem; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
 .ck-track-details summary::-webkit-details-marker { display:none; }
 .ck-track-details summary::after { content:"+"; font-size:.94rem; color:var(--text-muted); }
-.ck-track-details[open] summary::after { content:"−"; }
+.ck-track-details[open] summary::after { content:"-"; }
 .ck-track-details-body { padding:0 11px 10px; }
 .ck-track-extra { margin-top:6px; padding:10px; background:var(--sand); border-radius:8px; }
 .ck-track-hint  { font-size:.71rem; color:var(--text-muted); margin-top:3px; }
@@ -611,16 +609,16 @@ body.cart-open .k-wa-fab {
 .k-order-overlay.open .k-order-modal { display:flex; flex-direction:column; height:100vh; height:100dvh; max-height:100dvh; overflow:visible; }
 .k-order-overlay.open .k-order-body  { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
 /* BUG 4 FIX : le bouton est un enfant flex du modal (hors zone de scroll).
-   overflow:hidden sur le modal le clippait quand le contenu était trop tall.
+   overflow:hidden sur le modal le clippait quand le contenu �tait trop tall.
    On passe le modal en overflow:visible et on coupe uniquement via clip-path
-   pour préserver l'animation slide-up sans clip du bouton sticky. */
+   pour pr�server l'animation slide-up sans clip du bouton sticky. */
 .k-order-overlay.open .ck-confirm-btn { flex:0 0 auto; position:relative; bottom:auto; width:100%; margin:0; z-index:1300; padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
 
 /* Ring pulse bouton panier */
 @keyframes k-ring-pulse { 0% { box-shadow:0 0 0 0 rgba(255,90,70,.5); } 65% { box-shadow:0 0 0 12px rgba(255,90,70,0); } 100% { box-shadow:0 0 0 0 rgba(255,90,70,0); } }
-/* FIX Bug 1: l'animation CSS crée un compositing layer isolé qui casse mix-blend-mode sur .k-cart-avatar.
+/* FIX Bug 1: l'animation CSS cr�e un compositing layer isol� qui casse mix-blend-mode sur .k-cart-avatar.
    On applique l'animation sur un pseudo-element ::after au lieu du parent,
-   et on force mix-blend-mode:multiply sur l'avatar même pendant l'animation. */
+   et on force mix-blend-mode:multiply sur l'avatar m�me pendant l'animation. */
 .k-cart-btn.ring-pulse { border-radius:50%; }
 .k-cart-btn.ring-pulse::after {
   content:''; position:absolute; inset:0; border-radius:50%; pointer-events:none;
@@ -628,27 +626,27 @@ body.cart-open .k-wa-fab {
 }
 .k-cart-btn.ring-pulse .k-cart-avatar,
 .k-cart-btn.avatar-wave .k-cart-avatar {
-  mix-blend-mode: multiply; /* re-forcer pendant les animations pour éviter le fond blanc */
+  mix-blend-mode: multiply; /* re-forcer pendant les animations pour �viter le fond blanc */
 }
 
 /* Bouton ajouter "confirmed" */
 .k-add-cart-btn.confirmed { background:var(--ocean); color:var(--white); font-size:13px; font-weight:700; justify-content:center; }
 
-/* INTENTIONNEL @600px — complément du bloc L160 (.k-order-modal centré).
-   Fix Bug 4 : rétablit overflow:hidden pour le border-radius sur tablette/desktop,
+/* INTENTIONNEL @600px � compl�ment du bloc L160 (.k-order-modal centr�).
+   Fix Bug 4 : r�tablit overflow:hidden pour le border-radius sur tablette/desktop,
    compatible avec .ck-confirm-btn toujours visible (dernier enfant flex, hors scroll). */
 @media (min-width:600px) {
   .k-order-overlay.open .k-order-modal { height:auto; max-height:92vh; overflow:hidden; }
-  /* Sur desktop le modal a une hauteur fixe (92vh) : on rétablit overflow:hidden pour
-     le border-radius, mais le bouton confirmer est le dernier enfant flex →
-     il reste toujours dans le flux et visible, pas clippé par le scroll. */
+  /* Sur desktop le modal a une hauteur fixe (92vh) : on r�tablit overflow:hidden pour
+     le border-radius, mais le bouton confirmer est le dernier enfant flex ?
+     il reste toujours dans le flux et visible, pas clipp� par le scroll. */
   .k-order-overlay.open .ck-confirm-btn { border-radius:0 0 var(--radius-lg) var(--radius-lg); }
 }
 
 
-/* ═══════════════════════════════════════════════════════════════
-   ÉCRAN SUCCÈS COMMANDE — déplacé depuis interactions.css
-   ═══════════════════════════════════════════════════════════════ */
+/* ---------------------------------------------------------------
+   �CRAN SUCC�S COMMANDE � d�plac� depuis interactions.css
+   --------------------------------------------------------------- */
 
 .k-success-screen {
   display: none;
@@ -683,7 +681,7 @@ body.cart-open .k-wa-fab {
 .k-success-cta-ghost { padding: 12px; border-radius: 50px; background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; border: 1.5px solid var(--border); cursor: pointer; width: 100%; transition: all .2s var(--ease); }
 .k-success-cta-ghost:hover { background: var(--sand); color: var(--text); }
 
-/* Tracking form — déplacé depuis interactions.css */
+/* Tracking form � d�plac� depuis interactions.css */
 .k-track-input        { width:100%; padding:12px 14px; border:1.5px solid var(--sand-dark); border-radius:8px; outline:none; font-size:15px; font-weight:700; letter-spacing:4px; background:var(--white); transition:border-color .2s; }
 .k-track-input:focus  { border-color:var(--coral); box-shadow: 0 0 0 3px rgba(200,92,45,.1); }
 .k-track-input--phone { letter-spacing:normal; font-weight:400; font-size:14px; }
@@ -693,7 +691,7 @@ body.cart-open .k-wa-fab {
 .k-track-btn--ghost   { background:transparent; border:1.5px solid var(--border); color:var(--text-muted); border-radius:50px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:all .2s var(--ease); }
 .k-track-btn--ghost:hover { background:var(--sand); color:var(--text); border-color:var(--text-muted); }
 
-/* Confirm legacy — déplacé depuis interactions.css */
+/* Confirm legacy � d�plac� depuis interactions.css */
 .k-confirm-wrap        { text-align:center; padding:14px 0; }
 .k-confirm-sub         { color:var(--text-form-light); font-size:.85rem; margin-bottom:2px; }
 .k-confirm-close       { margin-top:6px; width:100%; padding:10px; border-radius:8px; font-weight:600; font-size:.85rem; background:#eef2e4; color:var(--text); border:1px solid rgba(0,0,0,.08); cursor:pointer; transition: background .15s; }
@@ -706,7 +704,7 @@ body.cart-open .k-wa-fab {
 .k-confirm-cash-lbl    { margin-top:10px; font-weight:700; font-size:.88rem; }
 .k-confirm-cash-ref    { display:inline-block; background:var(--cream-amber-bg); color:#92400e; font-weight:800; font-size:1.15rem; padding:8px 22px; border-radius:10px; margin:6px 0; letter-spacing:2px; border:2px solid #fde68a; font-family:monospace; }
 
-/* ── Checkout ultra compact ──────────────────────────────────── */
+/* -- Checkout ultra compact ------------------------------------ */
 .ck-relay-note    { font-size:.72rem; color:var(--text-muted); margin:0 0 5px; line-height:1.3; }
 .ck-step-card     { padding:2px 0; }
 .ck-step-title    { font-size:.9rem; font-weight:700; color:var(--text); }
@@ -722,14 +720,14 @@ body.cart-open .k-wa-fab {
 .ck-step-panel    { display:none; }
 .ck-step-panel.active { display:block; }
 
-/* Indicateur de suivi optionnel — discret */
+/* Indicateur de suivi optionnel � discret */
 .ck-track-details summary { font-size:.78rem; font-weight:600; color:var(--text-muted); padding:6px 0; }
 .ck-track-hint    { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
 
-/* ══════════════════════════════════════════════════════════════
-   FLAT SUBCAT — layout natif scroll-snap (b-subcat.js)
-   Séparé du pager catégories (b-pager.js / slide animation)
-   ══════════════════════════════════════════════════════════════ */
+/* --------------------------------------------------------------
+   FLAT SUBCAT � layout natif scroll-snap (b-subcat.js)
+   S�par� du pager cat�gories (b-pager.js / slide animation)
+   -------------------------------------------------------------- */
 @media (max-width: 899px) {
   #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat {
     display: flex;
@@ -740,7 +738,7 @@ body.cart-open .k-wa-fab {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    /* Annuler tout translateX résiduel du pager catégories */
+    /* Annuler tout translateX r�siduel du pager cat�gories */
     transform: none;
     transition: none;
     gap: 0;
@@ -761,16 +759,16 @@ body.cart-open .k-wa-fab {
     box-sizing: border-box;
     padding-bottom: calc(var(--bnav-h) + 64px);
   }
-  /* Pendant le drag flat, désactiver le scroll-snap pour fluidité */
+  /* Pendant le drag flat, d�sactiver le scroll-snap pour fluidit� */
   #k-grid.k-grid-flat-subcat.is-flat-dragging {
     scroll-snap-type: none;
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SHARE MODAL — bottom sheet partage panier
-   (anciennement injecté dynamiquement via _injectShareModalCSS)
-   ══════════════════════════════════════════════════════════════ */
+/* --------------------------------------------------------------
+   SHARE MODAL � bottom sheet partage panier
+   (anciennement inject� dynamiquement via _injectShareModalCSS)
+   -------------------------------------------------------------- */
 
 .k-share-overlay {
   position: fixed;
@@ -880,10 +878,10 @@ body.cart-open .k-wa-fab {
   margin-top: 16px;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* --------------------------------------------------------------
    BOUTON PAYER EN GROUPE
-   (anciennement injecté dynamiquement via k-cart-event-css)
-   ══════════════════════════════════════════════════════════════ */
+   (anciennement inject� dynamiquement via k-cart-event-css)
+   -------------------------------------------------------------- */
 
 .k-cart-event-btn {
   width: 100%;
@@ -901,10 +899,10 @@ body.cart-open .k-wa-fab {
 }
 
 /* =========================================================
-   PATCH — Desktop side cart attention + expanded state
+   PATCH � Desktop side cart attention + expanded state
    Clic petite dame desktop :
-   - met le side cart en évidence
-   - déplie la preview si elle était collapsée
+   - met le side cart en �vidence
+   - d�plie la preview si elle �tait collaps�e
    ========================================================= */
 
 @media (min-width: 900px) {
