@@ -1009,7 +1009,7 @@
 
   .k-chip.active {
     transform: translateY(-1px);
-    background: linear-gradient(180deg, var(--white)8e7, var(--white)df7);
+    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
     color: var(--coral-dark);
     border-color: rgba(198,168,93,.62);
     border-bottom-color: rgba(198,168,93,.62);
@@ -1136,7 +1136,7 @@
 
   /* Actif : même ton doré que les chips catégories actives */
   #k-subcats-wrap .k-subchip.active {
-    background: linear-gradient(180deg, var(--white)8e7, var(--white)df7);
+    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
     color: var(--coral-dark);
     border-color: rgba(198,168,93,.5);
     box-shadow: 0 4px 12px rgba(198,168,93,.12);

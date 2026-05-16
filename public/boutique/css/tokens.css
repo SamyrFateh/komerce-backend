@@ -119,6 +119,16 @@
   --amber-border:     #f4c77a;
   --amber-border-md:  #e8c78a;
 
+  /* ── Crèmes (restaurés depuis Lot 1 — migration var(--white)nnn cassée) ──
+     Ces hex étaient encodés en dur avant qu'une migration find-replace
+     ne les transforme en `var(--white)8e7` etc., invalide côté navigateur.
+     Tokens sémantiques par usage, pas par teinte. */
+  --cream-warm:       #fff8e7;  /* gradient haut — état actif rail desktop */
+  --cream-pearl:      #fffdf7;  /* gradient bas — état actif rail desktop */
+  --cream-amber-bg:   #fffbeb;  /* fond bannière cash, badge référence */
+  --cream-peach:      #fff4ed;  /* fond pay helper coral */
+  --cream-blush:      #fff8f8;  /* fond hover partage WhatsApp */
+
   --green-dark-text:  #1d5b2a;
   --green-text:       #1a7a3e;
   --green-bg:         #e8f7ee;
