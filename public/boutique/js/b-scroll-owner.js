@@ -73,6 +73,34 @@ export function ensureDesktopScrollOwner() {
   });
 }
 
+/**
+ * getScrollY() — valeur unifiée du scroll vertical
+ * Mobile : lit #k-page-scroll.scrollTop (container fixe)
+ * Desktop : lit window.scrollY natif
+ * À utiliser à la place de window.scrollY dans tous les modules.
+ */
+export function getScrollY() {
+  if (isDesktop()) return window.scrollY;
+  var ps = document.getElementById('k-page-scroll');
+  return ps ? ps.scrollTop : 0;
+}
+
+/**
+ * scrollToPosition(top, behavior?) — scroll vers une position absolue
+ * Mobile : scrolle #k-page-scroll
+ * Desktop : scrolle window
+ * Remplace window.scrollTo(0, y) et window.scrollTo({ top:y }) dans les modules.
+ */
+export function scrollToPosition(top, behavior = 'auto') {
+  if (isDesktop()) {
+    window.scrollTo({ top, behavior });
+    return;
+  }
+  var ps = document.getElementById('k-page-scroll');
+  if (ps) ps.scrollTo({ top, behavior });
+  else window.scrollTo({ top, behavior });
+}
+
 export function scrollPageToTop(behavior = 'smooth') {
   if (isDesktop()) {
     window.scrollTo({ top: 0, behavior });

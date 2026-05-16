@@ -11,7 +11,7 @@
 import { state }                             from './b-store.js';
 import { bus }                               from './b-bus.js';
 import { setActiveCat }                              from './b-catalog.js';
-import { isDesktop }                                 from './b-scroll-owner.js';
+import { isDesktop, scrollPageToTop }                from './b-scroll-owner.js';
 import { syncRailActiveState, renderSubcatRail } from './controllers/home-controller.js';
 import {
   getRailCategories,
@@ -71,7 +71,7 @@ function _buildSidebar(el) {
 
       renderSubcatRail(cat);
       _syncSidebarActive(el);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollPageToTop('smooth');
     };
     item.addEventListener('click', activate);
     item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });

@@ -1,0 +1,68 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "color-no-invalid-hex": true,
+    "color-named": "never",
+
+    "declaration-property-value-disallowed-list": {
+      "/.*/": [
+        "/^#[0-9a-fA-F]{3,8}$/",
+        "/^rgb\\(/",
+        "/^rgba\\(/",
+        "/^hsl\\(/",
+        "/^hsla\\(/"
+      ]
+    },
+
+    "declaration-no-important": [true, { "severity": "warning" }],
+
+    "at-rule-empty-line-before": null,
+    "rule-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "declaration-block-single-line-max-declarations": null,
+    "property-no-vendor-prefix": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "shorthand-property-no-redundant-values": null,
+
+    "selector-class-pattern": null,
+    "custom-property-pattern": null,
+    "value-keyword-case": null,
+    "font-family-name-quotes": null,
+    "no-descending-specificity": null,
+    "alpha-value-notation": null,
+    "color-function-notation": null,
+    "color-hex-length": null,
+    "import-notation": null,
+    "media-feature-range-notation": null,
+    "keyframes-name-pattern": null,
+    "no-duplicate-selectors": null
+  },
+
+  "overrides": [
+    {
+      "files": ["css/tokens.css"],
+      "rules": {
+        "declaration-property-value-disallowed-list": null,
+        "color-named": null
+      }
+    },
+    {
+      "files": ["css/dist/base.css"],
+      "rules": {
+        "declaration-property-value-disallowed-list": null,
+        "color-named": null
+      }
+    }
+  ],
+
+  "ignoreFiles": [
+    "css/boutique-wow.css",
+    "css/cart-groups.css",
+    "css/cart-product-open.css",
+    "css/desktop-horizontal-nav.css",
+    "css/group-cart-flow.css",
+    "css/mini-cart.css",
+    "css/shared-followup.css",
+    "node_modules/**"
+  ]
+}

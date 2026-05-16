@@ -1,0 +1,20 @@
+{
+  "name": "boutique",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
+    "lint:css:fix": "stylelint \"css/*.css\" --fix",
+    "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
+    "bundle:css": "node scripts/bundle-css.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "stylelint": "^17.11.1",
+    "stylelint-config-standard": "^40.0.0"
+  }
+}

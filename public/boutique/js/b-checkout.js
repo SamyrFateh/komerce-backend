@@ -69,7 +69,7 @@ export function checkoutCart() {
     state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
     dom.orderModal.classList.add('open');
-    scroll.savedY = window.scrollY;
+    scroll.savedY = getScrollY();
     document.body.classList.add('cart-open');
     // FIX : masquer bnav pour voir bouton Payer
     const bnav = document.getElementById('k-bnav');
@@ -90,7 +90,7 @@ export function closeOrderModal() {
       bnav.classList.remove('u-hidden');
     }
     if (scroll.savedY) {
-      window.scrollTo(0, scroll.savedY);
+      scrollToPosition(scroll.savedY);
       scroll.savedY = 0;
     }
   }
@@ -884,7 +884,7 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
         });
       }
       const closeBtn = document.getElementById('k-order-close-btn');
-      if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); scrollPageToTop('smooth'); });
       const trackBtn = document.getElementById('k-order-track-btn');
       if (trackBtn) {
         trackBtn.addEventListener('click', () => {

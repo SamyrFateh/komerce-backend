@@ -37,7 +37,7 @@ function setupScrollToTop() {
   document.body.appendChild(btn);
 
   btn.addEventListener('click', function() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop('smooth');
   });
 
   // Show/hide on scroll
@@ -46,7 +46,7 @@ function setupScrollToTop() {
     if (_ticking) return;
     _ticking = true;
     requestAnimationFrame(function() {
-      btn.classList.toggle('is-visible', window.scrollY > 600);
+      btn.classList.toggle('is-visible', getScrollY() > 600);
       _ticking = false;
     });
   }, { passive: true });

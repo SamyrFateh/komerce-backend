@@ -19,7 +19,7 @@ import {
 import {
   showToast, updateCartBadge, saveCart, cartQty, cartTotal, saveFavs,
 }                         from './b-cart-core.js';
-import { isDesktop }     from './b-scroll-owner.js';
+import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 
 'use strict';
@@ -398,7 +398,7 @@ function quickRemove(productId, btnEl) {
     if (!isDesktop()) {
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
-      scroll.savedY = window.scrollY;
+      scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     } else {
       // Desktop : la petite dame doit produire une action visible.
@@ -430,7 +430,7 @@ function quickRemove(productId, btnEl) {
       // pour que le clic ait toujours une réponse visible.
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
-      scroll.savedY = window.scrollY;
+      scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     }
   }
@@ -444,7 +444,7 @@ function quickRemove(productId, btnEl) {
     document.body.classList.remove('cart-open');
     document.body.classList.remove('cart-empty');
     if (scroll.savedY) {
-      window.scrollTo(0, scroll.savedY);
+      scrollToPosition(scroll.savedY);
       scroll.savedY = 0;
     }
   }
@@ -467,7 +467,7 @@ function quickRemove(productId, btnEl) {
     if (!isDesktop()) {
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
-      scroll.savedY = window.scrollY;
+      scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     }
 
@@ -1550,7 +1550,7 @@ function renderSideCart() {
       dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
-      scroll.savedY = window.scrollY;
+      scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     });
   }

@@ -207,7 +207,7 @@ function setupPromoStrip() {
   // Click on Soldes chip → navigate to Soldes category
   strip.querySelector('[data-action="soldes"]').addEventListener('click', function() {
     setActiveCat('Soldes');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollPageToTop('smooth');
   });
 }
 
@@ -279,8 +279,8 @@ function setupHomepageMerchandising() {
 
       setActiveCat(cat);
 
-      var top = anchor.getBoundingClientRect().top + window.scrollY - 84;
-      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      var top = anchor.getBoundingClientRect().top + getScrollY() - 84;
+      scrollToPosition(Math.max(0, top), 'smooth');
     });
   });
 }
@@ -462,7 +462,7 @@ function _setupViewChangedGuard() {
     var scrollTop = document.querySelector('.k-scroll-top');
     if (merch)     merch.style.display        = isShop ? '' : 'none';
     if (strip)     strip.style.display        = isShop ? '' : 'none';
-    if (scrollTop) scrollTop.classList.toggle('is-visible', isShop && window.scrollY > 600);
+    if (scrollTop) scrollTop.classList.toggle('is-visible', isShop && getScrollY() > 600);
   });
 }
 

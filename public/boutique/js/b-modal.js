@@ -23,7 +23,7 @@ import {
 import {
   normalizeCategoryKey, getCategorySectionEmoji,
 }                         from './shop-schema.js';
-import { isDesktop }      from './b-scroll-owner.js';
+import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setActiveCat }   from './b-catalog.js';
 
 'use strict';
@@ -323,7 +323,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
 
     // Mémoriser la position de scroll du catalogue pour y revenir à la fermeture
     if (!dom.modalOverlay.classList.contains('open')) {
-      state._savedCatalogScrollY = window.scrollY;
+      state._savedCatalogScrollY = getScrollY();
       // FIX: Push history state so browser back button closes modal
       if (!_modalHistoryPushed) {
         history.pushState({ kModal: true }, '');
@@ -455,7 +455,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // LOT 12: notify desktop-upgrade module
     bus.emit('modal:opened', product);
     // Lock body scroll — CSS handles layout via body.modal-open
-    state._savedCatalogScrollY = window.scrollY;
+    state._savedCatalogScrollY = getScrollY();
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
     document.body.classList.add('modal-open');
     // Signaler au CSS si le side-cart est visible (pour ajuster la largeur de la modal)
@@ -755,7 +755,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // (un setTimeout(_, 350) peut être armé juste avant l'ouverture).
     bus.emit('modal:closed');
 
-    window.scrollTo(0, scrollY);
+    scrollToPosition(scrollY);
     state.modalProduct = null;
     state.modalHistory = [];
   }
