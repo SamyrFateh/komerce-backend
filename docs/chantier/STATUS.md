@@ -73,50 +73,19 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
-- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **À corriger par un lot dédié** (proposé : `G1-fix` — remplacer l'UPDATE par appel à `confirmPaymentCycle()` de `services/order-payment-confirmation.js`).
+- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction différée — voir stratégie `I-SWEEP` ci-dessous.** Aucune modification de ce code à la volée pendant le chantier d'audits.
 
 ---
 
 ## Prochain lot recommandé
 
-### G1-fix — Corriger la violation I-01 dans `routes/pickup-secret.js`
-
-```text
-Branche   : fix/backend-G1fix-pickup-secret-i01
-Charge    : 1-2 h
-Risque    : 🔴 critique métier (paiement cash) — tests obligatoires
-Prérequis : aucun, doit passer avant tout autre lot D / G
-```
-
-**Contexte** :
-Audit D4 du 17/05 a détecté que `routes/pickup-secret.js` ligne 286 fait :
-```sql
-UPDATE orders SET payment_status = 'paid', status = 'confirmed', confirmed_at = $3, ...
-```
-en direct, sans passer par `transitionOrderStatus()`. C'est une violation active de l'invariant I-01 (et probablement I-04).
-
-**Actions** :
-
-1. Lire `services/order-payment-confirmation.js` et son contrat (`CONTRACTS.md` §4).
-2. Refactorer le bloc lignes ~275-292 de `routes/pickup-secret.js` : remplacer l'`UPDATE` global par un `UPDATE` qui met à jour uniquement les champs spécifiques au cash (`pickup_secret_hash`, `pickup_secret_salt`, `payment_received_at`, `payer_*`, `tracking_phone_*`), **puis** appeler `confirmPaymentCycle({ orderId, source: 'cash_confirm', actor, dbClient })` qui s'occupe de `payment_status = paid`, `status = confirmed`, `confirmed_at`, `order_status_history` et déclenche les effets (pickup_code, notifications, stock).
-3. Maintenir le passage en une seule transaction DB (passer `dbClient` à `confirmPaymentCycle`).
-4. Ajouter un test d'intégration : `tests/integration/pickup-secret-cash-confirm.test.js` vérifiant qu'après `/pay-cash`, il y a bien une ligne dans `order_status_history`.
-5. Mettre à jour `STATUS.md`, `BACKEND_GOLIVE_ROADMAP.md` (cocher G1-fix) et retirer le piège critique I-01.
-
-**À ne pas casser** :
-- Le hash et le salt du pickup_secret doivent être posés avant le passage `confirmed` (sinon le client n'a pas son code).
-- Le log d'audit `cash_collections` doit toujours être posé.
-- Le hook fidélité `loyaltyService.handleOrderConfirmed` doit toujours être déclenché.
-
----
-
-### D7 — CORS production (après G1-fix)
+### D7 — CORS production
 
 ```text
 Branche   : audit/backend-D7-cors-production
 Charge    : 1 jour
 Risque    : faible si audit/documentation, moyen si modification CORS
-Prérequis : G1-fix mergé
+Prérequis : aucun bloquant
 ```
 
 Actions :
@@ -127,19 +96,21 @@ Actions :
 4. Corriger uniquement les oublis évidents sans bloquer les pages existantes.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
+> **Stratégie corrections d'invariants** : la violation I-01 détectée par l'audit D4 (cf. § Pièges critiques) **n'est pas corrigée à la volée**. Elle est mise en attente avec toute autre violation d'invariant qui sera révélée par les audits D2, G1-G5. Toutes seront traitées en un lot groupé `I-SWEEP` après fin du chantier d'audits, pour cohérence (une seule refacto + une seule batterie de tests). Voir file d'attente.
+
 ---
 
 ## File d'attente après D7
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| **G1-fix** | 🔴 **Critique** | **Corriger la violation I-01 dans `routes/pickup-secret.js:286`** : remplacer l'`UPDATE orders SET status = 'confirmed'` direct par un appel à `confirmPaymentCycle()` de `services/order-payment-confirmation.js`. Restaure l'entrée `order_status_history`, garantit `pickup_code`, déclenche notifications et décrément stock. **À traiter avant tout nouveau lot D / G.** |
+| **I-SWEEP** | 🔴 **Critique (différé)** | **Correction groupée des violations d'invariants détectées par les audits.** Inclut au minimum la violation I-01 dans `routes/pickup-secret.js:286` (détectée par D4). À déclencher **après la fin du chantier d'audits** (D2, D7, D8 + G1 à G5). Une seule refacto cohérente, une seule batterie de tests, une seule revue. Les autres violations potentielles seront ajoutées à ce lot au fil de leur détection par ChatGPT. |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
-| TEST-1 | Stratégique | Tests d'intégration sur invariants I-01 à I-10 (filet minimal) |
+| TEST-1 | Stratégique | Tests d'intégration sur invariants I-01 à I-10 (filet minimal) — naturellement complémentaire de I-SWEEP |
 
 Pour la liste complète et les détails de chaque lot, utiliser `docs/BACKEND_GOLIVE_ROADMAP.md`.
 
