@@ -988,38 +988,65 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ H3 — Créer `audit-backend-arch.js` (garde-fou exécutable)
+### 🚧 H3 — Finaliser `audit-backend-arch.js` (garde-fou exécutable)
 
-**Charge** : 1-2 j  
+**Charge** : 30 min *(script déjà écrit — juste déplacer et brancher)*  
 **Risque** : nul
 
-**Actions** : suivre `audit-boutique-arch.js`. Implémenter les 10 invariants structurels :
-- I-BACK-1 : Aucun fichier doublon
-- I-BACK-2 : Aucun fichier .js > 1500 lignes
-- I-BACK-3 : Aucun UPDATE orders SET status hors order-status-machine.js
-- I-BACK-4 : Aucun UPDATE orders SET payment_status hors payment-service.js
-- I-BACK-5 : Aucune route /admin/* sans middleware auth
-- I-BACK-6 : Aucun routes/X-engine.js
-- I-BACK-7 : Aucun console.log dans routes/ ou services/
-- I-BACK-8 : Aucune query SQL non-paramétrée
-- I-BACK-9 : Aucun fichier test à la racine
-- I-BACK-10 : Aucune collision dans migrations/
+**État actuel** : le script existe à `docs/chantier/garde-fous/audit-backend-arch.js` (464 lignes, créé le 2026-05-17). Les 10 invariants sont implémentés avec allowlists pour les violations connues :
+
+| Invariant | Implémenté | Allowlist |
+|-----------|-----------|-----------|
+| I-BACK-1 — Aucun fichier doublon actif | ✅ | — |
+| I-BACK-2 — Aucun nouveau fichier > 800 l (warn) / > 1500 l (erreur) | ✅ | Lots B prévus |
+| I-BACK-3 — `UPDATE orders SET status` hors order-status-machine.js | ✅ | — |
+| I-BACK-4 — `UPDATE orders SET payment_status` hors owners légitimes | ✅ | — |
+| I-BACK-5 — Toute route /admin/* avec authenticate + requireRole/requireAdmin | ✅ | — |
+| I-BACK-6 — Aucun routes/X-engine.js non autorisé | ✅ | Lots B prévus |
+| I-BACK-7 — Aucun console.log dans de NOUVEAUX fichiers | ✅ | Snapshot 365 existants |
+| I-BACK-8 — Aucune query SQL avec interpolation `${variable}` | ✅ | Savepoints/DDL légitimes |
+| I-BACK-9 — Aucun fichier test à la racine | ✅ | — |
+| I-BACK-10 — Aucune collision de numéro dans migrations/ | ✅ | — |
+
+**Ce qui reste à faire** :
+
+1. Déplacer le script à sa place définitive :
+   ```bash
+   mkdir -p scripts
+   git mv docs/chantier/garde-fous/audit-backend-arch.js scripts/audit-backend-arch.js
+   ```
+2. Vérifier qu'il tourne depuis la racine :
+   ```bash
+   node scripts/audit-backend-arch.js
+   ```
+3. Cocher H3 ci-dessus
 
 **PR** : `chore/backend-H3-audit-arch-script`
 
 ---
 
-### ☐ H4 — Créer `gen-backend-arch-live.js` (LIVE généré)
+### ☐ H4 — Créer `gen-backend-arch-live.js` (photo réelle auto-générée)
 
 **Charge** : 1 j  
-**Risque** : nul
+**Risque** : nul  
+**Prérequis** : H3 ✅
 
-**Actions** : suivre `gen-boutique-arch-live.js`. Produire un MD avec la photo réelle :
-- Inventaire fichiers + tailles
-- Routes par fichier
-- Services par responsabilité
-- Couverture tests
-- Score architecture
+**Contexte** : même pattern que `gen-boutique-arch-live.js`. Produit un fichier `docs/BACKEND_ARCHITECTURE_LIVE.md` régénérable à tout moment qui remplace CARTOGRAPHY_360 pour les comptages (CARTOGRAPHY_360 reste le doc normatif de règles).
+
+**Actions** :
+1. Créer `scripts/gen-backend-arch-live.js` qui produit `docs/BACKEND_ARCHITECTURE_LIVE.md` avec :
+   - Inventaire routes/ : fichier, taille, nombre de routes détectées
+   - Inventaire services/ : fichier, taille, responsabilité déclarée
+   - REQUIRED_ENV détecté dans server.js
+   - Snapshot console.log par fichier (alimente l'allowlist de H3)
+   - Collisions migrations détectées
+   - Score architecture (violations connues vs résolues)
+   - Date de génération
+2. Vérifier que `node scripts/gen-backend-arch-live.js` tourne sans erreur
+3. Ajouter `docs/BACKEND_ARCHITECTURE_LIVE.md` au `.gitignore` ou le commiter selon préférence
+4. Cocher H4 ci-dessus
+
+**PR** : `chore/backend-H4-gen-arch-live`
 
 ---
 
@@ -1027,17 +1054,21 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 **Charge** : 1/2 j  
 **Risque** : nul  
-**Prérequis** : H3, H4
+**Prérequis** : H3 ✅, H4 ✅
 
 **Actions** :
 1. Ajouter à `package.json` :
-   ```
+   ```json
    "backend:audit": "node scripts/audit-backend-arch.js",
    "backend:arch":  "node scripts/gen-backend-arch-live.js",
-   "prebuild": "npm run backend:audit && npm run backend:arch && npm run build"
+   "pretest": "npm run backend:audit"
    ```
-2. Tester en CI
-3. Documenter dans le README
+2. Vérifier que `npm test` déclenche l'audit en premier
+3. Tester en CI (Railway / GitHub Actions selon config)
+4. Documenter dans le README principal : `npm run backend:audit` et `npm run backend:arch`
+5. Cocher H5 ci-dessus
+
+**PR** : `chore/backend-H5-ci-audit-gen`
 
 ---
 

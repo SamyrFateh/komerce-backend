@@ -262,9 +262,9 @@ Ces points ont été établis par lecture directe du code source. Pas encore dan
 |-----|------------|-----------|--------|--------|
 | H1 | Réconcilier `.cursorrules` et `AGENTS.md` → pointer vers AGENT_CONFIG.md | aucun | ½ j | ☐ |
 | H2 | Vérifier que CARTOGRAPHY_360 + ZONE_IMPACT sont à jour post-corrections | DOC-0 ✅ | ½ j | ☐ |
-| H3 | Créer `audit-backend-arch.js` (garde-fou exécutable — 10 invariants) | aucun | 1 j | ☐ |
-| H4 | Créer `gen-backend-arch-live.js` (photo réelle auto-générée) | aucun | 1 j | ☐ |
-| H5 | Brancher audit + gen en CI | H3 ✅, H4 ✅ | ½ j | ☐ |
+| **H3** | Déplacer `audit-backend-arch.js` → `scripts/` + vérifier exécution *(script déjà écrit, 464 lignes, 10 invariants)* | aucun | 30 min | ☐ |
+| H4 | Créer `gen-backend-arch-live.js` → `docs/BACKEND_ARCHITECTURE_LIVE.md` | H3 ✅ | 1 j | ☐ |
+| H5 | Brancher audit + gen en CI (`pretest`) | H3 ✅, H4 ✅ | ½ j | ☐ |
 
 ### Phase 5 — Architecture modulaire
 | Lot | Description | Prérequis | Charge | Statut |
