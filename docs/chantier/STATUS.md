@@ -48,6 +48,7 @@ Lire dans cet ordre avant toute modification :
 | D1 | ✅ Fait | Audit couverture auth admin documenté ; aucun oubli évident trouvé sur routes inspectées |
 | D3 | ✅ Fait | Audit `auth-guest.js` documenté ; risques suivis sans changement métier |
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
+| D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -65,31 +66,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### D5 — Audit `.env.example` vs prod
+### D6 — Rate limiting exhaustif
 
 ```text
-Branche   : audit/backend-D5-env-example
+Branche   : audit/backend-D6-rate-limiting
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si modification validation env
+Risque    : faible si audit/documentation, moyen si modification des quotas
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire `.env.example`, `server.js`, `package.json` et les usages `process.env.*` critiques.
-2. Vérifier les variables obligatoires, recommandées et optionnelles.
-3. Documenter les écarts et risques restants.
-4. Corriger uniquement les oublis évidents de documentation, sans casser le boot Railway.
+1. Lire `middleware/rate-limit.js` et les montages dans `server.js`.
+2. Vérifier les endpoints publics, auth, commandes, scans, admin, webhooks.
+3. Documenter les garanties et trous éventuels.
+4. Corriger uniquement les oublis évidents, sans durcir brutalement les quotas.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D5
+## File d'attente après D6
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D6 | Moyenne | Rate limiting exhaustif |
 | D7 | Moyenne | CORS production |
 | D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
