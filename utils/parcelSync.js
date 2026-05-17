@@ -221,7 +221,7 @@ async function safeSyncScanToParcels(opts, dbClient = null) {
   } catch (err) {
     console.error(`[PARCEL-SYNC] ❌ Erreur (order=${opts.order_id}, step=${opts.step}):`, err.message);
     // [P3-4] Le trigger legacy est désactivé — on log mais on ne crashe pas.
-    // TODO Phase 4 : alerting/monitoring pour ces erreurs
+    // TODO #387 : Ajouter alerting/monitoring pour ces erreurs de synchronisation colis.
     return { synced: false, parcelsUpdated: 0, orderStatus: null };
   }
 }
