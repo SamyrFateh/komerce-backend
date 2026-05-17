@@ -1,8 +1,9 @@
 # Zone d'impact Komerce
 
 > **Statut** : invariants critiques du projet  
-> **Dernière consolidation** : 15 mai 2026  
-> **Sources vérifiées** : `server.js`, `services/order-status-machine.js`, `services/pricing-engine.js`, `services/wallet-service.js`, `routes/payments.js`, `routes/scans.js`.  
+> **Dernière consolidation** : 17 mai 2026  
+> **Sources vérifiées** : `server.js`, `services/order-status-machine.js`, `services/order-payment-confirmation.js`, `services/pricing-engine.js`, `services/wallet-service.js`, `routes/payments.js`, `routes/scans.js`, `routes/pickup-secret.js`.  
+> **Mis à jour le 17 mai 2026** : I-02 étendu au paiement collectif, `order-payment-confirmation.js` ajouté, `collective_payment` ajouté, pickup rate-limit in-memory documenté.
 > **But** : éviter les modifications qui cassent la cohérence métier, financière ou logistique.
 
 ---
@@ -26,7 +27,7 @@ Avant toute modification, identifier :
 | ID | Invariant | Source de vérité |
 |---|---|---|
 | **I-01** | Ne pas modifier `orders.status` hors machine de statut. | `services/order-status-machine.js` |
-| **I-02** | Les paiements Stripe/cash/wallet/shared cart confirment uniquement `pending → confirmed`. | `transitionOrderStatus()` |
+| **I-02** | Les paiements Stripe/cash/wallet/shared cart/**collectif** confirment uniquement `pending → confirmed`. | `transitionOrderStatus()` |
 | **I-03** | Les transitions scan/système sont forward-only et idempotentes. | `isForwardTransition()` |
 | **I-04** | Toute transition effective doit laisser une trace dans `order_status_history`. | `transitionOrderStatus()` |
 | **I-05** | Le wallet ne se corrige pas par suppression ; on crédite, débite ou contre-passe. | `services/wallet-service.js` |
@@ -48,6 +49,7 @@ Avant toute modification, identifier :
 | `services/wallet-service.js` | Argent client, avoirs, idempotence, FIFO. |
 | `services/pricing-engine.js` | Marges, coût complet, décisions de sourcing. |
 | `routes/payments.js` | Stripe, cash, confirmation paiement. |
+| `services/order-payment-confirmation.js` | Point d'entrée unique du cycle paiement → stock. Déclenche la confirmation commande, le décrément stock et les notifications post-paiement. |
 | `routes/scans.js` | Scans terrain, collecte, statut logistique. |
 | `routes/orders.js` | Création et mutation commande. |
 | `routes/shared-cart.js` | Panier partagé et paiement tiers. |
@@ -98,6 +100,7 @@ stripe_webhook
 cash_confirm
 wallet_full_payment
 shared_cart_full_payment
+collective_payment
 ```
 
 Ces sources ne doivent faire qu'une chose : `pending → confirmed`. Toute autre situation doit être traitée comme no-op/idempotence ou erreur contrôlée.
@@ -117,6 +120,7 @@ Ces sources ne doivent faire qu'une chose : `pending → confirmed`. Toute autre
 - peut générer un `pickup_code` si absent ;
 - rend la commande/partie de commande récupérable ;
 - ne doit pas exposer un code faible ou bruteforçable sans protection.
+- ⚠️ le rate-limit anti-bruteforce du pickup secret est **in-memory** (`routes/pickup-secret.js` lignes 336 et 1110) — inefficace en multi-instance Railway. Non bloquant en mono-instance.
 
 ### Passage à `cancelled`
 
@@ -213,3 +217,5 @@ Avant de modifier un fichier sensible :
 - Les documents historiques peuvent encore mentionner `utils/parcelSync.js` ou `routes/orders.js` comme sources de vérité principales pour `orders.status`. La vérité actuelle est `services/order-status-machine.js`.
 - Les chiffres de routes/endpoints des anciennes cartographies ne doivent plus être utilisés comme preuve.
 - Les versions affichées divergent encore entre `package.json`, commentaire `server.js` et `/api/health`.
+- **Pickup rate-limit in-memory** : `routes/pickup-secret.js` lignes 336 et 1110 — TODO explicites dans le code. À migrer vers Redis avant passage multi-instance (lot dédié à créer).
+- **QR_SECRET fallback** : supprimé en lot D0 — s'assurer que la variable est bien configurée sur Railway avant merge.

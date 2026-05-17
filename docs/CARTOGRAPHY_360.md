@@ -1,8 +1,9 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 15 mai 2026  
+> **Dernière consolidation** : 17 mai 2026  
 > **Méthode** : ancienne cartographie v15 remplacée par une version maintenable, vérifiée contre `server.js` et les services critiques.  
+> **Mis à jour le 17 mai 2026** : REQUIRED_ENV complet, `services/order-payment-confirmation.js` ajouté, `collective_payment` ajouté comme source de transition.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes.
 
 ---
@@ -29,6 +30,7 @@ Le point d'entrée applicatif est `server.js`.
 | Boot serveur et montage des routes | `server.js` |
 | Runtime Node | `package.json` (`engines.node >=20.0.0`) |
 | Transitions commande | `services/order-status-machine.js` |
+| Cycle paiement → stock (point d'entrée unique) | `services/order-payment-confirmation.js` |
 | Pricing | `services/pricing-engine.js` |
 | Wallet / avoirs | `services/wallet-service.js` |
 | Routage logistique | `services/routing.js` |
@@ -175,15 +177,20 @@ Actifs dans `server.js` :
 - rate limiting spécialisé pour login/register, cash confirm, scans collect, création commande, dashboard et admin ;
 - webhooks Stripe en `express.raw` avant parser JSON.
 
-Variables critiques au boot :
+Variables **obligatoires** au boot (`REQUIRED_ENV`) :
 
 - `DATABASE_URL` ;
-- `JWT_SECRET`.
+- `JWT_SECRET` ;
+- `STRIPE_SECRET_KEY` ;
+- `STRIPE_WEBHOOK_SECRET` ;
+- `STRIPE_SHARED_CART_WEBHOOK_SECRET` ;
+- `STRIPE_COLLECTIVE_WEBHOOK_SECRET` ;
+- `QR_SECRET`.
 
-Variables recommandées :
+Variables recommandées (`RECOMMENDED_ENV`) :
 
 - `ADMIN_PASSWORD` ;
-- `STRIPE_SECRET_KEY`.
+- `META_WA_APP_SECRET`.
 
 ---
 
@@ -215,7 +222,8 @@ Sources de transition reconnues :
 - `stripe_webhook` ;
 - `cash_confirm` ;
 - `wallet_full_payment` ;
-- `shared_cart_full_payment`.
+- `shared_cart_full_payment` ;
+- `collective_payment`.
 
 Garanties :
 
@@ -288,6 +296,7 @@ Ces divergences sont connues et ne doivent pas contaminer les docs de référenc
 2. Plusieurs audits du 7 avril et du 8 mai parlent de nombres de routes/endpoints devenus obsolètes.
 3. Des documents temporaires de prompts/roadmaps Sonnet/Temu/mobile ont été retirés de l'index principal ou doivent être archivés/supprimés dans une passe dédiée.
 4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
+5. `collective_payment` est une source de transition reconnue par `order-status-machine.js` — les anciens audits ne la listaient pas.
 
 ---
 
