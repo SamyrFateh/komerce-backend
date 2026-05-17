@@ -3,8 +3,8 @@
 > **Statut** : cartographie documentaire canonique  
 > **Dernière consolidation** : 17 mai 2026  
 > **Méthode** : ancienne cartographie v15 remplacée par une version maintenable, vérifiée contre `server.js` et les services critiques.  
-> **Mis à jour le 17 mai 2026** : REQUIRED_ENV complet, `services/order-payment-confirmation.js` ajouté, `collective_payment` ajouté comme source de transition.  
-> **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes.
+> **Mis à jour le 17 mai 2026** : REQUIRED_ENV complet, `services/order-payment-confirmation.js` ajouté, `collective_payment` ajouté comme source de transition. **SOCLE-2** : sections 6 bis (modules cérémonie), 8 bis (notifications/SMS/idempotence Stripe), 8 ter (partage simple via `/api/shares`) ajoutées ; tables `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions`, `fabrics`, `garment_models` désormais référencées.  
+> **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
 ---
 
@@ -47,19 +47,19 @@ Le point d'entrée applicatif est `server.js`.
 | Préfixe | Rôle |
 |---|---|
 | `/api/auth` | Auth utilisateurs/admins + client auth selon route montée. |
-| `/api/auth/otp` | OTP. |
+| `/api/auth/otp` | OTP. Table : `otp_codes`. |
 | `/api/client` | Auth/client endpoints compatibles côté client. |
 
 ### Catalogue et boutique
 
 | Préfixe | Rôle |
 |---|---|
-| `/api/products` | Produits. |
+| `/api/products` | Produits. Tables : `products`, `product_variants`. |
 | `/api/categories` | Catégories boutique. |
 | `/api/admin/boutique-categories` | Admin catégories boutique. |
-| `/api/modules` | Modules spécialisés. |
+| `/api/modules` | Modules spécialisés (cérémonie : tissus + modèles, lunettes, couture). Voir §6 bis. |
 | `/api/baskets` | Paniers historiques / boutique. |
-| `/api/shares` | Partage. |
+| `/api/shares` | Partage simple de panier (système distinct de `/api/shared-carts`). Voir §8 ter. Tables : `cart_shares`, `cart_contributions`. |
 
 ### Commandes, paiements, factures
 
@@ -237,6 +237,26 @@ Garanties :
 
 ---
 
+## 6 bis. Modules spécialisés (cérémonie, couture, lunettes)
+
+Source : `routes/modules.js` + ENUM `ceremony_order_type`.
+
+Tables dédiées :
+
+- `fabrics` — catalogue de tissus pour modules cérémonie ;
+- `garment_models` — modèles de vêtements (références, prix, dimensions).
+
+Colonnes commande associées (`orders`) :
+
+- `confection_type` : `aucun`, `couture_standard`, `sur_mesure`, `retouche_locale`, `broderie`, `lunettes_vue`, `lunettes_solaires` ;
+- `module_type`, `module_fabric_id`, `module_fabric_type`, `module_size`, `module_retouche`, `module_qty_meters`, `module_accessories`, `confection_instructions`, `confection_delay_days`, `confection_artisan_id`.
+
+Vue agrégée : `v_ceremony_orders`.
+
+Principe : les modules spécialisés ne remplacent pas le moteur catalogue. Ils enrichissent une commande standard avec un type de confection et des paramètres dédiés.
+
+---
+
 ## 7. Pricing et économie
 
 Source : `services/pricing-engine.js`.
@@ -288,6 +308,39 @@ Principes :
 
 ---
 
+## 8 bis. Notifications, SMS et idempotence Stripe
+
+Tables transverses utilisées par plusieurs services :
+
+- `notification_log` — log applicatif des notifications (email, push, in-app). Consommée par `services/notification-service.js` et `routes/notification-api.js`.
+- `sms_log` — log des SMS envoyés. Consommée par `utils/sms.js`, `routes/admin.js`, `routes/relay-dashboard.js`.
+- `stripe_events_processed` — anti-double-traitement des webhooks Stripe. Consommée par `routes/payments.js`, `routes/shared-cart.js`, `services/collective-payment-orchestrator.js`.
+
+Principes :
+
+- toute notification métier doit être tracée dans `notification_log` ou `sms_log` selon le canal ;
+- `stripe_events_processed` est la garantie d'idempotence des 3 webhooks Stripe (principal, panier partagé, paiement collectif) — voir invariant I-07.
+
+---
+
+## 8 ter. Partage simple (`/api/shares`) vs panier partagé (`/api/shared-carts`)
+
+Komerce a **deux systèmes de partage distincts**, à ne pas confondre.
+
+| Critère | `/api/shares` | `/api/shared-carts` |
+|---|---|---|
+| Source de vérité | `routes/shares.js` | `services/shared-cart-engine.js` |
+| Tables | `cart_shares`, `cart_contributions` | `shared_carts`, `shared_cart_items`, `shared_cart_contributions`, `shared_cart_events` |
+| Cas d'usage | Partage simple de panier avec contributions libres (événements, cagnottes légères) | Panier partagé MVP avec conversion vers commande, paiement Stripe dédié |
+| Webhook Stripe | non | oui (`/api/shared-carts/stripe/webhook`, body brut) |
+| ENUMs typés | non (champs `status` libres) | `shared_cart_status`, `shared_cart_contribution_status` |
+
+Aucun des deux n'est legacy. Ils répondent à deux besoins fonctionnels différents.
+
+Le panier événement collectif structuré est encore autre chose (`/api/collective-workspaces`, tables `collective_*`).
+
+---
+
 ## 9. Dette documentaire détectée
 
 Ces divergences sont connues et ne doivent pas contaminer les docs de référence :
@@ -306,6 +359,9 @@ Pour maintenir cette cartographie :
 
 1. lire `server.js` ;
 2. mettre à jour les domaines, pas seulement les chiffres ;
-3. vérifier les services critiques ;
-4. ne pas recopier un audit ancien sans confrontation au code ;
-5. documenter toute divergence code/doc dans cette section.
+3. vérifier les services critiques (voir `CONTRACTS.md`) ;
+4. confronter au schéma DB (voir `SCHEMA.md`) ;
+5. ne pas recopier un audit ancien sans confrontation au code ;
+6. documenter toute divergence code/doc dans cette section.
+
+Ce document est l'un des **4 documents socle** (cf. `AGENTS.md` §1). Toute modification structurelle du backend doit le mettre à jour dans la même PR. La règle de divergence doc ↔ code ↔ DB est définie dans `AGENTS.md` §2.

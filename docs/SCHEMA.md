@@ -347,5 +347,5 @@ pg_dump --schema-only --no-owner --no-privileges \
 1. **2 dossiers de migrations** (`db/migrations/` legacy + `migrations/` actif) — non bloquant mais à clarifier (cf. STATUS.md lot A5).
 2. **Collisions de numéros** dans `migrations/` : `060.sql` + `060_add_pending_at_confirmed_at.sql` ; `061.sql` + `061_boutique_categories.sql` (cf. STATUS.md lot A4).
 3. **`db/schema.sql`** est obsolète (mars 2026, v1.3). Ce document le remplace comme référence d'état réel.
-4. **Tables non mentionnées dans CARTOGRAPHY** : `fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions` — à intégrer ou à archiver selon usage réel.
+4. **Tables non mentionnées dans CARTOGRAPHY** : ✅ **Résolu par lot SOCLE-2 (17 mai 2026)**. `fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions` désormais référencées dans `CARTOGRAPHY_360.md` §3 et §§ 6 bis, 8 bis, 8 ter.
 5. **Trou apparent** dans la numérotation migrations entre 025 et 033 — vérifier l'historique git si nécessaire.

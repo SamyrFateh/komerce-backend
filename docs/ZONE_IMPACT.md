@@ -3,7 +3,7 @@
 > **Statut** : invariants critiques du projet  
 > **Dernière consolidation** : 17 mai 2026  
 > **Sources vérifiées** : `server.js`, `services/order-status-machine.js`, `services/order-payment-confirmation.js`, `services/pricing-engine.js`, `services/wallet-service.js`, `routes/payments.js`, `routes/scans.js`, `routes/pickup-secret.js`.  
-> **Mis à jour le 17 mai 2026** : I-02 étendu au paiement collectif, `order-payment-confirmation.js` ajouté, `collective_payment` ajouté, pickup rate-limit in-memory documenté.
+> **Mis à jour le 17 mai 2026** : I-02 étendu au paiement collectif, `order-payment-confirmation.js` ajouté, `collective_payment` ajouté, pickup rate-limit in-memory documenté. **SOCLE-3** : section 3 bis ajoutée pour détailler le risque spécifique de `server.js` (1200 lignes, 80 routes API, 92 DDL inline, 3 webhooks Stripe en body brut).
 > **But** : éviter les modifications qui cassent la cohérence métier, financière ou logistique.
 
 ---
@@ -43,7 +43,7 @@ Avant toute modification, identifier :
 
 | Fichier | Risque |
 |---|---|
-| `server.js` | Montage des routes, middlewares, webhooks, fallback HTML. |
+| `server.js` | **Point névralgique — voir §3 bis ci-dessous.** Montage de 80 routes API, ordre critique des middlewares, 3 webhooks Stripe en body brut (lignes 129-131), 92 instructions DDL inline, `setImmediate(fixMissingSchema)` au boot, fallback HTML, validation `REQUIRED_ENV`. 1200 lignes. |
 | `db.js` | Connexion PostgreSQL utilisée partout. |
 | `services/order-status-machine.js` | Cohérence du cycle de vie commande. |
 | `services/wallet-service.js` | Argent client, avoirs, idempotence, FIFO. |
@@ -56,6 +56,38 @@ Avant toute modification, identifier :
 | `routes/collective-workspaces.js` | Workspace collectif et contributions. |
 | `middleware/auth.js` | Autorisations. |
 | `middleware/rate-limit.js` | Protection login, cash, scan collect, admin. |
+
+---
+
+## 3 bis. Le cas particulier de `server.js`
+
+`server.js` cumule plusieurs responsabilités hétérogènes. Modifier ce fichier sans précaution peut casser le boot complet, l'idempotence des webhooks Stripe (I-07), ou la cohérence du schéma DB. Détails :
+
+### Responsabilités cumulées (1200 lignes)
+
+1. **Validation env (`REQUIRED_ENV`)** lignes ~18-21 — refus de boot si une variable manque.
+2. **Webhooks Stripe en `express.raw`** lignes 129-131 — body brut **obligatoirement avant** `express.json` (invariant I-07).
+3. **Montage des middlewares globaux** — `helmet`, `cors`, `cookie-parser`, `express.json` (limite 1 MB), `requestIdMiddleware`, rate limiting global et spécialisé.
+4. **Montage de 80 routes API** — chaque `app.use('/api/...')` doit respecter l'ordre (rate limit avant route, auth avant payload sensible).
+5. **92 instructions DDL inline** (CREATE TABLE / ALTER TABLE / ADD COLUMN) — c'est de la migration runtime ad-hoc, à terme déplaçable vers `scripts/fix-schema.js`. Cf. `SCHEMA_GAP_KOMERCE.md` §Architecture.
+6. **Fallback HTML** pour les routes non-API (sert `public/boutique/index.html`).
+7. **Boot HTTP + post-boot async** — `app.listen` puis `setImmediate(fixMissingSchema)` ligne ~592.
+
+### Règles avant modification
+
+- **Ne jamais déplacer les webhooks Stripe (lignes 129-131) après `express.json`.** Ça invalide la signature, les paiements deviennent silencieusement non confirmés.
+- **Ne pas modifier l'ordre des middlewares globaux** sans valider que rate limit, auth et CORS s'appliquent toujours dans le bon ordre.
+- **Ne pas ajouter de nouvelle route `/api/...` sans rate limit applicable** (vérifier le rate-limiter global + spécialisé).
+- **Ne pas ajouter de DDL inline sans valider l'idempotence** (`IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`). Toute migration future doit privilégier `scripts/fix-schema.js` ou un fichier `migrations/*.sql`.
+- **Ne pas remplacer `REQUIRED_ENV` par des fallbacks silencieux**. Le boot doit échouer fort, pas dégrader en silence.
+
+### Vers où on veut aller (dette d'archi)
+
+- Découpler le montage des routes (générer depuis un manifeste, ou utiliser `glob` sur `routes/`).
+- Sortir les 92 DDL inline vers `scripts/fix-schema.js` ou un vrai runner de migrations.
+- Réduire `server.js` à : env check, middlewares, montage de routes, boot. Cible : < 300 lignes.
+
+C'est un chantier lourd (lot `H1` à programmer), pas un nettoyage rapide.
 
 ---
 
@@ -208,7 +240,7 @@ Avant de modifier un fichier sensible :
 4. Est-ce que cela touche pickup/collecte ? Si oui, vérifier brute-force, preuve et audit.
 5. Est-ce que cela touche pricing ? Si oui, vérifier doctrine économique.
 6. Est-ce que cela touche webhook ? Si oui, vérifier body brut.
-7. Est-ce que cela touche `server.js` ? Si oui, vérifier ordre des middlewares et routes.
+7. Est-ce que cela touche `server.js` ? Si oui, **lire §3 bis** : ne pas déplacer les webhooks Stripe sous `express.json`, ne pas ajouter de DDL non-idempotent, ne pas casser l'ordre des middlewares, ne pas ajouter de fallback silencieux sur `REQUIRED_ENV`.
 
 ---
 
@@ -219,3 +251,4 @@ Avant de modifier un fichier sensible :
 - Les versions affichées divergent encore entre `package.json`, commentaire `server.js` et `/api/health`.
 - **Pickup rate-limit in-memory** : `routes/pickup-secret.js` lignes 336 et 1110 — TODO explicites dans le code. À migrer vers Redis avant passage multi-instance (lot dédié à créer).
 - **QR_SECRET fallback** : supprimé en lot D0 — s'assurer que la variable est bien configurée sur Railway avant merge.
+- **`server.js` à 1200 lignes** : 92 instructions DDL inline + montage de 80 routes + fallback HTML + boot post-async. Refactor à programmer (lot `H1` futur). Cf. §3 bis.

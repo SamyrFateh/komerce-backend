@@ -47,6 +47,8 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | INIT-0 | ✅ Fait | Référentiels lus en session |
 | DOC-0 | ✅ Fait | `CARTOGRAPHY_360.md` et `ZONE_IMPACT.md` déjà à jour |
 | **SOCLE-1** | ✅ Fait | **Socle architectural à 4 docs gravé** : ajout `SCHEMA.md` + `CONTRACTS.md` ; `AGENTS.md` enrichi avec règle de divergence et règle de mise à jour ; `SCHEMA.md` généré contre `pg_dump` Railway 17/05/2026 |
+| **SOCLE-2** | ✅ Fait | **CARTOGRAPHY aligné sur les 9 tables manquantes** : sections 6 bis (modules cérémonie : `fabrics`, `garment_models`, `ceremony_order_type`, colonnes `confection_*` et `module_*`), 8 bis (notifications : `notification_log`, `sms_log`, `stripe_events_processed`), 8 ter (clarification `/api/shares` vs `/api/shared-carts` : `cart_shares`/`cart_contributions` ne sont pas legacy) ; `/api/products` mentionne `product_variants` ; `/api/auth/otp` mentionne `otp_codes` |
+| **SOCLE-3** | ✅ Fait | **`server.js` documenté comme point névralgique** : section 3 bis dédiée dans `ZONE_IMPACT.md` (responsabilités cumulées, règles avant modif, dette d'archi vers lot H1) ; checklist §10 enrichie ; dette §11 mise à jour. Audit factuel : 1200 lignes, 80 routes API, 92 DDL inline, 3 webhooks Stripe (lignes 129-131) |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
@@ -56,7 +58,6 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
 | D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
-| D7 | ✅ Fait | Audit CORS production documenté ; aucun code modifié |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -69,42 +70,40 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
 - Les webhooks Stripe sont déjà protégés par body brut + logique d'idempotence ; D2 est un audit formel.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
-- **Dette doc SCHEMA-1** : 9 tables actives en DB ne sont pas mentionnées dans `CARTOGRAPHY_360.md` (`fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions`). Voir `SCHEMA.md` §12 pt 4. Lot dédié à programmer.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
-- **`server.js` (1200 lignes)** : non listé explicitement comme "fichier à haut risque" dans `ZONE_IMPACT.md` §3 alors qu'il monte 75 routes et contient du SQL inline. À ajouter au prochain pass ZONE_IMPACT.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
 
 ---
 
 ## Prochain lot recommandé
 
-### D8 — Helmet production
+### D7 — CORS production
 
 ```text
-Branche   : audit/backend-D8-helmet-production
+Branche   : audit/backend-D7-cors-production
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si modification CSP
+Risque    : faible si audit/documentation, moyen si modification CORS
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire la configuration Helmet/CSP dans `server.js`.
-2. Vérifier les directives utiles : script, style, img, connect, frame, object, frameAncestors, baseUri, formAction.
-3. Documenter les garanties et risques restants.
-4. Corriger uniquement les oublis évidents sans casser Stripe, CDN ni pages existantes.
+1. Lire la configuration CORS dans `server.js`.
+2. Vérifier `FRONTEND_URL`, `ALLOWED_ORIGINS`, localhost, absence d'origin et credentials.
+3. Documenter garanties et risques restants.
+4. Corriger uniquement les oublis évidents sans bloquer les pages existantes.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D8
+## File d'attente après D7
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| SOCLE-2 | Moyenne | Aligner `CARTOGRAPHY_360.md` sur les 9 tables manquantes (fabrics, garment_models, otp_codes, sms_log, notification_log, stripe_events_processed, cart_shares, cart_contributions, product_variants) |
-| SOCLE-3 | Moyenne | Ajouter `server.js` à `ZONE_IMPACT.md §3` comme fichier à haut risque (1200 lignes, 75 routes, SQL inline) |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
+| D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
+| H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
 | TEST-1 | Stratégique | Tests d'intégration sur invariants I-01 à I-10 (filet minimal) |
 
