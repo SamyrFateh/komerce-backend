@@ -47,7 +47,8 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
     }
 
     // Générer le token : SHA256(orderId + relaisId + timestamp + QR_SECRET)
-    const secret    = process.env.QR_SECRET || 'komerce-qr-default-secret-change-in-prod';
+    // QR_SECRET est obligatoire au démarrage via scripts/validate-required-env.js.
+    const secret    = process.env.QR_SECRET;
     const timestamp = Date.now().toString();
     const token     = crypto
       .createHash('sha256')
