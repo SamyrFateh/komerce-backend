@@ -49,6 +49,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | **SOCLE-1** | ✅ Fait | **Socle architectural à 4 docs gravé** : ajout `SCHEMA.md` + `CONTRACTS.md` ; `AGENTS.md` enrichi avec règle de divergence et règle de mise à jour ; `SCHEMA.md` généré contre `pg_dump` Railway 17/05/2026 |
 | **SOCLE-2** | ✅ Fait | **CARTOGRAPHY aligné sur les 9 tables manquantes** : sections 6 bis (modules cérémonie : `fabrics`, `garment_models`, `ceremony_order_type`, colonnes `confection_*` et `module_*`), 8 bis (notifications : `notification_log`, `sms_log`, `stripe_events_processed`), 8 ter (clarification `/api/shares` vs `/api/shared-carts` : `cart_shares`/`cart_contributions` ne sont pas legacy) ; `/api/products` mentionne `product_variants` ; `/api/auth/otp` mentionne `otp_codes` |
 | **SOCLE-3** | ✅ Fait | **`server.js` documenté comme point névralgique** : section 3 bis dédiée dans `ZONE_IMPACT.md` (responsabilités cumulées, règles avant modif, dette d'archi vers lot H1) ; checklist §10 enrichie ; dette §11 mise à jour. Audit factuel : 1200 lignes, 80 routes API, 92 DDL inline, 3 webhooks Stripe (lignes 129-131) |
+| **H-SYNC** | ✅ Fait | **Synchronisation `BACKEND_GOLIVE_ROADMAP.md` ↔ `STATUS.md`** : 10 lots cochés ☐ → ✅ dans la roadmap (A1, A3, A5, A6, A7, D1, D3, D4, D5, D6), §0 Score global recalculé (20 % réel vs 0 % affiché auparavant), note de méthode ajoutée. Vieux audits avril archivés (`docs/audit/` → `docs/_archive/2026-04-22_audits/`). |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
@@ -72,18 +73,50 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
+- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **À corriger par un lot dédié** (proposé : `G1-fix` — remplacer l'UPDATE par appel à `confirmPaymentCycle()` de `services/order-payment-confirmation.js`).
 
 ---
 
 ## Prochain lot recommandé
 
-### D7 — CORS production
+### G1-fix — Corriger la violation I-01 dans `routes/pickup-secret.js`
+
+```text
+Branche   : fix/backend-G1fix-pickup-secret-i01
+Charge    : 1-2 h
+Risque    : 🔴 critique métier (paiement cash) — tests obligatoires
+Prérequis : aucun, doit passer avant tout autre lot D / G
+```
+
+**Contexte** :
+Audit D4 du 17/05 a détecté que `routes/pickup-secret.js` ligne 286 fait :
+```sql
+UPDATE orders SET payment_status = 'paid', status = 'confirmed', confirmed_at = $3, ...
+```
+en direct, sans passer par `transitionOrderStatus()`. C'est une violation active de l'invariant I-01 (et probablement I-04).
+
+**Actions** :
+
+1. Lire `services/order-payment-confirmation.js` et son contrat (`CONTRACTS.md` §4).
+2. Refactorer le bloc lignes ~275-292 de `routes/pickup-secret.js` : remplacer l'`UPDATE` global par un `UPDATE` qui met à jour uniquement les champs spécifiques au cash (`pickup_secret_hash`, `pickup_secret_salt`, `payment_received_at`, `payer_*`, `tracking_phone_*`), **puis** appeler `confirmPaymentCycle({ orderId, source: 'cash_confirm', actor, dbClient })` qui s'occupe de `payment_status = paid`, `status = confirmed`, `confirmed_at`, `order_status_history` et déclenche les effets (pickup_code, notifications, stock).
+3. Maintenir le passage en une seule transaction DB (passer `dbClient` à `confirmPaymentCycle`).
+4. Ajouter un test d'intégration : `tests/integration/pickup-secret-cash-confirm.test.js` vérifiant qu'après `/pay-cash`, il y a bien une ligne dans `order_status_history`.
+5. Mettre à jour `STATUS.md`, `BACKEND_GOLIVE_ROADMAP.md` (cocher G1-fix) et retirer le piège critique I-01.
+
+**À ne pas casser** :
+- Le hash et le salt du pickup_secret doivent être posés avant le passage `confirmed` (sinon le client n'a pas son code).
+- Le log d'audit `cash_collections` doit toujours être posé.
+- Le hook fidélité `loyaltyService.handleOrderConfirmed` doit toujours être déclenché.
+
+---
+
+### D7 — CORS production (après G1-fix)
 
 ```text
 Branche   : audit/backend-D7-cors-production
 Charge    : 1 jour
 Risque    : faible si audit/documentation, moyen si modification CORS
-Prérequis : aucun bloquant
+Prérequis : G1-fix mergé
 ```
 
 Actions :
@@ -100,6 +133,7 @@ Actions :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| **G1-fix** | 🔴 **Critique** | **Corriger la violation I-01 dans `routes/pickup-secret.js:286`** : remplacer l'`UPDATE orders SET status = 'confirmed'` direct par un appel à `confirmPaymentCycle()` de `services/order-payment-confirmation.js`. Restaure l'entrée `order_status_history`, garantit `pickup_code`, déclenche notifications et décrément stock. **À traiter avant tout nouveau lot D / G.** |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |

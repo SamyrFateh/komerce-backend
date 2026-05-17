@@ -23,19 +23,25 @@
 
 ## §0 — Score global d'avancement
 
+> **Mis à jour 17 mai 2026 — lot H-SYNC** : synchronisation avec `docs/chantier/STATUS.md` et vérification dans le code.
+
 | Bloc | Lots ☐ | Lots 🚧 | Lots ✅ | % |
 |---|---:|---:|---:|---:|
-| A — Hygiène code & DB | 7 | 0 | 0 | 0 % |
+| A — Hygiène code & DB | 2 | 0 | 5 | 71 % |
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
-| D — Sécurité & secrets | 8 | 0 | 0 | 0 % |
+| D — Sécurité & secrets | 3 | 0 | 5 | 62 % |
 | E — Tests & couverture | 6 | 0 | 0 | 0 % |
 | F — Observabilité & ops | 7 | 0 | 0 | 0 % |
 | G — Flows business critiques | 5 | 0 | 0 | 0 % |
-| H — Gouvernance & garde-fous | 5 | 0 | 0 | 0 % |
-| **TOTAL** | **51** | **0** | **0** | **0 %** |
+| H — Gouvernance & garde-fous | 4 | 1 | 0 | 0 % (H3 en cours) |
+| **TOTAL** | **40** | **1** | **10** | **20 %** |
 
-Mettre à jour ce tableau à chaque PR mergée.
+Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
+
+Lots ✅ détaillés : A1, A3, A5, A6, A7, D1 (audit), D3 (audit), D4 (audit), D5 (audit partiel), D6 (audit) + hotfix D0 hors roadmap initiale.
+
+Lots socle hors numérotation initiale : SOCLE-1 (4 docs socle), SOCLE-2 (CARTOGRAPHY aligné), SOCLE-3 (server.js documenté) — voir `STATUS.md`.
 
 ---
 
@@ -82,7 +88,9 @@ Pour chaque PR mergée, vérifier que :
 
 ---
 
-### ☐ A1 — Supprimer le fantôme `routes/orders/order-api-v2.js`
+### ✅ A1 — Supprimer le fantôme `routes/orders/order-api-v2.js`
+
+> **Fait le 17 mai 2026.** Le fichier `routes/orders/order-api-v2.js` n'existe plus dans le repo. Seul `routes/order-api-v2.js` (28 153 octets) subsiste et reste monté dans `server.js`.
 
 **Charge** : 30 min  
 **Risque** : nul (le fichier n'est pas chargé)
@@ -133,7 +141,9 @@ Quasi-identiques, diffèrent seulement sur l'encodage (BOM/latin-1 vs UTF-8 prop
 
 ---
 
-### ☐ A3 — Déplacer `test_groupe_paiement.js` dans `tests/`
+### ✅ A3 — Déplacer `test_groupe_paiement.js` dans `tests/`
+
+> **Fait le 17 mai 2026.** Déplacé vers `tests/integration/groupe-paiement.manual.js`. Script manuel, non intégré à Jest (suffixe `.manual.js` explicite).
 
 **Charge** : 15 min  
 **Risque** : nul
@@ -182,7 +192,9 @@ migrations/061_boutique_categories.sql
 
 ---
 
-### ☐ A5 — Documenter / archiver `db/migrations/`
+### ✅ A5 — Documenter / archiver `db/migrations/`
+
+> **Fait le 17 mai 2026.** Livrable : `docs/chantier/MIGRATIONS_FOLDERS_A5.md`. Runner actif documenté : `scripts/migrate.js` ne parcourt pas les `.sql` automatiquement, exécute `fixAdminHash` + `fixMissingSchema` + `runAllSeeds`.
 
 **Charge** : 45 min  
 **Risque** : nul (juste de la doc)
@@ -204,7 +216,9 @@ migrations/061_boutique_categories.sql
 
 ---
 
-### ☐ A6 — Nettoyer les 14 TODO en issues GitHub
+### ✅ A6 — Nettoyer les 14 TODO en issues GitHub
+
+> **Fait le 17 mai 2026.** Issue GitHub #387 créée comme backlog central. TODO backend principaux rattachés sans changement métier.
 
 **Charge** : 30 min  
 **Risque** : nul
@@ -225,7 +239,9 @@ migrations/061_boutique_categories.sql
 
 ---
 
-### ☐ A7 — Archiver les docs parasites et corriger `AGENTS.md`
+### ✅ A7 — Archiver les docs parasites et corriger `AGENTS.md`
+
+> **Fait le 17 mai 2026.** Docs archivées dans `docs/_archive/` (GOVERNANCE.md, REPRISE_SESSION.md, ROADMAP_KOMERCE.md, etc.). `AGENTS.md` corrigé. Enrichi ultérieurement par lots SOCLE-1/2/3.
 
 **Charge** : 20 min  
 **Risque** : nul  
@@ -575,7 +591,9 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D1 — Audit complet des routes admin (vérifier `authenticate + requireAdmin`)
+### ✅ D1 — Audit complet des routes admin (vérifier `authenticate + requireAdmin`)
+
+> **Fait le 17 mai 2026 — audit uniquement.** Livrable : `docs/chantier/ADMIN_AUTH_AUDIT_D1.md` (138L). Aucun oubli évident d'authentification admin trouvé sur routes inspectées. Aucune correction métier appliquée.
 
 **Charge** : 1 j  
 **Risque** : élevé si trou trouvé
@@ -613,7 +631,9 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D3 — Audit `auth-guest.js` (262 lignes)
+### ✅ D3 — Audit `auth-guest.js` (262 lignes)
+
+> **Fait le 17 mai 2026 — audit uniquement.** Livrable : `docs/chantier/AUTH_GUEST_AUDIT_D3.md` (95L). Risques suivis sans changement métier.
 
 **Charge** : 1 j  
 **Risque** : élevé
@@ -628,7 +648,9 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D4 — Audit des tokens QR (pickup-secret + qr.js)
+### ✅ D4 — Audit des tokens QR (pickup-secret + qr.js)
+
+> **Fait le 17 mai 2026 — audit uniquement.** Livrable : `docs/chantier/QR_PICKUP_SECRET_AUDIT_D4.md` (91L). **A détecté une violation I-01 active en prod : `routes/pickup-secret.js:286` modifie directement `orders.status = 'confirmed'` au lieu de passer par `transitionOrderStatus()`. Lot dédié à programmer (`G1-fix` ou `D2bis`).**
 
 **Charge** : 1 j  
 **Risque** : critique (retrait commande)
@@ -646,7 +668,9 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D5 — Audit des secrets (.env.example vs prod)
+### ✅ D5 — Audit des secrets (.env.example vs prod)
+
+> **Fait partiellement le 17 mai 2026.** Livrable : `docs/chantier/ENV_AUDIT_D5.md` (139L). Modification `.env.example` bloquée par le connecteur, à reprendre localement. Validation pre-start volontairement non réactivée pour ne pas recasser le boot Railway.
 
 **Charge** : 1/2 j  
 **Risque** : élevé
@@ -660,7 +684,9 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D6 — Rate limiting — couverture exhaustive
+### ✅ D6 — Rate limiting — couverture exhaustive
+
+> **Fait le 17 mai 2026 — audit uniquement.** Livrable : `docs/chantier/RATE_LIMIT_AUDIT_D6.md` (103L). Aucun quota modifié.
 
 **Charge** : 1/2 j  
 **Risque** : moyen
