@@ -60,8 +60,7 @@ router.get('/:ref', async (req, res, next) => {
     );
 
     // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
-    // TODO: Ajouter un middleware « soft-auth » (optionalAuthenticate) pour peupler req.user
-    //       sans bloquer la requête quand le token est absent/invalide.
+    // TODO #387 : Ajouter un middleware soft-auth pour peupler req.user sans bloquer les accès publics.
     // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
     // Les agents accèdent aux détails complets via GET /api/admin/orders.
     const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
