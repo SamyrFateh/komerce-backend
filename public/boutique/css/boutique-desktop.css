@@ -811,8 +811,13 @@
     top: 68px;
     z-index: 180;
     margin-top: 0;
-    background: var(--page-bg);
-    padding-bottom: 12px;
+    /* ── Float effect — chips + subcats lévitent ensemble ── */
+    background: rgba(248, 246, 241, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 8px 32px rgba(31, 48, 36, 0.08), 0 1px 0 rgba(198,168,93,.12);
+    padding-bottom: 14px;
   }
 
   .k-cats-shell {
@@ -1104,7 +1109,7 @@
   #k-subcats-wrap {
     max-width: 1480px;
     margin: 0 auto;
-    padding: 10px 20px 6px;
+    padding: 12px 20px 10px;
     background: transparent;
     border: none;
     box-shadow: none;
@@ -1140,31 +1145,34 @@
     box-shadow: none;
   }
 
-  /* Pills : mÃªme famille que les chips cat, en plus petit */
+  /* Pills : même famille que les chips cat — proportionnées et visibles */
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    height: 38px;
-    padding: 0 16px;
-    border-radius: 14px;
-    border: 1px solid var(--border-text-08);
-    background: var(--surface-white-64);
+    gap: 7px;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-text-08);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     color: var(--text-alpha-82);
-    font-size: 12.5px;
+    font-size: 13.5px;
     font-weight: 700;
-    letter-spacing: -.015em;
+    letter-spacing: -.018em;
     white-space: nowrap;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(31,48,36,.03);
-    transition: transform .14s ease, background .14s, border-color .14s, color .14s;
+    box-shadow: 0 2px 10px rgba(31,48,36,.05), 0 1px 0 rgba(255,255,255,.8) inset;
+    transition: transform .14s ease, background .14s, border-color .14s, color .14s, box-shadow .14s;
+  }
   }
 
   #k-subcats-wrap .k-subchip:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     background: var(--white);
-    border-color: rgba(198,168,93,.36);
-    box-shadow: 0 6px 16px var(--border-text-06);
+    border-color: rgba(198,168,93,.5);
+    box-shadow: 0 8px 20px rgba(31,48,36,.10);
     color: var(--text);
   }
 
@@ -1184,7 +1192,7 @@
 
   /* IcÃ´ne emoji */
   #k-subcats-wrap .k-subchip-icon {
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1;
   }
 
