@@ -5,56 +5,27 @@
 
 
 :root {
-  /* ── Palette Komerce complète (tokens.css) ── */
-  --ocean:        #64AF5A;
-  --ocean-light:  #82C478;
-  --ocean-dark:   #4A9040;
-  --violet:       #6c3fc5;   /* identité panier collectif */
-  --violet-dark:  #4a2d9e;
-  --violet-light: rgba(108,63,197,.08);
-  --violet-mid:   rgba(108,63,197,.18);
-  --cta-green:    #2a7a3e;
-  --coral:        #C85C2D;
-  --coral-dark:   #A84820;
-  --sand:         #FDFAF5;
-  --sand-warm:    #f6f0e3;
-  --sand-dark:    #F0EBE0;
-  --text:         #1F3024;
-  --text-muted:   #6B7B63;
-  --text-light:   #9EAC95;
-  --border:       #E3D9C9;
-  --white:        #ffffff;
-  --whatsapp:     #25d366;
-  --whatsapp-dk:  #1db954;
-  --red:          #e53e3e;
-  --shadow-sm:    0 1px 3px rgba(31,48,36,.07);
-  --shadow-md:    0 4px 12px rgba(31,48,36,.09);
-  --shadow-lg:    0 8px 30px rgba(31,48,36,.12);
-  --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,sans-serif;
-  --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
-  --radius:       12px;
-  --radius-sm:    8px;
-  --radius-lg:    20px;
-  --ease:         cubic-bezier(.22,1,.36,1);
-
-  /* ── Aliases sémantiques pour les vues event ── */
-  --ev-bg:        var(--sand);
-  --ev-bg-card:   var(--white);
-  --ev-border:    var(--border);
-  --ev-border-soft: #EDE8DF;
-  --ev-text:      var(--text);
-  --ev-text-soft: #3a4a3d;
-  --ev-text-muted: var(--text-muted);
-  --ev-text-faint: var(--text-light);
-  --ev-shadow-xs: var(--shadow-sm);
-  --ev-shadow-sm: 0 4px 16px rgba(31,48,36,.08);
-  --ev-shadow-md: var(--shadow-lg);
-  --ev-radius:    var(--radius);
-  --ev-radius-lg: 16px;
-  --ev-radius-xl: var(--radius-lg);
-  --ev-font:      var(--font);
+  /* ── Aliases sémantiques pour les vues event ──
+     Les couleurs/typographie/ombres de base viennent de tokens.css
+     (chargé en tête du bundle event via scripts/bundle-css.js).
+     Ne déclarer ici que ce qui est propre au design event. */
+  --ev-bg:           var(--sand);
+  --ev-bg-card:      var(--white);
+  --ev-border:       var(--border);
+  --ev-border-soft:  #EDE8DF;
+  --ev-text:         var(--text);
+  --ev-text-soft:    #3a4a3d;
+  --ev-text-muted:   var(--text-muted);
+  --ev-text-faint:   var(--text-light);
+  --ev-shadow-xs:    var(--shadow-sm);
+  --ev-shadow-sm:    0 4px 16px rgba(31,48,36,.08);
+  --ev-shadow-md:    var(--shadow-lg);
+  --ev-radius:       var(--radius);
+  --ev-radius-lg:    16px;
+  --ev-radius-xl:    var(--radius-lg);
+  --ev-font:         var(--font);
   --ev-font-display: var(--font-display);
-  --ev-mono:      'Courier New',monospace;
+  --ev-mono:         'Courier New',monospace;
 }
 
 body {
