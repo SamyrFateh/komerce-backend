@@ -47,6 +47,7 @@ Lire dans cet ordre avant toute modification :
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
 | D1 | ✅ Fait | Audit couverture auth admin documenté ; aucun oubli évident trouvé sur routes inspectées |
 | D3 | ✅ Fait | Audit `auth-guest.js` documenté ; risques suivis sans changement métier |
+| D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -64,31 +65,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### D4 — Audit QR / pickup-secret
+### D5 — Audit `.env.example` vs prod
 
 ```text
-Branche   : audit/backend-D4-qr-pickup-secret
+Branche   : audit/backend-D5-env-example
 Charge    : 1 jour
-Risque    : moyen si correction code, faible si audit/documentation
+Risque    : faible si audit/documentation, moyen si modification validation env
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire `routes/orders/qr.js`, `routes/pickup-secret.js` et les routes de scan liées au retrait.
-2. Vérifier secrets, expiration, usage unique, rate-limit et exposition publique.
-3. Documenter les garanties et les risques restants.
-4. Corriger uniquement les oublis évidents, sans refactor large.
+1. Lire `.env.example`, `server.js`, `package.json` et les usages `process.env.*` critiques.
+2. Vérifier les variables obligatoires, recommandées et optionnelles.
+3. Documenter les écarts et risques restants.
+4. Corriger uniquement les oublis évidents de documentation, sans casser le boot Railway.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D4
+## File d'attente après D5
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D5 | Haute | Audit `.env.example` vs prod |
 | D6 | Moyenne | Rate limiting exhaustif |
 | D7 | Moyenne | CORS production |
 | D8 | Moyenne | Helmet production |
