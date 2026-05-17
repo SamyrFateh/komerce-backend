@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-17
+> Mis à jour : 2026-05-18
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -68,6 +68,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | G4 | ✅ Fait | Audit annulation après paiement documenté ; refund/purchasing/stock rattachés à I-SWEEP/TEST-1 |
 | G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté ; pricing/publication/stock rattachés à I-SWEEP/TEST-1 |
 | I-SWEEP-0 | ✅ Fait | Checklist d'exécution créée dans `docs/chantier/I_SWEEP_PLAN.md` |
+| I-SWEEP-1 | ⚠️ Préparé, non branché | Service transactionnel créé (`services/confirm-pickup-cash-payment.js`) + patch documenté (`I_SWEEP_1_PICKUP_CASH_PATCH.md`). Branchement route bloqué par contrôles outil lors de la création du routeur dédié ; à appliquer localement ou via éditeur humain. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -82,7 +83,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
-- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4, confirmée par G1 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction prioritaire I-SWEEP-1.**
+- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4, confirmée par G1 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **I-SWEEP-1 a créé le service de correction, mais le branchement route reste à appliquer.**
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 - 🟠 **QR verify** : `POST /api/scans/verify-qr` transitionne l'order en `collected` dans la transaction puis appelle `safeSyncScanToParcels` après commit. Risque de divergence order/parcels si crash entre commit et sync ; à couvrir par TEST-1 ou job de repair.
 - 🟠 **Stripe intent / purchasing** : G2 a isolé plusieurs points à tester ou durcir : création PaymentIntent sans idempotency key apparente, `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
@@ -94,28 +95,20 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### I-SWEEP-1 — Corriger `/pay-cash` pickup-secret hors machine
+### I-SWEEP-1B — Brancher localement `/pay-cash` sur le service transactionnel
 
 ```text
 Branche   : fix/backend-I-SWEEP-1-pay-cash-machine
-Charge    : 1 jour
+Charge    : < 1 jour
 Risque    : élevé — touche paiement cash, statut, stock, pickup secret
-Prérequis : I-SWEEP-0 terminé
+Prérequis : I-SWEEP-1 service créé
 ```
 
-Objectif : remplacer le `UPDATE orders SET status='confirmed'` direct par `confirmPaymentCycle(...)` dans une transaction, puis générer le pickup secret dans la même transaction.
-
-Contraintes :
-
-1. garder l'émission du code clair une seule fois ;
-2. garder l'anti-collision last4 ;
-3. garder `cash_collections ON CONFLICT DO NOTHING` ;
-4. garder le refus stock insuffisant avant encaissement ;
-5. ne pas casser `/receipt/:orderId` ni `printTokens`.
+Objectif : appliquer le patch décrit dans `docs/chantier/I_SWEEP_1_PICKUP_CASH_PATCH.md`, puis tester immédiatement le flow cash pickup.
 
 ---
 
-## File d'attente après I-SWEEP-1
+## File d'attente après I-SWEEP-1B
 
 | Lot | Priorité | Note |
 |-----|----------|------|
