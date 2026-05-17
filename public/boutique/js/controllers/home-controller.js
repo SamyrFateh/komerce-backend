@@ -51,7 +51,17 @@ function escapeHtml(value) {
 
 function scrollToCatalog() {
   const catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
-  if (catalog) scrollPageToElement(catalog, -120, 'smooth');
+  if (!catalog) return;
+  // Calcule l'offset dynamiquement depuis la hauteur réelle de la barre sticky
+  // (chips .k-hero-cats-sticky + subcats #k-subcats-wrap) pour ne pas masquer
+  // le premier produit ni faire disparaître la barre du champ visuel.
+  const stickyBar = document.querySelector('.k-hero-cats-sticky');
+  const subcatsWrap = document.getElementById('k-subcats-wrap');
+  const barH = (stickyBar ? stickyBar.getBoundingClientRect().height : 0)
+             + (subcatsWrap && subcatsWrap.style.display !== 'none'
+                ? subcatsWrap.getBoundingClientRect().height : 0);
+  const offset = -(barH + 12); // 12px d'air sous la barre
+  scrollPageToElement(catalog, offset, 'smooth');
 }
 
 /**
@@ -113,7 +123,8 @@ export function renderSubcatRail(catKey) {
       state.activeSubcat = subcat || null;
       renderSubcatRail(catKey);
       renderGrid();
-      scrollToCatalog();
+      // Pas de scroll sur clic subcat : l'utilisateur est déjà
+      // dans le catalogue, un scrollToCatalog() ferait sauter la vue.
     });
   });
 }
@@ -193,7 +204,7 @@ function handleCategorySelection(cat, deps) {
 
   if (cat === 'all') {
     if (state.activeCat === 'all') {
-      scrollPageToTop('smooth');
+      requestAnimationFrame(() => scrollPageToTop('smooth'));
       return;
     }
     syncRailActiveState('all', { center: true });
@@ -201,7 +212,7 @@ function handleCategorySelection(cat, deps) {
     state.activeSubcat = null;
     setActiveCat('all');
     renderSubcatRail(null);
-    scrollPageToTop('smooth');
+    requestAnimationFrame(() => scrollPageToTop('smooth'));
     return;
   }
 
@@ -210,14 +221,15 @@ function handleCategorySelection(cat, deps) {
     state.activeSubcat = null;
     setActiveCat(cat);
     renderSubcatRail(cat);
-    scrollPageToTop('smooth');
+    requestAnimationFrame(() => scrollPageToTop('smooth'));
     return;
   }
 
   if (cat === state.activeCat) {
     if (window.innerWidth >= 900) {
       renderSubcatRail(cat);
-      scrollToCatalog();
+      // Re-clic même chip : on scrolle vers le catalogue mais sans sauter
+      requestAnimationFrame(() => scrollToCatalog());
       return;
     }
 
@@ -225,7 +237,7 @@ function handleCategorySelection(cat, deps) {
     state.sectionSubcats = {};
     state.activeSubcat = null;
     setActiveCat('all');
-    scrollPageToTop('smooth');
+    requestAnimationFrame(() => scrollPageToTop('smooth'));
     return;
   }
 
@@ -233,7 +245,7 @@ function handleCategorySelection(cat, deps) {
   state.activeSubcat = null;
   setActiveCat(cat);
   renderSubcatRail(cat);
-  scrollPageToTop('smooth');
+  requestAnimationFrame(() => scrollPageToTop('smooth'));
 }
 
 export function setupHomeController(deps) {
