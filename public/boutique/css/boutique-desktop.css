@@ -1064,6 +1064,110 @@
    Pas de titre, pas de cadre, proportionnÃ©es aux chips.
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
+/* ── SOUS-CATÉGORIES — Mobile base (masqué par défaut) ───────── */
+/* Lot I2-A : migré depuis categories.css */
+#k-subcats-wrap { display: none; }
+
+/* Mobile base rail — révélé dynamiquement par b-subcat.js */
+.k-subcats-rail {
+  display: flex;
+  gap: 6px;
+  padding: 6px 14px 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  background: var(--white);
+  border-top: 1px solid var(--overlay-black-xs);
+}
+.k-subcats-rail::-webkit-scrollbar { display: none; }
+
+/* Mobile subchip base */
+.k-subchip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  scroll-snap-align: start;
+  padding: 5px 11px;
+  background: var(--sand);
+  border: 1px solid var(--overlay-black-xs);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .16s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.k-subchip:active { transform: scale(.94); }
+.k-subchip-icon  { font-size: 12px; line-height: 1; }
+.k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
+.k-subchip.active {
+  background: transparent;
+  border-color: var(--coral);
+}
+.k-subchip.active .k-subchip-label { color: var(--text); font-weight: 800; }
+
+/* Fond couleur catégorie sur subchip actif — cohérence avec chip parente */
+.k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
+.k-chip[data-cat="Maison"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: var(--cat-maison-bg); }
+.k-chip[data-cat="Tech"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: var(--cat-tech-bg); }
+.k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: var(--cat-brico-bg); }
+.k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
+.k-chip[data-cat="Auto"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
+
+/* Animation apparition mobile */
+@keyframes k-subchip-in-mobile {
+  from { opacity: 0; transform: translateX(-6px) scale(.94); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+.k-subcats-visible .k-subchip               { animation: k-subchip-in-mobile .16s ease both; }
+.k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .03s; }
+.k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .06s; }
+.k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
+.k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
+
+/* ── SOUS-CATÉGORIES — Desktop : positionnement sticky ───────── */
+@media (min-width: 900px) {
+  #k-subcats-wrap {
+    display: block; /* révélé en desktop */
+    position: sticky;
+    top: var(--header-h);
+    z-index: 20;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Animation slide-in desktop */
+  @keyframes k-subcats-slide-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #k-subcats-wrap {
+    animation: k-subcats-slide-in .16s ease both;
+  }
+
+  /* Rail desktop : max-width centré */
+  #k-subcats-wrap .k-subcats-rail {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 8px clamp(16px, 3vw, 40px) 0;
+  }
+}
+
+/* ── Hover subchips (desktop pointeur précis) ────────────────── */
+@media (hover: hover) and (pointer: fine) {
+  .k-subchip:hover { background: rgba(100,175,90,.08); border-color: var(--ocean); transform: translateY(-1px); }
+  .k-subchip:hover .k-subchip-label { color: var(--text); }
+}
+
+
 @media (min-width: 900px) {
 
   /* Wrap : transparent, centrÃ© sous les chips */
@@ -1603,6 +1707,8 @@
   #k-side-cart .k-sc-btn-cart {
     margin-top: 4px;
   }
+
+} /* fin @media 900px — CTA side cart */
 
 /* ── Side cart — overrides visuels skeleton (déplacé depuis desktop-commerce-skeleton.css, Lot 3) ── */
 @media (min-width: 900px) {

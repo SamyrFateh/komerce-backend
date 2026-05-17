@@ -254,86 +254,13 @@
 /* Sentinel spacer */
 #k-bar-sentinel { height: 0; margin: 0; padding: 0; }
 #k-bar-spacer   { display: none; }
-#k-subcats-wrap { display: none; }
 
-/* ── SOUS-CATÉGORIES — Mobile base ───────────────────────────── */
-.k-subcats-rail {
-  display: flex;
-  gap: 6px;
-  padding: 6px 14px 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  background: var(--white);
-  border-top: 1px solid var(--overlay-black-xs);
-}
-.k-subcats-rail::-webkit-scrollbar { display: none; }
-
-.k-subchip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  scroll-snap-align: start;
-  padding: 5px 11px;
-  background: var(--sand);
-  border: 1px solid var(--overlay-black-xs);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all .16s ease;
-  -webkit-tap-highlight-color: transparent;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.k-subchip:active { transform: scale(.94); }
-.k-subchip-icon  { font-size: 12px; line-height: 1; }
-.k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
-.k-subchip.active {
-  background: transparent;
-  border-color: var(--coral);
-}
-.k-subchip.active .k-subchip-label { color: var(--text); font-weight: 800; }
-
-/* Fond couleur catégorie sur subchip actif — cohérence avec chip parente */
-.k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
-.k-chip[data-cat="Maison"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: var(--cat-maison-bg); }
-.k-chip[data-cat="Tech"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: var(--cat-tech-bg); }
-.k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: var(--cat-brico-bg); }
-.k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
-.k-chip[data-cat="Auto"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
-
-@keyframes k-subchip-in {
-  from { opacity: 0; transform: translateX(-6px) scale(.94); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
-}
-.k-subcats-visible .k-subchip               { animation: k-subchip-in .16s ease both; }
-.k-subcats-visible .k-subchip:nth-child(2)  { animation-delay: .03s; }
-.k-subcats-visible .k-subchip:nth-child(3)  { animation-delay: .06s; }
-.k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
-.k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
-
-/* ── SOUS-CATÉGORIES — Desktop : positionnement sticky ───────── */
-/* Styles visuels .k-subchip, .k-subcats-rail, @keyframes
-   → boutique-desktop.css #k-subcats-wrap .k-subchip (source de vérité) */
-@media (min-width: 900px) {
-
-  /* Positionnement uniquement — non couvert par boutique-desktop.css. */
-  #k-subcats-wrap {
-    position: sticky;
-    top: var(--header-h);
-    z-index: 20;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    /* background / border / box-shadow → boutique-desktop.css LOT 13 */
-  }
-}
+/* ── SOUS-CATÉGORIES ──────────────────────────────────────────
+   Owner : boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP)
+   Le rail #k-subcats-wrap est masqué par défaut et révélé en desktop.
+   Tout le visuel (rail, subchip, couleurs par catégorie, animations)
+   vit dans boutique-desktop.css depuis le Lot I2-A.
+   ──────────────────────────────────────────────────────────── */
 
 /* Section subcats (dans chaque section catalogue) */
 .k-cat-section  { margin-bottom: 4px; }
@@ -470,24 +397,12 @@
   padding-top: 0;
 }
 
-/* ── DESKTOP ─────────────────────────────────────────────────── */
-/* #k-subcats-wrap visuel (background, border, rail, subchip) → source de vérité : boutique-desktop.css */
-/* Animation d'entrée conservée ici car non couverte par boutique-desktop.css */
-@media (min-width: 900px) {
-  @keyframes k-subcats-slide-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  #k-subcats-wrap {
-    animation: k-subcats-slide-in .16s ease both;
-  }
-}
+/* #k-subcats-wrap, .k-subchip, .k-subcats-rail, @keyframes : tout est désormais
+   dans boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
 /* [supprimé] ancien bloc k-chip grille desktop — remplacé par le bloc pill L518 */
 /* [supprimé] k-chip-photo grille + k-sec-grid 1200px → voir products.css */
 @media (hover: hover) and (pointer: fine) {
   .k-chip:hover .k-chip-photo { transform: scale(1.06); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-  .k-subchip:hover { background: rgba(100,175,90,.08); border-color: var(--ocean); transform: translateY(-1px); }
-  .k-subchip:hover .k-subchip-label { color: var(--text); }
   .k-sec-see-all:hover { background: rgba(67,160,71,.08); }
 }
 
@@ -512,13 +427,7 @@
 @media (min-width: 900px) {
 
   /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
-
-  /* Subcats desktop */
-  .k-subcats-rail {
-    max-width: var(--container);
-    margin: 0 auto;
-    padding: 8px clamp(16px, 3vw, 40px) 0;
-  }
+  /* .k-subcats-rail desktop max-width → boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
 
 }
 
