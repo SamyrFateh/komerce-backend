@@ -71,7 +71,7 @@ const HEX_ALLOWLIST = [
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal', 'cart', 'cart-product-open', 'group-cart-flow', 'shared-followup', 'interactions', 'hero-cart-proxy'],
+  'components.css': ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup'],
   'desktop.css':    ['boutique-desktop', 'desktop-commerce-skeleton'],
   'event.css':      ['event'],
 };
