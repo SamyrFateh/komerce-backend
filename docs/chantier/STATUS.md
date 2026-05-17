@@ -66,6 +66,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | G2 | ✅ Fait | Audit flow Stripe → préparation hub documenté ; side-effects post-commit rattachés à I-SWEEP/TEST-1 |
 | G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté ; crash-recovery/idempotence rattachés à I-SWEEP/TEST-1 |
 | G4 | ✅ Fait | Audit annulation après paiement documenté ; refund/purchasing/stock rattachés à I-SWEEP/TEST-1 |
+| G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté ; pricing/publication/stock rattachés à I-SWEEP/TEST-1 |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -86,38 +87,47 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - 🟠 **Stripe intent / purchasing** : G2 a isolé plusieurs points à tester ou durcir : création PaymentIntent sans idempotency key apparente, `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
 - 🟠 **Collectif G3** : risques de reprise après crash à couvrir : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées explicitement après order.
 - 🔴 **Refund/annulation G4** : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` restaure stock/wallet mais ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`. À traiter par lot dédié refund/purchasing dans I-SWEEP ou REFUND-1.
+- 🟠 **Sourcing/catalogue G5** : un admin peut créer/modifier un produit visible avec prix/stock manuel sans passer par pricing-engine, sans `price_history` complet et sans stock movement log. `apply-price` protège le seuil survival seulement si le body fournit `survival_price_kmf`; `apply-all` n'a pas d'audit price_history par item.
 
 ---
 
 ## Prochain lot recommandé
 
-### G5 — Flow sourcing → ajout produit → mise en vente
+### I-SWEEP — Correction groupée des violations d'invariants détectées
 
 ```text
-Branche   : audit/backend-G5-sourcing-product-flow
-Charge    : 2 jours
-Risque    : faible si audit/documentation, moyen si correction métier
-Prérequis : D1-D8 terminés, G1-G4 terminés
+Branche   : fix/backend-I-SWEEP-invariants
+Charge    : 3-5 jours
+Risque    : élevé — touches paiement, statut, stock, refund, purchasing
+Prérequis : D1-D8 terminés, G1-G5 terminés
 ```
 
-Actions :
+Objectif : corriger en cohérence les violations et dettes critiques révélées par les audits, avec tests ciblés.
 
-1. Tracer les flows fournisseurs, mapping produit, ajout produit, prix, stock et mise en vente.
-2. Vérifier auth/admin, pricing, stock, product_suppliers, purchase_orders, images, logs.
-3. Documenter garanties et violations détectées.
-4. Ne pas corriger à la volée les violations d'invariant : les rattacher à `I-SWEEP`.
-5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` si applicable.
+Périmètre minimal identifié :
 
-> **Stratégie corrections d'invariants** : les violations détectées par D4/D2/G1-G4 et l'audit G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques.
+1. `/pay-cash` dans `routes/pickup-secret.js` : aligner sur `confirmPaymentCycle(...)` / machine.
+2. `verify-qr` : éviter divergence order/parcels après commit ou ajouter repair/test.
+3. Stripe intent/purchasing : idempotence PaymentIntent, `triggerPurchasing`, commandes `ordered` sans PO.
+4. Collectif : crash-recovery `ready_to_capture`, 100 % cash sans order, transition `ordered` obligatoire/alertée, réservations stock.
+5. Refund/annulation : doctrine `cancelled` vs `refunded`, refund Stripe, cash refund/wallet, synchro order cancel ↔ purchase_orders.
+6. Sourcing/catalogue : pricing hardening, `price_history`, stock movement log, doctrine publication.
+
+À faire avant correction :
+
+- créer ou mettre à jour une checklist `I-SWEEP` ;
+- choisir les sous-lots à corriger en premier ;
+- écrire au minimum des tests de non-régression sur I-01/I-04/I-06 et les flows G1-G5.
 
 ---
 
-## File d'attente après G5
+## File d'attente après I-SWEEP
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| **I-SWEEP** | 🔴 **Critique** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine, QR verify parcel sync after commit, Stripe/purchasing idempotence, collectif crash-recovery, refund Stripe/cash doctrine, et synchro order cancel ↔ purchase_orders. |
 | TEST-1 | 🔴 Stratégique | Tests d'intégration sur invariants I-01 à I-10 + flows G1-G5 avant/après I-SWEEP |
+| REFUND-1 | 🔴 Critique si non inclus I-SWEEP | Remboursement Stripe/cash/wallet et doctrine `cancelled` vs `refunded` |
+| PRICE-1 | Haute | Durcissement pricing/catalogue : survival recalculé serveur, price_history complet, stock movement log |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
