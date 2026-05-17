@@ -64,6 +64,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | D8 | ✅ Fait | Audit Helmet/CSP production documenté ; aucun code modifié |
 | G1 | ✅ Fait | Audit flow cash → retrait documenté ; violations rattachées à I-SWEEP |
 | G2 | ✅ Fait | Audit flow Stripe → préparation hub documenté ; side-effects post-commit rattachés à I-SWEEP/TEST-1 |
+| G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté ; crash-recovery/idempotence rattachés à I-SWEEP/TEST-1 |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -82,39 +83,39 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 - 🟠 **QR verify** : `POST /api/scans/verify-qr` transitionne l'order en `collected` dans la transaction puis appelle `safeSyncScanToParcels` après commit. Risque de divergence order/parcels si crash entre commit et sync ; à couvrir par TEST-1 ou job de repair.
 - 🟠 **Stripe intent / purchasing** : G2 a isolé plusieurs points à tester ou durcir : création PaymentIntent sans idempotency key apparente, `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
+- 🟠 **Collectif G3** : risques de reprise après crash à couvrir : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées explicitement après order.
 
 ---
 
 ## Prochain lot recommandé
 
-### G3 — Flow panier collectif → contributions → confirmation
+### G4 — Flow annulation commande après paiement
 
 ```text
-Branche   : audit/backend-G3-collective-payment-flow
-Charge    : 2-3 jours
+Branche   : audit/backend-G4-cancel-after-payment-flow
+Charge    : 2 jours
 Risque    : faible si audit/documentation, moyen si correction métier
-Prérequis : D1-D8 terminés, G1-G2 terminés
+Prérequis : D1-D8 terminés, G1-G3 terminés
 ```
 
 Actions :
 
-1. Tracer le flow complet : workspace collectif, intentions, finalisation, tokens, contributions cash/carte, capture, création order.
-2. Vérifier auth/authz, machine de statut, idempotence, stock, contributions, race conditions, notifications.
+1. Tracer les chemins d'annulation commande après cash, Stripe, wallet et collectif.
+2. Vérifier machine de statut, refund, wallet reversal, stock restore, purchase_orders, notifications, idempotence.
 3. Documenter les garanties et violations détectées.
 4. Ne pas corriger à la volée les violations d'invariant : les rattacher à `I-SWEEP`.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` si applicable.
 
-> **Stratégie corrections d'invariants** : les violations détectées par D4/D2/G1/G2 et les audits G3-G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques.
+> **Stratégie corrections d'invariants** : les violations détectées par D4/D2/G1/G2/G3 et les audits G4-G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques.
 
 ---
 
-## File d'attente après G3
+## File d'attente après G4
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| G4 | Haute | Flow annulation commande après paiement |
 | G5 | Haute | Flow sourcing → ajout produit → mise en vente |
-| **I-SWEEP** | 🔴 **Critique (différé)** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine, QR verify parcel sync after commit, Stripe/purchasing idempotence, et l'alignement collectif à étudier. |
+| **I-SWEEP** | 🔴 **Critique (différé)** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine, QR verify parcel sync after commit, Stripe/purchasing idempotence, collectif crash-recovery, et l'alignement collectif à étudier. |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
