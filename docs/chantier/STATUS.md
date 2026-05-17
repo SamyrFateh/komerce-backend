@@ -42,6 +42,7 @@ Lire dans cet ordre avant toute modification :
 | INIT-0 | ✅ Fait | Référentiels lus en session |
 | DOC-0 | ✅ Fait | `CARTOGRAPHY_360.md` et `ZONE_IMPACT.md` déjà à jour |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
+| A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
@@ -60,29 +61,29 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### A3 — Déplacer `test_groupe_paiement.js` dans `tests/`
+### A6 — Nettoyer les TODO en issues GitHub
 
 ```text
-Branche   : chore/backend-A3-move-groupe-paiement-test
-Charge    : 15 min
+Branche   : chore/backend-A6-todo-cleanup
+Charge    : 30 min
 Risque    : nul à faible
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Vérifier si le script est ad hoc ou Jest-compatible.
-2. Si ad hoc, le déplacer vers `tests/integration/` avec un nom explicite `.manual.js` ou l'adapter réellement à Jest.
-3. Ne pas casser `npm test`.
-4. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
+1. Lister les TODO/FIXME/HACK/XXX dans les fichiers backend.
+2. Supprimer ceux qui sont obsolètes.
+3. Pour ceux qui restent, créer ou référencer une issue GitHub.
+4. Ne pas modifier de logique métier dans ce lot.
+5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après A3
+## File d'attente après A6
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| A6 | Haute | Transformer les TODO restants en issues ou TODO référencés |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | D1 | Haute | Audit couverture auth des routes admin |
 | D3 | Haute | Audit `auth-guest.js` |
