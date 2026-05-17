@@ -45,6 +45,7 @@ Lire dans cet ordre avant toute modification :
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
+| D1 | ✅ Fait | Audit couverture auth admin documenté ; aucun oubli évident trouvé sur routes inspectées |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -62,31 +63,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### D1 — Audit couverture auth des routes admin
+### D3 — Audit `auth-guest.js`
 
 ```text
-Branche   : audit/backend-D1-admin-auth-coverage
+Branche   : audit/backend-D3-auth-guest
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si correction de routes
+Risque    : faible si audit/documentation, moyen si correction de middleware
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Inventorier les routes admin et assimilées.
-2. Vérifier `authenticate` + rôle requis sur chaque endpoint sensible.
-3. Documenter les routes déjà conformes.
+1. Lire `middleware/auth-guest.js` et les routes qui l'utilisent.
+2. Vérifier création/réutilisation guest, cookies, expiration, collisions et sécurité.
+3. Documenter les garanties et les risques restants.
 4. Corriger uniquement les oublis évidents, sans refactor large.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D1
+## File d'attente après D3
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D3 | Haute | Audit `auth-guest.js` |
 | D4 | Haute | Audit QR / pickup-secret |
 | D5 | Haute | Audit `.env.example` vs prod |
 | D6 | Moyenne | Rate limiting exhaustif |
