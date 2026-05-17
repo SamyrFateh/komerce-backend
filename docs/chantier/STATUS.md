@@ -55,6 +55,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
 | D1 | ✅ Fait | Audit couverture auth admin documenté ; aucun oubli évident trouvé sur routes inspectées |
+| D2 | ✅ Fait | Audit webhooks Stripe/idempotence documenté ; aucun code modifié |
 | D3 | ✅ Fait | Audit `auth-guest.js` documenté ; risques suivis sans changement métier |
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
@@ -71,43 +72,47 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - `console.log` : environ 365 occurrences ; F1 est un gros lot, pas un petit nettoyage.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
-- Les webhooks Stripe sont déjà protégés par body brut + logique d'idempotence ; D2 est un audit formel.
+- Les webhooks Stripe sont protégés par body brut + signature + idempotence, mais D2 a isolé des durcissements à traiter dans I-SWEEP/TEST-1 : secrets dédiés obligatoires, replay tests, shared-cart transactionnel, reprise collective `ready_to_capture`.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
 - 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction différée — voir stratégie `I-SWEEP` ci-dessous.** Aucune modification de ce code à la volée pendant le chantier d'audits.
+- 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 
 ---
 
 ## Prochain lot recommandé
 
-### D2 — Audit webhooks Stripe / idempotence
+### G1 — Flow création commande → paiement cash → retrait relais
 
 ```text
-Branche   : audit/backend-D2-stripe-webhooks
-Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si correction paiements
-Prérequis : aucun bloquant
+Branche   : audit/backend-G1-cash-to-pickup-flow
+Charge    : 2 jours
+Risque    : faible si audit/documentation, moyen si correction métier
+Prérequis : D1-D8 terminés
 ```
 
 Actions :
 
-1. Lire les webhooks Stripe standard, shared-cart et collective-payment.
-2. Vérifier body brut, signatures, idempotence, transactions et side-effects.
-3. Documenter garanties et risques restants.
-4. Corriger uniquement les oublis évidents sans toucher au flux paiement complet.
-5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR si applicable.
+1. Tracer le flow complet : création commande, confirmation cash, préparation, livraison relais, retrait.
+2. Vérifier auth/authz, machine de statut, stock, wallet, notifications, logs, pickup security.
+3. Documenter les garanties et violations détectées.
+4. Ne pas corriger à la volée les violations d'invariant : les rattacher à `I-SWEEP`.
+5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` si applicable.
 
-> **Stratégie corrections d'invariants** : la violation I-01 détectée par l'audit D4 (cf. § Pièges critiques) **n'est pas corrigée à la volée**. Elle est mise en attente avec toute autre violation d'invariant qui sera révélée par les audits D2, G1-G5. Toutes seront traitées en un lot groupé `I-SWEEP` après fin du chantier d'audits, pour cohérence (une seule refacto + une seule batterie de tests). Voir file d'attente.
+> **Stratégie corrections d'invariants** : les violations détectées par D4/D2 et les audits G1-G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques, pour une refacto cohérente et une seule batterie de tests.
 
 ---
 
-## File d'attente après D2
+## File d'attente après G1
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| **I-SWEEP** | 🔴 **Critique (différé)** | **Correction groupée des violations d'invariants détectées par les audits.** Inclut au minimum la violation I-01 dans `routes/pickup-secret.js:286` (détectée par D4). À déclencher **après la fin du chantier d'audits** (D2 + G1 à G5). Une seule refacto cohérente, une seule batterie de tests, une seule revue. Les autres violations potentielles seront ajoutées à ce lot au fil de leur détection. |
-| G1-G5 | Haute | Audits flows business critiques avant I-SWEEP |
+| G2 | Haute | Flow création commande → paiement Stripe → préparation hub |
+| G3 | Haute | Flow panier collectif → contributions → confirmation |
+| G4 | Haute | Flow annulation commande après paiement |
+| G5 | Haute | Flow sourcing → ajout produit → mise en vente |
+| **I-SWEEP** | 🔴 **Critique (différé)** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine et l'alignement collectif à étudier. |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
