@@ -80,29 +80,46 @@ bundlés. Décision à prendre par PR avant tout nouveau travail :
 Un sélecteur listé ici est défini **uniquement** dans son owner. Si tu en as besoin ailleurs,
 soit tu importes le fichier owner (cascade), soit tu changes l'owner ici dans la même PR.
 
-| Sélecteur | Owner | Breakpoint |
-|---|---|---|
-| `.k-chip` | `categories.css` | base |
-| `.k-chip` (overrides desktop) | `boutique-desktop.css` | ≥900px |
-| `.k-cats-shell` | `categories.css` | base |
-| `.k-cats-shell` (desktop) | `boutique-desktop.css` | ≥900px |
-| `.k-hero-cats-sticky` | `hero.css` | base |
-| `.k-hero-cats-sticky` (desktop) | `boutique-desktop.css` | ≥900px |
-| `#k-subcats-wrap`, `.k-subchip` | `boutique-desktop.css` | ≥900px |
-| `.k-grid`, `.k-sec-grid` | `products.css` | tous |
-| `.k-card` (base) | `products.css` | tous |
-| `.k-card` (hover overlay desktop) | `boutique-desktop.css` | ≥900px |
-| `.k-card-add`, `.k-card-fav` | `cart.css` | tous |
-| `.k-side-cart` (mobile : display:none) | `layout.css` | <900px |
-| `.k-side-cart` (desktop : tout) | `boutique-desktop.css` | ≥900px |
-| `#k-desktop-catalog-wrap` | `desktop-commerce-skeleton.css` | ≥900px |
-| `.k-header` (desktop) | `desktop-commerce-skeleton.css` | ≥900px |
-| `.k-hero-media`, `.k-hero-mini-slogan` (desktop) | `desktop-commerce-skeleton.css` | ≥900px |
-| `.k-modal` (desktop overrides) | `desktop-commerce-skeleton.css` | ≥900px |
+| Sélecteur | Owner(s) autorisé(s) | Breakpoint | Justification |
+|---|---|---|---|
+| `.k-chip` (base skin) | `categories.css` | base | Owner composant |
+| `.k-chip` (overrides desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
+| `.k-chip.transitioning` (animation) | `interactions.css` | tous | Owner animations inter-composants |
+| `.k-cats-shell` (base) | `categories.css` | base | Owner composant |
+| `.k-cats-shell` (desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
+| `.k-cats-shell` (contexte hero mobile) | `hero.css` | base | Adaptation contextuelle enfant-hero uniquement |
+| `.k-cats-shell` (max-width ≥1500px) | `desktop-commerce-skeleton.css` | ≥1500px | Contrainte largeur max — rôle skeleton |
+| `.k-hero-cats-sticky` | `hero.css` | base | Owner composant |
+| `.k-hero-cats-sticky` (desktop) | `boutique-desktop.css` | ≥900px | Owner desktop |
+| `#k-subcats-wrap`, `.k-subchip` | `boutique-desktop.css` | ≥900px | Lot I-2-A |
+| `.k-grid` (base layout) | `products.css` | tous | Owner composant |
+| `.k-grid` (animations slide) | `interactions.css` | tous | Owner animations — rôle explicite du fichier |
+| `.k-grid` (overflow-x fix sticky) | `layout.css` | ≥900px | Fix structural global, commenté et justifié |
+| `.k-grid` (contexte flat-subcat panier) | `cart.css` | tous | Adaptation contextuelle panier uniquement |
+| `.k-sec-grid` (base layout) | `products.css` | tous | Owner composant |
+| `.k-sec-grid` (padding contextuel sections) | `categories.css` | tous | Padding spécifique au contexte section-catégorie |
+| `.k-card` (base) | `products.css` | tous | Owner composant |
+| `.k-card` (skin desktop : radius, shadow) | `desktop-commerce-skeleton.css` | ≥900px | Skin desktop global — rôle skeleton (§7) |
+| `.k-card` (hover overlay) | `boutique-desktop.css` | ≥900px | Owner desktop interactions |
+| `.k-card-add`, `.k-card-fav` (base + états) | `products.css` | tous | Owner composant — boutons sur la card |
+| `.k-card-add`, `.k-card-fav` (sizing desktop) | `cart.css` | ≥900px | Sizing dans contexte panier ouvert |
+| `.k-card-fav` (opacité hover desktop) | `boutique-desktop.css` | ≥900px | Comportement hover desktop |
+| `.k-side-cart` (mobile : display:none) | `layout.css` | <900px | Owner mobile |
+| `.k-side-cart` (desktop : tout) | `boutique-desktop.css` | ≥900px | Owner desktop |
+| `#k-desktop-catalog-wrap` (grid layout) | `desktop-commerce-skeleton.css` | ≥900px | Owner layout desktop |
+| `#k-desktop-catalog-wrap` (overflow/sticky fixes) | `layout.css` | ≥900px | Fix structurel sticky side-cart — ne peut pas vivre dans skeleton (commenté PATCH#227) |
+| `.k-header` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
+| `.k-hero-media`, `.k-hero-mini-slogan` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
+| `.k-modal` (desktop overrides) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
 
 **Note importante sur `.k-side-cart`** : l'état actuel a deux owners (layout.css + skeleton.css)
 avec des `top` incompatibles. C'est la **violation principale** à traiter en priorité.
 Décision : tout va dans `boutique-desktop.css`, layout.css garde uniquement `display:none` mobile.
+
+**Principe de légitimation** : un fichier peut toucher un sélecteur hors de son owner principal
+dans trois cas strictement définis — (1) animation/transition (owner : interactions.css),
+(2) adaptation contextuelle explicitement commentée (enfant d'un composant spécifique),
+(3) contrainte de layout global commentée et non reproductible dans l'owner principal.
 
 ---
 

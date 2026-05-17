@@ -35,30 +35,73 @@ function violate(rule, msg, detail) {
 //                 (regex faible) sans être "défini" — utile pour les overrides légitimes
 //                 dans le fichier owner du scope opposé.
 const OWNERSHIP = [
-  // .k-chip
-  { selector: '.k-chip',           owner: 'categories.css',     scope: 'base' },
+  // ── .k-chip ─────────────────────────────────────────────────────
+  // Base skin : categories.css. Overrides desktop : boutique-desktop.css.
+  // Animations d'état (.transitioning) : interactions.css — owner légitme des transitions inter-composants.
+  { selector: '.k-chip',           owner: 'categories.css',       scope: 'base' },
   { selector: '.k-chip',           owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  // .k-cats-shell
-  { selector: '.k-cats-shell',     owner: 'categories.css',     scope: 'base' },
-  { selector: '.k-cats-shell',     owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  // .k-hero-cats-sticky
-  { selector: '.k-hero-cats-sticky', owner: 'hero.css',         scope: 'base' },
+  { selector: '.k-chip',           owner: 'interactions.css',     scope: 'all' }, // animations .transitioning uniquement
+
+  // ── .k-cats-shell ───────────────────────────────────────────────
+  // Base : categories.css. Desktop : boutique-desktop.css.
+  // hero.css : adaptation contextuelle quand cats-shell est enfant du hero (mobile).
+  // skeleton : max-width ≥1500px — contrainte largeur globale, rôle du skeleton (§7 ARCHITECTURE.md).
+  { selector: '.k-cats-shell',     owner: 'categories.css',                    scope: 'base' },
+  { selector: '.k-cats-shell',     owner: 'boutique-desktop.css',              scope: 'desktop-override' },
+  { selector: '.k-cats-shell',     owner: 'hero.css',                          scope: 'base' },      // contexte hero mobile
+  { selector: '.k-cats-shell',     owner: 'desktop-commerce-skeleton.css',     scope: 'desktop' },   // max-width ≥1500px
+
+  // ── .k-hero-cats-sticky ─────────────────────────────────────────
+  { selector: '.k-hero-cats-sticky', owner: 'hero.css',           scope: 'base' },
   { selector: '.k-hero-cats-sticky', owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  // sous-cats
-  { selector: '#k-subcats-wrap',   owner: 'boutique-desktop.css', scope: 'desktop' },
-  { selector: '.k-subchip',        owner: 'boutique-desktop.css', scope: 'desktop' },
-  // grid / cards
-  { selector: '.k-grid',           owner: 'products.css',       scope: 'all' },
-  { selector: '.k-sec-grid',       owner: 'products.css',       scope: 'all' },
-  { selector: '.k-card',           owner: 'products.css',       scope: 'base' },
+
+  // ── sous-cats (Lot I-2-A) ────────────────────────────────────────
+  // Migré depuis categories.css → boutique-desktop.css (base + desktop).
+  { selector: '#k-subcats-wrap',   owner: 'boutique-desktop.css', scope: 'all' },
+  { selector: '.k-subchip',        owner: 'boutique-desktop.css', scope: 'all' },
+
+  // ── .k-grid ──────────────────────────────────────────────────────
+  // products.css : owner du layout de grille.
+  // interactions.css : animations slide (k-grid-slide-in/out) — rôle explicite du fichier.
+  // layout.css : overflow-x:clip fix sticky side-cart — structural global, commenté PATCH#227.
+  // cart.css : adaptation flat-subcat dans contexte panier uniquement.
+  { selector: '.k-grid',           owner: 'products.css',         scope: 'all' },
+  { selector: '.k-grid',           owner: 'interactions.css',     scope: 'all' },   // animations slide uniquement
+  { selector: '.k-grid',           owner: 'layout.css',           scope: 'desktop' }, // overflow fix PATCH#227
+  { selector: '.k-grid',           owner: 'cart.css',             scope: 'all' },   // contexte flat-subcat panier
+
+  // ── .k-sec-grid ──────────────────────────────────────────────────
+  // products.css : owner layout. categories.css : padding contextuel sections catégorie.
+  { selector: '.k-sec-grid',       owner: 'products.css',         scope: 'all' },
+  { selector: '.k-sec-grid',       owner: 'categories.css',       scope: 'all' },   // padding contexte section-cat
+
+  // ── .k-card ──────────────────────────────────────────────────────
+  // products.css : base. boutique-desktop.css : hover overlay.
+  // skeleton : skin desktop (border-radius, shadow) — cascade §7 skeleton gagne.
+  { selector: '.k-card',           owner: 'products.css',         scope: 'base' },
   { selector: '.k-card',           owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  { selector: '.k-card-add',       owner: 'cart.css',           scope: 'all' },
-  { selector: '.k-card-fav',       owner: 'cart.css',           scope: 'all' },
-  // side-cart : LA règle critique
-  { selector: '.k-side-cart',      owner: 'layout.css',         scope: 'mobile-only' },
+  { selector: '.k-card',           owner: 'desktop-commerce-skeleton.css', scope: 'desktop' }, // skin desktop global
+
+  // ── .k-card-add / .k-card-fav ────────────────────────────────────
+  // products.css : base + états (boutons sur la card).
+  // cart.css : sizing desktop dans contexte panier ouvert.
+  // boutique-desktop.css : opacité hover desktop (.k-card-fav uniquement).
+  { selector: '.k-card-add',       owner: 'products.css',         scope: 'all' },
+  { selector: '.k-card-add',       owner: 'cart.css',             scope: 'desktop' }, // sizing contexte panier
+  { selector: '.k-card-add',       owner: 'boutique-desktop.css', scope: 'desktop' }, // hover desktop (.k-card:hover .k-card-add)
+  { selector: '.k-card-fav',       owner: 'products.css',         scope: 'all' },
+  { selector: '.k-card-fav',       owner: 'cart.css',             scope: 'desktop' }, // sizing contexte panier
+  { selector: '.k-card-fav',       owner: 'boutique-desktop.css', scope: 'desktop' }, // opacité hover desktop
+
+  // ── .k-side-cart ─────────────────────────────────────────────────
+  { selector: '.k-side-cart',      owner: 'layout.css',           scope: 'mobile-only' },
   { selector: '.k-side-cart',      owner: 'boutique-desktop.css', scope: 'desktop' },
-  // layout desktop
+
+  // ── #k-desktop-catalog-wrap ──────────────────────────────────────
+  // skeleton : grid layout desktop (owner principal).
+  // layout.css : overflow/sticky fixes — structural, ne peut pas vivre dans skeleton (PATCH#227).
   { selector: '#k-desktop-catalog-wrap', owner: 'desktop-commerce-skeleton.css', scope: 'desktop' },
+  { selector: '#k-desktop-catalog-wrap', owner: 'layout.css',     scope: 'all' }, // overflow sticky fixes
 ];
 
 // I-3 : Allowlist hex hors tokens.css. Justifier chaque exception.
