@@ -62,6 +62,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
 | D7 | ✅ Fait | Audit CORS production documenté ; aucun code modifié |
 | D8 | ✅ Fait | Audit Helmet/CSP production documenté ; aucun code modifié |
+| G1 | ✅ Fait | Audit flow cash → retrait documenté ; violations rattachées à I-SWEEP |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -76,43 +77,43 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
-- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction différée — voir stratégie `I-SWEEP` ci-dessous.** Aucune modification de ce code à la volée pendant le chantier d'audits.
+- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4, confirmée par G1 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction différée — voir stratégie `I-SWEEP` ci-dessous.** Aucune modification de ce code à la volée pendant le chantier d'audits.
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
+- 🟠 **QR verify** : `POST /api/scans/verify-qr` transitionne l'order en `collected` dans la transaction puis appelle `safeSyncScanToParcels` après commit. Risque de divergence order/parcels si crash entre commit et sync ; à couvrir par TEST-1 ou job de repair.
 
 ---
 
 ## Prochain lot recommandé
 
-### G1 — Flow création commande → paiement cash → retrait relais
+### G2 — Flow création commande → paiement Stripe → préparation hub
 
 ```text
-Branche   : audit/backend-G1-cash-to-pickup-flow
+Branche   : audit/backend-G2-stripe-to-preparation-flow
 Charge    : 2 jours
 Risque    : faible si audit/documentation, moyen si correction métier
-Prérequis : D1-D8 terminés
+Prérequis : D1-D8 terminés, G1 terminé
 ```
 
 Actions :
 
-1. Tracer le flow complet : création commande, confirmation cash, préparation, livraison relais, retrait.
-2. Vérifier auth/authz, machine de statut, stock, wallet, notifications, logs, pickup security.
+1. Tracer le flow complet : création commande Stripe, PaymentIntent, webhook, confirmation, stock, sourcing, préparation hub.
+2. Vérifier auth/authz, machine de statut, idempotence, stock, wallet, notifications, logs, purchasing.
 3. Documenter les garanties et violations détectées.
 4. Ne pas corriger à la volée les violations d'invariant : les rattacher à `I-SWEEP`.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` si applicable.
 
-> **Stratégie corrections d'invariants** : les violations détectées par D4/D2 et les audits G1-G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques, pour une refacto cohérente et une seule batterie de tests.
+> **Stratégie corrections d'invariants** : les violations détectées par D4/D2/G1 et les audits G2-G5 sont regroupées dans `I-SWEEP` après fin des audits business critiques.
 
 ---
 
-## File d'attente après G1
+## File d'attente après G2
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| G2 | Haute | Flow création commande → paiement Stripe → préparation hub |
 | G3 | Haute | Flow panier collectif → contributions → confirmation |
 | G4 | Haute | Flow annulation commande après paiement |
 | G5 | Haute | Flow sourcing → ajout produit → mise en vente |
-| **I-SWEEP** | 🔴 **Critique (différé)** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine et l'alignement collectif à étudier. |
+| **I-SWEEP** | 🔴 **Critique (différé)** | Correction groupée des violations d'invariants détectées par les audits. Inclut au minimum `/pay-cash` hors machine, QR verify parcel sync after commit, et l'alignement collectif à étudier. |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
