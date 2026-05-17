@@ -59,6 +59,8 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
 | D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
+| D7 | ✅ Fait | Audit CORS production documenté ; aucun code modifié |
+| D8 | ✅ Fait | Audit Helmet/CSP production documenté ; aucun code modifié |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -79,34 +81,34 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### D7 — CORS production
+### D2 — Audit webhooks Stripe / idempotence
 
 ```text
-Branche   : audit/backend-D7-cors-production
+Branche   : audit/backend-D2-stripe-webhooks
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si modification CORS
+Risque    : faible si audit/documentation, moyen si correction paiements
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire la configuration CORS dans `server.js`.
-2. Vérifier `FRONTEND_URL`, `ALLOWED_ORIGINS`, localhost, absence d'origin et credentials.
+1. Lire les webhooks Stripe standard, shared-cart et collective-payment.
+2. Vérifier body brut, signatures, idempotence, transactions et side-effects.
 3. Documenter garanties et risques restants.
-4. Corriger uniquement les oublis évidents sans bloquer les pages existantes.
-5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
+4. Corriger uniquement les oublis évidents sans toucher au flux paiement complet.
+5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR si applicable.
 
 > **Stratégie corrections d'invariants** : la violation I-01 détectée par l'audit D4 (cf. § Pièges critiques) **n'est pas corrigée à la volée**. Elle est mise en attente avec toute autre violation d'invariant qui sera révélée par les audits D2, G1-G5. Toutes seront traitées en un lot groupé `I-SWEEP` après fin du chantier d'audits, pour cohérence (une seule refacto + une seule batterie de tests). Voir file d'attente.
 
 ---
 
-## File d'attente après D7
+## File d'attente après D2
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| **I-SWEEP** | 🔴 **Critique (différé)** | **Correction groupée des violations d'invariants détectées par les audits.** Inclut au minimum la violation I-01 dans `routes/pickup-secret.js:286` (détectée par D4). À déclencher **après la fin du chantier d'audits** (D2, D7, D8 + G1 à G5). Une seule refacto cohérente, une seule batterie de tests, une seule revue. Les autres violations potentielles seront ajoutées à ce lot au fil de leur détection par ChatGPT. |
+| **I-SWEEP** | 🔴 **Critique (différé)** | **Correction groupée des violations d'invariants détectées par les audits.** Inclut au minimum la violation I-01 dans `routes/pickup-secret.js:286` (détectée par D4). À déclencher **après la fin du chantier d'audits** (D2 + G1 à G5). Une seule refacto cohérente, une seule batterie de tests, une seule revue. Les autres violations potentielles seront ajoutées à ce lot au fil de leur détection. |
+| G1-G5 | Haute | Audits flows business critiques avant I-SWEEP |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H1 | Stratégique (lourd) | Refacto `server.js` — sortir les 92 DDL inline vers `scripts/fix-schema.js`, manifeste de montage des routes, cible < 300 lignes. Cf. `ZONE_IMPACT.md §3 bis`. |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
