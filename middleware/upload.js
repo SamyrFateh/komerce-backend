@@ -10,7 +10,7 @@
  *
  * ⚠️ Railway : le filesystem est éphémère. Les images uploadées
  * survivent aux restarts mais PAS aux redéploiements.
- * TODO Vague 3 P2 : Migrer vers Cloudflare R2 pour la persistence en prod.
+ * TODO #387 : Migrer vers un stockage objet persistant avant la prod.
  */
 
 'use strict';
