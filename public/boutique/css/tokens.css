@@ -89,6 +89,12 @@
   --surface-sand-97:   rgba(253,250,245,.97);
   --surface-sand-96:   rgba(253,250,245,.96);
   --surface-sand-94:   rgba(253,250,245,.94);
+  --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
+
+  /* ── Bordures coral alpha ───────────────────────────────── */
+  --border-coral-09:   rgba(200,92,45,.09);
+  --border-coral-13:   rgba(200,92,45,.13);
+  --border-coral-22:   rgba(200,92,45,.22);
 
   /* ── Bordures & ombres text-alpha ───────────────────────── */
   --border-text-04:  rgba(31,48,36,.04);

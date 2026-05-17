@@ -114,44 +114,38 @@
     padding: 14px 20px 0;
   }
 
+  /* ── Hero propre — image pleine, zéro voile sombre (LOT 14) ── */
+
   .k-hero-media {
-    height: clamp(210px, 16vw, 248px);
-    border-radius: 26px;
+    /* Fond crème visible si image plus étroite que le viewport */
+    background: var(--sand-warm);
+    /* Hauteur raisonnable — image respire */
+    height: clamp(180px, 16vw, 220px);
+    border-radius: 0;
     overflow: hidden;
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) */
-    border: 1px solid rgba(100,175,90, .10);
-    /* PALETTE-FIX-01 */
-    box-shadow: 0 18px 42px rgba(100,175,90, .12);
-    background:
-      linear-gradient(90deg, var(--sand-warm) 0%, var(--sand-warm) 42%, var(--cream-amber-bg) 68%, var(--cream-amber-bg) 100%);
+    border: none;
+    box-shadow: none;
   }
 
   .k-hero-img {
     height: 100%;
     width: 100%;
     object-fit: cover;
-    object-position: center center;
+    object-position: center 0%;
     background: transparent;
   }
 
-  .k-hero-media::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background:
-      linear-gradient(90deg, rgba(246,240,227,.92) 0%, rgba(246,240,227,.78) 28%, rgba(246,240,227,.18) 52%, transparent 72%),
-      radial-gradient(circle at 16% 18%, rgba(255,255,255,.30), transparent 30%);
-  }
+  /* ✅ Voile sombre SUPPRIMÉ — l'image s'affiche propre */
+  .k-hero-media::before { display: none; }
 
+  /* Slogan : conteneur positionné, sans fond propre */
   .k-hero-mini-slogan,
   .k-hero-mini-slogan--premium {
     left: 0;
     top: 0;
     bottom: 0;
-    width: 42%;
-    padding: 0 24px 0 clamp(26px, 4vw, 64px);
+    width: auto;
+    padding: 0 28px 0 clamp(20px, 3.5vw, 56px);
     align-items: flex-start;
     justify-content: center;
     text-align: left;
@@ -162,82 +156,99 @@
     -webkit-backdrop-filter: none;
   }
 
+  /* ✅ Carte verre crème — wrapper ajouté dans index.html */
+  .k-hero-mini-slogan-inner {
+    background: var(--surface-sand-91);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-coral-13);
+    border-radius: 14px;
+    padding: 16px 22px 14px;
+    box-shadow: var(--elev-3), 0 1px 0 rgba(255,255,255,.9) inset;
+  }
+
   .k-hero-badge {
     display: inline-flex;
     margin-bottom: 9px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(200,92,45,.10);
-    border: 1px solid rgba(200,92,45,.22);
+    padding: 3px 9px;
+    border-radius: 4px;
+    background: var(--border-coral-09);
+    border: 1px solid var(--border-coral-22);
     color: var(--coral-dark);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .08em;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .10em;
+    text-transform: uppercase;
   }
 
   .k-hero-mini-slogan .k-line-1 {
     color: var(--text);
-    font-size: clamp(24px, 2.2vw, 34px);
-    font-weight: 800;
-    line-height: .96;
+    font-size: clamp(1.3rem, 2vw, 2rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -.025em;
     text-shadow: none;
   }
 
   .k-hero-mini-slogan .k-line-2 {
     color: var(--coral);
-    font-size: clamp(32px, 3vw, 46px);
+    font-size: clamp(1.6rem, 2.5vw, 2.6rem);
     font-weight: 900;
-    line-height: .96;
-    letter-spacing: -.04em;
+    line-height: 1.0;
+    letter-spacing: -.03em;
+    margin-bottom: 12px;
     text-shadow: none;
   }
 
-  .k-hero-sub {
-    display: block;
-    max-width: 360px;
-    margin: 9px 0 0;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.35;
-  }
+  /* Sous-titre masqué — trop verbeux en desktop compact */
+  .k-hero-sub { display: none; }
 
   .k-hero-cta-row {
     display: flex;
-    gap: 9px;
-    margin-top: 13px;
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .k-hero-cta-primary {
-    height: 34px;
+    height: 32px;
     padding: 0 16px;
-    border-radius: 999px;
-    background: var(--amber-warm);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 900;
+    border-radius: 6px;
+    background: var(--coral);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 800;
     border: 0;
     cursor: pointer;
+    font-family: var(--font);
+    letter-spacing: .01em;
+    transition: background .15s, transform .12s;
   }
+  .k-hero-cta-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
 
   .k-hero-cta-ghost {
     display: inline-flex;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 999px;
-    background: rgba(31,48,36,.06);
-    color: var(--text);
-    border: 1px solid rgba(31,48,36,.14);
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--border-text-10);
+    font-family: var(--font);
   }
 
   .k-hero-trust {
     display: flex;
-    gap: 9px;
-    margin-top: 10px;
-    color: var(--text-light);
-    font-size: 11px;
-    font-weight: 700;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: 600;
   }
+  .k-trust-sep { color: var(--text-light); }
 
   /* Desktop commerce workspace */
   #k-page-scroll {
