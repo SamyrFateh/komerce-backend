@@ -71,9 +71,9 @@ const HEX_ALLOWLIST = [
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup'],
+  'components.css': ['categories', 'products', 'modal', 'cart', 'cart-product-open', 'group-cart-flow', 'shared-followup', 'interactions', 'hero-cart-proxy'],
   'desktop.css':    ['boutique-desktop', 'desktop-commerce-skeleton'],
-  'event.css':      ['tokens', 'event'],
+  'event.css':      ['event'],
 };
 
 // I-6 : Variables CSS posées par JS uniquement
@@ -233,11 +233,36 @@ function checkI3_hexHardcoded() {
   for (const file of onDisk) {
     if (file === 'tokens') continue;
     const css = stripComments(readCss(file));
+
+    // Identifier les zones :root { ... } à exclure (déclarations de tokens locaux,
+    // ex. event.css garde un :root pour les --ev-* sur les pages /event/*)
+    const rootRanges = [];
+    const rootRe = /:root\s*\{/g;
+    let rm;
+    while ((rm = rootRe.exec(css)) !== null) {
+      // Trouver l'accolade fermante correspondante
+      let depth = 1;
+      let i = rm.index + rm[0].length;
+      while (i < css.length && depth > 0) {
+        if (css[i] === '{') depth++;
+        else if (css[i] === '}') depth--;
+        i++;
+      }
+      rootRanges.push([rm.index, i]);
+    }
+    const isInRoot = (pos) => rootRanges.some(([a, b]) => pos >= a && pos < b);
+
     const lines = css.split('\n');
+    let runningPos = 0;
     lines.forEach((line, idx) => {
+      const lineStartPos = runningPos;
+      runningPos += line.length + 1; // +1 pour le \n
       // Hex 6 ou 8 chiffres, ou 3 chiffres autonomes
-      const matches = line.match(/#[0-9a-fA-F]{3,8}\b/g) || [];
-      matches.forEach(hex => {
+      const matches = [...line.matchAll(/#[0-9a-fA-F]{3,8}\b/g)];
+      matches.forEach(match => {
+        const hex = match[0];
+        const absPos = lineStartPos + match.index;
+        if (isInRoot(absPos)) return; // ignoré : c'est une déclaration de token
         const key = `${file}.css::${hex.toLowerCase()}`;
         if (allowlist.has(key)) return;
         violate('I-3',

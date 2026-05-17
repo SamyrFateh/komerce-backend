@@ -138,10 +138,10 @@
   height: 100%;
   font-size: 8px;
   font-weight: 800;
-  color: #fff;
+  color: var(--white);
 }
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
-.k-chip-photo svg { width: 15px; height: 15px; stroke: #2A3E2C; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.k-chip-photo svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 @media (max-width: 899px) {
   .k-chip-photo {
@@ -228,9 +228,9 @@
   transform: scale(1.05);
 }
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
-.k-chip.active[data-cat="all"] .k-chip-photo > span { color: #fff; }
+.k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
 .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-.k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: #fff; }
+.k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: var(--white); }
 .k-chip.active .k-chip-label { color: var(--coral); font-weight: 800; }
 
 @media (max-width: 899px) {
@@ -378,7 +378,7 @@
   cursor: pointer; white-space: nowrap; transition: all .15s;
 }
 .k-sec-subchip.active {
-  background: var(--coral); color: #fff; border-color: var(--coral);
+  background: var(--coral); color: var(--white); border-color: var(--coral);
 }
 
 /* ── PROMO RAIL ──────────────────────────────────────────────── */

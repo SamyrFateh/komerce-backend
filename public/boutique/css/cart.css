@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------
-   KOMERCE — cart.css
+   KOMERCE ï¿½ cart.css
    Panier drawer, checkout, OTP, suivi, favoris, toast, WhatsApp FAB.
-   Mobile-first, zéro !important.
+   Mobile-first, zï¿½ro !important.
    --------------------------------------------------------------- */
 
 /* -- OVERLAY PANIER -------------------------------------------- */
@@ -14,7 +14,7 @@
 }
 .k-cart-overlay.open { display: block; opacity: 1; }
 
-/* Bloquer scroll derrière */
+/* Bloquer scroll derriï¿½re */
 body.cart-open .k-modal-overlay,
 body.cart-open .k-cats,
 body.cart-open .k-hero { pointer-events: none; }
@@ -49,7 +49,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-cart-empty-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 28px; margin-top: 8px;
-  background: linear-gradient(135deg, var(--cta-green) 0%, #1d5b2a 100%);
+  background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%);
   color: var(--white); border: none; border-radius: 50px;
   font-size: 14px; font-weight: 600; cursor: pointer;
   box-shadow: 0 3px 10px rgba(42,122,62,.3); transition: all .15s;
@@ -92,7 +92,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-qty-ctrl:hover { background: var(--coral); color: var(--white); }
 .k-qty-ctrl-val { min-width: 18px; text-align: center; font-weight: 700; font-size: .82rem; }
 .k-cart-item-remove { background: none; color: var(--text-muted); font-size: .85rem; align-self: flex-start; padding: 2px 4px; transition: all .2s; cursor: pointer; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: none; }
-.k-cart-item-remove:hover { background: #fef2f2; color: var(--red); transform: scale(1.1); }
+.k-cart-item-remove:hover { background: var(--red-bg-soft); color: var(--red); transform: scale(1.1); }
 
 /* -- FOOTER PANIER -------------------------------------------- */
 .k-cart-footer {
@@ -123,14 +123,14 @@ body.cart-open .k-hero { pointer-events: none; }
 #k-cart-clear    { grid-column: 2; grid-row: 1; min-width: 44px; padding: 10px 12px; }
 #k-cart-whatsapp { grid-column: 3; grid-row: 1; }
 #k-cart-checkout { grid-column: 1 / -1; grid-row: 2; }
-.kcf-full { width: 100%; padding: 14px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 6px 0 12px; background: linear-gradient(135deg, var(--cta-green) 0%, #1d5b2a 100%); color: var(--white); box-shadow: 0 4px 14px rgba(42,122,62,.3); }
+.kcf-full { width: 100%; padding: 14px 20px; border-radius: 50px; font-size: 15px; font-weight: 700; margin: 6px 0 12px; background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%); color: var(--white); box-shadow: 0 4px 14px rgba(42,122,62,.3); }
 .kcf-full:hover  { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(42,122,62,.4); }
 .kcf-full:active { transform: scale(.98); }
 .kcf-primary  { background: var(--coral); color: var(--white); box-shadow: 0 2px 10px rgba(200,92,45,.25); }
 .kcf-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
 .kcf-secondary { background: var(--sand); color: var(--text-muted); border: 1px solid var(--border); }
 .kcf-secondary:hover { background: var(--white); color: var(--text); }
-.kcf-danger-mini { padding: 9px 14px; background: transparent; color: #999; border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+.kcf-danger-mini { padding: 9px 14px; background: transparent; color: var(--text-form-soft); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
 .kcf-danger-mini:hover { background: var(--red-danger-bg); color: var(--red-danger-text); border-color: var(--red-danger-border); }
 .kcf-whatsapp { background: var(--whatsapp); color: var(--white); border-radius: 12px; }
 .kcf-whatsapp:hover { background: var(--ocean); }
@@ -144,8 +144,8 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* -- MODAL COMMANDE ------------------------------------------- */
 .k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: center; align-items: stretch; }
-/* .k-order-overlay.open — source de vérité : voir L606 (structure flex complète + z-index) */
-/* BUG 4 FIX : overflow:clip au lieu de overflow:hidden — clippe visuellement
+/* .k-order-overlay.open ï¿½ source de vï¿½ritï¿½ : voir L606 (structure flex complï¿½te + z-index) */
+/* BUG 4 FIX : overflow:clip au lieu de overflow:hidden ï¿½ clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
 .k-order-modal { width: 100%; height: 100vh; height: 100dvh; background: var(--white); border-radius: 0; overflow: clip; animation: k-slide-up .3s var(--ease); display: flex; flex-direction: column; }
 .k-order-header { display: flex; align-items: center; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; background: var(--ocean-dark); color: var(--white); flex-shrink: 0; font-weight: 700; font-size: .96rem; }
@@ -155,8 +155,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
 .k-of-group input:focus { border-color: var(--coral); }
 
-/* 600px intentionnel : .k-order-modal uniquement — popup centré dès 480px de large,
-   indépendant du breakpoint layout. Ne pas aligner sur 900px. */
+/* 600px intentionnel : .k-order-modal uniquement ï¿½ popup centrï¿½ dï¿½s 480px de large,
+   indï¿½pendant du breakpoint layout. Ne pas aligner sur 900px. */
 @media (min-width: 600px) {
   .k-order-modal { max-width: 480px; height: auto; max-height: 92vh; border-radius: var(--radius-lg); }
   .k-order-overlay { align-items: center; }
@@ -164,7 +164,7 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* -- OTP + SUIVI ---------------------------------------------- */
 .k-otp-hint { font-size: .82rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px; }
-.k-otp-sent-banner { background: var(--whatsapp-bg-hover); border-left: 3px solid #aaa; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: .82rem; line-height: 1.5; color: var(--text); margin-bottom: 16px; }
+.k-otp-sent-banner { background: var(--whatsapp-bg-hover); border-left: 3px solid var(--text-disabled); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: .82rem; line-height: 1.5; color: var(--text); margin-bottom: 16px; }
 .k-otp-code-input { display: block; width: 100%; max-width: 200px; margin: 0 auto 16px; padding: 14px 8px; font-size: 1.6rem; font-weight: 700; letter-spacing: .25em; text-align: center; border: 2px solid var(--overlay-black-md); border-radius: 10px; background: var(--white); outline: none; }
 .k-otp-code-input:focus { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(200,92,45,.12); }
 .k-otp-divider { display: flex; align-items: center; gap: 12px; margin: 12px 0; color: var(--text-muted); font-size: .78rem; }
@@ -266,7 +266,7 @@ body.cart-open .k-wa-fab {
   transform: translateY(8px) scale(.96);
 }
 
-/* 900px aligné sur layout : bnav masquée à 900px, offset mobile bottom:calc(bnav-h+…) devient invalide */
+/* 900px alignï¿½ sur layout : bnav masquï¿½e ï¿½ 900px, offset mobile bottom:calc(bnav-h+ï¿½) devient invalide */
 @media (min-width: 900px) {
   .k-wa-fab {
     bottom: 18px;
@@ -316,16 +316,16 @@ body.cart-open .k-wa-fab {
 .k-pop { animation: k-pop .3s ease; }
 
 /* --------------------------------------------------------------
-   PAGER TEMU — scroll biaxial (horizontal catégories + vertical produits)
+   PAGER TEMU ï¿½ scroll biaxial (horizontal catï¿½gories + vertical produits)
    -------------------------------------------------------------- */
 @media (max-width: 899px) {
 
 
-  /* -- PAGER SLIDE — pas de layout spécial, juste animations --- */
-  /* Le swipe change de catégorie via animation CSS slide            */
+  /* -- PAGER SLIDE ï¿½ pas de layout spï¿½cial, juste animations --- */
+  /* Le swipe change de catï¿½gorie via animation CSS slide            */
   /* Pas de position:absolute, pas d'overflow:hidden sur les parents */
 
-  /* -- Indicateur bounce bas ? catégorie suivante --------------- */
+  /* -- Indicateur bounce bas ? catï¿½gorie suivante --------------- */
   @keyframes k-pager-bounce-hint {
     0%   { transform: translateY(0);   opacity: 0; }
     20%  { opacity: 1; }
@@ -365,7 +365,7 @@ body.cart-open .k-wa-fab {
   .k-pager-slide-in-right { animation: k-pager-in-right .28s var(--ease) both; }
   .k-pager-slide-in-left  { animation: k-pager-in-left  .28s var(--ease) both; }
 
-  /* -- Carousel dans le pager : désactiver scroll-snap horizontal -- */
+  /* -- Carousel dans le pager : dï¿½sactiver scroll-snap horizontal -- */
   #k-page-scroll.k-pager-active .k-card-carousel {
     overflow-x: hidden;
     scroll-snap-type: none;
@@ -387,17 +387,17 @@ body.cart-open .k-wa-fab {
 .k-ck-phone-select { flex: 0 0 82px; height: 34px; font-size: .75rem; padding: 0 4px; }
 .k-ck-phone-input  { min-width: 0; height: 34px; font-size: .82rem; }
 
-/* Drawer plein écran sous 768px — mobile étroit.
-   Migré depuis interactions.css (était isolé du reste des règles .k-cart-drawer). */
+/* Drawer plein ï¿½cran sous 768px ï¿½ mobile ï¿½troit.
+   Migrï¿½ depuis interactions.css (ï¿½tait isolï¿½ du reste des rï¿½gles .k-cart-drawer). */
 @media (max-width: 768px) {
   .k-cart-drawer { width: 100%; max-width: 100%; border-radius: 0; }
 }
 
-/* .k-cart-drawer max-width/width ? layout.css @900px (source de vérité : 420px)
+/* .k-cart-drawer max-width/width ? layout.css @900px (source de vï¿½ritï¿½ : 420px)
    Note Phase 8 : ce bloc @900px n'est PAS un doublon de layout.css.
-   layout.css définit .k-cart-drawer width/max-width (420px).
-   Ce bloc gère body padding-bottom + sizing .k-card-add/.k-card-fav.
-   Les deux coexistent légitimement — propriétés disjointes. */
+   layout.css dï¿½finit .k-cart-drawer width/max-width (420px).
+   Ce bloc gï¿½re body padding-bottom + sizing .k-card-add/.k-card-fav.
+   Les deux coexistent lï¿½gitimement ï¿½ propriï¿½tï¿½s disjointes. */
 @media (min-width: 900px) {
   body { padding-bottom: 0; }
   .k-card-add        { width: 46px; height: 46px; bottom: 10px; right: 10px; }
@@ -406,7 +406,7 @@ body.cart-open .k-wa-fab {
 }
 
 /* ---------------------------------------------------------------
-   CHECKOUT COMPACT — .ck-* (tunnel de commande)
+   CHECKOUT COMPACT ï¿½ .ck-* (tunnel de commande)
    --------------------------------------------------------------- */
 
 .ck-summary { display:flex; align-items:center; gap:6px; padding:2px 0 4px; border-bottom:1px solid var(--overlay-black-sm); margin-bottom:6px; font-size:.8rem; color:var(--text-muted); }
@@ -427,13 +427,13 @@ body.cart-open .k-wa-fab {
 .ck-fulfillment-btn {
   min-height:32px; padding:0 6px;
   border:1.5px solid rgba(31,48,36,.10); border-radius:13px;
-  background:var(--white); color:#617064;
+  background:var(--white); color:var(--text-muted-md);
   font-size:.79rem; font-weight:700; line-height:1.15;
   display:flex; align-items:center; justify-content:center;
   box-shadow:0 4px 12px rgba(31,48,36,.04);
 }
 .ck-fulfillment-btn.active {
-  border-color:var(--ocean); background:#f2faef; color:var(--ocean-dark);
+  border-color:var(--ocean); background:var(--green-bg-soft); color:var(--ocean-dark);
   box-shadow:0 0 0 1px rgba(100,175,90,.18), 0 6px 14px rgba(49,81,30,.07);
 }
 
@@ -463,7 +463,7 @@ body.cart-open .k-wa-fab {
 
 /* Phone Comores +269 */
 .k-ck-km-wrap   { display:flex; height:40px; }
-.k-ck-km-prefix { display:flex; align-items:center; gap:4px; padding:0 10px; background:#f5f5f2; border:1.5px solid var(--overlay-black-md); border-right:none; border-radius:8px 0 0 8px; font-size:12px; font-weight:700; color:#555; white-space:nowrap; flex-shrink:0; transition:border-color .15s; }
+.k-ck-km-prefix { display:flex; align-items:center; gap:4px; padding:0 10px; background:var(--sand); border:1.5px solid var(--overlay-black-md); border-right:none; border-radius:8px 0 0 8px; font-size:12px; font-weight:700; color:var(--text-strong-mid); white-space:nowrap; flex-shrink:0; transition:border-color .15s; }
 .k-ck-km-code   { color:var(--text-form-light); }
 .k-ck-km-input  { flex:1; height:100%; border:1.5px solid var(--overlay-black-md); border-left:none; border-radius:0 8px 8px 0; padding:0 12px; font-size:14px; outline:none; background:var(--white); transition:border-color .15s; }
 .k-ck-km-wrap:focus-within .k-ck-km-prefix,
@@ -480,7 +480,7 @@ body.cart-open .k-wa-fab {
 .k-stripe-eur.is-visible { display:block; }
 
 /* Wallet */
-.k-wallet-section       { margin-top:5px; padding:7px 10px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,#f0f5e6,#e8eddb); display:none; }
+.k-wallet-section       { margin-top:5px; padding:7px 10px; border:2px dashed var(--ocean); border-radius:8px; background:linear-gradient(135deg,var(--green-bg-mid),var(--green-bg-warm)); display:none; }
 .k-wallet-section.is-visible { display:block; }
 .k-wallet-label         { display:flex; align-items:center; gap:10px; cursor:pointer; }
 .k-wallet-cb            { width:18px; height:18px; accent-color:var(--ocean); flex-shrink:0; }
@@ -501,7 +501,7 @@ body.cart-open .k-wa-fab {
 .k-pay-radio     { width:16px; height:16px; accent-color:var(--ocean); flex-shrink:0; }
 .k-pay-title     { font-weight:700; font-size:.88rem; }
 .k-pay-subtitle  { font-size:.75rem; color:var(--text-form-light); margin-top:1px; }
-.k-pay-helper    { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:var(--cream-peach); color:#9a4e2d; font-size:.73rem; line-height:1.3; }
+.k-pay-helper    { margin:4px 0 8px; padding:7px 9px; border:1px solid rgba(255,107,53,.18); border-left:3px solid var(--coral); border-radius:11px; background:var(--cream-peach); color:var(--coral-text); font-size:.73rem; line-height:1.3; }
 
 /* Chips paiement */
 .ck-pay-grid  { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:5px; }
@@ -512,7 +512,7 @@ body.cart-open .k-wa-fab {
 .ck-chip-icon { font-size:1.05rem; line-height:1; }
 .ck-chip-lbl  { font-size:.72rem; font-weight:700; color:var(--text); line-height:1.2; }
 .ck-chip-lbl em.ck-soon       { font-style:normal; font-size:.58rem; font-weight:600; background:var(--coral); color:var(--white); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
-.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:#eef4ff; color:#315caa; border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
+.ck-chip-lbl em.ck-stripe-tag { font-style:normal; font-size:.58rem; font-weight:700; background:var(--blue-stripe-bg); color:var(--blue-stripe-text); border-radius:4px; padding:1px 4px; display:inline-block; margin-top:2px; }
 .ck-soon { font-size:.62rem; background:var(--coral); color:white; padding:1px 5px; border-radius:5px; font-weight:700; vertical-align:middle; }
 .ck-pay-mvola { display:flex; align-items:center; gap:8px; padding:8px 11px; border:2px solid rgba(0,0,0,.08); border-radius:8px; margin-bottom:4px; cursor:not-allowed; opacity:.5; font-size:.88rem; font-weight:600; background:var(--white); }
 .ck-pay-mvola input { width:15px; height:15px; flex-shrink:0; }
@@ -521,7 +521,7 @@ body.cart-open .k-wa-fab {
 .ck-track-row    { margin:4px 0 2px; }
 .ck-track-toggle { display:flex; align-items:center; gap:7px; font-size:.8rem; font-weight:600; cursor:pointer; padding:5px 0; color:var(--text); }
 .ck-track-toggle input[type=checkbox] { width:16px; height:16px; flex-shrink:0; accent-color:var(--coral); }
-.ck-track-details { margin-top:4px; border:1px solid rgba(31,48,36,.08); border-radius:11px; background:#fafaf8; }
+.ck-track-details { margin-top:4px; border:1px solid rgba(31,48,36,.08); border-radius:11px; background:var(--sand); }
 .ck-track-details summary { list-style:none; cursor:pointer; padding:9px 11px; font-size:.8rem; font-weight:700; color:var(--text); display:flex; align-items:center; justify-content:space-between; }
 .ck-track-details summary::-webkit-details-marker { display:none; }
 .ck-track-details summary::after { content:"+"; font-size:.94rem; color:var(--text-muted); }
@@ -536,10 +536,10 @@ body.cart-open .k-wa-fab {
 .ck-relais-ile-label { font-size:.76rem; color:var(--text-muted); margin-bottom:5px; }
 .ck-relais-ile-grid  { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-bottom:6px; }
 .ck-relais-ile-btn   { min-height:36px; padding:0 8px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); color:var(--text); font-size:.78rem; font-weight:700; text-align:center; }
-.ck-relais-ile-btn.active { border-color:var(--ocean); background:#f2faef; color:var(--ocean-dark); }
+.ck-relais-ile-btn.active { border-color:var(--ocean); background:var(--green-bg-soft); color:var(--ocean-dark); }
 .ck-relais-item      { position:relative; padding:5px 8px 5px 30px; border:1.5px solid rgba(31,48,36,.10); border-radius:13px; background:var(--white); cursor:pointer; box-shadow:0 3px 10px rgba(31,48,36,.04); }
 .ck-relais-item--compact { padding-top:9px; padding-bottom:9px; }
-.ck-relais-item.selected { border-color:var(--ocean); background:#f4fbf2; box-shadow:0 0 0 1px rgba(100,175,90,.16), 0 6px 14px rgba(49,81,30,.07); }
+.ck-relais-item.selected { border-color:var(--ocean); background:var(--green-bg-mist); box-shadow:0 0 0 1px rgba(100,175,90,.16), 0 6px 14px rgba(49,81,30,.07); }
 .ck-relais-item.selected::before { content:"\2713"; position:absolute; left:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; border-radius:50%; background:var(--ocean); color:var(--white); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; }
 .ck-relais-name { display:block; font-size:.9rem; font-weight:700; color:var(--text); }
 .ck-relais-addr { display:block; margin-top:2px; font-size:.72rem; line-height:1.25; color:var(--text-muted); }
@@ -554,7 +554,7 @@ body.cart-open .k-wa-fab {
   padding:10px 14px calc(10px + env(safe-area-inset-bottom));
   display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px;
   border-radius:0;
-  background: linear-gradient(135deg, var(--ocean-dark) 0%, #2e6b28 100%);
+  background: linear-gradient(135deg, var(--ocean-dark) 0%, var(--status-confirmed-text) 100%);
   color: var(--white); font-weight:800; font-size:1rem; border:none; cursor:pointer;
   box-shadow: 0 -4px 20px rgba(42,122,62,.22), 0 -1px 0 rgba(0,0,0,.06);
   transition: filter .2s, transform .15s; z-index:5; min-height:64px;
@@ -609,16 +609,16 @@ body.cart-open .k-wa-fab {
 .k-order-overlay.open .k-order-modal { display:flex; flex-direction:column; height:100vh; height:100dvh; max-height:100dvh; overflow:visible; }
 .k-order-overlay.open .k-order-body  { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
 /* BUG 4 FIX : le bouton est un enfant flex du modal (hors zone de scroll).
-   overflow:hidden sur le modal le clippait quand le contenu était trop tall.
+   overflow:hidden sur le modal le clippait quand le contenu ï¿½tait trop tall.
    On passe le modal en overflow:visible et on coupe uniquement via clip-path
-   pour préserver l'animation slide-up sans clip du bouton sticky. */
+   pour prï¿½server l'animation slide-up sans clip du bouton sticky. */
 .k-order-overlay.open .ck-confirm-btn { flex:0 0 auto; position:relative; bottom:auto; width:100%; margin:0; z-index:1300; padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
 
 /* Ring pulse bouton panier */
 @keyframes k-ring-pulse { 0% { box-shadow:0 0 0 0 rgba(255,90,70,.5); } 65% { box-shadow:0 0 0 12px rgba(255,90,70,0); } 100% { box-shadow:0 0 0 0 rgba(255,90,70,0); } }
-/* FIX Bug 1: l'animation CSS crée un compositing layer isolé qui casse mix-blend-mode sur .k-cart-avatar.
+/* FIX Bug 1: l'animation CSS crï¿½e un compositing layer isolï¿½ qui casse mix-blend-mode sur .k-cart-avatar.
    On applique l'animation sur un pseudo-element ::after au lieu du parent,
-   et on force mix-blend-mode:multiply sur l'avatar même pendant l'animation. */
+   et on force mix-blend-mode:multiply sur l'avatar mï¿½me pendant l'animation. */
 .k-cart-btn.ring-pulse { border-radius:50%; }
 .k-cart-btn.ring-pulse::after {
   content:''; position:absolute; inset:0; border-radius:50%; pointer-events:none;
@@ -626,26 +626,26 @@ body.cart-open .k-wa-fab {
 }
 .k-cart-btn.ring-pulse .k-cart-avatar,
 .k-cart-btn.avatar-wave .k-cart-avatar {
-  mix-blend-mode: multiply; /* re-forcer pendant les animations pour éviter le fond blanc */
+  mix-blend-mode: multiply; /* re-forcer pendant les animations pour ï¿½viter le fond blanc */
 }
 
 /* Bouton ajouter "confirmed" */
 .k-add-cart-btn.confirmed { background:var(--ocean); color:var(--white); font-size:13px; font-weight:700; justify-content:center; }
 
-/* INTENTIONNEL @600px — complément du bloc L160 (.k-order-modal centré).
-   Fix Bug 4 : rétablit overflow:hidden pour le border-radius sur tablette/desktop,
+/* INTENTIONNEL @600px ï¿½ complï¿½ment du bloc L160 (.k-order-modal centrï¿½).
+   Fix Bug 4 : rï¿½tablit overflow:hidden pour le border-radius sur tablette/desktop,
    compatible avec .ck-confirm-btn toujours visible (dernier enfant flex, hors scroll). */
 @media (min-width:600px) {
   .k-order-overlay.open .k-order-modal { height:auto; max-height:92vh; overflow:hidden; }
-  /* Sur desktop le modal a une hauteur fixe (92vh) : on rétablit overflow:hidden pour
+  /* Sur desktop le modal a une hauteur fixe (92vh) : on rï¿½tablit overflow:hidden pour
      le border-radius, mais le bouton confirmer est le dernier enfant flex ?
-     il reste toujours dans le flux et visible, pas clippé par le scroll. */
+     il reste toujours dans le flux et visible, pas clippï¿½ par le scroll. */
   .k-order-overlay.open .ck-confirm-btn { border-radius:0 0 var(--radius-lg) var(--radius-lg); }
 }
 
 
 /* ---------------------------------------------------------------
-   ÉCRAN SUCCÈS COMMANDE — déplacé depuis interactions.css
+   ï¿½CRAN SUCCï¿½S COMMANDE ï¿½ dï¿½placï¿½ depuis interactions.css
    --------------------------------------------------------------- */
 
 .k-success-screen {
@@ -681,28 +681,28 @@ body.cart-open .k-wa-fab {
 .k-success-cta-ghost { padding: 12px; border-radius: 50px; background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; border: 1.5px solid var(--border); cursor: pointer; width: 100%; transition: all .2s var(--ease); }
 .k-success-cta-ghost:hover { background: var(--sand); color: var(--text); }
 
-/* Tracking form — déplacé depuis interactions.css */
+/* Tracking form ï¿½ dï¿½placï¿½ depuis interactions.css */
 .k-track-input        { width:100%; padding:12px 14px; border:1.5px solid var(--sand-dark); border-radius:8px; outline:none; font-size:15px; font-weight:700; letter-spacing:4px; background:var(--white); transition:border-color .2s; }
 .k-track-input:focus  { border-color:var(--coral); box-shadow: 0 0 0 3px rgba(200,92,45,.1); }
 .k-track-input--phone { letter-spacing:normal; font-weight:400; font-size:14px; }
 .k-track-phone-wrap   { display:flex; gap:0; width:100%; border:1.5px solid var(--sand-dark); border-radius:8px; overflow:hidden; background:var(--white); transition:border-color .2s; }
 .k-track-phone-wrap:focus-within { border-color:var(--coral); box-shadow: 0 0 0 3px rgba(200,92,45,.08); }
-.k-track-country      { flex:0 0 100px; border:none; border-right:1.5px solid var(--sand-dark); background:#f9f7f3; padding:0 10px; font-size:14px; font-weight:600; color:var(--text); outline:none; }
+.k-track-country      { flex:0 0 100px; border:none; border-right:1.5px solid var(--sand-dark); background:var(--sand); padding:0 10px; font-size:14px; font-weight:600; color:var(--text); outline:none; }
 .k-track-btn--ghost   { background:transparent; border:1.5px solid var(--border); color:var(--text-muted); border-radius:50px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:all .2s var(--ease); }
 .k-track-btn--ghost:hover { background:var(--sand); color:var(--text); border-color:var(--text-muted); }
 
-/* Confirm legacy — déplacé depuis interactions.css */
+/* Confirm legacy ï¿½ dï¿½placï¿½ depuis interactions.css */
 .k-confirm-wrap        { text-align:center; padding:14px 0; }
 .k-confirm-sub         { color:var(--text-form-light); font-size:.85rem; margin-bottom:2px; }
-.k-confirm-close       { margin-top:6px; width:100%; padding:10px; border-radius:8px; font-weight:600; font-size:.85rem; background:#eef2e4; color:var(--text); border:1px solid rgba(0,0,0,.08); cursor:pointer; transition: background .15s; }
-.k-confirm-close:hover { background:#e0eddc; }
+.k-confirm-close       { margin-top:6px; width:100%; padding:10px; border-radius:8px; font-weight:600; font-size:.85rem; background:var(--green-bg-warm-lt); color:var(--text); border:1px solid rgba(0,0,0,.08); cursor:pointer; transition: background .15s; }
+.k-confirm-close:hover { background:var(--green-bg-warm-md); }
 .k-confirm-track       { margin-top:12px; width:100%; padding:11px; border-radius:8px; font-weight:700; font-size:.9rem; background:var(--ocean); color:white; border:none; cursor:pointer; transition: opacity .15s; }
 .k-confirm-track:active { opacity: .85; }
-.k-confirm-loyalty     { margin-top:10px; padding:8px 12px; background:#ecfdf5; border-radius:8px; border:1px solid #a7f3d0; font-size:.82rem; color:#065f46; font-weight:600; }
-.k-confirm-credit      { margin-top:6px; padding:8px 14px; background:linear-gradient(135deg,#f0f5e6,#e8eddb); border-radius:8px; font-size:.85rem; text-align:center; }
+.k-confirm-loyalty     { margin-top:10px; padding:8px 12px; background:var(--green-bg-lightest); border-radius:8px; border:1px solid var(--green-bg-mid-soft); font-size:.82rem; color:var(--green-deep-text); font-weight:600; }
+.k-confirm-credit      { margin-top:6px; padding:8px 14px; background:linear-gradient(135deg,var(--green-bg-mid),var(--green-bg-warm)); border-radius:8px; font-size:.85rem; text-align:center; }
 .k-confirm-credit strong { color:var(--ocean); }
 .k-confirm-cash-lbl    { margin-top:10px; font-weight:700; font-size:.88rem; }
-.k-confirm-cash-ref    { display:inline-block; background:var(--cream-amber-bg); color:#92400e; font-weight:800; font-size:1.15rem; padding:8px 22px; border-radius:10px; margin:6px 0; letter-spacing:2px; border:2px solid #fde68a; font-family:monospace; }
+.k-confirm-cash-ref    { display:inline-block; background:var(--cream-amber-bg); color:var(--amber-text-mid); font-weight:800; font-size:1.15rem; padding:8px 22px; border-radius:10px; margin:6px 0; letter-spacing:2px; border:2px solid var(--amber-light-bg); font-family:monospace; }
 
 /* -- Checkout ultra compact ------------------------------------ */
 .ck-relay-note    { font-size:.72rem; color:var(--text-muted); margin:0 0 5px; line-height:1.3; }
@@ -720,13 +720,13 @@ body.cart-open .k-wa-fab {
 .ck-step-panel    { display:none; }
 .ck-step-panel.active { display:block; }
 
-/* Indicateur de suivi optionnel — discret */
+/* Indicateur de suivi optionnel ï¿½ discret */
 .ck-track-details summary { font-size:.78rem; font-weight:600; color:var(--text-muted); padding:6px 0; }
 .ck-track-hint    { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
 
 /* --------------------------------------------------------------
-   FLAT SUBCAT — layout natif scroll-snap (b-subcat.js)
-   Séparé du pager catégories (b-pager.js / slide animation)
+   FLAT SUBCAT ï¿½ layout natif scroll-snap (b-subcat.js)
+   Sï¿½parï¿½ du pager catï¿½gories (b-pager.js / slide animation)
    -------------------------------------------------------------- */
 @media (max-width: 899px) {
   #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat {
@@ -738,7 +738,7 @@ body.cart-open .k-wa-fab {
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    /* Annuler tout translateX résiduel du pager catégories */
+    /* Annuler tout translateX rï¿½siduel du pager catï¿½gories */
     transform: none;
     transition: none;
     gap: 0;
@@ -759,15 +759,15 @@ body.cart-open .k-wa-fab {
     box-sizing: border-box;
     padding-bottom: calc(var(--bnav-h) + 64px);
   }
-  /* Pendant le drag flat, désactiver le scroll-snap pour fluidité */
+  /* Pendant le drag flat, dï¿½sactiver le scroll-snap pour fluiditï¿½ */
   #k-grid.k-grid-flat-subcat.is-flat-dragging {
     scroll-snap-type: none;
   }
 }
 
 /* --------------------------------------------------------------
-   SHARE MODAL — bottom sheet partage panier
-   (anciennement injecté dynamiquement via _injectShareModalCSS)
+   SHARE MODAL ï¿½ bottom sheet partage panier
+   (anciennement injectï¿½ dynamiquement via _injectShareModalCSS)
    -------------------------------------------------------------- */
 
 .k-share-overlay {
@@ -799,7 +799,7 @@ body.cart-open .k-wa-fab {
 }
 .k-share-sub {
   font-size: 13px;
-  color: #999;
+  color: var(--text-form-soft);
   text-align: center;
   margin-bottom: 22px;
 }
@@ -813,24 +813,24 @@ body.cart-open .k-wa-fab {
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-soft-md);
   border-radius: 14px;
   cursor: pointer;
   transition: border-color .2s;
   background: var(--white);
 }
 .k-share-choice:active,
-.k-share-choice:hover { border-color: #e53935; background: var(--cream-blush); }
+.k-share-choice:hover { border-color: var(--hero-red); background: var(--cream-blush); }
 .k-share-choice-icon  { font-size: 32px; flex-shrink: 0; }
 .k-share-choice-label { font-size: 15px; font-weight: 700; }
-.k-share-choice-desc  { font-size: 12px; color: #757575; margin-top: 2px; }
+.k-share-choice-desc  { font-size: 12px; color: var(--text-form-mid-md); margin-top: 2px; }
 .k-share-cancel {
   margin-top: 16px;
   width: 100%;
   padding: 12px;
   border: none;
   background: none;
-  color: #999;
+  color: var(--text-form-soft);
   font-size: 14px;
   cursor: pointer;
 }
@@ -838,19 +838,19 @@ body.cart-open .k-wa-fab {
   font-size: 19px;
   font-weight: 800;
   text-align: center;
-  color: #e53935;
+  color: var(--hero-red);
   margin: 8px 0 18px;
 }
 .k-share-sub-family {
   font-size: 14px;
-  color: #555;
+  color: var(--text-strong-mid);
   text-align: center;
   margin-bottom: 16px;
   line-height: 1.5;
 }
 .k-event-form label {
   font-size: 13px;
-  color: #757575;
+  color: var(--text-form-mid-md);
   display: block;
   margin-bottom: 4px;
   margin-top: 14px;
@@ -858,17 +858,17 @@ body.cart-open .k-wa-fab {
 .k-event-form input {
   width: 100%;
   padding: 11px 14px;
-  border: 1.5px solid #e0e0e0;
+  border: 1.5px solid var(--border-soft-md);
   border-radius: 10px;
   font-size: 14px;
   outline: none;
   box-sizing: border-box;
 }
-.k-event-form input:focus { border-color: #e53935; }
+.k-event-form input:focus { border-color: var(--hero-red); }
 .k-event-go {
   width: 100%;
   padding: 13px;
-  background: #e53935;
+  background: var(--hero-red);
   color: var(--white);
   border: none;
   border-radius: 12px;
@@ -880,13 +880,13 @@ body.cart-open .k-wa-fab {
 
 /* --------------------------------------------------------------
    BOUTON PAYER EN GROUPE
-   (anciennement injecté dynamiquement via k-cart-event-css)
+   (anciennement injectï¿½ dynamiquement via k-cart-event-css)
    -------------------------------------------------------------- */
 
 .k-cart-event-btn {
   width: 100%;
   padding: 11px;
-  background: linear-gradient(135deg, var(--violet, #6c3fc5), var(--violet-dark, #4a2d9e));
+  background: linear-gradient(135deg, var(--violet, var(--violet)), var(--violet-dark, var(--violet-dark)));
   color: var(--white);
   border: none;
   border-radius: 50px;
@@ -899,10 +899,10 @@ body.cart-open .k-wa-fab {
 }
 
 /* =========================================================
-   PATCH — Desktop side cart attention + expanded state
+   PATCH ï¿½ Desktop side cart attention + expanded state
    Clic petite dame desktop :
-   - met le side cart en évidence
-   - déplie la preview si elle était collapsée
+   - met le side cart en ï¿½vidence
+   - dï¿½plie la preview si elle ï¿½tait collapsï¿½e
    ========================================================= */
 
 @media (min-width: 900px) {

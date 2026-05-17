@@ -78,7 +78,7 @@ body {
 
 /* ─── HERO violet (identité panier collectif) ─── */
 .ev-hero {
-  background: linear-gradient(135deg, var(--violet) 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--violet) 0%, var(--violet-mid-bright) 100%);
   border-radius: var(--radius-lg);
   padding: 30px 24px 26px;
   margin-bottom: 16px;
@@ -97,7 +97,7 @@ body {
 }
 /* Hero variante verte pour vue "payer" (argent / confirmation) */
 .ev-hero--pay {
-  background: linear-gradient(135deg, var(--cta-green) 0%, #3d9e55 100%);
+  background: linear-gradient(135deg, var(--cta-green) 0%, var(--green-success) 100%);
   box-shadow: 0 8px 30px rgba(42,122,62,.28);
 }
 .ev-hero-eyebrow {
@@ -134,7 +134,7 @@ body {
   background: rgba(255,255,255,.15); color: rgba(255,255,255,.85);
   letter-spacing: .04em;
 }
-.ev-hero-badge.paid { background: rgba(74,197,120,.25); color: #86efac; }
+.ev-hero-badge.paid { background: rgba(74,197,120,.25); color: var(--green-soft); }
 
 /* ─── CARD ─── */
 .ev-card {
@@ -330,7 +330,7 @@ body {
 .ev-btn-coral:hover { background: var(--coral-dark); }
 /* cta-green : confirmation de paiement final */
 .ev-btn-confirm {
-  background: linear-gradient(135deg, var(--cta-green) 0%, #1d5b2a 100%);
+  background: linear-gradient(135deg, var(--cta-green) 0%, var(--status-confirmed-text) 100%);
   color: white;
   box-shadow: 0 4px 14px rgba(42,122,62,.3);
 }
@@ -375,7 +375,7 @@ body {
 }
 /* Danger */
 .ev-alert-danger {
-  background: #fef2f2; color: #991b1b;
+  background: var(--red-bg-soft); color: var(--red-deep-text);
   border: 1px solid rgba(220,38,38,.15);
 }
 /* Info : sable */
@@ -539,14 +539,14 @@ body {
 /* Boutons : noms hérités → noms maquette */
 .ev-btn-primary { /* hérite via ev-btn déjà présent */ }
 .ev-btn-primary,
-.ev-btn-violet { background: var(--coral); color: #fff; border: none; }
+.ev-btn-violet { background: var(--coral); color: var(--white); border: none; }
 .ev-btn-primary:hover,
 .ev-btn-violet:hover { background: var(--coral-dark); }
 
 .ev-btn-success,
-.ev-btn-confirm { background: var(--cta-green); color: #fff; border: none; }
+.ev-btn-confirm { background: var(--cta-green); color: var(--white); border: none; }
 .ev-btn-success:hover,
-.ev-btn-confirm:hover { background: #1f5f30; }
+.ev-btn-confirm:hover { background: var(--status-confirmed-text); }
 
 .ev-btn-secondary,
 .ev-btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border); }
@@ -554,14 +554,14 @@ body {
 .ev-btn-ghost:hover { background: var(--sand-warm); border-color: var(--text-muted); }
 
 .ev-btn-whatsapp,
-.ev-btn-wa { background: var(--whatsapp); color: #fff; border: none; }
+.ev-btn-wa { background: var(--whatsapp); color: var(--white); border: none; }
 .ev-btn-whatsapp:hover,
 .ev-btn-wa:hover { background: var(--whatsapp-dk); }
 
 /* Alertes : noms hérités → noms maquette */
 .ev-warning {
-  background: #fef3c7; color: #92400e;
-  border: 1.5px solid #fcd34d; border-radius: var(--radius);
+  background: var(--amber-bg-pale); color: var(--amber-text-mid);
+  border: 1.5px solid var(--amber-mid); border-radius: var(--radius);
   padding: 12px 14px; font-size: 13px; line-height: 1.5;
 }
 .ev-info {
@@ -578,7 +578,7 @@ body {
 /* Badges : noms hérités → noms maquette */
 .ev-badge-conception { background: var(--sand-warm); color: var(--text-muted); }
 .ev-badge-finalized  { background: var(--violet-light); color: var(--violet-dark); }
-.ev-badge-paid       { background: #dcfce7; color: #166534; }
+.ev-badge-paid       { background: var(--green-bg-pale); color: var(--green-deep-mid); }
 
 /* Sections CTA héritées (event-public) */
 .ev-cta-section {
