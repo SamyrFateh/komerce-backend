@@ -67,6 +67,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté ; crash-recovery/idempotence rattachés à I-SWEEP/TEST-1 |
 | G4 | ✅ Fait | Audit annulation après paiement documenté ; refund/purchasing/stock rattachés à I-SWEEP/TEST-1 |
 | G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté ; pricing/publication/stock rattachés à I-SWEEP/TEST-1 |
+| I-SWEEP-0 | ✅ Fait | Checklist d'exécution créée dans `docs/chantier/I_SWEEP_PLAN.md` |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -81,7 +82,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
 - **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
-- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4, confirmée par G1 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction différée — voir stratégie `I-SWEEP` ci-dessous.** Aucune modification de ce code à la volée pendant le chantier d'audits.
+- 🔴 **VIOLATION I-01 ACTIVE en prod** : `routes/pickup-secret.js` ligne 286 (`/pay-cash`) fait `UPDATE orders SET status = 'confirmed'` en direct, court-circuitant `services/order-status-machine.js`. **Détectée par l'audit D4, confirmée par G1 le 17/05/2026.** Conséquences possibles : pas d'entrée dans `order_status_history` (violation I-04 aussi), `pickup_code` pas garanti généré, notifications post-paiement non déclenchées, décrément stock potentiellement absent. **Correction prioritaire I-SWEEP-1.**
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 - 🟠 **QR verify** : `POST /api/scans/verify-qr` transitionne l'order en `collected` dans la transaction puis appelle `safeSyncScanToParcels` après commit. Risque de divergence order/parcels si crash entre commit et sync ; à couvrir par TEST-1 ou job de repair.
 - 🟠 **Stripe intent / purchasing** : G2 a isolé plusieurs points à tester ou durcir : création PaymentIntent sans idempotency key apparente, `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
@@ -93,38 +94,36 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### I-SWEEP — Correction groupée des violations d'invariants détectées
+### I-SWEEP-1 — Corriger `/pay-cash` pickup-secret hors machine
 
 ```text
-Branche   : fix/backend-I-SWEEP-invariants
-Charge    : 3-5 jours
-Risque    : élevé — touches paiement, statut, stock, refund, purchasing
-Prérequis : D1-D8 terminés, G1-G5 terminés
+Branche   : fix/backend-I-SWEEP-1-pay-cash-machine
+Charge    : 1 jour
+Risque    : élevé — touche paiement cash, statut, stock, pickup secret
+Prérequis : I-SWEEP-0 terminé
 ```
 
-Objectif : corriger en cohérence les violations et dettes critiques révélées par les audits, avec tests ciblés.
+Objectif : remplacer le `UPDATE orders SET status='confirmed'` direct par `confirmPaymentCycle(...)` dans une transaction, puis générer le pickup secret dans la même transaction.
 
-Périmètre minimal identifié :
+Contraintes :
 
-1. `/pay-cash` dans `routes/pickup-secret.js` : aligner sur `confirmPaymentCycle(...)` / machine.
-2. `verify-qr` : éviter divergence order/parcels après commit ou ajouter repair/test.
-3. Stripe intent/purchasing : idempotence PaymentIntent, `triggerPurchasing`, commandes `ordered` sans PO.
-4. Collectif : crash-recovery `ready_to_capture`, 100 % cash sans order, transition `ordered` obligatoire/alertée, réservations stock.
-5. Refund/annulation : doctrine `cancelled` vs `refunded`, refund Stripe, cash refund/wallet, synchro order cancel ↔ purchase_orders.
-6. Sourcing/catalogue : pricing hardening, `price_history`, stock movement log, doctrine publication.
-
-À faire avant correction :
-
-- créer ou mettre à jour une checklist `I-SWEEP` ;
-- choisir les sous-lots à corriger en premier ;
-- écrire au minimum des tests de non-régression sur I-01/I-04/I-06 et les flows G1-G5.
+1. garder l'émission du code clair une seule fois ;
+2. garder l'anti-collision last4 ;
+3. garder `cash_collections ON CONFLICT DO NOTHING` ;
+4. garder le refus stock insuffisant avant encaissement ;
+5. ne pas casser `/receipt/:orderId` ni `printTokens`.
 
 ---
 
-## File d'attente après I-SWEEP
+## File d'attente après I-SWEEP-1
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| I-SWEEP-2 | 🔴 Critique | QR verify : sync parcels dans transaction ou repair |
+| I-SWEEP-3 | Haute | Stripe intent / purchasing idempotence |
+| I-SWEEP-4 | Haute | Collectif crash-recovery |
+| I-SWEEP-5 | Haute | Refund / annulation / purchase_orders |
+| I-SWEEP-6 | Moyenne/haute | Pricing/catalogue publication hardening |
 | TEST-1 | 🔴 Stratégique | Tests d'intégration sur invariants I-01 à I-10 + flows G1-G5 avant/après I-SWEEP |
 | REFUND-1 | 🔴 Critique si non inclus I-SWEEP | Remboursement Stripe/cash/wallet et doctrine `cancelled` vs `refunded` |
 | PRICE-1 | Haute | Durcissement pricing/catalogue : survival recalculé serveur, price_history complet, stock movement log |
