@@ -1590,11 +1590,11 @@
   /* PALETTE-FIX-01 : coral au lieu de vert status */
   .k-sc-btn-checkout {
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--coral), var(--coral-dark, #a8441e));
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
     box-shadow: 0 12px 24px rgba(200,92,45,.22);
   }
   .k-sc-btn-checkout:hover {
-    background: var(--coral-dark, #a8441e);
+    background: var(--coral-dark);
   }
 
   .k-sc-btn-group,
