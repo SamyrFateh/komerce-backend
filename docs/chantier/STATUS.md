@@ -50,6 +50,7 @@ Lire dans cet ordre avant toute modification :
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
 | D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
+| D7 | ✅ Fait | Audit CORS production documenté ; aucun code modifié |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -67,31 +68,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### D7 — CORS production
+### D8 — Helmet production
 
 ```text
-Branche   : audit/backend-D7-cors-production
+Branche   : audit/backend-D8-helmet-production
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si modification CORS
+Risque    : faible si audit/documentation, moyen si modification CSP
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire la configuration CORS dans `server.js`.
-2. Vérifier `FRONTEND_URL`, `ALLOWED_ORIGINS`, localhost, absence d'origin et credentials.
-3. Documenter garanties et risques restants.
-4. Corriger uniquement les oublis évidents sans bloquer les pages existantes.
+1. Lire la configuration Helmet/CSP dans `server.js`.
+2. Vérifier les directives utiles : script, style, img, connect, frame, object, frameAncestors, baseUri, formAction.
+3. Documenter les garanties et risques restants.
+4. Corriger uniquement les oublis évidents sans casser Stripe, CDN ni pages existantes.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D7
+## File d'attente après D8
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
 
