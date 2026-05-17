@@ -10,11 +10,16 @@
 Lire dans cet ordre avant toute modification :
 
 1. `docs/chantier/STATUS.md` — état du jour et prochain lot réel
-2. `docs/CARTOGRAPHY_360.md` — cartographie canonique
-3. `docs/ZONE_IMPACT.md` — invariants absolus + checklist
-4. `docs/BACKEND_AUDIT_CORRECTIONS.md` — corrections post-lecture code, fait foi contre l'audit initial
-5. `docs/BACKEND_GOLIVE_ROADMAP.md` — détail complet des lots
-6. `docs/BACKEND_AUDIT_SESSIONS_PLAN.md` — sessions d'audit approfondies
+2. **Socle architectural (4 documents canoniques)** :
+   - `docs/CARTOGRAPHY_360.md` — quoi existe (domaines, surfaces, points de vérité)
+   - `docs/ZONE_IMPACT.md` — quoi protéger (10 invariants + checklist)
+   - `docs/SCHEMA.md` — quoi est vrai en base (91 tables, 14 ENUMs, triggers)
+   - `docs/CONTRACTS.md` — qui appelle quoi (contrats services critiques)
+3. `docs/BACKEND_AUDIT_CORRECTIONS.md` — corrections post-lecture code, fait foi contre l'audit initial
+4. `docs/BACKEND_GOLIVE_ROADMAP.md` — détail complet des lots
+5. `docs/BACKEND_AUDIT_SESSIONS_PLAN.md` — sessions d'audit approfondies
+
+Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence doc ↔ code ↔ DB.
 
 ---
 
@@ -41,6 +46,7 @@ Lire dans cet ordre avant toute modification :
 |-----|------|-------|
 | INIT-0 | ✅ Fait | Référentiels lus en session |
 | DOC-0 | ✅ Fait | `CARTOGRAPHY_360.md` et `ZONE_IMPACT.md` déjà à jour |
+| **SOCLE-1** | ✅ Fait | **Socle architectural à 4 docs gravé** : ajout `SCHEMA.md` + `CONTRACTS.md` ; `AGENTS.md` enrichi avec règle de divergence et règle de mise à jour ; `SCHEMA.md` généré contre `pg_dump` Railway 17/05/2026 |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
@@ -62,6 +68,10 @@ Lire dans cet ordre avant toute modification :
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
 - Les webhooks Stripe sont déjà protégés par body brut + logique d'idempotence ; D2 est un audit formel.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
+- **Dette doc SCHEMA-1** : 9 tables actives en DB ne sont pas mentionnées dans `CARTOGRAPHY_360.md` (`fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions`). Voir `SCHEMA.md` §12 pt 4. Lot dédié à programmer.
+- **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
+- **`server.js` (1200 lignes)** : non listé explicitement comme "fichier à haut risque" dans `ZONE_IMPACT.md` §3 alors qu'il monte 75 routes et contient du SQL inline. À ajouter au prochain pass ZONE_IMPACT.
+- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
 
 ---
 
@@ -90,10 +100,13 @@ Actions :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| SOCLE-2 | Moyenne | Aligner `CARTOGRAPHY_360.md` sur les 9 tables manquantes (fabrics, garment_models, otp_codes, sms_log, notification_log, stripe_events_processed, cart_shares, cart_contributions, product_variants) |
+| SOCLE-3 | Moyenne | Ajouter `server.js` à `ZONE_IMPACT.md §3` comme fichier à haut risque (1200 lignes, 75 routes, SQL inline) |
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
 | D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
+| TEST-1 | Stratégique | Tests d'intégration sur invariants I-01 à I-10 (filet minimal) |
 
 Pour la liste complète et les détails de chaque lot, utiliser `docs/BACKEND_GOLIVE_ROADMAP.md`.
 
@@ -105,4 +118,6 @@ Avant de terminer une session avec commit ou PR :
 
 1. cocher ou annoter le lot traité ici ;
 2. mettre à jour le prochain lot recommandé ;
-3. vérifier que `AGENTS.md` continue de pointer vers ce fichier en premier.
+3. vérifier que `AGENTS.md` continue de pointer vers ce fichier en premier ;
+4. si une divergence doc ↔ code ↔ DB a été détectée pendant la session : ajouter une ligne dans "Pièges critiques" ;
+5. si un des 4 documents socle a été modifié structurellement, vérifier la cohérence avec les 3 autres.
