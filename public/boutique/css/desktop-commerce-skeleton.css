@@ -119,8 +119,8 @@
   .k-hero-media {
     /* Fond crème visible si image plus étroite que le viewport */
     background: var(--sand-warm);
-    /* Hauteur raisonnable — image respire */
-    height: clamp(180px, 16vw, 220px);
+    /* Hauteur : assez pour voir personnages + cadeaux (image ratio 2:1) */
+    height: clamp(300px, 24vw, 340px);
     border-radius: 0;
     overflow: hidden;
     border: none;
@@ -131,7 +131,7 @@
     height: 100%;
     width: 100%;
     object-fit: cover;
-    object-position: center 15%;
+    object-position: center 45%;
     background: transparent;
   }
 
@@ -262,7 +262,7 @@
   #k-desktop-catalog-wrap {
     max-width: 1480px;
     margin: 16px auto 0;
-    padding: 0 20px 28px;
+    padding: 0 0 28px 20px;  /* padding-right: 0 — side cart colle au bord droit */
     display: grid;
     grid-template-columns: minmax(0, 1fr) 286px;
     gap: 18px;

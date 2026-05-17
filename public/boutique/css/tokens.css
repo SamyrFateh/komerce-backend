@@ -90,6 +90,14 @@
   --surface-sand-96:   rgba(253,250,245,.96);
   --surface-sand-94:   rgba(253,250,245,.94);
   --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
+  /* ── Ocean alpha (side cart, cards) ─────────────────────── */
+  --border-ocean-14:   rgba(100,175,90,.14);
+  --border-ocean-10:   rgba(100,175,90,.10);
+  --border-ocean-08:   rgba(100,175,90,.08);
+  --ocean-label:       rgba(100,175,90,.80);  /* label sous-total side cart */
+  --ocean-bg-08:       rgba(100,175,90,.08);  /* fond livraison gratuite */
+  --shadow-ocean-10:   0 12px 30px rgba(100,175,90,.10);
+  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
 
   /* ── Bordures coral alpha ───────────────────────────────── */
   --border-coral-09:   rgba(200,92,45,.09);

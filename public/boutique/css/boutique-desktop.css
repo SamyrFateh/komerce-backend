@@ -1173,31 +1173,36 @@
 
 /* ══════════════════════════════════════════════════════════════════
    SIDE CART DESKTOP — source unique de vérité pour .k-side-cart ≥900px.
+   Consolidé LOT 14 : 3 blocs fusionnés → 1 seul, rgba → tokens,
+   boutons toujours visibles (flex column + sc-bottom sticky),
+   side cart collé au bord droit (padding-right: 0 sur catalog-wrap).
    ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
+  /* ── Side cart : conteneur sticky ── */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: sticky;
     top: calc(var(--header-h, 72px) + 12px);
     align-self: flex-start;
+    /* Hauteur max : viewport - header - marge basse */
+    max-height: calc(100dvh - var(--header-h, 72px) - 24px);
     flex: 0 0 290px;
     width: 290px;
     min-width: 290px;
-    background: transparent;
-    border-radius: 12px;
-    border: 0;
-    box-shadow: none;
-    overflow: visible;
-    max-height: none;
+    border-radius: 24px 0 0 24px;  /* arrondi gauche, carré bord droit */
+    background: var(--surface-sand-92);
+    border: 1px solid var(--border-ocean-14);
+    border-right: none;
+    box-shadow: var(--shadow-ocean-10);
+    overflow: hidden;
     z-index: 200;
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
-    margin-top: 52px;
   }
 
   .k-side-cart:not(.has-items) { display: none; }
@@ -1207,115 +1212,121 @@
     transform: translateY(0);
   }
 
+  /* ── Items : zone scrollable, prend tout l'espace dispo ── */
   .k-sc-items {
-    flex: 0 0 auto;
-    min-height: 0;
-    max-height: none;
-    overflow: visible;
+    flex: 1 1 auto;
+    min-height: 0;             /* critical : permet à flex de réduire */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-text-08) transparent;
+    padding: 10px 10px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
+  /* Limite à 4 items par défaut, tous visibles si is-expanded */
   .k-sc-items > *:nth-child(n+5) { display: none; }
-  .k-sc-bottom { margin-top: auto; }
-}
 
-@media (min-width: 900px) {
-  .k-sc-top {
-    padding: 0 2px 6px;
-    flex-shrink: 0;
-    background: transparent;
+  /* ── Bottom : toujours visible, collé en bas ── */
+  .k-sc-bottom {
+    flex-shrink: 0;            /* ne se compresse jamais */
+    padding: 10px 12px 12px;
+    background: linear-gradient(180deg, var(--surface-sand-94), var(--white));
+    border-top: 1px solid var(--border-ocean-10);
     display: flex;
     flex-direction: column;
     gap: 6px;
-    position: relative;
-    z-index: 1;
   }
 
+  /* ── Top (sous-total + livraison) ── */
+  .k-sc-top {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-bottom: 8px;
+  }
   .k-sc-subtotal-row {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
-    padding: 2px 2px 0;
   }
   .k-sc-subtotal-label {
     font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
+    font-weight: 800;
+    color: var(--ocean-label);
   }
   .k-sc-subtotal-amount {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--text);
-    letter-spacing: -.02em;
+    letter-spacing: -.035em;
   }
-
   .k-sc-free-ship {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 10.5px;
     font-weight: 600;
-    color: var(--green-text);
-    background: var(--green-bg);
+    color: var(--ocean);
+    background: var(--ocean-bg-08);
     border-radius: 999px;
-    padding: 3px 8px;
+    padding: 4px 9px;
     width: fit-content;
-    line-height: 1.4;
   }
   .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
+  /* ── CTAs ── */
   .k-sc-cta-row {
-    display: flex;
-    gap: 6px;
-    align-items: stretch;
-    margin-top: 2px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
   }
   .k-sc-btn-checkout {
-    flex: 1 1 auto;
-    display: block;
-    padding: 11px 14px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
     border: none;
-    border-radius: 8px;
-    background: var(--orange);
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
     color: var(--white);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    text-align: center;
     font-family: var(--font);
     letter-spacing: .01em;
+    box-shadow: 0 8px 20px var(--shadow-coral-22);
     transition: background .15s, transform .12s;
-    box-shadow: 0 2px 8px var(--orange-shadow);
   }
-  .k-sc-btn-checkout:hover { background: var(--orange-dark); }
+  .k-sc-btn-checkout:hover { background: var(--coral-dark); }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
   .k-sc-btn-group {
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    border-radius: 999px;
     border: none;
-    border-radius: 8px;
     background: var(--violet);
     color: var(--white);
     cursor: pointer;
     font-family: var(--font);
+    font-size: 13px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 14px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px var(--violet-mid);
     transition: background .15s, transform .12s;
-    box-shadow: 0 2px 8px rgba(108,63,197,.28);
-    position: relative;
   }
   .k-sc-btn-group:hover { background: var(--violet-dark); }
   .k-sc-btn-group:active { transform: scale(.95); }
   .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
-  .k-sc-btn-group-label {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
+  /* Texte visible directement dans le HTML — on supprime le ::after CSS */
+  .k-sc-btn-group-label { display: inline; }
 
   .k-sc-btn-cart {
     display: block;
@@ -1330,55 +1341,46 @@
     text-align: center;
     font-family: var(--font);
     text-decoration: underline;
-    text-decoration-color: rgba(107,123,99,.35);
+    text-decoration-color: var(--border-text-08);
     text-underline-offset: 3px;
     transition: color .12s;
   }
   .k-sc-btn-cart:hover { color: var(--text); }
 
-  .k-sc-items {
-    flex: 0 0 auto;
-    max-height: calc(55vh - 140px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-    padding: 6px 0 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  .k-sc-count-label {
+    font-size: 11px;
+    color: var(--text-light);
+    font-weight: 500;
+    text-align: center;
   }
+
+  /* ── Items ── */
   .k-sc-item {
     display: flex;
     align-items: flex-start;
     gap: 10px;
     padding: 10px 12px;
-    transition: background .12s, transform .12s;
     background: var(--white);
     border-radius: 10px;
     border: 0;
+    transition: background .12s;
+    flex-shrink: 0;
   }
   .k-sc-item:hover { background: var(--sand); }
-
   .k-sc-item-img {
-    width: 68px; height: 68px;
+    width: 64px; height: 64px;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
     background: var(--sand);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-text-06);
   }
   .k-sc-item-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 3px;
   }
   .k-sc-item-name {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text);
+    font-size: 12px; font-weight: 500; color: var(--text);
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1386,99 +1388,62 @@
     overflow: hidden;
   }
   .k-sc-item-variant {
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: 10px; font-weight: 600; color: var(--text-muted);
     background: var(--sand);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-text-06);
     border-radius: 4px;
     padding: 1px 5px;
-    display: inline-block;
-    width: fit-content;
+    display: inline-block; width: fit-content;
   }
   .k-sc-item-meta {
-    display: flex;
-    align-items: center;
+    display: flex; align-items: center;
     justify-content: space-between;
-    margin-top: 2px;
-    gap: 6px;
+    margin-top: 2px; gap: 6px;
   }
   .k-sc-item-price-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-    flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap;
   }
   .k-sc-item-price {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--red-text-md);
-    letter-spacing: -.01em;
+    font-size: 13px; font-weight: 800;
+    color: var(--red-text-md); letter-spacing: -.01em;
   }
   .k-sc-item-old-price {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-decoration: line-through;
+    font-size: 10px; font-weight: 500;
+    color: var(--text-muted); text-decoration: line-through;
   }
   .k-sc-item-actions {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
   }
-
   .k-sc-item-stepper {
-    display: flex;
-    align-items: center;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
+    display: flex; align-items: center;
+    border: 1px solid var(--border-text-08);
+    border-radius: 6px; overflow: hidden;
     background: var(--white);
   }
   .k-sc-item-stepper button {
     width: 24px; height: 24px;
-    border: none;
-    background: transparent;
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background .1s;
-    font-family: var(--font);
-    padding: 0;
-    line-height: 1;
+    border: none; background: transparent;
+    color: var(--text); font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; transition: background .1s;
+    font-family: var(--font); padding: 0; line-height: 1;
   }
   .k-sc-item-stepper button:hover { background: var(--sand-dark); }
-  .k-sc-item-stepper button:active { background: var(--border); }
   .k-sc-item-stepper-qty {
-    min-width: 24px;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
+    min-width: 24px; text-align: center;
+    font-size: 12px; font-weight: 700; color: var(--text);
     padding: 0 2px;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-    line-height: 24px;
-    user-select: none;
+    border-left: 1px solid var(--border-text-08);
+    border-right: 1px solid var(--border-text-08);
+    line-height: 24px; user-select: none;
   }
-
   .k-sc-item-remove {
     width: 24px; height: 24px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background .12s, color .12s, border-color .12s;
+    border: 1px solid var(--border-text-08);
+    border-radius: 6px; background: transparent;
+    color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background .12s, color .12s, border-color .12s;
     padding: 0;
   }
   .k-sc-item-remove:hover {
@@ -1486,119 +1451,27 @@
     border-color: var(--red-border);
     color: var(--red-text);
   }
-  .k-sc-item-remove:active { background: var(--red-bg-hover); }
 
-  .k-sc-bottom {
-    padding: 8px 0 0;
-    border-top: 0;
-    background: transparent;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: auto;
+  /* ── Attention state ── */
+  #k-side-cart.is-attention {
+    box-shadow:
+      0 0 0 3px var(--border-coral-13),
+      0 14px 40px var(--border-text-15);
+    transform: translateY(-2px);
+    transition: box-shadow .22s ease, transform .22s ease;
   }
-  .k-sc-count-label {
-    font-size: 11px;
-    color: var(--text-light);
-    font-weight: 500;
-    text-align: center;
+
+  /* ── Expanded state : tous les items visibles ── */
+  #k-side-cart.is-expanded .k-sc-items > * { display: flex; }
+  #k-side-cart.is-expanded .k-sc-items {
+    max-height: calc(100dvh - var(--header-h, 72px) - 245px);
   }
 }
 
-
-/* ══════════════════════════════════════════════════════════════════
-   PATCH — Side cart group payment CTA
-   ══════════════════════════════════════════════════════════════════ */
-
-@media (min-width: 900px) {
-  #k-side-cart .k-sc-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  #k-side-cart .k-sc-btn-checkout {
-    width: 100%;
-    min-height: 46px;
-  }
-
-  #k-side-cart .k-sc-btn-group {
-    width: 100%;
-    min-height: 42px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0 14px;
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  #k-side-cart .k-sc-btn-group-label { display: inline; }
-
-  #k-side-cart .k-sc-btn-group::after { content: "Payer en groupe"; }
-
-  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label { display: none; }
-
-  #k-side-cart .k-sc-btn-cart { margin-top: 4px; }
-}
-
-/* ── Side cart — overrides visuels skeleton
-   PALETTE-FIX-01 : bordure + ombre ocean, bouton checkout coral.
-   ──────────────────────────────────────────────────────────────── */
-@media (min-width: 900px) {
+@media (min-width: 1200px) {
   .k-side-cart {
-    top: 150px;
-    max-height: calc(100vh - 170px);
-    border-radius: 24px;
-    background: rgba(255,252,244,.92);
-    /* PALETTE-FIX-01 */
-    border: 1px solid rgba(100,175,90,.14);
-    box-shadow: 0 12px 30px rgba(100,175,90,.10);
-    overflow: hidden;
-  }
-
-  .k-sc-bottom {
-    background: linear-gradient(180deg, rgba(255,252,244,.88), var(--white));
-    /* PALETTE-FIX-01 */
-    border-top: 1px solid rgba(100,175,90,.10);
-  }
-
-  .k-sc-subtotal-label {
-    /* PALETTE-FIX-01 */
-    color: rgba(100,175,90,.80);
-    font-weight: 800;
-  }
-
-  .k-sc-subtotal-amount {
-    color: var(--text);
-    font-size: 18px;
-    letter-spacing: -.035em;
-  }
-
-  .k-sc-free-ship {
-    /* PALETTE-FIX-01 */
-    color: rgba(100,175,90,.90);
-    background: rgba(100,175,90,.08);
-    border-radius: 999px;
-    padding: 6px 9px;
-  }
-
-  /* PALETTE-FIX-01 : coral au lieu de vert status */
-  .k-sc-btn-checkout {
-    border-radius: 999px;
-    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
-    box-shadow: 0 12px 24px rgba(200,92,45,.22);
-  }
-  .k-sc-btn-checkout:hover {
-    background: var(--coral-dark);
-  }
-
-  .k-sc-btn-group,
-  .k-sc-btn-cart {
-    border-radius: 999px;
+    flex: 0 0 306px;
+    width: 306px;
+    min-width: 306px;
   }
 }

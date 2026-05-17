@@ -898,32 +898,5 @@ body.cart-open .k-wa-fab {
   letter-spacing: .01em;
 }
 
-/* =========================================================
-   PATCH � Desktop side cart attention + expanded state
-   Clic petite dame desktop :
-   - met le side cart en �vidence
-   - d�plie la preview si elle �tait collaps�e
-   ========================================================= */
-
-@media (min-width: 900px) {
-  #k-side-cart.is-attention {
-    box-shadow:
-      0 0 0 3px rgba(200, 92, 45, .25),
-      0 14px 40px rgba(31, 48, 36, .18);
-    transform: translateY(-2px);
-    transition:
-      box-shadow .22s ease,
-      transform .22s ease;
-  }
-
-  #k-side-cart.is-expanded .k-sc-items > * {
-    display: flex;
-  }
-
-  #k-side-cart.is-expanded .k-sc-items {
-    max-height: calc(100dvh - var(--header-h, 72px) - 245px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
+/* is-attention + is-expanded : déplacés dans boutique-desktop.css (owner §3). */
 
