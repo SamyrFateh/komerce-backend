@@ -1,50 +1,45 @@
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   KOMERCE â€” boutique-desktop.css
-   Fichier unique : rÃ¨gles globales (mobile-first) + overrides desktop.
+/* ══════════════════════════════════════════════════════════════════
+   KOMERCE — boutique-desktop.css
+   Fichier unique : règles globales (mobile-first) + overrides desktop.
    Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
-   ChargÃ© sans attribut media â€” mobile-first par construction.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   Chargé sans attribut media — mobile-first par construction.
+   ══════════════════════════════════════════════════════════════════
+   PALETTE-FIX-01 (2026-05-17) : tous les rgba(31,48,36,…) rgba(42,62,44,…)
+   rgba(47,107,63,…) remplacés par tokens de marque :
+     --ocean #64AF5A → rgba(100,175,90,…)
+     --coral #C85C2D → rgba(200,92,45,…)
+   ══════════════════════════════════════════════════════════════════ */
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PARTIE 1 â€” RÃˆGLES GLOBALES (mobile-first, tous breakpoints)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   PARTIE 1 — RÈGLES GLOBALES (mobile-first, tous breakpoints)
+   ══════════════════════════════════════════════════════════════════ */
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   KOMERCE â€” shared.css
-   RÃ¨gles partagÃ©es mobile + desktop.
-   ChargÃ© SANS attribut media â€” s'applique sur tous les breakpoints.
-   Extrait de desktop-upgrade.css et desktop-mega-nav.css pour corriger
-   le Bug #1 : chips desktop parasitant le mobile sur reload iOS Safari.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   KOMERCE — shared.css
+   Règles partagées mobile + desktop.
+   Chargé SANS attribut media — s'applique sur tous les breakpoints.
+   ══════════════════════════════════════════════════════════════════ */
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   FOOTER â€” cachÃ© par dÃ©faut (le CSS desktop le montre Ã  â‰¥900px)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   FOOTER — caché par défaut (le CSS desktop le montre à ≥900px)
+   ══════════════════════════════════════════════════════════════════ */
 .k-footer { display: none; }
 
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MEGA DROPDOWN â€” panneau sous-catÃ©gories (injectÃ© par JS desktop)
-   display:none par dÃ©faut â†’ aucun impact visuel sur mobile.
-   RegroupÃ© ici car le dropdown est dans le DOM mÃªme sur mobile
-   (le JS a un guard isDesktop() mais le nÃ…â€œud peut exister).
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* .k-mega-dropdown et classes associées supprimées (lot NAV-DESKTOP-01, 2026-05-17)
    Remplacé par sous-catégories permanentes dans #k-subcats-wrap.
    Le hover sur chip appelle directement renderSubcatRail() — plus de panneau contextuel. */
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   PARTIE 2 â€” DESKTOP UPGRADE (â‰¥ 900px)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   PARTIE 2 — DESKTOP UPGRADE (≥ 900px)
+   ══════════════════════════════════════════════════════════════════ */
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════════════
    1. HEADER DESKTOP
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-header-nav-btn {
@@ -81,11 +76,12 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   3. CARD HOVER OVERLAY â€” SOURCE DE VÃ‰RITÃ‰ UNIQUE
-   Overlay sombre en bas de carte : nom + desc + actions.
+/* ══════════════════════════════════════════════════════════════════
+   3. CARD HOVER OVERLAY — SOURCE DE VÉRITÉ UNIQUE
+   Overlay en bas de carte : nom + desc + actions.
    Le JS injecte .k-card-hover-overlay une seule fois par carte.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   PALETTE-FIX-01 : gradient ocean au lieu de vert foncé hardcodé.
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card { position: relative; }
@@ -96,8 +92,8 @@
     inset: 0;
     background: linear-gradient(
       to top,
-      rgba(31,48,36,.88) 0%,
-      rgba(31,48,36,.54) 48%,
+      rgba(100,175,90,.82) 0%,
+      rgba(100,175,90,.46) 48%,
       var(--border-text-08) 100%
     );
     border-radius: 10px;
@@ -118,7 +114,7 @@
     pointer-events: auto;
   }
 
-  /* Masquer les boutons natifs pour Ã©viter le doublon visuel */
+  /* Masquer les boutons natifs pour éviter le doublon visuel */
   .k-card:hover .k-card-fav,
   .k-card:hover .k-card-add {
     opacity: 0 !important;
@@ -228,25 +224,20 @@
     pointer-events: none;
   }
 
-  /* Fav natif : masquÃ© par dÃ©faut, rÃ©vÃ©lÃ© au hover, toujours visible si likÃ© */
+  /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
   .k-card-fav.liked { opacity: 1; }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   4. MODAL ZOOM â€” scale sur l'image, pas de lens visible
-   Le JS (b-desktop-upgrade.js setupZoom) gÃ¨re backgroundPosition
-   sur .k-modal-zoom-preview. La preview est dimensionnÃ©e/positionnÃ©e
-   dans modal.css (source de vÃ©ritÃ©). Aucune lens orange ici.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   4. MODAL ZOOM — scale sur l'image, pas de lens visible
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* Curseur signalant le mode zoom */
   #k-modal .k-modal-carousel { cursor: zoom-in; }
 
-  /* LÃ©gÃ¨re Ã©chelle de l'image au survol pour feedback immÃ©diat */
   #k-modal .k-modal-slide {
     transition: transform .25s var(--ease);
   }
@@ -258,9 +249,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   6. ANIMATION ENTRÃ‰E CARTES â€” stagger Temu-style
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   6. ANIMATION ENTRÉE CARTES — stagger Temu-style
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card {
@@ -283,14 +274,13 @@
   .k-card:nth-child(9)  { animation-delay: .18s; }
   .k-card:nth-child(10) { animation-delay: .20s; }
 
-  /* LÃ©vitation hover plus discrÃ¨te qu'en mobile */
   .k-card:hover { transform: translateY(-1px); }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   7. SCROLL-TO-TOP â€” Bouton fixe bas droite
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   7. SCROLL-TO-TOP — Bouton fixe bas droite
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-scroll-top {
@@ -328,9 +318,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   9. RECENTLY VIEWED â€” Section en bas du scroll modal (desktop)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   9. RECENTLY VIEWED — Section en bas du scroll modal (desktop)
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-modal-recent {
@@ -402,9 +392,9 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   10. KEYBOARD HINT â€” Navigation clavier dans la modal
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   10. KEYBOARD HINT — Navigation clavier dans la modal
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-modal-keyboard-hint {
@@ -433,11 +423,10 @@
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   11. UTILITIES â€” Focus visible & tap-highlight (source unique)
-   Supprime l'outline parasite sur les zones non-cliquables.
-   RÃ©tablit un outline accessible sur boutons/liens/inputs.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   11. UTILITIES — Focus visible & tap-highlight (source unique)
+   PALETTE-FIX-01 : outline ocean au lieu de vert foncé hardcodé.
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card,  .k-card  *,
@@ -456,27 +445,26 @@
   button:focus-visible,
   a:focus-visible,
   input:focus-visible {
-    outline: 2px solid rgba(42,122,62,.45);
+    outline: 2px solid rgba(100,175,90,.50);
     outline-offset: 2px;
   }
 }
 
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   12. FOOTER RICHE â€” 4 colonnes desktop uniquement
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
-/* .k-footer { display: none; } â†’ migrÃ© dans shared.css */
+/* ══════════════════════════════════════════════════════════════════
+   12. FOOTER RICHE — 4 colonnes desktop uniquement
+   PALETTE-FIX-01 : social hover border coral au lieu de vert foncé.
+   ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
   .k-footer {
     display: block;
-    background: var(--sand-warm, var(--sand-warm));
-    color: var(--text, var(--text));
+    background: var(--sand-warm);
+    color: var(--text);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
-    border-top: 1px solid var(--border, var(--border));
+    border-top: 1px solid var(--border);
   }
 
   .k-footer-grid {
@@ -493,14 +481,14 @@
     font-family: var(--font-display);
     font-size: 22px;
     font-weight: 700;
-    color: var(--coral, var(--coral));
+    color: var(--coral);
     letter-spacing: -.5px;
     margin-bottom: 10px;
   }
 
   .k-footer-tagline {
     font-size: 12px;
-    color: var(--text-muted, var(--text-muted));
+    color: var(--text-muted);
     line-height: 1.65;
     max-width: 220px;
     margin-bottom: 16px;
@@ -517,7 +505,7 @@
     border-radius: 8px;
     border: 1px solid var(--border-text-15);
     background: var(--white);
-    color: var(--text-muted, var(--text-muted));
+    color: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -526,9 +514,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: var(--sand, var(--sand));
-    border-color: rgba(31,48,36,.3);
-    color: var(--text, var(--text));
+    background: var(--sand);
+    border-color: rgba(200,92,45,.28);   /* coral — PALETTE-FIX-01 */
+    color: var(--text);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -541,24 +529,24 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--text-light, var(--text-light));
+    color: var(--text-light);
     margin-bottom: 14px;
   }
 
   .k-footer-col-link {
     display: block;
     font-size: 13px;
-    color: var(--text-muted, var(--text-muted));
+    color: var(--text-muted);
     margin-bottom: 9px;
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-col-link:hover { color: var(--text, var(--text)); }
+  .k-footer-col-link:hover { color: var(--text); }
 
   .k-footer-newsletter-desc {
     font-size: 12px;
-    color: var(--text-muted, var(--text-muted));
+    color: var(--text-muted);
     line-height: 1.6;
     margin-bottom: 12px;
   }
@@ -569,14 +557,14 @@
     border-radius: 8px;
     border: 1px solid var(--border-text-15);
     background: var(--white);
-    color: var(--text, var(--text));
+    color: var(--text);
     font-size: 13px;
     font-family: var(--font);
     outline: none;
     margin-bottom: 8px;
     transition: border-color .15s, background .15s;
   }
-  .k-footer-newsletter-input::placeholder { color: var(--text-light, var(--text-light)); }
+  .k-footer-newsletter-input::placeholder { color: var(--text-light); }
   .k-footer-newsletter-input:focus {
     border-color: rgba(200,92,45,.35);
     background: var(--white);
@@ -586,7 +574,7 @@
     width: 100%;
     padding: 10px;
     border-radius: 8px;
-    background: var(--coral, var(--coral));
+    background: var(--coral);
     color: var(--white);
     font-size: 13px;
     font-weight: 700;
@@ -595,7 +583,7 @@
     cursor: pointer;
     transition: background .15s, transform .12s;
   }
-  .k-footer-newsletter-btn:hover { background: var(--coral-dark, var(--coral-dark)); }
+  .k-footer-newsletter-btn:hover { background: var(--coral-dark); }
   .k-footer-newsletter-btn:active { transform: scale(.98); }
 
   .k-footer-bottom {
@@ -611,26 +599,24 @@
 
   .k-footer-copy {
     font-size: 11px;
-    color: var(--text-light, var(--text-light));
+    color: var(--text-light);
   }
 
   .k-footer-legal-links { display: flex; gap: 16px; }
 
   .k-footer-legal-link {
     font-size: 11px;
-    color: var(--text-light, var(--text-light));
+    color: var(--text-light);
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-legal-link:hover { color: var(--text, var(--text)); }
+  .k-footer-legal-link:hover { color: var(--text); }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   12. SECTION SUBCATS â€” chips Temu-style desktop (LOT 12)
-   Rail horizontal scrollable juste sous le header de chaque section.
-   Filtre les produits de la section sans recharger toute la page.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   12. SECTION SUBCATS — chips Temu-style desktop (LOT 12)
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-sec-subcats {
@@ -644,7 +630,6 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
-    /* Fades latÃ©raux pour signifier le scroll */
     -webkit-mask-image: linear-gradient(to right, transparent 0, var(--black) 16px, var(--black) calc(100% - 16px), transparent 100%);
     mask-image: linear-gradient(to right, transparent 0, var(--black) 16px, var(--black) calc(100% - 16px), transparent 100%);
   }
@@ -696,18 +681,15 @@
     align-items: center;
   }
 
-  /* La chip "Tout" : visuel un peu plus discret au repos pour ne pas voler la vedette */
   .k-sec-subchip-all:not(.active) {
     color: var(--text-muted);
     border-color: var(--border);
   }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   13. FLAT-CAT HEADER â€” quand on clique "Voir tout" sur une catÃ©gorie,
-   afficher un header propre (breadcrumb retour + titre + subchips)
-   pour ne pas laisser l'utilisateur perdu dans une grille flat.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   13. FLAT-CAT HEADER
+   ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-flatcat-header,
@@ -778,7 +760,6 @@
     margin-left: 4px;
   }
 
-  /* Subchips du flat-cat : mÃªme style que dans les sections (rÃ©utilise .k-sec-subchip) */
   .k-flatcat-subcats {
     display: flex;
     flex-wrap: nowrap;
@@ -794,29 +775,27 @@
 }
 
 
-
-
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   CATÃ‰GORIES DESKTOP â€” CARTES VISUELLES (source de vÃ©ritÃ© unique)
-   TransfÃ©rÃ© depuis desktop-horizontal-nav.css.
-   Remplace l'ancien bloc MEGA-NAV TEMU/SHEIN.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════════════
+   CATÉGORIES DESKTOP — CARTES VISUELLES (source de vérité unique)
+   PALETTE-FIX-01 : ombres chip hover ocean, barre sticky ocean.
+   ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* Sticky wrapper : c'est .k-hero-cats-sticky qui est sticky, pas .k-cats-shell */
+  /* Sticky wrapper */
   .k-hero-cats-sticky {
     position: sticky;
     top: 68px;
     z-index: 180;
     margin-top: 0;
-    /* ── Float effect — chips + subcats lévitent ensemble ── */
     background: rgba(248, 246, 241, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 0 0 20px 20px;
-    box-shadow: 0 8px 32px rgba(31, 48, 36, 0.08), 0 1px 0 rgba(198,168,93,.12);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+    box-shadow:
+      0 8px 32px rgba(100,175,90,.10),
+      0 1px 0 rgba(198,168,93,.12);
     padding-bottom: 14px;
   }
 
@@ -885,7 +864,8 @@
     transform: translateY(-2px);
     background: var(--white);
     border-color: rgba(198,168,93,.36);
-    box-shadow: 0 12px 24px rgba(31,48,36,.085);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+    box-shadow: 0 12px 24px rgba(100,175,90,.12);
     color: var(--text);
   }
 
@@ -962,23 +942,10 @@
     font-weight: 900;
   }
 
-  /* #k-subcats-wrap â†’ source unique : bloc SOUS-CATEGORIES DESKTOP ci-dessous */
+  .k-sec-subcats { display: none; }
+  .k-sec-see-all { display: none; }
+  .k-sec-header  { display: none; }
 
-  .k-sec-subcats {
-    display: none;
-  }
-
-  .k-sec-see-all {
-    display: none;
-  }
-
-  /* Titre de section catalogue (emoji + nom catÃ©gorie) masquÃ© en desktop :
-     la chip catÃ©gorie active dans le rail du haut suffit comme contexte */
-  .k-sec-header {
-    display: none;
-  }
-
-  /* Sidebar + universe nav masquÃ©s en desktop horizontal */
   #k-desktop-sidebar,
   .k-desktop-sidebar {
     display: none;
@@ -994,16 +961,15 @@
     grid-template-columns: repeat(4, minmax(120px, 1fr));
   }
 }
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SOUS-CATÃ‰GORIES DESKTOP â€” pills simples sous les catÃ©gories
-   Pas de titre, pas de cadre, proportionnÃ©es aux chips.
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── SOUS-CATÉGORIES — Mobile base (masqué par défaut) ───────── */
-/* Lot I2-A : migré depuis categories.css */
+/* ══════════════════════════════════════════════════════════════════
+   SOUS-CATÉGORIES DESKTOP — pills simples sous les catégories
+   PALETTE-FIX-01 : ombres subchip ocean.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile base (masqué par défaut) ── */
 #k-subcats-wrap { display: none; }
 
-/* Mobile base rail — révélé dynamiquement par b-subcat.js */
 .k-subcats-rail {
   display: flex;
   gap: 6px;
@@ -1018,7 +984,6 @@
 }
 .k-subcats-rail::-webkit-scrollbar { display: none; }
 
-/* Mobile subchip base */
 .k-subchip {
   display: flex;
   align-items: center;
@@ -1043,7 +1008,7 @@
 }
 .k-subchip.active .k-subchip-label { color: var(--text); font-weight: 800; }
 
-/* Fond couleur catégorie sur subchip actif — cohérence avec chip parente */
+/* Fond couleur catégorie sur subchip actif */
 .k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
 .k-chip[data-cat="Maison"] ~ * .k-subchip.active,
@@ -1057,7 +1022,7 @@
 .k-chip[data-cat="Auto"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
 
-/* Animation apparition mobile */
+/* Animation mobile */
 @keyframes k-subchip-in-mobile {
   from { opacity: 0; transform: translateX(-6px) scale(.94); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
@@ -1068,10 +1033,10 @@
 .k-subcats-visible .k-subchip:nth-child(4)  { animation-delay: .09s; }
 .k-subcats-visible .k-subchip:nth-child(5)  { animation-delay: .12s; }
 
-/* ── SOUS-CATÉGORIES — Desktop : positionnement sticky ───────── */
+/* ── Desktop : positionnement sticky ── */
 @media (min-width: 900px) {
   #k-subcats-wrap {
-    display: block; /* révélé en desktop */
+    display: block;
     position: sticky;
     top: var(--header-h);
     z-index: 20;
@@ -1079,7 +1044,6 @@
     -webkit-backdrop-filter: blur(10px);
   }
 
-  /* Animation slide-in desktop */
   @keyframes k-subcats-slide-in {
     from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -1088,7 +1052,6 @@
     animation: k-subcats-slide-in .16s ease both;
   }
 
-  /* Rail desktop : max-width centré */
   #k-subcats-wrap .k-subcats-rail {
     max-width: var(--container);
     margin: 0 auto;
@@ -1096,16 +1059,14 @@
   }
 }
 
-/* ── Hover subchips (desktop pointeur précis) ────────────────── */
+/* ── Hover subchips (desktop pointeur précis) ── */
 @media (hover: hover) and (pointer: fine) {
   .k-subchip:hover { background: rgba(100,175,90,.08); border-color: var(--ocean); transform: translateY(-1px); }
   .k-subchip:hover .k-subchip-label { color: var(--text); }
 }
 
-
 @media (min-width: 900px) {
 
-  /* Wrap : transparent, centrÃ© sous les chips */
   #k-subcats-wrap {
     max-width: 1480px;
     margin: 0 auto;
@@ -1115,21 +1076,18 @@
     box-shadow: none;
   }
 
-  /* Masquer tout header/titre injectÃ© */
   #k-subcats-wrap > [class*="-head"],
   #k-subcats-wrap > [class*="-title"],
   #k-subcats-wrap .k-subcats-rail::before {
     display: none;
   }
 
-  /* Reset enfants directs â€” pas de fond blanc hÃ©ritÃ© */
   #k-subcats-wrap > * {
     background: transparent;
     border: none;
     box-shadow: none;
   }
 
-  /* Rail : flex centrÃ©, pas de scroll */
   #k-subcats-wrap .k-subcats-rail {
     display: flex;
     align-items: center;
@@ -1145,7 +1103,7 @@
     box-shadow: none;
   }
 
-  /* Pills : même famille que les chips cat — proportionnées et visibles */
+  /* PALETTE-FIX-01 : ombre ocean au lieu de rgba(31,48,36,…) */
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
@@ -1163,115 +1121,92 @@
     letter-spacing: -.018em;
     white-space: nowrap;
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(31,48,36,.05), 0 1px 0 rgba(255,255,255,.8) inset;
+    box-shadow:
+      0 2px 10px rgba(100,175,90,.06),
+      0 1px 0 rgba(255,255,255,.8) inset;
     transition: transform .14s ease, background .14s, border-color .14s, color .14s, box-shadow .14s;
   }
-  }
-
-  #k-subcats-wrap .k-subchip:hover {
-    transform: translateY(-2px);
-    background: var(--white);
-    border-color: rgba(198,168,93,.5);
-    box-shadow: 0 8px 20px rgba(31,48,36,.10);
-    color: var(--text);
-  }
-
-  /* Actif : mÃªme ton dorÃ© que les chips catÃ©gories actives */
-  #k-subcats-wrap .k-subchip.active {
-    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
-    color: var(--coral-dark);
-    border-color: rgba(198,168,93,.5);
-    box-shadow: 0 4px 12px rgba(198,168,93,.12);
-    font-weight: 800;
-  }
-
-  /* "Tout voir" masquÃ© â€” il n'apporte rien en desktop */
-  #k-subcats-wrap .k-subchip[data-subcat=""] {
-    display: none;
-  }
-
-  /* IcÃ´ne emoji */
-  #k-subcats-wrap .k-subchip-icon {
-    font-size: 15px;
-    line-height: 1;
-  }
-
-  /* Animation d'apparition douce */
-  @keyframes k-subchip-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  #k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip {
-    animation: k-subchip-in .15s ease both;
-  }
-  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(2) { animation-delay: .03s; }
-  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(3) { animation-delay: .06s; }
-  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(4) { animation-delay: .08s; }
-  #k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(5) { animation-delay: .10s; }
 }
 
+#k-subcats-wrap .k-subchip:hover {
+  transform: translateY(-2px);
+  background: var(--white);
+  border-color: rgba(198,168,93,.5);
+  /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+  box-shadow: 0 8px 20px rgba(100,175,90,.12);
+  color: var(--text);
+}
 
+#k-subcats-wrap .k-subchip.active {
+  background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
+  color: var(--coral-dark);
+  border-color: rgba(198,168,93,.5);
+  box-shadow: 0 4px 12px rgba(198,168,93,.12);
+  font-weight: 800;
+}
+
+#k-subcats-wrap .k-subchip[data-subcat=""] {
+  display: none;
+}
+
+#k-subcats-wrap .k-subchip-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+@keyframes k-subchip-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#k-subcats-wrap .k-subcats-rail.k-subcats-visible .k-subchip {
+  animation: k-subchip-in .15s ease both;
+}
+#k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(2) { animation-delay: .03s; }
+#k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(3) { animation-delay: .06s; }
+#k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(4) { animation-delay: .08s; }
+#k-subcats-wrap .k-subcats-visible .k-subchip:nth-child(5) { animation-delay: .10s; }
 
 @media (min-width: 900px) {
-
-
-
-  /* Ã¢â€â‚¬Ã¢â€â‚¬ P0-E : SOUS-CHIPS de section (k-sec-subcats) Ã¢â€â‚¬Ã¢â€â‚¬
-     Ã‰tait : flex-wrap:nowrap + overflow-x:auto â†’ piÃ¨ge molette.
-     Cible  : flex-wrap:wrap + overflow:visible
-  */
-  /* P0-E/F supprimÃ©s Ã¢Â€Â” .k-sec-subcats masquÃ© en desktop (rail sticky #k-subcats-wrap suffit) */
   .k-sec-subcats { display: none; }
   .k-sec-subchip { display: none; }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART DESKTOP — déplacé depuis layout.css (Lot 3)
-   Source unique de vérité pour .k-side-cart ≥900px.
-   ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   SIDE CART DESKTOP — source unique de vérité pour .k-side-cart ≥900px.
+   ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* ── Conteneur sticky ─────────────────────────────────────── */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: sticky;
     top: calc(var(--header-h, 72px) + 12px);
     align-self: flex-start;
-
     flex: 0 0 290px;
     width: 290px;
     min-width: 290px;
-
     background: transparent;
     border-radius: 12px;
     border: 0;
     box-shadow: none;
     overflow: visible;
     max-height: none;
-
     z-index: 200;
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
-
-    /* Marge calibrée pour le hero compact 160px (Option B). */
     margin-top: 52px;
   }
 
-  /* Sidecart vide : sortie du flex pour que la grille prenne toute la largeur */
-  .k-side-cart:not(.has-items) {
-    display: none;
-  }
+  .k-side-cart:not(.has-items) { display: none; }
   .k-side-cart.has-items {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
   }
 
-  /* ── Aperçu compact : max 4 articles visibles (900–1180px) ── */
   .k-sc-items {
     flex: 0 0 auto;
     min-height: 0;
@@ -1279,12 +1214,10 @@
     overflow: visible;
   }
   .k-sc-items > *:nth-child(n+5) { display: none; }
-
   .k-sc-bottom { margin-top: auto; }
 }
 
 @media (min-width: 900px) {
-  /* ── Zone supérieure : sous-total + boutons ─────────────── */
   .k-sc-top {
     padding: 0 2px 6px;
     flex-shrink: 0;
@@ -1296,7 +1229,6 @@
     z-index: 1;
   }
 
-  /* Ligne sous-total : compacte, label inline */
   .k-sc-subtotal-row {
     display: flex;
     align-items: baseline;
@@ -1316,7 +1248,6 @@
     letter-spacing: -.02em;
   }
 
-  /* Badge livraison — pill discrète */
   .k-sc-free-ship {
     display: inline-flex;
     align-items: center;
@@ -1330,13 +1261,8 @@
     width: fit-content;
     line-height: 1.4;
   }
-  .k-sc-free-ship svg {
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-  }
+  .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
-  /* Bouton Commander Temu-style orange */
   .k-sc-cta-row {
     display: flex;
     gap: 6px;
@@ -1363,7 +1289,6 @@
   .k-sc-btn-checkout:hover { background: var(--orange-dark); }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
-  /* Bouton "En groupe" — icône carrée violet (action secondaire compacte) */
   .k-sc-btn-group {
     flex: 0 0 44px;
     width: 44px;
@@ -1384,7 +1309,6 @@
   .k-sc-btn-group:hover { background: var(--violet-dark); }
   .k-sc-btn-group:active { transform: scale(.95); }
   .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
-  /* Label caché visuellement mais accessible — l'icône suffit */
   .k-sc-btn-group-label {
     position: absolute;
     width: 1px; height: 1px;
@@ -1392,9 +1316,7 @@
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
-  /* Tooltip natif via attribut title — pas de CSS supplémentaire */
 
-  /* Lien "Voir le panier" — passe en lien texte discret sous les CTAs */
   .k-sc-btn-cart {
     display: block;
     width: 100%;
@@ -1414,11 +1336,7 @@
   }
   .k-sc-btn-cart:hover { color: var(--text); }
 
-  /* ── Liste articles ──────────────────────────────────────── */
   .k-sc-items {
-    /* @note LOT 9 : max-height ici est écrasé par max-height:none dans le bloc
-       consolidé ci-dessous. Conservé pour traçabilité historique (ancien comportement
-       avant SIDE CART POLISH). Ne pas modifier sans lire le bloc LOT 9. */
     flex: 0 0 auto;
     max-height: calc(55vh - 140px);
     overflow-y: auto;
@@ -1442,10 +1360,8 @@
   }
   .k-sc-item:hover { background: var(--sand); }
 
-
   .k-sc-item-img {
-    width: 68px;
-    height: 68px;
+    width: 68px; height: 68px;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
@@ -1512,7 +1428,6 @@
     flex-shrink: 0;
   }
 
-  /* Stepper quantité inline style Temu */
   .k-sc-item-stepper {
     display: flex;
     align-items: center;
@@ -1522,8 +1437,7 @@
     background: var(--white);
   }
   .k-sc-item-stepper button {
-    width: 24px;
-    height: 24px;
+    width: 24px; height: 24px;
     border: none;
     background: transparent;
     color: var(--text);
@@ -1553,10 +1467,8 @@
     user-select: none;
   }
 
-  /* Bouton suppression rapide ✕ */
   .k-sc-item-remove {
-    width: 24px;
-    height: 24px;
+    width: 24px; height: 24px;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: transparent;
@@ -1576,7 +1488,6 @@
   }
   .k-sc-item-remove:active { background: var(--red-bg-hover); }
 
-  /* ── Footer sticky : CTAs primaires + count ───────────── */
   .k-sc-bottom {
     padding: 8px 0 0;
     border-top: 0;
@@ -1585,8 +1496,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    /* margin-top:auto pousse le bottom vers le bas quand la liste est courte
-       (panier avec 1-2 articles) — comportement Temu. */
     margin-top: auto;
   }
   .k-sc-count-label {
@@ -1598,11 +1507,9 @@
 }
 
 
-/* =========================================================
+/* ══════════════════════════════════════════════════════════════════
    PATCH — Side cart group payment CTA
-   Le paiement en groupe est une action métier importante :
-   il ne doit pas être réduit à un mini bouton icône.
-   ========================================================= */
+   ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
   #k-side-cart .k-sc-cta-row {
@@ -1630,43 +1537,39 @@
     white-space: nowrap;
   }
 
-  #k-side-cart .k-sc-btn-group-label {
-    display: inline;
-  }
+  #k-side-cart .k-sc-btn-group-label { display: inline; }
 
-  #k-side-cart .k-sc-btn-group::after {
-    content: "Payer en groupe";
-  }
+  #k-side-cart .k-sc-btn-group::after { content: "Payer en groupe"; }
 
-  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label {
-    display: none;
-  }
+  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label { display: none; }
 
-  #k-side-cart .k-sc-btn-cart {
-    margin-top: 4px;
-  }
+  #k-side-cart .k-sc-btn-cart { margin-top: 4px; }
+}
 
-} /* fin @media 900px — CTA side cart */
-
-/* ── Side cart — overrides visuels skeleton (déplacé depuis desktop-commerce-skeleton.css, Lot 3) ── */
+/* ── Side cart — overrides visuels skeleton
+   PALETTE-FIX-01 : bordure + ombre ocean, bouton checkout coral.
+   ──────────────────────────────────────────────────────────────── */
 @media (min-width: 900px) {
   .k-side-cart {
     top: 150px;
     max-height: calc(100vh - 170px);
     border-radius: 24px;
     background: rgba(255,252,244,.92);
-    border: 1px solid rgba(42,62,44,.08);
-    box-shadow: 0 12px 30px rgba(31,48,36,.075);
+    /* PALETTE-FIX-01 */
+    border: 1px solid rgba(100,175,90,.14);
+    box-shadow: 0 12px 30px rgba(100,175,90,.10);
     overflow: hidden;
   }
 
   .k-sc-bottom {
     background: linear-gradient(180deg, rgba(255,252,244,.88), var(--white));
-    border-top: 1px solid rgba(42,62,44,.07);
+    /* PALETTE-FIX-01 */
+    border-top: 1px solid rgba(100,175,90,.10);
   }
 
   .k-sc-subtotal-label {
-    color: rgba(32,51,37,.62);
+    /* PALETTE-FIX-01 */
+    color: rgba(100,175,90,.80);
     font-weight: 800;
   }
 
@@ -1677,16 +1580,21 @@
   }
 
   .k-sc-free-ship {
-    color: rgba(32,51,37,.66);
-    background: rgba(47,107,63,.07);
+    /* PALETTE-FIX-01 */
+    color: rgba(100,175,90,.90);
+    background: rgba(100,175,90,.08);
     border-radius: 999px;
     padding: 6px 9px;
   }
 
+  /* PALETTE-FIX-01 : coral au lieu de vert status */
   .k-sc-btn-checkout {
     border-radius: 999px;
-    background: linear-gradient(135deg, var(--status-confirmed-text), var(--status-confirmed-text));
-    box-shadow: 0 12px 24px rgba(47,107,63,.22);
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark, #a8441e));
+    box-shadow: 0 12px 24px rgba(200,92,45,.22);
+  }
+  .k-sc-btn-checkout:hover {
+    background: var(--coral-dark, #a8441e);
   }
 
   .k-sc-btn-group,

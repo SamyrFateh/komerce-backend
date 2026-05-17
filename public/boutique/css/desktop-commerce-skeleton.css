@@ -1,30 +1,20 @@
-/* @import desktop-horizontal-nav.css â€” supprimÃ©. Regles fusionnÃ©es dans boutique-desktop.css (P1 ownership audit 2026-05-15). */
+/* @import desktop-horizontal-nav.css — supprimé. Règles fusionnées dans boutique-desktop.css (P1 ownership audit 2026-05-15). */
 
 /**
  * @component Boutique / Desktop Commerce Skeleton
  * @owner desktop-commerce-skeleton.css
  *
- * Responsibility:
- * - Start the desktop redesign direction without touching mobile.
- * - Make desktop feel like a real commerce workspace, not enlarged mobile.
- * - Improve structure: header/search, compact hero, 3-zone catalog, useful side cart.
- *
- * Must not:
- * - Affect mobile below 900px.
- * - Touch b-pager.js mechanics.
- * - Add supplier-specific product styling.
- * - Recreate product rendering logic.
- *
- * See:
- * - docs/BOUTIQUE_DESKTOP_REDESIGN_BRIEF.md
- * - docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md
+ * PALETTE-FIX-01 (2026-05-17) :
+ * Tous rgba(31,48,36,…) rgba(42,62,44,…) rgba(47,107,63,…) remplacés par
+ * tokens de marque : --ocean #64AF5A → rgba(100,175,90,…) / --coral #C85C2D
  */
 
 @media (min-width: 900px) {
   body.k-view-shop {
     background:
       radial-gradient(circle at 12% 0%, rgba(198, 168, 93, .08), transparent 26%),
-      radial-gradient(circle at 86% 10%, rgba(47, 107, 63, .07), transparent 28%),
+      /* PALETTE-FIX-01 : ocean au lieu de rgba(47,107,63,…) */
+      radial-gradient(circle at 86% 10%, rgba(100,175,90, .07), transparent 28%),
       var(--sand);
   }
 
@@ -34,8 +24,10 @@
     top: 0;
     z-index: 220;
     background: rgba(255, 252, 244, .92);
-    border-bottom: 1px solid rgba(42, 62, 44, .08);
-    box-shadow: 0 8px 24px rgba(31, 48, 36, .06);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) */
+    border-bottom: 1px solid rgba(100,175,90, .10);
+    /* PALETTE-FIX-01 */
+    box-shadow: 0 8px 24px rgba(100,175,90, .07);
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
   }
@@ -61,8 +53,12 @@
     height: 44px;
     border-radius: 999px;
     background: var(--white);
-    border: 1px solid rgba(42, 62, 44, .10);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 8px 22px rgba(31,48,36,.045);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) */
+    border: 1px solid rgba(100,175,90, .12);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.7),
+      /* PALETTE-FIX-01 */
+      0 8px 22px rgba(100,175,90, .05);
   }
 
   .k-search input {
@@ -79,7 +75,8 @@
     padding: 0 13px;
     border-radius: 999px;
     background: rgba(255,255,255,.58);
-    border: 1px solid rgba(42, 62, 44, .08);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) */
+    border: 1px solid rgba(100,175,90, .08);
   }
 
   .k-header-nav-btn:hover {
@@ -93,10 +90,11 @@
     border-radius: 999px;
     background: var(--white);
     border: 1px solid rgba(198, 168, 93, .32);
-    box-shadow: 0 8px 18px rgba(31,48,36,.08);
+    /* PALETTE-FIX-01 */
+    box-shadow: 0 8px 18px rgba(100,175,90, .08);
   }
 
-  /* Hero desktop : reset complet du fixed mobile â€” position relative pour contenir hero + sticky */
+  /* Hero desktop : reset complet du fixed mobile */
   #k-hero-fixed-wrap {
     position: relative;
     top: auto;
@@ -120,8 +118,10 @@
     height: clamp(210px, 16vw, 248px);
     border-radius: 26px;
     overflow: hidden;
-    border: 1px solid rgba(42, 62, 44, .08);
-    box-shadow: 0 18px 42px rgba(31, 48, 36, .12);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) */
+    border: 1px solid rgba(100,175,90, .10);
+    /* PALETTE-FIX-01 */
+    box-shadow: 0 18px 42px rgba(100,175,90, .12);
     background:
       linear-gradient(90deg, var(--text) 0%, var(--text) 38%, var(--cream-amber-bg) 70%, var(--cream-amber-bg) 100%);
   }
@@ -239,8 +239,6 @@
     font-weight: 700;
   }
 
-  /* .k-hero-cats-sticky â†’ source de vÃ©ritÃ© : boutique-desktop.css (bloc CARTES VISUELLES) */
-
   /* Desktop commerce workspace */
   #k-page-scroll {
     position: relative;
@@ -268,25 +266,25 @@
     padding: 0;
   }
 
+  /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) / rgba(31,48,36,…) */
   .k-card {
     border-radius: 18px;
-    border: 1px solid rgba(42,62,44,.075);
+    border: 1px solid rgba(100,175,90, .08);
     background: var(--white);
-    box-shadow: 0 5px 16px rgba(31,48,36,.045);
+    box-shadow: 0 5px 16px rgba(100,175,90, .05);
   }
 
   .k-card:hover {
     border-color: rgba(198,168,93,.32);
-    box-shadow: 0 12px 28px rgba(31,48,36,.10);
+    box-shadow: 0 12px 28px rgba(100,175,90, .10);
   }
 
-  /* Side cart desktop : styles visuels déplacés dans boutique-desktop.css (Lot 3). */
-
-  /* Modal desktop: neutraliser l'effet gadget, prÃ©parer commerce modal. */
+  /* Modal desktop */
   .k-modal {
     max-width: min(1040px, calc(100vw - 56px));
     border-radius: 26px;
-    box-shadow: 0 30px 80px rgba(31,48,36,.24);
+    /* PALETTE-FIX-01 */
+    box-shadow: 0 30px 80px rgba(100,175,90, .18);
   }
 
   .k-modal-img-wrap {
