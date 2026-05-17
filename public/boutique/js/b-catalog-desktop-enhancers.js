@@ -31,138 +31,43 @@ import { isDesktop }        from './b-scroll-owner.js';
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════
-//  1. MEGA-MENU — Dropdown sous-catégories au hover chip desktop
+//  1. SOUS-CATÉGORIES PERMANENTES au hover chip desktop
+//     (remplace le mega-dropdown contextuel — lot NAV-DESKTOP-01, 2026-05-17)
+//
+//  Principe : hover sur une chip principale → renderSubcatRail(cat)
+//  peuple immédiatement #k-subcats-wrap (barre sticky permanente).
+//  Pas de panneau flottant, pas de position:fixed, pas d'animation d'entrée
+//  séparée — le rail existant suffit.
 // ═══════════════════════════════════════════════════════════════
 
-let _megaEl      = null;
-let _megaTimer   = null;
-let _megaCurrent = null;
-
-function _getMegaEl() {
-  if (!_megaEl) {
-    _megaEl = document.createElement('div');
-    _megaEl.className = 'k-mega-dropdown';
-    _megaEl.setAttribute('role', 'menu');
-    document.body.appendChild(_megaEl);
-    _megaEl.addEventListener('mouseenter', _clearTimer);
-    _megaEl.addEventListener('mouseleave', _scheduleClose);
-  }
-  return _megaEl;
-}
-
-function _clearTimer() {
-  if (_megaTimer) { clearTimeout(_megaTimer); _megaTimer = null; }
-}
-
-function _scheduleClose(delay) {
-  _clearTimer();
-  _megaTimer = setTimeout(_close, typeof delay === 'number' ? delay : 180);
-}
-
-function _close() {
-  if (_megaEl) { _megaEl.classList.remove('is-open'); _megaEl.innerHTML = ''; }
-  _megaCurrent = null;
-  var catsShell = document.querySelector('.k-cats-shell');
-  if (catsShell) catsShell.classList.remove('k-mega-open');
-}
-
-function _openForChip(chip) {
-  if (!isDesktop()) return;
-  var cat = chip.dataset.cat;
-  if (!cat || cat === 'all') { _scheduleClose(80); return; }
-
-  var subcats = getSubcategories(cat);
-  if (!subcats || !subcats.length) { _scheduleClose(80); return; }
-
-  if (_megaCurrent === cat) { _clearTimer(); return; }
-  _megaCurrent = cat;
-  _clearTimer();
-
-  var el = _getMegaEl();
-
-  // Position : pleine largeur, collé sous le .k-cats-shell
-  // FIX Bug mega : position:fixed → coordonnées viewport (getBoundingClientRect suffit, pas de + scrollY)
-  var shell = document.querySelector('.k-cats-shell');
-  var shellRect = shell ? shell.getBoundingClientRect() : { bottom: 120, left: 0, width: window.innerWidth };
-  el.style.top   = shellRect.bottom + 'px';   /* viewport-relative, correct avec position:fixed */
-  el.style.left  = shellRect.left + 'px';
-  el.style.width = shellRect.width + 'px';
-
-  var emoji = getCategorySectionEmoji(cat) || '';
-  var catLabel = chip.querySelector('.k-chip-label');
-  var label = catLabel ? catLabel.textContent.trim() : cat;
-
-  el.innerHTML =
-    '<div class="k-mega-inner">' +
-      '<div class="k-mega-head">' +
-        '<span class="k-mega-head-emoji" aria-hidden="true">' + emoji + '</span>' +
-        '<span class="k-mega-head-label">' + label + '</span>' +
-      '</div>' +
-      '<ul class="k-mega-list">' +
-        subcats.map(function(sc) {
-          var scLabel = sc.label || sc.key || String(sc);
-          var scKey   = sc.key   || scLabel;
-          var scEmoji = sc.emoji || '';
-          return '<li class="k-mega-item" role="menuitem" tabindex="0" data-cat="' + cat + '" data-subcat="' + scKey + '">' +
-            (scEmoji ? '<span class="k-mega-item-emoji" aria-hidden="true">' + scEmoji + '</span>' : '') +
-            '<span class="k-mega-item-label">' + scLabel + '</span>' +
-          '</li>';
-        }).join('') +
-      '</ul>' +
-    '</div>';
-
-  el.classList.add('is-open');
-  if (shell) shell.classList.add('k-mega-open');
-
-  el.querySelectorAll('.k-mega-item').forEach(function(item) {
-    var go = function() {
-      var c  = item.dataset.cat;
-      var sc = item.dataset.subcat;
-      // FIX Bug A — passer subcat directement à setActiveCat au lieu d'émettre
-      // un event 'subcat:select' qui n'avait aucun consommateur dans la codebase.
-      setActiveCat(c, sc || null);
-      syncRailActiveState(c, { center: true });
-      renderSubcatRail(c);
-      _close();
-    };
-    item.addEventListener('click', go);
-    item.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
-    });
-  });
-}
-
-function setupMegaMenu() {
+function setupSubcatOnHover() {
   if (!isDesktop()) return;
 
-  // Délégation sur .k-cats — fonctionne même si les chips sont re-rendues
   var catsEl = document.querySelector('.k-cats');
   if (!catsEl) return;
 
+  var _hoverTimer = null;
+  var _currentCat = null;
+
   catsEl.addEventListener('mouseenter', function(e) {
     var chip = e.target.closest('.k-chip');
-    if (chip) { _clearTimer(); _openForChip(chip); }
+    if (!chip) return;
+    var cat = chip.dataset.cat;
+    if (!cat || cat === 'all' || cat === _currentCat) return;
+
+    // Délai court pour éviter le flash au passage rapide entre chips
+    if (_hoverTimer) clearTimeout(_hoverTimer);
+    _hoverTimer = setTimeout(function() {
+      _currentCat = cat;
+      renderSubcatRail(cat);
+      syncRailActiveState(cat, { center: false });
+    }, 80);
   }, true);
 
-  catsEl.addEventListener('mouseleave', function(e) {
-    // Ne pas fermer si on entre dans le mega
-    var to = e.relatedTarget;
-    if (_megaEl && _megaEl.contains(to)) return;
-    _scheduleClose();
+  // Annuler le timer si on quitte la zone chips sans s'arrêter
+  catsEl.addEventListener('mouseleave', function() {
+    if (_hoverTimer) { clearTimeout(_hoverTimer); _hoverTimer = null; }
   });
-
-  // Escape ferme
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') _close();
-  });
-
-  // Clic hors chips + mega → ferme
-  document.addEventListener('click', function(e) {
-    if (!_megaEl || !_megaEl.classList.contains('is-open')) return;
-    if (_megaEl.contains(e.target)) return;
-    if (e.target.closest('.k-cats')) return;
-    _close();
-  }, true);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -472,7 +377,7 @@ function _setupViewChangedGuard() {
 
 export function setupCatalogDesktopEnhancers() {
   if (!isDesktop()) return;
-  setupMegaMenu();
+  setupSubcatOnHover();
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();

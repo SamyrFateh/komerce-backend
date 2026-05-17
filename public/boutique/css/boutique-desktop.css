@@ -33,79 +33,9 @@
    (le JS a un guard isDesktop() mais le nÃ…â€œud peut exister).
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-.k-mega-dropdown {
-  display: none;
-  position: fixed;   /* FIX Bug mega : fixed â†” viewport, pas page (cats-shell est sticky) */
-  z-index: 105;      /* sous header (200) et cats-shell (110) â†’ s'ouvre SOUS les chips */
-  left: 0;
-  background: var(--white);
-  border-top: 1px solid var(--border-text-07);
-  border-bottom: 1px solid var(--border-text-08);
-  box-shadow: 0 8px 28px var(--border-text-10);
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .16s var(--ease), transform .16s var(--ease);
-}
-.k-mega-dropdown.is-open {
-  display: block;
-  pointer-events: auto;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.k-mega-inner {
-  max-width: var(--container);
-  margin: 0 auto;
-  padding: 16px clamp(16px, 3vw, 40px) 20px;
-}
-
-.k-mega-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--sand-dark);
-}
-.k-mega-head-emoji { font-size: 18px; line-height: 1; }
-.k-mega-head-label { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
-
-.k-mega-list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0;
-  margin: 0;
-}
-
-.k-mega-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: var(--sand);
-  border: 1px solid var(--border-text-08);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  transition: background .13s var(--ease), border-color .13s, color .13s, transform .12s;
-  outline: none;
-}
-.k-mega-item:hover {
-  background: rgba(200,92,45,.07);
-  border-color: rgba(200,92,45,.25);
-  color: var(--coral);
-  transform: translateY(-1px);
-}
-.k-mega-item:focus-visible { outline: 2px solid rgba(42,122,62,.4); outline-offset: 2px; }
-.k-mega-item-emoji { font-size: 14px; line-height: 1; }
-.k-mega-item-label { font-size: 13px; font-weight: 500; line-height: 1; }
-
-.k-cats-shell.k-mega-open { box-shadow: none; }
+/* .k-mega-dropdown et classes associées supprimées (lot NAV-DESKTOP-01, 2026-05-17)
+   Remplacé par sous-catégories permanentes dans #k-subcats-wrap.
+   Le hover sur chip appelle directement renderSubcatRail() — plus de panneau contextuel. */
 
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
