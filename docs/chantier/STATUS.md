@@ -49,6 +49,7 @@ Lire dans cet ordre avant toute modification :
 | D3 | ✅ Fait | Audit `auth-guest.js` documenté ; risques suivis sans changement métier |
 | D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
+| D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -66,31 +67,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### D6 — Rate limiting exhaustif
+### D7 — CORS production
 
 ```text
-Branche   : audit/backend-D6-rate-limiting
+Branche   : audit/backend-D7-cors-production
 Charge    : 1 jour
-Risque    : faible si audit/documentation, moyen si modification des quotas
+Risque    : faible si audit/documentation, moyen si modification CORS
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lire `middleware/rate-limit.js` et les montages dans `server.js`.
-2. Vérifier les endpoints publics, auth, commandes, scans, admin, webhooks.
-3. Documenter les garanties et trous éventuels.
-4. Corriger uniquement les oublis évidents, sans durcir brutalement les quotas.
+1. Lire la configuration CORS dans `server.js`.
+2. Vérifier `FRONTEND_URL`, `ALLOWED_ORIGINS`, localhost, absence d'origin et credentials.
+3. Documenter garanties et risques restants.
+4. Corriger uniquement les oublis évidents sans bloquer les pages existantes.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après D6
+## File d'attente après D7
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D7 | Moyenne | CORS production |
 | D8 | Moyenne | Helmet production |
 | F1 | Haute mais gros lot | Logger structuré à la place des `console.log` |
 | H3 | Moyenne | Déplacer l'audit backend arch vers `scripts/` |
