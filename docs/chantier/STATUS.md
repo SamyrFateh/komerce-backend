@@ -43,6 +43,7 @@ Lire dans cet ordre avant toute modification :
 | DOC-0 | ✅ Fait | `CARTOGRAPHY_360.md` et `ZONE_IMPACT.md` déjà à jour |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
+| A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
@@ -61,31 +62,30 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### A6 — Nettoyer les TODO en issues GitHub
+### D1 — Audit couverture auth des routes admin
 
 ```text
-Branche   : chore/backend-A6-todo-cleanup
-Charge    : 30 min
-Risque    : nul à faible
+Branche   : audit/backend-D1-admin-auth-coverage
+Charge    : 1 jour
+Risque    : faible si audit/documentation, moyen si correction de routes
 Prérequis : aucun bloquant
 ```
 
 Actions :
 
-1. Lister les TODO/FIXME/HACK/XXX dans les fichiers backend.
-2. Supprimer ceux qui sont obsolètes.
-3. Pour ceux qui restent, créer ou référencer une issue GitHub.
-4. Ne pas modifier de logique métier dans ce lot.
+1. Inventorier les routes admin et assimilées.
+2. Vérifier `authenticate` + rôle requis sur chaque endpoint sensible.
+3. Documenter les routes déjà conformes.
+4. Corriger uniquement les oublis évidents, sans refactor large.
 5. Mettre à jour ce fichier et `docs/BACKEND_GOLIVE_ROADMAP.md` dans la même PR.
 
 ---
 
-## File d'attente après A6
+## File d'attente après D1
 
 | Lot | Priorité | Note |
 |-----|----------|------|
 | A4 | Prudence | Collisions migrations 060/061 ; approbation humaine recommandée avant merge |
-| D1 | Haute | Audit couverture auth des routes admin |
 | D3 | Haute | Audit `auth-guest.js` |
 | D4 | Haute | Audit QR / pickup-secret |
 | D5 | Haute | Audit `.env.example` vs prod |
