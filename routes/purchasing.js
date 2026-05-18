@@ -119,6 +119,29 @@ async function triggerPurchasing(orderId) {
       continue;
     }
 
+    // I-SWEEP-3B : idempotence applicative anti-replay.
+    // Si un webhook/retry relance triggerPurchasing(orderId), ne pas recréer
+    // une PO active pour le même mapping fournisseur.
+    const { rows: [existingPo] } = await db.query(`
+      SELECT id, status
+      FROM purchase_orders
+      WHERE order_id = $1
+        AND product_supplier_id = $2
+        AND status != 'cancelled'
+      ORDER BY created_at ASC
+      LIMIT 1
+    `, [orderId, ps.id]);
+
+    if (existingPo) {
+      results.push({
+        item: item.product_name,
+        status: 'already_exists',
+        purchase_order_id: existingPo.id,
+        purchase_order_status: existingPo.status,
+      });
+      continue;
+    }
+
     // Créer la purchase_order
     const triggerMode = ps.auto_order ? 'auto' : (ps.platform === 'whatsapp' ? 'whatsapp' : 'manual');
 
@@ -177,7 +200,7 @@ async function triggerPurchasing(orderId) {
 
   // Phase 5.1: purchasing state tracked in purchase_orders, not orders.status
   // Order stays 'ordered' until full reception → 'preparation'
-  const createdPOs = results.filter(r => r.purchase_order_id != null);
+  const createdPOs = results.filter(r => r.purchase_order_id != null && r.status !== 'already_exists');
   if (createdPOs.length > 0) {
     console.log(`[PURCHASING] Commande ${orderId} — ${createdPOs.length} POs créés (order stays 'ordered')`);
   }
