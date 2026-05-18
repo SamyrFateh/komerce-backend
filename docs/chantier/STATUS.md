@@ -75,6 +75,7 @@ Lire dans cet ordre avant toute modification :
 | I-SWEEP-4B | ✅ Fait | PR #403 mergée. Repair admin dry-run `POST /api/admin/collective/repair-stock-reservations` : consomme les réservations des workspaces avec order et libère/expire celles des sessions/workspaces terminés sans order. |
 | I-SWEEP-5A | ✅ Fait | PR #404 mergée. Lors d'une annulation commande, les `purchase_orders` `pending/notified` sont annulées automatiquement ; les POs fournisseur déjà engagées créent une alerte opérationnelle. |
 | I-SWEEP-5B | ✅ Fait | PR #405 mergée. Endpoint admin dry-run `POST /api/admin/orders/:orderId/refund` : refund Stripe via service idempotent existant, cash manuel par défaut avec alerte, option wallet credit explicite, puis `cancelled → refunded` après remboursement exécuté. |
+| I-SWEEP-6A | ✅ Fait | PR #406 mergée. `price_history` est alimenté lors de la création produit (`product_create`) et lors des changements directs `PUT /api/products/:id` sur `price_kmf` (`product_update`). |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 
@@ -95,30 +96,32 @@ Lire dans cet ordre avant toute modification :
 - ✅ Collectif réservations stock : repair admin ajouté par I-SWEEP-4B.
 - ✅ Annulation ↔ purchase_orders : synchronisation ajoutée par I-SWEEP-5A.
 - ✅ Refund doctrine : endpoint admin explicite ajouté par I-SWEEP-5B ; `cancelled` reste métier, `refunded` devient financier après action explicite.
+- ✅ Prix catalogue manuel : audit `price_history` ajouté par I-SWEEP-6A.
 - 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
-- 🟠 Sourcing/catalogue G5 : prix/stock manuels hors pricing-engine, price_history incomplet, stock movement log absent.
+- 🟠 Sourcing/catalogue G5 restant : `apply-all` sans audit prix par item, survival server-side, stock movement log absent, doctrine publication à formaliser.
 
 ---
 
 ## Prochain lot recommandé
 
-### I-SWEEP-6 — Pricing/catalogue publication hardening
+### I-SWEEP-6B — Pricing apply-all + survival server-side
 
 ```text
-Branche   : fix/backend-I-SWEEP-6-pricing-catalogue-hardening
-Charge    : 1-2 jours
-Risque    : moyen/élevé — touche catalogue, pricing, publication produit
-Prérequis : I-SWEEP-5B terminé
+Branche   : fix/backend-I-SWEEP-6B-pricing-apply-all-audit
+Charge    : 1 jour
+Risque    : moyen — touche pricing admin
+Prérequis : I-SWEEP-6A terminé
 ```
 
-Objectif : traiter les risques G5 : prix/stock manuels hors pricing-engine, price_history incomplet, `apply-price` survival dépendant du body, `apply-all` sans audit prix par item, et absence de stock movement log.
+Objectif : auditer `apply-all` dans `price_history` par item et préparer le garde-fou survival côté serveur au lieu de dépendre uniquement du body.
 
 ---
 
-## File d'attente après I-SWEEP-6
+## File d'attente après I-SWEEP-6B
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| I-SWEEP-6C | Moyenne/haute | Stock movement log + doctrine publication catalogue |
 | TEST-1 | 🔴 Stratégique | Tests d'intégration invariants + flows G1-G5 |
 | PRICE-1 | Haute | Durcissement pricing/catalogue complémentaire si I-SWEEP-6 doit être découpé |
 | A4 | Prudence | Collisions migrations 060/061 |
