@@ -1607,25 +1607,39 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 
 /* ══════════════════════════════════════════════════════════════
-   §7. FULL PAGE DESKTOP — Temu-style pleine page
+   §7. FULL PAGE DESKTOP — Temu-style pleine page (v2)
    ──────────────────────────────────────────────────────────────
-   Écrase l'effet "carte flottante" des §3/§4/§5.
-   Le modal devient une vraie page produit : 100vw × 100dvh,
-   sans overlay sombre, sans coins arrondis, sans ombre portée.
-   Le side-cart reste un panneau glissant par-dessus la page.
+   Problèmes corrigés vs v1 :
+   - Footer visible : body.modal-open crée un stacking context via
+     position:fixed (reset.css). Le footer (DOM après l'overlay,
+     z-index:auto) pouvait s'afficher par-dessus. Fix : masquer
+     le footer explicitement quand modal-open desktop.
+   - Hauteur modale : flex-shrink:1 par défaut pouvait réduire
+     #k-modal sous 100dvh. Fix : min-height + flex-shrink:0.
+   - Colonnes : min-height/height de la product-zone recalibrées
+     sur 100dvh pour couvrir la hauteur réelle.
    Mobile : aucun effet (tout sous @media min-width:900px).
    ══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
+  /* ── Masquer le footer quand le modal est ouvert ─────────── */
+  /* body.modal-open { position:fixed } (reset.css) crée un
+     stacking context : le footer peut passer au-dessus de
+     l'overlay sans z-index explicite. Solution : le cacher. */
+  body.modal-open .k-footer,
+  body.modal-open footer { display: none !important; }
+
   /* ── Overlay : fond blanc plein, sans padding ni flou ────── */
   .k-modal-overlay.open {
     padding: 0;
-    background: var(--white);
+    background: var(--white, #fff);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     align-items: stretch;
-    justify-content: stretch;
+    /* justify-content:stretch n'existe pas en flex → flex-direction:column */
+    flex-direction: column;
+    justify-content: flex-start;
   }
 
   /* ── Shell : 100vw × 100dvh, sans carte flottante ────────── */
@@ -1633,12 +1647,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     width: 100vw;
     height: 100vh;
     height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     max-height: 100dvh;
+    flex: 0 0 100dvh;   /* flex-shrink:0 empêche la compression sous 100dvh */
     border-radius: 0;
     box-shadow: none;
   }
 
-  /* Side cart : glisse par-dessus la page, modal reste 100vw */
+  /* Side-cart : glisse par-dessus la page, modal reste 100vw */
   body.modal-has-cart #k-modal.k-modal {
     width: 100vw;
     margin-right: 0;
@@ -1648,11 +1665,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── Product-zone : toute la hauteur page moins la topbar ── */
   #k-modal .k-modal-product-zone {
     min-height: calc(100dvh - 58px);
+    /* Colonnes : gauche 50% fluide, droite 50% fluide pleine page */
+    grid-template-columns: minmax(0, 50%) minmax(0, 50%);
   }
 
   /* ── Image sticky : recalculée sur 100dvh ────────────────── */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     height: calc(100dvh - 58px);
+    max-height: calc(100dvh - 58px);
   }
 
   /* ── Topbar : séparation visible sur fond blanc ──────────── */
@@ -1664,21 +1684,17 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 /* ── Écraser les overrides responsive 900-1120px ────────────── */
 @media (min-width: 900px) and (max-width: 1120px) {
-  #k-modal.k-modal                     { width: 100vw; }
-  body.modal-has-cart #k-modal.k-modal  { width: 100vw; margin-right: 0; }
-  /* Conserver le layout 2 col adapté au viewport étroit */
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
-    grid-template-rows: auto;
-  }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    grid-column: 3;
-    grid-row: 1;
-  }
+  body.modal-open .k-footer,
+  body.modal-open footer           { display: none !important; }
+  #k-modal.k-modal                 { width: 100vw; }
+  body.modal-has-cart #k-modal.k-modal { width: 100vw; margin-right: 0; }
+  #k-modal .k-modal-product-zone  { grid-template-columns: minmax(0, 50%) minmax(0, 50%); }
 }
 
 /* ── Écraser les overrides ≥1200px ─────────────────────────── */
 @media (min-width: 1200px) {
-  #k-modal.k-modal                     { width: 100vw; }
-  body.modal-has-cart #k-modal.k-modal  { width: 100vw; margin-right: 0; }
+  body.modal-open .k-footer,
+  body.modal-open footer           { display: none !important; }
+  #k-modal.k-modal                 { width: 100vw; }
+  body.modal-has-cart #k-modal.k-modal { width: 100vw; margin-right: 0; }
 }
