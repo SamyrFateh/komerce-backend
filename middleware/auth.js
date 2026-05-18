@@ -39,6 +39,11 @@ function extractToken(req) {
   return null;
 }
 
+function isPickupPayCashRequest(req) {
+  const path = (req.originalUrl || req.url || '').split('?')[0];
+  return req.method === 'POST' && /^\/api\/pickup\/pay-cash\/[^/]+$/.test(path);
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -70,7 +75,7 @@ async function authenticate(req, res, next) {
 
     req.user = user;
 
-    if (req.method === 'POST' && /^\/api\/pickup\/pay-cash\/[^/]+$/.test(req.path)) {
+    if (isPickupPayCashRequest(req)) {
       return handleSafePickupCash(req, res, next);
     }
 
@@ -96,7 +101,8 @@ async function handleSafePickupCash(req, res, next) {
   try {
     const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
     const { generateAndStoreSecret } = require('../routes/pickup-secret');
-    const orderId = req.path.split('/').pop();
+    const path = (req.originalUrl || req.url || '').split('?')[0];
+    const orderId = path.split('/').pop();
 
     const result = await confirmPickupCashPayment({
       orderId,
