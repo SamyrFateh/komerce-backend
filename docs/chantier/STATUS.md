@@ -69,6 +69,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté ; pricing/publication/stock rattachés à I-SWEEP/TEST-1 |
 | I-SWEEP-0 | ✅ Fait | Checklist d'exécution créée dans `docs/chantier/I_SWEEP_PLAN.md` |
 | I-SWEEP-1 | ✅ Fait | Service transactionnel `confirm-pickup-cash-payment.js` créé ; route sûre `pickup-pay-cash.js` créée ; PR #395 mergée. `POST /api/pickup/pay-cash/:orderId` est intercepté après auth et passe par `confirmPaymentCycle(...)` au lieu du direct update legacy. |
+| I-SWEEP-2 | ✅ Fait | Service transactionnel `verify-qr-collection.js` créé ; PR #396 mergée. `POST /api/scans/verify-qr` est intercepté après auth et fait transition `collected`, invalidation QR, scan et `safeSyncScanToParcels(...)` dans la même transaction. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -82,10 +83,10 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Les webhooks Stripe sont protégés par body brut + signature + idempotence, mais D2 a isolé des durcissements à traiter dans I-SWEEP/TEST-1 : secrets dédiés obligatoires, replay tests, shared-cart transactionnel, reprise collective `ready_to_capture`.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
-- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — la doc est aujourd'hui le seul rempart, d'où l'importance du socle.
-- ✅ **I-01 / pickup cash** : la violation `/api/pickup/pay-cash/:orderId` a été corrigée par I-SWEEP-1. Le flux est intercepté après auth et passe par `confirmPaymentCycle(...)`. Tests manuels/API encore recommandés.
+- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — tests manuels/API encore recommandés après I-SWEEP-1/2.
+- ✅ **I-01 / pickup cash** : la violation `/api/pickup/pay-cash/:orderId` a été corrigée par I-SWEEP-1. Le flux est intercepté après auth et passe par `confirmPaymentCycle(...)`.
+- ✅ **QR verify / parcels** : la divergence potentielle order/parcels après crash a été corrigée par I-SWEEP-2. Le sync parcels est transactionnel dans le nouveau service.
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
-- 🟠 **QR verify** : `POST /api/scans/verify-qr` transitionne l'order en `collected` dans la transaction puis appelle `safeSyncScanToParcels` après commit. Risque de divergence order/parcels si crash entre commit et sync ; à couvrir par TEST-1 ou job de repair.
 - 🟠 **Stripe intent / purchasing** : G2 a isolé plusieurs points à tester ou durcir : création PaymentIntent sans idempotency key apparente, `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
 - 🟠 **Collectif G3** : risques de reprise après crash à couvrir : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées explicitement après order.
 - 🔴 **Refund/annulation G4** : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` restaure stock/wallet mais ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`. À traiter par lot dédié refund/purchasing dans I-SWEEP ou REFUND-1.
@@ -95,24 +96,23 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### I-SWEEP-2 — QR verify : sync parcels dans transaction ou repair
+### I-SWEEP-3 — Stripe intent / purchasing idempotence
 
 ```text
-Branche   : fix/backend-I-SWEEP-2-qr-verify-parcels
-Charge    : 1 jour
-Risque    : élevé — touche retrait QR, order/parcels sync
-Prérequis : I-SWEEP-1 terminé
+Branche   : fix/backend-I-SWEEP-3-stripe-purchasing-idempotence
+Charge    : 1-2 jours
+Risque    : élevé — touche paiement Stripe et sourcing post-paiement
+Prérequis : I-SWEEP-1/2 terminés
 ```
 
-Objectif : éviter la divergence order/parcels après `verify-qr`, soit en synchronisant les parcels dans la transaction, soit en ajoutant une stratégie repair/alerte testable.
+Objectif : réduire les risques G2 : PaymentIntent dupliqué, `triggerPurchasing` non idempotent, commandes `ordered` sans POs après crash, et réception hub non transactionnelle.
 
 ---
 
-## File d'attente après I-SWEEP-2
+## File d'attente après I-SWEEP-3
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| I-SWEEP-3 | Haute | Stripe intent / purchasing idempotence |
 | I-SWEEP-4 | Haute | Collectif crash-recovery |
 | I-SWEEP-5 | Haute | Refund / annulation / purchase_orders |
 | I-SWEEP-6 | Moyenne/haute | Pricing/catalogue publication hardening |
