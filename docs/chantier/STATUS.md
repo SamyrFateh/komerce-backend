@@ -72,6 +72,7 @@ Lire dans cet ordre avant toute modification :
 | I-SWEEP-3B | ✅ Fait | `triggerPurchasing` idempotent par `order_id + product_supplier_id` |
 | I-SWEEP-3C | ✅ Fait | Repair ordered sans PO existant ; réception PO transactionnelle ajoutée |
 | I-SWEEP-4A | ✅ Fait | PR #402 mergée. Repair admin dry-run `POST /api/admin/collective/repair-ready-to-capture` pour sessions collectives `ready_to_capture` anciennes sans order liée. |
+| I-SWEEP-4B | ✅ Fait | PR #403 mergée. Repair admin dry-run `POST /api/admin/collective/repair-stock-reservations` : consomme les réservations des workspaces avec order et libère/expire celles des sessions/workspaces terminés sans order. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 
@@ -89,7 +90,8 @@ Lire dans cet ordre avant toute modification :
 - ✅ Purchasing replay corrigé par I-SWEEP-3B.
 - ✅ Purchasing repair/réception amélioré par I-SWEEP-3C.
 - ✅ Collectif `ready_to_capture` : repair admin ajouté par I-SWEEP-4A.
-- 🟠 Collectif restant : session 100 % cash sans order, transition `ordered` collective post-commit non fatale, réservations stock non consommées/libérées explicitement après order.
+- ✅ Collectif réservations stock : repair admin ajouté par I-SWEEP-4B.
+- 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
 - 🔴 Refund/annulation G4 : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`.
 - 🟠 Sourcing/catalogue G5 : prix/stock manuels hors pricing-engine, price_history incomplet, stock movement log absent.
 
@@ -97,24 +99,23 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### I-SWEEP-4B — Collectif cash 100 % sans order + réservations stock
+### I-SWEEP-5 — Refund / annulation / purchase_orders
 
 ```text
-Branche   : fix/backend-I-SWEEP-4B-collective-cash-stock-reservations
-Charge    : 1-2 jours
-Risque    : élevé — touche paiement collectif cash, création order, stock reservations
-Prérequis : I-SWEEP-4A terminé
+Branche   : fix/backend-I-SWEEP-5-refund-cancel-purchasing
+Charge    : 1-3 jours
+Risque    : élevé — touche annulation, remboursement, stock, purchase_orders
+Prérequis : I-SWEEP-4B terminé
 ```
 
-Objectif : traiter les risques restants G3 : session 100 % cash sans order, transition `ordered` collective post-commit non fatale, réservations stock non consommées/libérées explicitement après order.
+Objectif : traiter les risques G4 : absence de flux refund Stripe classique, doctrine cash refund/wallet, différence `cancelled` vs `refunded`, et synchronisation annulation commande ↔ purchase_orders.
 
 ---
 
-## File d'attente après I-SWEEP-4B
+## File d'attente après I-SWEEP-5
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| I-SWEEP-5 | Haute | Refund / annulation / purchase_orders |
 | I-SWEEP-6 | Moyenne/haute | Pricing/catalogue publication hardening |
 | TEST-1 | 🔴 Stratégique | Tests d'intégration invariants + flows G1-G5 |
 | REFUND-1 | 🔴 Critique si non inclus I-SWEEP | Remboursement Stripe/cash/wallet et doctrine `cancelled` vs `refunded` |
