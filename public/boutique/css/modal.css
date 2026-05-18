@@ -1306,3 +1306,301 @@
 
 /* Prevent body scroll when guide open (stacks with modal-open) */
 body.k-sg-open { /* handled by overlay pointer-events */ }
+
+
+/* ══════════════════════════════════════════════════════════════
+   6. ZONES DESKTOP ENRICHIES — Temu-style full page
+   Owner : modal.css (propriétaire de tous .k-modal-*)
+   Règle I-5 : exclusivement sous @media (min-width: 900px)
+   Règle I-3 : aucun hex — uniquement des tokens CSS
+   Mobile : toutes ces zones sont display:none (défaut hors MQ)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Base mobile : masquées par défaut ─────────────────────── */
+.k-modal-aed-price,
+.k-modal-flash-bar,
+.k-modal-stock-bar,
+.k-modal-delivery,
+.k-modal-payment { display: none; }
+
+@media (min-width: 900px) {
+
+  /* ── AED price block ────────────────────────────────────── */
+  .k-modal-aed-price {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 6px 0 4px;
+  }
+  .k-modal-aed-val {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 2.2vw, 38px);
+    font-weight: 600;
+    color: var(--coral);
+    letter-spacing: -.03em;
+    line-height: 1;
+  }
+  .k-modal-aed-old {
+    font-size: 15px;
+    color: var(--text-light);
+    text-decoration: line-through;
+  }
+  .k-modal-aed-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--coral-dark);
+    background: var(--border-coral-09);
+    border: 1px solid var(--border-coral-13);
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: .3px;
+  }
+  .k-modal-kmf-equiv {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .k-modal-kmf-equiv strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* ── Flash bar (timer offre flash) ─────────────────────── */
+  .k-modal-flash-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--amber-bg-light);
+    border: 1px solid var(--amber-border);
+    border-radius: var(--radius-sm);
+    margin: 8px 0 0;
+  }
+  .k-modal-flash-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber-text);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    flex-shrink: 0;
+  }
+  .k-modal-flash-timer {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--coral);
+    letter-spacing: 1.5px;
+    font-variant-numeric: tabular-nums;
+    flex: 1;
+  }
+  .k-modal-flash-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Stock bar ──────────────────────────────────────────── */
+  .k-modal-stock-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 8px 0 4px;
+  }
+  .k-modal-stock-bar-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .k-modal-stock-bar-meta strong {
+    color: var(--coral);
+    font-weight: 700;
+  }
+  .k-modal-stock-bar-track {
+    height: 6px;
+    background: var(--sand-dark);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .k-modal-stock-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ocean) 0%, var(--ocean-dark) 100%);
+    border-radius: 99px;
+    transition: width .6s var(--ease);
+  }
+
+  /* ── Delivery section ───────────────────────────────────── */
+  .k-modal-delivery {
+    display: block;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .k-modal-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 10px;
+  }
+  .k-modal-delivery-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: var(--white);
+    margin-bottom: 7px;
+    user-select: none;
+  }
+  .k-modal-delivery-opt:last-child { margin-bottom: 0; }
+  .k-modal-delivery-opt:hover {
+    border-color: var(--ocean-light);
+    background: var(--ocean-bg-08);
+  }
+  .k-modal-delivery-opt.is-active {
+    border-color: var(--ocean);
+    background: var(--ocean-bg-08);
+  }
+  /* Radio visuel */
+  .k-modal-opt-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    position: relative;
+    transition: border-color .15s;
+  }
+  .k-modal-delivery-opt.is-active .k-modal-opt-radio,
+  .k-modal-payment-opt.is-active .k-modal-opt-radio {
+    border-color: var(--ocean);
+  }
+  .k-modal-delivery-opt.is-active .k-modal-opt-radio::after,
+  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--ocean);
+  }
+  .k-modal-opt-body { flex: 1; min-width: 0; }
+  .k-modal-opt-row1 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .k-modal-opt-icon { font-size: 15px; flex-shrink: 0; }
+  .k-modal-opt-free {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ocean-dark);
+    background: var(--ocean-bg-08);
+    border: 1px solid var(--border-ocean-14);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .k-modal-opt-row2 {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .k-modal-islands {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 7px;
+  }
+  .k-modal-island-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 4px;
+    background: var(--sand-dark);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Payment section ────────────────────────────────────── */
+  .k-modal-payment {
+    display: block;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .k-modal-payment-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .k-modal-payment-opt {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: var(--white);
+    user-select: none;
+  }
+  .k-modal-payment-opt:hover {
+    border-color: var(--violet);
+    background: var(--violet-light);
+  }
+  .k-modal-payment-opt.is-active {
+    border-color: var(--violet);
+    background: var(--violet-light);
+  }
+  .k-modal-payment-opt.is-active .k-modal-opt-radio {
+    border-color: var(--violet);
+  }
+  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
+    background: var(--violet);
+  }
+  .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
+  .k-modal-pay-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .k-modal-pay-sub {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .k-modal-pay-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-modal-pay-badge--stripe {
+    background: var(--blue-stripe-bg);
+    color: var(--blue-stripe-text);
+    border: 1px solid var(--blue-border);
+  }
+  .k-modal-pay-badge--group {
+    background: var(--violet-light);
+    color: var(--violet-dark);
+    border: 1px solid var(--violet-mid);
+  }
+}

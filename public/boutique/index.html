@@ -318,6 +318,11 @@ if('serviceWorker' in navigator){
               <span class="k-modal-price" id="k-modal-price"></span>
               <span class="k-modal-old-price" id="k-modal-old-price"></span>
             </div>
+            <!-- ── Zones desktop enrichies — peuplées par b-modal-desktop-enhancers.js ── -->
+            <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
+            <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
+            <div id="k-modal-flash-bar" class="k-modal-flash-bar"></div>
+            <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
             <!-- Variant picker (Taille / Couleur / Pointure) — juste après le prix -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
             <p class="k-modal-desc" id="k-modal-desc"></p>
@@ -325,8 +330,9 @@ if('serviceWorker' in navigator){
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
-          </div>
-        </div>
+            <!-- ── Livraison + Paiement — injectés par b-modal-desktop-enhancers.js ── -->
+            <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <div id="k-modal-payment" class="k-modal-payment"></div>
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
         <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
         <div class="k-modal-actions">

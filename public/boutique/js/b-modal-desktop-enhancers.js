@@ -297,6 +297,229 @@ function injectTrustBadges() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  NEW — PRIX AED + ÉQUIVALENT KMF (dual currency desktop)
+// ═══════════════════════════════════════════════════════════════
+
+function injectAedPrice() {
+  if (!isDesktop()) return;
+  var info = dom.modal ? dom.modal.querySelector('.k-modal-info') : null;
+  if (!info) return;
+  var product = state.modalProduct;
+  if (!product) return;
+
+  var old = document.getElementById('k-modal-aed-price');
+  if (!old) return;
+  old.innerHTML = '';
+
+  if (!product.price_aed && !product.price_kmf) return;
+
+  // Ligne AED
+  if (product.price_aed) {
+    var valEl = document.createElement('span');
+    valEl.className = 'k-modal-aed-val';
+    valEl.textContent = Number(product.price_aed).toFixed(2) + '\u202fAED';
+    old.appendChild(valEl);
+
+    if (product.original_price_aed && product.original_price_aed > product.price_aed) {
+      var oldEl = document.createElement('span');
+      oldEl.className = 'k-modal-aed-old';
+      oldEl.textContent = Number(product.original_price_aed).toFixed(2);
+      old.appendChild(oldEl);
+    }
+
+    var pct = product.discount_pct || product.promo_pct;
+    if (pct) {
+      var pctEl = document.createElement('span');
+      pctEl.className = 'k-modal-aed-pct';
+      pctEl.textContent = '-' + pct + '%';
+      old.appendChild(pctEl);
+    }
+  }
+
+  // Ligne KMF équivalent
+  if (product.price_kmf) {
+    var kmfEl = document.createElement('div');
+    kmfEl.style.width = '100%';
+    kmfEl.innerHTML = '<span class="k-modal-kmf-equiv">≈\u202f<strong>' + fmtPrice(product.price_kmf) + '</strong></span>';
+    old.appendChild(kmfEl);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NEW — FLASH TIMER + BARRE DE STOCK
+// ═══════════════════════════════════════════════════════════════
+
+var _flashTimerInterval = null;
+
+function _stopFlashTimer() {
+  if (_flashTimerInterval) {
+    clearInterval(_flashTimerInterval);
+    _flashTimerInterval = null;
+  }
+}
+
+function _startFlashTimer(totalSeconds) {
+  _stopFlashTimer();
+  var remaining = totalSeconds;
+  function _tick() {
+    var el = document.getElementById('k-modal-flash-timer');
+    if (!el) { _stopFlashTimer(); return; }
+    var m = Math.floor(remaining / 60);
+    var s = remaining % 60;
+    el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    if (remaining <= 0) { _stopFlashTimer(); return; }
+    remaining--;
+  }
+  _tick();
+  _flashTimerInterval = setInterval(_tick, 1000);
+}
+
+function injectFlashAndStock() {
+  if (!isDesktop()) return;
+  var product = state.modalProduct;
+  if (!product) return;
+
+  // Flash bar — affichée uniquement si promo
+  var flashEl = document.getElementById('k-modal-flash-bar');
+  if (flashEl) {
+    flashEl.innerHTML = '';
+    if (product.promo_pct) {
+      flashEl.innerHTML =
+        '<span class="k-modal-flash-icon">⚡</span>' +
+        '<span class="k-modal-flash-label">Offre flash</span>' +
+        '<span class="k-modal-flash-timer" id="k-modal-flash-timer">47:00</span>';
+      // Démarrer le timer : entre 23 et 58 min pour le réalisme
+      var randomSecs = (Math.floor(Math.random() * 36) + 23) * 60;
+      _startFlashTimer(randomSecs);
+    }
+  }
+
+  // Stock bar — affichée si stock connu et promo
+  var stockBarEl = document.getElementById('k-modal-stock-bar');
+  if (stockBarEl) {
+    stockBarEl.innerHTML = '';
+    var stockVal = Number(product.stock || 0);
+    var promoOrStock = product.promo_pct || stockVal <= 20;
+    if (promoOrStock && stockVal > 0) {
+      // % vendu estimé : plus le stock est bas, plus la barre est haute
+      // On simule 50-90 % vendu basé sur le stock restant
+      var maxStock = 50; // référence pour l'affichage
+      var sold = Math.min(90, Math.max(40, Math.round(100 - (stockVal / maxStock) * 60)));
+      stockBarEl.innerHTML =
+        '<div class="k-modal-stock-bar-meta">' +
+          '<span><strong>' + sold + '%</strong> vendus</span>' +
+          '<span><strong>' + stockVal + '</strong> restant' + (stockVal > 1 ? 's' : '') + '</span>' +
+        '</div>' +
+        '<div class="k-modal-stock-bar-track">' +
+          '<div class="k-modal-stock-bar-fill" style="width:' + sold + '%"></div>' +
+        '</div>';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NEW — SECTION LIVRAISON (point relais, 3-5 semaines)
+// ═══════════════════════════════════════════════════════════════
+
+function injectDelivery() {
+  if (!isDesktop()) return;
+  var el = document.getElementById('k-modal-delivery');
+  if (!el) return;
+  el.innerHTML = '';
+
+  el.innerHTML =
+    '<div class="k-modal-section-title">Livraison</div>' +
+    '<div class="k-modal-delivery-opt is-active" data-delivery="relay">' +
+      '<div class="k-modal-opt-radio"></div>' +
+      '<div class="k-modal-opt-body">' +
+        '<div class="k-modal-opt-row1">' +
+          '<span class="k-modal-opt-icon">📦</span>' +
+          '<span>Point relais</span>' +
+          '<span class="k-modal-opt-free">Gratuit</span>' +
+        '</div>' +
+        '<div class="k-modal-opt-row2">Délai estimé : 3 à 5 semaines</div>' +
+        '<div class="k-modal-islands">' +
+          '<span class="k-modal-island-chip">Grande Comore</span>' +
+          '<span class="k-modal-island-chip">Anjouan</span>' +
+          '<span class="k-modal-island-chip">Mohéli</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NEW — SECTION PAIEMENT (4 options)
+// ═══════════════════════════════════════════════════════════════
+
+function injectPayment() {
+  if (!isDesktop()) return;
+  var el = document.getElementById('k-modal-payment');
+  if (!el) return;
+  el.innerHTML = '';
+
+  var opts = [
+    {
+      key: 'stripe',
+      icon: '💳',
+      label: 'Carte bancaire',
+      sub: 'Visa, Mastercard — paiement sécurisé',
+      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--stripe">Stripe</span>',
+      active: true,
+    },
+    {
+      key: 'cash',
+      icon: '💵',
+      label: 'Paiement à la livraison',
+      sub: 'En espèces à la réception',
+      badge: '',
+      active: false,
+    },
+    {
+      key: 'group',
+      icon: '👥',
+      label: 'Panier partagé',
+      sub: 'Invitez des proches à contribuer',
+      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--group">Partage</span>',
+      active: false,
+    },
+    {
+      key: 'pot',
+      icon: '🎁',
+      label: 'Cagnotte collective',
+      sub: 'Offrir ensemble, payer ensemble',
+      badge: '<span class="k-modal-pay-badge k-modal-pay-badge--group">Collectif</span>',
+      active: false,
+    },
+  ];
+
+  var html = '<div class="k-modal-section-title">Paiement</div><div class="k-modal-payment-opts">';
+  opts.forEach(function(o) {
+    html +=
+      '<div class="k-modal-payment-opt' + (o.active ? ' is-active' : '') + '" data-pay="' + o.key + '">' +
+        '<div class="k-modal-opt-radio"></div>' +
+        '<span class="k-modal-pay-icon">' + o.icon + '</span>' +
+        '<span class="k-modal-pay-label">' +
+          o.label +
+          '<span class="k-modal-pay-sub">' + o.sub + '</span>' +
+        '</span>' +
+        o.badge +
+      '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+
+  // Interaction : sélection radio
+  el.querySelectorAll('.k-modal-payment-opt').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      el.querySelectorAll('.k-modal-payment-opt').forEach(function(o) {
+        o.classList.remove('is-active');
+      });
+      opt.classList.add('is-active');
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  7. SUBTOTAL — Prix dynamique dans les actions modal
 // ═══════════════════════════════════════════════════════════════
 
@@ -392,6 +615,12 @@ function _onModalOpened() {
   // Small delay to let b-modal.js finish rendering
   requestAnimationFrame(function() {
     injectBreadcrumb();
+    // ── Nouvelles zones Temu-style ──
+    injectAedPrice();
+    injectFlashAndStock();
+    injectDelivery();
+    injectPayment();
+    // ── Zones existantes ──
     injectTrustBadges();
     injectSpecs();
     injectShareRow();
@@ -419,5 +648,7 @@ function _setupQtyObserver() {
 export function setupModalDesktopEnhancers() {
   if (!isDesktop()) return;
   bus.on('modal:opened', _onModalOpened);
+  // Nettoyer le timer flash quand la modal se ferme
+  bus.on('modal:close', function() { _stopFlashTimer(); });
   _setupQtyObserver();
 }
