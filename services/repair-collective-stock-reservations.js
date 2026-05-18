@@ -3,8 +3,11 @@
 /**
  * I-SWEEP-4B — Repair des réservations stock collectives.
  *
- * Cas couvert : workspace collectif avec order_id créée mais réservations
- * encore status='reserved'. Le repair les passe en consumed.
+ * Cas couverts :
+ * - workspace collectif avec order_id créée mais réservations encore reserved
+ *   => consommer les réservations ;
+ * - workspace/session terminé sans order avec réservations encore reserved
+ *   => libérer ou expirer les réservations.
  */
 
 const db = require('../db');
@@ -18,7 +21,7 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
   const safeLimit = Math.max(1, Math.min(parseInt(limit, 10) || 50, 200));
   await stockReservations.ensureTable();
 
-  const { rows: candidates } = await db.query(`
+  const { rows: consumeCandidates } = await db.query(`
     SELECT cw.id AS workspace_id, cw.order_id, cw.status,
            COUNT(csr.id)::int AS reservations_count
     FROM collective_workspaces cw
@@ -30,36 +33,60 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
     LIMIT $1
   `, [safeLimit]);
 
+  const remainingLimit = Math.max(1, safeLimit - consumeCandidates.length);
+
+  const { rows: releaseCandidates } = await db.query(`
+    SELECT DISTINCT cw.id AS workspace_id, cw.order_id, cw.status,
+           COUNT(csr.id)::int AS reservations_count
+    FROM collective_workspaces cw
+    JOIN collective_stock_reservations csr ON csr.workspace_id = cw.id
+    LEFT JOIN collective_payment_sessions cps ON cps.workspace_id = cw.id
+    WHERE cw.order_id IS NULL
+      AND csr.status = 'reserved'
+      AND (
+        cw.status IN ('session_ended', 'cancelled')
+        OR cps.status IN ('ended', 'failed')
+        OR csr.reserved_until <= NOW()
+      )
+    GROUP BY cw.id, cw.order_id, cw.status
+    ORDER BY cw.updated_at DESC NULLS LAST, cw.created_at DESC
+    LIMIT $1
+  `, [remainingLimit]);
+
   if (dryRun) {
     return {
       status: 200,
       body: {
         dry_run: true,
-        count: candidates.length,
-        candidates,
+        consume_count: consumeCandidates.length,
+        release_count: releaseCandidates.length,
+        consume_candidates: consumeCandidates,
+        release_candidates: releaseCandidates,
       },
     };
   }
 
-  const repaired = [];
+  const consumed = [];
+  const released = [];
   const failed = [];
 
-  for (const c of candidates) {
+  for (const c of consumeCandidates) {
     try {
       await stockReservations.consumeForWorkspace(c.workspace_id);
-      repaired.push(c);
+      consumed.push(c);
     } catch (err) {
-      failed.push({ ...c, error: err.message });
-      try {
-        await db.query(
-          `INSERT INTO alerts (level, source, message, payload)
-           VALUES ('elevated', 'collective_stock_reservation_repair', $1, $2)`,
-          [
-            `Collective stock reservation repair failed for workspace ${c.workspace_id}`,
-            JSON.stringify({ workspace_id: c.workspace_id, order_id: c.order_id, error: err.message }),
-          ]
-        );
-      } catch (_) { /* non-bloquant */ }
+      failed.push({ action: 'consume', ...c, error: err.message });
+      await insertRepairAlert(c, err, 'consume');
+    }
+  }
+
+  for (const c of releaseCandidates) {
+    try {
+      await stockReservations.releaseForWorkspace(c.workspace_id, 'I-SWEEP-4B repair');
+      released.push(c);
+    } catch (err) {
+      failed.push({ action: 'release', ...c, error: err.message });
+      await insertRepairAlert(c, err, 'release');
     }
   }
 
@@ -67,13 +94,32 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
     status: failed.length ? 207 : 200,
     body: {
       dry_run: false,
-      scanned: candidates.length,
-      repaired_count: repaired.length,
+      consumed_count: consumed.length,
+      released_count: released.length,
       failed_count: failed.length,
-      repaired,
+      consumed,
+      released,
       failed,
     },
   };
+}
+
+async function insertRepairAlert(candidate, err, action) {
+  try {
+    await db.query(
+      `INSERT INTO alerts (level, source, message, payload)
+       VALUES ('elevated', 'collective_stock_reservation_repair', $1, $2)`,
+      [
+        `Collective stock reservation ${action} failed for workspace ${candidate.workspace_id}`,
+        JSON.stringify({
+          workspace_id: candidate.workspace_id,
+          order_id: candidate.order_id || null,
+          action,
+          error: err.message,
+        }),
+      ]
+    );
+  } catch (_) { /* non-bloquant */ }
 }
 
 module.exports = { repairCollectiveStockReservations };
