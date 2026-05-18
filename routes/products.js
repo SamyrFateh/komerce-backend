@@ -16,6 +16,7 @@ const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const { recordProductPriceChange } = require('../services/product-price-audit');
+const { auditProductStockChange, validatePublicationUpdate } = require('../services/product-publication-guard');
 
 // ─── UUID validation helper ──────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -186,11 +187,6 @@ router.get('/:id', requireUUID, async (req, res, next) => {
 
     const product = rows[0];
 
-    // ── VAGUE 3 — Variantes ──────────────────────────────────────────────────
-    // On charge product_variants seulement si has_variants=true (économise
-    // un JOIN sur 95% des produits qui n'ont pas de variantes).
-    // Format retourné conforme au frontend déjà déployé (b-modal.js):
-    //   product.variants = { "Taille": [{value, stock, ...}, ...], "Couleur": [...] }
     if (product.has_variants) {
       const { rows: vRows } = await db.query(
         `SELECT variant_type, variant_value, stock, price_kmf, image_url, sku, display_order
@@ -199,7 +195,6 @@ router.get('/:id', requireUUID, async (req, res, next) => {
           ORDER BY variant_type, display_order ASC, variant_value ASC`,
         [product.id]
       );
-      // Regrouper par type pour matcher le format attendu côté frontend
       const variants = {};
       for (const v of vRows) {
         if (!variants[v.variant_type]) variants[v.variant_type] = [];
@@ -251,7 +246,6 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       return res.status(400).json({ error: 'name, category et price_kmf sont obligatoires' });
     }
 
-    // Validate numeric fields
     const numericFields = { price_aed, price_kmf, price_eur, weight_kg, stock, customs_risk_coeff, sort_order, unsold_price_kmf };
     for (const [fname, val] of Object.entries(numericFields)) {
       if (val !== undefined && val !== null) {
@@ -260,6 +254,14 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
           return res.status(400).json({ error: `${fname} doit être un nombre positif` });
         }
       }
+    }
+
+    const publicationCheck = validatePublicationUpdate({
+      before: { is_active: true, is_available: req.body.is_available !== undefined ? req.body.is_available : true },
+      patch: req.body,
+    });
+    if (!publicationCheck.ok) {
+      return res.status(400).json(publicationCheck);
     }
 
     const { rows: [product] } = await db.query(
@@ -285,6 +287,17 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       note: 'Création produit catalogue',
     });
 
+    if (product.stock !== undefined) {
+      await auditProductStockChange(db, {
+        productId: product.id,
+        oldStock: null,
+        newStock: product.stock,
+        actor: req.user?.id || null,
+        source: 'product_create',
+        note: 'Création produit catalogue',
+      });
+    }
+
     res.status(201).json(product);
   } catch (err) {
     next(err);
@@ -303,7 +316,6 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
       'requires_secure_transport', 'unsold_price_kmf', 'unsold_channel',
     ];
 
-    // Validate numeric fields if present
     const numericFieldNames = ['price_aed', 'price_kmf', 'price_eur', 'weight_kg', 'stock', 'customs_risk_coeff', 'sort_order', 'unsold_price_kmf'];
     for (const fname of numericFieldNames) {
       const val = req.body[fname];
@@ -331,10 +343,15 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
     }
 
     const { rows: [before] } = await db.query(
-      'SELECT id, price_kmf FROM products WHERE id = $1',
+      'SELECT id, name, category, price_kmf, stock, is_active, is_available FROM products WHERE id = $1',
       [req.params.id]
     );
     if (!before) return res.status(404).json({ error: 'Produit introuvable' });
+
+    const publicationCheck = validatePublicationUpdate({ before, patch: req.body });
+    if (!publicationCheck.ok) {
+      return res.status(400).json(publicationCheck);
+    }
 
     values.push(req.params.id);
     const { rows: [product] } = await db.query(
@@ -352,6 +369,17 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
         newPriceKmf: product.price_kmf,
         source: 'product_update',
         appliedBy: req.user?.id || null,
+        note: 'Modification directe catalogue',
+      });
+    }
+
+    if (req.body.stock !== undefined) {
+      await auditProductStockChange(db, {
+        productId: product.id,
+        oldStock: before.stock,
+        newStock: product.stock,
+        actor: req.user?.id || null,
+        source: 'product_update',
         note: 'Modification directe catalogue',
       });
     }
@@ -407,7 +435,6 @@ router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upl
 });
 
 // ─── POST /api/products/:id/images (admin) — Upload multiple ─────────────────
-// P0-002 fix: SQL injection removed — uses parameterized query now
 
 router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), async (req, res, next) => {
   try {
@@ -417,7 +444,6 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
 
     const imageUrls = req.files.map(f => `/uploads/products/${f.filename}`);
 
-    // Récupérer les images existantes
     const { rows: [product] } = await db.query(
       'SELECT id, name, images FROM products WHERE id = $1 AND is_active = TRUE',
       [req.params.id]
@@ -432,9 +458,7 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
     const existing = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
     const merged = [...existing, ...imageUrls];
 
-    // P0-002 FIX: Parameterized query instead of string interpolation
     if (existing.length === 0) {
-      // No existing images — also set main image_url
       await db.query(
         `UPDATE products SET images = $1, image_url = $2, updated_at = NOW() WHERE id = $3`,
         [JSON.stringify(merged), imageUrls[0], req.params.id]
@@ -454,16 +478,7 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
 });
 
 // ─── VAGUE 3 — Admin variantes ───────────────────────────────────────────────
-//
-// PUT  /api/products/:id/variants   — Remplace toutes les variantes d'un produit
-//                                     (atomique : DELETE + INSERT dans une TX)
-// GET  /api/products/:id/variants   — Liste brute des variantes (admin)
-// DELETE /api/products/:id/variants/:variantId — Supprimer une variante
-//
-// Note : has_variants est maintenu automatiquement par le trigger
-// trg_sync_has_variants côté DB — pas besoin de l'écrire manuellement.
 
-// GET /api/products/:id/variants — liste brute pour l'admin
 router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   try {
     const { rows: [product] } = await db.query(
@@ -491,7 +506,6 @@ router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
   } catch (err) { next(err); }
 });
 
-// PUT /api/products/:id/variants — remplace toutes les variantes (atomique)
 router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   const client = await db.getClient();
   try {
@@ -504,7 +518,6 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
       return res.status(400).json({ error: 'Maximum 200 variantes par produit' });
     }
 
-    // Valider chaque variante
     for (const v of variants) {
       if (!v.type || typeof v.type !== 'string' || v.type.trim().length === 0) {
         return res.status(400).json({ error: 'Chaque variante doit avoir un "type" (ex: "Taille")' });
@@ -522,7 +535,6 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 
     await client.query('BEGIN');
 
-    // Vérifier que le produit existe
     const { rows: [product] } = await client.query(
       'SELECT id, name FROM products WHERE id = $1 FOR UPDATE',
       [req.params.id]
@@ -532,8 +544,6 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
       return res.status(404).json({ error: 'Produit introuvable' });
     }
 
-    // Vérifier qu'aucune variante n'est référencée dans des commandes pending
-    // (on interdit la suppression si des order_items pending y font référence)
     if (variants.length === 0) {
       const { rows: [pending] } = await client.query(
         `SELECT COUNT(*)::int AS cnt
@@ -553,10 +563,8 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
       }
     }
 
-    // Supprimer toutes les variantes existantes
     await client.query('DELETE FROM product_variants WHERE product_id = $1', [req.params.id]);
 
-    // Insérer les nouvelles variantes
     const inserted = [];
     for (let i = 0; i < variants.length; i++) {
       const v = variants[i];
@@ -581,7 +589,6 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 
     await client.query('COMMIT');
 
-    // Recharger le produit pour confirmer has_variants (mis à jour par trigger)
     const { rows: [updated] } = await db.query(
       'SELECT id, name, has_variants FROM products WHERE id = $1',
       [req.params.id]
@@ -596,7 +603,6 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
-    // Contrainte UNIQUE violation (type+value en double)
     if (err.code === '23505') {
       return res.status(409).json({
         error: 'Doublon détecté — deux variantes ont le même type et la même valeur',
@@ -609,12 +615,10 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
   }
 });
 
-// DELETE /api/products/:id/variants/:variantId — supprimer une variante précise
 router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   try {
     const { variantId } = req.params;
 
-    // Vérifier que la variante n'est pas dans une commande en cours
     const { rows: [pending] } = await db.query(
       `SELECT COUNT(*)::int AS cnt
          FROM order_items oi
