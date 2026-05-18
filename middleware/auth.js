@@ -53,6 +53,11 @@ function isQrVerifyRequest(req) {
   return req.method === 'POST' && path === '/api/scans/verify-qr';
 }
 
+function isStripeIntentRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/payments/stripe/intent';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -90,6 +95,10 @@ async function authenticate(req, res, next) {
 
     if (isQrVerifyRequest(req)) {
       return handleSafeQrVerify(req, res, next);
+    }
+
+    if (isStripeIntentRequest(req)) {
+      return handleIdempotentStripeIntent(req, res, next);
     }
 
     next();
@@ -140,6 +149,20 @@ async function handleSafeQrVerify(req, res, next) {
     const result = await verifyQrCollection({
       token: req.body && req.body.token,
       orderId: req.body && req.body.order_id,
+      user: req.user,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleIdempotentStripeIntent(req, res, next) {
+  try {
+    const { createStripeOrderIntent } = require('../services/create-stripe-order-intent');
+    const result = await createStripeOrderIntent({
+      orderReference: req.body && req.body.order_reference,
       user: req.user,
     });
 
