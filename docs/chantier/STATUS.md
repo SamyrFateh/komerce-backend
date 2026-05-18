@@ -77,6 +77,7 @@ Lire dans cet ordre avant toute modification :
 | I-SWEEP-5B | ✅ Fait | PR #405 mergée. Endpoint admin dry-run `POST /api/admin/orders/:orderId/refund` : refund Stripe via service idempotent existant, cash manuel par défaut avec alerte, option wallet credit explicite, puis `cancelled → refunded` après remboursement exécuté. |
 | I-SWEEP-6A | ✅ Fait | PR #406 mergée. `price_history` est alimenté lors de la création produit (`product_create`) et lors des changements directs `PUT /api/products/:id` sur `price_kmf` (`product_update`). |
 | I-SWEEP-6B | ✅ Fait | PR #407 mergée. `PUT /api/pricing/apply-price/:product_id` et `PUT /api/pricing/apply-all` passent par un service audité avec survival recalculé serveur et `price_history` par item. |
+| I-SWEEP-6C | ✅ Fait | PR #408 mergée. Garde de publication catalogue ajoutée et audit minimal des changements de stock via `alerts` source `product_stock_audit`. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 
@@ -99,32 +100,31 @@ Lire dans cet ordre avant toute modification :
 - ✅ Refund doctrine : endpoint admin explicite ajouté par I-SWEEP-5B ; `cancelled` reste métier, `refunded` devient financier après action explicite.
 - ✅ Prix catalogue manuel : audit `price_history` ajouté par I-SWEEP-6A.
 - ✅ Pricing apply : `apply-price/apply-all` audités avec survival serveur par I-SWEEP-6B.
+- ✅ Catalogue/stock : garde publication + audit stock minimal ajoutés par I-SWEEP-6C.
 - 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
-- 🟠 Sourcing/catalogue G5 restant : stock movement log absent, doctrine publication catalogue à formaliser.
 
 ---
 
 ## Prochain lot recommandé
 
-### I-SWEEP-6C — Stock movement log + doctrine publication catalogue
+### TEST-1 — Tests d'intégration invariants + flows G1-G5
 
 ```text
-Branche   : fix/backend-I-SWEEP-6C-stock-publication-doctrine
-Charge    : 1 jour
-Risque    : moyen — touche catalogue/stock admin
-Prérequis : I-SWEEP-6B terminé
+Branche   : test/backend-invariants-flows-G1-G5
+Charge    : 1-3 jours
+Risque    : moyen — tests uniquement, mais révèle les régressions potentielles
+Prérequis : I-SWEEP-6C terminé
 ```
 
-Objectif : ajouter une traçabilité minimale des changements de stock catalogue et formaliser une garde de publication simple pour éviter de publier des produits sans prix/stock cohérents.
+Objectif : ajouter un filet d'intégration sur les invariants I-01 à I-10 et les flows G1 à G5 maintenant que les corrections I-SWEEP sont en place.
 
 ---
 
-## File d'attente après I-SWEEP-6C
+## File d'attente après TEST-1
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| TEST-1 | 🔴 Stratégique | Tests d'intégration invariants + flows G1-G5 |
-| PRICE-1 | Haute | Durcissement pricing/catalogue complémentaire si I-SWEEP-6 doit être découpé |
+| PRICE-1 | Haute | Durcissement pricing/catalogue complémentaire si besoin après tests |
 | A4 | Prudence | Collisions migrations 060/061 |
 | F1 | Haute mais gros lot | Logger structuré |
 | H1 | Stratégique lourd | Refacto `server.js` |
