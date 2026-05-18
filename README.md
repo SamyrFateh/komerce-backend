@@ -1,90 +1,169 @@
 # 🛒 Komerce Backend
 
-> E-commerce multi-vendeurs — Comores · Node.js / Express / PostgreSQL (Supabase)
+> E-commerce multi-vendeurs — Comores
+> Node.js / Express / PostgreSQL (Railway)
 
 ---
 
-## 🤖 PROTOCOLE AGENT — ORDRE STRICT
+## 🤖 PROTOCOLE AGENT — LECTURE OBLIGATOIRE AVANT TOUTE ACTION
 
-### 1. Lis la gouvernance
-→ [`docs/GOVERNANCE.md`](./docs/GOVERNANCE.md) — **obligatoire avant toute action.**
+**Tu débarques sur ce repo ? Lis ces 5 fichiers dans l'ordre. Pas de raccourci.**
 
-### 2. Lis la toile d'impact
-→ [`docs/ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) — **obligatoire avant tout code.**
+| # | Fichier | Pourquoi |
+|---|---|---|
+| 1 | [`AGENTS.md`](./AGENTS.md) | Point d'entrée — règle de divergence + socle 4 docs + interdits |
+| 2 | [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) | État du jour + prochain lot à exécuter + pièges critiques |
+| 3 | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Quoi existe : 80 routes, domaines API, surfaces HTML, points de vérité |
+| 4 | [`docs/ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) | Quoi protéger : 10 invariants I-01 à I-10 + fichiers à haut risque |
+| 5 | [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base : 91 tables, 14 ENUMs, 31 triggers, 147 FK |
 
-Contient :
-- 6 invariants absolus (R1–R6)
-- 2 machines à états (orders + parcels) avec transitions interdites
-- Matrice 24 composants × tables × dépendances × scores de risque
-- Blast radius par zone
-- Checklist pré-code à compléter
-- Protocole de rollback
-
-### 3. Identifie ta priorité
-→ [`docs/ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md)
-
-```
-📊 STATUT
-✅ Dashboard 11/11 · Gouvernance 5/5 · Parcel-Centric 3/5
-🟡 Vague 1 Logistique (~22h)
-⬜ Vague 2 Hub Terrain · Vague 3 Optimisation · Catalogue Auto/Moto
-🔴 Violations V-01 à V-04 · Issues #71–#76
-```
-
-### 4. Complète la checklist ZONE_IMPACT avant d'écrire une ligne
-
-| # | Question | Réponse exigée |
-|---|----------|----------------|
-| 1 | Quelles zones je touche ? | Fichiers + scores de risque |
-| 2 | Quelles tables j'écris ? | Liste INSERT/UPDATE/DELETE |
-| 3 | Quel invariant pourrait casser ? | R1–R6 concernés |
-| 4 | Quel est le blast radius ? | Modules impactés en cascade |
-| 5 | Mon analyse est dans `_work/` ? | Chemin du fichier |
-| 6 | Le propriétaire a validé ? | Oui / Non |
-
-> ⚠️ **Si la réponse 6 est Non → STOP. Ne pas coder.**
+**Et un 6ᵉ si tu touches aux services critiques** : [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) — signatures publiques des 9 services critiques.
 
 ---
 
-## ⚡ Règles non-négociables
+## 🚨 Règles non-négociables — les 10 invariants
 
-| # | Règle |
-|---|-------|
-| R1 | Jamais `UPDATE orders SET status` → passer par `parcelSync.js` |
-| R2 | Hub = 3 actions seulement. Le système décide, l'opérateur exécute |
-| R3 | `orders.status` = machine à états fermée. Aucun statut inventé |
-| R4 | `parcels.status` = machine à états fermée. Idem |
-| R5 | Stock = transaction Supabase. Jamais de write sans lock |
-| R6 | Tout middleware sécurité existant reste en place |
-| R7 | `assisted_request` → `order` uniquement sur action humaine explicite |
-| 🔴 | Commit toutes les 10 min : `wip: [description]` |
-| 🧠 | Commit immédiat des analyses dans `docs/_work/` avant de coder |
-| 🚫 | Jamais "terminé" sans delta dans `docs/_pending/` |
+Détail complet dans `docs/ZONE_IMPACT.md` §2.
 
----
+| ID | Invariant |
+|---|---|
+| I-01 | Ne jamais modifier `orders.status` hors `services/order-status-machine.js` |
+| I-02 | Paiements Stripe/cash/wallet/shared-cart/collectif → uniquement `pending → confirmed` |
+| I-03 | Transitions scan/système : forward-only + idempotentes |
+| I-04 | Toute transition effective → trace dans `order_status_history` |
+| I-05 | Wallet : pas de suppression — créditer, débiter, contre-passer |
+| I-06 | Annulation → restaurer stock ET wallet appliqué |
+| I-07 | Webhooks Stripe : body brut avant `express.json` |
+| I-08 | Pricing : lire les composantes DB, jamais de coefficient dur |
+| I-09 | Colis = unité opérationnelle autonome |
+| I-10 | Codes retrait et preuves de collecte = éléments de confiance |
 
-## 📂 Documentation
-
-| Doc | Quand le lire |
-|-----|---------------|
-| [`GOVERNANCE.md`](./docs/GOVERNANCE.md) | **Toujours — dès l'entrée** |
-| [`ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) | **Avant tout code** |
-| [`ROADMAP_KOMERCE.md`](./docs/ROADMAP_KOMERCE.md) | Priorités & état |
-| [`CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Architecture complète — endpoints, tables, middlewares |
-| [`PLAN_LOGISTIQUE_V2.md`](./docs/PLAN_LOGISTIQUE_V2.md) | Plan 3 vagues logistiques |
-| [`AUDIT_REPORT.md`](./docs/AUDIT_REPORT.md) | Sécurité — issues #71–#84 |
-| [`AGENT_CONFIG.md`](./docs/AGENT_CONFIG.md) | Bootstrap agent Tasklet |
-| [`REPRISE_SESSION.md`](./docs/REPRISE_SESSION.md) | Reprise de session |
-| [`GOVERNANCE_BOOTSTRAP.md`](./docs/GOVERNANCE_BOOTSTRAP.md) | Config gardien Tasklet |
-| `docs/_work/` | Analyses en cours — **écrire ici avant de coder** |
-| `docs/_pending/` | Deltas en attente d'intégration |
+> 🔴 **Violation I-01 ACTIVE** signalée dans STATUS.md § Pièges critiques — `routes/pickup-secret.js:286`. Correction différée en lot I-SWEEP (après fin chantier d'audits). **Ne pas toucher avant.**
 
 ---
 
-## 🚀 Quick Start (dev)
+## 📂 Documentation organisée par couches
+
+### Socle architectural — 4 documents canoniques
+
+| Doc | Rôle | Co-référence |
+|---|---|---|
+| [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Quoi existe | domaines, surfaces, points de vérité |
+| [`docs/ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) | Quoi protéger | 10 invariants + fichiers à haut risque |
+| [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base | 91 tables, 14 ENUMs, 31 triggers |
+| [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) | Qui appelle quoi | 9 services critiques |
+
+**Règle de divergence** : voir `AGENTS.md` §2. En résumé : DB live fait foi sur le schéma ; code fait foi sur les contrats et comportements ; en cas de doute, stop + signaler dans STATUS.md.
+
+### Chantier en cours
+
+| Doc | Rôle |
+|---|---|
+| [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) | **Premier fichier à lire à chaque session** — lots cochés + prochain lot + pièges |
+| [`docs/BACKEND_GOLIVE_ROADMAP.md`](./docs/BACKEND_GOLIVE_ROADMAP.md) | 51 lots détaillés (8 blocs A-H) |
+| [`docs/BACKEND_AUDIT_SESSIONS_PLAN.md`](./docs/BACKEND_AUDIT_SESSIONS_PLAN.md) | Sessions d'audit approfondies |
+| [`docs/BACKEND_AUDIT_CORRECTIONS.md`](./docs/BACKEND_AUDIT_CORRECTIONS.md) | Corrections post-lecture code, fait foi contre l'audit initial |
+| `docs/chantier/*_AUDIT_*.md` | Livrables d'audit par lot (D1, D3, D4, D5, D6, D7) |
+
+### Docs métier (référence stable)
+
+| Doc | Rôle |
+|---|---|
+| [`docs/DOCTRINE_ECONOMIQUE_KOMERCE.md`](./docs/DOCTRINE_ECONOMIQUE_KOMERCE.md) | Pricing, marges, sourcing |
+| [`docs/DOCTRINE_LEVIERS_MARGE.md`](./docs/DOCTRINE_LEVIERS_MARGE.md) | Leviers de marge |
+| [`docs/DOCTRINE_ALLOCATION_COUTS.md`](./docs/DOCTRINE_ALLOCATION_COUTS.md) | Allocation des coûts |
+| [`docs/DOCTRINE_PANIER_COLLECTIF.md`](./docs/DOCTRINE_PANIER_COLLECTIF.md) | Panier collectif |
+| [`docs/SECURITY-MODEL.md`](./docs/SECURITY-MODEL.md) | Modèle de sécurité |
+| [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | Système d'impact / signaux |
+| [`docs/SPEC-ORDER-PARCEL-LIFECYCLE.md`](./docs/SPEC-ORDER-PARCEL-LIFECYCLE.md) | Cycle de vie commande/colis |
+
+### Décisions historisées (ADR)
+
+11 ADR dans `docs/ADR-*.md` — mémoire des décisions structurantes (ADR-001 à ADR-011).
+
+### Notes de design (à exécuter plus tard)
+
+| Doc | Rôle |
+|---|---|
+| [`docs/ARCHI_DECOUPAGE_MODULAIRE.md`](./docs/ARCHI_DECOUPAGE_MODULAIRE.md) | Plan de découpage des gros fichiers (REFAC-pricing, REFAC-dashboard) |
+| [`docs/PAYPAL_POSITIONNEMENT.md`](./docs/PAYPAL_POSITIONNEMENT.md) | Intégration PayPal phase 1 (lot PAYPAL-1) |
+| [`docs/PROMPTS_KIT.md`](./docs/PROMPTS_KIT.md) | Kit de prompts stricts pour agents Sonnet/ChatGPT |
+
+### Frontend Boutique
+
+Le frontend Boutique a sa propre gouvernance documentaire dans `public/boutique/docs/`. **Point d'entrée** : [`public/boutique/docs/BOUTIQUE_DOCS_INDEX.md`](./public/boutique/docs/BOUTIQUE_DOCS_INDEX.md).
+
+3 scripts automatisent sa vérification :
+- `npm run bundle:css` — bundling sources → dist
+- `npm run boutique:arch` — photo de l'archi réelle
+- `npm run boutique:audit` — garde-fou des invariants
+
+---
+
+## ⚙️ Quick Start (dev)
 
 ```bash
 npm install
 cp .env.example .env
+# Renseigner DATABASE_URL, JWT_SECRET, STRIPE_*, QR_SECRET, etc.
 npm start
 ```
+
+**Variables d'env requises** : voir `docs/CARTOGRAPHY_360.md` §5 + `docs/chantier/ENV_AUDIT_D5.md`.
+
+---
+
+## 🛠️ Commandes utiles
+
+```bash
+# Backend
+npm start                          # démarrer le serveur (port 3001 par défaut)
+npm test                           # tests Jest (5 fichiers actuellement — TEST-1 à venir)
+
+# Frontend Boutique (depuis public/boutique/)
+npm run bundle:css                 # rebundler les CSS sources → dist
+npm run boutique:arch              # régénérer BOUTIQUE_ARCHITECTURE_LIVE.md
+npm run boutique:audit             # valider les invariants Boutique
+```
+
+---
+
+## 📊 État du chantier
+
+Voir `docs/chantier/STATUS.md` pour le détail. Résumé au 17 mai 2026 :
+
+- **10 / 51 lots du chantier** terminés (20 %)
+- **Socle architectural à 4 docs** gravé (lots SOCLE-1, SOCLE-2, SOCLE-3, H-SYNC)
+- **Bloc A Hygiène** : 71 % (5/7)
+- **Bloc D Sécurité** : 62 % (5/8)
+- **Blocs B, C, E, F, G** : à venir
+- **Lot critique en attente** : I-SWEEP (correction groupée des violations d'invariants détectées par les audits)
+
+---
+
+## 📝 Process de PR
+
+```bash
+# 1. Lire AGENTS.md + STATUS.md + le socle 4 docs (CARTOGRAPHY/ZONE_IMPACT/SCHEMA/CONTRACTS)
+# 2. Coder en respectant les 10 invariants
+# 3. Mettre à jour les docs socle concernées DANS LA MÊME PR (cf. AGENTS.md §3)
+# 4. Mettre à jour STATUS.md (cocher le lot, dater, indiquer le prochain)
+# 5. Commit avec message conventional commits
+git commit -m "feat(domaine): description claire"
+git push origin main
+```
+
+> 🔴 **Une PR qui modifie le code sans mettre à jour le socle = à refuser** (ou dette explicite dans STATUS.md).
+
+---
+
+## 🆘 En cas de doute
+
+- **Conflit doc ↔ code** : voir `AGENTS.md` §2 (règle de divergence)
+- **Violation d'invariant détectée** : signaler dans STATUS.md § Pièges critiques, NE PAS corriger à la volée — sera traité en lot I-SWEEP groupé
+- **Tu ne sais pas où ajouter ton code** : ouvre `CARTOGRAPHY_360.md` (§3 domaines API) puis `CONTRACTS.md` (services critiques)
+- **Tu ne sais pas si une table existe** : ouvre `SCHEMA.md` (généré contre `pg_dump` live)
+
+---
+
+*Ce README est aligné sur l'état du repo au 17 mai 2026 (post-SOCLE-1/2/3 + H-SYNC). Si tu trouves une obsolescence, mets à jour dans la même PR que le changement qui rend l'info obsolète.*

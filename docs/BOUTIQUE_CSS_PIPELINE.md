@@ -201,6 +201,138 @@ git status css/dist/
 
 ---
 
-## 10. Évolution de la doc
+## 11. Outillage — les 3 scripts du pipeline
+
+Le pipeline CSS Boutique est accompagné de **3 scripts Node.js** dans `public/boutique/scripts/`. Chacun a un rôle précis et complémentaire.
+
+### 11.1 `bundle-css.js` — Construire le dist
+
+**Rôle** : concaténer les sources dans les 4 bundles dist.
+
+**Commande** :
+```bash
+cd public/boutique
+npm run bundle:css
+```
+
+**Quand l'utiliser** :
+- Après toute modification d'un fichier source CSS
+- Avant tout commit qui touche `public/boutique/css/*.css`
+- Avant déploiement prod (vérification finale)
+
+**Sortie** : régénère les 4 fichiers `public/boutique/css/dist/*.css` avec un header daté.
+
+---
+
+### 11.2 `gen-boutique-arch-live.js` — Photographier l'état réel
+
+**Rôle** : produire automatiquement `docs/BOUTIQUE_ARCHITECTURE_LIVE.md`, une photo de l'état RÉEL du code à un instant T.
+
+**Commande** :
+```bash
+cd public/boutique
+npm run boutique:arch
+```
+
+**Quand l'utiliser** :
+- En début de session de travail (savoir où on en est)
+- Après chaque PR mergée (acter l'état)
+- Quand on doute de la cohérence sources ↔ dist
+- Pour comparer avec `BOUTIQUE_ARCHITECTURE.md` (normatif) et détecter les écarts
+
+**Ce qu'il mesure** :
+- Inventaire CSS disque vs bundle (orphelins)
+- Ordre de chargement réel dans index.html
+- Cartographie des sélecteurs critiques (où ils vivent vraiment)
+- Tokens cassés (`var(--x)nnn`)
+- Hex hardcodés par fichier
+- `!important` par fichier
+- Variables CSS posées par JS et leurs owners
+- Score architecture global
+
+**Sortie** : `docs/BOUTIQUE_ARCHITECTURE_LIVE.md` (Markdown structuré, jamais édité à la main).
+
+---
+
+### 11.3 `audit-boutique-arch.js` — Garde-fou des invariants
+
+**Rôle** : faire planter le build si un invariant de `BOUTIQUE_ARCHITECTURE.md` § 1 est violé.
+
+**Commande** :
+```bash
+cd public/boutique
+npm run boutique:audit
+```
+
+**Quand l'utiliser** :
+- Dans le pipeline CI/CD (bloquant)
+- Avant tout merge (vérification systématique)
+- Pour valider qu'une refacto n'a rien cassé
+
+**Ce qu'il vérifie** :
+- **I-1** : aucun CSS orphelin (tout fichier source est bundlé ou supprimé)
+- **I-2** : ownership CSS (un sélecteur, un owner — voir tableau ARCHITECTURE.md §3)
+- **I-3** : aucun hex en dur hors `tokens.css` (sauf allowlist)
+- **I-4** : aucun `var(--token)xxx` (résidu de migration cassée)
+- **I-5** : modif desktop sous `@media (min-width: 900px)` uniquement
+- **I-6** : variables CSS owned par JS jamais posées par CSS
+
+**Comportement** :
+- `exit 0` si tout passe
+- `exit 1` si une violation est détectée + rapport détaillé
+
+---
+
+### 11.4 Workflow type d'une PR CSS
+
+L'ordre **strict** d'une PR qui modifie un CSS Boutique :
+
+```bash
+# 1. Modifier les fichiers sources
+vim public/boutique/css/modal.css
+
+# 2. Régénérer le bundle
+cd public/boutique
+npm run bundle:css
+
+# 3. Régénérer la photo de l'archi (descriptif)
+npm run boutique:arch
+
+# 4. Vérifier les invariants (garde-fou)
+npm run boutique:audit
+# Si exit 1 : corriger les violations avant de continuer
+
+# 5. Vérifier les diffs
+cd ../../
+git status public/boutique/css/dist/ public/boutique/docs/
+
+# 6. Commiter sources + dist + docs ensemble
+git add public/boutique/css/ public/boutique/docs/
+git commit -m "..."
+```
+
+**Règle d'or** : sources, dist et `BOUTIQUE_ARCHITECTURE_LIVE.md` doivent être dans **le même commit**. Sinon le repo diverge silencieusement.
+
+---
+
+### 11.5 Hook pre-commit recommandé
+
+Pour automatiser cette discipline, ajouter dans `.husky/pre-commit` (à créer) :
+
+```bash
+#!/bin/sh
+# Vérifier que le dist CSS est cohérent avec les sources
+cd public/boutique
+npm run boutique:audit || {
+  echo "❌ Audit archi Boutique a échoué — corrigez avant de commiter"
+  exit 1
+}
+```
+
+À programmer en lot CSS-5 (cf. RAPPORT_LOTS_CSS_1-4.md §7).
+
+---
+
+## 12. Évolution de la doc
 
 Si tu ajoutes une source dans `public/boutique/css/`, mets à jour `bundle-css.js` ET cette doc dans la même PR. Sinon les agents suivants ne sauront pas qu'elle existe.
