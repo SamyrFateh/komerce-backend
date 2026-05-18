@@ -1607,38 +1607,32 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 
 /* ══════════════════════════════════════════════════════════════
-   §7. FULL PAGE DESKTOP — Temu-style pleine page (v2)
+   §7. FULL PAGE DESKTOP — Temu-style pleine page (v3)
    ──────────────────────────────────────────────────────────────
-   Problèmes corrigés vs v1 :
-   - Footer visible : body.modal-open crée un stacking context via
-     position:fixed (reset.css). Le footer (DOM après l'overlay,
-     z-index:auto) pouvait s'afficher par-dessus. Fix : masquer
-     le footer explicitement quand modal-open desktop.
-   - Hauteur modale : flex-shrink:1 par défaut pouvait réduire
-     #k-modal sous 100dvh. Fix : min-height + flex-shrink:0.
-   - Colonnes : min-height/height de la product-zone recalibrées
-     sur 100dvh pour couvrir la hauteur réelle.
-   Mobile : aucun effet (tout sous @media min-width:900px).
+   v1 : passage pleine page (overlay blanc, 100dvh)
+   v2 : footer masqué, flex-shrink:0, justify-content corrigé
+   v3 : panneau droit qui respire
+        - colonnes 43 % image / 57 % détails (vs 50/50 en v1-v2
+          qui écrasait le 46/54 des §4-§5 originaux)
+        - padding details/actions : clamp(24px, 4vw, 64px)
+          → 36px à 900px · 48px à 1200px · 64px à 1600px+
+        - actions sticky : padding-inline identique aux détails
    ══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
   /* ── Masquer le footer quand le modal est ouvert ─────────── */
-  /* body.modal-open { position:fixed } (reset.css) crée un
-     stacking context : le footer peut passer au-dessus de
-     l'overlay sans z-index explicite. Solution : le cacher. */
   body.modal-open .k-footer,
   body.modal-open footer { display: none !important; }
 
   /* ── Overlay : fond blanc plein, sans padding ni flou ────── */
   .k-modal-overlay.open {
     padding: 0;
-    background: var(--white, #fff);
+    background: var(--white);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    align-items: stretch;
-    /* justify-content:stretch n'existe pas en flex → flex-direction:column */
     flex-direction: column;
+    align-items: stretch;
     justify-content: flex-start;
   }
 
@@ -1650,51 +1644,76 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     min-height: 100vh;
     min-height: 100dvh;
     max-height: 100dvh;
-    flex: 0 0 100dvh;   /* flex-shrink:0 empêche la compression sous 100dvh */
+    flex: 0 0 100dvh;
     border-radius: 0;
     box-shadow: none;
   }
 
-  /* Side-cart : glisse par-dessus la page, modal reste 100vw */
+  /* Side-cart : glisse par-dessus, modal reste 100vw */
   body.modal-has-cart #k-modal.k-modal {
     width: 100vw;
     margin-right: 0;
     transition: none;
   }
 
-  /* ── Product-zone : toute la hauteur page moins la topbar ── */
+  /* ── Grid : 43 % image · 57 % détails ───────────────────── */
   #k-modal .k-modal-product-zone {
     min-height: calc(100dvh - 58px);
-    /* Colonnes : gauche 50% fluide, droite 50% fluide pleine page */
-    grid-template-columns: minmax(0, 50%) minmax(0, 50%);
+    grid-template-columns: minmax(0, 43%) minmax(0, 57%);
   }
 
-  /* ── Image sticky : recalculée sur 100dvh ────────────────── */
+  /* ── Image sticky : pleine hauteur ──────────────────────── */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     height: calc(100dvh - 58px);
     max-height: calc(100dvh - 58px);
   }
 
-  /* ── Topbar : séparation visible sur fond blanc ──────────── */
+  /* ── Détails : padding qui respire, adapté au viewport ──── */
+  #k-modal .k-modal-product-zone .k-modal-details {
+    padding: 0 clamp(24px, 4vw, 64px);
+  }
+
+  /* ── Actions sticky : padding-inline aligné sur les détails  */
+  #k-modal .k-modal-product-zone .k-modal-actions {
+    padding-left:  clamp(24px, 4vw, 64px);
+    padding-right: clamp(24px, 4vw, 64px);
+    /* Annule le grid-template étroit hérité des §4-§5 */
+    grid-template-columns: auto minmax(160px, 1fr) minmax(190px, 1.15fr);
+  }
+
+  /* ── Topbar : séparation nette sur fond blanc ────────────── */
   #k-modal .k-modal-topbar {
     border-bottom-color: var(--border);
     box-shadow: var(--elev-1);
   }
 }
 
-/* ── Écraser les overrides responsive 900-1120px ────────────── */
+/* ── Override 900–1120px (§4) ───────────────────────────────── */
 @media (min-width: 900px) and (max-width: 1120px) {
   body.modal-open .k-footer,
-  body.modal-open footer           { display: none !important; }
-  #k-modal.k-modal                 { width: 100vw; }
-  body.modal-has-cart #k-modal.k-modal { width: 100vw; margin-right: 0; }
-  #k-modal .k-modal-product-zone  { grid-template-columns: minmax(0, 50%) minmax(0, 50%); }
+  body.modal-open footer                    { display: none !important; }
+  #k-modal.k-modal                          { width: 100vw; }
+  body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
+  #k-modal .k-modal-product-zone            { grid-template-columns: minmax(0, 44%) minmax(0, 56%); }
+  #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
+  #k-modal .k-modal-product-zone .k-modal-actions  {
+    padding-left:  clamp(18px, 3vw, 32px);
+    padding-right: clamp(18px, 3vw, 32px);
+    /* Réhabilite le layout 2 boutons col droite étroite */
+    grid-template-columns: auto minmax(140px, 1fr) minmax(170px, 1.1fr);
+    grid-template-rows: auto;
+  }
+  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
+    grid-column: 3; grid-row: 1;
+  }
 }
 
-/* ── Écraser les overrides ≥1200px ─────────────────────────── */
+/* ── Override ≥1200px (§5) ──────────────────────────────────── */
 @media (min-width: 1200px) {
   body.modal-open .k-footer,
-  body.modal-open footer           { display: none !important; }
-  #k-modal.k-modal                 { width: 100vw; }
+  body.modal-open footer               { display: none !important; }
+  #k-modal.k-modal                     { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal { width: 100vw; margin-right: 0; }
+  #k-modal .k-modal-product-zone       { grid-template-columns: minmax(0, 43%) minmax(0, 57%); }
+  /* Sur grands écrans, le padding clamp atteint déjà 48-64px, c'est correct. */
 }
