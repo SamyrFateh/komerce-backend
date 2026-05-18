@@ -68,6 +68,11 @@ function isPurchaseOrderReceiveRequest(req) {
   return req.method === 'POST' && /^\/api\/purchasing\/[^/]+\/receive$/.test(path);
 }
 
+function isCollectiveReadyRepairRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/admin/collective/repair-ready-to-capture';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -117,6 +122,10 @@ async function authenticate(req, res, next) {
 
     if (isPurchaseOrderReceiveRequest(req)) {
       return handleTransactionalPoReceive(req, res, next);
+    }
+
+    if (isCollectiveReadyRepairRequest(req)) {
+      return handleCollectiveReadyRepair(req, res, next);
     }
 
     next();
@@ -229,6 +238,22 @@ async function handleTransactionalPoReceive(req, res, next) {
       qtyReceived: req.body && req.body.qty_recue,
       actor: req.user,
       triggerScan3,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleCollectiveReadyRepair(req, res, next) {
+  try {
+    const { repairCollectiveReadyToCapture } = require('../services/repair-collective-ready-to-capture');
+    const result = await repairCollectiveReadyToCapture({
+      dryRun: req.body?.dry_run !== false,
+      limit: req.body?.limit || 25,
+      minAgeMinutes: req.body?.min_age_minutes || 5,
+      user: req.user,
     });
 
     return res.status(result.status).json(result.body);
