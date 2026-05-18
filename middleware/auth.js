@@ -39,9 +39,18 @@ function extractToken(req) {
   return null;
 }
 
+function requestPath(req) {
+  return (req.originalUrl || req.url || '').split('?')[0];
+}
+
 function isPickupPayCashRequest(req) {
-  const path = (req.originalUrl || req.url || '').split('?')[0];
+  const path = requestPath(req);
   return req.method === 'POST' && /^\/api\/pickup\/pay-cash\/[^/]+$/.test(path);
+}
+
+function isQrVerifyRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/scans/verify-qr';
 }
 
 async function authenticate(req, res, next) {
@@ -79,6 +88,10 @@ async function authenticate(req, res, next) {
       return handleSafePickupCash(req, res, next);
     }
 
+    if (isQrVerifyRequest(req)) {
+      return handleSafeQrVerify(req, res, next);
+    }
+
     next();
 
   } catch (err) {
@@ -101,14 +114,33 @@ async function handleSafePickupCash(req, res, next) {
   try {
     const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
     const { generateAndStoreSecret } = require('../routes/pickup-secret');
-    const path = (req.originalUrl || req.url || '').split('?')[0];
-    const orderId = path.split('/').pop();
+    const orderId = requestPath(req).split('/').pop();
 
     const result = await confirmPickupCashPayment({
       orderId,
       user: req.user,
       payload: req.body,
       generateAndStoreSecret,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleSafeQrVerify(req, res, next) {
+  const role = req.user && req.user.role;
+  if (role !== 'admin' && role !== 'agent_relais') {
+    return res.status(403).json({ error: 'Accès refusé — rôle requis : admin ou agent_relais' });
+  }
+
+  try {
+    const { verifyQrCollection } = require('../services/verify-qr-collection');
+    const result = await verifyQrCollection({
+      token: req.body && req.body.token,
+      orderId: req.body && req.body.order_id,
+      user: req.user,
     });
 
     return res.status(result.status).json(result.body);
