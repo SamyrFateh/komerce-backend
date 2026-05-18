@@ -46,32 +46,33 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 |-----|------|-------|
 | INIT-0 | ✅ Fait | Référentiels lus en session |
 | DOC-0 | ✅ Fait | `CARTOGRAPHY_360.md` et `ZONE_IMPACT.md` déjà à jour |
-| **SOCLE-1** | ✅ Fait | **Socle architectural à 4 docs gravé** : ajout `SCHEMA.md` + `CONTRACTS.md` ; `AGENTS.md` enrichi avec règle de divergence et règle de mise à jour ; `SCHEMA.md` généré contre `pg_dump` Railway 17/05/2026 |
-| **SOCLE-2** | ✅ Fait | **CARTOGRAPHY aligné sur les 9 tables manquantes** : sections 6 bis (modules cérémonie : `fabrics`, `garment_models`, `ceremony_order_type`, colonnes `confection_*` et `module_*`), 8 bis (notifications : `notification_log`, `sms_log`, `stripe_events_processed`), 8 ter (clarification `/api/shares` vs `/api/shared-carts` : `cart_shares`/`cart_contributions` ne sont pas legacy) ; `/api/products` mentionne `product_variants` ; `/api/auth/otp` mentionne `otp_codes` |
-| **SOCLE-3** | ✅ Fait | **`server.js` documenté comme point névralgique** : section 3 bis dédiée dans `ZONE_IMPACT.md` (responsabilités cumulées, règles avant modif, dette d'archi vers lot H1) ; checklist §10 enrichie ; dette §11 mise à jour. Audit factuel : 1200 lignes, 80 routes API, 92 DDL inline, 3 webhooks Stripe (lignes 129-131) |
-| **H-SYNC** | ✅ Fait | **Synchronisation `BACKEND_GOLIVE_ROADMAP.md` ↔ `STATUS.md`** : 10 lots cochés ☐ → ✅ dans la roadmap (A1, A3, A5, A6, A7, D1, D3, D4, D5, D6), §0 Score global recalculé (20 % réel vs 0 % affiché auparavant), note de méthode ajoutée. Vieux audits avril archivés (`docs/audit/` → `docs/_archive/2026-04-22_audits/`). |
+| **SOCLE-1** | ✅ Fait | Socle architectural à 4 docs gravé : ajout `SCHEMA.md` + `CONTRACTS.md` ; `AGENTS.md` enrichi avec règle de divergence et règle de mise à jour ; `SCHEMA.md` généré contre `pg_dump` Railway 17/05/2026 |
+| **SOCLE-2** | ✅ Fait | CARTOGRAPHY aligné sur les 9 tables manquantes |
+| **SOCLE-3** | ✅ Fait | `server.js` documenté comme point névralgique |
+| **H-SYNC** | ✅ Fait | Synchronisation `BACKEND_GOLIVE_ROADMAP.md` ↔ `STATUS.md` |
 | A1 | ✅ Fait | Fichier fantôme `routes/orders/order-api-v2.js` supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé vers `tests/integration/groupe-paiement.manual.js` ; manuel, non Jest |
 | A6 | ✅ Fait | Issue #387 créée ; TODO backend principaux rattachés au backlog central sans changement métier |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré via commande `npm start` non bloquante |
-| D1 | ✅ Fait | Audit couverture auth admin documenté ; aucun oubli évident trouvé sur routes inspectées |
-| D2 | ✅ Fait | Audit webhooks Stripe/idempotence documenté ; aucun code modifié |
-| D3 | ✅ Fait | Audit `auth-guest.js` documenté ; risques suivis sans changement métier |
-| D4 | ✅ Fait | Audit QR / pickup-secret documenté ; risques sensibles isolés sans correction métier |
+| D1 | ✅ Fait | Audit couverture auth admin documenté |
+| D2 | ✅ Fait | Audit webhooks Stripe/idempotence documenté |
+| D3 | ✅ Fait | Audit `auth-guest.js` documenté |
+| D4 | ✅ Fait | Audit QR / pickup-secret documenté |
 | D5 | ✅ Fait partiel | Audit env documenté ; modification `.env.example` bloquée par le connecteur, à reprendre localement |
-| D6 | ✅ Fait | Audit rate limiting documenté ; aucun quota modifié |
-| D7 | ✅ Fait | Audit CORS production documenté ; aucun code modifié |
-| D8 | ✅ Fait | Audit Helmet/CSP production documenté ; aucun code modifié |
-| G1 | ✅ Fait | Audit flow cash → retrait documenté ; violations rattachées à I-SWEEP |
-| G2 | ✅ Fait | Audit flow Stripe → préparation hub documenté ; side-effects post-commit rattachés à I-SWEEP/TEST-1 |
-| G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté ; crash-recovery/idempotence rattachés à I-SWEEP/TEST-1 |
-| G4 | ✅ Fait | Audit annulation après paiement documenté ; refund/purchasing/stock rattachés à I-SWEEP/TEST-1 |
-| G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté ; pricing/publication/stock rattachés à I-SWEEP/TEST-1 |
+| D6 | ✅ Fait | Audit rate limiting documenté |
+| D7 | ✅ Fait | Audit CORS production documenté |
+| D8 | ✅ Fait | Audit Helmet/CSP production documenté |
+| G1 | ✅ Fait | Audit flow cash → retrait documenté |
+| G2 | ✅ Fait | Audit flow Stripe → préparation hub documenté |
+| G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté |
+| G4 | ✅ Fait | Audit annulation après paiement documenté |
+| G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté |
 | I-SWEEP-0 | ✅ Fait | Checklist d'exécution créée dans `docs/chantier/I_SWEEP_PLAN.md` |
-| I-SWEEP-1 | ✅ Fait | Service transactionnel `confirm-pickup-cash-payment.js` créé ; route sûre `pickup-pay-cash.js` créée ; PR #395 mergée. `POST /api/pickup/pay-cash/:orderId` est intercepté après auth et passe par `confirmPaymentCycle(...)` au lieu du direct update legacy. |
-| I-SWEEP-2 | ✅ Fait | Service transactionnel `verify-qr-collection.js` créé ; PR #396 mergée. `POST /api/scans/verify-qr` est intercepté après auth et fait transition `collected`, invalidation QR, scan et `safeSyncScanToParcels(...)` dans la même transaction. |
+| I-SWEEP-1 | ✅ Fait | Service transactionnel `confirm-pickup-cash-payment.js` créé ; route sûre `pickup-pay-cash.js` créée ; PR #395 mergée. `POST /api/pickup/pay-cash/:orderId` passe par `confirmPaymentCycle(...)`. |
+| I-SWEEP-2 | ✅ Fait | Service transactionnel `verify-qr-collection.js` créé ; PR #396 mergée. `POST /api/scans/verify-qr` fait transition `collected`, invalidation QR, scan et `safeSyncScanToParcels(...)` dans la même transaction. |
 | I-SWEEP-3A | ✅ Fait | Service `create-stripe-order-intent.js` créé ; PR #397 mergée. `POST /api/payments/stripe/intent` réutilise un PaymentIntent existant ou crée avec idempotency key `pi_order_<orderId>`. |
 | I-SWEEP-3B | ✅ Fait | PR #398 mergée. `triggerPurchasing(orderId)` vérifie une PO active existante pour `order_id + product_supplier_id` avant insertion et retourne `already_exists` en cas de replay. |
+| I-SWEEP-3C | ✅ Fait | Service `receive-purchase-order.js` créé ; repair `ordered` sans PO déjà présent ; PR #401 mergée. `POST /api/purchasing/:id/receive` passe par réception transactionnelle. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -85,12 +86,12 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Les webhooks Stripe sont protégés par body brut + signature + idempotence, mais D2 a isolé des durcissements à traiter dans I-SWEEP/TEST-1 : secrets dédiés obligatoires, replay tests, shared-cart transactionnel, reprise collective `ready_to_capture`.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
-- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — tests manuels/API encore recommandés après I-SWEEP-1/2/3A/3B.
-- ✅ **I-01 / pickup cash** : la violation `/api/pickup/pay-cash/:orderId` a été corrigée par I-SWEEP-1. Le flux est intercepté après auth et passe par `confirmPaymentCycle(...)`.
-- ✅ **QR verify / parcels** : la divergence potentielle order/parcels après crash a été corrigée par I-SWEEP-2. Le sync parcels est transactionnel dans le nouveau service.
-- ✅ **Stripe intent** : le risque de PaymentIntents multiples pour une même commande est réduit par I-SWEEP-3A via réutilisation + idempotency key Stripe.
-- ✅ **Purchasing replay** : le risque de double `purchase_order` sur replay `triggerPurchasing(orderId)` est réduit par I-SWEEP-3B avec garde applicatif `order_id + product_supplier_id`.
-- 🟠 **Purchasing repair/réception** : restent à traiter dans I-SWEEP-3C : commandes `ordered` sans POs après crash et réception hub sans transaction globale apparente.
+- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — tests manuels/API encore recommandés après I-SWEEP-1/2/3A/3B/3C.
+- ✅ **I-01 / pickup cash** : violation `/api/pickup/pay-cash/:orderId` corrigée par I-SWEEP-1.
+- ✅ **QR verify / parcels** : divergence potentielle order/parcels corrigée par I-SWEEP-2.
+- ✅ **Stripe intent** : risque de PaymentIntents multiples réduit par I-SWEEP-3A.
+- ✅ **Purchasing replay** : risque de double `purchase_order` réduit par I-SWEEP-3B.
+- ✅ **Purchasing repair/réception** : repair `ordered` sans PO existe ; réception hub transactionnelle ajoutée par I-SWEEP-3C.
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 - 🟠 **Collectif G3** : risques de reprise après crash à couvrir : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées explicitement après order.
 - 🔴 **Refund/annulation G4** : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` restaure stock/wallet mais ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`. À traiter par lot dédié refund/purchasing dans I-SWEEP ou REFUND-1.
@@ -100,24 +101,23 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### I-SWEEP-3C — Repair commandes `ordered` sans PO + réception hub transactionnelle
+### I-SWEEP-4 — Collectif crash-recovery
 
 ```text
-Branche   : fix/backend-I-SWEEP-3C-purchasing-repair-receive
-Charge    : 1-2 jours
-Risque    : élevé — touche sourcing post-paiement et réception hub
-Prérequis : I-SWEEP-3A/3B terminés
+Branche   : fix/backend-I-SWEEP-4-collective-crash-recovery
+Charge    : 2 jours
+Risque    : élevé — touche paiement collectif, capture, commande, stock reservations
+Prérequis : I-SWEEP-3C terminé
 ```
 
-Objectif : ajouter une stratégie de reprise pour commandes `ordered` sans PO après crash post-commit, puis rendre la réception hub plus transactionnelle ou documenter/alerter les écarts.
+Objectif : traiter les risques G3 restants : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées/libérées explicitement.
 
 ---
 
-## File d'attente après I-SWEEP-3C
+## File d'attente après I-SWEEP-4
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| I-SWEEP-4 | Haute | Collectif crash-recovery |
 | I-SWEEP-5 | Haute | Refund / annulation / purchase_orders |
 | I-SWEEP-6 | Moyenne/haute | Pricing/catalogue publication hardening |
 | TEST-1 | 🔴 Stratégique | Tests d'intégration sur invariants I-01 à I-10 + flows G1-G5 avant/après I-SWEEP |
