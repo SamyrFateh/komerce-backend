@@ -71,6 +71,7 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 | I-SWEEP-1 | ✅ Fait | Service transactionnel `confirm-pickup-cash-payment.js` créé ; route sûre `pickup-pay-cash.js` créée ; PR #395 mergée. `POST /api/pickup/pay-cash/:orderId` est intercepté après auth et passe par `confirmPaymentCycle(...)` au lieu du direct update legacy. |
 | I-SWEEP-2 | ✅ Fait | Service transactionnel `verify-qr-collection.js` créé ; PR #396 mergée. `POST /api/scans/verify-qr` est intercepté après auth et fait transition `collected`, invalidation QR, scan et `safeSyncScanToParcels(...)` dans la même transaction. |
 | I-SWEEP-3A | ✅ Fait | Service `create-stripe-order-intent.js` créé ; PR #397 mergée. `POST /api/payments/stripe/intent` réutilise un PaymentIntent existant ou crée avec idempotency key `pi_order_<orderId>`. |
+| I-SWEEP-3B | ✅ Fait | PR #398 mergée. `triggerPurchasing(orderId)` vérifie une PO active existante pour `order_id + product_supplier_id` avant insertion et retourne `already_exists` en cas de replay. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté ; runner réel documenté |
 | A7 | ✅ Fait | Docs parasites archivées dans `docs/_archive/` ; `AGENTS.md` corrigé |
 
@@ -84,11 +85,12 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 - Les webhooks Stripe sont protégés par body brut + signature + idempotence, mais D2 a isolé des durcissements à traiter dans I-SWEEP/TEST-1 : secrets dédiés obligatoires, replay tests, shared-cart transactionnel, reprise collective `ready_to_capture`.
 - Toujours vérifier le scope d'un lot avant de modifier un fichier sensible.
 - **Dette doc SCHEMA-2** : trou apparent migrations 026-032. Vérifier l'historique git ou archiver le constat. Voir `SCHEMA.md` §12 pt 5.
-- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — tests manuels/API encore recommandés après I-SWEEP-1/2/3A.
+- **Tests** : 5 fichiers seulement pour 75 routes + 44 services. Filet quasi inexistant — tests manuels/API encore recommandés après I-SWEEP-1/2/3A/3B.
 - ✅ **I-01 / pickup cash** : la violation `/api/pickup/pay-cash/:orderId` a été corrigée par I-SWEEP-1. Le flux est intercepté après auth et passe par `confirmPaymentCycle(...)`.
 - ✅ **QR verify / parcels** : la divergence potentielle order/parcels après crash a été corrigée par I-SWEEP-2. Le sync parcels est transactionnel dans le nouveau service.
 - ✅ **Stripe intent** : le risque de PaymentIntents multiples pour une même commande est réduit par I-SWEEP-3A via réutilisation + idempotency key Stripe.
-- 🟠 **Purchasing** : restent à traiter dans I-SWEEP-3B/3C : `triggerPurchasing` post-commit fire-and-forget, possible double purchase_order si replay, commandes `ordered` sans POs après crash, réception hub sans transaction globale apparente.
+- ✅ **Purchasing replay** : le risque de double `purchase_order` sur replay `triggerPurchasing(orderId)` est réduit par I-SWEEP-3B avec garde applicatif `order_id + product_supplier_id`.
+- 🟠 **Purchasing repair/réception** : restent à traiter dans I-SWEEP-3C : commandes `ordered` sans POs après crash et réception hub sans transaction globale apparente.
 - 🟠 **À revoir dans I-SWEEP** : flow collectif `_createOrderFromSession(...)` insère directement une order `status='confirmed'` puis ajoute l'historique manuellement avant transition `ordered`. Ce n'est pas aussi critique que `/pay-cash`, mais l'alignement strict avec `confirmPaymentCycle` doit être étudié.
 - 🟠 **Collectif G3** : risques de reprise après crash à couvrir : session 100 % cash sans order, session `ready_to_capture` ancienne, transition `ordered` collective post-commit non fatale, réservations stock non consommées explicitement après order.
 - 🔴 **Refund/annulation G4** : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` restaure stock/wallet mais ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`. À traiter par lot dédié refund/purchasing dans I-SWEEP ou REFUND-1.
@@ -98,20 +100,20 @@ Voir `AGENTS.md` §1 pour la règle de socle et §2 pour la règle de divergence
 
 ## Prochain lot recommandé
 
-### I-SWEEP-3B — Purchasing idempotence / repair ordered sans PO
+### I-SWEEP-3C — Repair commandes `ordered` sans PO + réception hub transactionnelle
 
 ```text
-Branche   : fix/backend-I-SWEEP-3B-purchasing-idempotence
-Charge    : 1 jour
-Risque    : élevé — touche sourcing post-paiement
-Prérequis : I-SWEEP-3A terminé
+Branche   : fix/backend-I-SWEEP-3C-purchasing-repair-receive
+Charge    : 1-2 jours
+Risque    : élevé — touche sourcing post-paiement et réception hub
+Prérequis : I-SWEEP-3A/3B terminés
 ```
 
-Objectif : réduire les risques restants G2 : `triggerPurchasing` non idempotent, commandes `ordered` sans POs après crash, et réception hub non transactionnelle.
+Objectif : ajouter une stratégie de reprise pour commandes `ordered` sans PO après crash post-commit, puis rendre la réception hub plus transactionnelle ou documenter/alerter les écarts.
 
 ---
 
-## File d'attente après I-SWEEP-3B
+## File d'attente après I-SWEEP-3C
 
 | Lot | Priorité | Note |
 |-----|----------|------|
