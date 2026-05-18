@@ -58,6 +58,11 @@ function isStripeIntentRequest(req) {
   return req.method === 'POST' && path === '/api/payments/stripe/intent';
 }
 
+function isPurchasingRepairRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/admin/purchasing/repair-ordered-without-pos';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -99,6 +104,10 @@ async function authenticate(req, res, next) {
 
     if (isStripeIntentRequest(req)) {
       return handleIdempotentStripeIntent(req, res, next);
+    }
+
+    if (isPurchasingRepairRequest(req)) {
+      return handlePurchasingRepair(req, res, next);
     }
 
     next();
@@ -163,6 +172,21 @@ async function handleIdempotentStripeIntent(req, res, next) {
     const { createStripeOrderIntent } = require('../services/create-stripe-order-intent');
     const result = await createStripeOrderIntent({
       orderReference: req.body && req.body.order_reference,
+      user: req.user,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handlePurchasingRepair(req, res, next) {
+  try {
+    const { repairOrderedWithoutPurchaseOrders } = require('../services/repair-ordered-without-purchase-orders');
+    const result = await repairOrderedWithoutPurchaseOrders({
+      dryRun: req.body?.dry_run !== false,
+      limit: req.body?.limit || 25,
       user: req.user,
     });
 
