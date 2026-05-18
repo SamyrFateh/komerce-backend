@@ -63,6 +63,11 @@ function isPurchasingRepairRequest(req) {
   return req.method === 'POST' && path === '/api/admin/purchasing/repair-ordered-without-pos';
 }
 
+function isPurchaseOrderReceiveRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && /^\/api\/purchasing\/[^/]+\/receive$/.test(path);
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -108,6 +113,10 @@ async function authenticate(req, res, next) {
 
     if (isPurchasingRepairRequest(req)) {
       return handlePurchasingRepair(req, res, next);
+    }
+
+    if (isPurchaseOrderReceiveRequest(req)) {
+      return handleTransactionalPoReceive(req, res, next);
     }
 
     next();
@@ -188,6 +197,38 @@ async function handlePurchasingRepair(req, res, next) {
       dryRun: req.body?.dry_run !== false,
       limit: req.body?.limit || 25,
       user: req.user,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleTransactionalPoReceive(req, res, next) {
+  const role = req.user && req.user.role;
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Accès refusé — rôle requis : admin' });
+  }
+
+  try {
+    const { receivePurchaseOrder } = require('../services/receive-purchase-order');
+    let triggerScan3;
+    try {
+      triggerScan3 = require('../routes/scans').triggerScan3;
+    } catch (_) {
+      triggerScan3 = async () => {};
+    }
+
+    const path = requestPath(req);
+    const parts = path.split('/');
+    const poId = parts[3];
+
+    const result = await receivePurchaseOrder({
+      poId,
+      qtyReceived: req.body && req.body.qty_recue,
+      actor: req.user,
+      triggerScan3,
     });
 
     return res.status(result.status).json(result.body);
