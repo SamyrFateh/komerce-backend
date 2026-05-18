@@ -263,7 +263,12 @@ async function transitionOrderStatus({
   let cancelEffects = null;
 
   if (newStatus === 'cancelled') {
-    cancelEffects = { walletReversalAmount: 0, walletReversalTxId: null, stockItemsRestored: 0 };
+    cancelEffects = {
+      walletReversalAmount: 0,
+      walletReversalTxId: null,
+      stockItemsRestored: 0,
+      purchaseOrders: null,
+    };
 
     // Wallet reversal (idempotent via idempotency_key)
     const { rows: [orderInfo] } = await q.query(
@@ -313,6 +318,20 @@ async function transitionOrderStatus({
     cancelEffects.stockItemsRestored = items.length;
     if (items.length > 0) {
       console.log(`[STATUS-MACHINE] Stock restored: ${items.length} items for order ${orderId}`);
+    }
+
+    // Purchase orders sync — pending/notified auto-cancelled, engaged POs alerted.
+    try {
+      const { syncPurchaseOrdersOnOrderCancel } = require('./cancel-order-purchase-orders');
+      cancelEffects.purchaseOrders = await syncPurchaseOrdersOnOrderCancel(q, {
+        orderId,
+        orderReference: orderInfo?.reference || null,
+        actor,
+        reason: cancelReason || note || null,
+      });
+    } catch (poErr) {
+      console.error('[STATUS-MACHINE] purchase_orders cancel sync failed:', poErr.message);
+      cancelEffects.purchaseOrders = { error: poErr.message };
     }
   }
 
