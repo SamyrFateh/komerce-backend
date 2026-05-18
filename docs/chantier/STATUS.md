@@ -73,6 +73,7 @@ Lire dans cet ordre avant toute modification :
 | I-SWEEP-3C | ✅ Fait | Repair ordered sans PO existant ; réception PO transactionnelle ajoutée |
 | I-SWEEP-4A | ✅ Fait | PR #402 mergée. Repair admin dry-run `POST /api/admin/collective/repair-ready-to-capture` pour sessions collectives `ready_to_capture` anciennes sans order liée. |
 | I-SWEEP-4B | ✅ Fait | PR #403 mergée. Repair admin dry-run `POST /api/admin/collective/repair-stock-reservations` : consomme les réservations des workspaces avec order et libère/expire celles des sessions/workspaces terminés sans order. |
+| I-SWEEP-5A | ✅ Fait | PR #404 mergée. Lors d'une annulation commande, les `purchase_orders` `pending/notified` sont annulées automatiquement ; les POs fournisseur déjà engagées créent une alerte opérationnelle. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 
@@ -91,28 +92,29 @@ Lire dans cet ordre avant toute modification :
 - ✅ Purchasing repair/réception amélioré par I-SWEEP-3C.
 - ✅ Collectif `ready_to_capture` : repair admin ajouté par I-SWEEP-4A.
 - ✅ Collectif réservations stock : repair admin ajouté par I-SWEEP-4B.
+- ✅ Annulation ↔ purchase_orders : synchronisation ajoutée par I-SWEEP-5A.
 - 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
-- 🔴 Refund/annulation G4 : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` ne garantit pas remboursement externe. Annulation commande ne synchronise pas automatiquement les `purchase_orders`.
+- 🔴 Refund/annulation G4 : aucun flux refund Stripe explicite trouvé pour commandes classiques ; `cancelled` ne garantit pas remboursement externe. Cash refund/wallet et `cancelled` vs `refunded` restent à formaliser.
 - 🟠 Sourcing/catalogue G5 : prix/stock manuels hors pricing-engine, price_history incomplet, stock movement log absent.
 
 ---
 
 ## Prochain lot recommandé
 
-### I-SWEEP-5 — Refund / annulation / purchase_orders
+### I-SWEEP-5B — Doctrine refund : Stripe / cash / cancelled vs refunded
 
 ```text
-Branche   : fix/backend-I-SWEEP-5-refund-cancel-purchasing
-Charge    : 1-3 jours
-Risque    : élevé — touche annulation, remboursement, stock, purchase_orders
-Prérequis : I-SWEEP-4B terminé
+Branche   : fix/backend-I-SWEEP-5B-refund-doctrine
+Charge    : 1-2 jours
+Risque    : élevé — touche remboursement externe et doctrine financière
+Prérequis : I-SWEEP-5A terminé
 ```
 
-Objectif : traiter les risques G4 : absence de flux refund Stripe classique, doctrine cash refund/wallet, différence `cancelled` vs `refunded`, et synchronisation annulation commande ↔ purchase_orders.
+Objectif : formaliser et exposer un flux sécurisé de remboursement : Stripe avec idempotency key, cash en traitement manuel/avoir wallet, et différence claire entre `cancelled` métier et `refunded` financier.
 
 ---
 
-## File d'attente après I-SWEEP-5
+## File d'attente après I-SWEEP-5B
 
 | Lot | Priorité | Note |
 |-----|----------|------|
