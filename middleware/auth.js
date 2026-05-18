@@ -78,6 +78,11 @@ function isCollectiveStockReservationRepairRequest(req) {
   return req.method === 'POST' && path === '/api/admin/collective/repair-stock-reservations';
 }
 
+function isAdminOrderRefundRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && /^\/api\/admin\/orders\/[^/]+\/refund$/.test(path);
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -135,6 +140,10 @@ async function authenticate(req, res, next) {
 
     if (isCollectiveStockReservationRepairRequest(req)) {
       return handleCollectiveStockReservationRepair(req, res, next);
+    }
+
+    if (isAdminOrderRefundRequest(req)) {
+      return handleAdminOrderRefund(req, res, next);
     }
 
     next();
@@ -278,6 +287,29 @@ async function handleCollectiveStockReservationRepair(req, res, next) {
       dryRun: req.body?.dry_run !== false,
       limit: req.body?.limit || 50,
       user: req.user,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleAdminOrderRefund(req, res, next) {
+  try {
+    const role = req.user && req.user.role;
+    if (role !== 'admin') {
+      return res.status(403).json({ error: 'Accès réservé admin' });
+    }
+
+    const { refundCancelledOrder } = require('../services/admin-order-refund');
+    const orderId = requestPath(req).split('/')[3];
+    const result = await refundCancelledOrder({
+      orderId,
+      user: req.user,
+      dryRun: req.body?.dry_run !== false,
+      reason: req.body?.reason || null,
+      cashMode: req.body?.cash_mode || 'manual',
     });
 
     return res.status(result.status).json(result.body);
