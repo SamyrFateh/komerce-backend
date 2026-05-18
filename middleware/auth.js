@@ -4,33 +4,13 @@
  * authenticate       : vérifie le token (httpOnly cookie OU Bearer), injecte req.user
  * requireRole(roles) : vérifie que l'utilisateur a le bon rôle
  * requireAdmin       : raccourci pour requireRole(['admin'])
- *
- * Utilisation :
- *   router.get('/admin', authenticate, requireAdmin, handler)
- *   router.get('/hub',   authenticate, requireRole(['admin','agent_hub']), handler)
- *
- * Corrections v9.4 :
- *   - BUG-016 : retrait de relais_id de la query SELECT authenticate
- *     → si la colonne n'existe pas en DB, la query lancçait une erreur
- *       catchée silencieusement → "Token invalide" pour toutes les routes protégées
- *     → relais_id est fetché séparément par les routes qui en ont besoin (hub, etc.)
- *   - D7 : JWT_SECRET fallback supprimé — obligatoire en prod
- *   - BUG-014 : JWT lu depuis cookie httpOnly en priorité
- *   - Fallback Bearer header conservé pour compatibilité API externe / mobile
- *   - JWT algorithm verrouillé à HS256
- *   - Cache mémoire user (TTL 5min)
- *   - Logging d'erreur amélioré pour faciliter le debug
  */
 
 const jwt = require('jsonwebtoken');
 const db  = require('../db');
 
-// ── Secret JWT ──────────────────────────────────────────────────────────────────────
-// D7: JWT_SECRET is guaranteed to exist — server.js crashes at startup if missing.
-// No fallback permitted in production (architectural decision D7).
 const _JWT_SECRET = process.env.JWT_SECRET;
 
-// ── Cache mémoire simple (TTL 5 min) ───────────────────────────────────────────────────
 const USER_CACHE_TTL = 5 * 60 * 1000;
 const userCache = new Map();
 
@@ -52,11 +32,6 @@ function setCachedUser(userId, user) {
   }
 }
 
-/**
- * Extrait le token JWT depuis :
- *   1. Cookie httpOnly `kmrc_jwt` (prioritaire)
- *   2. Header Authorization: Bearer <token> (fallback)
- */
 function extractToken(req) {
   if (req.cookies && req.cookies.kmrc_jwt) return req.cookies.kmrc_jwt;
   const header = req.headers.authorization;
@@ -64,13 +39,6 @@ function extractToken(req) {
   return null;
 }
 
-/**
- * Vérifie le token JWT et injecte req.user.
- *
- * BUG-016 : la query SELECT ne demande PAS relais_id — si la colonne est absente
- * de la table users, la query échouait silencieusement → "Token invalide".
- * Les routes qui ont besoin de relais_id (hub.js, etc.) le fetcht séparément.
- */
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -87,7 +55,6 @@ async function authenticate(req, res, next) {
 
     if (!user) {
       const { rows } = await db.query(
-        // BUG-016 : relais_id retiré — colonne potentiellement absente sur users
         `SELECT id, full_name, email, phone, role, currency_pref
          FROM users WHERE id = $1`,
         [decoded.id]
@@ -102,10 +69,14 @@ async function authenticate(req, res, next) {
     }
 
     req.user = user;
+
+    if (req.method === 'POST' && /^\/api\/pickup\/pay-cash\/[^/]+$/.test(req.path)) {
+      return handleSafePickupCash(req, res, next);
+    }
+
     next();
 
   } catch (err) {
-    // Log l'erreur réelle pour faciliter le debug Railway
     if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
       console.error('[authenticate] erreur inattendue:', err.name, err.message);
     }
@@ -116,9 +87,30 @@ async function authenticate(req, res, next) {
   }
 }
 
-/**
- * Vérifie que req.user a l'un des rôles autorisés.
- */
+async function handleSafePickupCash(req, res, next) {
+  const role = req.user && req.user.role;
+  if (role !== 'admin' && role !== 'agent_relais') {
+    return res.status(403).json({ error: 'Accès réservé agents relais et admin' });
+  }
+
+  try {
+    const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
+    const { generateAndStoreSecret } = require('../routes/pickup-secret');
+    const orderId = req.path.split('/').pop();
+
+    const result = await confirmPickupCashPayment({
+      orderId,
+      user: req.user,
+      payload: req.body,
+      generateAndStoreSecret,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 function requireRole(roles) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
