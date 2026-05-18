@@ -83,6 +83,16 @@ function isAdminOrderRefundRequest(req) {
   return req.method === 'POST' && /^\/api\/admin\/orders\/[^/]+\/refund$/.test(path);
 }
 
+function isPricingApplyPriceRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'PUT' && /^\/api\/pricing\/apply-price\/[^/]+$/.test(path);
+}
+
+function isPricingApplyAllRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'PUT' && path === '/api/pricing/apply-all';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -144,6 +154,14 @@ async function authenticate(req, res, next) {
 
     if (isAdminOrderRefundRequest(req)) {
       return handleAdminOrderRefund(req, res, next);
+    }
+
+    if (isPricingApplyPriceRequest(req)) {
+      return handlePricingApplyPrice(req, res, next);
+    }
+
+    if (isPricingApplyAllRequest(req)) {
+      return handlePricingApplyAll(req, res, next);
     }
 
     next();
@@ -312,6 +330,45 @@ async function handleAdminOrderRefund(req, res, next) {
       cashMode: req.body?.cash_mode || 'manual',
     });
 
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handlePricingApplyPrice(req, res, next) {
+  try {
+    const role = req.user && req.user.role;
+    if (role !== 'admin') return res.status(403).json({ error: 'Accès réservé admin' });
+
+    const { applySinglePrice } = require('../services/apply-pricing-updates');
+    const productId = requestPath(req).split('/').pop();
+    const result = await applySinglePrice({
+      productId,
+      priceKmf: req.body?.price_kmf,
+      source: req.body?.source || 'manual',
+      scenarioId: req.body?.scenario_id || null,
+      scenarioLabel: req.body?.scenario_label || null,
+      levier: req.body?.levier || null,
+      user: req.user,
+    });
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handlePricingApplyAll(req, res, next) {
+  try {
+    const role = req.user && req.user.role;
+    if (role !== 'admin') return res.status(403).json({ error: 'Accès réservé admin' });
+
+    const { applyAllPrices } = require('../services/apply-pricing-updates');
+    const result = await applyAllPrices({
+      items: req.body?.items || [],
+      source: req.body?.source || 'batch',
+      user: req.user,
+    });
     return res.status(result.status).json(result.body);
   } catch (err) {
     return next(err);
