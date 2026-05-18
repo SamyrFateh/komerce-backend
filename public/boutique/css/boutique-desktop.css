@@ -1475,3 +1475,52 @@
     min-width: 306px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART — overrides spécificité préfixée
+   Rapatrié depuis dist/desktop.css lors du Lot CSS-2 (2026-05-18)
+   Ces règles ont une spécificité plus haute que les versions
+   non préfixées (cart.css). Elles imposent les valeurs desktop.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  #k-side-cart .k-sc-cta-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  #k-side-cart .k-sc-btn-checkout {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  #k-side-cart .k-sc-btn-group {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  #k-side-cart .k-sc-btn-group-label {
+    display: inline;
+  }
+
+  #k-side-cart .k-sc-btn-group::after {
+    content: "Payer en groupe";
+  }
+
+  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label {
+    display: none;
+  }
+
+  #k-side-cart .k-sc-btn-cart {
+    margin-top: 4px;
+  }
+}
