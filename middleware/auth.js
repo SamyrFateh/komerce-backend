@@ -58,6 +58,11 @@ function isStripeIntentRequest(req) {
   return req.method === 'POST' && path === '/api/payments/stripe/intent';
 }
 
+function isPurchasingRepairRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/purchasing/repair/ordered-without-po';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -99,6 +104,10 @@ async function authenticate(req, res, next) {
 
     if (isStripeIntentRequest(req)) {
       return handleIdempotentStripeIntent(req, res, next);
+    }
+
+    if (isPurchasingRepairRequest(req)) {
+      return handlePurchasingRepair(req, res, next);
     }
 
     next();
@@ -167,6 +176,30 @@ async function handleIdempotentStripeIntent(req, res, next) {
     });
 
     return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handlePurchasingRepair(req, res, next) {
+  if ((req.user && req.user.role) !== 'admin') {
+    return res.status(403).json({ error: 'Accès réservé admin' });
+  }
+
+  try {
+    const { repairOrderedWithoutPurchaseOrders } = require('../services/repair-ordered-purchasing');
+    const { triggerPurchasing } = require('../routes/purchasing');
+    const body = req.body || {};
+    const dryRun = body.dry_run !== false;
+    const limit = body.limit || 20;
+
+    const result = await repairOrderedWithoutPurchaseOrders({
+      limit,
+      dryRun,
+      triggerPurchasing,
+    });
+
+    return res.json(result);
   } catch (err) {
     return next(err);
   }
