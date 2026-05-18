@@ -15,9 +15,10 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
+const { recordProductPriceChange } = require('../services/product-price-audit');
 
 // ─── UUID validation helper ──────────────────────────────────────────────────
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function requireUUID(req, res, next) {
   if (!UUID_RE.test(req.params.id)) {
@@ -275,6 +276,15 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
        requires_secure_transport, unsold_price_kmf || null, unsold_channel]
     );
 
+    await recordProductPriceChange(db, {
+      productId: product.id,
+      oldPriceKmf: 0,
+      newPriceKmf: product.price_kmf,
+      source: 'product_create',
+      appliedBy: req.user?.id || null,
+      note: 'Création produit catalogue',
+    });
+
     res.status(201).json(product);
   } catch (err) {
     next(err);
@@ -320,6 +330,12 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
       return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
     }
 
+    const { rows: [before] } = await db.query(
+      'SELECT id, price_kmf FROM products WHERE id = $1',
+      [req.params.id]
+    );
+    if (!before) return res.status(404).json({ error: 'Produit introuvable' });
+
     values.push(req.params.id);
     const { rows: [product] } = await db.query(
       `UPDATE products SET ${updates.join(', ')}, updated_at = NOW()
@@ -328,6 +344,18 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
     );
 
     if (!product) return res.status(404).json({ error: 'Produit introuvable' });
+
+    if (req.body.price_kmf !== undefined) {
+      await recordProductPriceChange(db, {
+        productId: product.id,
+        oldPriceKmf: before.price_kmf,
+        newPriceKmf: product.price_kmf,
+        source: 'product_update',
+        appliedBy: req.user?.id || null,
+        note: 'Modification directe catalogue',
+      });
+    }
+
     res.json(product);
   } catch (err) {
     next(err);
