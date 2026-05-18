@@ -73,6 +73,11 @@ function isCollectiveReadyRepairRequest(req) {
   return req.method === 'POST' && path === '/api/admin/collective/repair-ready-to-capture';
 }
 
+function isCollectiveStockReservationRepairRequest(req) {
+  const path = requestPath(req);
+  return req.method === 'POST' && path === '/api/admin/collective/repair-stock-reservations';
+}
+
 async function authenticate(req, res, next) {
   try {
     const token = extractToken(req);
@@ -126,6 +131,10 @@ async function authenticate(req, res, next) {
 
     if (isCollectiveReadyRepairRequest(req)) {
       return handleCollectiveReadyRepair(req, res, next);
+    }
+
+    if (isCollectiveStockReservationRepairRequest(req)) {
+      return handleCollectiveStockReservationRepair(req, res, next);
     }
 
     next();
@@ -253,6 +262,21 @@ async function handleCollectiveReadyRepair(req, res, next) {
       dryRun: req.body?.dry_run !== false,
       limit: req.body?.limit || 25,
       minAgeMinutes: req.body?.min_age_minutes || 5,
+      user: req.user,
+    });
+
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function handleCollectiveStockReservationRepair(req, res, next) {
+  try {
+    const { repairCollectiveStockReservations } = require('../services/repair-collective-stock-reservations');
+    const result = await repairCollectiveStockReservations({
+      dryRun: req.body?.dry_run !== false,
+      limit: req.body?.limit || 50,
       user: req.user,
     });
 
