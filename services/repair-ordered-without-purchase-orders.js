@@ -1,0 +1,91 @@
+'use strict';
+
+/**
+ * I-SWEEP-3C — Repair explicite des commandes ordered sans purchase_orders.
+ *
+ * Cas couvert : crash ou erreur post-commit après paiement/transition ordered,
+ * avant que triggerPurchasing(orderId) ait pu créer les POs.
+ *
+ * Le service ne modifie pas orders.status. Il relance uniquement le sourcing via
+ * triggerPurchasing(orderId), désormais idempotent depuis I-SWEEP-3B.
+ */
+
+const db = require('../db');
+
+async function repairOrderedWithoutPurchaseOrders({ dryRun = true, limit = 25, user }) {
+  if (!user?.id || user.role !== 'admin') {
+    return { status: 403, body: { error: 'Accès réservé admin' } };
+  }
+
+  const safeLimit = Math.max(1, Math.min(parseInt(limit, 10) || 25, 100));
+
+  const { rows: candidates } = await db.query(`
+    SELECT o.id, o.reference, o.created_at, o.updated_at
+    FROM orders o
+    WHERE o.status = 'ordered'
+      AND NOT EXISTS (
+        SELECT 1 FROM purchase_orders po
+        WHERE po.order_id = o.id
+          AND po.status != 'cancelled'
+      )
+    ORDER BY o.updated_at ASC NULLS FIRST, o.created_at ASC
+    LIMIT $1
+  `, [safeLimit]);
+
+  if (dryRun) {
+    return {
+      status: 200,
+      body: {
+        dry_run: true,
+        count: candidates.length,
+        candidates,
+      },
+    };
+  }
+
+  const { triggerPurchasing } = require('../routes/purchasing');
+  const repaired = [];
+  const failed = [];
+
+  for (const order of candidates) {
+    try {
+      const result = await triggerPurchasing(order.id);
+      repaired.push({
+        order_id: order.id,
+        reference: order.reference,
+        result,
+      });
+    } catch (err) {
+      failed.push({
+        order_id: order.id,
+        reference: order.reference,
+        error: err.message,
+      });
+
+      try {
+        await db.query(
+          `INSERT INTO alerts (level, source, message, payload)
+           VALUES ('elevated', 'purchasing_repair', $1, $2)`,
+          [
+            `Repair sourcing failed for ordered order ${order.reference}`,
+            JSON.stringify({ order_id: order.id, reference: order.reference, error: err.message }),
+          ]
+        );
+      } catch (_) { /* non-bloquant */ }
+    }
+  }
+
+  return {
+    status: failed.length ? 207 : 200,
+    body: {
+      dry_run: false,
+      scanned: candidates.length,
+      repaired_count: repaired.length,
+      failed_count: failed.length,
+      repaired,
+      failed,
+    },
+  };
+}
+
+module.exports = { repairOrderedWithoutPurchaseOrders };
