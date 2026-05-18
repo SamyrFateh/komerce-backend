@@ -79,6 +79,7 @@ Lire dans cet ordre avant toute modification :
 | I-SWEEP-6B | ✅ Fait | PR #407 mergée. `PUT /api/pricing/apply-price/:product_id` et `PUT /api/pricing/apply-all` passent par un service audité avec survival recalculé serveur et `price_history` par item. |
 | I-SWEEP-6C | ✅ Fait | PR #408 mergée. Garde de publication catalogue ajoutée et audit minimal des changements de stock via `alerts` source `product_stock_audit`. |
 | TEST-1A | ✅ Fait | PR #409 mergée. Filet Jest sans DB réelle : tests statiques d'invariants I-SWEEP/G1-G5 + tests de comportement sur helpers publication/prix/stock. |
+| TEST-1B | ✅ Fait | Commit `28aae996` sur main. Tests Jest avec mocks DB transactionnels : cash pickup commit/rollback et réception PO commit/rollback. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 
@@ -89,7 +90,7 @@ Lire dans cet ordre avant toute modification :
 - `console.log` : environ 365 occurrences ; F1 est un gros lot, pas un petit nettoyage.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
-- Tests : TEST-1A pose un filet régression sans DB ; TEST-1B doit encore ajouter des tests API/DB plus réalistes.
+- Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
 - ✅ QR verify/parcels corrigé par I-SWEEP-2.
 - ✅ Stripe intent idempotent par I-SWEEP-3A.
@@ -108,24 +109,23 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### TEST-1B — Tests API/DB réalistes sur flows G1-G5
+### PRICE-1 — Durcissement pricing/catalogue complémentaire après tests
 
 ```text
-Branche   : test/backend-api-db-flows-G1-G5
-Charge    : 1-3 jours
-Risque    : moyen — tests uniquement, mais nécessite environnement DB fiable
-Prérequis : TEST-1A terminé
+Branche   : fix/backend-PRICE-1-pricing-catalogue-followup
+Charge    : 1-2 jours
+Risque    : moyen — dépend des retours tests et staging
+Prérequis : TEST-1B terminé
 ```
 
-Objectif : ajouter un filet plus réaliste avec base de test ou mocks DB transactionnels pour valider les flows cash, QR, Stripe/purchasing, collectif, refund et catalogue au-delà des tests statiques.
+Objectif : traiter les éventuels ajustements révélés par les tests/staging, notamment pricing/catalogue, publication, stock et audit.
 
 ---
 
-## File d'attente après TEST-1B
+## File d'attente après PRICE-1
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| PRICE-1 | Haute | Durcissement pricing/catalogue complémentaire si besoin après tests |
 | A4 | Prudence | Collisions migrations 060/061 |
 | F1 | Haute mais gros lot | Logger structuré |
 | H1 | Stratégique lourd | Refacto `server.js` |
