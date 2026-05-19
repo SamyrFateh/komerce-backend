@@ -77,6 +77,19 @@ export function checkoutCart() {
     if (bnav) {
       bnav.classList.add('u-hidden');
     }
+
+    // FIX — Sécurité de sortie : Escape + clic sur l'overlay ferment le checkout
+    // et retirent cart-open. Sans ça, une sortie non standard bloque le scroll body.
+    function _onOrderEscape(e) {
+      if (e.key === 'Escape' && dom.orderModal.classList.contains('open')) {
+        closeOrderModal();
+      }
+    }
+    function _onOrderOverlayClick(e) {
+      if (e.target === dom.orderModal) closeOrderModal();
+    }
+    document.addEventListener('keydown', _onOrderEscape, { once: true });
+    dom.orderModal.addEventListener('click', _onOrderOverlayClick, { once: true });
   }
 
   /**

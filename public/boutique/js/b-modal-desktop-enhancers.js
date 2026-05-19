@@ -349,7 +349,8 @@ function injectAedPrice() {
 //  NEW — FLASH TIMER + BARRE DE STOCK
 // ═══════════════════════════════════════════════════════════════
 
-var _flashTimerInterval = null;
+let _flashTimerInterval = null;
+let _enhancersInstalled = false;
 
 function _stopFlashTimer() {
   if (_flashTimerInterval) {
@@ -647,6 +648,8 @@ function _setupQtyObserver() {
 
 export function setupModalDesktopEnhancers() {
   if (!isDesktop()) return;
+  if (_enhancersInstalled) return;
+  _enhancersInstalled = true;
   bus.on('modal:opened', _onModalOpened);
   // Nettoyer le timer flash quand la modal se ferme
   bus.on('modal:close', function() { _stopFlashTimer(); });

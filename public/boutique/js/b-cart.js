@@ -198,10 +198,12 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
 
   saveCart();
 
-  const isModalAdd = sourceBtn === dom.addCartBtn;
+  const isModalAdd  = sourceBtn === dom.addCartBtn;
+  // Buy-now btn est un bouton modal mais n'est pas dom.addCartBtn → détecter explicitement
+  const isBuyNowBtn = sourceBtn && sourceBtn.id === 'k-buy-now-btn';
 
-  // Mark button feedback (grid / rail buttons only)
-  if (sourceBtn && !isModalAdd) {
+  // Mark button feedback (grid / rail buttons only — pas modal, pas buy-now)
+  if (sourceBtn && !isModalAdd && !isBuyNowBtn) {
     sourceBtn.classList.add('added');
     sourceBtn.disabled = true;
     setTimeout(() => {
@@ -255,8 +257,14 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
         }
       };
     }, 700);
+  } else if (isBuyNowBtn) {
+    // Buy-now depuis la modal : rafraîchir le side-cart desktop silencieusement
+    // (la modal gère elle-même le feedback visuel du bouton et l'ouverture du panier)
+    if (isDesktop()) {
+      if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
+    }
   } else if (sourceBtn) {
-    // Toast de confirmation (grid / rail)
+    // Toast de confirmation (grid / rail uniquement)
     showToast('✓ ' + (product.name || 'Produit') + ' ajouté', 'success');
   }
 }
