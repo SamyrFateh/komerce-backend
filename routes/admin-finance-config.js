@@ -17,6 +17,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
+const log     = require('../utils/logger').forModule('admin-finance-config');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { invalidateConfigCache } = require('../services/loyalty-service');
 
@@ -155,7 +156,7 @@ router.put('/', adminOnly, async (req, res, next) => {
       } catch(_) { /* historique non bloquant */ }
     }
 
-    console.log(`[finance-config] Updated by ${req.user.id}:`, updates);
+    log.info({ updated_by: req.user.id, fields: Object.keys(updates) }, 'Finance config updated');
 
     res.json(formatConfig(updated));
   } catch (err) { next(err); }
