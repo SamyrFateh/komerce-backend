@@ -4,11 +4,29 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
-    "lint:css:fix": "stylelint \"css/*.css\" --fix",
-    "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
-    "bundle:css": "node scripts/bundle-css.js"
+    "test": "echo \"Utilise npm run check:all pour les garde-fous\" && exit 1",
+
+    "bundle:css":         "node scripts/bundle-css.js",
+    "bundle:css:watch":   "node scripts/bundle-css.js && echo 'Bundle OK — relancez après chaque modif CSS'",
+
+    "lint:css":           "stylelint \"css/*.css\" --ignore-path .stylelintignore",
+    "lint:css:fix":       "stylelint \"css/*.css\" --fix",
+    "lint:css:report":    "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
+
+    "audit:arch":         "node scripts/audit-boutique-arch.js",
+    "audit:arch:live":    "node scripts/gen-boutique-arch-live.js",
+
+    "check:html":         "node scripts/check-html-balance.js",
+    "check:imports":      "node scripts/check-js-imports.js",
+    "check:body-classes": "node scripts/check-body-classes.js",
+    "check:cache":        "node scripts/check-cache-buster.js",
+    "check:cache:fix":    "node scripts/check-cache-buster.js --fix",
+    "check:cache:init":   "node scripts/check-cache-buster.js --init",
+
+    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run audit:arch",
+    "check:all:verbose":  "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch",
+
+    "precommit":          "npm run check:all"
   },
   "keywords": [],
   "author": "",
