@@ -154,6 +154,10 @@ function setupFooterLinks() {
 }
 
 // â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// FIX Bug 2 : __kmrcCheckout assigné AVANT init() pour que renderSideCart
+// (via updateCartBadge) trouve la fonction définie dès le premier rendu.
+window.__kmrcCheckout = checkoutCart;
+
 if (document.readyState === 'loading') {
   // Listener global cart:setqty (stepper) — enregistré UNE SEULE FOIS
   document.addEventListener('cart:setqty', function(e) {
@@ -168,7 +172,7 @@ if (document.readyState === 'loading') {
 }
 
 // â”€â”€ Side cart checkout : pont window pour éviter la dépendance circulaire b-cartâ†”b-checkout â”€â”€
-window.__kmrcCheckout = checkoutCart;
+// (window.__kmrcCheckout already assigned above)
 // Expose renderGrid pour le listener délégué sous-cats (b-subcat.js + boutique.js)
 if (typeof window !== 'undefined') window.renderGrid = renderGrid;
 

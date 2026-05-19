@@ -306,7 +306,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
   }
 
     function openModal(id, pushHistory) {
-    const product = state.products.find(p => p.id === id);
+    const product = state.products.find(p => String(p.id) === String(id));
     if (!product) return;
 
     // HOTFIX #213 — Reset la barre de recherche interne à chaque ouverture
@@ -914,7 +914,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const product = state.products.find(p => p.id === btn.dataset.add);
+        const product = state.products.find(p => String(p.id) === String(btn.dataset.add));
         if (!product) return;
         addToCart(product, 1, btn);
         // Re-render les suggestions pour afficher le stepper
