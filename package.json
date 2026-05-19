@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:verbose": "jest --runInBand --forceExit --detectOpenHandles --verbose",
+    "test:p0": "node scripts/p0-runtime-check.js",
     "seed": "node scripts/seed.js",
     "check:boutique": "node scripts/check-boutique.mjs",
     "analyze:boutique-css": "node scripts/analyze-boutique-css.mjs",
