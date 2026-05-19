@@ -60,22 +60,21 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 | Doc | Rôle |
 |---|---|
 | [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) | **Premier fichier à lire à chaque session** — lots cochés + prochain lot + pièges |
-| [`docs/BACKEND_GOLIVE_ROADMAP.md`](./docs/BACKEND_GOLIVE_ROADMAP.md) | 51 lots détaillés (8 blocs A-H) |
-| [`docs/BACKEND_AUDIT_SESSIONS_PLAN.md`](./docs/BACKEND_AUDIT_SESSIONS_PLAN.md) | Sessions d'audit approfondies |
-| [`docs/BACKEND_AUDIT_CORRECTIONS.md`](./docs/BACKEND_AUDIT_CORRECTIONS.md) | Corrections post-lecture code, fait foi contre l'audit initial |
+| [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./docs/backend/BACKEND_GOLIVE_ROADMAP.md) | 51 lots détaillés (8 blocs A-H) |
+| [`docs/backend/BACKEND_AUDIT_SESSIONS_PLAN.md`](./docs/backend/BACKEND_AUDIT_SESSIONS_PLAN.md) | Sessions d'audit approfondies |
+| [`docs/backend/BACKEND_AUDIT_CORRECTIONS.md`](./docs/backend/BACKEND_AUDIT_CORRECTIONS.md) | Corrections post-lecture code, fait foi contre l'audit initial |
 | `docs/chantier/*_AUDIT_*.md` | Livrables d'audit par lot (D1, D3, D4, D5, D6, D7) |
 
 ### Docs métier (référence stable)
 
 | Doc | Rôle |
 |---|---|
-| [`docs/DOCTRINE_ECONOMIQUE_KOMERCE.md`](./docs/DOCTRINE_ECONOMIQUE_KOMERCE.md) | Pricing, marges, sourcing |
-| [`docs/DOCTRINE_LEVIERS_MARGE.md`](./docs/DOCTRINE_LEVIERS_MARGE.md) | Leviers de marge |
-| [`docs/DOCTRINE_ALLOCATION_COUTS.md`](./docs/DOCTRINE_ALLOCATION_COUTS.md) | Allocation des coûts |
-| [`docs/DOCTRINE_PANIER_COLLECTIF.md`](./docs/DOCTRINE_PANIER_COLLECTIF.md) | Panier collectif |
-| [`docs/SECURITY-MODEL.md`](./docs/SECURITY-MODEL.md) | Modèle de sécurité |
-| [`docs/IMPACT_SYSTEM.md`](./docs/IMPACT_SYSTEM.md) | Système d'impact / signaux |
-| [`docs/SPEC-ORDER-PARCEL-LIFECYCLE.md`](./docs/SPEC-ORDER-PARCEL-LIFECYCLE.md) | Cycle de vie commande/colis |
+| [`docs/doctrine/DOCTRINE_ECONOMIQUE_KOMERCE.md`](./docs/doctrine/DOCTRINE_ECONOMIQUE_KOMERCE.md) | Pricing, marges, sourcing |
+| [`docs/doctrine/DOCTRINE_LEVIERS_MARGE.md`](./docs/doctrine/DOCTRINE_LEVIERS_MARGE.md) | Leviers de marge |
+| [`docs/doctrine/DOCTRINE_ALLOCATION_COUTS.md`](./docs/doctrine/DOCTRINE_ALLOCATION_COUTS.md) | Allocation des coûts |
+| [`docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md`](./docs/doctrine/DOCTRINE_PANIER_COLLECTIF.md) | Panier collectif |
+| [`docs/backend/SECURITY-MODEL.md`](./docs/backend/SECURITY-MODEL.md) | Modèle de sécurité |
+| [`docs/specs/SPEC-ORDER-PARCEL-LIFECYCLE.md`](./docs/specs/SPEC-ORDER-PARCEL-LIFECYCLE.md) | Cycle de vie commande/colis |
 
 ### Décisions historisées (ADR)
 
@@ -85,13 +84,12 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 
 | Doc | Rôle |
 |---|---|
-| [`docs/ARCHI_DECOUPAGE_MODULAIRE.md`](./docs/ARCHI_DECOUPAGE_MODULAIRE.md) | Plan de découpage des gros fichiers (REFAC-pricing, REFAC-dashboard) |
-| [`docs/PAYPAL_POSITIONNEMENT.md`](./docs/PAYPAL_POSITIONNEMENT.md) | Intégration PayPal phase 1 (lot PAYPAL-1) |
-| [`docs/PROMPTS_KIT.md`](./docs/PROMPTS_KIT.md) | Kit de prompts stricts pour agents Sonnet/ChatGPT |
+| [`docs/backend/ARCHI_DECOUPAGE_MODULAIRE.md`](./docs/backend/ARCHI_DECOUPAGE_MODULAIRE.md) | Plan de découpage des gros fichiers (REFAC-pricing, REFAC-dashboard) |
+| [`docs/ops/PAYPAL_POSITIONNEMENT.md`](./docs/ops/PAYPAL_POSITIONNEMENT.md) | Intégration PayPal phase 1 (lot PAYPAL-1) |
 
 ### Frontend Boutique
 
-Le frontend Boutique a sa propre gouvernance documentaire dans `public/boutique/docs/`. **Point d'entrée** : [`public/boutique/docs/BOUTIQUE_DOCS_INDEX.md`](./public/boutique/docs/BOUTIQUE_DOCS_INDEX.md).
+Le frontend Boutique a sa propre gouvernance documentaire dans `public/boutique/docs/`. **Point d'entrée** : [`docs/boutique/BOUTIQUE_DOCS_INDEX.md`](./docs/boutique/BOUTIQUE_DOCS_INDEX.md).
 
 3 scripts automatisent sa vérification :
 - `npm run bundle:css` — bundling sources → dist
