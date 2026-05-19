@@ -356,7 +356,7 @@ if('serviceWorker' in navigator){
       </div>
     </div>
   </div>
-</div>
+</div><!-- /#k-modal-overlay — FIX HTML 2026-05-19 : cette balise </div> manquait. Sans elle, #k-cart-overlay, #k-cart-drawer et #k-order-modal étaient parsés comme enfants de #k-modal-overlay et héritaient de son display:none par défaut. Conséquence : le bouton Commander ouvrait bien le modal mais il restait invisible (parent caché). -->
 
 <!-- ═══ CART DRAWER ═══ -->
 <div id="k-cart-overlay" class="k-cart-overlay"></div>
