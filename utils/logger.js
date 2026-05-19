@@ -11,6 +11,8 @@
  *   log.error({ err, orderId }, 'Payment failed');
  *
  * Child loggers for modules:
+ *   const log = require('../utils/logger').forModule('sms');
+ *   // Backward compatible:
  *   const log = require('../utils/logger').child({ module: 'sms' });
  */
 
@@ -67,6 +69,10 @@ try {
         'token',
         'secret',
         'creditCard',
+        '*.password',
+        '*.token',
+        '*.secret',
+        '*.creditCard',
       ],
       censor: '[REDACTED]',
     },
@@ -96,11 +102,14 @@ try {
   logger = makeConsoleLogger();
 }
 
+function forModule(module, extra = {}) {
+  return logger.child({ module, ...extra });
+}
+
 function httpLogger(req, res, next) {
   const start = Date.now();
-  const child = logger.child({
-    requestId: req.id || req.headers['x-request-id'],
-    module: 'http',
+  const child = forModule('http', {
+    request_id: req.id || req.headers['x-request-id'],
   });
 
   res.on('finish', () => {
@@ -116,7 +125,7 @@ function httpLogger(req, res, next) {
         status: res.statusCode,
         duration_ms: duration,
         ip: req.ip,
-        userId: req.user?.id || null,
+        user_id: req.user?.id || null,
       },
       `${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`
     );
@@ -125,6 +134,7 @@ function httpLogger(req, res, next) {
   next();
 }
 
+logger.forModule = forModule;
 logger.httpLogger = httpLogger;
 
 module.exports = logger;
