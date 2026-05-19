@@ -84,6 +84,7 @@ Lire dans cet ordre avant toute modification :
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 | DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
+| H1 plan | ✅ Fait | Document `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté. Code non commencé. Première PR recommandée : H1A extraction du manifest routes API uniquement, sans toucher aux webhooks raw, parsers, crons, HTML routes ni migrations inline. |
 | P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé puis enrichi. Env critique présent et boot Railway PASS sur logs. `npm test`, `/health` et flows HTTP staging restent à exécuter. |
 | P0-HELPER | ✅ Fait | PR #413 mergée. Ajout `scripts/p0-runtime-check.js`, commande `npm run test:p0` et doc `docs/chantier/P0_RUNTIME_CHECK.md` pour exécuter P0 runtime de façon reproductible. |
 
@@ -94,6 +95,7 @@ Lire dans cet ordre avant toute modification :
 - `console.log` : environ 365 occurrences ; F1 est un gros lot, pas un petit nettoyage.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
+- ✅ H1 plan : `server.js` doit être découpé en PRs petites ; ne pas déplacer les webhooks raw sous `express.json`, ne pas mélanger routes API, HTML, crons et migrations inline.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
 - 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter dans un environnement runtime réel. Utiliser `npm run test:p0`.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
@@ -114,39 +116,35 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### P0-RUNTIME — Exécuter la validation staging réelle
+### H1A — Extraction manifest routes API uniquement
 
 ```text
-Branche   : test/backend-P0-runtime-validation
+Branche   : refactor/backend-H1A-api-routes-manifest
 Charge    : 0.5-1 jour
-Risque    : faible — observation uniquement
-Prérequis : rapport P0 PARTIAL + P0-HELPER terminés
+Risque    : moyen — ordre des routes à préserver strictement
+Prérequis : H1 plan terminé
 ```
 
-Objectif : passer P0 de PARTIAL à PASS ou FAIL en exécutant réellement :
+Objectif : créer un module `bootstrap/api-routes.js` exposant `mountApiRoutes(app)` et déplacer uniquement les imports/montages API standards depuis `server.js`, en conservant l'ordre exact.
 
-```bash
-npm run test:p0
-P0_BASE_URL=<url-railway> npm run test:p0
-P0_BASE_URL=<url-railway> P0_ADMIN_TOKEN=<jwt-admin> npm run test:p0
-```
-
-Si P0 runtime reste indisponible, prochain lot documentaire/technique possible : F1A logger pilote ou H1 plan. Ne pas lancer de refacto runtime lourd sans verdict P0 ou décision explicite.
+Hors scope H1A : webhooks raw Stripe, `express.json`, routes HTML, static serving, crons, migrations inline, listen/shutdown.
 
 ---
 
-## File d'attente après P0 runtime
+## File d'attente après H1A
 
-Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` pour les prompts) :
+Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` et `PLAN_H1_REFACTO_SERVER.md`) :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| P0-RUNTIME | Haute | Exécuter `npm run test:p0` hors GitHub dès que possible |
 | PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
 | F1A | Haute mais découpé | Logger pilote sur 1 domaine (pas les 436 occurrences d'un coup) |
-| H1 plan | Stratégique | Plan de refacto `server.js` (1 200 l. + 96 blocs DDL inline) avant tout code |
-| H1A | Petit lot isolé | Extraction manifest routes hors de `server.js` |
-| B3 REFAC-dashboard | Lourd | `routes/dashboard.js` 2 614 l. → `routes/dashboard/{...}` |
-| B2 REFAC-pricing | Lourd | `services/pricing-engine.js` 1 483 l. → `services/pricing/{...}` |
+| H1B | Moyen | Extraire routes HTML / SPA fallback après H1A |
+| H1C | Moyen | Extraire security/middleware après H1A/H1B |
+| H1D | Moyen | Extraire crons |
+| H1E | Moyen | Extraire env validation |
+| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB |
 | H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
 
 ### Dette mesurée au 19 mai 2026 (référence)
