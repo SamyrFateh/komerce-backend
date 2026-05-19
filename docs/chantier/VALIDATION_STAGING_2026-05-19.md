@@ -11,38 +11,73 @@
 
 **PARTIAL**.
 
-La validation documentaire/statique P0 est cohérente :
+La validation documentaire/statique P0 est cohérente et la validation runtime a commencé :
 
 - le cycle critique est clôturé ;
 - I-SWEEP-1 → I-SWEEP-6C sont documentés comme terminés ;
 - TEST-1A / TEST-1B sont présents dans le statut chantier ;
 - le script de test Jest existe ;
-- le boot serveur vérifie les variables fatales `DATABASE_URL` et `JWT_SECRET` ;
+- les variables d'environnement critiques déclarées par l'opérateur sont présentes ;
+- le build Railway est passé ;
+- le conteneur Railway a démarré ;
+- l'API annonce `KOMERCE API v12.4 — port 8080` ;
+- les migrations background et seeds visibles dans les logs sont passés ;
 - les webhooks Stripe sont encore montés en body brut avant `express.json`.
 
-Mais la validation P0 complète exige des exécutions que le connecteur GitHub ne peut pas faire seul :
+La validation P0 complète exige encore :
 
 - `npm test` réel ;
-- `npm start` réel ;
-- boot Railway réel ;
-- appels HTTP/curl staging sur les flows 1 à 9.
+- appels HTTP `/health` ou `/api/health` ;
+- flows HTTP/curl staging sur les flows 1 à 9.
 
-Aucun bug bloquant code n'est confirmé dans cette session. Le verdict reste donc **PARTIAL par limitation d'environnement**, pas FAIL.
+Aucun bug bloquant code n'est confirmé dans cette session. Le verdict reste donc **PARTIAL**, mais avec **boot Railway validé**.
 
 ---
 
-## 2. Commandes lancées
+## 2. Commandes / preuves runtime disponibles
 
-Aucune commande runtime n'a été lancée dans cette session, car l'accès disponible est le connecteur GitHub et non un clone local/Railway shell.
+### Railway boot fourni par opérateur
 
-Commandes à lancer pour passer de PARTIAL à PASS :
+Extrait fourni :
+
+```text
+> npm run build && node server.js
+> komerce-backend@10.6.1 build
+> node public/boutique/scripts/bundle-css.js
+  ✓  base.css           1262 lignes
+  ✓  components.css     4500 lignes
+  ✓  desktop.css        1860 lignes
+  ✓  event.css          1146 lignes
+  Total : 8720 → 8768 lignes dans css/dist/
+[RateLimit] ℹ️  REDIS_URL absent — store mémoire (mono-instance)
+> komerce-backend@10.6.1 start
+Starting Container
+⚠️  Legacy SMS désactivé — canal cible : WhatsApp/AuthKey
+[CollectivePay] cron expiration started, interval=300s
+KOMERCE API v12.4 — port 8080 — démarrage immédiat — migrations en background
+🔒 ADMIN_PASSWORD défini — migration du hash admin
+⏰ Cash reminder cron: every 60min
+✅ Wallet tables ready
+[HUB-DASH] Tables + migrations OK
+[SECURITY] ✅ Security tables ready
+🔧 Running schema migrations...
+🔧 Schema migrations complete.
+[seed] Admin already exists, skipping
+[seed] Products already seeded (128468), skipping
+[seed] ✅ All seeds completed
+...
+✅ Migration 052: charges already seeded, skipping
+```
+
+Conclusion : **boot Railway PASS sur logs fournis**.
+
+### Commandes encore à lancer pour passer de PARTIAL à PASS
 
 ```bash
 npm test
-npm start
 ```
 
-Puis, sur staging/Railway avec variables d'environnement configurées :
+Puis, sur staging/Railway :
 
 ```bash
 curl /health
@@ -86,9 +121,20 @@ Action requise : lancer `npm test` localement ou en CI.
 
 ## 4. Résultats boot Railway / local
 
-### Statique depuis `server.js`
+### Variables d'environnement
 
-Variables fatales au boot :
+Présence déclarée par opérateur :
+
+| Variable | Statut |
+|----------|--------|
+| `DATABASE_URL` | présent |
+| `JWT_SECRET` | présent |
+| `STRIPE_SECRET_KEY` | présent |
+| `STRIPE_WEBHOOK_SECRET` | présent |
+| `STRIPE_SHARED_CART_WEBHOOK_SECRET` | présent |
+| `STRIPE_COLLECTIVE_WEBHOOK_SECRET` | présent |
+
+Variables fatales au boot dans `server.js` :
 
 ```js
 const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'];
@@ -100,17 +146,24 @@ Variables recommandées non fatales :
 const RECOMMENDED_ENV = ['ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
 ```
 
+### Build / boot
+
 Le boot attendu par `package.json` est :
 
 ```bash
 npm run build && node server.js
 ```
 
-Le build exécute :
+Le log Railway fourni confirme :
 
-```bash
-node public/boutique/scripts/bundle-css.js
-```
+- build CSS exécuté ;
+- 4 bundles CSS générés ;
+- conteneur démarré ;
+- API lancée sur port 8080 ;
+- migrations background exécutées ;
+- seeds exécutés ou ignorés proprement.
+
+Résultat : **PASS sur logs Railway fournis**.
 
 ### Webhooks Stripe
 
@@ -123,12 +176,6 @@ app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'applicat
 
 app.use(express.json({ limit: '1mb' }));
 ```
-
-### Exécution réelle
-
-Non exécutée dans cette session.
-
-Résultat : **NON EXÉCUTÉ**.
 
 ---
 
@@ -152,7 +199,7 @@ Résultat : **NON EXÉCUTÉ**.
 
 Aucun bug bloquant confirmé.
 
-Blocage P0 : environnement d'exécution non disponible dans cette session GitHub-only.
+Le boot Railway est validé sur logs fournis.
 
 ---
 
@@ -162,8 +209,8 @@ Aucun bug code confirmé.
 
 Points d'attention :
 
-- P0 ne peut pas être marqué PASS sans exécution réelle des tests et du boot.
-- La validation staging doit être relancée depuis un environnement capable d'exécuter `npm test`, `npm start` et des `curl` vers Railway.
+- `REDIS_URL` est absent : le rate-limit utilise un store mémoire mono-instance. C'est acceptable pour validation, mais à durcir si scaling multi-instance.
+- P0 ne peut pas être marqué PASS sans `npm test` réel et tests HTTP staging.
 
 ---
 
@@ -173,21 +220,19 @@ Verdict : **PARTIAL**.
 
 Recommandation :
 
-1. Ne pas lancer PRICE-1, A4, F1A ou H1 avant d'avoir exécuté la validation runtime.
-2. Lancer localement ou en CI :
-
-```bash
-npm test
-npm start
-```
-
-3. Si tout passe et que les flows staging passent, produire une nouvelle version de ce rapport avec verdict **PASS** et cocher P0 dans `STATUS.md`.
-4. Si un test ou flow échoue, ouvrir un lot de correction ciblé avant tout autre chantier.
+1. Lancer `npm test` localement ou en CI.
+2. Tester `/health` ou `/api/health` sur l'URL Railway.
+3. Tester en priorité les endpoints dry-run/non destructifs :
+   - `POST /api/admin/collective/repair-ready-to-capture` avec `dry_run:true` ;
+   - `POST /api/admin/collective/repair-stock-reservations` avec `dry_run:true` ;
+   - `POST /api/admin/orders/:orderId/refund` avec `dry_run:true`.
+4. Si tout passe et que les flows staging passent, produire une nouvelle version de ce rapport avec verdict **PASS** et cocher P0 dans `STATUS.md`.
+5. Si un test ou flow échoue, ouvrir un lot de correction ciblé avant tout autre chantier.
 
 ---
 
 ## Conclusion
 
-P0 est initialisé mais non clôturé.
+P0 est bien avancé mais non clôturé.
 
-Le backend semble cohérent statiquement avec le cycle post-critique, mais la validation runtime reste à faire pour obtenir un verdict PASS.
+Le backend boot correctement sur Railway avec les variables critiques présentes. Il reste à exécuter Jest et les endpoints HTTP staging pour obtenir un verdict PASS complet.
