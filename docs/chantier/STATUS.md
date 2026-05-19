@@ -85,6 +85,8 @@ Lire dans cet ordre avant toute modification :
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 | DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
 | H1 plan | ✅ Fait | Document `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté. Code non commencé. Première PR recommandée : H1A extraction du manifest routes API uniquement, sans toucher aux webhooks raw, parsers, crons, HTML routes ni migrations inline. |
+| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` avec `mountApiRoutesBeforeStripeOwnedBlocks(app)` et `mountApiRoutesAfterStripeOwnedBlocks(app)`. Aucun impact runtime : `server.js` non câblé. |
+| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc `docs/chantier/H1A_SERVER_WIRING_CODEMOD.md`. Codemod prêt pour appliquer localement le câblage `server.js` avec garde-fous. |
 | P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé puis enrichi. Env critique présent et boot Railway PASS sur logs. `npm test`, `/health` et flows HTTP staging restent à exécuter. |
 | P0-HELPER | ✅ Fait | PR #413 mergée. Ajout `scripts/p0-runtime-check.js`, commande `npm run test:p0` et doc `docs/chantier/P0_RUNTIME_CHECK.md` pour exécuter P0 runtime de façon reproductible. |
 
@@ -96,6 +98,7 @@ Lire dans cet ordre avant toute modification :
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
 - ✅ H1 plan : `server.js` doit être découpé en PRs petites ; ne pas déplacer les webhooks raw sous `express.json`, ne pas mélanger routes API, HTML, crons et migrations inline.
+- ✅ H1A-0/H1A-1 : manifest + codemod prêts. `server.js` n'est pas encore câblé ; appliquer le codemod localement puis tester avant PR H1A-2.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
 - 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter dans un environnement runtime réel. Utiliser `npm run test:p0`.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
@@ -116,22 +119,32 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### H1A — Extraction manifest routes API uniquement
+### H1A-2 — Appliquer le câblage `server.js` via codemod local
 
 ```text
-Branche   : refactor/backend-H1A-api-routes-manifest
-Charge    : 0.5-1 jour
+Branche   : refactor/backend-H1A-wire-server
+Charge    : 0.5 jour
 Risque    : moyen — ordre des routes à préserver strictement
-Prérequis : H1 plan terminé
+Prérequis : H1A-0 + H1A-1 terminés
 ```
 
-Objectif : créer un module `bootstrap/api-routes.js` exposant `mountApiRoutes(app)` et déplacer uniquement les imports/montages API standards depuis `server.js`, en conservant l'ordre exact.
+Objectif : exécuter localement le codemod, vérifier le diff, lancer les tests, puis ouvrir une PR contenant uniquement le diff `server.js` généré.
 
-Hors scope H1A : webhooks raw Stripe, `express.json`, routes HTML, static serving, crons, migrations inline, listen/shutdown.
+Commandes :
+
+```bash
+node scripts/h1a-wire-api-routes.js --check
+node scripts/h1a-wire-api-routes.js --write
+git diff -- server.js
+npm test
+npm run test:p0
+```
+
+Hors scope H1A-2 : webhooks raw Stripe, `express.json`, routes HTML, static serving, crons, migrations inline, listen/shutdown.
 
 ---
 
-## File d'attente après H1A
+## File d'attente après H1A-2
 
 Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` et `PLAN_H1_REFACTO_SERVER.md`) :
 
