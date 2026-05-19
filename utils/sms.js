@@ -30,6 +30,7 @@
  */
 
 const db = require('../db');
+const log = require('./logger').child({ module: 'sms' });
 const { getRuleNumber } = require('./rules');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 
@@ -38,7 +39,7 @@ const { transitionOrderStatus } = require('../services/order-status-machine');
 // sendSMS() is kept as a compatibility shim for old cron flows.
 let smsClient = null;
 
-console.warn('⚠️  Legacy SMS désactivé — canal cible : WhatsApp/AuthKey');
+log.warn('Legacy SMS disabled — target channel: WhatsApp/AuthKey');
 
 // ── Validation numéro de téléphone ───────────────────────────────────────────
 
@@ -62,12 +63,12 @@ function isValidPhone(phone) {
 async function sendSMS(to, message, type, order_id = null) {
   // Valider le numéro avant tout
   if (!isValidPhone(to)) {
-    console.warn(`SMS ignoré — numéro invalide : ${to}`);
+    log.warn({ phone: to, type, order_id }, 'SMS skipped: invalid phone number');
     return { success: false, error: 'invalid_phone' };
   }
 
   // Insérer en base avec statut pending
-  const { rows: [log] } = await db.query(
+  const { rows: [logRow] } = await db.query(
     `INSERT INTO sms_log (order_id, recipient, type, message, status)
      VALUES ($1,$2,$3,$4,'pending') RETURNING id`,
     [order_id, to, type, message]
@@ -75,10 +76,10 @@ async function sendSMS(to, message, type, order_id = null) {
 
   // Mode dev : simuler sans envoyer
   if (!smsClient) {
-    console.log(`[SMS DEV] to=${to} | type=${type} | "${message}"`);
+    log.info({ to, type, order_id, sms_log_id: logRow.id }, 'SMS dev skipped');
     await db.query(
       `UPDATE sms_log SET status = 'dev_skipped', sent_at = NOW() WHERE id = $1`,
-      [log.id]
+      [logRow.id]
     );
     return { success: true, dev: true };
   }
@@ -97,16 +98,16 @@ async function sendSMS(to, message, type, order_id = null) {
     await db.query(
       `UPDATE sms_log SET status = $1, at_message_id = $2, sent_at = NOW()
        WHERE id = $3`,
-      [status, atId, log.id]
+      [status, atId, logRow.id]
     );
 
     return { success: status === 'sent', at_message_id: atId };
 
   } catch (err) {
-    console.error(`SMS échoué vers ${to} :`, err.message);
+    log.error({ err, to, type, order_id, sms_log_id: logRow.id }, 'SMS send failed');
     await db.query(
       `UPDATE sms_log SET status = 'failed' WHERE id = $1`,
-      [log.id]
+      [logRow.id]
     );
     return { success: false, error: err.message };
   }
@@ -200,7 +201,7 @@ async function processCashRelaisReminders() {
       });
 
       if (!result.success) {
-        console.error(`[SMS H+36] Status machine failed for order ${order.id}: ${result.error}`);
+        log.error({ order_id: order.id, error: result.error }, 'H+36 status machine failed');
         await client.query('ROLLBACK');
         continue;
       }
@@ -214,11 +215,15 @@ async function processCashRelaisReminders() {
       await client.query('COMMIT');
 
       if (result.cancelEffects) {
-        console.log(`[SMS H+36] Order ${order.id} cancelled via status machine — wallet reversed: ${result.cancelEffects.walletReversalAmount} KMF, stock items restored: ${result.cancelEffects.stockItemsRestored}`);
+        log.info({
+          order_id: order.id,
+          wallet_reversal_amount_kmf: result.cancelEffects.walletReversalAmount,
+          stock_items_restored: result.cancelEffects.stockItemsRestored,
+        }, 'H+36 order cancelled via status machine');
       }
     } catch (txErr) {
       await client.query('ROLLBACK');
-      console.error(`[SMS H+36] Transaction failed for order ${order.id}:`, txErr.message);
+      log.error({ err: txErr, order_id: order.id }, 'H+36 cancellation transaction failed');
       continue;
     } finally {
       client.release();
@@ -234,7 +239,7 @@ async function processCashRelaisReminders() {
     }
   }
 
-  console.log(`Rappels cash relais : ${h12.length} H+12, ${h36.length} H+36 annulations`);
+  log.info({ h12_count: h12.length, h36_count: h36.length }, 'Cash relais reminders processed');
 }
 
 
@@ -303,11 +308,11 @@ async function processBackorderReminders() {
       );
     }
 
-    console.log(`[BACKORDER] Rappels backorder : ${sentCount} SMS envoyés sur ${expiredBackorders.length} backorders expirés`);
+    log.info({ sent_count: sentCount, expired_backorders_count: expiredBackorders.length }, 'Backorder reminders processed');
     return { processed: expiredBackorders.length, sms_sent: sentCount };
 
   } catch (err) {
-    console.error('[BACKORDER] Erreur rappels backorder:', err.message);
+    log.error({ err }, 'Backorder reminders failed');
     return { processed: 0, sms_sent: 0, error: err.message };
   }
 }
