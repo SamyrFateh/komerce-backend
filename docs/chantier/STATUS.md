@@ -83,7 +83,8 @@ Lire dans cet ordre avant toute modification :
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 | DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
-| P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé. Validation statique OK, mais tests Jest, boot Railway/local et curl staging non exécutables depuis connecteur GitHub. Ne pas cocher P0 ✅ avant exécution runtime réelle. |
+| P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé puis enrichi. Env critique présent et boot Railway PASS sur logs. `npm test`, `/health` et flows HTTP staging restent à exécuter. |
+| P0-HELPER | ✅ Fait | PR #413 mergée. Ajout `scripts/p0-runtime-check.js`, commande `npm run test:p0` et doc `docs/chantier/P0_RUNTIME_CHECK.md` pour exécuter P0 runtime de façon reproductible. |
 
 ---
 
@@ -93,7 +94,7 @@ Lire dans cet ordre avant toute modification :
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
-- 🟠 P0 est PARTIAL : `npm test`, `npm start`, boot Railway et flows curl staging restent à exécuter dans un environnement runtime réel.
+- 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter dans un environnement runtime réel. Utiliser `npm run test:p0`.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
 - ✅ QR verify/parcels corrigé par I-SWEEP-2.
 - ✅ Stripe intent idempotent par I-SWEEP-3A.
@@ -118,10 +119,16 @@ Lire dans cet ordre avant toute modification :
 Branche   : test/backend-P0-runtime-validation
 Charge    : 0.5-1 jour
 Risque    : faible — observation uniquement
-Prérequis : rapport P0 PARTIAL créé
+Prérequis : rapport P0 PARTIAL + P0-HELPER terminés
 ```
 
-Objectif : passer P0 de PARTIAL à PASS ou FAIL en exécutant réellement `npm test`, `npm start`, le boot Railway et les 9 flows curl staging définis dans `docs/chantier/VALIDATION_STAGING_2026-05-19.md`.
+Objectif : passer P0 de PARTIAL à PASS ou FAIL en exécutant réellement :
+
+```bash
+npm run test:p0
+P0_BASE_URL=<url-railway> npm run test:p0
+P0_BASE_URL=<url-railway> P0_ADMIN_TOKEN=<jwt-admin> npm run test:p0
+```
 
 Ne pas lancer PRICE-1, A4, F1A ou H1 avant verdict runtime PASS ou correction ciblée si FAIL.
 
