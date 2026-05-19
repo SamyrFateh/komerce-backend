@@ -627,7 +627,10 @@ function _onModalOpened() {
     injectShareRow();
     injectRecentlyViewed();
     updateSubtotal();
-    setupZoom();
+    // DÉSACTIVÉ 2026-05-19 : zoom loupe Temu sur l'image retiré sur demande
+    // produit. Pour réactiver : décommenter la ligne ci-dessous. Les fonctions
+    // setupZoom / _onZoomMove / _onZoomLeave restent dans le fichier.
+    // setupZoom();
   });
 }
 

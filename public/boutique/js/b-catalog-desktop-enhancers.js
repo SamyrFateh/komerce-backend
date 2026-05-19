@@ -381,9 +381,10 @@ export function setupCatalogDesktopEnhancers() {
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();
-  // Bug 12 fix : setupCardHoverOverlay() retiré ici — appelé à ce stade sur 0 cartes
-  // (loadProducts pas encore résolu). setupCardHoverObserver() pose un MutationObserver
-  // qui l'appelle dès que les cartes apparaissent.
-  setupCardHoverObserver();
+  // DÉSACTIVÉ 2026-05-19 : aperçu carte (hover overlay nom+prix+boutons) retiré
+  // sur demande produit. Le code reste en place (setupCardHoverOverlay,
+  // setupCardHoverObserver) pour réactivation rapide si nécessaire — il suffit
+  // de décommenter la ligne ci-dessous.
+  // setupCardHoverObserver();
   _setupViewChangedGuard();
 }

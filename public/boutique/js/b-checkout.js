@@ -66,6 +66,13 @@ async function ensureStripe() {
    */
 export function checkoutCart() {
     if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
+    // FIX 2026-05-19 : si on commande depuis la fiche produit Temu, fermer d'abord
+    // la modale produit. Sans ça, deux overlays s'empilent (k-modal-overlay +
+    // k-order-modal) ce qui casse le scroll et laisse la fiche produit visible
+    // en arrière-plan derrière le formulaire de commande.
+    if (dom.modalOverlay && dom.modalOverlay.classList.contains('open')) {
+      bus.emit('modal:close');
+    }
     closeCart();
     state.orderData = { payment_mode: 'cash_relais' };
     renderCheckout();
