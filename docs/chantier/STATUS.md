@@ -50,6 +50,7 @@ Lire dans cet ordre avant toute modification :
 | H-SYNC | ✅ Fait | Synchronisation roadmap ↔ STATUS |
 | A1 | ✅ Fait | Fichier fantôme supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé en manuel |
+| A4 | ✅ Fait | Audit `docs/chantier/AUDIT_MIGRATIONS_060_061.md`. Collisions 060/061 reconnues comme dette réelle mais non bloquante : le runner actif ne parcourt pas automatiquement les SQL. Aucun renommage/suppression de migration. |
 | A6 | ✅ Fait | Issue #387 créée |
 | D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré |
 | D1 | ✅ Fait | Audit couverture auth admin documenté |
@@ -92,7 +93,7 @@ Lire dans cet ordre avant toute modification :
 
 - `console.log` : environ 365 occurrences ; F1 est un gros lot, pas un petit nettoyage.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
-- Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
+- ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
 - 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter dans un environnement runtime réel. Utiliser `npm run test:p0`.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
@@ -130,7 +131,7 @@ P0_BASE_URL=<url-railway> npm run test:p0
 P0_BASE_URL=<url-railway> P0_ADMIN_TOKEN=<jwt-admin> npm run test:p0
 ```
 
-Ne pas lancer PRICE-1, A4, F1A ou H1 avant verdict runtime PASS ou correction ciblée si FAIL.
+Si P0 runtime reste indisponible, prochain lot documentaire/technique possible : F1A logger pilote ou H1 plan. Ne pas lancer de refacto runtime lourd sans verdict P0 ou décision explicite.
 
 ---
 
@@ -141,7 +142,6 @@ Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` pour les prompts) :
 | Lot | Priorité | Note |
 |-----|----------|------|
 | PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
-| A4 | Prudence | Audit collisions migrations 060/061 (collisions confirmées dans `migrations/`) |
 | F1A | Haute mais découpé | Logger pilote sur 1 domaine (pas les 436 occurrences d'un coup) |
 | H1 plan | Stratégique | Plan de refacto `server.js` (1 200 l. + 96 blocs DDL inline) avant tout code |
 | H1A | Petit lot isolé | Extraction manifest routes hors de `server.js` |
@@ -154,7 +154,7 @@ Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` pour les prompts) :
 - **19 god-objects ≥ 800 lignes** : aucun découpé pendant le cycle critique (volontaire, sécurité métier d'abord).
 - **`server.js`** : 1 200 lignes, 96 blocs DDL inline.
 - **`console.*`** : 436 occurrences dans `routes/` + `services/` (a augmenté depuis l'audit initial — F1 reste prioritaire).
-- **Migrations** : collisions 060/061 confirmées dans `migrations/` ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à clarifier.
+- **Migrations** : collisions 060/061 clarifiées par A4 ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à préserver documentairement.
 - **Tests** : couverture ~2,5 %, filet de sécurité I-SWEEP OK mais extension utile après refacto.
 
 ---
