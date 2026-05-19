@@ -16,7 +16,7 @@
  * Point d'entrée unique : setupDesktopUpgrade(), appelé depuis main.js.
  */
 
-import { isDesktop } from './b-scroll-owner.js';
+import { isDesktop, getScrollY, scrollPageToTop } from './b-scroll-owner.js';
 import { setupCatalogDesktopEnhancers } from './b-catalog-desktop-enhancers.js';
 import { setupModalDesktopEnhancers }   from './b-modal-desktop-enhancers.js';
 

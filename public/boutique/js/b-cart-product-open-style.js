@@ -4,13 +4,10 @@
  */
 
 export function setupCartProductOpenStyle() {
-  if (!document.getElementById('kmrc-cart-product-image-affordance-css')) {
-    const link = document.createElement('link');
-    link.id = 'kmrc-cart-product-image-affordance-css';
-    link.rel = 'stylesheet';
-    link.href = '/boutique/css/cart-product-open.css?v=1';
-    document.head.appendChild(link);
-  }
+  // NOTE 2026-05-19 : injection de cart-product-open.css retirée — fichier
+  // orphelin (cf. docs/BOUTIQUE_ARCHITECTURE_LIVE.md), n'existe plus dans le
+  // build. Provoquait "Refused to apply style ... MIME type 'text/html'" car
+  // le serveur renvoyait l'index HTML en fallback SPA.
 
   if (!document.getElementById('kmrc-shared-followup-css')) {
     const link = document.createElement('link');
