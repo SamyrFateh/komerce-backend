@@ -83,6 +83,7 @@ Lire dans cet ordre avant toute modification :
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 | DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
+| P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé. Validation statique OK, mais tests Jest, boot Railway/local et curl staging non exécutables depuis connecteur GitHub. Ne pas cocher P0 ✅ avant exécution runtime réelle. |
 
 ---
 
@@ -92,6 +93,7 @@ Lire dans cet ordre avant toute modification :
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - Les collisions de migrations SQL ne bloquent pas le boot actuel : le runner actif ne parcourt pas automatiquement les fichiers SQL.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
+- 🟠 P0 est PARTIAL : `npm test`, `npm start`, boot Railway et flows curl staging restent à exécuter dans un environnement runtime réel.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
 - ✅ QR verify/parcels corrigé par I-SWEEP-2.
 - ✅ Stripe intent idempotent par I-SWEEP-3A.
@@ -110,24 +112,22 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### P0 — Validation staging / Railway
+### P0-RUNTIME — Exécuter la validation staging réelle
 
 ```text
-Branche   : test/backend-P0-validation-staging
-Charge    : 1 jour
-Risque    : faible — lot d'observation, aucun code modifié sauf bug bloquant
-Prérequis : DOC-CLEANUP-1 terminé ; cycle critique clôturé
+Branche   : test/backend-P0-runtime-validation
+Charge    : 0.5-1 jour
+Risque    : faible — observation uniquement
+Prérequis : rapport P0 PARTIAL créé
 ```
 
-Objectif : avant tout lot de refacto (PRICE-1, A4, F1A, H1), valider que le backend boot, que les tests Jest passent, et que les 8 flows corrigés par I-SWEEP fonctionnent en staging.
+Objectif : passer P0 de PARTIAL à PASS ou FAIL en exécutant réellement `npm test`, `npm start`, le boot Railway et les 9 flows curl staging définis dans `docs/chantier/VALIDATION_STAGING_2026-05-19.md`.
 
-Livrable : `docs/chantier/VALIDATION_STAGING_2026-05-XX.md` selon le format défini dans `PROMPTS_KIT_POST_CRITIQUE.md` Prompt P0.
-
-Verdict attendu : PASS / PARTIAL / FAIL avec recommandation explicite du lot suivant.
+Ne pas lancer PRICE-1, A4, F1A ou H1 avant verdict runtime PASS ou correction ciblée si FAIL.
 
 ---
 
-## File d'attente après P0
+## File d'attente après P0 runtime
 
 Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` pour les prompts) :
 
