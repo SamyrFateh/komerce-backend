@@ -10,6 +10,7 @@ import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
+import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import {
   PHONE_COUNTRIES,
   digitsOnly as _digitsOnly,

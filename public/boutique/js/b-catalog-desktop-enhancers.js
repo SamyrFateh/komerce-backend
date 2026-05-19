@@ -26,7 +26,7 @@ import {
 }                           from './shop-schema.js';
 import { setActiveCat }                              from './b-catalog.js';
 import { syncRailActiveState, renderSubcatRail }    from './controllers/home-controller.js';
-import { isDesktop }        from './b-scroll-owner.js';
+import { isDesktop, scrollPageToTop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 
 'use strict';
 
