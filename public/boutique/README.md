@@ -9,19 +9,19 @@
 
 | # | Fichier | Pourquoi |
 |---|---|---|
-| 1 | [`docs/BOUTIQUE_DOCS_INDEX.md`](./docs/BOUTIQUE_DOCS_INDEX.md) | Point d'entrée — guide vers les bonnes docs |
-| 2 | [`docs/BOUTIQUE_ARCHITECTURE.md`](./docs/BOUTIQUE_ARCHITECTURE.md) | Normatif — 6 invariants I-1 à I-6, ownership CSS, process PR |
-| 3 | [`docs/BOUTIQUE_ARCHITECTURE_LIVE.md`](./docs/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run boutique:arch`) |
+| 1 | [`docs/boutique/BOUTIQUE_DOCS_INDEX.md`](../../docs/boutique/BOUTIQUE_DOCS_INDEX.md) | Point d'entrée — guide vers les bonnes docs |
+| 2 | [`docs/boutique/BOUTIQUE_ARCHITECTURE.md`](../../docs/boutique/BOUTIQUE_ARCHITECTURE.md) | Normatif — 6 invariants I-1 à I-6, ownership CSS, process PR |
+| 3 | [`docs/boutique/BOUTIQUE_ARCHITECTURE_LIVE.md`](../../docs/boutique/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run boutique:arch`) |
 
 **Si tu modifies du CSS Boutique**, lis aussi :
-- [`docs/BOUTIQUE_CSS_PIPELINE.md`](./docs/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
-- [`docs/BOUTIQUE_MODAL_ARCHITECTURE.md`](./docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1736 lignes, 7 sections)
+- [`docs/boutique/BOUTIQUE_CSS_PIPELINE.md`](../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
+- [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1736 lignes, 7 sections)
 
 ---
 
 ## 🚨 Les 6 invariants Boutique (le build casse si violés)
 
-Détail dans `docs/BOUTIQUE_ARCHITECTURE.md` §1. Validés automatiquement par `npm run boutique:audit`.
+Détail dans `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §1. Validés automatiquement par `npm run boutique:audit`.
 
 | ID | Invariant |
 |---|---|
@@ -134,7 +134,7 @@ Modifier ces fichiers sans review explicite est interdit. Ils portent la mécani
 - `js/b-scroll-owner.js` — détection mobile/desktop, scroll owner
 - Script inline `<body>` dans `index.html` (lignes ~480-550) — proxy `window.scrollY`
 
-Voir `docs/BOUTIQUE_ARCHITECTURE.md` §6.
+Voir `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §6.
 
 ---
 
@@ -142,11 +142,11 @@ Voir `docs/BOUTIQUE_ARCHITECTURE.md` §6.
 
 | Situation | Action |
 |---|---|
-| Tu modifies du CSS sans savoir le bon owner | Lis `docs/BOUTIQUE_ARCHITECTURE.md` §3 (table d'ownership) |
+| Tu modifies du CSS sans savoir le bon owner | Lis `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §3 (table d'ownership) |
 | `boutique:audit` plante | Lis le rapport, corrige avant de continuer — `npm run boutique:audit -v` pour le détail |
-| Modal produit, tu ne sais pas quelle section toucher | Lis `docs/BOUTIQUE_MODAL_ARCHITECTURE.md` §9 (« Quand toucher quelle section ») |
-| Tu trouves un sélecteur dans 2 fichiers et ne sais pas si c'est OK | Vérifier `docs/BOUTIQUE_ARCHITECTURE.md` §3 — certaines exceptions multi-owner sont légitimes |
-| Tu veux ajouter un nouveau CSS source | 1. Ajouter dans `scripts/bundle-css.js`, 2. Mettre à jour `docs/BOUTIQUE_ARCHITECTURE.md` §2, 3. `npm run bundle:css` |
+| Modal produit, tu ne sais pas quelle section toucher | Lis `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` §9 (« Quand toucher quelle section ») |
+| Tu trouves un sélecteur dans 2 fichiers et ne sais pas si c'est OK | Vérifier `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §3 — certaines exceptions multi-owner sont légitimes |
+| Tu veux ajouter un nouveau CSS source | 1. Ajouter dans `scripts/bundle-css.js`, 2. Mettre à jour `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §2, 3. `npm run bundle:css` |
 
 ---
 
