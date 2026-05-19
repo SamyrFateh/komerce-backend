@@ -1,8 +1,8 @@
 # Kit de prompts stricts — Komerce post-cycle critique
 
 > Statut : kit opérationnel pour agents Sonnet / ChatGPT après clôture du cycle critique backend.  
-> Date : 18 mai 2026  
-> Source : dérivé et actualisé depuis `PROMPTS_KIT.md` v1.0 du 17 mai 2026.  
+> Date : 19 mai 2026 (révision : ajout C1 et C2 récupérés de l'archive).  
+> Source : dérivé et actualisé depuis `_archive/PROMPTS_KIT.md` v1.0 du 17 mai 2026.  
 > But : fournir des prompts prêts à copier pour les prochains lots non bloquants, sans rouvrir les corrections I-SWEEP déjà terminées.
 
 ---
@@ -393,3 +393,128 @@ Ordre recommandé après clôture critique :
 5. H1 plan — pas code direct.
 6. H1A — extraction routes seulement.
 7. H3 — rangement scripts/audits.
+
+C1 et C2 ci-dessous sont des prompts **utilitaires transversaux** : à utiliser à la demande, pas dans la séquence.
+
+---
+
+# Prompt C1 — Mise à jour ciblée du socle après modification
+
+À utiliser quand une PR modifie le code ou la DB et qu'il faut aligner les 4 docs socle dans la même PR.
+
+```text
+Tu es un agent de maintenance documentaire pour Komerce.
+
+RÔLE
+Mettre à jour les 4 docs socle (CARTOGRAPHY_360, ZONE_IMPACT, SCHEMA, CONTRACTS)
+après une modification de code livrée dans la session précédente. Aucun code modifié.
+
+PARAMÈTRES OBLIGATOIRES (à compléter avant lancement)
+- TYPE_MODIF : [route_ajoutée | route_supprimée | service_ajouté | service_modifié |
+                table_ajoutée | table_modifiée | ENUM_modifié | invariant_modifié |
+                source_paiement_ajoutée]
+- DETAILS : description précise de la modification (fichiers, lignes, intention)
+
+DOCUMENTS À METTRE À JOUR (selon TYPE_MODIF)
+- route_ajoutée/supprimée   → docs/CARTOGRAPHY_360.md §3
+- service_ajouté/modifié    → docs/CONTRACTS.md
+- table_ajoutée/modifiée    → docs/SCHEMA.md (régénération depuis pg_dump si dispo,
+                              sinon édition ciblée)
+- ENUM_modifié              → docs/SCHEMA.md §3 + docs/CARTOGRAPHY_360.md si visible API
+- invariant_modifié         → docs/ZONE_IMPACT.md §2
+- source_paiement_ajoutée   → docs/CARTOGRAPHY_360.md §6 + docs/ZONE_IMPACT.md §4
+                              + docs/CONTRACTS.md §3
+
+RÈGLES
+- Mettre à jour la date de consolidation et la note de méthode en tête de chaque
+  document modifié : « Mis à jour le YYYY-MM-DD : <résumé> ».
+- Ne JAMAIS modifier le code dans cette session.
+- Si une divergence doc ↔ code est détectée pendant l'opération, la signaler dans
+  STATUS.md § Pièges critiques et ne pas la corriger.
+
+LIVRABLE
+- 1 à 4 docs socle mis à jour.
+- 1 ligne ajoutée dans docs/chantier/STATUS.md uniquement si la mise à jour acte
+  un lot précis (sinon pas de touche STATUS).
+- Message commit : « docs(socle): aligner {DOCS} sur {DETAILS} ».
+
+CRITÈRES DE VALIDATION
+- Aucune divergence laissée non signalée.
+- Chaque doc modifié a sa date de consolidation à jour.
+- Aucune modification de code.
+```
+
+---
+
+# Prompt C2 — Régénération de SCHEMA.md depuis pg_dump
+
+À utiliser après une migration appliquée en production ou en staging, quand un nouveau `pg_dump` est disponible.
+
+```text
+Tu es un agent de génération de doc DB pour Komerce.
+
+RÔLE
+Régénérer docs/SCHEMA.md à partir d'un pg_dump fourni en pièce jointe
+(typiquement schema_railway.sql à la racine du repo). Aucun code applicatif modifié.
+
+PRÉREQUIS
+- Un pg_dump à jour est fourni.
+- Une version précédente de docs/SCHEMA.md existe pour comparaison.
+
+DOCUMENTS À LIRE
+1. docs/chantier/STATUS.md
+2. docs/SCHEMA.md (version actuelle, pour structure et style)
+3. Le pg_dump fourni (schema_railway.sql ou équivalent)
+4. AGENTS.md §2.1 (la DB live fait foi sur le schéma)
+
+MÉTHODE
+1. Lire le pg_dump intégralement. Si encodage UTF-16 LE, convertir d'abord :
+   iconv -f UTF-16LE -t UTF-8 schema_railway.sql > schema_railway.utf8.sql
+2. Extraire : tables, ENUMs, triggers, FK, vues, fonctions, contraintes CHECK.
+3. Croiser avec la version précédente de SCHEMA.md.
+4. Identifier les NOUVEAUTÉS et SUPPRESSIONS depuis la précédente régénération.
+5. Produire un SCHEMA.md à jour en respectant la structure existante :
+   §1 Règle d'usage
+   §2 Vue d'ensemble
+   §3 ENUMs
+   §4 Tables par domaine
+   §5 Vues
+   §6 Triggers
+   §7 Contraintes CHECK
+   §8 Conventions
+   §9 Liens autres docs
+   §10 Règle divergence
+   §11 Procédure régénération
+   §12 Dette
+6. Mettre à jour la date de consolidation en tête : « Régénéré depuis pg_dump
+   du YYYY-MM-DD ».
+7. Si des tables existaient avant et ne sont plus dans le dump : les signaler
+   dans §12 Dette plutôt que de les supprimer silencieusement.
+
+GARDE-FOUS
+- Ne pas inventer de tables qui ne sont pas dans le dump.
+- Ne pas supprimer silencieusement une table absente du nouveau dump : la
+  signaler dans §12 Dette pour arbitrage.
+- Conserver le format des tableaux existants.
+- Ne pas toucher au code applicatif.
+- Ne pas toucher aux autres docs socle dans cette session (CARTOGRAPHY,
+  ZONE_IMPACT, CONTRACTS). Si une modif de schéma impose une mise à jour
+  ailleurs, la signaler dans STATUS.md § Pièges critiques.
+
+LIVRABLE
+- docs/SCHEMA.md régénéré.
+- 1 ligne ajoutée dans docs/chantier/STATUS.md actant la régénération.
+- Message commit : « docs(schema): régénérer SCHEMA.md depuis pg_dump du YYYY-MM-DD ».
+
+CRITÈRES DE VALIDATION
+- Toutes les tables, ENUMs, vues, triggers du pg_dump sont représentés.
+- §12 Dette mentionne explicitement chaque suppression observée.
+- La date de consolidation est à jour.
+- Aucun code applicatif modifié.
+```
+
+---
+
+## Note sur le pattern générique d'exécution
+
+Pour un futur lot qui ne serait pas couvert par P0–P6 ni C1/C2, le squelette générique reste disponible dans `docs/_archive/PROMPTS_KIT.md` (prompt **B1**). Il est verbeux mais complet : RÔLE, PRÉREQUIS, DOCUMENTS À LIRE, PÉRIMÈTRE IN/OUT, GARDE-FOUS, MÉTHODE, LIVRABLE, CRITÈRES DE VALIDATION, FIN DE SESSION. Le récupérer à la demande, pas par défaut.

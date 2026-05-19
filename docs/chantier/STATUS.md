@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-18
+> Mis à jour : 2026-05-19
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -82,6 +82,7 @@ Lire dans cet ordre avant toute modification :
 | TEST-1B | ✅ Fait | Commit `28aae996` sur main. Tests Jest avec mocks DB transactionnels : cash pickup commit/rollback et réception PO commit/rollback. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
+| DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
 
 ---
 
@@ -109,27 +110,45 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### PRICE-1 — Durcissement pricing/catalogue complémentaire après tests
+### P0 — Validation staging / Railway
 
 ```text
-Branche   : fix/backend-PRICE-1-pricing-catalogue-followup
-Charge    : 1-2 jours
-Risque    : moyen — dépend des retours tests et staging
-Prérequis : TEST-1B terminé
+Branche   : test/backend-P0-validation-staging
+Charge    : 1 jour
+Risque    : faible — lot d'observation, aucun code modifié sauf bug bloquant
+Prérequis : DOC-CLEANUP-1 terminé ; cycle critique clôturé
 ```
 
-Objectif : traiter les éventuels ajustements révélés par les tests/staging, notamment pricing/catalogue, publication, stock et audit.
+Objectif : avant tout lot de refacto (PRICE-1, A4, F1A, H1), valider que le backend boot, que les tests Jest passent, et que les 8 flows corrigés par I-SWEEP fonctionnent en staging.
+
+Livrable : `docs/chantier/VALIDATION_STAGING_2026-05-XX.md` selon le format défini dans `PROMPTS_KIT_POST_CRITIQUE.md` Prompt P0.
+
+Verdict attendu : PASS / PARTIAL / FAIL avec recommandation explicite du lot suivant.
 
 ---
 
-## File d'attente après PRICE-1
+## File d'attente après P0
+
+Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` pour les prompts) :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| A4 | Prudence | Collisions migrations 060/061 |
-| F1 | Haute mais gros lot | Logger structuré |
-| H1 | Stratégique lourd | Refacto `server.js` |
-| H3 | Moyenne | Déplacer audit backend arch vers `scripts/` |
+| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
+| A4 | Prudence | Audit collisions migrations 060/061 (collisions confirmées dans `migrations/`) |
+| F1A | Haute mais découpé | Logger pilote sur 1 domaine (pas les 436 occurrences d'un coup) |
+| H1 plan | Stratégique | Plan de refacto `server.js` (1 200 l. + 96 blocs DDL inline) avant tout code |
+| H1A | Petit lot isolé | Extraction manifest routes hors de `server.js` |
+| B3 REFAC-dashboard | Lourd | `routes/dashboard.js` 2 614 l. → `routes/dashboard/{...}` |
+| B2 REFAC-pricing | Lourd | `services/pricing-engine.js` 1 483 l. → `services/pricing/{...}` |
+| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
+
+### Dette mesurée au 19 mai 2026 (référence)
+
+- **19 god-objects ≥ 800 lignes** : aucun découpé pendant le cycle critique (volontaire, sécurité métier d'abord).
+- **`server.js`** : 1 200 lignes, 96 blocs DDL inline.
+- **`console.*`** : 436 occurrences dans `routes/` + `services/` (a augmenté depuis l'audit initial — F1 reste prioritaire).
+- **Migrations** : collisions 060/061 confirmées dans `migrations/` ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à clarifier.
+- **Tests** : couverture ~2,5 %, filet de sécurité I-SWEEP OK mais extension utile après refacto.
 
 ---
 
