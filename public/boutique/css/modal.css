@@ -1639,6 +1639,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   /* ── Shell : 100vw × 100dvh, sans carte flottante ────────── */
   #k-modal.k-modal {
     width: 100vw;
+    max-width: none; /* Contre-balance le max-width de desktop-commerce-skeleton.css */
     height: 100vh;
     height: 100dvh;
     min-height: 100vh;
