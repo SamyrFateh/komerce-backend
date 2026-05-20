@@ -52,14 +52,18 @@ describe('I-SWEEP invariants regression net', () => {
   });
 
   test('G3: collective repairs cover ready_to_capture sessions and stock reservations', () => {
+    const route = read('routes/admin-collective-repairs.js');
+    const manifest = read('bootstrap/api-routes.js');
     const readyRepair = read('services/repair-collective-ready-to-capture.js');
     const stockRepair = read('services/repair-collective-stock-reservations.js');
-    const auth = read('middleware/auth.js');
 
-    expect(auth).toContain('/api/admin/collective/repair-ready-to-capture');
-    expect(auth).toContain('/api/admin/collective/repair-stock-reservations');
+    expect(manifest).toContain("require('../routes/admin-collective-repairs')");
+    expect(manifest).toContain("app.use('/api/admin/collective', adminCollectiveRepairsRouter)");
+    expect(route).toContain("router.post('/repair-ready-to-capture'");
+    expect(route).toContain("router.post('/repair-stock-reservations'");
+    expect(route).toContain('requireRole([\'admin\'])');
     expect(readyRepair).toContain('ready_to_capture');
-    expect(readyRepair).toContain('resumeReadyToCapture');
+    expect(readyRepair).toContain('captureAllAndCreateOrder');
     expect(stockRepair).toContain('consumeForWorkspace');
     expect(stockRepair).toContain('releaseForWorkspace');
   });
