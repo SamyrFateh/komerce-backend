@@ -76,12 +76,13 @@ describe('I-SWEEP invariants regression net', () => {
 
     expect(machine).toContain('syncPurchaseOrdersOnOrderCancel');
     expect(poSync).toContain('AUTO_CANCEL_STATUSES');
-    expect(poSync).toContain('pending');
-    expect(poSync).toContain('notified');
+    expect(poSync).toContain("'pending'");
+    expect(poSync).toContain("'notified'");
     expect(poSync).toContain('order_cancel_purchasing');
 
-    expect(auth).toContain('/api/admin/orders/');
-    expect(auth).toContain('/refund');
+    expect(auth).toContain('isAdminOrderRefundRequest');
+    expect(auth).toContain('handleAdminOrderRefund');
+    expect(auth).toContain('processRefund');
     expect(refund).toContain('dryRun');
     expect(refund).toContain('manual_cash');
     expect(refund).toContain("newStatus: 'refunded'");
