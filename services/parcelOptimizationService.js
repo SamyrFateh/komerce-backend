@@ -92,7 +92,7 @@ function _itemTotalValue(item) {
  * Calcule le score de compatibilité entre un item et un colis existant.
  *
  * @param {object} item    — { unit_weight, unit_volume, unit_value, quantity_available, is_fragile, is_bulky, category, compatibility_group }
- * @param {object} parcel  — { id, current_weight, current_volume, current_value, max_weight, max_volume, status }
+ * @param {object} parcel  — { id|_id, current_weight, current_volume, current_value, max_weight, max_volume, status }
  * @param {object} config  — Configuration (DEFAULT_CONFIG par défaut)
  *
  * @returns {{ parcelId, score, valid, reasons, projected }}
@@ -100,6 +100,7 @@ function _itemTotalValue(item) {
 function scoreParcelFit(item, parcel, config = DEFAULT_CONFIG) {
   const cfg = { ...DEFAULT_CONFIG, ...config };
   const reasons = [];
+  const parcelId = parcel.id ?? parcel._id ?? null;
 
   const itemWeight = _itemTotalWeight(item);
   const itemVolume = _itemTotalVolume(item);
@@ -130,7 +131,7 @@ function scoreParcelFit(item, parcel, config = DEFAULT_CONFIG) {
 
   if (!valid) {
     return {
-      parcelId: parcel.id,
+      parcelId,
       score,
       valid: false,
       reasons,
@@ -167,7 +168,7 @@ function scoreParcelFit(item, parcel, config = DEFAULT_CONFIG) {
   }
 
   return {
-    parcelId: parcel.id,
+    parcelId,
     score,
     valid: true,
     reasons,
