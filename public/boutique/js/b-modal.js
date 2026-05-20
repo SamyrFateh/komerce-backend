@@ -25,6 +25,8 @@ import {
 }                         from './shop-schema.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setActiveCat }   from './b-catalog.js';
+import { setupImageUX }     from './b-modal-image-ux.js';
+import { setupSocialProof } from './b-modal-social-proof.js';
 
 'use strict';
 
@@ -172,6 +174,8 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // Sync compteur mobile "3/12"
     var counter = dom.modal.querySelector('.k-modal-counter');
     if (counter) counter.textContent = (index + 1) + '/' + state.carouselCount;
+    // PR-3 — notifier b-modal-image-ux du changement de slide
+    bus.emit('carousel:changed', index);
   }
 
   /**
@@ -454,6 +458,9 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
 
     // LOT 12: notify desktop-upgrade module
     bus.emit('modal:opened', product);
+    // PR-3 / PR-4 — modules image UX + social proof
+    setupImageUX();
+    setupSocialProof();
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = getScrollY();
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);

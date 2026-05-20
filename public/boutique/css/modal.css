@@ -173,6 +173,30 @@
 }
 .k-modal-counter.is-visible { display: block; }
 
+/* ── BOUTON "VOIR EN GRAND" — mobile, bas-gauche de l'image ──────
+   Pill semi-transparent injecté par b-modal-image-ux.js.
+   Masqué sur desktop (le zoom loupe suffit). */
+.k-modal-view-full {
+  position: absolute; bottom: 10px; left: 10px; z-index: 3;
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 12px;
+  background: var(--overlay-dark-md); color: var(--white);
+  font-size: 11px; font-weight: 600;
+  border: none; border-radius: 999px;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.k-modal-view-full svg { width: 13px; height: 13px; flex-shrink: 0; }
+@media (min-width: 900px) {
+  .k-modal-view-full { display: none; }
+}
+
+/* ── EDGE-TO-EDGE mobile — image plus haute sur petits écrans ──── */
+@media (max-width: 480px) {
+  .k-modal-img-wrap { height: 50vh; max-height: 420px; }
+}
+
+
 /* ── BOUTON FAVORI MODALE (top-right de l'image) ─────────────
    FIX favori absent dans modale produit : bouton ❤️ universel
    mobile + desktop, posé sur l'image. Même langage visuel que
@@ -226,11 +250,12 @@
 .k-modal-fullscreen {
   position: fixed; inset: 0; z-index: 600;
   background: var(--text);
-  opacity: 0; transition: opacity .2s var(--ease);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s var(--ease);
   overflow: hidden;
   display: flex; flex-direction: column; align-items: stretch; justify-content: center;
 }
-.k-modal-fullscreen.is-open { opacity: 1; }
+.k-modal-fullscreen.is-open { opacity: 1; pointer-events: auto; }
 .k-modal-fullscreen-close {
   position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px;
   width: 38px; height: 38px; border-radius: 50%;
@@ -295,6 +320,18 @@
 .k-modal-old-price { font-size: 13px; color: var(--text-light); text-decoration: line-through; }
 .k-modal-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
 .k-modal-meta span { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: var(--sand); border-radius: 50px; }
+/* ── SOCIAL PROOF — badges vendus/note, conditionnels (données backend) ──
+   Si product.sold_count, product.rating ou product.rank sont absents,
+   injectSocialProof() laisse .k-modal-meta vide et il est display:none.
+   Aucun chiffre inventé. */
+.k-modal-meta:empty { display: none; }
+.k-modal-meta-rank {
+  background: var(--coral-bg) !important;
+  color: var(--coral) !important;
+  border: 1px solid var(--coral-border);
+  font-weight: 700 !important;
+}
+.k-modal-meta-star { color: #F0A500; font-size: 12px; }
 
 /* ── BARRE RECHERCHE INTERNE ─────────────────────────────────── */
 .k-modal-inner-search {
@@ -1366,67 +1403,67 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     font-weight: 700;
   }
 
-  /* ── Flash bar (timer offre flash) ─────────────────────── */
+  /* ── Bandeau promo sobre — FIX 2026-05-20 ──────────────── */
+  /* Remplace l'ancien flash bar avec timer aléatoire (supprimé).
+     Affiché uniquement si product.promo_pct existe (donnée réelle).
+     Aucun token amber — uniquement sand-warm + coral du système Komerce. */
   .k-modal-flash-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: var(--amber-bg-light);
-    border: 1px solid var(--amber-border);
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--sand-warm);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     margin: 8px 0 0;
   }
-  .k-modal-flash-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--amber-text);
-    text-transform: uppercase;
-    letter-spacing: .7px;
+  .k-modal-flash-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    background-color: var(--coral);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: contain;
     flex-shrink: 0;
   }
-  .k-modal-flash-timer {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 600;
+  .k-modal-flash-label {
+    font-size: 12px;
+    font-weight: 500;
     color: var(--coral);
-    letter-spacing: 1.5px;
-    font-variant-numeric: tabular-nums;
     flex: 1;
   }
-  .k-modal-flash-icon {
-    font-size: 16px;
+  .k-modal-flash-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--coral);
+    background: var(--border-coral-09);
+    border: 1px solid var(--border-coral-13);
+    padding: 2px 8px;
+    border-radius: 5px;
     flex-shrink: 0;
   }
 
-  /* ── Stock bar ──────────────────────────────────────────── */
+  /* ── Stock disponible — FIX 2026-05-20 ─────────────────── */
+  /* Remplace la barre stock avec % simulé (supprimée).
+     Texte sobre affiché si stock réel ≤ 20. Pas de barre, pas de rouge. */
   .k-modal-stock-bar {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 5px;
-    margin: 8px 0 4px;
-  }
-  .k-modal-stock-bar-meta {
-    display: flex;
-    justify-content: space-between;
+    margin: 6px 0 2px;
     font-size: 12px;
     color: var(--text-muted);
   }
-  .k-modal-stock-bar-meta strong {
-    color: var(--coral);
-    font-weight: 700;
-  }
-  .k-modal-stock-bar-track {
-    height: 6px;
-    background: var(--sand-dark);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .k-modal-stock-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--ocean) 0%, var(--ocean-dark) 100%);
-    border-radius: 99px;
-    transition: width .6s var(--ease);
+  .k-modal-stock-line-icon {
+    display: inline-flex;
+    width: 13px;
+    height: 13px;
+    background-color: var(--ocean);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    flex-shrink: 0;
   }
 
   /* ── Delivery section ───────────────────────────────────── */
