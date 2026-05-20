@@ -297,51 +297,52 @@ function injectTrustBadges() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  NEW — PRIX AED + ÉQUIVALENT KMF (dual currency desktop)
+//  PRIX HÉRO — KMF coral grande taille + prix barré + équivalent EUR
 // ═══════════════════════════════════════════════════════════════
+// Remplace injectAedPrice (dual-currency AED, inutile pour le marché comorien).
+// Taux KMF → EUR : 1 KMF ≈ 0.00204 EUR (approximatif, à remplacer par API de change).
 
-function injectAedPrice() {
+var _KMF_TO_EUR = 0.00204;
+
+function injectPriceHero() {
   if (!isDesktop()) return;
-  var info = dom.modal ? dom.modal.querySelector('.k-modal-info') : null;
-  if (!info) return;
+  var el = document.getElementById('k-modal-aed-price');
+  if (!el) return;
   var product = state.modalProduct;
-  if (!product) return;
+  if (!product || !product.price_kmf) return;
 
-  var old = document.getElementById('k-modal-aed-price');
-  if (!old) return;
-  old.innerHTML = '';
+  el.innerHTML = '';
 
-  if (!product.price_aed && !product.price_kmf) return;
+  // Prix KMF héro — coral grande taille
+  var valEl = document.createElement('span');
+  valEl.className = 'k-modal-aed-val';
+  valEl.textContent = fmtPrice(product.price_kmf);
+  el.appendChild(valEl);
 
-  // Ligne AED
-  if (product.price_aed) {
-    var valEl = document.createElement('span');
-    valEl.className = 'k-modal-aed-val';
-    valEl.textContent = Number(product.price_aed).toFixed(2) + '\u202fAED';
-    old.appendChild(valEl);
-
-    if (product.original_price_aed && product.original_price_aed > product.price_aed) {
-      var oldEl = document.createElement('span');
-      oldEl.className = 'k-modal-aed-old';
-      oldEl.textContent = Number(product.original_price_aed).toFixed(2);
-      old.appendChild(oldEl);
-    }
-
-    var pct = product.discount_pct || product.promo_pct;
-    if (pct) {
-      var pctEl = document.createElement('span');
-      pctEl.className = 'k-modal-aed-pct';
-      pctEl.textContent = '-' + pct + '%';
-      old.appendChild(pctEl);
-    }
+  // Prix barré si original_price_kmf présent et supérieur
+  if (product.original_price_kmf && product.original_price_kmf > product.price_kmf) {
+    var oldEl = document.createElement('span');
+    oldEl.className = 'k-modal-aed-old';
+    oldEl.textContent = fmtPrice(product.original_price_kmf);
+    el.appendChild(oldEl);
   }
 
-  // Ligne KMF équivalent
-  if (product.price_kmf) {
-    var kmfEl = document.createElement('div');
-    kmfEl.style.width = '100%';
-    kmfEl.innerHTML = '<span class="k-modal-kmf-equiv">≈\u202f<strong>' + fmtPrice(product.price_kmf) + '</strong></span>';
-    old.appendChild(kmfEl);
+  // Badge % si promo_pct — donnée réelle backend
+  if (product.promo_pct) {
+    var pctEl = document.createElement('span');
+    pctEl.className = 'k-modal-aed-pct';
+    pctEl.textContent = '-' + product.promo_pct + '%';
+    el.appendChild(pctEl);
+  }
+
+  // Équivalent EUR discret — taux approx., à remplacer par API de change
+  var eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
+  if (eurVal > 0) {
+    var eurEl = document.createElement('div');
+    eurEl.style.width = '100%';
+    eurEl.innerHTML =
+      '<span class="k-modal-kmf-equiv">\u2248\u202f<strong>' + eurVal + '\u202f\u20ac</strong></span>';
+    el.appendChild(eurEl);
   }
 }
 
@@ -380,40 +381,33 @@ function injectFlashAndStock() {
   var product = state.modalProduct;
   if (!product) return;
 
-  // Flash bar — affichée uniquement si promo
+  // FIX 2026-05-20 — Bandeau promo sobre, SANS timer aléatoire.
+  // Conditionné sur product.promo_pct (donnée réelle backend).
+  // Pour un vrai compte à rebours lié à une offre datée :
+  //   conditionner sur product.flash_end_at et calculer la durée restante.
   var flashEl = document.getElementById('k-modal-flash-bar');
   if (flashEl) {
     flashEl.innerHTML = '';
     if (product.promo_pct) {
       flashEl.innerHTML =
-        '<span class="k-modal-flash-icon">⚡</span>' +
-        '<span class="k-modal-flash-label">Offre flash</span>' +
-        '<span class="k-modal-flash-timer" id="k-modal-flash-timer">47:00</span>';
-      // Démarrer le timer : entre 23 et 58 min pour le réalisme
-      var randomSecs = (Math.floor(Math.random() * 36) + 23) * 60;
-      _startFlashTimer(randomSecs);
+        '<span class="k-modal-flash-icon" aria-hidden="true"></span>' +
+        '<span class="k-modal-flash-label">Offre promotionnelle</span>' +
+        '<span class="k-modal-flash-pct">-' + product.promo_pct + '%</span>';
     }
   }
 
-  // Stock bar — affichée si stock connu et promo
+  // FIX 2026-05-20 — Stock réel, texte sobre, PAS de barre ni de % simulé.
+  // Affiché uniquement si product.stock est connu (> 0) et faible (≤ 20).
+  // Le seuil 20 est ajustable selon les réalités du catalogue.
   var stockBarEl = document.getElementById('k-modal-stock-bar');
   if (stockBarEl) {
     stockBarEl.innerHTML = '';
     var stockVal = Number(product.stock || 0);
-    var promoOrStock = product.promo_pct || stockVal <= 20;
-    if (promoOrStock && stockVal > 0) {
-      // % vendu estimé : plus le stock est bas, plus la barre est haute
-      // On simule 50-90 % vendu basé sur le stock restant
-      var maxStock = 50; // référence pour l'affichage
-      var sold = Math.min(90, Math.max(40, Math.round(100 - (stockVal / maxStock) * 60)));
+    if (stockVal > 0 && stockVal <= 20) {
       stockBarEl.innerHTML =
-        '<div class="k-modal-stock-bar-meta">' +
-          '<span><strong>' + sold + '%</strong> vendus</span>' +
-          '<span><strong>' + stockVal + '</strong> restant' + (stockVal > 1 ? 's' : '') + '</span>' +
-        '</div>' +
-        '<div class="k-modal-stock-bar-track">' +
-          '<div class="k-modal-stock-bar-fill" style="width:' + sold + '%"></div>' +
-        '</div>';
+        '<span class="k-modal-stock-line-icon" aria-hidden="true"></span>' +
+        stockVal + '\u202farticle' + (stockVal > 1 ? 's' : '') +
+        ' disponible' + (stockVal > 1 ? 's' : '');
     }
   }
 }
@@ -617,7 +611,7 @@ function _onModalOpened() {
   requestAnimationFrame(function() {
     injectBreadcrumb();
     // ── Nouvelles zones Temu-style ──
-    injectAedPrice();
+    injectPriceHero();
     injectFlashAndStock();
     injectDelivery();
     injectPayment();
