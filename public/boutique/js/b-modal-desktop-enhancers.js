@@ -309,40 +309,37 @@ function injectPriceHero() {
   var el = document.getElementById('k-modal-aed-price');
   if (!el) return;
   var product = state.modalProduct;
-  if (!product || !product.price_kmf) return;
+  if (!product || !product.price_kmf) { el.style.display = 'none'; return; }
 
   el.innerHTML = '';
+  el.style.display = '';
 
-  // Prix KMF héro — coral grande taille
-  var valEl = document.createElement('span');
-  valEl.className = 'k-modal-aed-val';
-  valEl.textContent = fmtPrice(product.price_kmf);
-  el.appendChild(valEl);
+  // Ligne unique : "≈ 6 €" + badge promo si présent
+  // Le prix KMF est déjà affiché par k-modal-price-row — on ne le duplique pas.
+  var eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
 
-  // Prix barré si original_price_kmf présent et supérieur
-  if (product.original_price_kmf && product.original_price_kmf > product.price_kmf) {
-    var oldEl = document.createElement('span');
-    oldEl.className = 'k-modal-aed-old';
-    oldEl.textContent = fmtPrice(product.original_price_kmf);
-    el.appendChild(oldEl);
+  if (eurVal > 0) {
+    var eurEl = document.createElement('span');
+    eurEl.className = 'k-modal-eur-ref';
+
+    // Prix barré EUR si promo
+    if (product.original_price_kmf && product.original_price_kmf > product.price_kmf) {
+      var oldEur = Math.round(product.original_price_kmf * _KMF_TO_EUR);
+      eurEl.innerHTML =
+        '≈ <strong>' + eurVal + ' €</strong>'
+        + '<s>' + oldEur + ' €</s>';
+    } else {
+      eurEl.innerHTML = '≈ <strong>' + eurVal + ' €</strong>';
+    }
+    el.appendChild(eurEl);
   }
 
-  // Badge % si promo_pct — donnée réelle backend
+  // Badge % sobre si promo_pct
   if (product.promo_pct) {
     var pctEl = document.createElement('span');
     pctEl.className = 'k-modal-aed-pct';
     pctEl.textContent = '-' + product.promo_pct + '%';
     el.appendChild(pctEl);
-  }
-
-  // Équivalent EUR discret — taux approx., à remplacer par API de change
-  var eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
-  if (eurVal > 0) {
-    var eurEl = document.createElement('div');
-    eurEl.style.width = '100%';
-    eurEl.innerHTML =
-      '<span class="k-modal-kmf-equiv">\u2248\u202f<strong>' + eurVal + '\u202f\u20ac</strong></span>';
-    el.appendChild(eurEl);
   }
 }
 
