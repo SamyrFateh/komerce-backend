@@ -74,6 +74,7 @@ const VALID_TRANSITIONS = Object.freeze({
 
 /** Role permissions per target status (for 'patch' source). */
 const TRANSITION_ROLES = Object.freeze({
+  pending: ['admin', 'system'],                    // LOT 4: retour depuis pending_group_payment si groupe abandonné
   pending_group_payment: ['admin', 'system'],        // LOT 4: activé par le créateur ou l'admin
   confirmed:   ['admin', 'agent_relais', 'system'],  // paiement confirmé
   ordered:     ['admin', 'agent_hub'],
