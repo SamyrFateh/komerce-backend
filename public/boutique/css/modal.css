@@ -302,7 +302,7 @@
 
 /* Désactivé sur desktop : le zoom-on-hover existant suffit */
 @media (min-width: 900px) {
-  .k-modal-fullscreen { display: none !important; }
+#k-modal .k-modal-fullscreen { display: none; }
 }
 
 /* ── INFOS PRODUIT ───────────────────────────────────────────── */
@@ -338,11 +338,11 @@
    injectSocialProof() laisse .k-modal-meta vide et il est display:none.
    Aucun chiffre inventé. */
 .k-modal-meta:empty { display: none; }
-.k-modal-meta-rank {
-  background: var(--coral-bg) !important;
-  color: var(--coral) !important;
+#k-modal .k-modal-meta-rank {
+  background: var(--coral-bg);
+  color: var(--coral);
   border: 1px solid var(--coral-border);
-  font-weight: 700 !important;
+  font-weight: 700;
 }
 .k-modal-meta-star { color: #F0A500; font-size: 12px; }
 
@@ -498,10 +498,10 @@
 /* Fix panier flottant transparent : forcer fond opaque sur mobile/tablette
    (backdrop-filter déclaré supporté mais non rendu sur Samsung/Chrome Android) */
 @media (max-width: 899px) {
-  .k-modal-actions {
-    background: var(--white) !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+  #k-modal .k-modal-actions {
+    background: var(--white);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
@@ -770,7 +770,7 @@
   #k-modal #k-modal-nav { margin-left: 10px; }
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
   .k-topbar-search-trigger { display: none; }
-  .k-topbar-search-expanded { display: none !important; }
+  #k-modal .k-topbar-search-expanded { display: none; }
   .k-modal-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); margin-left: 12px; flex: 1; min-width: 0; overflow: hidden; }
   .k-modal-breadcrumb span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .k-modal-breadcrumb-sep { color: var(--text-light); flex-shrink: 0; }
@@ -1062,8 +1062,8 @@
 }
 
 /* Sélectionné */
-.k-sku--active {
-  border-color: var(--coral) !important;
+.k-sku.k-sku--active {
+  border-color: var(--coral);
   box-shadow: 0 0 0 2px var(--coral);
 }
 .k-sku--active .k-sku-name {
@@ -1125,8 +1125,8 @@
   border-color: var(--coral);
   background: color-mix(in srgb, var(--coral) 5%, var(--white));
 }
-.k-vp--active {
-  border-color: var(--coral) !important;
+.k-vp.k-vp--active {
+  border-color: var(--coral);
   border-width: 2px;
   background: color-mix(in srgb, var(--coral) 8%, var(--white));
   color: var(--coral-dark);
@@ -1679,7 +1679,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
   /* ── Masquer le footer quand le modal est ouvert ─────────── */
   body.modal-open .k-footer,
-  body.modal-open footer { display: none !important; }
+  body.modal-open footer { display: none; }
 
   /* ── Overlay : fond blanc plein, sans padding ni flou ────── */
   .k-modal-overlay.open {
@@ -1764,8 +1764,6 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 /* ── Override 900–1120px (§4) ───────────────────────────────── */
 @media (min-width: 900px) and (max-width: 1120px) {
-  body.modal-open .k-footer,
-  body.modal-open footer                    { display: none !important; }
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
   #k-modal .k-modal-product-zone            { grid-template-columns: minmax(0, 44%) minmax(0, 56%); }
