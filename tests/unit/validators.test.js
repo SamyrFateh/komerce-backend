@@ -1,22 +1,30 @@
 /**
- * KOMERCE — Tests Unitaires: validators/index.js (V2.5)
+ * KOMERCE — Tests Unitaires: validators/index.js (V2.6)
  *
- * Couvre les schémas Joi critiques:
- *   ✅ orders.create — champs obligatoires + enums
- *   ✅ orders.cancel — uuid requis
- *   ✅ auth.register — email, phone, password
- *   ✅ auth.login — email + password
- *   ✅ scans.create — scan_code + step enum
- *   ✅ hub schemas — scan, pack, seal
- *   ✅ admin schemas — createUser, reset
+ * Couvre les schémas Joi critiques.
+ *
+ * validators/index.js exporte deux formes selon les domaines :
+ *   - Joi schema direct : Joi.object(...)
+ *   - route schema container : { body?, params?, query? }
+ *
+ * Les tests valident donc le body schema quand il existe, sinon le schema direct.
  *
  * Run: npx jest tests/unit/validators.test.js
  */
 
-// Note: validators/index.js exports grouped schemas
-// This test validates them directly via Joi .validate()
-
 const validators = require('../../validators');
+
+function bodySchema(schema) {
+  return schema?.body || schema;
+}
+
+function canValidate(schema) {
+  return typeof bodySchema(schema)?.validate === 'function';
+}
+
+function validate(schema, payload) {
+  return bodySchema(schema).validate(payload);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // orders validators
@@ -24,26 +32,22 @@ const validators = require('../../validators');
 
 describe('orders.create', () => {
   const schema = validators.orders?.create;
-
-  // Skip if schema doesn't exist (graceful)
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid order', () => {
     const valid = {
       items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 2 }],
       relais_id: '00000000-0000-0000-0000-000000000002',
       payment_mode: 'cash_relais',
-      recipient: {
-        full_name: 'Ali Mohamed',
-        phone: '+2693210001',
-      },
+      recipient_name: 'Ali Mohamed',
+      recipient_phone: '+2693210001',
     };
-    const { error } = schema.validate(valid);
+    const { error } = validate(schema, valid);
     expect(error).toBeUndefined();
   });
 
   runTest('rejects empty items', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       items: [],
       relais_id: '00000000-0000-0000-0000-000000000002',
       payment_mode: 'cash_relais',
@@ -52,7 +56,7 @@ describe('orders.create', () => {
   });
 
   runTest('rejects missing payment_mode', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 1 }],
       relais_id: '00000000-0000-0000-0000-000000000002',
     });
@@ -60,12 +64,12 @@ describe('orders.create', () => {
   });
 });
 
-describe('orders.cancel', () => {
-  const schema = validators.orders?.cancel;
-  const runTest = schema ? test : test.skip;
+describe('orders.cancelOrder', () => {
+  const schema = validators.orders?.cancelOrder;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid cancel with reason', () => {
-    const { error } = schema.validate({ reason: 'Client changed mind' });
+    const { error } = validate(schema, { reason: 'Client changed mind' });
     expect(error).toBeUndefined();
   });
 });
@@ -76,10 +80,10 @@ describe('orders.cancel', () => {
 
 describe('auth.register', () => {
   const schema = validators.auth?.register;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid registration', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       full_name: 'Ali Mohamed',
       email: 'ali@test.com',
       password: 'Test1234',
@@ -89,17 +93,19 @@ describe('auth.register', () => {
   });
 
   runTest('rejects missing email', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       full_name: 'Ali Mohamed',
       password: 'Test1234',
+      phone: '+2693210001',
     });
     expect(error).toBeDefined();
   });
 
   runTest('rejects weak password (too short)', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       full_name: 'Ali',
       email: 'ali@test.com',
+      phone: '+2693210001',
       password: '123',
     });
     expect(error).toBeDefined();
@@ -108,10 +114,10 @@ describe('auth.register', () => {
 
 describe('auth.login', () => {
   const schema = validators.auth?.login;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid login', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       email: 'ali@test.com',
       password: 'Test1234',
     });
@@ -119,7 +125,7 @@ describe('auth.login', () => {
   });
 
   runTest('rejects missing password', () => {
-    const { error } = schema.validate({ email: 'ali@test.com' });
+    const { error } = validate(schema, { email: 'ali@test.com' });
     expect(error).toBeDefined();
   });
 });
@@ -130,10 +136,10 @@ describe('auth.login', () => {
 
 describe('scans.create', () => {
   const schema = validators.scans?.create;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid scan', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       scan_code: 'KOM-2026-0001',
       step: 'preparation',
     });
@@ -141,12 +147,12 @@ describe('scans.create', () => {
   });
 
   runTest('rejects missing scan_code', () => {
-    const { error } = schema.validate({ step: 'preparation' });
+    const { error } = validate(schema, { step: 'preparation' });
     expect(error).toBeDefined();
   });
 
   runTest('rejects invalid step', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       scan_code: 'KOM-2026-0001',
       step: 'invalid_step',
     });
@@ -156,10 +162,10 @@ describe('scans.create', () => {
 
 describe('scans.collect', () => {
   const schema = validators.scans?.collect;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid pickup_code', () => {
-    const { error } = schema.validate({ pickup_code: 'AB1234' });
+    const { error } = validate(schema, { pickup_code: 'AB1234' });
     expect(error).toBeUndefined();
   });
 });
@@ -170,25 +176,25 @@ describe('scans.collect', () => {
 
 describe('hub.scan', () => {
   const schema = validators.hub?.scan;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid parcel_ref', () => {
-    const { error } = schema.validate({ parcel_ref: 'PCL-2026-0001' });
+    const { error } = validate(schema, { parcel_ref: 'PCL-2026-0001' });
     expect(error).toBeUndefined();
   });
 
   runTest('rejects missing parcel_ref', () => {
-    const { error } = schema.validate({});
+    const { error } = validate(schema, {});
     expect(error).toBeDefined();
   });
 });
 
 describe('hub.pack', () => {
   const schema = validators.hub?.pack;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid pack request', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       parcel_id: '00000000-0000-0000-0000-000000000001',
     });
     expect(error).toBeUndefined();
@@ -197,10 +203,10 @@ describe('hub.pack', () => {
 
 describe('hub.seal', () => {
   const schema = validators.hub?.seal;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid seal request', () => {
-    const { error } = schema.validate({
+    const { error } = validate(schema, {
       parcel_id: '00000000-0000-0000-0000-000000000001',
     });
     expect(error).toBeUndefined();
@@ -213,15 +219,15 @@ describe('hub.seal', () => {
 
 describe('admin.reset', () => {
   const schema = validators.admin?.reset;
-  const runTest = schema ? test : test.skip;
+  const runTest = canValidate(schema) ? test : test.skip;
 
   runTest('accepts valid reset mode', () => {
-    const { error } = schema.validate({ mode: 'orders' });
+    const { error } = validate(schema, { mode: 'orders' });
     expect(error).toBeUndefined();
   });
 
   runTest('rejects invalid mode', () => {
-    const { error } = schema.validate({ mode: 'everything' });
+    const { error } = validate(schema, { mode: 'everything' });
     expect(error).toBeDefined();
   });
 });
