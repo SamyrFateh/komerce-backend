@@ -1,8 +1,21 @@
 # Boutique Komerce — Index documentaire
 
 > **Point d'entrée pour la documentation Boutique.**
-> Date : 18 mai 2026
+> Date : 20 mai 2026
 > Si tu débarques sur ce dossier, lis ce fichier en premier.
+
+---
+
+## 0. Mode autonome ou repo complet ?
+
+> Si tu arrives ici depuis `boutique/README.md`, tu as déjà répondu à cette question. Passe au §1.
+
+| Situation | Tu as | Comportement |
+|---|---|---|
+| Repo complet | `../AGENTS.md` existe | `AGENTS.md` racine a déjà orienté vers ici — continue |
+| Boutique seule | Que le dossier `boutique/` | `boutique/README.md` fait office d'`AGENTS.md` — tout est dans `boutique/docs/` |
+
+**En mode autonome, toute l'information nécessaire est dans ce dossier `docs/`.** Rien ne manque.
 
 ---
 
@@ -16,6 +29,7 @@
 | Comprendre **le détail interne de `modal.css`** (1736L, 7 sections) | `BOUTIQUE_MODAL_ARCHITECTURE.md` |
 | Savoir **qui possède quel composant JS** | `BOUTIQUE_COMPONENT_OWNERSHIP.md` |
 | Comprendre **les contrats produit** (props, slots) | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+| Avoir la **cartographie complète** (routes, pièges, surfaces) | `CARTOGRAPHY_360_BOUTIQUE.md` |
 
 ---
 
@@ -33,19 +47,28 @@ BOUTIQUE_ARCHITECTURE_LIVE.md  BOUTIQUE_CSS_PIPELINE.md  BOUTIQUE_MODAL_ARCHITEC
  généré, jamais édité)          source → bundle → dist)  7 sections, invariants, pièges)
 ```
 
-**Règle de hiérarchie** : `BOUTIQUE_ARCHITECTURE.md` est la **source normative**. Si une autre doc le contredit, c'est l'autre doc qui doit être alignée (ou la règle changée explicitement dans ARCHITECTURE.md).
+**Règle de hiérarchie** : `BOUTIQUE_ARCHITECTURE.md` est la **source normative**. Si une autre doc le contredit, c'est l'autre doc qui doit être alignée (ou la règle changée explicitement dans `BOUTIQUE_ARCHITECTURE.md`).
 
 ---
 
-## 3. Les 3 scripts associés
+## 3. Les 7 scripts disponibles
+
+Tous lancés depuis la **racine du dossier boutique** (`cd boutique && npm run ...`).
+Leurs chemins sont calculés relativement à leur propre emplacement — **aucune config externe requise**, que tu sois en mode autonome ou repo complet.
 
 | Script | Commande npm | Quand l'utiliser |
 |---|---|---|
 | `bundle-css.js` | `npm run bundle:css` | Après toute modif d'un fichier source CSS — sinon rien n'est en prod |
-| `gen-boutique-arch-live.js` | `npm run boutique:arch` | En début de session + après chaque PR — pour photographier l'état réel |
-| `audit-boutique-arch.js` | `npm run boutique:audit` | Avant tout commit — plante (exit 1) si les invariants §1 sont violés |
+| `gen-boutique-arch-live.js` | `npm run audit:arch:live` | En début de session + après chaque PR — pour photographier l'état réel |
+| `audit-boutique-arch.js` | `npm run audit:arch` | Avant tout commit — plante (exit 1) si les invariants §1 sont violés |
+| `check-html-balance.js` | `npm run check:html` | Équilibrage balises + IDs critiques dans `index.html` |
+| `check-js-imports.js` | `npm run check:imports` | Imports JS : existence, cycles, dead exports |
+| `check-body-classes.js` | `npm run check:body-classes` | Chaque `classList.add` body a son `remove` |
+| `check-cache-buster.js` | `npm run check:cache` | `?v=N` dans `index.html` synchro avec les bundles CSS |
 
-**Tous lancés depuis `boutique/`.**
+`npm run check:all` enchaîne les 4 garde-fous (html + imports + body-classes + audit:arch) — à lancer avant tout commit.
+
+> **Mode autonome** : `npm run check:all` depuis `boutique/` valide l'intégralité des invariants sans rien d'autre.
 
 ---
 
@@ -61,14 +84,16 @@ vim css/modal.css
 npm run bundle:css
 
 # 3. Régénérer la photo descriptive
-npm run boutique:arch
+npm run audit:arch:live
 
 # 4. Valider les invariants
-npm run boutique:audit
+npm run audit:arch
 
 # 5. Commit unique (sources + dist + docs LIVE ensemble)
-cd ../../
+# Mode repo complet :
 git add boutique/css/ boutique/docs/
+# Mode autonome :
+git add css/ docs/
 git commit -m "..."
 ```
 
@@ -96,13 +121,14 @@ Si plusieurs docs disent des choses différentes, voici qui gagne :
 
 | Situation | Action |
 |---|---|
-| Tu modifies du CSS Boutique | 1. Modifier source, 2. `npm run bundle:css`, 3. `npm run boutique:audit` |
-| `boutique:audit` plante (exit 1) | Lire le rapport, corriger les violations avant de continuer |
-| `BOUTIQUE_ARCHITECTURE_LIVE.md` ne match pas tes changements | `npm run boutique:arch` (régénération) puis commit |
-| Tu veux ajouter un nouveau fichier CSS source | 1. Ajouter dans `bundle-css.js`, 2. Mettre à jour `BOUTIQUE_ARCHITECTURE.md` §2 inventaire, 3. `npm run bundle:css` |
+| Tu modifies du CSS Boutique | 1. Modifier source, 2. `npm run bundle:css`, 3. `npm run audit:arch` |
+| `audit:arch` plante (exit 1) | Lire le rapport, corriger les violations avant de continuer |
+| `BOUTIQUE_ARCHITECTURE_LIVE.md` ne match pas tes changements | `npm run audit:arch:live` (régénération) puis commit |
+| Tu veux ajouter un nouveau fichier CSS source | 1. Ajouter dans `../scripts/bundle-css.js`, 2. Mettre à jour `BOUTIQUE_ARCHITECTURE.md` §2 inventaire, 3. `npm run bundle:css` |
 | Tu trouves un sélecteur dans 2 fichiers et ne sais pas si c'est OK | Vérifier `BOUTIQUE_ARCHITECTURE.md` §3 (table d'ownership avec exceptions multi-owner légitimes) |
 | Tu veux toucher un fichier verrouillé (b-pager.js, b-store.js, b-scroll-owner.js) | Lire `BOUTIQUE_ARCHITECTURE.md` §6 — PR isolée obligatoire |
 | Tu veux modifier `modal.css` | Lire d'abord `BOUTIQUE_MODAL_ARCHITECTURE.md` (les 7 sections + pièges connus) |
+| Conflit entre deux docs | `BOUTIQUE_ARCHITECTURE.md` gagne toujours — aligner les autres sur lui |
 
 ---
 
@@ -112,4 +138,4 @@ Si tu crées une nouvelle doc Boutique, ajoute-la au tableau §1 ci-dessus dans 
 
 Si tu supprimes une doc, retire la ligne correspondante.
 
-Si la hiérarchie §5 change, mets à jour dans la même PR `BOUTIQUE_ARCHITECTURE.md` § 1 et ici.
+Si la hiérarchie §5 change, mets à jour dans la même PR `BOUTIQUE_ARCHITECTURE.md` §1 et ici.
