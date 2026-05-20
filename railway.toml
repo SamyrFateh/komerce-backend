@@ -13,7 +13,7 @@ watchPatterns = [
   "utils/**",
   "validators/**",
   "db/**",
-  "public/**",
+  "boutique/**",
   "dashboard-app/**",
   "server.js",
   "db.js",
