@@ -90,10 +90,12 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const sourcingScannerRouter = require('../routes/sourcing-scanner');
   const signalsRouter         = require('../routes/signals');
   const adminRiskProvisionsRouter = require('../routes/admin-risk-provisions');
+  const adminCollectiveRepairsRouter = require('../routes/admin-collective-repairs');
 
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
+  app.use('/api/admin/collective', adminCollectiveRepairsRouter);
   app.use('/api/admin',      adminRouter);
   app.use('/api/admin/rules', adminRulesRouter);
   app.use('/api/admin/radar', adminRadarRouter);
