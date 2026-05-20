@@ -85,7 +85,7 @@ describe('I-SWEEP invariants regression net', () => {
     expect(auth).toContain('processRefund');
     expect(refund).toContain('dryRun');
     expect(refund).toContain('manual_cash');
-    expect(refund).toContain("newStatus: 'refunded'");
+    expect(refund).toMatch(/newStatus\s*:\s*['"]refunded['"]/);
     expect(refund).toContain('processRefund');
   });
 
