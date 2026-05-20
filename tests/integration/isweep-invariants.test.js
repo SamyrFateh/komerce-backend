@@ -68,7 +68,7 @@ describe('I-SWEEP invariants regression net', () => {
     expect(stockRepair).toContain('releaseForWorkspace');
   });
 
-  test('G4: cancellation syncs purchase orders and refund remains an explicit admin financial action', () => {
+  test('G4: cancellation syncs purchase orders and final financial action remains explicit', () => {
     const machine = read('services/order-status-machine.js');
     const poSync = read('services/cancel-order-purchase-orders.js');
     const refund = read('services/admin-order-refund.js');
@@ -82,7 +82,7 @@ describe('I-SWEEP invariants regression net', () => {
 
     expect(auth).toContain('isAdminOrderRefundRequest');
     expect(auth).toContain('handleAdminOrderRefund');
-    expect(auth).toContain('processRefund');
+    expect(auth).toContain('refundCancelledOrder');
     expect(refund).toContain('dryRun');
     expect(refund).toContain('manual_cash');
     expect(refund).toMatch(/newStatus\s*:\s*['"]refunded['"]/);
