@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Tests Unitaires: order-status-machine.js (V2.4)
+ * KOMERCE — Tests Unitaires: order-status-machine.js (V2.5)
  *
  * Couvre:
  *   ✅ Matrice de transitions valides (patch)
@@ -8,7 +8,7 @@
  *   ✅ Idempotence (same status = noop)
  *   ✅ Rôles autorisés/refusés
  *   ✅ Pickup code generation on 'available'
- *   ✅ Cash relais auto-paid on 'ordered'
+ *   ✅ Paiement cash relais : pending → confirmed
  *   ✅ Cancel effects (wallet + stock)
  *   ✅ History logging (D6)
  *
@@ -95,6 +95,8 @@ describe('isForwardTransition()', () => {
 
 describe('Constants integrity', () => {
   test('ORDER_STATUSES contains all expected statuses', () => {
+    expect(ORDER_STATUSES).toContain('pending');
+    expect(ORDER_STATUSES).toContain('pending_group_payment');
     expect(ORDER_STATUSES).toContain('confirmed');
     expect(ORDER_STATUSES).toContain('ordered');
     expect(ORDER_STATUSES).toContain('preparation');
@@ -106,7 +108,7 @@ describe('Constants integrity', () => {
     expect(ORDER_STATUSES).toContain('refunded');
   });
 
-  test('VALID_TRANSITIONS has entries for all non-terminal statuses', () => {
+  test('VALID_TRANSITIONS has entries for all statuses', () => {
     for (const status of ORDER_STATUSES) {
       expect(VALID_TRANSITIONS[status]).toBeDefined();
     }
@@ -118,6 +120,8 @@ describe('Constants integrity', () => {
   });
 
   test('STATUS_RANK is sequential', () => {
+    expect(STATUS_RANK.pending).toBeLessThan(STATUS_RANK.confirmed);
+    expect(STATUS_RANK.pending_group_payment).toBe(STATUS_RANK.pending);
     expect(STATUS_RANK.confirmed).toBeLessThan(STATUS_RANK.ordered);
     expect(STATUS_RANK.ordered).toBeLessThan(STATUS_RANK.preparation);
     expect(STATUS_RANK.preparation).toBeLessThan(STATUS_RANK.shipped);
@@ -187,26 +191,28 @@ describe('transitionOrderStatus() — patch source', () => {
     expect(result.error).toContain('Rôle');
   });
 
-  test('role check: agent_relais can set ordered for cash_relais', async () => {
-    setupMockForTransition('confirmed', { payment_mode: 'cash_relais' });
+  test('role check: agent_relais can confirm cash_relais payment', async () => {
+    setupMockForTransition('pending', { payment_mode: 'cash_relais' });
 
     const result = await transitionOrderStatus({
       orderId: mockOrder.id,
-      newStatus: 'ordered',
+      newStatus: 'confirmed',
       actor: { id: 'relais-1', role: 'agent_relais' },
       source: 'patch',
       dbClient: mockDb,
     });
 
     expect(result.success).toBe(true);
+    expect(result.previousStatus).toBe('pending');
+    expect(result.newStatus).toBe('confirmed');
   });
 
-  test('role check: agent_relais CANNOT set ordered for stripe', async () => {
-    setupMockForTransition('confirmed', { payment_mode: 'stripe_eur' });
+  test('role check: agent_relais cannot confirm stripe payment', async () => {
+    setupMockForTransition('pending', { payment_mode: 'stripe_eur' });
 
     const result = await transitionOrderStatus({
       orderId: mockOrder.id,
-      newStatus: 'ordered',
+      newStatus: 'confirmed',
       actor: { id: 'relais-1', role: 'agent_relais' },
       source: 'patch',
       dbClient: mockDb,
