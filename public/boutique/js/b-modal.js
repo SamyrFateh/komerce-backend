@@ -386,9 +386,12 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
       dom.modalOldPrice.classList.remove('u-hidden');
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
       dom.modalPromoBadge.classList.add('show');
+      // F1 — prix coral sur mobile (classe lue par modal.css §1)
+      dom.modal && dom.modal.classList.add('k-modal--has-promo');
     } else {
       dom.modalOldPrice.classList.add('u-hidden');
       dom.modalPromoBadge.classList.remove('show');
+      dom.modal && dom.modal.classList.remove('k-modal--has-promo');
     }
 
     // FIX #1 — Bouton favori dans la modal
@@ -461,6 +464,9 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // PR-3 / PR-4 — modules image UX + social proof
     setupImageUX();
     setupSocialProof();
+    // F3 + F4 — livraison et trust bar mobile (masqués desktop via CSS)
+    _injectMobileDelivery(product);
+    _injectMobileTrust();
     // Lock body scroll — CSS handles layout via body.modal-open
     state._savedCatalogScrollY = getScrollY();
     document.body.style.setProperty('--modal-scroll-y', `-${state._savedCatalogScrollY}px`);
@@ -507,6 +513,62 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // La topbar enrichie rappelle le produit ouvert pendant le scroll.
     setupModalFAB();
   }
+
+  /* ── F3 — LIVRAISON MOBILE ──────────────────────────────────────
+     Injecte un encart livraison minimal dans .k-modal-info sur mobile.
+     Masqué desktop par CSS (display:none @min-width:900px).
+     Évite le double-inject via data-mobile-delivery.              */
+  function _injectMobileDelivery(product) {
+    if (!dom.modal) return;
+    // Retirer l'ancien si présent (changement de produit)
+    var old = dom.modal.querySelector('[data-mobile-delivery]');
+    if (old) old.remove();
+
+    var info = dom.modal.querySelector('.k-modal-info');
+    if (!info) return;
+
+    var delay = (product && product.delivery_delay) || '3 à 5 semaines';
+    var el = document.createElement('div');
+    el.className = 'k-modal-delivery-mobile';
+    el.setAttribute('data-mobile-delivery', '1');
+    el.innerHTML =
+      '<span class="k-modal-delivery-mobile-icon">📦</span>' +
+      '<span>' +
+        '<span class="k-modal-delivery-mobile-label">Livraison relais</span>' +
+        '<span class="k-modal-delivery-mobile-delay">· ' + delay + '</span>' +
+      '</span>';
+
+    // Insérer après .k-modal-meta (juste après les badges social proof)
+    var meta = info.querySelector('.k-modal-meta');
+    if (meta && meta.nextSibling) {
+      info.insertBefore(el, meta.nextSibling);
+    } else {
+      info.appendChild(el);
+    }
+  }
+
+  /* ── F4 — TRUST BAR MOBILE ──────────────────────────────────────
+     Injecte 3 pills de réassurance avant .k-modal-actions.
+     Masqué desktop par CSS (display:none @min-width:900px).       */
+  function _injectMobileTrust() {
+    if (!dom.modal) return;
+    var old = dom.modal.querySelector('[data-mobile-trust]');
+    if (old) old.remove();
+
+    var actions = dom.modal.querySelector('.k-modal-actions');
+    if (!actions || !actions.parentNode) return;
+
+    var el = document.createElement('div');
+    el.className = 'k-modal-trust-mobile';
+    el.setAttribute('data-mobile-trust', '1');
+    el.innerHTML =
+      '<span class="k-modal-trust-mobile-item">📍 Retrait en relais</span>' +
+      '<span class="k-modal-trust-mobile-item">💵 Paiement cash</span>' +
+      '<span class="k-modal-trust-mobile-item">🔄 Échange 14 j</span>';
+
+    actions.parentNode.insertBefore(el, actions);
+  }
+
 
   /* ── TOPBAR ENRICHIE : produit visible quand on scroll ── */
   /**
