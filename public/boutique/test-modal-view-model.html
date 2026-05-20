@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Test — ModalViewModel · PR-M1</title>
+<style>
+  /* Sobre, lisible — outil de debug, pas une page de prod */
+  :root {
+    --bg: #fafaf7;
+    --card: #fff;
+    --ink: #1a1a1a;
+    --mute: #6b7280;
+    --line: #e5e7eb;
+    --ok: #047857;
+    --warn: #b45309;
+    --bad: #b91c1c;
+    --coral: #f5635a;
+    --code-bg: #f3f4f6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 24px 80px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .lead {
+    color: var(--mute);
+    font-size: 14px;
+    max-width: 720px;
+    margin: 0 0 32px;
+  }
+  .lead code { background: var(--code-bg); padding: 1px 6px; border-radius: 3px; font-size: 12.5px; }
+
+  .case {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 0 0 16px;
+  }
+  .case h2 {
+    font-size: 15px;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .case h2 .num {
+    font-variant-numeric: tabular-nums;
+    color: var(--mute);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .case .desc {
+    color: var(--mute);
+    font-size: 13px;
+    margin: 0 0 14px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .col h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mute);
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+
+  .classes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pill {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 4px;
+    background: #ecfdf5;
+    color: var(--ok);
+    font-size: 12px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    border: 1px solid #a7f3d0;
+  }
+  .pill.warn  { background: #fef3c7; color: var(--warn); border-color: #fde68a; }
+  .pill.empty { background: #f3f4f6; color: var(--mute); border-color: var(--line); font-style: italic; }
+
+  .vm-display {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    max-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .vm-key { color: #7c3aed; }
+  .vm-string { color: #047857; }
+  .vm-number { color: #b45309; }
+  .vm-null { color: var(--mute); font-style: italic; }
+  .vm-bool { color: #db2777; }
+
+  .labels {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 14px;
+    font-size: 13px;
+    align-items: baseline;
+  }
+  .labels dt { color: var(--mute); }
+  .labels dd { margin: 0; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+  .labels .promo { color: var(--coral); font-weight: 600; }
+  .labels .strike { text-decoration: line-through; color: var(--mute); }
+
+  .summary {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin: 24px 0 0;
+    font-size: 13px;
+    color: var(--mute);
+  }
+  .summary strong { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<h1>ModalViewModel — banc de test</h1>
+<p class="lead">
+  PR-M1 : traduction d'un produit brut en contrat d'affichage modal.
+  Chaque cas montre l'entrée (à gauche), les classes CSS posées sur <code>.k-modal</code>,
+  et les labels prêts à afficher.
+  <br>Si tout est vert sur les 7 cas, le ViewModel est bon — on peut passer à PR-M2 (CSS).
+</p>
+
+<div id="cases"></div>
+
+<div class="summary" id="summary">Calcul en cours…</div>
+
+<script type="module">
+// Import du ViewModel — chemin relatif depuis test-modal-view-model.html à la racine
+import { buildModalViewModel, applyModalClasses } from './js/view-models/modal-view-model.js';
+
+// ─────────────────────────────────────────────────────────────
+//  7 cas — couvrent les scénarios du doc + sourcings hétérogènes
+// ─────────────────────────────────────────────────────────────
+
+const cases = [
+  {
+    title: 'Produit complet — stock local Comores',
+    desc: 'Toutes les données : promo, variantes, specs, social proof. Cas le plus riche, score qualité élevé.',
+    expectClasses: ['k-modal--has-promo', 'k-modal--has-variants', 'k-modal--has-delivery', 'k-modal--has-social-proof', 'k-modal--has-specs', 'k-modal--fulfillment-local'],
+    input: {
+      id: 'P001',
+      name: 'Tabouret artisanal Anjouan',
+      description: 'Bois de cocotier sculpté à la main.',
+      price_kmf: 12000,
+      promo_pct: 20,
+      images: ['img/tabouret-1.jpg', 'img/tabouret-2.jpg'],
+      category: 'Mobilier',
+      fulfillment_type: 'local_stock',
+      stock: 25,
+      delivery_estimate: 'Sous 24h — Moroni',
+      variants: [{ key: 'color', value: 'naturel' }, { key: 'color', value: 'foncé' }],
+      specs: [{ label: 'Hauteur', value: '45cm' }, { label: 'Bois', value: 'Cocotier' }],
+      social_proof: { sold_count: 47, rating: 4.6, reviews_count: 12 },
+    },
+  },
+  {
+    title: 'Produit sans promo — Dubai sourcing',
+    desc: 'Pas d\'oldPrice → pas de classe k-modal--has-promo. Fulfillment relais.',
+    expectClasses: ['k-modal--has-variants', 'k-modal--has-delivery', 'k-modal--fulfillment-relay'],
+    input: {
+      id: 'P002',
+      name: 'Sac à dos urbain',
+      price_kmf: 18500,
+      image_url: 'img/sac-urbain.jpg',
+      category: 'Accessoires',
+      fulfillment_type: 'dubai_sourcing',
+      stock: 50,
+      delivery_estimate: 'Sous 7 jours',
+      has_variants: true,
+      variants: { 'noir': true, 'gris': true },
+    },
+  },
+  {
+    title: 'Produit sans variantes — confection',
+    desc: 'Article fait sur mesure. Pas de variants, pas de specs structurées.',
+    expectClasses: ['k-modal--has-delivery', 'k-modal--fulfillment-custom'],
+    input: {
+      id: 'P003',
+      name: 'Boubou brodé sur mesure',
+      description: 'Tissu wax, broderie à la main.',
+      price_kmf: 35000,
+      images: ['img/boubou.jpg'],
+      category: 'Mode',
+      fulfillment_type: 'custom_made',
+      delivery_estimate: '3 semaines de confection',
+      stock_status: 'available',
+    },
+  },
+  {
+    title: 'Produit minimal — import WhatsApp',
+    desc: 'Données minimales : nom + prix + 1 image. Aucun bloc optionnel. Doit s\'afficher proprement (B-M-12).',
+    expectClasses: ['k-modal--fulfillment-relay'],
+    input: {
+      id: 'P004',
+      name: 'Lampe LED rechargeable',
+      price_kmf: 8500,
+      image_url: 'img/lampe.jpg',
+    },
+  },
+  {
+    title: 'Produit image manquante — CSV cassé',
+    desc: 'Image manquante + données pauvres → score qualité &lt; 40 → classe k-modal--low-confidence activée. Le placeholder image est garanti.',
+    expectClasses: ['k-modal--fulfillment-relay', 'k-modal--low-confidence', 'k-modal--no-price'],
+    input: {
+      id: 'P005',
+      name: 'Article importé',
+      // Pas de prix, pas d'image, pas de catégorie → score = 25 (nom seul)
+    },
+  },
+  {
+    title: 'Stock faible — alerte rareté',
+    desc: 'Stock = 3 → stockStatus = "low" → classe k-modal--stock-low activée.',
+    expectClasses: ['k-modal--stock-low', 'k-modal--has-delivery', 'k-modal--fulfillment-local'],
+    input: {
+      id: 'P006',
+      name: 'Bracelet en argent',
+      price_kmf: 22000,
+      image_url: 'img/bracelet.jpg',
+      category: 'Bijoux',
+      fulfillment_type: 'local_stock',
+      stock: 3,
+      delivery_estimate: 'Disponible immédiatement',
+    },
+  },
+  {
+    title: 'Champs API en camelCase — produit JS-natif',
+    desc: 'Test de robustesse : entrée en camelCase (priceKmf, promoPct, dataQualityScore). Doit fonctionner pareil.',
+    expectClasses: ['k-modal--has-promo', 'k-modal--has-specs', 'k-modal--fulfillment-relay'],
+    input: {
+      id: 'P007',
+      name: 'Casque Bluetooth',
+      priceKmf: 27500,
+      promoPct: 15,
+      imageUrl: 'img/casque.jpg',
+      category: 'Électronique',
+      specs: { 'Autonomie': '24h', 'Bluetooth': '5.3' },
+      dataQualityScore: 85,
+    },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────
+//  Rendu de chaque cas
+// ─────────────────────────────────────────────────────────────
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function colorJSON(obj) {
+  // Colorisation simple, lisible
+  const json = JSON.stringify(obj, (k, v) => {
+    if (k === 'raw') return '/* original product object (omitted) */';
+    return v;
+  }, 2);
+  return escapeHtml(json)
+    .replace(/&quot;([^&]+?)&quot;:/g, '<span class="vm-key">"$1"</span>:')
+    .replace(/: &quot;([^&]*)&quot;/g, ': <span class="vm-string">"$1"</span>')
+    .replace(/: (-?\d+(?:\.\d+)?)/g, ': <span class="vm-number">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="vm-bool">$1</span>')
+    .replace(/: null/g, ': <span class="vm-null">null</span>');
+}
+
+function renderClasses(actual, expected) {
+  if (!actual.length) return '<span class="pill empty">(aucune)</span>';
+  return actual.map(cls => {
+    const ok = expected.includes(cls) || cls.startsWith('k-modal--fulfillment-')
+            || cls === 'k-modal--no-price' || cls === 'k-modal--stock-out';
+    return `<span class="pill ${ok ? '' : 'warn'}">${escapeHtml(cls)}</span>`;
+  }).join('');
+}
+
+function renderLabels(vm) {
+  const promoBit = vm.oldPriceLabel
+    ? `<span class="strike">${escapeHtml(vm.oldPriceLabel)}</span> <span class="promo">${escapeHtml(vm.priceLabel)}</span> <span class="promo">${escapeHtml(vm.promoLabel)}</span>`
+    : escapeHtml(vm.priceLabel);
+
+  return `
+    <dt>Nom</dt><dd>${escapeHtml(vm.name)}</dd>
+    <dt>Prix</dt><dd>${promoBit}</dd>
+    <dt>Stock</dt><dd>${escapeHtml(vm.stockLabel)}</dd>
+    <dt>Livraison</dt><dd>${escapeHtml(vm.deliveryLabel)}</dd>
+    <dt>Images</dt><dd>${vm.images.length} image(s) · 1ʳᵉ: ${escapeHtml(vm.images[0].slice(0, 40))}${vm.images[0].length > 40 ? '…' : ''}</dd>
+    <dt>Score qualité</dt><dd>${vm.dataQualityScore}/100 ${vm.isLowConfidence ? '<span class="pill warn">low confidence</span>' : ''}</dd>
+    <dt>Fulfillment</dt><dd>${escapeHtml(vm.fulfillmentType)}</dd>
+  `;
+}
+
+const root = document.getElementById('cases');
+let passed = 0;
+let total = cases.length;
+
+cases.forEach((c, i) => {
+  let vm, error;
+  try { vm = buildModalViewModel(c.input); }
+  catch (e) { error = e; }
+
+  if (error) {
+    root.insertAdjacentHTML('beforeend', `
+      <div class="case">
+        <h2><span class="num">#${i+1}</span> ${escapeHtml(c.title)}</h2>
+        <p class="desc">${escapeHtml(c.desc)}</p>
+        <div class="vm-display" style="color:var(--bad);">ERREUR : ${escapeHtml(error.message)}</div>
+      </div>
+    `);
+    return;
+  }
+
+  // Vérification simple : toutes les classes attendues sont posées
+  const allExpectedPresent = c.expectClasses.every(cls => vm.cssClasses.includes(cls));
+  if (allExpectedPresent) passed++;
+
+  // Test idempotence du applyModalClasses
+  const dummyEl = document.createElement('div');
+  dummyEl.className = 'k-modal-test residual-class k-modal--legacy-stale';
+  applyModalClasses(dummyEl, vm);
+  applyModalClasses(dummyEl, vm); // 2× pour vérifier idempotence
+  const appliedClasses = Array.from(dummyEl.classList);
+  const idempotent = appliedClasses.filter(c => c.startsWith('k-modal--')).sort().join(',')
+                  === vm.cssClasses.slice().sort().join(',');
+
+  root.insertAdjacentHTML('beforeend', `
+    <div class="case">
+      <h2>
+        <span class="num">#${i+1}</span>
+        ${escapeHtml(c.title)}
+        ${allExpectedPresent ? '<span class="pill" style="margin-left:auto">✓ OK</span>' : '<span class="pill warn" style="margin-left:auto">⚠ écart</span>'}
+        ${idempotent ? '' : '<span class="pill warn">⚠ idempotence</span>'}
+      </h2>
+      <p class="desc">${escapeHtml(c.desc)}</p>
+      <div class="grid">
+        <div class="col">
+          <h3>Classes posées sur .k-modal</h3>
+          <div class="classes">${renderClasses(vm.cssClasses, c.expectClasses)}</div>
+          <h3 style="margin-top:14px">Labels prêts à afficher</h3>
+          <dl class="labels">${renderLabels(vm)}</dl>
+        </div>
+        <div class="col">
+          <h3>ViewModel (sortie complète)</h3>
+          <pre class="vm-display">${colorJSON(vm)}</pre>
+        </div>
+      </div>
+    </div>
+  `);
+});
+
+const summary = document.getElementById('summary');
+if (passed === total) {
+  summary.innerHTML = `<strong style="color:var(--ok)">✓ ${passed}/${total} cas passent.</strong> Le ViewModel est cohérent — PR-M1 prête à merger. Étape suivante : PR-M2 (refactoring grille modal.css).`;
+} else {
+  summary.innerHTML = `<strong style="color:var(--warn)">⚠ ${passed}/${total} cas passent.</strong> Cherchez les pills oranges dans les cas ci-dessus.`;
+}
+</script>
+
+</body>
+</html>

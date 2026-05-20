@@ -54,24 +54,29 @@ Posées exclusivement via `element.style.setProperty()` depuis le JS owner décl
 | `hero.css` | bundle `base` | `.k-hero` base, `.k-hero-cats-sticky` base mobile |
 | `categories.css` | bundle `components` | `.k-chip` base mobile, couleurs par catégorie |
 | `products.css` | bundle `components` | `.k-grid`, `.k-card` base |
-| `modal.css` | bundle `components` | Cycle modal, overlay, drawer |
+| `modal.css` | bundle `components` | Cycle modal, overlay, drawer. **Co-owner avec `js/view-models/modal-view-model.js`** pour les 10 classes contractuelles `.k-modal--*` (cf. `BOUTIQUE_SOURCE_OF_TRUTH.md` §3B) |
 | `cart.css` | bundle `components` | Panier complet, `.k-card-add`, `.k-card-fav` |
 | `interactions.css` | bundle `components` | Animations, toasts, transitions chips |
 | `hero-cart-proxy.css` | bundle `components` | Proxy mobile uniquement, masque `.k-hero-bubble` |
+| `group-cart-flow.css` | bundle `components` | Flux paniers partagés (résiduel) |
+| `shared-followup.css` | bundle `components` | Followup partagé (résiduel) |
 | `boutique-desktop.css` | bundle `desktop` | **Owner desktop ≥900px** : chips, sticky bar, side-cart, k-card hover, mega-nav |
 | `desktop-commerce-skeleton.css` | bundle `desktop` | Layout desktop : header, hero shape, `#k-desktop-catalog-wrap` grid |
 | `event.css` | bundle `event` | Pages événement |
 
 **Aucun autre `.css` ne doit exister dans `css/`.** Si présent, l'audit échoue.
 
-### Statut actuel des fichiers à supprimer ou intégrer
+### Statut actuel des fichiers — clos depuis le 20/05/2026
 
-Au moment de l'écriture de ce document, ces 7 fichiers existent sur disque mais ne sont pas
-bundlés. Décision à prendre par PR avant tout nouveau travail :
+La version v1.0 de cet inventaire listait 7 fichiers CSS "à supprimer ou intégrer".
+**Décision prise et appliquée** :
 
-- `boutique-wow.css` — 3 lignes, commentaire seul → **supprimer**
-- `desktop-horizontal-nav.css` — vidé, commentaire de désactivation → **supprimer**, gérer le cache via `?v=N`
-- `mini-cart.css`, `cart-groups.css`, `cart-product-open.css`, `group-cart-flow.css`, `shared-followup.css` → **décider** : ajouter au bundler si les composants sont vivants, supprimer sinon. Voir `BOUTIQUE_ARCHITECTURE_LIVE.md` pour le détail des sélecteurs orphelins.
+- `boutique-wow.css` — supprimé
+- `desktop-horizontal-nav.css` — supprimé
+- `mini-cart.css`, `cart-groups.css`, `cart-product-open.css` — supprimés
+- `group-cart-flow.css` et `shared-followup.css` — **intégrés au bundle `components`** (cf. `scripts/bundle-css.js`)
+
+Le dossier `css/` ne contient plus aucun orphelin (vérifié `npm run audit:arch`).
 
 ---
 

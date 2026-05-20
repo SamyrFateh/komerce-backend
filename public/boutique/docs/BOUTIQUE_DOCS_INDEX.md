@@ -23,12 +23,16 @@
 
 | Tu veux... | Tu lis... |
 |---|---|
+| Avoir la **carte propriétaire** consolidée (composants + état + dette) | `BOUTIQUE_SOURCE_OF_TRUTH.md` ← consolide les autres |
 | Comprendre les **règles** (invariants, ownership, process PR) | `BOUTIQUE_ARCHITECTURE.md` |
 | Savoir l'**état réel** du code aujourd'hui | `BOUTIQUE_ARCHITECTURE_LIVE.md` (généré, ne pas éditer) |
 | Comprendre comment **sources → dist** fonctionne | `BOUTIQUE_CSS_PIPELINE.md` |
-| Comprendre **le détail interne de `modal.css`** (1736L, 7 sections) | `BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Comprendre **le détail interne de `modal.css`** (1813L, 7 sections) | `BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Comprendre **la modal mobile** (GEL v1.0, 13 invariants M-MOB-01→13) | `MODAL_MOBILE_ARCHITECTURE.md` |
+| Comprendre **la modal desktop** (DRAFT v1.0, 4 PR M1-M4) | `MODAL_DESKTOP_ARCHITECTURE.md` |
 | Savoir **qui possède quel composant JS** | `BOUTIQUE_COMPONENT_OWNERSHIP.md` |
-| Comprendre **les contrats produit** (props, slots) | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+| Comprendre **les contrats produit** (props, slots) — carte | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+| Comprendre **le contrat modal** (10 classes contractuelles posées par `ModalViewModel`) | `BOUTIQUE_SOURCE_OF_TRUTH.md` §3B + `MODAL_DESKTOP_ARCHITECTURE.md` §3.3 |
 | Avoir la **cartographie complète** (routes, pièges, surfaces) | `CARTOGRAPHY_360_BOUTIQUE.md` |
 
 ---
@@ -107,13 +111,18 @@ Si plusieurs docs disent des choses différentes, voici qui gagne :
 
 ```
 1. BOUTIQUE_ARCHITECTURE.md            ← source normative, gagne sur tout
-2. BOUTIQUE_CSS_PIPELINE.md            ← détail pipeline, gagne sur les docs spécifiques
-3. BOUTIQUE_MODAL_ARCHITECTURE.md      ← spécifique modal
-4. BOUTIQUE_COMPONENT_OWNERSHIP.md     ← spécifique composants JS
-5. BOUTIQUE_ARCHITECTURE_LIVE.md       ← descriptif, jamais source de vérité (c'est une photo)
+2. BOUTIQUE_SOURCE_OF_TRUTH.md         ← carte propriétaire consolidée (gel versionné)
+3. BOUTIQUE_CSS_PIPELINE.md            ← détail pipeline, gagne sur les docs spécifiques
+4. BOUTIQUE_MODAL_ARCHITECTURE.md      ← spécifique modal CSS (7 sections actuelles)
+5. MODAL_DESKTOP_ARCHITECTURE.md       ← cible refonte modal desktop (4 PR M1-M4)
+6. MODAL_MOBILE_ARCHITECTURE.md        ← modal mobile (GEL — 13 invariants)
+7. BOUTIQUE_COMPONENT_OWNERSHIP.md     ← spécifique composants JS
+8. BOUTIQUE_ARCHITECTURE_LIVE.md       ← descriptif, jamais source de vérité (c'est une photo)
 ```
 
 **Si tu trouves un conflit** : ouvre une PR qui aligne la doc subordonnée sur la doc principale. Si c'est la doc principale qui se trompe, change-la explicitement dans la même PR.
+
+> **Note** : `BOUTIQUE_SOURCE_OF_TRUTH.md` est subordonné à `BOUTIQUE_ARCHITECTURE.md` (qui définit les invariants normatifs), mais il **consolide** la table d'ownership et l'état de santé sous forme gelée et versionnée. C'est le **point d'entrée pratique** pour identifier un propriétaire avant une PR.
 
 ---
 
@@ -127,7 +136,8 @@ Si plusieurs docs disent des choses différentes, voici qui gagne :
 | Tu veux ajouter un nouveau fichier CSS source | 1. Ajouter dans `../scripts/bundle-css.js`, 2. Mettre à jour `BOUTIQUE_ARCHITECTURE.md` §2 inventaire, 3. `npm run bundle:css` |
 | Tu trouves un sélecteur dans 2 fichiers et ne sais pas si c'est OK | Vérifier `BOUTIQUE_ARCHITECTURE.md` §3 (table d'ownership avec exceptions multi-owner légitimes) |
 | Tu veux toucher un fichier verrouillé (b-pager.js, b-store.js, b-scroll-owner.js) | Lire `BOUTIQUE_ARCHITECTURE.md` §6 — PR isolée obligatoire |
-| Tu veux modifier `modal.css` | Lire d'abord `BOUTIQUE_MODAL_ARCHITECTURE.md` (les 7 sections + pièges connus) |
+| Tu veux modifier `modal.css` | Lire d'abord `BOUTIQUE_MODAL_ARCHITECTURE.md` (les 7 sections + pièges connus) et `MODAL_DESKTOP_ARCHITECTURE.md` (cible refonte) |
+| Tu veux changer l'affichage modal selon un type de produit (Dubai, CSV, etc.) | **Ne touche pas le CSS** — édite `js/view-models/modal-view-model.js` pour poser une nouvelle classe contractuelle `.k-modal--*`, puis ajoute le style dans `modal.css` |
 | Conflit entre deux docs | `BOUTIQUE_ARCHITECTURE.md` gagne toujours — aligner les autres sur lui |
 
 ---

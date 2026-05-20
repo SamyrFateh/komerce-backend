@@ -31,8 +31,11 @@ boutique/
     ├── BOUTIQUE_DOCS_INDEX.md          ← 👈 lire après ce README
     ├── BOUTIQUE_ARCHITECTURE.md        ← normatif — les 6 invariants
     ├── BOUTIQUE_ARCHITECTURE_LIVE.md   ← photo de l'état réel (généré)
+    ├── BOUTIQUE_SOURCE_OF_TRUTH.md     ← carte propriétaire consolidée (GEL v1.1)
     ├── BOUTIQUE_CSS_PIPELINE.md        ← pipeline source → dist
     ├── BOUTIQUE_MODAL_ARCHITECTURE.md  ← détail modal.css (7 sections)
+    ├── MODAL_MOBILE_ARCHITECTURE.md    ← modal mobile (GEL, 13 invariants)
+    ├── MODAL_DESKTOP_ARCHITECTURE.md   ← modal desktop (refonte, 4 PR)
     ├── BOUTIQUE_COMPONENT_OWNERSHIP.md ← qui possède quoi en JS
     ├── BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md
     └── CARTOGRAPHY_360_BOUTIQUE.md     ← cartographie complète
@@ -45,6 +48,7 @@ boutique/
 | 1 | `docs/BOUTIQUE_DOCS_INDEX.md` | Guide vers la bonne doc selon ta tâche |
 | 2 | `docs/BOUTIQUE_ARCHITECTURE.md` | Les 6 invariants — plante si violés |
 | 3 | `docs/BOUTIQUE_ARCHITECTURE_LIVE.md` | État réel du code aujourd'hui |
+| 4 | `docs/BOUTIQUE_SOURCE_OF_TRUTH.md` | Carte propriétaire consolidée — identifier qui possède quoi |
 
 ---
 
@@ -54,11 +58,14 @@ boutique/
 |---|---|---|
 | 1 | [`docs/BOUTIQUE_DOCS_INDEX.md`](docs/BOUTIQUE_DOCS_INDEX.md) | Point d'entrée — guide vers les bonnes docs |
 | 2 | [`docs/BOUTIQUE_ARCHITECTURE.md`](docs/BOUTIQUE_ARCHITECTURE.md) | Normatif — 6 invariants I-1 à I-6, ownership CSS, process PR |
-| 3 | [`docs/BOUTIQUE_ARCHITECTURE_LIVE.md`](docs/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run boutique:arch`) |
+| 3 | [`docs/BOUTIQUE_ARCHITECTURE_LIVE.md`](docs/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run audit:arch:live`) |
+| 4 | [`docs/BOUTIQUE_SOURCE_OF_TRUTH.md`](docs/BOUTIQUE_SOURCE_OF_TRUTH.md) | Carte propriétaire consolidée (GEL v1.1) — identifier qui possède un fichier ou un sélecteur |
 
 **Si tu modifies du CSS Boutique**, lis aussi :
 - [`docs/BOUTIQUE_CSS_PIPELINE.md`](docs/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
-- [`docs/BOUTIQUE_MODAL_ARCHITECTURE.md`](docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1736 lignes, 7 sections)
+- [`docs/BOUTIQUE_MODAL_ARCHITECTURE.md`](docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1813 lignes, 7 sections)
+- [`docs/MODAL_MOBILE_ARCHITECTURE.md`](docs/MODAL_MOBILE_ARCHITECTURE.md) si tu touches le modal mobile (GEL — 13 invariants)
+- [`docs/MODAL_DESKTOP_ARCHITECTURE.md`](docs/MODAL_DESKTOP_ARCHITECTURE.md) si tu touches le modal desktop (refonte en cours, 4 PR M1-M4)
 
 ---
 

@@ -30,6 +30,7 @@ import { setupDesktopUpgrade } from './b-desktop-upgrade.js'; // Orchestrateur e
 import { isDesktop }          from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js'; // Contrat panier → modal produit
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js'; // Affordance image panier cliquable
+import { setupModalContractClasses } from './b-modal-desktop-enhancers.js'; // PR-M1 — ModalViewModel (mobile + desktop)
 
 // Expose bus globalement pour debug + devtools
 if (typeof window !== 'undefined') {
@@ -37,11 +38,13 @@ if (typeof window !== 'undefined') {
   // LOT 12 : init desktop upgrade après le boot
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
+      setupModalContractClasses(); // PR-M1 — toujours (mobile + desktop) AVANT setupDesktopUpgrade
       setupDesktopUpgrade();
       setupProductOpenContract(); // Panier mobile/desktop → fiche produit
       setupCartProductOpenStyle(); // Indication visuelle image cliquable
     });
   } else {
+    setupModalContractClasses(); // PR-M1 — toujours (mobile + desktop) AVANT setupDesktopUpgrade
     setupDesktopUpgrade();
     setupProductOpenContract();   // Panier mobile/desktop → fiche produit
     setupCartProductOpenStyle();  // Indication visuelle image cliquable

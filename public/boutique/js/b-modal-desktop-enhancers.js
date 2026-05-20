@@ -26,6 +26,9 @@ import { openModal }            from './b-modal.js';
 import { setActiveCat }         from './b-catalog.js';
 import { normalizeCategoryKey } from './shop-schema.js';
 import { isDesktop }            from './b-scroll-owner.js';
+import {
+  buildModalViewModel, applyModalClasses,
+} from './view-models/modal-view-model.js'; // PR-M1 — classes contractuelles modal
 
 'use strict';
 
@@ -349,6 +352,7 @@ function injectPriceHero() {
 
 let _flashTimerInterval = null;
 let _enhancersInstalled = false;
+let _vmListenerInstalled = false; // PR-M1 — flag séparé pour le listener ModalViewModel (mobile + desktop)
 
 function _stopFlashTimer() {
   if (_flashTimerInterval) {
@@ -595,6 +599,37 @@ function injectRecentlyViewed() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  PR-M1 — ModalViewModel : classes contractuelles (mobile + desktop)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Traduit le produit ouvert en ViewModel et pose les classes contractuelles
+ * sur .k-modal. Idempotent : peut s'exécuter en plus du code existant qui
+ * pose déjà k-modal--has-promo manuellement dans b-modal.js (pas de conflit,
+ * applyModalClasses normalise tout).
+ *
+ * S'exécute mobile ET desktop — les classes pilotent le CSS dans les deux
+ * contextes (ex: F1 prix coral mobile utilise déjà k-modal--has-promo).
+ *
+ * @param {Object} product - Produit brut émis par bus 'modal:opened'.
+ */
+function _applyModalContractClasses(product) {
+  if (!product || !dom.modal) return;
+  try {
+    const vm = buildModalViewModel(product);
+    applyModalClasses(dom.modal, vm);
+    // Exposer le ViewModel pour debug / inspection en console
+    state._currentModalViewModel = vm;
+  } catch (err) {
+    // En cas d'erreur de normalisation : on ne casse rien, on log et on continue.
+    // Le code legacy de b-modal.js continue de poser ses propres classes.
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('[modal-view-model] build failed, falling back to legacy classes:', err);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  ORCHESTRATION — Hook into modal open + qty observer
 // ═══════════════════════════════════════════════════════════════
 
@@ -639,6 +674,20 @@ function _setupQtyObserver() {
 // ═══════════════════════════════════════════════════════════════
 //  ENTRY POINT
 // ═══════════════════════════════════════════════════════════════
+
+/**
+ * PR-M1 — Setup du listener ModalViewModel.
+ *
+ * Appelé depuis main.js TOUJOURS (mobile + desktop), contrairement à
+ * setupModalDesktopEnhancers() qui ne tourne qu'en desktop.
+ *
+ * Idempotent : flag _vmListenerInstalled empêche les doubles branchements.
+ */
+export function setupModalContractClasses() {
+  if (_vmListenerInstalled) return;
+  _vmListenerInstalled = true;
+  bus.on('modal:opened', _applyModalContractClasses);
+}
 
 export function setupModalDesktopEnhancers() {
   if (!isDesktop()) return;
