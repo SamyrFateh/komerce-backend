@@ -4,9 +4,15 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.1 — 20 mai 2026** (rev. snapshot + PR-M1 livrée)
+> Statut : **GEL v1.2 — 20 mai 2026** (rev. PR-M2 livrée)
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
+>
+> **Changelog v1.2 vs v1.1** :
+> - PR-M2 livrée : grille modal.css unifiée, 2 sections fantômes supprimées (§4 intermédiaire, §5 large)
+> - modal.css renuméroté à 6 sections (était 8 sections + sous-sections)
+> - `!important` : 25 → **23** (suppression overrides redondants)
+> - Sections cibles atteintes : §6 LAYOUT DESKTOP est l'unique owner de grid-template-columns
 >
 > **Changelog v1.1 vs v1.0** :
 > - Snapshot §1 régénéré depuis `npm run audit:arch:live` (chiffres réels)
