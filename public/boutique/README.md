@@ -9,13 +9,13 @@
 
 | # | Fichier | Pourquoi |
 |---|---|---|
-| 1 | [`docs/boutique/BOUTIQUE_DOCS_INDEX.md`](../../docs/boutique/BOUTIQUE_DOCS_INDEX.md) | Point d'entrée — guide vers les bonnes docs |
-| 2 | [`docs/boutique/BOUTIQUE_ARCHITECTURE.md`](../../docs/boutique/BOUTIQUE_ARCHITECTURE.md) | Normatif — 6 invariants I-1 à I-6, ownership CSS, process PR |
-| 3 | [`docs/boutique/BOUTIQUE_ARCHITECTURE_LIVE.md`](../../docs/boutique/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run boutique:arch`) |
+| 1 | [`docs/boutique/BOUTIQUE_DOCS_INDEX.md`](docs/BOUTIQUE_DOCS_INDEX.md) | Point d'entrée — guide vers les bonnes docs |
+| 2 | [`docs/boutique/BOUTIQUE_ARCHITECTURE.md`](docs/BOUTIQUE_ARCHITECTURE.md) | Normatif — 6 invariants I-1 à I-6, ownership CSS, process PR |
+| 3 | [`docs/boutique/BOUTIQUE_ARCHITECTURE_LIVE.md`](docs/BOUTIQUE_ARCHITECTURE_LIVE.md) | Descriptif — état réel du code (régénéré par `npm run boutique:arch`) |
 
 **Si tu modifies du CSS Boutique**, lis aussi :
-- [`docs/boutique/BOUTIQUE_CSS_PIPELINE.md`](../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
-- [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1736 lignes, 7 sections)
+- [`docs/boutique/BOUTIQUE_CSS_PIPELINE.md`](docs/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
+- [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1736 lignes, 7 sections)
 
 ---
 
@@ -47,7 +47,7 @@ Détail dans `docs/boutique/BOUTIQUE_ARCHITECTURE.md` §1. Validés automatiquem
 ## ⚙️ Workflow type d'une PR CSS Boutique
 
 ```bash
-cd public/boutique
+cd boutique
 
 # 1. Modifier les sources
 vim css/modal.css
@@ -64,7 +64,7 @@ npm run boutique:audit
 
 # 5. Commit unique sources + dist + docs LIVE
 cd ../..
-git add public/boutique/css/ public/boutique/docs/
+git add boutique/css/ boutique/docs/
 git commit -m "..."
 ```
 
@@ -75,7 +75,7 @@ git commit -m "..."
 ## 📂 Structure du frontend Boutique
 
 ```
-public/boutique/
+boutique/
 ├── index.html              # page principale (charge les 4 bundles dist)
 ├── package.json            # scripts : bundle:css, boutique:arch, boutique:audit
 │

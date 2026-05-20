@@ -7,7 +7,7 @@
 
 ## Le vrai bug, enfin
 
-`public/boutique/index.html` contient **une `</div>` manquante** au niveau de `#k-modal-overlay` (modal produit Temu).
+`boutique/index.html` contient **une `</div>` manquante** au niveau de `#k-modal-overlay` (modal produit Temu).
 
 Vérifié par analyse de l'arbre DOM :
 
@@ -58,7 +58,7 @@ Le modal de commande a `<div id="k-modal-overlay">` comme parent avec `display:n
 
 ## Le fix
 
-Une seule modification dans `public/boutique/index.html` ligne 359 : ajouter une `</div>` fermante après celle qui ferme `<div id="k-modal" id="k-modal">`.
+Une seule modification dans `boutique/index.html` ligne 359 : ajouter une `</div>` fermante après celle qui ferme `<div id="k-modal" id="k-modal">`.
 
 ```diff
         <div class="k-sug-rail" id="k-sug-rail"></div>
@@ -84,7 +84,7 @@ Stack final     : 0 non fermé
 
 ## Application
 
-Remplacer `public/boutique/index.html` par celui livré ici (le fichier diffère de l'original d'**un seul caractère** : un `</div>` supplémentaire après la ligne 359).
+Remplacer `boutique/index.html` par celui livré ici (le fichier diffère de l'original d'**un seul caractère** : un `</div>` supplémentaire après la ligne 359).
 
 ## Validation post-déploiement
 

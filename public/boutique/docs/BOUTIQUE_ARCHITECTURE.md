@@ -193,7 +193,7 @@ L'ordre §5 n'est pas modifié sans review équivalente à §6.
 ```bash
 npm run boutique:audit   # plante si invariants §1 violés
 npm run boutique:arch    # régénère BOUTIQUE_ARCHITECTURE_LIVE.md
-git diff public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md   # diff de la photo réelle
+git diff boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md   # diff de la photo réelle
 ```
 
 Si `audit:arch` passe et que le diff de `LIVE` est cohérent avec l'intention de la PR,

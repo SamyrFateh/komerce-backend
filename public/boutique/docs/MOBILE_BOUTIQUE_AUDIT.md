@@ -238,7 +238,7 @@ Comportement "bounce" qui scroll vers la page suivante quand l'utilisateur arriv
 
 ## B.4 — Le SW reset "nuclear" en haut de l'index.html
 
-Ligne 6-21 de `public/boutique/index.html` : un script qui désinstalle TOUS les service workers et vide TOUS les caches au premier chargement avec une clé `sw_reset_v326` en localStorage.
+Ligne 6-21 de `boutique/index.html` : un script qui désinstalle TOUS les service workers et vide TOUS les caches au premier chargement avec une clé `sw_reset_v326` en localStorage.
 
 **À vérifier** : ce script est-il toujours nécessaire ? Si c'est un héritage d'un incident résolu :
 - Il rallonge le first paint sur les nouveaux visiteurs
@@ -328,11 +328,11 @@ Le doc MOBILE_BOUTIQUE_AUDIT.md (ce fichier) décrit chaque correction précisé
 
 CONTEXTE TECHNIQUE :
 - Frontend : ES modules natifs (pas de framework), pas de bundler
-- Pattern b-*.js dans public/boutique/js/
-- Bus d'événements : public/boutique/js/b-bus.js
-- State : public/boutique/js/b-store.js
-- Le pager mobile est public/boutique/js/b-pager.js (550 lignes)
-- Tokens CSS : public/boutique/css/tokens.css
+- Pattern b-*.js dans boutique/js/
+- Bus d'événements : boutique/js/b-bus.js
+- State : boutique/js/b-store.js
+- Le pager mobile est boutique/js/b-pager.js (550 lignes)
+- Tokens CSS : boutique/css/tokens.css
 
 CONTRAINTES STRICTES :
 - Tu n'introduis AUCUN framework (pas de React/Vue/Svelte)
@@ -346,7 +346,7 @@ ORDRE D'EXÉCUTION :
 
 ═══ PARTIE A — Bug ghost gauche (PRIORITÉ ABSOLUE) ═══
 
-1. Lis intégralement public/boutique/js/b-pager.js
+1. Lis intégralement boutique/js/b-pager.js
 2. Applique les 3 modifications exactes du §A.3 :
    - Modification 1 : _setupInfiniteLoop (ajout ghost gauche + décalage scroll initial)
    - Modification 2 : _setupScrollSync (détection ghostType 'left' / 'right')
@@ -371,7 +371,7 @@ ORDRE D'EXÉCUTION :
 
 9. B.4 (SW reset nuclear) — DEMANDE D'ABORD au user :
    - "Est-ce que le SW reset nuclear v326 dans index.html est toujours nécessaire ?"
-   - Si réponse "non / je sais pas" : trace l'origine via `git log --all -- public/boutique/index.html | head -50` et `git blame` sur les lignes
+   - Si réponse "non / je sais pas" : trace l'origine via `git log --all -- boutique/index.html | head -50` et `git blame` sur les lignes
    - Si l'incident d'origine est clairement résolu (commit > 30 jours et pas de mention dans changelogs récents) → propose la suppression
    - SINON laisse en place
    Commit (si fix) : "chore: remove obsolete SW nuclear reset"
@@ -384,11 +384,11 @@ ORDRE D'EXÉCUTION :
 ═══ PARTIE C — Améliorations Temu-like ═══
 
 11. C.3 (Renommer "Pour vous…" → "Sur-mesure") — 30 secondes
-    Édition simple de public/boutique/index.html ligne 215
+    Édition simple de boutique/index.html ligne 215
     Commit : "ux(mobile): rename ambiguous 'Pour vous' chip to 'Sur-mesure'"
 
 12. C.6 (Rail "Récemment consultés") — 1-2h
-    - Crée public/boutique/js/b-recently-viewed.js
+    - Crée boutique/js/b-recently-viewed.js
     - Hook : à chaque ouverture de modal produit, ajoute le product_id en tête d'un array localStorage 'kmrc_recently_viewed' (max 8 items, dédup par id)
     - Render : insère un rail horizontal entre le hero et la grille produits, masqué si liste vide
     - Style : réutilise les classes existantes des cartes produit (cohérence visuelle)
@@ -464,15 +464,15 @@ Si vous utilisez Claude Code (terminal), il a accès direct au filesystem — pa
 Si vous utilisez Sonnet 4.6 dans Claude.ai web :
 
 - Ce fichier (`MOBILE_BOUTIQUE_AUDIT.md`)
-- `public/boutique/index.html`
-- `public/boutique/js/b-pager.js`
-- `public/boutique/js/b-catalog.js`
-- `public/boutique/js/b-mini-cart.js`
-- `public/boutique/js/main.js`
-- `public/boutique/js/render/render-product-card.js`
-- `public/boutique/css/tokens.css`
-- `public/boutique/css/products.css`
-- `public/boutique/css/layout.css`
+- `boutique/index.html`
+- `boutique/js/b-pager.js`
+- `boutique/js/b-catalog.js`
+- `boutique/js/b-mini-cart.js`
+- `boutique/js/main.js`
+- `boutique/js/render/render-product-card.js`
+- `boutique/css/tokens.css`
+- `boutique/css/products.css`
+- `boutique/css/layout.css`
 
 ---
 

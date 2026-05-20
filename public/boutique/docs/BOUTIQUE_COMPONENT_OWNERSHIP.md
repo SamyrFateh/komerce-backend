@@ -30,24 +30,24 @@ Pas de JS qui recrée ce qu'un renderer sait déjà faire.
 
 | Zone / composant | Fichier propriétaire | Possède | Ne doit pas posséder |
 |---|---|---|---|
-| Schéma boutique | `public/boutique/js/shop-schema.js` | catégories, sous-catégories, images, ordre, `dbKeys`, normalisation | DOM, listeners, layout, scroll |
-| Rail catégories markup | `public/boutique/js/render/render-categories.js` | HTML des chips catégories, fallback image/SVG/texte | clics, état actif, pager, scroll |
-| Orchestration Accueil | `public/boutique/js/controllers/home-controller.js` | montage du rail, clics catégories, active state, subcats desktop, synchro sidebar | données catégories, cartes produit, internals pager |
-| Catalogue | `public/boutique/js/b-catalog.js` | chargement produits, filtrage, pagination, appel des renderers, coordination post-render | schéma catégories, markup rail, HTML carte dupliqué |
-| Pager catégories mobile | `public/boutique/js/b-pager.js` | cage mobile Temu, `--pager-top`, `--pager-h`, scroll sync, ghost loop, auto-advance | rendu rail, rendu cartes, layout desktop, patch CSS hero |
-| Sous-catégories mobile | `public/boutique/js/b-subcat.js` | mode flat sous-catégorie mobile, pager sous-catégorie | pager catégories principales, données catégories |
-| Sections home | `public/boutique/js/render/render-home-sections.js` | markup des sections catalogue | filtrage, pagination, rail catégories |
-| Carte produit | `public/boutique/js/render/render-product-card.js` | HTML d'une carte produit | mutation panier/favoris, ouverture modale directe, pagination |
-| Panier | `public/boutique/js/b-cart.js` et modules cart dédiés | état panier, rendu panier, actions panier | rendu produit global, schéma catégories |
-| Modal produit | `public/boutique/js/b-modal.js` | cycle d'ouverture/fermeture modal, rendu détail produit | correction pager, correction hero, navigation globale |
-| Styles catégories base/mobile | `public/boutique/css/categories.css` | visuel base/mobile des chips et subchips | mega-nav desktop complet, correction JS pager |
-| Hero base/mobile | `public/boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation de la cage pager mobile |
-| Grille produits + cartes (toutes tailles) | `public/boutique/css/products.css` | `.k-grid`, `.k-sec-grid`, `.k-card` base et overrides desktop — source de vérité unique | layout desktop global, panier, modal |
-| Chips catégories desktop (mega-nav) | `public/boutique/css/boutique-desktop.css` | `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` desktop — bloc P0 + patch P1V-2 | redéclarer le layout chip dans un fichier chargé après |
-| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, mega-nav catégories, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
-| Overrides desktop `.k-card` | `public/boutique/css/desktop-commerce-skeleton.css` | `border-radius`, `border`, `box-shadow` desktop de `.k-card` ; side-cart sticky ; largeurs max ≥1200px | layout `.k-chip`, `.k-cats-shell`, `.k-cats` — propriété de `boutique-desktop.css` |
-| Mini-cart / accès panier | `public/boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
-| Couche wow temporaire | `public/boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
+| Schéma boutique | `boutique/js/shop-schema.js` | catégories, sous-catégories, images, ordre, `dbKeys`, normalisation | DOM, listeners, layout, scroll |
+| Rail catégories markup | `boutique/js/render/render-categories.js` | HTML des chips catégories, fallback image/SVG/texte | clics, état actif, pager, scroll |
+| Orchestration Accueil | `boutique/js/controllers/home-controller.js` | montage du rail, clics catégories, active state, subcats desktop, synchro sidebar | données catégories, cartes produit, internals pager |
+| Catalogue | `boutique/js/b-catalog.js` | chargement produits, filtrage, pagination, appel des renderers, coordination post-render | schéma catégories, markup rail, HTML carte dupliqué |
+| Pager catégories mobile | `boutique/js/b-pager.js` | cage mobile Temu, `--pager-top`, `--pager-h`, scroll sync, ghost loop, auto-advance | rendu rail, rendu cartes, layout desktop, patch CSS hero |
+| Sous-catégories mobile | `boutique/js/b-subcat.js` | mode flat sous-catégorie mobile, pager sous-catégorie | pager catégories principales, données catégories |
+| Sections home | `boutique/js/render/render-home-sections.js` | markup des sections catalogue | filtrage, pagination, rail catégories |
+| Carte produit | `boutique/js/render/render-product-card.js` | HTML d'une carte produit | mutation panier/favoris, ouverture modale directe, pagination |
+| Panier | `boutique/js/b-cart.js` et modules cart dédiés | état panier, rendu panier, actions panier | rendu produit global, schéma catégories |
+| Modal produit | `boutique/js/b-modal.js` | cycle d'ouverture/fermeture modal, rendu détail produit | correction pager, correction hero, navigation globale |
+| Styles catégories base/mobile | `boutique/css/categories.css` | visuel base/mobile des chips et subchips | mega-nav desktop complet, correction JS pager |
+| Hero base/mobile | `boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation de la cage pager mobile |
+| Grille produits + cartes (toutes tailles) | `boutique/css/products.css` | `.k-grid`, `.k-sec-grid`, `.k-card` base et overrides desktop — source de vérité unique | layout desktop global, panier, modal |
+| Chips catégories desktop (mega-nav) | `boutique/css/boutique-desktop.css` | `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` desktop — bloc P0 + patch P1V-2 | redéclarer le layout chip dans un fichier chargé après |
+| Desktop premium | `boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, mega-nav catégories, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
+| Overrides desktop `.k-card` | `boutique/css/desktop-commerce-skeleton.css` | `border-radius`, `border`, `box-shadow` desktop de `.k-card` ; side-cart sticky ; largeurs max ≥1200px | layout `.k-chip`, `.k-cats-shell`, `.k-cats` — propriété de `boutique-desktop.css` |
+| Mini-cart / accès panier | `boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
+| Couche wow temporaire | `boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
 
 ## Contrats par composant
 

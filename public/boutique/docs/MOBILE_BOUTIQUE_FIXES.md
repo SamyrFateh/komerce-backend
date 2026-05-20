@@ -313,7 +313,7 @@ RÈGLES STRICTES :
 - Tu testes APRÈS CHAQUE fix sur (a) Chrome DevTools mobile (b) au moins 1 vrai device si possible
 - Tu commits après chaque fix (1 fix = 1 commit)
 - Tu n'introduis aucune dépendance npm
-- Tu ne touches qu'aux fichiers public/boutique/js/b-pager.js, b-mini-cart.js, et public/boutique/css/* si nécessaire
+- Tu ne touches qu'aux fichiers boutique/js/b-pager.js, b-mini-cart.js, et boutique/css/* si nécessaire
 - Si tu observes un autre bug en route, tu le notes mais ne le corriges PAS sans demander
 
 Démarre par le Fix 1, étape par étape. Commence par lire b-pager.js intégralement.
@@ -322,12 +322,12 @@ Démarre par le Fix 1, étape par étape. Commence par lire b-pager.js intégral
 ### Fichiers à attacher
 
 - Ce fichier (`MOBILE_BOUTIQUE_FIXES.md`)
-- `public/boutique/js/b-pager.js`
-- `public/boutique/js/b-catalog.js`
-- `public/boutique/js/b-mini-cart.js`
-- `public/boutique/js/main.js`
-- `public/boutique/css/products.css` (où vit probablement le scroll-snap CSS)
-- `public/boutique/css/layout.css`
+- `boutique/js/b-pager.js`
+- `boutique/js/b-catalog.js`
+- `boutique/js/b-mini-cart.js`
+- `boutique/js/main.js`
+- `boutique/css/products.css` (où vit probablement le scroll-snap CSS)
+- `boutique/css/layout.css`
 
 ### Critère de fin
 

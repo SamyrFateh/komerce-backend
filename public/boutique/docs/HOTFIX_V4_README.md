@@ -65,7 +65,7 @@ Sur demande produit : la loupe Temu qui suit la souris sur l'image dans la modal
 
 ## Application
 
-Remplacer les 3 fichiers dans `public/boutique/js/` :
+Remplacer les 3 fichiers dans `boutique/js/` :
 - `b-checkout.js`
 - `b-catalog-desktop-enhancers.js`
 - `b-modal-desktop-enhancers.js`

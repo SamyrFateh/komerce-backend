@@ -45,14 +45,14 @@ BOUTIQUE_ARCHITECTURE_LIVE.md  BOUTIQUE_CSS_PIPELINE.md  BOUTIQUE_MODAL_ARCHITEC
 | `gen-boutique-arch-live.js` | `npm run boutique:arch` | En début de session + après chaque PR — pour photographier l'état réel |
 | `audit-boutique-arch.js` | `npm run boutique:audit` | Avant tout commit — plante (exit 1) si les invariants §1 sont violés |
 
-**Tous lancés depuis `public/boutique/`.**
+**Tous lancés depuis `boutique/`.**
 
 ---
 
 ## 4. Workflow type d'une PR CSS
 
 ```bash
-cd public/boutique
+cd boutique
 
 # 1. Modifier les sources
 vim css/modal.css
@@ -68,7 +68,7 @@ npm run boutique:audit
 
 # 5. Commit unique (sources + dist + docs LIVE ensemble)
 cd ../../
-git add public/boutique/css/ public/boutique/docs/
+git add boutique/css/ boutique/docs/
 git commit -m "..."
 ```
 

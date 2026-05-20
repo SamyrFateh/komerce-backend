@@ -1,10 +1,10 @@
 # Architecture du modal produit Boutique
 
-> **Statut** : doc d'architecture du fichier `public/boutique/css/modal.css`
+> **Statut** : doc d'architecture du fichier `boutique/css/modal.css`
 > **Date** : 17 mai 2026
-> **Owner** : `public/boutique/css/modal.css` (1719 lignes, 7 sections + sous-sections)
-> **JS associé** : `public/boutique/js/b-modal.js` + `public/boutique/js/b-modal-desktop-enhancers.js`
-> **HTML cible** : `public/boutique/index.html` lignes 290-358 (structure DOM)
+> **Owner** : `boutique/css/modal.css` (1719 lignes, 7 sections + sous-sections)
+> **JS associé** : `boutique/js/b-modal.js` + `boutique/js/b-modal-desktop-enhancers.js`
+> **HTML cible** : `boutique/index.html` lignes 290-358 (structure DOM)
 
 ---
 
@@ -21,7 +21,7 @@ Sans plan d'ensemble :
 Cette mini-doc complète `BOUTIQUE_ARCHITECTURE.md` en remplissant le trou : **`modal.css` n'a pas d'owner déclaré dans le tableau** (seul `b-modal.js` y figure). À corriger en ajoutant la ligne :
 
 ```
-| Modal produit CSS | public/boutique/css/modal.css |
+| Modal produit CSS | boutique/css/modal.css |
 ```
 
 ---
@@ -254,10 +254,10 @@ Plus les variantes `.k-vg`, `.k-vg-skus`, `.k-vg-sizes`, `.k-sku`, `.k-vp` (lign
 ## 10. Liens et co-référence
 
 - `docs/BOUTIQUE_ARCHITECTURE.md` — règles générales Boutique (cette doc complète le tableau d'ownership)
-- `public/boutique/js/b-modal.js` — orchestrateur JS du modal
-- `public/boutique/js/b-modal-desktop-enhancers.js` — enrichissements desktop
-- `public/boutique/index.html` lignes 290-358 — structure DOM cible
-- `public/boutique/css/tokens.css` — variables CSS sources de vérité couleur/spacing
+- `boutique/js/b-modal.js` — orchestrateur JS du modal
+- `boutique/js/b-modal-desktop-enhancers.js` — enrichissements desktop
+- `boutique/index.html` lignes 290-358 — structure DOM cible
+- `boutique/css/tokens.css` — variables CSS sources de vérité couleur/spacing
 - `AGENTS.md` §4 "Règle Boutique obligatoire" — checklist avant PR Boutique
 
 ---

@@ -248,11 +248,11 @@ Cette refonte desktop ne doit pas :
 ## Fichiers propriétaires probables
 
 ```txt
-public/boutique/css/boutique-desktop.css
-public/boutique/css/products.css
-public/boutique/css/modal.css
-public/boutique/js/render/render-product-card.js
-public/boutique/js/view-models/product-card-view-model.js
+boutique/css/boutique-desktop.css
+boutique/css/products.css
+boutique/css/modal.css
+boutique/js/render/render-product-card.js
+boutique/js/view-models/product-card-view-model.js
 ```
 
 À éviter :

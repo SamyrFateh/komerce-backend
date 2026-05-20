@@ -2,13 +2,13 @@
 
 > **Statut** : doc d'architecture du système CSS Boutique
 > **Date** : 18 mai 2026 — lot CSS-4
-> **Périmètre** : `public/boutique/css/*.css` (sources) + `public/boutique/css/dist/*.css` (production)
+> **Périmètre** : `boutique/css/*.css` (sources) + `boutique/css/dist/*.css` (production)
 
 ---
 
 ## 1. Ce qui est chargé en production
 
-`public/boutique/index.html` lignes 68-71 :
+`boutique/index.html` lignes 68-71 :
 
 ```html
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=3">
@@ -23,8 +23,8 @@
 
 ## 2. Le bundler
 
-Fichier : `public/boutique/scripts/bundle-css.js`
-Commande : `cd public/boutique && npm run bundle:css`
+Fichier : `boutique/scripts/bundle-css.js`
+Commande : `cd boutique && npm run bundle:css`
 
 **Comportement** : concat naïf des sources dans l'ordre déclaré, avec headers générés.
 
@@ -130,7 +130,7 @@ Sauf cas documenté ci-dessus (modal `.k-modal-*` réparti sur 3 sources, hero i
 Toutes les couleurs, ombres, rayons doivent être des variables CSS de `tokens.css`. Audit possible :
 
 ```bash
-grep -nE "#[0-9a-fA-F]{3,6}" public/boutique/css/*.css | \
+grep -nE "#[0-9a-fA-F]{3,6}" boutique/css/*.css | \
   grep -vE "(/\*|font-family|url\()"
 ```
 
@@ -147,7 +147,7 @@ Une règle `@media (min-width: 600px)` sans borne supérieure va déborder sur d
 
 ## 6. Checklist avant PR qui touche un CSS Boutique
 
-Cocher avant tout commit qui modifie un fichier dans `public/boutique/css/` :
+Cocher avant tout commit qui modifie un fichier dans `boutique/css/` :
 
 - [ ] J'ai modifié les **sources**, pas le `dist/`
 - [ ] J'ai identifié le **bon owner** (cf. §4 ci-dessus) pour mes sélecteurs
@@ -167,7 +167,7 @@ Cocher avant tout commit qui modifie un fichier dans `public/boutique/css/` :
 Pour vérifier si le dist est synchro avec les sources, lancer :
 
 ```bash
-cd public/boutique
+cd boutique
 node scripts/bundle-css.js
 git status css/dist/
 # Si la commande affiche des modifs : le dist était désynchro AVANT votre PR
@@ -203,7 +203,7 @@ git status css/dist/
 
 ## 11. Outillage — les 3 scripts du pipeline
 
-Le pipeline CSS Boutique est accompagné de **3 scripts Node.js** dans `public/boutique/scripts/`. Chacun a un rôle précis et complémentaire.
+Le pipeline CSS Boutique est accompagné de **3 scripts Node.js** dans `boutique/scripts/`. Chacun a un rôle précis et complémentaire.
 
 ### 11.1 `bundle-css.js` — Construire le dist
 
@@ -211,16 +211,16 @@ Le pipeline CSS Boutique est accompagné de **3 scripts Node.js** dans `public/b
 
 **Commande** :
 ```bash
-cd public/boutique
+cd boutique
 npm run bundle:css
 ```
 
 **Quand l'utiliser** :
 - Après toute modification d'un fichier source CSS
-- Avant tout commit qui touche `public/boutique/css/*.css`
+- Avant tout commit qui touche `boutique/css/*.css`
 - Avant déploiement prod (vérification finale)
 
-**Sortie** : régénère les 4 fichiers `public/boutique/css/dist/*.css` avec un header daté.
+**Sortie** : régénère les 4 fichiers `boutique/css/dist/*.css` avec un header daté.
 
 ---
 
@@ -230,7 +230,7 @@ npm run bundle:css
 
 **Commande** :
 ```bash
-cd public/boutique
+cd boutique
 npm run boutique:arch
 ```
 
@@ -260,7 +260,7 @@ npm run boutique:arch
 
 **Commande** :
 ```bash
-cd public/boutique
+cd boutique
 npm run boutique:audit
 ```
 
@@ -289,10 +289,10 @@ L'ordre **strict** d'une PR qui modifie un CSS Boutique :
 
 ```bash
 # 1. Modifier les fichiers sources
-vim public/boutique/css/modal.css
+vim boutique/css/modal.css
 
 # 2. Régénérer le bundle
-cd public/boutique
+cd boutique
 npm run bundle:css
 
 # 3. Régénérer la photo de l'archi (descriptif)
@@ -304,10 +304,10 @@ npm run boutique:audit
 
 # 5. Vérifier les diffs
 cd ../../
-git status public/boutique/css/dist/ public/boutique/docs/
+git status boutique/css/dist/ boutique/docs/
 
 # 6. Commiter sources + dist + docs ensemble
-git add public/boutique/css/ public/boutique/docs/
+git add boutique/css/ boutique/docs/
 git commit -m "..."
 ```
 
@@ -322,7 +322,7 @@ Pour automatiser cette discipline, ajouter dans `.husky/pre-commit` (à créer) 
 ```bash
 #!/bin/sh
 # Vérifier que le dist CSS est cohérent avec les sources
-cd public/boutique
+cd boutique
 npm run boutique:audit || {
   echo "❌ Audit archi Boutique a échoué — corrigez avant de commiter"
   exit 1
@@ -335,4 +335,4 @@ npm run boutique:audit || {
 
 ## 12. Évolution de la doc
 
-Si tu ajoutes une source dans `public/boutique/css/`, mets à jour `bundle-css.js` ET cette doc dans la même PR. Sinon les agents suivants ne sauront pas qu'elle existe.
+Si tu ajoutes une source dans `boutique/css/`, mets à jour `bundle-css.js` ET cette doc dans la même PR. Sinon les agents suivants ne sauront pas qu'elle existe.

@@ -89,7 +89,7 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 
 ### Frontend Boutique
 
-Le frontend Boutique a sa propre gouvernance documentaire dans `public/boutique/docs/`. **Point d'entrée** : [`docs/boutique/BOUTIQUE_DOCS_INDEX.md`](./docs/boutique/BOUTIQUE_DOCS_INDEX.md).
+Le frontend Boutique a sa propre gouvernance documentaire dans `boutique/docs/`. **Point d'entrée** : [`boutique/docs/BOUTIQUE_DOCS_INDEX.md`](./boutique/docs/BOUTIQUE_DOCS_INDEX.md).
 
 3 scripts automatisent sa vérification :
 - `npm run bundle:css` — bundling sources → dist
@@ -118,7 +118,7 @@ npm start
 npm start                          # démarrer le serveur (port 3001 par défaut)
 npm test                           # tests Jest (5 fichiers actuellement — TEST-1 à venir)
 
-# Frontend Boutique (depuis public/boutique/)
+# Frontend Boutique (depuis boutique/)
 npm run bundle:css                 # rebundler les CSS sources → dist
 npm run boutique:arch              # régénérer BOUTIQUE_ARCHITECTURE_LIVE.md
 npm run boutique:audit             # valider les invariants Boutique

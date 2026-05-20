@@ -8,7 +8,7 @@ Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeu
 
 1. `docs/chantier/STATUS.md` — état du jour et prochain lot à exécuter
 2. **Socle architectural** (les 4 documents de référence — voir §1 ci-dessous)
-3. `docs/BOUTIQUE_ARCHITECTURE.md` si la modification touche la Boutique
+3. `boutique/docs/BOUTIQUE_ARCHITECTURE.md` si la modification touche la Boutique
 
 ---
 
@@ -74,11 +74,11 @@ Toute PR qui touche structurellement le projet doit mettre à jour les documents
 
 Si une modification touche :
 
-- `public/boutique/**`
+- `boutique/**`
 - `public/Komerce_Boutique.html`
-- `docs/*BOUTIQUE*`
+- `boutique/docs/*BOUTIQUE*`
 
-alors il faut lire et respecter `docs/BOUTIQUE_ARCHITECTURE.md` avant d'écrire du code.
+alors il faut lire et respecter `boutique/docs/BOUTIQUE_ARCHITECTURE.md` avant d'écrire du code.
 
 Toute PR Boutique doit indiquer :
 
@@ -129,7 +129,7 @@ Pour mémoire, en cas de doute sur quelle doc fait foi :
 3. ZONE_IMPACT.md       ← invariants à ne pas casser
 4. CARTOGRAPHY_360.md   ← cartographie domaines et points de vérité
 5. ADR-001 à ADR-011    ← décisions historisées (justifient le présent)
-6. BOUTIQUE_ARCHITECTURE.md + docs Boutique
+6. boutique/docs/BOUTIQUE_ARCHITECTURE.md + boutique/docs/
 7. Autres docs spécialisées (DOCTRINE_*, SPEC_*, ROADMAP_*)
 8. docs/_archive/       ← archive (informationnel uniquement)
 ```

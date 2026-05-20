@@ -55,7 +55,7 @@
 
 > Chaque vague est cadrée pour passer la checklist `ZONE_IMPACT.md` du repo.
 > Aucune vague ne touche aux 6 invariants R1–R6 (orders, parcels, stock, sécurité).
-> Modifications **frontend uniquement** : `public/boutique/css/modal.css`, `public/boutique/js/b-modal.js`, `public/boutique/js/b-desktop-upgrade.js`, `public/boutique/index.html`.
+> Modifications **frontend uniquement** : `boutique/css/modal.css`, `boutique/js/b-modal.js`, `boutique/js/b-desktop-upgrade.js`, `boutique/index.html`.
 
 ### Vague 1 — Mobile parity (≈ 3h, faible risque)
 

@@ -12,7 +12,7 @@ docs/BOUTIQUE_COMPONENT_OWNERSHIP.md
 
 ## Statut actuel de `boutique-wow.css`
 
-`public/boutique/css/boutique-wow.css` est une couche de polish visuel réversible.
+`boutique/css/boutique-wow.css` est une couche de polish visuel réversible.
 
 Elle a été créée pour tester rapidement une direction premium sans modifier brutalement les fichiers historiques :
 

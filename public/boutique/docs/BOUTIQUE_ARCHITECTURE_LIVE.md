@@ -128,4 +128,4 @@ Aucun. ✅
 
 ---
 
-*Généré par `public/boutique/scripts/gen-boutique-arch-live.js`.*
+*Généré par `boutique/scripts/gen-boutique-arch-live.js`.*

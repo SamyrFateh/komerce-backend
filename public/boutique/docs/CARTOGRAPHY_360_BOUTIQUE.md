@@ -2,17 +2,17 @@
 
 > **Statut** : carte vivante du frontend boutique.
 > **Mise à jour** : 2026-05-19 (création initiale après debug v3.1).
-> **Convention** : ce document décrit l'état réel observé dans `public/boutique/`. Si tu trouves une divergence code ↔ doc, le code fait foi à l'instant T mais ouvre une PR pour aligner la doc. La doc doit suivre.
+> **Convention** : ce document décrit l'état réel observé dans `boutique/`. Si tu trouves une divergence code ↔ doc, le code fait foi à l'instant T mais ouvre une PR pour aligner la doc. La doc doit suivre.
 >
 > **Lecture obligatoire** avant tout changement structurel : HTML, mutations DOM, classes body, flux utilisateur, build CSS.
 >
-> **Complète** (sans remplacer) `public/boutique/docs/BOUTIQUE_ARCHITECTURE.md` qui ne couvre que la doctrine CSS.
+> **Complète** (sans remplacer) `boutique/docs/BOUTIQUE_ARCHITECTURE.md` qui ne couvre que la doctrine CSS.
 
 ---
 
 ## 1. Topologie des fichiers
 
-`public/boutique/` contient :
+`boutique/` contient :
 
 | Dossier | Rôle | Taille indicative |
 |---|---|---|
@@ -174,7 +174,7 @@ Classes posées et retirées sur `<body>` au runtime, avec leurs effets CSS et l
 
 ## 8. Cartographie CSS (par responsabilité)
 
-Plus de détails dans `public/boutique/docs/BOUTIQUE_ARCHITECTURE.md` §3 (table sélecteur ↔ owner). Vue résumée :
+Plus de détails dans `boutique/docs/BOUTIQUE_ARCHITECTURE.md` §3 (table sélecteur ↔ owner). Vue résumée :
 
 | Fichier source | Bundle | Responsabilité |
 |---|---|---|
@@ -325,7 +325,7 @@ Source unique de vérité des événements inter-modules. Tout ajout d'événeme
 
 ## 11. Garde-fous exécutables — plan
 
-Lot suivant : créer ces scripts dans `public/boutique/scripts/` ou `scripts/` racine, à lancer en `precommit` et CI Railway.
+Lot suivant : créer ces scripts dans `boutique/scripts/` ou `scripts/` racine, à lancer en `precommit` et CI Railway.
 
 | Script | Vérifie | Action si violation |
 |---|---|---|
@@ -354,7 +354,7 @@ Détail d'implémentation à faire dans le lot 2 (étape 2 de la roadmap doc).
 1. Modifier le code.
 2. Mettre à jour ce document dans la même PR.
 3. Mettre à jour la date de consolidation en tête.
-4. Si la doctrine CSS change : mettre à jour aussi `public/boutique/docs/BOUTIQUE_ARCHITECTURE.md`.
+4. Si la doctrine CSS change : mettre à jour aussi `boutique/docs/BOUTIQUE_ARCHITECTURE.md`.
 5. Lancer `npm run boutique:arch` pour régénérer `BOUTIQUE_ARCHITECTURE_LIVE.md`.
 
 **Règle d'or** : si tu hésites à mettre à jour, c'est que la carto a besoin d'être mise à jour. Le coût d'une carte fausse est élevé (cf. P-1 qu'on a mis 6h à diagnostiquer faute de carte).
@@ -363,8 +363,8 @@ Détail d'implémentation à faire dans le lot 2 (étape 2 de la roadmap doc).
 
 ## 13. Liens vers les autres documents
 
-- `public/boutique/docs/BOUTIQUE_ARCHITECTURE.md` : doctrine CSS normative (un sélecteur, un owner). Court par discipline.
-- `public/boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md` : audit CSS auto-généré. Régénéré par `npm run boutique:arch`.
+- `boutique/docs/BOUTIQUE_ARCHITECTURE.md` : doctrine CSS normative (un sélecteur, un owner). Court par discipline.
+- `boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md` : audit CSS auto-généré. Régénéré par `npm run boutique:arch`.
 - `docs/CARTOGRAPHY_360.md` : cartographie 360 **backend** (sœur de ce document).
 - `docs/SCHEMA.md`, `docs/ZONE_IMPACT.md`, `docs/CONTRACTS.md` : socle backend (non lié au front mais référencé par les flows checkout).
 - `AGENTS.md` : règles globales agents (à mettre à jour pour pointer ici).
