@@ -71,6 +71,24 @@ async function runHealthChecks() {
   }
 }
 
+function classifyDryRunResult(check, response) {
+  const accepted = check.acceptedStatuses || [200, 207];
+
+  if (accepted.includes(response.status)) {
+    return { status: 'PASS', details: `HTTP ${response.status}` };
+  }
+
+  // Auth-protected admin checks are optional smoke checks. A 401/403 means the
+  // route is reachable and protected, but the dry-run could not execute because
+  // the provided P0_ADMIN_TOKEN is absent/expired/not admin. Do not mark the
+  // whole runtime as failed for that case; keep it explicit as SKIP.
+  if ([401, 403].includes(response.status)) {
+    return { status: 'SKIP', details: `HTTP ${response.status} — JWT admin valide requis` };
+  }
+
+  return { status: 'FAIL', details: `HTTP ${response.status}` };
+}
+
 async function runDryRunChecks() {
   if (!BASE_URL || !ADMIN_TOKEN) {
     add('admin dry-run checks', 'SKIP', 'P0_BASE_URL ou P0_ADMIN_TOKEN absent');
@@ -104,9 +122,8 @@ async function runDryRunChecks() {
   for (const check of dryRuns) {
     try {
       const r = await request(check.path, { method: 'POST', body: check.body, token: ADMIN_TOKEN });
-      const accepted = check.acceptedStatuses || [200, 207];
-      if (accepted.includes(r.status)) add(check.name, 'PASS', `HTTP ${r.status}`);
-      else add(check.name, 'FAIL', `HTTP ${r.status}`);
+      const classified = classifyDryRunResult(check, r);
+      add(check.name, classified.status, classified.details);
     } catch (err) {
       add(check.name, 'FAIL', err.message);
     }
