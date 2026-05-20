@@ -1,8 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — modal.css
-   ARCHITECTURE :
+   ARCHITECTURE (PR-M2 — 6 sections) :
      < 900px  = MOBILE   : modal plein écran, flex colonne, 1 scroll owner = .k-modal-scroll
-     ≥ 900px  = DESKTOP  : modal fenêtrée, image sticky gauche, détails droite, suggestions dessous
+     ≥ 900px  = DESKTOP  : modal pleine page 100dvh, grille 43/57, image sticky gauche
+
+   SECTIONS :
+     §1  BASE MOBILE        — base universelle, overridée ≥900px
+     §2  MOBILE GUARD       — haute spécificité #k-modal (max-width:899px)
+     §3  DESKTOP ≥900px     — typographie, espacement, topbar, actions (pas de grille)
+     §4  VARIANTES          — SKUs couleur, grille tailles (sans media query)
+     §5  ZONES ENRICHIES    — blocs conditionnels desktop (§6 avant PR-M2)
+     §6  LAYOUT DESKTOP     — grille 43/57, pleine page 100dvh (§7 avant PR-M2)
+                              Source de vérité unique pour grid-template-columns (B-M-11)
 
    RÈGLE D'OR :
      - Toute règle mobile est sans media query (base) ou dans @media (max-width:899px)
@@ -11,6 +20,7 @@
        elle s'appliquerait aussi au desktop et créerait des conflits.
      - Le bloc @media (max-width:899px) à haute spécificité (#k-modal) ne doit
        JAMAIS omettre flex:1 / min-height:0 qu'il écrase depuis la base.
+     - grid-template-columns sur .k-modal-product-zone : §6 UNIQUEMENT (B-M-11)
    ═══════════════════════════════════════════════════════════════ */
 
 
@@ -733,12 +743,10 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   3. DESKTOP ≥900px — SOURCE DE VÉRITÉ UNIQUE
-   Architecture :
-     .k-modal              = flex colonne (topbar fixe | scroll)
-     .k-modal-scroll       = flex colonne, overflow-y:auto (SEUL scroll owner)
-     .k-modal-product-zone = grid 2 colonnes (image sticky | détails+actions)
-     .k-modal-suggestions  = pleine largeur SOUS product-zone, overflow:visible
+   3. DESKTOP ≥900px — TYPOGRAPHIE, ESPACEMENT, TOPBAR
+   Rôle : overlay, shell fenêtré (fallback), topbar, scroll, image, détails,
+          actions, suggestions — tout SAUF grid-template-columns.
+   La grille est exclusive à §6 (B-M-11 — grep "grid-template-columns" §3 → 0).
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
@@ -778,10 +786,9 @@
     padding: 0; background: var(--white);
   }
 
-  /* ── Product-zone : grid 2 colonnes (override display:contents) */
+  /* ── Product-zone : grid 2 colonnes (colonnes dans §6, B-M-11) */
   #k-modal .k-modal-product-zone {
     display: grid;
-    grid-template-columns: minmax(0, 52%) minmax(340px, 48%);
     grid-template-rows: 1fr auto;
     flex: 0 0 auto;
     min-height: calc(min(880px, 100vh - 56px) - 58px);
@@ -959,34 +966,9 @@
 }
 
 
-/* ══════════════════════════════════════════════════════════════
-   4. DESKTOP INTERMÉDIAIRE 900–1120px
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) and (max-width: 1120px) {
-  #k-modal.k-modal { width: calc(100vw - 32px); }
-  body.modal-has-cart #k-modal.k-modal {
-    width: calc(100vw - 32px - 336px);
-    margin-right: 336px;
-  }
-  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 46%) minmax(340px, 54%); }
-  #k-modal .k-modal-product-zone .k-modal-details { padding: 0 18px; }
-  #k-modal .k-modal-product-zone .k-modal-actions { padding-inline: 18px; grid-template-columns: auto 1fr; grid-template-rows: auto auto; }
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; }
-  #k-modal .k-modal-suggestions,
-  #k-modal-suggestions.k-modal-suggestions--desktop-list { padding: 24px 24px 36px; }
-}
 
-
-/* ══════════════════════════════════════════════════════════════
-   5. DESKTOP LARGE ≥1200px
-   ══════════════════════════════════════════════════════════════ */
+/* ── Suggestions desktop ≥1200px : grille plus dense ─────── */
 @media (min-width: 1200px) {
-  #k-modal.k-modal { width: min(1280px, calc(100vw - 48px)); }
-  body.modal-has-cart #k-modal.k-modal {
-    width: min(1280px, calc(100vw - 48px - 348px));
-    margin-right: 348px;
-  }
-  #k-modal .k-modal-product-zone { grid-template-columns: minmax(0, 46%) minmax(400px, 54%); }
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
   #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
@@ -995,7 +977,7 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   VARIANTES — SKUs couleur + grille tailles / pointures
+   4. VARIANTES — SKUs couleur + grille tailles / pointures
    Classes couleur : .k-vg / .k-vg-skus / .k-sku
    Classes taille  : .k-vg / .k-vg-sizes / .k-vp
    ══════════════════════════════════════════════════════════════ */
@@ -1390,7 +1372,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 
 /* ══════════════════════════════════════════════════════════════
-   6. ZONES DESKTOP ENRICHIES — Temu-style full page
+   5. ZONES DESKTOP ENRICHIES — Temu-style full page
    Owner : modal.css (propriétaire de tous .k-modal-*)
    Règle I-5 : exclusivement sous @media (min-width: 900px)
    Règle I-3 : aucun hex — uniquement des tokens CSS
@@ -1683,16 +1665,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 
 
 /* ══════════════════════════════════════════════════════════════
-   §7. FULL PAGE DESKTOP — Temu-style pleine page (v3)
+   §6. LAYOUT DESKTOP — Pleine page Temu-style (source de vérité grille)
    ──────────────────────────────────────────────────────────────
-   v1 : passage pleine page (overlay blanc, 100dvh)
-   v2 : footer masqué, flex-shrink:0, justify-content corrigé
-   v3 : panneau droit qui respire
-        - colonnes 43 % image / 57 % détails (vs 50/50 en v1-v2
-          qui écrasait le 46/54 des §4-§5 originaux)
-        - padding details/actions : clamp(24px, 4vw, 64px)
-          → 36px à 900px · 48px à 1200px · 64px à 1600px+
-        - actions sticky : padding-inline identique aux détails
+   Anciennement §7. Promu source de vérité unique pour le layout desktop.
+   Déclare grid-template-columns une seule fois (invariant B-M-11).
+   v3 : colonnes 43 % image / 57 % détails
+        padding details/actions : clamp(24px, 4vw, 64px)
+        → 36px à 900px · 48px à 1200px · 64px à 1600px+
+   Sous-blocs : ≥900px (base) + 900–1120px (grille serrée 44/56)
    ══════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
@@ -1802,12 +1782,3 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 }
 
-/* ── Override ≥1200px (§5) ──────────────────────────────────── */
-@media (min-width: 1200px) {
-  body.modal-open .k-footer,
-  body.modal-open footer               { display: none !important; }
-  #k-modal.k-modal                     { width: 100vw; }
-  body.modal-has-cart #k-modal.k-modal { width: 100vw; margin-right: 0; }
-  #k-modal .k-modal-product-zone       { grid-template-columns: minmax(0, 43%) minmax(0, 57%); }
-  /* Sur grands écrans, le padding clamp atteint déjà 48-64px, c'est correct. */
-}
