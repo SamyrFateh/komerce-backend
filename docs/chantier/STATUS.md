@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-19
+> Mis à jour : 2026-05-20
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -84,23 +84,24 @@ Lire dans cet ordre avant toute modification :
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
 | DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
-| H1 plan | ✅ Fait | Document `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté. Code non commencé. Première PR recommandée : H1A extraction du manifest routes API uniquement, sans toucher aux webhooks raw, parsers, crons, HTML routes ni migrations inline. |
-| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` avec `mountApiRoutesBeforeStripeOwnedBlocks(app)` et `mountApiRoutesAfterStripeOwnedBlocks(app)`. Aucun impact runtime : `server.js` non câblé. |
-| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc `docs/chantier/H1A_SERVER_WIRING_CODEMOD.md`. Codemod prêt pour appliquer localement le câblage `server.js` avec garde-fous. |
-| P0 | 🟠 PARTIAL | Rapport `docs/chantier/VALIDATION_STAGING_2026-05-19.md` créé puis enrichi. Env critique présent et boot Railway PASS sur logs. `npm test`, `/health` et flows HTTP staging restent à exécuter. |
+| H1 plan | ✅ Fait | Document `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté. Découpe progressive de `server.js` cadrée : routes API, HTML, middlewares, crons, env et migrations inline doivent rester séparés. |
+| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` avec `mountApiRoutesBeforeStripeOwnedBlocks(app)` et `mountApiRoutesAfterStripeOwnedBlocks(app)`. |
+| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc `docs/chantier/H1A_SERVER_WIRING_CODEMOD.md`. |
+| H1A-2 | ✅ Fait | PR #427 mergée. `server.js` est câblé via `bootstrap/api-routes.js` : montage API avant et après les blocs Stripe-owned, sans déplacer webhooks raw, `express.json`, HTML routes, crons, migrations inline ni listen/shutdown. |
+| H1A-2-FIX | ✅ Fait | PR #426 mergée. Le codemod conserve désormais `sharedCart` dans `server.js` et vérifie que l'import reste présent après transformation. |
+| P0 | 🟠 PARTIAL | Boot Railway restauré côté config. `npm test` local échoue encore sur dettes préexistantes hors H1A-2 : `validators`, `order-status-machine`, `parcelOptimization`, et env test `DATABASE_URL`/`JWT_SECRET`. `/health`, `/api/health` et flows HTTP staging restent à valider via `npm run test:p0`. |
 | P0-HELPER | ✅ Fait | PR #413 mergée. Ajout `scripts/p0-runtime-check.js`, commande `npm run test:p0` et doc `docs/chantier/P0_RUNTIME_CHECK.md` pour exécuter P0 runtime de façon reproductible. |
 
 ---
 
 ## Pièges critiques à retenir
 
-- `console.log` : environ 365 occurrences ; F1 est un gros lot, pas un petit nettoyage.
+- `console.log` : environ 365+ occurrences ; F1 est un gros lot, pas un petit nettoyage.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
-- ✅ H1 plan : `server.js` doit être découpé en PRs petites ; ne pas déplacer les webhooks raw sous `express.json`, ne pas mélanger routes API, HTML, crons et migrations inline.
-- ✅ H1A-0/H1A-1 : manifest + codemod prêts. `server.js` n'est pas encore câblé ; appliquer le codemod localement puis tester avant PR H1A-2.
+- ✅ H1A : manifest + câblage `server.js` réalisés. Les webhooks raw Stripe restent explicitement avant `express.json`; les blocs Stripe-owned partagés/collectifs restent dans `server.js`.
 - Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
-- 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter dans un environnement runtime réel. Utiliser `npm run test:p0`.
+- 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter ou corriger dans un environnement runtime réel. Utiliser `npm run test:p0`.
 - ✅ `pay-cash` corrigé par I-SWEEP-1.
 - ✅ QR verify/parcels corrigé par I-SWEEP-2.
 - ✅ Stripe intent idempotent par I-SWEEP-3A.
@@ -119,54 +120,57 @@ Lire dans cet ordre avant toute modification :
 
 ## Prochain lot recommandé
 
-### H1A-2 — Appliquer le câblage `server.js` via codemod local
+### P0-RUNTIME — Valider le runtime après H1A-2
 
 ```text
-Branche   : refactor/backend-H1A-wire-server
+Branche   : aucune si simple validation ; branche dédiée si correction de tests
 Charge    : 0.5 jour
-Risque    : moyen — ordre des routes à préserver strictement
-Prérequis : H1A-0 + H1A-1 terminés
+Risque    : faible à moyen selon corrections nécessaires
+Prérequis : H1A-2 terminé
 ```
 
-Objectif : exécuter localement le codemod, vérifier le diff, lancer les tests, puis ouvrir une PR contenant uniquement le diff `server.js` généré.
+Objectif : confirmer que le serveur démarre et que les checks runtime passent après le câblage `server.js`.
 
 Commandes :
 
 ```bash
-node scripts/h1a-wire-api-routes.js --check
-node scripts/h1a-wire-api-routes.js --write
-git diff -- server.js
-npm test
 npm run test:p0
+P0_BASE_URL=https://komerce-backend-production.up.railway.app npm run test:p0
 ```
 
-Hors scope H1A-2 : webhooks raw Stripe, `express.json`, routes HTML, static serving, crons, migrations inline, listen/shutdown.
+À clarifier avant de marquer P0 ✅ :
+
+- `GET /health`
+- `GET /api/health`
+- boot Railway après merge H1A-2
+- résultat `npm run test:p0`
+- statut des échecs `npm test` préexistants
 
 ---
 
-## File d'attente après H1A-2
+## File d'attente après P0-RUNTIME
 
 Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` et `PLAN_H1_REFACTO_SERVER.md`) :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| P0-RUNTIME | Haute | Exécuter `npm run test:p0` hors GitHub dès que possible |
-| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
-| F1A | Haute mais découpé | Logger pilote sur 1 domaine (pas les 436 occurrences d'un coup) |
-| H1B | Moyen | Extraire routes HTML / SPA fallback après H1A |
-| H1C | Moyen | Extraire security/middleware après H1A/H1B |
-| H1D | Moyen | Extraire crons |
-| H1E | Moyen | Extraire env validation |
-| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB |
-| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
+| TEST-DEBT | Haute | Corriger ou isoler les échecs connus : `validators`, `order-status-machine`, `parcelOptimization`, env test. |
+| H1B | Moyen | Extraire routes HTML / SPA fallback après H1A. |
+| H1C | Moyen | Extraire security/middleware après H1A/H1B. |
+| H1D | Moyen | Extraire crons. |
+| H1E | Moyen | Extraire env validation. |
+| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB. |
+| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue. |
+| F1 suite logging | Haute mais découpé | Continuer migration logger par domaines, notamment `notification-service.js` via codemod. |
+| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/`. |
 
-### Dette mesurée au 19 mai 2026 (référence)
+### Dette mesurée au 20 mai 2026 (référence)
 
-- **19 god-objects ≥ 800 lignes** : aucun découpé pendant le cycle critique (volontaire, sécurité métier d'abord).
-- **`server.js`** : 1 200 lignes, 96 blocs DDL inline.
-- **`console.*`** : 436 occurrences dans `routes/` + `services/` (a augmenté depuis l'audit initial — F1 reste prioritaire).
+- **19 god-objects ≥ 800 lignes** : découpe commencée par H1A mais non généralisée.
+- **`server.js`** : routes API externalisées via manifest, mais HTML routes, crons, migrations inline et listen/shutdown restent encore dans le fichier.
+- **`console.*`** : dette logging toujours présente ; F1 reste prioritaire mais doit rester découpé.
 - **Migrations** : collisions 060/061 clarifiées par A4 ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à préserver documentairement.
-- **Tests** : couverture ~2,5 %, filet de sécurité I-SWEEP OK mais extension utile après refacto.
+- **Tests** : filet de sécurité I-SWEEP OK, mais `npm test` global reste à remettre au vert.
 
 ---
 
