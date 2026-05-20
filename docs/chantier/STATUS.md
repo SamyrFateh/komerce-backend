@@ -51,46 +51,52 @@ Lire dans cet ordre avant toute modification :
 | A1 | ✅ Fait | Fichier fantôme supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé en manuel |
 | A4 | ✅ Fait | Audit `docs/chantier/AUDIT_MIGRATIONS_060_061.md`. Collisions 060/061 reconnues comme dette réelle mais non bloquante : le runner actif ne parcourt pas automatiquement les SQL. Aucun renommage/suppression de migration. |
-| A6 | ✅ Fait | Issue #387 créée |
-| D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré |
-| D1 | ✅ Fait | Audit couverture auth admin documenté |
-| D2 | ✅ Fait | Audit webhooks Stripe/idempotence documenté |
-| D3 | ✅ Fait | Audit `auth-guest.js` documenté |
-| D4 | ✅ Fait | Audit QR / pickup-secret documenté |
-| D5 | ✅ Fait partiel | Audit env documenté ; `.env.example` à reprendre localement |
-| D6 | ✅ Fait | Audit rate limiting documenté |
-| D7 | ✅ Fait | Audit CORS production documenté |
-| D8 | ✅ Fait | Audit Helmet/CSP production documenté |
-| G1 | ✅ Fait | Audit flow cash → retrait documenté |
-| G2 | ✅ Fait | Audit flow Stripe → préparation hub documenté |
-| G3 | ✅ Fait | Audit flow collectif → contributions → commande documenté |
-| G4 | ✅ Fait | Audit annulation après paiement documenté |
-| G5 | ✅ Fait | Audit sourcing → produit → mise en vente documenté |
-| I-SWEEP-0 | ✅ Fait | Checklist créée |
-| I-SWEEP-1 | ✅ Fait | `/api/pickup/pay-cash/:orderId` passe par `confirmPaymentCycle(...)` |
-| I-SWEEP-2 | ✅ Fait | `verify-qr` synchronise order/scan/parcels dans une transaction |
-| I-SWEEP-3A | ✅ Fait | Stripe intent idempotent par commande |
-| I-SWEEP-3B | ✅ Fait | `triggerPurchasing` idempotent par `order_id + product_supplier_id` |
-| I-SWEEP-3C | ✅ Fait | Repair ordered sans PO existant ; réception PO transactionnelle ajoutée |
-| I-SWEEP-4A | ✅ Fait | PR #402 mergée. Repair admin dry-run `POST /api/admin/collective/repair-ready-to-capture` pour sessions collectives `ready_to_capture` anciennes sans order liée. |
-| I-SWEEP-4B | ✅ Fait | PR #403 mergée. Repair admin dry-run `POST /api/admin/collective/repair-stock-reservations` : consomme les réservations des workspaces avec order et libère/expire celles des sessions/workspaces terminés sans order. |
-| I-SWEEP-5A | ✅ Fait | PR #404 mergée. Lors d'une annulation commande, les `purchase_orders` `pending/notified` sont annulées automatiquement ; les POs fournisseur déjà engagées créent une alerte opérationnelle. |
-| I-SWEEP-5B | ✅ Fait | PR #405 mergée. Endpoint admin dry-run `POST /api/admin/orders/:orderId/refund` : refund Stripe via service idempotent existant, cash manuel par défaut avec alerte, option wallet credit explicite, puis `cancelled → refunded` après remboursement exécuté. |
-| I-SWEEP-6A | ✅ Fait | PR #406 mergée. `price_history` est alimenté lors de la création produit (`product_create`) et lors des changements directs `PUT /api/products/:id` sur `price_kmf` (`product_update`). |
-| I-SWEEP-6B | ✅ Fait | PR #407 mergée. `PUT /api/pricing/apply-price/:product_id` et `PUT /api/pricing/apply-all` passent par un service audité avec survival recalculé serveur et `price_history` par item. |
-| I-SWEEP-6C | ✅ Fait | PR #408 mergée. Garde de publication catalogue ajoutée et audit minimal des changements de stock via `alerts` source `product_stock_audit`. |
-| TEST-1A | ✅ Fait | PR #409 mergée. Filet Jest sans DB réelle : tests statiques d'invariants I-SWEEP/G1-G5 + tests de comportement sur helpers publication/prix/stock. |
-| TEST-1B | ✅ Fait | Commit `28aae996` sur main. Tests Jest avec mocks DB transactionnels : cash pickup commit/rollback et réception PO commit/rollback. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
+| A6 | ✅ Fait | Issue #387 créée |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
-| DOC-CLEANUP-1 | ✅ Fait | Doublons `chantier/CARTOGRAPHY_360.md` et `chantier/ZONE_IMPACT.md` archivés ; `chantier/README.md` corrigé (audits à la racine, pas dans `audits/`) ; `PROMPTS_KIT_POST_CRITIQUE.md` complété par C1 (MAJ socle) et C2 (régénération SCHEMA). |
-| H1 plan | ✅ Fait | Document `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté. Découpe progressive de `server.js` cadrée : routes API, HTML, middlewares, crons, env et migrations inline doivent rester séparés. |
-| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` avec `mountApiRoutesBeforeStripeOwnedBlocks(app)` et `mountApiRoutesAfterStripeOwnedBlocks(app)`. |
-| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc `docs/chantier/H1A_SERVER_WIRING_CODEMOD.md`. |
-| H1A-2 | ✅ Fait | PR #427 mergée. `server.js` est câblé via `bootstrap/api-routes.js` : montage API avant et après les blocs Stripe-owned, sans déplacer webhooks raw, `express.json`, HTML routes, crons, migrations inline ni listen/shutdown. |
-| H1A-2-FIX | ✅ Fait | PR #426 mergée. Le codemod conserve désormais `sharedCart` dans `server.js` et vérifie que l'import reste présent après transformation. |
-| P0 | 🟠 PARTIAL | Boot Railway restauré côté config. `npm test` local échoue encore sur dettes préexistantes hors H1A-2 : `validators`, `order-status-machine`, `parcelOptimization`, et env test `DATABASE_URL`/`JWT_SECRET`. `/health`, `/api/health` et flows HTTP staging restent à valider via `npm run test:p0`. |
-| P0-HELPER | ✅ Fait | PR #413 mergée. Ajout `scripts/p0-runtime-check.js`, commande `npm run test:p0` et doc `docs/chantier/P0_RUNTIME_CHECK.md` pour exécuter P0 runtime de façon reproductible. |
+| D0 | ✅ Fait avec hotfix | Fallback QR supprimé ; démarrage Railway restauré |
+| D1-D8 | ✅ Fait | Audits sécurité, env, rate limit, CORS, Helmet/CSP documentés |
+| G1-G5 | ✅ Fait | Audits flows cash, Stripe, collectif, annulation, sourcing/catalogue documentés |
+| I-SWEEP-0 à I-SWEEP-6C | ✅ Fait | Corrections critiques cash, QR, Stripe, purchasing, collectif, refund, pricing, publication/stock mergées |
+| TEST-1A | ✅ Fait | PR #409 mergée. Filet Jest sans DB réelle : invariants I-SWEEP/G1-G5 + helpers publication/prix/stock |
+| TEST-1B | ✅ Fait | Commit `28aae996` sur main. Tests Jest avec mocks DB transactionnels : cash pickup commit/rollback et réception PO commit/rollback |
+| TEST-DEBT | ✅ Fait | `npm test` vert : 7 suites passées, 1 suite intégration API skip propre sans `DATABASE_URL`; 87 tests passés, 1 skipped |
+| DOC-CLEANUP-1 | ✅ Fait | Doublons chantier archivés ; `chantier/README.md` corrigé ; `PROMPTS_KIT_POST_CRITIQUE.md` complété |
+| H1 plan | ✅ Fait | `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté |
+| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` |
+| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc codemod |
+| H1A-2 | ✅ Fait | PR #427 mergée. `server.js` câblé via `bootstrap/api-routes.js`, sans déplacer webhooks raw, `express.json`, HTML routes, crons, migrations inline ni listen/shutdown |
+| H1A-2-FIX | ✅ Fait | PR #426 mergée. Le codemod conserve `sharedCart` dans `server.js` |
+| P0-HELPER | ✅ Fait | PR #413 + PR #436. `npm run test:p0` reproductible ; 401/403 admin dry-runs classés SKIP explicite si JWT admin invalide |
+| P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, Railway `/api/health` ✅. Dry-runs admin collectifs SKIP en 401 car JWT admin valide requis. Refund dry-run SKIP sans `P0_ORDER_ID`. |
+
+---
+
+## Résultat de validation du 20 mai 2026
+
+### `npm test`
+
+```text
+Test Suites: 1 skipped, 7 passed, 7 of 8 total
+Tests:       1 skipped, 87 passed, 88 total
+```
+
+La suite API intégration est volontairement skipped si `DATABASE_URL` est absent, afin d'éviter d'importer `server.js` et son garde runtime `process.exit(1)`. Elle reste exécutable avec un vrai environnement DB/JWT.
+
+### `npm run test:p0` avec Railway
+
+```text
+npm test                                     PASS
+GET /health                                  PASS HTTP 200
+GET /api/health                              PASS HTTP 200
+admin order refund dry-run                   SKIP P0_ORDER_ID absent
+collective ready_to_capture repair dry-run   SKIP HTTP 401 — JWT admin valide requis
+collective stock reservations repair dry-run SKIP HTTP 401 — JWT admin valide requis
+
+P0 runtime verdict: PARTIAL (3 skipped)
+```
+
+Conclusion : le runtime est sain. Le `PARTIAL` restant n'est pas une panne ; il manque seulement un vrai JWT admin et, pour le refund dry-run, un `P0_ORDER_ID` testable.
 
 ---
 
@@ -100,77 +106,66 @@ Lire dans cet ordre avant toute modification :
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
 - ✅ H1A : manifest + câblage `server.js` réalisés. Les webhooks raw Stripe restent explicitement avant `express.json`; les blocs Stripe-owned partagés/collectifs restent dans `server.js`.
-- Tests : TEST-1A/1B posent un filet Jest sans DB réelle ; un futur E2E Railway/staging peut compléter.
-- 🟠 P0 est PARTIAL : `npm test`, `/health`, `/api/health` et flows curl staging restent à exécuter ou corriger dans un environnement runtime réel. Utiliser `npm run test:p0`.
-- ✅ `pay-cash` corrigé par I-SWEEP-1.
-- ✅ QR verify/parcels corrigé par I-SWEEP-2.
-- ✅ Stripe intent idempotent par I-SWEEP-3A.
-- ✅ Purchasing replay corrigé par I-SWEEP-3B.
-- ✅ Purchasing repair/réception amélioré par I-SWEEP-3C.
-- ✅ Collectif `ready_to_capture` : repair admin ajouté par I-SWEEP-4A.
-- ✅ Collectif réservations stock : repair admin ajouté par I-SWEEP-4B.
-- ✅ Annulation ↔ purchase_orders : synchronisation ajoutée par I-SWEEP-5A.
-- ✅ Refund doctrine : endpoint admin explicite ajouté par I-SWEEP-5B ; `cancelled` reste métier, `refunded` devient financier après action explicite.
-- ✅ Prix catalogue manuel : audit `price_history` ajouté par I-SWEEP-6A.
-- ✅ Pricing apply : `apply-price/apply-all` audités avec survival serveur par I-SWEEP-6B.
-- ✅ Catalogue/stock : garde publication + audit stock minimal ajoutés par I-SWEEP-6C.
+- ✅ Tests : `npm test` est vert. La suite API intégration est un skip propre sans env DB.
+- 🟠 P0 est PARTIAL propre : health Railway OK, admin dry-runs protégés mais non exécutés faute de JWT admin valide / `P0_ORDER_ID`.
+- ✅ Routes admin collectives : exposées via `routes/admin-collective-repairs.js` et montées dans `bootstrap/api-routes.js`.
+- ✅ Refund doctrine : endpoint admin explicite ; `cancelled` reste métier, `refunded` devient financier après action explicite.
 - 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
 
 ---
 
 ## Prochain lot recommandé
 
-### P0-RUNTIME — Valider le runtime après H1A-2
+### H1B — Extraire routes HTML / SPA fallback hors `server.js`
 
 ```text
-Branche   : aucune si simple validation ; branche dédiée si correction de tests
+Branche   : refactor/H1B-html-routes
 Charge    : 0.5 jour
-Risque    : faible à moyen selon corrections nécessaires
-Prérequis : H1A-2 terminé
+Risque    : moyen
+Prérequis : H1A terminé, npm test vert, P0 runtime PARTIAL propre
 ```
 
-Objectif : confirmer que le serveur démarre et que les checks runtime passent après le câblage `server.js`.
+Objectif : poursuivre la découpe progressive de `server.js` sans toucher aux blocs sensibles.
 
-Commandes :
+Contraintes :
+
+- Ne pas déplacer les webhooks Stripe raw.
+- Ne pas déplacer `express.json`.
+- Ne pas déplacer les crons.
+- Ne pas déplacer les migrations inline.
+- Ne pas modifier la logique business.
+- Ajouter un petit helper/bootstrap dédié aux routes HTML et fallback SPA.
+- Conserver un diff lisible et réversible.
+
+Validation attendue :
 
 ```bash
+npm test
 npm run test:p0
-P0_BASE_URL=https://komerce-backend-production.up.railway.app npm run test:p0
 ```
-
-À clarifier avant de marquer P0 ✅ :
-
-- `GET /health`
-- `GET /api/health`
-- boot Railway après merge H1A-2
-- résultat `npm run test:p0`
-- statut des échecs `npm test` préexistants
 
 ---
 
-## File d'attente après P0-RUNTIME
-
-Ordre recommandé (voir `PROMPTS_KIT_POST_CRITIQUE.md` et `PLAN_H1_REFACTO_SERVER.md`) :
+## File d'attente après H1B
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| TEST-DEBT | Haute | Corriger ou isoler les échecs connus : `validators`, `order-status-machine`, `parcelOptimization`, env test. |
-| H1B | Moyen | Extraire routes HTML / SPA fallback après H1A. |
-| H1C | Moyen | Extraire security/middleware après H1A/H1B. |
-| H1D | Moyen | Extraire crons. |
-| H1E | Moyen | Extraire env validation. |
-| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB. |
-| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue. |
-| F1 suite logging | Haute mais découpé | Continuer migration logger par domaines, notamment `notification-service.js` via codemod. |
-| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/`. |
+| H1C | Moyen | Extraire security/middleware après H1A/H1B |
+| H1D | Moyen | Extraire crons |
+| H1E | Moyen | Extraire env validation |
+| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB |
+| P0-FULL | Conditionnelle | Fournir JWT admin valide + `P0_ORDER_ID` pour transformer P0 PARTIAL en PASS complet |
+| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
+| F1 suite logging | Haute mais découpé | Continuer migration logger par domaines, notamment `notification-service.js` via codemod |
+| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
 
-### Dette mesurée au 20 mai 2026 (référence)
+### Dette mesurée au 20 mai 2026 — référence
 
 - **19 god-objects ≥ 800 lignes** : découpe commencée par H1A mais non généralisée.
-- **`server.js`** : routes API externalisées via manifest, mais HTML routes, crons, migrations inline et listen/shutdown restent encore dans le fichier.
+- **`server.js`** : routes API externalisées via manifest ; HTML routes, crons, migrations inline et listen/shutdown restent encore dans le fichier.
 - **`console.*`** : dette logging toujours présente ; F1 reste prioritaire mais doit rester découpé.
 - **Migrations** : collisions 060/061 clarifiées par A4 ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à préserver documentairement.
-- **Tests** : filet de sécurité I-SWEEP OK, mais `npm test` global reste à remettre au vert.
+- **Tests** : filet I-SWEEP OK et `npm test` vert ; suite API intégration complète à jouer uniquement avec env DB/JWT.
 
 ---
 
