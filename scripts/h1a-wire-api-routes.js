@@ -49,7 +49,7 @@ if (original.includes('mountApiRoutesBeforeStripeOwnedBlocks(app)')) {
 const importBlockStart = '// ── Routes API ────────────────────────────────────────────────────────────\n\n';
 const importBlockEnd = "\n\napp.use('/api/transit-dashboard', transitDashRouter);";
 
-const importReplacement = `// ── Routes API ────────────────────────────────────────────────────────────\n\nconst {\n  mountApiRoutesBeforeStripeOwnedBlocks,\n  mountApiRoutesAfterStripeOwnedBlocks,\n} = require('./bootstrap/api-routes');\n\nconst walletService    = require('./services/wallet-service');\nconst routingService   = require('./services/routing');\nconst parcelSecurity   = require('./services/parcel-security');`;
+const importReplacement = `// ── Routes API ────────────────────────────────────────────────────────────\n\nconst {\n  mountApiRoutesBeforeStripeOwnedBlocks,\n  mountApiRoutesAfterStripeOwnedBlocks,\n} = require('./bootstrap/api-routes');\n\n// Stripe-owned shared cart handlers remain mounted in server.js so the raw-body\n// webhook ordering stays explicit and auditable.\nconst sharedCart = require('./routes/shared-cart');\n\nconst walletService    = require('./services/wallet-service');\nconst routingService   = require('./services/routing');\nconst parcelSecurity   = require('./services/parcel-security');`;
 
 let next = replaceOnce(original, importBlockStart, importBlockEnd, importReplacement, 'routes imports block');
 
@@ -68,6 +68,7 @@ const requiredChecks = [
   "app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));",
   "app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'application/json' }));",
   "app.use(express.json({ limit: '1mb' }));",
+  "const sharedCart = require('./routes/shared-cart');",
   "app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);",
   "app.post('/api/collective-payments/stripe/webhook', collectiveWS.stripeWebhookHandler);",
   "collectivePaymentOrchestrator.startExpirationCron(intervalMs);",
