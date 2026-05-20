@@ -324,7 +324,7 @@ function render() {
   md += `- **Hex hardcodés** : ${hex.reduce((s, x) => s + x.count, 0)} (cible : 0 ou allowlist)\n`;
   md += `- **\`!important\`** : ${imp.reduce((s, x) => s + x.count, 0)} (cible : <10, idéal 0)\n`;
   md += `- **Sélecteurs multi-owner** : ${Object.entries(map).filter(([, rows]) => rows.length > 1).length} (vérifier vs \`BOUTIQUE_ARCHITECTURE.md\` §3)\n\n`;
-  md += `---\n\n*Généré par \`public/boutique/scripts/gen-boutique-arch-live.js\`.*\n`;
+  md += `---\n\n*Généré par \`boutique/scripts/gen-boutique-arch-live.js\`.*\n`;
 
   return md;
 }

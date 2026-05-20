@@ -2,10 +2,10 @@
 /**
  * audit-arch.js — Garde-fou architecture Komerce boutique
  *
- * Valide les invariants déclarés dans public/boutique/docs/BOUTIQUE_ARCHITECTURE.md.
+ * Valide les invariants déclarés dans boutique/docs/BOUTIQUE_ARCHITECTURE.md.
  * Plante (exit 1) à la première violation, ou affiche un rapport et plante en fin.
  *
- * Usage : node public/boutique/scripts/audit-boutique-arch.js
+ * Usage : node boutique/scripts/audit-boutique-arch.js
  *         npm run audit:arch
  *
  * Sortie : exit 0 si tout passe, exit 1 sinon.
@@ -26,7 +26,7 @@ function violate(rule, msg, detail) {
 }
 
 // ════════════════════════════════════════════════════════════════
-// CONFIG — source unique : doit refléter public/boutique/docs/BOUTIQUE_ARCHITECTURE.md §3
+// CONFIG — source unique : doit refléter boutique/docs/BOUTIQUE_ARCHITECTURE.md §3
 // ════════════════════════════════════════════════════════════════
 
 // I-2 : Ownership CSS. Format : selector → { owner, scope, allowedAlso? }
@@ -311,7 +311,7 @@ function checkI3_hexHardcoded() {
         violate('I-3',
           `Hex hardcodé hors tokens.css`,
           `css/${file}.css:${idx + 1} → ${hex}. Ajouter un token sémantique dans tokens.css ` +
-          `ou justifier dans HEX_ALLOWLIST de public/boutique/scripts/audit-boutique-arch.js.`);
+          `ou justifier dans HEX_ALLOWLIST de boutique/scripts/audit-boutique-arch.js.`);
       });
     });
   }
@@ -393,7 +393,7 @@ function checkBundleConfig() {
 // RUN
 // ════════════════════════════════════════════════════════════════
 
-console.log('\n  🔍  Audit architecture Komerce — invariants public/boutique/docs/BOUTIQUE_ARCHITECTURE.md\n');
+console.log('\n  🔍  Audit architecture Komerce — invariants boutique/docs/BOUTIQUE_ARCHITECTURE.md\n');
 
 checkI1_orphans();
 checkI2_ownership();
