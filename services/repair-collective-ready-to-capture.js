@@ -23,9 +23,9 @@ async function repairCollectiveReadyToCapture({ dryRun = true, limit = 25, minAg
     FROM collective_payment_sessions cps
     JOIN collective_workspaces cw ON cw.id = cps.workspace_id
     WHERE cps.status = 'ready_to_capture'
-      AND cps.updated_at <= NOW() - ($2 || ' minutes')::interval
+      AND cps.created_at <= NOW() - ($2 || ' minutes')::interval
       AND cw.order_id IS NULL
-    ORDER BY cps.updated_at ASC NULLS FIRST, cps.created_at ASC
+    ORDER BY cps.created_at ASC
     LIMIT $1
   `, [safeLimit, String(safeMinAge)]);
 
