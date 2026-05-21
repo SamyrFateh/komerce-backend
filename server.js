@@ -12,23 +12,8 @@
  * Changelog v10.12: F34 stock constraint garantit admin au démarrage
  */
 
-require('dotenv').config();
-
-// ── Validation des variables d'environnement critiques ───────────────────────
-const REQUIRED_ENV = ['DATABASE_URL', 'JWT_SECRET'];
-const RECOMMENDED_ENV = ['ADMIN_PASSWORD', 'STRIPE_SECRET_KEY'];
-
-for (const key of REQUIRED_ENV) {
-  if (!process.env[key]) {
-    console.error(`❌ FATAL: ${key} manquant — impossible de démarrer`);
-    process.exit(1);
-  }
-}
-for (const key of RECOMMENDED_ENV) {
-  if (!process.env[key]) {
-    console.warn(`⚠️  ${key} non défini — valeur par défaut utilisée (à configurer avant la prod)`);
-  }
-}
+const { loadAndValidateEnv } = require('./bootstrap/env');
+loadAndValidateEnv();
 
 const express      = require('express');
 const cookieParser = require('cookie-parser');
