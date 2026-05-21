@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module modal-view-model
  * @component Boutique / Modal ViewModel
  *
@@ -36,7 +36,7 @@
  * - js/view-models/product-card-view-model.js (modèle calqué)
  */
 
-import { sanitize, fmt, fmtPrice, optimizeImgUrl } from '../b-utils.js';
+import { sanitize, fmt, fmtPrice, optimizeImgUrl } from './b-utils.js';
 
 'use strict';
 
@@ -406,3 +406,4 @@ export function applyModalClasses(modalEl, viewModel) {
   // 2. Poser les classes du ViewModel courant
   viewModel.cssClasses.forEach(cls => modalEl.classList.add(cls));
 }
+

@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-21T16:10:49.450Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-21T16:19:10.661Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -14,7 +14,7 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1588 | desktop.css |
+| `boutique-desktop.css` | 1584 | desktop.css |
 | `cart.css` | 903 | components.css |
 | `categories.css` | 470 | components.css |
 | `desktop-commerce-skeleton.css` | 325 | desktop.css |
@@ -23,7 +23,7 @@
 | `hero-cart-proxy.css` | 110 | components.css |
 | `hero.css` | 146 | base.css |
 | `interactions.css` | 529 | components.css |
-| `layout.css` | 741 | base.css |
+| `layout.css` | 756 | base.css |
 | `modal.css` | 1810 | components.css |
 | `products.css` | 725 | components.css |
 | `reset.css` | 86 | base.css |
@@ -57,7 +57,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `.k-card-add` ⚠️ | `boutique-desktop.css` (0/1)<br>`cart.css` (0/2)<br>`products.css` (10/1) |
 | `.k-card-fav` ⚠️ | `boutique-desktop.css` (0/4)<br>`cart.css` (0/1)<br>`products.css` (4/0) |
 | `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0) |
-| `#k-desktop-catalog-wrap` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/6) |
+| `#k-desktop-catalog-wrap` ⚠️ | `desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/8) |
 | `.k-header` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`hero-cart-proxy.css` (4/2)<br>`layout.css` (3/2) |
 | `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/0) |
 | `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/2) |

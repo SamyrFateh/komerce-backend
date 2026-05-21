@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — layout.css
    Header, hero shell, sections, bottom-nav.
    Mobile-first, zéro !important.
@@ -737,4 +737,19 @@ body {
 
 /* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
 /* margin-top side-cart : 52px, intégré dans le bloc consolidé LOT 9 ci-dessus. */
+
+/* SIDE CART FIXED VIEWPORT - CATALOG OFFSET
+   Owner autorisé : #k-desktop-catalog-wrap appartient à layout.css.
+   Le side cart lui-même reste owner desktop dans boutique-desktop.css. */
+@media (min-width: 900px) {
+  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
+    padding-right: calc(var(--side-cart-w, 290px) + var(--side-cart-gap, 20px));
+  }
+}
+
+@media (min-width: 1200px) {
+  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
+    padding-right: calc(var(--side-cart-w, 306px) + var(--side-cart-gap, 24px));
+  }
+}
 

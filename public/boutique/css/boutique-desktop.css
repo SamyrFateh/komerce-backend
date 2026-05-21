@@ -1566,12 +1566,7 @@
   .k-side-cart.has-items {
     transform: translateX(0);
   }
-
-  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
-    padding-right: calc(var(--side-cart-w) + var(--side-cart-gap));
-  }
-
-  #k-side-cart.is-expanded .k-sc-items {
+#k-side-cart.is-expanded .k-sc-items {
     max-height: calc(100dvh - var(--header-h, 72px) - 220px);
   }
 }
@@ -1584,4 +1579,5 @@
 }
 
 /* END SIDE CART — FIXED VIEWPORT TEMU */
+
 
