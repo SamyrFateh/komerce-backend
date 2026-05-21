@@ -29,6 +29,7 @@
 'use strict';
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'order-status-machine' });
 const { randomBytes } = require('crypto');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -284,9 +285,9 @@ async function transitionOrderStatus({
         const wResult = await walletService.removeFromOrder(q, { orderId });
         cancelEffects.walletReversalAmount = wResult.reversed_kmf;
         cancelEffects.walletReversalTxId = wResult.transaction?.id || null;
-        console.log(`[STATUS-MACHINE] Wallet reversed: ${wResult.reversed_kmf} KMF → user ${orderInfo.user_id}`);
+        log.info({ order_id: orderId, user_id: orderInfo.user_id, amount_kmf: wResult.reversed_kmf }, 'Wallet reversed after order cancellation');
       } catch (e) {
-        console.error('[STATUS-MACHINE] removeFromOrder failed:', e.message, '— credit fallback');
+        log.error({ err: e, order_id: orderId, user_id: orderInfo.user_id }, 'Wallet removeFromOrder failed, trying credit fallback');
         try {
           const wResult = await walletService.credit(q, {
             userId:         orderInfo.user_id,
@@ -300,7 +301,7 @@ async function transitionOrderStatus({
           cancelEffects.walletReversalAmount = walletApplied;
           cancelEffects.walletReversalTxId = wResult.transaction?.id || null;
         } catch (e2) {
-          console.error('[STATUS-MACHINE] Wallet credit fallback also failed:', e2.message);
+          log.error({ err: e2, order_id: orderId, user_id: orderInfo.user_id }, 'Wallet credit fallback failed');
         }
       }
     }
@@ -318,7 +319,7 @@ async function transitionOrderStatus({
     }
     cancelEffects.stockItemsRestored = items.length;
     if (items.length > 0) {
-      console.log(`[STATUS-MACHINE] Stock restored: ${items.length} items for order ${orderId}`);
+      log.info({ order_id: orderId, items_count: items.length }, 'Stock restored after order cancellation');
     }
 
     // Purchase orders sync — pending/notified auto-cancelled, engaged POs alerted.
@@ -331,7 +332,7 @@ async function transitionOrderStatus({
         reason: cancelReason || note || null,
       });
     } catch (poErr) {
-      console.error('[STATUS-MACHINE] purchase_orders cancel sync failed:', poErr.message);
+      log.error({ err: poErr, order_id: orderId }, 'Purchase orders cancel sync failed');
       cancelEffects.purchaseOrders = { error: poErr.message };
     }
   }
@@ -345,11 +346,11 @@ async function transitionOrderStatus({
       [orderId, newStatus, scanId, actor.id, historyNote]
     );
   } catch (histErr) {
-    console.error(`[STATUS-MACHINE] ⚠️ History insert failed (order=${orderId}):`, histErr.message);
+    log.error({ err: histErr, order_id: orderId, status: newStatus }, 'Order status history insert failed');
     throw histErr;
   }
 
-  console.log(`[STATUS-MACHINE] ✅ order=${orderId} ${previousStatus} → ${newStatus} (source=${source})`);
+  log.info({ order_id: orderId, previous_status: previousStatus, new_status: newStatus, source }, 'Order status transition applied');
 
   return { success: true, previousStatus, newStatus, pickupCode, cancelEffects };
 }
