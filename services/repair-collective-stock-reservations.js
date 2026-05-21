@@ -36,7 +36,7 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
   const remainingLimit = Math.max(1, safeLimit - consumeCandidates.length);
 
   const { rows: releaseCandidates } = await db.query(`
-    SELECT DISTINCT cw.id AS workspace_id, cw.order_id, cw.status,
+    SELECT cw.id AS workspace_id, cw.order_id, cw.status,
            COUNT(csr.id)::int AS reservations_count
     FROM collective_workspaces cw
     JOIN collective_stock_reservations csr ON csr.workspace_id = cw.id
@@ -48,7 +48,7 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
         OR cps.status IN ('ended', 'failed')
         OR csr.reserved_until <= NOW()
       )
-    GROUP BY cw.id, cw.order_id, cw.status
+    GROUP BY cw.id, cw.order_id, cw.status, cw.updated_at, cw.created_at
     ORDER BY cw.updated_at DESC NULLS LAST, cw.created_at DESC
     LIMIT $1
   `, [remainingLimit]);
