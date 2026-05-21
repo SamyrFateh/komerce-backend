@@ -200,68 +200,9 @@ mountHtmlRoutes(app, __dirname);
 
 app.use(errorHandler);
 
-// ── Cron cash relais ──────────────────────────────────────────────────────────
-
-const { processCashRelaisReminders, processBackorderReminders } = require('./utils/sms');
-const { getRuleNumber: _getRuleNum } = require('./utils/rules');
-
-let cronRunning = false;
-
-(async () => {
-  let intervalMin = 60;
-  try {
-    intervalMin = await _getRuleNum('CASH_REMINDER_INTERVAL_MIN', 60);
-  } catch (_) { /* fallback 60min */ }
-
-  console.log(`⏰ Cash reminder cron: every ${intervalMin}min`);
-
-  setInterval(async () => {
-    try {
-      const inv = require('./services/inventory-service');
-      const result = await inv.autoConfirmExpired();
-      if (result.auto_confirmed > 0)
-        console.log(`[CRON] Auto-confirmed ${result.auto_confirmed} inventory proposals`);
-    } catch (e) { /* non-fatal */ }
-  }, 30 * 60 * 1000);
-
-  setInterval(async () => {
-    if (cronRunning) return;
-    cronRunning = true;
-    try {
-      await processCashRelaisReminders();
-    } catch (err) {
-      console.error('Cash reminder cron error:', err.message);
-    } finally {
-      cronRunning = false;
-    }
-  }, intervalMin * 60 * 1000);
-})();
-
-// ── Phase 4 — Backorder checker cron ─────────────────────────────────────────
-
-const BACKORDER_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
-let backorderCronRunning = false;
-
-setInterval(async () => {
-  if (backorderCronRunning) return;
-  backorderCronRunning = true;
-  try {
-    const result = await processBackorderReminders();
-    if (result.processed > 0) {
-      console.log(`[CRON] Backorder check: ${result.processed} traités, ${result.sms_sent} SMS envoyés`);
-    }
-  } catch (err) {
-    console.error('[CRON] Backorder check error:', err.message);
-  } finally {
-    backorderCronRunning = false;
-  }
-}, BACKORDER_CHECK_INTERVAL_MS);
-
-setTimeout(() => {
-  processBackorderReminders()
-    .then(result => { if (result.processed > 0) console.log(`[CRON] Initial backorder check: ${result.processed} traités`); })
-    .catch(err => console.error('[CRON] Initial backorder check error:', err.message));
-}, 30 * 1000);
+// ── Operational crons ───────────────────────────────────────────────────────
+const { startOperationalCrons } = require('./bootstrap/crons');
+startOperationalCrons();
 
 // ── Démarrage + Graceful Shutdown ──────────────────────────────────────────────
 
