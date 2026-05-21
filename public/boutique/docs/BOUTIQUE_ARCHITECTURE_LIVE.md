@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-21T13:03:21.244Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-21T16:10:49.450Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -14,7 +14,7 @@
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1527 | desktop.css |
+| `boutique-desktop.css` | 1588 | desktop.css |
 | `cart.css` | 903 | components.css |
 | `categories.css` | 470 | components.css |
 | `desktop-commerce-skeleton.css` | 325 | desktop.css |
@@ -56,8 +56,8 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/19)<br>`desktop-commerce-skeleton.css` (0/2)<br>`products.css` (6/0) |
 | `.k-card-add` ⚠️ | `boutique-desktop.css` (0/1)<br>`cart.css` (0/2)<br>`products.css` (10/1) |
 | `.k-card-fav` ⚠️ | `boutique-desktop.css` (0/4)<br>`cart.css` (0/1)<br>`products.css` (4/0) |
-| `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/4)<br>`layout.css` (2/0) |
-| `#k-desktop-catalog-wrap` ⚠️ | `desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/6) |
+| `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0) |
+| `#k-desktop-catalog-wrap` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/6) |
 | `.k-header` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`hero-cart-proxy.css` (4/2)<br>`layout.css` (3/2) |
 | `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/0) |
 | `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/2) |
@@ -92,11 +92,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js/b-pager.js` (×1) |
-| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js/b-pager.js` (×1) |
-| `--bnav-h` | `js/b-pager.js` (×1) |
-| `--modal-scroll-y` | `js/b-modal.js` (×1) |
+| `--pager-top` | `js\b-pager.js` (×1) |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1) |
+| `--bnav-h` | `js\b-pager.js` (×1) |
+| `--modal-scroll-y` | `js\b-modal.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 

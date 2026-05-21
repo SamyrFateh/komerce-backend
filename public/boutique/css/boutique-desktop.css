@@ -1,4 +1,4 @@
-/* ══════════════════════════════════════════════════════════════════
+﻿/* ══════════════════════════════════════════════════════════════════
    KOMERCE — boutique-desktop.css
    Fichier unique : règles globales (mobile-first) + overrides desktop.
    Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
@@ -1537,3 +1537,51 @@
     height: calc(100dvh - var(--header-h, 72px) - 24px);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART — FIXED VIEWPORT TEMU
+   Transforme le .k-side-cart existant de sticky-in-layout vers fixed-to-viewport.
+   Desktop uniquement. Ne crée aucun nouveau panier.
+   Conserve .has-items, .is-expanded et toutes les classes .k-sc-* existantes.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  :root {
+    --side-cart-w: 290px;
+    --side-cart-gap: 20px;
+  }
+
+  .k-side-cart {
+    position: fixed;
+    top: var(--header-h, 72px);
+    right: 0;
+    bottom: 0;
+    height: calc(100dvh - var(--header-h, 72px));
+    max-height: calc(100dvh - var(--header-h, 72px));
+    width: var(--side-cart-w);
+    min-width: var(--side-cart-w);
+    flex: none;
+    transform: translateX(8px);
+  }
+
+  .k-side-cart.has-items {
+    transform: translateX(0);
+  }
+
+  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
+    padding-right: calc(var(--side-cart-w) + var(--side-cart-gap));
+  }
+
+  #k-side-cart.is-expanded .k-sc-items {
+    max-height: calc(100dvh - var(--header-h, 72px) - 220px);
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --side-cart-w: 306px;
+    --side-cart-gap: 24px;
+  }
+}
+
+/* END SIDE CART — FIXED VIEWPORT TEMU */
+
