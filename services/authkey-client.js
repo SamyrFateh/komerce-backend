@@ -12,6 +12,7 @@
 
 const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
+const log = require('../utils/logger').child({ module: 'authkey-client' });
 
 // WID des templates â€” surchargeable via env au cas oÃ¹ Meta regÃ©nÃ¨re les IDs
 const WID = {
@@ -190,15 +191,15 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
       /invalid authkey|insufficient balance/i.test(String(providerMessage || ''));
 
     if (!response.ok || providerFailed) {
-      console.error('[authkey] âŒ', {
+      log.error({
         status: response.status,
-        providerStatus,
-        providerMessage,
+        provider_status: providerStatus,
+        provider_message: providerMessage,
         data,
         wid,
         country_code,
         mobile: cleanMobile,
-      });
+      }, 'AuthKey provider rejected request');
 
       return {
         ok: false,
@@ -209,13 +210,13 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
       };
     }
 
-    console.log('[authkey] âœ…', {
+    log.info({
       wid,
       country_code,
       mobile: cleanMobile,
-      messageId,
-      providerStatus,
-    });
+      message_id: messageId,
+      provider_status: providerStatus,
+    }, 'AuthKey message accepted');
 
     return {
       ok: true,
@@ -224,7 +225,7 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
       data,
     };
   } catch (err) {
-    console.error('[authkey] exception', err.message);
+    log.error({ err, wid }, 'AuthKey request failed');
     return { ok: false, error: 'network_error', details: err.message };
   }
 }
