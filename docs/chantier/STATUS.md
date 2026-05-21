@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-20
+> Mis à jour : 2026-05-21
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -67,12 +67,15 @@ Lire dans cet ordre avant toute modification :
 | H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc codemod |
 | H1A-2 | ✅ Fait | PR #427 mergée. `server.js` câblé via `bootstrap/api-routes.js`, sans déplacer webhooks raw, `express.json`, HTML routes, crons, migrations inline ni listen/shutdown |
 | H1A-2-FIX | ✅ Fait | PR #426 mergée. Le codemod conserve `sharedCart` dans `server.js` |
+| H1B | ✅ Fait | PR #443 mergée. `server.js` câble `bootstrap/html-routes.js` via `mountHtmlRoutes(app, __dirname)` ; bloc HTML/SPA fallback extrait sans toucher webhooks raw, API routes, crons, migrations inline ni listen/shutdown. Validation post-merge : `npm test` PASS, P0 runtime PARTIAL propre. |
+| H1C-PREP | ✅ Fait | PR #441 mergée. Ajout `bootstrap/security.js`, `scripts/h1c-wire-security.js` et doc H1C ; pas encore câblé dans `server.js`. |
+| H1D-PREP | ✅ Fait | PR #442 mergée. Ajout `bootstrap/crons.js`, `scripts/h1d-wire-crons.js` et doc H1D ; pas encore câblé dans `server.js`. |
 | P0-HELPER | ✅ Fait | PR #413 + PR #436. `npm run test:p0` reproductible ; 401/403 admin dry-runs classés SKIP explicite si JWT admin invalide |
 | P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, Railway `/api/health` ✅. Dry-runs admin collectifs SKIP en 401 car JWT admin valide requis. Refund dry-run SKIP sans `P0_ORDER_ID`. |
 
 ---
 
-## Résultat de validation du 20 mai 2026
+## Résultat de validation du 21 mai 2026
 
 ### `npm test`
 
@@ -83,7 +86,7 @@ Tests:       1 skipped, 87 passed, 88 total
 
 La suite API intégration est volontairement skipped si `DATABASE_URL` est absent, afin d'éviter d'importer `server.js` et son garde runtime `process.exit(1)`. Elle reste exécutable avec un vrai environnement DB/JWT.
 
-### `npm run test:p0` avec Railway
+### `npm run test:p0` avec Railway après H1B
 
 ```text
 npm test                                     PASS
@@ -106,6 +109,7 @@ Conclusion : le runtime est sain. Le `PARTIAL` restant n'est pas une panne ; il 
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
 - ✅ H1A : manifest + câblage `server.js` réalisés. Les webhooks raw Stripe restent explicitement avant `express.json`; les blocs Stripe-owned partagés/collectifs restent dans `server.js`.
+- ✅ H1B : routes HTML/SPA fallback extraites dans `bootstrap/html-routes.js` et câblées dans `server.js`.
 - ✅ Tests : `npm test` est vert. La suite API intégration est un skip propre sans env DB.
 - 🟠 P0 est PARTIAL propre : health Railway OK, admin dry-runs protégés mais non exécutés faute de JWT admin valide / `P0_ORDER_ID`.
 - ✅ Routes admin collectives : exposées via `routes/admin-collective-repairs.js` et montées dans `bootstrap/api-routes.js`.
@@ -116,42 +120,45 @@ Conclusion : le runtime est sain. Le `PARTIAL` restant n'est pas une panne ; il 
 
 ## Prochain lot recommandé
 
-### H1B — Extraire routes HTML / SPA fallback hors `server.js`
+### H1C — Câbler l'extraction security/CORS/Helmet hors `server.js`
 
 ```text
-Branche   : refactor/H1B-html-routes
+Branche   : refactor/H1C-wire-security
 Charge    : 0.5 jour
 Risque    : moyen
-Prérequis : H1A terminé, npm test vert, P0 runtime PARTIAL propre
+Prérequis : H1A + H1B terminés, npm test vert, P0 runtime PARTIAL propre
 ```
 
-Objectif : poursuivre la découpe progressive de `server.js` sans toucher aux blocs sensibles.
+Objectif : poursuivre la découpe progressive de `server.js` en câblant le module `bootstrap/security.js` déjà préparé.
 
 Contraintes :
 
 - Ne pas déplacer les webhooks Stripe raw.
 - Ne pas déplacer `express.json`.
+- Ne pas déplacer les routes API.
+- Ne pas déplacer les routes HTML H1B.
 - Ne pas déplacer les crons.
 - Ne pas déplacer les migrations inline.
 - Ne pas modifier la logique business.
-- Ajouter un petit helper/bootstrap dédié aux routes HTML et fallback SPA.
-- Conserver un diff lisible et réversible.
+- Utiliser `scripts/h1c-wire-security.js` avec diff contrôlé.
 
 Validation attendue :
 
 ```bash
+node scripts/h1c-wire-security.js --check
+node scripts/h1c-wire-security.js --write
+git diff -- server.js
 npm test
 npm run test:p0
 ```
 
 ---
 
-## File d'attente après H1B
+## File d'attente après H1C
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| H1C | Moyen | Extraire security/middleware après H1A/H1B |
-| H1D | Moyen | Extraire crons |
+| H1D | Moyen | Câbler extraction crons après H1C |
 | H1E | Moyen | Extraire env validation |
 | H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB |
 | P0-FULL | Conditionnelle | Fournir JWT admin valide + `P0_ORDER_ID` pour transformer P0 PARTIAL en PASS complet |
@@ -159,10 +166,10 @@ npm run test:p0
 | F1 suite logging | Haute mais découpé | Continuer migration logger par domaines, notamment `notification-service.js` via codemod |
 | H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
 
-### Dette mesurée au 20 mai 2026 — référence
+### Dette mesurée au 21 mai 2026 — référence
 
-- **19 god-objects ≥ 800 lignes** : découpe commencée par H1A mais non généralisée.
-- **`server.js`** : routes API externalisées via manifest ; HTML routes, crons, migrations inline et listen/shutdown restent encore dans le fichier.
+- **19 god-objects ≥ 800 lignes** : découpe commencée par H1A/H1B mais non généralisée.
+- **`server.js`** : routes API et routes HTML/SPA fallback externalisées ; security/CORS/Helmet, crons, migrations inline et listen/shutdown restent encore dans le fichier.
 - **`console.*`** : dette logging toujours présente ; F1 reste prioritaire mais doit rester découpé.
 - **Migrations** : collisions 060/061 clarifiées par A4 ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à préserver documentairement.
 - **Tests** : filet I-SWEEP OK et `npm test` vert ; suite API intégration complète à jouer uniquement avec env DB/JWT.
