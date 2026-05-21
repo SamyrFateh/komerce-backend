@@ -743,7 +743,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
  */
 async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCount }) {
   if (!phone) {
-    console.warn('[loyalty-notif] Pas de téléphone pour user', userId);
+    log.warn({ user_id: userId, order_ref: orderRef, basket_count: basketCount }, 'Loyalty notification skipped: no phone');
     return { success: false, reason: 'no_phone' };
   }
 
@@ -768,14 +768,14 @@ async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCo
     });
 
     if (result.ok) {
-      console.log(`[loyalty-notif] ✅ → ${phone} (${basketCount} paniers)`);
+      log.info({ phone, user_id: userId, order_ref: orderRef, basket_count: basketCount }, 'Loyalty notification sent');
     } else {
-      console.warn(`[loyalty-notif] ❌ ${phone}: ${result.error}`);
+      log.warn({ phone, user_id: userId, order_ref: orderRef, basket_count: basketCount, error: result.error }, 'Loyalty notification rejected by provider');
     }
 
     return { success: result.ok };
   } catch (err) {
-    console.error('[loyalty-notif] exception:', err.message);
+    log.error({ err, phone, user_id: userId, order_ref: orderRef, basket_count: basketCount }, 'Loyalty notification failed');
     await logNotification({
       channel: 'whatsapp',
       event: 'loyalty_earned',
