@@ -13,7 +13,15 @@ function fail(message) {
   process.exit(1);
 }
 
-function replaceOnce(input, startMarker, endMarker, replacement, label) {
+function replaceBlockOnce(input, needle, replacement, label) {
+  const first = input.indexOf(needle);
+  if (first < 0) fail(`${label}: marker not found`);
+  const second = input.indexOf(needle, first + needle.length);
+  if (second >= 0) fail(`${label}: marker appears more than once`);
+  return input.replace(needle, replacement);
+}
+
+function replaceRangeOnce(input, startMarker, endMarker, replacement, label) {
   const start = input.indexOf(startMarker);
   if (start < 0) fail(`${label}: start marker not found`);
   const end = input.indexOf(endMarker, start + startMarker.length);
@@ -29,15 +37,17 @@ if (next.includes('mountHtmlRoutes(app, __dirname);')) {
   fail('server.js already appears wired for H1B');
 }
 
-next = replaceOnce(
-  next,
-  "const {\n  mountApiRoutesBeforeStripeOwnedBlocks,\n  mountApiRoutesAfterStripeOwnedBlocks,\n} = require('./bootstrap/api-routes');\n",
-  "\n\nconst walletService",
-  "const {\n  mountApiRoutesBeforeStripeOwnedBlocks,\n  mountApiRoutesAfterStripeOwnedBlocks,\n} = require('./bootstrap/api-routes');\nconst { mountHtmlRoutes } = require('./bootstrap/html-routes');",
-  'html import insertion'
-);
+const apiImportBlock = `const {
+  mountApiRoutesBeforeStripeOwnedBlocks,
+  mountApiRoutesAfterStripeOwnedBlocks,
+} = require('./bootstrap/api-routes');`;
 
-next = replaceOnce(
+const apiAndHtmlImportBlock = `${apiImportBlock}
+const { mountHtmlRoutes } = require('./bootstrap/html-routes');`;
+
+next = replaceBlockOnce(next, apiImportBlock, apiAndHtmlImportBlock, 'html import insertion');
+
+next = replaceRangeOnce(
   next,
   '// ── SPA fallback ────────────────────────────────────────────────────────────\n\n// ── Tracking short URL: /s/:token → serve suivi.html ──────────────────────\n',
   '\n\napp.use(errorHandler);',
@@ -46,13 +56,15 @@ next = replaceOnce(
 );
 
 const requiredNeedles = [
+  "require('./bootstrap/html-routes')",
   "app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));",
   "app.use(express.json({ limit: '1mb' }));",
   'mountApiRoutesBeforeStripeOwnedBlocks(app);',
   'mountApiRoutesAfterStripeOwnedBlocks(app);',
-  'app.post(\'/api/shared-carts/stripe/webhook\'',
-  'app.post(\'/api/collective-payments/stripe/webhook\'',
-  'app.get(\'/api/health\'',
+  "app.post('/api/shared-carts/stripe/webhook'",
+  "app.post('/api/collective-payments/stripe/webhook'",
+  "app.get('/api/health'",
+  'mountHtmlRoutes(app, __dirname);',
   'app.use(errorHandler);',
   'setInterval(async () => {',
   'app.listen(PORT',
