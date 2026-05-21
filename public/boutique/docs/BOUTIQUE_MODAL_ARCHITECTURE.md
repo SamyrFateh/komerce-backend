@@ -98,7 +98,7 @@ Tirés du code (commentaires lignes 1-25, mobile guard §2, header §6), formali
 | **B-M-02** | Toute règle desktop dans `@media (min-width: 900px)` minimum | grep `.k-modal-` dans base et vérifier que c'est mobile-only |
 | **B-M-03** | Aucune media query `(min-width: 600px)` sans borne supérieure | grep `min-width: 6` dans le fichier doit retourner 0 sur les sélecteurs `.k-modal-*` |
 | **B-M-04** | Le mobile guard (§2) répète `flex: 1` et `min-height: 0` sur `#k-modal .k-modal-scroll` | sinon override par spécificité ID écrase avec un vide |
-| **B-M-05** | Aucun hex en dur — uniquement des tokens CSS de `tokens.css` (`var(--coral)`, `var(--sand)`...) | `npm run audit:arch` — 2 hex restants tracés en dette PR-M4 |
+| **B-M-05** | Aucun hex en dur — uniquement des tokens CSS de `tokens.css` (`var(--coral)`, `var(--sand)`...) | `npm run audit:arch` — **0 violation** ✅ (PR-M4 livrée 21/05, 2 hex migrés) |
 | **B-M-06** | Les zones enrichies §5 sont `display: none` par défaut, révélées ≥ 900px | inspection visuelle mobile |
 | **B-M-07** | `.k-modal-product-zone` est `display: contents` sur mobile, `grid` desktop. Toujours les deux. | check §1 ligne ~118 + §6 |
 | **B-M-08** | La grid desktop a `minmax(0, X%)` pas `X%` direct (sinon overflow horizontal des enfants) | check toutes les `grid-template-columns` dans §6 |

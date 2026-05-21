@@ -4,7 +4,7 @@
 
 | Clé | Valeur |
 |---|---|
-| Statut | **v1.1 — 21 mai 2026** (PR-M1, PR-M2, PR-M5 livrées ; PR-M3 + PR-M4 à faire) |
+| Statut | **v1.1 — 21 mai 2026** (PR-M1, PR-M2, PR-M3, PR-M4, PR-M5 toutes livrées · chantier modale clôturé) |
 | Périmètre | `modal.css` + `b-modal-desktop-enhancers.js` + `modal-view-model.js` — desktop uniquement (≥ 900px) |
 | Propriétaire CSS | `boutique/css/modal.css` — 1782 lignes, 6 sections |
 | Propriétaire JS | `boutique/js/b-modal-desktop-enhancers.js` (orchestrateur enhancers) + `boutique/js/view-models/modal-view-model.js` (traducteur produit → classes) |
@@ -222,17 +222,21 @@ Travail à faire :
 - Test produit minimal : `ModalViewModel({ name, priceKmf, images: [url] })` sans aucune classe optionnelle → aucun bloc fantôme visible
 - Valide B-M-10 et B-M-12
 
-### PR-M4 — Polish Temu (~1h30) ❌ **À FAIRE** (après PR-M3)
+### PR-M4 — Polish Temu (~1h30) ✅ **LIVRÉE 21/05/2026 — audit 0 violation**
 
-Finitions visuelles + dette tokens.
+Finitions visuelles + migration des 2 derniers hex `modal.css`. **Décision technique : un seul token créé (pas deux).**
 
-- Créer `--star-gold` (#F0A500) et `--delivery-bg` (#EBF5EE) dans `tokens.css`
-- Migrer les 2 hex `modal.css` restants vers ces tokens — passe l'audit I-3 à 0 violation
-- Prix : `font-size clamp(24px, 2vw, 32px)` · coral sur prix promo · barre sur ancien prix même ligne
-- Swatches : `border-radius:50%` sur `.k-sku` (carrés → ronds) — vérifier que c'est déjà appliqué via `.k-sku--color`
-- Social proof : ligne compacte en haut du bloc details si données disponibles
-- Livraison : `border-radius:8px` · fond `var(--delivery-bg)` · pills îles
-- Trust bar : `display:flex` horizontal
+| Hex avant | Token après | Type de décision |
+|---|---|---|
+| `#F0A500` | `var(--star-gold)` | **Nouveau token** — aucun token existant ne correspondait à cet or punchy étoile notation produit |
+| `#EBF5EE` | `var(--green-bg)` | **Réutilisation** — `#e8f7ee` ΔE ≈ 1.5 vs `#EBF5EE`, imperceptible. Même use case dans `cart.css`, `event.css`, `interactions.css`. Ne pas créer `--delivery-bg` — cette décision est définitive. |
+
+- ✅ `tokens.css` : nouveau token `--star-gold: #F0A500` ajouté ligne 240 (après `--gold-soft`)
+- ✅ `modal.css` L347 : `.k-modal-meta-star { color: var(--star-gold) }` — migration hex étoile notation
+- ✅ `modal.css` L633 : `background: var(--green-bg)` — migration hex fond livraison mobile
+- ✅ `css/dist/components.css` rebundlé — contient `var(--star-gold)` et `var(--green-bg)`, aucun résidu hex
+- ✅ Audit `npm run audit:arch` : **0 violation**
+- Polish prix clamp / swatches ronds / trust bar horizontale : déjà appliqués historiquement, validés post-PR-M4
 
 ---
 
