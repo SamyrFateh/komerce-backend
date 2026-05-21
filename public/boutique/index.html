@@ -247,35 +247,47 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
-    <!-- Side cart desktop Temu-style — panneau fixe droit -->
+    <!-- Side cart desktop Temu-style — panneau fixe droit.
+         Layout vertical Temu : header sticky (sous-total + CTAs) en haut,
+         puis "Tout sélectionner", puis liste items scrollable.
+         Voir docs/MOCKUP_TEMU_SIDE_CART.md pour la cible visuelle. -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
-      <!-- Liste articles (scroll si dépasse) -->
-      <div id="k-sc-items" class="k-sc-items"></div>
-      <!-- Bottom : prix + CTAs collés en bas + count -->
-      <div class="k-sc-bottom">
-        <!-- Prix/sous-total juste avant le bouton Commander -->
-        <div class="k-sc-top">
-          <div class="k-sc-subtotal-row">
-            <span class="k-sc-subtotal-label">Sous-total</span>
-            <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
-          </div>
-          <div class="k-sc-free-ship">
-            <svg viewBox="0 0 16 16" fill="none"><path d="M1 6h10v6H1zM11 8h2l2 2v2h-4V8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="4" cy="14" r="1.2" fill="currentColor"/><circle cx="12" cy="14" r="1.2" fill="currentColor"/></svg>
-            Livraison incluse aux Comores
-          </div>
+      <!-- ── HEADER : sous-total + CTAs (Temu top block) ── -->
+      <div class="k-sc-header">
+        <div class="k-sc-subtotal-row">
+          <span class="k-sc-subtotal-label">
+            <svg class="k-sc-subtotal-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h2l1.5 7h7.5l1.5-5H4.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="13.5" r="1" fill="currentColor"/><circle cx="12" cy="13.5" r="1" fill="currentColor"/></svg>
+            Sous-total
+          </span>
+          <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
         </div>
-        <div class="k-sc-cta-row">
-          <button id="k-sc-checkout" class="k-sc-btn-checkout">
-            Commander (<span id="k-sc-count-inline">0</span>)
-          </button>
-          <button id="k-sc-group" class="k-sc-btn-group" type="button" aria-label="Lancer un panier collectif" title="Payer en groupe">
-            <span class="k-sc-btn-group-emoji">👥</span>
-            <span class="k-sc-btn-group-label">En groupe</span>
-          </button>
+        <div class="k-sc-free-ship">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5l5 3 5-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 5v6l5 3 5-3V5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Livraison incluse aux Comores
         </div>
+        <button id="k-sc-checkout" class="k-sc-btn-checkout" type="button">
+          Commander (<span id="k-sc-count-inline">0</span>)
+        </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
-        <span id="k-sc-count" class="k-sc-count-label"></span>
+        <button id="k-sc-group" class="k-sc-btn-group" type="button" aria-label="Lancer un panier collectif" title="Payer en groupe">
+          <span class="k-sc-btn-group-emoji" aria-hidden="true">👥</span>
+          <span class="k-sc-btn-group-label">En groupe</span>
+        </button>
       </div>
+
+      <!-- ── SELECT-ALL bar (Temu pattern) ── -->
+      <div class="k-sc-select-all-row">
+        <label class="k-sc-select-all">
+          <input type="checkbox" id="k-sc-select-all-input" class="k-sc-select-all-input" checked>
+          <span class="k-sc-select-all-check" aria-hidden="true">
+            <svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L5 8.5l4.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="k-sc-select-all-label">Tout sélectionner (<span id="k-sc-count">0</span>)</span>
+        </label>
+      </div>
+
+      <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->
+      <div id="k-sc-items" class="k-sc-items"></div>
     </aside>
   </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->

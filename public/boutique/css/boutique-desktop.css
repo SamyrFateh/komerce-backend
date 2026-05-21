@@ -1172,28 +1172,29 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   SIDE CART DESKTOP — source unique de vérité pour .k-side-cart ≥900px.
-   Consolidé LOT 14 : 3 blocs fusionnés → 1 seul, rgba → tokens,
-   boutons toujours visibles (flex column + sc-bottom sticky),
-   side cart collé au bord droit (padding-right: 0 sur catalog-wrap).
+   SIDE CART DESKTOP — Layout Temu pur (refactor 21/05/2026).
+   Pattern : header sticky (sous-total + CTAs) en haut → "Tout
+   sélectionner" → liste items scrollable. Identité Komerce conservée
+   (coral CTA principal, violet "En groupe", ocean livraison).
+   Owner unique de .k-side-cart et de tous les sélecteurs .k-sc-*
+   pour ≥900px.
    ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* ── Side cart : conteneur sticky ── */
+  /* ── Conteneur sticky ── */
   .k-side-cart {
     display: flex;
     flex-direction: column;
     position: sticky;
     top: calc(var(--header-h, 72px) + 12px);
     align-self: flex-start;
-    /* Hauteur max : viewport - header - marge basse */
     max-height: calc(100dvh - var(--header-h, 72px) - 24px);
-    flex: 0 0 290px;
-    width: 290px;
-    min-width: 290px;
-    border-radius: 24px 0 0 24px;  /* arrondi gauche, carré bord droit */
-    background: var(--surface-sand-92);
+    flex: 0 0 240px;
+    width: 240px;
+    min-width: 240px;
+    border-radius: 24px 0 0 24px;
+    background: var(--surface-sand-94);
     border: 1px solid var(--border-ocean-14);
     border-right: none;
     box-shadow: var(--shadow-ocean-10);
@@ -1212,40 +1213,21 @@
     transform: translateY(0);
   }
 
-  /* ── Items : zone scrollable, prend tout l'espace dispo ── */
-  .k-sc-items {
-    flex: 1 1 auto;
-    min-height: 0;             /* critical : permet à flex de réduire */
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-text-08) transparent;
-    padding: 10px 10px 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  /* Limite à 4 items par défaut, tous visibles si is-expanded */
-  .k-sc-items > *:nth-child(n+5) { display: none; }
-
-  /* ── Bottom : toujours visible, collé en bas ── */
-  .k-sc-bottom {
-    flex-shrink: 0;            /* ne se compresse jamais */
-    padding: 10px 12px 12px;
-    background: linear-gradient(180deg, var(--surface-sand-94), var(--white));
-    border-top: 1px solid var(--border-ocean-10);
+  /* ──────────────────────────────────────────────────────────
+     HEADER (top block Temu) — sous-total + livraison + CTAs.
+     Reste visible en permanence, ne scrolle pas.
+     Paddings ajustés pour panneau 240px (plancher mini).
+     ────────────────────────────────────────────────────────── */
+  .k-sc-header {
+    flex-shrink: 0;
+    padding: 12px 14px 10px;
+    background: linear-gradient(180deg, var(--white), var(--surface-sand-94));
+    border-bottom: 1px solid var(--border-ocean-10);
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  /* ── Top (sous-total + livraison) ── */
-  .k-sc-top {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding-bottom: 8px;
-  }
   .k-sc-subtotal-row {
     display: flex;
     align-items: baseline;
@@ -1253,16 +1235,28 @@
     gap: 8px;
   }
   .k-sc-subtotal-label {
-    font-size: 12px;
-    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 700;
     color: var(--ocean-label);
+    letter-spacing: .02em;
+  }
+  .k-sc-subtotal-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--coral);
+    flex-shrink: 0;
   }
   .k-sc-subtotal-amount {
     font-size: 18px;
     font-weight: 800;
     color: var(--text);
     letter-spacing: -.035em;
+    line-height: 1;
   }
+
   .k-sc-free-ship {
     display: inline-flex;
     align-items: center;
@@ -1272,103 +1266,174 @@
     color: var(--ocean);
     background: var(--ocean-bg-08);
     border-radius: 999px;
-    padding: 4px 9px;
+    padding: 3px 9px;
     width: fit-content;
+    margin-bottom: 2px;
   }
-  .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
+  .k-sc-free-ship svg { width: 11px; height: 11px; flex-shrink: 0; }
 
-  /* ── CTAs ── */
-  .k-sc-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 7px;
-  }
+  /* ── CTA Commander — coral plein, sobre mais marqué ── */
   .k-sc-btn-checkout {
     width: 100%;
-    min-height: 44px;
-    padding: 0 14px;
+    min-height: 38px;
+    padding: 0 12px;
     border: none;
     border-radius: 999px;
     background: linear-gradient(135deg, var(--coral), var(--coral-dark));
     color: var(--white);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
     font-family: var(--font);
     letter-spacing: .01em;
-    box-shadow: 0 8px 20px var(--shadow-coral-22);
-    transition: background .15s, transform .12s;
+    box-shadow: 0 4px 12px var(--shadow-coral-22);
+    transition: background .15s, transform .12s, box-shadow .15s;
   }
-  .k-sc-btn-checkout:hover { background: var(--coral-dark); }
+  .k-sc-btn-checkout:hover {
+    background: var(--coral-dark);
+    box-shadow: 0 6px 16px var(--shadow-coral-22);
+  }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
+  /* ── Voir le panier — outline sobre, secondaire ── */
+  .k-sc-btn-cart {
+    display: block;
+    width: 100%;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--border-text-10);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--text);
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    text-align: center;
+    text-decoration: none;
+    transition: background .12s, border-color .12s;
+  }
+  .k-sc-btn-cart:hover {
+    background: var(--sand);
+    border-color: var(--border-text-15);
+  }
+
+  /* ── En groupe — violet Komerce conservé, plus sobre ── */
   .k-sc-btn-group {
     width: 100%;
-    min-height: 40px;
-    border-radius: 999px;
+    min-height: 32px;
+    padding: 0 12px;
     border: none;
+    border-radius: 999px;
     background: var(--violet);
     color: var(--white);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 11.5px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 0 14px;
+    gap: 5px;
     white-space: nowrap;
-    box-shadow: 0 2px 8px var(--violet-mid);
+    box-shadow: 0 1px 4px var(--violet-mid);
     transition: background .15s, transform .12s;
   }
   .k-sc-btn-group:hover { background: var(--violet-dark); }
   .k-sc-btn-group:active { transform: scale(.95); }
-  .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
-  /* Texte visible directement dans le HTML — on supprime le ::after CSS */
+  .k-sc-btn-group-emoji { font-size: 13px; line-height: 1; }
   .k-sc-btn-group-label { display: inline; }
 
-  .k-sc-btn-cart {
-    display: block;
-    width: 100%;
-    padding: 4px;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
+  /* ──────────────────────────────────────────────────────────
+     SELECT-ALL BAR (Temu pattern) — séparateur visuel entre
+     header et liste des items.
+     ────────────────────────────────────────────────────────── */
+  .k-sc-select-all-row {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border-text-06);
+  }
+  .k-sc-select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .k-sc-select-all-input {
+    /* checkbox masquée mais accessible */
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 1px;
+    height: 1px;
+  }
+  .k-sc-select-all-check {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border-text-15);
+    background: var(--white);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: background .12s, border-color .12s, color .12s;
+    flex-shrink: 0;
+  }
+  .k-sc-select-all-check svg { width: 10px; height: 10px; }
+  .k-sc-select-all-input:checked + .k-sc-select-all-check {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: var(--white);
+  }
+  .k-sc-select-all-input:focus-visible + .k-sc-select-all-check {
+    outline: 2px solid var(--coral);
+    outline-offset: 2px;
+  }
+  .k-sc-select-all-label {
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    font-family: var(--font);
-    text-decoration: underline;
-    text-decoration-color: var(--border-text-08);
-    text-underline-offset: 3px;
-    transition: color .12s;
-  }
-  .k-sc-btn-cart:hover { color: var(--text); }
-
-  .k-sc-count-label {
-    font-size: 11px;
-    color: var(--text-light);
-    font-weight: 500;
-    text-align: center;
+    color: var(--text);
   }
 
-  /* ── Items ── */
+  /* ──────────────────────────────────────────────────────────
+     ITEMS — zone scrollable, prend toute la hauteur restante.
+     Dimensions adaptées à panneau 240px.
+     ────────────────────────────────────────────────────────── */
+  .k-sc-items {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-text-08) transparent;
+    padding: 8px 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  /* Plus de limite à 4 items : tout scrolle (mode Temu) */
+
+  /* ── Item carte ── */
   .k-sc-item {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px;
     background: var(--white);
     border-radius: 10px;
-    border: 0;
-    transition: background .12s;
+    border: 1px solid var(--border-text-06);
+    transition: background .12s, border-color .12s;
     flex-shrink: 0;
   }
-  .k-sc-item:hover { background: var(--sand); }
+  .k-sc-item:hover {
+    background: var(--sand);
+    border-color: var(--border-text-08);
+  }
   .k-sc-item-img {
-    width: 64px; height: 64px;
+    width: 56px; height: 56px;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
@@ -1377,10 +1442,10 @@
   }
   .k-sc-item-info {
     flex: 1; min-width: 0;
-    display: flex; flex-direction: column; gap: 3px;
+    display: flex; flex-direction: column; gap: 2px;
   }
   .k-sc-item-name {
-    font-size: 12px; font-weight: 500; color: var(--text);
+    font-size: 11.5px; font-weight: 500; color: var(--text);
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1388,7 +1453,7 @@
     overflow: hidden;
   }
   .k-sc-item-variant {
-    font-size: 10px; font-weight: 600; color: var(--text-muted);
+    font-size: 9.5px; font-weight: 600; color: var(--text-muted);
     background: var(--sand);
     border: 1px solid var(--border-text-06);
     border-radius: 4px;
@@ -1398,22 +1463,24 @@
   .k-sc-item-meta {
     display: flex; align-items: center;
     justify-content: space-between;
-    margin-top: 2px; gap: 6px;
+    margin-top: 2px; gap: 5px;
   }
   .k-sc-item-price-wrap {
-    display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap;
   }
   .k-sc-item-price {
-    font-size: 13px; font-weight: 800;
+    font-size: 12.5px; font-weight: 800;
     color: var(--red-text-md); letter-spacing: -.01em;
   }
   .k-sc-item-old-price {
-    font-size: 10px; font-weight: 500;
+    font-size: 9.5px; font-weight: 500;
     color: var(--text-muted); text-decoration: line-through;
   }
   .k-sc-item-actions {
-    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
   }
+
+  /* Stepper +/- tactile (choix Komerce, on garde) — compact 22px */
   .k-sc-item-stepper {
     display: flex; align-items: center;
     border: 1px solid var(--border-text-08);
@@ -1421,24 +1488,24 @@
     background: var(--white);
   }
   .k-sc-item-stepper button {
-    width: 24px; height: 24px;
+    width: 22px; height: 22px;
     border: none; background: transparent;
-    color: var(--text); font-size: 15px; font-weight: 700;
+    color: var(--text); font-size: 14px; font-weight: 700;
     cursor: pointer; display: flex; align-items: center;
     justify-content: center; transition: background .1s;
     font-family: var(--font); padding: 0; line-height: 1;
   }
   .k-sc-item-stepper button:hover { background: var(--sand-dark); }
   .k-sc-item-stepper-qty {
-    min-width: 24px; text-align: center;
-    font-size: 12px; font-weight: 700; color: var(--text);
+    min-width: 20px; text-align: center;
+    font-size: 11.5px; font-weight: 700; color: var(--text);
     padding: 0 2px;
     border-left: 1px solid var(--border-text-08);
     border-right: 1px solid var(--border-text-08);
-    line-height: 24px; user-select: none;
+    line-height: 22px; user-select: none;
   }
   .k-sc-item-remove {
-    width: 24px; height: 24px;
+    width: 22px; height: 22px;
     border: 1px solid var(--border-text-08);
     border-radius: 6px; background: transparent;
     color: var(--text-muted); cursor: pointer;
@@ -1452,7 +1519,7 @@
     color: var(--red-text);
   }
 
-  /* ── Attention state ── */
+  /* ── Attention state (highlight quand l'avatar panier est cliqué) ── */
   #k-side-cart.is-attention {
     box-shadow:
       0 0 0 3px var(--border-coral-13),
@@ -1461,66 +1528,18 @@
     transition: box-shadow .22s ease, transform .22s ease;
   }
 
-  /* ── Expanded state : tous les items visibles ── */
+  /* L'état "is-expanded" n'est plus nécessaire : la liste scrolle
+     d'elle-même, plus de limite à 4 items. On garde l'override
+     historique vide pour ne rien casser côté JS qui pourrait
+     encore toggler la classe. */
   #k-side-cart.is-expanded .k-sc-items > * { display: flex; }
-  #k-side-cart.is-expanded .k-sc-items {
-    max-height: calc(100dvh - var(--header-h, 72px) - 245px);
-  }
 }
+
 
 @media (min-width: 1200px) {
   .k-side-cart {
-    flex: 0 0 306px;
-    width: 306px;
-    min-width: 306px;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — overrides spécificité préfixée
-   Rapatrié depuis dist/desktop.css lors du Lot CSS-2 (2026-05-18)
-   Ces règles ont une spécificité plus haute que les versions
-   non préfixées (cart.css). Elles imposent les valeurs desktop.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  #k-side-cart .k-sc-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  #k-side-cart .k-sc-btn-checkout {
-    width: 100%;
-    min-height: 46px;
-  }
-
-  #k-side-cart .k-sc-btn-group {
-    width: 100%;
-    min-height: 42px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0 14px;
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  #k-side-cart .k-sc-btn-group-label {
-    display: inline;
-  }
-
-  #k-side-cart .k-sc-btn-group::after {
-    content: "Payer en groupe";
-  }
-
-  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label {
-    display: none;
-  }
-
-  #k-side-cart .k-sc-btn-cart {
-    margin-top: 4px;
+    flex: 0 0 254px;
+    width: 254px;
+    min-width: 254px;
   }
 }
