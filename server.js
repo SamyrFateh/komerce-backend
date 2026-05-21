@@ -184,6 +184,7 @@ const {
   mountApiRoutesBeforeStripeOwnedBlocks,
   mountApiRoutesAfterStripeOwnedBlocks,
 } = require('./bootstrap/api-routes');
+const { mountHtmlRoutes } = require('./bootstrap/html-routes');
 
 const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
@@ -241,145 +242,8 @@ app.get('/api/public/config', (req, res) => {
   });
 });
 
-// ── SPA fallback ────────────────────────────────────────────────────────────
-
-// ── Tracking short URL: /s/:token → serve suivi.html ──────────────────────
-app.get('/s/:token', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'suivi.html'));
-});
-
-// ── Cart share short URL: /c/:token → boutique with ?share=token ──────────
-app.get('/c/:token', (req, res) => {
-  const token = req.params.token;
-  if (!token || token.length > 20 || !/^[\w-]+$/.test(token)) {
-    return res.redirect('/Komerce_Boutique.html');
-  }
-  res.redirect(301, '/boutique/?share=' + encodeURIComponent(token));
-});
-
-// ── Mon Compte ─────────────────────────────────────────────────────────────
-app.get('/mon-compte', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'mon-compte.html'));
-});
-
-// ── Panier Partagé ─────────────────────────────────────────────────────────
-app.get('/cart/shared/:token', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'shared-cart-public.html'));
-});
-app.get('/cart/shared', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'shared-cart-public.html'));
-});
-
-// ── Mes Paniers Partagés ────────────────────────────────────────────────────
-app.get('/account/shared-carts', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'shared-cart-account.html'));
-});
-
-// ── Admin Dashboards Sprint 1+ — shell SPA pour toutes les vues admin ──────
-// Routes gérées côté SPA (app.js) via pushState — toutes servent le même index.html
-const ADMIN_DASHBOARD_PATHS = [
-  '/admin/pilotage',
-  '/admin/control-tower',
-  '/admin/costing',
-  '/admin/orders-logistics',
-  '/admin/event-workspaces',
-  '/admin/sourcing',
-  '/admin/alerts',
-  '/admin/categories',
-];
-ADMIN_DASHBOARD_PATHS.forEach(p => {
-  app.get(p, (req, res) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(path.join(__dirname, 'public', 'dashboards', 'admin', 'index.html'));
-  });
-});
-
-// ── Anciens dashboards Control Tower (compatibilité descendante) ──────────
-app.get('/control-tower.html', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'dashboards', 'admin-legacy', 'control-tower.html'));
-});
-
-// ── App Relais ────────────────────────────────────────────────────────────
-app.get('/Komerce_Relais.html', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'relais', 'index.html'));
-});
-app.get('/relais', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'relais', 'index.html'));
-});
-
-// ── App Hub ───────────────────────────────────────────────────────────────
-app.get('/hub', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'hub', 'index.html'));
-});
-
-// ── Panier Événement ──────────────────────────────────────────────────
-app.get('/event/create', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'event', 'create.html'));
-});
-app.get('/event/manage/:creatorToken', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'event', 'manage.html'));
-});
-app.get('/event/w/:publicToken', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'event', 'public.html'));
-});
-app.get('/event/pay/:paymentToken', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'event', 'pay.html'));
-});
-
-// ── Redirections legacy URLs événement ────────────────────────────────────
-app.get('/event/:creatorToken/manage', (req, res) => {
-  res.redirect(301, '/event/manage/' + encodeURIComponent(req.params.creatorToken));
-});
-app.get('/workspace/:publicToken', (req, res) => {
-  res.redirect(301, '/event/w/' + encodeURIComponent(req.params.publicToken));
-});
-
-// ── Boutique canonique ────────────────────────────────────────
-app.get('/Komerce_Boutique.html', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'index.html'));
-});
-app.get('/boutique', (req, res) => {
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'index.html'));
-});
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'Endpoint introuvable' });
-  }
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.sendFile(path.join(__dirname, 'public', 'boutique', 'index.html'));
-});
+// ── HTML routes / SPA fallback ─────────────────────────────────────────────
+mountHtmlRoutes(app, __dirname);
 
 app.use(errorHandler);
 
