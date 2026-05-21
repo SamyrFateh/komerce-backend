@@ -1386,6 +1386,33 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 .k-modal-delivery,
 .k-modal-payment { display: none; }
 
+/* ── PR-M3 — Blocs conditionnels par classes ModalViewModel ──
+   Invariant B-M-10 : chaque bloc optionnel est révélé UNIQUEMENT
+   si la classe contractuelle correspondante est posée sur .k-modal
+   par ModalViewModel (cf. js/view-models/modal-view-model.js).
+   Sans ces règles, le @media ≥900 ci-dessous afficherait des blocs
+   vides (padding/border/margin visibles) quand le JS injecte un
+   innerHTML='' faute de donnée produit.
+
+   Couverts ici (les vrais blocs fantômes) :
+     .k-modal-aed-price → .k-modal--has-promo
+     .k-modal-flash-bar → .k-modal--has-promo
+     .k-modal-stock-bar → .k-modal--stock-low
+
+   Non couverts (intentionnel) :
+     .k-modal-delivery / .k-modal-payment → toujours visibles desktop
+       (décisions UX : zones fonctionnelles, pas des données produit)
+     .k-modal-specs / .k-modal-meta / .k-modal-variants → déjà conditionnels
+       côté JS (rien injecté si pas de donnée, pas de padding/border de bloc)
+   ──────────────────────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .k-modal:not(.k-modal--has-promo) .k-modal-aed-price,
+  .k-modal:not(.k-modal--has-promo) .k-modal-flash-bar,
+  .k-modal:not(.k-modal--stock-low) .k-modal-stock-bar {
+    display: none;
+  }
+}
+
 @media (min-width: 900px) {
 
   /* ── EUR reference line (remplace AED) ─────────────────── */
