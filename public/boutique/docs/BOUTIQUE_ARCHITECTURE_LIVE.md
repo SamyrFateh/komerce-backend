@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-21T07:06:23.666Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-21T13:03:21.244Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -24,11 +24,11 @@
 | `hero.css` | 146 | base.css |
 | `interactions.css` | 529 | components.css |
 | `layout.css` | 741 | base.css |
-| `modal.css` | 1783 | components.css |
+| `modal.css` | 1810 | components.css |
 | `products.css` | 725 | components.css |
 | `reset.css` | 86 | base.css |
 | `shared-followup.css` | 3 | components.css |
-| `tokens.css` | 277 | event.css |
+| `tokens.css` | 278 | event.css |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -36,7 +36,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=3
- 2. /boutique/css/dist/components.css?v=3
+ 2. /boutique/css/dist/components.css?v=5
  3. /boutique/css/dist/desktop.css?v=3
  4. /boutique/css/dist/event.css?v=3
 ```
@@ -60,7 +60,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `#k-desktop-catalog-wrap` ⚠️ | `desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/6) |
 | `.k-header` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`hero-cart-proxy.css` (4/2)<br>`layout.css` (3/2) |
 | `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/0) |
-| `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/1) |
+| `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/2) |
 
 > ⚠️ = sélecteur défini dans plus d'un fichier. Vérifier que c'est conforme à `BOUTIQUE_ARCHITECTURE.md` §3.
 
@@ -70,12 +70,11 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-4 occurrence(s) au total, répartition :
+2 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
 | `event.css` | 2 |
-| `modal.css` | 2 |
 
 ## 6. `!important` par fichier
 
@@ -105,7 +104,7 @@ Aucun. ✅
 
 - **CSS orphelins** : 0 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 4 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 2 (cible : 0 ou allowlist)
 - **`!important`** : 12 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 12 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 

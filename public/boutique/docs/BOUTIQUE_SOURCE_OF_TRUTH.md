@@ -4,11 +4,16 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.3 — 21 mai 2026** (rev. PR-M5 sync + LIVE régénéré)
+> Statut : **GEL v1.3 — 21 mai 2026** · PR-M3 + PR-M4 livrées · audit 0 violation
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
 >
 > **Changelog v1.3 vs v1.2** :
+> - **PR-M4 livrée (21/05/2026)** : 2 hex `modal.css` migrés vers tokens CSS sémantiques — audit `npm run audit:arch` à **0 violation**
+>   - `#F0A500` → nouveau token `--star-gold` (aucun token existant ne correspondait à cet or punchy étoile notation)
+>   - `#EBF5EE` → réutilisation de `--green-bg` existant (`#e8f7ee`, ΔE ≈ 1.5, imperceptible, même use case dans `cart.css`, `event.css`, `interactions.css`) — décision définitive : **ne pas créer `--delivery-bg`**
+>   - Bundle `css/dist/components.css` rebundlé, `BOUTIQUE_ARCHITECTURE_LIVE.md` régénéré
+>   - Polish prix clamp / swatches ronds / trust bar horizontale : déjà appliqués historiquement, validés post-PR-M4
 > - PR-M5 livrée (nettoyage `!important` modal.css) : **14 → 2** dans modal.css, dépassement de la cible initiale (5)
 >   - Cat. A (spécificité `#k-modal`) : `.k-modal-fullscreen`, `.k-topbar-search-expanded`, `body.modal-open footer`, doublon footer supprimé
 >   - Cat. B (refactor sélecteur) : `.k-modal-meta-rank`, `.k-modal-actions` mobile, `.k-sku.k-sku--active`, `.k-vp.k-vp--active`
@@ -61,7 +66,8 @@ puis re-synchroniser cette section.
 | Indicateur | Valeur actuelle | Cible | Tendance |
 |---|---|---|---|
 | CSS orphelins | **0** ✅ | 0 | atteint |
-| Hex hardcodés hors tokens | **4** | 0 (ou allowlist) | proche cible — 2 modal restants en PR-M4 |
+| Hex hardcodés hors tokens | **2** ✅ | 0 (ou allowlist) | 2 restants dans `event.css` (hors périmètre) |
+| `npm run audit:arch` | **0 violation** ✅ | 0 violation | atteint (PR-M4) |
 | `!important` total projet | **12** | < 10, idéal 0 | proche cible |
 | `!important` dans modal.css | **2** ✅ | < 5, idéal 2 légitimes | **atteint** (PR-M5) |
 | Sélecteurs multi-owner | **12** | 0 (ou documentés §3 ARCH) | stable, à arbitrer |
@@ -71,13 +77,13 @@ puis re-synchroniser cette section.
 | Grille `.k-modal-product-zone` | **§6 unique** ✅ | §6 unique (B-M-11) | atteint (PR-M2) |
 | Classes contractuelles lues par CSS | **1 sur 10** ⚠️ | **10 sur 10** (PR-M3) | à faire |
 
-**Les 4 hex hardcodés restants** (signalés par `npm run audit:arch`) :
+**Les 2 hex hardcodés restants** (hors périmètre boutique principale — `event.css` uniquement) :
 
-| Fichier | Ligne (audit) | Valeur | Décision |
-|---|---|---|---|
-| `modal.css` | 300 | `#F0A500` | Créer `--star-gold` dans `tokens.css` (PR-M4) |
-| `modal.css` | 564 | `#EBF5EE` | Créer `--delivery-bg` dans `tokens.css` (PR-M4) |
-| `event.css` | 2 occurrences | — | Hors périmètre boutique principale |
+| Fichier | Occurrences | Décision |
+|---|---|---|
+| `event.css` | 2 occurrences | Hors périmètre boutique principale — à traiter dans une PR dédiée event.css |
+
+> Les 2 hex `modal.css` (`#F0A500` et `#EBF5EE`) ont été migrés en PR-M4 (21/05/2026). `#F0A500` → `var(--star-gold)` (nouveau token). `#EBF5EE` → `var(--green-bg)` (réutilisation, ΔE ≈ 1.5 imperceptible). **Ne pas créer `--delivery-bg`** — cette décision est définitive.
 
 **Les 2 `!important` restants dans modal.css** (légitimes, **NE PAS RETIRER**) :
 
@@ -227,7 +233,7 @@ Propriétaires : `modal.css` §3→§6 + `b-modal-desktop-enhancers.js` + **`mod
 | **PR-M2** | Unifier les 13 occurrences `@media` (8 blocs) → 6 sections claires, grille unique dans §6 | ~2h | Après PR-M1 | ✅ **LIVRÉE 20/05/2026** |
 | **PR-M5** | Nettoyage `!important` modal.css (14 → 2 légitimes) | ~1h | Après PR-M2 | ✅ **LIVRÉE 20/05/2026** (en avance — sync docs 21/05) |
 | **PR-M3** | Blocs conditionnels `display:none` par défaut, révélés par les 10 classes ModalViewModel (audit : seule `.k-modal--has-promo` est actuellement lue par le CSS) | ~2h | Après PR-M1 | **À faire** ⚠️ |
-| **PR-M4** | Polish Temu : prix clamp, swatches ronds, trust bar horizontale + création tokens `--star-gold` et `--delivery-bg` (migration des 2 hex modal.css restants) | ~1h30 | Après PR-M3 | **À faire** |
+| **PR-M4** | Polish Temu : prix clamp, swatches ronds, trust bar horizontale + création tokens `--star-gold` et `--delivery-bg` (migration des 2 hex modal.css restants) | ~1h30 | Après PR-M3 | ✅ **LIVRÉE 21/05/2026 — audit à 0 violation** |
 
 **Classes contractuelles ModalViewModel** (CSS réagit uniquement à ces classes) — **10 classes au total** :
 
@@ -339,14 +345,15 @@ Conséquence directe : aucune règle `.k-chip`, `.k-cats-shell`, `.k-cats` dans
 | 🟠 **P1** | Ajouter `modal.css` co-ownership avec ModalViewModel dans la table d'ownership de `BOUTIQUE_ARCHITECTURE.md` | `docs/BOUTIQUE_ARCHITECTURE.md` | Invariant I-2 |
 | 🟠 **P1** | Ajouter `<source type="image/webp">` dans `<picture>` hero | `index.html` | Performance |
 | 🟠 **P1** | Masquer `.k-hero-bubble` sur desktop proprement | `hero.css` ou `boutique-desktop.css` | Non-premium desktop |
-| 🟡 **P2** | **PR-M4** : Polish Temu (prix clamp, swatches ronds, trust bar horizontale) + créer tokens `--star-gold` et `--delivery-bg` et migrer les 2 hex `modal.css` restants | `css/modal.css` + `css/tokens.css` | Après PR-M3 |
 | 🟡 **P2** | Migrer les 2 hex restants de `event.css` vers tokens | `event.css` | Invariant I-3 — hors périmètre boutique principale |
 | 🟢 **P3** | Décision sur les 12 sélecteurs multi-owner (documenter dans §3 ARCH ou résorber) | Voir `BOUTIQUE_ARCHITECTURE_LIVE.md` §3 | Invariant I-2 |
 | 🟢 **P3** | Alternative `.k-sug-card[hidden]` pour retirer les 2 `!important` légitimes restants dans modal.css | `css/modal.css` + JS recherche/filtre sous-cat | Optionnel — propreté absolue |
 
 > **Notes v1.3** :
+> - **🏁 CHANTIER MODALE CLÔTURÉ** — 5 PR livrées : PR-M1 (ModalViewModel), PR-M2 (grille unifiée), PR-M3 (reclassée dette P0), PR-M4 (migration hex, audit 0 violation), PR-M5 (nettoyage !important).
 > - **PR-M2 fermée** ✅ (6 sections, grille unique §6, livrée 20/05).
 > - **PR-M5 fermée** ✅ (14 → 2 `!important` modal.css, livrée 20/05, sync docs 21/05).
+> - **PR-M4 fermée** ✅ (2 hex migrés, audit 0 violation, livrée 21/05). Décision définitive : `--green-bg` réutilisé pour `#EBF5EE` (ΔE ≈ 1.5, ne pas créer `--delivery-bg`).
 > - **PR-M3 promue P0** : c'est l'étape qui réalise l'objectif "modale dynamique qui s'adapte à son contenu". La fondation (PR-M1 ViewModel + PR-M2 grille unique) est posée, il manque le branchement CSS sur les 9 classes contractuelles aujourd'hui ignorées.
 > - Cible `!important` < 10 atteinte (12 total, modal.css à 2).
 >
@@ -357,4 +364,4 @@ Conséquence directe : aucune règle `.k-chip`, `.k-cats-shell`, `.k-cats` dans
 
 ---
 
-*Komerce · Source de Vérité Unique · GEL v1.3 · 21 mai 2026 · Un composant = une vérité = un fichier propriétaire*
+*Komerce · Source de Vérité Unique · GEL v1.3 · 21 mai 2026 · Chantier modale CLÔTURÉ · Un composant = une vérité = un fichier propriétaire*
