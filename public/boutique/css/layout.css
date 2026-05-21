@@ -713,7 +713,7 @@ body {
     avant le footer, sans se tronquer brutalement.
   */
   #k-desktop-catalog-wrap {
-    padding-bottom: clamp(120px, 18vh, 220px);
+    padding-bottom: clamp(40px, 8vh, 80px); /* LOT 15 : réduit — l'ancien 220px faisait glisser le sticky hors viewport */
   }
 
   /*

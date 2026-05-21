@@ -1524,3 +1524,16 @@
     margin-top: 4px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART — FIX hauteur pleine viewport (sticky tenu sur toute
+   la longueur du catalogue, comportement Temu).
+   Ajouté LOT 15 — 2026-05-21
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  .k-side-cart {
+    /* height explicite = viewport - header - marges.
+       Sans ça, sticky finit à hauteur-contenu et disparaît. */
+    height: calc(100dvh - var(--header-h, 72px) - 24px);
+  }
+}
