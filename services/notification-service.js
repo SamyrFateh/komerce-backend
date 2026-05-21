@@ -16,6 +16,7 @@
  */
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'notification-service' });
 const {
   notifyOrderCreated: waOrderCreated,
   notifyPaymentConfirmed: waPaymentConfirmed,
@@ -48,9 +49,9 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
   } catch (err) {
     if (err.code === '42P01') {
       // Table pas encore créée — on ignore
-      console.warn('[notification-service] table notification_log absente, log skipped');
+      log.warn({ table: 'notification_log' }, 'Notification log table missing, log skipped');
     } else {
-      console.error('[notification-service] log error', err.message);
+      log.error({ err }, 'Notification log write failed');
     }
   }
 }
@@ -156,7 +157,7 @@ async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relai
   }
 
   if (recipients.length === 0) {
-    console.warn('[notif][order-created] no phone', order.reference);
+    log.warn({ order_ref: order.reference }, 'Order created notification skipped: no phone');
     await logNotification({
       orderRef: order.reference, channel: 'whatsapp', event: 'order_created',
       status: 'skipped', detail: 'no_phone'
@@ -185,7 +186,7 @@ async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relai
           : { error: result.error, role },
       });
     } catch (err) {
-      console.error(`[notif][order-created][${role}]`, err.message);
+      log.error({ err, order_ref: order.reference, phone, role }, 'Order created notification failed');
       await logNotification({
         orderRef: order.reference, channel: 'whatsapp', event: 'order_created',
         recipient: phone, status: 'failed', detail: { error: err.message, role },
@@ -219,7 +220,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
     );
 
     if (!order) {
-      console.warn('[notif][payment-confirmed] order not found', orderId);
+      log.warn({ order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification skipped: order not found');
       return;
     }
 
@@ -249,7 +250,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       detail: result.ok ? { messageId: result.messageId } : { error: result.error },
     });
   } catch (err) {
-    console.error('[notif][payment-confirmed]', err.message);
+    log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
   }
 }
 
@@ -305,7 +306,7 @@ async function notifyStatusChange(order, newStatus) {
         detail: result.ok ? { messageId: result.messageId, role } : { error: result.error, role },
       });
     } catch (err) {
-      console.error(`[notif][${entry.event}][${role}]`, err.message);
+      log.error({ err, order_ref: order.reference, event: entry.event, phone, role }, 'Status change notification failed');
       await logNotification({
         orderRef: order.reference, channel: 'whatsapp', event: entry.event,
         recipient: phone, status: 'failed', detail: { error: err.message, role },
@@ -345,7 +346,7 @@ async function notifyCancellation(order, smsRefundInfo) {
       detail: result.ok ? { messageId: result.messageId, refund: smsRefundInfo } : { error: result.error },
     });
   } catch (err) {
-    console.error('[notif][cancellation]', err.message);
+    log.error({ err, order_ref: order.reference, phone }, 'Cancellation notification failed');
     await logNotification({
       orderRef: order.reference, channel: 'whatsapp', event: 'order_cancelled',
       recipient: phone, status: 'failed', detail: err.message,
@@ -388,7 +389,7 @@ async function _loadOrderFromParcel(parcelId) {
     );
     return rows[0] || null;
   } catch (err) {
-    console.error('[notif][load-order-from-parcel]', err.message);
+    log.error({ err, parcel_id: parcelId }, 'Load order from parcel failed');
     return null;
   }
 }
@@ -412,7 +413,7 @@ async function _loadOrderFromParcel(parcelId) {
 // ═══════════════════════════════════════════════════════════════════════
 async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
   if (!parcelId || !parcelStatus) {
-    console.warn('[notif][parcel-scan] missing params', { parcelId, parcelStatus });
+    log.warn({ parcel_id: parcelId, parcel_status: parcelStatus }, 'Parcel scan notification skipped: missing params');
     return;
   }
 
@@ -425,14 +426,14 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
 
   const orderStatus = statusMap[parcelStatus];
   if (!orderStatus) {
-    console.warn('[notif][parcel-scan] unmapped status', parcelStatus);
+    log.warn({ parcel_status: parcelStatus }, 'Parcel scan notification skipped: unmapped status');
     return;
   }
 
   // Charger l'order complet pour avoir les téléphones payeur + bénéficiaire
   const order = await _loadOrderFromParcel(parcelId);
   if (!order) {
-    console.warn('[notif][parcel-scan] order not found for parcel', parcelReference);
+    log.warn({ parcel_id: parcelId, parcel_ref: parcelReference }, 'Parcel scan notification skipped: order not found');
     await logNotification({
       parcelRef: parcelReference,
       channel: 'whatsapp',
@@ -443,12 +444,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
     return;
   }
 
-  console.log('[notif][parcel-scan] ▶', {
-    parcelRef: parcelReference,
-    orderRef: order.reference,
-    parcelStatus,
-    orderStatus,
-  });
+  log.info({ parcel_ref: parcelReference, order_ref: order.reference, parcel_status: parcelStatus, order_status: orderStatus }, 'Parcel scan notification dispatched');
 
   // Délègue : notifyStatusChange gère déjà payeur/bénéficiaire + log DB
   return notifyStatusChange(order, orderStatus);
@@ -505,7 +501,7 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
         };
       }
 
-      console.warn('[wa-otp] template OTP failed, no fallback configured:', result.error);
+      log.warn({ error: result.error, phone }, 'WhatsApp OTP template failed, no fallback configured');
       return {
         success: false,
         channel: 'whatsapp',
@@ -513,7 +509,7 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
         reason: 'authkey_rejected',
       };
     } catch (err) {
-      console.error('[wa-otp] exception:', err.message);
+      log.error({ err, phone }, 'WhatsApp OTP send failed');
       await logNotification({
         channel: 'whatsapp',
         event: 'otp_sent',
@@ -532,7 +528,7 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
 
   // ── 2. Pas de WID_OTP configuré → on log et on return l'erreur ──
   //    (fallback SMS à implémenter ici si besoin via un autre provider)
-  console.warn('[wa-otp] WID_OTP not configured in env — cannot send OTP');
+  log.warn({ phone }, 'WhatsApp OTP skipped: template not configured');
   await logNotification({
     channel: 'whatsapp',
     event: 'otp_sent',
@@ -564,7 +560,7 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
 // ═══════════════════════════════════════════════════════════════════════
 async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   if (!orderId) {
-    console.warn('[notif][parcel-created] missing orderId');
+    log.warn({ parcel_ref: parcelRef, order_ref: orderReference }, 'Parcel created notification skipped: missing orderId');
     return;
   }
 
@@ -591,7 +587,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
     );
 
     if (!order) {
-      console.warn('[notif][parcel-created] order not found', orderId);
+      log.warn({ order_id: orderId, order_ref: orderReference, parcel_ref: parcelRef }, 'Parcel created notification skipped: order not found');
       await logNotification({
         orderRef: orderReference,
         parcelRef,
@@ -603,9 +599,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
       return;
     }
 
-    console.log('[notif][parcel-created] ▶', {
-      parcelRef, orderRef: order.reference,
-    });
+    log.info({ parcel_ref: parcelRef, order_ref: order.reference }, 'Parcel created notification logged');
 
     // Délègue à notifyStatusChange avec 'preparation'.
     // Si aucun template ne correspond dans notifyStatusChange.mapping,
@@ -627,7 +621,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
 
     return { success: true, logged_only: true };
   } catch (err) {
-    console.error('[notif][parcel-created]', err.message);
+    log.error({ err, order_id: orderId, order_ref: orderReference, parcel_ref: parcelRef }, 'Parcel created notification failed');
     await logNotification({
       orderRef: orderReference, parcelRef,
       channel: 'whatsapp', event: 'parcel_created',
@@ -667,7 +661,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   const wid = WID_MAGIC_LINK || WID_OTP;
 
   if (!wid) {
-    console.warn('[wa-magic-link] Aucun template WID_MAGIC_LINK ni WID_OTP configuré');
+    log.warn({ phone }, 'Magic link skipped: no WhatsApp template configured');
     await logNotification({
       channel: 'whatsapp',
       event: 'magic_link_sent',
@@ -707,7 +701,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
     });
 
     if (result.ok) {
-      console.log(`[wa-magic-link] ✅ → ${phone} (messageId: ${result.messageId})`);
+      log.info({ phone, message_id: result.messageId }, 'Magic link sent');
       return {
         success: true,
         channel: 'whatsapp',
@@ -715,7 +709,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
       };
     }
 
-    console.warn(`[wa-magic-link] ❌ ${phone}: ${result.error}`);
+    log.warn({ phone, error: result.error }, 'Magic link rejected by provider');
     return {
       success: false,
       channel: 'whatsapp',
@@ -723,7 +717,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
       reason: 'authkey_rejected',
     };
   } catch (err) {
-    console.error('[wa-magic-link] exception:', err.message);
+    log.error({ err, phone }, 'Magic link send failed');
     await logNotification({
       channel: 'whatsapp',
       event: 'magic_link_sent',
