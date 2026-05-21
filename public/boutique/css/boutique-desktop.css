@@ -1186,7 +1186,7 @@
     flex-direction: column;
     position: sticky;
     top: calc(var(--header-h, 72px) + 12px);
-    align-self: flex-start;
+    align-self: start;          /* flex-start en flex, start en grid — les deux marchent */
     /* Hauteur max : viewport - header - marge basse */
     max-height: calc(100dvh - var(--header-h, 72px) - 24px);
     flex: 0 0 290px;
