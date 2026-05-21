@@ -237,6 +237,7 @@
   --amber-mid:              #fcd34d   ;  /* Jaune amber moyen */
   --amber-warm:             #f0bf67   ;  /* Or chaud (mention promo) */
   --gold-soft:              #d4b87a   ;  /* Or doux (premium accent) */
+  --star-gold:              #F0A500   ;  /* Or punchy étoile notation produit (Temu-like) */
   --amber-cta:              #e8a13a   ;  /* Amber CTA dynamique */
   --amber-text-deep:        #8b5a1a   ;  /* Amber texte foncé */
   --amber-light-bg:         #fde68a   ;  /* Fond amber clair badge */
