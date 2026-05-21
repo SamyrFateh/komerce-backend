@@ -31,8 +31,6 @@ for (const key of RECOMMENDED_ENV) {
 }
 
 const express      = require('express');
-const cors         = require('cors');
-const helmet       = require('helmet');
 const cookieParser = require('cookie-parser');
 const path         = require('path');
 const db           = require('./db');
@@ -73,57 +71,12 @@ app.get('/webhook/authkey-whatsapp', async (req, res) => {
   }
 });
 
-const FRONTEND_URL = process.env.FRONTEND_URL || '';
+const { applySecurity } = require('./bootstrap/security');
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
 
-function isAllowedOrigin(origin) {
-  if (!origin) return true;
-  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
-  if (FRONTEND_URL && origin === FRONTEND_URL) return true;
-  const extra = process.env.ALLOWED_ORIGINS;
-  if (extra) {
-    const allowed = extra.split(',').map(s => s.trim()).filter(Boolean);
-    if (allowed.includes(origin)) return true;
-  }
-  return false;
-}
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (isAllowedOrigin(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Not allowed by CORS: ${origin}`));
-    }
-  },
-  methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  credentials: true,
-};
-
-// ── Security headers ────────────────────────────────────────────────────
-
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com"],
-      styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
-      imgSrc:      ["'self'", "data:", "https:", "http:"],
-      connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://api.stripe.com"],
-      frameSrc:    ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
-      mediaSrc:    ["'self'"],
-      objectSrc:   ["'none'"],
-      frameAncestors: ["'none'"],
-      baseUri:     ["'self'"],
-      formAction:  ["'self'"],
-      scriptSrcAttr: ["'unsafe-inline'"],
-    },
-  },
-}));
-
-app.use(cors(corsOptions));
+// ── Security headers + CORS ───────────────────────────────────────────────
+applySecurity(app);
 
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
