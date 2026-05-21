@@ -19,7 +19,7 @@ async function repairCollectiveReadyToCapture({ dryRun = true, limit = 25, minAg
 
   const { rows: candidates } = await db.query(`
     SELECT cps.id, cps.workspace_id, cps.total_to_pay_kmf, cps.amount_secured_kmf,
-           cps.created_at, cw.public_token, cw.event_name, cw.order_id
+           cps.created_at, cw.public_token_hash, cw.event_name, cw.order_id
     FROM collective_payment_sessions cps
     JOIN collective_workspaces cw ON cw.id = cps.workspace_id
     WHERE cps.status = 'ready_to_capture'
