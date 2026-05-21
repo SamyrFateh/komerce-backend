@@ -44,7 +44,7 @@ async function repairCollectiveStockReservations({ dryRun = true, limit = 50, us
     WHERE cw.order_id IS NULL
       AND csr.status = 'reserved'
       AND (
-        cw.status IN ('session_ended', 'cancelled')
+        cw.status IN ('session_ended', 'archived')
         OR cps.status IN ('ended', 'failed')
         OR csr.reserved_until <= NOW()
       )
