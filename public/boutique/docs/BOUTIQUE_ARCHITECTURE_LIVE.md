@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-16T09:41:17.746Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-21T07:06:23.666Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -10,30 +10,25 @@
 
 ## 1. Inventaire CSS
 
-20 fichier(s) sur disque, 7 orphelin(s).
+15 fichier(s) sur disque, 0 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1185 | desktop.css |
-| `boutique-wow.css` | 4 | 🔴 **ORPHELIN** |
-| `cart-groups.css` | 3 | 🔴 **ORPHELIN** |
-| `cart-product-open.css` | 87 | 🔴 **ORPHELIN** |
-| `cart.css` | 932 | components.css |
-| `categories.css` | 561 | components.css |
-| `desktop-commerce-skeleton.css` | 360 | desktop.css |
-| `desktop-horizontal-nav.css` | 12 | 🔴 **ORPHELIN** |
-| `event.css` | 890 | event.css |
-| `group-cart-flow.css` | 3 | 🔴 **ORPHELIN** |
+| `boutique-desktop.css` | 1527 | desktop.css |
+| `cart.css` | 903 | components.css |
+| `categories.css` | 470 | components.css |
+| `desktop-commerce-skeleton.css` | 325 | desktop.css |
+| `event.css` | 861 | event.css |
+| `group-cart-flow.css` | 3 | components.css |
 | `hero-cart-proxy.css` | 110 | components.css |
-| `hero.css` | 299 | base.css |
+| `hero.css` | 146 | base.css |
 | `interactions.css` | 529 | components.css |
-| `layout.css` | 1155 | base.css |
-| `mini-cart.css` | 288 | 🔴 **ORPHELIN** |
-| `modal.css` | 1309 | components.css |
+| `layout.css` | 741 | base.css |
+| `modal.css` | 1783 | components.css |
 | `products.css` | 725 | components.css |
 | `reset.css` | 86 | base.css |
-| `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
-| `tokens.css` | 206 | base.css |
+| `shared-followup.css` | 3 | components.css |
+| `tokens.css` | 277 | event.css |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -52,19 +47,19 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 
 | Sélecteur | Owners trouvés (base / desktop) |
 |---|---|
-| `.k-chip` ⚠️ | `boutique-desktop.css` (0/5)<br>`categories.css` (33/0)<br>`interactions.css` (2/0) |
-| `.k-cats-shell` ⚠️ | `boutique-desktop.css` (1/1)<br>`categories.css` (2/0)<br>`desktop-commerce-skeleton.css` (0/1)<br>`hero.css` (1/0) |
+| `.k-chip` ⚠️ | `boutique-desktop.css` (6/5)<br>`categories.css` (27/0)<br>`interactions.css` (2/0) |
+| `.k-cats-shell` ⚠️ | `boutique-desktop.css` (0/1)<br>`categories.css` (2/0)<br>`desktop-commerce-skeleton.css` (0/1)<br>`hero.css` (1/0) |
 | `.k-hero-cats-sticky` ⚠️ | `boutique-desktop.css` (0/1)<br>`hero.css` (2/0) |
-| `#k-subcats-wrap` ⚠️ | `boutique-desktop.css` (0/14)<br>`categories.css` (7/2) |
-| `.k-subchip` ⚠️ | `boutique-desktop.css` (0/9)<br>`categories.css` (17/0) |
+| `#k-subcats-wrap` | `boutique-desktop.css` (16/8) |
+| `.k-subchip` | `boutique-desktop.css` (25/1) |
 | `.k-grid` ⚠️ | `cart.css` (2/0)<br>`interactions.css` (6/0)<br>`layout.css` (0/1)<br>`products.css` (3/3) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/19)<br>`desktop-commerce-skeleton.css` (0/2)<br>`products.css` (6/0) |
 | `.k-card-add` ⚠️ | `boutique-desktop.css` (0/1)<br>`cart.css` (0/2)<br>`products.css` (10/1) |
 | `.k-card-fav` ⚠️ | `boutique-desktop.css` (0/4)<br>`cart.css` (0/1)<br>`products.css` (4/0) |
-| `.k-side-cart` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`layout.css` (2/3) |
+| `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/4)<br>`layout.css` (2/0) |
 | `#k-desktop-catalog-wrap` ⚠️ | `desktop-commerce-skeleton.css` (0/3)<br>`layout.css` (1/6) |
 | `.k-header` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`hero-cart-proxy.css` (4/2)<br>`layout.css` (3/2) |
-| `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/3) |
+| `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/0) |
 | `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/1) |
 
 > ⚠️ = sélecteur défini dans plus d'un fichier. Vérifier que c'est conforme à `BOUTIQUE_ARCHITECTURE.md` §3.
@@ -75,34 +70,22 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-213 occurrence(s) au total, répartition :
+4 occurrence(s) au total, répartition :
 
 | Fichier | Nombre |
 |---|---:|
-| `cart.css` | 41 |
-| `event.css` | 36 |
-| `modal.css` | 32 |
-| `boutique-desktop.css` | 22 |
-| `cart-groups.css` | 20 |
-| `interactions.css` | 18 |
-| `desktop-commerce-skeleton.css` | 16 |
-| `mini-cart.css` | 8 |
-| `hero.css` | 6 |
-| `categories.css` | 5 |
-| `shared-followup.css` | 5 |
-| `group-cart-flow.css` | 3 |
-| `cart-product-open.css` | 1 |
+| `event.css` | 2 |
+| `modal.css` | 2 |
 
 ## 6. `!important` par fichier
 
-21 déclaration(s) au total.
+12 déclaration(s) au total.
 
 | Fichier | Nombre |
 |---|---:|
-| `modal.css` | 9 |
 | `hero-cart-proxy.css` | 6 |
 | `boutique-desktop.css` | 2 |
-| `mini-cart.css` | 2 |
+| `modal.css` | 2 |
 | `layout.css` | 1 |
 | `shared-followup.css` | 1 |
 
@@ -110,21 +93,21 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1) |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1) |
-| `--bnav-h` | `js\b-pager.js` (×1) |
-| `--modal-scroll-y` | `js\b-modal.js` (×1) |
+| `--pager-top` | `js/b-pager.js` (×1) |
+| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js/b-pager.js` (×1) |
+| `--bnav-h` | `js/b-pager.js` (×1) |
+| `--modal-scroll-y` | `js/b-modal.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 7 (cible : 0)
+- **CSS orphelins** : 0 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 213 (cible : 0 ou allowlist)
-- **`!important`** : 21 (cible : <10, idéal 0)
-- **Sélecteurs multi-owner** : 14 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
+- **Hex hardcodés** : 4 (cible : 0 ou allowlist)
+- **`!important`** : 12 (cible : <10, idéal 0)
+- **Sélecteurs multi-owner** : 12 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 
 ---
 

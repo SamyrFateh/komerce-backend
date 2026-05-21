@@ -4,9 +4,19 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.2 — 20 mai 2026** (rev. PR-M2 livrée)
+> Statut : **GEL v1.3 — 21 mai 2026** (rev. PR-M5 sync + LIVE régénéré)
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
+>
+> **Changelog v1.3 vs v1.2** :
+> - PR-M5 livrée (nettoyage `!important` modal.css) : **14 → 2** dans modal.css, dépassement de la cible initiale (5)
+>   - Cat. A (spécificité `#k-modal`) : `.k-modal-fullscreen`, `.k-topbar-search-expanded`, `body.modal-open footer`, doublon footer supprimé
+>   - Cat. B (refactor sélecteur) : `.k-modal-meta-rank`, `.k-modal-actions` mobile, `.k-sku.k-sku--active`, `.k-vp.k-vp--active`
+>   - Cat. C (conservés, légitimes JS runtime) : `.k-sug-card.search-hidden`, `.k-sug-card.subcat-hidden`
+> - Bundle `css/dist/` régénéré (était périmé de 1h30 — 25 → 13 `!important` dans `components.css`)
+> - `BOUTIQUE_ARCHITECTURE_LIVE.md` régénéré (était périmé de 5 jours, listait encore 7 orphelins / 213 hex)
+> - `!important` total projet : 21 → **12** (modal.css passe sous la cible « < 10, idéal 0 »)
+> - **PR-M3 reclassée « à faire »** : audit CSS montre qu'une seule classe contractuelle est lue par modal.css (`.k-modal--has-promo` L331). Les 9 autres classes (`--has-variants`, `--has-delivery`, `--stock-low`, `--has-social-proof`, `--has-specs`, `--low-confidence`, `--no-price`, `--stock-out`, `--fulfillment-*`) sont posées par le JS mais le CSS ne les utilise pas — les blocs sont révélés inconditionnellement par `@media (min-width:900px)`. Voir §8 dette.
 >
 > **Changelog v1.2 vs v1.1** :
 > - PR-M2 livrée : grille modal.css unifiée, 2 sections fantômes supprimées (§4 intermédiaire, §5 large)
@@ -42,7 +52,7 @@ son propriétaire dans la table §2 ci-dessous.
 
 ---
 
-## 1. État de santé du projet (snapshot 20 mai 2026, post-PR-M1)
+## 1. État de santé du projet (snapshot 21 mai 2026, post-PR-M5)
 
 Source officielle : `docs/BOUTIQUE_ARCHITECTURE_LIVE.md` (régénéré par `npm run audit:arch:live`).
 **En cas d'écart entre ce tableau et le LIVE, le LIVE fait foi** — relancer `audit:arch:live`
@@ -51,20 +61,32 @@ puis re-synchroniser cette section.
 | Indicateur | Valeur actuelle | Cible | Tendance |
 |---|---|---|---|
 | CSS orphelins | **0** ✅ | 0 | atteint |
-| Hex hardcodés hors tokens | **4** | 0 (ou allowlist) | proche cible |
-| `!important` | **25** | < 10, idéal 0 | au-dessus cible |
-| Sélecteurs multi-owner | **12** | 0 (ou documentés §3 ARCH) | au-dessus cible |
+| Hex hardcodés hors tokens | **4** | 0 (ou allowlist) | proche cible — 2 modal restants en PR-M4 |
+| `!important` total projet | **12** | < 10, idéal 0 | proche cible |
+| `!important` dans modal.css | **2** ✅ | < 5, idéal 2 légitimes | **atteint** (PR-M5) |
+| Sélecteurs multi-owner | **12** | 0 (ou documentés §3 ARCH) | stable, à arbitrer |
 | Tokens cassés `var(--x)nnn` | **0** ✅ | 0 | atteint |
 | `modal-view-model.js` | **PRÉSENT** ✅ | Présent | livré PR-M1 le 20/05/2026 |
-| Blocs `@media min-width:900px` dans modal.css | **13 occurrences** (8 blocs sémantiques) | 3 blocs propres (PR-M2) | refonte prévue |
+| Sections `modal.css` | **6** ✅ | 6 (PR-M2) | atteint |
+| Grille `.k-modal-product-zone` | **§6 unique** ✅ | §6 unique (B-M-11) | atteint (PR-M2) |
+| Classes contractuelles lues par CSS | **1 sur 10** ⚠️ | **10 sur 10** (PR-M3) | à faire |
 
 **Les 4 hex hardcodés restants** (signalés par `npm run audit:arch`) :
 
-| Fichier | Ligne | Valeur | Décision |
+| Fichier | Ligne (audit) | Valeur | Décision |
 |---|---|---|---|
-| `modal.css` | 300 | `#F0A500` | Migrer vers token sémantique (PR-M4 polish) |
-| `modal.css` | 564 | `#EBF5EE` | Migrer vers token sémantique (PR-M4 polish) |
+| `modal.css` | 300 | `#F0A500` | Créer `--star-gold` dans `tokens.css` (PR-M4) |
+| `modal.css` | 564 | `#EBF5EE` | Créer `--delivery-bg` dans `tokens.css` (PR-M4) |
 | `event.css` | 2 occurrences | — | Hors périmètre boutique principale |
+
+**Les 2 `!important` restants dans modal.css** (légitimes, **NE PAS RETIRER**) :
+
+| Ligne | Sélecteur | Raison |
+|---|---|---|
+| 363 | `.k-sug-card.search-hidden { display: none !important }` | Classe posée par JS pour masquer une carte qui a `display:flex` en règle de base. Sans `!important`, le masquage est ignoré. |
+| 602 | `.k-sug-card.subcat-hidden { display: none !important }` | Idem — filtre sous-catégorie posé par JS. |
+
+> Alternative future (hors PR-M5) : utiliser l'attribut HTML `hidden` au lieu d'une classe, ce qui permettrait de retirer ces 2 `!important`. Pas prioritaire.
 
 > **Note historique** : la version v1.0 de ce doc annonçait "7 CSS orphelins" et "213 hex hardcodés".
 > Vérifié le 20/05/2026 : ces chiffres étaient hérités d'un snapshot antérieur. Les 7 fichiers
@@ -191,20 +213,21 @@ Finitions F1-F5 appliquées :
 
 **13 invariants M-MOB-01→13 à ne jamais violer** — voir `MODAL_MOBILE_ARCHITECTURE.md`.
 
-### 3B. Desktop (DRAFT v1.0 — plan de migration en 4 PR, M1 livrée)
+### 3B. Desktop (plan de migration en 5 PR — M1, M2, M5 livrées)
 
-Propriétaires : `modal.css` §3→§7 + `b-modal-desktop-enhancers.js` + **`modal-view-model.js`**
+Propriétaires : `modal.css` §3→§6 + `b-modal-desktop-enhancers.js` + **`modal-view-model.js`**
 
-**Problème actuel** : 13 occurrences `@media(min-width:900px)` (8 blocs sémantiques) dans `modal.css`, §7 écrase silencieusement §3-§5.
+**État actuel** : 6 sections claires dans `modal.css`, grille déclarée une seule fois dans §6, `ModalViewModel` traducteur unique. PR-M5 (nettoyage `!important`) appliquée en avance de la chaîne, modal.css est à 2 `!important` légitimes.
 
-**Cible** : 3 blocs propres, grille déclarée une seule fois dans §5, `modal-view-model.js` comme traducteur unique.
+**Reste à faire pour atteindre la modale dynamique cible** : PR-M3 (CSS qui réagit aux 10 classes contractuelles) puis PR-M4 (polish + migration des 2 derniers hex).
 
 | PR | Action | Durée estimée | Bloquant | Statut |
 |---|---|---|---|---|
 | **PR-M1** | Créer `modal-view-model.js` — ViewModel traduit produit → classes contractuelles | ~3h | **OUI — fondation de tout** | ✅ **LIVRÉE 20/05/2026** |
-| **PR-M2** | Unifier les 13 occurrences `@media` (8 blocs) → 3 blocs, grille unique dans §5 | ~2h | Après PR-M1 | À faire |
-| **PR-M3** | Blocs conditionnels `display:none` par défaut, révélés par classe ModalViewModel | ~2h | Après PR-M1 | À faire |
-| **PR-M4** | Polish Temu : prix clamp, swatches ronds, trust bar horizontale + migration des 2 hex modal.css restants | ~1h30 | Après PR-M2 + M3 | À faire |
+| **PR-M2** | Unifier les 13 occurrences `@media` (8 blocs) → 6 sections claires, grille unique dans §6 | ~2h | Après PR-M1 | ✅ **LIVRÉE 20/05/2026** |
+| **PR-M5** | Nettoyage `!important` modal.css (14 → 2 légitimes) | ~1h | Après PR-M2 | ✅ **LIVRÉE 20/05/2026** (en avance — sync docs 21/05) |
+| **PR-M3** | Blocs conditionnels `display:none` par défaut, révélés par les 10 classes ModalViewModel (audit : seule `.k-modal--has-promo` est actuellement lue par le CSS) | ~2h | Après PR-M1 | **À faire** ⚠️ |
+| **PR-M4** | Polish Temu : prix clamp, swatches ronds, trust bar horizontale + création tokens `--star-gold` et `--delivery-bg` (migration des 2 hex modal.css restants) | ~1h30 | Après PR-M3 | **À faire** |
 
 **Classes contractuelles ModalViewModel** (CSS réagit uniquement à ces classes) — **10 classes au total** :
 
@@ -307,26 +330,31 @@ Conséquence directe : aucune règle `.k-chip`, `.k-cats-shell`, `.k-cats` dans
 
 ---
 
-## 8. Dette technique priorisée (post-PR-M1)
+## 8. Dette technique priorisée (post-PR-M5)
 
-| Priorité | Action | Fichier(s) | Bloquant |
+| Priorité | Action | Fichier(s) | Statut |
 |---|---|---|---|
+| 🔴 **P0** | **PR-M3** : modal.css réagit aux 10 classes contractuelles `.k-modal--*` (aujourd'hui seule `.k-modal--has-promo` est lue). Chaque bloc optionnel doit être `display:none` base + révélé par sa classe sur `.k-modal`, pas par `@media`. C'est ce qui rend la modale dynamique. | `css/modal.css` §5 | **À faire** — bloquant pour la modale dynamique |
 | 🟠 **P1** | Enregistrer `MODAL_DESKTOP_ARCHITECTURE.md` et `MODAL_MOBILE_ARCHITECTURE.md` dans `BOUTIQUE_DOCS_INDEX.md` | `docs/BOUTIQUE_DOCS_INDEX.md` | Cohérence doc |
 | 🟠 **P1** | Ajouter `modal.css` co-ownership avec ModalViewModel dans la table d'ownership de `BOUTIQUE_ARCHITECTURE.md` | `docs/BOUTIQUE_ARCHITECTURE.md` | Invariant I-2 |
 | 🟠 **P1** | Ajouter `<source type="image/webp">` dans `<picture>` hero | `index.html` | Performance |
 | 🟠 **P1** | Masquer `.k-hero-bubble` sur desktop proprement | `hero.css` ou `boutique-desktop.css` | Non-premium desktop |
-| 🟡 **P2** | Unifier les 13 occurrences `@media` modal → 3 blocs (PR-M2) | `css/modal.css` | Après PR-M1 ✅ |
-| 🟡 **P2** | Blocs conditionnels modal via ModalViewModel (PR-M3) | `css/modal.css` + `b-modal-desktop-enhancers.js` | Après PR-M1 ✅ |
-| 🟡 **P2** | Migrer les 4 hex hardcodés restants vers tokens (2 modal + 2 event) | `modal.css`, `event.css` | Invariant I-3 |
-| 🟡 **P2** | Réduire les 25 `!important` vers < 10 (focus : modal.css = 15, hero-cart-proxy.css = 6) | `modal.css`, `hero-cart-proxy.css` | Invariant général |
-| 🟢 **P3** | Polish Temu modal (PR-M4) | `css/modal.css` | Après PR-M2 + M3 |
-| 🟢 **P3** | Décision sur les 12 sélecteurs multi-owner (documenter ou résorber) | Voir `BOUTIQUE_ARCHITECTURE_LIVE.md` §3 | Invariant I-2 |
+| 🟡 **P2** | **PR-M4** : Polish Temu (prix clamp, swatches ronds, trust bar horizontale) + créer tokens `--star-gold` et `--delivery-bg` et migrer les 2 hex `modal.css` restants | `css/modal.css` + `css/tokens.css` | Après PR-M3 |
+| 🟡 **P2** | Migrer les 2 hex restants de `event.css` vers tokens | `event.css` | Invariant I-3 — hors périmètre boutique principale |
+| 🟢 **P3** | Décision sur les 12 sélecteurs multi-owner (documenter dans §3 ARCH ou résorber) | Voir `BOUTIQUE_ARCHITECTURE_LIVE.md` §3 | Invariant I-2 |
+| 🟢 **P3** | Alternative `.k-sug-card[hidden]` pour retirer les 2 `!important` légitimes restants dans modal.css | `css/modal.css` + JS recherche/filtre sous-cat | Optionnel — propreté absolue |
 
-> **Notes v1.1** :
+> **Notes v1.3** :
+> - **PR-M2 fermée** ✅ (6 sections, grille unique §6, livrée 20/05).
+> - **PR-M5 fermée** ✅ (14 → 2 `!important` modal.css, livrée 20/05, sync docs 21/05).
+> - **PR-M3 promue P0** : c'est l'étape qui réalise l'objectif "modale dynamique qui s'adapte à son contenu". La fondation (PR-M1 ViewModel + PR-M2 grille unique) est posée, il manque le branchement CSS sur les 9 classes contractuelles aujourd'hui ignorées.
+> - Cible `!important` < 10 atteinte (12 total, modal.css à 2).
+>
+> **Notes v1.1 (conservées pour historique)** :
 > - La P0 "Créer modal-view-model.js" est **fermée** ✅ (livrée PR-M1).
 > - La P0 "Traiter les 7 CSS orphelins" est **supprimée** (5 fichiers n'existent plus, 2 sont déjà bundlés depuis le bundler v3).
-> - La cible "213 hex hardcodés" est ramenée à **4** (chiffre réel) — la dette n'a jamais été aussi importante que le snapshot v1.0 ne le laissait croire.
+> - La cible "213 hex hardcodés" est ramenée à **4** (chiffre réel).
 
 ---
 
-*Komerce · Source de Vérité Unique · GEL v1.1 · 20 mai 2026 · Un composant = une vérité = un fichier propriétaire*
+*Komerce · Source de Vérité Unique · GEL v1.3 · 21 mai 2026 · Un composant = une vérité = un fichier propriétaire*

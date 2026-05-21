@@ -4,11 +4,11 @@
 
 | Clé | Valeur |
 |---|---|
-| Statut | **DRAFT — v1.0** — Mai 2026 |
-| Périmètre | `modal.css` + `b-modal-desktop-enhancers.js` — desktop uniquement (≥ 900px) |
-| Propriétaire CSS | `boutique/css/modal.css` — 1769 lignes |
-| Propriétaire JS | `boutique/js/b-modal-desktop-enhancers.js` |
-| Docs liées | `BOUTIQUE_MODAL_ARCHITECTURE.md` · `ROADMAP_MODAL_TEMU.md` · `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
+| Statut | **v1.1 — 21 mai 2026** (PR-M1, PR-M2, PR-M5 livrées ; PR-M3 + PR-M4 à faire) |
+| Périmètre | `modal.css` + `b-modal-desktop-enhancers.js` + `modal-view-model.js` — desktop uniquement (≥ 900px) |
+| Propriétaire CSS | `boutique/css/modal.css` — 1782 lignes, 6 sections |
+| Propriétaire JS | `boutique/js/b-modal-desktop-enhancers.js` (orchestrateur enhancers) + `boutique/js/view-models/modal-view-model.js` (traducteur produit → classes) |
+| Docs liées | `BOUTIQUE_MODAL_ARCHITECTURE.md` · `BOUTIQUE_SOURCE_OF_TRUTH.md` · `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` |
 
 ---
 
@@ -150,75 +150,89 @@ Chaque bloc optionnel suit le même pattern : masqué par défaut via CSS, rév�
 
 ---
 
-## 6. Nouvelle carte des sections modal.css
+## 6. Nouvelle carte des sections modal.css (post-PR-M2)
 
-La refonte rationalise les 7 sections actuelles en 5 sections claires :
+La refonte rationalise les 7 sections initiales en **6 sections claires** (la cible initiale de 5 sections incluait les variantes comme "sous-section transverse" ; le code livré les compte comme une section à part entière §4) :
 
-| Sect. | Rôle | Media query | Statut vs actuel |
+| Sect. | Rôle | Media query | Statut vs initial |
 |---|---|---|---|
-| **§1** | Base mobile complète (overlay, shell, topbar, carousel, infos, actions sticky, suggestions) | Aucune (base) | Inchangé |
+| **§1** | Base mobile complète (overlay, shell, topbar, carousel, infos, actions sticky, suggestions, livraison/trust mobile) | Aucune (base) | Inchangé |
 | **§2** | Mobile guard haute spécificité (`#k-modal`) | `max-width: 899px` | Inchangé |
-| **§3** | Desktop : **uniquement** typographie, espacements, topbar breadcrumb (plus de grille) | `min-width: 900px` | Réduit (grille retirée) |
-| **§4** (ex-§6) | Blocs conditionnels masqués base, révélés desktop (social proof, promo, stock, delivery, specs, trust) | `min-width: 900px` | Réorganisé + renommé |
-| **§5** (ex-§7) | Layout desktop : grille 43/57, image sticky, details scroll, actions sticky bas | `min-width: 900px` | **Promu source de vérité unique** |
+| **§3** | Desktop : **uniquement** typographie, espacements, topbar breadcrumb (plus de grille) | `min-width: 900px` | Réduit (grille retirée) ✅ PR-M2 |
+| **§4** | Variantes (SKUs couleur, grille tailles/pointures, guide tailles overlay) | Aucune (composant pur) | Promu section (ex-sous-section transverse) |
+| **§5** (ex-§6 / ex-§7) | Blocs conditionnels masqués base, révélés desktop (social proof, promo, stock, delivery, specs, trust) | `min-width: 900px` | Renommé ✅ PR-M2 |
+| **§6** (ex-§7) | Layout desktop : grille 43/57, image sticky, details scroll, actions sticky bas, mode full page | `min-width: 900px` (+1 override 900-1120) | **Source de vérité unique grille** ✅ PR-M2 / B-M-11 |
 
-> **Supprimés** : §4 (desktop intermédiaire 900-1120) et §5 (desktop large ≥1200) comme sections grille indépendantes. Leurs ajustements de taille de police sont absorbés par `clamp()` dans §3.
+> **Supprimés en PR-M2** : ancien §4 (desktop intermédiaire 900-1120) et ancien §5 (desktop large ≥1200) comme sections grille indépendantes. Leurs ajustements sont absorbés dans §6 (un seul override sous-borne 900-1120) ou dans §3 via `clamp()`.
 
 ---
 
 ## 7. Invariants de la nouvelle architecture
 
-Les invariants B-M-01 à B-M-08 existants restent valides. 4 nouveaux, spécifiques à l'universalité :
+Les invariants B-M-01 à B-M-08 existants restent valides. 4 nouveaux, spécifiques à l'universalité (consolidés post-PR-M2) :
 
-| ID | Invariant | Vérification |
-|---|---|---|
-| **B-M-09** | Aucune règle CSS ne dépend d'un fournisseur ou d'une source de données | `grep "dubai\|whatsapp\|csv\|excel"` dans `modal.css` → 0 résultat |
-| **B-M-10** | Chaque bloc conditionnel est `display:none` par défaut, révélé par classe sur `.k-modal` uniquement | Tester sans aucune classe optionnelle : aucun bloc vide visible |
-| **B-M-11** | La grille desktop est déclarée une seule fois dans §5, jamais dans §3 | `grep "grid-template-columns"` dans §3 → 0 résultat |
-| **B-M-12** | Un produit minimal (1 image + nom + prix) s'affiche sans espace vide ni layout cassé | Test intégration avec `ModalViewModel` vide (seuls `name`, `priceKmf`, `images[0]`) |
+| ID | Invariant | Vérification | Statut |
+|---|---|---|---|
+| **B-M-09** | Aucune règle CSS ne dépend d'un fournisseur ou d'une source de données | `grep -iE "\.[a-z-]*(dubai\|csv\|excel)[a-z-]*[ ,{]"` dans `modal.css` → 0 résultat (`var(--whatsapp)` couleur de marque autorisé) | ✅ |
+| **B-M-10** | Chaque bloc conditionnel est `display:none` par défaut, révélé par classe `.k-modal--*` sur `.k-modal` uniquement | Tester sans aucune classe optionnelle : aucun bloc vide visible | ⚠️ **Non respecté** — PR-M3 à faire (seule `.k-modal--has-promo` est lue par le CSS) |
+| **B-M-11** | La grille desktop est déclarée **une seule fois dans §6**, jamais ailleurs | `grep "grid-template-columns" css/modal.css` → uniquement dans §6 | ✅ depuis PR-M2 |
+| **B-M-12** | Un produit minimal (1 image + nom + prix) s'affiche sans espace vide ni layout cassé | Test intégration avec `ModalViewModel` minimal (seuls `name`, `priceKmf`, `images[0]`) | Dépend de B-M-10 — à valider après PR-M3 |
 
 ---
 
-## 8. Plan de migration — 4 PR atomiques
+## 8. Plan de migration — 5 PR atomiques
 
-### PR-M1 — ModalViewModel (fondation, ~3h)
+### PR-M1 — ModalViewModel (fondation, ~3h) ✅ **LIVRÉE 20/05/2026**
 
 Créer le ViewModel qui normalise tout produit Komerce en contrat modal. **Sans toucher au CSS.**
 
-- Créer `boutique/js/view-models/modal-view-model.js`
-- Exposer les champs contractuels avec fallbacks garantis (table §3.3)
-- Poser les classes CSS sur `.k-modal` selon les champs présents
-- Brancher sur `bus.on("modal:opened")` dans `b-modal-desktop-enhancers.js`
-- Tests : 5 cas (produit complet / sans promo / sans variantes / sans image / score < 40)
+- ✅ Créé `boutique/js/view-models/modal-view-model.js`
+- ✅ Champs contractuels avec fallbacks garantis (table §3.3)
+- ✅ Classes CSS posées sur `.k-modal` selon les champs présents
+- ✅ Branchement sur `bus.on("modal:opened")` dans `b-modal-desktop-enhancers.js`, hook initial via `setupModalContractClasses()` dans `main.js`
 
-### PR-M2 — Refactoring grille modal.css (~2h)
+### PR-M2 — Refactoring grille modal.css (~2h) ✅ **LIVRÉE 20/05/2026**
 
-Unifier les sections grille. **Ne pas toucher au mobile.**
+Unifier les sections grille. **Mobile non touché.**
 
-- Déplacer `grid-template-columns` de §3 vers §5 (ex-§7)
-- Supprimer les overrides §4 (900-1120) et §5 (≥1200) comme sections grille
-- Remplacer toutes les valeurs pixel fixes par `clamp()` dans §3
-- Vérifier les 12 invariants B-M-01 à B-M-12
-- Tests : 900px, 1024px, 1440px, 1920px
+- ✅ `grid-template-columns` déplacé en §6 (source unique)
+- ✅ Overrides 900-1120 (ex-§4) et ≥1200 (ex-§5) supprimés comme sections indépendantes
+- ✅ Sections rationalisées : 7 → 6
+- ✅ Invariant B-M-11 atteint
 
-### PR-M3 — Blocs conditionnels (~2h)
+### PR-M5 — Nettoyage `!important` modal.css (~1h) ✅ **LIVRÉE 20/05/2026**
 
-Refactoriser §6 en §4 avec la logique `ModalViewModel`.
+Réduire les 14 `!important` du modal.css aux 2 légitimes (masquage JS runtime).
 
-- Renommer §6 en §4, réorganiser dans l'ordre : social proof / promo / stock / variants / delivery / specs / trust
-- Chaque bloc : `display:none` base, révélé par classe sur `.k-modal`
-- Supprimer les injections JS hardcodées — remplacer par la classe `ModalViewModel`
-- Test produit minimal : aucun bloc fantôme visible
+- ✅ Cat. A (4 retraits par spécificité `#k-modal`) : `.k-modal-fullscreen`, `.k-topbar-search-expanded`, `body.modal-open footer`, doublon footer supprimé
+- ✅ Cat. B (8 retraits par refactor sélecteur) : `.k-modal-meta-rank`, `.k-modal-actions` mobile, `.k-sku.k-sku--active`, `.k-vp.k-vp--active`
+- ✅ Cat. C (2 conservés) : `.k-sug-card.search-hidden`, `.k-sug-card.subcat-hidden`
+- Dépassement de cible : prévu 5 restants, atteint 2
 
-### PR-M4 — Polish Temu (~1h30)
+### PR-M3 — Blocs conditionnels (~2h) ⚠️ **À FAIRE** — bloquant pour la modale dynamique
 
-Finitions visuelles issues de l'analyse mockup.
+Refactoriser §5 pour que les blocs réagissent aux 10 classes contractuelles posées par `ModalViewModel`.
 
+État actuel : seule `.k-modal--has-promo` est lue par le CSS (1/10). Les 9 autres classes sont posées mais ignorées. Les blocs sont actuellement révélés inconditionnellement par `@media (min-width:900px)`.
+
+Travail à faire :
+- Réorganiser §5 dans l'ordre : social proof / promo / stock / variants / delivery / specs / trust
+- Chaque bloc : `display:none` base, révélé par `.k-modal--has-X .k-modal-X { display: ... }` sur `.k-modal`
+- Supprimer les injections conditionnelles JS dans `b-modal-desktop-enhancers.js` qui pourraient encore poser des `display` inline
+- Test produit minimal : `ModalViewModel({ name, priceKmf, images: [url] })` sans aucune classe optionnelle → aucun bloc fantôme visible
+- Valide B-M-10 et B-M-12
+
+### PR-M4 — Polish Temu (~1h30) ❌ **À FAIRE** (après PR-M3)
+
+Finitions visuelles + dette tokens.
+
+- Créer `--star-gold` (#F0A500) et `--delivery-bg` (#EBF5EE) dans `tokens.css`
+- Migrer les 2 hex `modal.css` restants vers ces tokens — passe l'audit I-3 à 0 violation
 - Prix : `font-size clamp(24px, 2vw, 32px)` · coral sur prix promo · barre sur ancien prix même ligne
-- Swatches : `border-radius:50%` sur `.k-sku` (carrés → ronds)
+- Swatches : `border-radius:50%` sur `.k-sku` (carrés → ronds) — vérifier que c'est déjà appliqué via `.k-sku--color`
 - Social proof : ligne compacte en haut du bloc details si données disponibles
-- Livraison : `border-radius:8px` · fond vert clair · pills îles
-- Trust bar : `display:flex` horizontal (pas vertical comme actuellement)
+- Livraison : `border-radius:8px` · fond `var(--delivery-bg)` · pills îles
+- Trust bar : `display:flex` horizontal
 
 ---
 
@@ -243,15 +257,16 @@ Finitions visuelles issues de l'analyse mockup.
 
 | Document | Rôle |
 |---|---|
-| `BOUTIQUE_MODAL_ARCHITECTURE.md` | Architecture CSS actuelle (§1-§7, invariants B-M-01→08) — à mettre à jour après migration |
-| `ROADMAP_MODAL_TEMU.md` | Roadmap vagues 1-3 (mobile parity, desktop polish, variantes) |
+| `BOUTIQUE_MODAL_ARCHITECTURE.md` | Architecture CSS actuelle (§1-§6 post-PR-M2, invariants B-M-01→12) |
+| `BOUTIQUE_SOURCE_OF_TRUTH.md` | Carte propriétaire consolidée + état de santé + dette priorisée |
 | `BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md` | Contrat `ProductCardViewModel` — modèle sur lequel s'appuie le `ModalViewModel` |
 | `BOUTIQUE_DESKTOP_REDESIGN_BRIEF.md` | Direction UX desktop — modal doit vendre et rassurer, pas faire de la technique |
-| `boutique/css/modal.css` | Fichier CSS propriétaire — 1769 lignes — toutes les règles `.k-modal-*` |
-| `boutique/js/b-modal-desktop-enhancers.js` | Injections desktop — à refactorer pour brancher sur `ModalViewModel` |
+| `boutique/css/modal.css` | Fichier CSS propriétaire — 1782 lignes, 6 sections — toutes les règles `.k-modal-*` |
+| `boutique/js/view-models/modal-view-model.js` | ViewModel — pose les 10 classes contractuelles `.k-modal--*` |
+| `boutique/js/b-modal-desktop-enhancers.js` | Injections desktop + hôte de `setupModalContractClasses()` |
 | `boutique/js/b-modal.js` | Orchestrateur modal — carousel, prix, infos, qty, boutons |
 | `MODAL_MOBILE_ARCHITECTURE.md` | Document complémentaire — mobile gelé GEL v1.0 |
 
 ---
 
-*Komerce · Architecture Modal Desktop · DRAFT v1.0 · Mai 2026 · Une seule modal — tout sourcing — zéro effort additionnel*
+*Komerce · Architecture Modal Desktop · v1.1 · 21 mai 2026 · Une seule modal — tout sourcing — zéro effort additionnel*
