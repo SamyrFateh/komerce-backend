@@ -36,39 +36,36 @@ function injectStyles() {
   }
 
   html.k-mobile-premium-v1 .k-header-inner {
-    gap: 10px;
-    padding-inline: 12px;
+    gap: 8px;
+    padding-inline: 10px;
   }
 
   html.k-mobile-premium-v1 .k-search {
-    min-height: 46px;
+    min-height: 42px;
     border-radius: 999px;
-    box-shadow: 0 12px 26px var(--border-text-06);
+    box-shadow: 0 10px 22px var(--border-text-06);
   }
 
-  html.k-mobile-premium-v1 .k-search input {
-    font-size: 15px;
-  }
+  html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
 
-  html.k-mobile-premium-v1 .k-hero-inner {
-    padding: 0 12px;
-  }
+  html.k-mobile-premium-v1 .k-hero-inner { padding: 0 10px; }
 
   html.k-mobile-premium-v1 .k-hero-media {
-    border-radius: 24px;
-    max-height: 158px;
+    border-radius: 22px;
+    height: 118px;
+    max-height: 118px;
     overflow: hidden;
-    box-shadow: 0 12px 30px var(--border-text-06);
+    box-shadow: 0 10px 24px var(--border-text-06);
   }
 
   html.k-mobile-premium-v1 .k-hero-img {
-    height: 158px;
+    height: 118px;
     object-fit: cover;
     object-position: center;
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    transform: scale(.86);
+    transform: scale(.72);
     transform-origin: left center;
   }
 
@@ -79,63 +76,59 @@ function injectStyles() {
     display: none !important;
   }
 
-  html.k-mobile-premium-v1 .k-hero-cats-sticky {
-    padding-top: 8px;
-  }
+  html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
+  html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
-  html.k-mobile-premium-v1 .k-cats-shell {
-    padding: 0 10px 8px;
-  }
-
+  /* Fix compact mobile : pas de grosse tuile active, grille stable 4 colonnes. */
   html.k-mobile-premium-v1 .k-cats {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 9px;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px 2px 10px;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding: 3px 0 8px;
   }
 
   html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
 
-  html.k-mobile-premium-v1 .k-chip {
-    flex: 0 0 auto;
-    min-width: 112px;
-    height: 68px;
-    border-radius: 22px;
-    padding: 8px 12px;
-    scroll-snap-align: start;
-    background: color-mix(in srgb, var(--white) 82%, transparent);
-    box-shadow: 0 8px 22px var(--border-text-06);
+  html.k-mobile-premium-v1 .k-chip,
+  html.k-mobile-premium-v1 .k-chip.is-active,
+  html.k-mobile-premium-v1 .k-chip.active {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 6px 7px !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: color-mix(in srgb, var(--white) 84%, transparent);
+    box-shadow: 0 7px 18px var(--border-text-06);
   }
 
   html.k-mobile-premium-v1 .k-chip-photo {
-    width: 38px;
-    height: 38px;
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px;
   }
 
   html.k-mobile-premium-v1 .k-chip-label {
-    font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
     font-weight: 850;
   }
 
-  html.k-mobile-premium-v1 #k-subcats-wrap {
-    margin-top: -4px;
-  }
-
-  html.k-mobile-premium-v1 .k-proverb-sep {
-    display: none;
-  }
-
-  html.k-mobile-premium-v1 #k-catalog-section {
-    padding-top: 10px;
-  }
+  html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
+  html.k-mobile-premium-v1 .k-proverb-sep { display: none; }
+  html.k-mobile-premium-v1 #k-catalog-section { padding-top: 6px; }
 
   html.k-mobile-premium-v1 .k-section-title,
-  html.k-mobile-premium-v1 .k-cat-title {
-    margin-top: 10px;
-  }
+  html.k-mobile-premium-v1 .k-cat-title { margin-top: 8px; }
 
   html.k-mobile-premium-v1 .k-grid {
     gap: 14px;
@@ -166,11 +159,11 @@ function injectStyles() {
   }
 
   html.k-mobile-premium-v1 .k-wa-fab {
-    width: 54px;
-    height: 54px;
+    width: 50px;
+    height: 50px;
     right: 16px;
-    bottom: 96px;
-    box-shadow: 0 12px 30px color-mix(in srgb, #25D366 32%, transparent);
+    bottom: 98px;
+    box-shadow: 0 12px 30px color-mix(in srgb, #25D366 28%, transparent);
   }
 
   /* PDP mobile : assumer une vraie sheet tactile. */
@@ -184,9 +177,7 @@ function injectStyles() {
     background: var(--sand);
   }
 
-  html.k-mobile-premium-v1 #k-modal .k-modal-slide {
-    object-fit: cover;
-  }
+  html.k-mobile-premium-v1 #k-modal .k-modal-slide { object-fit: cover; }
 
   html.k-mobile-premium-v1 #k-modal .k-modal-details {
     margin-top: -28px;
@@ -198,9 +189,7 @@ function injectStyles() {
     overflow: hidden;
   }
 
-  html.k-mobile-premium-v1 #k-modal .k-modal-info {
-    padding: 24px 18px 12px;
-  }
+  html.k-mobile-premium-v1 #k-modal .k-modal-info { padding: 24px 18px 12px; }
 
   html.k-mobile-premium-v1 #k-modal .k-modal-info::before {
     content: '';
@@ -233,9 +222,7 @@ function injectStyles() {
     box-shadow: 0 12px 28px var(--border-text-08);
   }
 
-  html.k-mobile-premium-v1 #k-modal .k-modal-price-row {
-    margin-top: 12px;
-  }
+  html.k-mobile-premium-v1 #k-modal .k-modal-price-row { margin-top: 12px; }
 
   html.k-mobile-premium-v1 #k-modal .k-modal-price {
     font-size: clamp(42px, 12vw, 58px);
