@@ -1454,9 +1454,14 @@ function renderSideCart() {
   if (!sc) return;
   sc.classList.toggle('has-items', hasItems);
 
+  // Réserve la place du side cart en bordure droite du body.
+  // Double-mécanisme avec body:has(.k-side-cart.has-items) en CSS :
+  // si :has() n'est pas supporté (Firefox <121), cette classe prend le relais.
+  document.body.classList.toggle('sc-reserve', hasItems);
+
   // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
-  // position: sticky dans le flex parent. Le sidecart prend sa place dans le
-  // flux, plus aucun élément n'a besoin de céder la place via padding-right.)
+  // position: fixed. La réserve de place est gérée par body.sc-reserve +
+  // body:has(.k-side-cart.has-items) en CSS — voir boutique-desktop.css.)
   if (!hasItems) return;
 
   const qty = cartQty();

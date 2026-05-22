@@ -1541,8 +1541,15 @@
      mais SEULEMENT quand le panier a des items. Sinon le
      panneau est en display:none et on ne veut pas de bande
      vide à droite.
+
+     STRATÉGIE EN DEUX TEMPS (ceinture + bretelles) :
+     1. body:has(.k-side-cart.has-items) (CSS pur, navigateurs modernes)
+     2. body.sc-reserve (toggle JS, fallback universel)
+     Le `body` reçoit le padding par une OU l'autre — pas un + un,
+     donc pas de risque de doublage.
      ────────────────────────────────────────────────────────── */
-  body:has(.k-side-cart.has-items) {
+  body:has(.k-side-cart.has-items),
+  body.sc-reserve {
     padding-right: 240px;
   }
 
@@ -1564,7 +1571,8 @@
   .k-side-cart {
     width: 254px;
   }
-  body:has(.k-side-cart.has-items) {
+  body:has(.k-side-cart.has-items),
+  body.sc-reserve {
     padding-right: 254px;
   }
 }
