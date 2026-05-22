@@ -733,22 +733,22 @@ body {
 
 @media (min-width: 1180px) {
   /*
-    Donne de l'air en fin de catalogue pour que le sticky sorte proprement
-    avant le footer, sans se tronquer brutalement.
+    Padding-bottom du catalogue pour respirer en fin de page.
+    (Ex-justification "sticky sortait proprement avant footer" obsolète
+    depuis PR-SC2 v3.2 — side cart en fixed, pas en sticky.)
   */
   #k-desktop-catalog-wrap {
     padding-bottom: clamp(120px, 18vh, 220px);
   }
 
   /*
-    Aperçu premium : 3 articles visibles seulement.
-    Le compteur en bas affiche le total réel.
-    Le drawer "Voir le panier" reste la vue complète.
+    PR-SC2 v3.4 — limitation à 3 items retirée.
+    Ancien comportement : nth-child(n+4){display:none} cachait tout au-delà
+    du 3e item dans le side cart, l'utilisateur devait cliquer "Voir le
+    panier" pour voir le reste. Avec le pattern Temu (side cart full-height
+    + .k-sc-items en flex:1 1 auto + overflow-y:auto), la liste scrolle
+    en interne et tous les items sont visibles. Plus de limitation.
   */
-  .k-sc-items > *:nth-child(n+5) { display: revert; } /* annule la règle 900px */
-  .k-sc-items > *:nth-child(n+4) { display: none; }
-
-  .k-sc-count-label { display: block; }
 }
 
 /* ── Side cart masqué hors onglet boutique ── */
