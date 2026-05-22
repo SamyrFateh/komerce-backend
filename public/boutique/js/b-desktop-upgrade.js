@@ -59,17 +59,24 @@ function setupScrollToTop() {
 /**
  * setupSideCartFooterGuard — masque le side-cart quand le footer entre dans le viewport.
  *
- * Pourquoi cette feature existe :
- *   position:sticky ne connaît pas les limites du footer. Sans guard, le side-cart
- *   chevauche visuellement le footer au bas de page.
+ * DÉSACTIVÉ depuis PR-SC2 v3.2 (passage en position:fixed) — voir docs/PR-SC2.
  *
- * Implémentation : IntersectionObserver sur #k-footer → opacity 0 + pointerEvents none
- *   + transform translateY(8px) quand visible. Restoration au retour.
+ * Historique : posée à l'époque où .k-side-cart était en position:sticky.
+ * Sans guard, le sticky chevauchait visuellement le footer au bas de page.
  *
- * NE PAS REMPLACER par une solution CSS-only (margin-bottom, padding) : a été testé,
- * ne fonctionne pas avec position:sticky dans un flex container.
+ * Pourquoi désactivée maintenant : le pattern actuel est position:fixed +
+ * body { padding-right: 240px } sur body:has(.k-side-cart.has-items) /
+ * body.sc-reserve. Le footer respecte donc déjà les 240px en bordure
+ * droite, le side-cart n'a plus à se cacher pour libérer le footer.
+ *
+ * Pour réactiver (en cas de retour à sticky), supprimer le `return` en
+ * tête de fonction.
  */
 function setupSideCartFooterGuard() {
+  // No-op : voir docstring ci-dessus.
+  return;
+
+  // eslint-disable-next-line no-unreachable
   var footer = document.getElementById('k-footer');
   var sc     = document.getElementById('k-side-cart');
   if (!footer || !sc || typeof IntersectionObserver === 'undefined') return;
