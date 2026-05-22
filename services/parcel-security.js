@@ -16,6 +16,7 @@
  */
 
 const crypto = require('crypto');
+const log = require('../utils/logger').forModule('parcel-security');
 
 // ─── [S4] Code externe neutre ─────────────────────────────────────────────
 // Format : 2 lettres + 6 alphanum (ex: "KP-A7K9M2")
@@ -105,7 +106,7 @@ async function logParcelEvent(db, event) {
   } = event;
 
   if (!parcel_id || !event_type) {
-    console.warn('[SECURITY] logParcelEvent: parcel_id et event_type requis');
+    log.warn({ parcel_id, event_type }, 'logParcelEvent requires parcel_id and event_type');
     return null;
   }
 
@@ -120,7 +121,7 @@ async function logParcelEvent(db, event) {
     return rows[0];
   } catch (err) {
     // Non bloquant — la traçabilité ne doit pas casser le flow
-    console.error('[SECURITY] logParcelEvent error:', err.message);
+    log.error({ err, parcel_id, event_type }, 'logParcelEvent error');
     return null;
   }
 }
@@ -217,7 +218,7 @@ async function ensureSecurityTables(db) {
 
       if (!check.rows.length) {
         await db.query(`ALTER TABLE parcels ADD COLUMN ${col.name} ${col.type}`);
-        console.log(`[SECURITY] Added parcels.${col.name}`);
+        log.info({ column: col.name }, 'Added parcels security column');
       }
     }
 
@@ -236,12 +237,12 @@ async function ensureSecurityTables(db) {
       await db.query('UPDATE parcels SET external_code = $1 WHERE id = $2', [code, p.id]);
     }
     if (orphans.length) {
-      console.log(`[SECURITY] Backfilled ${orphans.length} parcels with external_code`);
+      log.info({ count: orphans.length }, 'Backfilled parcels with external_code');
     }
 
-    console.log('[SECURITY] ✅ Security tables ready');
+    log.info('Security tables ready');
   } catch (err) {
-    console.error('[SECURITY] Migration error:', err.message);
+    log.error({ err }, 'Security migration error');
   }
 }
 

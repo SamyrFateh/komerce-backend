@@ -21,6 +21,7 @@
 'use strict';
 
 const rateLimit = require('express-rate-limit');
+const log = require('../utils/logger').forModule('rate-limit');
 
 // ── Store Redis conditionnel (Vague 3) ──────────────────────────────────────────
 // Si REDIS_URL est défini, utilise un store Redis partagé entre instances.
@@ -36,24 +37,24 @@ if (process.env.REDIS_URL) {
     const redisClient = createClient({ url: process.env.REDIS_URL });
 
     redisClient.on('error', err =>
-      console.error('[RateLimit] Redis client error:', err.message));
+      log.error({ err }, 'Redis client error'));
 
     // Connexion non-bloquante — le serveur démarre même si Redis est indisponible
     redisClient.connect().catch(err =>
-      console.error('[RateLimit] Redis connect failed (fallback to memory):', err.message));
+      log.error({ err }, 'Redis connect failed (fallback to memory)'));
 
     makeStore = (prefix) => new RedisStore({
       sendCommand: (...args) => redisClient.sendCommand(args),
       prefix: `rl:${prefix}:`,
     });
 
-    console.log('[RateLimit] ✅ Redis store activé');
+    log.info('Redis store enabled');
   } catch (err) {
-    console.warn('[RateLimit] ⚠️ Redis store non disponible (module manquant?), repli sur mémoire:', err.message);
+    log.warn({ err }, 'Redis store unavailable (missing module?), fallback to memory');
     makeStore = null;
   }
 } else {
-  console.log('[RateLimit] ℹ️  REDIS_URL absent — store mémoire (mono-instance)');
+  log.info('REDIS_URL absent — using memory store (single instance)');
   makeStore = null;
 }
 

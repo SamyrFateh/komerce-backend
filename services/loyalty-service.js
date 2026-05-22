@@ -27,6 +27,7 @@
  */
 
 const db = require('../db');
+const log = require('../utils/logger').forModule('loyalty-service');
 
 // ─── Cache de la config (5 min) pour éviter de requêter à chaque commande ───
 let _configCache = null;
@@ -46,7 +47,7 @@ async function getFinanceConfig() {
   } catch (err) {
     // Table pas encore créée — on ignore
     if (err.code === '42P01') {
-      console.warn('[loyalty] finance_config table not yet created');
+      log.warn({ err }, 'finance_config table not yet created');
       return null;
     }
     throw err;
@@ -89,7 +90,7 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
     `, [orderId]);
 
     if (!order) {
-      console.warn('[loyalty] order not found', orderId);
+      log.warn({ orderId }, 'order not found');
       return { skipped: true, reason: 'order_not_found' };
     }
 
@@ -116,7 +117,7 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
     const lastNotified   = Number(updated.big_basket_last_notified_count);
     const triggerCount   = Number(cfg.loyalty_trigger_count);
 
-    console.log(`[loyalty] user=${order.user_id} big_basket_count: ${newCount} (order=${order.reference}, total=${totalKmf})`);
+    log.info({ userId: order.user_id, count: newCount, orderRef: order.reference, totalKmf }, 'big basket count incremented');
 
     // 3. Déclenchement si on atteint ou dépasse un palier de trigger
     //    (par défaut 3, puis chaque tranche de 3 supplémentaire : 6, 9, 12...)
@@ -152,11 +153,11 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
           phone:      updated.phone,
           orderRef:   order.reference,
           basketCount: newCount,
-        }).catch(e => console.error('[loyalty] notif error:', e.message));
+        }).catch(e => log.error({ err: e, userId: order.user_id, orderRef: order.reference }, 'loyalty notification error'));
       }
-    } catch(e) { console.warn('[loyalty] notif require error:', e.message); }
+    } catch(e) { log.warn({ err: e }, 'loyalty notification require error'); }
 
-    console.log(`[loyalty] 🎉 Client ${order.user_id} éligible (palier ${newCount}/${triggerCount})`);
+    log.info({ userId: order.user_id, count: newCount, triggerCount }, 'client eligible for loyalty reward');
 
     return {
       skipped: false,
@@ -167,7 +168,7 @@ async function handleOrderConfirmed({ orderId, dbClient = null }) {
     };
 
   } catch (err) {
-    console.error('[loyalty] handleOrderConfirmed error:', err.message, err.stack);
+    log.error({ err, orderId }, 'handleOrderConfirmed error');
     return { skipped: true, reason: 'error', error: err.message };
   }
 }

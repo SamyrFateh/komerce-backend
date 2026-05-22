@@ -15,6 +15,7 @@
 
 require('dotenv').config();
 const { Pool } = require('pg');
+const log = require('./utils/logger').forModule('db');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -32,7 +33,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  console.error('PostgreSQL pool error:', err.message);
+  log.error({ err }, 'PostgreSQL pool error');
 });
 
 // ── V2.8: Pool health monitoring ────────────────────────────────────────────
@@ -41,11 +42,11 @@ if (process.env.NODE_ENV !== 'test') {
   setInterval(() => {
     const { totalCount, idleCount, waitingCount } = pool;
     if (totalCount > 0 || waitingCount > 0) {
-      console.log(`[DB-POOL] total=${totalCount} idle=${idleCount} waiting=${waitingCount}`);
+      log.info({ totalCount, idleCount, waitingCount }, 'DB pool status');
     }
     // Alert if pool is under pressure
     if (waitingCount > 5) {
-      console.warn(`[DB-POOL] ⚠️ ${waitingCount} queries waiting for connection — consider increasing DB_POOL_MAX`);
+      log.warn({ waitingCount }, 'DB pool under pressure — consider increasing DB_POOL_MAX');
     }
   }, MONITOR_INTERVAL);
 }
