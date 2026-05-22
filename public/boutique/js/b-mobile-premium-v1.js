@@ -79,13 +79,13 @@ function injectStyles() {
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
   html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
-  /* Fix compact mobile : pas de grosse tuile active, grille stable 4 colonnes. */
+  /* V2 catégories mobile : compactes, mais d'abord visuelles et lisibles. */
   html.k-mobile-premium-v1 .k-cats {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     overflow: visible;
-    padding: 3px 0 8px;
+    padding: 4px 0 10px;
   }
 
   html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
@@ -96,31 +96,47 @@ function injectStyles() {
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
-    height: 58px !important;
-    min-height: 58px !important;
-    padding: 6px 7px !important;
+    height: 88px !important;
+    min-height: 88px !important;
+    padding: 7px 6px 6px !important;
     border-radius: 18px !important;
     display: flex !important;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    background: color-mix(in srgb, var(--white) 84%, transparent);
+    gap: 5px;
+    background: color-mix(in srgb, var(--white) 86%, transparent);
     box-shadow: 0 7px 18px var(--border-text-06);
   }
 
   html.k-mobile-premium-v1 .k-chip-photo {
-    width: 32px !important;
-    height: 32px !important;
-    flex: 0 0 32px;
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px;
+    border-radius: 14px;
+    object-fit: cover;
+    object-position: center;
   }
 
   html.k-mobile-premium-v1 .k-chip-label {
     min-width: 0;
+    max-width: 100%;
     overflow: hidden;
+    white-space: normal;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.2;
+    font-size: 11px;
     font-weight: 850;
+    text-align: center;
+  }
+
+  @media (max-width: 360px) {
+    html.k-mobile-premium-v1 .k-cats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
