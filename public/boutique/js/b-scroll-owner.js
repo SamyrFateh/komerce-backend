@@ -161,10 +161,12 @@ export function installScrollOwner() {
       return;
     }
 
-    // Side cart déployé : il a son propre scroll interne (.k-sc-items overflow-y:auto).
+    // Side cart : il a son propre scroll interne (.k-sc-items overflow-y:auto).
     // Ne pas rediriger la molette vers window — ça scrollerait le catalogue en même temps.
-    var sideCart = document.getElementById('k-side-cart');
-    if (sideCart && sideCart.classList.contains('is-expanded') && target.closest('#k-side-cart')) {
+    // NOTE : la condition `is-expanded` a été retirée (refactor 21/05/2026 — pattern Temu
+    // full-height, is-expanded n'est plus jamais posé). Le guard couvre désormais tous
+    // les états du side cart, pas seulement quand il était "déployé".
+    if (target.closest('#k-side-cart')) {
       return;
     }
 
