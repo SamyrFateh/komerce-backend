@@ -8,11 +8,13 @@ import { setupProductOpenContract } from './b-product-open-contract.js';
 import { setupCartProductOpenStyle } from './b-cart-product-open-style.js';
 import { setupModalContractClasses } from './b-modal-desktop-enhancers.js';
 import { setupApprocheCHybridPdp } from './b-modal-approche-c-hybrid.js';
+import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 
 function setupBoutiqueRuntime() {
   setupModalContractClasses();
   setupDesktopUpgrade();
   setupApprocheCHybridPdp();
+  setupPdpCurationSuggestions();
   setupProductOpenContract();
   setupCartProductOpenStyle();
 }
@@ -36,6 +38,7 @@ if (typeof window !== 'undefined') {
         _desktopUpgradeDone = true;
         setupDesktopUpgrade();
         setupApprocheCHybridPdp();
+        setupPdpCurationSuggestions();
       }
     }, 150);
   }, { passive: true });
