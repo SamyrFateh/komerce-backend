@@ -1237,59 +1237,6 @@
   .k-sc-btn-group-label { display: inline; }
 
   /* ──────────────────────────────────────────────────────────
-     SELECT-ALL BAR — séparateur header / liste items.
-     ────────────────────────────────────────────────────────── */
-  .k-sc-select-all-row {
-    flex-shrink: 0;
-    padding: 10px 16px;
-    background: var(--white);
-    border-bottom: 1px solid var(--border-text-06);
-  }
-  .k-sc-select-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    user-select: none;
-  }
-  .k-sc-select-all-input {
-    /* checkbox masquée mais accessible */
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    width: 1px;
-    height: 1px;
-  }
-  .k-sc-select-all-check {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1.5px solid var(--border-text-15);
-    background: var(--white);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: transparent;
-    transition: background .12s, border-color .12s, color .12s;
-    flex-shrink: 0;
-  }
-  .k-sc-select-all-check svg { width: 11px; height: 11px; }
-  .k-sc-select-all-input:checked + .k-sc-select-all-check {
-    background: var(--coral);
-    border-color: var(--coral);
-    color: var(--white);
-  }
-  .k-sc-select-all-input:focus-visible + .k-sc-select-all-check {
-    outline: 2px solid var(--coral);
-    outline-offset: 2px;
-  }
-  .k-sc-select-all-label {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  /* ──────────────────────────────────────────────────────────
      ITEMS — zone scrollable, prend toute la hauteur restante.
      Pleine hauteur viewport → items confortables.
      ────────────────────────────────────────────────────────── */

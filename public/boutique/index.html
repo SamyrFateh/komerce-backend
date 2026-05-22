@@ -247,10 +247,9 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
-    <!-- Side cart desktop Temu-style — panneau fixe droit.
-         Layout vertical Temu : header sticky (sous-total + CTAs) en haut,
-         puis "Tout sélectionner", puis liste items scrollable.
-         Voir docs/MOCKUP_TEMU_SIDE_CART.md pour la cible visuelle. -->
+    <!-- Side cart desktop — panneau fixe droit.
+         Layout vertical : header sticky (sous-total + CTAs) en haut,
+         puis liste items scrollable. -->
     <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
       <!-- ── HEADER : sous-total + CTAs (Temu top block) ── -->
       <div class="k-sc-header">
@@ -273,17 +272,6 @@ if('serviceWorker' in navigator){
           <span class="k-sc-btn-group-emoji" aria-hidden="true">👥</span>
           <span class="k-sc-btn-group-label">En groupe</span>
         </button>
-      </div>
-
-      <!-- ── SELECT-ALL bar (Temu pattern) ── -->
-      <div class="k-sc-select-all-row">
-        <label class="k-sc-select-all">
-          <input type="checkbox" id="k-sc-select-all-input" class="k-sc-select-all-input" checked>
-          <span class="k-sc-select-all-check" aria-hidden="true">
-            <svg viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2L5 8.5l4.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <span class="k-sc-select-all-label">Tout sélectionner (<span id="k-sc-count">0</span>)</span>
-        </label>
       </div>
 
       <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->

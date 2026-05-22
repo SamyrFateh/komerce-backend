@@ -1474,11 +1474,6 @@ function renderSideCart() {
   const countInline = sc.querySelector('#k-sc-count-inline');
   if (countInline) countInline.textContent = qty;
 
-  // Compteur dans le label "Tout sélectionner (N)" — juste le nombre,
-  // le wrapping est dans le HTML (.k-sc-select-all-label).
-  const countEl = sc.querySelector('#k-sc-count');
-  if (countEl) countEl.textContent = qty;
-
   // Articles (plus récents en premier)
   const itemsEl = sc.querySelector('#k-sc-items');
   if (itemsEl) {
