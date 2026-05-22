@@ -169,6 +169,7 @@ function injectStyles() {
   /* PDP mobile : assumer une vraie sheet tactile. */
   html.k-mobile-premium-v1 #k-modal .k-modal-scroll {
     background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
+    padding-bottom: calc(172px + env(safe-area-inset-bottom));
   }
 
   html.k-mobile-premium-v1 #k-modal .k-modal-img-wrap {
@@ -242,9 +243,20 @@ function injectStyles() {
     grid-template-columns: minmax(106px, .8fr) minmax(0, 1.25fr);
     gap: 12px;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--white) 96%, transparent);
+    background: var(--white);
     border-top: 1px solid var(--border-text-06);
-    box-shadow: 0 -16px 34px var(--border-text-08);
+    box-shadow: 0 -18px 40px color-mix(in srgb, var(--text) 10%, transparent);
+    isolation: isolate;
+    z-index: 30;
+  }
+
+  html.k-mobile-premium-v1 #k-modal .k-modal-actions::before {
+    content: '';
+    position: absolute;
+    inset: -22px 0 auto 0;
+    height: 22px;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent 0%, var(--white) 100%);
   }
 
   html.k-mobile-premium-v1 #k-modal .k-modal-actions .k-qty,
