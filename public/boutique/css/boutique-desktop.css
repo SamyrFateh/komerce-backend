@@ -1205,28 +1205,10 @@
     margin: 0 auto 6px;
   }
 
-  /* ── Voir le panier — outline sobre ── */
+  /* ── Voir le panier — masqué sur desktop (Commander va direct au checkout,
+     le tiroir complet est superflu quand le side cart est déjà visible) ── */
   .k-sc-btn-cart {
-    display: block;
-    width: 100%;
-    min-height: 34px;
-    padding: 0 14px;
-    border: 1px solid var(--border-text-10);
-    border-radius: 999px;
-    background: var(--white);
-    color: var(--text-muted);
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: var(--font);
-    text-align: center;
-    text-decoration: none;
-    transition: background .12s, border-color .12s, color .12s;
-  }
-  .k-sc-btn-cart:hover {
-    background: var(--sand);
-    border-color: var(--border-text-15);
-    color: var(--text);
+    display: none;
   }
 
   /* ── En groupe — violet Komerce ── */
