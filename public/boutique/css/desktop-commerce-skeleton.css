@@ -260,13 +260,16 @@
   }
 
   #k-desktop-catalog-wrap {
-    max-width: 1480px;
+    /* PR-SC2 v3.3 — le grid 2-cols est mort (side cart en position:fixed).
+       Le wrapper devient flex 1-col qui exploite la zone utile restante
+       après le body padding-right: 240px réservé au side cart. */
+    max-width: none;
     margin: 16px auto 0;
-    padding: 0 0 28px 20px;  /* padding-right: 0 — side cart colle au bord droit */
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 286px;
+    padding: 0 20px 28px;
+    display: flex;
+    flex-direction: column;
     gap: 18px;
-    align-items: start;
+    align-items: stretch;
   }
 
   #k-catalog-section {
@@ -309,13 +312,15 @@
 }
 
 @media (min-width: 1200px) {
-  #k-desktop-catalog-wrap {
-    grid-template-columns: minmax(0, 1fr) 306px;
-  }
+  /* PR-SC2 v3.3 — bloc neutralisé : grid-template-columns n'a plus de
+     sens en flex 1-col. Le side cart en fixed gère sa propre largeur
+     (240→254px) via boutique-desktop.css. */
 }
 
 @media (min-width: 1500px) {
-  #k-desktop-catalog-wrap,
+  /* PR-SC2 v3.3 — #k-desktop-catalog-wrap retiré de cette règle :
+     le wrapper du catalogue exploite toute la zone utile (pas de
+     max-width). Les autres conteneurs gardent leur centrage à 1540px. */
   .k-header-inner,
   .k-hero-inner,
   .k-cats-shell {

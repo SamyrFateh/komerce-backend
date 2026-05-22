@@ -602,14 +602,19 @@ body {
 
 @media (min-width: 900px) {
 
-  /* ── Wrapper principal ────────────────────────────────────── */
+  /* ── Wrapper principal ──────────────────────────────────────
+     Élargi par rapport au --container global : le wrapper du
+     catalogue exploite toute la zone utile restante après le
+     side-cart (240px réservé par body padding-right). Marges
+     latérales visuelles ~20px de chaque côté pour respirer.
+     PR-SC2 v3.3 (chantier 1, marges symétriques). */
   #k-desktop-catalog-wrap {
     display: flex;
     align-items: flex-start;
     gap: 20px;
-    max-width: var(--container);
+    max-width: none;
     margin: 0 auto;
-    padding: 12px clamp(16px, 3vw, 40px) 0;
+    padding: 12px 20px 0;
   }
 
   /* ── Catalogue : prend le reste de la largeur ─────────────── */
