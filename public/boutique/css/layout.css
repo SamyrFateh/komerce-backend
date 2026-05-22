@@ -403,9 +403,19 @@ body {
 
   /* ── Page layout ─────────────────────────────────────────── */
   /* overflow-x sur html casse position:sticky (html devient scroll container).
-     On le retire de html en desktop — body seul clippe le débordement. */
+     On le retire de html en desktop.
+
+     EX-RÈGLE : `body { overflow-x: clip }` était posée ici pour clipper
+     le débordement horizontal. Elle a été RETIRÉE car `overflow: clip`
+     sur body crée un containing block pour les éléments en
+     position:fixed, ce qui empêchait .k-side-cart de rester ancré au
+     viewport au scroll (le panneau disparaissait au niveau du footer).
+     Le clip horizontal est désormais assuré uniquement par les autres
+     règles `overflow-x: clip` posées sur #k-catalog-section, .k-section
+     et .k-grid (cf. lignes ~610, 635, 655). Si une scrollbar horizontale
+     parasite apparaît, identifier l'élément débordant et lui appliquer
+     overflow-x: clip plutôt que de remettre cette règle. */
   html { overflow-x: visible; }
-  body { overflow-x: clip; }
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
@@ -573,8 +583,10 @@ body {
   body {
     height: auto;
     overflow-y: auto;
-    /* overflow-x:clip rogne sans créer de scroll container (≠ hidden). */
-    overflow-x: clip;
+    /* overflow-x:clip retiré ici : créait un containing block qui ancrait
+       .k-side-cart (position:fixed) au body au lieu du viewport. Le clip
+       horizontal est désormais assuré par #k-catalog-section/.k-section/.k-grid. */
+    overflow-x: visible;
   }
 
   /* Neutraliser tout overflow blocking hérité */
@@ -632,7 +644,10 @@ body {
   body {
     width: 100%;
     max-width: 100%;
-    overflow-x: clip;
+    /* overflow-x:clip retiré : créait un containing block sur body qui
+       ancrait .k-side-cart (position:fixed) au body au lieu du viewport.
+       Le clip est assuré par #k-catalog-section/.k-section/.k-grid. */
+    overflow-x: visible;
   }
 
   body:not(.modal-open):not(.cart-open) #k-page-scroll {
@@ -694,13 +709,17 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   STICKY CONTEXT PRESERVATION
-   Ces règles existent UNIQUEMENT pour permettre au side-cart de rester sticky.
-   Ne pas modifier sans tester le side-cart à toutes les résolutions desktop.
+   FIXED CONTEXT PRESERVATION (ex- "STICKY CONTEXT")
+   Le side-cart est désormais en position:fixed (cf. boutique-desktop.css
+   bloc SIDE CART DESKTOP). overflow-x: clip sur body créerait un
+   containing block et clouerait le panneau au body au lieu du viewport.
+   Le clip horizontal est assuré par les autres règles overflow-x: clip
+   posées sur #k-catalog-section, .k-section, .k-grid (cf. layout.css
+   lignes ~610, 635, 655).
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   html { overflow-x: visible; overflow-y: auto; }
-  body { overflow-x: clip;    overflow-y: visible; }
+  body { overflow-x: visible; overflow-y: visible; }
   #k-page-scroll,
   #k-desktop-catalog-wrap,
   #k-catalog-section { overflow: visible; }
