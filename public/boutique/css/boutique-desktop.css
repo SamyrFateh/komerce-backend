@@ -77,157 +77,47 @@
 
 
 /* ══════════════════════════════════════════════════════════════════
-   3. CARD HOVER OVERLAY — SOURCE DE VÉRITÉ UNIQUE
-   Overlay en bas de carte : nom + desc + actions.
-   Le JS injecte .k-card-hover-overlay une seule fois par carte.
-   PALETTE-FIX-01 : gradient ocean au lieu de vert foncé hardcodé.
+   3. CARD HOVER — bouton fav + bouton panier
+   Overlay JS désactivé : plus de voile vert.
+   Le hover CSS natif (translateY + shadow) suffit.
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card { position: relative; }
 
-  /* Overlay shell */
-  .k-card-hover-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(100,175,90,.82) 0%,
-      rgba(100,175,90,.46) 48%,
-      var(--border-text-08) 100%
-    );
-    border-radius: 10px;
-    padding: 12px;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    will-change: opacity;
-    backface-visibility: hidden;
-    transition: opacity .22s var(--ease);
-  }
-
-  .k-card:hover .k-card-hover-overlay {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Masquer les boutons natifs pour éviter le doublon visuel */
-  .k-card:hover .k-card-fav,
-  .k-card:hover .k-card-add {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* Contenu */
-  .k-card-hover-content {
-    margin-top: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    width: 100%;
-  }
-
-  .k-card-hover-name {
-    color: var(--white);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.3;
-    text-shadow: 0 1px 4px rgba(0,0,0,.3);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .k-card-hover-desc {
-    color: var(--overlay-white-78);
-    font-size: 11px;
-    line-height: 1.25;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .k-card-price-eur-hover {
-    display: none;
-    font-size: 11px;
-    color: var(--overlay-white-80);
-    font-weight: 600;
-    margin-top: 2px;
-  }
-  .k-card:hover .k-card-price-eur-hover { display: block; }
-
-  /* Barre d'actions : [Quick View | Fav | Add] */
-  .k-card-hover-actions {
-    display: grid;
-    grid-template-columns: 1fr 34px 34px;
-    align-items: center;
-    gap: 7px;
-  }
-
-  .k-card-quick-view {
-    height: 34px;
-    background: var(--surface-white-96);
-    border: none;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    cursor: pointer;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: background .12s;
-  }
-  .k-card-quick-view:hover { background: var(--white); }
-  .k-card-quick-view svg {
-    width: 14px; height: 14px;
-    stroke: currentColor; fill: none; stroke-width: 2;
-  }
-
-  .k-card-hover-fav,
-  .k-card-hover-add {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    background: var(--surface-white-92);
-    border: none;
-    cursor: pointer;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: transform .12s, background .12s;
-  }
-  .k-card-hover-fav:hover,
-  .k-card-hover-add:hover {
-    transform: scale(1.08);
-    background: var(--white);
-  }
-
-  .k-card-hover-fav {
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--text);
-  }
-  .k-card-hover-fav.liked { color: var(--hero-red); }
-
-  .k-card-hover-add img {
-    width: 22px; height: 22px;
-    object-fit: contain;
-    pointer-events: none;
-  }
-
   /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
   .k-card-fav.liked { opacity: 1; }
+
+  /* ── BOUTON PANIER desktop : taille réduite + stepper compact ───────── */
+  /* Override de la taille mobile (32px) : plus discret sur desktop.       */
+  .k-card-add {
+    width: 26px;
+    height: 26px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  /* Stepper − qty + : plus compact sur desktop (mobile = 68-86px).
+     Surchargé depuis products.css @900px (100px → 80px).                */
+  .k-card-add.in-cart {
+    width: 80px;
+    height: 28px;
+    border-radius: 18px;
+    background-color: var(--white);
+    box-shadow: var(--elev-2);
+  }
+
+  .k-card-add.in-cart .k-add-minus,
+  .k-card-add.in-cart .k-add-plus-ic {
+    flex: 0 0 22px;
+    font-size: 16px;
+  }
+
+  .k-card-add.in-cart .k-add-qty {
+    font-size: 12px;
+  }
 }
 
 
@@ -1404,10 +1294,14 @@
      Pleine hauteur viewport → items confortables.
      ────────────────────────────────────────────────────────── */
   .k-sc-items {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    /* overflow-y: scroll plutôt que auto pour FORCER le scroll même si
+       le contenu rentre (évite que la molette passe à la page). */
+    overflow-y: scroll;
+    /* none plutôt que contain : empêche complètement le scroll de "passer"
+       à la page principale quand on atteint la butée. */
+    overscroll-behavior: none;
     scrollbar-width: thin;
     scrollbar-color: var(--border-text-08) transparent;
     padding: 10px 10px 16px;

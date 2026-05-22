@@ -5,7 +5,7 @@
  *   - Mega-menu : dropdown de sous-catégories au hover des chips
  *   - Promo strip sous le hero (actuellement désactivé via early return)
  *   - Homepage merchandising : 4 cartes raccourcis (actuellement désactivé)
- *   - Hover overlay riche sur les cartes produit (Aperçu / Favori / Panier)
+ *   - Hover overlay sur les cartes produit (Favori / Panier) — aperçu supprimé
  *   - Hero search bar : barre de recherche injectée dans .k-hero-media
  *   - Handler view:changed : masque merch / promo strip / scroll-top sur
  *     Favoris et Suivi
@@ -18,7 +18,6 @@
 
 import { bus }              from './b-bus.js';
 import { state }            from './b-store.js';
-import { openModal }        from './b-modal.js';
 import {
   getCategorySectionEmoji,
   getSubcategories,
@@ -210,6 +209,26 @@ function setupCardHoverOverlay() {
     });
   }
 
+  /* Construit l'HTML du bouton add dans l'overlay selon l'état in-cart.
+     Si le produit est déjà dans le panier, on affiche le stepper − qty +
+     directement dans l'overlay pour ne pas avoir à sortir du survol.     */
+  function buildOverlayAddBtn(realAddBtn) {
+    if (realAddBtn && realAddBtn.classList.contains('in-cart')) {
+      // Stepper dans l'overlay — même structure que markAllCartButtons()
+      var pid = realAddBtn.dataset.add || '';
+      var qtyEl = realAddBtn.querySelector('.k-add-qty');
+      var qty = qtyEl ? qtyEl.textContent : '1';
+      return '<div class="k-card-hover-add k-card-hover-add--stepper" data-pid="' + pid + '">' +
+               '<span class="k-hover-add-minus" data-pid="' + pid + '">−</span>' +
+               '<span class="k-hover-add-qty">' + qty + '</span>' +
+               '<span class="k-hover-add-plus" data-pid="' + pid + '">+</span>' +
+             '</div>';
+    }
+    return '<button class="k-card-hover-add" type="button" aria-label="Ajouter au panier">' +
+             '<img src="/images/panier_tresse_vert.png" width="22" height="22" alt="">' +
+           '</button>';
+  }
+
   document.querySelectorAll('.k-card').forEach(function(card) {
     if (card.querySelector('.k-card-hover-overlay')) return;
 
@@ -217,6 +236,7 @@ function setupCardHoverOverlay() {
     var nameEl = card.querySelector('.k-card-name');
     var priceEl = card.querySelector('.k-card-price');
     var descEl = card.querySelector('.k-card-desc');
+    var realAddBtn = card.querySelector('.k-card-add');
     var name = nameEl ? nameEl.textContent.trim() : '';
     var price = priceEl ? priceEl.textContent.trim() : '';
     var desc = descEl ? descEl.textContent.trim() : '';
@@ -230,41 +250,45 @@ function setupCardHoverOverlay() {
         (desc ? '<div class="k-card-hover-desc">' + esc(desc) + '</div>' : '') +
         (price ? '<div class="k-card-price-eur-hover">' + esc(price) + '</div>' : '') +
         '<div class="k-card-hover-actions">' +
-          '<button class="k-card-quick-view" type="button" data-id="' + esc(id) + '">' +
-            '<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>' +
-            'Aperçu' +
-          '</button>' +
           '<button class="k-card-hover-fav' + (liked ? ' liked' : '') + '" type="button" aria-label="Favori">♡</button>' +
-          '<button class="k-card-hover-add" type="button" aria-label="Ajouter au panier">' +
-            '<img src="/images/panier_tresse_vert.png" width="22" height="22" alt="">' +
-          '</button>' +
+          buildOverlayAddBtn(realAddBtn) +
         '</div>' +
       '</div>';
 
     card.appendChild(overlay);
+
+    // Sync de l'état overlay → mise à jour du bouton add quand le DOM de
+    // .k-card-add change (markAllCartButtons modifie son innerHTML/className).
+    if (realAddBtn) {
+      var addObserver = new MutationObserver(function() {
+        var addWrap = overlay.querySelector('.k-card-hover-add, .k-card-hover-add--stepper');
+        if (!addWrap) return;
+        var fresh = buildOverlayAddBtn(realAddBtn);
+        var tmp = document.createElement('div');
+        tmp.innerHTML = fresh;
+        var newNode = tmp.firstElementChild;
+        if (newNode) addWrap.parentNode.replaceChild(newNode, addWrap);
+      });
+      addObserver.observe(realAddBtn, { attributes: true, childList: true, subtree: true });
+    }
   });
 
   if (!window.__komerceCardHoverOverlayBound) {
     window.__komerceCardHoverOverlayBound = true;
 
     document.addEventListener('click', function(e) {
-      var quick = e.target.closest('.k-card-quick-view');
-      var fav = e.target.closest('.k-card-hover-fav');
-      var add = e.target.closest('.k-card-hover-add');
+      var fav    = e.target.closest('.k-card-hover-fav');
+      var add    = e.target.closest('.k-card-hover-add');
+      var minus  = e.target.closest('.k-hover-add-minus');
+      var plus   = e.target.closest('.k-hover-add-plus');
 
-      if (!quick && !fav && !add) return;
+      if (!fav && !add) return;
 
       e.preventDefault();
       e.stopPropagation();
 
       var card = e.target.closest('.k-card');
       if (!card) return;
-
-      if (quick) {
-        var id = quick.dataset.id || card.dataset.id;
-        if (id) openModal(id);
-        return;
-      }
 
       if (fav) {
         var realFav = card.querySelector('.k-card-fav');
@@ -275,7 +299,22 @@ function setupCardHoverOverlay() {
 
       if (add) {
         var realAdd = card.querySelector('.k-card-add');
-        if (realAdd) realAdd.click();
+        if (!realAdd) return;
+
+        if (minus) {
+          // Clic sur − dans le stepper overlay → quickRemove
+          var minusEl = realAdd.querySelector('.k-add-minus');
+          if (minusEl) minusEl.click();
+          else realAdd.click(); // fallback si structure inattendue
+        } else if (plus) {
+          // Clic sur + dans le stepper overlay → quickAdd
+          var plusEl = realAdd.querySelector('.k-add-plus-ic');
+          if (plusEl) plusEl.click();
+          else realAdd.click();
+        } else {
+          // Clic sur le bouton panier (état non-in-cart) → ajouter au panier
+          realAdd.click();
+        }
         return;
       }
     }, true);
@@ -381,10 +420,9 @@ export function setupCatalogDesktopEnhancers() {
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();
-  // DÉSACTIVÉ 2026-05-19 : aperçu carte (hover overlay nom+prix+boutons) retiré
-  // sur demande produit. Le code reste en place (setupCardHoverOverlay,
-  // setupCardHoverObserver) pour réactivation rapide si nécessaire — il suffit
-  // de décommenter la ligne ci-dessous.
+  // Overlay désactivé : le fix CSS (suppression opacity:0 !important sur
+  // .k-card-add au hover) suffit. Le voile vert masquait les boutons via
+  // mix-blend-mode:multiply sur l'image du panier. Plus de doublon à gérer.
   // setupCardHoverObserver();
   _setupViewChangedGuard();
 }
