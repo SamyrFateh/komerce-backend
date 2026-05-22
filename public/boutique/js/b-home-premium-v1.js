@@ -10,6 +10,7 @@
  * pour ne pas créer d'état body permanent que check:body-classes considère bloquant.
  */
 
+import { bus } from './b-bus.js';
 import { isDesktop } from './b-scroll-owner.js';
 
 'use strict';
@@ -160,6 +161,10 @@ function injectStyles() {
     background:
       radial-gradient(circle at 84% 4%, color-mix(in srgb, var(--coral) 10%, transparent), transparent 22%),
       var(--sand);
+  }
+
+  body:not(.k-view-shop) .k-home-curation {
+    display: none !important;
   }
 
   html.k-home-premium-v1 .k-home-curation-inner {
@@ -331,6 +336,12 @@ function injectStyles() {
     font-size: 14px;
   }
 
+  body:not(.k-view-shop) #k-catalog-section::before,
+  body:not(.k-view-shop) #k-catalog-section::after {
+    content: none !important;
+    display: none !important;
+  }
+
   html.k-home-premium-v1 .k-side-cart {
     box-shadow: -14px 0 44px var(--border-text-08);
     border-left: 1px solid var(--border-text-06);
@@ -365,6 +376,12 @@ function createComposeCard(icon, title, subtitle, cat) {
   const sub = makeEl('span', '', subtitle);
   card.append(i, strong, sub);
   return card;
+}
+
+function syncHomeScope(tab) {
+  const section = document.querySelector('.k-home-curation');
+  if (!section) return;
+  section.classList.toggle('u-hidden', tab !== 'shop');
 }
 
 function injectHomeBlocks() {
@@ -432,6 +449,7 @@ function injectHomeBlocks() {
   section.appendChild(inner);
 
   pageScroll.insertBefore(section, catalogWrap);
+  syncHomeScope(document.body.classList.contains('k-view-shop') ? 'shop' : 'other');
 }
 
 export function setupHomePremiumV1() {
@@ -444,4 +462,6 @@ export function setupHomePremiumV1() {
   } else {
     injectHomeBlocks();
   }
+
+  bus.on('view:changed', syncHomeScope);
 }
