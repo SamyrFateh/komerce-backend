@@ -64,14 +64,42 @@ function injectStyles() {
     object-position: center;
   }
 
+  /* Slogan overlay : visible mais discret. Plus de scale (qui floutait le texte).
+     On garde le badge "La boutique comorienne" + le slogan court (ligne 1/2),
+     dans le coin gauche, sur fond image. */
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    transform: scale(.72);
-    transform-origin: left center;
+    padding: 10px 12px 0;
+    align-items: flex-start;
+    text-align: left;
   }
 
+  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-hero-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--white) 88%, transparent);
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 6px var(--border-text-08);
+    margin-bottom: 6px;
+  }
+
+  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-1,
+  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
+    text-align: left;
+    font-size: 18px;
+    line-height: 1.05;
+  }
+
+  /* On masque toujours les CTAs / trust / pills / overlay desktop sur mobile.
+     Le hero reste un overlay d'identité, pas un bloc d'action. */
   html.k-mobile-premium-v1 .k-hero-cta-row,
   html.k-mobile-premium-v1 .k-hero-trust,
   html.k-mobile-premium-v1 .k-hero-bubble,
+  html.k-mobile-premium-v1 .k-hero-sub,
   html.k-mobile-premium-v1 .k-hero-overlay {
     display: none !important;
   }
@@ -79,13 +107,21 @@ function injectStyles() {
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
   html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
-  /* V2 catégories mobile : compactes, mais d'abord visuelles et lisibles. */
+  /* V3 catégories mobile : UNE seule rangée scrollable horizontalement.
+     Affordance "il y a plus à droite" + gain hauteur ≈ 100px vs grid 4×2.
+     Les fades gauche/droite déjà présents dans le DOM (.k-cats-wrap-fade-*)
+     prennent le relais visuel. */
   html.k-mobile-premium-v1 .k-cats {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    overflow: visible;
-    padding: 4px 0 10px;
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 10px;
+    padding: 6px 12px 10px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
@@ -93,27 +129,29 @@ function injectStyles() {
   html.k-mobile-premium-v1 .k-chip,
   html.k-mobile-premium-v1 .k-chip.is-active,
   html.k-mobile-premium-v1 .k-chip.active {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: 88px !important;
-    min-height: 88px !important;
-    padding: 7px 6px 6px !important;
-    border-radius: 18px !important;
+    flex: 0 0 auto !important;
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+    height: 84px !important;
+    min-height: 84px !important;
+    padding: 6px 4px 6px !important;
+    border-radius: 16px !important;
     display: flex !important;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 5px;
     background: color-mix(in srgb, var(--white) 86%, transparent);
-    box-shadow: 0 7px 18px var(--border-text-06);
+    box-shadow: 0 6px 14px var(--border-text-06);
+    scroll-snap-align: start;
   }
 
   html.k-mobile-premium-v1 .k-chip-photo {
-    width: 42px !important;
-    height: 42px !important;
-    flex: 0 0 42px;
-    border-radius: 14px;
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px;
+    border-radius: 12px;
     object-fit: cover;
     object-position: center;
   }
@@ -127,15 +165,19 @@ function injectStyles() {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.2;
-    font-size: 11px;
-    font-weight: 850;
+    line-height: 1.15;
+    font-size: 10.5px;
+    font-weight: 800;
     text-align: center;
   }
 
+  /* Petits écrans : chips encore un peu plus serrées pour qu'on en voie 5 d'un coup. */
   @media (max-width: 360px) {
-    html.k-mobile-premium-v1 .k-cats {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+    html.k-mobile-premium-v1 .k-chip,
+    html.k-mobile-premium-v1 .k-chip.active {
+      width: 60px !important;
+      min-width: 60px !important;
+      max-width: 60px !important;
     }
   }
 
