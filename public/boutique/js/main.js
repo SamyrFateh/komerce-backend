@@ -10,7 +10,6 @@ import { setupModalContractClasses } from './b-modal-desktop-enhancers.js';
 import { setupApprocheCHybridPdp } from './b-modal-approche-c-hybrid.js';
 import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
-import { setupMobilePremiumV1 } from './b-mobile-premium-v1.js';
 
 function setupBoutiqueRuntime() {
   setupModalContractClasses();
@@ -18,7 +17,6 @@ function setupBoutiqueRuntime() {
   setupApprocheCHybridPdp();
   setupPdpCurationSuggestions();
   setupHomePremiumV1();
-  setupMobilePremiumV1();
   setupProductOpenContract();
   setupCartProductOpenStyle();
 }
@@ -44,7 +42,6 @@ if (typeof window !== 'undefined') {
         setupApprocheCHybridPdp();
         setupPdpCurationSuggestions();
         setupHomePremiumV1();
-        setupMobilePremiumV1();
       }
     }, 150);
   }, { passive: true });
