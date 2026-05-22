@@ -350,11 +350,11 @@
 
   .k-footer {
     display: block;
-    background: var(--green-bg-mist);
+    background: var(--green-bg-leaf);
     color: var(--text);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
-    border-top: 1px solid var(--border-ocean-14);
+    border-top: 2px solid var(--ocean-light);
   }
 
   .k-footer-grid {
@@ -364,7 +364,7 @@
     max-width: var(--container);
     margin: 0 auto;
     padding-bottom: 32px;
-    border-bottom: 1px solid var(--border-text-10);
+    border-bottom: 1px solid var(--border-ocean-14);
   }
 
   .k-footer-brand-logo {
@@ -393,9 +393,9 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    border: 1px solid var(--border-text-15);
+    border: 1px solid var(--border-ocean-14);
     background: var(--white);
-    color: var(--text-muted);
+    color: var(--ocean);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -404,9 +404,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: var(--sand);
-    border-color: rgba(200,92,45,.28);   /* coral — PALETTE-FIX-01 */
-    color: var(--text);
+    background: var(--ocean-bg-08);
+    border-color: var(--border-ocean-14);
+    color: var(--ocean);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -419,7 +419,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--text-light);
+    color: var(--violet-mid-bright);
     margin-bottom: 14px;
   }
 
@@ -432,7 +432,7 @@
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-col-link:hover { color: var(--text); }
+  .k-footer-col-link:hover { color: var(--ocean); }
 
   .k-footer-newsletter-desc {
     font-size: 12px;
@@ -445,7 +445,7 @@
     width: 100%;
     padding: 9px 12px;
     border-radius: 8px;
-    border: 1px solid var(--border-text-15);
+    border: 1px solid var(--border-ocean-14);
     background: var(--white);
     color: var(--text);
     font-size: 13px;
@@ -456,7 +456,7 @@
   }
   .k-footer-newsletter-input::placeholder { color: var(--text-light); }
   .k-footer-newsletter-input:focus {
-    border-color: rgba(200,92,45,.35);
+    border-color: var(--ocean-light);
     background: var(--white);
   }
 
@@ -464,7 +464,7 @@
     width: 100%;
     padding: 10px;
     border-radius: 8px;
-    background: var(--coral);
+    background: var(--violet-mid-bright);
     color: var(--white);
     font-size: 13px;
     font-weight: 700;
@@ -473,7 +473,7 @@
     cursor: pointer;
     transition: background .15s, transform .12s;
   }
-  .k-footer-newsletter-btn:hover { background: var(--coral-dark); }
+  .k-footer-newsletter-btn:hover { background: var(--violet); }
   .k-footer-newsletter-btn:active { transform: scale(.98); }
 
   .k-footer-bottom {
@@ -489,19 +489,19 @@
 
   .k-footer-copy {
     font-size: 11px;
-    color: var(--text-light);
+    color: var(--text-muted);
   }
 
   .k-footer-legal-links { display: flex; gap: 16px; }
 
   .k-footer-legal-link {
     font-size: 11px;
-    color: var(--text-light);
+    color: var(--text-muted);
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-legal-link:hover { color: var(--text); }
+  .k-footer-legal-link:hover { color: var(--violet-mid-bright); }
 }
 
 /* ══════════════════════════════════════════════════════════════════
