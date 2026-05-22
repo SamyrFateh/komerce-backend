@@ -27,8 +27,18 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setActiveCat }   from './b-catalog.js';
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
+// Chantier 2 — mock temporaire en attendant les colonnes DB
+// (rank, sold_count, rating, review_count). Voir le header du fichier
+// pour la procédure de retrait propre quand l'API fournira ces champs.
+import { setupSocialProofMock } from './b-modal-social-proof-mock.js';
 
 'use strict';
+
+// Chantier 2 — installer le mock social proof au chargement du module.
+// Le hook bus est posé immédiatement, donc opérationnel dès la 1ʳᵉ
+// ouverture de modale (bus.emit('modal:opened') la déclenche).
+// Idempotent : safe à appeler plusieurs fois.
+setupSocialProofMock();
 
 // ─────────────────────────────────────────────────────────────────
 //  Chantier 2 — Helper de styling prix desktop
