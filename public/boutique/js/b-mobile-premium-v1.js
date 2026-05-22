@@ -76,16 +76,24 @@ function injectStyles() {
     display: none !important;
   }
 
-  html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
-  html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
+  html.k-mobile-premium-v1 .k-hero-cats-sticky {
+    padding-top: 8px;
+    background:
+      radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--ocean-bg-08) 52%, transparent), transparent 28%),
+      linear-gradient(180deg, color-mix(in srgb, var(--sand-warm) 72%, var(--white)) 0%, var(--sand) 100%);
+  }
 
-  /* V2 catégories mobile : compactes, mais d'abord visuelles et lisibles. */
+  html.k-mobile-premium-v1 .k-cats-shell {
+    padding: 0 10px 10px;
+  }
+
+  /* V2 catégories mobile : prolongement visuel du hero, compact et lisible. */
   html.k-mobile-premium-v1 .k-cats {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     overflow: visible;
-    padding: 4px 0 10px;
+    padding: 5px 0 10px;
   }
 
   html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
@@ -99,23 +107,35 @@ function injectStyles() {
     height: 88px !important;
     min-height: 88px !important;
     padding: 7px 6px 6px !important;
-    border-radius: 18px !important;
+    border-radius: 20px !important;
     display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    background: color-mix(in srgb, var(--white) 86%, transparent);
-    box-shadow: 0 7px 18px var(--border-text-06);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--white) 92%, transparent) 0%, color-mix(in srgb, var(--sand) 80%, var(--white)) 100%);
+    border: 1px solid color-mix(in srgb, var(--white) 72%, var(--border-text-06));
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--text) 6%, transparent);
+  }
+
+  html.k-mobile-premium-v1 .k-chip.is-active,
+  html.k-mobile-premium-v1 .k-chip.active {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--white) 94%, transparent) 0%, color-mix(in srgb, var(--ocean-bg-08) 52%, var(--sand)) 100%);
+    border-color: color-mix(in srgb, var(--ocean) 18%, var(--white));
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--ocean) 10%, transparent);
   }
 
   html.k-mobile-premium-v1 .k-chip-photo {
     width: 42px !important;
     height: 42px !important;
     flex: 0 0 42px;
-    border-radius: 14px;
+    border-radius: 15px;
     object-fit: cover;
     object-position: center;
+    background: color-mix(in srgb, var(--white) 82%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--white) 70%, transparent);
   }
 
   html.k-mobile-premium-v1 .k-chip-label {
@@ -131,6 +151,7 @@ function injectStyles() {
     font-size: 11px;
     font-weight: 850;
     text-align: center;
+    color: var(--text);
   }
 
   @media (max-width: 360px) {
