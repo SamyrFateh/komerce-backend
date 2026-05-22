@@ -2,24 +2,21 @@
  * @module b-modal-approche-c-hybrid
  * @brief Approche C hybride pour la PDP desktop Komerce.
  *
- * Objectif : monter la fiche produit desktop en gamme sans toucher au mobile
- * ni réouvrir la refonte modale. Ce module est volontairement additif :
- * il écoute `modal:opened`, attend que les enhancers desktop existants aient
- * injecté leurs blocs, puis compacte Livraison/Paiement et applique une couche
- * visuelle premium desktop-only.
- *
- * Décision UX : pas de side-cart permanent dans la PDP desktop. La Buy Box reste
- * prioritaire ; le panier complet reste une action volontaire.
+ * V2 : remonte les actions d'achat juste après le retrait relais, force une
+ * quantité d'intention minimale à 1, rend le partage secondaire, et masque la
+ * recherche interne en bas du panneau desktop.
  */
 
 import { bus } from './b-bus.js';
 import { state } from './b-store.js';
+import { fmtPrice } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
 
 'use strict';
 
 let _installed = false;
 let _styleInjected = false;
+let _qtyGuardInstalled = false;
 
 function injectHybridStyles() {
   if (_styleInjected || typeof document === 'undefined') return;
@@ -29,8 +26,7 @@ function injectHybridStyles() {
   style.id = 'k-approche-c-hybrid-style';
   style.textContent = `
 /* ══════════════════════════════════════════════════════════════
-   APPROCHE C HYBRIDE — PDP Desktop premium compacte
-   Injecté par b-modal-approche-c-hybrid.js
+   APPROCHE C HYBRIDE V2 — PDP Desktop premium compacte
    Desktop only — mobile préservé
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
@@ -149,6 +145,57 @@ function injectHybridStyles() {
     white-space: nowrap;
   }
 
+  /* V2 — actions d'achat remontées dans la Buy Box, avant le paiement. */
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) minmax(210px, 1.15fr);
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 0 4px;
+    background: transparent;
+    border-top: 0;
+    box-shadow: none;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty,
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn,
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
+    min-height: 50px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty {
+    background: var(--sand);
+    box-shadow: inset 0 0 0 1px var(--border-text-06);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
+    font-size: 15px;
+    font-weight: 900;
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
+    grid-column: 3;
+    justify-self: center;
+    margin-top: -2px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
+    color: var(--coral);
+    font-size: 15px;
+  }
+
   #k-modal .k-modal-payment .k-modal-section-title { margin-bottom: 9px; }
 
   #k-modal .k-buybox-payment-tabs {
@@ -260,51 +307,44 @@ function injectHybridStyles() {
     min-height: 30px;
   }
 
+  /* V2 — partage secondaire : utile, mais il ne concurrence plus Acheter. */
   #k-modal .k-modal-share-row {
     border-top: 0;
-    margin-top: 12px;
+    margin-top: 10px;
     padding-top: 0;
-    grid-template-columns: minmax(160px, 220px) minmax(140px, 180px);
-    justify-content: start;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
   }
 
-  #k-modal .k-modal-share-btn { border-radius: 12px; min-height: 40px; }
-
-  #k-modal .k-modal-product-zone .k-modal-actions {
-    background:
-      linear-gradient(180deg,
-        color-mix(in srgb, var(--white) 84%, transparent) 0%,
-        var(--white) 42%);
-    border-top: 1px solid var(--border-text-08);
-    box-shadow: 0 -18px 36px var(--border-text-06);
-    padding-top: 14px;
-    padding-bottom: 18px;
+  #k-modal .k-modal-share-row::before {
+    content: 'Partager ce produit :';
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
   }
 
-  #k-modal .k-modal-product-zone .k-modal-actions .k-buy-now-btn {
-    min-height: 48px;
+  #k-modal .k-modal-share-btn,
+  #k-modal .k-modal-share-btn.k-modal-share-btn--wa {
+    width: auto;
+    min-height: 0;
+    height: 30px;
+    padding: 0 10px;
     border-radius: 999px;
-    font-size: 15px;
-    font-weight: 850;
-    box-shadow: 0 12px 26px color-mix(in srgb, var(--ocean) 22%, transparent);
+    background: color-mix(in srgb, var(--sand) 78%, var(--white));
+    color: var(--text-muted);
+    border: 1px solid var(--border-text-06);
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 700;
   }
 
-  #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
-    min-height: 48px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 800;
-    background: var(--white);
-  }
+  #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
+  #k-modal .k-modal-share-btn.k-modal-share-btn--wa svg { fill: currentColor; }
 
-  #k-modal .k-modal-product-zone .k-modal-actions .k-qty {
-    min-height: 48px;
-    border-radius: 999px;
-    background: var(--sand);
-  }
-
-  #k-modal .k-modal-subtotal { font-size: 12px; color: var(--text-muted); }
-  #k-modal .k-modal-subtotal strong { color: var(--coral); font-size: 15px; }
+  /* V2 — la recherche globale n'est pas l'aboutissement de la Buy Box. */
+  #k-modal .k-modal-details > .k-modal-inner-search { display: none !important; }
 
   #k-modal-suggestions.k-modal-suggestions--desktop-list {
     background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
@@ -351,39 +391,64 @@ function renderDelivery() {
     '</div>';
 }
 
+function ensureIntentQty() {
+  if (!state.modalProduct) return;
+  if (!Number.isFinite(Number(state.modalQty)) || Number(state.modalQty) < 1) {
+    state.modalQty = 1;
+  }
+
+  const qtyVal = document.getElementById('k-qty-val');
+  if (qtyVal && Number(qtyVal.textContent || 0) < 1) qtyVal.textContent = '1';
+
+  const subtotal = document.querySelector('.k-modal-subtotal');
+  if (subtotal && state.modalProduct.price_kmf) {
+    subtotal.innerHTML = 'Sous-total : <strong>' + fmtPrice(state.modalProduct.price_kmf * state.modalQty) + '</strong>';
+  }
+}
+
+function installQtyGuard() {
+  if (_qtyGuardInstalled || typeof document === 'undefined') return;
+  _qtyGuardInstalled = true;
+
+  document.addEventListener('click', function(e) {
+    const minus = e.target && e.target.closest ? e.target.closest('#k-qty-minus') : null;
+    if (!minus || !isDesktop() || !state.modalProduct) return;
+
+    const current = Number(state.modalQty || 0);
+    if (current <= 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      state.modalQty = 1;
+      const qtyVal = document.getElementById('k-qty-val');
+      if (qtyVal) qtyVal.textContent = '1';
+      ensureIntentQty();
+    }
+  }, true);
+}
+
+function moveActionsAfterDelivery() {
+  const info = document.querySelector('#k-modal .k-modal-info');
+  const delivery = document.getElementById('k-modal-delivery');
+  const actions = document.querySelector('#k-modal .k-modal-actions');
+  if (!info || !delivery || !actions) return;
+
+  actions.classList.add('k-buybox-actions-inline');
+
+  if (actions.parentElement !== info || delivery.nextElementSibling !== actions) {
+    info.insertBefore(actions, delivery.nextSibling);
+  }
+}
+
 function renderPayment() {
   const el = document.getElementById('k-modal-payment');
   if (!el) return;
 
   const modes = {
-    stripe: {
-      icon: '💳',
-      tab: 'Carte',
-      title: 'Carte bancaire',
-      sub: 'Visa, Mastercard — Stripe sécurisé',
-      badge: 'Stripe',
-    },
-    cash: {
-      icon: '💵',
-      tab: 'Livraison',
-      title: 'Paiement à la livraison',
-      sub: 'En espèces à la réception',
-      badge: 'Cash',
-    },
-    group: {
-      icon: '👥',
-      tab: 'Partagé',
-      title: 'Panier partagé',
-      sub: 'Invitez des proches à contribuer',
-      badge: 'Partage',
-    },
-    pot: {
-      icon: '🎁',
-      tab: 'Cagnotte',
-      title: 'Cagnotte collective',
-      sub: 'Offrir ensemble, payer ensemble',
-      badge: 'Collectif',
-    },
+    stripe: { icon: '💳', tab: 'Carte', title: 'Carte bancaire', sub: 'Visa, Mastercard — Stripe sécurisé', badge: 'Stripe' },
+    cash:   { icon: '💵', tab: 'Livraison', title: 'Paiement à la livraison', sub: 'En espèces à la réception', badge: 'Cash' },
+    group:  { icon: '👥', tab: 'Partagé', title: 'Panier partagé', sub: 'Invitez des proches à contribuer', badge: 'Partage' },
+    pot:    { icon: '🎁', tab: 'Cagnotte', title: 'Cagnotte collective', sub: 'Offrir ensemble, payer ensemble', badge: 'Collectif' },
   };
 
   const active = state.modalPaymentMode || 'stripe';
@@ -438,7 +503,10 @@ function renderPayment() {
 function applyHybridPdp() {
   if (!isDesktop()) return;
   injectHybridStyles();
+  installQtyGuard();
   renderDelivery();
+  moveActionsAfterDelivery();
+  ensureIntentQty();
   renderPayment();
 }
 
@@ -447,11 +515,10 @@ export function setupApprocheCHybridPdp() {
   _installed = true;
 
   injectHybridStyles();
+  installQtyGuard();
 
   bus.on('modal:opened', function() {
     if (!isDesktop()) return;
-    // Les enhancers desktop existants injectent leurs blocs dans un RAF.
-    // Deux RAF garantissent que cette couche hybride passe après eux.
     requestAnimationFrame(function() {
       requestAnimationFrame(applyHybridPdp);
     });
