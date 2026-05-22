@@ -315,7 +315,7 @@ function clearNode(node) {
 function syncMobileIntentQty() {
   if (!isMobile() || !state.modalProduct) return;
 
-  const item = state.cart.find(function(i) {
+  const item = (state.cart || []).find(function(i) {
     return String((i.product && i.product.id) || i.id) === String(state.modalProduct.id);
   });
 
@@ -368,9 +368,6 @@ function installQtyGuard() {
 
 function applyMobilePremium() {
   if (!isMobile()) return;
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.add('k-mobile-premium-v1');
-  }
   syncMobileIntentQty();
 }
 
@@ -386,6 +383,8 @@ export function setupMobilePremiumV1() {
 
   bus.on('modal:opened', function() {
     if (!isMobile()) return;
+    // Deux frames : attendre que b-modal ait injecté/réconcilié la fiche
+    // et que les handlers historiques aient synchronisé le stepper.
     requestAnimationFrame(function() {
       requestAnimationFrame(applyMobilePremium);
     });
