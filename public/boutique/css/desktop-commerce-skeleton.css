@@ -111,7 +111,7 @@
 
   .k-hero-inner {
     max-width: 1480px;
-    padding: 14px 20px 0;
+    padding: 8px 20px 0;
   }
 
   /* ── Hero propre — image pleine, zéro voile sombre (LOT 14) ── */
@@ -119,8 +119,8 @@
   .k-hero-media {
     /* Fond crème visible si image plus étroite que le viewport */
     background: var(--sand-warm);
-    /* Hauteur : assez pour voir personnages + cadeaux (image ratio 2:1) */
-    height: clamp(300px, 24vw, 340px);
+    /* Hauteur compacte desktop (réduite depuis clamp(300px,24vw,340px) — PR hero-compact) */
+    height: clamp(170px, 14vw, 200px);
     border-radius: 0;
     overflow: hidden;
     border: none;
@@ -162,14 +162,14 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-coral-13);
-    border-radius: 14px;
-    padding: 16px 22px 14px;
+    border-radius: 12px;
+    padding: 10px 18px 10px;
     box-shadow: var(--elev-3), 0 1px 0 rgba(255,255,255,.9) inset;
   }
 
   .k-hero-badge {
     display: inline-flex;
-    margin-bottom: 9px;
+    margin-bottom: 6px;
     padding: 3px 9px;
     border-radius: 4px;
     background: var(--border-coral-09);
@@ -183,7 +183,7 @@
 
   .k-hero-mini-slogan .k-line-1 {
     color: var(--text);
-    font-size: clamp(1.3rem, 2vw, 2rem);
+    font-size: clamp(1.1rem, 1.6vw, 1.6rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -.025em;
@@ -191,12 +191,12 @@
   }
 
   .k-hero-mini-slogan .k-line-2 {
-    color: var(--coral);
-    font-size: clamp(1.6rem, 2.5vw, 2.6rem);
+    color: var(--ocean-dark);
+    font-size: clamp(1.3rem, 2vw, 2.1rem);
     font-weight: 900;
     line-height: 1.0;
     letter-spacing: -.03em;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     text-shadow: none;
   }
 
