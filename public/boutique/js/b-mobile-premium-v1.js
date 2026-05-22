@@ -96,8 +96,8 @@ function injectStyles() {
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
-    height: 78px !important;
-    min-height: 78px !important;
+    height: 88px !important;
+    min-height: 88px !important;
     padding: 7px 6px 6px !important;
     border-radius: 18px !important;
     display: flex !important;
@@ -123,11 +123,11 @@ function injectStyles() {
     max-width: 100%;
     overflow: hidden;
     white-space: normal;
-    text-overflow: unset;
+    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.05;
+    line-height: 1.2;
     font-size: 11px;
     font-weight: 850;
     text-align: center;
