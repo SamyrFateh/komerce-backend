@@ -400,30 +400,30 @@ function quickRemove(productId, btnEl) {
    * Met à jour le rendu complet + synchronise les badges.
    */
   function openCart() {
-    renderCartBody();
-    dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
-    // Desktop : side cart Temu inline — pas de drawer
-    if (!isDesktop()) {
-      dom.cartOverlay.classList.add('open');
-      dom.cartDrawer.classList.add('open');
-      scroll.savedY = getScrollY();
-      document.body.classList.add('cart-open');
-    } else {
-      // Desktop : le side cart est déjà visible.
-      // Si panier non vide → lancer le checkout directement (même action que
-      // le bouton "Commander" du side cart — pas de détour par le tiroir).
+    // Desktop : side cart déjà visible — pas de tiroir.
+    if (isDesktop()) {
+      // Panier non vide → checkout direct (même action que "Commander" du side cart).
       if (cartQty() > 0 && typeof window.__kmrcCheckout === 'function') {
         window.__kmrcCheckout();
         return;
       }
-
-      // Panier vide ou checkout indisponible : ouvrir le tiroir classique
-      // pour que le clic ait toujours une réponse visible.
+      // Panier vide : tiroir classique en fallback.
+      renderCartBody();
+      dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
       scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
+      return;
     }
+
+    // Mobile : tiroir panier classique.
+    renderCartBody();
+    dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
+    dom.cartOverlay.classList.add('open');
+    dom.cartDrawer.classList.add('open');
+    scroll.savedY = getScrollY();
+    document.body.classList.add('cart-open');
   }
 
   /**
