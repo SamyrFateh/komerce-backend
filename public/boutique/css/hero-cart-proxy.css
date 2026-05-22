@@ -59,13 +59,16 @@
     display: block;
     visibility: visible;
     opacity: 1;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 50px;
     object-fit: contain;
+    object-position: center bottom;
     border: 0;
     box-shadow: none;
     background: transparent;
     mix-blend-mode: multiply;
+    margin-top: -10px;
+    margin-bottom: -2px;
   }
 
   .k-header .k-cart-badge,
