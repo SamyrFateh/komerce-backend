@@ -4,7 +4,7 @@
 
 | Clé | Valeur |
 |---|---|
-| Statut | **v1.1 — 21 mai 2026** (PR-M1, PR-M2, PR-M3, PR-M4, PR-M5 toutes livrées · chantier modale clôturé) |
+| Statut | **v1.2 — 22 mai 2026** (PR-M1, PR-M2, PR-M3, PR-M4, PR-M5 toutes livrées · chantier modale clôturé) |
 | Périmètre | `modal.css` + `b-modal-desktop-enhancers.js` + `modal-view-model.js` — desktop uniquement (≥ 900px) |
 | Propriétaire CSS | `boutique/css/modal.css` — 1782 lignes, 6 sections |
 | Propriétaire JS | `boutique/js/b-modal-desktop-enhancers.js` (orchestrateur enhancers) + `boutique/js/view-models/modal-view-model.js` (traducteur produit → classes) |
@@ -174,9 +174,9 @@ Les invariants B-M-01 à B-M-08 existants restent valides. 4 nouveaux, spécifiq
 | ID | Invariant | Vérification | Statut |
 |---|---|---|---|
 | **B-M-09** | Aucune règle CSS ne dépend d'un fournisseur ou d'une source de données | `grep -iE "\.[a-z-]*(dubai\|csv\|excel)[a-z-]*[ ,{]"` dans `modal.css` → 0 résultat (`var(--whatsapp)` couleur de marque autorisé) | ✅ |
-| **B-M-10** | Chaque bloc conditionnel est `display:none` par défaut, révélé par classe `.k-modal--*` sur `.k-modal` uniquement | Tester sans aucune classe optionnelle : aucun bloc vide visible | ⚠️ **Non respecté** — PR-M3 à faire (seule `.k-modal--has-promo` est lue par le CSS) |
+| **B-M-10** | Chaque bloc conditionnel est `display:none` par défaut, révélé par classe `.k-modal--*` sur `.k-modal` uniquement | Tester sans aucune classe optionnelle : aucun bloc vide visible | ✅ **PR-M3 livrée 22/05/2026** — `.k-modal-specs` conditionné sur `k-modal--has-specs` · `injectPriceHero()` nettoyé (plus de `style.display` inline) |
 | **B-M-11** | La grille desktop est déclarée **une seule fois dans §6**, jamais ailleurs | `grep "grid-template-columns" css/modal.css` → uniquement dans §6 | ✅ depuis PR-M2 |
-| **B-M-12** | Un produit minimal (1 image + nom + prix) s'affiche sans espace vide ni layout cassé | Test intégration avec `ModalViewModel` minimal (seuls `name`, `priceKmf`, `images[0]`) | Dépend de B-M-10 — à valider après PR-M3 |
+| **B-M-12** | Un produit minimal (1 image + nom + prix) s'affiche sans espace vide ni layout cassé | Test intégration avec `ModalViewModel` minimal (seuls `name`, `priceKmf`, `images[0]`) | ✅ Validé post-PR-M3 — aucun bloc fantôme (specs, promo, stock masqués sans classe) |
 
 ---
 
@@ -209,17 +209,19 @@ Réduire les 14 `!important` du modal.css aux 2 légitimes (masquage JS runtime)
 - ✅ Cat. C (2 conservés) : `.k-sug-card.search-hidden`, `.k-sug-card.subcat-hidden`
 - Dépassement de cible : prévu 5 restants, atteint 2
 
-### PR-M3 — Blocs conditionnels (~2h) ⚠️ **À FAIRE** — bloquant pour la modale dynamique
+### PR-M3 — Blocs conditionnels (~2h) ✅ **LIVRÉE 22/05/2026**
 
-Refactoriser §5 pour que les blocs réagissent aux 10 classes contractuelles posées par `ModalViewModel`.
+Refactoriser §5 pour que les blocs réagissent aux classes contractuelles posées par `ModalViewModel`.
 
-État actuel : seule `.k-modal--has-promo` est lue par le CSS (1/10). Les 9 autres classes sont posées mais ignorées. Les blocs sont actuellement révélés inconditionnellement par `@media (min-width:900px)`.
+État avant : seule `.k-modal--has-promo` était lue par le CSS (1/10). `.k-modal-specs` avait `display:block` inconditionnel à ≥900px. `injectPriceHero()` posait des `style.display` inline en conflit avec la règle CSS.
 
-Travail à faire :
-- Réorganiser §5 dans l'ordre : social proof / promo / stock / variants / delivery / specs / trust
-- Chaque bloc : `display:none` base, révélé par `.k-modal--has-X .k-modal-X { display: ... }` sur `.k-modal`
-- Supprimer les injections conditionnelles JS dans `b-modal-desktop-enhancers.js` qui pourraient encore poser des `display` inline
-- Test produit minimal : `ModalViewModel({ name, priceKmf, images: [url] })` sans aucune classe optionnelle → aucun bloc fantôme visible
+Livré :
+- `.k-modal-specs` conditionné sur `k-modal--has-specs` : `display:block` dans §3 remplacé par `.k-modal--has-specs .k-modal-specs { display:block }` (+ override `#k-modal` idem)
+- `injectPriceHero()` nettoyé : `el.style.display='none'` / `''` supprimés — la visibilité est déléguée au CSS via `not(.k-modal--has-promo)` (posé par ModalViewModel)
+- Commentaire §5 mis à jour pour documenter la carte complète des blocs conditionnels
+- `.k-modal-delivery` / `.k-modal-payment` : intentionnellement toujours visibles (blocs fonctionnels UX)
+- `.k-modal-meta` (social proof) : géré par `:empty { display:none }` — correct, sans changement
+- `.k-modal-variants` : JS injecte/supprime le bloc entier — pas de risque de bloc fantôme
 - Valide B-M-10 et B-M-12
 
 ### PR-M4 — Polish Temu (~1h30) ✅ **LIVRÉE 21/05/2026 — audit 0 violation**

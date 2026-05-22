@@ -312,10 +312,11 @@ function injectPriceHero() {
   var el = document.getElementById('k-modal-aed-price');
   if (!el) return;
   var product = state.modalProduct;
-  if (!product || !product.price_kmf) { el.style.display = 'none'; return; }
+  // PR-M3 : visibilité gérée par CSS via .k-modal--has-promo (ModalViewModel).
+  // Ne pas poser de style.display inline — le CSS fait le travail.
+  if (!product || !product.price_kmf) { el.innerHTML = ''; return; }
 
   el.innerHTML = '';
-  el.style.display = '';
 
   // Ligne unique : "≈ 6 €" + badge promo si présent
   // Le prix KMF est déjà affiché par k-modal-price-row — on ne le duplique pas.

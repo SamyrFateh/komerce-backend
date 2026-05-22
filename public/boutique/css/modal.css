@@ -875,7 +875,8 @@
   .k-modal-share-btn--wa:hover { background: var(--green-positive); border-color: var(--green-positive); }
   #k-modal .k-modal-share-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 0; }
   #k-modal .k-modal-share-btn { justify-content: center; min-height: 38px; padding: 8px 10px; }
-  .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
+  /* PR-M3 — B-M-10 : specs masquées si absent du produit (k-modal--has-specs posé par ModalViewModel) */
+  .k-modal--has-specs .k-modal-specs { display: block; border-top: 1px solid var(--sand-dark); margin-top: 10px; padding-top: 8px; }
   .k-modal-spec-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 0; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text); transition: color .12s; }
   .k-modal-spec-toggle:hover { color: var(--coral); }
   .k-modal-spec-toggle-arrow { width: 18px; height: 18px; transition: transform .2s var(--ease); color: var(--text-muted); stroke: currentColor; fill: none; stroke-width: 2; }
@@ -887,7 +888,7 @@
   .k-modal-spec-table tr:nth-child(even) { background: var(--sand); }
   .k-modal-spec-table td { padding: 7px 10px; }
   .k-modal-spec-table td:first-child { font-weight: 600; color: var(--text-muted); white-space: nowrap; width: 35%; }
-  #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
+  .k-modal--has-specs #k-modal .k-modal-specs { margin-top: 8px; border-top: 1px solid var(--sand-dark); }
 
   /* ── Recherche interne ───────────────────────────────────── */
   #k-modal .k-modal-inner-search { flex: 0 0 auto; margin: 10px 0 8px; border-radius: 14px; padding: 10px 16px; }
@@ -1386,24 +1387,25 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
 .k-modal-delivery,
 .k-modal-payment { display: none; }
 
-/* ── PR-M3 — Blocs conditionnels par classes ModalViewModel ──
+/* ── PR-M3 ✅ — Blocs conditionnels par classes ModalViewModel ──
    Invariant B-M-10 : chaque bloc optionnel est révélé UNIQUEMENT
    si la classe contractuelle correspondante est posée sur .k-modal
    par ModalViewModel (cf. js/view-models/modal-view-model.js).
-   Sans ces règles, le @media ≥900 ci-dessous afficherait des blocs
-   vides (padding/border/margin visibles) quand le JS injecte un
-   innerHTML='' faute de donnée produit.
+   Zéro logique de sourcing dans le CSS — B-M-09 respecté.
 
-   Couverts ici (les vrais blocs fantômes) :
-     .k-modal-aed-price → .k-modal--has-promo
-     .k-modal-flash-bar → .k-modal--has-promo
-     .k-modal-stock-bar → .k-modal--stock-low
+   Couverts par CSS (blocs avec border/padding visibles même vides) :
+     .k-modal-aed-price → .k-modal--has-promo (not() ci-dessous)
+     .k-modal-flash-bar → .k-modal--has-promo (not() ci-dessous)
+     .k-modal-stock-bar → .k-modal--stock-low  (not() ci-dessous)
+     .k-modal-specs     → .k-modal--has-specs  (§3 desktop ci-dessous)
 
-   Non couverts (intentionnel) :
-     .k-modal-delivery / .k-modal-payment → toujours visibles desktop
-       (décisions UX : zones fonctionnelles, pas des données produit)
-     .k-modal-specs / .k-modal-meta / .k-modal-variants → déjà conditionnels
-       côté JS (rien injecté si pas de donnée, pas de padding/border de bloc)
+   Intentionnellement toujours visibles desktop (blocs fonctionnels) :
+     .k-modal-delivery / .k-modal-payment → UX : toujours présents,
+       contenus générés par injectDelivery() / injectPayment()
+
+   Gérés côté JS sans risque de bloc fantôme (innerHTML vide → :empty) :
+     .k-modal-meta (social proof) → .k-modal-meta:empty { display:none }
+     .k-modal-variants → JS injecte/supprime le bloc entier
    ──────────────────────────────────────────────────────────── */
 @media (min-width: 900px) {
   .k-modal:not(.k-modal--has-promo) .k-modal-aed-price,
