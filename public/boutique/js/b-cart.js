@@ -400,24 +400,6 @@ function quickRemove(productId, btnEl) {
    * Met à jour le rendu complet + synchronise les badges.
    */
   function openCart() {
-    // Desktop : side cart déjà visible — pas de tiroir.
-    if (isDesktop()) {
-      // Panier non vide → checkout direct (même action que "Commander" du side cart).
-      if (cartQty() > 0 && typeof window.__kmrcCheckout === 'function') {
-        window.__kmrcCheckout();
-        return;
-      }
-      // Panier vide : tiroir classique en fallback.
-      renderCartBody();
-      dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
-      dom.cartOverlay.classList.add('open');
-      dom.cartDrawer.classList.add('open');
-      scroll.savedY = getScrollY();
-      document.body.classList.add('cart-open');
-      return;
-    }
-
-    // Mobile : tiroir panier classique.
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     dom.cartOverlay.classList.add('open');
