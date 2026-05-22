@@ -409,32 +409,15 @@ function quickRemove(productId, btnEl) {
       scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     } else {
-      // Desktop : la petite dame doit produire une action visible.
-      // Le side cart est déjà dans le flux sticky : on le rafraîchit,
-      // on le déplie et on le met brièvement en évidence.
-      const sc = document.getElementById('k-side-cart');
-
-      if (sc && cartQty() > 0) {
-        if (typeof window.__kmrcSideCart === 'function') {
-          window.__kmrcSideCart();
-        }
-
-        sc.classList.add('is-expanded');
-        sc.classList.add('is-attention');
-
-        sc.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-
-        setTimeout(() => {
-          sc.classList.remove('is-attention');
-        }, 1200);
-
+      // Desktop : le side cart est déjà visible.
+      // Si panier non vide → lancer le checkout directement (même action que
+      // le bouton "Commander" du side cart — pas de détour par le tiroir).
+      if (cartQty() > 0 && typeof window.__kmrcCheckout === 'function') {
+        window.__kmrcCheckout();
         return;
       }
 
-      // Panier vide ou side cart absent : ouvrir le tiroir classique
+      // Panier vide ou checkout indisponible : ouvrir le tiroir classique
       // pour que le clic ait toujours une réponse visible.
       dom.cartOverlay.classList.add('open');
       dom.cartDrawer.classList.add('open');
