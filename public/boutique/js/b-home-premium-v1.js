@@ -5,9 +5,11 @@
  * Objectif : transformer l'entrée catalogue en vitrine curatée sans casser
  * l'architecture existante ni le mobile. Module additif : il enrichit le hero,
  * les catégories et insère des bandes éditoriales avant la grille produits.
+ *
+ * Note audit : la classe d'activation est posée sur <html>, pas sur <body>,
+ * pour ne pas créer d'état body permanent que check:body-classes considère bloquant.
  */
 
-import { state } from './b-store.js';
 import { isDesktop } from './b-scroll-owner.js';
 
 'use strict';
@@ -24,53 +26,53 @@ function injectStyles() {
   style.id = 'k-home-premium-v1-style';
   style.textContent = `
 @media (min-width: 900px) {
-  body.k-home-premium-v1 .k-header {
+  html.k-home-premium-v1 .k-header {
     backdrop-filter: blur(18px);
     background: color-mix(in srgb, var(--sand) 82%, var(--white));
     border-bottom: 1px solid var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-logo-text {
+  html.k-home-premium-v1 .k-logo-text {
     font-weight: 900;
     letter-spacing: -.025em;
   }
 
-  body.k-home-premium-v1 .k-search {
+  html.k-home-premium-v1 .k-search {
     min-height: 54px;
     border-radius: 999px;
     box-shadow: 0 14px 36px var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-search input::placeholder {
+  html.k-home-premium-v1 .k-search input::placeholder {
     color: color-mix(in srgb, var(--text-muted) 78%, transparent);
   }
 
-  body.k-home-premium-v1 #k-hero-fixed-wrap {
+  html.k-home-premium-v1 #k-hero-fixed-wrap {
     background:
       radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
       linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
   }
 
-  body.k-home-premium-v1 .k-hero-inner {
+  html.k-home-premium-v1 .k-hero-inner {
     max-width: none;
     padding-inline: clamp(26px, 3.6vw, 60px);
   }
 
-  body.k-home-premium-v1 .k-hero-media {
+  html.k-home-premium-v1 .k-hero-media {
     border-radius: 0 0 28px 28px;
     overflow: hidden;
     box-shadow: 0 18px 50px var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-hero-mini-slogan--premium {
+  html.k-home-premium-v1 .k-hero-mini-slogan--premium {
     max-width: 510px;
   }
 
-  body.k-home-premium-v1 .k-hero-badge {
+  html.k-home-premium-v1 .k-hero-badge {
     letter-spacing: .06em;
   }
 
-  body.k-home-premium-v1 .k-line-1::before {
+  html.k-home-premium-v1 .k-line-1::before {
     content: 'Achetez pour les Comores, simplement.';
     display: block;
     font-family: var(--font-display, var(--font));
@@ -81,34 +83,34 @@ function injectStyles() {
     max-width: 560px;
   }
 
-  body.k-home-premium-v1 .k-line-1,
-  body.k-home-premium-v1 .k-line-2 {
+  html.k-home-premium-v1 .k-line-1,
+  html.k-home-premium-v1 .k-line-2 {
     font-size: 0 !important;
   }
 
-  body.k-home-premium-v1 .k-hero-sub {
+  html.k-home-premium-v1 .k-hero-sub {
     margin-top: 14px;
     max-width: 470px;
     font-size: 15px;
     line-height: 1.55;
   }
 
-  body.k-home-premium-v1 .k-hero-sub::after {
+  html.k-home-premium-v1 .k-hero-sub::after {
     content: ' Dubai → Comores · Retrait en relais · Paiement carte ou à la livraison.';
   }
 
-  body.k-home-premium-v1 .k-hero-cta-primary {
+  html.k-home-premium-v1 .k-hero-cta-primary {
     min-height: 44px;
     border-radius: 14px;
     box-shadow: 0 16px 32px color-mix(in srgb, var(--coral) 22%, transparent);
   }
 
-  body.k-home-premium-v1 .k-hero-cta-ghost {
+  html.k-home-premium-v1 .k-hero-cta-ghost {
     border-radius: 14px;
     background: color-mix(in srgb, var(--white) 78%, transparent);
   }
 
-  body.k-home-premium-v1 .k-hero-trust {
+  html.k-home-premium-v1 .k-hero-trust {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -118,11 +120,9 @@ function injectStyles() {
     border: 1px solid var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-cats-shell {
-    padding-top: 18px;
-  }
+  html.k-home-premium-v1 .k-cats-shell { padding-top: 18px; }
 
-  body.k-home-premium-v1 .k-cats::before {
+  html.k-home-premium-v1 .k-cats::before {
     content: 'Explorer par univers';
     position: absolute;
     left: clamp(24px, 3vw, 46px);
@@ -134,12 +134,12 @@ function injectStyles() {
     color: var(--text);
   }
 
-  body.k-home-premium-v1 .k-cats {
+  html.k-home-premium-v1 .k-cats {
     position: relative;
     gap: 14px;
   }
 
-  body.k-home-premium-v1 .k-chip {
+  html.k-home-premium-v1 .k-chip {
     border-radius: 24px;
     min-width: 164px;
     background: color-mix(in srgb, var(--white) 78%, transparent);
@@ -147,16 +147,14 @@ function injectStyles() {
     transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
   }
 
-  body.k-home-premium-v1 .k-chip:hover {
+  html.k-home-premium-v1 .k-chip:hover {
     transform: translateY(-3px);
     box-shadow: 0 20px 44px var(--border-text-08);
   }
 
-  body.k-home-premium-v1 .k-chip-label {
-    font-weight: 850;
-  }
+  html.k-home-premium-v1 .k-chip-label { font-weight: 850; }
 
-  body.k-home-premium-v1 .k-home-curation {
+  html.k-home-premium-v1 .k-home-curation {
     display: block;
     padding: 28px clamp(26px, 3.4vw, 56px) 18px;
     background:
@@ -164,21 +162,21 @@ function injectStyles() {
       var(--sand);
   }
 
-  body.k-home-premium-v1 .k-home-curation-inner {
+  html.k-home-premium-v1 .k-home-curation-inner {
     max-width: 1500px;
     margin: 0 auto;
     display: grid;
     gap: 22px;
   }
 
-  body.k-home-premium-v1 .k-home-section-head {
+  html.k-home-premium-v1 .k-home-section-head {
     display: flex;
     align-items: end;
     justify-content: space-between;
     gap: 16px;
   }
 
-  body.k-home-premium-v1 .k-home-eyebrow {
+  html.k-home-premium-v1 .k-home-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -189,7 +187,7 @@ function injectStyles() {
     font-weight: 900;
   }
 
-  body.k-home-premium-v1 .k-home-title {
+  html.k-home-premium-v1 .k-home-title {
     margin-top: 5px;
     font-family: var(--font-display, var(--font));
     font-size: clamp(28px, 2.6vw, 42px);
@@ -198,20 +196,20 @@ function injectStyles() {
     color: var(--text);
   }
 
-  body.k-home-premium-v1 .k-home-subtitle {
+  html.k-home-premium-v1 .k-home-subtitle {
     max-width: 620px;
     color: var(--text-muted);
     font-size: 14px;
     line-height: 1.55;
   }
 
-  body.k-home-premium-v1 .k-home-compose-grid {
+  html.k-home-premium-v1 .k-home-compose-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
   }
 
-  body.k-home-premium-v1 .k-home-compose-card {
+  html.k-home-premium-v1 .k-home-compose-card {
     min-height: 132px;
     padding: 18px;
     border-radius: 26px;
@@ -222,13 +220,13 @@ function injectStyles() {
     transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
   }
 
-  body.k-home-premium-v1 .k-home-compose-card:hover {
+  html.k-home-premium-v1 .k-home-compose-card:hover {
     transform: translateY(-4px);
     border-color: var(--ocean-light);
     box-shadow: 0 22px 54px var(--border-text-08);
   }
 
-  body.k-home-premium-v1 .k-home-compose-icon {
+  html.k-home-premium-v1 .k-home-compose-icon {
     width: 42px;
     height: 42px;
     display: grid;
@@ -239,7 +237,7 @@ function injectStyles() {
     font-size: 22px;
   }
 
-  body.k-home-premium-v1 .k-home-compose-card strong {
+  html.k-home-premium-v1 .k-home-compose-card strong {
     display: block;
     margin-top: 14px;
     color: var(--text);
@@ -247,7 +245,7 @@ function injectStyles() {
     letter-spacing: -.015em;
   }
 
-  body.k-home-premium-v1 .k-home-compose-card span:last-child {
+  html.k-home-premium-v1 .k-home-compose-card span:last-child {
     display: block;
     margin-top: 5px;
     color: var(--text-muted);
@@ -255,29 +253,29 @@ function injectStyles() {
     line-height: 1.4;
   }
 
-  body.k-home-premium-v1 .k-home-how {
+  html.k-home-premium-v1 .k-home-how {
     display: grid;
     grid-template-columns: 1.1fr 1fr;
     gap: 18px;
     align-items: stretch;
   }
 
-  body.k-home-premium-v1 .k-home-how-card,
-  body.k-home-premium-v1 .k-home-promise-card {
+  html.k-home-premium-v1 .k-home-how-card,
+  html.k-home-premium-v1 .k-home-promise-card {
     border-radius: 28px;
     padding: 22px;
     background: color-mix(in srgb, var(--white) 76%, transparent);
     border: 1px solid var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-home-steps {
+  html.k-home-premium-v1 .k-home-steps {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin-top: 16px;
   }
 
-  body.k-home-premium-v1 .k-home-step {
+  html.k-home-premium-v1 .k-home-step {
     padding: 12px;
     border-radius: 18px;
     background: var(--sand);
@@ -286,21 +284,21 @@ function injectStyles() {
     color: var(--text-muted);
   }
 
-  body.k-home-premium-v1 .k-home-step b {
+  html.k-home-premium-v1 .k-home-step b {
     display: block;
     color: var(--text);
     font-size: 13px;
     margin-bottom: 4px;
   }
 
-  body.k-home-premium-v1 .k-home-promise-list {
+  html.k-home-premium-v1 .k-home-promise-list {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 16px;
   }
 
-  body.k-home-premium-v1 .k-home-promise-chip {
+  html.k-home-premium-v1 .k-home-promise-chip {
     padding: 8px 10px;
     border-radius: 999px;
     background: var(--sand);
@@ -310,11 +308,9 @@ function injectStyles() {
     font-weight: 750;
   }
 
-  body.k-home-premium-v1 #k-catalog-section {
-    padding-top: 22px;
-  }
+  html.k-home-premium-v1 #k-catalog-section { padding-top: 22px; }
 
-  body.k-home-premium-v1 #k-catalog-section::before {
+  html.k-home-premium-v1 #k-catalog-section::before {
     content: 'Bons plans du moment';
     display: block;
     max-width: 1500px;
@@ -326,7 +322,7 @@ function injectStyles() {
     color: var(--text);
   }
 
-  body.k-home-premium-v1 #k-catalog-section::after {
+  html.k-home-premium-v1 #k-catalog-section::after {
     content: 'Des produits utiles, bien placés, faciles à commander et à retirer en relais.';
     display: block;
     max-width: 1500px;
@@ -335,14 +331,12 @@ function injectStyles() {
     font-size: 14px;
   }
 
-  body.k-home-premium-v1 .k-side-cart {
+  html.k-home-premium-v1 .k-side-cart {
     box-shadow: -14px 0 44px var(--border-text-08);
     border-left: 1px solid var(--border-text-06);
   }
 
-  body.k-home-premium-v1 .k-sc-btn-checkout {
-    border-radius: 18px;
-  }
+  html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }
 }
 `;
 
@@ -381,7 +375,7 @@ function injectHomeBlocks() {
   if (!pageScroll || !catalogWrap) return;
 
   _blocksInjected = true;
-  document.body.classList.add('k-home-premium-v1');
+  document.documentElement.classList.add('k-home-premium-v1');
 
   const section = makeEl('section', 'k-home-curation');
   section.setAttribute('aria-label', 'Sélections Komerce');
