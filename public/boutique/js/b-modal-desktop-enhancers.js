@@ -345,6 +345,21 @@ function injectPriceHero() {
     pctEl.textContent = '-' + product.promo_pct + '%';
     el.appendChild(pctEl);
   }
+
+  // Chantier 2 — mention "· économie X KMF" en fin de ligne aed-price.
+  // L'ancien prix dérive de promo_pct via la même formule que b-modal.js
+  // openModal : Math.round(price / (1 - promo_pct / 100)). Source unique.
+  if (product.promo_pct && product.price_kmf) {
+    var oldPrice = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
+    var saving = oldPrice - product.price_kmf;
+    if (saving > 0) {
+      var saveEl = document.createElement('span');
+      saveEl.className = 'k-modal-price-saving';
+      saveEl.innerHTML = '<span class="k-modal-price-saving-sep" aria-hidden="true">·</span>'
+                       + 'économie ' + new Intl.NumberFormat('fr-FR').format(saving) + ' KMF';
+      el.appendChild(saveEl);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -394,7 +409,8 @@ function injectFlashAndStock() {
       flashEl.innerHTML =
         '<span class="k-modal-flash-icon" aria-hidden="true"></span>' +
         '<span class="k-modal-flash-label">Offre promotionnelle</span>' +
-        '<span class="k-modal-flash-pct">-' + product.promo_pct + '%</span>';
+        '<span class="k-modal-flash-pct">-' + product.promo_pct + '%</span>' +
+        '<span class="k-modal-flash-suffix">sur ce produit</span>';
     }
   }
 
