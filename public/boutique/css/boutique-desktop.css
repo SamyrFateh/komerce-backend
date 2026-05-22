@@ -1404,14 +1404,10 @@
      Pleine hauteur viewport → items confortables.
      ────────────────────────────────────────────────────────── */
   .k-sc-items {
-    flex: 1 1 0;
+    flex: 1 1 auto;
     min-height: 0;
-    /* overflow-y: scroll plutôt que auto pour FORCER le scroll même si
-       le contenu rentre (évite que la molette passe à la page). */
-    overflow-y: scroll;
-    /* none plutôt que contain : empêche complètement le scroll de "passer"
-       à la page principale quand on atteint la butée. */
-    overscroll-behavior: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--border-text-08) transparent;
     padding: 10px 10px 16px;
