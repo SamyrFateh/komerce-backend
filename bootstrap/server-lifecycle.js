@@ -1,5 +1,7 @@
 'use strict';
 
+const log = require('../utils/logger').child({ module: 'server-lifecycle' });
+
 /**
  * H2 — Server lifecycle bootstrap.
  *
