@@ -25,6 +25,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const { confirmPickupCashPayment } = require('../services/confirm-pickup-cash-payment');
 const log = require('../utils/logger').child({ module: 'pickup-secret' });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -182,161 +183,50 @@ async function generateAndStoreSecret({
 // reste en DB.
 router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req, res, next) => {
   try {
-    const { orderId } = req.params;
-    const agentId     = req.user.id;
-    const {
-      payer_name,                 // obligatoire : nom du payeur qui paie physiquement
-      payer_id_type,              // optionnel : 'CNI' | 'passport' | 'permis' | ...
-      payer_id_number,            // optionnel : numéro de la pièce
-      payer_note,                 // optionnel : note libre agent ("c'est la tante")
-      tracking_phone_primary,     // optionnel : confirmer/corriger le numéro de suivi principal
-      tracking_phone_secondary,   // optionnel : second numéro "personne de confiance"
-    } = req.body;
-
-    if (!payer_name || !payer_name.trim()) {
-      return res.status(400).json({ error: 'Le nom du payeur est obligatoire' });
-    }
-
-    // Validation légère du format des numéros (si fournis)
-    const phoneRx = /^[+]?[0-9\s().-]{6,20}$/;
-    if (tracking_phone_primary && !phoneRx.test(tracking_phone_primary)) {
-      return res.status(400).json({ error: 'Numéro principal invalide' });
-    }
-    if (tracking_phone_secondary && !phoneRx.test(tracking_phone_secondary)) {
-      return res.status(400).json({ error: 'Numéro secondaire invalide' });
-    }
-
-    // 1. Vérifier que la commande existe et est en pending_payment
-    const { rows: [order] } = await db.query(`
-      SELECT id, reference, total_kmf, payment_mode, status, pickup_secret_hash,
-             tracking_phone, tracking_phone_secondary, relais_id
-      FROM orders WHERE id = $1
-    `, [orderId]);
-
-    if (!order) {
-      return res.status(404).json({ error: 'Commande introuvable' });
-    }
-    if (order.payment_mode !== 'cash_relais') {
-      return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
-    }
-    if (order.pickup_secret_hash) {
-      return res.status(409).json({
-        error: 'Un code secret existe déjà pour cette commande. Si le reçu est perdu, utilisez la procédure de régénération admin.',
-      });
-    }
-
-    // 2. Générer le code secret + salt (avec anti-collision sur last4 du relais)
-    // Les 4 derniers caractères alphanumériques servent de "short code" que
-    // l'agent saisira au guichet. On s'assure qu'aucun autre code ACTIF du
-    // même relais n'a les mêmes 4 derniers chars.
-    let code, last4, hash;
-    const salt = crypto.randomBytes(16).toString('hex');
-    let attempts = 0;
-    const MAX_GEN_ATTEMPTS = 50;
-    while (attempts < MAX_GEN_ATTEMPTS) {
-      code  = generatePickupCode();
-      last4 = code.replace(/-/g, '').slice(-4);
-      // Vérifier qu'aucune commande ACTIVE du même relais n'a le même last4
-      const { rows: [dup] } = await db.query(`
-        SELECT id FROM orders
-        WHERE pickup_secret_last4 = $1
-          AND relais_id IS NOT DISTINCT FROM $2
-          AND status NOT IN ('collected', 'cancelled', 'refunded')
-          AND (pickup_secret_expires_at IS NULL OR pickup_secret_expires_at > NOW())
-        LIMIT 1
-      `, [last4, order.relais_id || null]);
-      if (!dup) break;
-      attempts++;
-    }
-    if (attempts >= MAX_GEN_ATTEMPTS) {
-      log.error('[PICKUP-SECRET] Impossible de générer un code unique pour le relais ' + order.relais_id);
-      return res.status(500).json({ error: 'Génération du code impossible (saturation) — contactez un admin' });
-    }
-    hash = hashCode(code, salt);
-    const now     = new Date();
-    const expires = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // +60 jours
-
-    // Déterminer les numéros finaux : si agent corrige → utiliser valeur agent,
-    // sinon conserver celle déjà en DB
-    const finalPhonePrimary   = (tracking_phone_primary && tracking_phone_primary.trim())
-                                  ? tracking_phone_primary.trim()
-                                  : (order.tracking_phone || null);
-    const finalPhoneSecondary = (tracking_phone_secondary && tracking_phone_secondary.trim())
-                                  ? tracking_phone_secondary.trim()
-                                  : null;
-
-    // 3. Enregistrer en DB
-    await db.query(`
-      UPDATE orders
-      SET pickup_secret_hash              = $1,
-          pickup_secret_salt              = $2,
-          pickup_secret_last4             = $13,
-          pickup_secret_created_at        = $3,
-          pickup_secret_expires_at        = $4,
-          payment_received_at             = $3,
-          payment_received_by_agent_id    = $5,
-          payer_name                      = $6,
-          payer_id_type                   = $7,
-          payer_id_number                 = $8,
-          payer_note                      = $9,
-          tracking_phone                  = $10,
-          tracking_phone_secondary        = $11,
-          tracking_phone_confirmed_at     = $3,
-          tracking_phone_confirmed_by_agent_id = $5,
-          payment_status                  = 'paid',
-          confirmed_at                    = $3,
-          updated_at                      = NOW()
-      WHERE id = $12
-    `, [hash, salt, now, expires, agentId, payer_name.trim(),
-        payer_id_type || null, payer_id_number || null, payer_note || null,
-        finalPhonePrimary, finalPhoneSecondary, orderId, last4]);
-
-    // 3b. Transition de statut via la machine (I-01) — pending → confirmed
-    // Trace dans order_status_history (I-04)
-    await transitionOrderStatus({
-      orderId,
-      newStatus: 'confirmed',
-      source: 'cash_relais_pickup_secret',
-      actor: { id: agentId, role: 'agent' },
+    const result = await confirmPickupCashPayment({
+      orderId: req.params.orderId,
+      user: req.user,
+      payload: req.body,
+      generateAndStoreSecret,
     });
 
-    // 4. Log d'audit (en cash_collections pour rester cohérent avec l'existant)
-    await db.query(`
-      INSERT INTO cash_collections (order_id, amount_kmf, collected_by, relais_id)
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (order_id) DO NOTHING
-    `, [orderId, Number(order.total_kmf), agentId, null]);
+    if (result.status !== 200) {
+      return res.status(result.status).json(result.body);
+    }
 
-    log.info(`[PICKUP-SECRET] Généré pour ${order.reference} — agent=${agentId} payeur="${payer_name}"`);
-
-    // 4b. 🎁 Hook fidélité — fire-and-forget (non-bloquant)
-    try {
-      const loyaltyService = require('../services/loyalty-service');
-      loyaltyService.handleOrderConfirmed({ orderId })
-        .then(r => { if (r && !r.skipped) log.info('[loyalty] hook OK:', r); })
-        .catch(e => log.warn('[loyalty] hook error:', e.message));
-    } catch(e) { /* loyalty-service not yet loaded — silent */ }
-
-    // 5. Renvoyer le code CLAIR une seule fois, avec un token d'impression
-    // Le token d'impression permet d'accéder à /receipt/:orderId pendant 2 min
     const printToken = crypto.randomBytes(24).toString('hex');
-    req.session = req.session || {};
-    // Stocker en mémoire process (MVP — à migrer vers Redis pour multi-instance)
     printTokens.set(printToken, {
-      orderId,
-      code,
-      payer_name: payer_name.trim(),
+      orderId:    result.body.order_id,
+      code:       result.body.code,
+      payer_name: result.body.payer_name,
       expires_at: Date.now() + 2 * 60 * 1000,
     });
 
     res.json({
-      success: true,
-      message: `Paiement encaissé. Imprimez le reçu maintenant.`,
-      code,                         // clair — à afficher à l'agent UNE FOIS
-      print_token: printToken,      // utilisé pour /receipt/:orderId
-      order_ref: order.reference,
-      amount_kmf: Number(order.total_kmf),
+      success:     true,
+      message:     result.body.message,
+      code:        result.body.code,
+      print_token: printToken,
+      order_ref:   result.body.order_ref,
+      amount_kmf:  result.body.amount_kmf,
     });
+
+    // Post-commit hooks — fire-and-forget, non-bloquants
+    try {
+      const loyaltyService = require('../services/loyalty-service');
+      loyaltyService.handleOrderConfirmed({ orderId: result.body.order_id })
+        .then(r => { if (r && !r.skipped) log.info('[loyalty] hook OK:', r); })
+        .catch(e => log.warn('[loyalty] hook error:', e.message));
+    } catch (_) { /* non-bloquant */ }
+
+    try {
+      const { triggerPurchasing } = require('./purchasing');
+      triggerPurchasing(result.body.order_id)
+        .then(r => log.info('[PURCHASING] Pickup cash trigger OK:', result.body.order_ref, r))
+        .catch(e => log.error('[PURCHASING] Pickup cash trigger error:', result.body.order_ref, e.message));
+    } catch (e) {
+      log.error('[PICKUP-CASH-POSTCOMMIT] triggerPurchasing load error:', e.message);
+    }
 
   } catch (err) { next(err); }
 });
