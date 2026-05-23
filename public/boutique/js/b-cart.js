@@ -1557,6 +1557,22 @@ function renderSideCart() {
       window.location.href = '/event/create?from=cart';
     });
   }
+
+  // Bouton "Vider" — purge complète du panier, avec confirmation native.
+  // Réutilise clearCart() (mutation centralisée) — pas de duplication de
+  // logique métier. La visibilité du bouton est gérée par CSS via
+  // .k-side-cart.has-items (cf. boutique-desktop.css).
+  const ctaClear = sc.querySelector('#k-sc-clear');
+  if (ctaClear && !ctaClear._wired) {
+    ctaClear._wired = true;
+    ctaClear.addEventListener('click', () => {
+      if (state.cart.length === 0) return;
+      const ok = window.confirm('Vider le panier ? Cette action ne peut pas être annulée.');
+      if (!ok) return;
+      clearCart();
+      showToast('🗑 Panier vidé');
+    });
+  }
 }
 
 // Hook global appelé par b-cart-core.js updateCartBadge()
