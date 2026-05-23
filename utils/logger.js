@@ -18,6 +18,7 @@
 
 'use strict';
 
+const isTest = process.env.NODE_ENV === 'test';
 const isDev = process.env.NODE_ENV !== 'production';
 
 let logger;
@@ -26,7 +27,7 @@ try {
   const pino = require('pino');
 
   let transport;
-  if (isDev) {
+  if (isDev && !isTest) {
     try {
       transport = {
         target: 'pino-pretty',
@@ -80,7 +81,7 @@ try {
   });
 
 } catch (_) {
-  log.warn('⚠️  pino not installed — using console fallback. Run: npm install pino pino-pretty');
+  console.warn('⚠️  pino not installed — using console fallback. Run: npm install pino pino-pretty');
 
   const noop = () => {};
 
@@ -89,11 +90,11 @@ try {
 
     return {
       trace: noop,
-      debug: (...args) => isDev && log.debug(prefix, ...args),
-      info:  (...args) => log.info(prefix, ...args),
-      warn:  (...args) => log.warn(prefix, ...args),
-      error: (...args) => log.error(prefix, ...args),
-      fatal: (...args) => log.error('💀', prefix, ...args),
+      debug: (...args) => isDev && console.debug(prefix, ...args),
+      info:  (...args) => console.log(prefix, ...args),
+      warn:  (...args) => console.warn(prefix, ...args),
+      error: (...args) => console.error(prefix, ...args),
+      fatal: (...args) => console.error('💀', prefix, ...args),
       child: (childCtx) => makeConsoleLogger({ ...context, ...childCtx }),
       level: isDev ? 'debug' : 'info',
     };
