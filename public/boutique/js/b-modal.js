@@ -27,40 +27,8 @@ import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
 import { setActiveCat }   from './b-catalog.js';
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
-// Chantier 2 — mock temporaire en attendant les colonnes DB
-// (rank, sold_count, rating, review_count). Voir le header du fichier
-// pour la procédure de retrait propre quand l'API fournira ces champs.
-import { setupSocialProofMock } from './b-modal-social-proof-mock.js';
 
 'use strict';
-
-// Chantier 2 — installer le mock social proof au chargement du module.
-// Le hook bus est posé immédiatement, donc opérationnel dès la 1ʳᵉ
-// ouverture de modale (bus.emit('modal:opened') la déclenche).
-// Idempotent : safe à appeler plusieurs fois.
-setupSocialProofMock();
-
-// ─────────────────────────────────────────────────────────────────
-//  Chantier 2 — Helper de styling prix desktop
-//
-//  Split "15 700 KMF" en deux spans (.k-modal-price-val / -unit) pour
-//  permettre un styling fin DESKTOP : gros chiffre coral + petite unité
-//  coral en uppercase (cf. mockup chantier 2).
-//
-//  IMPORTANT — comportement mobile :
-//  L'espace HTML entre les deux spans est essentiel. Sur mobile, les
-//  sous-spans n'ont AUCUNE règle CSS dédiée (toutes mes règles chantier 2
-//  sont gated par @media (min-width: 900px)). Ils héritent du parent
-//  .k-modal-price, et l'espace HTML produit le rendu "15 700 KMF"
-//  strictement identique à l'ancien `textContent = fmtPrice(...)`.
-//
-//  Valeur en entrée purement numérique — aucune injection HTML possible.
-// ─────────────────────────────────────────────────────────────────
-function formatPriceMarkup(kmf) {
-  var formatted = new Intl.NumberFormat('fr-FR').format(kmf);
-  return '<span class="k-modal-price-val">' + formatted + '</span> '
-       + '<span class="k-modal-price-unit">KMF</span>';
-}
 
 // Receive close-modal signal from b-cart (avoids circular dep)
 bus.on('modal:close', function() { if (typeof closeModal === 'function') closeModal(); });
@@ -409,12 +377,12 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     dom.modalDesc.textContent = product.description || '';
     dom.modalDesc.classList.remove('is-expanded'); // reset truncation on each open
     dom.modalDesc.onclick = function() { dom.modalDesc.classList.toggle('is-expanded'); };
-    dom.modalPrice.innerHTML = formatPriceMarkup(product.price_kmf);
+    dom.modalPrice.textContent = fmtPrice(product.price_kmf);
     dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
 
     if (product.promo_pct) {
       const old = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
-      dom.modalOldPrice.innerHTML = formatPriceMarkup(old);
+      dom.modalOldPrice.textContent = fmtPrice(old);
       dom.modalOldPrice.classList.remove('u-hidden');
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
       dom.modalPromoBadge.classList.add('show');

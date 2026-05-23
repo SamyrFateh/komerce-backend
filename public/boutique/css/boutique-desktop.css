@@ -1150,13 +1150,15 @@
     letter-spacing: -.03em;
     line-height: 1;
     text-align: right;
+    flex: 1;
+    white-space: nowrap;
   }
 
   /* Bouton "Vider" : discret en haut à droite du header, à côté du sous-total.
      Visible uniquement quand le side-cart a des items (.has-items posée par
      renderSideCart). Confirmation native gérée côté JS dans b-cart.js. */
   .k-sc-clear {
-    margin-left: auto;
+    flex-shrink: 0;
     display: none;
     align-items: center;
     gap: 4px;
