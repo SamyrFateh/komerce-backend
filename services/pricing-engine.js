@@ -1,916 +1,55 @@
 /**
- * KOMERCE — Pricing Engine Service
- * ═════════════════════════════════
+ * KOMERCE — Pricing Engine (Orchestrateur)
+ * ════════════════════════════════════════
  *
- * Coeur du moteur de pricing aligné sur la doctrine économique Komerce.
- * Voir : docs/DOCTRINE_ECONOMIQUE_KOMERCE.md
+ * Point d'entrée unique du moteur de pricing.
+ * Responsabilité : orchestrer les 3 couches de calcul.
  *
- * Phrase de vérité :
- *   Komerce ne cherche pas le prix parfait au lancement.
- *   Komerce cherche un prix protégé qui permet d'apprendre le marché
- *   sans vendre à perte, puis utilise les signaux réels pour décider
- *   quoi sourcer, renforcer, corriger ou arrêter.
+ * Architecture (après découpe) :
+ *   pricing-cdr.js     → loadGlobalConfig + computeFixedCostAllocation + computeCDR
+ *   pricing-output.js  → computePrices + computeScenarios + health + sourcing + alertes + textes
+ *   pricing-engine.js  → recommend() + computeMarketConfidence() (accès DB) ← ICI
  *
- * Responsabilité :
- *   - Calculer les 4 prix : survival, minimum_safe, recommended, test
- *   - Calculer health_status (loss / danger / fragile / healthy / strong / unknown)
- *   - Calculer market_confidence (unknown / testing / validated / scaling / rejected)
- *   - Recommander une sourcing_decision (PRIORITY / TEST / WATCH / AVOID / LOSS)
- *   - Produire une explication lisible humainement
- *
- * Ce service est consommé par :
+ * Consommé par :
  *   - routes/pricing.js → /recommend, /recommend-batch, /dashboard
- *
- * Sources de vérité (cf. ADR-009 à ADR-011) :
- *   - finance_config            : config singleton (cible marge, taux change, objectifs)
- *   - customs_categories        : douane/TVA/marge cible par catégorie
- *   - pricing_components        : Niveau 1 (variables par commande)
- *   - risk_provisions           : Niveau 3 (provisions risques)
- *   - charges                   : Niveau 2 (charges fixes mensuelles)
- *   - products                  : produits avec cost_kmf, weight_kg, price_kmf
- *   - orders / order_items      : pour calculer market_confidence (ventes payées)
+ *   - services/apply-pricing-updates.js
+ *   - services/order-cost-snapshot.js
+ *   - services/sourcing-engine.js
+ *   - routes/sourcing-scanner.js
+ *   - routes/supplier-catalog-scanner.js
  */
 
 'use strict';
 
 const db = require('../db');
+const { loadGlobalConfig, computeCDR } = require('./pricing-cdr');
+const {
+  computePrices,
+  computeScenarios,
+  computeHealthStatus,
+  computeSourcingDecision,
+  buildAlerts,
+  buildRecommendationText,
+  buildCostBreakdown,
+  buildDataQuality,
+  inferSubjectType,
+  HEALTH_THRESHOLDS,
+  MARKET_THRESHOLDS,
+} = require('./pricing-output');
 
 // ═══════════════════════════════════════════════════════════════════
-// CONSTANTES — Seuils doctrinaux (§6 et §7 de la doctrine)
+// HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
-const HEALTH_THRESHOLDS = {
-  DANGER_PCT:   15,   // marge < 15 %  → danger
-  FRAGILE_PCT:  25,   // marge < 25 %  → fragile
-  HEALTHY_PCT:  40,   // marge ≤ 40 %  → healthy, sinon strong
-};
-
-const MARKET_THRESHOLDS = {
-  TESTING_MIN_SALES:    1,    // 1+ ventes → testing
-  VALIDATED_MIN_SALES:  6,    // 6+ ventes → validated
-  SCALING_MIN_SALES:    20,   // 20+ ventes → scaling
-  REJECTED_DAYS_NOSALE: 60,   // 60j sans vente avec produit actif → rejected
-};
-
-// Volume cible par défaut (si finance_config.objectif_commandes_mois absent)
-const DEFAULT_TARGET_ORDERS_PER_MONTH = 100;
+function r(n) { return Math.round(Number(n) || 0); }
 
 // ═══════════════════════════════════════════════════════════════════
-// HELPERS UTILITAIRES
-// ═══════════════════════════════════════════════════════════════════
-
-/** Arrondi psychologique : 990, 490, 90, etc. */
-function arrondiPsycho(x) {
-  if (!x || x <= 0) return 0;
-  if (x < 500)  return Math.ceil(x / 10) * 10;
-  if (x < 1000) return Math.ceil(x / 100) * 100 - 10;
-  const k = Math.ceil(x / 1000) * 1000;
-  return k - 10;  // ex 13990
-}
-
-/** Round à l'entier (jamais de NaN) */
-function r(n) {
-  return Math.round(Number(n) || 0);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// CHARGEMENT DES CONFIGURATIONS GLOBALES
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Charge toutes les configs nécessaires pour le calcul.
- * Cache éventuellement à ajouter plus tard si performance critique.
- *
- * @returns {Object} { finance, categories, components, provisions, charges }
- */
-async function loadGlobalConfig() {
-  // ─── Phase 1 cost_components : on tente d'abord la nouvelle table ───
-  // Fallback sur pricing_components si cost_components vide ou absente.
-  // Le champ family vient de la nouvelle table ; pour les anciens composants
-  // on dérive family depuis category.
-  let components = [];
-  let componentsSource = 'cost_components';
-  try {
-    const ccRes = await db.query(`
-      SELECT
-        id, key, label, emoji, description,
-        family, category,
-        default_value, unit, currency,
-        scope, scope_value, allocation_method,
-        source, confidence,
-        channel, island,
-        is_active, is_exceptional,
-        active_from, active_until,
-        display_order
-      FROM cost_components
-      WHERE is_active = TRUE
-        AND is_exceptional = FALSE
-        AND (active_from IS NULL OR active_from <= CURRENT_DATE)
-        AND (active_until IS NULL OR active_until >= CURRENT_DATE)
-      ORDER BY display_order, key
-    `);
-    components = ccRes.rows;
-  } catch (err) {
-    // cost_components n'existe pas encore (avant migration 043) — on continue.
-    components = [];
-  }
-
-  if (!components.length) {
-    // Fallback : ancienne table pricing_components
-    try {
-      const pcRes = await db.query('SELECT * FROM pricing_components WHERE is_active = TRUE');
-      components = pcRes.rows.map(c => ({
-        ...c,
-        // Mapper l'ancienne category vers la nouvelle structure pour le calcul LOT G
-        family: _legacyFamilyFromCategory(c.category),
-        category: _legacyCategoryToNew(c.category, c.key),
-        scope: 'global',
-        is_exceptional: false,
-      }));
-      componentsSource = 'pricing_components_legacy';
-    } catch (errFallback) {
-      components = [];
-    }
-  }
-
-  const [fcRes, catsRes, provRes, chargesRes] = await Promise.all([
-    db.query('SELECT * FROM finance_config WHERE id = 1'),
-    db.query('SELECT * FROM customs_categories WHERE is_active = TRUE'),
-    db.query('SELECT * FROM risk_provisions WHERE is_active = TRUE'),
-    db.query('SELECT * FROM charges WHERE is_active = TRUE'),
-  ]);
-
-  const categories = {};
-  catsRes.rows.forEach(c => { categories[c.key] = c; });
-
-  return {
-    finance: fcRes.rows[0] || {},
-    categories,
-    components,
-    components_source: componentsSource,
-    provisions: provRes.rows,
-    charges: chargesRes.rows,
-  };
-}
-
-// ─── Helpers legacy (rétrocompat le temps que les anciennes données migrent) ───
-function _legacyFamilyFromCategory(oldCat) {
-  if (oldCat === 'paiement') return 'business';
-  return 'landed_relay';
-}
-function _legacyCategoryToNew(oldCat, key) {
-  // Mapping minimal de l'ancien vers le nouveau, basé sur la key quand pertinent
-  const k = (key || '').toLowerCase();
-  if (oldCat === 'sourcing') return 'sourcing';
-  if (oldCat === 'transit') return 'freight';
-  if (oldCat === 'douane') {
-    if (k.includes('transitaire') || k.includes('portuaire')) return 'port_transitary';
-    return 'customs';
-  }
-  if (oldCat === 'hub') {
-    if (k.includes('packaging') || k.includes('emballage')) return 'packaging';
-    return 'hub';
-  }
-  if (oldCat === 'distribution') {
-    if (k.includes('commission') || (k.includes('relais') && !k.includes('transport'))) return 'relay';
-    return 'local_distribution';
-  }
-  if (oldCat === 'paiement') return 'payment';
-  return 'sourcing'; // défaut conservateur
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// FIXED COST ALLOCATION (Niveau 2)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Calcule la part de charges fixes par commande.
- * Doctrine §4 : fixed_cost_allocation_kmf = monthly_fixed_costs / target_orders/mois
- *
- * Si target_orders_per_month absent → défaut configurable + warning.
- *
- * @returns { fixed_cost_allocation_kmf, monthly_fixed_costs_kmf, target_orders_per_month, warnings }
- */
-function computeFixedCostAllocation(charges, finance) {
-  const warnings = [];
-
-  // Total charges mensuelles (monthly + weekly amorti + per_order)
-  const totalMonthly = charges
-    .filter(c => c.recurrence_period === 'monthly')
-    .reduce((s, c) => s + Number(c.amount_kmf || 0), 0);
-  const totalWeekly = charges
-    .filter(c => c.recurrence_period === 'weekly')
-    .reduce((s, c) => s + Number(c.amount_kmf || 0), 0);
-  const totalYearly = charges
-    .filter(c => c.recurrence_period === 'yearly')
-    .reduce((s, c) => s + Number(c.amount_kmf || 0), 0);
-  const totalPerOrder = charges
-    .filter(c => c.recurrence_period === 'per_order')
-    .reduce((s, c) => s + Number(c.amount_kmf || 0), 0);
-
-  const monthlyFixedCosts = totalMonthly + (totalWeekly * 4.33) + (totalYearly / 12);
-
-  let targetOrdersPerMonth = Number(finance.objectif_commandes_mois) || 0;
-  if (!targetOrdersPerMonth) {
-    targetOrdersPerMonth = DEFAULT_TARGET_ORDERS_PER_MONTH;
-    warnings.push(
-      `objectif_commandes_mois absent dans finance_config — utilisation valeur par défaut ${DEFAULT_TARGET_ORDERS_PER_MONTH}.`
-    );
-  }
-
-  const fixedAllocPerOrder = (monthlyFixedCosts / targetOrdersPerMonth) + totalPerOrder;
-
-  return {
-    fixed_cost_allocation_kmf: r(fixedAllocPerOrder),
-    monthly_fixed_costs_kmf: r(monthlyFixedCosts),
-    target_orders_per_month: targetOrdersPerMonth,
-    warnings,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// CDR — COÛT DE REVIENT COMPLET ESTIMÉ
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Calcule le CDR (cost_complete_estimated) d'un produit.
- *
- * Doctrine §4 :
- *   cost_complete_estimated_kmf =
- *       product_cost
- *     + sourcing
- *     + hub_variable
- *     + freight_estimated
- *     + customs_estimated
- *     + port_transitaire_estimated
- *     + local_distribution_estimated
- *     + payment_cost_estimated
- *     + risk_provision_estimated
- *     + fixed_cost_allocation
- *
- * @param {Object} product   { id, category, cost_kmf, weight_kg }
- * @param {Object} ctx       contexte { config, prixAed?, volume_m3?, channel? }
- * @returns {Object} { variable, fixed, risks, total, details, warnings }
- */
-function computeCDR(product, ctx = {}) {
-  const cfg = ctx.config;
-  const fc = cfg.finance;
-  const warnings = [];
-
-  // ── Taux ──
-  const taxAED  = Number(fc.taux_aed_kmf) || 138;
-  const taxEUR  = Number(fc.taux_change_eur_kmf) || 492;
-  const fretEUR = Number(fc.fret_eur_per_m3) || 180;
-
-  // ── Catégorie ──
-  const categoryKey = product.category || 'phones';
-  const cat = cfg.categories[categoryKey];
-  if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — taux douane par défaut utilisés.`);
-
-  // ── Inputs produit ──
-  const productCostKmf = Number(product.cost_kmf) || 0;
-  const weightKg = Number(product.weight_kg) || 1;
-  const volM3 = Number(ctx.volume_m3) || 0.005;  // défaut 5L
-  const channel = ctx.channel || 'cash_relais';
-
-  if (productCostKmf <= 0) {
-    warnings.push('cost_kmf absent ou nul sur le produit — CDR non significatif.');
-  }
-
-  // ── Détails par poste (cf. doctrine §9 details) ──
-  const details = {
-    product_cost: r(productCostKmf),
-    sourcing: 0,
-    hub: 0,
-    packaging: 0,           // mappé sur composants ayant 'packaging' dans la key
-    freight: 0,
-    customs: 0,
-    port_transitaire: 0,
-    distribution: 0,        // total = local_distribution + relay (legacy)
-    local_distribution: 0,  // transport hub→relais
-    relay: 0,               // commission relais
-    payment: 0,
-    risks: 0,
-    fixed_costs: 0,
-  };
-
-  // Fret estimé (volume × tarif EUR/m³ × taux EUR)
-  const freightEstimated = volM3 * fretEUR * taxEUR;
-  details.freight = r(freightEstimated);
-
-  // Composants Niveau 1 — répartis dans les bons buckets selon leur catégorie doctrine
-  // Phase 1 : on lit directement family/category depuis cost_components (ou mappé legacy).
-  let runningSubtotal = productCostKmf + freightEstimated;
-  for (const c of cfg.components) {
-    const v = Number(c.default_value || 0);
-
-    // ── Filtrage scope/category : on n'applique que si le composant concerne le sujet ──
-    // applies_to ancien (rétro-compat) : 'all' | 'category:phones' | 'channel:diaspora'
-    const a = c.applies_to || 'all';
-    if (a !== 'all' && !a.startsWith('category:' + categoryKey) && !a.startsWith('channel:' + channel)) continue;
-
-    // Nouveau modèle : scope='category' avec scope_value=categoryKey
-    if (c.scope === 'category' && c.scope_value && c.scope_value !== categoryKey) continue;
-
-    // Filtrage canal explicite (champ channel sur le composant)
-    if (c.channel && c.channel !== channel) continue;
-
-    // Filtrage canal legacy (paiement diaspora vs cash_relais via convention de key)
-    if ((c.category === 'paiement' || c.category === 'payment') && !c.channel) {
-      if (channel === 'cash_relais' && (c.key || '').startsWith('stripe_')) continue;
-      if (channel === 'diaspora' && !(c.key || '').startsWith('stripe_') && (c.key || '').includes('cash')) continue;
-    }
-
-    // ─────────────────────────────────────────────────────────────────
-    // IMPUTATION DOCTRINE — Allocation des coûts agrégés à l'article
-    // ─────────────────────────────────────────────────────────────────
-    // Doctrine : Komerce engage des coûts à 4 niveaux :
-    //   1. Par shipment   (1 conteneur LCL Dubai-Moroni)
-    //   2. Par colis      (un sac/carton qui sort du hub)
-    //   3. Par commande   (1 client = 1 commande Komerce)
-    //   4. Par article    (1 produit dans la commande)
-    //
-    // Pour pricer UN article, on divise les coûts agrégés par les
-    // moyennes correspondantes (lues dans finance_config).
-    // On garde la traçabilité dans `engagedAmount` pour l'audit.
-    const avgArticlesPerOrder    = Number(fc.avg_articles_per_order)    || 2.5;
-    const avgArticlesPerParcel   = Number(fc.avg_articles_per_parcel)   || 4.0;
-    const avgArticlesPerShipment = Number(fc.avg_articles_per_shipment) || 200.0;
-
-    let amount = 0;          // montant imputé à l'article (après division)
-    let engagedAmount = 0;   // montant engagé à son niveau (avant division) pour audit
-    let allocationLevel = 'article'; // par défaut : déjà à l'article
-    let allocationDivisor = 1;
-
-    switch (c.unit) {
-      case 'pct':
-        amount = runningSubtotal * (v / 100);
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'kmf':
-        amount = v;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'kmf_per_kg':
-        amount = v * weightKg;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'kmf_per_m3':
-        amount = v * volM3;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'kmf_per_order':
-        engagedAmount = v;
-        allocationDivisor = avgArticlesPerOrder;
-        amount = v / allocationDivisor;
-        allocationLevel = 'order';
-        break;
-      case 'kmf_per_parcel':
-        engagedAmount = v;
-        allocationDivisor = avgArticlesPerParcel;
-        amount = v / allocationDivisor;
-        allocationLevel = 'parcel';
-        break;
-      case 'kmf_per_shipment':
-        engagedAmount = v;
-        allocationDivisor = avgArticlesPerShipment;
-        amount = v / allocationDivisor;
-        allocationLevel = 'shipment';
-        break;
-      case 'aed':
-        amount = v * taxAED;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'eur':
-        amount = v * taxEUR;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-      case 'usd':
-        amount = v * 0.92 * taxEUR;
-        engagedAmount = amount;
-        allocationLevel = 'article';
-        break;
-    }
-
-    // Traçabilité interne : on stocke l'imputation pour l'audit / l'UI Atelier
-    if (!details._allocations) details._allocations = [];
-    if (amount > 0) {
-      details._allocations.push({
-        component_key: c.key || null,
-        component_label: c.label || c.key || '',
-        category: c.category || null,
-        unit: c.unit,
-        engaged_amount_kmf: r(engagedAmount),
-        engaged_level: allocationLevel,
-        allocation_divisor: r(allocationDivisor * 100) / 100,  // ex: 200 articles
-        imputed_amount_kmf: r(amount),
-      });
-    }
-
-    // ── Bucketing : aligné sur les catégories doctrine ──
-    // On utilise category (new) si disponible, sinon category (legacy) déjà mappée.
-    switch (c.category) {
-      // ── landed_relay ──
-      case 'product_purchase':   details.product_cost += amount; break;
-      case 'sourcing':           details.sourcing += amount; break;
-      case 'hub':                details.hub += amount; break;
-      case 'packaging':          details.packaging += amount; break;
-      case 'freight':            details.freight += amount; break;
-      case 'transit':            details.freight += amount; break;  // legacy
-      case 'customs':            details.customs += amount; break;
-      case 'douane':             details.customs += amount; break;  // legacy
-      case 'port_transitary':    details.port_transitaire += amount; break;
-      case 'local_distribution': details.local_distribution += amount; details.distribution += amount; break;
-      case 'relay':              details.relay += amount; details.distribution += amount; break;
-      case 'distribution':       details.local_distribution += amount; details.distribution += amount; break;  // legacy
-      // ── business ──
-      case 'payment':            details.payment += amount; break;
-      case 'paiement':           details.payment += amount; break;  // legacy
-      case 'risk_provision':     details.risks += amount; break;
-      case 'fixed_overhead':     details.fixed_costs += amount; break;
-      // ── exceptional / inconnu ──
-      default:                   details.sourcing += amount;
-    }
-
-    runningSubtotal += amount;
-  }
-
-  // Douane / TVA / Taxes additionnelles depuis customs_categories
-  if (cat) {
-    const baseDouane = productCostKmf + freightEstimated;
-    const customsAmt = baseDouane * (Number(cat.douane_pct) || 0) / 100;
-    const tvaAmt     = baseDouane * (Number(cat.tva_pct) || 0) / 100;
-    const taxAddAmt  = baseDouane * (Number(cat.taxe_add_pct) || 0) / 100;
-    details.customs = r(customsAmt + tvaAmt + taxAddAmt);
-    runningSubtotal += customsAmt + tvaAmt + taxAddAmt;
-  }
-
-  // Coût variable estimé (avant risques et avant fixe)
-  const variableCostEstimated = runningSubtotal;
-
-  // Niveau 3 — Provisions de risque (% sur (variable + fixed))
-  // On les calcule sur (variable + fixed) selon la doctrine
-  let risksAmount = 0;
-
-  // Niveau 2 — Part fixe par commande
-  const fixedAlloc = computeFixedCostAllocation(cfg.charges, fc);
-  if (fixedAlloc.warnings.length) warnings.push(...fixedAlloc.warnings);
-  details.fixed_costs = fixedAlloc.fixed_cost_allocation_kmf;
-
-  // ── PHASE 3a : warning si moyennes d'allocation pas calibrées ──
-  // Si les moyennes restent à leurs hypothèses initiales, l'imputation
-  // est approximative. On le signale explicitement.
-  if (!fc.allocation_calibrated_at && (fc.allocation_confidence || 'low') === 'low') {
-    const hasAllocations = (details._allocations || []).some(
-      a => a.engaged_level !== 'article'
-    );
-    if (hasAllocations) {
-      warnings.push(
-        'Moyennes d\'allocation non calibrées (hypothèses initiales). ' +
-        'Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. ' +
-        'À recalibrer dans finance_config dès que vous aurez du volume réel.'
-      );
-    }
-  }
-
-  // Provisions risques — on les calcule sur (variable + fixed)
-  const baseRisks = variableCostEstimated + fixedAlloc.fixed_cost_allocation_kmf;
-  for (const p of cfg.provisions) {
-    risksAmount += baseRisks * (Number(p.rate_pct) / 100);
-  }
-  details.risks = r(risksAmount);
-
-  // Arrondi final des détails (sauf _allocations qui est un tableau pour la traçabilité)
-  for (const k of Object.keys(details)) {
-    if (k === '_allocations') continue;
-    details[k] = r(details[k]);
-  }
-
-  const variableTotal = r(variableCostEstimated + risksAmount);
-  const fixedTotal = fixedAlloc.fixed_cost_allocation_kmf;
-  const completeTotal = variableTotal + fixedTotal;
-
-  return {
-    variable_cost_estimated_kmf: variableTotal,
-    fixed_cost_allocation_kmf: fixedTotal,
-    risk_provision_estimated_kmf: r(risksAmount),
-    cost_complete_estimated_kmf: completeTotal,
-    monthly_fixed_costs_kmf: fixedAlloc.monthly_fixed_costs_kmf,
-    target_orders_per_month: fixedAlloc.target_orders_per_month,
-    details,
-    warnings,
-    _meta: { taxAED, taxEUR, fretEUR, category: categoryKey, channel },
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// COST BREAKDOWN DOCTRINAL (Lot G — landed cost rendu relais)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Produit la décomposition doctrinale en 2 blocs :
- *   - landed_relay : 9 lignes (achat, sourcing, hub, packaging, freight,
- *                              customs, port_transitary, local_distribution, relay)
- *   - business    : 3 lignes (payment, risk_provision, fixed_overhead)
- *
- * Doctrine §2 : "Komerce ne part pas du produit, il part du coût rendu relais."
- *
- *   landed_relay_cost_kmf      = somme des 9 lignes landed_relay
- *   business_complete_cost_kmf = landed_relay_cost_kmf + somme des 3 lignes business
- *
- * @param {Object} details  — résultat de computeCDR().details
- * @returns {{ landed_relay, business, landed_relay_cost_kmf, business_complete_cost_kmf }}
- */
-function buildCostBreakdown(details) {
-  const r = (x) => Math.round(Number(x) || 0);
-  const landed_relay = {
-    product_purchase:    r(details.product_cost),
-    sourcing:            r(details.sourcing),
-    hub:                 r(details.hub),
-    packaging:           r(details.packaging || 0),
-    freight:             r(details.freight),
-    customs:             r(details.customs),
-    port_transitary:     r(details.port_transitaire),
-    local_distribution:  r(details.local_distribution || 0),
-    relay:               r(details.relay || 0),
-  };
-  // Si on n'a pas pu splitter distribution → relay/local, on bascule tout sur local_distribution
-  // pour que le total reste cohérent
-  if (landed_relay.local_distribution === 0 && landed_relay.relay === 0 && details.distribution > 0) {
-    landed_relay.local_distribution = r(details.distribution);
-  }
-
-  const business = {
-    payment:        r(details.payment),
-    risk_provision: r(details.risks),
-    fixed_overhead: r(details.fixed_costs),
-  };
-
-  const landed_relay_cost_kmf = Object.values(landed_relay).reduce((s, v) => s + v, 0);
-  const business_extra = Object.values(business).reduce((s, v) => s + v, 0);
-  const business_complete_cost_kmf = landed_relay_cost_kmf + business_extra;
-
-  return {
-    landed_relay,
-    business,
-    landed_relay_cost_kmf,
-    business_complete_cost_kmf,
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// DATA QUALITY (Lot G — fiabilité données)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Évalue la fiabilité des données utilisées et retourne :
- *   - confidence : 'low' | 'medium' | 'high'
- *   - missing_fields : liste des champs absents/par défaut
- *   - sources : { field: 'real'|'manual'|'category'|'default'|'missing' }
- *
- * @param {Object} input    — paramètres d'entrée du recommend()
- * @param {Object} context  — { hasProduct, hasCustomsCategory, hasFinanceConfig, warnings }
- * @returns {{ confidence, missing_fields, sources }}
- */
-function buildDataQuality(input, context) {
-  const sources = {};
-  const missing = [];
-
-  // Prix d'achat
-  if (input.product_id && context.hasProduct) {
-    sources.purchase_price = 'real';        // depuis products.cost_kmf
-  } else if (input.cost_kmf || input.prix_aed) {
-    sources.purchase_price = 'manual';      // saisi par l'admin (simulation/candidat)
-  } else {
-    sources.purchase_price = 'missing';
-    missing.push('purchase_price');
-  }
-
-  // Poids
-  if (input.weight_kg || input.poids_kg) {
-    sources.weight = input.product_id && context.hasProduct ? 'real' : 'manual';
-  } else if (context.hasCustomsCategory) {
-    sources.weight = 'category';
-  } else {
-    sources.weight = 'default';
-    missing.push('weight');
-  }
-
-  // Volume
-  if (input.volume_m3 && Number(input.volume_m3) > 0) {
-    sources.volume = 'manual';
-  } else if (context.hasCustomsCategory) {
-    sources.volume = 'category';
-  } else {
-    sources.volume = 'default';
-    missing.push('volume');
-  }
-
-  // Catégorie douane
-  sources.customs_category = context.hasCustomsCategory ? 'category' : 'default';
-  if (!context.hasCustomsCategory) missing.push('customs_category');
-
-  // Charges fixes
-  sources.fixed_overhead = context.hasFinanceConfig ? 'real' : 'default';
-
-  // Fret estimé (toujours par catégorie/global pour le moment)
-  sources.freight = 'category';
-  // Douane estimée
-  sources.customs = context.hasCustomsCategory ? 'category' : 'default';
-
-  // Confidence : nombre de champs missing/default
-  const total = Object.keys(sources).length;
-  const realOrManual = Object.values(sources).filter(s => s === 'real' || s === 'manual').length;
-  const ratio = realOrManual / total;
-  let confidence = 'low';
-  if (ratio >= 0.6) confidence = 'high';
-  else if (ratio >= 0.3) confidence = 'medium';
-
-  // Warnings du moteur ajoutent du bruit qui dégrade la confidence
-  if ((context.warnings || []).length >= 3) confidence = 'low';
-
-  return { confidence, missing_fields: missing, sources };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SUBJECT TYPE (Lot G)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Détermine le type de sujet d'analyse selon les paramètres reçus.
- *   - catalog_product   : product_id fourni et trouvé en BDD
- *   - supplier_candidate : candidate_id fourni (futur — non supporté ici)
- *   - manual_simulation : aucun id, juste des champs saisis
- */
-function inferSubjectType(input, context) {
-  if (input.product_id && context.hasProduct) return 'catalog_product';
-  if (input.candidate_id) return 'supplier_candidate';
-  return 'manual_simulation';
-}
-
-
-
-/**
- * Produit les 4 prix doctrinaux à partir d'un CDR.
- *
- * @param {Object} cdr        résultat de computeCDR()
- * @param {Object} cat        customs_category de la cible (peut être null)
- * @param {Object} finance    finance_config
- * @returns { survival, minimum_safe, recommended, test, target_margin_pct }
- */
-function computePrices(cdr, cat, finance) {
-  // Marge cible : par catégorie sinon globale finance_config sinon 40 %
-  const targetMarginPct = cat?.default_margin_pct
-    ? Number(cat.default_margin_pct)
-    : Number(finance?.target_marge_brute_pct) || 40;
-  const margeDecimal = targetMarginPct / 100;
-
-  // 1. Prix de survie : variables uniquement (sans risques, sans fixe)
-  //    On veut juste couvrir les coûts directs.
-  //    Note : variable_cost_estimated_kmf inclut déjà les risques selon notre
-  //    implémentation. Pour respecter la doctrine §3.A "coûts variables uniquement",
-  //    on prend la version SANS risque.
-  const survivalPrice = cdr.variable_cost_estimated_kmf - cdr.risk_provision_estimated_kmf;
-
-  // 2. Prix minimum sûr : variables + risques + fixed
-  //    = cost_complete_estimated_kmf
-  const minSafePrice = cdr.cost_complete_estimated_kmf;
-
-  // 3. Prix conseillé : CDR / (1 - marge_cible)
-  let recommendedPrice = 0;
-  if (margeDecimal > 0 && margeDecimal < 1) {
-    recommendedPrice = cdr.cost_complete_estimated_kmf / (1 - margeDecimal);
-  }
-  recommendedPrice = arrondiPsycho(recommendedPrice);
-
-  // 4. Prix test marché : par défaut = recommandé.
-  //    Doctrine §3.D : "ne doit jamais être inférieur au minimum_safe sauf décision admin"
-  //    Ici on retient recommended car c'est le prix d'apprentissage non agressif.
-  //    Si admin veut tester moins cher, il appliquera manuellement.
-  const testPrice = Math.max(recommendedPrice, minSafePrice);
-
-  return {
-    survival_price_kmf: r(survivalPrice),
-    minimum_safe_price_kmf: r(minSafePrice),
-    recommended_price_kmf: r(recommendedPrice),
-    test_price_kmf: r(testPrice),
-    target_margin_pct: Number(targetMarginPct),
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SIMULATEUR DE SCÉNARIOS (Doctrine V3 — Phase 3a-bis)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Génère les scénarios de prix possibles à partir du baseline imputation.
- *
- * Doctrine V3 :
- *   - Scénario "honnête baseline" = couverture 100% au volume actuel (recommandé)
- *   - Scénario "sous-couverture" = Levier 1 (acceptable_undercoverage_pct)
- *   - Scénario "volume cible" = recalcul si moyennes "cible" atteintes
- *   - Scénario "promo volume" = Levier 3 (panier de N articles)
- *   - Scénario "loading" = Levier 2 (cost_loading_factor < 1.0)
- *
- * Garde-fou : aucun scénario sous survival_price_kmf n'est selectable.
- *
- * @param {Object} cdr     — résultat computeCDR (avec details._allocations)
- * @param {Object} prices  — résultat computePrices
- * @param {Object} cat     — catégorie courante
- * @param {Object} finance — finance_config row
- * @returns {Array<Object>} liste de scénarios
- */
-function computeScenarios(cdr, prices, cat, finance) {
-  const scenarios = [];
-  const survival = prices.survival_price_kmf;
-  const baseCostImputed = cdr.cost_complete_estimated_kmf;
-  const baselinePrice = prices.recommended_price_kmf;
-  const targetMarginPct = prices.target_margin_pct;
-
-  // Helper : calcul de marge en pourcentage
-  function marginPct(price, cost) {
-    if (price <= 0) return 0;
-    return r((price - cost) / price * 100 * 10) / 10;  // 1 décimale
-  }
-
-  // Helper : vérifier qu'un scénario est selectable (au-dessus de survival)
-  function checkSelectable(price) {
-    return price >= survival;
-  }
-
-  // ═════════════════════════════════════════════════════════════════
-  // SCÉNARIO 1 — Honnête baseline (recommandé)
-  // ═════════════════════════════════════════════════════════════════
-  scenarios.push({
-    id: 'honest_baseline',
-    label: 'Honnête baseline',
-    short_description: `Couverture 100% au volume actuel (marge cible ${targetMarginPct}%)`,
-    explanation: 'Ce prix couvre tous les coûts imputés à l\'article (achat + landed + business + part fixe + risques) avec la marge cible de la catégorie. C\'est le prix recommandé par défaut.',
-    levier: null,
-    price_kmf: baselinePrice,
-    cost_imputed_kmf: r(baseCostImputed),
-    margin_kmf: r(baselinePrice - baseCostImputed),
-    margin_pct: marginPct(baselinePrice, baseCostImputed),
-    selectable: checkSelectable(baselinePrice),
-    is_recommended: true,
-  });
-
-  // ═════════════════════════════════════════════════════════════════
-  // SCÉNARIO 2 — Sous-couverture acceptée -15% (Levier 1)
-  // ═════════════════════════════════════════════════════════════════
-  const undercoveragePct = Number(finance.acceptable_undercoverage_pct) || 15;
-  const underCost = baseCostImputed * (1 - undercoveragePct / 100);
-  let underPrice = 0;
-  const margeDecimal = targetMarginPct / 100;
-  if (margeDecimal > 0 && margeDecimal < 1) {
-    underPrice = arrondiPsycho(underCost / (1 - margeDecimal));
-  }
-  scenarios.push({
-    id: 'undercoverage_accepted',
-    label: `Sous-couverture acceptée -${undercoveragePct}%`,
-    short_description: `Tu sous-collectes ${undercoveragePct}% en attendant le volume cible`,
-    explanation: `Stratégie de conquête : tu acceptes de ne pas couvrir 100% des coûts maintenant, en pariant que le volume va monter. À mesurer en continu dans Santé Éco. À borner dans le temps (typiquement 6 mois).`,
-    levier: 'undercoverage',
-    levier_params: { undercoverage_pct: undercoveragePct },
-    price_kmf: underPrice,
-    cost_imputed_kmf: r(baseCostImputed),
-    sous_couverture_kmf: r(baseCostImputed - underCost),
-    margin_kmf: r(underPrice - baseCostImputed),
-    margin_pct: marginPct(underPrice, baseCostImputed),
-    selectable: checkSelectable(underPrice),
-    is_recommended: false,
-  });
-
-  // ═════════════════════════════════════════════════════════════════
-  // SCÉNARIO 3 — Promo volume (panier 5 articles, Levier 3)
-  // ═════════════════════════════════════════════════════════════════
-  // Si le client commande 5 articles au lieu de 2.5 (moyenne), les coûts
-  // par commande sont divisés par 5 → on dilue mieux. On peut redonner
-  // une partie au client.
-  const avgArtPerOrder = Number(finance.avg_articles_per_order) || 2.5;
-  const promoVolumeTarget = 5;  // panier cible
-  // Identifier les coûts kmf_per_order dans les allocations
-  const allocations = (cdr.details && cdr.details._allocations) || [];
-  let perOrderEngaged = 0;
-  for (const a of allocations) {
-    if (a.engaged_level === 'order') {
-      perOrderEngaged += Number(a.engaged_amount_kmf || 0);
-    }
-  }
-  // Gain de dilution par article si panier 5 au lieu de 2.5
-  const currentImputed = perOrderEngaged / avgArtPerOrder;
-  const promoImputed = perOrderEngaged / promoVolumeTarget;
-  const dilutionGain = currentImputed - promoImputed;
-  // On redistribue 100% du gain au client (configurable plus tard)
-  const promoPrice = baselinePrice - r(dilutionGain);
-  scenarios.push({
-    id: 'promo_volume_5',
-    label: `Promo volume — 5 articles dans le panier`,
-    short_description: `Si client commande 5+ articles : -${r(dilutionGain)} KMF/article`,
-    explanation: `Quand le client commande 5 articles, les coûts par commande (commission relais, Stripe) sont divisés par 5 au lieu de ${avgArtPerOrder}. Tu gagnes ${r(dilutionGain)} KMF d'imputation par article. Tu peux le redonner au client.`,
-    levier: 'volume_discount',
-    levier_params: { panier_threshold: promoVolumeTarget, share_back_pct: 100 },
-    price_kmf: promoPrice,
-    cost_imputed_kmf: r(baseCostImputed - dilutionGain),
-    margin_kmf: r(promoPrice - (baseCostImputed - dilutionGain)),
-    margin_pct: marginPct(promoPrice, baseCostImputed - dilutionGain),
-    selectable: checkSelectable(promoPrice),
-    is_recommended: false,
-  });
-
-  // ═════════════════════════════════════════════════════════════════
-  // SCÉNARIO 4 — Loading 0.7× (Levier 2)
-  // ═════════════════════════════════════════════════════════════════
-  // Subvention croisée : ce produit porte 70% de sa part normale.
-  // Les 30% restants doivent être absorbés ailleurs dans le catalogue.
-  const loadingFactor = 0.7;
-  const loadedCost = baseCostImputed * loadingFactor;
-  let loadedPrice = 0;
-  if (margeDecimal > 0 && margeDecimal < 1) {
-    loadedPrice = arrondiPsycho(loadedCost / (1 - margeDecimal));
-  }
-  scenarios.push({
-    id: 'loading_07',
-    label: `Subventionné par autres articles (loading 0.7×)`,
-    short_description: `Ce produit porte 70% de sa part normale, 30% sont absorbés ailleurs`,
-    explanation: `Stratégie de redistribution : tu décides que ce produit est un "produit d'appel" et porte moins que sa juste part. Les 30% manquants doivent être compensés par des produits "vache à lait" qui portent plus de 1.0×. À utiliser avec parcimonie pour ne pas dériver la marge globale.`,
-    levier: 'cost_loading',
-    levier_params: { loading_factor: loadingFactor },
-    price_kmf: loadedPrice,
-    cost_imputed_kmf: r(loadedCost),
-    margin_kmf: r(loadedPrice - loadedCost),
-    margin_pct: marginPct(loadedPrice, loadedCost),
-    requires_compensation: true,
-    selectable: checkSelectable(loadedPrice),
-    is_recommended: false,
-  });
-
-  // ═════════════════════════════════════════════════════════════════
-  // SCÉNARIO 5 — Volume cible atteint (projection future)
-  // ═════════════════════════════════════════════════════════════════
-  // Recalcul si on atteignait le volume cible : moyennes "cible"
-  // au lieu de moyennes "actuelles".
-  // Pour l'instant on suppose que les cibles sont 1.5x les moyennes actuelles
-  // (à terme, ces cibles seront dans finance_config aussi).
-  const targetMultiplier = 1.5;
-  let perOrderImpacted = 0, perParcelImpacted = 0, perShipmentImpacted = 0;
-  for (const a of allocations) {
-    if (a.engaged_level === 'order')    perOrderImpacted    += Number(a.engaged_amount_kmf);
-    if (a.engaged_level === 'parcel')   perParcelImpacted   += Number(a.engaged_amount_kmf);
-    if (a.engaged_level === 'shipment') perShipmentImpacted += Number(a.engaged_amount_kmf);
-  }
-  const avgArtPerParcel   = Number(finance.avg_articles_per_parcel) || 4.0;
-  const avgArtPerShipment = Number(finance.avg_articles_per_shipment) || 200.0;
-
-  // Économie au volume cible
-  const econOrder    = perOrderImpacted    * (1/avgArtPerOrder    - 1/(avgArtPerOrder * targetMultiplier));
-  const econParcel   = perParcelImpacted   * (1/avgArtPerParcel   - 1/(avgArtPerParcel * targetMultiplier));
-  const econShipment = perShipmentImpacted * (1/avgArtPerShipment - 1/(avgArtPerShipment * targetMultiplier));
-  const totalEconomy = econOrder + econParcel + econShipment;
-  const targetCost = baseCostImputed - totalEconomy;
-  let targetPrice = 0;
-  if (margeDecimal > 0 && margeDecimal < 1) {
-    targetPrice = arrondiPsycho(targetCost / (1 - margeDecimal));
-  }
-  scenarios.push({
-    id: 'volume_target_reached',
-    label: `Au volume cible (×${targetMultiplier})`,
-    short_description: `Si on atteint ${r(avgArtPerShipment * targetMultiplier)} articles/shipment et ${r(avgArtPerOrder * targetMultiplier).toFixed(1)} articles/cmd`,
-    explanation: `Projection : si le volume monte de ${targetMultiplier}× (objectif moyen terme), les coûts agrégés se diluent mieux. Tu pourrais alors baisser le prix de ${r(totalEconomy)} KMF par article tout en gardant la même marge. Sert de cible commerciale.`,
-    levier: 'projection',
-    levier_params: { target_multiplier: targetMultiplier },
-    price_kmf: targetPrice,
-    cost_imputed_kmf: r(targetCost),
-    economy_vs_baseline_kmf: r(totalEconomy),
-    margin_kmf: r(targetPrice - targetCost),
-    margin_pct: marginPct(targetPrice, targetCost),
-    is_projection: true,
-    selectable: checkSelectable(targetPrice),
-    is_recommended: false,
-  });
-
-  return scenarios;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// MARKET CONFIDENCE (Doctrine §7)
+// MARKET CONFIDENCE (Doctrine §7) — accès DB
 // ═══════════════════════════════════════════════════════════════════
 
 /**
  * Calcule market_confidence pour un produit.
- *
- * Sources de vérité :
- *   - orders + order_items pour compter les ventes payées
- *   - products.created_at pour days_since_publication
- *
- * Les autres signaux (views, paniers, WhatsApp) ne sont pas encore trackés
- * → market_signals = null pour ces champs et warning émis.
+ * Seule fonction de ce fichier qui touche la DB (hors loadGlobalConfig).
  *
  * @param {String} productId
  * @returns { market_confidence, market_signals, warnings }
@@ -937,73 +76,43 @@ async function computeMarketConfidence(productId) {
   }
 
   try {
-    // Compter ventes payées + date première vente + repeat purchase
     const { rows } = await db.query(
       `SELECT
-         COUNT(DISTINCT o.id) FILTER (
-           WHERE o.status NOT IN ('cancelled', 'refunded')
-         ) AS paid_orders,
-         MIN(o.created_at) FILTER (
-           WHERE o.status NOT IN ('cancelled', 'refunded')
-         ) AS first_sale_at,
-         COUNT(DISTINCT o.user_id) FILTER (
-           WHERE o.status NOT IN ('cancelled', 'refunded')
-         ) AS unique_buyers
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-        WHERE oi.product_id = $1`,
+         COUNT(DISTINCT o.id)      FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) AS paid_orders,
+         MIN(o.created_at)         FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) AS first_sale_at,
+         COUNT(DISTINCT o.user_id) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) AS unique_buyers
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+      WHERE oi.product_id = $1`,
       [productId]
     );
 
     const r0 = rows[0] || {};
-    const paidOrders = Number(r0.paid_orders) || 0;
+    const paidOrders  = Number(r0.paid_orders) || 0;
     const uniqueBuyers = Number(r0.unique_buyers) || 0;
     signals.paid_orders_count = paidOrders;
 
-    // Days to first sale (depuis création produit)
-    const { rows: prodRows } = await db.query(
-      `SELECT created_at FROM products WHERE id = $1`,
-      [productId]
-    );
+    const { rows: prodRows } = await db.query('SELECT created_at FROM products WHERE id = $1', [productId]);
     const productCreatedAt = prodRows[0]?.created_at;
     if (productCreatedAt) {
-      const daysSincePub = Math.floor(
-        (Date.now() - new Date(productCreatedAt).getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const daysSincePub = Math.floor((Date.now() - new Date(productCreatedAt).getTime()) / 86400000);
       signals.days_since_publication = daysSincePub;
-
       if (r0.first_sale_at) {
-        const daysToFirst = Math.floor(
-          (new Date(r0.first_sale_at).getTime() - new Date(productCreatedAt).getTime())
-          / (1000 * 60 * 60 * 24)
+        signals.days_to_first_sale = Math.max(0,
+          Math.floor((new Date(r0.first_sale_at).getTime() - new Date(productCreatedAt).getTime()) / 86400000)
         );
-        signals.days_to_first_sale = Math.max(0, daysToFirst);
       }
     }
 
-    // Repeat purchase = au moins un acheteur a commandé plusieurs fois ?
-    if (paidOrders > uniqueBuyers && uniqueBuyers > 0) {
-      signals.repeat_purchase_signal = true;
-    } else if (paidOrders > 0) {
-      signals.repeat_purchase_signal = false;
-    }
+    if (paidOrders > uniqueBuyers && uniqueBuyers > 0) signals.repeat_purchase_signal = true;
+    else if (paidOrders > 0) signals.repeat_purchase_signal = false;
 
-    // Calcul confidence
     let confidence = 'unknown';
     if (paidOrders === 0) {
-      // Si publié depuis longtemps sans aucune vente → rejected
-      if (signals.days_since_publication >= MARKET_THRESHOLDS.REJECTED_DAYS_NOSALE) {
-        confidence = 'rejected';
-      } else {
-        confidence = 'unknown';
-      }
-    } else if (paidOrders >= MARKET_THRESHOLDS.SCALING_MIN_SALES) {
-      confidence = 'scaling';
-    } else if (paidOrders >= MARKET_THRESHOLDS.VALIDATED_MIN_SALES) {
-      confidence = 'validated';
-    } else if (paidOrders >= MARKET_THRESHOLDS.TESTING_MIN_SALES) {
-      confidence = 'testing';
-    }
+      confidence = (signals.days_since_publication >= MARKET_THRESHOLDS.REJECTED_DAYS_NOSALE) ? 'rejected' : 'unknown';
+    } else if (paidOrders >= MARKET_THRESHOLDS.SCALING_MIN_SALES)   confidence = 'scaling';
+    else if (paidOrders >= MARKET_THRESHOLDS.VALIDATED_MIN_SALES)   confidence = 'validated';
+    else if (paidOrders >= MARKET_THRESHOLDS.TESTING_MIN_SALES)     confidence = 'testing';
 
     if (confidence === 'unknown') {
       warnings.push('Données marché insuffisantes. Recommandation basée sur coûts et hypothèses.');
@@ -1017,382 +126,90 @@ async function computeMarketConfidence(productId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HEALTH STATUS (Doctrine §6)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Calcule health_status à partir du prix actuel et du CDR.
- *
- * @param {Number} currentPrice
- * @param {Number} cdrComplete
- * @param {Number} estimatedMarginPct
- * @returns 'loss' | 'danger' | 'fragile' | 'healthy' | 'strong' | 'unknown'
- */
-function computeHealthStatus(currentPrice, cdrComplete, estimatedMarginPct) {
-  if (!currentPrice || currentPrice <= 0) return 'unknown';
-  if (!cdrComplete || cdrComplete <= 0)   return 'unknown';
-  if (currentPrice < cdrComplete)         return 'loss';
-  if (estimatedMarginPct < HEALTH_THRESHOLDS.DANGER_PCT)   return 'danger';
-  if (estimatedMarginPct < HEALTH_THRESHOLDS.FRAGILE_PCT)  return 'fragile';
-  if (estimatedMarginPct <= HEALTH_THRESHOLDS.HEALTHY_PCT) return 'healthy';
-  return 'strong';
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SOURCING DECISION (Doctrine §8)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Recommande une décision sourcing.
- *
- * Règles doctrinales §8 :
- *   - LOSS : current_price < CDR
- *   - bonne marge + demande inconnue → TEST
- *   - bonne marge + demande positive → PRIORITY
- *   - marge faible + demande positive → WATCH (à RENEGOTIATE/INCREASE_PRICE)
- *   - marge faible + demande faible → AVOID
- *   - marge forte + demande faible → WATCH (à améliorer photo/offre)
- *   - lourd/volumineux → AVOID sauf demande spécifique
- *
- * @param {Object} args { health_status, market_confidence, weight_kg }
- * @returns 'PRIORITY' | 'TEST' | 'WATCH' | 'AVOID' | 'LOSS'
- */
-function computeSourcingDecision({ health_status, market_confidence, weight_kg }) {
-  // 1. Vendu à perte → toujours LOSS
-  if (health_status === 'loss') return 'LOSS';
-
-  // 2. Override : produit lourd → AVOID sauf demande prouvée
-  const isHeavy = (weight_kg || 0) > 5;  // > 5 kg = lourd
-  if (isHeavy && market_confidence !== 'validated' && market_confidence !== 'scaling') {
-    return 'AVOID';
-  }
-
-  // 3. Demande forte (validated/scaling) → décide selon marge
-  if (market_confidence === 'validated' || market_confidence === 'scaling') {
-    if (health_status === 'strong' || health_status === 'healthy') return 'PRIORITY';
-    if (health_status === 'fragile')                                return 'WATCH';
-    if (health_status === 'danger')                                 return 'WATCH';
-    return 'WATCH';
-  }
-
-  // 4. Demande inconnue (unknown/testing) → décide selon marge
-  if (market_confidence === 'unknown' || market_confidence === 'testing') {
-    if (health_status === 'strong' || health_status === 'healthy') return 'TEST';
-    if (health_status === 'fragile')                                return 'WATCH';
-    if (health_status === 'danger')                                 return 'AVOID';
-    return 'TEST';
-  }
-
-  // 5. Rejected → AVOID (sauf si marge forte, alors WATCH pour décision admin)
-  if (market_confidence === 'rejected') {
-    if (health_status === 'strong') return 'WATCH';
-    return 'AVOID';
-  }
-
-  return 'WATCH';
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ALERTES (Doctrine §6)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Construit la liste d'alertes pour ce produit.
- */
-function buildAlerts({
-  current_price_kmf,
-  cost_complete_estimated_kmf,
-  estimated_margin_pct,
-  estimated_contribution_kmf,
-  fixed_cost_allocation_kmf,
-  monthly_break_even_orders,
-  target_orders_per_month,
-}) {
-  const alerts = [];
-
-  if (current_price_kmf > 0 && current_price_kmf < cost_complete_estimated_kmf) {
-    alerts.push({
-      severity: 'critical',
-      code: 'price_below_cost',
-      message: 'Prix actuel inférieur au coût de revient complet estimé.',
-    });
-  }
-  if (estimated_margin_pct !== null && estimated_margin_pct < HEALTH_THRESHOLDS.DANGER_PCT) {
-    alerts.push({
-      severity: 'critical',
-      code: 'margin_dangerous',
-      message: 'Marge estimée dangereusement faible.',
-    });
-  } else if (estimated_margin_pct !== null && estimated_margin_pct < HEALTH_THRESHOLDS.FRAGILE_PCT) {
-    alerts.push({
-      severity: 'warning',
-      code: 'margin_fragile',
-      message: 'Marge fragile, surveiller les coûts terrain.',
-    });
-  }
-
-  if (
-    estimated_contribution_kmf !== null
-    && fixed_cost_allocation_kmf > 0
-    && estimated_contribution_kmf < fixed_cost_allocation_kmf
-  ) {
-    alerts.push({
-      severity: 'warning',
-      code: 'contribution_insufficient',
-      message: 'La commande ne couvre pas sa part de charges fixes.',
-    });
-  }
-
-  if (monthly_break_even_orders > target_orders_per_month) {
-    alerts.push({
-      severity: 'warning',
-      code: 'volume_target_too_low',
-      message: 'Volume cible insuffisant pour couvrir les charges fixes.',
-    });
-  }
-
-  return alerts;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// RECOMMENDATION TEXT (langage humain)
-// ═══════════════════════════════════════════════════════════════════
-
-/**
- * Produit une phrase d'explication lisible humainement.
- *
- * Exemples doctrine :
- *   - "Produit rentable mais demande inconnue. TEST en faible quantité à 14 990 KMF."
- *   - "Produit demandé mais marge fragile. Renégocier ou augmenter prix."
- *   - "Produit léger, forte marge et premières ventes positives. Sourcing prioritaire."
- */
-function buildRecommendationText({
-  health_status,
-  market_confidence,
-  sourcing_decision,
-  recommended_price_kmf,
-  cost_complete_estimated_kmf,
-  target_margin_pct,
-  current_price_kmf,
-  estimated_margin_pct,
-  weight_kg,
-}) {
-  const fmt = (n) => new Intl.NumberFormat('fr-FR').format(r(n)) + ' KMF';
-  const sentences = [];
-
-  // 1ère phrase : situation actuelle
-  if (cost_complete_estimated_kmf > 0) {
-    sentences.push(`Ce produit coûte ${fmt(cost_complete_estimated_kmf)} tout compris.`);
-  }
-  if (target_margin_pct && recommended_price_kmf > 0) {
-    sentences.push(
-      `Pour viser ${target_margin_pct}% de marge, il faut le vendre au moins ${fmt(recommended_price_kmf)}.`
-    );
-  }
-
-  // 2ème phrase : situation prix actuel
-  if (current_price_kmf > 0) {
-    if (health_status === 'loss') {
-      sentences.push(
-        `Au prix actuel de ${fmt(current_price_kmf)}, le produit est vendu à perte.`
-      );
-    } else if (health_status === 'danger') {
-      sentences.push(
-        `Au prix actuel de ${fmt(current_price_kmf)}, la marge (${estimated_margin_pct.toFixed(1)}%) est dangereuse.`
-      );
-    } else if (health_status === 'fragile') {
-      sentences.push(
-        `Au prix actuel de ${fmt(current_price_kmf)}, la marge (${estimated_margin_pct.toFixed(1)}%) est fragile.`
-      );
-    } else if (health_status === 'healthy' || health_status === 'strong') {
-      sentences.push(
-        `Au prix actuel de ${fmt(current_price_kmf)}, la marge (${estimated_margin_pct.toFixed(1)}%) est ${health_status === 'strong' ? 'forte' : 'saine'}.`
-      );
-    }
-  }
-
-  // 3ème phrase : décision sourcing
-  switch (sourcing_decision) {
-    case 'PRIORITY':
-      sentences.push('Recommandation : sourcing prioritaire, augmenter les volumes.');
-      break;
-    case 'TEST':
-      sentences.push('Recommandation : TEST en faible quantité, ne pas sourcer massivement avant signal marché.');
-      break;
-    case 'WATCH':
-      if (health_status === 'fragile' || health_status === 'danger') {
-        sentences.push('Recommandation : renégocier le fournisseur ou augmenter le prix avant tout sourcing.');
-      } else {
-        sentences.push('Recommandation : surveiller les coûts terrain ou les signaux marché avant décision.');
-      }
-      break;
-    case 'AVOID':
-      if ((weight_kg || 0) > 5) {
-        sentences.push('Recommandation : éviter, produit trop lourd pour rentabiliser le fret.');
-      } else {
-        sentences.push('Recommandation : éviter, marge trop faible et signaux insuffisants.');
-      }
-      break;
-    case 'LOSS':
-      sentences.push('Recommandation : URGENCE, corriger le prix ou retirer le produit.');
-      break;
-  }
-
-  // 4ème phrase : confiance marché
-  if (market_confidence === 'unknown') {
-    sentences.push('Données marché insuffisantes : décision basée sur coûts et hypothèses.');
-  } else if (market_confidence === 'rejected') {
-    sentences.push('Aucune vente depuis 60+ jours malgré la mise en ligne — repositionner ou retirer.');
-  }
-
-  return sentences.join(' ');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// API PRINCIPALE — recommend(productOrInputs, options)
+// API PRINCIPALE — recommend()
 // ═══════════════════════════════════════════════════════════════════
 
 /**
  * Calcule la recommandation pricing complète pour un produit ou un input libre.
  *
- * Format de retour aligné sur la doctrine §9.
- *
- * @param {Object} input  Soit un produit complet, soit un objet d'inputs :
- *                        { product_id?, category, channel, cost_kmf, weight_kg, volume_m3, current_price_kmf }
- * @param {Object} options { config? } pour réutiliser une config déjà chargée (batch).
+ * @param {Object} input   { product_id?, category, channel, cost_kmf, weight_kg, volume_m3, current_price_kmf }
+ * @param {Object} options { config? } pour réutiliser une config déjà chargée (batch)
  */
 async function recommend(input, options = {}) {
   const config = options.config || (await loadGlobalConfig());
-
-  // ─── PATCH P2 (Phase A) — alias pour scope cohérent ──────────────────
-  // Ces 2 références (`fc`, `productRow`) sont utilisées plus bas dans la fonction
-  // (data_quality, allocation_averages, subject_type) mais n'étaient pas déclarées
-  // dans le scope de recommend() = ReferenceError silencieusement swallow par les
-  // try/catch des callers (routes/pricing.js). On les déclare maintenant proprement.
   const fc = config.finance;
 
-  // Normaliser : product (depuis BDD) ou inputs libres
+  // ── Résolution produit ────────────────────────────────────────────
   let product = null;
   if (input.product_id) {
     const r0 = await db.query('SELECT * FROM products WHERE id = $1', [input.product_id]);
     if (r0.rows.length) product = r0.rows[0];
   }
-  const productRow = product;          // ← PATCH P2 — alias pour cohérence avec l'usage en aval
 
-  // Fusionner inputs prioritaires sur le produit
   const merged = {
-    id: input.product_id || product?.id || null,
-    category: input.category || product?.category || 'phones',
-    cost_kmf: input.cost_kmf != null ? input.cost_kmf : product?.cost_kmf,
-    weight_kg: input.weight_kg != null ? input.weight_kg : product?.weight_kg,
+    id:        input.product_id || product?.id || null,
+    category:  input.category   || product?.category  || 'phones',
+    cost_kmf:  input.cost_kmf   != null ? input.cost_kmf  : product?.cost_kmf,
+    weight_kg: input.weight_kg  != null ? input.weight_kg : product?.weight_kg,
     price_kmf: input.current_price_kmf != null ? input.current_price_kmf : product?.price_kmf,
   };
 
   const ctx = {
     config,
     volume_m3: input.volume_m3 || 0.005,
-    channel: input.channel || 'cash_relais',
+    channel:   input.channel   || 'cash_relais',
   };
 
-  // 1. CDR
+  // ── 1. CDR ────────────────────────────────────────────────────────
   const cdr = computeCDR(merged, ctx);
-
-  // 2. Catégorie
   const cat = config.categories[merged.category];
 
-  // 3. Prix
-  const prices = computePrices(cdr, cat, config.finance);
+  // ── 2. Prix + scénarios ───────────────────────────────────────────
+  const prices    = computePrices(cdr, cat, fc);
+  const scenarios = computeScenarios(cdr, prices, cat, fc);
 
-  // 3-bis. Scénarios d'imputation (Doctrine V3 — Levier 1 prioritaire)
-  const scenarios = computeScenarios(cdr, prices, cat, config.finance);
-
-  // 4. Marge & contribution estimées (sur le prix actuel)
+  // ── 3. Marge & contribution (sur prix actuel) ─────────────────────
   const currentPrice = Number(merged.price_kmf) || 0;
-  let estimatedMarginPct = null;
+  let estimatedMarginPct    = null;
   let estimatedContribution = null;
   if (currentPrice > 0) {
-    estimatedMarginPct = ((currentPrice - cdr.cost_complete_estimated_kmf) / currentPrice) * 100;
+    estimatedMarginPct    = ((currentPrice - cdr.cost_complete_estimated_kmf) / currentPrice) * 100;
     estimatedContribution = currentPrice - (cdr.variable_cost_estimated_kmf - cdr.risk_provision_estimated_kmf);
   }
 
-  // 5. Seuil de rentabilité
-  const monthlyFixed = cdr.monthly_fixed_costs_kmf;
-  const avgContribution = estimatedContribution || prices.recommended_price_kmf - cdr.variable_cost_estimated_kmf;
-  let monthlyBreakEven = 0;
-  if (avgContribution > 0) {
-    monthlyBreakEven = Math.ceil(monthlyFixed / avgContribution);
-  }
+  // ── 4. Seuil de rentabilité ───────────────────────────────────────
+  const monthlyFixed     = cdr.monthly_fixed_costs_kmf;
+  const avgContribution  = estimatedContribution || prices.recommended_price_kmf - cdr.variable_cost_estimated_kmf;
+  const monthlyBreakEven = avgContribution > 0 ? Math.ceil(monthlyFixed / avgContribution) : 0;
 
-  // 6. Health status
-  const healthStatus = computeHealthStatus(currentPrice, cdr.cost_complete_estimated_kmf, estimatedMarginPct);
+  // ── 5–8. Health / Market / Sourcing / Alertes ─────────────────────
+  const healthStatus    = computeHealthStatus(currentPrice, cdr.cost_complete_estimated_kmf, estimatedMarginPct);
+  const market          = await computeMarketConfidence(merged.id);
+  const sourcingDecision = computeSourcingDecision({ health_status: healthStatus, market_confidence: market.market_confidence, weight_kg: merged.weight_kg });
+  const alerts          = buildAlerts({ current_price_kmf: currentPrice, cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf, estimated_margin_pct: estimatedMarginPct, estimated_contribution_kmf: estimatedContribution, fixed_cost_allocation_kmf: cdr.fixed_cost_allocation_kmf, monthly_break_even_orders: monthlyBreakEven, target_orders_per_month: cdr.target_orders_per_month });
+  const reason          = buildRecommendationText({ health_status: healthStatus, market_confidence: market.market_confidence, sourcing_decision: sourcingDecision, recommended_price_kmf: prices.recommended_price_kmf, cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf, target_margin_pct: prices.target_margin_pct, current_price_kmf: currentPrice, estimated_margin_pct: estimatedMarginPct, weight_kg: merged.weight_kg });
 
-  // 7. Market confidence (depuis BDD)
-  const market = await computeMarketConfidence(merged.id);
-
-  // 8. Sourcing decision
-  const sourcingDecision = computeSourcingDecision({
-    health_status: healthStatus,
-    market_confidence: market.market_confidence,
-    weight_kg: merged.weight_kg,
-  });
-
-  // 9. Alertes
-  const alerts = buildAlerts({
-    current_price_kmf: currentPrice,
-    cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf,
-    estimated_margin_pct: estimatedMarginPct,
-    estimated_contribution_kmf: estimatedContribution,
-    fixed_cost_allocation_kmf: cdr.fixed_cost_allocation_kmf,
-    monthly_break_even_orders: monthlyBreakEven,
-    target_orders_per_month: cdr.target_orders_per_month,
-  });
-
-  // 10. Texte de recommandation humain
-  const reason = buildRecommendationText({
-    health_status: healthStatus,
-    market_confidence: market.market_confidence,
-    sourcing_decision: sourcingDecision,
-    recommended_price_kmf: prices.recommended_price_kmf,
-    cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf,
-    target_margin_pct: prices.target_margin_pct,
-    current_price_kmf: currentPrice,
-    estimated_margin_pct: estimatedMarginPct,
-    weight_kg: merged.weight_kg,
-  });
-
-  // 11. Warnings cumulés
-  const warnings = [...cdr.warnings, ...market.warnings];
-
-  // ─── LOT G : décomposition landed cost rendu relais ───────────────
-  const breakdown = buildCostBreakdown(cdr.details);
-  const dataQuality = buildDataQuality(input, {
-    hasProduct: !!productRow,
-    hasCustomsCategory: !!cat,
-    hasFinanceConfig: !!fc && Object.keys(fc).length > 0,
-    warnings,
-  });
-  const subjectType = inferSubjectType(input, { hasProduct: !!productRow });
+  // ── 9. Lot G : breakdown + data quality + subject type ───────────
+  const breakdown   = buildCostBreakdown(cdr.details);
+  const warnings    = [...cdr.warnings, ...market.warnings];
+  const dataQuality = buildDataQuality(input, { hasProduct: !!product, hasCustomsCategory: !!cat, hasFinanceConfig: !!fc && Object.keys(fc).length > 0, warnings });
+  const subjectType = inferSubjectType(input, { hasProduct: !!product });
 
   return {
-    // ── SUBJECT (Lot G) ──────────────────────────────────────────────
+    // ── Subject ──────────────────────────────────────────────────────
     subject_type: subjectType,
-    product_id: merged.id,
+    product_id:   merged.id,
     candidate_id: input.candidate_id || null,
-    category: merged.category,
-    channel: ctx.channel,
+    category:     merged.category,
+    channel:      ctx.channel,
 
-    // ── COÛTS DOCTRINAUX (Lot G) ─────────────────────────────────────
-    landed_relay_cost_kmf: breakdown.landed_relay_cost_kmf,
+    // ── Coûts doctrinaux ─────────────────────────────────────────────
+    landed_relay_cost_kmf:      breakdown.landed_relay_cost_kmf,
     business_complete_cost_kmf: breakdown.business_complete_cost_kmf,
     cost_breakdown: {
       landed_relay: breakdown.landed_relay,
-      business: breakdown.business,
-      // ── PHASE 3a : traçabilité de l'imputation (engagé/niveau/imputé) ──
-      // Détail ligne par ligne pour l'Atelier Construction du Prix.
-      // Chaque entrée : { component_key, engaged_amount_kmf, engaged_level,
-      //                    allocation_divisor, imputed_amount_kmf }
-      allocations: cdr.details._allocations || [],
-      // Moyennes utilisées pour la division (visibles pour l'admin)
+      business:     breakdown.business,
+      allocations:  cdr.details._allocations || [],
       allocation_averages: {
         articles_per_order:    Number(fc.avg_articles_per_order)    || 2.5,
         articles_per_parcel:   Number(fc.avg_articles_per_parcel)   || 4.0,
@@ -1401,57 +218,54 @@ async function recommend(input, options = {}) {
       },
     },
 
-    // ── PRIX ─────────────────────────────────────────────────────────
-    current_price_kmf: r(currentPrice),
-    survival_price_kmf: prices.survival_price_kmf,
+    // ── Prix ─────────────────────────────────────────────────────────
+    current_price_kmf:      r(currentPrice),
+    survival_price_kmf:     prices.survival_price_kmf,
     minimum_safe_price_kmf: prices.minimum_safe_price_kmf,
-    recommended_price_kmf: prices.recommended_price_kmf,
-    test_price_kmf: prices.test_price_kmf,
+    recommended_price_kmf:  prices.recommended_price_kmf,
+    test_price_kmf:         prices.test_price_kmf,
 
-    // ── SCÉNARIOS D'IMPUTATION (Doctrine V3) ─────────────────────────
-    // Tableau de scénarios : honnête / sous-couverture / promo / loading / projection
-    // Chaque scénario expose : id, label, price_kmf, margin_pct, levier, explanation
-    // L'humain choisit, le frontend lock-in via POST /api/pricing/apply
-    scenarios: scenarios,
+    // ── Scénarios ────────────────────────────────────────────────────
+    scenarios,
     recommended_scenario_id: 'honest_baseline',
 
-    // ── COÛTS LEGACY (rétro-compat) ──────────────────────────────────
-    cost_complete_estimated_kmf: cdr.cost_complete_estimated_kmf,
-    variable_cost_estimated_kmf: cdr.variable_cost_estimated_kmf,
-    fixed_cost_allocation_kmf: cdr.fixed_cost_allocation_kmf,
+    // ── Coûts legacy (rétro-compat) ──────────────────────────────────
+    cost_complete_estimated_kmf:  cdr.cost_complete_estimated_kmf,
+    variable_cost_estimated_kmf:  cdr.variable_cost_estimated_kmf,
+    fixed_cost_allocation_kmf:    cdr.fixed_cost_allocation_kmf,
     risk_provision_estimated_kmf: cdr.risk_provision_estimated_kmf,
 
-    // ── MARGE ────────────────────────────────────────────────────────
-    target_margin_pct: prices.target_margin_pct,
-    estimated_margin_pct: estimatedMarginPct !== null ? Number(estimatedMarginPct.toFixed(1)) : null,
-    estimated_contribution_kmf: estimatedContribution !== null ? r(estimatedContribution) : null,
+    // ── Marge ────────────────────────────────────────────────────────
+    target_margin_pct:            prices.target_margin_pct,
+    estimated_margin_pct:         estimatedMarginPct !== null ? Number(estimatedMarginPct.toFixed(1)) : null,
+    estimated_contribution_kmf:   estimatedContribution !== null ? r(estimatedContribution) : null,
 
-    // ── PILOTAGE ─────────────────────────────────────────────────────
-    monthly_fixed_costs_kmf: monthlyFixed,
-    target_orders_per_month: cdr.target_orders_per_month,
-    monthly_break_even_orders: monthlyBreakEven,
+    // ── Pilotage ─────────────────────────────────────────────────────
+    monthly_fixed_costs_kmf:    monthlyFixed,
+    target_orders_per_month:    cdr.target_orders_per_month,
+    monthly_break_even_orders:  monthlyBreakEven,
 
-    // ── SANTÉ + DÉCISION ─────────────────────────────────────────────
-    health_status: healthStatus,
-    market_confidence: market.market_confidence,
-    sourcing_decision: sourcingDecision,
+    // ── Santé + décision ─────────────────────────────────────────────
+    health_status:      healthStatus,
+    market_confidence:  market.market_confidence,
+    sourcing_decision:  sourcingDecision,
     reason,
     recommended_action: ({
-      PRIORITY:        'Sourcer plus. Augmenter le stock pour profiter de la demande.',
-      TEST:            'Tester en faible quantité. Ne pas sourcer massivement avant signal marché.',
-      WATCH:           'Surveiller. Compléter les données avant décision.',
-      AVOID:           'Éviter. Renégocier le prix fournisseur ou changer de produit.',
-      LOSS:            'Vendu sous coût. Corriger le prix ou retirer du catalogue.',
-      RENEGOTIATE:     'Renégocier avec le fournisseur (prix d\'achat trop élevé).',
-      INCREASE_PRICE:  'Augmenter le prix de vente actuel pour restaurer la marge.',
+      PRIORITY:       'Sourcer plus. Augmenter le stock pour profiter de la demande.',
+      TEST:           'Tester en faible quantité. Ne pas sourcer massivement avant signal marché.',
+      WATCH:          'Surveiller. Compléter les données avant décision.',
+      AVOID:          'Éviter. Renégocier le prix fournisseur ou changer de produit.',
+      LOSS:           'Vendu sous coût. Corriger le prix ou retirer du catalogue.',
+      RENEGOTIATE:    'Renégocier avec le fournisseur (prix d\'achat trop élevé).',
+      INCREASE_PRICE: 'Augmenter le prix de vente actuel pour restaurer la marge.',
     })[sourcingDecision] || 'À examiner manuellement',
 
-    // ── DATA QUALITY (Lot G) ─────────────────────────────────────────
+    // ── Data quality ─────────────────────────────────────────────────
     data_quality: dataQuality,
 
-    // ── DÉTAILS / SIGNAUX / ALERTS ───────────────────────────────────
+    // ── Détails / signaux / alerts ───────────────────────────────────
     market_signals: market.market_signals,
-    details: cdr.details,   // legacy : conservé pour rétro-compat
+    details: cdr.details,
     alerts,
     warnings,
 
@@ -1467,13 +281,12 @@ module.exports = {
   computeCDR,
   computePrices,
   computeScenarios,
-  computeFixedCostAllocation,
+  computeFixedCostAllocation: require('./pricing-cdr').computeFixedCostAllocation,
   computeMarketConfidence,
   computeHealthStatus,
   computeSourcingDecision,
   buildAlerts,
   buildRecommendationText,
-  // Helpers Lot G
   buildCostBreakdown,
   buildDataQuality,
   inferSubjectType,
