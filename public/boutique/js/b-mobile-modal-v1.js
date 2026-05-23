@@ -4,6 +4,18 @@
  *
  * Périmètre strict : uniquement #k-modal sur mobile.
  * Ne touche pas au hero, aux catégories, aux cartes catalogue ou au desktop.
+ *
+ * NOTE — Mai 2026 — CSS neutralisé après régression visuelle :
+ * Le CSS injecté par `injectStyles()` imposait un design "premium" (H2 titre
+ * à clamp(28px, 8vw, 38px), prix à clamp(42px, 12vw, 58px), barre actions
+ * avec z-index: 2147483000 !important) qui a introduit 3 régressions vs
+ * GEL v1.0 documenté dans MODAL_MOBILE_ARCHITECTURE.md :
+ *   1. Titre produit débordant hors viewport sur noms longs
+ *   2. Badges promo des suggestions s'affichant sur le bouton Acheter
+ *   3. Badges promo dépassant sous la barre actions
+ * Le CSS du module est désactivé. Le JS utile reste actif :
+ *   - syncMobileIntentQty() : synchro qty modal ↔ panier
+ *   - installQtyGuard()     : empêche qty de descendre sous 1
  */
 
 import { bus } from './b-bus.js';
@@ -14,186 +26,10 @@ import { isDesktop } from './b-scroll-owner.js';
 'use strict';
 
 let _installed = false;
-let _styleInjected = false;
 let _qtyGuardInstalled = false;
 
 function isMobile() {
   return !isDesktop();
-}
-
-function injectStyles() {
-  if (_styleInjected || typeof document === 'undefined') return;
-  _styleInjected = true;
-
-  const style = document.createElement('style');
-  style.id = 'k-mobile-modal-v1-style';
-  style.textContent = `
-@media (max-width: 899px) {
-  html.k-mobile-modal-v1 #k-modal {
-    isolation: isolate;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-scroll {
-    background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
-    padding-bottom: calc(228px + env(safe-area-inset-bottom));
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-img-wrap {
-    min-height: 46vh;
-    max-height: 52vh;
-    background: var(--sand);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-slide {
-    object-fit: cover;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-details {
-    margin-top: -28px;
-    position: relative;
-    z-index: 2;
-    border-radius: 28px 28px 0 0;
-    background: color-mix(in srgb, var(--white) 96%, transparent);
-    box-shadow: 0 -14px 36px var(--border-text-08);
-    overflow: hidden;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-info {
-    padding: 24px 18px 12px;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-info::before {
-    content: '';
-    display: block;
-    width: 44px;
-    height: 5px;
-    margin: -10px auto 16px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--text-muted) 28%, transparent);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-name-row {
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-info h2 {
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(28px, 8vw, 38px);
-    line-height: 1.02;
-    letter-spacing: -.035em;
-    color: var(--text);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-fav-btn {
-    width: 58px;
-    height: 58px;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    box-shadow: 0 12px 28px var(--border-text-08);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-price-row {
-    margin-top: 12px;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-price {
-    font-size: clamp(42px, 12vw, 58px);
-    line-height: .95;
-    letter-spacing: -.045em;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-desc {
-    margin-top: 10px;
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions {
-    position: fixed !important;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: grid;
-    grid-template-columns: minmax(106px, .8fr) minmax(0, 1.25fr);
-    gap: 12px;
-    padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-    background: var(--white) !important;
-    border-top: 1px solid var(--border-text-06);
-    box-shadow: 0 -18px 44px color-mix(in srgb, var(--text) 14%, transparent);
-    isolation: isolate;
-    z-index: 2147483000 !important;
-    overflow: visible;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions::before {
-    content: '';
-    position: absolute;
-    inset: -34px 0 auto 0;
-    height: 34px;
-    pointer-events: none;
-    background: linear-gradient(180deg, transparent 0%, var(--white) 72%, var(--white) 100%);
-    z-index: -1;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: var(--white);
-    z-index: -1;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-qty,
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-add-cart-btn,
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-buy-now-btn {
-    position: relative;
-    z-index: 1;
-    border-radius: 999px;
-    min-height: 54px;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-qty {
-    grid-column: 1;
-    grid-row: 1;
-    background: var(--sand);
-    box-shadow: inset 0 0 0 1px var(--border-text-06);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-add-cart-btn {
-    grid-column: 2;
-    grid-row: 1;
-    background: var(--white);
-    font-size: 16px;
-    font-weight: 850;
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-buy-now-btn {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    min-height: 62px;
-    font-size: 20px;
-    font-weight: 900;
-    box-shadow: 0 14px 34px color-mix(in srgb, var(--ocean) 26%, transparent);
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-suggestions {
-    background: var(--sand);
-    padding-top: 22px;
-    padding-bottom: calc(42px + env(safe-area-inset-bottom));
-  }
-
-  html.k-mobile-modal-v1 #k-modal .k-modal-suggestions h3 {
-    font-family: var(--font-display, var(--font));
-    font-size: 24px;
-    letter-spacing: -.025em;
-  }
-}
-`;
-
-  document.head.appendChild(style);
 }
 
 function clearNode(node) {
@@ -263,12 +99,7 @@ function applyMobileModal() {
 export function setupMobileModalV1() {
   if (_installed) return;
   _installed = true;
-  injectStyles();
   installQtyGuard();
-
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.add('k-mobile-modal-v1');
-  }
 
   bus.on('modal:opened', function() {
     if (!isMobile()) return;
