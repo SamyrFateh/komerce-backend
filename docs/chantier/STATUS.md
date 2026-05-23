@@ -77,19 +77,24 @@ Lire dans cet ordre avant toute modification :
 | H2 | ✅ Fait | `server.js` lifecycle (listen/shutdown/crash guards) finalisé |
 | H3 | ✅ Fait | `audit-backend-arch.js` déplacé de `docs/chantier/garde-fous/` → `scripts/` |
 | F1B | ✅ Fait | `notification-service.js` migré vers logger structuré |
-| F1-FULL | ✅ Fait | Migration complète `console.*` → logger structuré. **0 console.* restant** dans le code source (routes, services, middleware, utils, bootstrap, server.js). Codemod `scripts/f1-console-to-logger.js` créé et appliqué. |
+| F1-FULL | ✅ Fait | Migration `console.*` → logger structuré clôturée. Les seuls `console.*` tolérés sont le fallback interne de `utils/logger.js` quand `pino` est indisponible. Toute nouvelle occurrence hors fallback logger = régression. |
+| F1-TEST-FIX | ✅ Fait | Commit `f6aca040`. `pino-pretty` désactivé en `NODE_ENV=test`; fallback logger réparé. `npm test` vert sans worker Jest ouvert. |
 | P0-HELPER | ✅ Fait | PR #413 + #436. `npm run test:p0` reproductible |
 | P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-runs admin SKIP faute de JWT admin valide / `P0_ORDER_ID`. |
+| GOD-FILES-0 | ▶️ Prochain | Audit des fichiers obèses restants avant découpage. Aucun patch métier sans plan d'extraction. |
 
 ---
 
 ## Résultat de validation du 23 mai 2026
 
-### `npm test`
+### `npm test` après patch logger
 
 ```text
 Test Suites: 1 skipped, 7 passed, 7 of 8 total
 Tests:       1 skipped, 87 passed, 88 total
+Snapshots:   0 total
+Time:        1.062 s
+Ran all test suites.
 ```
 
 La suite API intégration est volontairement skipped si `DATABASE_URL` est absent.
@@ -111,7 +116,8 @@ P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 
 ## Pièges critiques à retenir
 
-- `console.*` : **83 fichiers source** contiennent encore des appels console ; F1 est un chantier continu, pas un one-shot.
+- `console.*` : F1 est clôturé. Les branches F1/logging restantes sont abandonnées et doivent être supprimées côté GitHub/local. Toute nouvelle occurrence hors fallback `utils/logger.js` doit être traitée comme régression.
+- `utils/logger.js` : en test, ne pas réactiver `pino-pretty` sans fermer explicitement le worker, sinon Jest détecte un open handle.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - A4 : collisions 060/061 clarifiées — dette non bloquante ; ne pas renommer/supprimer de migration sans audit DB réel.
 - H1 complet : `server.js` (206 lignes) délègue maintenant à `bootstrap/env.js`, `security.js`, `api-routes.js`, `html-routes.js`, `crons.js`, `startup-migrations.js`. Les webhooks Stripe raw restent explicitement avant `express.json`.
@@ -123,6 +129,34 @@ P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 
 ## Prochain lot recommandé
 
+### GOD-FILES-0 — Audit des fichiers obèses restants
+
+```text
+Charge   : 0.5 session pour audit + classement
+Risque   : faible tant qu'on ne modifie pas le code
+Objectif : identifier, classer et prioriser les fichiers ≥ 800 lignes encore actifs
+```
+
+But : passer des refactos structurelles déjà terminées (`server.js`, bootstrap, logging) à un chantier maîtrisé sur les gros fichiers restants.
+
+Règles :
+- aucune modification métier dans GOD-FILES-0 ;
+- pas de découpage avant cartographie du fichier ;
+- pas de déplacement de logique sans tests ou garde-fous ;
+- un god file = un plan d'extraction documenté avant patch ;
+- commencer par les fichiers UI/front ou utilitaires à faible risque ;
+- éviter paiements, commandes, scans, collectif sans lecture préalable de `CONTRACTS.md` + `ZONE_IMPACT.md`.
+
+Livrable attendu :
+- liste des fichiers ≥ 800 lignes ;
+- classement par risque : faible / moyen / élevé ;
+- premier candidat recommandé ;
+- plan d'extraction du premier candidat, sans patch métier.
+
+---
+
+## Dette sécurité séparée
+
 ### I-SWEEP-FINAL — Correction violation I-01 active (`routes/pickup-secret.js:286`)
 
 ```text
@@ -131,33 +165,12 @@ Risque   : moyen (modifier orders.status en dehors de la machine)
 Prérequis : lire CONTRACTS.md + order-status-machine.js avant de toucher
 ```
 
-La violation I-01 active à `routes/pickup-secret.js:286` est la **seule dette critique restante**. Elle a été intentionnellement différée depuis le début du chantier. Le moment est venu.
+Cette dette reste importante, mais elle n'est pas le prochain lot si l'objectif immédiat est le chantier god files.
 
 Contraintes :
-- Passer par `order-status-machine.js` pour toute transition de statut
-- Tracer dans `order_status_history` (I-04)
-- `npm test` vert après
-
----
-
-```text
-Charge   : 3–5 sessions découpées par domaine
-Risque   : faible (aucun changement logique, substitution mécanique)
-Méthode  : codemod par fichier ou par domaine + npm test après chaque batch
-```
-
-Ordre suggéré par impact / volume :
-
-| Domaine | Fichiers clés | Console restants |
-|---------|--------------|-----------------|
-| Routes paiements | `routes/payments.js` | ~30 |
-| Services collectif | `services/collective-payment-orchestrator.js` | ~26 |
-| Routes scans | `routes/scans.js` | ~17 |
-| Routes workspaces | `routes/collective-workspaces.js` | ~16 |
-| Routes purchasing | `routes/purchasing.js` | ~15 |
-| … | (voir `scripts/audit-backend-arch.js`) | … |
-
-Règle : un `npm test` vert après chaque domaine avant de passer au suivant.
+- passer par `order-status-machine.js` pour toute transition de statut ;
+- tracer dans `order_status_history` (I-04) ;
+- `npm test` vert après.
 
 ---
 
@@ -165,20 +178,20 @@ Règle : un `npm test` vert après chaque domaine avant de passer au suivant.
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| F1 logging | ✅ Terminé | 0 console.* restant dans le code source |
+| GOD-FILES-0 | ▶️ Maintenant | Audit + classement des fichiers ≥ 800 lignes, sans patch métier |
+| I-SWEEP-FINAL | Sécurité | Corriger `routes/pickup-secret.js:286` (violation I-01 active) — lot groupé, pas à la volée |
 | P0-FULL | Conditionnelle | Fournir `P0_ORDER_ID` pour transformer dry-run refund SKIP → PASS |
 | PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
-| I-SWEEP-FINAL | Sécurité | Corriger `routes/pickup-secret.js:286` (violation I-01 active) — lot groupé, pas à la volée |
 
 ---
 
 ## Dette mesurée au 23 mai 2026
 
 - **`server.js`** : 206 lignes — tout le refactoring H1 terminé. Seuls les webhooks Stripe raw et le bloc `listen/shutdown` restent en place (intentionnel).
-- **`console.*`** : ✅ **0 occurrence restante** dans le code source — migration F1 terminée le 2026-05-23.
+- **`console.*`** : ✅ migration F1 terminée. Les seuls `console.*` tolérés sont dans le fallback interne de `utils/logger.js`.
 - **Migrations** : collisions 060/061 connues, non bloquantes, préservées documentairement.
 - **Tests** : 87 passés, 1 skipped propre — filet solide.
-- **19 god-objects ≥ 800 lignes** : H1 a réduit `server.js` mais les autres gros fichiers restent à découper (backlog long terme).
+- **God files** : chantier suivant. Les fichiers ≥ 800 lignes doivent être recensés et classés avant tout patch.
 
 ---
 
