@@ -35,7 +35,28 @@ function injectStyles() {
 
   html.k-mobile-modal-v1 #k-modal .k-modal-scroll {
     background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
-    padding-bottom: calc(228px + env(safe-area-inset-bottom));
+    padding-bottom: calc(256px + env(safe-area-inset-bottom));
+  }
+
+  html.k-mobile-modal-v1 #k-modal .k-mobile-modal-cta-mask {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(176px + env(safe-area-inset-bottom));
+    background: var(--white);
+    pointer-events: none;
+    z-index: 2147482998;
+  }
+
+  html.k-mobile-modal-v1 #k-modal .k-mobile-modal-cta-mask::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -38px;
+    height: 38px;
+    background: linear-gradient(180deg, transparent 0%, var(--white) 82%, var(--white) 100%);
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-img-wrap {
@@ -119,7 +140,7 @@ function injectStyles() {
     grid-template-columns: minmax(106px, .8fr) minmax(0, 1.25fr);
     gap: 12px;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-    background: var(--white) !important;
+    background: transparent !important;
     border-top: 1px solid var(--border-text-06);
     box-shadow: 0 -18px 44px color-mix(in srgb, var(--text) 14%, transparent);
     isolation: isolate;
@@ -127,23 +148,10 @@ function injectStyles() {
     overflow: visible;
   }
 
-  html.k-mobile-modal-v1 #k-modal .k-modal-actions::before {
-    content: '';
-    position: absolute;
-    inset: -34px 0 auto 0;
-    height: 34px;
-    pointer-events: none;
-    background: linear-gradient(180deg, transparent 0%, var(--white) 72%, var(--white) 100%);
-    z-index: -1;
-  }
-
+  html.k-mobile-modal-v1 #k-modal .k-modal-actions::before,
   html.k-mobile-modal-v1 #k-modal .k-modal-actions::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: var(--white);
-    z-index: -1;
+    content: none !important;
+    display: none !important;
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-qty,
@@ -182,7 +190,7 @@ function injectStyles() {
   html.k-mobile-modal-v1 #k-modal .k-modal-suggestions {
     background: var(--sand);
     padding-top: 22px;
-    padding-bottom: calc(42px + env(safe-area-inset-bottom));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-suggestions h3 {
@@ -194,6 +202,16 @@ function injectStyles() {
 `;
 
   document.head.appendChild(style);
+}
+
+function ensureCtaMask() {
+  if (!isMobile() || typeof document === 'undefined') return;
+  const modal = document.getElementById('k-modal');
+  if (!modal || modal.querySelector('.k-mobile-modal-cta-mask')) return;
+  const mask = document.createElement('div');
+  mask.className = 'k-mobile-modal-cta-mask';
+  mask.setAttribute('aria-hidden', 'true');
+  modal.appendChild(mask);
 }
 
 function clearNode(node) {
@@ -257,6 +275,7 @@ function installQtyGuard() {
 
 function applyMobileModal() {
   if (!isMobile()) return;
+  ensureCtaMask();
   syncMobileIntentQty();
 }
 
