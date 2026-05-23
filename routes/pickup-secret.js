@@ -25,6 +25,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'pickup-secret' });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -137,7 +138,7 @@ async function generateAndStoreSecret({
   }
 
   if (attempts >= MAX_GEN_ATTEMPTS) {
-    console.error(`[PICKUP-SECRET] Saturation anti-collision relais=${relaisId} channel=${channel}`);
+    log.error(`[PICKUP-SECRET] Saturation anti-collision relais=${relaisId} channel=${channel}`);
     throw new Error('Génération du code impossible (saturation)');
   }
 
@@ -168,7 +169,7 @@ async function generateAndStoreSecret({
     values
   );
 
-  console.log(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
+  log.info(`[PICKUP-SECRET] ✅ Code généré channel=${channel} order=${orderId} last4=${last4}`);
 
   return { code, last4 };
 }
@@ -248,7 +249,7 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
       attempts++;
     }
     if (attempts >= MAX_GEN_ATTEMPTS) {
-      console.error('[PICKUP-SECRET] Impossible de générer un code unique pour le relais ' + order.relais_id);
+      log.error('[PICKUP-SECRET] Impossible de générer un code unique pour le relais ' + order.relais_id);
       return res.status(500).json({ error: 'Génération du code impossible (saturation) — contactez un admin' });
     }
     hash = hashCode(code, salt);
@@ -298,14 +299,14 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
       ON CONFLICT (order_id) DO NOTHING
     `, [orderId, Number(order.total_kmf), agentId, null]);
 
-    console.log(`[PICKUP-SECRET] Généré pour ${order.reference} — agent=${agentId} payeur="${payer_name}"`);
+    log.info(`[PICKUP-SECRET] Généré pour ${order.reference} — agent=${agentId} payeur="${payer_name}"`);
 
     // 4b. 🎁 Hook fidélité — fire-and-forget (non-bloquant)
     try {
       const loyaltyService = require('../services/loyalty-service');
       loyaltyService.handleOrderConfirmed({ orderId })
-        .then(r => { if (r && !r.skipped) console.log('[loyalty] hook OK:', r); })
-        .catch(e => console.warn('[loyalty] hook error:', e.message));
+        .then(r => { if (r && !r.skipped) log.info('[loyalty] hook OK:', r); })
+        .catch(e => log.warn('[loyalty] hook error:', e.message));
     } catch(e) { /* loyalty-service not yet loaded — silent */ }
 
     // 5. Renvoyer le code CLAIR une seule fois, avec un token d'impression
@@ -746,7 +747,7 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
         WHERE id = $3
       `, [attempts, blockUntil, orderId]);
 
-      console.warn(`[PICKUP-SECRET] Tentative échouée ${attempts}/3 pour ${order.reference} agent=${agentId}`);
+      log.warn(`[PICKUP-SECRET] Tentative échouée ${attempts}/3 pour ${order.reference} agent=${agentId}`);
 
       return res.status(401).json({
         error: 'Code incorrect',
@@ -765,7 +766,7 @@ router.post('/verify/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
       WHERE id = $1
     `, [orderId]);
 
-    console.log(`[PICKUP-SECRET] ✅ Code vérifié pour ${order.reference}`);
+    log.info(`[PICKUP-SECRET] ✅ Code vérifié pour ${order.reference}`);
 
     res.json({
       success: true,
@@ -815,7 +816,7 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       WHERE id = $2
     `, [collected_by_name || null, orderId]);
 
-    console.log(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collected_by_name || '(anonyme)'}"`);
+    log.info(`[PICKUP-SECRET] 📦 Colis remis pour ${order.reference} à "${collected_by_name || '(anonyme)'}"`);
 
     res.json({
       success: true,
@@ -892,7 +893,7 @@ router.post('/regenerate/:orderId', authenticate, requireAdmin, async (req, res,
       WHERE id = $6
     `, [hash, salt, now, expires, reason.trim(), orderId, last4]);
 
-    console.log(`[PICKUP-SECRET] 🔄 Régénéré pour ${order.reference} par admin ${adminId} motif="${reason}"`);
+    log.info(`[PICKUP-SECRET] 🔄 Régénéré pour ${order.reference} par admin ${adminId} motif="${reason}"`);
 
     // Le nouveau code en clair est renvoyé à l'admin UNE SEULE FOIS
     // L'admin est responsable de le transmettre par canal sécurisé à l'agent relais
@@ -1076,7 +1077,7 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
     );
     REVEAL_CACHE.delete(orderId);
 
-    console.log(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
+    log.info(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
 
     // 7. Générer le payload QR (format KMR1.base64url)
     const qrPayloadRaw = JSON.stringify({ c: cached.code, o: order.reference });

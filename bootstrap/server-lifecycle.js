@@ -19,23 +19,23 @@ function startServerLifecycle({
   runAllSeeds,
   port = process.env.PORT || 3000,
 }) {
-  walletService.ensureWalletTables().catch(e => console.error('Wallet init error:', e.message));
-  routingService.ensureRoutingColumns(db).catch(e => console.error('Routing init error:', e.message));
-  parcelSecurity.ensureSecurityTables(db).catch(e => console.error('Security init error:', e.message));
+  walletService.ensureWalletTables().catch(e => log.error('Wallet init error:', e.message));
+  routingService.ensureRoutingColumns(db).catch(e => log.error('Routing init error:', e.message));
+  parcelSecurity.ensureSecurityTables(db).catch(e => log.error('Security init error:', e.message));
 
   const server = app.listen(port, () => {
-    console.log(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — migrations en background`);
+    log.info(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — migrations en background`);
 
     setImmediate(() => {
       runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAllSeeds })
-        .catch(err => console.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message));
+        .catch(err => log.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message));
     });
   });
 
   process.on('SIGTERM', () => {
-    console.log('SIGTERM reçu — fermeture gracieuse...');
+    log.info('SIGTERM reçu — fermeture gracieuse...');
     server.close(() => {
-      console.log('Serveur fermé proprement.');
+      log.info('Serveur fermé proprement.');
       process.exit(0);
     });
     setTimeout(() => process.exit(1), 10_000);
@@ -43,11 +43,11 @@ function startServerLifecycle({
 
   // NEW-07 — Crash guards : éviter qu'une promesse non catchée tue le process
   process.on('unhandledRejection', (reason) => {
-    console.error('[unhandledRejection]', reason);
+    log.error('[unhandledRejection]', reason);
   });
 
   process.on('uncaughtException', (err) => {
-    console.error('[uncaughtException]', err);
+    log.error('[uncaughtException]', err);
     // Sortir proprement — l'état du process est incertain après uncaughtException
     setTimeout(() => process.exit(1), 500);
   });

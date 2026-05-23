@@ -134,7 +134,7 @@ async function seedEconomicData() {
 
 // Run seed on load
 seedEconomicData().catch(function(err) {
-  console.error('[Economic] Seed error:', err.message);
+  log.error('[Economic] Seed error:', err.message);
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -457,7 +457,7 @@ router.get('/executive', async function(req, res) {
     var summary = await buildExecutiveSummary();
     res.json(summary);
   } catch (err) {
-    console.error('[Economic] Executive error:', err);
+    log.error('[Economic] Executive error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -481,7 +481,7 @@ router.get('/variables', async function(req, res) {
 
     res.json({ categories: categories });
   } catch (err) {
-    console.error('[Economic] Variables error:', err);
+    log.error('[Economic] Variables error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -563,7 +563,7 @@ router.put('/variables/:key', async function(req, res) {
       executive: summary
     });
   } catch (err) {
-    console.error('[Economic] Update variable error:', err);
+    log.error('[Economic] Update variable error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -594,7 +594,7 @@ router.get('/charges', async function(req, res) {
 
     res.json({ families: families, totals: totals });
   } catch (err) {
-    console.error('[Economic] Charges error:', err);
+    log.error('[Economic] Charges error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -627,7 +627,7 @@ router.post('/charges', async function(req, res) {
 
     res.json({ charge: result.rows[0], executive: summary });
   } catch (err) {
-    console.error('[Economic] Create charge error:', err);
+    log.error('[Economic] Create charge error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -675,7 +675,7 @@ router.put('/charges/:id', async function(req, res) {
 
     res.json({ charge: result.rows[0], executive: summary });
   } catch (err) {
-    console.error('[Economic] Update charge error:', err);
+    log.error('[Economic] Update charge error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -703,7 +703,7 @@ router.put('/charges/:id/toggle', async function(req, res) {
 
     res.json({ charge: result.rows[0], executive: summary });
   } catch (err) {
-    console.error('[Economic] Toggle charge error:', err);
+    log.error('[Economic] Toggle charge error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -752,7 +752,7 @@ router.delete('/charges/:id', async function(req, res) {
       charge: result.rows[0]
     });
   } catch (err) {
-    console.error('[Economic] Delete charge error:', err);
+    log.error('[Economic] Delete charge error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -775,7 +775,7 @@ router.get('/coherence', async function(req, res) {
       checked_at: new Date().toISOString()
     });
   } catch (err) {
-    console.error('[Economic] Coherence error:', err);
+    log.error('[Economic] Coherence error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -788,7 +788,7 @@ router.get('/history', async function(req, res) {
     );
     res.json({ snapshots: result.rows });
   } catch (err) {
-    console.error('[Economic] History error:', err);
+    log.error('[Economic] History error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -800,7 +800,7 @@ router.post('/redistribute', async function(req, res) {
     var summary = await buildExecutiveSummary();
     res.json(summary);
   } catch (err) {
-    console.error('[Economic] Redistribute error:', err);
+    log.error('[Economic] Redistribute error:', err);
     res.status(500).json({ error: err.message });
   }
 });

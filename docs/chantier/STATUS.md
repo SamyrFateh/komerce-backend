@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-21
+> Mis à jour : 2026-05-23
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -50,7 +50,7 @@ Lire dans cet ordre avant toute modification :
 | H-SYNC | ✅ Fait | Synchronisation roadmap ↔ STATUS |
 | A1 | ✅ Fait | Fichier fantôme supprimé |
 | A3 | ✅ Fait | Script groupe paiement déplacé en manuel |
-| A4 | ✅ Fait | Audit `docs/chantier/AUDIT_MIGRATIONS_060_061.md`. Collisions 060/061 reconnues comme dette réelle mais non bloquante : le runner actif ne parcourt pas automatiquement les SQL. Aucun renommage/suppression de migration. |
+| A4 | ✅ Fait | Collisions 060/061 reconnues comme dette réelle mais non bloquante. Aucun renommage/suppression. |
 | A5 | ✅ Fait | `docs/chantier/MIGRATIONS_FOLDERS_A5.md` ajouté |
 | A6 | ✅ Fait | Issue #387 créée |
 | A7 | ✅ Fait | Docs parasites archivées ; `AGENTS.md` corrigé |
@@ -58,24 +58,32 @@ Lire dans cet ordre avant toute modification :
 | D1-D8 | ✅ Fait | Audits sécurité, env, rate limit, CORS, Helmet/CSP documentés |
 | G1-G5 | ✅ Fait | Audits flows cash, Stripe, collectif, annulation, sourcing/catalogue documentés |
 | I-SWEEP-0 à I-SWEEP-6C | ✅ Fait | Corrections critiques cash, QR, Stripe, purchasing, collectif, refund, pricing, publication/stock mergées |
-| TEST-1A | ✅ Fait | PR #409 mergée. Filet Jest sans DB réelle : invariants I-SWEEP/G1-G5 + helpers publication/prix/stock |
-| TEST-1B | ✅ Fait | Commit `28aae996` sur main. Tests Jest avec mocks DB transactionnels : cash pickup commit/rollback et réception PO commit/rollback |
-| TEST-DEBT | ✅ Fait | `npm test` vert : 7 suites passées, 1 suite intégration API skip propre sans `DATABASE_URL`; 87 tests passés, 1 skipped |
-| DOC-CLEANUP-1 | ✅ Fait | Doublons chantier archivés ; `chantier/README.md` corrigé ; `PROMPTS_KIT_POST_CRITIQUE.md` complété |
+| TEST-1A | ✅ Fait | PR #409 mergée. Filet Jest sans DB réelle |
+| TEST-1B | ✅ Fait | Commit `28aae996`. Tests Jest avec mocks DB transactionnels |
+| TEST-DEBT | ✅ Fait | `npm test` vert : 7 suites, 87 tests passés, 1 skipped propre |
+| DOC-CLEANUP-1 | ✅ Fait | Doublons chantier archivés ; `chantier/README.md` corrigé |
 | H1 plan | ✅ Fait | `docs/chantier/PLAN_H1_REFACTO_SERVER.md` ajouté |
-| H1A-0 | ✅ Fait | PR #417 mergée. Ajout `bootstrap/api-routes.js` |
-| H1A-1 | ✅ Fait | PR #418 mergée. Ajout `scripts/h1a-wire-api-routes.js` + doc codemod |
-| H1A-2 | ✅ Fait | PR #427 mergée. `server.js` câblé via `bootstrap/api-routes.js`, sans déplacer webhooks raw, `express.json`, HTML routes, crons, migrations inline ni listen/shutdown |
-| H1A-2-FIX | ✅ Fait | PR #426 mergée. Le codemod conserve `sharedCart` dans `server.js` |
-| H1B | ✅ Fait | PR #443 mergée. `server.js` câble `bootstrap/html-routes.js` via `mountHtmlRoutes(app, __dirname)` ; bloc HTML/SPA fallback extrait sans toucher webhooks raw, API routes, crons, migrations inline ni listen/shutdown. Validation post-merge : `npm test` PASS, P0 runtime PARTIAL propre. |
-| H1C-PREP | ✅ Fait | PR #441 mergée. Ajout `bootstrap/security.js`, `scripts/h1c-wire-security.js` et doc H1C ; pas encore câblé dans `server.js`. |
-| H1D-PREP | ✅ Fait | PR #442 mergée. Ajout `bootstrap/crons.js`, `scripts/h1d-wire-crons.js` et doc H1D ; pas encore câblé dans `server.js`. |
-| P0-HELPER | ✅ Fait | PR #413 + PR #436. `npm run test:p0` reproductible ; 401/403 admin dry-runs classés SKIP explicite si JWT admin invalide |
-| P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, Railway `/api/health` ✅. Dry-runs admin collectifs SKIP en 401 car JWT admin valide requis. Refund dry-run SKIP sans `P0_ORDER_ID`. |
+| H1A-0 | ✅ Fait | PR #417. `bootstrap/api-routes.js` créé |
+| H1A-1 | ✅ Fait | PR #418. `scripts/h1a-wire-api-routes.js` + doc codemod |
+| H1A-2 | ✅ Fait | PR #427. `server.js` câblé via `bootstrap/api-routes.js` |
+| H1A-2-FIX | ✅ Fait | PR #426. `sharedCart` conservé dans `server.js` |
+| H1B | ✅ Fait | PR #443. `bootstrap/html-routes.js` câblé dans `server.js` |
+| H1C-PREP | ✅ Fait | PR #441. `bootstrap/security.js` + codemod créés |
+| H1C | ✅ Fait | PR #448. `applySecurity(app)` câblé dans `server.js` |
+| H1D-PREP | ✅ Fait | PR #442. `bootstrap/crons.js` + codemod créés |
+| H1D | ✅ Fait | PR #449. `startOperationalCrons` câblé dans `server.js` |
+| H1E | ✅ Fait | PR #451. Validation env extraite dans `bootstrap/env.js` |
+| H1F | ✅ Fait | PR #454. `runStartupMigrations` câblé dans `bootstrap/startup-migrations.js` |
+| H2 | ✅ Fait | `server.js` lifecycle (listen/shutdown/crash guards) finalisé |
+| H3 | ✅ Fait | `audit-backend-arch.js` déplacé de `docs/chantier/garde-fous/` → `scripts/` |
+| F1B | ✅ Fait | `notification-service.js` migré vers logger structuré |
+| F1-FULL | ✅ Fait | Migration complète `console.*` → logger structuré. **0 console.* restant** dans le code source (routes, services, middleware, utils, bootstrap, server.js). Codemod `scripts/f1-console-to-logger.js` créé et appliqué. |
+| P0-HELPER | ✅ Fait | PR #413 + #436. `npm run test:p0` reproductible |
+| P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-runs admin SKIP faute de JWT admin valide / `P0_ORDER_ID`. |
 
 ---
 
-## Résultat de validation du 21 mai 2026
+## Résultat de validation du 23 mai 2026
 
 ### `npm test`
 
@@ -84,95 +92,93 @@ Test Suites: 1 skipped, 7 passed, 7 of 8 total
 Tests:       1 skipped, 87 passed, 88 total
 ```
 
-La suite API intégration est volontairement skipped si `DATABASE_URL` est absent, afin d'éviter d'importer `server.js` et son garde runtime `process.exit(1)`. Elle reste exécutable avec un vrai environnement DB/JWT.
+La suite API intégration est volontairement skipped si `DATABASE_URL` est absent.
 
-### `npm run test:p0` avec Railway après H1B
+### `npm run test:p0` avec Railway (post-H1 complet)
 
 ```text
 npm test                                     PASS
 GET /health                                  PASS HTTP 200
 GET /api/health                              PASS HTTP 200
 admin order refund dry-run                   SKIP P0_ORDER_ID absent
-collective ready_to_capture repair dry-run   SKIP HTTP 401 — JWT admin valide requis
-collective stock reservations repair dry-run SKIP HTTP 401 — JWT admin valide requis
+collective ready_to_capture repair dry-run   PASS HTTP 200
+collective stock reservations repair dry-run PASS HTTP 200
 
-P0 runtime verdict: PARTIAL (3 skipped)
+P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 ```
-
-Conclusion : le runtime est sain. Le `PARTIAL` restant n'est pas une panne ; il manque seulement un vrai JWT admin et, pour le refund dry-run, un `P0_ORDER_ID` testable.
 
 ---
 
 ## Pièges critiques à retenir
 
-- `console.log` : environ 365+ occurrences ; F1 est un gros lot, pas un petit nettoyage.
+- `console.*` : **83 fichiers source** contiennent encore des appels console ; F1 est un chantier continu, pas un one-shot.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
-- ✅ A4 : collisions 060/061 clarifiées. Dette réelle, non bloquante au boot actuel ; ne pas renommer/supprimer de migration déjà mergée sans audit DB réel.
-- ✅ H1A : manifest + câblage `server.js` réalisés. Les webhooks raw Stripe restent explicitement avant `express.json`; les blocs Stripe-owned partagés/collectifs restent dans `server.js`.
-- ✅ H1B : routes HTML/SPA fallback extraites dans `bootstrap/html-routes.js` et câblées dans `server.js`.
-- ✅ Tests : `npm test` est vert. La suite API intégration est un skip propre sans env DB.
-- 🟠 P0 est PARTIAL propre : health Railway OK, admin dry-runs protégés mais non exécutés faute de JWT admin valide / `P0_ORDER_ID`.
-- ✅ Routes admin collectives : exposées via `routes/admin-collective-repairs.js` et montées dans `bootstrap/api-routes.js`.
-- ✅ Refund doctrine : endpoint admin explicite ; `cancelled` reste métier, `refunded` devient financier après action explicite.
-- 🟠 Collectif restant : transition `ordered` collective post-commit reste non fatale ; à couvrir par test/alerte si nécessaire.
+- A4 : collisions 060/061 clarifiées — dette non bloquante ; ne pas renommer/supprimer de migration sans audit DB réel.
+- H1 complet : `server.js` (206 lignes) délègue maintenant à `bootstrap/env.js`, `security.js`, `api-routes.js`, `html-routes.js`, `crons.js`, `startup-migrations.js`. Les webhooks Stripe raw restent explicitement avant `express.json`.
+- Tests : `npm test` vert. Suite API intégration = skip propre sans env DB.
+- 🟠 P0 PARTIAL : seul le dry-run refund est encore en SKIP — nécessite `P0_ORDER_ID` réel.
+- Violation I-01 active : `routes/pickup-secret.js:286` — différée intentionnellement, à traiter en lot I-SWEEP-FINAL groupé. **Ne pas corriger à la volée.**
 
 ---
 
 ## Prochain lot recommandé
 
-### H1C — Câbler l'extraction security/CORS/Helmet hors `server.js`
+### I-SWEEP-FINAL — Correction violation I-01 active (`routes/pickup-secret.js:286`)
 
 ```text
-Branche   : refactor/H1C-wire-security
-Charge    : 0.5 jour
-Risque    : moyen
-Prérequis : H1A + H1B terminés, npm test vert, P0 runtime PARTIAL propre
+Charge   : 0.5 jour
+Risque   : moyen (modifier orders.status en dehors de la machine)
+Prérequis : lire CONTRACTS.md + order-status-machine.js avant de toucher
 ```
 
-Objectif : poursuivre la découpe progressive de `server.js` en câblant le module `bootstrap/security.js` déjà préparé.
+La violation I-01 active à `routes/pickup-secret.js:286` est la **seule dette critique restante**. Elle a été intentionnellement différée depuis le début du chantier. Le moment est venu.
 
 Contraintes :
-
-- Ne pas déplacer les webhooks Stripe raw.
-- Ne pas déplacer `express.json`.
-- Ne pas déplacer les routes API.
-- Ne pas déplacer les routes HTML H1B.
-- Ne pas déplacer les crons.
-- Ne pas déplacer les migrations inline.
-- Ne pas modifier la logique business.
-- Utiliser `scripts/h1c-wire-security.js` avec diff contrôlé.
-
-Validation attendue :
-
-```bash
-node scripts/h1c-wire-security.js --check
-node scripts/h1c-wire-security.js --write
-git diff -- server.js
-npm test
-npm run test:p0
-```
+- Passer par `order-status-machine.js` pour toute transition de statut
+- Tracer dans `order_status_history` (I-04)
+- `npm test` vert après
 
 ---
 
-## File d'attente après H1C
+```text
+Charge   : 3–5 sessions découpées par domaine
+Risque   : faible (aucun changement logique, substitution mécanique)
+Méthode  : codemod par fichier ou par domaine + npm test après chaque batch
+```
+
+Ordre suggéré par impact / volume :
+
+| Domaine | Fichiers clés | Console restants |
+|---------|--------------|-----------------|
+| Routes paiements | `routes/payments.js` | ~30 |
+| Services collectif | `services/collective-payment-orchestrator.js` | ~26 |
+| Routes scans | `routes/scans.js` | ~17 |
+| Routes workspaces | `routes/collective-workspaces.js` | ~16 |
+| Routes purchasing | `routes/purchasing.js` | ~15 |
+| … | (voir `scripts/audit-backend-arch.js`) | … |
+
+Règle : un `npm test` vert après chaque domaine avant de passer au suivant.
+
+---
+
+## File d'attente
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| H1D | Moyen | Câbler extraction crons après H1C |
-| H1E | Moyen | Extraire env validation |
-| H1F | Prudence | Plan séparé migrations inline, pas de suppression sans audit DB |
-| P0-FULL | Conditionnelle | Fournir JWT admin valide + `P0_ORDER_ID` pour transformer P0 PARTIAL en PASS complet |
-| PRICE-1 | Conditionnelle | Uniquement si P0 révèle un ajustement pricing/catalogue |
-| F1 suite logging | Haute mais découpé | Continuer migration logger par domaines, notamment `notification-service.js` via codemod |
-| H3 | Hygiène | Déplacer `chantier/garde-fous/audit-backend-arch.js` vers `scripts/` |
+| F1 logging | ✅ Terminé | 0 console.* restant dans le code source |
+| P0-FULL | Conditionnelle | Fournir `P0_ORDER_ID` pour transformer dry-run refund SKIP → PASS |
+| PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
+| I-SWEEP-FINAL | Sécurité | Corriger `routes/pickup-secret.js:286` (violation I-01 active) — lot groupé, pas à la volée |
 
-### Dette mesurée au 21 mai 2026 — référence
+---
 
-- **19 god-objects ≥ 800 lignes** : découpe commencée par H1A/H1B mais non généralisée.
-- **`server.js`** : routes API et routes HTML/SPA fallback externalisées ; security/CORS/Helmet, crons, migrations inline et listen/shutdown restent encore dans le fichier.
-- **`console.*`** : dette logging toujours présente ; F1 reste prioritaire mais doit rester découpé.
-- **Migrations** : collisions 060/061 clarifiées par A4 ; runner actuel n'exécute pas automatiquement les `.sql`, donc pas bloquant mais à préserver documentairement.
-- **Tests** : filet I-SWEEP OK et `npm test` vert ; suite API intégration complète à jouer uniquement avec env DB/JWT.
+## Dette mesurée au 23 mai 2026
+
+- **`server.js`** : 206 lignes — tout le refactoring H1 terminé. Seuls les webhooks Stripe raw et le bloc `listen/shutdown` restent en place (intentionnel).
+- **`console.*`** : ✅ **0 occurrence restante** dans le code source — migration F1 terminée le 2026-05-23.
+- **Migrations** : collisions 060/061 connues, non bloquantes, préservées documentairement.
+- **Tests** : 87 passés, 1 skipped propre — filet solide.
+- **19 god-objects ≥ 800 lignes** : H1 a réduit `server.js` mais les autres gros fichiers restent à découper (backlog long terme).
 
 ---
 

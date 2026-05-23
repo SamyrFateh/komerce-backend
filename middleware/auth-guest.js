@@ -37,6 +37,7 @@
 const crypto = require('crypto');
 const jwt  = require('jsonwebtoken');
 const db   = require('../db');
+const log = require('../utils/logger').child({ module: 'auth-guest' });
 
 const _JWT_SECRET  = process.env.JWT_SECRET;
 const JWT_EXPIRES  = process.env.JWT_EXPIRES || '90d';
@@ -205,7 +206,7 @@ async function authenticateOrCreateGuest(req, res, next) {
         // Si token valide mais user introuvable → on crée en guest
       } catch (err) {
         if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
-          console.warn('[auth-guest] erreur verif token:', err.message);
+          log.warn('[auth-guest] erreur verif token:', err.message);
         }
         // → fallthrough vers création guest
       }
@@ -244,7 +245,7 @@ async function authenticateOrCreateGuest(req, res, next) {
     return next();
 
   } catch (err) {
-    console.error('[auth-guest] erreur inattendue:', err);
+    log.error('[auth-guest] erreur inattendue:', err);
     return res.status(500).json({ error: 'Erreur serveur lors de l\'authentification' });
   }
 }

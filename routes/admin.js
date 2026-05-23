@@ -11,6 +11,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { admin } = require('../validators');
+const log = require('../utils/logger').child({ module: 'admin' });
 
 const guard = [authenticate, requireRole(['admin'])];
 const VALID_ROLES = ['client', 'agent_relais', 'agent_hub', 'admin'];
@@ -110,7 +111,7 @@ router.delete('/orders/:id', ...guard, async (req, res, next) => {
 
     await deleteOrderCascade(db, id);
 
-    console.log(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
+    log.info(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
     res.json({
       success: true,
       message: `Commande ${order.reference} supprimée`,
@@ -389,7 +390,7 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     
     await client.query('COMMIT');
     
-    console.log(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
+    log.info(`🧹 Admin reset "${mode}" effectué par ${req.user.email}`);
     res.json({ success: true, message: `Reset "${mode}" effectué avec succès ✅`, ...report });
   } catch(err) {
     await client.query('ROLLBACK');
@@ -709,7 +710,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
         await client.query('RELEASE SAVEPOINT sp_parcel');
       } catch (pErr) {
         await client.query('ROLLBACK TO SAVEPOINT sp_parcel');
-        console.warn(`⚠️ Parcel insert failed for ${s.ref}: ${pErr.message}`);
+        log.warn(`⚠️ Parcel insert failed for ${s.ref}: ${pErr.message}`);
         continue; // Skip parcel_items, scans, incidents for this order
       }
 
@@ -989,7 +990,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
     await client.query('COMMIT');
 
     const caTotal = summary.orders.reduce((s, o) => s + o.total_kmf, 0);
-    console.log(`🌱 Rich seed v2: ${summary.orders.length} orders, ${summary.parcels.length} parcels, ${summary.scan_events} scans, ${summary.incidents.length} incidents, ${summary.invoices.length} invoices — by ${req.user.email}`);
+    log.info(`🌱 Rich seed v2: ${summary.orders.length} orders, ${summary.parcels.length} parcels, ${summary.scan_events} scans, ${summary.incidents.length} incidents, ${summary.invoices.length} invoices — by ${req.user.email}`);
 
     res.json({
       success: true,
@@ -1053,7 +1054,7 @@ router.post('/users', ...guard, async (req, res, next) => {
        RETURNING id, full_name, email, phone, role, currency_pref, created_at`,
       [full_name, email.toLowerCase().trim(), phone || null, role, currency_pref, password_hash]
     );
-    console.log(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
+    log.info(`👤 Admin created user ${user.email} (${role}) by ${req.user.email}`);
     res.status(201).json(user);
   } catch(err) { next(err); }
 });
@@ -1070,7 +1071,7 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
       [role, id]
     );
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    console.log(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
+    log.info(`🔑 Admin changed role of ${user.email} to ${role} by ${req.user.email}`);
     res.json({ success: true, user });
   } catch(err) { next(err); }
 });
@@ -1113,7 +1114,7 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
       }
       const isValid = await bcrypt.compare(current_password, existing.password_hash);
       if (!isValid) {
-        console.warn(`🔒 Failed self-password-change attempt for ${existing.email} from ${req.ip}`);
+        log.warn(`🔒 Failed self-password-change attempt for ${existing.email} from ${req.ip}`);
         return res.status(403).json({
           error: 'Mot de passe actuel incorrect',
           code: 'INVALID_CURRENT_PASSWORD',
@@ -1137,7 +1138,7 @@ router.put('/users/:id/password', ...guard, async (req, res, next) => {
     );
 
     const action = id === req.user.id ? 'self-changed' : 'admin-reset';
-    console.log(`🔒 Password ${action} for ${existing.email} by ${req.user.email} (IP: ${req.ip})`);
+    log.info(`🔒 Password ${action} for ${existing.email} by ${req.user.email} (IP: ${req.ip})`);
     res.json({
       success: true,
       message: `Mot de passe ${id === req.user.id ? 'modifié' : 'réinitialisé'} pour ${existing.full_name}`,
@@ -1158,7 +1159,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
         `UPDATE users SET email = 'deleted_' || id || '@komerce.deleted', full_name = '[Compte supprimé]',
            phone = NULL, password_hash = '', updated_at = NOW() WHERE id = $1::uuid`, [id]
       );
-      console.log(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
+      log.info(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur anonymisé (${orderCount} commande(s) conservée(s))`, type: 'soft_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     } else {
       // Clean all potential FK references to this user before hard-deleting
@@ -1187,7 +1188,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
         try { await db.query(q, [id]); } catch (_) { /* table may not exist */ }
       }
       await db.query('DELETE FROM users WHERE id = $1::uuid', [id]);
-      console.log(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
+      log.info(`🗑️ Admin hard-deleted user ${user.email} by ${req.user.email}`);
       res.json({ success: true, message: `Utilisateur ${user.full_name} supprimé définitivement`, type: 'hard_delete', deleted: { id, email: user.email, full_name: user.full_name } });
     }
   } catch(err) { next(err); }

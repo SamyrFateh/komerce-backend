@@ -37,6 +37,7 @@
 
 const { getRule, getRuleNumber } = require('./rules');
 const { generateParcelRef } = require('./reference');
+const log = require('../utils/logger').child({ module: 'parcels' });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. CONSTANTES
@@ -502,7 +503,7 @@ async function splitOrderIntoParcels(orderItems, availabilityMap, db) {
 
   const strategy = STRATEGIES[strategyName];
   if (!strategy) {
-    console.warn(`[PARCELS] Stratégie "${strategyName}" introuvable, fallback → default`);
+    log.warn(`[PARCELS] Stratégie "${strategyName}" introuvable, fallback → default`);
   }
   const fn = strategy || STRATEGIES['default'];
 

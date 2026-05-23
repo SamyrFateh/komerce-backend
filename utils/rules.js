@@ -16,6 +16,7 @@
 'use strict';
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'rules' });
 
 // ── Cache mémoire ────────────────────────────────────────────────────────────
 const CACHE_TTL_MS = 60_000; // 1 minute
@@ -43,7 +44,7 @@ async function getRule(key, defaultValue) {
     return val !== undefined ? val : defaultValue;
   } catch (err) {
     // DB inaccessible → fallback silencieux
-    console.error('[RULES] getRule error (fallback used):', err.message);
+    log.error('[RULES] getRule error (fallback used):', err.message);
     return defaultValue;
   }
 }

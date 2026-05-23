@@ -16,7 +16,7 @@ function log(orderId, ref, scenario, message, success) {
     success: success !== false
   });
   const prefix = success === false ? '❌' : '✅';
-  console.log(`[SIM] ${prefix} ${ref || '—'} | ${message}`);
+  log.info(`[SIM] ${prefix} ${ref || '—'} | ${message}`);
 }
 
 function getRecent(n) { return entries.slice(-n); }

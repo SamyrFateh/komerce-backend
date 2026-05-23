@@ -31,6 +31,7 @@ const db = require('../db');
 const costAllocation = require('../services/cost-allocation');
 const dashboardCache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'admin-costing' });
 
 const router = express.Router();
 
@@ -155,7 +156,7 @@ router.get('/orders', authenticate, requireAdmin, async (req, res, next) => {
       doctrine_phase: 'D-full',
     });
   } catch (err) {
-    console.error('[admin-costing] GET /orders error:', err);
+    log.error('[admin-costing] GET /orders error:', err);
     next(err);
   }
 });
@@ -253,7 +254,7 @@ router.get('/orders/:orderId', authenticate, requireAdmin, async (req, res, next
       doctrine_phase: 'D-full',
     });
   } catch (err) {
-    console.error('[admin-costing] GET /orders/:id error:', err);
+    log.error('[admin-costing] GET /orders/:id error:', err);
     next(err);
   }
 });
@@ -339,7 +340,7 @@ router.get('/products', authenticate, requireAdmin, async (req, res, next) => {
       doctrine_phase: 'D-full',
     });
   } catch (err) {
-    console.error('[admin-costing] GET /products error:', err);
+    log.error('[admin-costing] GET /products error:', err);
     next(err);
   }
 });
@@ -425,7 +426,7 @@ router.get('/relais', authenticate, requireAdmin, async (req, res, next) => {
       doctrine_phase: 'D-full',
     });
   } catch (err) {
-    console.error('[admin-costing] GET /relais error:', err);
+    log.error('[admin-costing] GET /relais error:', err);
     next(err);
   }
 });
@@ -439,7 +440,7 @@ router.post('/shipments/:id/allocate', authenticate, requireAdmin, async (req, r
     dashboardCache.invalidateAllDashboards();   // ← Sprint 1 : auto-invalidation
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[admin-costing] POST /shipments/:id/allocate error:', err);
+    log.error('[admin-costing] POST /shipments/:id/allocate error:', err);
     next(err);
   }
 });
@@ -453,7 +454,7 @@ router.post('/parcels/:id/allocate', authenticate, requireAdmin, async (req, res
     dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[admin-costing] POST /parcels/:id/allocate error:', err);
+    log.error('[admin-costing] POST /parcels/:id/allocate error:', err);
     next(err);
   }
 });
@@ -467,7 +468,7 @@ router.post('/orders/:id/lock-purchase', authenticate, requireAdmin, async (req,
     dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[admin-costing] POST /orders/:id/lock-purchase error:', err);
+    log.error('[admin-costing] POST /orders/:id/lock-purchase error:', err);
     next(err);
   }
 });
@@ -483,7 +484,7 @@ router.post('/monthly-fixed/:yearMonth', authenticate, requireAdmin, async (req,
     if (!dryRun) dashboardCache.invalidateAllDashboards();   // dryRun ne change rien
     res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[admin-costing] POST /monthly-fixed error:', err);
+    log.error('[admin-costing] POST /monthly-fixed error:', err);
     next(err);
   }
 });
@@ -577,7 +578,7 @@ router.get('/recalibration-proposal', authenticate, requireAdmin, async (req, re
       notes: 'Validation admin requise. POST /api/admin/costing/recalibration-apply pour appliquer.',
     });
   } catch (err) {
-    console.error('[admin-costing] GET /recalibration-proposal error:', err);
+    log.error('[admin-costing] GET /recalibration-proposal error:', err);
     next(err);
   }
 });
@@ -631,7 +632,7 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
     dashboardCache.invalidateAllDashboards();
     res.json({ ok: true, applied: r.rows[0] });
   } catch (err) {
-    console.error('[admin-costing] POST /recalibration-apply error:', err);
+    log.error('[admin-costing] POST /recalibration-apply error:', err);
     next(err);
   }
 });

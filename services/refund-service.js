@@ -16,6 +16,7 @@
 
 const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const walletService = require('./wallet-service');
+const log = require('../utils/logger').child({ module: 'refund-service' });
 
 /**
  * Construit une clé d'idempotence stable.
@@ -50,7 +51,7 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
       idempotencyKey,  // ← P0 FIX : empêche double remboursement Stripe sur retry
     });
     stripeRefundId = stripeRefund.id;
-    console.log(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${amountEur}€ pour ${order.reference}`);
+    log.info(`[CANCEL] Stripe refund OK: ${stripeRefundId} — ${amountEur}€ pour ${order.reference}`);
   } else {
     refundMethod = 'wallet_credit';
     const result = await walletService.credit(dbClient, {
@@ -110,7 +111,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
       stripeRefundId = stripeRefund.id;
       refundMethod   = 'stripe';
     } catch (stripeErr) {
-      console.error('[refund-service] Stripe failed, using wallet:', stripeErr.message);
+      log.error('[refund-service] Stripe failed, using wallet:', stripeErr.message);
       refundMethod = 'wallet_credit';
     }
   }

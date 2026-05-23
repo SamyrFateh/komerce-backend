@@ -21,6 +21,7 @@ const { getUniqueRef, generateCashCode, generatePickupCode } = require('../../se
 const walletService = require('../../services/wallet-service');
 const { resolveRoutingFromRelais, RoutingError } = require('../../services/routing');
 const { notifyOrderCreated }             = require('../../services/notification-service');
+const log = require('../../utils/logger').child({ module: 'create' });
 
 // MODULE_TYPES — sous-types pour le module couture uniquement
 const MODULE_TYPES = ['ready_made', 'fabric_only', 'custom_from_fabric'];
@@ -412,7 +413,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     } catch (snapErr) {
       // Non-bloquant : si le snapshot échoue, la commande est quand même créée.
       // L'erreur est loggée pour traitement admin (alerts table possible plus tard).
-      console.error('[ORDER-CREATE] cost snapshot failed for', order.reference, snapErr.message);
+      log.error('[ORDER-CREATE] cost snapshot failed for', order.reference, snapErr.message);
     }
 
     await client.query('COMMIT');
@@ -426,7 +427,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
          WHERE share_token = $2
            AND converted_order_id IS NULL`,
         [order.id, share_token]
-      ).catch(e => console.error('[SHARES] linkShareToOrder error:', e.message));
+      ).catch(e => log.error('[SHARES] linkShareToOrder error:', e.message));
     }
 
     // ── Notifications post-commit (multi-numéros) ──────────────────────────
@@ -455,7 +456,7 @@ const emailItems = items.map(i => {
 
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
-  .catch(err => console.error('[ORDER-CREATED] ❌', err.message));
+  .catch(err => log.error('[ORDER-CREATED] ❌', err.message));
 
     return res.status(201).json({
       discount_pct: order.discount_pct || 0,

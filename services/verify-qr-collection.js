@@ -13,6 +13,7 @@ const db = require('../db');
 const { sendSMS } = require('../utils/sms');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
+const log = require('../utils/logger').child({ module: 'verify-qr-collection' });
 
 async function verifyQrCollection({ token, orderId, user }) {
   if (!token) return { status: 400, body: { error: 'token est requis' } };
@@ -81,7 +82,7 @@ async function verifyQrCollection({ token, orderId, user }) {
 
     if (order.qr_token !== token) {
       await client.query('ROLLBACK');
-      console.warn(`[VERIFY-QR] Token invalide pour ${order.reference}`);
+      log.warn(`[VERIFY-QR] Token invalide pour ${order.reference}`);
       return { status: 400, body: { error: 'QR code invalide' } };
     }
 
@@ -144,14 +145,14 @@ async function verifyQrCollection({ token, orderId, user }) {
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name || 'le destinataire'}. Merci pour votre confiance ! 🎉`,
         'collected',
         order.id
-      ).catch(err => console.error('SMS QR collect error:', err.message));
+      ).catch(err => log.error('SMS QR collect error:', err.message));
     }
 
     if (order.user_id) {
       try {
         const { recalculateLoyalty } = require('../routes/loyalty');
         recalculateLoyalty(db, order.user_id)
-          .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
+          .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
       } catch (_) { /* non-bloquant */ }
     }
 

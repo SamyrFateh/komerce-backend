@@ -30,6 +30,7 @@
 
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
+const log = require('../utils/logger').child({ module: 'order-cost-snapshot' });
 
 // ─── Feature flag ────────────────────────────────────────────────────────
 function _isActive() {
@@ -119,7 +120,7 @@ async function lockEstimatedCostsForOrder(orderId, dbClient, options = {}) {
       // Si pricing-engine plante (ne devrait plus arriver apres Phase A),
       // on enregistre quand meme une imputation 'fallback' avec coûts à null.
       // Cela permet de tracer qu'on a bien essaye, et missing_cost_fields sera explicite.
-      console.error('[order-cost-snapshot] pricing-engine failed for item', item.order_item_id, err.message);
+      log.error('[order-cost-snapshot] pricing-engine failed for item', item.order_item_id, err.message);
       reco = null;
     }
 

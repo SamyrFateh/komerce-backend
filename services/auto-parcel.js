@@ -14,6 +14,7 @@
 'use strict';
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'auto-parcel' });
 
 // ── Config ──────────────────────────────────────────────────────
 const MAX_ITEMS_PER_PARCEL = 30;
@@ -144,10 +145,10 @@ async function distributeOrder(orderId, dbClient) {
     parcelId = newP.id;
     parcelRef = newP.reference;
     created = true;
-    console.log(`[AUTO-PARCEL] New parcel ${parcelRef} → ${destLabel} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
+    log.info(`[AUTO-PARCEL] New parcel ${parcelRef} → ${destLabel} (${openParcels.length + 1}/${MAX_OPEN_PARCELS_PER_DEST})`);
   } else {
     // SATURATED — queue the order
-    console.log(`[AUTO-PARCEL] ⚠️ ${destLabel}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file`);
+    log.info(`[AUTO-PARCEL] ⚠️ ${destLabel}: ${openParcels.length} colis ouverts (max ${MAX_OPEN_PARCELS_PER_DEST}) — ${order.reference} en file`);
     return {
       success: true,
       queued: true,
@@ -184,12 +185,12 @@ async function distributeOrder(orderId, dbClient) {
         `, [parcelId, item.id, item.quantity || 1]);
         assigned++;
       } catch (e2) {
-        console.warn(`[AUTO-PARCEL] Failed to assign item ${item.id}: ${e2.message}`);
+        log.warn(`[AUTO-PARCEL] Failed to assign item ${item.id}: ${e2.message}`);
       }
     }
   }
 
-  console.log(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${created ? 'new' : 'existing'})`);
+  log.info(`[AUTO-PARCEL] ${order.reference} → ${parcelRef} (${assigned}/${items.length} items, ${created ? 'new' : 'existing'})`);
 
   return {
     success: true,
@@ -368,7 +369,7 @@ async function cleanupGhostParcels() {
     deleted++;
   }
 
-  console.log(`[AUTO-PARCEL] Cleanup: ${deleted} ghost parcels deleted`);
+  log.info(`[AUTO-PARCEL] Cleanup: ${deleted} ghost parcels deleted`);
   return { deleted, ghosts: ghosts.concat(emptyAuto).map(g => g.reference) };
 }
 

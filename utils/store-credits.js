@@ -18,7 +18,7 @@ async function createStoreCredit() {
 }
 
 async function getAvailableCredits() {
-  console.warn('[DEPRECATED] ' + DEPRECATED_MSG);
+  log.warn('[DEPRECATED] ' + DEPRECATED_MSG);
   return { credits: [], total_kmf: 0 };
 }
 

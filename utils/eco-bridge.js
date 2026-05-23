@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'eco-bridge' });
 
 // ── Cache ────────────────────────────────────────────────────────────
 const CACHE_TTL_MS = 60_000;
@@ -46,7 +47,7 @@ async function loadEcoVars() {
     _varsCacheAt = Date.now();
     return map;
   } catch (err) {
-    console.error('[ECO-BRIDGE] loadEcoVars error:', err.message);
+    log.error('[ECO-BRIDGE] loadEcoVars error:', err.message);
     return _varsCache || {};
   }
 }
@@ -132,7 +133,7 @@ async function loadChargesSummary() {
     _chargesCacheAt = Date.now();
     return result;
   } catch (err) {
-    console.error('[ECO-BRIDGE] loadChargesSummary error:', err.message);
+    log.error('[ECO-BRIDGE] loadChargesSummary error:', err.message);
     return _chargesCache || {
       charges: [], per_order_total: 0, monthly_total: 0,
       monthly_per_order: 0, total_cost_per_order: 0, orders_per_month: 100,

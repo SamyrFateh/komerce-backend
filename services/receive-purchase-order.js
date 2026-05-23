@@ -9,6 +9,7 @@
 
 const db = require('../db');
 const { transitionOrderStatus } = require('./order-status-machine');
+const log = require('../utils/logger').child({ module: 'receive-purchase-order' });
 
 async function receivePurchaseOrder({ poId, qtyReceived, actor, triggerScan3 }) {
   if (!poId) return { status: 400, body: { error: 'po_id requis' } };
@@ -104,7 +105,7 @@ async function receivePurchaseOrder({ poId, qtyReceived, actor, triggerScan3 }) 
 
     if (shouldTriggerScan3 && typeof triggerScan3 === 'function') {
       triggerScan3(triggerOrderId, actor?.id || null)
-        .catch(e => console.error('[purchasing/receive] Erreur SMS SCAN3:', e.message));
+        .catch(e => log.error('[purchasing/receive] Erreur SMS SCAN3:', e.message));
     }
 
     const itemsMissing = total - recus;

@@ -23,6 +23,7 @@ const { randomBytes, randomUUID } = require('crypto');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'order-api-v2' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
 
@@ -166,7 +167,7 @@ async function autoCreateParcel(client, orderId, actor) {
     dbClient: client,
   }).catch(() => {});
 
-  console.log(`ðŸ“¦ AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
+  log.info(`ðŸ“¦ AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
 
   return {
     success: true,
@@ -405,7 +406,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       dbClient: client,
     });
     if (!_confirmResult.success) {
-      console.warn(`[ORDER-V2] transitionOrderStatus confirm failed for ${order.id}: ${_confirmResult.error}`);
+      log.warn(`[ORDER-V2] transitionOrderStatus confirm failed for ${order.id}: ${_confirmResult.error}`);
     }
 
     // âœ… AUTO-PARCEL: create parcel automatically after payment confirmation
@@ -418,22 +419,22 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    console.log(`ðŸ’° Cash confirmed + auto-parcel: ${order.reference} by ${req.user?.email || 'system'}`);
+    log.info(`ðŸ’° Cash confirmed + auto-parcel: ${order.reference} by ${req.user?.email || 'system'}`);
 
     // NOTIFICATIONS (fire-and-forget)
     const notif = require('../services/notification-service');
     notif.notifyPaymentConfirmed(order.id, order.reference)
       .then(result => {
         if (result?.invoice) {
-          console.log(`ðŸ§¾ Invoice ${result.invoice} sent for ${order.reference}`);
+          log.info(`ðŸ§¾ Invoice ${result.invoice} sent for ${order.reference}`);
         }
       })
-      .catch(e => console.error('[CONFIRM-NOTIF] âŒ', e.message));
+      .catch(e => log.error('[CONFIRM-NOTIF] âŒ', e.message));
 
     if (parcelResult.success) {
       const notifSvc = require('../services/notification-service');
       notifSvc.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
-        .catch(e => console.error('[AUTO-PARCEL-NOTIF] âŒ', e.message));
+        .catch(e => log.error('[AUTO-PARCEL-NOTIF] âŒ', e.message));
     }
 
     res.json({
@@ -509,12 +510,12 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    console.log(`ðŸ“¦ Manual parcel created: ${result.parcel.reference} for ${order.reference}`);
+    log.info(`ðŸ“¦ Manual parcel created: ${result.parcel.reference} for ${order.reference}`);
 
     // NOTIFICATIONS (fire-and-forget)
     const notifSvc = require('../services/notification-service');
     notifSvc.notifyParcelCreated(result.parcel.reference, order.id, order.reference)
-      .catch(e => console.error('[CREATE-NOTIF] âŒ', e.message));
+      .catch(e => log.error('[CREATE-NOTIF] âŒ', e.message));
 
     res.json({
       success: true,

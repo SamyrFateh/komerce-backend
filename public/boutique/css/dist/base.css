@@ -1,0 +1,1277 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — base.css (bundle Sprint 3 · 2026-05-21)
+   base — tokens · reset · layout · hero
+   Généré par scripts/bundle-css.js — éditer les sources.
+   ═══════════════════════════════════════════════════════════════ */
+/* ── tokens.css ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — tokens.css
+   Source unique de vérité pour toutes les variables CSS.
+   Règle : jamais de couleur/valeur en dur ailleurs dans le CSS.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Couleurs principales ──────────────────────────────────── */
+  --ocean:        #64AF5A;
+  --ocean-light:  #82C478;
+  --violet:      #6c3fc5;   /* paiement groupé, workspace, événements */
+  --violet-dark:  #4a2d9e;
+  --violet-light: rgba(108,63,197,.08);
+  --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
+  --ocean-dark:   #4A9040;
+  --cta-green:    #2a7a3e;
+
+  --sand:         #FDFAF5;
+  --sand-warm:    #f6f0e3;
+  --sand-dark:    #F0EBE0;
+
+  /* ── Surfaces sémantiques ─────────────────────────────────── */
+  --page-bg:      var(--sand);
+  --hero-bg:      var(--page-bg);
+  --hero-border:  transparent;
+  --hero-shadow:  none;
+
+  --coral:        #C85C2D;
+  --coral-dark:   #A84820;
+  --hero-red:     #e53935;
+
+  --white:        #ffffff;
+  --whatsapp:     #25d366;
+  --whatsapp-dk:  #1db954;   /* WhatsApp variant foncé, gradient + pages /event/* */
+  --red:          #e53e3e;
+
+  /* ── Texte ────────────────────────────────────────────────── */
+  --text:         #1F3024;
+  --text-muted:   #6B7B63;
+  --text-light:   #9EAC95;
+  --border:       #E3D9C9;
+
+  /* ── Ombres (basées sur --text pour cohérence) ─────────────── */
+  --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
+  --shadow-md: 0 4px 12px rgba(31,48,36,.09);
+  --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
+
+  /* ── Typographie ─────────────────────────────────────────── */
+  --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
+
+  /* ── Formes ──────────────────────────────────────────────── */
+  --radius:    12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --container: 1400px;
+  --pad-x:     16px;
+  --header-h:  44px;
+  --bnav-h:    50px;
+
+  /* ── Animation ───────────────────────────────────────────── */
+  --ease:         cubic-bezier(.22,1,.36,1);
+  --ease-spring:  cubic-bezier(.34,1.56,.64,1);
+  --ease-in:      cubic-bezier(.4,0,1,1);
+
+  /* ── Élévations (remplacent les box-shadow inline) ──────── */
+  --elev-1: 0 1px 3px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
+  --elev-2: 0 4px 12px rgba(31,48,36,.08), 0 2px 4px rgba(31,48,36,.04);
+  --elev-3: 0 8px 24px rgba(31,48,36,.10), 0 4px 8px rgba(31,48,36,.06);
+  --elev-4: 0 16px 40px rgba(31,48,36,.12), 0 8px 16px rgba(31,48,36,.08);
+
+  /* ── Overlays & surfaces semi-transparentes ────────────── */
+  --overlay-dark:      rgba(0,0,0,.5);
+  --overlay-dark-md:   rgba(0,0,0,.55);
+  --overlay-dark-sm:   rgba(0,0,0,.4);
+  --overlay-black-xs:  rgba(0,0,0,.06);
+  --overlay-black-sm:  rgba(0,0,0,.08);
+  --overlay-black-md:  rgba(0,0,0,.12);
+  --overlay-black-lg:  rgba(0,0,0,.3);
+
+  --surface-white-96:  rgba(255,255,255,.96);
+  --surface-white-92:  rgba(255,255,255,.92);
+  --surface-white-88:  rgba(255,255,255,.88);
+  --surface-white-64:  rgba(255,255,255,.64);
+
+  --surface-sand-97:   rgba(253,250,245,.97);
+  --surface-sand-96:   rgba(253,250,245,.96);
+  --surface-sand-94:   rgba(253,250,245,.94);
+  --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
+  /* ── Ocean alpha (side cart, cards) ─────────────────────── */
+  --border-ocean-14:   rgba(100,175,90,.14);
+  --border-ocean-10:   rgba(100,175,90,.10);
+  --border-ocean-08:   rgba(100,175,90,.08);
+  --ocean-label:       rgba(100,175,90,.80);  /* label sous-total side cart */
+  --ocean-bg-08:       rgba(100,175,90,.08);  /* fond livraison gratuite */
+  --shadow-ocean-10:   0 12px 30px rgba(100,175,90,.10);
+  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
+
+  /* ── Bordures coral alpha ───────────────────────────────── */
+  --border-coral-09:   rgba(200,92,45,.09);
+  --border-coral-13:   rgba(200,92,45,.13);
+  --border-coral-22:   rgba(200,92,45,.22);
+
+  /* ── Bordures & ombres text-alpha ───────────────────────── */
+  --border-text-04:  rgba(31,48,36,.04);
+  --border-text-06:  rgba(31,48,36,.06);
+  --border-text-07:  rgba(31,48,36,.07);
+  --border-text-08:  rgba(31,48,36,.08);
+  --border-text-10:  rgba(31,48,36,.10);
+  --border-text-12:  rgba(31,48,36,.12);
+  --border-text-15:  rgba(31,48,36,.15);
+
+  /* ── Couleurs sémantiques manquantes ────────────────────── */
+  --orange:           #ff6900;
+  --orange-dark:      #e55f00;
+  --orange-shadow:    rgba(255,105,0,.30);
+
+  --pink:             #e91e63;
+  --pink-light:       rgba(233,30,99,.10);
+  --pink-shadow:      rgba(233,30,99,.35);
+
+  --blue-dark:        #0c447c;
+  --blue-mid:         #1e3a5f;
+  --blue-light-bg:    #e6f1fb;
+  --blue-lighter-bg:  #cfe5f7;
+  --blue-border:      #b5d4f4;
+
+  --amber-text:       #6b3e0e;
+  --amber-text-light: #a06a1f;
+  --amber-bg:         #fff8ed;
+  --amber-bg-warm:    #fdf4e8;
+  --amber-border:     #f4c77a;
+  --amber-border-md:  #e8c78a;
+
+  /* ── Crèmes (restaurés depuis Lot 1 — migration var(--white)nnn cassée) ──
+     Ces hex étaient encodés en dur avant qu'une migration find-replace
+     ne les transforme en `var(--white)8e7` etc., invalide côté navigateur.
+     Tokens sémantiques par usage, pas par teinte. */
+  --cream-warm:       #fff8e7;  /* gradient haut — état actif rail desktop */
+  --cream-pearl:      #fffdf7;  /* gradient bas — état actif rail desktop */
+  --cream-amber-bg:   #fffbeb;  /* fond bannière cash, badge référence */
+  --cream-peach:      #fff4ed;  /* fond pay helper coral */
+  --cream-blush:      #fff8f8;  /* fond hover partage WhatsApp */
+
+  --green-dark-text:  #1d5b2a;
+  --green-text:       #1a7a3e;
+  --green-bg:         #e8f7ee;
+
+  --red-text:         #cc2200;
+  --red-text-md:      #cc4400;
+  --red-bg:           #fff0f0;
+  --red-border:       #ffbbbb;
+  --red-bg-hover:     #ffe0e0;
+
+  /* ── Couleurs catégories (chips & suggestions) ──────────── */
+  --cat-mode-bg:      #FDE8CD;
+  --cat-maison-bg:    #F3E7D3;
+  --cat-tech-bg:      #E0F0E8;
+  --cat-brico-bg:     #E8EDF0;
+  --cat-perso-bg:     #FCE8D4;
+  --cat-auto-bg:      #E8E4F5;
+  --cat-solaire-bg:   #FFF9D6;
+  --cat-beaute-bg:    #FDE5F0;
+  --cat-creatio-bg:   #EDE8FD;
+
+  /* ── Statuts commandes ──────────────────────────────────── */
+  --status-pending-bg:     #fff8ed;
+  --status-pending-text:   #a06a1f;
+  --status-confirmed-bg:   #e8f5ee;
+  --status-confirmed-text: #1d5b2a;
+  --status-processing-bg:  #eaf2fd;
+  --status-processing-text:#1d4f9e;
+  --status-shipped-bg:     #f0eafd;
+  --status-shipped-text:   #4f2b9e;
+  --status-available-bg:   #fef0e8;
+  --status-available-text: #8b3a0f;
+  --status-cancelled-bg:   #fce8e8;
+  --status-cancelled-text: #9e1d1d;
+}
+
+/* padding latéral tablette — intermédiaire entre mobile (16px) et desktop (28px) */
+@media (min-width: 768px) {
+  :root { --pad-x: 24px; }
+}
+@media (min-width: 900px) {
+  :root {
+    --header-h: 68px;   /* hauteur réelle du .k-header desktop (layout.css) */
+    --pad-x: 28px;
+  }
+}
+@media (min-width: 1200px) {
+  :root {
+    --header-h: 72px;   /* layout.css bloc 1200px */
+    --pad-x: 32px;
+  }
+}
+
+/* ── Tokens de précision (alpha non standards) ──────────────
+   Ajoutés lors du Sprint 2 pour les derniers cas non couverts */
+:root {
+  --surface-sand-90:   rgba(255,252,244,.90);
+  --surface-sand-92:   rgba(253,250,245,.92);
+  --overlay-white-50:  rgba(255,255,255,.50);
+  --overlay-white-78:  rgba(255,255,255,.78);
+  --overlay-white-80:  rgba(255,255,255,.80);
+  --overlay-white-72:  rgba(255,255,255,.72);
+  --text-alpha-82:     rgba(32,51,37,.82);
+
+  --red-danger:        #dc2626;
+  --red-danger-bg:     #fef5f5;
+  --red-danger-border: #e8a0a0;
+  --red-danger-text:   #c73a3a;
+  --whatsapp-bg-hover: #f0fdf4;
+
+  --text-form-muted:   #7a8078;
+  --text-form-light:   #888;
+  --text-form-mid:     #666;
+  /* ── Lot 5 : tokens supplémentaires (greys, ambers, greens, blues, etc.) ──
+     Voir PR_GUIDE_LOT5.md pour la justification sémantique. */
+  --black:                  #000      ;  /* Noir pur — pour ombres, rares texte premium */
+  --text-form-soft:         #999      ;  /* Texte gris moyen formulaires */
+  --text-strong-mid:        #555      ;  /* Texte gris-foncé secondaire */
+  --text-strong:            #222      ;  /* Texte presque noir (non-#000) */
+  --text-form-soft-md:      #777      ;  /* Texte gris formulaires (variation) */
+  --text-disabled:          #aaa      ;  /* Texte désactivé */
+  --border-soft:            #ccc      ;  /* Bordure douce neutre */
+  --border-light:           #ddd      ;  /* Bordure claire neutre */
+  --border-lighter:         #eee      ;  /* Bordure très claire neutre */
+  --border-soft-md:         #e0e0e0   ;  /* Bordure douce (variant) */
+  --text-form-mid-md:       #757575   ;  /* Texte formulaires (variation) */
+  --surface-warm-cool:      #f3f3f1   ;  /* Surface neutre quasi-blanche */
+  --gray-bg:                #f5f5f5   ;  /* Fond gris très clair neutre */
+  --gray-bg-lighter:        #f7f7f7   ;  /* Fond gris ultra clair */
+  --amber-mid:              #fcd34d   ;  /* Jaune amber moyen */
+  --amber-warm:             #f0bf67   ;  /* Or chaud (mention promo) */
+  --gold-soft:              #d4b87a   ;  /* Or doux (premium accent) */
+  --star-gold:              #F0A500   ;  /* Or punchy étoile notation produit (Temu-like) */
+  --amber-cta:              #e8a13a   ;  /* Amber CTA dynamique */
+  --amber-text-deep:        #8b5a1a   ;  /* Amber texte foncé */
+  --amber-light-bg:         #fde68a   ;  /* Fond amber clair badge */
+  --amber-bg-pale:          #fef3c7   ;  /* Fond amber pâle */
+  --amber-bg-light:         #fef3df   ;  /* Fond amber très clair */
+  --amber-text-mid:         #92400e   ;  /* Texte amber moyen-foncé */
+  --cream-amber-light:      #ffe8c2   ;  /* Crème ambré clair (banner fav) */
+  --green-bg-soft:          #f2faef   ;  /* Fond vert très pâle (success soft) */
+  --green-bg-mid:           #f0f5e6   ;  /* Fond vert pâle */
+  --green-bg-warm:          #e8eddb   ;  /* Fond vert chaud (sage) */
+  --green-bg-pale:          #dcfce7   ;  /* Fond vert ultra pâle */
+  --green-bg-mid-soft:      #a7f3d0   ;  /* Vert mid soft */
+  --green-soft:             #86efac   ;  /* Vert soft (success badge) */
+  --green-success:          #3d9e55   ;  /* Vert success solid */
+  --green-positive:         #20b858   ;  /* Vert positif (CTA payé) */
+  --green-bg-lightest:      #ecfdf5   ;  /* Vert bg ultra clair */
+  --green-deep-text:        #065f46   ;  /* Vert deep text */
+  --green-deep-mid:         #166534   ;  /* Vert deep mid */
+  --text-muted-dark:        #3a4a3d   ;  /* Texte muted variation foncée */
+  --text-muted-md:          #617064   ;  /* Texte muted variation */
+  --green-text-strong:      #3b6d11   ;  /* Texte vert solid foncé */
+  --green-bg-leaf:          #eaf3de   ;  /* Vert clair feuille */
+  --green-bg-mist:          #f4fbf2   ;  /* Vert mist */
+  --green-bg-warm-md:       #e0eddc   ;  /* Vert chaud variation */
+  --green-bg-warm-lt:       #eef2e4   ;  /* Vert chaud clair */
+  --blue-link-deep:         #185fa5   ;  /* Bleu lien externe foncé */
+  --blue-ocean-dark:        #0d4f74   ;  /* Bleu océan foncé (modal) */
+  --blue-stripe-text:       #315caa   ;  /* Bleu texte stripe badge */
+  --blue-stripe-bg:         #eef4ff   ;  /* Bleu fond stripe badge */
+  --coral-text:             #9a4e2d   ;  /* Coral texte foncé sur fond clair */
+  --coral-text-deep:        #a0461e   ;  /* Coral texte très foncé */
+  --violet-mid-bright:      #8b5cf6   ;  /* Violet mid bright */
+  --red-bg-soft:            #fef2f2   ;  /* Fond rouge très pâle (bannière erreur) */
+  --red-deep-text:          #991b1b   ;  /* Rouge deep text */
+  --red-soft:               #ff5e5e   ;  /* Rouge soft (alert léger) */
+  --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
+}
+
+
+/* ── reset.css ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — reset.css
+   Reset minimal, une seule fois, encodage UTF-8 propre.
+   ═══════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  max-width: 100vw;
+  overscroll-behavior-y: none;
+  background: var(--sand);
+}
+
+/* Desktop : scroll natif instantané — smooth sur html ralentit toute la page */
+@media (min-width: 900px) {
+  html { scroll-behavior: auto; }
+}
+
+body {
+  font-family: var(--font);
+  background: var(--sand);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+  padding-bottom: calc(var(--bnav-h) + 90px);
+}
+
+button  { font: inherit; border: none; background: none; cursor: pointer; }
+input   { font: inherit; border: none; outline: none; }
+img     { display: block; max-width: 100%; }
+a       { text-decoration: none; color: inherit; }
+ul, ol  { list-style: none; }
+
+/* Body lock — DESKTOP uniquement.
+   Mobile : la modal est position:fixed plein écran, pas besoin de fixer le body.
+   position:fixed sur body tue overflow-y:auto des enfants sur Chrome Android. */
+@media (min-width: 900px) {
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: var(--modal-scroll-y, 0);
+  }
+  body.cart-open { overflow: hidden; }
+}
+
+/* Utilité globale */
+.u-hidden { display: none; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── MODE PAGER TEMU : le document reste toujours cadré ──────
+   Le rail horizontal est #k-grid uniquement.
+   html/body ne doivent jamais devenir scrollables horizontalement. */
+@media (max-width: 899px) {
+  html,
+  body,
+  body:has(#k-page-scroll.k-pager-active) {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+/* ── layout.css ──────────────────────────────────────────── */
+﻿/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — layout.css
+   Header, hero shell, sections, bottom-nav.
+   Mobile-first, zéro !important.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Fond global boutique ───────────────────────────────────── */
+html,
+body {
+  background: var(--page-bg);
+}
+
+#k-page-scroll,
+#k-catalog-section {
+  background: var(--page-bg);
+}
+
+/* ── HERO FIXED WRAP — mobile : fixe en haut sous le header ─── */
+/* Desktop : remis à static dans layout.css @900px               */
+#k-hero-fixed-wrap {
+  position: fixed;
+  top: var(--header-h, 44px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  width: 100%;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.k-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--header-h);
+  padding: 0 var(--pad-x);
+  background: var(--sand-warm);
+  border-bottom: 1px solid var(--border-text-07);
+}
+
+.k-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+}
+
+/* Logo */
+.k-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.k-logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.k-logo-icon svg { width: 100%; height: 100%; display: block; }
+.k-logo-text { display: none; } /* masqué mobile, visible desktop */
+
+/* Recherche */
+.k-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  height: 32px;
+  border-radius: 16px;
+  background: var(--surface-white-96);
+  border: 1px solid var(--border-text-08);
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), border-color .2s;
+}
+.k-search:focus-within {
+  border-color: rgba(42,122,62,.3);
+  box-shadow: var(--elev-2), 0 0 0 3px rgba(100,175,90,.08);
+}
+.k-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 32px;
+  background: transparent;
+  font-size: 14px;
+  color: var(--text);
+  border-radius: 21px;
+}
+.k-search input::placeholder { color: var(--overlay-black-lg); }
+.k-search input:focus { background: var(--white); }
+.k-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--overlay-black-lg);
+  pointer-events: none;
+}
+.k-search-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 200;
+}
+.k-search-dropdown.open { display: block; }
+.k-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.k-search-item:hover { background: var(--sand); }
+.k-search-item img { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; }
+.k-search-item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-search-item-price { font-size: 12px; color: var(--coral); font-weight: 700; }
+
+/* Bouton panier */
+.k-cart-btn {
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background .2s;
+  margin-right: -4px;     /* coller l'avatar contre le label */
+  overflow: visible;
+}
+
+.k-header,
+.k-header-inner {
+  overflow: visible;
+}
+.k-cart-btn svg { width: 22px; height: 22px; color: var(--coral); }
+.k-cart-btn:active { background: transparent; }
+
+.k-cart-badge {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 6px;
+  border: 2px solid var(--page-bg);
+  transform: scale(0);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 2px 6px var(--overlay-black-md);
+  line-height: 1;
+  z-index: 20;
+  pointer-events: none;
+  
+  }
+.k-cart-badge.show { transform: scale(1); }
+
+/* Avatar dame panier */
+.k-cart-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  object-fit: contain;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  mix-blend-mode: multiply;
+  transition: opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.k-header .k-cart-avatar { width: 40px; height: 40px; }
+
+@keyframes panierArrive {
+  0%   { transform: scale(.85) rotate(-8deg); }
+  50%  { transform: scale(1.12) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.k-cart-btn.has-items .k-cart-avatar,
+.k-modal-cart-btn.has-items .k-cart-avatar {
+  animation: panierArrive .5s cubic-bezier(.34,1.56,.64,1);
+}
+.k-cart-btn.is-empty .k-cart-badge,
+.k-modal-cart-btn.is-empty .k-modal-cart-badge { display: none; }
+
+@keyframes avatarWave {
+  0%   { transform: scale(1) rotate(0deg); }
+  20%  { transform: scale(1.25) rotate(-10deg); }
+  40%  { transform: scale(1.2) rotate(12deg); }
+  60%  { transform: scale(1.22) rotate(-8deg); }
+  80%  { transform: scale(1.18) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.k-cart-btn.avatar-wave .k-cart-avatar { animation: avatarWave .9s cubic-bezier(.34,1.56,.64,1); }
+
+/* Boutons nav desktop (favoris, suivi) */
+.k-header-nav-btn { display: none; }
+
+/* ── SECTIONS ────────────────────────────────────────────────── */
+.k-section {
+  max-width: var(--container);
+  margin: 0 auto 8px;
+  padding: 4px var(--pad-x);
+}
+.k-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.k-section-head h2 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 2.4vw, 28px);
+  font-weight: 500;
+  letter-spacing: -.01em;
+  color: var(--text);
+  font-variation-settings: 'opsz' 24;
+}
+.k-see-all {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--coral);
+  padding: 4px 8px;
+  border-radius: 50px;
+  transition: background .2s;
+}
+.k-see-all:active { background: rgba(200,92,45,.1); }
+
+/* ── BOTTOM NAV ──────────────────────────────────────────────── */
+.k-bnav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  height: var(--bnav-h);
+  background: var(--surface-sand-97);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-top: 1px solid var(--border-text-07);
+  display: flex;
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.k-bnav-btn, .k-bnav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-light);
+  transition: color .15s;
+  position: relative;
+}
+.k-bnav-btn.active, .k-bnav-item.active { color: var(--ocean-dark); }
+.k-bnav-btn svg, .k-bnav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+.k-bnav-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 18px);
+  min-width: 16px;
+  height: 16px;
+  background: var(--coral);
+  color: var(--white);
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 99px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--white);
+}
+
+/* ── LOADING + SKELETON ──────────────────────────────────────── */
+.k-loading { display: none; padding: 40px; text-align: center; }
+.k-loading.show { display: block; }
+.k-spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border: 3px solid var(--border);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  animation: k-spin .7s linear infinite;
+}
+@keyframes k-spin { to { transform: rotate(360deg); } }
+
+@keyframes k-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.k-skeleton,
+.k-skel-img,
+.k-skeleton-img,
+.k-skel-line,
+.k-skeleton-title,
+.k-skeleton-price {
+  background: linear-gradient(90deg, var(--sand-dark) 25%, var(--sand-warm) 50%, var(--sand-dark) 75%);
+  background-size: 200% 100%;
+  animation: k-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+.k-skel-card,
+.k-card-skeleton {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: 0 1px 4px var(--overlay-black-xs);
+}
+.k-skel-img,
+.k-skeleton-img { width: 100%; aspect-ratio: 1/1; border-radius: 0; }
+.k-skel-line,
+.k-skeleton-title,
+.k-skeleton-price { margin: 6px 6px 0; border-radius: 4px; height: 10px; }
+.k-skel-line.short,
+.k-skeleton-price { width: 55%; margin-bottom: 8px; }
+.k-skeleton-title  { width: 72%; }
+
+/* ── DESKTOP ─────────────────────────────────────────────────── */
+/* ── Header desktop visuel (backdrop, border, shadow) ──
+   Fusionné dans le bloc DESKTOP PREMIUM ci-dessous. */
+
+/* ── Coller la grille directement sous les chips (mobile) ───── */
+@media (max-width: 899px) {
+  .k-proverb-sep      { display: none; margin: 0; }
+  .k-section          { margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+
+  #k-page-scroll {
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #k-catalog-section {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+}
+/* ── Cage fixe du pager mobile Temu ───────────────────────────── */
+@media (max-width: 899px) {
+  body:has(#k-page-scroll.k-pager-active) {
+    overflow: hidden;
+    overscroll-behavior: none;
+    max-width: 100vw;
+  }
+
+  #k-page-scroll.k-pager-active {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--pager-top, 0px);
+    bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px));
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #k-page-scroll.k-pager-active #k-catalog-section {
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+}
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP PREMIUM — @media (min-width: 900px)
+   Couche isolée. Aucun impact mobile.
+   ══════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* ── Page layout ─────────────────────────────────────────── */
+  /* overflow-x sur html casse position:sticky (html devient scroll container).
+     On le retire de html en desktop — body seul clippe le débordement. */
+  html { overflow-x: visible; }
+  body { overflow-x: clip; }
+
+  /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
+
+  #k-catalog-section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  /* ── Header desktop (fusionné) ───────────────────────────── */
+  .k-header {
+    height: 68px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: var(--surface-sand-94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-text-08);
+    box-shadow: 0 10px 28px var(--border-text-06);
+  }
+
+  .k-header-inner {
+    height: 68px;
+    max-width: var(--container);
+    margin: 0 auto;
+    gap: 18px;
+    padding-inline: clamp(24px, 3vw, 32px);
+  }
+
+  .k-logo { min-width: 170px; }
+  .k-logo-text { display: block; font-size: 20px; color: var(--ocean-dark); font-weight: 800; letter-spacing: -.5px; } /* source de vérité desktop — override 1200px au bloc @1200px ci-dessous */
+  .k-logo-icon { width: 36px; height: 36px; }
+
+  /* Barre recherche centrale large */
+  .k-search {
+    flex: 1 1 0;
+    max-width: 680px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--border-text-12);
+    background: var(--white);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 16px var(--border-text-06);
+  }
+  .k-search input {
+    height: 44px;
+    font-size: 15px;
+    padding: 0 16px 0 44px;
+  }
+  .k-search-icon { left: 16px; }
+
+  /* .k-header-actions gap → boutique-desktop.css (source de vérité : gap:4px) */
+
+  /* .k-header-nav-btn → boutique-desktop.css (source de vérité) */
+
+  /* Avatar panier — sans fond carré */
+  .k-cart-btn {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 4px;
+  }
+  .k-cart-avatar { width: 36px; height: 36px; }
+
+  /* Badge panier */
+  .k-cart-badge {
+    top: -2px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 10px;
+    z-index: 20;
+  }
+
+  /* Bnav caché desktop */
+  .k-bnav { display: none; }
+
+  /* .k-cats, .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+
+  /* .k-cats-wrap fades : masqués desktop */
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right { display: none; }  /* pas de fade desktop */
+
+  /* .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+
+  /* Section titre catégorie */
+  .k-sec-header {
+    padding: 18px 0 10px;
+    font-size: 1.15rem;
+  }
+
+  /* ── Grille produits desktop ─────────────────────────────── */
+  .k-section {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3vw, 40px);
+  }
+
+  /* .k-card desktop → source de vérité : products.css (base) + desktop-commerce-skeleton.css (overrides)
+     Règles supprimées de layout.css (P3 ownership audit 2026-05-15) — étaient réécrites après dans la cascade. */
+  /* .k-card-add / .k-card-fav → cart.css @900px (source de vérité : 46×46px / 32×32px) */
+
+  /* ── Panier drawer desktop ───────────────────────────────── */
+  .k-cart-drawer {
+    width: 420px;
+    max-width: 420px;
+    border-radius: 0;
+    box-shadow: var(--elev-4);
+  }
+
+  .k-cart-header {
+    padding: 18px 20px 14px;
+    font-size: 1rem;
+  }
+
+  .k-cart-body { padding: 12px 16px; }
+
+  .k-cart-item { padding: 10px 0; gap: 12px; }
+  .k-cart-item-img { width: 60px; height: 60px; border-radius: 8px; }
+  .k-cart-item-name { font-size: .88rem; }
+
+  .k-cart-footer { padding: 14px 20px 20px; }
+
+  /* ── Hero fixe desktop (pas de fixed) ───────────────────── */
+  #k-hero-fixed-wrap {
+    position: static;
+    top: auto;
+    z-index: auto;
+    width: 100%;
+  }
+
+  .k-hero-wrap { margin: 0; }
+
+}
+
+/* ── 1200px : raffinements supplémentaires ───────────────────── */
+@media (min-width: 1200px) {
+
+  .k-header { height: 72px; }
+  .k-header-inner { height: 72px; }
+  .k-logo-text { font-size: 22px; }
+  .k-search { height: 46px; max-width: 760px; }
+  .k-search input { height: 46px; font-size: 16px; }
+
+  .k-card-name { font-size: 13px; }
+  .k-card-price { font-size: 16px; }
+
+  /* .k-grid/.k-sec-grid gap → products.css L599 (source de vérité) */
+
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP SCROLL FIX
+   body[data-layout="desktop"] est posé par boutique.js au load.
+   Il neutralise le style.top inline de setupMobile().
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html {
+    height: auto;
+    overflow-y: auto;
+    /* overflow-x:hidden sur html crée un scroll container et casse position:sticky.
+       On utilise visible ici — le clip horizontal est assuré par body (overflow-x:clip). */
+    overflow-x: visible;
+  }
+  body {
+    height: auto;
+    overflow-y: auto;
+    /* overflow-x:clip rogne sans créer de scroll container (≠ hidden). */
+    overflow-x: clip;
+  }
+
+  /* Neutraliser tout overflow blocking hérité */
+  body.modal-open { overflow: hidden; }
+  body.cart-open  { overflow: hidden; }
+
+  /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
+}
+/* Mobile : wrapper transparent */
+#k-desktop-catalog-wrap {
+  display: contents;
+}
+
+@media (min-width: 900px) {
+
+  /* ── Wrapper principal ────────────────────────────────────── */
+  #k-desktop-catalog-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    max-width: var(--container);
+    margin: 0 auto;
+    padding: 12px clamp(16px, 3vw, 40px) 0;
+  }
+
+  /* ── Catalogue : prend le reste de la largeur ─────────────── */
+  #k-desktop-catalog-wrap #k-catalog-section {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    /* overflow-x:clip au lieu de hidden: rogne sans créer de scroll container */
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+}
+
+@media (min-width: 1200px) {
+  #k-desktop-catalog-wrap { gap: 24px; }
+}
+
+
+
+/* PATCH #227 — desktop stabilization (consolidé) */
+@media (min-width: 900px) {
+
+  /* 1. Stabilisation scroll desktop */
+  html {
+    width: 100%;
+    max-width: 100%;
+    /* overflow-x sur html casse position:sticky — géré séparément ligne ~396 */
+  }
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  body:not(.modal-open):not(.cart-open) #k-page-scroll {
+    position: static;
+    top: auto;
+    height: auto;
+    overflow: visible;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* overflow-x:clip sur #k-catalog-section, .k-section, .k-grid uniquement.
+     #k-page-scroll NE DOIT PAS avoir overflow-x:clip — cela crée un scroll container
+     qui casse position:sticky du side-cart. Le clip horizontal de page-scroll
+     est assuré par html/body (overflow-x:clip sur body). */
+  #k-catalog-section,
+  .k-section,
+  .k-grid {
+    max-width: 100%;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+  #k-page-scroll {
+    max-width: 100%;
+    overflow-x: visible;
+    box-sizing: border-box;
+  }
+  /* Fix sticky side-cart: #k-desktop-catalog-wrap NE DOIT PAS avoir overflow-x:clip
+     car cela crée un scroll container qui casse position:sticky des enfants.
+     On utilise overflow-x:visible — le clip horizontal est géré par html/body. */
+  #k-desktop-catalog-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: visible;
+  }
+
+  /* 3. Zoom modal — curseur zoom-in (source de vérité : boutique-desktop.css) */
+  /* Note : tap-highlight, focus, perf cartes → boutique-desktop.css */
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE CART DESKTOP — Source unique de vérité (LOT 9)
+   Historique : fixed → sticky → sticky+clip → context fix → option B → consolidé.
+   Mobile : masqué (le panier mobile passe par la bottom nav)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Mobile : side cart masqué */
+.k-side-cart { display: none; }
+
+/* Mobile bnav : label cart devient le total quand panier non vide */
+#k-bnav-cart-label {
+  font-size: 10px;
+  transition: color .2s, font-weight .2s;
+}
+#k-bnav-cart-label.has-total {
+  color: var(--coral);
+  font-weight: 800;
+  font-size: 9px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STICKY CONTEXT PRESERVATION
+   Ces règles existent UNIQUEMENT pour permettre au side-cart de rester sticky.
+   Ne pas modifier sans tester le side-cart à toutes les résolutions desktop.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html { overflow-x: visible; overflow-y: auto; }
+  body { overflow-x: clip;    overflow-y: visible; }
+  #k-page-scroll,
+  #k-desktop-catalog-wrap,
+  #k-catalog-section { overflow: visible; }
+}
+
+
+@media (min-width: 1180px) {
+  /*
+    Donne de l'air en fin de catalogue pour que le sticky sorte proprement
+    avant le footer, sans se tronquer brutalement.
+  */
+  #k-desktop-catalog-wrap {
+    padding-bottom: clamp(40px, 8vh, 80px); /* LOT 15 : réduit — l'ancien 220px faisait glisser le sticky hors viewport */
+  }
+
+  /*
+    Aperçu premium : 3 articles visibles seulement.
+    Le compteur en bas affiche le total réel.
+    Le drawer "Voir le panier" reste la vue complète.
+  */
+  .k-sc-items > *:nth-child(n+5) { display: revert; } /* annule la règle 900px */
+  .k-sc-items > *:nth-child(n+4) { display: none; }
+
+  .k-sc-count-label { display: block; }
+}
+
+/* ── Side cart masqué hors onglet boutique ── */
+/* switchView() pose data-tab sur #k-page-scroll — on en profite pour cacher
+   le side cart sur les onglets suivi et favoris sans toucher au JS. */
+#k-page-scroll[data-tab="track"] .k-side-cart,
+#k-page-scroll[data-tab="fav"]   .k-side-cart {
+  display: none !important;
+}
+
+/* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
+/* margin-top side-cart : 52px, intégré dans le bloc consolidé LOT 9 ci-dessus. */
+
+/* SIDE CART FIXED VIEWPORT - CATALOG OFFSET
+   Owner autorisé : #k-desktop-catalog-wrap appartient à layout.css.
+   Le side cart lui-même reste owner desktop dans boutique-desktop.css. */
+@media (min-width: 900px) {
+  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
+    padding-right: calc(var(--side-cart-w, 290px) + var(--side-cart-gap, 20px));
+  }
+}
+
+@media (min-width: 1200px) {
+  body:not(.modal-open):not(.cart-open) #k-desktop-catalog-wrap {
+    padding-right: calc(var(--side-cart-w, 306px) + var(--side-cart-gap, 24px));
+  }
+}
+
+
+
+/* ── hero.css ────────────────────────────────────────────── */
+﻿/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — hero.css  (LOT 13 refonte)
+   Mobile-first, zéro !important.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── HERO SHELL ─────────────────────────────────────────────── */
+/* overflow:clip (≠ hidden) : coupe le débordement SANS créer de scroll container,
+   donc ne casse pas position:sticky des descendants. */
+.k-hero { position: relative; background: var(--sand-warm); overflow: clip; }
+.k-hero-inner { display: flex; flex-direction: column; max-width: var(--container); margin: 0 auto; }
+
+/* ── MOBILE : image arrondie ────────────────────────────────── */
+.k-hero-media {
+  position: relative;
+  margin: 0 12px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 14px 28px var(--border-text-10);
+}
+.k-hero-img {
+  width: 100%;
+  height: clamp(110px, 28vw, 140px);
+  object-fit: cover;
+  object-position: 50% 0%;
+  display: block;
+}
+.k-hero-mini-slogan {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  z-index: 5;
+  padding: 6px 28% 0;
+  pointer-events: none;
+}
+.k-hero-mini-slogan .k-line-1 {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 4.2vw, 20px);
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.1;
+  text-shadow: 0 0 12px var(--white), 0 0 24px var(--surface-white-92);
+}
+.k-hero-mini-slogan .k-line-2 {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 4.8vw, 24px);
+  font-weight: 900;
+  color: var(--ocean, var(--ocean));
+  line-height: 1.05;
+  text-shadow: 0 0 12px var(--white), 0 0 24px var(--surface-white-92);
+}
+
+/* Bulle hero mobile : conteneur neutre.
+   L'avatar panier appartient à hero-cart-proxy.css quand JS ajoute .k-hero-cart-proxy. */
+.k-hero-bubble {
+  display: flex;
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  z-index: 12;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-sand-90);
+  border: 1px solid rgba(198,168,93,.24);
+  box-shadow: 0 4px 12px var(--border-text-10);
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-hero-bubble:active { transform: scale(.94); }
+
+/* Éléments masqués mobile */
+.k-hero-overlay, .k-hero-badge, .k-hero-sub, .k-hero-cta-row,
+.k-hero-trust, .k-hero-pills, .k-hero-text-left, .k-hero-tag { display: none; }
+
+.k-hero-cats-sticky {
+  background: transparent;
+  box-shadow: none;
+  margin-top: -42px;
+  position: relative;
+  /* z-index doit être > .k-header (z-index:100 dans layout.css) pour ne pas
+     passer derrière le header lors du scroll. Valeur 110 = cohérente avec
+     .k-cats-shell @900px dans boutique-desktop.css (z-index:110). */
+  z-index: 110;
+}
+.k-hero-cats-sticky::after { content: ''; display: block; height: 4px; }
+.k-cats-shell {
+  margin: -14px 12px 0;
+  padding: 0;
+  background: var(--sand-warm);
+  border: 1px solid var(--border-text-06);
+  border-radius: 18px;
+  box-shadow: 0 10px 20px var(--border-text-08);
+  overflow: clip;
+}
+
+/* ── EVENT BANNER ─────────────────────────────────────────────── */
+.k-event-banner {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 12px 0; padding: 12px 16px;
+  color: var(--blue-dark); text-decoration: none;
+  background: linear-gradient(135deg, var(--blue-light-bg), var(--blue-lighter-bg));
+  border: 1px solid var(--blue-border); border-radius: 12px;
+  box-shadow: var(--elev-1);
+  transition: box-shadow .2s var(--ease), transform .2s var(--ease);
+}
+.k-event-banner:active { transform: scale(.98); box-shadow: none; }
+.k-event-banner-icon { flex-shrink: 0; font-size: 24px; line-height: 1; }
+.k-event-banner-copy { flex: 1; min-width: 0; }
+.k-event-banner-title { display: block; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.k-event-banner-text  { display: block; margin-top: 2px; color: var(--blue-mid); font-size: 12px; line-height: 1.4; }
+.k-event-banner-arrow { flex-shrink: 0; font-size: 13px; font-weight: 600; }
+
+/* ── DESKTOP ─────────────────────────────────────────────────── */
+/* Toutes les règles desktop pour .k-hero-media, .k-hero-mini-slogan,
+   .k-hero-img, .k-hero-badge, .k-hero-cta-*, .k-hero-trust
+   sont dans desktop-commerce-skeleton.css (owner déclaré §3 BOUTIQUE_ARCHITECTURE.md).
+   hero.css est owner base/mobile uniquement. */
+
+/* ── Fond hero transparent (tokens) ─────────────────────── */
+.k-hero, .k-hero-wrap, .k-hero-shell, .k-hero-card, .k-hero-banner {
+  background: var(--hero-bg);
+  border-color: var(--hero-border);
+  box-shadow: var(--hero-shadow);
+}
+.k-hero-card, .k-hero-banner { overflow: hidden; border-radius: var(--radius-lg); }
+.k-hero img, .k-hero-card img, .k-hero-banner img { display: block; width: 100%; background: transparent; }
+/* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
+.k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
+/* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
+/* @900px override final → boutique-desktop.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,160px) !important) */
+
+/* Trust bar : desktop only (non utilisée actuellement) */
+.k-hero-trust-bar { display: none; }

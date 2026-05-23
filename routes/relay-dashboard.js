@@ -20,6 +20,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 
 // ── Auth : relay + admin ────────────────────────────────────────────────────
 router.use(authenticate, requireRole(['admin', 'agent_relais']));
@@ -58,7 +59,7 @@ async function ensureRelayTables() {
       CREATE INDEX IF NOT EXISTS idx_comments_order ON order_comments(order_id);
     `);
   } catch(e) {
-    console.warn('[RELAY] Table creation (non-fatal):', e.message);
+    log.warn('[RELAY] Table creation (non-fatal):', e.message);
   }
 }
 
@@ -392,7 +393,7 @@ router.post('/orders/:id/incident', async (req, res, next) => {
       RETURNING *
     `, [order.id, req.user.id, req.user.full_name, type, description || null, priority || 'normal']);
 
-    console.log(`[RELAY] 🚨 Incident ${incident.id} créé — commande ${order.reference} — type: ${type}`);
+    log.info(`[RELAY] 🚨 Incident ${incident.id} créé — commande ${order.reference} — type: ${type}`);
 
     res.status(201).json({ success: true, incident });
   } catch(err) { next(err); }
@@ -445,7 +446,7 @@ router.post('/orders/:id/escalate', async (req, res, next) => {
       VALUES ($1, $2, $3, $4, $5)
     `, [order.id, req.user.id, req.user.full_name, req.user.role, `⚠️ Escaladé au hub: ${reason.trim()}`]);
 
-    console.log(`[RELAY] ⚠️ Escalade hub — commande ${order.reference} — raison: ${reason}`);
+    log.info(`[RELAY] ⚠️ Escalade hub — commande ${order.reference} — raison: ${reason}`);
 
     res.status(201).json({ success: true, incident, message: 'Escalade envoyée au hub' });
   } catch(err) { next(err); }
@@ -479,7 +480,7 @@ router.patch('/orders/:id/client-absent', async (req, res, next) => {
       VALUES ($1, $2, $3, $4, 'Client absent — relance programmée')
     `, [order.id, req.user.id, req.user.full_name, req.user.role]);
 
-    console.log(`[RELAY] 👤 Client absent — commande ${order.reference}`);
+    log.info(`[RELAY] 👤 Client absent — commande ${order.reference}`);
 
     res.json({ success: true, message: 'Client marqué absent, relance programmée' });
   } catch(err) { next(err); }

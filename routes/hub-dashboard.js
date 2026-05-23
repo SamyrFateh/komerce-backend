@@ -27,6 +27,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
@@ -76,8 +77,8 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
     for (const m of migrations) {
       try { await db.query(m); } catch(e) { /* column may already exist */ }
     }
-    console.log('[HUB-DASH] Tables + migrations OK');
-  } catch(e) { console.warn('Hub-dash tables init (non-fatal):', e.message); }
+    log.info('[HUB-DASH] Tables + migrations OK');
+  } catch(e) { log.warn('Hub-dash tables init (non-fatal):', e.message); }
 })();
 
 // ── GET /dashboard — KPIs Hub (défensif) ────────────────────────────────────
@@ -119,7 +120,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         total_active: parseInt(r.total_active) || 0,
         today: parseInt(t.c) || 0
       };
-    } catch(e) { console.error('[HUB-DASH] Orders KPI error:', e.message); }
+    } catch(e) { log.error('[HUB-DASH] Orders KPI error:', e.message); }
 
     // 2. Parcels KPIs
     try {
@@ -139,7 +140,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         in_transit: parseInt(r.in_transit) || 0,
         at_relay: parseInt(r.at_relay) || 0
       };
-    } catch(e) { console.error('[HUB-DASH] Parcels KPI error:', e.message); }
+    } catch(e) { log.error('[HUB-DASH] Parcels KPI error:', e.message); }
 
     // 3. Incidents
     try {
@@ -154,7 +155,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         open: parseInt(r.open_count) || 0,
         critical: parseInt(r.critical_count) || 0
       };
-    } catch(e) { console.error('[HUB-DASH] Incidents error:', e.message); }
+    } catch(e) { log.error('[HUB-DASH] Incidents error:', e.message); }
 
     // 4. Stock alerts
     try {
@@ -163,7 +164,7 @@ router.get('/dashboard', ...hubAuth, async (req, res, next) => {
         WHERE stock IS NOT NULL AND stock <= 2 AND stock >= 0
       `);
       stockData = { low_stock_count: parseInt(r.c) || 0 };
-    } catch(e) { console.error('[HUB-DASH] Stock error:', e.message); }
+    } catch(e) { log.error('[HUB-DASH] Stock error:', e.message); }
 
     res.json({
       orders: ordersData,
@@ -541,7 +542,7 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
       source: 'hub_start_prep',
     });
     if (!_prepResult.success) {
-      console.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
+      log.warn(`[HUB] transitionOrderStatus failed for ${order.id}: ${_prepResult.error}`);
     }
 
     // Log scan

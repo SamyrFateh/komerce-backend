@@ -27,6 +27,7 @@ const QRCode = require('qrcode');
 const { validate } = require('../middleware/validate');
 const { logistics } = require('../validators');
 const { logParcelEvent } = require('../services/parcel-security');
+const log = require('../utils/logger').child({ module: 'logistics' });
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
@@ -113,7 +114,7 @@ router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment),
           `Komerce · Colis ${sp.parcel_ref || sp.order_ref} disponible au ${sp.relais_name} (${sp.relais_addr}).`,
           'available', null
         ))
-      ).catch(err => console.error('SMS parcel batch error:', err.message));
+      ).catch(err => log.error('SMS parcel batch error:', err.message));
     }
 
     res.json(rows[0]);

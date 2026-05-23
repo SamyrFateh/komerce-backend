@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'parcel-label' });
 
 // ── Helper: format date ──
 function fmtDate(d) {
@@ -235,7 +236,7 @@ router.get('/:ref/label', async (req, res) => {
     res.send(html);
 
   } catch (err) {
-    console.error('[LABEL]', err);
+    log.error('[LABEL]', err);
     res.status(500).json({ error: 'Erreur génération étiquette', detail: err.message });
   }
 });

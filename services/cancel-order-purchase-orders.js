@@ -12,6 +12,7 @@
  */
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'cancel-order-purchase-orders' });
 
 const AUTO_CANCEL_STATUSES = ['pending', 'notified'];
 const BLOCKING_STATUSES = ['confirmed', 'received', 'partially_received', 'hub_received'];
@@ -96,7 +97,7 @@ async function insertBlockingAlert(q, { orderId, orderReference, actor, reason, 
     );
   } catch (err) {
     // Ne jamais casser l'annulation métier uniquement parce que l'alerte échoue.
-    console.error('[I-SWEEP-5A] failed to insert purchasing cancel alert:', err.message);
+    log.error('[I-SWEEP-5A] failed to insert purchasing cancel alert:', err.message);
   }
 }
 

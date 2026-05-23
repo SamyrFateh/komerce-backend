@@ -17,6 +17,7 @@
 'use strict';
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'wallet-service' });
 
 // ── Schema Migration ────────────────────────────────────────────────────────
 async function ensureWalletTables() {
@@ -83,9 +84,9 @@ async function ensureWalletTables() {
 
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS wallet_applied_kmf INTEGER DEFAULT 0;
     `);
-    console.log('✅ Wallet tables ready');
+    log.info('✅ Wallet tables ready');
   } catch (err) {
-    console.error('⚠️ Wallet migration error:', err.message);
+    log.error('⚠️ Wallet migration error:', err.message);
   } finally {
     client.release();
   }
@@ -396,7 +397,7 @@ async function reverseLot(client, { lotId, adminId, note }) {
     RETURNING *
   `, [lot.wallet_id, amountToReverse, newBalance, lot.source_order_id, note || 'Reversal admin', adminId]);
 
-  console.log(`[WALLET] ✅ Lot ${lotId} reversed: ${amountToReverse} KMF — new balance: ${newBalance}`);
+  log.info(`[WALLET] ✅ Lot ${lotId} reversed: ${amountToReverse} KMF — new balance: ${newBalance}`);
 
   return { transaction: tx, reversed_kmf: amountToReverse };
 }

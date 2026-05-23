@@ -26,6 +26,7 @@ const { transitionOrderStatus } = require('../services/order-status-machine');
 // ── CANONIQUE: source de vérité unique pour le calcul du statut agrégé ──
 // Toute modification de la logique doit se faire dans utils/parcels.js.
 const { computeOrderStatus: computeOrderStatusFromParcels } = require('./parcels');
+const log = require('../utils/logger').child({ module: 'parcelSync-v2' });
 
 /**
  * Recalcule le statut d'une commande depuis ses colis.
@@ -122,7 +123,7 @@ async function fullSync(orderId) {
 
       if (!result.success && !result.noop) {
         // La transition a été refusée — log warning mais ne crash pas
-        console.warn(`[PARCEL-SYNC-V2] ⚠️ Transition refusée pour order=${orderId}: ${result.error}`);
+        log.warn(`[PARCEL-SYNC-V2] ⚠️ Transition refusée pour order=${orderId}: ${result.error}`);
       }
 
       await client.query('COMMIT');

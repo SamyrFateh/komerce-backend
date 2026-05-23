@@ -2,6 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
+const log = require('../utils/logger').child({ module: 'shares' });
 
 let cartSharesSchemaReady = false;
 
@@ -105,7 +106,7 @@ router.post('/', async (req, res) => {
       total_kmf
     });
   } catch (err) {
-    console.error('[shares] POST error:', err);
+    log.error('[shares] POST error:', err);
     return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -167,7 +168,7 @@ router.get('/:token', async (req, res) => {
       contributions
     });
   } catch (err) {
-    console.error('[shares] GET error:', err);
+    log.error('[shares] GET error:', err);
     return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -230,7 +231,7 @@ router.post('/:token/contributions', async (req, res) => {
 
     return res.status(201).json({ contribution: insertRows[0] });
   } catch (err) {
-    console.error('[shares] contribution error:', err);
+    log.error('[shares] contribution error:', err);
     return res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -260,7 +261,7 @@ router.patch('/:token/contributions/:id', async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    console.error('[shares] PATCH contribution error:', err);
+    log.error('[shares] PATCH contribution error:', err);
     return res.status(500).json({ error: 'Erreur serveur' });
   }
 });

@@ -14,8 +14,9 @@
  *   - Erreurs critiques → rejet du scan
  *   - Jamais de suppression, toujours correction append-only
  */
-console.log('[SCAN-ENGINE] version 5ed2bac loaded');
+log.info('[SCAN-ENGINE] version 5ed2bac loaded');
 const pool = require('../db');
+const log = require('../utils/logger').child({ module: 'scan-engine' });
 
 // ════════════════════════════════════════════════════════════════
 // MAPPING: event_type → statut colis + étape quantité
@@ -336,7 +337,7 @@ async function processScan(params) {
     if (flow.parcel_status && ['shipped', 'available'].includes(flow.parcel_status)) {
       const { notifyParcelScan } = require('./notification-service');
       notifyParcelScan(params.parcel_id, updatedParcel.reference, flow.parcel_status)
-        .catch(err => console.error('[SCAN-ENGINE] Notification error:', err.message));
+        .catch(err => log.error('[SCAN-ENGINE] Notification error:', err.message));
     }
 
     return result;
@@ -356,14 +357,14 @@ async function processScan(params) {
         });
         result.event_id = rejectedEvent.id;
       } catch (logErr) {
-        console.error('[scan-engine] Erreur lors de la journalisation du rejet:', logErr.message);
+        log.error('[scan-engine] Erreur lors de la journalisation du rejet:', logErr.message);
       }
       result.error = { code: err.code, message: err.message };
       return result;
     }
 
     // Erreur système inattendue
-    console.error('[scan-engine] Erreur système:', err);
+    log.error('[scan-engine] Erreur système:', err);
     throw err;
 
   } finally {
@@ -654,7 +655,7 @@ async function syncOrderFromParcels(client, orderId) {
       dbClient: client,
     });
     if (!result.success) {
-      console.warn(`[SCAN-ENGINE] syncOrderFromParcels: transition to ${newStatus} failed for order ${orderId}: ${result.error}`);
+      log.warn(`[SCAN-ENGINE] syncOrderFromParcels: transition to ${newStatus} failed for order ${orderId}: ${result.error}`);
     }
   }
 }

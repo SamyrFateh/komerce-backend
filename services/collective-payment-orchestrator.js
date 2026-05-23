@@ -25,6 +25,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../db');
 const engine = require('./collective-workspace-engine');
+const log = require('../utils/logger').child({ module: 'collective-payment-orchestrator' });
 
 // Le moteur ordre Komerce — on s'en sert pour creer la commande proprement.
 // Si le service order-service est dispo, on l'utilise. Sinon SQL direct.
@@ -75,7 +76,7 @@ async function createOrGetPaymentIntent(rawToken) {
         };
       }
     } catch (err) {
-      console.warn('[CollectivePay] PaymentIntent retrieve failed, recreating:', err.message);
+      log.warn('[CollectivePay] PaymentIntent retrieve failed, recreating:', err.message);
     }
   }
 
@@ -143,7 +144,7 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
     );
     if (!tokenRes.rows.length) {
       await client.query('ROLLBACK');
-      console.warn('[CollectivePay] PI', stripePaymentIntentId, 'not linked to a token');
+      log.warn('[CollectivePay] PI', stripePaymentIntentId, 'not linked to a token');
       return { ignored: true };
     }
     const token = tokenRes.rows[0];
@@ -156,7 +157,7 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
 
     if (token.status !== 'active') {
       await client.query('ROLLBACK');
-      console.warn('[CollectivePay] token', token.id, 'in unexpected status:', token.status);
+      log.warn('[CollectivePay] token', token.id, 'in unexpected status:', token.status);
       return { ignored: true, reason: 'unexpected_status' };
     }
 
@@ -179,7 +180,7 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
 
     if (!sessionRes.rows.length) {
       // La session a déjà changé d'état (ended, paid, etc.) — on annule l'autorisation
-      console.warn('[CollectivePay] session', token.session_id, 'no longer open, cancelling authorization');
+      log.warn('[CollectivePay] session', token.session_id, 'no longer open, cancelling authorization');
       await client.query('COMMIT');
       // Annulation hors transaction (appel Stripe)
       try { await stripe.paymentIntents.cancel(stripePaymentIntentId); } catch (e) { /* déjà cancel */ }
@@ -210,7 +211,7 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
       // setImmediate pour ne pas bloquer le webhook
       setImmediate(() => {
         captureAllAndCreateOrder(session.id).catch(err => {
-          console.error('[CollectivePay] capture atomique échouée :', err.message);
+          log.error('[CollectivePay] capture atomique échouée :', err.message);
         });
       });
     }
@@ -245,7 +246,7 @@ async function captureAllAndCreateOrder(sessionId) {
   const session = sessionRes.rows[0];
 
   if (session.status !== 'ready_to_capture') {
-    console.warn('[CollectivePay] session', sessionId, 'not ready_to_capture (status=' + session.status + ')');
+    log.warn('[CollectivePay] session', sessionId, 'not ready_to_capture (status=' + session.status + ')');
     return { skipped: true };
   }
 
@@ -268,7 +269,7 @@ async function captureAllAndCreateOrder(sessionId) {
       });
       captured.push({ token_id: t.id, pi_id: pi.id });
     } catch (err) {
-      console.error('[CollectivePay] capture failed for token', t.id, err.message);
+      log.error('[CollectivePay] capture failed for token', t.id, err.message);
       failed.push({ token_id: t.id, error: err.message });
     }
   }
@@ -281,12 +282,12 @@ async function captureAllAndCreateOrder(sessionId) {
   }
 
   // Une ou plusieurs ont échoué → annuler les réussies (best effort)
-  console.error('[CollectivePay] partial failure, refunding', captured.length, 'captures');
+  log.error('[CollectivePay] partial failure, refunding', captured.length, 'captures');
   for (const c of captured) {
     try {
       // Refund best effort si déjà capturé
       await stripe.refunds.create({ payment_intent: c.pi_id }, { idempotencyKey: 'refund_' + c.token_id });
-    } catch (e) { console.error('[CollectivePay] refund failed:', e.message); }
+    } catch (e) { log.error('[CollectivePay] refund failed:', e.message); }
   }
 
   await db.query(
@@ -481,9 +482,9 @@ async function _createOrderFromSession(sessionId, options = {}) {
           ]
         );
       } catch (alertErr) {
-        console.error('[CollectivePay] ⛔ FAILED TO INSERT ALERT for', reference, alertErr.message);
+        log.error('[CollectivePay] ⛔ FAILED TO INSERT ALERT for', reference, alertErr.message);
       }
-      console.error(`[CollectivePay] ⛔ paid_but_stock_blocked: ${reference} — ${insufficientItems.length} produit(s) en rupture`);
+      log.error(`[CollectivePay] ⛔ paid_but_stock_blocked: ${reference} — ${insufficientItems.length} produit(s) en rupture`);
     } else {
       // Stock OK partout → décrémenter
       for (const si of stockItems) {
@@ -524,11 +525,11 @@ async function _createOrderFromSession(sessionId, options = {}) {
       const orderCostSnapshot = require('./order-cost-snapshot');
       await orderCostSnapshot.lockEstimatedCostsForOrder(order.id, client, { source: 'collective' });
     } catch (snapErr) {
-      console.error('[CollectivePay] cost snapshot failed for', order.reference, snapErr.message);
+      log.error('[CollectivePay] cost snapshot failed for', order.reference, snapErr.message);
     }
 
     await client.query('COMMIT');
-    console.log('[CollectivePay] ✅ Commande creee', order.reference, 'depuis workspace', ws.id, stockBlocked ? '(STOCK BLOCKED)' : '');
+    log.info('[CollectivePay] ✅ Commande creee', order.reference, 'depuis workspace', ws.id, stockBlocked ? '(STOCK BLOCKED)' : '');
 
     if (!stockBlocked) {
       triggerPurchasingFor = order.id;
@@ -554,7 +555,7 @@ async function _createOrderFromSession(sessionId, options = {}) {
         note: 'Commande lancée automatiquement après paiement collectif',
       });
     } catch (err) {
-      console.warn('[CollectivePay] transition ordered failed (non-fatal):', err.message);
+      log.warn('[CollectivePay] transition ordered failed (non-fatal):', err.message);
     }
   }
 
@@ -567,12 +568,12 @@ async function _createOrderFromSession(sessionId, options = {}) {
         notifSvc.notifyPaymentConfirmed(createdOrderId, createdOrderRef)
           .then(result => {
             if (result?.invoice) {
-              console.log(`🧾 [CollectivePay] Invoice ${result.invoice} sent for ${createdOrderRef}`);
+              log.info(`🧾 [CollectivePay] Invoice ${result.invoice} sent for ${createdOrderRef}`);
             }
           })
-          .catch(e => console.error('[CollectivePay-NOTIF] ❌', e.message));
+          .catch(e => log.error('[CollectivePay-NOTIF] ❌', e.message));
       } catch (e) {
-        console.error('[CollectivePay-NOTIF] require error:', e.message);
+        log.error('[CollectivePay-NOTIF] require error:', e.message);
       }
     }
 
@@ -583,9 +584,9 @@ async function _createOrderFromSession(sessionId, options = {}) {
         const purchasing = require('../routes/purchasing');
         if (typeof purchasing.triggerPurchasing === 'function') {
           purchasing.triggerPurchasing(triggerPurchasingFor)
-            .then(r => console.log('[CollectivePay-PURCHASING] OK:', createdOrderRef, r))
+            .then(r => log.info('[CollectivePay-PURCHASING] OK:', createdOrderRef, r))
             .catch(async (e) => {
-              console.error('[CollectivePay-PURCHASING] error:', createdOrderRef, e.message);
+              log.error('[CollectivePay-PURCHASING] error:', createdOrderRef, e.message);
               try {
                 await db.query(
                   `INSERT INTO alerts (level, source, message, payload)
@@ -596,12 +597,12 @@ async function _createOrderFromSession(sessionId, options = {}) {
                   ]
                 );
               } catch (alertErr) {
-                console.error('[CollectivePay-PURCHASING] alert insert failed:', alertErr.message);
+                log.error('[CollectivePay-PURCHASING] alert insert failed:', alertErr.message);
               }
             });
         }
       } catch (e) {
-        console.warn('[CollectivePay-PURCHASING] require failed:', e.message);
+        log.warn('[CollectivePay-PURCHASING] require failed:', e.message);
       }
     }
   }
@@ -812,7 +813,7 @@ async function expireOverdueSessions() {
       await _expireSession(session.id);
       results.push({ session_id: session.id, ok: true });
     } catch (err) {
-      console.error('[CollectivePay] expire session', session.id, 'failed:', err.message);
+      log.error('[CollectivePay] expire session', session.id, 'failed:', err.message);
       results.push({ session_id: session.id, ok: false, error: err.message });
     }
   }
@@ -837,7 +838,7 @@ async function _expireSession(sessionId) {
       } catch (err) {
         // Ignore : peut-etre deja cancel ou capture
         if (!String(err.message).includes('cannot be canceled')) {
-          console.warn('[CollectivePay] PI cancel failed for', t.id, ':', err.message);
+          log.warn('[CollectivePay] PI cancel failed for', t.id, ':', err.message);
         }
       }
     }
@@ -912,15 +913,15 @@ async function markStripeEventProcessed(stripeEventId, eventType, payloadSummary
 let _cronInterval = null;
 function startExpirationCron(intervalMs = 5 * 60 * 1000) {
   if (_cronInterval) return; // déjà démarré
-  console.log('[CollectivePay] cron expiration started, interval=' + Math.round(intervalMs/1000) + 's');
+  log.info('[CollectivePay] cron expiration started, interval=' + Math.round(intervalMs/1000) + 's');
   _cronInterval = setInterval(async () => {
     try {
       const r = await expireOverdueSessions();
       if (r.expired_count > 0) {
-        console.log('[CollectivePay] cron: expired ' + r.expired_count + ' sessions');
+        log.info('[CollectivePay] cron: expired ' + r.expired_count + ' sessions');
       }
     } catch (err) {
-      console.error('[CollectivePay] cron error:', err.message);
+      log.error('[CollectivePay] cron error:', err.message);
     }
   }, intervalMs);
 }

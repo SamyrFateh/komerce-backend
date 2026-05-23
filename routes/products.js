@@ -17,6 +17,7 @@ const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const { recordProductPriceChange } = require('../services/product-price-audit');
 const { auditProductStockChange, validatePublicationUpdate } = require('../services/product-publication-guard');
+const log = require('../utils/logger').child({ module: 'products' });
 
 // ─── UUID validation helper ──────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -427,7 +428,7 @@ router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upl
       return res.status(404).json({ error: 'Produit introuvable' });
     }
 
-    console.log(`📷 Image uploadée pour "${product.name}" → ${imageUrl}`);
+    log.info(`📷 Image uploadée pour "${product.name}" → ${imageUrl}`);
     res.json({ success: true, image_url: imageUrl, product });
   } catch (err) {
     next(err);
@@ -470,7 +471,7 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
       );
     }
 
-    console.log(`📷 ${imageUrls.length} images uploadées pour "${product.name}"`);
+    log.info(`📷 ${imageUrls.length} images uploadées pour "${product.name}"`);
     res.json({ success: true, images: merged, new_images: imageUrls });
   } catch (err) {
     next(err);

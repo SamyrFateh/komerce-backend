@@ -16,6 +16,7 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createStoreCredit } = require('./store-credits');
+const log = require('../utils/logger').child({ module: 'refunds' });
 
 /**
  * Traite un remboursement (Stripe ou crédit boutique).
@@ -60,7 +61,7 @@ async function processRefund(client, {
       });
       stripeRefundId = stripeRefund.id;
     } catch (stripeErr) {
-      console.error(`❌ Stripe refund failed for ${order.reference}:`, stripeErr.message);
+      log.error(`❌ Stripe refund failed for ${order.reference}:`, stripeErr.message);
 
       // Enregistrer le refund en échec
       const { rows: [failedRefund] } = await client.query(
@@ -98,7 +99,7 @@ async function processRefund(client, {
     ]
   );
 
-  console.log(`✅ Refund ${refund.id} — ${refundType} ${refundPct}% — ${refundMethod} — ${order.reference}`);
+  log.info(`✅ Refund ${refund.id} — ${refundType} ${refundPct}% — ${refundMethod} — ${order.reference}`);
   return { refund, error: null };
 }
 

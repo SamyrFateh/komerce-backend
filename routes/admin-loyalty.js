@@ -17,6 +17,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'admin-loyalty' });
 
 const adminOnly = [authenticate, requireAdmin];
 
@@ -117,7 +118,7 @@ router.post('/reward/:id', adminOnly, async (req, res, next) => {
       RETURNING *
     `, [gift_description.trim(), notes || null, req.user.id, id]);
 
-    console.log(`[loyalty] 🎁 Cadeau accordé user=${existing.user_id} by admin=${req.user.id}: ${gift_description}`);
+    log.info(`[loyalty] 🎁 Cadeau accordé user=${existing.user_id} by admin=${req.user.id}: ${gift_description}`);
 
     res.json({
       success: true,

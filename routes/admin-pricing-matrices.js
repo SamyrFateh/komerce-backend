@@ -23,6 +23,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { invalidatePricingMatricesCache } = require('../utils/pricing');
+const log = require('../utils/logger').child({ module: 'admin-pricing-matrices' });
 
 const ALLOWED_CATEGORIES = ['electronique', 'maison', 'mariage', 'mode_beaute', 'enfants'];
 
@@ -121,7 +122,7 @@ router.put('/taxes/:category', authenticate, requireAdmin, async (req, res, next
   } catch (err) {
     // Table audit manquante ? On crée à la volée un log console mais on n'échoue pas
     if (err.message && err.message.includes('pricing_matrices_audit')) {
-      console.warn('[PRICING] Table pricing_matrices_audit manquante, audit skippé.');
+      log.warn('[PRICING] Table pricing_matrices_audit manquante, audit skippé.');
       return res.json({ success: true, warning: 'Audit trail non persisté (table manquante)' });
     }
     next(err);
@@ -205,7 +206,7 @@ router.put('/dims/:category', authenticate, requireAdmin, async (req, res, next)
         ]);
       } catch (auditErr) {
         // Audit best-effort, ne bloque pas l'update
-        console.warn('[PRICING] Audit dims skipped:', auditErr.message);
+        log.warn('[PRICING] Audit dims skipped:', auditErr.message);
       }
 
       await client.query('COMMIT');

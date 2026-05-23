@@ -46,6 +46,7 @@
  */
 
 const { transitionOrderStatus } = require('./order-status-machine');
+const log = require('../utils/logger').child({ module: 'order-payment-confirmation' });
 
 async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   if (!dbClient) {
@@ -106,7 +107,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
 
   if (!orderResult.success && !orderResult.noop) {
     // Log explicite mais non-bloquant : la commande est confirmed, le stock doit quand même bouger
-    console.warn(`[confirmPaymentCycle] ⚠ confirmed→ordered rejeté (non-fatal): ${orderResult.error} — order=${orderId}`);
+    log.warn(`[confirmPaymentCycle] ⚠ confirmed→ordered rejeté (non-fatal): ${orderResult.error} — order=${orderId}`);
   }
 
   // ── Étape 3 : vérification stock + décrémentage (FOR UPDATE atomique) ─────
@@ -162,7 +163,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
       // Variante introuvable → on alerte mais on ne bloque pas (la commande
       // existe déjà, blocage à l'étape de création). C'est un état anormal.
       if (!variant) {
-        console.warn(`[confirmPaymentCycle] ⚠ variante introuvable au paiement: ${item.product_id} ${vType}=${vValue} — order=${orderId}`);
+        log.warn(`[confirmPaymentCycle] ⚠ variante introuvable au paiement: ${item.product_id} ${vType}=${vValue} — order=${orderId}`);
         continue;
       }
       // stock NULL = "non géré par cette variante" (retombe sur stock global déjà vérifié)

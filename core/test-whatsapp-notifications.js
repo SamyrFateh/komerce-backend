@@ -14,17 +14,17 @@
 
 const phone = process.argv[2];
 if (!phone) {
-  console.error('❌ Usage : node test-whatsapp-notifications.js <numero>');
+  log.error('❌ Usage : node test-whatsapp-notifications.js <numero>');
   process.exit(1);
 }
 
 (async () => {
-  console.log('\n🧪 KOMERCE — Test notifications WhatsApp');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`📱 Numéro      : ${phone}`);
-  console.log(`🔑 AUTHKEY_KEY : ${process.env.AUTHKEY_API_KEY ? '✅' : '❌ MANQUANT'}`);
-  console.log(`🆔 WID_OTP     : ${process.env.WID_OTP || '❌ NON CONFIGURÉ (OTP ne marchera pas)'}`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  log.info('\n🧪 KOMERCE — Test notifications WhatsApp');
+  log.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  log.info(`📱 Numéro      : ${phone}`);
+  log.info(`🔑 AUTHKEY_KEY : ${process.env.AUTHKEY_API_KEY ? '✅' : '❌ MANQUANT'}`);
+  log.info(`🆔 WID_OTP     : ${process.env.WID_OTP || '❌ NON CONFIGURÉ (OTP ne marchera pas)'}`);
+  log.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   const authkey = require('./services/authkey-client');
   const notifService = require('./services/notification-service');
@@ -86,32 +86,32 @@ if (!phone) {
   ];
 
   for (const t of tests) {
-    console.log(`\n▶ ${t.name}`);
+    log.info(`\n▶ ${t.name}`);
     try {
       const r = await t.fn();
       // Signatures différentes selon les helpers
       const ok = r.ok || r.success;
       const msgId = r.messageId || (r.success ? 'via sendOtpMessage' : null);
       if (ok) {
-        console.log(`  ✅ ENVOYÉ — messageId: ${msgId || 'n/a'}`);
-        if (r.channel) console.log(`     channel: ${r.channel}`);
+        log.info(`  ✅ ENVOYÉ — messageId: ${msgId || 'n/a'}`);
+        if (r.channel) log.info(`     channel: ${r.channel}`);
       } else {
-        console.log(`  ❌ ÉCHEC — raison: ${r.error || r.reason}`);
-        if (r.data) console.log(`     data: ${JSON.stringify(r.data).substring(0, 150)}`);
+        log.info(`  ❌ ÉCHEC — raison: ${r.error || r.reason}`);
+        if (r.data) log.info(`     data: ${JSON.stringify(r.data).substring(0, 150)}`);
       }
     } catch (err) {
-      console.log(`  💥 EXCEPTION : ${err.message}`);
+      log.info(`  💥 EXCEPTION : ${err.message}`);
     }
     await new Promise(r => setTimeout(r, 2000)); // 2s entre chaque
   }
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ Test terminé.');
-  console.log('👉 Vérifie ton WhatsApp — tu devrais avoir reçu 8 messages.');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  log.info('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  log.info('✅ Test terminé.');
+  log.info('👉 Vérifie ton WhatsApp — tu devrais avoir reçu 8 messages.');
+  log.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   process.exit(0);
 })().catch(err => {
-  console.error('💥 Erreur fatale :', err);
+  log.error('💥 Erreur fatale :', err);
   process.exit(1);
 });

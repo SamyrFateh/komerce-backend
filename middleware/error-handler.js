@@ -11,9 +11,9 @@ try {
   log = require('../utils/logger').child({ module: 'error-handler' });
 } catch (_) {
   log = {
-    error: (...args) => console.error('[error-handler]', ...args),
-    warn:  (...args) => console.warn('[error-handler]', ...args),
-    info:  (...args) => console.log('[error-handler]', ...args),
+    error: (...args) => log.error('[error-handler]', ...args),
+    warn:  (...args) => log.warn('[error-handler]', ...args),
+    info:  (...args) => log.info('[error-handler]', ...args),
   };
 }
 

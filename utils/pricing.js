@@ -19,6 +19,7 @@
 
 const db = require('../db');
 const { getEcoVar, invalidateEcoCache } = require('./eco-bridge');
+const log = require('../utils/logger').child({ module: 'pricing' });
 
 const DEFAULT_RATES = { eur_kmf: 492, aed_kmf: 138, fret_eur_m3: 180 };
 
@@ -61,7 +62,7 @@ async function loadDims() {
       'SELECT category, length_cm, width_cm, height_cm FROM pricing_category_dims'
     );
     if (rows.length === 0) {
-      console.warn('[PRICING] pricing_category_dims vide, fallback utilisé.');
+      log.warn('[PRICING] pricing_category_dims vide, fallback utilisé.');
       _dimsCache = FALLBACK_DIMS;
     } else {
       const cache = {};
@@ -73,7 +74,7 @@ async function loadDims() {
     _dimsCacheAt = Date.now();
     return _dimsCache;
   } catch (err) {
-    console.error('[PRICING] loadDims error (fallback):', err.message);
+    log.error('[PRICING] loadDims error (fallback):', err.message);
     return FALLBACK_DIMS;
   }
 }
@@ -91,7 +92,7 @@ async function loadTaxes() {
       'SELECT category, douane_pct, tva_pct, taxe_add_pct FROM pricing_category_taxes'
     );
     if (rows.length === 0) {
-      console.warn('[PRICING] pricing_category_taxes vide, fallback utilisé.');
+      log.warn('[PRICING] pricing_category_taxes vide, fallback utilisé.');
       _taxesCache = FALLBACK_TAXES;
     } else {
       const cache = {};
@@ -107,7 +108,7 @@ async function loadTaxes() {
     _taxesCacheAt = Date.now();
     return _taxesCache;
   } catch (err) {
-    console.error('[PRICING] loadTaxes error (fallback):', err.message);
+    log.error('[PRICING] loadTaxes error (fallback):', err.message);
     return FALLBACK_TAXES;
   }
 }

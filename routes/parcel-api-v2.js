@@ -24,6 +24,7 @@ const router = express.Router();
 const db = require('../db');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { authenticate, requireRole } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'parcel-api-v2' });
 
 router.use(authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']));
 
@@ -264,7 +265,7 @@ async function syncParcelToOrders(client, parcelId, newStatus) {
       synced++;
     } else {
       // Non-fatal: log and continue (e.g. order already at target status)
-      console.warn(`[PARCEL-SYNC] transition ${orderStatus} failed for order ${orderId}: ${result.error}`);
+      log.warn(`[PARCEL-SYNC] transition ${orderStatus} failed for order ${orderId}: ${result.error}`);
     }
   }
 
@@ -1271,7 +1272,7 @@ router.post('/:ref/scan', async (req, res, next) => {
     // ── NOTIFICATIONS (fire-and-forget) ──
     const notif = require('../services/notification-service');
     notif.notifyParcelScan(parcel.id, parcel.reference, newStatus)
-      .catch(e => console.error('[SCAN-NOTIF] ❌', e.message));
+      .catch(e => log.error('[SCAN-NOTIF] ❌', e.message));
 
     res.json({
       success: true,

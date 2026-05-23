@@ -8,6 +8,7 @@
 
 const db = require('../../db');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
+const log = require('../../utils/logger').child({ module: 'state-advancer' });
 
 const SIM_ACTOR = { id: null, role: 'simulator' };
 
@@ -200,7 +201,7 @@ async function scanAdvance(orderId, tracked, targetStep) {
     await db.query(
       "INSERT INTO scans (parcel_id, step, notes, created_at) VALUES ($1, $2, $3, NOW())",
       [parcel.id, targetStep, 'Simulateur — ' + targetStep]
-    ).catch(function(e) { console.warn('[SIM] scan insert:', e.message); });
+    ).catch(function(e) { log.warn('[SIM] scan insert:', e.message); });
 
     const result = await transitionOrderStatus({
       orderId,

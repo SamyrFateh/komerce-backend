@@ -20,6 +20,7 @@ const { orders }                    = require('../../validators');
 const { recalculateLoyalty }        = require('../loyalty');
 const { notifyStatusChange }        = require('../../services/notification-service');
 const { transitionOrderStatus }     = require('../../services/order-status-machine');
+const log = require('../../utils/logger').child({ module: 'status' });
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     // ── Recalculer le palier fidélité après collecte ──────────────────────
     if (status === 'collected' && order.user_id) {
       recalculateLoyalty(db, order.user_id)
-        .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
+        .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
     }
 
     // SMS notification (non bloquant)

@@ -12,6 +12,7 @@ const express = require('express');
 const router = express.Router();
 const invoiceService = require('../services/invoice-service');
 const { authenticate } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'invoices' });
 
 // ── Middleware: authenticate (extracts JWT → req.user) + check ──
 const guard = [authenticate, (req, res, next) => {
@@ -27,7 +28,7 @@ router.get('/', ...guard, async (req, res) => {
     const invoices = await invoiceService.listInvoices({ limit, offset });
     res.json({ ok: true, invoices, count: invoices.length });
   } catch (err) {
-    console.error('[INVOICE] List error:', err.message);
+    log.error('[INVOICE] List error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -51,7 +52,7 @@ router.get('/:orderId', ...guard, async (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err) {
-    console.error('[INVOICE] Generate error:', err.message);
+    log.error('[INVOICE] Generate error:', err.message);
     if (err.message.includes('introuvable')) {
       return res.status(404).json({ error: err.message });
     }
@@ -68,7 +69,7 @@ router.get('/:orderId/json', ...guard, async (req, res) => {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     res.json({ ok: true, invoice });
   } catch (err) {
-    console.error('[INVOICE] JSON error:', err.message);
+    log.error('[INVOICE] JSON error:', err.message);
     res.status(err.message.includes('introuvable') ? 404 : 500).json({ error: err.message });
   }
 });
@@ -85,7 +86,7 @@ router.get('/:orderId/download', ...guard, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(html);
   } catch (err) {
-    console.error('[INVOICE] Download error:', err.message);
+    log.error('[INVOICE] Download error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -103,7 +104,7 @@ router.post('/:orderId/deliver', ...guard, async (req, res) => {
     
     res.json({ ok: true, message: `Facture ${invoice.invoice_number} marquée comme délivrée via ${via}` });
   } catch (err) {
-    console.error('[INVOICE] Deliver error:', err.message);
+    log.error('[INVOICE] Deliver error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

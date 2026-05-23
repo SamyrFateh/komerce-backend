@@ -36,6 +36,7 @@ const engine  = require('../services/shared-cart-engine');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
+const log = require('../utils/logger').child({ module: 'shared-cart' });
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -71,7 +72,7 @@ router.get('/public/:token', async (req, res, next) => {
 
     // Tracker la vue (best-effort, n'échoue pas silencieusement)
     engine.incrementViewCount(req.params.token).catch(err =>
-      console.error('[shared-cart] view_count fail', err.message)
+      log.error('[shared-cart] view_count fail', err.message)
     );
 
     res.json(data);
@@ -179,7 +180,7 @@ async function isStripeEventProcessed(event) {
     );
     return rows.length > 0;
   } catch (e) {
-    console.warn('[shared-cart webhook] stripe_events_processed unavailable:', e.message);
+    log.warn('[shared-cart webhook] stripe_events_processed unavailable:', e.message);
     return false;
   }
 }
@@ -193,7 +194,7 @@ async function markStripeEventProcessed(event, payloadSummary = {}) {
       [event.id, event.type, JSON.stringify(payloadSummary || {})]
     );
   } catch (e) {
-    console.warn('[shared-cart webhook] mark event processed failed:', e.message);
+    log.warn('[shared-cart webhook] mark event processed failed:', e.message);
   }
 }
 
@@ -211,11 +212,11 @@ async function stripeWebhookHandler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
-    console.error('[shared-cart webhook] signature invalide :', err.message);
+    log.error('[shared-cart webhook] signature invalide :', err.message);
     return res.status(400).send(`Webhook signature invalid: ${err.message}`);
   }
 
-  console.log(`[shared-cart webhook] event ${event.type} reçu`);
+  log.info(`[shared-cart webhook] event ${event.type} reçu`);
 
   if (await isStripeEventProcessed(event)) {
     return res.json({ received: true, idempotent: true });
@@ -232,13 +233,13 @@ async function stripeWebhookHandler(req, res) {
         }
         const result = await engine.confirmContributionFromStripe(session);
         if (!result) {
-          console.log(`[shared-cart webhook] session ${session.id} déjà traitée ou non confirmée`);
+          log.info(`[shared-cart webhook] session ${session.id} déjà traitée ou non confirmée`);
           await markStripeEventProcessed(event, {
             session_id: session.id,
             contribution: 'already_processed_or_not_confirmed',
           });
         } else {
-          console.log(`[shared-cart webhook] contribution ${result.contribution.id} confirmée`);
+          log.info(`[shared-cart webhook] contribution ${result.contribution.id} confirmée`);
           await markStripeEventProcessed(event, {
             session_id: session.id,
             shared_cart_id: result.cart?.id,
@@ -267,7 +268,7 @@ async function stripeWebhookHandler(req, res) {
     }
     res.json({ received: true });
   } catch (err) {
-    console.error('[shared-cart webhook] traitement échoué', err);
+    log.error('[shared-cart webhook] traitement échoué', err);
     // 500 pour que Stripe retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }

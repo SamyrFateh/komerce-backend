@@ -1019,7 +1019,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 **Charge** : 30 min *(script déjà écrit — juste déplacer et brancher)*  
 **Risque** : nul
 
-**État actuel** : le script existe à `docs/chantier/garde-fous/audit-backend-arch.js` (464 lignes, créé le 2026-05-17). Les 10 invariants sont implémentés avec allowlists pour les violations connues :
+**État actuel** : le script existe à `docs/chantier/scripts/audit-backend-arch.js` (464 lignes, créé le 2026-05-17). Les 10 invariants sont implémentés avec allowlists pour les violations connues :
 
 | Invariant | Implémenté | Allowlist |
 |-----------|-----------|-----------|
@@ -1039,7 +1039,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 1. Déplacer le script à sa place définitive :
    ```bash
    mkdir -p scripts
-   git mv docs/chantier/garde-fous/audit-backend-arch.js scripts/audit-backend-arch.js
+   git mv docs/chantier/scripts/audit-backend-arch.js scripts/audit-backend-arch.js
    ```
 2. Vérifier qu'il tourne depuis la racine :
    ```bash

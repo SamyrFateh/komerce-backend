@@ -10,6 +10,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'transitaire-api' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_transitaire'])];
 
@@ -111,7 +112,7 @@ router.post('/ship', ...guard, async (req, res, next) => {
     try {
       const { notifyParcelScan } = require('../services/notification-service');
       notifyParcelScan(parcel_id, parcel.reference, 'in_transit')
-        .catch(err => console.warn('[TRANSITAIRE] Notification error:', err.message));
+        .catch(err => log.warn('[TRANSITAIRE] Notification error:', err.message));
     } catch (e) { /* notification service not available */ }
 
     res.json({

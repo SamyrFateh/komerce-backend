@@ -8,6 +8,7 @@
 
 const jwt = require('jsonwebtoken');
 const db  = require('../db');
+const log = require('../utils/logger').child({ module: 'auth' });
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 
@@ -168,7 +169,7 @@ async function authenticate(req, res, next) {
 
   } catch (err) {
     if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
-      console.error('[authenticate] erreur inattendue:', err.name, err.message);
+      log.error('[authenticate] erreur inattendue:', err.name, err.message);
     }
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expiré — veuillez vous reconnecter' });

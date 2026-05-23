@@ -23,7 +23,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         END IF;
       END$$
     `);
-  } catch(e) { console.warn('Phase1 migration (non-fatal):', e.message); }
+  } catch(e) { log.warn('Phase1 migration (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -35,7 +35,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         END IF;
       END$$
     `);
-  } catch(e) { console.warn('Phase1 scan_step migration (non-fatal):', e.message); }
+  } catch(e) { log.warn('Phase1 scan_step migration (non-fatal):', e.message); }
 
   try {
     await db.query(`DO $$ BEGIN
@@ -44,7 +44,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
            RAISE NOTICE 'F34: stock CHECK constraint added';
       END IF;
     END$$`);
-  } catch(e) { console.warn('F34 stock CHECK (non-fatal):', e.message); }
+  } catch(e) { log.warn('F34 stock CHECK (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -70,8 +70,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_invoices_order ON invoices(order_id);
       CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number);
     `);
-    console.log('✅ Migration 023: invoices table ready');
-  } catch(e) { console.warn('Migration 023 (non-fatal):', e.message); }
+    log.info('✅ Migration 023: invoices table ready');
+  } catch(e) { log.warn('Migration 023 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -91,8 +91,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_notif_channel ON notification_log(channel);
       CREATE INDEX IF NOT EXISTS idx_notif_created ON notification_log(created_at DESC);
     `);
-    console.log('✅ Migration 024: notification_log table ready');
-  } catch(e) { console.warn('Migration 024 (non-fatal):', e.message); }
+    log.info('✅ Migration 024: notification_log table ready');
+  } catch(e) { log.warn('Migration 024 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -108,8 +108,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_otp_phone ON otp_codes(phone);
       CREATE INDEX IF NOT EXISTS idx_otp_expires ON otp_codes(expires_at);
     `);
-    console.log('✅ Migration 025: otp_codes table ready');
-  } catch(e) { console.warn('Migration 025 (non-fatal):', e.message); }
+    log.info('✅ Migration 025: otp_codes table ready');
+  } catch(e) { log.warn('Migration 025 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -121,11 +121,11 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         END IF;
       END$$
     `);
-  } catch(e) { console.warn('Pending enum migration (non-fatal):', e.message); }
+  } catch(e) { log.warn('Pending enum migration (non-fatal):', e.message); }
 
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_at TIMESTAMPTZ`);
   await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`);
-  console.log('[MIGRATION] pending_at + confirmed_at columns ensured');
+  log.info('[MIGRATION] pending_at + confirmed_at columns ensured');
 
   try {
     await db.query(`
@@ -151,8 +151,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_inventory_parcel ON inventory_items(parcel_id);
       CREATE INDEX IF NOT EXISTS idx_inventory_order_item ON inventory_items(order_item_id);
     `);
-    console.log('✅ Migration 026: inventory_items table ready');
-  } catch(e) { console.warn('Migration 026 (non-fatal):', e.message); }
+    log.info('✅ Migration 026: inventory_items table ready');
+  } catch(e) { log.warn('Migration 026 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -161,8 +161,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS items_total INT DEFAULT 0;
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS deadline_dispatch TIMESTAMPTZ;
     `);
-    console.log('✅ Migration 027: orders enrichment columns ready');
-  } catch(e) { console.warn('Migration 027 (non-fatal):', e.message); }
+    log.info('✅ Migration 027: orders enrichment columns ready');
+  } catch(e) { log.warn('Migration 027 (non-fatal):', e.message); }
 
   try {
     const bcrypt = require('bcryptjs');
@@ -173,16 +173,16 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       VALUES (gen_random_uuid(), 'Transitaire Komerce', 'transitaire@komerce.km', '+2690000003', 'agent_transitaire', $1)
       ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
     `, [transitHash]);
-    console.log('✅ Migration 028: transitaire user seeded');
+    log.info('✅ Migration 028: transitaire user seeded');
 
   try {
     await db.query(`
       ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS proposed_parcel_id UUID;
       ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS proposed_at TIMESTAMPTZ;
     `);
-    console.log('✅ Migration 029: inventory_items proposal columns ready');
-  } catch(e) { console.warn('Migration 029 (non-fatal):', e.message); }
-  } catch(e) { console.warn('Migration 028 (non-fatal):', e.message); }
+    log.info('✅ Migration 029: inventory_items proposal columns ready');
+  } catch(e) { log.warn('Migration 029 (non-fatal):', e.message); }
+  } catch(e) { log.warn('Migration 028 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -199,8 +199,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_pma_created ON pricing_matrices_audit(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_pma_matrix_cat ON pricing_matrices_audit(matrix_type, category);
     `);
-    console.log('✅ Migration 033: pricing_matrices_audit table ready');
-  } catch(e) { console.warn('Migration 033 (non-fatal):', e.message); }
+    log.info('✅ Migration 033: pricing_matrices_audit table ready');
+  } catch(e) { log.warn('Migration 033 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -225,8 +225,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_cart_shares_converted ON cart_shares(converted_order_id)
         WHERE converted_order_id IS NOT NULL;
     `);
-    console.log('✅ Migration 030: cart_shares table ready');
-  } catch(e) { console.warn('Migration 030 (non-fatal):', e.message); }
+    log.info('✅ Migration 030: cart_shares table ready');
+  } catch(e) { log.warn('Migration 030 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -234,8 +234,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_products_category_subcategory 
         ON products(category, subcategory) WHERE is_available = TRUE;
     `);
-    console.log('✅ Migration 031: products.subcategory column ready');
-  } catch(e) { console.warn('Migration 031 (non-fatal):', e.message); }
+    log.info('✅ Migration 031: products.subcategory column ready');
+  } catch(e) { log.warn('Migration 031 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -252,8 +252,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_cash_coll_agent ON cash_collections(collected_by);
       CREATE INDEX IF NOT EXISTS idx_cash_coll_date ON cash_collections(confirmed_at DESC);
     `);
-    console.log('✅ Migration 034: cash_collections table ready');
-  } catch(e) { console.warn('Migration 034 (non-fatal):', e.message); }
+    log.info('✅ Migration 034: cash_collections table ready');
+  } catch(e) { log.warn('Migration 034 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -277,8 +277,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_cash_dep_status ON cash_deposits(status);
       CREATE INDEX IF NOT EXISTS idx_cash_dep_period ON cash_deposits(period_start, period_end);
     `);
-    console.log('✅ Migration 035: cash_deposits table ready');
-  } catch(e) { console.warn('Migration 035 (non-fatal):', e.message); }
+    log.info('✅ Migration 035: cash_deposits table ready');
+  } catch(e) { log.warn('Migration 035 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -302,31 +302,31 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_cash_recon_status ON cash_reconciliation(status);
       CREATE INDEX IF NOT EXISTS idx_cash_recon_period ON cash_reconciliation(period_start, period_end);
     `);
-    console.log('✅ Migration 036: cash_reconciliation table ready');
-  } catch(e) { console.warn('Migration 036 (non-fatal):', e.message); }
+    log.info('✅ Migration 036: cash_reconciliation table ready');
+  } catch(e) { log.warn('Migration 036 (non-fatal):', e.message); }
 
   try {
     const migration037 = require('./scripts/migration-037-fix-products');
     await migration037(db);
-    console.log('✅ Migration 037: products is_active + subcategory fixed');
-  } catch(e) { console.warn('Migration 037 (non-fatal):', e.message); }
+    log.info('✅ Migration 037: products is_active + subcategory fixed');
+  } catch(e) { log.warn('Migration 037 (non-fatal):', e.message); }
 
   try {
     const migration038 = require('./scripts/migration-038-replace-products');
     await migration038(db);
-    console.log('✅ Migration 038: product catalog replaced');
-  } catch(e) { console.warn('Migration 038 (non-fatal):', e.message); }
+    log.info('✅ Migration 038: product catalog replaced');
+  } catch(e) { log.warn('Migration 038 (non-fatal):', e.message); }
 
   try {
     const migration039 = require('./scripts/migration-039-french-descriptions');
     await migration039();
-    console.log('✅ Migration 039: descriptions updated to French');
-  } catch(e) { console.warn('Migration 039 (non-fatal):', e.message); }
+    log.info('✅ Migration 039: descriptions updated to French');
+  } catch(e) { log.warn('Migration 039 (non-fatal):', e.message); }
 
   try {
     await db.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL;`);
-    console.log('✅ Migration 041: users.email now nullable (guest checkout)');
-  } catch(e) { console.warn('Migration 041 (non-fatal):', e.message); }
+    log.info('✅ Migration 041: users.email now nullable (guest checkout)');
+  } catch(e) { log.warn('Migration 041 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -334,8 +334,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_beneficiary VARCHAR(30);
       CREATE INDEX IF NOT EXISTS idx_users_phone_payer ON users(phone_payer);
     `);
-    console.log('✅ Migration 040: phone_payer + phone_beneficiary columns added');
-  } catch(e) { console.warn('Migration 040 (non-fatal):', e.message); }
+    log.info('✅ Migration 040: phone_payer + phone_beneficiary columns added');
+  } catch(e) { log.warn('Migration 040 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -357,8 +357,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-    console.log('✅ Migration 046: economic_variables table created');
-  } catch(e) { console.warn('Migration 046 (non-fatal):', e.message); }
+    log.info('✅ Migration 046: economic_variables table created');
+  } catch(e) { log.warn('Migration 046 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -375,8 +375,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-    console.log('✅ Migration 047: charges table created');
-  } catch(e) { console.warn('Migration 047 (non-fatal):', e.message); }
+    log.info('✅ Migration 047: charges table created');
+  } catch(e) { log.warn('Migration 047 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -388,8 +388,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
-    console.log('✅ Migration 048: economic_snapshots table created');
-  } catch(e) { console.warn('Migration 048 (non-fatal):', e.message); }
+    log.info('✅ Migration 048: economic_snapshots table created');
+  } catch(e) { log.warn('Migration 048 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -439,8 +439,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_loyalty_rewards_status ON loyalty_rewards(status);
       CREATE INDEX IF NOT EXISTS idx_users_big_basket ON users(big_basket_count) WHERE big_basket_count > 0;
     `);
-    console.log('✅ Migration 049: finance_config + loyalty_rewards + big_basket');
-  } catch(e) { console.warn('Migration 049 (non-fatal):', e.message); }
+    log.info('✅ Migration 049: finance_config + loyalty_rewards + big_basket');
+  } catch(e) { log.warn('Migration 049 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -461,8 +461,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_products_sourcing_rail ON products(sourcing_rail) WHERE sourcing_rail IS NOT NULL;
       CREATE INDEX IF NOT EXISTS idx_products_lifecycle ON products(lifecycle_status) WHERE is_active = TRUE;
     `);
-    console.log('✅ Migration 050: sourcing columns on products');
-  } catch(e) { console.warn('Migration 050 (non-fatal):', e.message); }
+    log.info('✅ Migration 050: sourcing columns on products');
+  } catch(e) { log.warn('Migration 050 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -502,8 +502,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE UNIQUE INDEX IF NOT EXISTS idx_signals_dedup
         ON signals(signal_type, entity_type, entity_id) WHERE status = 'open';
     `);
-    console.log('✅ Migration 051: signals table created');
-  } catch(e) { console.warn('Migration 051 (non-fatal):', e.message); }
+    log.info('✅ Migration 051: signals table created');
+  } catch(e) { log.warn('Migration 051 (non-fatal):', e.message); }
 
   // ── Migration 050b : order_item_cost_imputations (snapshot économique figé) ──
   try {
@@ -541,8 +541,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         END IF;
       END $do$;
     `);
-    console.log('✅ Migration 050b: order_item_cost_imputations table ready');
-  } catch(e) { console.warn('Migration 050b (non-fatal):', e.message); }
+    log.info('✅ Migration 050b: order_item_cost_imputations table ready');
+  } catch(e) { log.warn('Migration 050b (non-fatal):', e.message); }
 
   // ── Migration 051b : order_item_real_cost_allocations (réventilation terrain) ──
   try {
@@ -568,8 +568,8 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       CREATE INDEX IF NOT EXISTS idx_oirca_cost_type  ON order_item_real_cost_allocations(cost_type);
       CREATE INDEX IF NOT EXISTS idx_oirca_is_actual  ON order_item_real_cost_allocations(is_actual);
     `);
-    console.log('✅ Migration 051b: order_item_real_cost_allocations table ready');
-  } catch(e) { console.warn('Migration 051b (non-fatal):', e.message); }
+    log.info('✅ Migration 051b: order_item_real_cost_allocations table ready');
+  } catch(e) { log.warn('Migration 051b (non-fatal):', e.message); }
 
   try {
     const { rows: existingCharges } = await db.query('SELECT COUNT(*) as c FROM charges');
@@ -582,13 +582,13 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         ('support', 'Support client', 20000, true, 'monthly', true, 'SAV & support client — défaut 200 KMF/cmd × 100 cmd/mois'),
         ('logistique', 'Transit Comores', 500, false, null, true, 'Transport Dubai→Comores — variable par commande')
       `);
-      console.log('✅ Migration 052: 5 charges seeded with defaults');
+      log.info('✅ Migration 052: 5 charges seeded with defaults');
     } else {
-      console.log('✅ Migration 052: charges already seeded, skipping');
+      log.info('✅ Migration 052: charges already seeded, skipping');
     }
-  } catch(e) { console.warn('Migration 052 (non-fatal):', e.message); }
+  } catch(e) { log.warn('Migration 052 (non-fatal):', e.message); }
 
-  console.log('✅ Migrations et seeds terminées');
+  log.info('✅ Migrations et seeds terminées');
 }
 
 module.exports = {

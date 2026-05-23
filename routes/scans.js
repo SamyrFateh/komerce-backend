@@ -49,6 +49,7 @@ const { scans } = require('../validators');
 // [P2-1] Parcel sync — [P3-2] maintenant SOURCE DE VÉRITÉ (trigger désactivé)
 const { safeSyncScanToParcels, STEP_TO_ORDER_STATUS } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'scans' });
 
 // Alias middleware (le fichier original utilisait requireAuth dans certains endroits)
 const requireAuth = authenticate;
@@ -88,7 +89,7 @@ async function triggerScan3(order_id, scanned_by = null) {
 
   // Garde : si la commande n'est pas en 'preparation', ne rien faire
   if (order.status !== 'preparation') {
-    console.warn(`[SCAN3] Commande ${order_id} ignorée — statut: ${order.status} (attendu: preparation)`);
+    log.warn(`[SCAN3] Commande ${order_id} ignorée — statut: ${order.status} (attendu: preparation)`);
     return { skipped: true, reason: `statut_invalide: ${order.status}` };
   }
 
@@ -98,7 +99,7 @@ async function triggerScan3(order_id, scanned_by = null) {
   try {
     await sendSMS(order.client_phone, smsClient);
   } catch (smsErr) {
-    console.error(`[SCAN3] SMS client échoué (order ${order_id}):`, smsErr.message);
+    log.error(`[SCAN3] SMS client échoué (order ${order_id}):`, smsErr.message);
   }
 
   // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL | [B12] scanned_by optionnel
@@ -112,7 +113,7 @@ async function triggerScan3(order_id, scanned_by = null) {
     );
     scan_id = scanRow?.id;
   } catch (logErr) {
-    console.warn(`[SCAN3] Log non enregistré:`, logErr.message);
+    log.warn(`[SCAN3] Log non enregistré:`, logErr.message);
   }
 
   // [P3-1] Parcel sync — awaité, source de vérité
@@ -127,7 +128,7 @@ async function triggerScan3(order_id, scanned_by = null) {
     });
   }
 
-  console.log(`[SCAN3] ✅ Commande ${order.reference} en préparation — SMS client envoyé`);
+  log.info(`[SCAN3] ✅ Commande ${order.reference} en préparation — SMS client envoyé`);
   return { success: true, order_id, reference: order.reference };
 }
 
@@ -256,7 +257,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est prête, remise au transitaire à Dubai.`,
             'shipped', order_id
-          ).catch(err => console.error('SMS shipped error:', err.message));
+          ).catch(err => log.error('SMS shipped error:', err.message));
           sms_triggered = true;
         }
       }
@@ -273,7 +274,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est embarquée sur le bateau ! 🚢 Arrivée estimée 3–5 semaines.`,
             'in_transit', order_id
-          ).catch(err => console.error('SMS in_transit error:', err.message));
+          ).catch(err => log.error('SMS in_transit error:', err.message));
           sms_triggered = true;
         }
       }
@@ -293,7 +294,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.recipient_phone,
             `Komerce · Bonjour ${fullOrder.full_name}, votre colis est disponible au ${fullOrder.relais_name} (${fullOrder.relais_address}). Code de retrait : ${fullOrder.pickup_code}`,
             'available', order_id
-          ).catch(err => console.error('SMS relais error:', err.message));
+          ).catch(err => log.error('SMS relais error:', err.message));
           sms_triggered = true;
         }
       }
@@ -308,7 +309,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
           `Komerce · Anomalie scan sur ${order.reference} à l'étape "${step}". Notes : ${notes || 'aucune'}`,
           'anomaly_alert', order_id
         ))
-      ).catch(err => console.error('SMS anomaly error:', err.message));
+      ).catch(err => log.error('SMS anomaly error:', err.message));
     }
 
     res.status(201).json({
@@ -391,7 +392,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
     // Le blocage est posé après 5 échecs cross-relais ou autres.
     if (order.pickup_secret_blocked_until && new Date(order.pickup_secret_blocked_until) > new Date()) {
       await client.query('ROLLBACK');
-      console.warn(`[SCAN-COLLECT] Order ${order.reference} blocked until ${order.pickup_secret_blocked_until}`);
+      log.warn(`[SCAN-COLLECT] Order ${order.reference} blocked until ${order.pickup_secret_blocked_until}`);
       return res.status(429).json({
         error: 'Trop de tentatives sur cette commande, réessayez plus tard',
         blocked_until: order.pickup_secret_blocked_until,
@@ -413,7 +414,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
       } catch (e) {
         // Colonne users.relais_id absente
         checkPossible = false;
-        console.warn(`[SCAN-COLLECT] users.relais_id query failed: ${e.message}`);
+        log.warn(`[SCAN-COLLECT] users.relais_id query failed: ${e.message}`);
       }
 
       if (!checkPossible || !agentRelaisId) {
@@ -460,10 +461,10 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
             [attempts, blockUntil, order.id]
           );
         } catch (e) {
-          console.warn('[SCAN-COLLECT] update attempts failed:', e.message);
+          log.warn('[SCAN-COLLECT] update attempts failed:', e.message);
         }
 
-        console.warn(`[SCAN-COLLECT] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait order ${order.reference} (relais ${order.relais_id}) — attempts=${attempts}/5`);
+        log.warn(`[SCAN-COLLECT] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait order ${order.reference} (relais ${order.relais_id}) — attempts=${attempts}/5`);
         try {
           await db.query(
             `INSERT INTO alerts (level, source, message, payload)
@@ -547,7 +548,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
         fullOrder.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name}. Merci pour votre confiance !`,
         'collected', order.id
-      ).catch(err => console.error('SMS collect error:', err.message));
+      ).catch(err => log.error('SMS collect error:', err.message));
     }
 
     res.json({
@@ -712,7 +713,7 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     if (order.qr_token !== token) {
       await client.query('ROLLBACK');
-      console.warn(`[VERIFY-QR] Token invalide pour ${order.reference} — fourni: ${token.slice(0, 8)}... attendu: ${order.qr_token.slice(0, 8)}...`);
+      log.warn(`[VERIFY-QR] Token invalide pour ${order.reference} — fourni: ${token.slice(0, 8)}... attendu: ${order.qr_token.slice(0, 8)}...`);
       return res.status(400).json({ error: 'QR code invalide' });
     }
 
@@ -773,7 +774,7 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
       notes: 'Retrait client via QR Code — token validé',
     });
 
-    console.log(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
+    log.info(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
 
     // SMS confirmation au commanditaire (non bloquant)
     if (order.user_phone) {
@@ -782,14 +783,14 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name || 'le destinataire'}. Merci pour votre confiance ! 🎉`,
         'collected',
         order.id
-      ).catch(err => console.error('SMS QR collect error:', err.message));
+      ).catch(err => log.error('SMS QR collect error:', err.message));
     }
 
     // Recalculer fidélité (non bloquant)
     if (order.user_id) {
       const { recalculateLoyalty } = require('./loyalty');
       recalculateLoyalty(db, order.user_id)
-        .catch(e => console.error('[LOYALTY] recalculate error:', e.message));
+        .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
     }
 
     res.json({

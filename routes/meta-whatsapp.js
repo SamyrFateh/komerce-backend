@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const log = require('../utils/logger').child({ module: 'meta-whatsapp' });
 
 const VERIFY_TOKEN   = process.env.META_WA_VERIFY_TOKEN || 'komerce_meta_verify_token';
 const WA_APP_SECRET  = process.env.META_WA_APP_SECRET || '';
@@ -15,7 +16,7 @@ const WA_APP_SECRET  = process.env.META_WA_APP_SECRET || '';
 function verifyMetaSignature(req, res, next) {
   if (!WA_APP_SECRET) {
     // Dev : pas de secret configuré → on loggue et on laisse passer
-    console.warn('[META-WA] META_WA_APP_SECRET absent — vérification HMAC désactivée (DEV uniquement)');
+    log.warn('[META-WA] META_WA_APP_SECRET absent — vérification HMAC désactivée (DEV uniquement)');
     return next();
   }
 
@@ -36,7 +37,7 @@ function verifyMetaSignature(req, res, next) {
   );
 
   if (!valid) {
-    console.warn('[META-WA] Signature HMAC invalide — requête rejetée');
+    log.warn('[META-WA] Signature HMAC invalide — requête rejetée');
     return res.status(403).json({ error: 'Signature Meta invalide' });
   }
 
@@ -58,7 +59,7 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
   try {
     const body = req.body || {};
 
-    console.log('[META-WA][WEBHOOK]', JSON.stringify(body));
+    log.info('[META-WA][WEBHOOK]', JSON.stringify(body));
 
     // Ici plus tard:
     // - status sent/delivered/read/failed
@@ -67,7 +68,7 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
 
     return res.sendStatus(200);
   } catch (e) {
-    console.error('[META-WA][WEBHOOK][ERROR]', e.message);
+    log.error('[META-WA][WEBHOOK][ERROR]', e.message);
     return res.sendStatus(500);
   }
 });

@@ -16,6 +16,7 @@
 
 const db = require('../db');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const log = require('../utils/logger').child({ module: 'confirm-pickup-cash-payment' });
 
 const PHONE_RX = /^[+]?[0-9\s().-]{6,20}$/;
 
@@ -102,7 +103,7 @@ async function confirmPickupCashPayment({
         agentRelaisId = agent?.relais_id || null;
       } catch (e) {
         checkPossible = false;
-        console.warn(`[PICKUP-CASH] users.relais_id query failed: ${e.message}`);
+        log.warn(`[PICKUP-CASH] users.relais_id query failed: ${e.message}`);
       }
 
       if (!checkPossible || !agentRelaisId) {

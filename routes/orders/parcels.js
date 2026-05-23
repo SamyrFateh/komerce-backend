@@ -29,6 +29,7 @@ const {
   PARCEL_SMS,
 } = require('../../services/parcel-service');
 const { transitionOrderStatus } = require('../../services/order-status-machine');
+const log = require('../../utils/logger').child({ module: 'parcels' });
 
 // ─── POST /api/orders/:id/mark-availability ──────────────────────────────────
 // Marquer la disponibilité de chaque article au hub Dubai.
@@ -329,7 +330,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
     if (autoNotify && order.user_phone) {
       const boCount  = allBackorderItems.reduce((s, i) => s + i.quantity, 0);
       const smsText  = `Komerce : Commande ${order.reference} — expedition partielle : ${availableQty} article(s) expedie(s), ${boCount} en attente (backorder). Ref colis : ${psRef}`;
-      sendSMS(order.user_phone, smsText, 'partial_ship', id).catch(console.error);
+      sendSMS(order.user_phone, smsText, 'partial_ship', id).catch(err => log.error({ err }, 'SMS send failed'));
     }
 
     // ── Réponse ─────────────────────────────────────────────────────────────
@@ -556,7 +557,7 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
     // SMS client (non bloquant) — sur shipped / available / collected
     if (parcel.user_phone && PARCEL_SMS[status]) {
       const smsText = PARCEL_SMS[status](parcel.reference, parcel.relais_name);
-      sendSMS(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(console.error);
+      sendSMS(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(err => log.error({ err }, 'SMS send failed'));
     }
 
     res.json({
@@ -710,7 +711,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
         ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
         : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`;
       const smsText = `Komerce : Backorder ${parcel.reference} annule. ${creditStr}. Merci de votre comprehension.`;
-      sendSMS(order.user_phone, smsText, 'backorder_cancelled', id).catch(console.error);
+      sendSMS(order.user_phone, smsText, 'backorder_cancelled', id).catch(err => log.error({ err }, 'SMS send failed'));
     }
 
     res.json({

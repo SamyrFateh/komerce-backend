@@ -12,7 +12,7 @@ Ce dossier est le **poste de commande** du chantier de consolidation backend Kom
 | `{D1..D8}_*.md`, `FLOW_AUDIT_*.md` | Livrables des sessions d'audit D et G (à la racine). |
 | `I_SWEEP_*.md` | Plan et patch I-SWEEP. |
 | `MIGRATIONS_FOLDERS_A5.md` | Note A5 sur la cohabitation `db/migrations/` ↔ `migrations/`. |
-| `garde-fous/audit-backend-arch.js` | Garde-fou architectural exécutable (à déplacer vers `scripts/` au lot H3). |
+| `scripts/audit-backend-arch.js` | Garde-fou architectural exécutable (à déplacer vers `scripts/` au lot H3). |
 
 > Note : un sous-dossier `audits/` a existé un temps. Les livrables d'audit sont désormais **à la racine de ce dossier**, pas dans un sous-dossier.
 

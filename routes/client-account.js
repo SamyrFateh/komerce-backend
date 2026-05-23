@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const jwt = require('jsonwebtoken');
+const log = require('../utils/logger').child({ module: 'client-account' });
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const BASE_URL = process.env.BASE_URL || 'https://komerce.km';
@@ -62,7 +63,7 @@ router.post('/magic-link', async (req, res) => {
 
     if (userResult.rows.length === 0) {
       // Don't reveal if user exists or not — always return success
-      console.log('[magic-link] Requested for unknown phone', { phone: maskPhone(normalizedPhone) });
+      log.info('[magic-link] Requested for unknown phone', { phone: maskPhone(normalizedPhone) });
       return res.json({ success: true, message: 'Lien envoyé' });
     }
 
@@ -85,14 +86,14 @@ router.post('/magic-link', async (req, res) => {
     const magicUrl = `${BASE_URL}/api/auth/magic-link/validate?token=${magicToken}`;
 
     // Never echo a usable magic link in production logs.
-    console.log('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
+    log.info('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
     if (canEchoMagicLink()) {
-      console.log('[magic-link][dev] URL:', magicUrl);
+      log.info('[magic-link][dev] URL:', magicUrl);
     }
 
     res.json({ success: true, message: 'Lien envoyé' });
   } catch (err) {
-    console.error('Magic link error:', err);
+    log.error('Magic link error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -162,7 +163,7 @@ router.get('/magic-link/validate', async (req, res) => {
     // Redirect to account page
     res.redirect('/mon-compte.html');
   } catch (err) {
-    console.error('Magic link validate error:', err);
+    log.error('Magic link validate error:', err);
     res.status(500).send('Erreur serveur');
   }
 });
@@ -190,7 +191,7 @@ router.get('/me', requireClientAuth, async (req, res) => {
       email: user.email
     });
   } catch (err) {
-    console.error('Auth me error:', err);
+    log.error('Auth me error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -315,7 +316,7 @@ router.get('/orders', requireClientAuth, async (req, res) => {
 
     res.json({ orders: orders });
   } catch (err) {
-    console.error('Client orders error:', err);
+    log.error('Client orders error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -359,7 +360,7 @@ router.get('/invoices', requireClientAuth, async (req, res) => {
 
     res.json({ invoices: invoices });
   } catch (err) {
-    console.error('Client invoices error:', err);
+    log.error('Client invoices error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

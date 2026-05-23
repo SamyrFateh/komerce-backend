@@ -31,6 +31,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { getRates } = require('../utils/rates');
 const { getRule } = require('../utils/rules');
 const { getEcoVar } = require('../utils/eco-bridge');
+const log = require('../utils/logger').child({ module: 'dashboard' });
 
 // ── Auth : toutes les routes dashboard = admin only ─────────────────────────
 router.use(authenticate, requireRole(['admin']));
@@ -2523,7 +2524,7 @@ router.get('/sales', async (req, res, next) => {
       ORDER BY cohort_month ASC, offset_months ASC
     `, [cohortLimitMonths, cohortLimitMonths]).catch(err => {
       // Si problème malgré le fix, on dégrade plutôt que planter
-      console.warn('[dashboard/sales] cohortes failed:', err.message);
+      log.warn('[dashboard/sales] cohortes failed:', err.message);
       return { rows: [] };
     });
 

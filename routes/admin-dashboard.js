@@ -27,6 +27,7 @@ const db = require('../db');
 const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'admin-dashboard' });
 
 const router = express.Router();
 
@@ -125,7 +126,7 @@ router.get(
         ], { warnings }),
       });
     } catch (err) {
-      console.error('[admin-dashboard] /control-tower error:', err);
+      log.error('[admin-dashboard] /control-tower error:', err);
       next(err);
     }
   }
@@ -200,7 +201,7 @@ router.get(
         ], { warnings, incompleteFields }),
       });
     } catch (err) {
-      console.error('[admin-dashboard] /costing error:', err);
+      log.error('[admin-dashboard] /costing error:', err);
       next(err);
     }
   }
@@ -255,7 +256,7 @@ router.get(
         data_quality: makeDataQuality(filters, ['orders', 'parcels', 'scan_events'], { warnings }),
       });
     } catch (err) {
-      console.error('[admin-dashboard] /logistics error:', err);
+      log.error('[admin-dashboard] /logistics error:', err);
       next(err);
     }
   }
@@ -311,7 +312,7 @@ router.get(
         ]),
       });
     } catch (err) {
-      console.error('[admin-dashboard] /event-workspaces error:', err);
+      log.error('[admin-dashboard] /event-workspaces error:', err);
       next(err);
     }
   }
@@ -420,7 +421,7 @@ router.get(
         data_quality: makeDataQuality(filters, ['(toutes)']),
       });
     } catch (err) {
-      console.error('[admin-dashboard] /unified error:', err);
+      log.error('[admin-dashboard] /unified error:', err);
       next(err);
     }
   }
@@ -778,7 +779,7 @@ async function _fetchTopAlerts(limit = 5) {
       created_at: row.created_at,
     }));
   } catch (e) {
-    console.warn('[admin-dashboard] _fetchTopAlerts non-fatal:', e.message);
+    log.warn('[admin-dashboard] _fetchTopAlerts non-fatal:', e.message);
     return [];
   }
 }

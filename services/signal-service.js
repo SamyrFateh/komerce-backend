@@ -131,7 +131,7 @@ GENERATORS.parcel_blocked = async function() {
     await autoResolveSignals('parcel_blocked', entityIds);
     return { generated: generated, resolved: 0 };
   } catch (e) {
-    console.warn('[signal-service] parcel_blocked error:', e.message);
+    log.warn('[signal-service] parcel_blocked error:', e.message);
     return { generated: 0, error: e.message };
   }
 };
@@ -178,7 +178,7 @@ GENERATORS.cash_expiring = async function() {
     await autoResolveSignals('cash_expiring', entityIds);
     return { generated: generated };
   } catch (e) {
-    console.warn('[signal-service] cash_expiring error:', e.message);
+    log.warn('[signal-service] cash_expiring error:', e.message);
     return { generated: 0, error: e.message };
   }
 };
@@ -229,7 +229,7 @@ GENERATORS.stock_rupture = async function() {
     // Don't auto-resolve here — these should be manually reviewed
     return { generated: generated };
   } catch (e) {
-    console.warn('[signal-service] stock_rupture error:', e.message);
+    log.warn('[signal-service] stock_rupture error:', e.message);
     return { generated: 0, error: e.message };
   }
 };
@@ -278,7 +278,7 @@ GENERATORS.margin_drift = async function() {
     await autoResolveSignals('margin_drift', entityIds);
     return { generated: generated };
   } catch (e) {
-    console.warn('[signal-service] margin_drift error:', e.message);
+    log.warn('[signal-service] margin_drift error:', e.message);
     return { generated: 0, error: e.message };
   }
 };
@@ -327,7 +327,7 @@ GENERATORS.dispute_sensitive = async function() {
     await autoResolveSignals('dispute_sensitive', entityIds);
     return { generated: generated };
   } catch (e) {
-    console.warn('[signal-service] dispute_sensitive error:', e.message);
+    log.warn('[signal-service] dispute_sensitive error:', e.message);
     return { generated: 0, error: e.message };
   }
 };

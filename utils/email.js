@@ -162,18 +162,18 @@ const templates = {
 /* ─── Envoi via API REST v3 ─────────────────────────────── */
 async function sendOrderEmail(order, status) {
   if (!order.customer_email) {
-    console.log(`[EMAIL] Pas d'email client pour ${order.reference} — skip`);
+    log.info(`[EMAIL] Pas d'email client pour ${order.reference} — skip`);
     return { skipped: true, reason: 'no_email' };
   }
 
   const templateFn = templates[status];
   if (!templateFn) {
-    console.log(`[EMAIL] Pas de template pour statut "${status}" — skip`);
+    log.info(`[EMAIL] Pas de template pour statut "${status}" — skip`);
     return { skipped: true, reason: 'no_template' };
   }
 
   if (!BREVO_KEY) {
-    console.log(`[EMAIL] ⚠️ BREVO_API_KEY non configurée — email non envoyé`);
+    log.info(`[EMAIL] ⚠️ BREVO_API_KEY non configurée — email non envoyé`);
     return { skipped: true, reason: 'no_api_key' };
   }
 
@@ -198,14 +198,14 @@ async function sendOrderEmail(order, status) {
     const data = await res.json();
 
     if (data.messageId) {
-      console.log(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${data.messageId}`);
+      log.info(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${data.messageId}`);
       return { sent: true, messageId: data.messageId };
     } else {
-      console.error(`[EMAIL] ❌ Erreur Brevo:`, JSON.stringify(data));
+      log.error(`[EMAIL] ❌ Erreur Brevo:`, JSON.stringify(data));
       return { sent: false, error: data.message || JSON.stringify(data) };
     }
   } catch (err) {
-    console.error(`[EMAIL] ❌ Erreur envoi ${status} → ${order.customer_email}:`, err.message);
+    log.error(`[EMAIL] ❌ Erreur envoi ${status} → ${order.customer_email}:`, err.message);
     return { sent: false, error: err.message };
   }
 }

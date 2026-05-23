@@ -13,6 +13,7 @@ const crypto  = require('crypto');
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { getRule }                   = require('../../utils/rules');
+const log = require('../../utils/logger').child({ module: 'qr' });
 
 // ─── POST /api/orders/:id/qr-token ───────────────────────────────────────────
 // Génère un token QR unique pour une commande disponible.
@@ -67,7 +68,7 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       [token, expiration, id]
     );
 
-    console.log(`[QR-TOKEN] Généré pour ${order.reference} — token: ${token.slice(0, 8)}... expires: ${expiration.toISOString()}`);
+    log.info(`[QR-TOKEN] Généré pour ${order.reference} — token: ${token.slice(0, 8)}... expires: ${expiration.toISOString()}`);
 
     // Payload QR complet — sera encodé en JSON dans le QR code côté frontend
     const qr_payload = {
@@ -220,7 +221,7 @@ router.get('/retrait/:token', async (req, res, next) => {
     res.send(html);
 
   } catch (err) {
-    console.error('[orders/retrait] Erreur:', err.message);
+    log.error('[orders/retrait] Erreur:', err.message);
     res.status(500).send('<h1>Erreur serveur</h1>');
   }
 });

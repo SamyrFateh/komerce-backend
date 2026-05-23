@@ -19,7 +19,7 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
   const missingRecommended = recommendedEnv.filter(key => !process.env[key]);
 
   for (const key of missingRequired) {
-    console.error(`❌ FATAL: ${key} manquant — impossible de démarrer`);
+    log.error(`❌ FATAL: ${key} manquant — impossible de démarrer`);
   }
 
   if (missingRequired.length && exitOnMissing) {
@@ -27,7 +27,7 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
   }
 
   for (const key of missingRecommended) {
-    console.warn(`⚠️  ${key} non défini — valeur par défaut utilisée (à configurer avant la prod)`);
+    log.warn(`⚠️  ${key} non défini — valeur par défaut utilisée (à configurer avant la prod)`);
   }
 
   return {

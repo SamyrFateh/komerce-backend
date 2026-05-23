@@ -150,7 +150,7 @@ async function ensureRoutingColumns(db) {
     } catch (e) {
       // Colonne existe déjà ou autre erreur non critique
       if (!e.message.includes('already exists')) {
-        console.warn(`[Routing] Migration warning: ${e.message}`);
+        log.warn(`[Routing] Migration warning: ${e.message}`);
       }
     }
   }
@@ -171,10 +171,10 @@ async function ensureRoutingColumns(db) {
         [code, humanName]
       );
       if (rowCount > 0) {
-        console.log(`[Routing] Backfill: ${rowCount} relais "${humanName}" → ${code}`);
+        log.info(`[Routing] Backfill: ${rowCount} relais "${humanName}" → ${code}`);
       }
     } catch (e) {
-      console.warn(`[Routing] Backfill error: ${e.message}`);
+      log.warn(`[Routing] Backfill error: ${e.message}`);
     }
   }
 
@@ -198,13 +198,13 @@ async function ensureRoutingColumns(db) {
         AND r.island_code IS NOT NULL
     `);
     if (rowCount > 0) {
-      console.log(`[Routing] Backfill: ${rowCount} commandes existantes enrichies`);
+      log.info(`[Routing] Backfill: ${rowCount} commandes existantes enrichies`);
     }
   } catch (e) {
-    console.warn(`[Routing] Order backfill error: ${e.message}`);
+    log.warn(`[Routing] Order backfill error: ${e.message}`);
   }
 
-  console.log('✅ Routing columns ready');
+  log.info('✅ Routing columns ready');
 }
 
 // ── Exports ──────────────────────────────────────────────────────────────────

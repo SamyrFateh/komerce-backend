@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const router = express.Router();
 const pool = require('../db');
 const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
+const log = require('../utils/logger').child({ module: 'tracking' });
 
 /**
  * Status labels in French for client-facing display
@@ -231,7 +232,7 @@ router.get('/:token', async (req, res) => {
       timeline: timeline
     });
   } catch (err) {
-    console.error('Tracking error:', err);
+    log.error('Tracking error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -279,7 +280,7 @@ router.post('/:token/verify-pickup', async (req, res) => {
       crypto.timingSafeEqual(expected, provided);
     res.json({ valid: valid });
   } catch (err) {
-    console.error('Verify pickup error:', err);
+    log.error('Verify pickup error:', err);
     res.status(500).json({ valid: false, error: 'Erreur serveur' });
   }
 });
@@ -294,7 +295,7 @@ async function generatePickupCode(orderId) {
     `UPDATE orders SET pickup_code = $1 WHERE id = $2 AND pickup_code IS NULL`,
     [code, orderId]
   );
-  console.log(`📱 Pickup code generated for order ${orderId}: ${code}`);
+  log.info(`📱 Pickup code generated for order ${orderId}: ${code}`);
   return code;
 }
 
@@ -312,7 +313,7 @@ async function generateTrackingToken(orderId) {
     `UPDATE orders SET qr_token = $1 WHERE id = $2 AND qr_token IS NULL`,
     [token, orderId]
   );
-  console.log(`📱 Tracking token generated for order ${orderId}: ${token}`);
+  log.info(`📱 Tracking token generated for order ${orderId}: ${token}`);
   return token;
 }
 

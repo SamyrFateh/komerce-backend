@@ -38,6 +38,7 @@ const db       = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sendSMS } = require('../utils/sms');
 const { transitionOrderStatus } = require('../services/order-status-machine');
+const log = require('../utils/logger').child({ module: 'purchasing' });
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -48,13 +49,13 @@ let triggerScan3;
 try {
   triggerScan3 = require('./scans').triggerScan3;
 } catch (e) {
-  console.warn('[purchasing] triggerScan3 non disponible:', e.message);
+  log.warn('[purchasing] triggerScan3 non disponible:', e.message);
   triggerScan3 = async () => {};
 }
 
 // ─── Numéro WhatsApp admin (notifications manuelles) ──────────────────────────
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
-if (!ADMIN_WA) console.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
+if (!ADMIN_WA) log.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
 const WA_API   = 'https://api.whatsapp.com/send';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -202,7 +203,7 @@ async function triggerPurchasing(orderId) {
   // Order stays 'ordered' until full reception → 'preparation'
   const createdPOs = results.filter(r => r.purchase_order_id != null && r.status !== 'already_exists');
   if (createdPOs.length > 0) {
-    console.log(`[PURCHASING] Commande ${orderId} — ${createdPOs.length} POs créés (order stays 'ordered')`);
+    log.info(`[PURCHASING] Commande ${orderId} — ${createdPOs.length} POs créés (order stays 'ordered')`);
   }
 
   return { purchase_orders: results };
@@ -223,9 +224,9 @@ async function notifyAdminNoSupplier(order, item) {
 
   // SMS admin
   if (process.env.ADMIN_PHONE) {
-    sendSMS(process.env.ADMIN_PHONE, msg, 'sourcing_alert', order.id).catch(console.error);
+    sendSMS(process.env.ADMIN_PHONE, msg, 'sourcing_alert', order.id).catch(err => log.error({ err }, 'SMS send failed'));
   }
-  console.warn('[PURCHASING] Aucun fournisseur pour produit:', item.product_name, '— commande:', order.reference);
+  log.warn('[PURCHASING] Aucun fournisseur pour produit:', item.product_name, '— commande:', order.reference);
 }
 
 // ─── Notification admin — commande manuelle à passer ─────────────────────────
@@ -247,9 +248,9 @@ async function notifyAdminManual(order, item, ps, purchaseOrderId) {
   ].filter(Boolean).join('\n');
 
   if (process.env.ADMIN_PHONE) {
-    sendSMS(process.env.ADMIN_PHONE, msg, 'purchase_manual', order.id).catch(console.error);
+    sendSMS(process.env.ADMIN_PHONE, msg, 'purchase_manual', order.id).catch(err => log.error({ err }, 'SMS send failed'));
   }
-  console.log('[PURCHASING] Notification admin — commande manuelle:', order.reference, ps.supplier_name);
+  log.info('[PURCHASING] Notification admin — commande manuelle:', order.reference, ps.supplier_name);
 }
 
 // ─── Notification WhatsApp fournisseur local ──────────────────────────────────
@@ -270,7 +271,7 @@ async function notifySupplierWhatsApp(ps, order, item, purchaseOrderId) {
   ].join('\n'));
 
   const waUrl = `https://wa.me/${ps.contact_phone}?text=${msg}`;
-  console.log('[PURCHASING] WhatsApp fournisseur:', waUrl);
+  log.info('[PURCHASING] WhatsApp fournisseur:', waUrl);
 
   // Stocker l'URL pour que l'admin puisse l'ouvrir depuis le dashboard
   await db.query(`
@@ -294,17 +295,17 @@ async function callSupplierAPI(ps, item, purchaseOrderId) {
 }
 
 async function noonOrder(ps, item) {
-  console.log('[PURCHASING] Noon API — stub (Phase 2):', ps.supplier_sku);
+  log.info('[PURCHASING] Noon API — stub (Phase 2):', ps.supplier_sku);
   return { success: false, error: 'Noon API non implémentée (Phase 2)' };
 }
 
 async function amazonOrder(ps, item) {
-  console.log('[PURCHASING] Amazon UAE API — stub (Phase 2):', ps.supplier_sku);
+  log.info('[PURCHASING] Amazon UAE API — stub (Phase 2):', ps.supplier_sku);
   return { success: false, error: 'Amazon SP-API non implémentée (Phase 2)' };
 }
 
 async function aliexpressOrder(ps, item) {
-  console.log('[PURCHASING] AliExpress API — stub (Phase 2):', ps.supplier_sku);
+  log.info('[PURCHASING] AliExpress API — stub (Phase 2):', ps.supplier_sku);
   return { success: false, error: 'AliExpress API non implémentée (Phase 2)' };
 }
 
@@ -493,7 +494,7 @@ router.delete('/suppliers/:id', ...guard, async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    console.log(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s)`);
+    log.info(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s)`);
     res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_cancelled: posCancelled });
 
   } catch (err) {
@@ -718,12 +719,12 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
         await triggerScan3(po.order_id, req.user?.id || null);
       } catch (smsErr) {
         // Ne pas bloquer la réception si le SMS échoue — logguer seulement
-        console.error('[purchasing/receive] Erreur SMS SCAN3:', smsErr.message);
+        log.error('[purchasing/receive] Erreur SMS SCAN3:', smsErr.message);
       }
 
     } else {
       // Phase 5.1: partial reception tracked in purchase_orders, order stays 'ordered'
-      console.log(`[PURCHASING] Réception partielle commande ${po.order_id} — ${recus}/${total} articles`);
+      log.info(`[PURCHASING] Réception partielle commande ${po.order_id} — ${recus}/${total} articles`);
     }
 
     // 5. Construire la réponse opérateur
@@ -771,7 +772,7 @@ router.delete('/po/:po_id', ...guard, async (req, res, next) => {
       [po_id]
     );
 
-    console.log(`[PURCHASING] PO annulée : ${po_id} (était: ${po.status})`);
+    log.info(`[PURCHASING] PO annulée : ${po_id} (était: ${po.status})`);
     res.json({ cancelled: true, po_id, previous_status: po.status });
 
   } catch(err) { next(err); }

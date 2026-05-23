@@ -4,6 +4,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'loyalty' });
 
 // ── GET /api/loyalty/tiers — liste des paliers (public, pour affichage client) ──
 router.get('/tiers', async (req, res, next) => {
@@ -112,7 +113,7 @@ async function getLoyaltyDiscount(db, userId) {
     };
   } catch (err) {
     // En cas d'erreur DB, on ne bloque pas la commande — remise = 0
-    console.error('[LOYALTY] getLoyaltyDiscount error:', err.message);
+    log.error('[LOYALTY] getLoyaltyDiscount error:', err.message);
     return { discountPct: 0, discountLabel: null };
   }
 }
@@ -126,7 +127,7 @@ async function recalculateLoyalty(db, userId) {
   try {
     await db.query('SELECT recalculate_loyalty($1)', [userId]);
   } catch (err) {
-    console.error('[LOYALTY] recalculateLoyalty error:', err.message);
+    log.error('[LOYALTY] recalculateLoyalty error:', err.message);
   }
 }
 

@@ -14,6 +14,7 @@ const db = require('../db');
 const engine = require('./collective-workspace-engine');
 const legacy = require('./collective-payment-orchestrator');
 const closeOrderService = require('./collective-close-order-service');
+const log = require('../utils/logger').child({ module: 'collective-ready-to-order-orchestrator' });
 
 async function markSessionReadyToOrder(sessionId, actor = {}) {
   const client = await db.pool.connect();
@@ -126,7 +127,7 @@ async function onPaymentAuthorized(stripePaymentIntentId) {
 
     if (!token) {
       await client.query('ROLLBACK');
-      console.warn('[CollectiveReady] PI', stripePaymentIntentId, 'not linked to a token');
+      log.warn('[CollectiveReady] PI', stripePaymentIntentId, 'not linked to a token');
       return { ignored: true };
     }
 

@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
 const { sendOtpMessage } = require('../services/notification-service');
+const log = require('../utils/logger').child({ module: 'otp' });
 
 // ─── Config ─────────────────────────────────────────────────
 const OTP_LENGTH = 6;
@@ -102,7 +103,7 @@ router.post('/request', async (req, res) => {
       expiryMin: OTP_EXPIRY_MIN,
     });
 
-    console.log(`[OTP] 📱 Code envoyé → ${phone} (${waResult.success ? `✅ via ${waResult.channel}` : `❌ ${waResult.reason || waResult.error}`})`);
+    log.info(`[OTP] 📱 Code envoyé → ${phone} (${waResult.success ? `✅ via ${waResult.channel}` : `❌ ${waResult.reason || waResult.error}`})`);
 
     res.json({
       success: true,
@@ -116,7 +117,7 @@ router.post('/request', async (req, res) => {
         : undefined
     });
   } catch (err) {
-    console.error('[OTP] ❌ request error:', err.message);
+    log.error('[OTP] ❌ request error:', err.message);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
@@ -208,7 +209,7 @@ router.post('/verify', async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    console.log(`[OTP] ✅ Vérifié → ${user.full_name} (${phone})`);
+    log.info(`[OTP] ✅ Vérifié → ${user.full_name} (${phone})`);
 
     res.json({
       success: true,
@@ -219,7 +220,7 @@ router.post('/verify', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('[OTP] ❌ verify error:', err.message);
+    log.error('[OTP] ❌ verify error:', err.message);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });

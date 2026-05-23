@@ -9,6 +9,7 @@
  */
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'product-publication-guard' });
 
 async function auditProductStockChange(q = db, {
   productId,
@@ -44,7 +45,7 @@ async function auditProductStockChange(q = db, {
     );
     return { inserted: true };
   } catch (err) {
-    console.warn('[product-publication-guard] stock audit skipped:', err.message);
+    log.warn('[product-publication-guard] stock audit skipped:', err.message);
     return { skipped: true, reason: err.message };
   }
 }

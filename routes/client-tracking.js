@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
 const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
+const log = require('../utils/logger').child({ module: 'client-tracking' });
 
 const STATUS_LABELS = {
   pending: 'En attente de paiement',
@@ -218,7 +219,7 @@ router.get('/', requireClientAuth, async (req, res) => {
       count: result.length
     });
   } catch (err) {
-    console.error('[CLIENT-TRACKING] ❌', err.message);
+    log.error('[CLIENT-TRACKING] ❌', err.message);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

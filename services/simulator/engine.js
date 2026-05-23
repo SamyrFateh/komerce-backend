@@ -10,6 +10,7 @@ const db = require('../../db');
 const scenarios = require('./scenarios');
 const advancer = require('./state-advancer');
 const journal = require('./journal');
+const log = require('../../utils/logger').child({ module: 'engine' });
 
 let running = false;
 let intervalId = null;
@@ -47,7 +48,7 @@ async function start(cfg) {
   await tick();
 
   intervalId = setInterval(async () => {
-    try { await tick(); } catch(e) { console.error('[SIM] Tick error:', e.message); }
+    try { await tick(); } catch(e) { log.error('[SIM] Tick error:', e.message); }
   }, config.cadence_minutes * 60 * 1000);
 
   return getStatus();

@@ -10,6 +10,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const engine  = require('../services/collective-workspace-engine');
 const orchestrator = require('../services/collective-ready-to-order-orchestrator');
 const stockReservations = require('../services/collective-stock-reservation-service');
+const log = require('../utils/logger').child({ module: 'collective-workspaces' });
 
 const router = express.Router();
 const paymentsRouter = express.Router();
@@ -37,7 +38,7 @@ router.post('/', async (req, res) => {
     });
   } catch (err) {
     if (err.message.includes('requis')) return _err(res, 400, 'validation', err.message);
-    console.error('[CollectiveWS] create error:', err);
+    log.error('[CollectiveWS] create error:', err);
     _err(res, 500, 'server_error', 'Création impossible');
   }
 });
@@ -77,7 +78,7 @@ router.get('/me/:creatorToken', async (req, res) => {
       phase,
     });
   } catch (err) {
-    console.error('[CollectiveWS] me error:', err);
+    log.error('[CollectiveWS] me error:', err);
     _err(res, 500, 'server_error', 'Lecture impossible');
   }
 });
@@ -100,7 +101,7 @@ router.patch('/:creatorToken/items', async (req, res) => {
     };
     const m = map[err.message];
     if (m) return _err(res, m[0], m[1], m[2]);
-    console.error('[CollectiveWS] items error:', err);
+    log.error('[CollectiveWS] items error:', err);
     _err(res, 500, 'server_error', 'Action impossible');
   }
 });
@@ -117,7 +118,7 @@ router.post('/:creatorToken/finalization-review', async (req, res) => {
     };
     const m = map[err.message];
     if (m) return _err(res, m[0], m[1], m[2]);
-    console.error('[CollectiveWS] review error:', err);
+    log.error('[CollectiveWS] review error:', err);
     _err(res, 500, 'server_error', 'Calcul impossible');
   }
 });
@@ -151,7 +152,7 @@ router.post('/:creatorToken/finalize', async (req, res) => {
     if (m.startsWith('product_inactive:')) return _err(res, 409, 'product_inactive', 'Un produit n\'est plus disponible');
     if (m.startsWith('insufficient_intentions:')) return _err(res, 409, 'insufficient_intentions', 'Les intentions ne couvrent pas le total');
     if (m === 'total_invalid') return _err(res, 400, 'total_invalid', 'Total incorrect');
-    console.error('[CollectiveWS] finalize error:', err);
+    log.error('[CollectiveWS] finalize error:', err);
     _err(res, 500, 'server_error', 'Finalisation impossible');
   }
 });
@@ -166,7 +167,7 @@ router.post('/:creatorToken/resume', async (req, res) => {
     if (err.message === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (err.message === 'workspace_locked_by_order') return _err(res, 409, 'locked_by_order', 'Une commande a déjà été créée pour cet espace. La reprise n\'est plus possible.');
     if (err.message.startsWith('workspace_not_resumable')) return _err(res, 409, 'not_resumable', 'Cet espace n\'est pas reprenable');
-    console.error('[CollectiveWS] resume error:', err);
+    log.error('[CollectiveWS] resume error:', err);
     _err(res, 500, 'server_error', 'Reprise impossible');
   }
 });
@@ -179,7 +180,7 @@ router.post('/:creatorToken/close', async (req, res) => {
     const m = err.message || '';
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_ready_to_order') return _err(res, 409, 'not_ready_to_order', 'Ce panier collectif n\'est pas encore prêt à commander');
-    console.error('[CollectiveWS] close error:', err);
+    log.error('[CollectiveWS] close error:', err);
     _err(res, 500, 'server_error', 'Clôture impossible');
   }
 });
@@ -191,7 +192,7 @@ router.get('/public/:publicToken', async (req, res) => {
     const phase = engine.deriveWorkspacePhase(data.workspace, { items: data.items, contributions: data.contributions, session: data.session });
     res.json({ ...data, workspace: { ...(data.workspace || {}), phase }, phase });
   } catch (err) {
-    console.error('[CollectiveWS] public read error:', err);
+    log.error('[CollectiveWS] public read error:', err);
     _err(res, 500, 'server_error', 'Lecture impossible');
   }
 });
@@ -209,7 +210,7 @@ router.post('/public/:publicToken/contributions', async (req, res) => {
     if (m === 'amount_invalid') return _err(res, 400, 'amount_invalid', 'Montant invalide');
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_open') return _err(res, 409, 'closed', 'Cet espace n\'accepte plus d\'intentions');
-    console.error('[CollectiveWS] add contribution error:', err);
+    log.error('[CollectiveWS] add contribution error:', err);
     _err(res, 500, 'server_error', 'Ajout impossible');
   }
 });
@@ -223,7 +224,7 @@ router.delete('/:creatorToken/contributions/:id', async (req, res) => {
     if (m === 'workspace_not_found') return _err(res, 404, 'not_found', 'Espace introuvable');
     if (m === 'workspace_not_open') return _err(res, 409, 'closed', 'Cet espace n\'accepte plus de modifications');
     if (m === 'contribution_not_found_or_already_handled') return _err(res, 404, 'not_found', 'Intention introuvable');
-    console.error('[CollectiveWS] creator cancel contribution error:', err);
+    log.error('[CollectiveWS] creator cancel contribution error:', err);
     _err(res, 500, 'server_error', 'Action impossible');
   }
 });
@@ -258,7 +259,7 @@ paymentsRouter.get('/:token', async (req, res) => {
                'Vous pouvez confirmer votre part de ' + t.amount_kmf + ' KMF.',
     });
   } catch (err) {
-    console.error('[CollectivePay] read error:', err);
+    log.error('[CollectivePay] read error:', err);
     _err(res, 500, 'server_error', 'Lecture impossible');
   }
 });
@@ -273,7 +274,7 @@ paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 
         if (!agent || !agent.relais_id) return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
         actor.relais_id = agent.relais_id;
       } catch (e) {
-        console.warn('[CollectivePay] agent relais config check failed:', e.message);
+        log.warn('[CollectivePay] agent relais config check failed:', e.message);
         return _err(res, 403, 'agent_relais_not_configured', 'Configuration agent relais incomplète');
       }
     }
@@ -292,7 +293,7 @@ paymentsRouter.post('/:token/confirm-cash', authenticate, requireRole(['admin', 
     if (m === 'workspace_not_payment_pending') return _err(res, 409, 'wrong_state', 'Cet espace n\'est pas en attente de paiement');
     if (m === 'cross_relais_forbidden') return _err(res, 403, 'cross_relais_forbidden', 'Cette part appartient à un autre relais');
     if (m === 'agent_relais_not_configured') return _err(res, 403, 'agent_relais_not_configured', 'Agent relais sans relais configuré');
-    console.error('[CollectivePay] confirm-cash error:', err);
+    log.error('[CollectivePay] confirm-cash error:', err);
     _err(res, 500, 'server_error', 'Confirmation cash impossible');
   }
 });
@@ -309,7 +310,7 @@ paymentsRouter.post('/:token/pay-card', async (req, res) => {
     if (m === 'token_cancelled') return _err(res, 410, 'cancelled', 'Ce paiement a été annulé');
     if (m === 'session_ended') return _err(res, 410, 'session_ended', 'Cette session est terminée');
     if (m === 'session_failed') return _err(res, 410, 'session_failed', 'Cette session ne peut plus aboutir');
-    console.error('[CollectivePay] pay error:', err);
+    log.error('[CollectivePay] pay error:', err);
     _err(res, 500, 'server_error', 'Initialisation paiement impossible');
   }
 });
@@ -321,7 +322,7 @@ async function stripeWebhookHandler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
-    console.error('[CollectivePay webhook] signature verification failed:', err.message);
+    log.error('[CollectivePay webhook] signature verification failed:', err.message);
     return res.status(400).json({ error: 'invalid_signature' });
   }
   try {
@@ -340,7 +341,7 @@ async function stripeWebhookHandler(req, res) {
     await orchestrator.markStripeEventProcessed(event.id, event.type, { payment_intent_id: obj.id || null });
     return res.json({ received: true });
   } catch (err) {
-    console.error('[CollectivePay webhook] handler error:', err);
+    log.error('[CollectivePay webhook] handler error:', err);
     return res.status(500).json({ error: 'handler_error' });
   }
 }

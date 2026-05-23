@@ -29,6 +29,7 @@ const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
 const { notifyCancellation }       = require('../../services/notification-service');
 const { transitionOrderStatus }    = require('../../services/order-status-machine');
+const log = require('../../utils/logger').child({ module: 'cancel' });
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
 
@@ -134,7 +135,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
         );
       } catch (refundErr) {
         await client.query('ROLLBACK');
-        console.error('[CANCEL] Refund error:', refundErr.message);
+        log.error('[CANCEL] Refund error:', refundErr.message);
         return res.status(500).json({
           error: `Annulation impossible — erreur remboursement: ${refundErr.message}`,
         });

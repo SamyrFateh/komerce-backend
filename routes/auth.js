@@ -16,11 +16,12 @@ const db       = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { auth } = require('../validators');
+const log = require('../utils/logger').child({ module: 'auth' });
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET manquant — démarrage impossible');
+  log.error('FATAL: JWT_SECRET manquant — démarrage impossible');
   process.exit(1); // N7: pas de fallback autorisé, même en dev
 }
 const _JWT_SECRET = JWT_SECRET;
@@ -274,7 +275,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
 
     // Sécurité 1 : pas de clé configurée → route désactivée
     if (!resetKey) {
-      console.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY non définie — tentative refusée (IP: ${req.ip})`);
+      log.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY non définie — tentative refusée (IP: ${req.ip})`);
       return res.status(503).json({
         error: 'Route de reset désactivée (ADMIN_RESET_KEY non configurée)'
       });
@@ -282,7 +283,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
 
     // Sécurité 2 : clé trop faible (< 32 chars) → route désactivée
     if (resetKey.length < 32) {
-      console.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY trop faible (< 32 chars) — tentative refusée (IP: ${req.ip})`);
+      log.warn(`[admin-reset] ⛔ ADMIN_RESET_KEY trop faible (< 32 chars) — tentative refusée (IP: ${req.ip})`);
       return res.status(503).json({
         error: 'Route de reset désactivée (ADMIN_RESET_KEY doit faire au moins 32 caractères)'
       });
@@ -290,7 +291,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
 
     // Sécurité 3 : bloqué en production sauf si ALLOW_ADMIN_RESET=true explicitement
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_ADMIN_RESET !== 'true') {
-      console.warn(`[admin-reset] ⛔ Tentative en production sans ALLOW_ADMIN_RESET=true (IP: ${req.ip})`);
+      log.warn(`[admin-reset] ⛔ Tentative en production sans ALLOW_ADMIN_RESET=true (IP: ${req.ip})`);
       return res.status(403).json({
         error: 'Route désactivée en production',
         hint: 'Définir ALLOW_ADMIN_RESET=true pour autoriser temporairement'
@@ -307,7 +308,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
                         crypto.timingSafeEqual(keyBuf, resetKeyBuf);
 
     if (!keysMatch) {
-      console.warn(`[admin-reset] ⛔ Clé invalide (IP: ${req.ip})`);
+      log.warn(`[admin-reset] ⛔ Clé invalide (IP: ${req.ip})`);
       return res.status(403).json({ error: 'Clé de reset invalide' });
     }
 
@@ -328,7 +329,7 @@ router.post('/admin-reset', validate(auth.adminReset), async (req, res, next) =>
       );
     }
 
-    console.log(`[admin-reset] ✅ Admin password reset OK (IP: ${req.ip}, UA: ${req.get('user-agent')})`);
+    log.info(`[admin-reset] ✅ Admin password reset OK (IP: ${req.ip}, UA: ${req.get('user-agent')})`);
     res.json({ success: true, message: 'Mot de passe admin réinitialisé avec succès' });
   } catch(err) { next(err); }
 });

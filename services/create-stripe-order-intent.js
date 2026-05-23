@@ -10,6 +10,7 @@
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'create-stripe-order-intent' });
 
 const PRIVILEGED_ROLES = ['admin', 'agent_hub', 'agent_relais'];
 
@@ -54,7 +55,7 @@ async function createStripeOrderIntent({ orderReference, user }) {
         intent = existing;
       }
     } catch (e) {
-      console.warn('[STRIPE-INTENT] existing intent retrieve failed:', e.message);
+      log.warn('[STRIPE-INTENT] existing intent retrieve failed:', e.message);
     }
   }
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'transit-dashboard' });
 
 // ─────────────────────────────────────────────
 // GET — colis prêts pour transit (shipped)
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 
     res.json({ parcels: result.rows });
   } catch (err) {
-    console.error(err);
+    log.error(err);
     res.status(500).json({ error: 'Erreur transit dashboard' });
   }
 });
@@ -38,7 +39,7 @@ router.post('/:ref/transit', authenticate, requireAdmin, async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    log.error(err);
     res.status(500).json({ error: 'Erreur passage en transit' });
   }
 });

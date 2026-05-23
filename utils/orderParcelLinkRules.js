@@ -16,6 +16,7 @@
 
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { computeOrderStatus } = require('./parcels');
+const log = require('../utils/logger').child({ module: 'orderParcelLinkRules' });
 
 /**
  * Evaluate link rules between order and its parcels.
@@ -62,7 +63,7 @@ async function evaluateOrderParcelLinkRules(order_id, db) {
 
   // ── R2 — All parcels cancelled (observation signal) ───────────────────
   if (allParcels.every(p => p.status === 'cancelled') && order.status !== 'collected') {
-    console.log(`[LINK-RULES] R2: All parcels cancelled for order ${order_id}`);
+    log.info(`[LINK-RULES] R2: All parcels cancelled for order ${order_id}`);
     return 'R2_ALL_PARCELS_CANCELLED';
   }
 

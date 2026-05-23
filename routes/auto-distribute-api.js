@@ -12,6 +12,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const autoParcel = require('../services/auto-parcel');
+const log = require('../utils/logger').child({ module: 'auto-distribute-api' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub'])];
 
@@ -30,7 +31,7 @@ router.post('/auto-distribute', ...guard, async (req, res, next) => {
       cleanup
     });
   } catch (e) {
-    console.error('[AUTO-DISTRIBUTE]', e);
+    log.error('[AUTO-DISTRIBUTE]', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -41,7 +42,7 @@ router.get('/auto-distribute', ...guard, async (req, res, next) => {
     const data = await autoParcel.getDistribution();
     res.json(data);
   } catch (e) {
-    console.error('[AUTO-DISTRIBUTE]', e);
+    log.error('[AUTO-DISTRIBUTE]', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -52,7 +53,7 @@ router.post('/auto-distribute/cleanup', ...guard, async (req, res, next) => {
     const result = await autoParcel.cleanupGhostParcels();
     res.json({ message: `${result.cancelled} colis fantômes annulés`, ...result });
   } catch (e) {
-    console.error('[AUTO-DISTRIBUTE]', e);
+    log.error('[AUTO-DISTRIBUTE]', e);
     res.status(500).json({ error: e.message });
   }
 });

@@ -34,6 +34,7 @@ const { generateParcelRef } = require('../utils/reference');
 const { PARCEL_STATUSES } = require('../utils/parcels');
 const { DEFAULT_CONFIG: DEFAULT_OPTIM_CONFIG } = require('../services/parcelOptimizationService');
 const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
+const log = require('../utils/logger').child({ module: 'parcels' });
 
 // [S1-S5] Sécurité logistique
 const {
@@ -252,7 +253,7 @@ router.patch('/:id/status', ...adminAgent, validate(parcels.updateStatus), async
     // Évaluer les règles de liaison order ↔ parcel (R1/R2/R3)
     const triggeredRule = await evaluateOrderParcelLinkRules(parcel.order_id, db);
     if (triggeredRule) {
-      console.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
+      log.info(`[LINK-RULE] ${triggeredRule} déclenché pour order ${parcel.order_id}`);
     }
 
     const [parcelResult, orderResult] = await Promise.all([

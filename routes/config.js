@@ -18,6 +18,7 @@ const router  = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { config: configSchemas } = require('../validators');
+const log = require('../utils/logger').child({ module: 'config' });
 const {
   getAllRules,
   getRuleByKey,
@@ -38,7 +39,7 @@ router.get('/rules', async (req, res) => {
     const categories = await getAllRules();
     res.json({ categories });
   } catch (err) {
-    console.error('[CONFIG] List rules error:', err.message);
+    log.error('[CONFIG] List rules error:', err.message);
     res.status(500).json({ error: 'Erreur récupération des règles' });
   }
 });
@@ -70,7 +71,7 @@ router.get('/rules/:key', async (req, res) => {
       history:     history.slice(0, 10),
     });
   } catch (err) {
-    console.error('[CONFIG] Get rule error:', err.message);
+    log.error('[CONFIG] Get rule error:', err.message);
     res.status(500).json({ error: 'Erreur récupération de la règle' });
   }
 });
@@ -97,7 +98,7 @@ router.put('/rules/:key', validate(configSchemas.updateRule), async (req, res) =
       message: `Règle "${updated.label_fr}" mise à jour`,
     });
   } catch (err) {
-    console.error('[CONFIG] Update rule error:', err.message);
+    log.error('[CONFIG] Update rule error:', err.message);
 
     // Erreurs de validation → 422
     if (err.message.includes('Valeur minimum') || err.message.includes('Valeur maximum') ||
@@ -124,7 +125,7 @@ router.post('/rules/:key/reset', async (req, res) => {
       message: `Règle "${rule.label_fr}" remise à la valeur par défaut`,
     });
   } catch (err) {
-    console.error('[CONFIG] Reset rule error:', err.message);
+    log.error('[CONFIG] Reset rule error:', err.message);
     if (err.message.includes('introuvable')) {
       return res.status(404).json({ error: err.message });
     }
@@ -156,7 +157,7 @@ router.get('/rules/:key/history', async (req, res) => {
       })),
     });
   } catch (err) {
-    console.error('[CONFIG] Rule history error:', err.message);
+    log.error('[CONFIG] Rule history error:', err.message);
     res.status(500).json({ error: 'Erreur historique de la règle' });
   }
 });

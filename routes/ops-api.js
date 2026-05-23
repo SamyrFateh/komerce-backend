@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const log = require('../utils/logger').child({ module: 'ops-api' });
 
 router.use(authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']));
 
@@ -105,7 +106,7 @@ router.get('/global', async (req, res) => {
       alerts: alertCount
     });
   } catch (err) {
-    console.error('GET /api/v2/global error:', err.message);
+    log.error('GET /api/v2/global error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -139,7 +140,7 @@ router.get('/incidents', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('GET /api/v2/incidents error:', err.message);
+    log.error('GET /api/v2/incidents error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -216,7 +217,7 @@ const reconciliationHandler = async (req, res) => {
       parcels
     });
   } catch (err) {
-    console.error('GET /api/v2/reconciliation/summary error:', err.message);
+    log.error('GET /api/v2/reconciliation/summary error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -336,7 +337,7 @@ message: `⚠️ Anomalie poids — ${i.parcel_reference}: ${i.title}`,
 
     res.json(alerts);
   } catch (err) {
-    console.error('GET /api/v2/alerts error:', err.message);
+    log.error('GET /api/v2/alerts error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -358,7 +359,7 @@ router.post('/alerts/:id/acknowledge', async (req, res) => {
     
     res.json({ success: true, message: 'Alerte acquittée' });
   } catch (err) {
-    console.error('POST /api/v2/alerts/:id/acknowledge error:', err.message);
+    log.error('POST /api/v2/alerts/:id/acknowledge error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -433,7 +434,7 @@ router.get('/parcels/:ref/detail', async (req, res) => {
 
     res.json({ parcel, scans, orders });
   } catch (err) {
-    console.error('GET /api/v2/parcels/:ref/detail error:', err.message);
+    log.error('GET /api/v2/parcels/:ref/detail error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -461,7 +462,7 @@ router.get('/parcels/:id', async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Colis non trouvé' });
     res.json(rows[0]);
   } catch (err) {
-    console.error('GET /api/v2/parcels/:id error:', err.message);
+    log.error('GET /api/v2/parcels/:id error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -483,7 +484,7 @@ router.get('/parcels/:id/scans', async (req, res) => {
     `, [req.params.id]);
     res.json(rows);
   } catch (err) {
-    console.error('GET /api/v2/parcels/:id/scans error:', err.message);
+    log.error('GET /api/v2/parcels/:id/scans error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -531,7 +532,7 @@ router.get('/parcels/:id/orders', async (req, res) => {
 
     res.json(orders);
   } catch (err) {
-    console.error('GET /api/v2/parcels/:id/orders error:', err.message);
+    log.error('GET /api/v2/parcels/:id/orders error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -558,7 +559,7 @@ router.get('/invoices', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('GET /api/v2/invoices error:', err.message);
+    log.error('GET /api/v2/invoices error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -584,7 +585,7 @@ router.get('/scan-events', async (req, res) => {
     `, [limit]);
     res.json(rows);
   } catch (err) {
-    console.error('GET /api/v2/scan-events error:', err.message);
+    log.error('GET /api/v2/scan-events error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -615,7 +616,7 @@ router.get('/parcels', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('GET /api/v2/parcels error:', err.message);
+    log.error('GET /api/v2/parcels error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

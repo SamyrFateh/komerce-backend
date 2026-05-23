@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
 const { sendMagicLink } = require('../services/notification-service');
+const log = require('../utils/logger').child({ module: 'client-auth' });
 
 function maskPhone(phone) {
   if (!phone) return null;
@@ -53,9 +54,9 @@ router.post('/magic-link', async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     const magicLink = `${baseUrl}/mon-compte?token=${magicToken}`;
 
-    console.log('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
+    log.info('[magic-link] Generated', { userId: user.id, phone: maskPhone(user.phone) });
     if (canEchoMagicLink()) {
-      console.log('[magic-link][dev] URL:', magicLink);
+      log.info('[magic-link][dev] URL:', magicLink);
     }
 
     // Envoyer le lien via WhatsApp (AuthKey)
@@ -66,7 +67,7 @@ router.post('/magic-link', async (req, res) => {
       expiryMin: 15,
     });
 
-    console.log('[magic-link] Send result:', {
+    log.info('[magic-link] Send result:', {
       userId: user.id,
       phone: maskPhone(user.phone),
       success: waResult.success,
@@ -83,7 +84,7 @@ router.post('/magic-link', async (req, res) => {
       _dev_link: canEchoMagicLink() ? magicLink : undefined,
     });
   } catch (err) {
-    console.error('Magic link request error:', err);
+    log.error('Magic link request error:', err);
     res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
@@ -129,10 +130,10 @@ router.get('/magic-link/validate', async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
-    console.log('[magic-link] Login success', { userId: user.id, phone: maskPhone(user.phone) });
+    log.info('[magic-link] Login success', { userId: user.id, phone: maskPhone(user.phone) });
     res.redirect('/mon-compte');
   } catch (err) {
-    console.error('Magic link validate error:', err);
+    log.error('Magic link validate error:', err);
     res.redirect('/mon-compte?error=server_error');
   }
 });
@@ -196,7 +197,7 @@ router.get('/orders', async (req, res) => {
 
     res.json({ orders });
   } catch (err) {
-    console.error('Client orders error:', err);
+    log.error('Client orders error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -241,7 +242,7 @@ router.get('/invoices', async (req, res) => {
       }))
     });
   } catch (err) {
-    console.error('Client invoices error:', err);
+    log.error('Client invoices error:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

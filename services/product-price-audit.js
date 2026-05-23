@@ -9,6 +9,7 @@
  */
 
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'product-price-audit' });
 
 async function recordProductPriceChange(q = db, {
   productId,
@@ -60,7 +61,7 @@ async function recordProductPriceChange(q = db, {
       );
       return { inserted: true, enriched: false };
     } catch (fallbackErr) {
-      console.warn('[product-price-audit] price_history skipped:', fallbackErr.message);
+      log.warn('[product-price-audit] price_history skipped:', fallbackErr.message);
       return { skipped: true, reason: fallbackErr.message };
     }
   }

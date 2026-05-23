@@ -38,6 +38,7 @@
 const { computeOrderStatus, STATUS_WEIGHT, PARCEL_STATUSES } = require('./parcels');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const db = require('../db');
+const log = require('../utils/logger').child({ module: 'parcelSync' });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAPPING : scan step → parcel status + timestamp column (parcels + orders)
@@ -189,7 +190,7 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
   // No direct insert into order_status_history here.
   // The machine guarantees every transition is logged.
 
-  console.log(
+  log.info(
     `[PARCEL-SYNC] ✅ order=${order_id} step=${step} → ${parcelsUpdated} parcel(s) updated, status=${finalOrderStatus}`
   );
 
@@ -219,7 +220,7 @@ async function safeSyncScanToParcels(opts, dbClient = null) {
   try {
     return await syncScanToParcels(opts, dbClient);
   } catch (err) {
-    console.error(`[PARCEL-SYNC] ❌ Erreur (order=${opts.order_id}, step=${opts.step}):`, err.message);
+    log.error(`[PARCEL-SYNC] ❌ Erreur (order=${opts.order_id}, step=${opts.step}):`, err.message);
     // [P3-4] Le trigger legacy est désactivé — on log mais on ne crashe pas.
     // TODO #387 : Ajouter alerting/monitoring pour ces erreurs de synchronisation colis.
     return { synced: false, parcelsUpdated: 0, orderStatus: null };

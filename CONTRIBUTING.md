@@ -1,90 +1,86 @@
-# 🤝 Guide de Contribution — Komerce Backend
+'use strict';
 
-## 🔒 Règle d'Or : Le Coffre-Fort d'abord
+const log = require('../utils/logger').child({ module: 'bootstrap-crons' });
 
-> **Avant de toucher à une seule ligne de code, consultez la Cartographie 360°.**
->
-> 📄 [`docs/CARTOGRAPHY_360.md`](docs/CARTOGRAPHY_360.md)
+function startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber }) {
+  let cronRunning = false;
 
-Ce document est la **source de vérité unique** du projet. Il contient :
-- Tous les endpoints (méthode, chemin, auth, middleware, tables touchées)
-- Le schéma DB complet (tables, colonnes, types, contraintes)
-- Le pipeline de commandes (9 statuts + transitions)
-- Les services externes (Stripe, SMS, Email, Supabase)
-- La matrice middleware et rate limiters
+  (async () => {
+    let intervalMin = 60;
+    try {
+      intervalMin = await getRuleNumber('CASH_REMINDER_INTERVAL_MIN', 60);
+    } catch (_) {
+      // fallback 60min
+    }
 
----
+    log.info({ interval_min: intervalMin }, 'Cash reminder cron started');
 
-## 📝 Workflow de contribution
+    setInterval(async () => {
+      try {
+        const inv = require('../services/inventory-service');
+        const result = await inv.autoConfirmExpired();
+        if (result.auto_confirmed > 0) {
+          log.info({ auto_confirmed: result.auto_confirmed }, 'Inventory proposals auto-confirmed');
+        }
+      } catch (_) {
+        // non-fatal
+      }
+    }, 30 * 60 * 1000);
 
-### 1. Consulter la carto
-```
-Ouvrir docs/CARTOGRAPHY_360.md
-→ Chercher la section liée à votre modification
-→ Vérifier les endpoints, tables et middleware concernés
-```
+    setInterval(async () => {
+      if (cronRunning) return;
+      cronRunning = true;
+      try {
+        await processCashRelaisReminders();
+      } catch (err) {
+        log.error({ err }, 'Cash reminder cron failed');
+      } finally {
+        cronRunning = false;
+      }
+    }, intervalMin * 60 * 1000);
+  })();
+}
 
-### 2. Coder les modifications
-- Respecter les patterns existants (auth, validation, try/catch)
-- Paramétrer toutes les requêtes SQL (jamais de concaténation)
-- Ajouter authenticate + requireRole sur les routes sensibles
+function startBackorderCron({ processBackorderReminders }) {
+  const BACKORDER_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+  let backorderCronRunning = false;
 
-### 3. Mettre à jour la carto
-Si votre PR modifie des endpoints, tables, middleware ou le pipeline :
-```
-Mettre à jour docs/CARTOGRAPHY_360.md dans la MÊME PR
-```
+  setInterval(async () => {
+    if (backorderCronRunning) return;
+    backorderCronRunning = true;
+    try {
+      const result = await processBackorderReminders();
+      if (result.processed > 0) {
+        log.info({ processed: result.processed, sms_sent: result.sms_sent }, 'Backorder check processed');
+      }
+    } catch (err) {
+      log.error({ err }, 'Backorder check failed');
+    } finally {
+      backorderCronRunning = false;
+    }
+  }, BACKORDER_CHECK_INTERVAL_MS);
 
-### 4. Créer la PR
-- Remplir **toute** la checklist du template PR
-- Lister les fichiers modifiés et leur impact
-- Indiquer les endpoints et tables impactés
+  setTimeout(() => {
+    processBackorderReminders()
+      .then(result => {
+        if (result.processed > 0) {
+          log.info({ processed: result.processed }, 'Initial backorder check processed');
+        }
+      })
+      .catch(err => log.error({ err }, 'Initial backorder check failed'));
+  }, 30 * 1000);
+}
 
-### 5. Review
-- Le reviewer vérifie la cohérence code ↔ carto
-- Si la carto n'est pas à jour → PR bloquée
+function startOperationalCrons() {
+  const { processCashRelaisReminders, processBackorderReminders } = require('../utils/sms');
+  const { getRuleNumber } = require('../utils/rules');
 
----
+  startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber });
+  startBackorderCron({ processBackorderReminders });
+}
 
-## 🚫 Ce qui bloque une PR
-
-| Motif | Exemple |
-|-------|---------|
-| Carto non consultée | Checklist non cochée |
-| Carto non mise à jour | Nouvel endpoint absent de la carto |
-| SQL non paramétré | `WHERE id = ${id}` au lieu de `WHERE id = $1` |
-| Route sans auth | Endpoint admin sans `requireRole(['admin'])` |
-| Secret en dur | `JWT_SECRET = 'mysecret'` dans le code |
-| Pas de try/catch | Route sans gestion d'erreur |
-
----
-
-## 📂 Structure du projet
-
-```
-komerce-backend/
-├── server.js                 # Point d'entrée Express v10.0
-├── db.js                     # Pool PostgreSQL
-├── routes/                   # 18 fichiers de routes
-│   ├── dashboard.js          # ⭐ Dashboard unifié v11 (8 endpoints)
-│   ├── orders.js             # Commandes (26 endpoints)
-│   ├── admin.js              # Administration
-│   └── ...
-├── middleware/                # Auth, rate-limit, upload, validate
-├── utils/                    # Email, SMS, pricing, rates, reference
-├── validators/               # Schémas Joi
-├── db/                       # Schema SQL + migrations
-│   ├── schema.sql
-│   ├── schema_extension.sql
-│   ├── seed.sql
-│   └── migrations/
-└── docs/                     # 📚 Documentation
-    ├── CARTOGRAPHY_360.md    # 🔒 COFFRE-FORT — Source de vérité
-    ├── AUDIT_REPORT.md       # Rapport d'audit
-    ├── DASHBOARD_REDESIGN.md # Architecture dashboard v11
-    └── ROADMAP_KOMERCE.md    # Plan de travail
-```
-
----
-
-> 🔒 *Le coffre-fort protège le code. Le code protège le business.*
+module.exports = {
+  startOperationalCrons,
+  startCashRelaisCron,
+  startBackorderCron,
+};

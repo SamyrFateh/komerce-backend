@@ -11,6 +11,7 @@
 const db = require('../db');
 const pricingEngine = require('./pricing-engine');
 const { recordProductPriceChange } = require('./product-price-audit');
+const log = require('../utils/logger').child({ module: 'apply-pricing-updates' });
 
 async function computeServerSurvival(product) {
   try {
@@ -26,7 +27,7 @@ async function computeServerSurvival(product) {
     const survival = Number(doctrine?.survival_price_kmf || 0);
     return Number.isFinite(survival) && survival > 0 ? survival : null;
   } catch (err) {
-    console.warn('[pricing-apply] survival compute skipped:', err.message);
+    log.warn('[pricing-apply] survival compute skipped:', err.message);
     return null;
   }
 }

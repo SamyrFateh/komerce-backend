@@ -29,6 +29,7 @@
 const pool = require('../db');
 // ── CANONIQUE: source de vérité unique pour le calcul agrégé colis → commande ──
 const { computeOrderStatus } = require('../utils/parcels');
+const log = require('../utils/logger').child({ module: 'reconciliation-service' });
 
 // ════════════════════════════════════════════════════════════════
 // RÉCONCILIATION D'UNE COMMANDE
@@ -171,7 +172,7 @@ async function reconcileOrder(orderId) {
       // PATCH P0.2b: LOG WARNING au lieu de UPDATE direct
       // L'auto-correction est désactivée — la réconciliation est observatrice.
       // Un opérateur ou un processus automatisé doit corriger via la state machine.
-      console.warn(`[RECONCILIATION] ⚠️ Status drift détecté: order=${orderId} current=${order.status} computed=${computedStatus} — PAS d'auto-correction (P0.2b)`);
+      log.warn(`[RECONCILIATION] ⚠️ Status drift détecté: order=${orderId} current=${order.status} computed=${computedStatus} — PAS d'auto-correction (P0.2b)`);
       
       await createReconciliationIncident(client, orderId, null, null, issue);
       issue.auto_corrected = false;
