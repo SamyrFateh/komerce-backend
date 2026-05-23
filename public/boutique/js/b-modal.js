@@ -191,7 +191,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     if (!state.modalProduct) return;
     const pid = String(state.modalProduct.id);
     const item = state.cart.find(i => String(i.product?.id ?? i.id) === pid);
-    state.modalQty = item ? item.qty : 0;
+    state.modalQty = item ? item.qty : 1; /* BUGFIX: défaut 1 (pas 0) — produit pas encore au panier → qty initiale = 1 pour ajouter directement */
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
     // Update "Ajouter" button label
     if (dom.addCartBtn) {
@@ -343,7 +343,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
 
     // FIX: Stepper = panier direct. Affiche la quantité déjà dans le panier.
     const _cartItem = state.cart.find(i => String(i.product?.id ?? i.id) === String(product.id));
-    state.modalQty = _cartItem ? _cartItem.qty : 0;
+    state.modalQty = _cartItem ? _cartItem.qty : 1; /* BUGFIX: défaut 1 → cohérent avec _syncModalQtyUI */
 
     // Reset "Ajouter" button state
     if (dom.addCartBtn) {

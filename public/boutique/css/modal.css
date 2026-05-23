@@ -187,7 +187,7 @@
    Pill semi-transparent injecté par b-modal-image-ux.js.
    Masqué sur desktop (le zoom loupe suffit). */
 .k-modal-view-full {
-  position: absolute; bottom: 10px; left: 10px; z-index: 3;
+  position: absolute; bottom: 28px; left: 10px; z-index: 3; /* BUGFIX: bottom:28px > 20px (margin-top:-20px de .k-modal-details z-index:2) → bouton hors zone de chevauchement */
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
@@ -613,7 +613,7 @@
 .k-sug-step:active { background: var(--sand-dark); transform: scale(.9); }
 .k-sug-qty { min-width: 22px; text-align: center; font-size: 13px; font-weight: 700; color: var(--ocean); user-select: none; }
 .k-sug-card-bottom { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 8px; gap: 4px; }
-.k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; }
+.k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
 /* Source de vérité modale — .k-sug-add dans le contexte modal produit.
    32×32px, transparent, sans bordure. Actif via b-modal.js.
    Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
@@ -687,7 +687,7 @@
     -webkit-overflow-scrolling: touch;
     width: 100%;
     max-width: 100%;
-    padding-bottom: 0; /* FIX Bug 2: padding déporté sur .k-modal-suggestions (safe-area géré là) */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom)); /* BUGFIX: §2 guard ne doit pas écraser le 140px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
   }
 
   /* Pas de débordement horizontal sur aucun enfant.
