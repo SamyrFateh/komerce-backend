@@ -62,9 +62,9 @@
   .k-cats-shell {
     margin-top: 0;
     border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255, 252, 244, .80), rgba(255, 252, 244, .66));
-    border: 1px solid rgba(42, 62, 44, .045);
-    box-shadow: 0 2px 7px rgba(31, 48, 36, .04);
+    background: var(--sand-warm);
+    border: 1px solid var(--border-text-08);
+    box-shadow: 0 6px 18px var(--border-text-10);
     overflow: hidden;
   }
 

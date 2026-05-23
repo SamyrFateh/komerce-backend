@@ -419,6 +419,10 @@
   flex-wrap: wrap;
   margin-top: 6px;
   gap: 6px;
+  /* Réserve l'espace du bouton .k-card-add (32px + 7px right + 4px breathing)
+     pour que prix/ancien-prix ne passent jamais sous le bouton panier en
+     bas-droite. Écrasé en desktop par le bloc @600px ci-dessous. */
+  padding-right: 43px;
 }
 
 .k-card-price {
@@ -443,13 +447,17 @@
   flex-direction: column;
   gap: 1px;
   align-items: flex-start;
+  /* Réserve l'espace de 3 lignes (prix KMF + ≈ EUR + ancien prix barré)
+     pour que les cartes avec/sans promo aient la même hauteur visuelle.
+     ≈ 18px (prix) + 13px (eur) + 13px (old) + 2px gap = ~46px */
+  min-height: 46px;
 }
 
 .k-card-price-eur {
-  font-size: 11px;
-  color: var(--text-light);
+  font-size: 13px;
+  color: var(--text-muted);
   line-height: 1;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .k-card-prices-row {
@@ -561,6 +569,10 @@
     justify-content: space-between;
     gap: 4px;
     margin-top: 4px;
+    /* Reset du padding-right mobile : à partir de 600px, .k-card-add
+       est repositionné par cart.css @900px (46×46px) et la zone prix
+       n'a plus besoin de réserver l'espace bas-droite. */
+    padding-right: 0;
   }
 
   .k-card-info {
