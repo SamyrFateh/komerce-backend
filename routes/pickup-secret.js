@@ -284,13 +284,21 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
           tracking_phone_confirmed_at     = $3,
           tracking_phone_confirmed_by_agent_id = $5,
           payment_status                  = 'paid',
-          status                          = 'confirmed',
           confirmed_at                    = $3,
           updated_at                      = NOW()
       WHERE id = $12
     `, [hash, salt, now, expires, agentId, payer_name.trim(),
         payer_id_type || null, payer_id_number || null, payer_note || null,
         finalPhonePrimary, finalPhoneSecondary, orderId, last4]);
+
+    // 3b. Transition de statut via la machine (I-01) — pending → confirmed
+    // Trace dans order_status_history (I-04)
+    await transitionOrderStatus({
+      orderId,
+      newStatus: 'confirmed',
+      source: 'cash_relais_pickup_secret',
+      actor: { id: agentId, role: 'agent' },
+    });
 
     // 4. Log d'audit (en cash_collections pour rester cohérent avec l'existant)
     await db.query(`
