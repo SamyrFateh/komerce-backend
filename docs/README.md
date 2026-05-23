@@ -1,6 +1,6 @@
 # Documentation Komerce
 
-> **Statut** : index documentaire canonique — mis à jour le 15 mai 2026  
+> **Statut** : index documentaire canonique — mis à jour le 22 mai 2026  
 > **Méthode** : consolidation des audits existants + vérification contre le code réel (`server.js`, `package.json`, `services/order-status-machine.js`, `services/pricing-engine.js`, `services/wallet-service.js`).  
 > **Objectif** : garder uniquement les documents utiles pour comprendre, maintenir et piloter Komerce.
 
@@ -10,6 +10,7 @@
 
 | Document | Rôle |
 |---|---|
+| [`BRAND_TRUTH_KOMERCE.md`](./BRAND_TRUTH_KOMERCE.md) | Vérité de marque, positionnement, ton, audiences, promesse, règles UX éditoriales et logique d’échanges croisés entre Comoriens. |
 | [`SYNOPTIQUE_KOMERCE.md`](./SYNOPTIQUE_KOMERCE.md) | Vue métier et technique rapide : ce que Komerce fait, pour qui, et comment les grands blocs s'enchaînent. |
 | [`DOCTRINE_ECONOMIQUE_KOMERCE.md`](./DOCTRINE_ECONOMIQUE_KOMERCE.md) | Doctrine de pricing, marges, coût complet, risque, confiance marché et décisions de sourcing. |
 | [`CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) | Cartographie opérationnelle vérifiée : routes, domaines, services critiques et points de vérité. |
