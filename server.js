@@ -15,6 +15,7 @@
 const { loadAndValidateEnv } = require('./bootstrap/env');
 loadAndValidateEnv();
 
+const log          = require('./utils/logger').child({ module: 'server' });
 const express      = require('express');
 const cookieParser = require('cookie-parser');
 const path         = require('path');
@@ -41,7 +42,7 @@ app.set('trust proxy', 1);
 
 app.get('/webhook/authkey-whatsapp', async (req, res) => {
   try {
-    console.log('[AUTHKEY-WA][WEBHOOK]', req.query);
+    log.info('[AUTHKEY-WA][WEBHOOK]', req.query);
 
     const mobile = req.query.Mobile || null;
     const email = req.query.Email || null;
@@ -51,7 +52,7 @@ app.get('/webhook/authkey-whatsapp', async (req, res) => {
 
     return res.status(200).send('OK');
   } catch (e) {
-    console.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
+    log.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
     return res.status(500).send('ERROR');
   }
 });
