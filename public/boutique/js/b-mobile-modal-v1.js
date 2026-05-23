@@ -29,9 +29,13 @@ function injectStyles() {
   style.id = 'k-mobile-modal-v1-style';
   style.textContent = `
 @media (max-width: 899px) {
+  html.k-mobile-modal-v1 #k-modal {
+    isolation: isolate;
+  }
+
   html.k-mobile-modal-v1 #k-modal .k-modal-scroll {
     background: linear-gradient(180deg, var(--sand) 0%, var(--white) 34%);
-    padding-bottom: calc(172px + env(safe-area-inset-bottom));
+    padding-bottom: calc(228px + env(safe-area-inset-bottom));
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-img-wrap {
@@ -107,29 +111,46 @@ function injectStyles() {
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-actions {
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: grid;
     grid-template-columns: minmax(106px, .8fr) minmax(0, 1.25fr);
     gap: 12px;
     padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
-    background: var(--white);
+    background: var(--white) !important;
     border-top: 1px solid var(--border-text-06);
-    box-shadow: 0 -18px 40px color-mix(in srgb, var(--text) 10%, transparent);
+    box-shadow: 0 -18px 44px color-mix(in srgb, var(--text) 14%, transparent);
     isolation: isolate;
-    z-index: 30;
+    z-index: 2147483000 !important;
+    overflow: visible;
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-actions::before {
     content: '';
     position: absolute;
-    inset: -22px 0 auto 0;
-    height: 22px;
+    inset: -34px 0 auto 0;
+    height: 34px;
     pointer-events: none;
-    background: linear-gradient(180deg, transparent 0%, var(--white) 100%);
+    background: linear-gradient(180deg, transparent 0%, var(--white) 72%, var(--white) 100%);
+    z-index: -1;
+  }
+
+  html.k-mobile-modal-v1 #k-modal .k-modal-actions::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--white);
+    z-index: -1;
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-qty,
   html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-add-cart-btn,
   html.k-mobile-modal-v1 #k-modal .k-modal-actions .k-buy-now-btn {
+    position: relative;
+    z-index: 1;
     border-radius: 999px;
     min-height: 54px;
   }
@@ -161,6 +182,7 @@ function injectStyles() {
   html.k-mobile-modal-v1 #k-modal .k-modal-suggestions {
     background: var(--sand);
     padding-top: 22px;
+    padding-bottom: calc(42px + env(safe-area-inset-bottom));
   }
 
   html.k-mobile-modal-v1 #k-modal .k-modal-suggestions h3 {
