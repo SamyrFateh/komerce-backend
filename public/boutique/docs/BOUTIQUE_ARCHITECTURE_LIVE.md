@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-23T13:09:59.231Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-23T13:13:28.102Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -25,7 +25,7 @@
 | `hero.css` | 146 | base.css |
 | `interactions.css` | 529 | components.css |
 | `layout.css` | 765 | base.css |
-| `modal.css` | 1872 | components.css |
+| `modal.css` | 1874 | components.css |
 | `products.css` | 737 | components.css |
 | `reset.css` | 86 | base.css |
 | `shared-followup.css` | 3 | components.css |
@@ -38,7 +38,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 ```
  1. /boutique/css/dist/base.css?v=3
  2. /boutique/css/dist/components.css?v=6
- 3. /boutique/css/dist/desktop.css?v=3
+ 3. /boutique/css/dist/desktop.css?v=4
  4. /boutique/css/dist/event.css?v=3
 ```
 

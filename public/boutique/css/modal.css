@@ -523,9 +523,11 @@
     box-shadow: 0 -2px 12px var(--overlay-black-sm);
   }
   /* Compensation: éviter que le contenu scrollable disparaisse derrière la barre fixe.
-     Hauteur estimée = qty(44) + buy(48) + gap(10) + padding-top(10) + padding-bottom(10+safe-area) */
+     Hauteur exacte CTA = padding-top(10) + row1-qty(44) + gap(10) + row2-buy(48) + padding-bottom(10) = 122px.
+     + 28px marge = 150px. Fallback env() à 48px pour Android où safe-area-inset-bottom = 0
+     mais la barre home/nav peut quand même chevaucher le contenu en edge-to-edge. */
   .k-modal-scroll {
-    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px));
   }
   .k-modal-suggestions { order: 2; }
 }
@@ -687,7 +689,7 @@
     -webkit-overflow-scrolling: touch;
     width: 100%;
     max-width: 100%;
-    padding-bottom: calc(140px + env(safe-area-inset-bottom)); /* BUGFIX: §2 guard ne doit pas écraser le 140px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px)); /* BUGFIX: §2 guard ne doit pas écraser le 150px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
   }
 
   /* Pas de débordement horizontal sur aucun enfant.
