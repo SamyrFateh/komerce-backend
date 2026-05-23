@@ -32,7 +32,7 @@ function injectStyles() {
   html.k-mobile-premium-v1 #k-hero-fixed-wrap {
     background:
       radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--ocean-bg-08) 68%, transparent), transparent 26%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 60%, var(--white)) 100%);
+      var(--sand-warm);
   }
 
   html.k-mobile-premium-v1 .k-header-inner {
