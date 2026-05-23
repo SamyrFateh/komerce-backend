@@ -73,22 +73,6 @@ function injectStyles() {
     letter-spacing: .06em;
   }
 
-  html.k-home-premium-v1 .k-line-1::before {
-    content: 'Achetez pour les Comores, simplement.';
-    display: block;
-    font-family: var(--font-display, var(--font));
-    color: var(--text);
-    font-size: clamp(34px, 3.4vw, 58px);
-    line-height: .92;
-    letter-spacing: -.045em;
-    max-width: 560px;
-  }
-
-  html.k-home-premium-v1 .k-line-1,
-  html.k-home-premium-v1 .k-line-2 {
-    font-size: 0 !important;
-  }
-
   html.k-home-premium-v1 .k-hero-sub {
     margin-top: 14px;
     max-width: 470px;

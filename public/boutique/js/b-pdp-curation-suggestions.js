@@ -124,6 +124,14 @@ function injectStyles() {
     box-shadow: 0 8px 18px var(--border-text-12);
   }
 
+  /* Si la carte porte déjà un badge promo (.k-sug-promo-badge), masquer
+     le badge curation Utile/Assorti — la promo a priorité commerciale.
+     Les deux badges occupaient le même coin haut-gauche et le curation
+     écrasait visuellement le -X% qui est un argument d'achat plus fort. */
+  #k-modal-suggestions.k-pdp-curation .k-sug-card-img:has(.k-sug-promo-badge) .k-pdp-curation-badge {
+    display: none;
+  }
+
   #k-modal-suggestions.k-pdp-curation .k-sug-card-img { position: relative; }
 }
 `;
