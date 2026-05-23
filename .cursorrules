@@ -1,0 +1,75 @@
+# 🔒 Komerce — Règles Agent Cursor
+
+## ⚠️ INSTRUCTION OBLIGATOIRE — LIRE AVANT TOUTE ACTION
+
+Avant de modifier, corriger ou implémenter quoi que ce soit dans ce projet,
+tu DOIS lire et suivre le protocole de gouvernance :
+
+### 📖 Lecture obligatoire (dans cet ordre) :
+
+1. **docs/AGENT_CONFIG.md** — 🤖 Config complète agent (outils, workflow, sous-agents, bootstrap)
+2. **docs/ROADMAP_KOMERCE.md** — Le Plan (priorités, progression, issues)
+3. **docs/CARTOGRAPHY_360.md** — La Carte (architecture, endpoints, tables, dépendances)
+4. **docs/AUDIT_REPORT.md** + **docs/audit/** — Le Bouclier (sécurité, vulnérabilités)
+
+> 🔴 **AGENT_CONFIG.md est la source de vérité unique pour la configuration de tout agent.**
+> Que tu sois Cursor, Tasklet, ou un autre agent, lis-le EN PREMIER.
+
+## Workflow
+
+```
+AVANT de coder :
+1. Lire AGENT_CONFIG → comment suis-je configuré ?
+2. Lire ROADMAP → quelle est la priorité ?
+3. Lire CARTOGRAPHY → quels fichiers impactés ?
+4. Lire AUDIT → risque sécurité ?
+5. SEULEMENT ALORS → implémenter
+
+APRÈS avoir codé :
+1. Mettre à jour CARTOGRAPHY si endpoints/tables changés
+2. Mettre à jour ROADMAP (cocher tâches, ajouter découvertes)
+3. Mettre à jour AUDIT si fix sécurité
+4. Déposer un DELTA dans docs/_pending/ (voir ci-dessous)
+5. Commit avec message clair + références issues/PRs
+```
+
+## 📂 Système de deltas — docs/_pending/
+
+Après CHAQUE session de travail, tu DOIS déposer un fichier delta :
+
+```
+docs/_pending/YYYY-MM-DD_HH-MM_description.md
+```
+
+Format :
+```markdown
+# Delta — [Description courte]
+
+## ROADMAP
+- [changements à appliquer à la roadmap]
+
+## CARTOGRAPHY
+- [changements à appliquer à la carto]
+```
+
+Ce delta sera traité automatiquement par le trigger Tasklet (toutes les 10 min).
+Voir `docs/AGENT_CONFIG.md` pour les détails complets du système de gouvernance.
+
+## 🤖 Si tu es un agent Tasklet
+
+Lis **docs/AGENT_CONFIG.md** et configure-toi comme gardien de la gouvernance :
+- Le fichier contient les outils à activer, le trigger à configurer, le sous-agent à créer
+- Le repo contient tout ce qu'il te faut, aucun état préalable nécessaire
+- **Zéro config locale** — tout vit dans le repo
+
+## Règles Absolues
+
+- JAMAIS d'action sans lecture préalable de AGENT_CONFIG.md
+- JAMAIS de modification sans lecture des 3 piliers (ROADMAP, CARTO, AUDIT)
+- JAMAIS de commit sans mise à jour des documents impactés
+- JAMAIS de fix sécurité sans mise à jour de l'AUDIT_REPORT et des issues
+- TOUJOURS vérifier la véracité — croiser les claims avec le code réel
+- TOUJOURS déposer un delta dans docs/_pending/ après une session de travail
+- TOUJOURS lire depuis le repo, JAMAIS se fier à un état local
+
+> _"Pas de config, pas de carte, pas de plan, pas de bouclier → pas de code."_
