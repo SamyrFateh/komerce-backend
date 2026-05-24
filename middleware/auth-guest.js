@@ -38,31 +38,16 @@ const crypto = require('crypto');
 const jwt  = require('jsonwebtoken');
 const db   = require('../db');
 const log = require('../utils/logger').child({ module: 'auth-guest' });
+// N2 FIX: cache partagé avec auth.js (même Map, même TTL, même invalidation)
+const userCache = require('../utils/user-cache');
 
 const _JWT_SECRET  = process.env.JWT_SECRET;
 const JWT_EXPIRES  = process.env.JWT_EXPIRES || '90d';
 const COOKIE_NAME  = 'kmrc_jwt';
 
-// ── Cache utilisateur (5 min) — aligné sur auth.js ────────────────────
-const USER_CACHE_TTL = 5 * 60 * 1000;
-const userCache = new Map();
-
-function getCachedUser(userId) {
-  const entry = userCache.get(userId);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > USER_CACHE_TTL) {
-    userCache.delete(userId);
-    return null;
-  }
-  return entry.user;
-}
-
-function setCachedUser(userId, user) {
-  userCache.set(userId, { user, ts: Date.now() });
-  if (userCache.size > 10_000) {
-    userCache.delete(userCache.keys().next().value);
-  }
-}
+// ── Cache utilisateur partagé via utils/user-cache.js (N2 FIX) ────────
+function getCachedUser(userId) { return userCache.get(userId); }
+function setCachedUser(userId, user) { userCache.set(userId, user); }
 
 // ── Options cookie (alignées sur auth.js) ─────────────────────────────
 function cookieOptions() {
@@ -250,9 +235,9 @@ async function authenticateOrCreateGuest(req, res, next) {
   }
 }
 
-// Invalidation de cache (utile si on modifie un user depuis une autre route)
+// Invalidation de cache (partagée — invalide aussi le cache de auth.js)
 function invalidateUserCache(userId) {
-  userCache.delete(userId);
+  userCache.invalidate(userId);
 }
 
 module.exports = {

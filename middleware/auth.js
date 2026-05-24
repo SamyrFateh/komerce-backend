@@ -12,26 +12,9 @@ const log = require('../utils/logger').child({ module: 'auth' });
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 
-const USER_CACHE_TTL = 5 * 60 * 1000;
-const userCache = new Map();
-
-function getCachedUser(userId) {
-  const entry = userCache.get(userId);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > USER_CACHE_TTL) {
-    userCache.delete(userId);
-    return null;
-  }
-  return entry.user;
-}
-
-function setCachedUser(userId, user) {
-  userCache.set(userId, { user, ts: Date.now() });
-  if (userCache.size > 10_000) {
-    const oldest = userCache.keys().next().value;
-    userCache.delete(oldest);
-  }
-}
+// Cache partagé via utils/user-cache.js (voir N2 FIX ci-dessus)
+function getCachedUser(userId) { return userCache.get(userId); }
+function setCachedUser(userId, user) { userCache.set(userId, user); }
 
 function extractToken(req) {
   if (req.cookies && req.cookies.kmrc_jwt) return req.cookies.kmrc_jwt;
@@ -392,7 +375,7 @@ function requireRole(roles) {
 const requireAdmin = requireRole(['admin']);
 
 function invalidateUserCache(userId) {
-  userCache.delete(userId);
+  userCache.invalidate(userId);
 }
 
 module.exports = { authenticate, requireRole, requireAdmin, invalidateUserCache };

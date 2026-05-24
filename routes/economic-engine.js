@@ -566,8 +566,12 @@ router.put('/variables/:key', async function(req, res) {
     // Redistribute
     await redistribute('variable_update:' + key);
 
-    // Invalidate eco-bridge cache after variable update
+    // N3 FIX: invalider les deux caches — _varsCache ET _chargesCache.
+    // orders_per_month est une eco-var utilisée par loadChargesSummary() :
+    // si seul invalidateEcoCache() est appelé, _chargesCache reste stale
+    // pendant 60s après chaque changement de variable.
     ecoBridge.invalidateEcoCache();
+    ecoBridge.invalidateChargesCache();
 
     // Return updated variable + new executive summary
     var summary = await buildExecutiveSummary();

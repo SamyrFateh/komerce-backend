@@ -93,6 +93,12 @@ async function assertOrderBelongsToRelais(req, res, orderId) {
 router.get('/dashboard', async (req, res, next) => {
   try {
     // ── KPIs principaux ──────────────────────────────────────────────────
+    // N1 FIX: scope to the agent's own relais. Admin sees all.
+    const kpiParams = [];
+    const kpiWhere = req.user.role !== 'admin'
+      ? (kpiParams.push(req.user.relais_id), 'WHERE relais_id = $1')
+      : '';
+
     const { rows: [kpi] } = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE status = 'in_transit')   AS en_transit,
@@ -109,14 +115,19 @@ router.get('/dashboard', async (req, res, next) => {
         COALESCE(SUM(total_kmf) FILTER (WHERE status = 'available'
           AND payment_mode = 'cash_relais' AND payment_status = 'pending'), 0) AS montant_cash_pending
       FROM orders
-    `);
+      ${kpiWhere}
+    `, kpiParams);
 
-    // ── Incidents ouverts ────────────────────────────────────────────────
+    // ── Incidents ouverts — scopés au relais (N1 FIX) ────────────────────
     let incidents_ouverts = 0;
     try {
-      const { rows: [inc] } = await db.query(
-        `SELECT COUNT(*)::int AS c FROM order_incidents WHERE status IN ('open','in_progress')`
-      );
+      const incQuery = req.user.role !== 'admin'
+        ? `SELECT COUNT(*)::int AS c FROM order_incidents oi
+           JOIN orders o ON o.id = oi.order_id
+           WHERE oi.status IN ('open','in_progress') AND o.relais_id = $1`
+        : `SELECT COUNT(*)::int AS c FROM order_incidents WHERE status IN ('open','in_progress')`;
+      const incParams = req.user.role !== 'admin' ? [req.user.relais_id] : [];
+      const { rows: [inc] } = await db.query(incQuery, incParams);
       incidents_ouverts = inc.c;
     } catch(e) { /* table might not exist yet */ }
 

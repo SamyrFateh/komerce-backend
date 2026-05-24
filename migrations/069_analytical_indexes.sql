@@ -41,7 +41,18 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_real_cost_alloc_source_created
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_economic_snapshots_created_at
   ON economic_snapshots (created_at);
 
--- ── alerts — lecture dashboard radar (level + source) ────────────────────────
+-- ── signals — lecture dashboard radar ────────────────────────────────────────
+-- CORRECTION v069 : admin-radar.js lit la table `signals` (pas `alerts`).
+-- La colonne est `severity` (pas `level`) et le filtre actif est `status = 'open'`
+-- ou `resolved_at IS NULL`.
+--
+-- Requêtes couvertes :
+--   WHERE severity IN ('critical','high') AND resolved_at IS NULL
+--   WHERE status = 'open' AND (severity = 'critical' OR severity = 'high')
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_alerts_level_created
-  ON alerts (level, created_at DESC);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_signals_severity_status
+  ON signals (severity, status)
+  WHERE status = 'open';
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_signals_severity_created
+  ON signals (severity, created_at DESC);
