@@ -10,7 +10,6 @@ const express  = require('express');
 const router   = express.Router();
 const db       = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { calcPrix, calcPrixTenue } = require('../utils/pricing');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
@@ -32,14 +31,13 @@ router.post('/calculate', async (req, res, next) => {
     const prod   = p.rows[0];
     const rates  = await getRates();
 
-    const result = calcPrix({
-      prix_aed:   parseFloat(prod.price_aed || prod.price_kmf / rates.aed_kmf),
-      category:   prod.category,
-      source:     prod.source || 'S1',
-      qty:        parseInt(qty),
-      is_diaspora,
+    // calcPrix supprimée (I-08) — passer par pricingEngine.recommend()
+    const channel = is_diaspora ? 'diaspora' : 'cash_relais';
+    const result = await pricingEngine.recommend({
+      product_id,
+      qty:      parseInt(qty),
+      channel,
       relais_type,
-      rates,
     });
 
     res.json(result);
@@ -58,17 +56,21 @@ router.post('/couture', async (req, res, next) => {
     ]);
     if (!f.rows.length || !m.rows.length) return res.status(404).json({ error: 'Tissu ou modèle introuvable' });
 
-    const rates  = await getRates();
-    const result = calcPrixTenue({
-      prix_tissu_aed:      parseFloat(f.rows[0].price_per_meter_aed),
-      metrage:             parseFloat(m.rows[0].fabric_meters),
-      cout_confection_aed: parseFloat(m.rows[0].making_cost_aed),
-      qty: parseInt(qty),
-      is_diaspora,
-      rates,
+    // calcPrixTenue supprimée (I-08) — passer par pricingEngine.recommend()
+    const fabric = f.rows[0];
+    const model  = m.rows[0];
+    const channel = is_diaspora ? 'diaspora' : 'cash_relais';
+    const prixAchatAed = parseFloat(fabric.price_per_meter_aed) * parseFloat(model.fabric_meters)
+      + parseFloat(model.making_cost_aed);
+    const result = await pricingEngine.recommend({
+      virtual:   true,
+      price_aed: prixAchatAed,
+      category:  'couture',
+      qty:       parseInt(qty),
+      channel,
     });
 
-    res.json({ ...result, fabric: f.rows[0].name, model: m.rows[0].name });
+    res.json({ ...result, fabric: fabric.name, model: model.name });
   } catch(e) { next(e); }
 });
 

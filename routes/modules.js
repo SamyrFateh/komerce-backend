@@ -30,7 +30,6 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { calcPrixTenue } = require('../utils/pricing');
 
 // ─── Registre des modules ─────────────────────────────────────────────────────
 //
@@ -316,13 +315,17 @@ router.post('/price', validate(modules.calculatePrice), async (req, res, next) =
         if (!fabric) return res.status(404).json({ error: 'Tissu introuvable' });
         if (!model)  return res.status(404).json({ error: 'Modèle introuvable' });
 
-        const result = calcPrixTenue({
-          prix_tissu_aed:      parseFloat(fabric.price_per_meter_aed),
-          metrage:             parseFloat(model.fabric_meters),
-          cout_confection_aed: parseFloat(model.making_cost_aed),
-          qty:                 parseInt(qty),
-          is_diaspora,
-          rates,
+        // calcPrixTenue supprimée (I-08) — passer par pricingEngine.recommend()
+        const prixAchatAed = parseFloat(fabric.price_per_meter_aed) * parseFloat(model.fabric_meters)
+          + parseFloat(model.making_cost_aed);
+        const channel = is_diaspora ? 'diaspora' : 'cash_relais';
+        const pricingEngine = require('../services/pricing-engine');
+        const result = await pricingEngine.recommend({
+          virtual:   true,
+          price_aed: prixAchatAed,
+          category:  'couture',
+          qty:       parseInt(qty),
+          channel,
         });
 
         return res.json({

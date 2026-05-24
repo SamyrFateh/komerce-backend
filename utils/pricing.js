@@ -10,7 +10,6 @@ const express  = require('express');
 const router   = express.Router();
 const db       = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { calcPrix, calcPrixTenue } = require('../utils/pricing');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
@@ -21,6 +20,7 @@ const { getRates } = require('../utils/rates');
 const pricingEngine = require('../services/pricing-engine');
 
 // POST /api/pricing/calculate
+// Calcul prix temps réel via pricing-engine (remplace calcPrix supprimée — I-08)
 router.post('/calculate', async (req, res, next) => {
   try {
     const { product_id, qty=1, is_diaspora=false, relais_type='standard' } = req.body;
@@ -29,20 +29,20 @@ router.post('/calculate', async (req, res, next) => {
     const p = await db.query('SELECT * FROM products WHERE id=$1', [product_id]);
     if (!p.rows.length) return res.status(404).json({ error: 'Produit introuvable' });
 
-    const prod   = p.rows[0];
-    const rates  = await getRates();
-
-    const result = await calcPrix(
-      parseFloat(prod.price_aed || prod.price_kmf / rates.aed_kmf),
-      prod.category,
-      { qty: parseInt(qty), is_diaspora, relais_type, rates }
-    );
+    const channel = is_diaspora ? 'diaspora' : 'cash_relais';
+    const result = await pricingEngine.recommend({
+      product_id,
+      qty:      parseInt(qty),
+      channel,
+      relais_type,
+    });
 
     res.json(result);
   } catch(e) { next(e); }
 });
 
 // POST /api/pricing/couture
+// Calcul prix tenue couture via pricing-engine (remplace calcPrixTenue supprimée — I-08)
 router.post('/couture', async (req, res, next) => {
   try {
     const { fabric_id, model_id, qty=1, is_diaspora=false } = req.body;
@@ -54,15 +54,35 @@ router.post('/couture', async (req, res, next) => {
     ]);
     if (!f.rows.length || !m.rows.length) return res.status(404).json({ error: 'Tissu ou modèle introuvable' });
 
-    const rates = await getRates();
-    const prixAchatAed = parseFloat(f.rows[0].price_per_meter_aed) * parseFloat(m.rows[0].fabric_meters)
-      + parseFloat(m.rows[0].making_cost_aed);
-    const result = await calcPrixTenue(
-      prixAchatAed,
-      { qty: parseInt(qty), is_diaspora, rates }
-    );
+    const fabric = f.rows[0];
+    const model  = m.rows[0];
+    const channel = is_diaspora ? 'diaspora' : 'cash_relais';
 
-    res.json({ ...result, fabric: f.rows[0].name, model: m.rows[0].name });
+    const prixAchatAed = parseFloat(fabric.price_per_meter_aed) * parseFloat(model.fabric_meters)
+      + parseFloat(model.making_cost_aed);
+
+    const result = await pricingEngine.recommend({
+      virtual:   true,
+      price_aed: prixAchatAed,
+      category:  'couture',
+      qty:       parseInt(qty),
+      channel,
+    });
+
+    res.json({
+      ...result,
+      fabric: fabric.name,
+      model:  model.name,
+      detail: {
+        fabric_name:       fabric.name,
+        model_name:        model.name,
+        metrage_par_tenue: model.fabric_meters,
+        confection_aed:    model.making_cost_aed,
+        prix_tissu_aed:    fabric.price_per_meter_aed,
+        prix_achat_aed:    prixAchatAed,
+        qty,
+      },
+    });
   } catch(e) { next(e); }
 });
 
