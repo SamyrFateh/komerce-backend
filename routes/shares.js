@@ -35,7 +35,7 @@ async function enrichItems(items) {
   const ids = [...new Set(items.map(i => i.product_id).filter(Boolean))];
   if (!ids.length) return items;
   const { rows } = await db.query(
-    `SELECT id, name, price_kmf, promo_price_kmf, images FROM products WHERE id = ANY($1)`,
+    `SELECT id, name, price_kmf, promo_pct, is_promo, promo_until, images FROM products WHERE id = ANY($1)`,
     [ids]
   );
   const byId = {};
@@ -48,7 +48,14 @@ async function enrichItems(items) {
       product: {
         id: item.product_id,
         name: p.name || item.name || 'Produit',
-        price_kmf: p.promo_price_kmf || p.price_kmf || item.price_kmf || 0,
+        price_kmf: (() => {
+          const now = new Date();
+          const promoActive = p.is_promo && p.promo_pct > 0 &&
+            (!p.promo_until || new Date(p.promo_until) >= now);
+          return promoActive
+            ? Math.round(p.price_kmf * (1 - p.promo_pct / 100))
+            : (p.price_kmf || item.price_kmf || 0);
+        })(),
         images: p.images || []
       }
     };
@@ -207,7 +214,7 @@ router.post('/:token/contributions', async (req, res) => {
     let finalAmount = amount_kmf;
     if (mode === 'item' && product_id) {
       const pRes = await db.query(
-        'SELECT COALESCE(promo_price_kmf, price_kmf) as price FROM products WHERE id = $1', [product_id]
+        `SELECT CASE WHEN is_promo AND promo_pct > 0 AND (promo_until IS NULL OR promo_until >= CURRENT_DATE) THEN ROUND(price_kmf * (1 - promo_pct / 100.0)) ELSE price_kmf END AS price FROM products WHERE id = $1`, [product_id]
       );
       if (pRes.rows.length) finalAmount = pRes.rows[0].price;
     }

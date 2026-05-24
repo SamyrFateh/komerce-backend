@@ -244,7 +244,8 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     if (productIds.length === 0) throw new Error('Aucun produit valide dans le panier');
 
     const { rows: products } = await client.query(
-      `SELECT id, name, image_url, category, price_kmf, promo_price_kmf, is_active
+      `SELECT id, name, image_url, category, price_kmf,
+              promo_pct, is_promo, promo_until, is_active
          FROM products
         WHERE id = ANY($1)`,
       [productIds]
@@ -259,7 +260,14 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       if (!p || !p.is_active) continue;
       const qty = r(item.quantity || 1);
       if (qty <= 0) continue;
-      const unitPrice = r(p.promo_price_kmf || p.price_kmf || 0);
+      // Prix effectif : appliquer promo_pct si is_promo=true et promo_until >= aujourd'hui
+      const now = new Date();
+      const promoActive = p.is_promo &&
+        p.promo_pct > 0 &&
+        (!p.promo_until || new Date(p.promo_until) >= now);
+      const unitPrice = promoActive
+        ? r(p.price_kmf * (1 - p.promo_pct / 100))
+        : r(p.price_kmf || 0);
       if (unitPrice <= 0) continue;
       enrichedItems.push({
         product_id: p.id,
