@@ -38,7 +38,7 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 | I-09 | Colis = unité opérationnelle autonome |
 | I-10 | Codes retrait et preuves de collecte = éléments de confiance |
 
-> 🔴 **Violation I-01 ACTIVE** signalée dans STATUS.md § Pièges critiques — `routes/pickup-secret.js:286`. Correction différée en lot I-SWEEP (après fin chantier d'audits). **Ne pas toucher avant.**
+> ✅ **Violation I-01 résolue** — I-SWEEP-FINAL mergé. `routes/pickup-secret.js` passe désormais par `transitionOrderStatus` pour toutes les transitions de statut (I-01 respecté).
 
 ---
 

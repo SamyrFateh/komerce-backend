@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-23
+> Mis à jour : 2026-05-24
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -81,7 +81,11 @@ Lire dans cet ordre avant toute modification :
 | F1-TEST-FIX | ✅ Fait | Commit `f6aca040`. `pino-pretty` désactivé en `NODE_ENV=test`; fallback logger réparé. `npm test` vert sans worker Jest ouvert. |
 | P0-HELPER | ✅ Fait | PR #413 + #436. `npm run test:p0` reproductible |
 | P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-runs admin SKIP faute de JWT admin valide / `P0_ORDER_ID`. |
-| GOD-FILES-0 | ▶️ Prochain | Audit des fichiers obèses restants avant découpage. Aucun patch métier sans plan d'extraction. |
+| I-SWEEP-FINAL | ✅ Fait | Violation I-01 pickup-secret.js résolue (I-SWEEP-1 mergé). /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct. |
+| SEC-1 | ✅ Fait | Rate-limit brute-force en DB depuis migration 049. Migration 070 appliquée : printTokens → pickup_print_tokens (TTL 2 min), REVEAL_CACHE → pickup_reveal_codes (TTL 30 min). Cron startPickupTokenCleanupCron câblé dans bootstrap/crons.js. Multi-instance safe. |
+| GOD-FILES-0 | ✅ Fait | Cartographie + extractions : buildReceiptHTML → utils/pickup-receipt-html.js (−264 lignes), REVEAL_CACHE Map → table pickup_reveal_codes DB. pickup-secret.js : 1021 → 754 lignes. |
+| BUG-CIRC-DEP | ✅ Fait | Dépendance circulaire calcPrix/calcPrixTenue supprimée. utils/pricing.js et routes/pricing.js s'auto-importaient (import fantôme ligne 13). routes/modules.js idem. Les 3 fichiers patchés : import supprimé, handlers /calculate et /couture réécrits via pricingEngine.recommend(). |
+| GOD-FILES-1 | ▶️ Prochain | Extraction services/pricing-recommend.js (−518 lignes de routes/pricing.js). Extraction services/pricing-dashboard.js (−445 lignes). |
 
 ---
 
@@ -123,35 +127,28 @@ P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 - H1 complet : `server.js` (206 lignes) délègue maintenant à `bootstrap/env.js`, `security.js`, `api-routes.js`, `html-routes.js`, `crons.js`, `startup-migrations.js`. Les webhooks Stripe raw restent explicitement avant `express.json`.
 - Tests : `npm test` vert. Suite API intégration = skip propre sans env DB.
 - 🟠 P0 PARTIAL : seul le dry-run refund est encore en SKIP — nécessite `P0_ORDER_ID` réel.
-- Violation I-01 active : `routes/pickup-secret.js:286` — différée intentionnellement, à traiter en lot I-SWEEP-FINAL groupé. **Ne pas corriger à la volée.**
+- I-SWEEP-FINAL ✅ — Violation I-01 pickup-secret.js résolue. /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct.
+- SEC-1 ✅ — Maps in-memory pickup-secret.js migrées en DB (migration 070). Cron startPickupTokenCleanupCron toutes les 5 min dans bootstrap/crons.js.
+- BUG-CIRC-DEP ✅ — `calcPrix` et `calcPrixTenue` n'existaient nulle part. utils/pricing.js et routes/pricing.js s'auto-importaient (dépendance circulaire). 3 fichiers patchés. Warnings Node.js supprimés au boot.
+- `printTokens` Map (ligne 237 de pickup-secret.js) : toujours in-memory — tokens d'impression cash, TTL 2 min, volume très faible. À migrer en lot SEC-1b si passage multi-instance.
 
 ---
 
 ## Prochain lot recommandé
 
-### GOD-FILES-0 — Audit des fichiers obèses restants
+### GOD-FILES-1 — Extraction pricing-recommend + pricing-dashboard
 
 ```text
-Charge   : 0.5 session pour audit + classement
-Risque   : faible tant qu'on ne modifie pas le code
-Objectif : identifier, classer et prioriser les fichiers ≥ 800 lignes encore actifs
+Charge   : 1 session
+Risque   : moyen (20+ consommateurs de routes/pricing.js)
+Objectif : descendre routes/pricing.js de 1310 → ~350 lignes
 ```
 
-But : passer des refactos structurelles déjà terminées (`server.js`, bootstrap, logging) à un chantier maîtrisé sur les gros fichiers restants.
+Plan d'extraction validé en GOD-FILES-0 :
+- `services/pricing-recommend.js` ← /recommend + /recommend-batch (518 lignes sorties)
+- `services/pricing-dashboard.js` ← /dashboard + /benchmarks + /benchmarks-gap (445 lignes sorties)
 
-Règles :
-- aucune modification métier dans GOD-FILES-0 ;
-- pas de découpage avant cartographie du fichier ;
-- pas de déplacement de logique sans tests ou garde-fous ;
-- un god file = un plan d'extraction documenté avant patch ;
-- commencer par les fichiers UI/front ou utilitaires à faible risque ;
-- éviter paiements, commandes, scans, collectif sans lecture préalable de `CONTRACTS.md` + `ZONE_IMPACT.md`.
-
-Livrable attendu :
-- liste des fichiers ≥ 800 lignes ;
-- classement par risque : faible / moyen / élevé ;
-- premier candidat recommandé ;
-- plan d'extraction du premier candidat, sans patch métier.
+Prérequis : vérifier que `_applies()` et `_arrondiPsycho()` ne sont pas importés directement ailleurs (privés actuellement). Lire CONTRACTS.md avant de toucher aux exports.
 
 ---
 
@@ -178,8 +175,9 @@ Contraintes :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| GOD-FILES-0 | ▶️ Maintenant | Audit + classement des fichiers ≥ 800 lignes, sans patch métier |
-| I-SWEEP-FINAL | Sécurité | Corriger `routes/pickup-secret.js:286` (violation I-01 active) — lot groupé, pas à la volée |
+| GOD-FILES-1 | ▶️ Maintenant | Extraction pricing-recommend.js + pricing-dashboard.js depuis routes/pricing.js |
+| SEC-2 | Sécurité | Promouvoir ADMIN_PASSWORD en REQUIRED_ENV dans bootstrap/env.js (15 min) |
+| SEC-3 | Vérification | grep localStorage.*token dans public/ pour confirmer migration cookies httpOnly |
 | P0-FULL | Conditionnelle | Fournir `P0_ORDER_ID` pour transformer dry-run refund SKIP → PASS |
 | PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
 
@@ -191,7 +189,82 @@ Contraintes :
 - **`console.*`** : ✅ migration F1 terminée. Les seuls `console.*` tolérés sont dans le fallback interne de `utils/logger.js`.
 - **Migrations** : collisions 060/061 connues, non bloquantes, préservées documentairement.
 - **Tests** : 87 passés, 1 skipped propre — filet solide.
-- **God files** : chantier suivant. Les fichiers ≥ 800 lignes doivent être recensés et classés avant tout patch.
+- **God files** : GOD-FILES-0 terminé. pickup-secret.js : 1021 → 754 lignes. utils/pickup-receipt-html.js créé. routes/pricing.js et utils/pricing.js : dépendance circulaire supprimée, handlers réécrits.
+- **Migration 070** : pickup_print_tokens + pickup_reveal_codes créées. SEC-1 clos côté REVEAL_CACHE. printTokens Map encore in-memory (faible volume, non bloquant).
+- **calcPrix/calcPrixTenue** : fonctions fantômes supprimées. 3 fichiers patchés (utils/pricing.js, routes/pricing.js, routes/modules.js). Warnings circular dependency éliminés au boot.
+- **Routing init error** : message vide au boot — ensureRoutingColumns absorbe ses propres erreurs en interne, le log Railway est un artefact bénin (function ne throw pas). Non bloquant.
+
+---
+
+
+---
+
+## Traçage dette technique résiduelle (DETTE_TECHNIQUE_RESIDUELLE.md — 2026-05-24)
+
+### Findings de l'analyse ANALYSE_BACKEND_KOMERCE (session 24 mai)
+
+| # | Finding | Statut | Notes |
+|---|---|---|---|
+| N1 | GET /relay/dashboard filtre relais_id | ✅ Corrigé | relay-dashboard.js lignes 98–99, 124–128, 174–176 |
+| N2 | Dual userCache Maps auth.js / auth-guest.js | ✅ Corrigé | utils/user-cache.js créé |
+| N3 | invalidateChargesCache() manquant après update orders_per_month | ✅ Corrigé | economic-engine.js lignes 569–574 |
+| N4 | JWT stateless 90j, pas de révocation | ⏳ Dette architecturale connue | Non bloquant go-live |
+| M1 | Migration 068 double — 068_check_balance_non_negative.sql cassé | ❓ À confirmer | Supprimer le fichier cassé, appliquer 068_wallets_check_balance.sql manuellement |
+| M2 | Migration 069 — CREATE INDEX CONCURRENTLY hors transaction | ❓ À confirmer | Appliquer manuellement : `psql $DATABASE_URL -f migrations/069_analytical_indexes.sql` |
+| I-01 | Violation pickup-secret.js | ✅ Résolu | I-SWEEP-FINAL mergé |
+| SEC-1 | Rate-limit pickup in-memory | ✅ Résolu | Migration 070 + cron bootstrap/crons.js |
+| SEC-2 | ADMIN_PASSWORD en dur dans startup-migrations | ❌ Non traité | Promouvoir en REQUIRED_ENV — 15 min |
+| SEC-3 | JWT localStorage pages HTML legacy | ❌ Non traité | grep localStorage.*token dans public/ — 10 min |
+| ARCH-1 | core.zip 8,5 Mo dans le repo | ❌ Non traité | unzip -l core.zip puis supprimer/archiver |
+| ARCH-2 | Gaps numérotation migrations | ❌ Non traité | Créer migrations/GAPS.md |
+| ARCH-3 | Fichier orphelin utils/_parcelSync-v2.ORPHAN.js | ❌ Non traité | Suppression opportuniste |
+| BUG-CIRC-DEP | calcPrix/calcPrixTenue dépendance circulaire | ✅ Résolu | 3 fichiers patchés (utils/pricing.js, routes/pricing.js, routes/modules.js) |
+
+### Risques résiduels (DETTE_TECHNIQUE_RESIDUELLE.md)
+
+| # | Item | Fichier | Sévérité | Effort | Statut |
+|---|---|---|---|---|---|
+| R1 | IDOR inter-relais — incidents/comments/escalades sans scope relais_id | relay-dashboard.js | 🔴 Haute | 1h | ❌ Non traité |
+| R2 | POST /apply wallet sans guard order.status cancelled | wallet.js | 🟡 Moyenne | 15 min | ❌ Non traité |
+| R3 | Contrainte DB CHECK (balance_kmf >= 0) manquante | Migration 068 | 🟡 Moyenne | 10 min | ❓ M1 lié — à confirmer |
+| R4 | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js | admin.js | 🟡 Moyenne | 5 min | ❌ Non traité |
+| R5 | confirmed→ordered non-fatal sans alerte dans payment-confirmation | order-payment-confirmation.js | 🟡 Moyenne | 20 min | ❌ Non traité |
+| R6 | DELETE+INSERT non atomique dans allocateMonthlyFixedCosts | cost-allocation.js | 🟡 Moyenne | 1h | ❌ Non traité |
+| R7 | INSERT scans sans scan_code dans hub-dashboard | hub-dashboard.js | 🟡 Moyenne | 15 min | ❌ Non traité |
+| D1 | Rétention economic_snapshots | Cron | 🟢 Faible | 30 min | ✅ Résolu — startSnapshotRetentionCron dans bootstrap/crons.js (90 jours, toutes les 24h) |
+| D2 | Index DB manquants sur requêtes analytiques lourdes | DB | 🟡 Moyenne | 2-4h | ❓ Migration 069 à appliquer hors transaction (M2) |
+| D3 | Deux tables scan coexistent (scans + scan_events) sans plan migration | Architecture | 🟡 Moyenne | Planning | ❌ Non traité |
+| D4 | notification-service : pas de retry ni d'alerte sur échec envoi | notification-service.js | 🟡 Moyenne | 2h | ❌ Non traité |
+| ND1 | Audit middleware/auth.js et auth-guest.js | — | 🟡 Moyenne | 1h | ✅ Audité — N2 corrigé, userCache unifié |
+| ND2 | Audit utils/rates.js (cache TTL, fallbacks) | — | 🟡 Moyenne | 30 min | ❌ Non traité |
+| ND3 | Audit utils/eco-bridge.js (SSOT v6.7, invalidation cache) | — | 🟡 Moyenne | 30 min | ✅ N3 corrigé — invalidateChargesCache() présent |
+| ND4 | Audit services/order-cost-snapshot.js (idempotence) | — | 🟢 Faible | 30 min | ❌ Non traité |
+| ND5 | Vérification schema scans.scan_code NOT NULL | DB migrations | 🟡 Moyenne | 15 min | ❌ Non traité |
+| ND6 | Exposition pickup_code dans endpoints client (client-account.js) | client-account.js | 🟡 Moyenne | 30 min | ❌ Non traité |
+
+### Verdicts audits routes (session 24 mai)
+
+| Fichier | Verdict | Notes |
+|---|---|---|
+| routes/relay-dashboard.js | 🔴 À corriger | IDOR R1 — voir ci-dessus |
+| routes/shared-cart.js | ✅ OK | I-07 ✅, idempotence ✅, délègue engine ✅ |
+| routes/collective-workspaces.js | ✅ OK | Délègue services ✅, auth ✅ |
+| routes/client-tracking.js | ✅ OK | Lecture seule ✅ |
+| routes/client-account.js | 🟡 À surveiller | pickup_code exposition à vérifier (ND6) |
+| routes/baskets.js | 🟡 À surveiller | Prix snapshotés sans TTL ni alerte de divergence |
+| routes/orders/status.js | ✅ OK | 100% via transitionOrderStatus() ✅ |
+| routes/relais.js | ✅ OK | Court, CRUD propre, mutations admin only ✅ |
+| services/notification-service.js | 🟡 À surveiller | Pas de retry ni d'alerte sur échec (D4) |
+
+### Ordre de traitement recommandé (mis à jour 24 mai 2026)
+
+**Immédiat** : M1 (confirmer 068), M2 (appliquer 069 hors transaction), R1 (IDOR relais), SEC-2 (ADMIN_PASSWORD REQUIRED_ENV), SEC-3 (grep localStorage).
+
+**Prochain lot** : R2 (wallet guard), R4 (ALLOW_FLUSH), R7 (scan_code hub), GOD-FILES-1 (extraction pricing-recommend + pricing-dashboard).
+
+**Sprint suivant** : R5, R6, D3 (plan scan_events), D4 (notification retry), ND2 (rates.js), ND5 (scan_code schema), ND6 (pickup_code client).
+
+**Backlog** : R3 (lié M1), D2 (EXPLAIN), ND4 (cost-snapshot idempotence), ARCH-1/2/3.
 
 ---
 
