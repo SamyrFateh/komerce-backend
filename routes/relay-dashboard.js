@@ -282,6 +282,12 @@ router.get('/orders/:id', async (req, res, next) => {
 
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
+    // ── Guard IDOR : un agent_relais ne peut voir que ses propres commandes ──
+    if (req.user.role !== 'admin' && String(order.relais_id) !== String(req.user.relais_id)) {
+      log.warn(`[RELAY] IDOR bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+      return res.status(403).json({ error: "Cette commande n\'appartient pas à votre relais" });
+    }
+
     // ── Items ────────────────────────────────────────────────────────────
     const { rows: items } = await db.query(`
       SELECT oi.*, p.name AS produit_nom, p.image_url, p.category
