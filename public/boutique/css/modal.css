@@ -521,6 +521,13 @@
     z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
     border-radius: 0; /* pleine largeur en fixed */
     box-shadow: 0 -2px 12px var(--overlay-black-sm);
+    /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
+       crée un stacking context qui piège position:fixed et empêche le repaint du fond.
+       translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   /* Compensation: éviter que le contenu scrollable disparaisse derrière la barre fixe.
      Hauteur exacte CTA = padding-top(10) + row1-qty(44) + gap(10) + row2-buy(48) + padding-bottom(10) = 122px.
