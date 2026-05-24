@@ -1,7 +1,7 @@
 # Schéma DB Komerce
 
 > **Statut** : schéma canonique de la base de production
-> **Source** : `pg_dump` PostgreSQL 18.3 — Railway — 17 mai 2026
+> **Source** : `pg_dump` PostgreSQL 18.4 — Railway — 24 mai 2026
 > **Méthode** : ce document est généré contre la DB live. Il fait foi contre `db/schema.sql` (obsolète, mars 2026) et les fichiers `migrations/*.sql` (référence manuelle, non exécutés automatiquement).
 > **Rappel** : 3 mécanismes de migration coexistent (cf. `SCHEMA_GAP_KOMERCE.md` §Architecture). `db/schema.sql` ne reflète pas l'état live.
 
@@ -27,7 +27,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 91 | Sans compter les tables système |
+| Tables | 93 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
 | Vues | 16 | Préfixe `v_` ou `customs_*` |
 | ENUMs | 14 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
@@ -87,14 +87,27 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 **Triggers de protection** : `trg_no_delete_parcels` (DELETE bloqué) + `trg_parcel_ship_guard` (transitions contrôlées) + `trg_check_parcel_item_qty` (cohérence quantités).
 
+### 4.2 bis — Sécurité pickup — tokens éphémères (2 tables)
+
+> **Ajouté** : migration 070 (SEC-1, 24 mai 2026). Remplace les deux Maps in-memory de `routes/pickup-secret.js` pour survivre aux redémarrages et fonctionner en multi-instance Railway.
+
+| Table | Rôle |
+|---|---|
+| `pickup_print_tokens` | Token one-shot (TTL 2 min) pour accès au HTML imprimable du reçu cash après encaissement. PK = token hex 48 bytes. FK → `orders(id)` ON DELETE CASCADE. Supprimé à la première lecture. |
+| `pickup_reveal_codes` | Code pickup en clair (8 chars), stocké max 30 min pour révélation one-shot après paiement Stripe/Wallet/MM. PK = `order_id`. Supprimé immédiatement après `GET /reveal-once`. |
+
+**Nettoyage** : `startPickupTokenCleanupCron()` toutes les 5 min dans `bootstrap/crons.js`. Multi-instance safe — aucune Map in-memory résiduelle pour ces deux flows.
+
+**Invariant I-10** : les codes sont en clair uniquement pendant leur fenêtre TTL, avec le même niveau de confiance que `DATABASE_URL`. Voir **SEC-1** dans `STATUS.md`.
+
 ### 4.3 Wallet (4 tables)
 
 | Table | Rôle |
 |---|---|
-| `wallets` | Wallet client (1 par user, création lazy). |
+| `wallets` | Wallet client (1 par user, création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0) NOT VALID` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. |
 | `wallet_transactions` | Transactions immutables. |
 | `wallet_credit_lots` | Lots de crédits (consommation FIFO). |
-| `wallet_consumptions` | Consommations de lots (audit). |
+| `wallet_consumptions` | Consommations de lots (audit). **Append-only depuis migration 066** : suppression physique remplacée par marquage `reversed_at = NOW()` + `reversal_reason`. Index partiel `idx_wcons_active WHERE reversed_at IS NULL` pour filtrer les consommations actives. `wallet-service.removeFromOrder()` fait `UPDATE` et non `DELETE`. |
 | `store_credits` | Crédits magasin (legacy/compat). |
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
@@ -154,7 +167,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 
 | Table | Rôle |
 |---|---|
-| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. |
+| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel (était hardcodé à 1 % dans `cost-allocation.js` — violation I-08 résolue). Configurable via Control Tower > Paramètres économiques. |
 | `economic_variables` | Variables économiques (legacy, voir ADR-009). |
 | `exchange_rates` | Taux de change historisés. |
 | `pricing_components` | Composantes de pricing. |
@@ -347,5 +360,5 @@ pg_dump --schema-only --no-owner --no-privileges \
 1. **2 dossiers de migrations** (`db/migrations/` legacy + `migrations/` actif) — non bloquant mais à clarifier (cf. STATUS.md lot A5).
 2. **Collisions de numéros** dans `migrations/` : `060.sql` + `060_add_pending_at_confirmed_at.sql` ; `061.sql` + `061_boutique_categories.sql` (cf. STATUS.md lot A4).
 3. **`db/schema.sql`** est obsolète (mars 2026, v1.3). Ce document le remplace comme référence d'état réel.
-4. **Tables non mentionnées dans CARTOGRAPHY** : ✅ **Résolu par lot SOCLE-2 (17 mai 2026)**. `fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions` désormais référencées dans `CARTOGRAPHY_360.md` §3 et §§ 6 bis, 8 bis, 8 ter.
+4. **Tables non mentionnées dans CARTOGRAPHY** : ✅ **Résolu par lot SOCLE-2 (17 mai 2026)**. `fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions` désormais référencées dans `CARTOGRAPHY_360.md`. `pickup_print_tokens` et `pickup_reveal_codes` (migration 070, SEC-1) sont des tables techniques internes — pas de domaine API propre, pas d'endpoint dédié — et ne nécessitent pas d'entrée CARTOGRAPHY.
 5. **Trou apparent** dans la numérotation migrations entre 025 et 033 — vérifier l'historique git si nécessaire.

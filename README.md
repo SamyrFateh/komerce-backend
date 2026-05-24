@@ -15,7 +15,7 @@
 | 2 | [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) | État du jour + prochain lot à exécuter + pièges critiques |
 | 3 | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Quoi existe : 80 routes, domaines API, surfaces HTML, points de vérité |
 | 4 | [`docs/ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) | Quoi protéger : 10 invariants I-01 à I-10 + fichiers à haut risque |
-| 5 | [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base : 91 tables, 14 ENUMs, 31 triggers, 147 FK |
+| 5 | [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base : 93 tables, 14 ENUMs, 31 triggers, 147 FK |
 
 **Et un 6ᵉ si tu touches aux services critiques** : [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) — signatures publiques des 9 services critiques.
 
@@ -50,7 +50,7 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 |---|---|---|
 | [`docs/CARTOGRAPHY_360.md`](./docs/CARTOGRAPHY_360.md) | Quoi existe | domaines, surfaces, points de vérité |
 | [`docs/ZONE_IMPACT.md`](./docs/ZONE_IMPACT.md) | Quoi protéger | 10 invariants + fichiers à haut risque |
-| [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base | 91 tables, 14 ENUMs, 31 triggers |
+| [`docs/SCHEMA.md`](./docs/SCHEMA.md) | Quoi est vrai en base | 93 tables, 14 ENUMs, 31 triggers |
 | [`docs/CONTRACTS.md`](./docs/CONTRACTS.md) | Qui appelle quoi | 9 services critiques |
 
 **Règle de divergence** : voir `AGENTS.md` §2. En résumé : DB live fait foi sur le schéma ; code fait foi sur les contrats et comportements ; en cas de doute, stop + signaler dans STATUS.md.
@@ -78,7 +78,7 @@ Détail complet dans `docs/ZONE_IMPACT.md` §2.
 
 ### Décisions historisées (ADR)
 
-11 ADR dans `docs/ADR-*.md` — mémoire des décisions structurantes (ADR-001 à ADR-011).
+12 ADR dans `docs/ADR-*.md` — mémoire des décisions structurantes (ADR-001 à ADR-012). ADR-012 : plan de migration `scans` → `scan_events`.
 
 ### Notes de design (à exécuter plus tard)
 
@@ -116,7 +116,7 @@ npm start
 ```bash
 # Backend
 npm start                          # démarrer le serveur (port 3001 par défaut)
-npm test                           # tests Jest (5 fichiers actuellement — TEST-1 à venir)
+npm test                           # tests Jest (7 suites, 87 tests passés — TEST-DEBT ✅)
 
 # Frontend Boutique (depuis boutique/)
 npm run bundle:css                 # rebundler les CSS sources → dist
@@ -128,14 +128,13 @@ npm run boutique:audit             # valider les invariants Boutique
 
 ## 📊 État du chantier
 
-Voir `docs/chantier/STATUS.md` pour le détail. Résumé au 17 mai 2026 :
+Voir `docs/chantier/STATUS.md` pour le détail. Résumé au 24 mai 2026 :
 
-- **10 / 51 lots du chantier** terminés (20 %)
+- **~40 / 51 lots du chantier** terminés — voir STATUS.md pour le détail précis
 - **Socle architectural à 4 docs** gravé (lots SOCLE-1, SOCLE-2, SOCLE-3, H-SYNC)
-- **Bloc A Hygiène** : 71 % (5/7)
-- **Bloc D Sécurité** : 62 % (5/8)
-- **Blocs B, C, E, F, G** : à venir
-- **Lot critique en attente** : I-SWEEP (correction groupée des violations d'invariants détectées par les audits)
+- **Blocs A, D, G, H, I-SWEEP, TEST, GOD-FILES-0** : terminés
+- **SEC-1, BUG-CIRC-DEP, F1-FULL** : terminés
+- **Prochain lot** : GOD-FILES-1 (extraction `pricing-recommend.js` + `pricing-dashboard.js`)
 
 ---
 
@@ -164,4 +163,4 @@ git push origin main
 
 ---
 
-*Ce README est aligné sur l'état du repo au 17 mai 2026 (post-SOCLE-1/2/3 + H-SYNC). Si tu trouves une obsolescence, mets à jour dans la même PR que le changement qui rend l'info obsolète.*
+*Ce README est aligné sur l'état du repo au 24 mai 2026 (post-I-SWEEP-FINAL + SEC-1 + GOD-FILES-0 + BUG-CIRC-DEP + F1-FULL). Si tu trouves une obsolescence, mets à jour dans la même PR que le changement qui rend l'info obsolète.*

@@ -1,7 +1,7 @@
 # Contrats inter-services Komerce
 
 > **Statut** : contrats des services critiques (points d'entrée stables)
-> **Source** : lecture directe des `services/*.js` et `routes/*.js` — 17 mai 2026
+> **Source** : lecture directe des `services/*.js` et `routes/*.js` — 24 mai 2026
 > **But** : éviter les régressions silencieuses quand un service change de signature ou de comportement.
 > **Règle** : un service listé ici a un contrat de sortie stable. Modifier sa signature publique = lot de gouvernance, pas un commit de feature.
 
@@ -9,7 +9,7 @@
 
 ## 1. Pourquoi ce document existe
 
-Komerce est modulaire : 44 services, 75 routes, 91 tables. Sans contrats explicites, modifier `pricing-engine` ou `wallet-service` casse en silence des consommateurs dont on a oublié l'existence.
+Komerce est modulaire : 44 services, 75 routes, 93 tables. Sans contrats explicites, modifier `pricing-engine` ou `wallet-service` casse en silence des consommateurs dont on a oublié l'existence.
 
 Ce document ne liste pas **tout**. Il liste les **services critiques** — ceux qui touchent à l'argent, au statut commande, au stock, à la sécurité, ou qui sont consommés par plusieurs routes.
 
@@ -168,7 +168,7 @@ module.exports = {
 
 **`applyToOrder(client, { userId, orderId, amountKmf })`** — applique le wallet sur une commande, créée transaction + consumptions.
 
-**`removeFromOrder(client, { orderId })`** — annule l'application (utilisé en cas d'annulation commande).
+**`removeFromOrder(client, { orderId })`** — annule l'application (utilisé en cas d'annulation commande). **Depuis migration 066 : ne supprime plus les lignes** — pose `reversed_at = NOW()` + `reversal_reason = 'order_cancel'` sur `wallet_consumptions`. Invariant I-05 renforcé.
 
 **`createCreditFromCancel(client, { orderId, adminId, amountKmf })`** — crée un crédit suite à une annulation.
 
