@@ -297,16 +297,8 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     });
 
     // Ajuster le padding-bottom du scroll pour la barre d'actions fixe
-    if (window.innerWidth < 900) {
-      requestAnimationFrame(function() {
-        var actBar  = document.querySelector('.k-modal-actions');
-        var scrollEl = document.querySelector('.k-modal-scroll');
-        if (actBar && scrollEl) {
-          scrollEl.style.paddingBottom =
-            'calc(' + (actBar.offsetHeight + 16) + 'px + env(safe-area-inset-bottom, 0px))';
-        }
-      });
-    }
+    // (les variants changent la hauteur du contenu, re-sync pour être sûr)
+    _syncScrollPadding();
   }
 
     function openModal(id, pushHistory) {
@@ -511,7 +503,29 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
 
     // Les actions restent hors du scroll : bouton Acheter toujours visible.
     // La topbar enrichie rappelle le produit ouvert pendant le scroll.
+    _syncScrollPadding();
     setupModalFAB();
+  }
+
+  /* ── SYNC PADDING SCROLL ────────────────────────────────────────
+     Mesure la hauteur réelle de .k-modal-actions (position:fixed) et
+     applique un padding-bottom compensatoire sur .k-modal-scroll.
+     Utilise offsetHeight plutôt que env(safe-area-inset-bottom) en CSS
+     car offsetHeight inclut déjà la safe-area rendue par l'OS, même
+     sur Samsung Internet / Chrome Android qui ignorent env() dans calc().
+     Double-rAF : laisse un cycle de paint pour que les injections
+     (_injectMobileTrust, _injectMobileDelivery) soient reflowées. */
+  function _syncScrollPadding() {
+    if (window.innerWidth >= 900) return;
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        var actBar  = dom.modal && dom.modal.querySelector('.k-modal-actions');
+        var scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+        if (!actBar || !scrollEl) return;
+        // +20px buffer pour absorber les variations de rendu inter-navigateurs
+        scrollEl.style.paddingBottom = (actBar.offsetHeight + 20) + 'px';
+      });
+    });
   }
 
   /* ── F3 — LIVRAISON MOBILE ──────────────────────────────────────
