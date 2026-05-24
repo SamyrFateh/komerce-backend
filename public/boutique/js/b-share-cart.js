@@ -400,6 +400,18 @@ export function install() {
     startShareFlow({ reshare: true });
   });
 
+  document.getElementById('k-sc-group-view')?.addEventListener('click', () => {
+    import('./b-nav.js').then(({ switchView }) => {
+      import('./b-group-view.js').then(({ renderGroupView }) => {
+        document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
+          i.classList.toggle('active', i.dataset.tab === 'group');
+        });
+        renderGroupView();
+        switchView('group');
+      });
+    });
+  });
+
   document.addEventListener('cart:cleared', () => {
     clearShareState();
     refreshSharedBadges(false);

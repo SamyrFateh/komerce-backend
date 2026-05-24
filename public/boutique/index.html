@@ -270,9 +270,14 @@ if('serviceWorker' in navigator){
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
         <!-- Badge "Partagé" — visible uniquement quand shareToken actif -->
         <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
-          <span class="k-sc-shared-dot" aria-hidden="true"></span>
-          <span class="k-sc-shared-label">Partagé</span>
-          <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">Re-partager</button>
+          <div class="k-sc-shared-badge-row">
+            <span class="k-sc-shared-dot" aria-hidden="true"></span>
+            <span class="k-sc-shared-label">Panier partagé actif</span>
+            <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">📲 Re-partager</button>
+          </div>
+          <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">
+            👥 Suivre les participations →
+          </button>
         </div>
         <!-- Bouton "Payer à plusieurs" (PR-1) — géré par b-share-cart.js -->
         <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Payer à plusieurs">
