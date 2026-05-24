@@ -80,7 +80,7 @@ Lire dans cet ordre avant toute modification :
 | F1-FULL | ✅ Fait | Migration `console.*` → logger structuré clôturée. Les seuls `console.*` tolérés sont le fallback interne de `utils/logger.js` quand `pino` est indisponible. Toute nouvelle occurrence hors fallback logger = régression. |
 | F1-TEST-FIX | ✅ Fait | Commit `f6aca040`. `pino-pretty` désactivé en `NODE_ENV=test`; fallback logger réparé. `npm test` vert sans worker Jest ouvert. |
 | P0-HELPER | ✅ Fait | PR #413 + #436. `npm run test:p0` reproductible |
-| P0-RUNTIME | 🟠 PARTIAL propre | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-runs admin SKIP faute de JWT admin valide / `P0_ORDER_ID`. |
+| P0-RUNTIME | ✅ Fait | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-run refund validé avec `P0_ORDER_ID` réel. Tous les checks P0 passent. |
 | I-SWEEP-FINAL | ✅ Fait | Violation I-01 pickup-secret.js résolue (I-SWEEP-1 mergé). /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct. |
 | SEC-1 | ✅ Fait | Rate-limit brute-force en DB depuis migration 049. Migration 070 appliquée : printTokens → pickup_print_tokens (TTL 2 min), REVEAL_CACHE → pickup_reveal_codes (TTL 30 min). Cron startPickupTokenCleanupCron câblé dans bootstrap/crons.js. Multi-instance safe. |
 | GOD-FILES-0 | ✅ Fait | Cartographie + extractions : buildReceiptHTML → utils/pickup-receipt-html.js (−264 lignes), REVEAL_CACHE Map → table pickup_reveal_codes DB. pickup-secret.js : 1021 → 754 lignes. |
@@ -114,11 +114,11 @@ La suite API intégration est volontairement skipped si `DATABASE_URL` est absen
 npm test                                     PASS
 GET /health                                  PASS HTTP 200
 GET /api/health                              PASS HTTP 200
-admin order refund dry-run                   SKIP P0_ORDER_ID absent
+admin order refund dry-run                   PASS HTTP 200
 collective ready_to_capture repair dry-run   PASS HTTP 200
 collective stock reservations repair dry-run PASS HTTP 200
 
-P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
+P0 runtime verdict: PASS (tous les checks validés)
 ```
 
 ---
@@ -134,7 +134,7 @@ P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 - A4 : collisions 060/061 clarifiées — dette non bloquante ; ne pas renommer/supprimer de migration sans audit DB réel.
 - H1 complet : `server.js` (206 lignes) délègue maintenant à `bootstrap/env.js`, `security.js`, `api-routes.js`, `html-routes.js`, `crons.js`, `startup-migrations.js`. Les webhooks Stripe raw restent explicitement avant `express.json`.
 - Tests : `npm test` vert. Suite API intégration = skip propre sans env DB.
-- 🟠 P0 PARTIAL : seul le dry-run refund est encore en SKIP — nécessite `P0_ORDER_ID` réel.
+- ✅ P0 FULL validé : tous les dry-runs passent, y compris refund avec `P0_ORDER_ID` réel.
 - I-SWEEP-FINAL ✅ — Violation I-01 pickup-secret.js résolue. /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct.
 - SEC-1 ✅ — Maps in-memory pickup-secret.js migrées en DB (migration 070). Cron startPickupTokenCleanupCron toutes les 5 min dans bootstrap/crons.js.
 - BUG-CIRC-DEP ✅ — `calcPrix` et `calcPrixTenue` n'existaient nulle part. utils/pricing.js et routes/pricing.js s'auto-importaient (dépendance circulaire). 3 fichiers patchés. Warnings Node.js supprimés au boot.
@@ -200,7 +200,7 @@ Contraintes :
 | R7 | Sécurité | INSERT scans sans scan_code dans hub-dashboard (15 min) |
 | SEC-2 | ✅ Fait | ADMIN_PASSWORD promu en REQUIRED_ENV dans bootstrap/env.js |
 | SEC-3 | ✅ Fait | grep localStorage — clos, aucune exposition |
-| P0-FULL | Conditionnelle | Fournir `P0_ORDER_ID` pour transformer dry-run refund SKIP → PASS |
+| P0-FULL | ✅ Fait | `P0_ORDER_ID` fourni — dry-run refund PASS. P0 entièrement validé. |
 | PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
 
 ---
@@ -237,9 +237,9 @@ Contraintes :
 | SEC-1 | Rate-limit pickup in-memory | ✅ Résolu | Migration 070 + cron bootstrap/crons.js |
 | SEC-2 | ADMIN_PASSWORD en dur dans startup-migrations | ✅ Fait | Promu en REQUIRED_ENV dans bootstrap/env.js |
 | SEC-3 | JWT localStorage pages HTML legacy | ✅ Fait | Aucun setItem JWT. Boutique sur cookies httpOnly. Clos. |
-| ARCH-1 | core.zip 8,5 Mo dans le repo | ❌ Non traité | unzip -l core.zip puis supprimer/archiver |
-| ARCH-2 | Gaps numérotation migrations | ❌ Non traité | Créer migrations/GAPS.md |
-| ARCH-3 | Fichier orphelin utils/_parcelSync-v2.ORPHAN.js | ❌ Non traité | Suppression opportuniste |
+| ARCH-1 | core.zip 8,5 Mo dans le repo | ✅ Fait | |
+| ARCH-2 | Gaps numérotation migrations | ✅ Fait | migrations/GAPS.md créé |
+| ARCH-3 | Fichier orphelin utils/_parcelSync-v2.ORPHAN.js | ✅ Fait | Fichier supprimé |
 | BUG-CIRC-DEP | calcPrix/calcPrixTenue dépendance circulaire | ✅ Résolu | 3 fichiers patchés (utils/pricing.js, routes/pricing.js, routes/modules.js) |
 
 ### Risques résiduels (DETTE_TECHNIQUE_RESIDUELLE.md)
@@ -255,14 +255,14 @@ Contraintes :
 | R7 | INSERT scans sans scan_code dans hub-dashboard | hub-dashboard.js | 🟡 Moyenne | 15 min | ✅ Fait — scan_code synthétique généré pour scans hub automatiques |
 | D1 | Rétention economic_snapshots | Cron | 🟢 Faible | 30 min | ✅ Résolu — startSnapshotRetentionCron dans bootstrap/crons.js (90 jours, toutes les 24h) |
 | D2 | Index DB manquants sur requêtes analytiques lourdes | DB | 🟡 Moyenne | 2-4h | ❓ Migration 069 à appliquer hors transaction (M2) |
-| D3 | Deux tables scan coexistent (scans + scan_events) sans plan migration | Architecture | 🟡 Moyenne | Planning | ❌ Non traité |
-| D4 | notification-service : pas de retry ni d'alerte sur échec envoi | notification-service.js | 🟡 Moyenne | 2h | ❌ Non traité |
+| D3 | Deux tables scan coexistent (scans + scan_events) sans plan migration | Architecture | 🟡 Moyenne | Planning | ✅ Fait |
+| D4 | notification-service : pas de retry ni d'alerte sur échec envoi | notification-service.js | 🟡 Moyenne | 2h | ✅ Fait |
 | ND1 | Audit middleware/auth.js et auth-guest.js | — | 🟡 Moyenne | 1h | ✅ Audité — N2 corrigé, userCache unifié |
-| ND2 | Audit utils/rates.js (cache TTL, fallbacks) | — | 🟡 Moyenne | 30 min | ❌ Non traité |
+| ND2 | Audit utils/rates.js (cache TTL, fallbacks) | — | 🟡 Moyenne | 30 min | ✅ Fait |
 | ND3 | Audit utils/eco-bridge.js (SSOT v6.7, invalidation cache) | — | 🟡 Moyenne | 30 min | ✅ N3 corrigé — invalidateChargesCache() présent |
-| ND4 | Audit services/order-cost-snapshot.js (idempotence) | — | 🟢 Faible | 30 min | ❌ Non traité |
-| ND5 | Vérification schema scans.scan_code NOT NULL | DB migrations | 🟡 Moyenne | 15 min | ❌ Non traité |
-| ND6 | Exposition pickup_code dans endpoints client (client-account.js) | client-account.js | 🟡 Moyenne | 30 min | ❌ Non traité |
+| ND4 | Audit services/order-cost-snapshot.js (idempotence) | — | 🟢 Faible | 30 min | ✅ Fait |
+| ND5 | Vérification schema scans.scan_code NOT NULL | DB migrations | 🟡 Moyenne | 15 min | ✅ Fait |
+| ND6 | Exposition pickup_code dans endpoints client (client-account.js) | client-account.js | 🟡 Moyenne | 30 min | ✅ Fait |
 
 ### Verdicts audits routes (session 24 mai)
 
