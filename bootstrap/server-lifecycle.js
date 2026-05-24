@@ -30,7 +30,7 @@ function startServerLifecycle({
 
     setImmediate(() => {
       runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAllSeeds })
-        .catch(err => log.error('❌ Migration error (non-fatal, serveur opérationnel):', err.message));
+        .catch(err => log.error({ err }, '❌ Migration error (non-fatal, serveur opérationnel)'));
     });
   });
 

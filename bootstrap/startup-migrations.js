@@ -1,5 +1,7 @@
 'use strict';
 
+const log = require('../utils/logger').child({ module: 'startup-migrations' });
+
 /**
  * H1F — Startup migrations bootstrap.
  *
@@ -174,6 +176,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
     `, [transitHash]);
     log.info('✅ Migration 028: transitaire user seeded');
+  } catch(e) { log.warn('Migration 028 (non-fatal):', e.message); }
 
   try {
     await db.query(`
@@ -182,7 +185,6 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     `);
     log.info('✅ Migration 029: inventory_items proposal columns ready');
   } catch(e) { log.warn('Migration 029 (non-fatal):', e.message); }
-  } catch(e) { log.warn('Migration 028 (non-fatal):', e.message); }
 
   try {
     await db.query(`
