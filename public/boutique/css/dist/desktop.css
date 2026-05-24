@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop.css (bundle Sprint 3 · 2026-05-21)
+   KOMERCE — desktop.css (bundle Sprint 3 · 2026-05-24)
    desktop — boutique-desktop · desktop-commerce-skeleton
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
 /* ── boutique-desktop.css ────────────────────────────────── */
-﻿/* ══════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════
    KOMERCE — boutique-desktop.css
    Fichier unique : règles globales (mobile-first) + overrides desktop.
    Remplace desktop-upgrade.css + desktop-mega-nav.css + shared.css.
@@ -83,157 +83,47 @@
 
 
 /* ══════════════════════════════════════════════════════════════════
-   3. CARD HOVER OVERLAY — SOURCE DE VÉRITÉ UNIQUE
-   Overlay en bas de carte : nom + desc + actions.
-   Le JS injecte .k-card-hover-overlay une seule fois par carte.
-   PALETTE-FIX-01 : gradient ocean au lieu de vert foncé hardcodé.
+   3. CARD HOVER — bouton fav + bouton panier
+   Overlay JS désactivé : plus de voile vert.
+   Le hover CSS natif (translateY + shadow) suffit.
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
   .k-card { position: relative; }
 
-  /* Overlay shell */
-  .k-card-hover-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to top,
-      rgba(100,175,90,.82) 0%,
-      rgba(100,175,90,.46) 48%,
-      var(--border-text-08) 100%
-    );
-    border-radius: 10px;
-    padding: 12px;
-    opacity: 0;
-    pointer-events: none;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    will-change: opacity;
-    backface-visibility: hidden;
-    transition: opacity .22s var(--ease);
-  }
-
-  .k-card:hover .k-card-hover-overlay {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  /* Masquer les boutons natifs pour éviter le doublon visuel */
-  .k-card:hover .k-card-fav,
-  .k-card:hover .k-card-add {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-
-  /* Contenu */
-  .k-card-hover-content {
-    margin-top: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    width: 100%;
-  }
-
-  .k-card-hover-name {
-    color: var(--white);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.3;
-    text-shadow: 0 1px 4px rgba(0,0,0,.3);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .k-card-hover-desc {
-    color: var(--overlay-white-78);
-    font-size: 11px;
-    line-height: 1.25;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .k-card-price-eur-hover {
-    display: none;
-    font-size: 11px;
-    color: var(--overlay-white-80);
-    font-weight: 600;
-    margin-top: 2px;
-  }
-  .k-card:hover .k-card-price-eur-hover { display: block; }
-
-  /* Barre d'actions : [Quick View | Fav | Add] */
-  .k-card-hover-actions {
-    display: grid;
-    grid-template-columns: 1fr 34px 34px;
-    align-items: center;
-    gap: 7px;
-  }
-
-  .k-card-quick-view {
-    height: 34px;
-    background: var(--surface-white-96);
-    border: none;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-    cursor: pointer;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: background .12s;
-  }
-  .k-card-quick-view:hover { background: var(--white); }
-  .k-card-quick-view svg {
-    width: 14px; height: 14px;
-    stroke: currentColor; fill: none; stroke-width: 2;
-  }
-
-  .k-card-hover-fav,
-  .k-card-hover-add {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    background: var(--surface-white-92);
-    border: none;
-    cursor: pointer;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: transform .12s, background .12s;
-  }
-  .k-card-hover-fav:hover,
-  .k-card-hover-add:hover {
-    transform: scale(1.08);
-    background: var(--white);
-  }
-
-  .k-card-hover-fav {
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--text);
-  }
-  .k-card-hover-fav.liked { color: var(--hero-red); }
-
-  .k-card-hover-add img {
-    width: 22px; height: 22px;
-    object-fit: contain;
-    pointer-events: none;
-  }
-
   /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
   .k-card-fav { opacity: 0; }
   .k-card:hover .k-card-fav { opacity: 1; }
   .k-card-fav.liked { opacity: 1; }
+
+  /* ── BOUTON PANIER desktop : taille réduite + stepper compact ───────── */
+  /* Override de la taille mobile (32px) : plus discret sur desktop.       */
+  .k-card-add {
+    width: 26px;
+    height: 26px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  /* Stepper − qty + : plus compact sur desktop (mobile = 68-86px).
+     Surchargé depuis products.css @900px (100px → 80px).                */
+  .k-card-add.in-cart {
+    width: 80px;
+    height: 28px;
+    border-radius: 18px;
+    background-color: var(--white);
+    box-shadow: var(--elev-2);
+  }
+
+  .k-card-add.in-cart .k-add-minus,
+  .k-card-add.in-cart .k-add-plus-ic {
+    flex: 0 0 22px;
+    font-size: 16px;
+  }
+
+  .k-card-add.in-cart .k-add-qty {
+    font-size: 12px;
+  }
 }
 
 
@@ -466,11 +356,11 @@
 
   .k-footer {
     display: block;
-    background: var(--sand-warm);
+    background: var(--green-bg-leaf);
     color: var(--text);
     padding: 40px clamp(20px, 4vw, 60px) 0;
     margin-top: 48px;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--ocean-light);
   }
 
   .k-footer-grid {
@@ -480,7 +370,7 @@
     max-width: var(--container);
     margin: 0 auto;
     padding-bottom: 32px;
-    border-bottom: 1px solid var(--border-text-10);
+    border-bottom: 1px solid var(--border-ocean-14);
   }
 
   .k-footer-brand-logo {
@@ -509,9 +399,9 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    border: 1px solid var(--border-text-15);
+    border: 1px solid var(--border-ocean-14);
     background: var(--white);
-    color: var(--text-muted);
+    color: var(--ocean);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -520,9 +410,9 @@
     transition: background .15s, border-color .15s, color .15s;
   }
   .k-footer-social-btn:hover {
-    background: var(--sand);
-    border-color: rgba(200,92,45,.28);   /* coral — PALETTE-FIX-01 */
-    color: var(--text);
+    background: var(--ocean-bg-08);
+    border-color: var(--border-ocean-14);
+    color: var(--ocean);
   }
   .k-footer-social-btn svg {
     width: 16px; height: 16px;
@@ -535,7 +425,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .12em;
-    color: var(--text-light);
+    color: var(--violet-mid-bright);
     margin-bottom: 14px;
   }
 
@@ -548,7 +438,7 @@
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-col-link:hover { color: var(--text); }
+  .k-footer-col-link:hover { color: var(--ocean); }
 
   .k-footer-newsletter-desc {
     font-size: 12px;
@@ -561,7 +451,7 @@
     width: 100%;
     padding: 9px 12px;
     border-radius: 8px;
-    border: 1px solid var(--border-text-15);
+    border: 1px solid var(--border-ocean-14);
     background: var(--white);
     color: var(--text);
     font-size: 13px;
@@ -572,7 +462,7 @@
   }
   .k-footer-newsletter-input::placeholder { color: var(--text-light); }
   .k-footer-newsletter-input:focus {
-    border-color: rgba(200,92,45,.35);
+    border-color: var(--ocean-light);
     background: var(--white);
   }
 
@@ -580,7 +470,7 @@
     width: 100%;
     padding: 10px;
     border-radius: 8px;
-    background: var(--coral);
+    background: var(--violet-mid-bright);
     color: var(--white);
     font-size: 13px;
     font-weight: 700;
@@ -589,7 +479,7 @@
     cursor: pointer;
     transition: background .15s, transform .12s;
   }
-  .k-footer-newsletter-btn:hover { background: var(--coral-dark); }
+  .k-footer-newsletter-btn:hover { background: var(--violet); }
   .k-footer-newsletter-btn:active { transform: scale(.98); }
 
   .k-footer-bottom {
@@ -605,19 +495,19 @@
 
   .k-footer-copy {
     font-size: 11px;
-    color: var(--text-light);
+    color: var(--text-muted);
   }
 
   .k-footer-legal-links { display: flex; gap: 16px; }
 
   .k-footer-legal-link {
     font-size: 11px;
-    color: var(--text-light);
+    color: var(--text-muted);
     cursor: pointer;
     text-decoration: none;
     transition: color .12s;
   }
-  .k-footer-legal-link:hover { color: var(--text); }
+  .k-footer-legal-link:hover { color: var(--violet-mid-bright); }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -877,11 +767,11 @@
 
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
-    width: 54px;
-    height: 54px;
-    min-width: 54px;
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
     margin: 0;
-    border-radius: 18px;
+    border-radius: 50%;
     border: 1px solid var(--overlay-white-72);
     background: var(--surface-sand-92);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px var(--border-text-08);
@@ -897,7 +787,7 @@
     height: 100%;
     display: block;
     object-fit: cover;
-    border-radius: 17px;
+    border-radius: 0;
   }
 
   .k-chip-fallback {
@@ -993,9 +883,9 @@
 .k-subchip {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   scroll-snap-align: start;
-  padding: 5px 11px;
+  padding: 7px 16px;
   background: var(--sand);
   border: 1px solid var(--overlay-black-xs);
   border-radius: 999px;
@@ -1006,8 +896,8 @@
   flex-shrink: 0;
 }
 .k-subchip:active { transform: scale(.94); }
-.k-subchip-icon  { font-size: 12px; line-height: 1; }
-.k-subchip-label { font-size: 11px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
+.k-subchip-icon  { font-size: 14px; line-height: 1; }
+.k-subchip-label { font-size: 13px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
 .k-subchip.active {
   background: transparent;
   border-color: var(--coral);
@@ -1178,36 +1068,40 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   SIDE CART DESKTOP — source unique de vérité pour .k-side-cart ≥900px.
-   Consolidé LOT 14 : 3 blocs fusionnés → 1 seul, rgba → tokens,
-   boutons toujours visibles (flex column + sc-bottom sticky),
-   side cart collé au bord droit (padding-right: 0 sur catalog-wrap).
+   SIDE CART DESKTOP — Layout Temu pur (refactor 21/05/2026).
+   Pattern : header sticky (sous-total + CTAs) en haut → "Tout
+   sélectionner" → liste items scrollable. Identité Komerce conservée
+   (coral CTA principal, violet "En groupe", ocean livraison).
+   Owner unique de .k-side-cart et de tous les sélecteurs .k-sc-*
+   pour ≥900px.
    ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
 
-  /* ── Side cart : conteneur sticky ── */
+  /* ── Conteneur fixed, full-height, collé au bord droit ──
+     Sort du flux : padding-right sur body réserve la place
+     (voir bloc "BODY PADDING RIGHT — side cart fixed" plus bas). */
   .k-side-cart {
     display: flex;
     flex-direction: column;
-    position: sticky;
-    top: calc(var(--header-h, 72px) + 12px);
-    align-self: start;          /* flex-start en flex, start en grid — les deux marchent */
-    /* Hauteur max : viewport - header - marge basse */
-    max-height: calc(100dvh - var(--header-h, 72px) - 24px);
-    flex: 0 0 290px;
-    width: 290px;
-    min-width: 290px;
-    border-radius: 24px 0 0 24px;  /* arrondi gauche, carré bord droit */
-    background: var(--surface-sand-92);
-    border: 1px solid var(--border-ocean-14);
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 240px;
+    height: 100dvh;
+    border-radius: 0;
+    background: var(--surface-sand-94);
+    border-left: 1px solid var(--border-ocean-14);
     border-right: none;
-    box-shadow: var(--shadow-ocean-10);
+    border-top: 3px solid var(--coral);
+    border-bottom: none;
+    box-shadow: -4px 0 20px var(--shadow-ocean-10), -1px 0 0 var(--border-coral-09);
     overflow: hidden;
     z-index: 200;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(6px);
+    transform: translateX(6px);
     transition: opacity .22s var(--ease), transform .22s var(--ease);
   }
 
@@ -1215,80 +1109,107 @@
   .k-side-cart.has-items {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 
-  /* ── Items : zone scrollable, prend tout l'espace dispo ── */
-  .k-sc-items {
-    flex: 1 1 auto;
-    min-height: 0;             /* critical : permet à flex de réduire */
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-text-08) transparent;
-    padding: 10px 10px 4px;
+  /* ──────────────────────────────────────────────────────────
+     HEADER (top block Temu) — sous-total + livraison + CTAs.
+     Tailles confortables : on a la pleine hauteur viewport.
+     ────────────────────────────────────────────────────────── */
+  .k-sc-header {
+    flex-shrink: 0;
+    padding: 14px 14px 12px;
+    background: linear-gradient(160deg, var(--cream-peach) 0%, var(--surface-sand-94) 100%);
+    border-bottom: 1px solid var(--border-coral-09);
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  /* Limite à 4 items par défaut, tous visibles si is-expanded */
-  .k-sc-items > *:nth-child(n+5) { display: none; }
 
-  /* ── Bottom : toujours visible, collé en bas ── */
-  .k-sc-bottom {
-    flex-shrink: 0;            /* ne se compresse jamais */
-    padding: 10px 12px 12px;
-    background: linear-gradient(180deg, var(--surface-sand-94), var(--white));
-    border-top: 1px solid var(--border-ocean-10);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  /* ── Top (sous-total + livraison) ── */
-  .k-sc-top {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    padding-bottom: 8px;
-  }
   .k-sc-subtotal-row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
   }
   .k-sc-subtotal-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--ocean-label);
+    letter-spacing: .02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-sc-subtotal-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--coral);
+    flex-shrink: 0;
   }
   .k-sc-subtotal-amount {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
     color: var(--text);
-    letter-spacing: -.035em;
+    letter-spacing: -.03em;
+    line-height: 1;
+    text-align: right;
+    flex: 1;
+    white-space: nowrap;
   }
+
+  /* Bouton "Vider" : discret en bas du header, sous les CTAs, centré pleine largeur.
+     Visible uniquement quand le side-cart a des items (.has-items posée par
+     renderSideCart). Confirmation native gérée côté JS dans b-cart.js. */
+  .k-sc-clear {
+    flex-shrink: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid var(--border-text-08);
+    border-radius: 999px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color .15s var(--ease), border-color .15s var(--ease), background .15s var(--ease);
+  }
+  .k-sc-clear svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+  .k-sc-clear:hover {
+    color: var(--coral);
+    border-color: var(--border-coral-22);
+    background: color-mix(in srgb, var(--coral) 6%, transparent);
+  }
+  .k-side-cart.has-items .k-sc-clear {
+    display: inline-flex;
+  }
+
   .k-sc-free-ship {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    font-size: 10.5px;
+    gap: 5px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--ocean);
     background: var(--ocean-bg-08);
     border-radius: 999px;
-    padding: 4px 9px;
+    padding: 4px 10px;
     width: fit-content;
+    margin-bottom: 2px;
   }
   .k-sc-free-ship svg { width: 12px; height: 12px; flex-shrink: 0; }
 
-  /* ── CTAs ── */
-  .k-sc-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 7px;
-  }
+  /* ── CTA Commander — coral plein ── */
   .k-sc-btn-checkout {
     width: 100%;
     min-height: 44px;
@@ -1297,85 +1218,108 @@
     border-radius: 999px;
     background: linear-gradient(135deg, var(--coral), var(--coral-dark));
     color: var(--white);
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     cursor: pointer;
     font-family: var(--font);
-    letter-spacing: .01em;
-    box-shadow: 0 8px 20px var(--shadow-coral-22);
-    transition: background .15s, transform .12s;
+    letter-spacing: .02em;
+    box-shadow: 0 4px 16px var(--shadow-coral-22), 0 1px 3px var(--border-coral-22);
+    transition: background .15s, transform .12s, box-shadow .15s;
   }
-  .k-sc-btn-checkout:hover { background: var(--coral-dark); }
+  .k-sc-btn-checkout:hover {
+    background: var(--coral-dark);
+    box-shadow: 0 7px 22px var(--shadow-coral-22), 0 1px 4px var(--border-coral-22);
+    transform: translateY(-1px);
+  }
   .k-sc-btn-checkout:active { transform: scale(.98); }
 
-  .k-sc-btn-group {
+  /* ── Séparateur Commander / Voir le panier ── */
+  .k-sc-btn-checkout + .k-sc-btn-cart {
+    position: relative;
+    margin-top: 2px;
+  }
+  .k-sc-btn-checkout + .k-sc-btn-cart::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--border-text-08);
+    margin: 0 auto 6px;
+  }
+
+  /* ── Voir le panier — masqué sur desktop (Commander va direct au checkout,
+     le tiroir complet est superflu quand le side cart est déjà visible) ── */
+  .k-sc-btn-cart {
+    display: none;
+  }
+
+  /* ── Payer à plusieurs — vert WhatsApp (aligné mobile) ── */
+  .k-sc-btn-share {
     width: 100%;
-    min-height: 40px;
-    border-radius: 999px;
+    min-height: 34px;
+    padding: 0 14px;
     border: none;
-    background: var(--violet);
+    border-radius: 999px;
+    background: var(--whatsapp);
     color: var(--white);
     cursor: pointer;
     font-family: var(--font);
-    font-size: 13px;
-    font-weight: 800;
+    font-size: 12px;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 0 14px;
+    gap: 6px;
     white-space: nowrap;
-    box-shadow: 0 2px 8px var(--violet-mid);
+    box-shadow: 0 1px 6px rgba(37,211,102,.30);
     transition: background .15s, transform .12s;
   }
-  .k-sc-btn-group:hover { background: var(--violet-dark); }
-  .k-sc-btn-group:active { transform: scale(.95); }
-  .k-sc-btn-group-emoji { font-size: 18px; line-height: 1; }
-  /* Texte visible directement dans le HTML — on supprime le ::after CSS */
-  .k-sc-btn-group-label { display: inline; }
+  .k-sc-btn-share:hover { background: var(--whatsapp-dk); }
+  .k-sc-btn-share:active { transform: scale(.95); }
+  /* Legacy — conservé pour compat si utilisé ailleurs, ne s'affiche plus dans le HTML */
+  .k-sc-btn-group { display: none; }
 
-  .k-sc-btn-cart {
-    display: block;
-    width: 100%;
-    padding: 4px;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    font-family: var(--font);
-    text-decoration: underline;
-    text-decoration-color: var(--border-text-08);
-    text-underline-offset: 3px;
-    transition: color .12s;
+  /* ──────────────────────────────────────────────────────────
+     ITEMS — zone scrollable, prend toute la hauteur restante.
+     Pleine hauteur viewport → items confortables.
+     ────────────────────────────────────────────────────────── */
+  .k-sc-items {
+    flex: 1 1 0;
+    min-height: 0;
+    /* overflow-y: scroll plutôt que auto pour FORCER le scroll même si
+       le contenu rentre (évite que la molette passe à la page). */
+    overflow-y: scroll;
+    /* none plutôt que contain : empêche complètement le scroll de "passer"
+       à la page principale quand on atteint la butée. */
+    overscroll-behavior: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-text-08) transparent;
+    padding: 10px 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
-  .k-sc-btn-cart:hover { color: var(--text); }
+  /* Plus de limite à 4 items : tout scrolle (mode Temu) */
 
-  .k-sc-count-label {
-    font-size: 11px;
-    color: var(--text-light);
-    font-weight: 500;
-    text-align: center;
-  }
-
-  /* ── Items ── */
+  /* ── Item carte ── */
   .k-sc-item {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px;
     background: var(--white);
     border-radius: 10px;
-    border: 0;
-    transition: background .12s;
+    border: 1px solid var(--border-text-06);
+    transition: background .12s, border-color .12s;
     flex-shrink: 0;
   }
-  .k-sc-item:hover { background: var(--sand); }
+  .k-sc-item:hover {
+    background: var(--sand);
+    border-color: var(--border-text-08);
+  }
   .k-sc-item-img {
-    width: 64px; height: 64px;
-    border-radius: 8px;
+    width: 48px; height: 48px;
+    border-radius: 7px;
     object-fit: cover;
     flex-shrink: 0;
     background: var(--sand);
@@ -1386,67 +1330,71 @@
     display: flex; flex-direction: column; gap: 3px;
   }
   .k-sc-item-name {
-    font-size: 12px; font-weight: 500; color: var(--text);
-    line-height: 1.35;
+    font-size: 11.5px; font-weight: 500; color: var(--text);
+    line-height: 1.3;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
   .k-sc-item-variant {
-    font-size: 10px; font-weight: 600; color: var(--text-muted);
+    font-size: 9.5px; font-weight: 600; color: var(--text-muted);
     background: var(--sand);
     border: 1px solid var(--border-text-06);
     border-radius: 4px;
-    padding: 1px 5px;
+    padding: 1px 4px;
     display: inline-block; width: fit-content;
   }
   .k-sc-item-meta {
     display: flex; align-items: center;
     justify-content: space-between;
-    margin-top: 2px; gap: 6px;
+    margin-top: 1px; gap: 4px;
   }
   .k-sc-item-price-wrap {
-    display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 4px; flex-wrap: nowrap; min-width: 0; overflow: hidden;
   }
   .k-sc-item-price {
-    font-size: 13px; font-weight: 800;
+    font-size: 12px; font-weight: 800;
     color: var(--red-text-md); letter-spacing: -.01em;
+    white-space: nowrap;
   }
   .k-sc-item-old-price {
-    font-size: 10px; font-weight: 500;
+    font-size: 9px; font-weight: 500;
     color: var(--text-muted); text-decoration: line-through;
+    white-space: nowrap;
   }
   .k-sc-item-actions {
-    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0;
   }
+
+  /* Stepper +/- tactile (choix Komerce) */
   .k-sc-item-stepper {
     display: flex; align-items: center;
     border: 1px solid var(--border-text-08);
-    border-radius: 6px; overflow: hidden;
+    border-radius: 5px; overflow: hidden;
     background: var(--white);
   }
   .k-sc-item-stepper button {
-    width: 24px; height: 24px;
+    width: 20px; height: 20px;
     border: none; background: transparent;
-    color: var(--text); font-size: 15px; font-weight: 700;
+    color: var(--text); font-size: 14px; font-weight: 700;
     cursor: pointer; display: flex; align-items: center;
     justify-content: center; transition: background .1s;
     font-family: var(--font); padding: 0; line-height: 1;
   }
   .k-sc-item-stepper button:hover { background: var(--sand-dark); }
   .k-sc-item-stepper-qty {
-    min-width: 24px; text-align: center;
-    font-size: 12px; font-weight: 700; color: var(--text);
+    min-width: 18px; text-align: center;
+    font-size: 11px; font-weight: 700; color: var(--text);
     padding: 0 2px;
     border-left: 1px solid var(--border-text-08);
     border-right: 1px solid var(--border-text-08);
-    line-height: 24px; user-select: none;
+    line-height: 20px; user-select: none;
   }
   .k-sc-item-remove {
-    width: 24px; height: 24px;
+    width: 20px; height: 20px;
     border: 1px solid var(--border-text-08);
-    border-radius: 6px; background: transparent;
+    border-radius: 5px; background: transparent;
     color: var(--text-muted); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: background .12s, color .12s, border-color .12s;
@@ -1458,7 +1406,7 @@
     color: var(--red-text);
   }
 
-  /* ── Attention state ── */
+  /* ── Attention state (highlight quand l'avatar panier est cliqué) ── */
   #k-side-cart.is-attention {
     box-shadow:
       0 0 0 3px var(--border-coral-13),
@@ -1467,241 +1415,51 @@
     transition: box-shadow .22s ease, transform .22s ease;
   }
 
-  /* ── Expanded state : tous les items visibles ── */
+  /* L'état "is-expanded" n'est plus nécessaire : la liste scrolle
+     d'elle-même, plus de limite à 4 items. On garde l'override
+     historique vide pour ne rien casser côté JS qui pourrait
+     encore toggler la classe. */
   #k-side-cart.is-expanded .k-sc-items > * { display: flex; }
-  #k-side-cart.is-expanded .k-sc-items {
-    max-height: calc(100dvh - var(--header-h, 72px) - 245px);
+
+  /* ──────────────────────────────────────────────────────────
+     BODY PADDING RIGHT — side cart fixed.
+     Réserve la place du side-cart sur le bord droit (240px),
+     mais SEULEMENT quand le panier a des items. Sinon le
+     panneau est en display:none et on ne veut pas de bande
+     vide à droite.
+
+     STRATÉGIE EN DEUX TEMPS (ceinture + bretelles) :
+     1. body:has(.k-side-cart.has-items) (CSS pur, navigateurs modernes)
+     2. body.sc-reserve (toggle JS, fallback universel)
+     Le `body` reçoit le padding par une OU l'autre — pas un + un,
+     donc pas de risque de doublage.
+     ────────────────────────────────────────────────────────── */
+  body:has(.k-side-cart.has-items),
+  body.sc-reserve {
+    padding-right: 240px;
+  }
+
+  /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
+     on libère le padding pour que l'overlay puisse occuper toute
+     la largeur sans laisser une bande sand-94 résiduelle. */
+  body.modal-open,
+  body.cart-open {
+    padding-right: 0 !important;
+  }
+  body.modal-open .k-side-cart,
+  body.cart-open  .k-side-cart {
+    display: none !important;
   }
 }
+
 
 @media (min-width: 1200px) {
   .k-side-cart {
-    flex: 0 0 306px;
-    width: 306px;
-    min-width: 306px;
+    width: 254px;
   }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — overrides spécificité préfixée
-   Rapatrié depuis dist/desktop.css lors du Lot CSS-2 (2026-05-18)
-   Ces règles ont une spécificité plus haute que les versions
-   non préfixées (cart.css). Elles imposent les valeurs desktop.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  #k-side-cart .k-sc-cta-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  #k-side-cart .k-sc-btn-checkout {
-    width: 100%;
-    min-height: 46px;
-  }
-
-  #k-side-cart .k-sc-btn-group {
-    width: 100%;
-    min-height: 42px;
-    border-radius: 14px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0 14px;
-    font-size: 13px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  #k-side-cart .k-sc-btn-group-label {
-    display: inline;
-  }
-
-  #k-side-cart .k-sc-btn-group::after {
-    content: "Payer en groupe";
-  }
-
-  #k-side-cart .k-sc-btn-group .k-sc-btn-group-label {
-    display: none;
-  }
-
-  #k-side-cart .k-sc-btn-cart {
-    margin-top: 4px;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — FIX hauteur pleine viewport (sticky tenu sur toute
-   la longueur du catalogue, comportement Temu).
-   Ajouté LOT 15 — 2026-05-21
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  .k-side-cart {
-    /* height explicite = viewport - header - marges.
-       Sans ça, sticky finit à hauteur-contenu et disparaît. */
-    height: calc(100dvh - var(--header-h, 72px) - 24px);
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — FIXED VIEWPORT TEMU
-   Transforme le .k-side-cart existant de sticky-in-layout vers fixed-to-viewport.
-   Desktop uniquement. Ne crée aucun nouveau panier.
-   Conserve .has-items, .is-expanded et toutes les classes .k-sc-* existantes.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  :root {
-    --side-cart-w: 290px;
-    --side-cart-gap: 20px;
-  }
-
-  .k-side-cart {
-    position: fixed;
-    top: var(--header-h, 72px);
-    right: 0;
-    bottom: 0;
-    height: calc(100dvh - var(--header-h, 72px));
-    max-height: calc(100dvh - var(--header-h, 72px));
-    width: var(--side-cart-w);
-    min-width: var(--side-cart-w);
-    flex: none;
-    transform: translateX(8px);
-  }
-
-  .k-side-cart.has-items {
-    transform: translateX(0);
-  }
-#k-side-cart.is-expanded .k-sc-items {
-    max-height: calc(100dvh - var(--header-h, 72px) - 220px);
-  }
-}
-
-@media (min-width: 1200px) {
-  :root {
-    --side-cart-w: 306px;
-    --side-cart-gap: 24px;
-  }
-}
-
-/* END SIDE CART — FIXED VIEWPORT TEMU */
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   SIDE CART — STICKY POLISH TEMU-LIKE
-   Garde le panier dans le layout boutique : sticky, pas fixed.
-   Objectif : plus compact, moins large, tous les articles scrollables.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-  .k-side-cart {
-    position: sticky;
-    top: calc(var(--header-h, 72px) + 10px);
-    margin-top: 6px;
-    height: calc(100dvh - var(--header-h, 72px) - 20px);
-    max-height: calc(100dvh - var(--header-h, 72px) - 20px);
-    flex: 0 0 260px;
-    width: 260px;
-    min-width: 260px;
-    border-radius: 20px 0 0 20px;
-  }
-
-  .k-side-cart.has-items {
-    transform: translateY(0);
-  }
-
-  .k-sc-items {
-    padding: 8px 8px 4px;
-    gap: 6px;
-  }
-
-  /* Ne plus limiter le nombre d'articles affichés.
-     La liste complète est visible dans la zone scrollable. */
-  #k-side-cart .k-sc-items > * {
-    display: flex;
-  }
-
-  .k-sc-item {
-    gap: 8px;
-    padding: 8px 9px;
-    border-radius: 9px;
-  }
-
-  .k-sc-item-img {
-    width: 52px;
-    height: 52px;
-    border-radius: 7px;
-  }
-
-  .k-sc-item-name {
-    font-size: 11.5px;
-    line-height: 1.25;
-    -webkit-line-clamp: 2;
-  }
-
-  .k-sc-item-variant {
-    font-size: 9.5px;
-    padding: 1px 4px;
-  }
-
-  .k-sc-item-price {
-    font-size: 12px;
-  }
-
-  .k-sc-item-stepper button,
-  .k-sc-item-remove {
-    width: 22px;
-    height: 22px;
-  }
-
-  .k-sc-item-stepper-qty {
-    min-width: 22px;
-    line-height: 22px;
-    font-size: 11px;
-  }
-
-  .k-sc-bottom {
-    padding: 9px 10px 10px;
-    gap: 6px;
-  }
-
-  .k-sc-subtotal-label {
-    font-size: 11px;
-  }
-
-  .k-sc-subtotal-amount {
-    font-size: 16px;
-  }
-
-  .k-sc-free-ship {
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-
-  .k-sc-btn-checkout {
-    min-height: 40px;
-    font-size: 13px;
-  }
-
-  .k-sc-btn-group {
-    min-height: 38px;
-    font-size: 12.5px;
-  }
-
-  .k-sc-btn-cart {
-    font-size: 11.5px;
-  }
-
-  .k-sc-count-label {
-    font-size: 10.5px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .k-side-cart {
-    flex: 0 0 276px;
-    width: 276px;
-    min-width: 276px;
+  body:has(.k-side-cart.has-items),
+  body.sc-reserve {
+    padding-right: 254px;
   }
 }
 
@@ -1820,7 +1578,7 @@
 
   .k-hero-inner {
     max-width: 1480px;
-    padding: 14px 20px 0;
+    padding: 8px 20px 0;
   }
 
   /* ── Hero propre — image pleine, zéro voile sombre (LOT 14) ── */
@@ -1828,8 +1586,8 @@
   .k-hero-media {
     /* Fond crème visible si image plus étroite que le viewport */
     background: var(--sand-warm);
-    /* Hauteur : assez pour voir personnages + cadeaux (image ratio 2:1) */
-    height: clamp(300px, 24vw, 340px);
+    /* Hauteur compacte desktop (réduite depuis clamp(300px,24vw,340px) — PR hero-compact) */
+    height: clamp(170px, 14vw, 200px);
     border-radius: 0;
     overflow: hidden;
     border: none;
@@ -1840,7 +1598,7 @@
     height: 100%;
     width: 100%;
     object-fit: cover;
-    object-position: center 45%;
+    object-position: center 30%;
     background: transparent;
   }
 
@@ -1871,14 +1629,14 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-coral-13);
-    border-radius: 14px;
-    padding: 16px 22px 14px;
+    border-radius: 12px;
+    padding: 10px 18px 10px;
     box-shadow: var(--elev-3), 0 1px 0 rgba(255,255,255,.9) inset;
   }
 
   .k-hero-badge {
     display: inline-flex;
-    margin-bottom: 9px;
+    margin-bottom: 6px;
     padding: 3px 9px;
     border-radius: 4px;
     background: var(--border-coral-09);
@@ -1892,7 +1650,7 @@
 
   .k-hero-mini-slogan .k-line-1 {
     color: var(--text);
-    font-size: clamp(1.3rem, 2vw, 2rem);
+    font-size: clamp(1.1rem, 1.6vw, 1.6rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -.025em;
@@ -1900,12 +1658,12 @@
   }
 
   .k-hero-mini-slogan .k-line-2 {
-    color: var(--coral);
-    font-size: clamp(1.6rem, 2.5vw, 2.6rem);
+    color: var(--ocean-dark);
+    font-size: clamp(1.3rem, 2vw, 2.1rem);
     font-weight: 900;
     line-height: 1.0;
     letter-spacing: -.03em;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     text-shadow: none;
   }
 
@@ -1969,13 +1727,16 @@
   }
 
   #k-desktop-catalog-wrap {
-    max-width: 1480px;
+    /* PR-SC2 v3.3 — le grid 2-cols est mort (side cart en position:fixed).
+       Le wrapper devient flex 1-col qui exploite la zone utile restante
+       après le body padding-right: 240px réservé au side cart. */
+    max-width: none;
     margin: 16px auto 0;
-    padding: 0 0 28px 20px;  /* padding-right: 0 — side cart colle au bord droit */
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 286px;
+    padding: 0 20px 28px;
+    display: flex;
+    flex-direction: column;
     gap: 18px;
-    align-items: start;
+    align-items: stretch;
   }
 
   #k-catalog-section {
@@ -2018,13 +1779,15 @@
 }
 
 @media (min-width: 1200px) {
-  #k-desktop-catalog-wrap {
-    grid-template-columns: minmax(0, 1fr) 306px;
-  }
+  /* PR-SC2 v3.3 — bloc neutralisé : grid-template-columns n'a plus de
+     sens en flex 1-col. Le side cart en fixed gère sa propre largeur
+     (240→254px) via boutique-desktop.css. */
 }
 
 @media (min-width: 1500px) {
-  #k-desktop-catalog-wrap,
+  /* PR-SC2 v3.3 — #k-desktop-catalog-wrap retiré de cette règle :
+     le wrapper du catalogue exploite toute la zone utile (pas de
+     max-width). Les autres conteneurs gardent leur centrage à 1540px. */
   .k-header-inner,
   .k-hero-inner,
   .k-cats-shell {

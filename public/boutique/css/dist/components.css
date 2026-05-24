@@ -3247,6 +3247,9 @@ body.cart-open .k-hero { pointer-events: none; }
 .kcf-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
 .kcf-secondary { background: var(--sand); color: var(--text-muted); border: 1px solid var(--border); }
 .kcf-secondary:hover { background: var(--white); color: var(--text); }
+.kcf-share { background: var(--whatsapp); color: var(--white); box-shadow: 0 2px 8px rgba(37,211,102,.25); }
+.kcf-share:hover { background: var(--whatsapp-dk); transform: translateY(-1px); }
+.kcf-share:active { transform: scale(.97); }
 .kcf-danger-mini { padding: 9px 14px; background: transparent; color: var(--text-form-soft); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
 .kcf-danger-mini:hover { background: var(--red-danger-bg); color: var(--red-danger-text); border-color: var(--red-danger-border); }
 .kcf-whatsapp { background: var(--whatsapp); color: var(--white); border-radius: 12px; }
@@ -4017,75 +4020,6 @@ body.cart-open .k-wa-fab {
 
 /* is-attention + is-expanded : déplacés dans boutique-desktop.css (owner §3). */
 
-
-/* ── BOUTON PARTAGER (mobile drawer + side-cart) ─────────────── */
-.kcf-share {
-  background: var(--violet);
-  color: var(--white);
-  border-radius: 12px;
-  gap: 6px;
-}
-.kcf-share:hover { background: var(--violet-dark); transform: translateY(-1px); }
-.kcf-share:disabled {
-  background: var(--sand-dark);
-  color: var(--text-light);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* ── CHAMP NOM DU PANIER (drawer mobile) ─────────────────────── */
-.k-share-name-row {
-  margin-bottom: 10px;
-}
-.k-share-name-input {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-family: var(--font);
-  color: var(--text);
-  background: var(--white);
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color .2s;
-}
-.k-share-name-input:focus { border-color: var(--violet); }
-.k-share-name-input::placeholder { color: var(--text-light); }
-
-/* ── BADGE PARTAGÉ (drawer mobile) ──────────────────────────── */
-.k-share-badge-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 10px;
-  background: var(--green-bg);
-  border-radius: var(--radius-sm);
-  margin-bottom: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--green-dark-text);
-}
-.k-share-badge-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--green-success);
-  flex-shrink: 0;
-}
-.k-share-badge-label { flex: 1; }
-.k-share-reshare-btn {
-  padding: 4px 10px;
-  background: transparent;
-  border: 1.5px solid var(--green-success);
-  border-radius: 50px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--green-text);
-  cursor: pointer;
-  transition: all .15s;
-}
-.k-share-reshare-btn:hover { background: var(--green-bg-soft); }
 
 
 /* ── interactions.css ────────────────────────────────────── */

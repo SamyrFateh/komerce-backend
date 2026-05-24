@@ -1247,14 +1247,14 @@
     display: none;
   }
 
-  /* ── En groupe — violet Komerce ── */
-  .k-sc-btn-group {
+  /* ── Payer à plusieurs — vert WhatsApp (aligné mobile) ── */
+  .k-sc-btn-share {
     width: 100%;
     min-height: 34px;
     padding: 0 14px;
     border: none;
     border-radius: 999px;
-    background: var(--violet);
+    background: var(--whatsapp);
     color: var(--white);
     cursor: pointer;
     font-family: var(--font);
@@ -1265,13 +1265,13 @@
     justify-content: center;
     gap: 6px;
     white-space: nowrap;
-    box-shadow: 0 1px 4px var(--violet-mid);
+    box-shadow: 0 1px 6px rgba(37,211,102,.30);
     transition: background .15s, transform .12s;
   }
-  .k-sc-btn-group:hover { background: var(--violet-dark); }
-  .k-sc-btn-group:active { transform: scale(.95); }
-  .k-sc-btn-group-emoji { font-size: 14px; line-height: 1; }
-  .k-sc-btn-group-label { display: inline; }
+  .k-sc-btn-share:hover { background: var(--whatsapp-dk); }
+  .k-sc-btn-share:active { transform: scale(.95); }
+  /* Legacy — conservé pour compat si utilisé ailleurs, ne s'affiche plus dans le HTML */
+  .k-sc-btn-group { display: none; }
 
   /* ──────────────────────────────────────────────────────────
      ITEMS — zone scrollable, prend toute la hauteur restante.

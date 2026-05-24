@@ -130,6 +130,9 @@ body.cart-open .k-hero { pointer-events: none; }
 .kcf-primary:hover { background: var(--coral-dark); transform: translateY(-1px); }
 .kcf-secondary { background: var(--sand); color: var(--text-muted); border: 1px solid var(--border); }
 .kcf-secondary:hover { background: var(--white); color: var(--text); }
+.kcf-share { background: var(--whatsapp); color: var(--white); box-shadow: 0 2px 8px rgba(37,211,102,.25); }
+.kcf-share:hover { background: var(--whatsapp-dk); transform: translateY(-1px); }
+.kcf-share:active { transform: scale(.97); }
 .kcf-danger-mini { padding: 9px 14px; background: transparent; color: var(--text-form-soft); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
 .kcf-danger-mini:hover { background: var(--red-danger-bg); color: var(--red-danger-text); border-color: var(--red-danger-border); }
 .kcf-whatsapp { background: var(--whatsapp); color: var(--white); border-radius: 12px; }
