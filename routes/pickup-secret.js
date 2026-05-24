@@ -687,11 +687,14 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
 
     // 5. Révélation : on ne peut PAS reconstruire le code depuis le hash (c'est
     //    le principe du hash). Donc on stocke temporairement le code clair en
-    //    mémoire au moment de la génération, indexé par orderId, avec TTL 30min.
-    //    Voir REVEAL_CACHE en bas du fichier.
-    const cached = REVEAL_CACHE.get(orderId);
-    if (!cached) {
-      // Cache expiré ou serveur redémarré entre-temps → 410
+    //    DB (table pickup_reveal_codes, TTL 30 min) au moment de la génération.
+    //    Migré de REVEAL_CACHE (Map in-memory) vers DB en SEC-1 / migration 070.
+    const { rows: [revealRow] } = await db.query(
+      'SELECT code FROM pickup_reveal_codes WHERE order_id = $1 AND expires_at > NOW()',
+      [orderId]
+    );
+    if (!revealRow) {
+      // Ligne absente ou expirée → 410 (redémarrage, délai dépassé)
       return res.status(410).json({
         error: 'Code non disponible',
         message: 'Le code n\'est plus disponible (redémarrage serveur ou expiration). Utilisez la procédure de perte.',
@@ -701,17 +704,16 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
       });
     }
 
-    // 6. Marquer comme révélé + supprimer du cache immédiatement
-    await db.query(
-      'UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1',
-      [orderId]
-    );
-    REVEAL_CACHE.delete(orderId);
+    // 6. Marquer comme révélé + supprimer de la table immédiatement (one-shot)
+    await Promise.all([
+      db.query('UPDATE orders SET pickup_secret_revealed_at = NOW() WHERE id = $1', [orderId]),
+      db.query('DELETE FROM pickup_reveal_codes WHERE order_id = $1', [orderId]),
+    ]);
 
     log.info(`[PICKUP-SECRET] 👁 Code révélé (one-shot) order=${orderId} channel=${order.pickup_secret_channel}`);
 
     // 7. Générer le payload QR (format KMR1.base64url)
-    const qrPayloadRaw = JSON.stringify({ c: cached.code, o: order.reference });
+    const qrPayloadRaw = JSON.stringify({ c: revealRow.code, o: order.reference });
     const qrPayload = 'KMR1.' + Buffer.from(qrPayloadRaw)
       .toString('base64')
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -730,23 +732,23 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// REVEAL_CACHE — stockage mémoire court (30 min) des codes en attente de révélation
+// cacheCodeForReveal — persistance DB du code en attente de révélation (SEC-1)
 // ══════════════════════════════════════════════════════════════════════════════
-// Pourquoi en mémoire : le hash est irréversible, on ne peut pas reconstruire
-// le code clair depuis la DB. Donc pour Stripe/Wallet/MM, après génération,
-// le code est placé ici en attendant que le client le récupère via reveal-once.
+// Remplace la Map REVEAL_CACHE in-memory par la table pickup_reveal_codes
+// (migration 070). Survit aux redémarrages et fonctionne en multi-instance.
 //
-// TTL 30 min garantit que si le client ne revient pas (navigateur fermé), le
-// code disparaît de la mémoire → procédure de perte obligatoire.
-//
-// TODO prod : remplacer par Redis avec TTL natif pour survivre aux restarts.
+// TTL 30 min : si le client ne revient pas (navigateur fermé, timeout),
+// le cron startPickupTokenCleanupCron() purge les lignes expirées toutes les 5 min.
+// → procédure de perte obligatoire passé ce délai.
 
-const REVEAL_CACHE = new Map();
-const REVEAL_TTL_MS = 30 * 60 * 1000;
-
-function cacheCodeForReveal(orderId, code) {
-  REVEAL_CACHE.set(orderId, { code, expiresAt: Date.now() + REVEAL_TTL_MS });
-  setTimeout(() => REVEAL_CACHE.delete(orderId), REVEAL_TTL_MS);
+async function cacheCodeForReveal(orderId, code) {
+  await db.query(
+    `INSERT INTO pickup_reveal_codes (order_id, code, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '30 minutes')
+     ON CONFLICT (order_id) DO UPDATE
+       SET code = EXCLUDED.code, expires_at = EXCLUDED.expires_at`,
+    [orderId, code]
+  );
 }
 
 module.exports = router;

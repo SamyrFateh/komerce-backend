@@ -259,7 +259,7 @@ router.post('/stripe/webhook',
               stripe_receipt_email: stripeEmail,
             },
           });
-          cacheCodeForReveal(orderId, genResult.code);
+          await cacheCodeForReveal(orderId, genResult.code); // SEC-1: async depuis migration 070
         } catch(genErr) {
           log.error('[STRIPE-WEBHOOK] ⚠ génération code échouée :', genErr.message);
         }
