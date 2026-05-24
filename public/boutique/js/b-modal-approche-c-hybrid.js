@@ -11,6 +11,9 @@ import { bus } from './b-bus.js';
 import { state } from './b-store.js';
 import { fmtPrice } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
+import { closeModal } from './b-modal.js';
+import { addToCart } from './b-cart.js';
+import { startShareFlow } from './b-share-cart.js';
 
 'use strict';
 
@@ -504,6 +507,18 @@ function renderPayment() {
 
     tab.append(icon, label);
     tab.addEventListener('click', function() {
+      // ── Tab "Partagé" : ajouter au panier + lancer le flow groupe ──
+      if (key === 'group') {
+        if (!state.modalProduct) return;
+        // Ajouter le produit au panier si pas encore dedans
+        addToCart(state.modalProduct, state.modalQty || 1, tab);
+        // Fermer la modal proprement avant le flow (évite l'empilement de couches)
+        closeModal();
+        // Laisser la fermeture s'animer (200ms) puis lancer le flow
+        setTimeout(() => startShareFlow(), 250);
+        return;
+      }
+
       state.modalPaymentMode = key;
       tabs.querySelectorAll('.k-buybox-payment-tab').forEach(function(t) {
         const isActive = t === tab;

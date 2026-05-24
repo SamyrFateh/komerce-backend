@@ -634,6 +634,7 @@ body.cart-open .k-wa-fab {
 
 /* Bouton ajouter "confirmed" */
 .k-add-cart-btn.confirmed { background:var(--ocean); color:var(--white); font-size:13px; font-weight:700; justify-content:center; }
+.k-add-cart-btn.in-cart { background: var(--green-bg-leaf); color: var(--green-text-strong); border-color: var(--cta-green); font-weight: 700; }
 
 /* INTENTIONNEL @600px � compl�ment du bloc L160 (.k-order-modal centr�).
    Fix Bug 4 : r�tablit overflow:hidden pour le border-radius sur tablette/desktop,
