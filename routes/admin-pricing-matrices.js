@@ -22,7 +22,7 @@ const router  = express.Router();
 
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
-const { invalidatePricingMatricesCache } = require('../utils/pricing');
+const { invalidatePricingMatricesCache } = require('../utils/pricing-cache');
 const log = require('../utils/logger').child({ module: 'admin-pricing-matrices' });
 
 const ALLOWED_CATEGORIES = ['electronique', 'maison', 'mariage', 'mode_beaute', 'enfants'];
