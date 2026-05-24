@@ -78,6 +78,7 @@ function startOperationalCrons() {
   startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber });
   startBackorderCron({ processBackorderReminders });
   startSnapshotRetentionCron();
+  startPickupTokenCleanupCron(); // SEC-1 migration 070
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -107,9 +108,39 @@ function startSnapshotRetentionCron() {
   log.info({ retention_days: RETENTION_DAYS, interval_h: 24 }, 'Snapshot retention cron scheduled');
 }
 
+// SEC-1 — Purge des tokens éphémères pickup (migration 070)
+// pickup_print_tokens : TTL 2 min / pickup_reveal_codes : TTL 30 min
+// Toutes les 5 minutes, supprime les lignes expirées.
+function startPickupTokenCleanupCron() {
+  const INTERVAL_MS = 5 * 60 * 1000;
+
+  const run = async () => {
+    try {
+      const db = require('../db');
+      const [r1, r2] = await Promise.all([
+        db.query('DELETE FROM pickup_print_tokens WHERE expires_at < NOW()'),
+        db.query('DELETE FROM pickup_reveal_codes WHERE expires_at < NOW()'),
+      ]);
+      const deleted = (r1.rowCount || 0) + (r2.rowCount || 0);
+      if (deleted > 0) {
+        log.info({ deleted }, 'pickup ephemeral tokens purge done');
+      }
+    } catch (err) {
+      log.error({ err }, 'pickup token cleanup cron failed');
+    }
+  };
+
+  // Première exécution 5 min après démarrage
+  setTimeout(run, 5 * 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+
+  log.info({ interval_min: 5 }, 'Pickup token cleanup cron scheduled');
+}
+
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
   startBackorderCron,
   startSnapshotRetentionCron,
+  startPickupTokenCleanupCron,
 };
