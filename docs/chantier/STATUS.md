@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-24
+> Mis à jour : 2026-05-24 (session après-midi)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -86,6 +86,11 @@ Lire dans cet ordre avant toute modification :
 | GOD-FILES-0 | ✅ Fait | Cartographie + extractions : buildReceiptHTML → utils/pickup-receipt-html.js (−264 lignes), REVEAL_CACHE Map → table pickup_reveal_codes DB. pickup-secret.js : 1021 → 754 lignes. |
 | BUG-CIRC-DEP | ✅ Fait | Dépendance circulaire calcPrix/calcPrixTenue supprimée. utils/pricing.js et routes/pricing.js s'auto-importaient (import fantôme ligne 13). routes/modules.js idem. Les 3 fichiers patchés : import supprimé, handlers /calculate et /couture réécrits via pricingEngine.recommend(). |
 | GOD-FILES-1 | ▶️ Prochain | Extraction services/pricing-recommend.js (−518 lignes de routes/pricing.js). Extraction services/pricing-dashboard.js (−445 lignes). |
+| BUG-LOG-STARTUP | ✅ Fait | `bootstrap/startup-migrations.js` : import `log` manquant ajouté. `bootstrap/server-lifecycle.js` : convention Pino corrigée (`{ err }` comme objet contexte). Migration 028/029 désimbriquées. |
+| BUG-LOG-ENV | ✅ Fait | `bootstrap/env.js` : import `log` manquant ajouté (même bug que startup-migrations). |
+| SEC-2 | ✅ Fait | `ADMIN_PASSWORD` promu de `recommendedEnv` → `requiredEnv` dans `bootstrap/env.js`. Bloquant au démarrage. |
+| SEC-3 | ✅ Fait | grep localStorage — aucun `setItem` JWT en localStorage. Boutique déjà sur cookies httpOnly. Clos. |
+| R1 | ✅ Fait | IDOR `GET /orders/:id` dans `routes/relay-dashboard.js` — guard scope relais ajouté (403 + log warn). Même pattern que `assertOrderBelongsToRelais` sur tous les POST. |
 
 ---
 
@@ -121,6 +126,9 @@ P0 runtime verdict: PARTIAL (1 skipped — refund uniquement)
 ## Pièges critiques à retenir
 
 - `console.*` : F1 est clôturé. Les branches F1/logging restantes sont abandonnées et doivent être supprimées côté GitHub/local. Toute nouvelle occurrence hors fallback `utils/logger.js` doit être traitée comme régression.
+- `log` non importé : pattern récurrent — `startup-migrations.js` ET `env.js` avaient le même bug (ReferenceError silencieux avalé par le catch global). Tout nouveau fichier bootstrap doit avoir `const log = require('../utils/logger').child({ module: '...' })` en ligne 3.
+- Pino calling convention : `log.error('msg:', err.message)` → le second string arg est silencieusement ignoré. Toujours passer `log.error({ err }, 'message')` pour sérialiser l'erreur complète.
+- IDOR relay-dashboard : GET /orders/:id n'avait pas de scope guard. Les POST (incident/comment/escalate/client-absent) étaient protégés via `assertOrderBelongsToRelais` mais pas le GET. Pattern à vérifier sur tout nouvel endpoint de lecture.
 - `utils/logger.js` : en test, ne pas réactiver `pino-pretty` sans fermer explicitement le worker, sinon Jest détecte un open handle.
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - A4 : collisions 060/061 clarifiées — dette non bloquante ; ne pas renommer/supprimer de migration sans audit DB réel.
@@ -150,6 +158,17 @@ Plan d'extraction validé en GOD-FILES-0 :
 
 Prérequis : vérifier que `_applies()` et `_arrondiPsycho()` ne sont pas importés directement ailleurs (privés actuellement). Lire CONTRACTS.md avant de toucher aux exports.
 
+### Rappel : actions manuelles DB en attente
+
+```bash
+# M1 — supprimer la migration 068 cassée et appliquer la bonne
+rm migrations/068_check_balance_non_negative.sql
+psql $DATABASE_URL -f migrations/068_wallets_check_balance.sql
+
+# M2 — hors transaction (CREATE INDEX CONCURRENTLY interdit dans BEGIN)
+psql $DATABASE_URL -f migrations/069_analytical_indexes.sql
+```
+
 ---
 
 ## Dette sécurité séparée
@@ -176,8 +195,11 @@ Contraintes :
 | Lot | Priorité | Note |
 |-----|----------|------|
 | GOD-FILES-1 | ▶️ Maintenant | Extraction pricing-recommend.js + pricing-dashboard.js depuis routes/pricing.js |
-| SEC-2 | Sécurité | Promouvoir ADMIN_PASSWORD en REQUIRED_ENV dans bootstrap/env.js (15 min) |
-| SEC-3 | Vérification | grep localStorage.*token dans public/ pour confirmer migration cookies httpOnly |
+| R2 | Sécurité | POST /apply wallet sans guard order.status cancelled (15 min) |
+| R4 | Sécurité | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js (5 min) |
+| R7 | Sécurité | INSERT scans sans scan_code dans hub-dashboard (15 min) |
+| SEC-2 | ✅ Fait | ADMIN_PASSWORD promu en REQUIRED_ENV dans bootstrap/env.js |
+| SEC-3 | ✅ Fait | grep localStorage — clos, aucune exposition |
 | P0-FULL | Conditionnelle | Fournir `P0_ORDER_ID` pour transformer dry-run refund SKIP → PASS |
 | PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
 
@@ -213,8 +235,8 @@ Contraintes :
 | M2 | Migration 069 — CREATE INDEX CONCURRENTLY hors transaction | ❓ À confirmer | Appliquer manuellement : `psql $DATABASE_URL -f migrations/069_analytical_indexes.sql` |
 | I-01 | Violation pickup-secret.js | ✅ Résolu | I-SWEEP-FINAL mergé |
 | SEC-1 | Rate-limit pickup in-memory | ✅ Résolu | Migration 070 + cron bootstrap/crons.js |
-| SEC-2 | ADMIN_PASSWORD en dur dans startup-migrations | ❌ Non traité | Promouvoir en REQUIRED_ENV — 15 min |
-| SEC-3 | JWT localStorage pages HTML legacy | ❌ Non traité | grep localStorage.*token dans public/ — 10 min |
+| SEC-2 | ADMIN_PASSWORD en dur dans startup-migrations | ✅ Fait | Promu en REQUIRED_ENV dans bootstrap/env.js |
+| SEC-3 | JWT localStorage pages HTML legacy | ✅ Fait | Aucun setItem JWT. Boutique sur cookies httpOnly. Clos. |
 | ARCH-1 | core.zip 8,5 Mo dans le repo | ❌ Non traité | unzip -l core.zip puis supprimer/archiver |
 | ARCH-2 | Gaps numérotation migrations | ❌ Non traité | Créer migrations/GAPS.md |
 | ARCH-3 | Fichier orphelin utils/_parcelSync-v2.ORPHAN.js | ❌ Non traité | Suppression opportuniste |
@@ -224,7 +246,7 @@ Contraintes :
 
 | # | Item | Fichier | Sévérité | Effort | Statut |
 |---|---|---|---|---|---|
-| R1 | IDOR inter-relais — incidents/comments/escalades sans scope relais_id | relay-dashboard.js | 🔴 Haute | 1h | ❌ Non traité |
+| R1 | IDOR inter-relais — incidents/comments/escalades sans scope relais_id | relay-dashboard.js | 🔴 Haute | 1h | ✅ Fait — guard ajouté dans GET /orders/:id (403 + log warn) |
 | R2 | POST /apply wallet sans guard order.status cancelled | wallet.js | 🟡 Moyenne | 15 min | ❌ Non traité |
 | R3 | Contrainte DB CHECK (balance_kmf >= 0) manquante | Migration 068 | 🟡 Moyenne | 10 min | ❓ M1 lié — à confirmer |
 | R4 | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js | admin.js | 🟡 Moyenne | 5 min | ❌ Non traité |
@@ -258,9 +280,7 @@ Contraintes :
 
 ### Ordre de traitement recommandé (mis à jour 24 mai 2026)
 
-**Immédiat** : M1 (confirmer 068), M2 (appliquer 069 hors transaction), R1 (IDOR relais), SEC-2 (ADMIN_PASSWORD REQUIRED_ENV), SEC-3 (grep localStorage).
-
-**Prochain lot** : R2 (wallet guard), R4 (ALLOW_FLUSH), R7 (scan_code hub), GOD-FILES-1 (extraction pricing-recommend + pricing-dashboard).
+**Immédiat** : M1 (confirmer 068), M2 (appliquer 069 hors transaction), R2 (wallet guard), R4 (ALLOW_FLUSH), R7 (scan_code hub), GOD-FILES-1 (extraction pricing-recommend + pricing-dashboard).
 
 **Sprint suivant** : R5, R6, D3 (plan scan_events), D4 (notification retry), ND2 (rates.js), ND5 (scan_code schema), ND6 (pickup_code client).
 
