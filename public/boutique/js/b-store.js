@@ -93,6 +93,10 @@ export const state = {
   pageSize: PAGE_SIZE,
   checkoutAttemptKey: null,
   pendingStripeOrderRef: null,
+  /** Panier partagé actif — posé par b-share-cart.js */
+  shareToken: null,
+  shareId:    null,
+  cartName:   '',
 };
 
 // Debug global (read-only)

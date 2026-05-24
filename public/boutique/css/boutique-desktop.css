@@ -1270,6 +1270,7 @@
   }
   .k-sc-btn-share:hover { background: var(--whatsapp-dk); }
   .k-sc-btn-share:active { transform: scale(.95); }
+  .k-sc-btn-share[hidden] { display: none; }
 
   /* ── Badge panier partagé actif ── */
   .k-sc-shared-badge {

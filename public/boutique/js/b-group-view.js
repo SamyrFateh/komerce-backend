@@ -3,7 +3,7 @@
  * @owner sélecteurs .k-group-* — onglet dédié paniers partagés
  * @brief Vue "Groupe" — deux modes :
  *
- *   MODE CRÉATEUR  : l'utilisateur a un state.cart.shareToken
+ *   MODE CRÉATEUR  : l'utilisateur a un state.shareToken
  *                    → GET /api/shared-carts/public/:token  (progression + participants)
  *                    → formulaire contribution (créateur = participant principal)
  *                    → bouton clôturer → POST /api/shared-carts/:id/finalize (auth)
@@ -241,7 +241,7 @@ function bindCreatorActions(el, cart, shareUrl) {
   });
 
   el.querySelector('#k-group-finalize')?.addEventListener('click', async () => {
-    const cartId = state.cart?.shareId;
+    const cartId = state.shareId;
     if (!cartId) {
       showToast('ID du panier introuvable. Rechargez la page.', 'error');
       return;
@@ -255,8 +255,8 @@ function bindCreatorActions(el, cart, shareUrl) {
       const res = await apiPost(`/api/shared-carts/${cartId}/finalize`, {});
 
       // Clôture réussie → nettoyer le state, afficher confirmation
-      state.cart.shareToken = null;
-      state.cart.shareId    = null;
+      state.shareToken = null;
+      state.shareId    = null;
       try { sessionStorage.removeItem('kmrc_share'); } catch (_) {}
 
       // Importer refreshGroupBadge en évitant référence circulaire
@@ -343,7 +343,7 @@ export async function renderGroupView(opts = {}) {
     </div>`;
 
   const participantToken = opts.participantToken || null;
-  const creatorToken     = state.cart?.shareToken || null;
+  const creatorToken     = state.shareToken || null;
   const token            = participantToken || creatorToken;
 
   if (!token) { renderEmpty(el); return; }
@@ -420,5 +420,5 @@ export async function renderGroupView(opts = {}) {
 export function refreshGroupBadge() {
   const badge = document.getElementById('k-bnav-group-badge');
   if (!badge) return;
-  badge.classList.toggle('show', !!state.cart?.shareToken);
+  badge.classList.toggle('show', !!state.shareToken);
 }

@@ -10,7 +10,7 @@
  *   D — Ouverture WhatsApp + switch onglet Groupe
  *
  * Aucun stockage dans kmrc_group_carts_v1. Le token est posé dans
- * state.cart.shareToken — lu par b-group-view.js.
+ * state.shareToken — lu par b-group-view.js.
  */
 
 import { state }       from './b-store.js';
@@ -29,9 +29,9 @@ function loadShareState() {
     const raw = sessionStorage.getItem('kmrc_share');
     if (raw) {
       const s = JSON.parse(raw);
-      state.cart.shareToken = s.token || null;
-      state.cart.shareId    = s.id    || null;
-      state.cart.cartName   = s.name  || '';
+      state.shareToken = s.token || null;
+      state.shareId    = s.id    || null;
+      state.cartName   = s.name  || '';
     }
   } catch (_) {}
 }
@@ -39,17 +39,17 @@ function loadShareState() {
 function saveShareState() {
   try {
     sessionStorage.setItem('kmrc_share', JSON.stringify({
-      token: state.cart.shareToken || null,
-      id:    state.cart.shareId    || null,
-      name:  state.cart.cartName   || '',
+      token: state.shareToken || null,
+      id:    state.shareId    || null,
+      name:  state.cartName   || '',
     }));
   } catch (_) {}
 }
 
 function clearShareState() {
-  state.cart.shareToken = null;
-  state.cart.shareId    = null;
-  state.cart.cartName   = '';
+  state.shareToken = null;
+  state.shareId    = null;
+  state.cartName   = '';
   try { sessionStorage.removeItem('kmrc_share'); } catch (_) {}
 }
 
@@ -279,12 +279,9 @@ function refreshSharedBadges(isShared) {
   if (mobileBtn)   mobileBtn.textContent = isShared ? 'Re-partager' : 'Payer à plusieurs';
 
   const desktopBadge = document.getElementById('k-sc-shared-badge');
-  const desktopBtn   = document.getElementById('k-sc-share');
+  const desktopBtn   = document.getElementById('k-sc-share');   // "Payer à plusieurs"
   if (desktopBadge) desktopBadge.hidden = !isShared;
-  if (desktopBtn) {
-    const label = desktopBtn.querySelector('.k-sc-btn-share-label');
-    if (label) label.textContent = isShared ? 'Re-partager' : 'Payer à plusieurs';
-  }
+  if (desktopBtn)   desktopBtn.hidden   =  isShared;            // masqué quand badge actif
 
   refreshGroupBadge();
 }
@@ -294,10 +291,10 @@ export async function startShareFlow(opts = {}) {
   const { reshare = false } = opts;
 
   // Re-partage : token déjà connu → ouvrir directement WhatsApp
-  if (reshare && state.cart.shareToken) {
+  if (reshare && state.shareToken) {
     const host     = window.location.origin;
-    const shareUrl = `${host}/cart/shared/${state.cart.shareToken}`;
-    openWhatsApp(state.cart.cartName || 'Panier Komerce', shareUrl);
+    const shareUrl = `${host}/cart/shared/${state.shareToken}`;
+    openWhatsApp(state.cartName || 'Panier Komerce', shareUrl);
     return;
   }
 
@@ -307,12 +304,12 @@ export async function startShareFlow(opts = {}) {
   }
 
   /* A — Nom */
-  let cartName = state.cart.cartName || getSyncedName();
+  let cartName = state.cartName || getSyncedName();
   if (!cartName || cartName.trim().length < 3) {
     cartName = await promptCartName(cartName);
     if (!cartName) return;
   }
-  state.cart.cartName = cartName;
+  state.cartName = cartName;
   syncNameInputs(cartName);
 
   /* B — Auth */
@@ -342,8 +339,8 @@ export async function startShareFlow(opts = {}) {
     return;
   }
 
-  state.cart.shareToken = token;
-  state.cart.shareId    = id;
+  state.shareToken = token;
+  state.shareId    = id;
   saveShareState();
   refreshSharedBadges(true);
 
@@ -375,21 +372,21 @@ export function install() {
   _installed = true;
 
   loadShareState();
-  if (state.cart.shareToken) refreshSharedBadges(true);
+  if (state.shareToken) refreshSharedBadges(true);
 
   ['k-cart-name-input', 'k-sc-name-input'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', e => {
-      state.cart.cartName = e.target.value;
+      state.cartName = e.target.value;
       syncNameInputs(e.target.value);
     });
   });
 
   document.getElementById('k-cart-share')?.addEventListener('click', () => {
-    startShareFlow({ reshare: !!state.cart.shareToken });
+    startShareFlow({ reshare: !!state.shareToken });
   });
 
   document.getElementById('k-sc-share')?.addEventListener('click', () => {
-    startShareFlow({ reshare: !!state.cart.shareToken });
+    startShareFlow({ reshare: !!state.shareToken });
   });
 
   document.getElementById('k-cart-reshare')?.addEventListener('click', () => {
