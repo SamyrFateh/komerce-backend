@@ -85,7 +85,7 @@ Lire dans cet ordre avant toute modification :
 | SEC-1 | ✅ Fait | Rate-limit brute-force en DB depuis migration 049. Migration 070 appliquée : printTokens → pickup_print_tokens (TTL 2 min), REVEAL_CACHE → pickup_reveal_codes (TTL 30 min). Cron startPickupTokenCleanupCron câblé dans bootstrap/crons.js. Multi-instance safe. |
 | GOD-FILES-0 | ✅ Fait | Cartographie + extractions : buildReceiptHTML → utils/pickup-receipt-html.js (−264 lignes), REVEAL_CACHE Map → table pickup_reveal_codes DB. pickup-secret.js : 1021 → 754 lignes. |
 | BUG-CIRC-DEP | ✅ Fait | Dépendance circulaire calcPrix/calcPrixTenue supprimée. utils/pricing.js et routes/pricing.js s'auto-importaient (import fantôme ligne 13). routes/modules.js idem. Les 3 fichiers patchés : import supprimé, handlers /calculate et /couture réécrits via pricingEngine.recommend(). |
-| GOD-FILES-1 | ▶️ Prochain | Extraction services/pricing-recommend.js (−518 lignes de routes/pricing.js). Extraction services/pricing-dashboard.js (−445 lignes). |
+| GOD-FILES-1 | ✅ Fait | routes/pricing.js : 1318 → 283 lignes. services/pricing-recommend.js + services/pricing-dashboard.js créés. utils/pricing-cache.js créé. admin-pricing-matrices.js : import corrigé (TypeError silencieux supprimé). |
 | BUG-LOG-STARTUP | ✅ Fait | `bootstrap/startup-migrations.js` : import `log` manquant ajouté. `bootstrap/server-lifecycle.js` : convention Pino corrigée (`{ err }` comme objet contexte). Migration 028/029 désimbriquées. |
 | BUG-LOG-ENV | ✅ Fait | `bootstrap/env.js` : import `log` manquant ajouté (même bug que startup-migrations). |
 | SEC-2 | ✅ Fait | `ADMIN_PASSWORD` promu de `recommendedEnv` → `requiredEnv` dans `bootstrap/env.js`. Bloquant au démarrage. |
@@ -247,12 +247,12 @@ Contraintes :
 | # | Item | Fichier | Sévérité | Effort | Statut |
 |---|---|---|---|---|---|
 | R1 | IDOR inter-relais — incidents/comments/escalades sans scope relais_id | relay-dashboard.js | 🔴 Haute | 1h | ✅ Fait — guard ajouté dans GET /orders/:id (403 + log warn) |
-| R2 | POST /apply wallet sans guard order.status cancelled | wallet.js | 🟡 Moyenne | 15 min | ❌ Non traité |
+| R2 | POST /apply wallet sans guard order.status cancelled | wallet.js | 🟡 Moyenne | 15 min | ✅ Fait — BLOCKED_STATUSES guard (cancelled/refunded/collected) présent |
 | R3 | Contrainte DB CHECK (balance_kmf >= 0) manquante | Migration 068 | 🟡 Moyenne | 10 min | ❓ M1 lié — à confirmer |
-| R4 | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js | admin.js | 🟡 Moyenne | 5 min | ❌ Non traité |
-| R5 | confirmed→ordered non-fatal sans alerte dans payment-confirmation | order-payment-confirmation.js | 🟡 Moyenne | 20 min | ❌ Non traité |
-| R6 | DELETE+INSERT non atomique dans allocateMonthlyFixedCosts | cost-allocation.js | 🟡 Moyenne | 1h | ❌ Non traité |
-| R7 | INSERT scans sans scan_code dans hub-dashboard | hub-dashboard.js | 🟡 Moyenne | 15 min | ❌ Non traité |
+| R4 | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js | admin.js | 🟡 Moyenne | 5 min | ✅ Fait — ALLOW_FLUSH distinct de ALLOW_SEED, hint Railway ajouté |
+| R5 | confirmed→ordered non-fatal sans alerte dans payment-confirmation | order-payment-confirmation.js | 🟡 Moyenne | 20 min | ✅ Fait — _alertNotificationFailure + INSERT alerts sur rejet confirmed→ordered |
+| R6 | DELETE+INSERT non atomique dans allocateMonthlyFixedCosts | cost-allocation.js | 🟡 Moyenne | 1h | ✅ Fait — DELETE + INSERT dans BEGIN/COMMIT, provision_risque_pct depuis finance_config |
+| R7 | INSERT scans sans scan_code dans hub-dashboard | hub-dashboard.js | 🟡 Moyenne | 15 min | ✅ Fait — scan_code synthétique généré pour scans hub automatiques |
 | D1 | Rétention economic_snapshots | Cron | 🟢 Faible | 30 min | ✅ Résolu — startSnapshotRetentionCron dans bootstrap/crons.js (90 jours, toutes les 24h) |
 | D2 | Index DB manquants sur requêtes analytiques lourdes | DB | 🟡 Moyenne | 2-4h | ❓ Migration 069 à appliquer hors transaction (M2) |
 | D3 | Deux tables scan coexistent (scans + scan_events) sans plan migration | Architecture | 🟡 Moyenne | Planning | ❌ Non traité |
