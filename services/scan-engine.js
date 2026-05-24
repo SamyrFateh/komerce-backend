@@ -168,6 +168,8 @@ async function processScan(params) {
       if (alreadyDone) continue;
 
       // Appliquer le rattrapage
+      const catchupQtyBefore = buildQtySnapshot(parcelItems);
+
       if (catchupFlow.qty_field) {
         await cascadeQuantities(client, params.parcel_id, catchupFlow.qty_field);
       }
@@ -179,6 +181,19 @@ async function processScan(params) {
         if (catchupOrder > currentOrder) {
           // On ne met pas à jour ici, on le fera avec l'événement principal
         }
+      }
+
+      // PATCH P1-5 : snapshot qty_after LU APRÈS cascadeQuantities (et non avant).
+      // Avant ce patch, qty_after === qty_before pour tous les catchup events.
+      let catchupQtyAfter = catchupQtyBefore;
+      if (catchupFlow.qty_field) {
+        const { rows: itemsAfterCatchup } = await client.query(
+          `SELECT * FROM parcel_items WHERE parcel_id = $1`,
+          [params.parcel_id]
+        );
+        catchupQtyAfter = buildQtySnapshot(itemsAfterCatchup);
+        // Mettre à jour parcelItems pour que le prochain catchup parte du bon état
+        parcelItems.splice(0, parcelItems.length, ...itemsAfterCatchup);
       }
 
       // Journaliser le rattrapage
@@ -193,8 +208,8 @@ async function processScan(params) {
         notes: `Rattrapage automatique déclenché par scan ${params.event_type}`,
         metadata: { triggered_by: params.event_type, auto_catchup: true },
         status: 'applied',
-        qty_before: buildQtySnapshot(parcelItems),
-        qty_after: buildQtySnapshot(parcelItems) // Will be updated below
+        qty_before: catchupQtyBefore,
+        qty_after: catchupQtyAfter,
       });
 
       result.catchup_events.push({
@@ -427,14 +442,27 @@ function checkSequence(currentStatus, eventType) {
     };
   }
 
-  // Scan en arrière (ex: preparation quand déjà shipped) → warning
+  // Scan en arrière (ex: preparation quand déjà shipped)
+  // PATCH P2-5 : durcissement des sévérités backward scan.
+  // Les transitions critiques (régresser depuis collected/available) sont bloquantes.
+  // Les autres sont dégradées de 'medium' à 'high' (non bloquant mais visible dans le radar).
   const currentOrder = getStatusOrder(currentStatus);
   const targetOrder = flow.order;
   if (targetOrder < currentOrder && eventType !== 'correction') {
+    // Régresser depuis un état terminal ou quasi-terminal → bloquant
+    const TERMINAL_STATUSES = ['collected', 'available'];
+    if (TERMINAL_STATUSES.includes(currentStatus)) {
+      return {
+        severity: 'critical',
+        title: `Scan rétrograde bloqué: ${eventType} alors que le colis est ${currentStatus}`,
+        description: `Un colis en statut terminal (${currentStatus}) ne peut pas revenir à ${eventType}. Utilisez une correction explicite si nécessaire.`
+      };
+    }
+    // Rétrogradation non-terminale → high (signalé dans radar, non bloquant)
     return {
-      severity: 'medium',
+      severity: 'high',
       title: `Scan en arrière: ${eventType} alors que le colis est ${currentStatus}`,
-      description: `Le colis est déjà à un stade avancé (${currentStatus}). Ce scan pourrait indiquer une erreur.`
+      description: `Le colis est déjà à un stade avancé (${currentStatus}). Ce scan pourrait indiquer une erreur terrain.`
     };
   }
 

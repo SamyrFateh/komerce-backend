@@ -143,7 +143,16 @@ function generatePickupCode() {
  * @param {string}      opts.orderId       — UUID of the order
  * @param {string}      opts.newStatus     — Target order_status
  * @param {object}      opts.actor         — { id, role } of who initiated (default: system)
- * @param {string}      opts.source        — 'patch' | 'scan' | 'system' | 'stripe_webhook' | 'cash_confirm'
+ * @param {string}      opts.source        — Source de la transition :
+ *   - 'patch'          : mutation admin directe (role check VALID_ROLES_PER_STATUS)
+ *   - 'scan'           : scan terrain via scan-engine ou parcelSync (forward-only via isForwardTransition)
+ *   - 'system'         : déclenchement interne (cron, webhook, machine) — même branche que 'scan'
+ *   - 'stripe_webhook' : confirmation Stripe automatique
+ *   - 'cash_confirm'   : confirmation cash agent
+ *   - 'cancel'         : annulation via routes/orders/cancel.js — utilise la branche isForwardTransition
+ *                        (cancelled est un mouvement forward depuis la plupart des statuts).
+ *                        Le contrôle d'accès est géré dans cancel.js (requireAdmin ou cutoff_status).
+ *                        NE PAS copier ce pattern sans ajouter un contrôle d'accès explicite côté route.
  * @param {string|null} opts.scanId        — Scan UUID (for scan source)
  * @param {string|null} opts.note          — Optional note for history
  * @param {string|null} opts.cancelReason  — Reason for cancellation (set on orders.cancel_reason)

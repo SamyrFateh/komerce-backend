@@ -364,23 +364,37 @@ async function redistribute(triggerEvent) {
   // 12. Determine status
   var status = determineStatus(alerts);
 
-  // 13. Save snapshot
-  await db.query(
-    'INSERT INTO economic_snapshots (snapshot_data, model_status, trigger_event) VALUES ($1, $2, $3)',
-    [JSON.stringify({
-      totalCostPerOrder: totalCostPerOrder,
-      breakEven: breakEven,
-      targetBasket: targetBasket,
-      safetyRatio: safetyRatio,
-      marginPressure: marginPressure,
-      weightedMargin: weightedMargin,
-      netProfit: netProfit,
-      monthlyBreakevenOrders: monthlyBreakevenOrders,
-      charges_per_order: perOrderCost,
-      charges_monthly: totalMonthlyCost,
-      charges_count: charges.length
-    }), status, triggerEvent || 'manual']
-  );
+  // 13. Save snapshot — PATCH P2-6 : debounce 15 min pour éviter la croissance
+  // non bornée de economic_snapshots (chaque appel /executive insérait une ligne).
+  var shouldInsertSnapshot = true;
+  try {
+    var lastSnap = await db.query(
+      'SELECT created_at FROM economic_snapshots ORDER BY created_at DESC LIMIT 1'
+    );
+    if (lastSnap.rows.length > 0) {
+      var ageMs = Date.now() - new Date(lastSnap.rows[0].created_at).getTime();
+      if (ageMs < 15 * 60 * 1000) shouldInsertSnapshot = false; // < 15 min
+    }
+  } catch (_) { /* Si la table n'existe pas encore, on insère quand même */ }
+
+  if (shouldInsertSnapshot) {
+    await db.query(
+      'INSERT INTO economic_snapshots (snapshot_data, model_status, trigger_event) VALUES ($1, $2, $3)',
+      [JSON.stringify({
+        totalCostPerOrder: totalCostPerOrder,
+        breakEven: breakEven,
+        targetBasket: targetBasket,
+        safetyRatio: safetyRatio,
+        marginPressure: marginPressure,
+        weightedMargin: weightedMargin,
+        netProfit: netProfit,
+        monthlyBreakevenOrders: monthlyBreakevenOrders,
+        charges_per_order: perOrderCost,
+        charges_monthly: totalMonthlyCost,
+        charges_count: charges.length
+      }), status, triggerEvent || 'manual']
+    );
+  }
 
   return {
     status: status,

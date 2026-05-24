@@ -763,9 +763,11 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     await client.query('COMMIT');
 
-    // Parcel sync — AFTER commit (updates parcel statuses)
-    // Machine handles history — parcelSync will call machine but it'll be a no-op
-    // (order is already 'collected')
+    // Parcel sync — AFTER commit (met à jour les statuts des colis vers 'collected').
+    // La machine a déjà écrit order_status_history dans la transaction ci-dessus.
+    // safeSyncScanToParcels appellera transitionOrderStatus(source='scan') qui
+    // retournera noop (statut identique) — aucune double écriture dans order_status_history.
+    // C'est le comportement attendu : parcelSync met à jour PARCELS, pas orders.
     await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',

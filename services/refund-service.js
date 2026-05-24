@@ -34,6 +34,20 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
 
+  // PATCH P2-2 : INSERT refund en 'pending' AVANT l'appel Stripe.
+  // Avant : INSERT après Stripe → si crash DB post-refund, argent remboursé sans trace.
+  // Maintenant : INSERT pending → Stripe → UPDATE completed. Idempotence garantie.
+  const { rows: [pendingRefund] } = await dbClient.query(
+    `INSERT INTO refunds
+       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+        stripe_refund_id, store_credit_id, reason, initiated_by, status)
+     VALUES ($1,$2,$3,$4,'pending_stripe',NULL,NULL,$5,$6,'pending')
+     ON CONFLICT DO NOTHING
+     RETURNING id`,
+    [order.id, amountKmf, amountEur, refundType, reason || 'Annulation client', initiatedBy]
+  );
+  const refundRowId = pendingRefund?.id;
+
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
     refundMethod    = 'stripe';
     const amountCents  = Math.round(amountEur * 100);
@@ -66,18 +80,16 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     walletTxId = result.transaction.id;
   }
 
-  await dbClient.query(
-    `INSERT INTO refunds
-       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
-        stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'completed',NOW())`,
-    [
-      order.id, amountKmf, amountEur,
-      refundType, refundMethod,
-      stripeRefundId, walletTxId,
-      reason || 'Annulation client', initiatedBy,
-    ]
-  );
+  // Mettre à jour l'enregistrement refund avec les IDs réels + statut 'completed'
+  if (refundRowId) {
+    await dbClient.query(
+      `UPDATE refunds
+          SET refund_method = $1, stripe_refund_id = $2, store_credit_id = $3,
+              status = 'completed', completed_at = NOW()
+        WHERE id = $4`,
+      [refundMethod, stripeRefundId, walletTxId, refundRowId]
+    );
+  }
 
   return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
 }

@@ -747,7 +747,9 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
   try {
     const data = await cached('radar:status_details', 30, async () => {
 
-      // Charger toutes les commandes actives + leurs colis
+      // PATCH P1-1 : LIMIT 2000 — évite la saturation pool sur gros volumes.
+      // Si truncated=true dans la réponse, les KPIs portent sur un échantillon.
+      const RADAR_MAX_ORDERS = 2000;
       const { rows: orders } = await db.query(`
         SELECT
           o.id,
@@ -770,7 +772,9 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
           o.created_at,
           u.full_name,
           u.phone
-      `);
+        ORDER BY o.created_at DESC
+        LIMIT $1
+      `, [RADAR_MAX_ORDERS]);
 
       // Distribution par status_detail
       const distribution = {
@@ -827,6 +831,7 @@ router.get('/status-details', authenticate, requireAdmin, async (req, res, next)
       return {
         generated_at: new Date().toISOString(),
         total_orders_analyzed: orders.length,
+        truncated: orders.length >= RADAR_MAX_ORDERS,
         details: result,
       };
     });
@@ -865,6 +870,7 @@ router.get('/orders-by-detail/:detail', authenticate, requireAdmin, async (req, 
       WHERE o.status NOT IN ('refunded')
       GROUP BY o.id, u.full_name, u.phone
       ORDER BY o.created_at DESC
+      LIMIT 500
     `);
 
     const filtered = orders

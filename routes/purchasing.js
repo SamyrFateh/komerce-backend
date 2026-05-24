@@ -96,9 +96,17 @@ async function triggerPurchasing(orderId) {
     WHERE oi.order_id = $1
   `, [orderId]);
 
+  // PATCH P2-7 : savepoint par item — si la création d'une PO échoue,
+  // les POs déjà créées restent commitées et une alerte est insérée.
+  // Avant ce patch : la boucle était non-atomique sans visibilité sur les échecs partiels.
+  const client = await db.getClient();
+  try {
+  await client.query('BEGIN');
+
   for (const item of items) {
+    await client.query(`SAVEPOINT po_item_${items.indexOf(item)}`);
     // Chercher le meilleur fournisseur actif pour ce produit
-    const { rows: [ps] } = await db.query(`
+    const { rows: [ps] } = await client.query(`
       SELECT ps.*, s.name AS supplier_name, s.platform,
              s.auto_order, s.contact_phone, s.account_id,
              s.api_key_enc, s.api_secret_enc, s.lead_time_days
@@ -113,17 +121,20 @@ async function triggerPurchasing(orderId) {
       LIMIT 1
     `, [item.product_id]);
 
+    let poSavepointIdx = items.indexOf(item);
+    try {
     if (!ps) {
       // Aucun fournisseur mappé — notifier admin pour sourcing manuel
       await notifyAdminNoSupplier(order, item);
       results.push({ item: item.product_name, status: 'no_supplier', purchase_order_id: null });
+      await client.query(`RELEASE SAVEPOINT po_item_${poSavepointIdx}`);
       continue;
     }
 
     // I-SWEEP-3B : idempotence applicative anti-replay.
     // Si un webhook/retry relance triggerPurchasing(orderId), ne pas recréer
     // une PO active pour le même mapping fournisseur.
-    const { rows: [existingPo] } = await db.query(`
+    const { rows: [existingPo] } = await client.query(`
       SELECT id, status
       FROM purchase_orders
       WHERE order_id = $1
@@ -146,7 +157,7 @@ async function triggerPurchasing(orderId) {
     // Créer la purchase_order
     const triggerMode = ps.auto_order ? 'auto' : (ps.platform === 'whatsapp' ? 'whatsapp' : 'manual');
 
-    const { rows: [po] } = await db.query(`
+    const { rows: [po] } = await client.query(`
       INSERT INTO purchase_orders
         (order_id, supplier_id, product_supplier_id, supplier_sku,
          qty, unit_price_aed, status, trigger_mode)
@@ -166,7 +177,7 @@ async function triggerPurchasing(orderId) {
       // Mode AUTO — appel API fournisseur
       const apiResult = await callSupplierAPI(ps, item, po.id);
       if (apiResult.success) {
-        await db.query(`
+        await client.query(`
           UPDATE purchase_orders
           SET status = 'confirmed', supplier_order_id = $1,
               tracking_url = $2, ordered_at = NOW(), updated_at = NOW()
@@ -177,7 +188,7 @@ async function triggerPurchasing(orderId) {
       } else {
         // Échec API → fallback notification manuelle
         await notifyAdminManual(order, item, ps, po.id);
-        await db.query(`
+        await client.query(`
           UPDATE purchase_orders SET status = 'notified', trigger_mode = 'manual', updated_at = NOW() WHERE id = $1
         `, [po.id]);
         results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id });
@@ -185,18 +196,40 @@ async function triggerPurchasing(orderId) {
     } else if (ps.platform === 'whatsapp') {
       // Mode WHATSAPP — message pré-rempli vers le fournisseur local
       await notifySupplierWhatsApp(ps, order, item, po.id);
-      await db.query(`
+      await client.query(`
         UPDATE purchase_orders SET status = 'notified', ordered_at = NOW(), updated_at = NOW() WHERE id = $1
       `, [po.id]);
       results.push({ item: item.product_name, status: 'whatsapp_sent', purchase_order_id: po.id });
     } else {
       // Mode MANUAL — notification admin dashboard
       await notifyAdminManual(order, item, ps, po.id);
-      await db.query(`
+      await client.query(`
         UPDATE purchase_orders SET status = 'notified', updated_at = NOW() WHERE id = $1
       `, [po.id]);
       results.push({ item: item.product_name, status: 'admin_notified', purchase_order_id: po.id });
     }
+    await client.query(`RELEASE SAVEPOINT po_item_${poSavepointIdx}`);
+    } catch (itemErr) {
+      // PATCH P2-7 : rollback au savepoint de cet item uniquement — les autres POs restent
+      await client.query(`ROLLBACK TO SAVEPOINT po_item_${poSavepointIdx}`).catch(() => {});
+      log.error(`[PURCHASING] Erreur création PO pour ${item.product_name}:`, itemErr.message);
+      results.push({ item: item.product_name, status: 'error', error: itemErr.message });
+      // Alerte visible dans le radar
+      try {
+        await client.query(
+          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated','purchasing',$1,$2)`,
+          [`PO creation failed — order ${orderId} product ${item.product_name}`, JSON.stringify({ order_id: orderId, product_id: item.product_id, error: itemErr.message })]
+        );
+      } catch (_) {}
+    }
+  }
+
+  await client.query('COMMIT');
+  } catch (globalErr) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw globalErr;
+  } finally {
+    client.release();
   }
 
   // Phase 5.1: purchasing state tracked in purchase_orders, not orders.status

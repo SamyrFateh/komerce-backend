@@ -34,8 +34,23 @@ try { orderService = require('./order-service'); } catch (e) { /* optionnel */ }
 
 const KMF_PER_EUR_FALLBACK = 492;
 
-function _kmfToEur(amountKmf, fxRate) {
-  const rate = fxRate || parseFloat(process.env.EUR_KMF_RATE || KMF_PER_EUR_FALLBACK);
+/**
+ * Convertit un montant KMF en centimes EUR pour Stripe.
+ * PATCH P0-3 : lit le taux depuis finance_config via getRates() (I-08).
+ * Fallback sur process.env.EUR_KMF_RATE uniquement si la DB est inaccessible.
+ */
+async function _kmfToEur(amountKmf, fxRateOverride) {
+  let rate = fxRateOverride;
+  if (!rate) {
+    try {
+      const { getRates } = require('../utils/rates');
+      const rates = await getRates();
+      rate = rates?.eur_kmf;
+    } catch (e) {
+      log.error('[CollectivePay] getRates() failed in _kmfToEur, using env fallback:', e.message);
+    }
+    rate = rate || parseFloat(process.env.EUR_KMF_RATE || KMF_PER_EUR_FALLBACK);
+  }
   // Stripe attend des centimes EUR
   return Math.max(50, Math.round((amountKmf / rate) * 100)); // 50 centimes mini
 }
@@ -81,7 +96,7 @@ async function createOrGetPaymentIntent(rawToken) {
   }
 
   // Créer un nouveau PaymentIntent
-  const amountEurCents = _kmfToEur(tokenInfo.amount_kmf);
+  const amountEurCents = await _kmfToEur(tokenInfo.amount_kmf);
 
   const idempotencyKey = 'cpt_' + tokenInfo.id;
   const pi = await stripe.paymentIntents.create({
@@ -287,7 +302,23 @@ async function captureAllAndCreateOrder(sessionId) {
     try {
       // Refund best effort si déjà capturé
       await stripe.refunds.create({ payment_intent: c.pi_id }, { idempotencyKey: 'refund_' + c.token_id });
-    } catch (e) { log.error('[CollectivePay] refund failed:', e.message); }
+    } catch (e) {
+      log.error('[CollectivePay] refund failed:', e.message);
+      // PATCH P1-8 : alerte critique si le refund best-effort échoue.
+      // Argent capturé sur Stripe sans commande créée — intervention manuelle requise.
+      try {
+        await db.query(
+          `INSERT INTO alerts (level, source, message, payload, created_at)
+           VALUES ('critical', 'collective_payment', $1, $2, NOW())`,
+          [
+            `refund_best_effort_failed — session ${sessionId} token ${c.token_id}`,
+            JSON.stringify({ session_id: sessionId, payment_intent_id: c.pi_id, token_id: c.token_id, error: e.message }),
+          ]
+        );
+      } catch (alertErr) {
+        log.error('[CollectivePay] CRITICAL: alerte impossible à insérer — intervention manuelle urgente!', alertErr.message);
+      }
+    }
   }
 
   await db.query(

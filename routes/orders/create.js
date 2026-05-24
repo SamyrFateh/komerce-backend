@@ -33,7 +33,13 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
     await client.query('BEGIN');
 
     const rates = await getRates();
-    const eurKmf = rates?.eur_kmf || 492;
+    const eurKmf = rates?.eur_kmf;
+    // PATCH P2-3 : log explicite si le taux EUR/KMF est indisponible en DB.
+    // Un prix EUR calculé sur un taux stale peut provoquer une divergence comptable.
+    if (!eurKmf) {
+      log.error('[ORDER-CREATE] getRates() n\'a pas retourné eur_kmf — fallback 492 utilisé. Prix EUR potentiellement inexact.');
+    }
+    const eurKmfFinal = eurKmf || 492;
 
     const {
       items = [],
@@ -293,9 +299,12 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
   [
     uuidv4(), reference, req.user.id, recipient_id, relais?.id || null,
     tracking_phone || null,
-    total_kmf, parseFloat((total_kmf / eurKmf).toFixed(2)),
+    total_kmf, parseFloat((total_kmf / eurKmfFinal).toFixed(2)),
     payment_mode,
-    creditApplied > 0 && total_kmf === 0 ? 'paid' : 'pending',
+    // PATCH P2-4 : toujours créer en 'pending'. Si wallet couvre 100%,
+    // confirmPaymentCycle (appelé plus bas) transite vers 'paid' via la machine.
+    // L'ancien pre-write 'paid' ici contournait la machine et était redondant.
+    'pending',
     stripe_payment_intent || null,
     cash_ref_code,
     pickup_code,

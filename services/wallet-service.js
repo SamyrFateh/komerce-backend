@@ -298,7 +298,16 @@ async function removeFromOrder(client, { orderId }) {
     );
     totalReversed += c.amount_kmf;
   }
-  await client.query('DELETE FROM wallet_consumptions WHERE order_id = $1', [orderId]);
+
+  // PATCH P1-2 : marquage append-only au lieu de DELETE physique.
+  // Conserve la traçabilité audit "quel lot a financé quelle commande".
+  // Requiert migration 066_wallet_consumptions_append_only.sql.
+  await client.query(
+    `UPDATE wallet_consumptions
+        SET reversed_at = NOW(), reversal_reason = 'order_cancel'
+      WHERE order_id = $1 AND reversed_at IS NULL`,
+    [orderId]
+  );
 
   const wRes = await client.query(
     'UPDATE wallets SET balance_kmf = balance_kmf + $1, updated_at = NOW() WHERE id = $2 RETURNING *',
@@ -366,24 +375,27 @@ async function reverseLot(client, { lotId, adminId, note }) {
     );
   }
 
-  // Reverse: deduct from wallet balance
-  const { rows: [w] } = await client.query(
-    'SELECT * FROM wallets WHERE id = $1 FOR UPDATE',
+  // Reverse: deduct from wallet balance (PATCH P1-3: atomic UPDATE pour éviter race condition)
+  const amountToReverse = lot.remaining_kmf;
+
+  // Guard: vérifier que le solde est suffisant AVANT l'update atomique
+  const { rows: [wCheck] } = await client.query(
+    'SELECT balance_kmf FROM wallets WHERE id = $1 FOR UPDATE',
     [lot.wallet_id]
   );
-  const amountToReverse = lot.remaining_kmf;
-  const newBalance = w.balance_kmf - amountToReverse;
-  if (newBalance < 0) {
+  if ((wCheck?.balance_kmf ?? 0) < amountToReverse) {
     throw new Error(
-      `Reversal causerait un solde négatif (${w.balance_kmf} - ${amountToReverse} = ${newBalance}). ` +
+      `Reversal causerait un solde négatif (${wCheck?.balance_kmf} - ${amountToReverse}). ` +
       `Le client a probablement dépensé via un autre lot.`
     );
   }
 
-  await client.query(
-    'UPDATE wallets SET balance_kmf = $1, updated_at = NOW() WHERE id = $2',
-    [newBalance, lot.wallet_id]
+  // UPDATE atomique (balance_kmf = balance_kmf - X) — résistant aux races concurrentes
+  const { rows: [wUpdated] } = await client.query(
+    'UPDATE wallets SET balance_kmf = balance_kmf - $1, updated_at = NOW() WHERE id = $2 RETURNING balance_kmf',
+    [amountToReverse, lot.wallet_id]
   );
+  const newBalance = wUpdated.balance_kmf;
 
   await client.query(
     "UPDATE wallet_credit_lots SET status = 'reversed', remaining_kmf = 0 WHERE id = $1",

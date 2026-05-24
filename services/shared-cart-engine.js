@@ -28,6 +28,7 @@ const db = require('../db');
 const { getUniqueRef, generatePickupCode } = require('./order-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { getRates } = require('../utils/rates');
 
 // ─── Configuration ─────────────────────────────────────────────────────
 const CONFIG = {
@@ -848,7 +849,11 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     const orderId = crypto.randomUUID();
     const reference = await getUniqueRef(db);
     const pickupCode = generatePickupCode();
-    const totalEur = parseFloat((totalKmf / 491.97).toFixed(2));
+    // PATCH P2-8 : taux lu depuis finance_config via getRates() (I-08).
+    // Avant : 491.97 hardcodé — divergeait dès que l'admin changeait le taux.
+    const liveRates = await getRates();
+    const eurKmf = liveRates?.eur_kmf || 492;
+    const totalEur = parseFloat((totalKmf / eurKmf).toFixed(2));
 
     const { rows: [order] } = await client.query(
       `INSERT INTO orders (

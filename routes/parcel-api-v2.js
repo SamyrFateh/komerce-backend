@@ -1199,12 +1199,23 @@ router.get('/:ref/timeline', async (req, res, next) => {
 
 // 8. POST /api/v2/parcels/:ref/scan — Scanner + sync auto
 // ═══════════════════════════════════════════════════════════════════════
+// PATCH P0-2 : délègue à scan-engine.processScan() pour validation de
+// séquence, smart-catchup, cascade quantités et journalisation correcte.
+// L'écriture directe UPDATE parcels SET status était bypassing toute la
+// logique métier du scan-engine.
+
+// Mapping event_type API v2 → scan-engine event_type canonique
+const V2_TO_ENGINE_EVENT = {
+  preparation: 'packed',
+  shipped:     'shipped',
+  in_transit:  'transit_confirmed',
+  arrived:     'relais_received',
+  available:   'relais_received',
+  collected:   'customer_collected',
+};
 
 router.post('/:ref/scan', async (req, res, next) => {
-  const client = await db.getClient();
   try {
-    await client.query('BEGIN');
-
     const { ref } = req.params;
     const { event_type, location, notes, actor_name, actor_role } = req.body;
 
@@ -1212,87 +1223,71 @@ router.post('/:ref/scan', async (req, res, next) => {
       return res.status(400).json({ error: 'event_type requis' });
     }
 
-    // Find parcel
-    const { rows: [parcel] } = await client.query(
+    // Résoudre le parcel (hors transaction — processScan ouvre la sienne)
+    const { rows: [parcel] } = await db.query(
       `SELECT id, reference, status FROM parcels WHERE reference = $1 OR id::text = $1`, [ref]
     );
     if (!parcel) {
-      await client.query('ROLLBACK');
       return res.status(404).json({ error: `Colis ${ref} introuvable` });
     }
 
-    // Determine new parcel status
-    const eventToStatus = {
-      preparation: 'preparation',
-      shipped: 'shipped',
-      in_transit: 'in_transit',
-      arrived: 'available',
-      available: 'available',
-      collected: 'collected',
-    };
-    const newStatus = eventToStatus[event_type] || parcel.status;
-
-    // Get actor from JWT if available
-    const actorId = req.user?.id || null;
-    const actorNameFinal = actor_name || req.user?.full_name || 'Système';
-    const actorRoleFinal = actor_role || (req.user?.role === 'agent_hub' ? 'hub_agent' : req.user?.role === 'agent_relais' ? 'relay_agent' : 'system');
-
-    // Insert scan event
-    const { rows: [scanEvent] } = await client.query(`
-      INSERT INTO scan_events (parcel_id, event_type, location, notes, scanned_by, actor_name, actor_role, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'applied')
-      RETURNING id, event_type, created_at
-    `, [parcel.id, event_type, location || null, notes || null, actorId, actorNameFinal, actorRoleFinal]);
-
-    // Update parcel status + timestamp
-    const timestampCol = {
-      preparation: 'prepared_at',
-      shipped: 'shipped_at',
-      in_transit: 'in_transit_at',
-      arrived: 'available_at',
-      available: 'available_at',
-      collected: 'collected_at',
-    }[event_type];
-
-    const setClauses = ['status = $2', 'updated_at = NOW()'];
-    const params = [parcel.id, newStatus];
-    if (timestampCol) {
-      setClauses.push(`${timestampCol} = NOW()`);
+    // Mapper l'event_type v2 vers l'event_type canonique scan-engine
+    const engineEventType = V2_TO_ENGINE_EVENT[event_type];
+    if (!engineEventType) {
+      return res.status(400).json({
+        error: `event_type inconnu: ${event_type}. Valeurs: ${Object.keys(V2_TO_ENGINE_EVENT).join(', ')}`,
+      });
     }
 
-    await client.query(`UPDATE parcels SET ${setClauses.join(', ')} WHERE id = $1`, params);
+    const actorId = req.user?.id || null;
+    const actorRoleFinal = actor_role
+      || (req.user?.role === 'agent_hub'    ? 'hub_agent'
+        : req.user?.role === 'agent_relais' ? 'relay_agent'
+        : 'system');
 
-    // SYNC: propagate to orders
-    const syncedOrders = await syncParcelToOrders(client, parcel.id, newStatus);
+    // Déléguer à scan-engine (gère sa propre transaction)
+    const scanEngine = require('../services/scan-engine');
+    const result = await scanEngine.processScan({
+      parcel_id:  parcel.id,
+      event_type: engineEventType,
+      scanned_by: actorId,
+      actor_name: actor_name || req.user?.full_name || 'Système',
+      actor_role: actorRoleFinal,
+      location:   location || null,
+      notes:      notes || null,
+    });
 
-    await client.query('COMMIT');
+    if (!result.success) {
+      const incident = result.incidents?.[0];
+      return res.status(409).json({
+        error: incident?.title || 'Scan rejeté par le moteur de séquence',
+        incidents: result.incidents || [],
+      });
+    }
 
     clearCache();
 
     // ── NOTIFICATIONS (fire-and-forget) ──
     const notif = require('../services/notification-service');
-    notif.notifyParcelScan(parcel.id, parcel.reference, newStatus)
+    notif.notifyParcelScan(parcel.id, parcel.reference, result.parcel?.status || engineEventType)
       .catch(e => log.error('[SCAN-NOTIF] ❌', e.message));
 
     res.json({
       success: true,
       scan: {
-        id: scanEvent.id,
-        event_type: scanEvent.event_type,
-        created_at: scanEvent.created_at,
+        id:         result.event_id,
+        event_type: engineEventType,
       },
       parcel: {
-        reference: parcel.reference,
+        reference:  parcel.reference,
         old_status: parcel.status,
-        new_status: newStatus,
+        new_status: result.parcel?.status,
       },
-      synced_orders: syncedOrders,
+      catchup_events: result.catchup_events || [],
+      incidents:      result.incidents || [],
     });
   } catch (err) {
-    await client.query('ROLLBACK');
     next(err);
-  } finally {
-    client.release();
   }
 });
 

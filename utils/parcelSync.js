@@ -221,8 +221,19 @@ async function safeSyncScanToParcels(opts, dbClient = null) {
     return await syncScanToParcels(opts, dbClient);
   } catch (err) {
     log.error(`[PARCEL-SYNC] ❌ Erreur (order=${opts.order_id}, step=${opts.step}):`, err.message);
-    // [P3-4] Le trigger legacy est désactivé — on log mais on ne crashe pas.
-    // TODO #387 : Ajouter alerting/monitoring pour ces erreurs de synchronisation colis.
+    // PATCH P2-10 / TODO #387 : alerte 'elevated' si la sync parcel échoue.
+    // Sans cet alerting, la divergence scan/parcel/order est invisible en production.
+    // L'alerte est non-bloquante (fire-and-forget) — on ne laisse jamais crasher le client.
+    const db = require('../db');
+    db.query(
+      `INSERT INTO alerts (level, source, message, payload, created_at)
+       VALUES ('elevated', 'parcel_sync', $1, $2, NOW())`,
+      [
+        `safeSyncScanToParcels failed — order ${opts.order_id} step ${opts.step}`,
+        JSON.stringify({ order_id: opts.order_id, step: opts.step, scan_id: opts.scan_id, error: err.message }),
+      ]
+    ).catch(alertErr => log.error('[PARCEL-SYNC] Impossible d\'insérer l\'alerte:', alertErr.message));
+
     return { synced: false, parcelsUpdated: 0, orderStatus: null };
   }
 }

@@ -59,6 +59,15 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
     }
 
+    // PATCH P1-7 : guard statut — pas de collecte sur commande annulée, remboursée ou déjà collectée.
+    const INVALID_COLLECT_STATUSES = ['cancelled', 'refunded', 'collected'];
+    if (INVALID_COLLECT_STATUSES.includes(order.status)) {
+      return res.status(409).json({
+        error: `Collecte impossible — commande en statut '${order.status}'`,
+        current_status: order.status,
+      });
+    }
+
     // 2. Vérifier pas de doublon
     const { rows: existing } = await db.query(`
       SELECT id FROM cash_collections WHERE order_id = $1
