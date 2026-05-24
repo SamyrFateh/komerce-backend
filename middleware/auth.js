@@ -9,6 +9,7 @@
 const jwt = require('jsonwebtoken');
 const db  = require('../db');
 const log = require('../utils/logger').child({ module: 'auth' });
+const userCache = require('../utils/user-cache');
 
 const _JWT_SECRET = process.env.JWT_SECRET;
 
