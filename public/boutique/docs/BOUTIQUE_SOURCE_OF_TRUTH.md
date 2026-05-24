@@ -4,9 +4,18 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.4 — 22 mai 2026** · PR-M3 livrée 22/05 · toutes les 5 PR livrées · audit 0 violation
+> Statut : **GEL v1.5 — 24 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
+>
+> **Changelog v1.5 vs v1.4** :
+> - **PR-1 livrée (24/05/2026)** : feature panier partagé côté créateur
+>   - `b-share-cart.js` créé — owner exclusif `.k-share-modal-*` (déclaré §2B) — flow A→B→C→D (nom + OTP + shared-cart API + WhatsApp)
+>   - `index.html` : bouton "En groupe" → "Partager" (mobile drawer + side-cart desktop), badge "Partagé" (hidden par défaut)
+>   - `b-group-cart-flow.js` → stub vide (DEPRECATED, sélecteurs supprimés du DOM)
+>   - Import inutile `installShareCart` retiré de `b-cart.js`
+>   - **Fix scroll-to-top modal** (`b-modal.js`) : `scrollTop=0` repositionné APRÈS `overlay.classList.add('open')` + rAF (bug : display:none ignore scrollTop sur descendants) — valide pour catalog, suggestions et navigation prev/next
+>   - Fix v5 CTA bar déjà intégré : architecture fix `setupModal()` + `_syncScrollPadding()` court-circuit + CSS `modal.css` règles `>` (enfant direct)
 >
 > **Changelog v1.4 vs v1.3** :
 > - **PR-M3 livrée (22/05/2026)** : `.k-modal-specs` conditionné sur `k-modal--has-specs` (remplace `display:block` inconditionnel en §3) · `injectPriceHero()` nettoyé (plus de `style.display` inline) · commentaire §5 modal.css mis à jour avec carte complète des blocs conditionnels · invariants B-M-10 et B-M-12 validés
@@ -183,7 +192,8 @@ puis re-synchroniser cette section.
 | `js/b-checkout.js` | | Flow checkout | Checkout | |
 | `js/b-phone.js` | | Détection/format téléphone | Téléphone | |
 | `js/b-friendly-group-redirect.js` | | Compatibilité lien public court `/g/:token` (paniers partagés) | Redirect short URL | Hors group cart |
-| `js/b-group-cart-flow.js` | | Flux ultra court pour lancer un panier partagé | Lancement group cart | Hors group cart |
+| `js/b-group-cart-flow.js` | | **DEPRECATED PR-1** — stub vide, sélecteurs supprimés du DOM. À supprimer lors nettoyage event/*.html | — | Tout (stub no-op) |
+| `js/b-share-cart.js` | | **Owner exclusif** flow partage panier créateur (PR-1) — modal nom, OTP WhatsApp, POST /api/shared-cart/from-cart-items, ouverture WhatsApp | **Tout `.k-share-modal-*`**, `.k-share-badge-*`, state `cart.shareToken` / `cart.shareId` / `cart.cartName` | Sélecteurs hors `.k-share-*`, logique panier principal |
 | `js/b-boutique-wow-style.js` | | Couche visuelle expérimentale réversible | Expérimentation | Vérité définitive, structure |
 | **BOOT** | | | | |
 | `js/boutique.js` | | Orchestrateur principal — init et boot, §13 INIT, imports nominatifs depuis tous les modules b-* | Boot applicatif | Logique métier dupliquée |

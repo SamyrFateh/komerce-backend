@@ -11,7 +11,6 @@ import { bus }           from './b-bus.js';
 import {
   state, dom, $, $$, scroll,
 }                         from './b-store.js';
-import { install as installShareCart } from './b-share-cart.js';
 import { scrollToCategorySection } from './b-catalog.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,

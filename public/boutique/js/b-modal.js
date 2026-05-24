@@ -429,10 +429,22 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
         state.modalSubcatFilter = null; // Reset subcategory filter for new product
     renderSuggestions(sameCat, otherCat, product.category);
 
+    dom.modalOverlay.classList.add('open');
+
+    // FIX SCROLL-TO-TOP : scrollTop = 0 doit être posé APRÈS classList.add('open').
+    // Quand l'overlay est display:none (fermé), le browser ignore scrollTop sur les
+    // éléments descendants — la valeur ne s'applique pas sur un noeud non-rendu.
+    // On reset donc APRÈS que l'overlay soit display:flex, dans un rAF pour laisser
+    // le browser calculer le reflow. Belt+suspenders : on tente aussi avant pour
+    // les cas où le modal était déjà ouvert (navigation suggestion → suggestion).
     if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
     const _scrollEl = document.querySelector('.k-modal-scroll');
     if (_scrollEl) _scrollEl.scrollTop = 0;
-    dom.modalOverlay.classList.add('open');
+    requestAnimationFrame(function() {
+      if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
+      var _sEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+      if (_sEl) _sEl.scrollTop = 0;
+    });
 
     // PR-D 2.3 : historique des produits vus (persisté localStorage).
     // On retire d'abord toute occurrence de l'id courant (déduplication),
