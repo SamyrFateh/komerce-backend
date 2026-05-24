@@ -1,6 +1,7 @@
 /**
  * @module b-tracking
- * @brief Suivi commandes + paniers partagés.
+ * @brief Suivi commandes uniquement.
+ * Les paniers partagés sont gérés dans b-group-view.js (onglet Groupe).
  */
 
 import { sanitize, optimizeImgUrl, fmt, apiGet, apiPost } from './b-utils.js';
@@ -23,146 +24,6 @@ const TRACK_STEPS = [
   { key: 'at_relay',   label: 'Disponible au relais',    icon: '🏪', sub: 'Prêt à être retiré' },
   { key: 'delivered',  label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' },
 ];
-
-function loadSharedCarts() {
-  try {
-    const raw = localStorage.getItem('kmrc_group_carts_v1');
-    const list = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(list)) return [];
-
-    const cleaned = list.filter(g => {
-      if (!g || g.status === 'archived') return false;
-      if (String(g.id || '').startsWith('demo-')) return false;
-      const total = Number(g.total) || 0;
-      const hasRealUrl = Boolean(g.url && !String(g.url).endsWith('/boutique/'));
-      const hasParticipants = Array.isArray(g.participants) && g.participants.length > 0;
-      return total > 0 || hasRealUrl || hasParticipants;
-    });
-
-    // Dédupliquer les créations de test rapides : même url + même titre.
-    const seen = new Set();
-    return cleaned.filter(g => {
-      const key = String(g.url || '') + '|' + String(g.title || '') + '|' + String(g.total || '');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  } catch (_) {
-    return [];
-  }
-}
-
-function saveSharedCarts(groups) {
-  try { localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(groups.slice(0, 20))); } catch (_) {}
-}
-
-function sharedProgress(group) {
-  const total = Number(group.total) || 0;
-  const participants = Array.isArray(group.participants) ? group.participants : [];
-  const collected = participants.reduce((sum, p) => {
-    if (p.status !== 'paid') return sum;
-    return sum + (Number(p.amount) || 0);
-  }, 0);
-  const pct = total > 0 ? Math.max(0, Math.min(100, Math.round((collected / total) * 100))) : 0;
-  return { total, collected, pct, participants };
-}
-
-function renderSharedCartsPanel() {
-  const groups = loadSharedCarts();
-  if (!groups.length) {
-    return `
-      <section class="k-track-shared-panel">
-        <div class="k-track-panel-head">
-          <h2>👥 Mes paniers partagés</h2>
-          <p class="k-track-sub-hint">Créez un panier depuis le panier, puis suivez ici les participations.</p>
-        </div>
-        <div class="k-track-shared-empty">
-          <div class="k-track-shared-empty-icon">👥</div>
-          <strong>Aucun panier partagé actif</strong>
-          <span>Ils apparaîtront ici après partage.</span>
-        </div>
-      </section>`;
-  }
-
-  return `
-    <section class="k-track-shared-panel">
-      <div class="k-track-panel-head k-track-panel-head--row">
-        <div>
-          <h2>👥 Mes paniers partagés</h2>
-          <p class="k-track-sub-hint">Suivi des paiements à plusieurs.</p>
-        </div>
-        <span class="k-track-shared-count">${groups.length}</span>
-      </div>
-      <div class="k-track-shared-list">
-        ${groups.map(g => {
-          const paid = g.status === 'paid';
-          const { total, collected, pct, participants } = sharedProgress(g);
-          const totalLabel = total > 0 ? fmt(total, 'KMF') : 'Montant à confirmer';
-          const collectedLabel = collected > 0 ? fmt(collected, 'KMF') : '0 KMF';
-          const participantCount = participants.length;
-          const firstNames = participants.slice(0, 3).map(p => sanitize(p.name || 'Moi')).join(', ');
-          return `
-            <article class="k-track-shared-card" data-shared-id="${sanitize(g.id || '')}">
-              <div class="k-track-shared-top">
-                <div>
-                  <div class="k-track-shared-title">${sanitize(g.title || 'Panier partagé')}</div>
-                  <div class="k-track-shared-meta">${participantCount} participant${participantCount > 1 ? 's' : ''}${firstNames ? ' · ' + firstNames : ''}</div>
-                </div>
-                <span class="k-track-shared-pill ${paid ? 'is-paid' : 'is-open'}">${paid ? 'Clôturé' : 'Ouvert'}</span>
-              </div>
-              <div class="k-track-shared-money">
-                <span>${collectedLabel}</span>
-                <strong>${totalLabel}</strong>
-              </div>
-              <div class="k-track-shared-progress" aria-label="Progression ${pct}%">
-                <span style="width:${pct}%"></span>
-              </div>
-              <div class="k-track-shared-bottom">
-                <span>${sanitize(g.dateLabel || 'En cours')}</span>
-                <div class="k-track-shared-actions">
-                  <button type="button" data-shared-copy title="Copier le lien">🔗</button>
-                  <button type="button" data-shared-close title="${paid ? 'Voir le détail' : 'Clôturer'}">${paid ? '👁️' : '🔒'}</button>
-                </div>
-              </div>
-            </article>`;
-        }).join('')}
-      </div>
-    </section>`;
-}
-
-function bindSharedCartsPanel(el) {
-  el.querySelectorAll('[data-shared-copy]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const card = btn.closest('[data-shared-id]');
-      const group = loadSharedCarts().find(g => String(g.id) === String(card?.dataset.sharedId));
-      if (!group) return;
-      try {
-        await navigator.clipboard.writeText(group.url || window.location.href);
-        showToast('Lien copié', 'success');
-      } catch (_) {
-        showToast('Copie impossible', 'error');
-      }
-    });
-  });
-
-  el.querySelectorAll('[data-shared-close]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = btn.closest('[data-shared-id]');
-      const groups = loadSharedCarts();
-      const group = groups.find(g => String(g.id) === String(card?.dataset.sharedId));
-      if (!group) return;
-      if (group.status === 'paid') {
-        showToast('Détail du panier partagé', 'success');
-        return;
-      }
-      group.status = 'paid';
-      group.dateLabel = 'Clôturé aujourd’hui';
-      saveSharedCarts(groups);
-      renderTrackView();
-      showToast('Panier partagé clôturé', 'success');
-    });
-  });
-}
 
 export function buildTimeline(status) {
   const idx = TRACK_STEPS.findIndex(s => s.key === status);
@@ -275,7 +136,6 @@ export function renderMyOrdersList(el, orders) {
   el.innerHTML = '<div class="k-track-dashboard">' +
     header + '<div class="k-myorders-list">' + cards + '</div>' +
     '<button class="k-track-btn k-track-btn--ghost k-myorders-new-search" id="k-myorders-search-other">🔍 Chercher une autre commande</button></section>' +
-    renderSharedCartsPanel() +
     '</div>';
 
   el.querySelectorAll('.k-myorder-card').forEach(card => {
@@ -303,7 +163,6 @@ export function renderMyOrdersList(el, orders) {
 
   const searchBtn = el.querySelector('#k-myorders-search-other');
   if (searchBtn) searchBtn.addEventListener('click', () => renderTrackViewSearchMode(el));
-  bindSharedCartsPanel(el);
 }
 
 export function renderTrackView() {
@@ -320,105 +179,20 @@ export function renderTrackView() {
 
   (async () => {
     // Charger commandes + paniers partagés en parallèle
-    const [ordersResult, sharedGroups] = await Promise.all([
-      apiGet('/api/orders?limit=20').catch(() => null),
-      _refreshSharedCartsFromApi(),
-    ]);
+    const ordersResult = await apiGet('/api/orders?limit=20').catch(() => null);
 
     const orders = Array.isArray(ordersResult)
       ? ordersResult
       : (ordersResult?.orders || []);
 
-    const hasOrders  = orders.length > 0;
-    const hasShared  = sharedGroups.length > 0;
-
-    if (!hasOrders && !hasShared) {
+    if (!orders.length) {
       renderTrackViewSearchMode(el);
       return;
     }
 
-    // Construire la vue composite
     el.innerHTML = '';
-
-    // ── Section paniers partagés (en premier — plus urgent pour le créateur) ──
-    if (hasShared) {
-      const sharedEl = document.createElement('div');
-      sharedEl.innerHTML = renderSharedCartsPanel();
-      el.appendChild(sharedEl.firstElementChild);
-      bindSharedCartsPanel(el);
-      _startSharedCartsPolling(el);
-    }
-
-    // ── Section commandes classiques ──
-    if (hasOrders) {
-      renderMyOrdersList(el, orders);
-    } else {
-      // Pas de commandes mais des paniers partagés : proposer la recherche en bas
-      const searchEl = document.createElement('div');
-      searchEl.className = 'k-track-search-hint';
-      searchEl.innerHTML = '<button class="k-track-search-btn" id="k-track-open-search">Suivre une commande par référence</button>';
-      el.appendChild(searchEl);
-      el.querySelector('#k-track-open-search')?.addEventListener('click', () => renderTrackViewSearchMode(el));
-    }
+    renderMyOrdersList(el, orders);
   })();
-}
-
-/* ── Refresh paniers partagés depuis /api/shared-carts/public/:token ── */
-// Sans auth — route publique, token stocké localement.
-// Met à jour participants + total collecté dans kmrc_group_carts_v1.
-async function _refreshSharedCartsFromApi() {
-  const groups = loadSharedCarts();
-  if (!groups.length) return groups;
-
-  const updated = await Promise.all(groups.map(async (g) => {
-    if (!g.token || g.status === 'paid') return g; // clôturé → pas de refresh
-    try {
-      const data = await apiGet(`/api/shared-carts/public/${g.token}`);
-      if (!data?.cart) return g;
-      const contribs = (data.contributions || []).map(c => ({
-        name:   c.first_name || 'Anonyme',
-        amount: Number(c.amount_kmf) || 0,
-        status: 'paid',
-        message: c.message || '',
-        paid_at: c.paid_at,
-      }));
-      return {
-        ...g,
-        total:        Number(data.cart.total_kmf_snapshot) || g.total,
-        status:       data.cart.status === 'finalized' ? 'paid' : (g.status || 'open'),
-        participants: contribs,
-        _refreshed_at: Date.now(),
-      };
-    } catch (_) {
-      return g; // silencieux — pas bloquant
-    }
-  }));
-
-  try {
-    localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(updated.slice(0, 20)));
-  } catch (_) {}
-  return updated;
-}
-
-/* ── Polling léger toutes les 30s pendant que l'onglet Suivi est ouvert ── */
-let _pollTimer = null;
-function _startSharedCartsPolling(el) {
-  if (_pollTimer) clearInterval(_pollTimer);
-  _pollTimer = setInterval(async () => {
-    // Vérifier que l'onglet Suivi est encore visible
-    if (!document.getElementById('k-track-view')) {
-      clearInterval(_pollTimer);
-      _pollTimer = null;
-      return;
-    }
-    const groups = await _refreshSharedCartsFromApi();
-    // Re-render uniquement le panneau partagé (pas toute la vue)
-    const panel = el.querySelector('.k-track-shared-panel');
-    if (panel && groups.length > 0) {
-      panel.outerHTML = renderSharedCartsPanel();
-      bindSharedCartsPanel(el);
-    }
-  }, 30_000);
 }
 
 export function renderTrackViewSearchMode(el) {
@@ -468,10 +242,7 @@ export function renderTrackViewSearchMode(el) {
           <button class="k-otp-resend-btn k-otp-back-btn" id="k-otp-back-btn">← Nouvelle recherche</button>
         </div>
       </section>
-      ${renderSharedCartsPanel()}
-    </div>`;
-
-  bindSharedCartsPanel(el);
+      </div>`;
 
   const digitsInput = el.querySelector('#k-track-digits');
   digitsInput.addEventListener('input', () => {

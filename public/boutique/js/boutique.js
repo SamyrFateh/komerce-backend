@@ -61,6 +61,7 @@ import {
 import {
   setupDrawer, setupInfiniteScroll,
   switchView, setupBnav, loadRelais,
+  handleParticipantUrl,
 }                              from './b-nav.js';
 import {
   renderFavView, updateFavPromoBadge, shareWishlistWhatsApp,
@@ -126,6 +127,7 @@ function init() {
   setupModal();
   setupDrawer();
   setupBnav();
+  handleParticipantUrl();
   setupInfiniteScroll();
   initFlatSubcat();
   installShareCart();

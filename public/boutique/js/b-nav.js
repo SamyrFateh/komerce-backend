@@ -14,6 +14,7 @@ import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
+import { renderGroupView, detectParticipantToken } from './b-group-view.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 
@@ -138,17 +139,19 @@ export function switchView(tab) {
     destroyMobilePager();
   }
 
-  document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track');
+  document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track', 'k-view-group');
   document.body.classList.add('k-view-' + tab);
   const catalog    = document.getElementById('k-catalog-section');
   const favView    = document.getElementById('k-fav-view');
   const trackView  = document.getElementById('k-track-view');
+  const groupView  = document.getElementById('k-group-view');
   const heroWrap   = document.getElementById('k-hero-fixed-wrap');
   const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
   if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
   if (favView)   favView.classList.toggle('show', tab === 'fav');
   if (trackView) trackView.classList.toggle('show', tab === 'track');
+  if (groupView) groupView.classList.toggle('show', tab === 'group');
   if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
   if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
 
@@ -200,9 +203,30 @@ export function setupBnav() {
       if (tab === 'cart')  { openCart(); return; }
       if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
       if (tab === 'track') { renderTrackView(); switchView('track'); return; }
+      if (tab === 'group') { renderGroupView(); switchView('group'); return; }
       switchView('shop');
     });
   });
+}
+
+/**
+ * Détecte un token participant dans l'URL au boot et bascule sur l'onglet Groupe.
+ * Appelée depuis boutique.js après setupBnav().
+ */
+export function handleParticipantUrl() {
+  const token = detectParticipantToken();
+  if (!token) return;
+  // Nettoyer l'URL sans recharger la page
+  try {
+    const clean = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, '', clean);
+  } catch (_) {}
+  // Activer l'onglet Groupe
+  document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
+    i.classList.toggle('active', i.dataset.tab === 'group');
+  });
+  renderGroupView({ participantToken: token });
+  switchView('group');
 }
 
 /**
