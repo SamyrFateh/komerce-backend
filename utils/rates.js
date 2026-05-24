@@ -15,6 +15,7 @@
 
 const db = require('../db');
 const { getRuleNumber } = require('./rules');
+const log = require('./logger').child({ module: 'rates' });
 
 // Fallback hardcodé ultime (si BDD totalement inaccessible)
 const RATES_FALLBACK = { eur_kmf: 492, aed_kmf: 138 };
@@ -59,6 +60,8 @@ async function getRates() {
   } catch (_) { /* fallback */ }
 
   // 4. Fallback ultime : hardcodés
+  // ND2 FIX — on log explicitement pour ne pas manquer une panne DB prolongée
+  log.warn('[getRates] Fallback ultime activé — finance_config et business_rules inaccessibles. Taux figés utilisés.');
   return RATES_FALLBACK;
 }
 

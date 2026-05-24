@@ -110,7 +110,7 @@ async function authenticate(req, res, next) {
 
     if (!user) {
       const { rows } = await db.query(
-        `SELECT id, full_name, email, phone, role, currency_pref
+        `SELECT id, full_name, email, phone, role, currency_pref, relais_id
          FROM users WHERE id = $1`,
         [decoded.id]
       );

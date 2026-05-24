@@ -28,6 +28,20 @@ const {
 } = require('./authkey-client');
 
 // WID dédié OTP — à configurer dans Railway env : WID_OTP=xxxxx
+
+// D4 FIX — Helper alerte sur échec notification critique
+// Fire-and-forget : ne crashe jamais l'appelant.
+function _alertNotificationFailure({ event, orderRef, orderId, error }) {
+  db.query(
+    `INSERT INTO alerts (level, source, message, payload)
+     VALUES ('elevated', 'notification_service', $1, $2)`,
+    [
+      `Notification '${event}' échouée — commande ${orderRef || orderId || '?'}`,
+      JSON.stringify({ event, orderRef, orderId, error: String(error) }),
+    ]
+  ).catch(e => log.error({ err: e }, 'Failed to insert notification alert'));
+}
+
 // Si non configuré, l'OTP passera par un canal de fallback (SMS, etc. selon config)
 const WID_OTP = process.env.WID_OTP || null;
 
@@ -251,6 +265,8 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
     });
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
+    // D4 FIX — remonter dans alerts pour visibilité radar
+    _alertNotificationFailure({ event: 'payment_confirmed', orderRef: orderReference, orderId, error: err.message });
   }
 }
 
@@ -351,6 +367,8 @@ async function notifyCancellation(order, smsRefundInfo) {
       orderRef: order.reference, channel: 'whatsapp', event: 'order_cancelled',
       recipient: phone, status: 'failed', detail: err.message,
     });
+    // D4 FIX — remonter dans alerts pour visibilité radar
+    _alertNotificationFailure({ event: 'order_cancelled', orderRef: order.reference, error: err.message });
   }
 }
 

@@ -77,10 +77,39 @@ function startOperationalCrons() {
 
   startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber });
   startBackorderCron({ processBackorderReminders });
+  startSnapshotRetentionCron();
+}
+
+// D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
+// Le debounce (P2-6) réduit le flux d'insertion mais ne nettoie pas l'historique.
+function startSnapshotRetentionCron() {
+  const RETENTION_DAYS = 90;
+  const INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+  const run = async () => {
+    try {
+      const db = require('../db');
+      const { rowCount } = await db.query(
+        `DELETE FROM economic_snapshots WHERE created_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`
+      );
+      if (rowCount > 0) {
+        log.info({ deleted: rowCount, retention_days: RETENTION_DAYS }, 'economic_snapshots retention purge done');
+      }
+    } catch (err) {
+      log.error({ err }, 'economic_snapshots retention cron failed');
+    }
+  };
+
+  // Première exécution 5 min après démarrage (pas au boot immédiat)
+  setTimeout(run, 5 * 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+
+  log.info({ retention_days: RETENTION_DAYS, interval_h: 24 }, 'Snapshot retention cron scheduled');
 }
 
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
   startBackorderCron,
+  startSnapshotRetentionCron,
 };
