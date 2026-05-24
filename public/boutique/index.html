@@ -268,21 +268,16 @@ if('serviceWorker' in navigator){
           Commander (<span id="k-sc-count-inline">0</span>)
         </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
-        <!-- Champ nom du panier (optionnel sauf au partage) -->
-        <div class="k-sc-name-wrap" id="k-sc-name-wrap">
-          <input id="k-sc-name-input" class="k-sc-name-input" type="text"
-            placeholder="Nom du panier (ex: Cadeau Aïcha)" maxlength="80" autocomplete="off" aria-label="Nom du panier partagé">
-        </div>
         <!-- Badge "Partagé" — visible uniquement quand shareToken actif -->
         <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
           <span class="k-sc-shared-dot" aria-hidden="true"></span>
           <span class="k-sc-shared-label">Partagé</span>
           <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">Re-partager</button>
         </div>
-        <!-- Bouton Partager (remplace "En groupe") -->
-        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Partager ce panier">
+        <!-- Bouton "Payer à plusieurs" (PR-1) — géré par b-share-cart.js -->
+        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Payer à plusieurs">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span class="k-sc-btn-share-label">Partager</span>
+          <span class="k-sc-btn-share-label">Payer à plusieurs</span>
         </button>
         <button id="k-sc-clear" class="k-sc-clear" type="button" aria-label="Vider le panier" title="Vider le panier">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6h12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -384,11 +379,6 @@ if('serviceWorker' in navigator){
   </div>
   <div id="k-cart-body" class="k-cart-body"></div>
   <div id="k-cart-footer" class="k-cart-footer u-hidden">
-    <!-- Champ nom du panier (drawer mobile) -->
-    <div class="k-share-name-row" id="k-share-name-row">
-      <input id="k-cart-name-input" class="k-share-name-input" type="text"
-        placeholder="Nom du panier (ex: Cadeau Aïcha)" maxlength="80" autocomplete="off" aria-label="Nom du panier partagé">
-    </div>
     <!-- Badge partagé (drawer mobile) -->
     <div class="k-share-badge-row" id="k-share-badge-row" hidden>
       <span class="k-share-badge-dot" aria-hidden="true"></span>
@@ -405,9 +395,9 @@ if('serviceWorker' in navigator){
     <div class="k-cart-footer-btns">
       <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
       <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
-      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Partager ce panier">
+      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Payer à plusieurs">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Partager
+        Payer à plusieurs
       </button>
       <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
     </div>

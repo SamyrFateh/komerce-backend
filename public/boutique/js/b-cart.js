@@ -595,25 +595,8 @@ function quickRemove(productId, btnEl) {
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
 
-    // Bouton événement collectif
-    const _evtBtnExisting = document.getElementById('k-cart-event-btn');
-    if (_evtBtnExisting) _evtBtnExisting.remove();
-    const _evtBtn = document.createElement('button');
-    _evtBtn.id = 'k-cart-event-btn';
-    _evtBtn.type = 'button';
-    _evtBtn.className = 'k-cart-event-btn';
-    _evtBtn.innerHTML = '👥 Payer en groupe';
-    _evtBtn.addEventListener('click', () => {
-      _showFamilySheet();
-    });
-    if (dom.cartFooter) {
-      const _checkoutBtn = dom.cartFooter.querySelector('#k-cart-checkout') || dom.cartCheckout;
-      if (_checkoutBtn && _checkoutBtn.parentNode === dom.cartFooter) {
-        dom.cartFooter.insertBefore(_evtBtn, _checkoutBtn);
-      } else {
-        dom.cartFooter.appendChild(_evtBtn);
-      }
-    }
+    // PR-1 : le bouton "Payer à plusieurs" est statique dans index.html (#k-cart-share)
+    // géré par b-share-cart.js — plus d'injection dynamique ici.
 
     const qty = cartQty();
     const total = cartTotal();
@@ -675,302 +658,30 @@ function quickRemove(productId, btnEl) {
     return window.location.origin + '/Komerce_Boutique.html?cart=' + encodeURIComponent(items.join(','));
   }
 
-  /* ======= SHARE CHOICE MODAL ======= */
+  /* ======= SHARE CHOICE MODAL — DEPRECATED PR-1 =======
+     Remplacé par b-share-cart.js (owner exclusif du flow "Payer à plusieurs").
+     Stubs conservés pour compatibilité exports. À supprimer en nettoyage PR-event. */
 
-  /**
-   * Ferme et détruit le bottom sheet de choix de partage panier.
-   */
   function _closeShareModal() {
     var ov = document.getElementById('k-share-overlay');
     if (ov) ov.remove();
   }
 
-  /**
-   * Affiche le bottom sheet "Simple / Événement collectif" pour le partage panier.
-   * Point d'entrée unique pour tout partage WhatsApp du panier.
-   */
-
-  /* ══════════════════════════════════════════════════════════
-     FAMILY PARTICIPATION SHEET
-     "Payer en groupe" — bottom sheet dédié
-     ══════════════════════════════════════════════════════════ */
-
-  /**
-   * Ouvre le bottom sheet "👥 Payer en groupe".
-   * Remplace le redirect vers /event/create.
-   */
-  function _showFamilySheet() {
-    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-
-    var total = cartTotal();
-
-    var ov = document.createElement('div');
-    ov.id = 'k-share-overlay';
-    ov.className = 'k-share-overlay';
-
-    var html = '<div class="k-share-sheet" id="k-share-sheet">'
-      + '<div class="k-share-title">👥 Payer en groupe</div>'
-      + '<div class="k-share-sub-family">Plusieurs proches peuvent payer une partie<br>de ce panier.</div>'
-      + '<div class="k-family-total">' + fmt(total, 'KMF') + '</div>'
-      + '<div class="k-event-form">'
-        + '<label>Nom du panier <span style="color:#bbb;font-weight:400;font-size:11px">(facultatif)</span></label>'
-        + '<input id="k-event-label" type="text" placeholder="Ex : Ex : Famille, Cousins, Mariage" maxlength="80"/>'
-        + '<button class="k-event-go" id="k-family-go-btn">Créer le lien de participation</button>'
-      + '</div>'
-      + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
-      + '</div>';
-
-    ov.innerHTML = html;
-    ov.addEventListener('click', function(e) { if (e.target === ov) _closeShareModal(); });
-    document.body.appendChild(ov);
-
-    // Focus sur le champ (confort mobile)
-    setTimeout(function() {
-      var inp = document.getElementById('k-event-label');
-      if (inp) inp.focus();
-    }, 350);
-
-    document.getElementById('k-family-go-btn').addEventListener('click', _doFamilyShare);
-    document.getElementById('k-share-cancel-btn').addEventListener('click', _closeShareModal);
-  }
-
-  /**
-   * Crée le lien de participation famille et l'envoie via WhatsApp.
-   */
-  function _doFamilyShare() {
-    var labelEl = document.getElementById('k-event-label');
-    var eventLabel = labelEl ? labelEl.value.trim() : '';
-
-    // Sauvegarder le panier en session pour event-create.js
-    try {
-      var pendingItems = state.cart.map(function(item) {
-        return {
-          product_id:   item.product.id,
-          product_name: item.product.name || '',
-          name:         item.product.name || '',
-          price_kmf:    item.product.promo_price_kmf || item.product.price_kmf || 0,
-          qty:          item.qty,
-          quantity:     item.qty,
-        };
-      });
-      sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(pendingItems));
-    } catch(_) {}
-
-    _closeShareModal();
-
-    // Rediriger vers /event/create?from=cart (+ label pré-rempli si saisi)
-    var url = '/event/create?from=cart';
-    if (eventLabel) url += '&label=' + encodeURIComponent(eventLabel);
-    window.location.href = url;
-  }
-
+  /** @deprecated PR-1 — stub, flow géré par b-share-cart.js */
   function showShareChoiceModal() {
-    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-    var ov = document.createElement('div');
-    ov.id = 'k-share-overlay';
-    ov.className = 'k-share-overlay';
-    var html = '<div class="k-share-sheet" id="k-share-sheet">'
-      + '<div class="k-share-title">Comment partager ?</div>'
-      + '<div class="k-share-sub">Choisis selon l&#x27;occasion</div>'
-      + '<div class="k-share-choices">'
-        + '<div class="k-share-choice" id="k-choice-simple">'
-          + '<div class="k-share-choice-icon">&#128279;</div>'
-          + '<div><div class="k-share-choice-label">Partage simple</div>'
-          + '<div class="k-share-choice-desc">Le destinataire voit ton panier et peut commander</div></div>'
-        + '</div>'
-        + '<div class="k-share-choice" id="k-choice-event">'
-          + '<div class="k-share-choice-icon">&#127881;</div>'
-          + '<div><div class="k-share-choice-label">&#201;v&#233;nement collectif</div>'
-          + '<div class="k-share-choice-desc">Mariage, anniversaire, naissance&#8230; chacun contribue</div></div>'
-        + '</div>'
-      + '</div>'
-      + '<button class="k-share-cancel" id="k-share-cancel-btn">Annuler</button>'
-      + '</div>';
-    ov.innerHTML = html;
-    ov.addEventListener('click', function(e){ if (e.target === ov) _closeShareModal(); });
-    document.body.appendChild(ov);
-    document.getElementById('k-choice-simple').addEventListener('click', function() {
-      _closeShareModal(); _doSimpleShare();
-    });
-    document.getElementById('k-choice-event').addEventListener('click', _showEventForm);
-    document.getElementById('k-share-cancel-btn').addEventListener('click', _closeShareModal);
+    // no-op — b-share-cart.js prend en charge le flow "Payer à plusieurs"
   }
 
-  /**
-   * Affiche le formulaire de création d'événement collectif dans le bottom sheet de partage.
-   * Permet de saisir le libellé de l'événement et le nom du créateur.
-   */
-  function _showEventForm() {
-    var sheet = document.getElementById('k-share-sheet');
-    if (!sheet) return;
-    /* Refresh 28/04/26 — Vocabulaire spec V1 : "Paiement groupé" + ajout
-       champ téléphone obligatoire (utilisé par authenticateOrCreateGuest
-       pour créer le user à la volée si l'utilisateur n'est pas connecté). */
-    var html = '<div class="k-share-title">&#127881; Payer en groupe</div>'
-      + '<div class="k-share-sub">Cr&#233;e un lien pour que tes proches contribuent &#224; ce panier</div>'
-      + '<div class="k-event-form">'
-        + '<label>Nom du panier <span style="color:#999">(optionnel)</span></label>'
-        + '<input id="k-event-label" type="text" placeholder="ex: Cadeau Maman, Cousins, Mariage..." maxlength="80"/>'
-        + '<label>Ton pr&#233;nom</label>'
-        + '<input id="k-event-sharer" type="text" placeholder="ex: Fatima" maxlength="60"/>'
-        + '<label>Ton num&#233;ro <span style="color:#999">(pour suivre les contributions)</span></label>'
-        + '<input id="k-event-phone" type="tel" placeholder="ex: +269..." maxlength="20"/>'
-        + '<button class="k-event-go" id="k-event-go-btn">Créer le lien de groupe</button>'
-      + '</div>'
-      + '<button class="k-share-cancel" id="k-share-back-btn">&#8592; Retour</button>';
-    sheet.innerHTML = html;
-    document.getElementById('k-event-go-btn').addEventListener('click', _doEventShare);
-    document.getElementById('k-share-back-btn').addEventListener('click', function() {
-      _closeShareModal(); showShareChoiceModal();
-    });
+  /** @deprecated PR-1 — stub */
+  function _showEventForm() { /* no-op */ }
+  /** @deprecated PR-1 — stub */
+  async function _doEventShare() { /* no-op */ }
+  /** @deprecated PR-1 — stub */
+  async function shareCartWhatsApp() {
+    // no-op — b-share-cart.js prend en charge le flow "Payer à plusieurs"
   }
 
-  /**
- * Exécute le partage simple du panier via WhatsApp.
- */
-  async function _doSimpleShare() {
-    showToast('Generation du lien...', 'info');
-    var cartURL;
-    try { cartURL = await buildCartShareURL({ type: 'simple' }); }
-    catch(e) { cartURL = _buildFallbackCartURL(); }
-    var lines = ['&#129525; *Mon panier Komerce*', '--------------------', ''];
-    state.cart.forEach(function(item, i) {
-      var name = item.product.name || 'Produit';
-      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
-      var line = (i+1) + '. ' + name;
-      if (item.qty > 1) line += ' x' + item.qty;
-      line += ' - ' + fmt(price, 'KMF');
-      lines.push(line);
-    });
-    lines.push('', '--------------------');
-    lines.push('Total : ' + fmt(cartTotal(), 'KMF') + ' (approx. ' + fmt(cartTotal(), 'EUR') + ')');
-    lines.push('Livraison incluse - 3-5 semaines', '');
-    lines.push('Voir le panier et commander :', cartURL);
-    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
-  }
-
-  /**
- * Exécute le partage événement collectif (mariage, fête…).
- */
-  async function _doEventShare() {
-    /* Refresh 28/04/26 — Bascule de l'ancienne route /api/shares vers
-       la nouvelle chaîne /api/shared-carts/from-cart-items qui apporte :
-       - paiement Stripe réel (vs déclaratif sur l'ancienne)
-       - idempotence et transactions
-       - conversion automatique en order Komerce
-       - compatible "paiement mixte cash relais" (mixed_shared_cart_cash) */
-
-    var labelEl  = document.getElementById('k-event-label');
-    var sharerEl = document.getElementById('k-event-sharer');
-    var phoneEl  = document.getElementById('k-event-phone');
-    var eventLabel = labelEl  ? labelEl.value.trim()  : '';
-    var sharerName = sharerEl ? sharerEl.value.trim() : '';
-    var phone      = phoneEl  ? phoneEl.value.trim()  : '';
-
-    /* Phone obligatoire : c'est lui qui sert à authenticateOrCreateGuest
-       pour rattacher le panier à un user (existant ou créé à la volée). */
-    if (!phone) {
-      showToast('Ton num&#233;ro est requis pour cr&#233;er le paiement groupé', 'error');
-      return;
-    }
-
-    var btn = document.getElementById('k-event-go-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Cr&#233;ation...'; }
-
-    /* Construire le payload. Le backend re-vérifie tous les prix DB :
-       on n'envoie que product_id + quantity, jamais de prix. */
-    var payload = {
-      cart_items: state.cart.map(function(item) {
-        return {
-          product_id: item.product.id,
-          quantity:   item.qty,
-        };
-      }),
-      title:            eventLabel || null,
-      message:          sharerName ? ('De la part de ' + sharerName) : null,
-      tracking_phone:   phone,    /* lu par authenticateOrCreateGuest */
-      recipient_phone:  phone,    /* le bénéficiaire = créateur en V1 */
-    };
-
-    var response;
-    try {
-      response = await apiPost('/api/shared-carts/from-cart-items', payload);
-    } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
-      var msg = (err && err.message) ? err.message : 'Erreur lors de la cr&#233;ation';
-      showToast(msg, 'error');
-      return;
-    }
-
-    if (!response || !response.share_url) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Créer le lien de groupe'; }
-      showToast('R&#233;ponse serveur invalide', 'error');
-      return;
-    }
-
-    _closeShareModal();
-
-    /* Composer le message WhatsApp. On garde la mise en forme actuelle qui
-       fonctionne bien : titre, liste articles, total, lien, signature. */
-    var lines = ['👥 *' + (eventLabel || 'Paiement groupé') + '*', '--------------------', ''];
-    lines.push('Aide-moi &#224; financer ce panier - participe selon tes moyens !', '');
-    state.cart.forEach(function(item, i) {
-      var name = item.product.name || 'Produit';
-      var price = (item.product.promo_price_kmf || item.product.price_kmf || 0) * item.qty;
-      var line = (i+1) + '. ' + name;
-      if (item.qty > 1) line += ' x' + item.qty;
-      line += ' - ' + fmt(price, 'KMF');
-      lines.push(line);
-    });
-    lines.push('', '--------------------');
-    lines.push('Total : ' + fmt(response.total_kmf || cartTotal(), 'KMF'), '');
-    lines.push('Voir et participer :', response.share_url);
-    if (sharerName) lines.push('', 'Merci de la part de ' + sharerName + ' &#10084;&#65039;');
-
-    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank');
-
-    /* Toast de confirmation + lien vers la page de suivi */
-    showToast('Paiement groupé créé - lien envoyé sur WhatsApp', 'success');
-
-    /* Stocker le token pour accès rapide depuis la boutique */
-    try {
-      var stored = JSON.parse(localStorage.getItem('k_group_carts') || '[]');
-      stored.unshift({
-        token: response.token,
-        title: eventLabel || 'Paiement groupé',
-        total_kmf: response.total_kmf,
-        share_url: response.share_url,
-        created_at: new Date().toISOString(),
-      });
-      localStorage.setItem('k_group_carts', JSON.stringify(stored.slice(0, 10)));
-    } catch(e) {}
-
-    /* Bouton de suivi affiché 3 secondes après */
-    setTimeout(function() {
-      var followBtn = document.createElement('div');
-      followBtn.style.cssText = 'position:fixed;bottom:calc(var(--bnav-h,56px) + 12px);left:50%;transform:translateX(-50%);z-index:2000;background:var(--violet,#6c3fc5);color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(108,63,197,.4);white-space:nowrap;';
-      followBtn.textContent = '👥 Suivre mon panier groupe →';
-      followBtn.onclick = function() {
-        window.location.href = '/boutique/shared-cart-account.html?phone=' + encodeURIComponent(phone);
-      };
-      document.body.appendChild(followBtn);
-      setTimeout(function() { if (followBtn.parentNode) followBtn.remove(); }, 6000);
-    }, 1500);
-  }
-
-  /**
-   * @brief shareCartWhatsApp — Déclenche le flow de partage panier WhatsApp
-   * Affiche le bottom sheet showShareChoiceModal() :
-   *   - Mode "Simple" : lien panier partagé
-   *   - Mode "Événement collectif" : flow contributions
-   */
-    async function shareCartWhatsApp() {
-    // Partage direct WhatsApp — pas de modal intermédiaire
-    if (state.cart.length === 0) { showToast('Votre panier est vide.', 'error'); return; }
-    await _doSimpleShare();
-  }
-
-  /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
+    /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */
   /**
  * Charge et affiche un panier partagé depuis un token URL.
  * @param {string} token - Token de partage
@@ -1592,7 +1303,6 @@ export {
   renderCartBody,
   removeFromCart, markAllCartButtons,
   shareCartWhatsApp, showShareChoiceModal, loadSharedCart,
-  _showEventForm, _doEventShare,
 };
 // Alias pour boutique.js qui importe 'renderCart'
 export { renderCartBody as renderCart };

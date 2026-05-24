@@ -579,7 +579,7 @@ function refreshSharedBadges(isShared) {
   const mobileBadge  = document.getElementById('k-share-badge-row');
   const mobileShare  = document.getElementById('k-cart-share');
   if (mobileBadge)  mobileBadge.hidden  = !isShared;
-  if (mobileShare)  mobileShare.textContent = isShared ? 'Re-partager' : 'Partager';
+  if (mobileShare)  mobileShare.textContent = isShared ? 'Re-partager' : 'Payer à plusieurs';
 
   // Side-cart desktop
   const desktopBadge  = document.getElementById('k-sc-shared-badge');
@@ -587,7 +587,7 @@ function refreshSharedBadges(isShared) {
   if (desktopBadge) desktopBadge.hidden = !isShared;
   if (desktopShare) {
     const label = desktopShare.querySelector('.k-sc-btn-share-label');
-    if (label) label.textContent = isShared ? 'Re-partager' : 'Partager';
+    if (label) label.textContent = isShared ? 'Re-partager' : 'Payer à plusieurs';
   }
 }
 
@@ -610,13 +610,13 @@ export function install() {
     });
   });
 
-  // Bouton "Partager" — drawer mobile
+  // Bouton "Payer à plusieurs" — drawer mobile
   document.getElementById('k-cart-share')?.addEventListener('click', () => {
     const isReshare = !!state.cart.shareToken;
     startShareFlow({ reshare: isReshare });
   });
 
-  // Bouton "Partager" — side-cart desktop
+  // Bouton "Payer à plusieurs" — side-cart desktop
   document.getElementById('k-sc-share')?.addEventListener('click', () => {
     const isReshare = !!state.cart.shareToken;
     startShareFlow({ reshare: isReshare });
