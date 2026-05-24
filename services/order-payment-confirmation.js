@@ -47,6 +47,7 @@
 
 const { transitionOrderStatus } = require('./order-status-machine');
 const log = require('../utils/logger').child({ module: 'order-payment-confirmation' });
+const db  = require('../db');
 
 async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   if (!dbClient) {
@@ -108,6 +109,15 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
   if (!orderResult.success && !orderResult.noop) {
     // Log explicite mais non-bloquant : la commande est confirmed, le stock doit quand même bouger
     log.warn(`[confirmPaymentCycle] ⚠ confirmed→ordered rejeté (non-fatal): ${orderResult.error} — order=${orderId}`);
+    // R5 FIX — Alerte opérationnelle : commande bloquée en 'confirmed' sans sourcing déclenché
+    db.query(
+      `INSERT INTO alerts (level, source, message, payload)
+       VALUES ('elevated', 'payment_cycle', $1, $2)`,
+      [
+        `confirmed→ordered rejeté — order ${orderId}`,
+        JSON.stringify({ orderId, error: orderResult.error }),
+      ]
+    ).catch(e => log.error('[confirmPaymentCycle] Échec INSERT alerte confirmed→ordered:', e.message));
   }
 
   // ── Étape 3 : vérification stock + décrémentage (FOR UPDATE atomique) ─────

@@ -69,7 +69,7 @@ router.post('/apply', async (req, res, next) => {
 
     // NEW-01 — Guard IDOR : vérifier que la commande appartient à l'utilisateur connecté
     const { rows: [orderCheck] } = await client.query(
-      'SELECT user_id, payment_status FROM orders WHERE id = $1', [order_id]
+      'SELECT user_id, payment_status, status FROM orders WHERE id = $1', [order_id]
     );
     if (!orderCheck) {
       await client.query('ROLLBACK');
@@ -82,6 +82,12 @@ router.post('/apply', async (req, res, next) => {
     if (orderCheck.payment_status === 'paid') {
       await client.query('ROLLBACK');
       return res.status(409).json({ error: 'Commande déjà payée' });
+    }
+    // R2 FIX — Guard order.status : bloquer les statuts terminaux
+    const BLOCKED_STATUSES = ['cancelled', 'refunded', 'collected'];
+    if (BLOCKED_STATUSES.includes(orderCheck.status)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: `Application impossible — commande en statut '${orderCheck.status}'` });
     }
 
     const result = await walletService.applyToOrder(client, {

@@ -292,11 +292,13 @@ router.delete('/partners/:id', ...guard, validate(admin.deletePartner), async (r
 router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) => {
   // ══════════════════════════════════════════════════════════════════
   // CRIT-04 FIX: Block in production — this endpoint is dev/staging only.
+  // R4 FIX: ALLOW_FLUSH distinct de ALLOW_SEED — activer ALLOW_SEED en prod
+  //         pour un seed de démo ne doit pas débloquer le flush destructif.
   // ══════════════════════════════════════════════════════════════════
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_FLUSH !== 'true') {
     return res.status(403).json({
       error: 'Endpoint désactivé en production',
-      hint: 'Ajoutez ALLOW_SEED=true dans les variables Railway pour activer',
+      hint: 'Ajoutez ALLOW_FLUSH=true (distinct de ALLOW_SEED) dans les variables Railway pour activer',
     });
   }
 

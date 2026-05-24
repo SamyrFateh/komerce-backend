@@ -546,10 +546,12 @@ router.post('/orders/:id/start-prep', ...hubAuth, async (req, res, next) => {
     }
 
     // Log scan
+    // R7 FIX — scan_code NOT NULL : générer un code synthétique pour les scans hub automatiques
+    const scanCodePrep = `HUB-PREP-${order.id.slice(0, 8).toUpperCase()}`;
     await db.query(`
-      INSERT INTO scans (order_id, step, scanned_by, notes)
-      VALUES ($1, 'preparation', $2, $3)
-    `, [order.id, req.user.id, `Préparation démarrée par ${req.user.full_name || 'hub'}`]);
+      INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
+      VALUES ($1, 'preparation', $2, $3, $4)
+    `, [order.id, req.user.id, `Préparation démarrée par ${req.user.full_name || 'hub'}`, scanCodePrep]);
 
     // Log comment
     await db.query(`
@@ -712,11 +714,13 @@ router.post('/orders/:id/auto-prepare', ...hubAuth, async (req, res, next) => {
     );
 
     // Log scan + commentaire
+    // R7 FIX — scan_code NOT NULL : code synthétique pour scans hub automatiques
     try {
+      const scanCodeAuto = `HUB-AUTO-${order.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
       await client.query(`
-        INSERT INTO scans (order_id, step, scanned_by, notes)
-        VALUES ($1, 'preparation', $2, $3)
-      `, [order.id, req.user.id, `Auto-prepare: colis ${reference} créé, ${unassigned.length} article(s) assigné(s)`]);
+        INSERT INTO scans (order_id, step, scanned_by, notes, scan_code)
+        VALUES ($1, 'preparation', $2, $3, $4)
+      `, [order.id, req.user.id, `Auto-prepare: colis ${reference} créé, ${unassigned.length} article(s) assigné(s)`, scanCodeAuto]);
     } catch(e) { /* scans table peut varier */ }
 
     await client.query(`

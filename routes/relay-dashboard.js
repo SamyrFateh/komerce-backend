@@ -66,6 +66,26 @@ async function ensureRelayTables() {
 // Run on module load
 ensureRelayTables();
 
+// ── SECURITY HELPER — R1 FIX ─────────────────────────────────────────────────
+// Vérifie que la commande appartient bien au relais de l'agent connecté.
+// Retourne l'order si OK, ou envoie 403/404 et retourne null.
+async function assertOrderBelongsToRelais(req, res, orderId) {
+  const { rows: [order] } = await db.query(
+    'SELECT id, reference, status, relais_id FROM orders WHERE id = $1',
+    [orderId]
+  );
+  if (!order) {
+    res.status(404).json({ error: 'Commande introuvable' });
+    return null;
+  }
+  if (req.user.role !== 'admin' && String(order.relais_id) !== String(req.user.relais_id)) {
+    log.warn(`[RELAY] IDOR bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+    res.status(403).json({ error: 'Cette commande n\'appartient pas à votre relais' });
+    return null;
+  }
+  return order;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. GET /dashboard — KPIs relais
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -137,6 +157,14 @@ router.get('/orders', async (req, res, next) => {
     let where = 'WHERE 1=1';
     const params = [];
     let pi = 1;
+
+    // SECURITY — R1 FIX: scope to the agent's own relais only
+    // Admin can see all; agent_relais only sees their relais.
+    if (req.user.role !== 'admin') {
+      where += ` AND o.relais_id = $${pi}`;
+      params.push(req.user.relais_id);
+      pi++;
+    }
 
     if (status) {
       // Allow comma-separated statuses
@@ -383,9 +411,9 @@ router.post('/orders/:id/incident', async (req, res, next) => {
       return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
     }
 
-    // Verify order exists
-    const { rows: [order] } = await db.query('SELECT id, reference FROM orders WHERE id = $1', [req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+    // SECURITY — R1 FIX: scope check + existence
+    const order = await assertOrderBelongsToRelais(req, res, req.params.id);
+    if (!order) return;
 
     const { rows: [incident] } = await db.query(`
       INSERT INTO order_incidents (order_id, reporter_id, reporter_name, type, description, priority)
@@ -408,8 +436,9 @@ router.post('/orders/:id/comment', async (req, res, next) => {
     const { text } = req.body;
     if (!text || !text.trim()) return res.status(400).json({ error: 'Texte requis' });
 
-    const { rows: [order] } = await db.query('SELECT id FROM orders WHERE id = $1', [req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+    // SECURITY — R1 FIX: scope check + existence
+    const order = await assertOrderBelongsToRelais(req, res, req.params.id);
+    if (!order) return;
 
     const { rows: [comment] } = await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, author_role, text)
@@ -430,8 +459,9 @@ router.post('/orders/:id/escalate', async (req, res, next) => {
     const { reason, priority } = req.body;
     if (!reason || !reason.trim()) return res.status(400).json({ error: 'Raison d\'escalade requise' });
 
-    const { rows: [order] } = await db.query('SELECT id, reference FROM orders WHERE id = $1', [req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+    // SECURITY — R1 FIX: scope check + existence
+    const order = await assertOrderBelongsToRelais(req, res, req.params.id);
+    if (!order) return;
 
     // Create incident of type "escalade" with high priority
     const { rows: [incident] } = await db.query(`
@@ -458,11 +488,9 @@ router.post('/orders/:id/escalate', async (req, res, next) => {
 
 router.patch('/orders/:id/client-absent', async (req, res, next) => {
   try {
-    const { rows: [order] } = await db.query(
-      'SELECT id, reference, status FROM orders WHERE id = $1',
-      [req.params.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+    // SECURITY — R1 FIX: scope check + existence
+    const order = await assertOrderBelongsToRelais(req, res, req.params.id);
+    if (!order) return;
 
     if (order.status !== 'available') {
       return res.status(422).json({ error: 'Seules les commandes "available" peuvent être marquées client absent' });

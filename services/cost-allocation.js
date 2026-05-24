@@ -483,10 +483,9 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
       [monthStart, monthEnd]
     );
     const monthRevenue = Number(revenueRes.rows[0].revenue) || 0;
-    // PATCH P1-6 : taux lu depuis finance_config.provision_risque_pct (I-08).
-    // Fallback 0.01 (1%) si la colonne n'existe pas encore (migration à venir).
-    const provisionPct = Number(fc.provision_risque_pct) || 0.01;
-    const riskMonthlyKmf = Math.round(monthRevenue * provisionPct);
+    // R6 FIX — provision_risque_pct depuis finance_config (patch P1-6 manquant ici)
+    const riskPct = Number(fc.provision_risque_pct) || 0.01;
+    const riskMonthlyKmf = Math.round(monthRevenue * riskPct);
 
     // Allocation par order_item
     const hubPerItem  = Math.round(hubMonthlyKmf / itemsCount);
