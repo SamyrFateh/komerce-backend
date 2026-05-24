@@ -18,10 +18,7 @@ import { showToast } from './b-cart-core.js';
 
 /* ── Config ────────────────────────────────────────────────────── */
 const API_BASE        = '';  // même origine
-const API_OTP_REQUEST = `${API_BASE}/api/auth/otp/request`;
-const API_OTP_VERIFY  = `${API_BASE}/api/auth/otp/verify`;
-const API_AUTH_ME     = `${API_BASE}/api/auth/me`;
-const API_SHARED_CART = `${API_BASE}/api/shared-cart/from-cart-items`;
+const API_SHARED_CART = `${API_BASE}/api/shared-carts/from-cart-items`;
 
 /* ── State partagé (stocké dans state.cart) ─────────────────────
    On étend l'objet state.cart existant sans créer de deuxième source.
@@ -174,10 +171,12 @@ function injectInlineStyles() {
 }
 
 /* ── Vérification auth ──────────────────────────────────────────── */
-async function isAuthenticated() {
+function isAuthenticated() {
+  // On évite un fetch /api/auth/me qui peut être 404 selon la config backend.
+  // Le cookie kmrc_jwt est httpOnly (illisible depuis JS), mais le backend le pose
+  // aussi dans localStorage via 'komerce_session' (signal proxy — cf. auth-guest.js).
   try {
-    const res = await fetch(API_AUTH_ME, { credentials: 'include' });
-    return res.ok;
+    return !!localStorage.getItem('komerce_session');
   } catch (_) {
     return false;
   }
@@ -257,230 +256,112 @@ function promptCartName(currentName) {
   });
 }
 
-/* ── Étape B : Flow OTP ─────────────────────────────────────────── */
-function promptOtp() {
+/* ── Étape B : Identification légère (phone + nom) ──────────────── */
+// Pas d'OTP : authenticateOrCreateGuest crée/retrouve le user côté backend
+// sur la base de tracking_phone. Simple, rapide.
+function promptPhone(prefilledName) {
   return new Promise(resolve => {
     ensureCss();
-    let otpSent = false;
-    let phone   = '';
-    let resendTimeout = null;
-
     const overlay = createModal(`
       <div class="k-share-modal-head">
-        <span class="k-share-modal-title">Votre identité</span>
+        <span class="k-share-modal-title">Qui partage ce panier ?</span>
         <button class="k-share-modal-close" aria-label="Fermer">✕</button>
       </div>
-      <p class="k-share-modal-hint">Un code WhatsApp vous sera envoyé pour confirmer votre numéro.</p>
-      <div id="k-share-otp-form">
-        <div class="k-share-modal-field-group">
-          <label class="k-share-modal-label" for="k-share-otp-name">Votre nom</label>
-          <input id="k-share-otp-name" class="k-share-modal-input" type="text"
-            placeholder="Prénom Nom" maxlength="80" autocomplete="name">
-        </div>
-        <div class="k-share-modal-field-group">
-          <label class="k-share-modal-label" for="k-share-otp-phone">Téléphone</label>
-          <input id="k-share-otp-phone" class="k-share-modal-input" type="tel"
-            placeholder="+33 6 … ou +269 …" autocomplete="tel">
-        </div>
-        <p class="k-share-modal-error" id="k-share-otp-err1"></p>
-        <button class="k-share-modal-btn" id="k-share-otp-send">
-          Recevoir mon code WhatsApp
-        </button>
+      <p class="k-share-modal-hint">Votre numéro nous permet de vous rattacher le panier partagé.</p>
+      <div class="k-share-modal-field-group">
+        <label class="k-share-modal-label" for="k-sph-name">Votre prénom</label>
+        <input id="k-sph-name" class="k-share-modal-input" type="text"
+          placeholder="Ex : Fatima" maxlength="60" value="${prefilledName || ''}" autocomplete="given-name">
       </div>
-      <div id="k-share-otp-code-block" style="display:none">
-        <div class="k-share-otp-sent" id="k-share-otp-sent-banner"></div>
-        <div class="k-share-modal-field-group">
-          <label class="k-share-modal-label" for="k-share-otp-code">Code à 6 chiffres</label>
-          <input id="k-share-otp-code" class="k-share-modal-input k-otp-code-input" type="text"
-            inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
-            placeholder="000000" autocomplete="one-time-code">
-          <p class="k-share-modal-error" id="k-share-otp-err2"></p>
-        </div>
-        <button class="k-share-modal-btn" id="k-share-otp-verify">Vérifier</button>
-        <div class="k-share-modal-divider">ou</div>
-        <button class="k-share-modal-resend" id="k-share-otp-resend" disabled>
-          Renvoyer le code (attendre 30s)
-        </button>
+      <div class="k-share-modal-field-group">
+        <label class="k-share-modal-label" for="k-sph-tel">Votre numéro WhatsApp</label>
+        <input id="k-sph-tel" class="k-share-modal-input" type="tel"
+          placeholder="+269… ou +33…" maxlength="20" autocomplete="tel">
+        <p class="k-share-modal-error" id="k-sph-err"></p>
       </div>
+      <button class="k-share-modal-btn" id="k-sph-continue">Continuer →</button>
     `);
 
-    const nameInput    = overlay.querySelector('#k-share-otp-name');
-    const phoneInput   = overlay.querySelector('#k-share-otp-phone');
-    const sendBtn      = overlay.querySelector('#k-share-otp-send');
-    const err1         = overlay.querySelector('#k-share-otp-err1');
-    const codeBlock    = overlay.querySelector('#k-share-otp-code-block');
-    const formBlock    = overlay.querySelector('#k-share-otp-form');
-    const codeInput    = overlay.querySelector('#k-share-otp-code');
-    const verifyBtn    = overlay.querySelector('#k-share-otp-verify');
-    const err2         = overlay.querySelector('#k-share-otp-err2');
-    const resendBtn    = overlay.querySelector('#k-share-otp-resend');
-    const sentBanner   = overlay.querySelector('#k-share-otp-sent-banner');
-    const closeBtn     = overlay.querySelector('.k-share-modal-close');
+    const nameEl = overlay.querySelector('#k-sph-name');
+    const telEl  = overlay.querySelector('#k-sph-tel');
+    const err    = overlay.querySelector('#k-sph-err');
+    const btn    = overlay.querySelector('#k-sph-continue');
+    const closeBtn = overlay.querySelector('.k-share-modal-close');
+
+    requestAnimationFrame(() => (nameEl.value ? telEl.focus() : nameEl.focus()));
+
+    function validate() {
+      const name = nameEl.value.trim();
+      const tel  = telEl.value.trim();
+      if (!name) { err.textContent = 'Votre prénom est requis.'; return null; }
+      if (!tel)  { err.textContent = 'Votre numéro est requis.'; return null; }
+      if (!/^\+?[\d\s\-]{8,20}$/.test(tel)) {
+        err.textContent = 'Format invalide (ex: +269321… ou +33699…)';
+        return null;
+      }
+      return { name, phone: tel };
+    }
+
+    btn.addEventListener('click', () => {
+      err.textContent = '';
+      const result = validate();
+      if (!result) return;
+      closeModal(overlay);
+      resolve(result);
+    });
 
     closeBtn.addEventListener('click', () => {
-      clearTimeout(resendTimeout);
       closeModal(overlay);
       resolve(null);
     });
 
-    /* --- Envoi OTP --- */
-    sendBtn.addEventListener('click', async () => {
-      err1.textContent = '';
-      const name  = nameInput.value.trim();
-      const tel   = phoneInput.value.trim().replace(/\s/g, '');
-      if (!name)  { err1.textContent = 'Entrez votre nom.'; return; }
-      if (!tel || tel.length < 8) { err1.textContent = 'Numéro invalide.'; return; }
-
-      sendBtn.disabled    = true;
-      sendBtn.textContent = 'Envoi en cours…';
-      phone = tel;
-
-      try {
-        /* L'endpoint /otp/request est anti-énumération : n'envoie le code
-           que si l'utilisateur existe. On passe d'abord par
-           authenticateOrCreateGuest via from-cart-items si besoin.
-           Ici on tente directement /otp/request — si le backend retourne
-           une erreur 404/403, on affiche un message d'attente et on stoppe.
-           TODO: si bloquant, documenter dans docs/_work/ et demander
-           au mainteneur backend de gérer la création à la volée. */
-        const res = await fetch(API_OTP_REQUEST, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ phone: tel, name }),
-        });
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          err1.textContent = body.message || 'Erreur envoi code. Réessayez.';
-          sendBtn.disabled    = false;
-          sendBtn.textContent = 'Recevoir mon code WhatsApp';
-          return;
-        }
-
-        otpSent = true;
-        formBlock.style.display   = 'none';
-        codeBlock.style.display   = 'block';
-        sentBanner.textContent    = `Code envoyé sur ${tel} via WhatsApp.`;
-        requestAnimationFrame(() => codeInput.focus());
-
-        // Resend countdown 30s
-        let countdown = 30;
-        resendBtn.disabled    = true;
-        resendBtn.textContent = `Renvoyer le code (${countdown}s)`;
-        resendTimeout = setInterval(() => {
-          countdown--;
-          if (countdown <= 0) {
-            clearInterval(resendTimeout);
-            resendBtn.disabled    = false;
-            resendBtn.textContent = 'Renvoyer le code';
-          } else {
-            resendBtn.textContent = `Renvoyer le code (${countdown}s)`;
-          }
-        }, 1000);
-
-      } catch (_) {
-        err1.textContent        = 'Erreur réseau. Réessayez.';
-        sendBtn.disabled        = false;
-        sendBtn.textContent     = 'Recevoir mon code WhatsApp';
-      }
-    });
-
-    /* --- Resend --- */
-    resendBtn.addEventListener('click', async () => {
-      resendBtn.disabled = true;
-      try {
-        await fetch(API_OTP_REQUEST, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ phone }),
-        });
-        sentBanner.textContent = `Nouveau code envoyé sur ${phone}.`;
-      } catch (_) {}
-      let countdown = 30;
-      resendBtn.textContent = `Renvoyer le code (${countdown}s)`;
-      resendTimeout = setInterval(() => {
-        countdown--;
-        if (countdown <= 0) {
-          clearInterval(resendTimeout);
-          resendBtn.disabled    = false;
-          resendBtn.textContent = 'Renvoyer le code';
-        } else {
-          resendBtn.textContent = `Renvoyer le code (${countdown}s)`;
-        }
-      }, 1000);
-    });
-
-    /* --- Vérification code --- */
-    verifyBtn.addEventListener('click', async () => {
-      err2.textContent = '';
-      const code = codeInput.value.trim();
-      if (!/^\d{6}$/.test(code)) { err2.textContent = 'Code à 6 chiffres requis.'; return; }
-
-      verifyBtn.disabled    = true;
-      verifyBtn.textContent = 'Vérification…';
-
-      try {
-        const res = await fetch(API_OTP_VERIFY, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ phone, code }),
-        });
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          err2.textContent      = body.message || 'Code incorrect. Réessayez.';
-          verifyBtn.disabled    = false;
-          verifyBtn.textContent = 'Vérifier';
-          return;
-        }
-
-        clearTimeout(resendTimeout);
-        closeModal(overlay);
-        resolve(true); // identifié avec succès
-
-      } catch (_) {
-        err2.textContent      = 'Erreur réseau. Réessayez.';
-        verifyBtn.disabled    = false;
-        verifyBtn.textContent = 'Vérifier';
-      }
-    });
-
-    codeInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') verifyBtn.click();
+    [nameEl, telEl].forEach(el => {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
     });
   });
 }
 
 /* ── Étape C : Création shared-cart ─────────────────────────────── */
-async function createSharedCart(cartName) {
-  const items = state.cart.map(it => ({
+async function createSharedCart(cartName, opts = {}) {
+  // Le backend attend 'cart_items' (pas 'items') — cf. routes/shared-cart.js
+  const cart_items = state.cart.map(it => ({
     product_id: it.product?.id || it.id,
     quantity:   Number(it.qty) || 1,
   })).filter(it => it.product_id);
+
+  // tracking_phone + recipient_name → utilisés par authenticateOrCreateGuest
+  // pour créer ou retrouver l'utilisateur côté backend (pas d'OTP requis).
+  const body = {
+    title: cartName,
+    cart_items,
+  };
+  if (opts.phone) body.tracking_phone = opts.phone;
+  if (opts.name)  body.recipient_name  = opts.name;
 
   const res = await fetch(API_SHARED_CART, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ title: cartName, items }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || `Erreur API (${res.status})`);
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || errBody.message || `Erreur API (${res.status})`);
   }
 
-  return await res.json();
-  // Réponse attendue : { id, token, public_url } ou similaire
+  const data = await res.json();
+  // Poser le signal proxy pour les prochains clics (token JWT posé en cookie httpOnly)
+  try { localStorage.setItem('komerce_session', '1'); } catch (_) {}
+  return data;
+  // Réponse : { shared_cart_id, token, share_url, total_kmf, expires_at, items_count }
 }
 
 /* ── Étape D : Partage WhatsApp + clipboard ─────────────────────── */
-function shareViaWhatsApp(cartName, shareToken) {
+function shareViaWhatsApp(cartName, shareToken, overrideUrl = null) {
   const host = window.location.origin;
-  const link = `${host}/?p=${shareToken}`;
+  // Si le backend a fourni une share_url canonique, on l'utilise ; sinon on reconstruit
+  const link = overrideUrl || `${host}/cart/shared/${shareToken}`;
   const msg  = `Salut ! J'ai préparé un panier sur Komerce : "${cartName}".\nVous pouvez participer ici : ${link}`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
@@ -524,24 +405,27 @@ export async function startShareFlow(opts = {}) {
   syncNameInputs(cartName);
 
   /* ─── Étape B : Auth ────────────────────────────────────────── */
-  const authed = await isAuthenticated();
-  if (!authed) {
-    const ok = await promptOtp();
-    if (!ok) return; // annulé ou échec
+  // Si déjà authentifié (cookie kmrc_jwt connu), on passe directement.
+  // Sinon, on demande nom + téléphone — le backend crée le guest à la volée.
+  let phoneOpts = {};
+  if (!isAuthenticated()) {
+    const info = await promptPhone(state.cart.cartName);
+    if (!info) return; // annulé
+    phoneOpts = { name: info.name, phone: info.phone };
   }
 
   /* ─── Étape C : Création API ────────────────────────────────── */
   let shareData;
   try {
-    shareData = await createSharedCart(cartName);
+    shareData = await createSharedCart(cartName, phoneOpts);
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
     return;
   }
 
-  // Le backend peut retourner { token, id } ou { share_token, id } — normaliser
+  // Le backend retourne { shared_cart_id, token, share_url, total_kmf, ... }
   const token = shareData.token || shareData.share_token;
-  const id    = shareData.id;
+  const id    = shareData.shared_cart_id || shareData.id;
 
   if (!token) {
     showToast('Erreur : token manquant dans la réponse', 'error');
@@ -554,7 +438,9 @@ export async function startShareFlow(opts = {}) {
   refreshSharedBadges(true);
 
   /* ─── Étape D : WhatsApp ────────────────────────────────────── */
-  shareViaWhatsApp(cartName, token);
+  // share_url peut être fournie directement par le backend (préférable à reconstruire)
+  const shareUrl = shareData.share_url || null;
+  shareViaWhatsApp(cartName, token, shareUrl);
 }
 
 /* ── Synchronisation champs nom (drawer + side-cart) ────────────── */
