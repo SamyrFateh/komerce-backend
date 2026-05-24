@@ -319,15 +319,106 @@ export function renderTrackView() {
   el.innerHTML = '<div class="k-track-loading"><div class="k-track-loading-spin"></div><p>Chargement de vos commandes…</p></div>';
 
   (async () => {
-    try {
-      const data   = await apiGet('/api/orders?limit=20');
-      const orders = Array.isArray(data) ? data : ((data && data.orders) || []);
-      if (orders.length > 0) { renderMyOrdersList(el, orders); return; }
+    // Charger commandes + paniers partagés en parallèle
+    const [ordersResult, sharedGroups] = await Promise.all([
+      apiGet('/api/orders?limit=20').catch(() => null),
+      _refreshSharedCartsFromApi(),
+    ]);
+
+    const orders = Array.isArray(ordersResult)
+      ? ordersResult
+      : (ordersResult?.orders || []);
+
+    const hasOrders  = orders.length > 0;
+    const hasShared  = sharedGroups.length > 0;
+
+    if (!hasOrders && !hasShared) {
       renderTrackViewSearchMode(el);
-    } catch (err) {
-      renderTrackViewSearchMode(el);
+      return;
+    }
+
+    // Construire la vue composite
+    el.innerHTML = '';
+
+    // ── Section paniers partagés (en premier — plus urgent pour le créateur) ──
+    if (hasShared) {
+      const sharedEl = document.createElement('div');
+      sharedEl.innerHTML = renderSharedCartsPanel();
+      el.appendChild(sharedEl.firstElementChild);
+      bindSharedCartsPanel(el);
+      _startSharedCartsPolling(el);
+    }
+
+    // ── Section commandes classiques ──
+    if (hasOrders) {
+      renderMyOrdersList(el, orders);
+    } else {
+      // Pas de commandes mais des paniers partagés : proposer la recherche en bas
+      const searchEl = document.createElement('div');
+      searchEl.className = 'k-track-search-hint';
+      searchEl.innerHTML = '<button class="k-track-search-btn" id="k-track-open-search">Suivre une commande par référence</button>';
+      el.appendChild(searchEl);
+      el.querySelector('#k-track-open-search')?.addEventListener('click', () => renderTrackViewSearchMode(el));
     }
   })();
+}
+
+/* ── Refresh paniers partagés depuis /api/shared-carts/public/:token ── */
+// Sans auth — route publique, token stocké localement.
+// Met à jour participants + total collecté dans kmrc_group_carts_v1.
+async function _refreshSharedCartsFromApi() {
+  const groups = loadSharedCarts();
+  if (!groups.length) return groups;
+
+  const updated = await Promise.all(groups.map(async (g) => {
+    if (!g.token || g.status === 'paid') return g; // clôturé → pas de refresh
+    try {
+      const data = await apiGet(`/api/shared-carts/public/${g.token}`);
+      if (!data?.cart) return g;
+      const contribs = (data.contributions || []).map(c => ({
+        name:   c.first_name || 'Anonyme',
+        amount: Number(c.amount_kmf) || 0,
+        status: 'paid',
+        message: c.message || '',
+        paid_at: c.paid_at,
+      }));
+      return {
+        ...g,
+        total:        Number(data.cart.total_kmf_snapshot) || g.total,
+        status:       data.cart.status === 'finalized' ? 'paid' : (g.status || 'open'),
+        participants: contribs,
+        _refreshed_at: Date.now(),
+      };
+    } catch (_) {
+      return g; // silencieux — pas bloquant
+    }
+  }));
+
+  try {
+    localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(updated.slice(0, 20)));
+  } catch (_) {}
+  return updated;
+}
+
+/* ── Polling léger toutes les 30s pendant que l'onglet Suivi est ouvert ── */
+let _pollTimer = null;
+function _startSharedCartsPolling(el) {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    // Vérifier que l'onglet Suivi est encore visible
+    if (!document.getElementById('k-track-view')) {
+      clearInterval(_pollTimer);
+      _pollTimer = null;
+      return;
+    }
+    const groups = await _refreshSharedCartsFromApi();
+    // Re-render uniquement le panneau partagé (pas toute la vue)
+    const panel = el.querySelector('.k-track-shared-panel');
+    if (panel && groups.length > 0) {
+      panel.outerHTML = renderSharedCartsPanel();
+      bindSharedCartsPanel(el);
+    }
+  }, 30_000);
 }
 
 export function renderTrackViewSearchMode(el) {

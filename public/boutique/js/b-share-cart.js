@@ -437,10 +437,48 @@ export async function startShareFlow(opts = {}) {
   saveShareState();
   refreshSharedBadges(true);
 
-  /* ─── Étape D : WhatsApp ────────────────────────────────────── */
-  // share_url peut être fournie directement par le backend (préférable à reconstruire)
-  const shareUrl = shareData.share_url || null;
+  /* ─── Enregistrement dans kmrc_group_carts_v1 (lu par b-tracking.js) ── */
+  try {
+    const host = window.location.origin;
+    const shareUrl = shareData.share_url || `${host}/cart/shared/${token}`;
+    const entry = {
+      id:           id,
+      token:        token,
+      title:        cartName,
+      url:          shareUrl,
+      total:        shareData.total_kmf || 0,
+      status:       'open',
+      created_at:   new Date().toISOString(),
+      participants: [],
+      items:        state.cart.map(it => ({
+        product_id: it.product?.id || it.id,
+        name:       it.name || it.product?.name || '',
+        qty:        Number(it.qty) || 1,
+        price:      Number(it.price) || 0,
+      })),
+    };
+    const raw    = localStorage.getItem('kmrc_group_carts_v1');
+    const groups = raw ? JSON.parse(raw) : [];
+    // Éviter les doublons si re-partage
+    const deduped = groups.filter(g => String(g.id) !== String(id));
+    deduped.unshift(entry);
+    localStorage.setItem('kmrc_group_carts_v1', JSON.stringify(deduped.slice(0, 20)));
+  } catch (_) {}
+
+  /* ─── Étape D : WhatsApp + notification Suivi ───────────────── */
+  const shareUrl = shareData.share_url || `${window.location.origin}/cart/shared/${token}`;
   shareViaWhatsApp(cartName, token, shareUrl);
+
+  // Informer le créateur qu'un événement l'attend dans l'onglet Suivi
+  setTimeout(() => {
+    showToast('📋 Ton panier partagé t'attend dans l'onglet Suivi', 'info', 5000);
+    // Pulser l'onglet Suivi pour attirer l'œil
+    const trackTab = document.querySelector('[data-tab="suivi"], [data-view="tracking"], #k-nav-suivi, .k-nav-suivi');
+    if (trackTab) {
+      trackTab.classList.add('k-tab-pulse');
+      setTimeout(() => trackTab.classList.remove('k-tab-pulse'), 4000);
+    }
+  }, 1200); // délai court — laisser WhatsApp s'ouvrir d'abord
 }
 
 /* ── Synchronisation champs nom (drawer + side-cart) ────────────── */
