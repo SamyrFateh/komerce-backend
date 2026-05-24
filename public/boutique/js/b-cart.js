@@ -1,4 +1,4 @@
-﻿/**
+/**
  * b-cart.js — Module ES · §7 CART INTERACTIONS + §10 CART PANEL & SHARE + §14 STEPPER
  * Extrait de boutique.js Sprint 2F — Option C
  *
@@ -11,6 +11,7 @@ import { bus }           from './b-bus.js';
 import {
   state, dom, $, $$, scroll,
 }                         from './b-store.js';
+import { install as installShareCart } from './b-share-cart.js';
 import { scrollToCategorySection } from './b-catalog.js';
 import {
   sanitize, fmt, fmtPrice, optimizeImgUrl,
@@ -1538,25 +1539,7 @@ function renderSideCart() {
     });
   }
 
-  // Bouton "En groupe" — démarre un panier collectif
-  const ctaGroup = sc.querySelector('#k-sc-group');
-  if (ctaGroup && !ctaGroup._wired) {
-    ctaGroup._wired = true;
-    ctaGroup.addEventListener('click', () => {
-      try {
-        // Snapshot du panier courant pour pré-charger le workspace après création
-        const pending = state.cart.map(it => ({
-          product_id: it.product.id,
-          name:       it.product.name,
-          price_kmf:  it.product.price_kmf || 0,
-          quantity:   it.qty,
-          qty:        it.qty,
-        }));
-        sessionStorage.setItem('komerce_event_pending_cart', JSON.stringify(pending));
-      } catch (_) {}
-      window.location.href = '/event/create?from=cart';
-    });
-  }
+  // Bouton "Partager" side-cart desktop — géré par b-share-cart.js (installé au boot)
 
   // Bouton "Vider" — purge complète du panier, avec confirmation native.
   // Réutilise clearCart() (mutation centralisée) — pas de duplication de

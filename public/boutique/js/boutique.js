@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module boutique
  * @brief Komerce boutique — Â§13 INIT (orchestrateur)
  *
@@ -75,6 +75,7 @@ import {
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
+import { install as installShareCart } from './b-share-cart.js';
 
 'use strict';
 
@@ -127,6 +128,7 @@ function init() {
   setupBnav();
   setupInfiniteScroll();
   initFlatSubcat();
+  installShareCart();
   setupFooterLinks();
   loadProducts();
   loadRelais();

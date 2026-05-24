@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (bundle Sprint 3 · 2026-05-23)
+   KOMERCE — components.css (bundle Sprint 3 · 2026-05-24)
    components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
@@ -1738,13 +1738,39 @@
     z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
     border-radius: 0; /* pleine largeur en fixed */
     box-shadow: 0 -2px 12px var(--overlay-black-sm);
+    /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
+       crée un stacking context qui piège position:fixed et empêche le repaint du fond.
+       translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
   }
   /* Compensation: éviter que le contenu scrollable disparaisse derrière la barre fixe.
-     Hauteur estimée = qty(44) + buy(48) + gap(10) + padding-top(10) + padding-bottom(10+safe-area) */
+     Hauteur exacte CTA = padding-top(10) + row1-qty(44) + gap(10) + row2-buy(48) + padding-bottom(10) = 122px.
+     + 28px marge = 150px. Fallback env() à 48px pour Android où safe-area-inset-bottom = 0
+     mais la barre home/nav peut quand même chevaucher le contenu en edge-to-edge. */
   .k-modal-scroll {
-    padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px));
   }
   .k-modal-suggestions { order: 2; }
+
+  /* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
+     => enfant flex direct de #k-modal => position statique, flex gere l'ancrage.
+     Selecteur enfant direct (>) => ne s'applique QUE si le JS a fait le deplacement.
+     Si le JS echoue, l'ancien position:fixed reste en fallback. */
+  #k-modal > .k-modal-actions {
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    z-index: auto;
+    border-radius: 0;
+  }
+  /* Quand la barre CTA est en position statique (flex), le padding compensatoire est inutile */
+  #k-modal > .k-modal-scroll {
+    padding-bottom: 0 !important;
+  }
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
@@ -1904,7 +1930,7 @@
     -webkit-overflow-scrolling: touch;
     width: 100%;
     max-width: 100%;
-    padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px)); /* BUGFIX: §2 guard — valeur augmentée de 140→160 pour couvrir les appareils où env() n'est pas supporté */
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px)); /* BUGFIX: §2 guard ne doit pas écraser le 150px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
   }
 
   /* Pas de débordement horizontal sur aucun enfant.
@@ -3991,6 +4017,75 @@ body.cart-open .k-wa-fab {
 
 /* is-attention + is-expanded : déplacés dans boutique-desktop.css (owner §3). */
 
+
+/* ── BOUTON PARTAGER (mobile drawer + side-cart) ─────────────── */
+.kcf-share {
+  background: var(--violet);
+  color: var(--white);
+  border-radius: 12px;
+  gap: 6px;
+}
+.kcf-share:hover { background: var(--violet-dark); transform: translateY(-1px); }
+.kcf-share:disabled {
+  background: var(--sand-dark);
+  color: var(--text-light);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── CHAMP NOM DU PANIER (drawer mobile) ─────────────────────── */
+.k-share-name-row {
+  margin-bottom: 10px;
+}
+.k-share-name-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--white);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+.k-share-name-input:focus { border-color: var(--violet); }
+.k-share-name-input::placeholder { color: var(--text-light); }
+
+/* ── BADGE PARTAGÉ (drawer mobile) ──────────────────────────── */
+.k-share-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--green-bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green-dark-text);
+}
+.k-share-badge-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green-success);
+  flex-shrink: 0;
+}
+.k-share-badge-label { flex: 1; }
+.k-share-reshare-btn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1.5px solid var(--green-success);
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-text);
+  cursor: pointer;
+  transition: all .15s;
+}
+.k-share-reshare-btn:hover { background: var(--green-bg-soft); }
 
 
 /* ── interactions.css ────────────────────────────────────── */

@@ -517,12 +517,15 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
      (_injectMobileTrust, _injectMobileDelivery) soient reflowées. */
   function _syncScrollPadding() {
     if (window.innerWidth >= 900) return;
+    var actBar = dom.modal && dom.modal.querySelector('.k-modal-actions');
+    // FIX v5: si .k-modal-actions est enfant direct de #k-modal (architecture statique),
+    // le layout flex gere l'ancrage => pas de padding compensatoire necessaire.
+    if (!actBar || actBar.parentNode === dom.modal) return;
+    // Fallback legacy: position:fixed => compenser via padding
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        var actBar  = dom.modal && dom.modal.querySelector('.k-modal-actions');
         var scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
-        if (!actBar || !scrollEl) return;
-        // +20px buffer pour absorber les variations de rendu inter-navigateurs
+        if (!scrollEl) return;
         scrollEl.style.paddingBottom = (actBar.offsetHeight + 20) + 'px';
       });
     });
@@ -1092,6 +1095,23 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
    * Doctrine : structure HTML + CSS, JS = comportements uniquement.
    */
   function setupModal() {
+
+    // FIX ARCHITECTURE v5: extraire .k-modal-actions du flux scrollable
+    // Sur mobile, position:fixed sur .k-modal-actions cause un bug subtil:
+    // l'animation k-slide-up (transform) sur .k-modal cree un containing block
+    // pour ses enfants position:fixed => ils sont positionnes par rapport a
+    // .k-modal en cours de transformation, pas le viewport.
+    // + offsetHeight peut valoir 0 pendant l'animation => padding compensatoire
+    // faux => scroll sous la CTA.
+    // Solution: deplacer .k-modal-actions en enfant flex direct de #k-modal
+    // (display:flex flex-direction:column). Flex l'ancre en bas sans position:fixed.
+    if (window.innerWidth < 900) {
+      var _act = dom.modal && dom.modal.querySelector('.k-modal-actions');
+      if (_act && _act.parentNode !== dom.modal) {
+        dom.modal.appendChild(_act);
+      }
+    }
+
     dom.modalBack.addEventListener('click', modalGoBack);
     dom.modalClose.addEventListener('click', closeModal);
     dom.modalCartBtn.addEventListener('click', () => {

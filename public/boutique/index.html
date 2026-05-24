@@ -268,9 +268,21 @@ if('serviceWorker' in navigator){
           Commander (<span id="k-sc-count-inline">0</span>)
         </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
-        <button id="k-sc-group" class="k-sc-btn-group" type="button" aria-label="Lancer un panier collectif" title="Payer en groupe">
-          <span class="k-sc-btn-group-emoji" aria-hidden="true">👥</span>
-          <span class="k-sc-btn-group-label">En groupe</span>
+        <!-- Champ nom du panier (optionnel sauf au partage) -->
+        <div class="k-sc-name-wrap" id="k-sc-name-wrap">
+          <input id="k-sc-name-input" class="k-sc-name-input" type="text"
+            placeholder="Nom du panier (ex: Cadeau Aïcha)" maxlength="80" autocomplete="off" aria-label="Nom du panier partagé">
+        </div>
+        <!-- Badge "Partagé" — visible uniquement quand shareToken actif -->
+        <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
+          <span class="k-sc-shared-dot" aria-hidden="true"></span>
+          <span class="k-sc-shared-label">Partagé</span>
+          <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">Re-partager</button>
+        </div>
+        <!-- Bouton Partager (remplace "En groupe") -->
+        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Partager ce panier">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span class="k-sc-btn-share-label">Partager</span>
         </button>
         <button id="k-sc-clear" class="k-sc-clear" type="button" aria-label="Vider le panier" title="Vider le panier">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6h12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -372,6 +384,17 @@ if('serviceWorker' in navigator){
   </div>
   <div id="k-cart-body" class="k-cart-body"></div>
   <div id="k-cart-footer" class="k-cart-footer u-hidden">
+    <!-- Champ nom du panier (drawer mobile) -->
+    <div class="k-share-name-row" id="k-share-name-row">
+      <input id="k-cart-name-input" class="k-share-name-input" type="text"
+        placeholder="Nom du panier (ex: Cadeau Aïcha)" maxlength="80" autocomplete="off" aria-label="Nom du panier partagé">
+    </div>
+    <!-- Badge partagé (drawer mobile) -->
+    <div class="k-share-badge-row" id="k-share-badge-row" hidden>
+      <span class="k-share-badge-dot" aria-hidden="true"></span>
+      <span class="k-share-badge-label">Partagé</span>
+      <button id="k-cart-reshare" class="k-share-reshare-btn" type="button">Re-partager</button>
+    </div>
     <div class="k-cart-total-row">
       <span>Total</span>
       <div>
@@ -382,7 +405,10 @@ if('serviceWorker' in navigator){
     <div class="k-cart-footer-btns">
       <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
       <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
-      <button id="k-cart-whatsapp" class="kcf-btn kcf-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>Partager à un proche</button>
+      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Partager ce panier">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Partager
+      </button>
       <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
     </div>
   </div>
