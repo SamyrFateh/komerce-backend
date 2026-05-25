@@ -2,60 +2,158 @@
  * @module b-share-cart
  * @brief Flow "Payer en groupe" — côté créateur.
  *
- * Étapes :
- *   A — Mini-formulaire : titre du panier (optionnel) + identification
- *       si session absente (prénom + téléphone)
- *   B — POST /api/shared-carts/from-cart-items → token + share_url + expires_at
- *   C — WhatsApp + switch onglet Groupe
- *
- * state.shareToken / state.shareId / state.shareExpiry persiste en sessionStorage
- * (kmrc_share) — expire à la fermeture du navigateur.
- * Aucun localStorage group carts. Aucun polling ici.
+ * P0 UX/state — Mai 2026 :
+ *   - sessionStorage n'est plus source de vérité, seulement un cache session.
+ *   - au boot, l'état réel est restauré via GET /api/shared-carts/mine.
+ *   - la side cart/sidebar affiche un résumé unique + "Voir le suivi".
+ *   - les actions de partage vivent dans l'onglet Groupe.
  */
 
-import { state }          from './b-store.js';
-import { showToast }      from './b-cart-core.js';
+import { state } from './b-store.js';
+import { showToast } from './b-cart-core.js';
 import { refreshGroupBadge } from './b-group-view.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
+const API_MINE = '/api/shared-carts/mine';
+const ACTIVE_STATUSES = new Set(['active', 'partially_funded', 'fully_funded']);
 
-/* ── Persistance session ────────────────────────────────────────── */
+/* ── Helpers ───────────────────────────────────────────────────── */
+function r(n) { return Math.round(Number(n) || 0); }
+
+function pct(contributed, total) {
+  const t = r(total);
+  if (!t) return 0;
+  return Math.max(0, Math.min(100, Math.round((r(contributed) / t) * 100)));
+}
+
+function timeRemaining(expiresAt) {
+  if (!expiresAt) return 'actif';
+  const diffMs = new Date(expiresAt) - Date.now();
+  if (diffMs <= 0) return 'expiré';
+  const h = Math.floor(diffMs / 3_600_000);
+  const m = Math.floor((diffMs % 3_600_000) / 60_000);
+  if (h >= 48) return `${Math.floor(h / 24)}j restants`;
+  if (h >= 1) return `${h}h${m > 0 ? m + 'min' : ''} restantes`;
+  return `${Math.max(1, m)}min restantes`;
+}
+
+function isActiveCart(cart) {
+  return cart && ACTIVE_STATUSES.has(cart.status) && (!cart.expires_at || new Date(cart.expires_at) > new Date());
+}
+
+function pickActiveCart(carts = []) {
+  return [...carts]
+    .filter(isActiveCart)
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0] || null;
+}
+
+function applyCartToState(cart) {
+  if (!cart) return null;
+  state.shareToken = cart.token || null;
+  state.shareId = cart.id || null;
+  state.shareExpiry = cart.expires_at || null;
+  state.cartName = cart.title || 'Panier groupe';
+  state.shareStatus = cart.status || null;
+  state.shareTotalKmf = r(cart.total_kmf_snapshot);
+  state.shareContributedKmf = r(cart.contributed_kmf);
+  state.shareRemainingKmf = r(cart.remaining_kmf);
+  state.shareUrl = cart.share_url || (cart.token ? `${window.location.origin}/cart/shared/${cart.token}` : null);
+  saveShareState();
+  return cart;
+}
+
+/* ── Persistance session : cache uniquement ─────────────────────── */
 function loadShareState() {
   try {
     const raw = sessionStorage.getItem('kmrc_share');
     if (!raw) return;
     const s = JSON.parse(raw);
-    state.shareToken  = s.token  || null;
-    state.shareId     = s.id     || null;
+    state.shareToken = s.token || null;
+    state.shareId = s.id || null;
     state.shareExpiry = s.expiry || null;
-    state.cartName    = s.name   || '';
+    state.cartName = s.name || '';
+    state.shareStatus = s.status || null;
+    state.shareTotalKmf = r(s.total_kmf);
+    state.shareContributedKmf = r(s.contributed_kmf);
+    state.shareRemainingKmf = r(s.remaining_kmf);
+    state.shareUrl = s.share_url || null;
   } catch (_) {}
 }
 
 function saveShareState() {
   try {
     sessionStorage.setItem('kmrc_share', JSON.stringify({
-      token:  state.shareToken,
-      id:     state.shareId,
+      token: state.shareToken,
+      id: state.shareId,
       expiry: state.shareExpiry,
-      name:   state.cartName,
+      name: state.cartName,
+      status: state.shareStatus,
+      total_kmf: state.shareTotalKmf,
+      contributed_kmf: state.shareContributedKmf,
+      remaining_kmf: state.shareRemainingKmf,
+      share_url: state.shareUrl,
     }));
   } catch (_) {}
 }
 
-export function clearShareState() {
-  state.shareToken  = null;
-  state.shareId     = null;
+function clearLocalShareState() {
+  state.shareToken = null;
+  state.shareId = null;
   state.shareExpiry = null;
-  state.cartName    = '';
+  state.cartName = '';
+  state.shareStatus = null;
+  state.shareTotalKmf = 0;
+  state.shareContributedKmf = 0;
+  state.shareRemainingKmf = 0;
+  state.shareUrl = null;
   try {
     sessionStorage.removeItem('kmrc_share');
     sessionStorage.removeItem('kmrc_banner_dismissed');
   } catch (_) {}
+}
+
+export function clearShareState() {
+  clearLocalShareState();
   refreshGroupBadge();
   hideBanner();
   refreshSharedBadges(false);
+}
+
+/* ── Restauration backend : source de vérité P0 ─────────────────── */
+export async function restoreSharedCartFromBackend({ silent = true } = {}) {
+  try {
+    const res = await fetch(API_MINE, { credentials: 'include' });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) return null;
+      throw new Error(`GET /mine ${res.status}`);
+    }
+    const data = await res.json().catch(() => ({}));
+    const cart = pickActiveCart(data.carts || []);
+
+    if (!cart) {
+      clearLocalShareState();
+      refreshSharedBadges(false);
+      hideBanner();
+      refreshGroupBadge();
+      return null;
+    }
+
+    applyCartToState(cart);
+    refreshSharedBadges(true, cart);
+    refreshGroupBadge();
+    showBanner({
+      title: cart.title,
+      expires_at: cart.expires_at,
+      status: cart.status,
+      contributed_kmf: cart.contributed_kmf,
+      total_kmf_snapshot: cart.total_kmf_snapshot,
+    });
+    return cart;
+  } catch (err) {
+    if (!silent) showToast(`Panier groupe non restauré : ${err.message}`, 'error');
+    return null;
+  }
 }
 
 /* ── Détection session ──────────────────────────────────────────── */
@@ -63,19 +161,65 @@ function isConnected() {
   return window.K?.isConnected?.() || false;
 }
 
-/* ── Badges sidebar ─────────────────────────────────────────────── */
-export function refreshSharedBadges(isShared) {
-  // Mobile drawer
+/* ── Sidebar / badges ───────────────────────────────────────────── */
+function ensureSidebarStyles() {
+  if (document.getElementById('k-share-sidebar-p0-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'k-share-sidebar-p0-styles';
+  s.textContent = `
+.k-sc-shared-badge{padding:10px 12px;border:1px solid rgba(31,122,84,.18);border-radius:14px;background:rgba(31,122,84,.07);margin-top:10px}
+.k-sc-shared-summary{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px;min-width:0}
+.k-sc-shared-dot{width:9px;height:9px;border-radius:999px;background:#1f7a54;box-shadow:0 0 0 4px rgba(31,122,84,.10);margin-top:5px;flex:0 0 auto}
+.k-sc-shared-text{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.k-sc-shared-text strong{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.k-sc-shared-text span{font-size:12px;color:var(--text-muted);margin-top:2px}
+.k-sc-shared-badge.is-funded{background:rgba(31,122,84,.12);border-color:rgba(31,122,84,.30)}
+.k-sc-shared-badge.is-urgent{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.34)}
+.k-sc-group-view-btn{width:100%;border:none;border-radius:999px;padding:9px 12px;background:var(--text);color:var(--white);font-weight:800;font-size:13px;cursor:pointer}
+.k-sc-group-view-btn:hover{transform:translateY(-1px)}
+.k-sc-reshare-btn{display:none!important}`;
+  document.head.appendChild(s);
+}
+
+function renderSidebarSummary(cart = {}) {
+  const desktopBadge = document.getElementById('k-sc-shared-badge');
+  if (!desktopBadge) return;
+  ensureSidebarStyles();
+
+  const title = cart.title || state.cartName || 'Panier groupe';
+  const status = cart.status || state.shareStatus;
+  const total = cart.total_kmf_snapshot ?? state.shareTotalKmf;
+  const contributed = cart.contributed_kmf ?? state.shareContributedKmf;
+  const p = pct(contributed, total);
+  const remaining = timeRemaining(cart.expires_at || state.shareExpiry);
+  const urgent = (cart.expires_at || state.shareExpiry) && new Date(cart.expires_at || state.shareExpiry) - Date.now() < 2 * 3_600_000;
+
+  desktopBadge.classList.toggle('is-funded', status === 'fully_funded');
+  desktopBadge.classList.toggle('is-urgent', !!urgent && status !== 'fully_funded');
+  desktopBadge.innerHTML = `
+    <div class="k-sc-shared-summary">
+      <span class="k-sc-shared-dot" aria-hidden="true"></span>
+      <div class="k-sc-shared-text">
+        <strong id="k-sc-shared-title">${title}</strong>
+        <span id="k-sc-shared-meta">${status === 'fully_funded' ? 'Financé !' : `${p}% · ${remaining}`}</span>
+      </div>
+    </div>
+    <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">Voir le suivi →</button>`;
+
+  desktopBadge.querySelector('#k-sc-group-view')?.addEventListener('click', switchToGroup);
+}
+
+export function refreshSharedBadges(isShared, cart = null) {
   const mobileBadge = document.getElementById('k-share-badge-row');
   const mobileShare = document.getElementById('k-cart-share');
   if (mobileBadge) mobileBadge.hidden = !isShared;
-  if (mobileShare) mobileShare.textContent = isShared ? 'Re-partager' : 'Payer en groupe';
+  if (mobileShare) mobileShare.textContent = isShared ? 'Voir le groupe' : 'Payer en groupe';
 
-  // Desktop sidebar
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   const desktopShare = document.getElementById('k-sc-share');
   if (desktopBadge) desktopBadge.hidden = !isShared;
-  if (desktopShare) desktopShare.hidden  = isShared;  // masqué quand badge actif
+  if (desktopShare) desktopShare.hidden = !!isShared;
+  if (isShared) renderSidebarSummary(cart || {});
 
   refreshGroupBadge();
 }
@@ -160,15 +304,15 @@ function promptInit(needsAuth) {
       <button class="k-sm-btn" id="k-sm-submit">Créer le panier →</button>`);
 
     const errEl = ov.querySelector('#k-sm-err');
-    const btn   = ov.querySelector('#k-sm-submit');
+    const btn = ov.querySelector('#k-sm-submit');
 
     btn.addEventListener('click', () => {
       const title = (ov.querySelector('#k-sm-title-f')?.value || '').trim();
-      const name  = (ov.querySelector('#k-sm-name-f')?.value  || '').trim();
+      const name = (ov.querySelector('#k-sm-name-f')?.value || '').trim();
       const phone = (ov.querySelector('#k-sm-phone-f')?.value || '').trim();
 
       if (needsAuth) {
-        if (!name)  { errEl.textContent = 'Prénom requis.'; return; }
+        if (!name) { errEl.textContent = 'Prénom requis.'; return; }
         if (!phone || !/^\+?[\d\s\-]{8,20}$/.test(phone)) {
           errEl.textContent = 'Numéro invalide (ex: +26932…)'; return;
         }
@@ -189,9 +333,9 @@ async function createSharedCart(opts) {
     .filter(it => it.product_id);
 
   const body = { cart_items: cartItems };
-  if (opts.title)  body.title            = opts.title;
-  if (opts.phone)  body.tracking_phone   = opts.phone;
-  if (opts.name)   body.recipient_name   = opts.name;
+  if (opts.title) body.title = opts.title;
+  if (opts.phone) body.tracking_phone = opts.phone;
+  if (opts.name) body.recipient_name = opts.name;
 
   const res = await fetch(API_CREATE, {
     method: 'POST',
@@ -205,7 +349,6 @@ async function createSharedCart(opts) {
     throw new Error(e.error || `Erreur API (${res.status})`);
   }
   return res.json();
-  // { shared_cart_id, token, share_url, total_kmf, expires_at, items_count }
 }
 
 /* ── Étape C : WhatsApp + switch groupe ─────────────────────────── */
@@ -235,16 +378,14 @@ export async function startShareFlow(opts = {}) {
     return;
   }
 
-  // Re-partage d'un panier déjà créé
   if (reshare && state.shareToken) {
-    const shareUrl = `${window.location.origin}/cart/shared/${state.shareToken}`;
+    const shareUrl = state.shareUrl || `${window.location.origin}/cart/shared/${state.shareToken}`;
     openWhatsApp(state.cartName, shareUrl);
     return;
   }
 
-  // Formulaire init
   const needsAuth = !isConnected();
-  const formData  = await promptInit(needsAuth);
+  const formData = await promptInit(needsAuth);
   if (!formData) return;
 
   const btn = document.getElementById('k-cart-share') || document.getElementById('k-sc-share');
@@ -253,28 +394,36 @@ export async function startShareFlow(opts = {}) {
   try {
     const data = await createSharedCart(formData);
 
-    const token    = data.token;
-    const id       = data.shared_cart_id;
-    const shareUrl = data.share_url || `${window.location.origin}/cart/shared/${token}`;
-    const title    = formData.title || 'Panier groupe';
+    const title = formData.title || 'Panier groupe';
+    const cart = {
+      id: data.shared_cart_id,
+      token: data.token,
+      share_url: data.share_url || `${window.location.origin}/cart/shared/${data.token}`,
+      title,
+      status: 'active',
+      total_kmf_snapshot: data.total_kmf,
+      contributed_kmf: 0,
+      remaining_kmf: data.total_kmf,
+      expires_at: data.expires_at,
+      created_at: new Date().toISOString(),
+    };
 
-    state.shareToken  = token;
-    state.shareId     = id;
-    state.shareExpiry = data.expires_at;
-    state.cartName    = title;
-    saveShareState();
+    applyCartToState(cart);
+    refreshSharedBadges(true, cart);
+    showBanner({
+      title,
+      expires_at: data.expires_at,
+      status: 'active',
+      contributed_kmf: 0,
+      total_kmf_snapshot: data.total_kmf,
+    });
+    openWhatsApp(title, cart.share_url);
 
-    refreshSharedBadges(true);
-    showBanner({ title, expires_at: data.expires_at });
-    openWhatsApp(title, shareUrl);
-
-    // Délai pour laisser WhatsApp s'ouvrir, puis switch onglet
     setTimeout(switchToGroup, 600);
-
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Payer en groupe'; }
+    if (btn) { btn.disabled = false; btn.textContent = state.shareToken ? 'Voir le groupe' : 'Payer en groupe'; }
   }
 }
 
@@ -292,12 +441,15 @@ export function install() {
     refreshBanner();
   }
 
-  // Boutons créer/re-partager
-  document.getElementById('k-cart-share')?.addEventListener('click', () =>
-    startShareFlow({ reshare: !!state.shareToken }));
+  restoreSharedCartFromBackend({ silent: true });
+
+  document.getElementById('k-cart-share')?.addEventListener('click', () => {
+    if (state.shareToken) switchToGroup();
+    else startShareFlow({ reshare: false });
+  });
 
   document.getElementById('k-sc-share')?.addEventListener('click', () =>
-    startShareFlow({ reshare: !!state.shareToken }));
+    startShareFlow({ reshare: false }));
 
   document.getElementById('k-cart-reshare')?.addEventListener('click', () =>
     startShareFlow({ reshare: true }));
@@ -305,10 +457,8 @@ export function install() {
   document.getElementById('k-sc-reshare')?.addEventListener('click', () =>
     startShareFlow({ reshare: true }));
 
-  // Voir les participations (sidebar desktop)
   document.getElementById('k-sc-group-view')?.addEventListener('click', switchToGroup);
 
-  // Vidage panier = reset panier partagé
   document.addEventListener('cart:cleared', () => {
     clearShareState();
     refreshSharedBadges(false);
