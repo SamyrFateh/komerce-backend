@@ -2,11 +2,11 @@
  * @module b-share-cart
  * @brief Flow "Payer en groupe" — côté créateur.
  *
- * P0 UX/state — Mai 2026 :
- *   - sessionStorage n'est plus source de vérité, seulement un cache session.
- *   - au boot, l'état réel est restauré via GET /api/shared-carts/mine.
- *   - la side cart/sidebar affiche un résumé unique + "Voir le suivi".
- *   - les actions de partage vivent dans l'onglet Groupe.
+ * Doctrine boutique-first — Mai 2026 :
+ *   - un panier partagé actif n'empêche pas d'en créer un autre.
+ *   - /mine restaure le dernier panier actif seulement comme raccourci de suivi.
+ *   - "Voir le groupe" = consulter le panier actif, pas verrouiller le panier courant.
+ *   - le backend reste source de vérité pour la limite de paniers actifs.
  */
 
 import { state } from './b-store.js';
@@ -213,12 +213,15 @@ export function refreshSharedBadges(isShared, cart = null) {
   const mobileBadge = document.getElementById('k-share-badge-row');
   const mobileShare = document.getElementById('k-cart-share');
   if (mobileBadge) mobileBadge.hidden = !isShared;
-  if (mobileShare) mobileShare.textContent = isShared ? 'Voir le groupe' : 'Payer en groupe';
+  if (mobileShare) mobileShare.textContent = isShared ? 'Groupe actif' : 'Payer en groupe';
 
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   const desktopShare = document.getElementById('k-sc-share');
   if (desktopBadge) desktopBadge.hidden = !isShared;
-  if (desktopShare) desktopShare.hidden = !!isShared;
+  if (desktopShare) {
+    desktopShare.hidden = false;
+    desktopShare.textContent = isShared ? 'Nouveau groupe' : 'Payer en groupe';
+  }
   if (isShared) renderSidebarSummary(cart || {});
 
   refreshGroupBadge();
@@ -256,7 +259,12 @@ function ensureStyles() {
 .k-sm-btn{width:100%;padding:14px;margin-top:14px;background:var(--violet);color:var(--white);
   border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .15s}
 .k-sm-btn:hover{background:var(--violet-dark);transform:translateY(-1px)}
-.k-sm-btn:disabled{background:var(--sand-dark);color:var(--text-light);cursor:not-allowed;transform:none}`;
+.k-sm-btn:disabled{background:var(--sand-dark);color:var(--text-light);cursor:not-allowed;transform:none}
+.k-sm-choice{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.k-sm-btn-secondary{background:var(--sand);color:var(--text)}
+.k-sm-btn-secondary:hover{background:var(--sand-dark)}
+.k-sm-btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
+.k-sm-btn-ghost:hover{background:var(--sand);color:var(--text)}}`;
   document.head.appendChild(s);
 }
 
@@ -277,6 +285,27 @@ function closeModal(ov) {
   setTimeout(() => ov.remove(), 150);
 }
 
+function promptExistingCartChoice() {
+  return new Promise(resolve => {
+    const ov = openModal(`
+      <div class="k-sm-head">
+        <span class="k-sm-title">👥 Panier groupe actif</span>
+        <button class="k-sm-close" aria-label="Fermer">✕</button>
+      </div>
+      <p class="k-sm-hint">Vous avez déjà un panier partagé en cours. Vous pouvez le suivre, ou créer un nouveau panier partagé avec le panier actuel.</p>
+      <div class="k-sm-choice">
+        <button class="k-sm-btn" id="k-sm-view-group">Voir le groupe actif</button>
+        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-create-new">Créer un nouveau groupe</button>
+        <button class="k-sm-btn k-sm-btn-ghost" id="k-sm-cancel-choice">Annuler</button>
+      </div>`);
+
+    ov.querySelector('#k-sm-view-group')?.addEventListener('click', () => { closeModal(ov); resolve('view'); });
+    ov.querySelector('#k-sm-create-new')?.addEventListener('click', () => { closeModal(ov); resolve('create'); });
+    ov.querySelector('#k-sm-cancel-choice')?.addEventListener('click', () => { closeModal(ov); resolve(null); });
+    ov.querySelector('.k-sm-close')?.addEventListener('click', () => { closeModal(ov); resolve(null); });
+  });
+}
+
 /* ── Étape A : formulaire init ──────────────────────────────────── */
 function promptInit(needsAuth) {
   return new Promise(resolve => {
@@ -285,7 +314,7 @@ function promptInit(needsAuth) {
         <span class="k-sm-title">🛒 Payer en groupe</span>
         <button class="k-sm-close" aria-label="Fermer">✕</button>
       </div>
-      <p class="k-sm-hint">Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue à sa part.</p>
+      <p class="k-sm-hint">Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement, jusqu'au total du panier.</p>
       <div class="k-sm-field">
         <label class="k-sm-label" for="k-sm-title-f">Nom du panier (optionnel)</label>
         <input id="k-sm-title-f" class="k-sm-input" type="text"
@@ -423,8 +452,17 @@ export async function startShareFlow(opts = {}) {
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = state.shareToken ? 'Voir le groupe' : 'Payer en groupe'; }
+    if (btn) { btn.disabled = false; btn.textContent = state.shareToken ? 'Groupe actif' : 'Payer en groupe'; }
   }
+}
+
+async function handleShareClick() {
+  if (!state.shareToken) {
+    return startShareFlow({ reshare: false });
+  }
+  const choice = await promptExistingCartChoice();
+  if (choice === 'view') return switchToGroup();
+  if (choice === 'create') return startShareFlow({ reshare: false });
 }
 
 /* ── Installation ───────────────────────────────────────────────── */
@@ -443,13 +481,9 @@ export function install() {
 
   restoreSharedCartFromBackend({ silent: true });
 
-  document.getElementById('k-cart-share')?.addEventListener('click', () => {
-    if (state.shareToken) switchToGroup();
-    else startShareFlow({ reshare: false });
-  });
+  document.getElementById('k-cart-share')?.addEventListener('click', handleShareClick);
 
-  document.getElementById('k-sc-share')?.addEventListener('click', () =>
-    startShareFlow({ reshare: false }));
+  document.getElementById('k-sc-share')?.addEventListener('click', handleShareClick);
 
   document.getElementById('k-cart-reshare')?.addEventListener('click', () =>
     startShareFlow({ reshare: true }));
