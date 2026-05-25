@@ -64,7 +64,7 @@ async function listManualRefundQueue(options = {}) {
      JOIN shared_carts sc ON sc.id = c.shared_cart_id
      LEFT JOIN users u ON u.id = sc.beneficiary_user_id
      WHERE c.status = 'failed'
-       AND COALESCE((c.metadata->>'requires_manual_refund')::boolean, false) = true
+       AND c.metadata @> '{"requires_manual_refund": true}'
      ORDER BY c.failed_at DESC NULLS LAST, c.created_at DESC
      LIMIT $1 OFFSET $2`,
     [limit, offset]
@@ -73,8 +73,9 @@ async function listManualRefundQueue(options = {}) {
   const { rows: countRows } = await db.query(
     `SELECT COUNT(*)::int AS count
        FROM shared_cart_contributions c
+       JOIN shared_carts sc ON sc.id = c.shared_cart_id
       WHERE c.status = 'failed'
-        AND COALESCE((c.metadata->>'requires_manual_refund')::boolean, false) = true`
+        AND c.metadata @> '{"requires_manual_refund": true}'`
   );
 
   return {
