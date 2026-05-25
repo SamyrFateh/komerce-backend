@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-25** (analyse code pré go-live complète — M1 + M2 confirmés en prod)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -156,6 +156,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 - [ ] **GOD-FILES-3** — `routes/parcel-api-v2.js` : 1 295 lignes, 8 routes. `syncParcelToOrders` (236 l) inline. Extraire vers `services/parcel-sync-service.js`.
 - [ ] **GOD-FILES-4** — `routes/admin.js` : 1 210 lignes, 20 routes. Lot **B4 planifié** dans `BACKEND_GOLIVE_ROADMAP.md`. Découper en `routes/admin-orders.js`, `routes/admin-partners.js`, etc.
 - [x] **GOD-FILES-6** — `routes/hub-dashboard.js` : 1 020 → 619 lignes. Logique lecture extraite vers `services/hub-dashboard-queries.js`. Corrections : type `backorder`→`stock`, priority `medium`→`normal`, CHECK constraints alignées avec relay-dashboard. npm test vert.
+- [x] **REFACTO-SCAN-ENGINE** ✅ — `services/scan-engine.js` : `processScan()` 311 → ~55 lignes. 4 sous-fonctions privées extraites : `_loadScanContext` (étapes 1-3), `_validateAndCatchup` (étapes 4-5, I-03 guards intacts, `parcelItems.splice()` PATCH P1-5 préservé), `_applyEvent` (étapes 6-9), `_finalizeAndLog` (étapes 10-12). Notifications post-commit (étape 14) et `logScanEventDirect` (catch) restent dans `processScan()`. `module.exports` inchangé. `tests/unit/scan-engine.test.js` créé : 7 cas, npm test vert.
 - [x] **GOD-FILES-5-SOURCING** — `routes/sourcing-engine.js` : 960 → 386 lignes. Logique lecture (getAnalysis, getAnalysisById, getSynthesis, getConfig) extraite vers `services/sourcing-analysis.js`. Mutations (PUT products/:id, PUT products/:id/variants, POST bulk-rail) conservées dans la route. npm test vert.
 - [ ] **COLLECTIVE-CLEANUP** — `services/collective-workspace-engine.js` (965 l) encore importé par `collective-close-order-service.js`, `collective-stock-reservation-service.js`, `collective-ready-to-order-orchestrator.js`, eux-mêmes appelés depuis `middleware/auth.js` et `routes/admin-collective-repairs.js`. Le tombstone PR #486 a désactivé les routes mais **pas nettoyé la chaîne de services**. Non bloquant go-live.
 
@@ -204,10 +205,10 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 ### `npm test` après patch logger
 
 ```text
-Test Suites: 1 skipped, 7 passed, 7 of 8 total
-Tests:       1 skipped, 87 passed, 88 total
+Test Suites: 1 skipped, 8 passed, 8 of 9 total
+Tests:       1 skipped, 94 passed, 95 total
 Snapshots:   0 total
-Time:        1.062 s
+Time:        ~1.1 s
 Ran all test suites.
 ```
 
@@ -303,6 +304,7 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 | GOD-FILES-3 | Post go-live | `routes/parcel-api-v2.js` 1 295 l — extraire `syncParcelToOrders` |
 | GOD-FILES-4 | Post go-live | `routes/admin.js` 1 210 l — lot B4 planifié dans BACKEND_GOLIVE_ROADMAP.md |
 | GOD-FILES-6 | ✅ Fait | `routes/hub-dashboard.js` 619 l (était 1 020). `services/hub-dashboard-queries.js` créé. |
+| REFACTO-SCAN-ENGINE | ✅ Fait | `services/scan-engine.js` : `processScan()` ~55 l (était 311). 4 sous-fonctions privées. `tests/unit/scan-engine.test.js` : 7 cas. npm test vert. |
 | B-MODAL-MOCK | Post go-live | Supprimer `b-modal-social-proof-mock.js` quand colonnes DB social proof prêtes |
 | SEC-1b | Conditionnel scale-out | Migrer `printTokens` Map in-memory si multi-instance strict |
 | BOUTIQUE-CSS-CLEANUP | Faible | Dead CSS `k-modal-open` dans `cart.css`. 2 hex `event.css` → tokens. |
@@ -330,6 +332,7 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 - **`baskets.js`** : prix snapshotés sans TTL/alerte de divergence — à surveiller.
 - **`utils/pricing.js`** : **ZOMBIE** — 1 330 lignes, router Express non monté, aucun import. À supprimer (ZOMBIE-1).
 - **God files restants** : `routes/dashboard-finance.js` (1 218 l), `routes/parcel-api-v2.js` (1 295 l), `routes/admin.js` (1 210 l, lot B4 planifié), `routes/hub-dashboard.js` (1 020 l). Backlog post go-live.
+- **`services/scan-engine.js`** : refactorisé ✅ — `processScan()` 55 lignes, 4 sous-fonctions privées, `module.exports` inchangé. `tests/unit/scan-engine.test.js` : 7 cas. npm test vert.
 
 ### Boutique frontend
 
