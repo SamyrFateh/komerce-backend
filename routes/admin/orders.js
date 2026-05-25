@@ -1,0 +1,116 @@
+'use strict';
+
+const crypto = require('crypto');
+const express = require('express');
+const router  = express.Router();
+const db      = require('../../db');
+const { authenticate, requireRole } = require('../../middleware/auth');
+const log = require('../../utils/logger').child({ module: 'admin/orders' });
+
+const guard = [authenticate, requireRole(['admin'])];
+
+// Helper: supprime une commande et toutes ses dépendances
+// Tables enfants avec FK vers orders: order_items, scans, order_status_history, sms_log, disputes, ceremony_order_items
+// COPIE CONFORME de l'original routes/admin.js — NE PAS déplacer vers un service partagé dans ce lot.
+async function deleteOrderCascade(client_or_db, id) {
+  // Supprimer les tables enfants dans l'ordre correct
+  // Use SAVEPOINT to survive missing tables (PG aborts TX on error)
+  const childOps = [
+    ['DELETE FROM scans WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM ceremony_order_items WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM disputes WHERE order_id = $1::uuid', [id]],
+    ['UPDATE sms_log SET order_id = NULL WHERE order_id = $1::uuid', [id]],
+    ['DELETE FROM order_items WHERE order_id = $1::uuid', [id]],
+  ];
+  for (let i = 0; i < childOps.length; i++) {
+    try {
+      await client_or_db.query(`SAVEPOINT sp_del_${i}`);
+      await client_or_db.query(childOps[i][0], childOps[i][1]);
+      await client_or_db.query(`RELEASE SAVEPOINT sp_del_${i}`);
+    } catch (_) {
+      await client_or_db.query(`ROLLBACK TO SAVEPOINT sp_del_${i}`);
+    }
+  }
+  await client_or_db.query('DELETE FROM orders WHERE id = $1::uuid', [id]);
+}
+
+// ─── GET /api/admin/orders ─────────────────────────────────────────
+router.get('/orders', ...guard, async (req, res, next) => {
+  try {
+    const {
+      status, payment_mode, confection_type, from_date, to_date,
+      search, margin_alert, limit = 50, offset = 0,
+    } = req.query;
+
+    const conditions = ['1=1'];
+    const params     = [];
+    let   pi         = 1;
+
+    if (status)           { conditions.push(`o.status = $${pi++}`); params.push(status); }
+    if (payment_mode)     { conditions.push(`o.payment_mode = $${pi++}`); params.push(payment_mode); }
+    if (confection_type)  { conditions.push(`o.confection_type = $${pi++}`); params.push(confection_type); }
+    if (from_date)        { conditions.push(`o.created_at >= $${pi++}`); params.push(from_date); }
+    if (to_date)          { conditions.push(`o.created_at <= $${pi++}`); params.push(to_date); }
+    if (margin_alert === 'true') { conditions.push('o.margin_alert = TRUE'); }
+    if (search) {
+      conditions.push(`(o.reference ILIKE $${pi} OR u.full_name ILIKE $${pi} OR u.phone ILIKE $${pi})`);
+      params.push(`%${search}%`);
+      pi++;
+    }
+
+    const where = conditions.join(' AND ');
+    const { rows } = await db.query(
+      `SELECT DISTINCT ON (o.id)
+         o.id, o.reference, o.status, o.total_kmf,
+         o.cost_estimated_kmf, o.cost_real_kmf, o.cost_delta_pct,
+         o.margin_estimated_pct, o.margin_real_pct, o.margin_alert, o.sourcing_blocked,
+         o.payment_mode, o.payment_status,
+         o.confection_type, o.confection_instructions, o.confection_delay_days,
+         rc.full_name AS recipient_name, rc.phone AS recipient_phone,
+         o.created_at, o.ordered_at, o.purchasing_at, o.preparation_at,
+         o.shipped_at, o.available_at, o.collected_at, o.cash_paid_at,
+         (SELECT p2.name FROM order_items oi2 JOIN products p2 ON p2.id = oi2.product_id WHERE oi2.order_id = o.id LIMIT 1) AS product_name,
+         (SELECT p2.category FROM order_items oi2 JOIN products p2 ON p2.id = oi2.product_id WHERE oi2.order_id = o.id LIMIT 1) AS category,
+         u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+         r.name AS relais_name, r.zone AS relais_zone,
+         r.island AS relais_island,
+         o.destination_island
+       FROM orders o
+       LEFT JOIN users    u ON u.id = o.user_id
+       LEFT JOIN relais   r ON r.id = o.relais_id
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
+       WHERE ${where}
+       ORDER BY o.id, o.created_at DESC
+       LIMIT $${pi} OFFSET $${pi + 1}`,
+      [...params, Number(limit), Number(offset)]
+    );
+
+    const { rows: [{ count }] } = await db.query(
+      `SELECT COUNT(*) FROM orders o LEFT JOIN users u ON u.id = o.user_id WHERE ${where}`,
+      params
+    );
+
+    res.json({ orders: rows, total: Number(count) });
+  } catch(err) { next(err); }
+});
+
+// ─── DELETE /api/admin/orders/:id ──────────────────────────────────
+router.delete('/orders/:id', ...guard, async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const { rows: [order] } = await db.query('SELECT id, reference, status FROM orders WHERE id = $1::uuid', [id]);
+    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
+
+    await deleteOrderCascade(db, id);
+
+    log.info(`🗑️ Admin deleted order ${order.reference} (${id}) by ${req.user.email}`);
+    res.json({
+      success: true,
+      message: `Commande ${order.reference} supprimée`,
+      deleted: { id, reference: order.reference, status: order.status },
+    });
+  } catch(err) { next(err); }
+});
+
+module.exports = router;
