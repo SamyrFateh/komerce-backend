@@ -109,11 +109,10 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
 
   return withTransaction(async (client) => {
     const { rows: contributionRows } = await client.query(
-      `SELECT c.*, sc.status AS shared_cart_status
-         FROM shared_cart_contributions c
-         JOIN shared_carts sc ON sc.id = c.shared_cart_id
-        WHERE c.id = $1
-        FOR UPDATE OF c`,
+      `SELECT *
+         FROM shared_cart_contributions
+        WHERE id = $1
+        FOR UPDATE`,
       [contributionId]
     );
 
@@ -131,10 +130,11 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
       throw err;
     }
 
+    const now = new Date().toISOString();
     const manualRefundPayload = {
       requires_manual_refund: false,
       manual_refund_processed: true,
-      manual_refund_processed_at: new Date().toISOString(),
+      manual_refund_processed_at: now,
       manual_refund_processed_by: adminUserId,
       ...(refundReference ? { manual_refund_reference: refundReference } : {}),
       ...(note ? { manual_refund_note: note } : {}),
@@ -143,14 +143,14 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
     const { rows: [updatedContribution] } = await client.query(
       `UPDATE shared_cart_contributions
           SET status = 'refunded',
-              refunded_at = NOW(),
+              refunded_at = $3,
               metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
-              updated_at = NOW()
+              updated_at = $3
         WHERE id = $2
           AND status = 'failed'
           AND metadata @> '{"requires_manual_refund": true}'
         RETURNING *`,
-      [JSON.stringify(manualRefundPayload), contributionId]
+      [JSON.stringify(manualRefundPayload), contributionId, now]
     );
 
     if (!updatedContribution) {
