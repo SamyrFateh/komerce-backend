@@ -2,8 +2,9 @@
  * @module b-group-view
  * @owner sélecteurs .k-group-* — onglet dédié panier partagé
  *
- * P0 UX/state — Mai 2026 :
- *   - le mode créateur tente une restauration backend /mine avant l'état vide.
+ * UX compacte — Mai 2026 :
+ *   - inspiration onglet Suivi boutique, sans surcharge informationnelle.
+ *   - une carte principale : statut, progression, reste, prochaine action.
  *   - les actions de partage vivent ici, pas dans la sidebar.
  *   - la finalisation devient action principale uniquement si fully_funded.
  *   - le formulaire contribution annonce et respecte remaining_kmf côté client.
@@ -81,6 +82,25 @@ function remainingKmf(cart) {
   return Math.max(0, r(cart.remaining_kmf) || total - confirmed);
 }
 
+function compactNextAction(cart) {
+  const remaining = remainingKmf(cart);
+  if (cart.status === 'fully_funded' || remaining <= 0) return 'Valider la commande';
+  if (cart.status === 'converted_to_order' || cart.finalized_order_id) return 'Suivre la commande';
+  if (cart.status === 'expired') return 'Créer un nouveau panier';
+  if (cart.status === 'cancelled') return 'Panier annulé';
+  return 'Partager le lien';
+}
+
+function shortDeadline(expiresAt) {
+  if (!expiresAt) return 'actif';
+  const diff = new Date(expiresAt) - Date.now();
+  if (diff <= 0) return 'expiré';
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  if (days >= 1) return `expire dans ${days}j`;
+  return `expire dans ${Math.max(1, hours)}h`;
+}
+
 async function ensureCreatorCartState() {
   if (state.shareToken && state.shareId) return true;
   try {
@@ -97,13 +117,27 @@ function showGroupStyles() {
   const s = document.createElement('style');
   s.id = 'k-group-view-p0-styles';
   s.textContent = `
+.k-group-compact-status{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}
+.k-group-compact-title{min-width:0}
+.k-group-compact-title strong{display:block;font-size:20px;line-height:1.15;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-group-compact-title span{display:block;font-size:13px;color:var(--text-muted);margin-top:4px}
+.k-group-compact-pill{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(31,122,84,.22);background:rgba(31,122,84,.08);color:var(--green);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:900}
+.k-group-compact-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.k-group-compact-money div{border:1px solid var(--border);background:var(--sand);border-radius:14px;padding:10px 12px}
+.k-group-compact-money small{display:block;font-size:11px;line-height:1;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:900;margin-bottom:7px}
+.k-group-compact-money strong{display:block;font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-group-next-action{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:12px;margin-top:12px;color:var(--text)}
+.k-group-next-action span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:900}
+.k-group-next-action strong{font-size:14px}
 .k-group-funded-callout{border:1px solid rgba(31,122,84,.28);background:rgba(31,122,84,.09);border-radius:18px;padding:16px;margin-top:14px}
 .k-group-funded-callout strong{display:block;font-size:16px;margin-bottom:6px;color:var(--text)}
 .k-group-funded-callout p{font-size:13px;line-height:1.45;color:var(--text-muted);margin:0 0 12px}
 .k-group-disabled-finalize{opacity:.72;cursor:not-allowed!important;background:var(--sand-dark)!important;color:var(--text-muted)!important}
 .k-group-share-hint,.k-group-finalize-hint{font-size:12px;line-height:1.45;color:var(--text-muted);margin:10px 0 0}
 .k-group-self-toggle{margin-top:12px;width:100%;border:1px dashed var(--border);background:var(--sand);color:var(--text);border-radius:14px;padding:11px;font-weight:800;cursor:pointer}
-.k-group-self-panel[hidden]{display:none!important}`;
+.k-group-self-panel[hidden]{display:none!important}
+@media(max-width:640px){.k-group-compact-status{display:block}.k-group-compact-pill{margin-top:10px}.k-group-compact-money{grid-template-columns:1fr}.k-group-next-action{align-items:flex-start;flex-direction:column}}
+`;
   document.head.appendChild(s);
 }
 
@@ -126,22 +160,25 @@ function renderProgress(cart, contributions) {
 
   return `
     <div class="k-group-progress-card" id="k-group-progress-card">
-      <div class="k-group-card-head">
-        <div>
-          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">${statusLabel(cart.status)}</div>
+      <div class="k-group-compact-status">
+        <div class="k-group-compact-title">
+          <strong>${sanitize(cart.title || 'Panier groupe')}</strong>
+          <span>${statusLabel(cart.status)} · ${shortDeadline(cart.expires_at)}</span>
         </div>
-      </div>
-      <div class="k-group-money">
-        <span>${fmt(confirmed, 'KMF')} collectés</span>
-        <strong>${fmt(total, 'KMF')} total</strong>
+        <div class="k-group-compact-pill">${p}% financé</div>
       </div>
       <div class="k-group-progress" aria-label="${p}%">
         <span style="width:${p}%" class="k-group-progress-bar"></span>
       </div>
-      ${remaining > 0 && isOpen
-        ? `<p class="k-group-remaining">Reste : <strong>${fmt(remaining, 'KMF')}</strong></p>`
-        : ''}
+      <div class="k-group-compact-money">
+        <div><small>Collecté</small><strong>${fmt(confirmed, 'KMF')}</strong></div>
+        <div><small>Reste</small><strong>${fmt(remaining, 'KMF')}</strong></div>
+        <div><small>Total</small><strong>${fmt(total, 'KMF')}</strong></div>
+      </div>
+      <div class="k-group-next-action">
+        <span>Prochaine action</span>
+        <strong>${compactNextAction(cart)}</strong>
+      </div>
       <div class="k-group-contribs">
         <div class="k-group-contribs-label">Contributions (${contributions?.length || 0})</div>
         ${rows}
@@ -165,7 +202,7 @@ function renderCreatorActions(cart) {
   const fullyFunded = cart.status === 'fully_funded' || remainingKmf(cart) <= 0;
   return `
     <div class="k-group-card k-group-actions-card">
-      <div class="k-group-section-title">Partager le lien</div>
+      <div class="k-group-section-title">Actions</div>
       <div class="k-group-creator-actions">
         <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
@@ -411,7 +448,7 @@ export async function renderGroupView(opts = {}) {
   el.innerHTML = `
     <div class="k-group-header">
       <h2>👥 Mon panier groupe</h2>
-      <p class="k-group-subhead">Où en est la collecte, que faire maintenant ?</p>
+      <p class="k-group-subhead">Suivi de collecte</p>
     </div>
     ${renderProgress(cart, contributions)}
     ${showSelfContribution ? `
