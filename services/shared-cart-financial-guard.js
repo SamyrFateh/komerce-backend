@@ -161,33 +161,39 @@ async function confirmContributionFromStripeSafely(session) {
     const newRemaining = Math.max(0, total - newContributed);
     const newStatus = newRemaining === 0 ? 'fully_funded' : 'partially_funded';
 
-    await client.query(
+    const { rows: [updatedContribution] } = await client.query(
       `UPDATE shared_cart_contributions
           SET status = 'paid',
               paid_at = NOW(),
               stripe_payment_intent_id = $1,
               updated_at = NOW()
-        WHERE id = $2 AND status = 'pending'`,
+        WHERE id = $2 AND status = 'pending'
+        RETURNING *`,
       [paymentIntentId, contribution.id]
     );
 
-    await client.query(
+    const { rows: [updatedCart] } = await client.query(
       `UPDATE shared_carts
           SET contributed_kmf = $1,
               remaining_kmf = $2,
               status = $3,
               updated_at = NOW()
-        WHERE id = $4`,
+        WHERE id = $4
+        RETURNING *`,
       [newContributed, newRemaining, newStatus, cart.id]
     );
+
+    if (!updatedContribution || !updatedCart) {
+      throw new Error('Confirmation contribution incohérente : update non appliqué');
+    }
 
     await addEvent(client, cart.id, 'contribution_paid',
       { type: 'stripe' },
       {
-        contribution_id: contribution.id,
-        amount_kmf: contribution.amount_kmf,
-        amount_paid: contribution.amount_paid,
-        currency: contribution.currency_paid,
+        contribution_id: updatedContribution.id,
+        amount_kmf: updatedContribution.amount_kmf,
+        amount_paid: updatedContribution.amount_paid,
+        currency: updatedContribution.currency_paid,
         stripe_session_id: sessionId,
         new_status: newStatus,
       }
@@ -204,14 +210,6 @@ async function confirmContributionFromStripeSafely(session) {
         { contributed_kmf: newContributed, remaining_kmf: newRemaining }
       );
     }
-
-    const updatedCart = (await client.query(
-      `SELECT * FROM shared_carts WHERE id = $1`, [cart.id]
-    )).rows[0];
-
-    const updatedContribution = (await client.query(
-      `SELECT * FROM shared_cart_contributions WHERE id = $1`, [contribution.id]
-    )).rows[0];
 
     return { cart: updatedCart, contribution: updatedContribution };
   });
