@@ -1,42 +1,121 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
-const morgan = require('morgan');
-const compression = require('compression');
-const db = require('./db');
-const errorHandler = require('./middleware/errorHandler');
-const log = require('./utils/logger').child({ module: 'server' });
+/**
+ * KOMERCE — Serveur API v12.4 (Cash reconciliation + Inventory proposals + Transitaire)
+ *
+ * Point d'entrée Node.js + Express
+ * Déployé sur Railway — PORT fourni par la variable d'environnement
+ *
+ * Changelog v11.2: Parcel-First API v2 (routes/parcel-api-v2.js) — refonte COLIS-FIRST
+ * Changelog v10.18: routes/invoices.js ajouté (mini-facture client)
+ * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
+ * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
+ * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
+ * Changelog v10.12: F34 stock constraint garantit admin au démarrage
+ */
+
+const { loadAndValidateEnv } = require('./bootstrap/env');
+loadAndValidateEnv();
+
+const log          = require('./utils/logger').child({ module: 'server' });
+const express      = require('express');
+const cookieParser = require('cookie-parser');
+const path         = require('path');
+const db           = require('./db');
+
+const {
+  globalLimiter,
+  authLimiter,
+  cashConfirmLimiter,
+  scanCollectLimiter,
+  orderCreateLimiter,
+  dashboardLimiter,
+  adminLimiter,
+} = require('./middleware/rate-limit');
+
+const { fixAdminHash, fixMissingSchema } = require('./scripts/fix-schema');
+const { runAllSeeds }                     = require('./scripts/seed');
+const { errorHandler } = require('./middleware/error-handler');
+const { requestIdMiddleware } = require('./middleware/request-id');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
-// ── Core middleware ─────────────────────────────────────────────────────────
+app.get('/webhook/authkey-whatsapp', async (req, res) => {
+  try {
+    log.info('[AUTHKEY-WA][WEBHOOK]', req.query);
 
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
+    const mobile = req.query.Mobile || null;
+    const email = req.query.Email || null;
+    const status = req.query.Status || null;
+    const logId = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
+    const time = req.query.Time || null;
+
+    return res.status(200).send('OK');
+  } catch (e) {
+    log.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
+    return res.status(500).send('ERROR');
+  }
+});
+
+const { applySecurity } = require('./bootstrap/security');
+
+
+
+// ── Security headers + CORS ───────────────────────────────────────────────
+applySecurity(app);
+
+// ── Stripe webhook MUST receive raw body for signature verification ──────────
+app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'application/json' }));
+
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
+app.use(requestIdMiddleware);
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+
+app.use('/api/', globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/payments/cash/confirm', cashConfirmLimiter);
+app.use('/api/scans/collect', scanCollectLimiter);
+app.use('/api/orders', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/') {
+    return orderCreateLimiter(req, res, next);
+  }
+  next();
+});
+app.use('/api/dashboard', dashboardLimiter);
+app.use('/api/admin/', adminLimiter);
+
+
+// ── Auth guard injection — auto-injects session checker into admin pages ────
+const _fs = require('fs');
+app.get('/*.html', (req, res, next) => {
+  if (req.path.includes('Boutique') || req.path === '/boutique.html' || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
+  const filePath = path.join(__dirname, 'public', req.path);
+  _fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) return next();
+    html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\
+</body>');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.send(html);
+  });
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
 }));
-
-app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
-  credentials: true,
-}));
-
-app.use(compression());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-// Stripe-owned raw webhook routes must be registered before express.json().
-// The actual handlers are mounted below once route modules are loaded.
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// ── Static assets ───────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Routes API ────────────────────────────────────────────────────────────
 
@@ -112,9 +191,19 @@ app.use(errorHandler);
 // ── Operational crons ───────────────────────────────────────────────────────
 const { startOperationalCrons } = require('./bootstrap/crons');
 startOperationalCrons();
+const { runStartupMigrations } = require('./bootstrap/startup-migrations');
 
-app.listen(PORT, () => {
-  log.info(`✅ Komerce backend listening on port ${PORT}`);
+// ── Server lifecycle ────────────────────────────────────────────────────────
+const { startServerLifecycle } = require('./bootstrap/server-lifecycle');
+startServerLifecycle({
+  app,
+  db,
+  walletService,
+  routingService,
+  parcelSecurity,
+  runStartupMigrations,
+  fixAdminHash,
+  fixMissingSchema,
+  runAllSeeds,
 });
-
 module.exports = app;
