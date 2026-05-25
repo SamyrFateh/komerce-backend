@@ -5,7 +5,7 @@
  * Doctrine boutique-first — Mai 2026 :
  *   - un panier partagé actif n'empêche pas d'en créer un autre.
  *   - /mine restaure le dernier panier actif seulement comme raccourci de suivi.
- *   - la sidebar panier doit rester simple : état actif + voir le suivi, pas création permanente.
+ *   - la sidebar panier reste le panier courant : pas de suivi ni création groupe.
  *   - le backend reste source de vérité pour la limite de paniers actifs.
  */
 
@@ -167,16 +167,7 @@ function ensureSidebarStyles() {
   const s = document.createElement('style');
   s.id = 'k-share-sidebar-p0-styles';
   s.textContent = `
-.k-sc-shared-badge{padding:10px 12px;border:1px solid rgba(31,122,84,.18);border-radius:14px;background:rgba(31,122,84,.07);margin-top:10px}
-.k-sc-shared-summary{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px;min-width:0}
-.k-sc-shared-dot{width:9px;height:9px;border-radius:999px;background:#1f7a54;box-shadow:0 0 0 4px rgba(31,122,84,.10);margin-top:5px;flex:0 0 auto}
-.k-sc-shared-text{display:flex;flex-direction:column;min-width:0;line-height:1.25}
-.k-sc-shared-text strong{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.k-sc-shared-text span{font-size:12px;color:var(--text-muted);margin-top:2px}
-.k-sc-shared-badge.is-funded{background:rgba(31,122,84,.12);border-color:rgba(31,122,84,.30)}
-.k-sc-shared-badge.is-urgent{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.34)}
-.k-sc-group-view-btn{width:100%;border:none;border-radius:999px;padding:9px 12px;background:var(--text);color:var(--white);font-weight:800;font-size:13px;cursor:pointer}
-.k-sc-group-view-btn:hover{transform:translateY(-1px)}
+.k-sc-shared-badge{display:none!important}
 .k-sc-reshare-btn{display:none!important}`;
   document.head.appendChild(s);
 }
@@ -185,28 +176,8 @@ function renderSidebarSummary(cart = {}) {
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   if (!desktopBadge) return;
   ensureSidebarStyles();
-
-  const title = cart.title || state.cartName || 'Panier groupe';
-  const status = cart.status || state.shareStatus;
-  const total = cart.total_kmf_snapshot ?? state.shareTotalKmf;
-  const contributed = cart.contributed_kmf ?? state.shareContributedKmf;
-  const p = pct(contributed, total);
-  const remaining = timeRemaining(cart.expires_at || state.shareExpiry);
-  const urgent = (cart.expires_at || state.shareExpiry) && new Date(cart.expires_at || state.shareExpiry) - Date.now() < 2 * 3_600_000;
-
-  desktopBadge.classList.toggle('is-funded', status === 'fully_funded');
-  desktopBadge.classList.toggle('is-urgent', !!urgent && status !== 'fully_funded');
-  desktopBadge.innerHTML = `
-    <div class="k-sc-shared-summary">
-      <span class="k-sc-shared-dot" aria-hidden="true"></span>
-      <div class="k-sc-shared-text">
-        <strong id="k-sc-shared-title">${title}</strong>
-        <span id="k-sc-shared-meta">${status === 'fully_funded' ? 'Financé !' : `${p}% · ${remaining}`}</span>
-      </div>
-    </div>
-    <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">Voir le suivi →</button>`;
-
-  desktopBadge.querySelector('#k-sc-group-view')?.addEventListener('click', switchToGroup);
+  desktopBadge.hidden = true;
+  desktopBadge.innerHTML = '';
 }
 
 export function refreshSharedBadges(isShared, cart = null) {
@@ -217,12 +188,14 @@ export function refreshSharedBadges(isShared, cart = null) {
 
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   const desktopShare = document.getElementById('k-sc-share');
-  if (desktopBadge) desktopBadge.hidden = !isShared;
+  if (desktopBadge) {
+    desktopBadge.hidden = true;
+    desktopBadge.innerHTML = '';
+  }
   if (desktopShare) {
     desktopShare.hidden = !!isShared;
     desktopShare.textContent = 'Payer en groupe';
   }
-  if (isShared) renderSidebarSummary(cart || {});
 
   refreshGroupBadge();
 }
