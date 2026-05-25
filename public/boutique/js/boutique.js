@@ -77,6 +77,7 @@ import {
 }                              from './b-pager.js';
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';
 import { install as installShareCart } from './b-share-cart.js';
+import './b-group-banner.js'; // chargé pour init auto si token actif
 
 'use strict';
 

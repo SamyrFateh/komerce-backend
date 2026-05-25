@@ -1,45 +1,40 @@
 /**
  * @module b-group-view
- * @owner sélecteurs .k-group-* — onglet dédié paniers partagés
- * @brief Vue "Groupe" — deux modes :
+ * @owner sélecteurs .k-group-* — onglet dédié panier partagé
  *
- *   MODE CRÉATEUR  : l'utilisateur a un state.shareToken
- *                    → GET /api/shared-carts/public/:token  (progression + participants)
- *                    → formulaire contribution (créateur = participant principal)
- *                    → bouton clôturer → POST /api/shared-carts/:id/finalize (auth)
- *                    → polling 30s pendant que la vue est ouverte
+ * MODE CRÉATEUR (state.shareToken défini + utilisateur auth)
+ *   GET /api/shared-carts/mine          → liste + sélection active
+ *   GET /api/shared-carts/:id           → détail (contributions complètes)
+ *   POST /api/shared-carts/:id/finalize → clôture + création commande
  *
- *   MODE PARTICIPANT : URL contient ?p=TOKEN ou /cart/shared/TOKEN
- *                    → même endpoint public
- *                    → formulaire contribution → POST …/contributions → Stripe
+ * MODE PARTICIPANT (opts.participantToken passé depuis URL)
+ *   GET /api/shared-carts/public/:token → lecture publique
+ *   POST /api/shared-carts/public/:token/contributions → Stripe
  *
+ * Polling 30s créateur uniquement (rafraîchit les contributions).
  * Aucun localStorage. Tout vient du backend.
- * Le créateur est aussi participant : il contribue via le même endpoint public,
- * puis clôture via l'endpoint authentifié /:id/finalize.
  */
 
-import { state }     from './b-store.js';
-import { showToast } from './b-cart-core.js';
+import { state }        from './b-store.js';
+import { showToast }    from './b-cart-core.js';
 import { sanitize, fmt, apiGet, apiPost } from './b-utils.js';
+import { showBanner, hideBanner }         from './b-group-banner.js';
 
-/* ── Détection token participant dans l'URL ────────────────────── */
-
+/* ── Token participant URL ─────────────────────────────────────── */
 export function detectParticipantToken() {
   const url = new URL(window.location.href);
   const qp  = url.searchParams.get('p');
   if (qp) return qp;
   const m = url.pathname.match(/\/cart\/shared\/([^/?#]+)/);
-  if (m) return m[1];
-  return null;
+  return m ? m[1] : null;
 }
 
-/* ── Conteneur (créé une seule fois) ───────────────────────────── */
-
+/* ── Conteneur ─────────────────────────────────────────────────── */
 function getOrCreateEl() {
   let el = document.getElementById('k-group-view');
   if (!el) {
     el = document.createElement('div');
-    el.id        = 'k-group-view';
+    el.id = 'k-group-view';
     el.className = 'k-group-view';
     const anchor = document.getElementById('k-fav-view')
                 || document.getElementById('k-catalog-section');
@@ -49,48 +44,53 @@ function getOrCreateEl() {
 }
 
 /* ── Polling ───────────────────────────────────────────────────── */
-
 let _pollTimer = null;
-
-function startPolling(token, onRefresh) {
+function startPolling(cartId, onRefresh) {
   stopPolling();
   _pollTimer = setInterval(async () => {
     if (!document.getElementById('k-group-view')?.classList.contains('show')) {
-      stopPolling();
-      return;
+      stopPolling(); return;
     }
-    const data = await fetchSharedCart(token);
-    if (data) onRefresh(data);
+    try {
+      const fresh = await apiGet(`/api/shared-carts/${cartId}`);
+      if (fresh) onRefresh(fresh);
+    } catch (_) {}
   }, 30_000);
 }
-
 function stopPolling() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
 }
 
-/* ── API ───────────────────────────────────────────────────────── */
-
-async function fetchSharedCart(token) {
-  try { return await apiGet(`/api/shared-carts/public/${token}`); }
-  catch (_) { return null; }
+/* ── Helpers ───────────────────────────────────────────────────── */
+function pct(confirmed, total) {
+  if (!total) return 0;
+  return Math.max(0, Math.min(100, Math.round((confirmed / total) * 100)));
 }
 
-/* ── Rendu : carte progression ─────────────────────────────────── */
+function statusLabel(status) {
+  return {
+    active:           '🟢 Ouvert',
+    partially_funded: '🟡 Partiellement financé',
+    fully_funded:     '✅ Financé',
+    finalized:        '📦 Clôturé',
+    cancelled:        '❌ Annulé',
+    expired:          '⏱️ Expiré',
+  }[status] || status;
+}
 
-function renderProgressCard(data) {
-  const cart          = data.cart || {};
-  const contributions = data.contributions || [];
-  const total         = Number(cart.total_kmf_snapshot) || 0;
-  const collected     = contributions.reduce((s, c) => s + (Number(c.amount_kmf) || 0), 0);
-  const remaining     = Math.max(0, total - collected);
-  const pct           = total > 0 ? Math.max(0, Math.min(100, Math.round((collected / total) * 100))) : 0;
-  const isFinalized   = cart.status === 'finalized';
-  const title         = sanitize(cart.title || 'Panier partagé');
+/* ── Rendu progression ─────────────────────────────────────────── */
+function renderProgress(cart, contributions) {
+  const total      = Number(cart.total_kmf_snapshot) || 0;
+  const confirmed  = Number(cart.contributed_kmf)    || 0;
+  const remaining  = Number(cart.remaining_kmf)      || Math.max(0, total - confirmed);
+  const p          = pct(confirmed, total);
+  const isOpen     = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
 
-  const participantRows = contributions.length
+  const rows = contributions?.length
     ? contributions.map(c => `
         <div class="k-group-contrib-row">
-          <span class="k-group-contrib-name">${sanitize(c.contributor_name || c.first_name || 'Anonyme')}</span>
+          <span class="k-group-contrib-name">${sanitize(c.contributor_name?.split(' ')[0] || 'Anonyme')}</span>
+          <span class="k-group-contrib-status k-group-contrib-status--${c.status}">${c.status === 'paid' ? '✅' : '⏳'}</span>
           <span class="k-group-contrib-amount">${fmt(Number(c.amount_kmf) || 0, 'KMF')}</span>
         </div>`).join('')
     : '<p class="k-group-contrib-empty">Aucune contribution encore.</p>';
@@ -99,107 +99,90 @@ function renderProgressCard(data) {
     <div class="k-group-progress-card" id="k-group-progress-card">
       <div class="k-group-card-head">
         <div>
-          <div class="k-group-card-title">${title}</div>
-          <div class="k-group-card-meta">${contributions.length} contribution${contributions.length > 1 ? 's' : ''}</div>
+          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
+          <div class="k-group-card-meta">${statusLabel(cart.status)}</div>
         </div>
-        <span class="k-group-pill ${isFinalized ? 'is-paid' : 'is-open'}">${isFinalized ? 'Clôturé' : 'Ouvert'}</span>
       </div>
-
       <div class="k-group-money">
-        <span>${fmt(collected, 'KMF')} collectés</span>
+        <span>${fmt(confirmed, 'KMF')} collectés</span>
         <strong>${fmt(total, 'KMF')} total</strong>
       </div>
-      <div class="k-group-progress" aria-label="Progression ${pct}%">
-        <span style="width:${pct}%" class="k-group-progress-bar"></span>
+      <div class="k-group-progress" aria-label="${p}%">
+        <span style="width:${p}%" class="k-group-progress-bar"></span>
       </div>
-      ${remaining > 0 && !isFinalized
-        ? `<p class="k-group-remaining">Reste à collecter : <strong>${fmt(remaining, 'KMF')}</strong></p>`
+      ${remaining > 0 && isOpen
+        ? `<p class="k-group-remaining">Reste : <strong>${fmt(remaining, 'KMF')}</strong></p>`
         : ''}
-
       <div class="k-group-contribs">
-        <div class="k-group-contribs-label">Participants</div>
-        ${participantRows}
+        <div class="k-group-contribs-label">Contributions (${contributions?.length || 0})</div>
+        ${rows}
       </div>
-
-      ${isFinalized
-        ? `<p class="k-group-finalized-hint">✅ Ce panier a été clôturé et converti en commande.</p>`
-        : ''}
     </div>`;
 }
 
-/* ── Rendu : formulaire de contribution (commun créateur/participant) ── */
-// Le créateur passe isCreator=true pour voir les actions supplémentaires.
+/* ── Rendu actions créateur ────────────────────────────────────── */
+function renderCreatorActions(cart, shareUrl, cartId) {
+  const isOpen = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+  if (!isOpen) return `<p class="k-group-finalized-hint">Ce panier est clôturé.</p>`;
 
-function renderContributeForm(token, shareUrl, isCreator = false) {
   return `
-    <div class="k-group-card k-group-contribute-card" id="k-group-contribute-card">
-      <div class="k-group-section-title">${isCreator ? '💸 Ma contribution' : '💸 Contribuer'}</div>
+    <div class="k-group-card k-group-actions-card">
+      <div class="k-group-section-title">Actions</div>
+      <div class="k-group-creator-actions">
+        <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 Re-partager</button>
+        <button class="k-group-btn k-group-btn--copy"  id="k-group-copy">🔗 Copier le lien</button>
+      </div>
+      <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">
+        🔒 Clôturer et commander
+      </button>
+      <p class="k-group-finalize-hint">
+        Transforme ce panier en commande. Les contributions reçues sont déduites du total.
+      </p>
+      <p class="k-group-input-error" id="k-group-finalize-err"></p>
+    </div>`;
+}
 
+/* ── Rendu formulaire contribution ─────────────────────────────── */
+function renderContributeForm(token, isCreator) {
+  return `
+    <div class="k-group-card k-group-contribute-card">
+      <div class="k-group-section-title">${isCreator ? '💸 Ma contribution' : '💸 Contribuer'}</div>
       <div class="k-group-field">
-        <label class="k-group-label" for="k-gc-name">Votre prénom</label>
-        <input id="k-gc-name" class="k-group-input" type="text"
-          placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name">
+        <label class="k-group-label" for="k-gc-name">Prénom</label>
+        <input id="k-gc-name" class="k-group-input" type="text" placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name">
       </div>
       <div class="k-group-field">
-        <label class="k-group-label" for="k-gc-email">Votre email</label>
-        <input id="k-gc-email" class="k-group-input" type="email"
-          placeholder="Ex : fatima@gmail.com" maxlength="120" autocomplete="email">
+        <label class="k-group-label" for="k-gc-email">Email</label>
+        <input id="k-gc-email" class="k-group-input" type="email" placeholder="Ex : fatima@email.com" maxlength="120" autocomplete="email">
       </div>
       <div class="k-group-field">
         <label class="k-group-label" for="k-gc-amount">Montant (KMF)</label>
-        <input id="k-gc-amount" class="k-group-input" type="number"
-          min="100" step="100" placeholder="Ex : 5 000" inputmode="numeric">
+        <input id="k-gc-amount" class="k-group-input" type="number" min="100" step="100" placeholder="Ex : 5 000" inputmode="numeric">
       </div>
       <div class="k-group-field">
         <label class="k-group-label" for="k-gc-msg">Message (optionnel)</label>
-        <input id="k-gc-msg" class="k-group-input" type="text"
-          placeholder="Ex : Avec tout mon amour ❤️" maxlength="200">
+        <input id="k-gc-msg" class="k-group-input" type="text" placeholder="Ex : Bon courage !" maxlength="200">
       </div>
       <p class="k-group-input-error" id="k-gc-err"></p>
-      <button class="k-group-btn k-group-btn--primary" id="k-gc-pay-btn">
-        💳 Payer ma contribution
-      </button>
-
-      ${isCreator ? `
-        <div class="k-group-divider"></div>
-        <div class="k-group-creator-actions">
-          <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">
-            📲 Re-partager
-          </button>
-          <button class="k-group-btn k-group-btn--copy" id="k-group-copy">
-            🔗 Copier le lien
-          </button>
-        </div>
-        <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">
-          🔒 Clôturer et commander
-        </button>
-        <p class="k-group-finalize-hint">
-          Clôture le panier et crée la commande avec les contributions reçues.
-          Les montants manquants seront à régler à la livraison.
-        </p>
-      ` : ''}
+      <button class="k-group-btn k-group-btn--primary" id="k-gc-pay-btn">💳 Payer ma contribution</button>
     </div>`;
 }
 
-/* ── Bind : formulaire de contribution ─────────────────────────── */
-
+/* ── Bind contribution ─────────────────────────────────────────── */
 function bindContributeForm(el, token) {
-  const btn    = el.querySelector('#k-gc-pay-btn');
-  const errEl  = el.querySelector('#k-gc-err');
-
-  btn?.addEventListener('click', async () => {
+  el.querySelector('#k-gc-pay-btn')?.addEventListener('click', async () => {
     const name   = (el.querySelector('#k-gc-name')?.value  || '').trim();
     const email  = (el.querySelector('#k-gc-email')?.value || '').trim();
     const amount = Number(el.querySelector('#k-gc-amount')?.value);
     const msg    = (el.querySelector('#k-gc-msg')?.value   || '').trim();
+    const errEl  = el.querySelector('#k-gc-err');
+    const btn    = el.querySelector('#k-gc-pay-btn');
 
-    if (!name)              { errEl.textContent = 'Votre prénom est requis.'; return; }
-    if (!email || !email.includes('@')) { errEl.textContent = 'Un email valide est requis.'; return; }
-    if (!amount || amount < 100) { errEl.textContent = 'Montant minimum : 100 KMF.'; return; }
+    if (!name)                        { errEl.textContent = 'Prénom requis.'; return; }
+    if (!email || !email.includes('@')) { errEl.textContent = 'Email valide requis.'; return; }
+    if (!amount || amount < 100)      { errEl.textContent = 'Minimum 100 KMF.'; return; }
     errEl.textContent = '';
-
-    btn.disabled    = true;
-    btn.textContent = '⏳ Redirection…';
+    btn.disabled = true; btn.textContent = '⏳ Redirection…';
 
     try {
       const res = await apiPost(`/api/shared-carts/public/${token}/contributions`, {
@@ -208,7 +191,6 @@ function bindContributeForm(el, token) {
         contributor_email: email,
         ...(msg ? { message: msg } : {}),
       });
-
       if (res?.checkout_url) {
         window.location.href = res.checkout_url;
       } else {
@@ -216,18 +198,16 @@ function bindContributeForm(el, token) {
         btn.textContent = '✅ Enregistré';
       }
     } catch (err) {
-      errEl.textContent = err?.message || 'Erreur lors de la contribution.';
-      btn.disabled      = false;
-      btn.textContent   = '💳 Payer ma contribution';
+      errEl.textContent = err?.message || 'Erreur.';
+      btn.disabled = false; btn.textContent = '💳 Payer ma contribution';
     }
   });
 }
 
-/* ── Bind : actions créateur (reshare, copy, finalize) ─────────── */
-
-function bindCreatorActions(el, cart, shareUrl) {
+/* ── Bind actions créateur ─────────────────────────────────────── */
+function bindCreatorActions(el, cart, shareUrl, cartId) {
   el.querySelector('#k-group-reshare')?.addEventListener('click', () => {
-    const msg = `Rejoins mon panier Komerce : "${sanitize(cart.title || 'Panier partagé')}" → ${shareUrl}`;
+    const msg = `Rejoins mon panier Komerce : "${sanitize(cart.title || 'Panier groupe')}" → ${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   });
 
@@ -235,93 +215,73 @@ function bindCreatorActions(el, cart, shareUrl) {
     try {
       await navigator.clipboard.writeText(shareUrl);
       showToast('Lien copié !', 'success');
-    } catch (_) {
-      showToast('Impossible de copier.', 'error');
-    }
+    } catch (_) { showToast('Impossible de copier.', 'error'); }
   });
 
   el.querySelector('#k-group-finalize')?.addEventListener('click', async () => {
-    const cartId = state.shareId;
-    if (!cartId) {
-      showToast('ID du panier introuvable. Rechargez la page.', 'error');
-      return;
-    }
-
-    const btn = el.querySelector('#k-group-finalize');
-    btn.disabled    = true;
-    btn.textContent = '⏳ Clôture en cours…';
+    const btn    = el.querySelector('#k-group-finalize');
+    const errEl  = el.querySelector('#k-group-finalize-err');
+    btn.disabled = true; btn.textContent = '⏳ Clôture…';
 
     try {
       const res = await apiPost(`/api/shared-carts/${cartId}/finalize`, {});
 
-      // Clôture réussie → nettoyer le state, afficher confirmation
-      state.shareToken = null;
-      state.shareId    = null;
-      try { sessionStorage.removeItem('kmrc_share'); } catch (_) {}
-
-      // Importer refreshGroupBadge en évitant référence circulaire
+      // Nettoyer le state
+      state.shareToken  = null;
+      state.shareId     = null;
+      state.cartName    = '';
+      state.shareExpiry = null;
+      try { sessionStorage.removeItem('kmrc_share'); sessionStorage.removeItem('kmrc_banner_dismissed'); } catch (_) {}
       refreshGroupBadge();
+      hideBanner();
+
+      // Importer et rafraîchir le badge share
+      import('./b-share-cart.js').then(m => m.install?.());
 
       el.innerHTML = `
         <div class="k-group-success">
           <div class="k-group-success-icon">🎉</div>
           <strong>Panier clôturé !</strong>
           <p>Commande <strong>${sanitize(res.order_reference || '')}</strong> créée.</p>
-          ${res.prepaid_kmf > 0
-            ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés via les contributions.</p>`
-            : ''}
-          ${res.remaining_cash_kmf > 0
-            ? `<p class="k-group-success-detail k-group-success-remain">Reste à régler : ${fmt(res.remaining_cash_kmf, 'KMF')}</p>`
-            : ''}
-          <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">
-            📦 Voir ma commande
-          </button>
+          ${res.prepaid_kmf > 0 ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés.</p>` : ''}
+          ${res.remaining_cash_kmf > 0 ? `<p class="k-group-success-detail k-group-success-remain">Reste : ${fmt(res.remaining_cash_kmf, 'KMF')}</p>` : ''}
+          <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">📦 Voir ma commande</button>
         </div>`;
 
       el.querySelector('#k-group-to-track')?.addEventListener('click', () => {
         import('./b-nav.js').then(({ switchView }) => {
           import('./b-tracking.js').then(({ renderTrackView }) => {
-            document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
-              i.classList.toggle('active', i.dataset.tab === 'track');
-            });
-            renderTrackView();
-            switchView('track');
+            document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+              .forEach(i => i.classList.toggle('active', i.dataset.tab === 'track'));
+            renderTrackView(); switchView('track');
           });
         });
       });
 
     } catch (err) {
-      // Cas stock insuffisant (409)
       if (err?.code === 'stock_issues' || err?.message?.includes('stock')) {
-        errEl(el, err.message || 'Problème de stock. Acceptez-vous de continuer quand même ?');
-        btn.disabled    = false;
-        btn.textContent = '🔒 Clôturer et commander';
-        return;
+        if (errEl) errEl.textContent = err.message || 'Problème de stock.';
+      } else {
+        showToast(err?.message || 'Erreur clôture.', 'error');
       }
-      showToast(err?.message || 'Erreur lors de la clôture.', 'error');
-      btn.disabled    = false;
-      btn.textContent = '🔒 Clôturer et commander';
+      btn.disabled = false; btn.textContent = '🔒 Clôturer et commander';
     }
   });
 }
 
-function errEl(el, msg) {
-  const e = el.querySelector('#k-gc-err') || el.querySelector('.k-group-input-error');
-  if (e) e.textContent = msg;
+/* ── Loader ────────────────────────────────────────────────────── */
+function renderLoading(el) {
+  el.innerHTML = `<div class="k-group-loading"><div class="k-group-spin"></div><p>Chargement…</p></div>`;
 }
-
-/* ── Rendu état vide / erreur ──────────────────────────────────── */
-
 function renderEmpty(el) {
   el.innerHTML = `
     <div class="k-group-empty">
       <div class="k-group-empty-icon">👥</div>
-      <strong>Aucun panier partagé actif</strong>
-      <span>Créez-en un depuis votre panier avec "Payer à plusieurs".</span>
+      <strong>Aucun panier groupe actif</strong>
+      <span>Créez-en un depuis votre panier avec "Payer en groupe".</span>
     </div>`;
 }
-
-function renderLoadError(el) {
+function renderError(el) {
   el.innerHTML = `
     <div class="k-group-empty">
       <div class="k-group-empty-icon">❌</div>
@@ -330,102 +290,100 @@ function renderLoadError(el) {
     </div>`;
 }
 
-/* ── Point d'entrée principal ──────────────────────────────────── */
-
+/* ── Point d'entrée ────────────────────────────────────────────── */
 export async function renderGroupView(opts = {}) {
   stopPolling();
   const el = getOrCreateEl();
-
-  el.innerHTML = `
-    <div class="k-group-loading">
-      <div class="k-group-spin"></div>
-      <p>Chargement…</p>
-    </div>`;
+  renderLoading(el);
 
   const participantToken = opts.participantToken || null;
-  const creatorToken     = state.shareToken || null;
-  const token            = participantToken || creatorToken;
+  const isCreator = !participantToken || participantToken === state.shareToken;
 
-  if (!token) { renderEmpty(el); return; }
+  // ── MODE PARTICIPANT ────────────────────────────────────────────
+  if (!isCreator) {
+    const data = await fetch(`/api/shared-carts/public/${participantToken}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null).catch(() => null);
 
-  const data = await fetchSharedCart(token);
-  if (!data?.cart) { renderLoadError(el); return; }
-
-  const host       = window.location.origin;
-  const shareUrl   = data.cart.share_url || `${host}/cart/shared/${token}`;
-  const isCreator  = !participantToken || (participantToken === creatorToken);
-  const isFinalized = data.cart.status === 'finalized';
-
-  if (isCreator) {
-    // ── MODE CRÉATEUR ──────────────────────────────────────────
-    // Progression + contribution créateur + clôture
-    el.innerHTML = `
-      <div class="k-group-header">
-        <h2>👥 Mon panier partagé</h2>
-        <p class="k-group-subhead">Suivi en temps réel — tu peux aussi contribuer toi-même.</p>
-      </div>
-      ${renderProgressCard(data)}
-      ${isFinalized ? '' : renderContributeForm(token, shareUrl, true)}`;
-
-    if (!isFinalized) {
-      bindContributeForm(el, token);
-      bindCreatorActions(el, data.cart, shareUrl);
-    }
-
-    // Polling : mettre à jour uniquement la carte de progression
-    startPolling(token, (freshData) => {
-      const card = el.querySelector('#k-group-progress-card');
-      if (card) {
-        card.outerHTML = renderProgressCard(freshData);
-        // Les actions de contribution ne changent pas — pas besoin de rebind
-      }
-    });
-
-  } else {
-    // ── MODE PARTICIPANT ───────────────────────────────────────
+    if (!data?.cart) { renderError(el); return; }
+    const cart  = data.cart;
     const items = data.items || [];
-    const total = Number(data.cart.total_kmf_snapshot) || 0;
-    const title = sanitize(data.cart.title || 'Panier partagé');
+    const total = Number(cart.total_kmf_snapshot) || 0;
 
     const itemRows = items.map(it => `
       <div class="k-group-item-row">
-        <span class="k-group-item-name">${sanitize(it.product_name || it.name || 'Produit')}</span>
+        <span class="k-group-item-name">${sanitize(it.name || 'Produit')}</span>
         <span class="k-group-item-qty">×${it.quantity || 1}</span>
-        <span class="k-group-item-price">${fmt(Number(it.unit_price_kmf || it.price || 0), 'KMF')}</span>
+        <span class="k-group-item-price">${fmt(Number(it.unit_price_kmf || 0), 'KMF')}</span>
       </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
 
     el.innerHTML = `
       <div class="k-group-header">
-        <h2>👥 Panier partagé</h2>
-        <p class="k-group-subhead">Contribue à ce panier collectif.</p>
+        <h2>👥 Panier groupe</h2>
+        <p class="k-group-subhead">Contribution au panier de ${sanitize(cart.beneficiary_name_snapshot || '')}.</p>
       </div>
       <div class="k-group-card k-group-items-card">
         <div class="k-group-card-head">
-          <div>
-            <div class="k-group-card-title">${title}</div>
-            <div class="k-group-card-meta">Total : ${fmt(total, 'KMF')}</div>
-          </div>
-          <span class="k-group-pill is-open">Ouvert</span>
+          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
+          <div class="k-group-card-meta">Total : ${fmt(total, 'KMF')}</div>
         </div>
         <div class="k-group-items-list">${itemRows}</div>
       </div>
-      ${renderContributeForm(token, shareUrl, false)}`;
+      ${renderContributeForm(participantToken, false)}`;
 
-    bindContributeForm(el, token);
+    bindContributeForm(el, participantToken);
+    return;
+  }
+
+  // ── MODE CRÉATEUR ───────────────────────────────────────────────
+  // Si pas de token → pas de panier actif
+  if (!state.shareToken) { renderEmpty(el); return; }
+
+  // Charger le détail via route authentifiée /:id
+  let data;
+  try {
+    data = await apiGet(`/api/shared-carts/${state.shareId}`);
+  } catch (_) {
+    // Fallback : lecture publique si l'auth échoue (session expirée)
+    data = await fetch(`/api/shared-carts/public/${state.shareToken}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null).catch(() => null);
+  }
+
+  if (!data?.cart) { renderError(el); return; }
+
+  const cart         = data.cart;
+  const contributions = data.contributions || [];
+  const cartId       = state.shareId || cart.id;
+  const shareUrl     = data.share_url || `${window.location.origin}/cart/shared/${state.shareToken}`;
+  const isOpen       = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+
+  el.innerHTML = `
+    <div class="k-group-header">
+      <h2>👥 Mon panier groupe</h2>
+      <p class="k-group-subhead">Suivi en temps réel des contributions.</p>
+    </div>
+    ${renderProgress(cart, contributions)}
+    ${isOpen ? renderContributeForm(state.shareToken, true) : ''}
+    ${renderCreatorActions(cart, shareUrl, cartId)}`;
+
+  if (isOpen) bindContributeForm(el, state.shareToken);
+  bindCreatorActions(el, cart, shareUrl, cartId);
+
+  // Bannière
+  showBanner({ title: cart.title, expires_at: cart.expires_at });
+
+  // Polling — rafraîchit uniquement la carte de progression
+  if (isOpen) {
+    startPolling(cartId, (fresh) => {
+      const card = el.querySelector('#k-group-progress-card');
+      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions);
+    });
   }
 }
 
-/* ── Badge bnav ────────────────────────────────────────────────── */
-
+/* ── Badge ─────────────────────────────────────────────────────── */
 export function refreshGroupBadge() {
-  const hasActive = !!state.shareToken;
-  // Badge bnav mobile
-  const bnavBadge = document.getElementById('k-bnav-group-badge');
-  if (bnavBadge) bnavBadge.classList.toggle('show', hasActive);
-  // Badge header desktop
-  const headerBadge = document.getElementById('k-header-group-badge');
-  if (headerBadge) headerBadge.classList.toggle('show', hasActive);
-  // Couleur bouton header desktop quand actif
-  const headerBtn = document.getElementById('k-header-group-btn');
-  if (headerBtn) headerBtn.classList.toggle('has-active', hasActive);
+  const has = !!state.shareToken;
+  document.getElementById('k-bnav-group-badge')?.classList.toggle('show', has);
+  document.getElementById('k-header-group-badge')?.classList.toggle('show', has);
+  document.getElementById('k-header-group-btn')?.classList.toggle('has-active', has);
 }

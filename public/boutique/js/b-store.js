@@ -97,6 +97,7 @@ export const state = {
   shareToken: null,
   shareId:    null,
   cartName:   '',
+  shareExpiry: null,
 };
 
 // Debug global (read-only)
