@@ -124,7 +124,7 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/admin/finance`, `/api/finance` | Finance ; `/api/finance` redirige vers `/api/admin/finance`. |
 | `/api/admin/finance-config` | Configuration finance. |
 | `/api/admin/loyalty` | Fidélité. |
-| `/api/admin/sourcing` | Sourcing engine + scanner. |
+| `/api/admin/sourcing` | Sourcing engine + scanner. Route : `routes/sourcing-engine.js`. Lecture déléguée à `services/sourcing-analysis.js` (GOD-FILES-5). |
 | `/api/admin/signals` | Signaux. |
 | `/api/admin/pricing-matrices` | Matrices pricing. |
 | `/api/admin/pricing-components` | Composantes pricing. |

@@ -156,6 +156,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 - [ ] **GOD-FILES-3** — `routes/parcel-api-v2.js` : 1 295 lignes, 8 routes. `syncParcelToOrders` (236 l) inline. Extraire vers `services/parcel-sync-service.js`.
 - [ ] **GOD-FILES-4** — `routes/admin.js` : 1 210 lignes, 20 routes. Lot **B4 planifié** dans `BACKEND_GOLIVE_ROADMAP.md`. Découper en `routes/admin-orders.js`, `routes/admin-partners.js`, etc.
 - [ ] **GOD-FILES-5** — `routes/hub-dashboard.js` : 1 020 lignes, 15 routes, logique métier inlinée. Non encore planifié dans la roadmap.
+- [x] **GOD-FILES-5-SOURCING** — `routes/sourcing-engine.js` : 960 → 386 lignes. Logique lecture (getAnalysis, getAnalysisById, getSynthesis, getConfig) extraite vers `services/sourcing-analysis.js`. Mutations (PUT products/:id, PUT products/:id/variants, POST bulk-rail) conservées dans la route. npm test vert.
 - [ ] **COLLECTIVE-CLEANUP** — `services/collective-workspace-engine.js` (965 l) encore importé par `collective-close-order-service.js`, `collective-stock-reservation-service.js`, `collective-ready-to-order-orchestrator.js`, eux-mêmes appelés depuis `middleware/auth.js` et `routes/admin-collective-repairs.js`. Le tombstone PR #486 a désactivé les routes mais **pas nettoyé la chaîne de services**. Non bloquant go-live.
 
 ### Workspace decommission
@@ -241,6 +242,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 - **H1 complet** : `server.js` (209 lignes) délègue aux 7 modules bootstrap. Webhooks Stripe raw explicitement avant `express.json`.
 - **I-07 / webhooks Stripe** : ne jamais déplacer les raw body parsers derrière `express.json`. Webhook collectif legacy peut rester monté techniquement mais ne doit plus traiter de paiement actif.
 - **SEC-1b** : `printTokens` Map encore in-memory (`routes/pickup-secret.js` ligne 237). Non bloquant go-live mono-instance. Conditionnel scale-out.
+- **`sourcing-analysis.js`** : service extrait (GOD-FILES-5). Les helpers `loadSourcingConfig`, `getSales30d`, `analyzeProduct` sont aussi exportés pour usage dans `PUT /products/:id` de la route. Ne pas les déplacer sans adapter la route.
 - **`baskets.js`** : prix snapshotés à l'ajout sans TTL ni alerte de divergence. Si le prix d'un produit change entre l'ajout au panier et le paiement, le snapshot est stale. Non bloquant go-live mais à surveiller en cas de mise à jour prix catalogue fréquente.
 - **N4** : JWT stateless 90j sans révocation = dette architecturale connue, non bloquant go-live.
 - **`b-group-cart-flow.js`** : stub 14 lignes DEPRECATED PR-1. À supprimer lors du nettoyage `event/*.html`.
