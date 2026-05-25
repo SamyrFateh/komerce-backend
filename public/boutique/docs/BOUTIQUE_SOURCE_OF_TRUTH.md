@@ -4,7 +4,7 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.5 — 24 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation
+> Statut : **GEL v1.6 — 26 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation · B-SOT-1 résolu 26/05 (6 fichiers actifs ajoutés, 3 orphelins documentés)
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
 >
@@ -195,6 +195,18 @@ puis re-synchroniser cette section.
 | `js/b-group-cart-flow.js` | | **DEPRECATED PR-1** — stub vide, sélecteurs supprimés du DOM. À supprimer lors nettoyage event/*.html | — | Tout (stub no-op) |
 | `js/b-share-cart.js` | | **Owner exclusif** flow partage panier créateur (PR-1) — modal nom, OTP WhatsApp, POST /api/shared-cart/from-cart-items, ouverture WhatsApp | **Tout `.k-share-modal-*`**, `.k-share-badge-*`, state `cart.shareToken` / `cart.shareId` / `cart.cartName` | Sélecteurs hors `.k-share-*`, logique panier principal |
 | `js/b-boutique-wow-style.js` | | Couche visuelle expérimentale réversible | Expérimentation | Vérité définitive, structure |
+| **PANIER PARTAGÉ — ACTIFS NON LISTÉS (ajout B-SOT-1, 26/05/2026)** | | | | |
+| `js/b-share-phone-guard.js` | | Guard numéro de téléphone avant partage panier — vérifie et demande le n° si absent avant de déclencher le flow WhatsApp | Validation téléphone pré-partage | Logique panier, flow commande |
+| `js/b-group-view.js` | | Rendu onglet Groupe du panier partagé (`renderGroupView`, `refreshGroupBadge`, `detectParticipantToken`). Importé par `b-nav.js`, `b-group-banner.js`, `b-share-cart.js`, `b-share-phone-guard.js` | **Onglet Groupe panier partagé** | Logique panier principal, modal |
+| `js/b-group-banner.js` | | Bannière statut panier partagé (auto-init si token actif dans l'URL). Import auto dans `boutique.js` ligne 80 | Bannière groupe | Onglet groupe, flow panier |
+| **PDP ENRICHIE — ACTIFS NON LISTÉS (ajout B-SOT-1, 26/05/2026)** | | | | |
+| `js/b-modal-approche-c-hybrid.js` | | Enrichissements PDP hybride approche-C : personnalisation fiche produit selon type. Branché dans `main.js` (`setupApprocheCHybridPdp`) | Enrichissement PDP type-C | Cycle modal de base |
+| `js/b-pdp-curation-suggestions.js` | | Suggestions de curation en bas de fiche produit. Branché dans `main.js` (`setupPdpCurationSuggestions`) | Suggestions PDP | Catalogue, modal |
+| `js/b-home-premium-v1.js` | | Enrichissements visuels homepage premium (mobile + desktop). Branché dans `main.js` (`setupHomePremiumV1`) | Homepage premium V1 | Catalogue, panier |
+| **ORPHELINS CONFIRMÉS (B-SOT-1, 26/05/2026 — aucun import trouvé)** | | | | |
+| `js/b-mobile-premium-v1.js` | | ❌ **Orphelin** — aucun import dans `main.js`, `boutique.js` ou autre module. Présent sur disque. À auditer avant suppression | — | — |
+| `js/b-mobile-modal-v1.js` | | ❌ **Orphelin** — CSS neutralisé après régression visuelle (noté dans le header du fichier). Aucun import trouvé. À supprimer | — | — |
+| `js/b-modal-social-proof-mock.js` | | ❌ **Orphelin** — Mock temporaire non importé (c'est `b-modal-social-proof.js` qui est importé par `b-modal.js`). Header indique ⚠️ À SUPPRIMER quand colonnes DB social proof prêtes | — | — |
 | **BOOT** | | | | |
 | `js/boutique.js` | | Orchestrateur principal — init et boot, §13 INIT, imports nominatifs depuis tous les modules b-* | Boot applicatif | Logique métier dupliquée |
 | `js/main.js` | | Point d'entrée ES module. Branche `setupDesktopUpgrade`, `setupProductOpenContract`, `setupCartProductOpenStyle`, **`setupModalContractClasses` (PR-M1)** | Entrée module + hook initial | Logique métier |
@@ -378,4 +390,4 @@ Conséquence directe : aucune règle `.k-chip`, `.k-cats-shell`, `.k-cats` dans
 
 ---
 
-*Komerce · Source de Vérité Unique · GEL v1.4 · 22 mai 2026 · Chantier modale CLÔTURÉ (5/5 PR) · Un composant = une vérité = un fichier propriétaire*
+*Komerce · Source de Vérité Unique · GEL v1.6 · 26 mai 2026 · Chantier modale CLÔTURÉ (5/5 PR) · B-SOT-1 résolu (6 actifs ajoutés, 3 orphelins documentés) · Un composant = une vérité = un fichier propriétaire*

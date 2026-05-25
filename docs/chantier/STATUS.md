@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -151,7 +151,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 
 - [x] **GOD-FILES-0** — `buildReceiptHTML` extrait → `utils/pickup-receipt-html.js` (286 lignes) ✅. `pickup-secret.js` : 756 lignes. `REVEAL_CACHE` Map → table `pickup_reveal_codes` DB ✅.
 - [x] **GOD-FILES-1** — `routes/pricing.js` : 283 lignes ✅ (1318 → 283). `services/pricing-recommend.js` (507 l) ✅. `services/pricing-dashboard.js` (382 l) ✅. `utils/pricing-cache.js` (41 l) ✅.
-- [ ] **ZOMBIE-1** — ❌ `utils/pricing.js` : **1 330 lignes — fichier zombie confirmé**. Ancien `routes/pricing.js` d'avant GOD-FILES-1. Exporte un router Express, n'est importé nulle part. `routes/pricing.js` (283 l) est le seul actif monté dans `bootstrap/api-routes.js`. **À supprimer sans risque.**
+- [x] **ZOMBIE-1** ✅ — `utils/pricing.js` : **absent du repo** — confirmé par analyse du zip (2026-05-26). Fichier zombie déjà supprimé, aucune action requise.
 - [ ] **GOD-FILES-2** — `routes/dashboard-finance.js` : 1 218 lignes, 4 routes. `GET /payments` = 627 lignes SQL inline. Extraire vers `services/dashboard-finance-service.js`.
 - [ ] **GOD-FILES-3** — `routes/parcel-api-v2.js` : 1 295 lignes, 8 routes. `syncParcelToOrders` (236 l) inline. Extraire vers `services/parcel-sync-service.js`.
 - [ ] **GOD-FILES-4** — `routes/admin.js` : 1 210 lignes, 20 routes. Lot **B4 planifié** dans `BACKEND_GOLIVE_ROADMAP.md`. Découper en `routes/admin-orders.js`, `routes/admin-partners.js`, etc.
@@ -182,23 +182,9 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 
 - [x] `public/boutique/docs/BOUTIQUE_SOURCE_OF_TRUTH.md` — GEL v1.5 ✅. `b-share-cart.js` owner exclusif §2B. `b-group-cart-flow.js` DEPRECATED. PR-1 documentée.
 - [x] `b-share-phone-guard.js` wired dans `main.js` ligne 5 + 16 ✅
-- [ ] **GAP B-DOC-1** — `public/boutique/docs/CARTOGRAPHY_360_BOUTIQUE.md` ne mentionne pas les redirections serveur `/event/*` → `/boutique` (PR #486) ni le tombstone API collectif (`410`). ⚠️ À corriger.
-- [ ] **GAP B-DOC-2** — `public/boutique/docs/BOUTIQUE_DOCS_INDEX.md` ne liste pas `MODAL_DESKTOP_ARCHITECTURE.md` et `MODAL_MOBILE_ARCHITECTURE.md`. ⚠️ À corriger.
-- [ ] **GAP B-SOT-1** — 9 fichiers JS actifs ou présents **absents du `BOUTIQUE_SOURCE_OF_TRUTH.md`** (GEL v1.5 incomplet) :
-
-| Fichier | Lignes | Statut | Action |
-|---|---|---|---|
-| `b-share-phone-guard.js` | 301 | ✅ Actif — `setupSharePhoneGuard()` dans `main.js` | Ajouter au SOT §2B |
-| `b-group-view.js` | 463 | ✅ Actif — owner onglet groupe panier partagé, importé depuis `boutique.js` | Ajouter au SOT §2B |
-| `b-group-banner.js` | 225 | ✅ Actif — import auto `boutique.js` ligne 80 | Ajouter au SOT §2B |
-| `b-modal-approche-c-hybrid.js` | 564 | ✅ Actif — `setupApprocheCHybridPdp()` dans `main.js` | Ajouter au SOT §2B |
-| `b-pdp-curation-suggestions.js` | 283 | ✅ Actif — `setupPdpCurationSuggestions()` dans `main.js` | Ajouter au SOT §2B |
-| `b-home-premium-v1.js` | 292 | ✅ Actif — `setupHomePremiumV1()` dans `main.js` | Ajouter au SOT §2B |
-| `b-mobile-premium-v1.js` | 449 | ⚠️ Non vu dans `main.js` — à vérifier si importé depuis `boutique.js` ou orphelin | Auditer |
-| `b-mobile-modal-v1.js` | 110 | ⚠️ CSS neutralisé après régression (noté dans le header du fichier) — potentiellement orphelin | Auditer / supprimer |
-| `b-modal-social-proof-mock.js` | 156 | ❌ **TEMPORAIRE** — header indique `⚠️ À SUPPRIMER quand la DB aura les colonnes social proof` | Supprimer quand colonnes DB prêtes |
-
----
+- [x] **GAP B-DOC-1** ✅ — `public/boutique/docs/CARTOGRAPHY_360_BOUTIQUE.md` : §14 ajouté (2026-05-26) — redirections `/event/*` → `/boutique`, API `410`, tombstones. Confirmé par analyse code `bootstrap/html-routes.js` + `routes/collective-workspaces.js`.
+- [x] **GAP B-DOC-2** ✅ — `public/boutique/docs/BOUTIQUE_DOCS_INDEX.md` : déjà à jour — `MODAL_DESKTOP_ARCHITECTURE.md` et `MODAL_MOBILE_ARCHITECTURE.md` présents en §1 et §5. Confirmé par lecture du fichier (2026-05-26). Aucune action requise.
+- [x] **GAP B-SOT-1** ✅ — `BOUTIQUE_SOURCE_OF_TRUTH.md` passé en GEL v1.6 (2026-05-26) : 6 fichiers actifs ajoutés en §2B (b-share-phone-guard, b-group-view, b-group-banner, b-modal-approche-c-hybrid, b-pdp-curation-suggestions, b-home-premium-v1). 3 orphelins documentés : b-mobile-premium-v1 (aucun import), b-mobile-modal-v1 (CSS neutralisé + aucun import), b-modal-social-proof-mock (non importé — à supprimer avec les colonnes DB social proof).
 
 ## Résultat de validation du 23 mai 2026
 
@@ -254,28 +240,10 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 ## 🎯 Prochain lot recommandé
 
-### 1. DOC-SYNC-BOUTIQUE-FIRST (✅ partiellement fait — 2 gaps à fermer)
-
-**Priorité : ▶️ Maintenant — 30 min**
-
-Deux actions restantes dans les docs existants (pas de doc satellite) :
+### 1. GO-LIVE-CHECK (▶️ Maintenant — 1 session)
 
 ```text
-[ ] public/boutique/docs/CARTOGRAPHY_360_BOUTIQUE.md
-    → Ajouter section "Routes serveur legacy désactivées (PR #486)"
-    → Documenter : /event/* → redirect 302 /boutique
-    → Documenter : /workspace/:token → redirect 302 /boutique
-    → Documenter : /api/collective-workspaces → 410 collective_workspace_disabled
-    → Documenter : services/collective-payment-orchestrator.js = tombstone no-op
-
-[ ] public/boutique/docs/BOUTIQUE_DOCS_INDEX.md
-    → Ajouter MODAL_DESKTOP_ARCHITECTURE.md et MODAL_MOBILE_ARCHITECTURE.md à l'index
-```
-
-### 2. GO-LIVE-CHECK (Ensuite — 1 session)
-
-```text
-[ ] Rejouer npm test → doit rester vert (87 passés)
+[ ] Rejouer npm test → doit rester vert (94 passés)
 [ ] GET /health → HTTP 200
 [ ] GET /api/health → HTTP 200
 [ ] Flow shared-cart complet :
@@ -295,10 +263,10 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| DOC-SYNC-BOUTIQUE-FIRST | ▶️ Maintenant | B-DOC-1 + B-DOC-2 + B-SOT-1 (9 fichiers absents du SOT boutique) |
-| ZOMBIE-1 | ▶️ Maintenant | Supprimer `utils/pricing.js` (1 330 l, zombie sans import) — zéro risque |
-| GO-LIVE-CHECK | Ensuite | Rejouer tests + flux shared-cart complet + vérifs prod |
-| B-SOT-AUDIT | Ensuite | Auditer `b-mobile-premium-v1.js` + `b-mobile-modal-v1.js` (chargés ou orphelins ?) |
+| GO-LIVE-CHECK | ▶️ Maintenant | Rejouer tests + flux shared-cart complet + vérifs prod |
+| B-SOT-AUDIT | Ensuite | ✅ Résolu — b-mobile-premium-v1 et b-mobile-modal-v1 confirmés orphelins, documentés dans SOT v1.6 |
+| DOC-SYNC-BOUTIQUE-FIRST | ✅ Fait | B-DOC-1 ✅ (§14 ajouté CARTOGRAPHY_360_BOUTIQUE) · B-DOC-2 ✅ (déjà à jour) · B-SOT-1 ✅ (SOT v1.6, 6 actifs + 3 orphelins) |
+| ZOMBIE-1 | ✅ Fait | `utils/pricing.js` absent du repo — déjà supprimé, confirmé par analyse code |
 | COLLECTIVE-CLEANUP | Post go-live | Nettoyer la chaîne de services collective-workspace-engine (tombstone incomplet) |
 | GOD-FILES-2 | Post go-live | `routes/dashboard-finance.js` 1 218 l — extraire SQL `/payments` en service |
 | GOD-FILES-3 | Post go-live | `routes/parcel-api-v2.js` 1 295 l — extraire `syncParcelToOrders` |
@@ -341,9 +309,9 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 - **Panier partagé boutique** : `b-share-cart.js` (447 l) owner exclusif. `b-group-cart-flow.js` stub DEPRECATED. `b-share-phone-guard.js` wired dans `main.js`. Flows A→B→C→D opérationnels.
 - **Legacy event** : `event/` HTML autonomes existent encore dans `public/boutique/`. Routes serveur redirigent mais pages HTML statiques non supprimées. Nettoyage progressif post go-live.
 - **Dead CSS** : `k-modal-open` dans `cart.css` — alias jamais posé par le JS, à supprimer.
-- **`BOUTIQUE_SOURCE_OF_TRUTH.md`** : GEL v1.5 — **incomplet** : 6 fichiers actifs + 3 fichiers à statut incertain absents du SOT (voir B-SOT-1 dans la checklist).
-- **`CARTOGRAPHY_360_BOUTIQUE.md`** : gap confirmé — ne documente pas les redirections serveur PR #486. ⚠️ À corriger (B-DOC-1).
-- **`BOUTIQUE_DOCS_INDEX.md`** : gap confirmé — ne liste pas `MODAL_DESKTOP_ARCHITECTURE.md` et `MODAL_MOBILE_ARCHITECTURE.md`. ⚠️ À corriger (B-DOC-2).
+- **`BOUTIQUE_SOURCE_OF_TRUTH.md`** : GEL v1.6 ✅ — 6 fichiers actifs ajoutés §2B, 3 orphelins documentés (b-mobile-premium-v1, b-mobile-modal-v1, b-modal-social-proof-mock).
+- **`CARTOGRAPHY_360_BOUTIQUE.md`** : §14 ajouté ✅ — routes serveur legacy désactivées (PR #486), redirections 302, API 410, tombstones.
+- **`BOUTIQUE_DOCS_INDEX.md`** : ✅ déjà à jour — MODAL_DESKTOP/MOBILE_ARCHITECTURE.md présents.
 
 ---
 

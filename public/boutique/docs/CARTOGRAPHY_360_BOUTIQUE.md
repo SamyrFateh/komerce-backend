@@ -371,4 +371,42 @@ Détail d'implémentation à faire dans le lot 2 (étape 2 de la roadmap doc).
 
 ---
 
+## 14. Routes serveur legacy désactivées (PR #486)
+
+> Ajouté 2026-05-26 — B-DOC-1. Confirmé par analyse code `bootstrap/html-routes.js` et `routes/collective-workspaces.js`.
+
+Le modèle Panier Événement Collectif / Workspace est **déclassé**. Les routes serveur correspondantes sont neutralisées depuis PR #486. Le modèle actif est le **panier partagé boutique-first** (`/boutique` → `b-share-cart.js`).
+
+### Redirections HTML (302)
+
+| Route serveur | Comportement | Fichier |
+|---|---|---|
+| `GET /event/create` | → `302 /boutique` | `bootstrap/html-routes.js` ligne 78 |
+| `GET /event/manage/:creatorToken` | → `302 /boutique` | ligne 79 |
+| `GET /event/w/:publicToken` | → `302 /boutique` | ligne 80 |
+| `GET /event/pay/:paymentToken` | → `302 /boutique` | ligne 81 |
+| `GET /event/:creatorToken/manage` | → `302 /boutique` | ligne 82 |
+| `GET /workspace/:publicToken` | → `302 /boutique` | ligne 83 |
+
+### API désactivées (410)
+
+| Route API | Comportement | Fichier |
+|---|---|---|
+| `* /api/collective-workspaces/*` | `410 collective_workspace_disabled` | `routes/collective-workspaces.js` |
+| `* /api/collective-payments/*` | `410 collective_workspace_disabled` | idem |
+
+### Services tombstone (no-op)
+
+| Service | État | Note |
+|---|---|---|
+| `services/collective-payment-orchestrator.js` | Tombstone no-op | Aucun cron, aucun PaymentIntent, aucun webhook traité |
+| `services/collective-workspace-engine.js` | Encore importé par 3 services legacy | Non bloquant go-live — COLLECTIVE-CLEANUP planifié post go-live |
+
+### Ce qui reste actif côté boutique
+
+- `public/boutique/event/*.html` : pages statiques toujours présentes sur disque — **non supprimées**, mais le serveur redirige avant de les servir. Nettoyage progressif post go-live.
+- `css/event.css` : toujours bundlé (tokens + styles event). Non bloquant.
+
+---
+
 **Fin de carto v1**. Validation requise avant publication. Étape suivante : garde-fous exécutables (§11).
