@@ -73,6 +73,31 @@
     border-color: var(--border);
   }
   .k-header-nav-btn:active { background: var(--sand-dark); }
+  .k-header-nav-btn.active {
+    background: var(--sand-warm);
+    border-color: var(--border);
+    font-weight: 700;
+  }
+
+  /* Bouton Groupe desktop — mise en valeur discrète */
+  .k-header-nav-btn--group { position: relative; }
+  .k-header-nav-btn--group.has-active {
+    background: var(--green-bg-leaf);
+    border-color: var(--cta-green);
+    color: var(--green-text-strong);
+  }
+  .k-header-group-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cta-green);
+    border: 2px solid var(--white);
+    display: none;
+  }
+  .k-header-group-badge.show { display: block; }
 
   .k-header-actions {
     display: flex;

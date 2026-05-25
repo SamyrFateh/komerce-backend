@@ -418,7 +418,14 @@ export async function renderGroupView(opts = {}) {
 /* ── Badge bnav ────────────────────────────────────────────────── */
 
 export function refreshGroupBadge() {
-  const badge = document.getElementById('k-bnav-group-badge');
-  if (!badge) return;
-  badge.classList.toggle('show', !!state.shareToken);
+  const hasActive = !!state.shareToken;
+  // Badge bnav mobile
+  const bnavBadge = document.getElementById('k-bnav-group-badge');
+  if (bnavBadge) bnavBadge.classList.toggle('show', hasActive);
+  // Badge header desktop
+  const headerBadge = document.getElementById('k-header-group-badge');
+  if (headerBadge) headerBadge.classList.toggle('show', hasActive);
+  // Couleur bouton header desktop quand actif
+  const headerBtn = document.getElementById('k-header-group-btn');
+  if (headerBtn) headerBtn.classList.toggle('has-active', hasActive);
 }
