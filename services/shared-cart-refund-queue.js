@@ -12,7 +12,8 @@
  *   metadata.requires_manual_refund = true
  *
  * Ce service ne rembourse pas automatiquement. Il expose la file opérationnelle
- * pour traitement manuel Stripe/admin.
+ * pour traitement manuel Stripe/admin et permet ensuite de marquer qu'un
+ * remboursement a été traité manuellement.
  */
 
 const db = require('../db');
@@ -25,6 +26,21 @@ function clampLimit(value) {
 function clampOffset(value) {
   const n = Number(value) || 0;
   return Math.max(0, Math.round(n));
+}
+
+async function withTransaction(callback) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function listManualRefundQueue(options = {}) {
@@ -46,6 +62,7 @@ async function listManualRefundQueue(options = {}) {
        c.stripe_session_id,
        c.stripe_payment_intent_id,
        c.failed_at,
+       c.refunded_at,
        c.created_at AS contribution_created_at,
        c.metadata AS contribution_metadata,
        sc.token AS shared_cart_token,
@@ -86,6 +103,82 @@ async function listManualRefundQueue(options = {}) {
   };
 }
 
+async function markManualRefundProcessed(contributionId, adminUserId, options = {}) {
+  const refundReference = String(options.refund_reference || '').trim() || null;
+  const note = String(options.note || '').trim() || null;
+
+  return withTransaction(async (client) => {
+    const { rows: contributionRows } = await client.query(
+      `SELECT *
+         FROM shared_cart_contributions
+        WHERE id = $1
+        FOR UPDATE`,
+      [contributionId]
+    );
+
+    if (!contributionRows.length) {
+      const err = new Error('Contribution introuvable');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const contribution = contributionRows[0];
+
+    if (contribution.status !== 'failed' || !contribution.metadata?.requires_manual_refund) {
+      const err = new Error('Cette contribution ne nécessite pas de remboursement manuel');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    const manualRefundPayload = {
+      requires_manual_refund: false,
+      manual_refund_processed: true,
+      manual_refund_processed_at: now,
+      manual_refund_processed_by: adminUserId,
+      ...(refundReference ? { manual_refund_reference: refundReference } : {}),
+      ...(note ? { manual_refund_note: note } : {}),
+    };
+
+    const { rows: [updatedContribution] } = await client.query(
+      `UPDATE shared_cart_contributions
+          SET status = 'refunded',
+              refunded_at = $3,
+              metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+              updated_at = $3
+        WHERE id = $2
+          AND status = 'failed'
+          AND metadata @> '{"requires_manual_refund": true}'
+        RETURNING *`,
+      [JSON.stringify(manualRefundPayload), contributionId, now]
+    );
+
+    if (!updatedContribution) {
+      const err = new Error('Remboursement manuel déjà traité ou contribution incompatible');
+      err.statusCode = 409;
+      throw err;
+    }
+
+    await client.query(
+      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
+         VALUES ($1, 'manual_refund_marked', 'admin', $2, $3)`,
+      [updatedContribution.shared_cart_id, adminUserId, {
+        contribution_id: updatedContribution.id,
+        amount_kmf: updatedContribution.amount_kmf,
+        amount_paid: updatedContribution.amount_paid,
+        currency_paid: updatedContribution.currency_paid,
+        stripe_session_id: updatedContribution.stripe_session_id,
+        stripe_payment_intent_id: updatedContribution.stripe_payment_intent_id,
+        refund_reference: refundReference,
+        note,
+      }]
+    );
+
+    return updatedContribution;
+  });
+}
+
 module.exports = {
   listManualRefundQueue,
+  markManualRefundProcessed,
 };

@@ -129,12 +129,14 @@ const walletService    = require('./services/wallet-service');
 const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
 const sharedCart = require('./routes/shared-cart');
+const sharedCartRefundAdmin = require('./routes/shared-cart-refund-admin');
 
 mountApiRoutesBeforeStripeOwnedBlocks(app);
 
 // ═══ Panier Partagé MVP (Niveau 1) ═══
 app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
 app.use('/api/shared-carts',       sharedCart.router);
+app.use('/api/admin/shared-carts', sharedCartRefundAdmin.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 
 // ═══ Panier Événement Collectif V1 ═══
