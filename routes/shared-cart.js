@@ -33,6 +33,7 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
+const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
@@ -231,12 +232,12 @@ async function stripeWebhookHandler(req, res) {
           await markStripeEventProcessed(event, { ignored: 'not_a_shared_cart_session' });
           return res.json({ received: true, ignored: 'not_a_shared_cart_session' });
         }
-        const result = await engine.confirmContributionFromStripe(session);
+        const result = await confirmContributionFromStripeSafely(session);
         if (!result) {
-          log.info(`[shared-cart webhook] session ${session.id} déjà traitée ou non confirmée`);
+          log.info(`[shared-cart webhook] session ${session.id} déjà traitée, non confirmée ou payée tardivement`);
           await markStripeEventProcessed(event, {
             session_id: session.id,
-            contribution: 'already_processed_or_not_confirmed',
+            contribution: 'already_processed_not_confirmed_or_not_counted',
           });
         } else {
           log.info(`[shared-cart webhook] contribution ${result.contribution.id} confirmée`);
