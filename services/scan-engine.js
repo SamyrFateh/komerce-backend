@@ -1,6 +1,7 @@
+'use strict';
 /**
  * scan-engine.js — Moteur de scans PARCEL-FIRST
- * 
+ *
  * PRINCIPE: Chaque scan est un ÉVÉNEMENT immutable qui :
  *   1. Est journalisé (append-only dans scan_events)
  *   2. Fait évoluer le statut du colis
@@ -9,7 +10,7 @@
  *   5. Génère des incidents si incohérence
  *   6. Rattrape les étapes manquées (smart-scan)
  *
- * RÉSILIENCE: 
+ * RÉSILIENCE:
  *   - Erreurs récupérables → incident + needs_review
  *   - Erreurs critiques → rejet du scan
  *   - Jamais de suppression, toujours correction append-only
@@ -88,256 +89,22 @@ async function processScan(params) {
   try {
     await client.query('BEGIN');
 
-    // ── 1. Charger le colis ──
-    const { rows: [parcel] } = await client.query(
-      `SELECT p.*, o.reference AS order_ref, o.id AS order_id
-       FROM parcels p
-       LEFT JOIN orders o ON o.id = p.order_id
-       WHERE p.id = $1`,
-      [params.parcel_id]
-    );
+    const { parcel, parcelItems, qtyBefore } = await _loadScanContext(client, params);
 
-    if (!parcel) {
-      throw new ScanError('PARCEL_NOT_FOUND', `Colis ${params.parcel_id} introuvable`);
-    }
-
-    if (parcel.status === 'cancelled') {
-      throw new ScanError('PARCEL_CANCELLED', `Colis ${parcel.reference} est annulé`);
-    }
-
-    // ── 2. Charger les items du colis ──
-    const { rows: parcelItems } = await client.query(
-      `SELECT pi.*, oi.product_id, oi.product_name AS oi_product_name
-       FROM parcel_items pi
-       LEFT JOIN order_items oi ON oi.id = pi.order_item_id
-       WHERE pi.parcel_id = $1`,
-      [params.parcel_id]
-    );
-
-    // ── 3. Snapshot quantités AVANT ──
-    const qtyBefore = buildQtySnapshot(parcelItems);
-
-    // ── 4. Validation du scan ──
     const flow = SCAN_FLOW[params.event_type];
     if (!flow) {
       throw new ScanError('UNKNOWN_EVENT', `Type de scan inconnu: ${params.event_type}`);
     }
 
-    // Vérification de séquence (soft: incident au lieu de blocage)
-    const sequenceIssue = checkSequence(parcel.status, params.event_type);
-    if (sequenceIssue) {
-      result.incidents.push(
-        await createIncident(client, {
-          parcel_id: params.parcel_id,
-          order_id: parcel.order_id,
-          incident_type: 'sequence_violation',
-          severity: sequenceIssue.severity,
-          title: sequenceIssue.title,
-          description: sequenceIssue.description,
-          details: { current_status: parcel.status, attempted_event: params.event_type },
-          detected_by: params.scanned_by,
-          detected_source: params.actor_role || 'system'
-        })
-      );
-
-      // Si critique → rejeter le scan
-      if (sequenceIssue.severity === 'critical') {
-        const rejectedEvent = await logScanEvent(client, {
-          ...params,
-          order_id: parcel.order_id,
-          status: 'rejected',
-          error_message: sequenceIssue.title,
-          qty_before: qtyBefore,
-          qty_after: qtyBefore
-        });
-        result.event_id = rejectedEvent.id;
-        await client.query('COMMIT');
-        result.success = false;
-        return result;
-      }
+    const { valid } = await _validateAndCatchup(client, params, parcel, parcelItems, result);
+    if (!valid) {
+      await client.query('COMMIT');
+      return result;
     }
 
-    // ── 5. Smart Catchup — rattraper les étapes manquées ──
-    const catchups = CATCHUP_MAP[params.event_type] || [];
-    for (const catchupType of catchups) {
-      const catchupFlow = SCAN_FLOW[catchupType];
-      if (!catchupFlow) continue;
+    await _applyEvent(client, params, parcel, parcelItems, flow, result);
 
-      // Vérifier si l'étape a déjà été faite
-      const alreadyDone = await isStepCompleted(client, params.parcel_id, catchupType);
-      if (alreadyDone) continue;
-
-      // Appliquer le rattrapage
-      const catchupQtyBefore = buildQtySnapshot(parcelItems);
-
-      if (catchupFlow.qty_field) {
-        await cascadeQuantities(client, params.parcel_id, catchupFlow.qty_field);
-      }
-
-      if (catchupFlow.parcel_status) {
-        // Ne mettre à jour le statut que s'il progresse
-        const currentOrder = getStatusOrder(parcel.status);
-        const catchupOrder = catchupFlow.order;
-        if (catchupOrder > currentOrder) {
-          // On ne met pas à jour ici, on le fera avec l'événement principal
-        }
-      }
-
-      // PATCH P1-5 : snapshot qty_after LU APRÈS cascadeQuantities (et non avant).
-      // Avant ce patch, qty_after === qty_before pour tous les catchup events.
-      let catchupQtyAfter = catchupQtyBefore;
-      if (catchupFlow.qty_field) {
-        const { rows: itemsAfterCatchup } = await client.query(
-          `SELECT * FROM parcel_items WHERE parcel_id = $1`,
-          [params.parcel_id]
-        );
-        catchupQtyAfter = buildQtySnapshot(itemsAfterCatchup);
-        // Mettre à jour parcelItems pour que le prochain catchup parte du bon état
-        parcelItems.splice(0, parcelItems.length, ...itemsAfterCatchup);
-      }
-
-      // Journaliser le rattrapage
-      const catchupEvent = await logScanEvent(client, {
-        parcel_id: params.parcel_id,
-        order_id: parcel.order_id,
-        event_type: catchupType,
-        scanned_by: params.scanned_by,
-        actor_name: params.actor_name || 'Système (rattrapage)',
-        actor_role: 'system',
-        location: params.location,
-        notes: `Rattrapage automatique déclenché par scan ${params.event_type}`,
-        metadata: { triggered_by: params.event_type, auto_catchup: true },
-        status: 'applied',
-        qty_before: catchupQtyBefore,
-        qty_after: catchupQtyAfter,
-      });
-
-      result.catchup_events.push({
-        id: catchupEvent.id,
-        type: catchupType,
-        auto: true
-      });
-
-      // Créer un incident informatif pour le rattrapage
-      result.incidents.push(
-        await createIncident(client, {
-          parcel_id: params.parcel_id,
-          order_id: parcel.order_id,
-          scan_event_id: catchupEvent.id,
-          incident_type: 'scan_anomaly',
-          severity: 'low',
-          title: `Étape ${catchupType} rattrapée automatiquement`,
-          description: `L'étape ${catchupType} n'avait pas été scannée. Rattrapage auto lors de ${params.event_type}.`,
-          details: { catchup_type: catchupType, triggered_by: params.event_type },
-          detected_source: 'system'
-        })
-      );
-    }
-
-    // ── 6. Appliquer les quantités de l'événement principal ──
-    if (flow.qty_field) {
-      await cascadeQuantities(client, params.parcel_id, flow.qty_field);
-    }
-
-    // ── 7. Mettre à jour le statut du colis ──
-    if (flow.parcel_status) {
-      const updateFields = [`status = $2`];
-      const updateValues = [params.parcel_id, flow.parcel_status];
-      let paramIdx = 3;
-
-      // Timestamps automatiques selon le statut
-      if (flow.parcel_status === 'shipped') {
-        updateFields.push(`shipped_at = COALESCE(shipped_at, NOW())`);
-      } else if (flow.parcel_status === 'available') {
-        updateFields.push(`received_at = COALESCE(received_at, NOW())`);
-      } else if (flow.parcel_status === 'collected') {
-        updateFields.push(`collected_at = COALESCE(collected_at, NOW())`);
-      }
-
-      await client.query(
-        `UPDATE parcels SET ${updateFields.join(', ')} WHERE id = $1`,
-        updateValues
-      );
-    }
-
-    // ── 8. Traitement spécifique: weight_check ──
-    if (params.event_type === 'weight_check' && params.actual_weight_kg != null) {
-      await client.query(
-        `UPDATE parcels SET actual_weight_kg = $2 WHERE id = $1`,
-        [params.parcel_id, params.actual_weight_kg]
-      );
-
-      // Comparer avec le poids attendu
-      if (parcel.expected_weight_kg) {
-        const diff = Math.abs(params.actual_weight_kg - parcel.expected_weight_kg);
-        const tolerance = parcel.expected_weight_kg * 0.15; // 15% tolérance
-        if (diff > tolerance) {
-          result.incidents.push(
-            await createIncident(client, {
-              parcel_id: params.parcel_id,
-              order_id: parcel.order_id,
-              incident_type: 'weight_mismatch',
-              severity: diff > tolerance * 2 ? 'high' : 'medium',
-              title: `Écart de poids: ${params.actual_weight_kg}kg vs ${parcel.expected_weight_kg}kg attendu`,
-              description: `Différence de ${diff.toFixed(2)}kg (tolérance: ${tolerance.toFixed(2)}kg)`,
-              details: {
-                expected_kg: parcel.expected_weight_kg,
-                actual_kg: params.actual_weight_kg,
-                diff_kg: diff,
-                tolerance_kg: tolerance
-              },
-              detected_by: params.scanned_by,
-              detected_source: params.actor_role || 'hub_agent'
-            })
-          );
-        }
-      }
-    }
-
-    // ── 9. Traitement spécifique: content_verified (vérification relais) ──
-    if (params.event_type === 'content_verified' && params.items) {
-      const verificationResult = await processContentVerification(
-        client, params.parcel_id, parcel.order_id, params.items, params.scanned_by, params.actor_role
-      );
-      result.incidents.push(...verificationResult.incidents);
-
-      // Mettre à jour le statut de vérification du colis
-      const allVerified = verificationResult.all_ok;
-      await client.query(
-        `UPDATE parcels SET 
-          verification_status = $2,
-          verified_at = NOW(),
-          verified_by = $3,
-          verification_notes = $4
-        WHERE id = $1`,
-        [
-          params.parcel_id,
-          allVerified ? 'verified' : 'discrepancy',
-          params.scanned_by,
-          allVerified ? 'Contenu vérifié OK' : `${verificationResult.issues.length} écart(s) détecté(s)`
-        ]
-      );
-    }
-
-    // ── 10. Snapshot quantités APRÈS ──
-    const { rows: updatedItems } = await client.query(
-      `SELECT * FROM parcel_items WHERE parcel_id = $1`,
-      [params.parcel_id]
-    );
-    const qtyAfter = buildQtySnapshot(updatedItems);
-
-    // ── 11. Journaliser l'événement principal ──
-    const mainEvent = await logScanEvent(client, {
-      ...params,
-      order_id: parcel.order_id,
-      status: 'applied',
-      qty_before: qtyBefore,
-      qty_after: qtyAfter
-    });
-    result.event_id = mainEvent.id;
-
-    // ── 12. Propager vers order_items + recalculer statut commande ──
-    await syncOrderFromParcels(client, parcel.order_id);
+    await _finalizeAndLog(client, params, parcel, flow, qtyBefore, result);
 
     await client.query('COMMIT');
 
@@ -345,7 +112,7 @@ async function processScan(params) {
     const { rows: [updatedParcel] } = await client.query(
       `SELECT * FROM parcels WHERE id = $1`, [params.parcel_id]
     );
-       result.parcel = updatedParcel;
+    result.parcel = updatedParcel;
     result.success = true;
 
     // ── 14. Notifications WhatsApp (après COMMIT, non-bloquant) ──
@@ -388,6 +155,279 @@ async function processScan(params) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// SOUS-FONCTIONS PRIVÉES (non exportées)
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Étapes 1-3 : charge parcel, parcelItems, construit qtyBefore.
+ * Throws ScanError si colis introuvable ou cancelled.
+ * @returns {{ parcel, parcelItems, qtyBefore }}
+ */
+async function _loadScanContext(client, params) {
+  // ── 1. Charger le colis ──
+  const { rows: [parcel] } = await client.query(
+    `SELECT p.*, o.reference AS order_ref, o.id AS order_id
+     FROM parcels p
+     LEFT JOIN orders o ON o.id = p.order_id
+     WHERE p.id = $1`,
+    [params.parcel_id]
+  );
+
+  if (!parcel) {
+    throw new ScanError('PARCEL_NOT_FOUND', `Colis ${params.parcel_id} introuvable`);
+  }
+
+  if (parcel.status === 'cancelled') {
+    throw new ScanError('PARCEL_CANCELLED', `Colis ${parcel.reference} est annulé`);
+  }
+
+  // ── 2. Charger les items du colis ──
+  const { rows: parcelItems } = await client.query(
+    `SELECT pi.*, oi.product_id, oi.product_name AS oi_product_name
+     FROM parcel_items pi
+     LEFT JOIN order_items oi ON oi.id = pi.order_item_id
+     WHERE pi.parcel_id = $1`,
+    [params.parcel_id]
+  );
+
+  // ── 3. Snapshot quantités AVANT ──
+  const qtyBefore = buildQtySnapshot(parcelItems);
+
+  return { parcel, parcelItems, qtyBefore };
+}
+
+/**
+ * Étape 4 : vérifie flow + séquence. Si critique → log event rejeté + return { valid: false }.
+ * Étape 5 : smart-catchup (CATCHUP_MAP). Mutate parcelItems en place (splice).
+ * @returns {{ valid: boolean, flow }}
+ */
+async function _validateAndCatchup(client, params, parcel, parcelItems, result) {
+  const flow = SCAN_FLOW[params.event_type];
+  const qtyBefore = buildQtySnapshot(parcelItems);
+
+  // ── 4. Validation du scan ──
+  // Vérification de séquence (soft: incident au lieu de blocage)
+  const sequenceIssue = checkSequence(parcel.status, params.event_type);
+  if (sequenceIssue) {
+    result.incidents.push(
+      await createIncident(client, {
+        parcel_id: params.parcel_id,
+        order_id: parcel.order_id,
+        incident_type: 'sequence_violation',
+        severity: sequenceIssue.severity,
+        title: sequenceIssue.title,
+        description: sequenceIssue.description,
+        details: { current_status: parcel.status, attempted_event: params.event_type },
+        detected_by: params.scanned_by,
+        detected_source: params.actor_role || 'system'
+      })
+    );
+
+    // Si critique → rejeter le scan
+    if (sequenceIssue.severity === 'critical') {
+      const rejectedEvent = await logScanEvent(client, {
+        ...params,
+        order_id: parcel.order_id,
+        status: 'rejected',
+        error_message: sequenceIssue.title,
+        qty_before: qtyBefore,
+        qty_after: qtyBefore
+      });
+      result.event_id = rejectedEvent.id;
+      result.success = false;
+      return { valid: false, flow };
+    }
+  }
+
+  // ── 5. Smart Catchup — rattraper les étapes manquées ──
+  const catchups = CATCHUP_MAP[params.event_type] || [];
+  for (const catchupType of catchups) {
+    const catchupFlow = SCAN_FLOW[catchupType];
+    if (!catchupFlow) continue;
+
+    // Vérifier si l'étape a déjà été faite
+    const alreadyDone = await isStepCompleted(client, params.parcel_id, catchupType);
+    if (alreadyDone) continue;
+
+    // Appliquer le rattrapage
+    const catchupQtyBefore = buildQtySnapshot(parcelItems);
+
+    if (catchupFlow.qty_field) {
+      await cascadeQuantities(client, params.parcel_id, catchupFlow.qty_field);
+    }
+
+    // PATCH P1-5 : snapshot qty_after LU APRÈS cascadeQuantities (et non avant).
+    // Avant ce patch, qty_after === qty_before pour tous les catchup events.
+    let catchupQtyAfter = catchupQtyBefore;
+    if (catchupFlow.qty_field) {
+      const { rows: itemsAfterCatchup } = await client.query(
+        `SELECT * FROM parcel_items WHERE parcel_id = $1`,
+        [params.parcel_id]
+      );
+      catchupQtyAfter = buildQtySnapshot(itemsAfterCatchup);
+      // Mettre à jour parcelItems pour que le prochain catchup parte du bon état
+      parcelItems.splice(0, parcelItems.length, ...itemsAfterCatchup);
+    }
+
+    // Journaliser le rattrapage
+    const catchupEvent = await logScanEvent(client, {
+      parcel_id: params.parcel_id,
+      order_id: parcel.order_id,
+      event_type: catchupType,
+      scanned_by: params.scanned_by,
+      actor_name: params.actor_name || 'Système (rattrapage)',
+      actor_role: 'system',
+      location: params.location,
+      notes: `Rattrapage automatique déclenché par scan ${params.event_type}`,
+      metadata: { triggered_by: params.event_type, auto_catchup: true },
+      status: 'applied',
+      qty_before: catchupQtyBefore,
+      qty_after: catchupQtyAfter,
+    });
+
+    result.catchup_events.push({
+      id: catchupEvent.id,
+      type: catchupType,
+      auto: true
+    });
+
+    // Créer un incident informatif pour le rattrapage
+    result.incidents.push(
+      await createIncident(client, {
+        parcel_id: params.parcel_id,
+        order_id: parcel.order_id,
+        scan_event_id: catchupEvent.id,
+        incident_type: 'scan_anomaly',
+        severity: 'low',
+        title: `Étape ${catchupType} rattrapée automatiquement`,
+        description: `L'étape ${catchupType} n'avait pas été scannée. Rattrapage auto lors de ${params.event_type}.`,
+        details: { catchup_type: catchupType, triggered_by: params.event_type },
+        detected_source: 'system'
+      })
+    );
+  }
+
+  return { valid: true, flow };
+}
+
+/**
+ * Étapes 6-9 : quantités + statut + weight_check + content_verified.
+ * Modifie la DB dans la transaction courante.
+ */
+async function _applyEvent(client, params, parcel, parcelItems, flow, result) {
+  // ── 6. Appliquer les quantités de l'événement principal ──
+  if (flow.qty_field) {
+    await cascadeQuantities(client, params.parcel_id, flow.qty_field);
+  }
+
+  // ── 7. Mettre à jour le statut du colis ──
+  if (flow.parcel_status) {
+    const updateFields = [`status = $2`];
+    const updateValues = [params.parcel_id, flow.parcel_status];
+
+    // Timestamps automatiques selon le statut
+    if (flow.parcel_status === 'shipped') {
+      updateFields.push(`shipped_at = COALESCE(shipped_at, NOW())`);
+    } else if (flow.parcel_status === 'available') {
+      updateFields.push(`received_at = COALESCE(received_at, NOW())`);
+    } else if (flow.parcel_status === 'collected') {
+      updateFields.push(`collected_at = COALESCE(collected_at, NOW())`);
+    }
+
+    await client.query(
+      `UPDATE parcels SET ${updateFields.join(', ')} WHERE id = $1`,
+      updateValues
+    );
+  }
+
+  // ── 8. Traitement spécifique: weight_check ──
+  if (params.event_type === 'weight_check' && params.actual_weight_kg != null) {
+    await client.query(
+      `UPDATE parcels SET actual_weight_kg = $2 WHERE id = $1`,
+      [params.parcel_id, params.actual_weight_kg]
+    );
+
+    // Comparer avec le poids attendu
+    if (parcel.expected_weight_kg) {
+      const diff = Math.abs(params.actual_weight_kg - parcel.expected_weight_kg);
+      const tolerance = parcel.expected_weight_kg * 0.15; // 15% tolérance
+      if (diff > tolerance) {
+        result.incidents.push(
+          await createIncident(client, {
+            parcel_id: params.parcel_id,
+            order_id: parcel.order_id,
+            incident_type: 'weight_mismatch',
+            severity: diff > tolerance * 2 ? 'high' : 'medium',
+            title: `Écart de poids: ${params.actual_weight_kg}kg vs ${parcel.expected_weight_kg}kg attendu`,
+            description: `Différence de ${diff.toFixed(2)}kg (tolérance: ${tolerance.toFixed(2)}kg)`,
+            details: {
+              expected_kg: parcel.expected_weight_kg,
+              actual_kg: params.actual_weight_kg,
+              diff_kg: diff,
+              tolerance_kg: tolerance
+            },
+            detected_by: params.scanned_by,
+            detected_source: params.actor_role || 'hub_agent'
+          })
+        );
+      }
+    }
+  }
+
+  // ── 9. Traitement spécifique: content_verified (vérification relais) ──
+  if (params.event_type === 'content_verified' && params.items) {
+    const verificationResult = await processContentVerification(
+      client, params.parcel_id, parcel.order_id, params.items, params.scanned_by, params.actor_role
+    );
+    result.incidents.push(...verificationResult.incidents);
+
+    // Mettre à jour le statut de vérification du colis
+    const allVerified = verificationResult.all_ok;
+    await client.query(
+      `UPDATE parcels SET
+        verification_status = $2,
+        verified_at = NOW(),
+        verified_by = $3,
+        verification_notes = $4
+      WHERE id = $1`,
+      [
+        params.parcel_id,
+        allVerified ? 'verified' : 'discrepancy',
+        params.scanned_by,
+        allVerified ? 'Contenu vérifié OK' : `${verificationResult.issues.length} écart(s) détecté(s)`
+      ]
+    );
+  }
+}
+
+/**
+ * Étapes 10-14 (hors notifications) : snapshot qty_after + logScanEvent +
+ * syncOrderFromParcels + peuple result.event_id.
+ * Les notifications post-commit (étape 14) restent dans processScan après COMMIT.
+ */
+async function _finalizeAndLog(client, params, parcel, flow, qtyBefore, result) {
+  // ── 10. Snapshot quantités APRÈS ──
+  const { rows: updatedItems } = await client.query(
+    `SELECT * FROM parcel_items WHERE parcel_id = $1`,
+    [params.parcel_id]
+  );
+  const qtyAfter = buildQtySnapshot(updatedItems);
+
+  // ── 11. Journaliser l'événement principal ──
+  const mainEvent = await logScanEvent(client, {
+    ...params,
+    order_id: parcel.order_id,
+    status: 'applied',
+    qty_before: qtyBefore,
+    qty_after: qtyAfter
+  });
+  result.event_id = mainEvent.id;
+
+  // ── 12. Propager vers order_items + recalculer statut commande ──
+  await syncOrderFromParcels(client, parcel.order_id);
+}
+
+// ════════════════════════════════════════════════════════════════
 // HELPERS INTERNES
 // ════════════════════════════════════════════════════════════════
 
@@ -401,7 +441,7 @@ async function cascadeQuantities(client, parcelId, qtyField) {
   const sourceField = chain[targetIdx - 1];
 
   await client.query(
-    `UPDATE parcel_items 
+    `UPDATE parcel_items
      SET ${qtyField} = ${sourceField}
      WHERE parcel_id = $1 AND ${qtyField} < ${sourceField}`,
     [parcelId]
@@ -411,7 +451,7 @@ async function cascadeQuantities(client, parcelId, qtyField) {
 /** Vérifie si une étape a déjà été complétée pour un colis */
 async function isStepCompleted(client, parcelId, eventType) {
   const { rows } = await client.query(
-    `SELECT 1 FROM scan_events 
+    `SELECT 1 FROM scan_events
      WHERE parcel_id = $1 AND event_type = $2 AND status = 'applied'
      LIMIT 1`,
     [parcelId, eventType]
@@ -629,7 +669,7 @@ async function syncOrderFromParcels(client, orderId) {
       qty_received  = COALESCE(agg.total_received, 0),
       qty_collected = COALESCE(agg.total_collected, 0)
     FROM (
-      SELECT 
+      SELECT
         pi.order_item_id,
         SUM(pi.qty_allocated) AS total_allocated,
         SUM(pi.qty_packed) AS total_packed,
@@ -829,7 +869,7 @@ async function correctScanEvent(originalEventId, correctionParams) {
 async function getParcelTrace(parcelId) {
   // Colis + commande + client
   const { rows: [parcel] } = await pool.query(`
-    SELECT 
+    SELECT
       p.*,
       o.reference AS order_ref, o.status AS order_status,
       o.client_name, o.client_phone, o.client_email,
@@ -845,7 +885,7 @@ async function getParcelTrace(parcelId) {
 
   // Items du colis avec détail order_item
   const { rows: items } = await pool.query(`
-    SELECT 
+    SELECT
       pi.*,
       oi.product_name AS oi_product_name,
       oi.product_id,
