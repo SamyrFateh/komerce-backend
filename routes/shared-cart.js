@@ -21,6 +21,7 @@
  *
  *   ── Admin ──
  *   GET    /api/admin/shared-carts
+ *   GET    /api/admin/shared-carts/refund-queue
  *   GET    /api/admin/shared-carts/:id
  *   POST   /api/admin/shared-carts/:id/expire
  *   POST   /api/admin/shared-carts/:id/extend
@@ -34,6 +35,7 @@ const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
+const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
@@ -465,6 +467,16 @@ adminRouter.get('/', authenticate, requireAdmin, async (req, res, next) => {
       params
     );
     res.json({ carts: rows, count: rows.length });
+  } catch (err) { next(err); }
+});
+
+adminRouter.get('/refund-queue', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const data = await listManualRefundQueue({
+      limit: req.query?.limit,
+      offset: req.query?.offset,
+    });
+    res.json(data);
   } catch (err) { next(err); }
 });
 
