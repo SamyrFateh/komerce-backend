@@ -8,6 +8,10 @@ function sendHtml(res, filePath, cache = 'no-cache') {
   res.sendFile(filePath);
 }
 
+function redirectToBoutique(res) {
+  res.redirect(302, '/boutique');
+}
+
 function mountHtmlRoutes(app, rootDir) {
   const publicDir = path.join(rootDir, 'public');
 
@@ -69,25 +73,14 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
   });
 
-  app.get('/event/create', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'event', 'create.html'));
-  });
-  app.get('/event/manage/:creatorToken', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'event', 'manage.html'));
-  });
-  app.get('/event/w/:publicToken', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'event', 'public.html'));
-  });
-  app.get('/event/pay/:paymentToken', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'event', 'pay.html'));
-  });
-
-  app.get('/event/:creatorToken/manage', (req, res) => {
-    res.redirect(301, '/event/manage/' + encodeURIComponent(req.params.creatorToken));
-  });
-  app.get('/workspace/:publicToken', (req, res) => {
-    res.redirect(301, '/event/w/' + encodeURIComponent(req.params.publicToken));
-  });
+  // Ancien parcours "Panier Événement Collectif / Workspace" désactivé.
+  // Doctrine actuelle : tout commence et finit dans la boutique.
+  app.get('/event/create', (req, res) => redirectToBoutique(res));
+  app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));
+  app.get('/event/w/:publicToken', (req, res) => redirectToBoutique(res));
+  app.get('/event/pay/:paymentToken', (req, res) => redirectToBoutique(res));
+  app.get('/event/:creatorToken/manage', (req, res) => redirectToBoutique(res));
+  app.get('/workspace/:publicToken', (req, res) => redirectToBoutique(res));
 
   app.get('/Komerce_Boutique.html', (req, res) => {
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
