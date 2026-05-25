@@ -5,7 +5,7 @@
  * Doctrine boutique-first — Mai 2026 :
  *   - un panier partagé actif n'empêche pas d'en créer un autre.
  *   - /mine restaure le dernier panier actif seulement comme raccourci de suivi.
- *   - la sidebar panier reste le panier courant : pas de suivi ni création groupe.
+ *   - le checkout/sidebar reste le panier courant : pas d'état ni suivi groupe.
  *   - le backend reste source de vérité pour la limite de paniers actifs.
  */
 
@@ -184,7 +184,7 @@ export function refreshSharedBadges(isShared, cart = null) {
   const mobileBadge = document.getElementById('k-share-badge-row');
   const mobileShare = document.getElementById('k-cart-share');
   if (mobileBadge) mobileBadge.hidden = !isShared;
-  if (mobileShare) mobileShare.textContent = isShared ? 'Groupe actif' : 'Payer en groupe';
+  if (mobileShare) mobileShare.textContent = 'Payer en groupe';
 
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   const desktopShare = document.getElementById('k-sc-share');
@@ -256,27 +256,6 @@ function openModal(content) {
 function closeModal(ov) {
   ov.style.animation = 'kSMFadeIn .15s ease reverse';
   setTimeout(() => ov.remove(), 150);
-}
-
-function promptExistingCartChoice() {
-  return new Promise(resolve => {
-    const ov = openModal(`
-      <div class="k-sm-head">
-        <span class="k-sm-title">👥 Panier groupe actif</span>
-        <button class="k-sm-close" aria-label="Fermer">✕</button>
-      </div>
-      <p class="k-sm-hint">Vous avez déjà un panier partagé en cours. Vous pouvez le suivre, ou créer un nouveau panier partagé avec le panier actuel.</p>
-      <div class="k-sm-choice">
-        <button class="k-sm-btn" id="k-sm-view-group">Voir le groupe actif</button>
-        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-create-new">Créer un nouveau groupe</button>
-        <button class="k-sm-btn k-sm-btn-ghost" id="k-sm-cancel-choice">Annuler</button>
-      </div>`);
-
-    ov.querySelector('#k-sm-view-group')?.addEventListener('click', () => { closeModal(ov); resolve('view'); });
-    ov.querySelector('#k-sm-create-new')?.addEventListener('click', () => { closeModal(ov); resolve('create'); });
-    ov.querySelector('#k-sm-cancel-choice')?.addEventListener('click', () => { closeModal(ov); resolve(null); });
-    ov.querySelector('.k-sm-close')?.addEventListener('click', () => { closeModal(ov); resolve(null); });
-  });
 }
 
 /* ── Étape A : formulaire init ──────────────────────────────────── */
@@ -425,17 +404,12 @@ export async function startShareFlow(opts = {}) {
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = state.shareToken ? 'Groupe actif' : 'Payer en groupe'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Payer en groupe'; }
   }
 }
 
 async function handleShareClick() {
-  if (!state.shareToken) {
-    return startShareFlow({ reshare: false });
-  }
-  const choice = await promptExistingCartChoice();
-  if (choice === 'view') return switchToGroup();
-  if (choice === 'create') return startShareFlow({ reshare: false });
+  return startShareFlow({ reshare: false });
 }
 
 /* ── Installation ───────────────────────────────────────────────── */
