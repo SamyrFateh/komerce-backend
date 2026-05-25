@@ -2,6 +2,7 @@ import './b-utils.js';
 import { bus } from './b-bus.js';
 import './b-store.js';
 import './boutique.js';
+import { setupSharePhoneGuard } from './b-share-phone-guard.js';
 import { setupDesktopUpgrade } from './b-desktop-upgrade.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { setupProductOpenContract } from './b-product-open-contract.js';
@@ -12,6 +13,7 @@ import { setupPdpCurationSuggestions } from './b-pdp-curation-suggestions.js';
 import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 
 function setupBoutiqueRuntime() {
+  setupSharePhoneGuard();
   setupModalContractClasses();
   setupDesktopUpgrade();
   setupApprocheCHybridPdp();
