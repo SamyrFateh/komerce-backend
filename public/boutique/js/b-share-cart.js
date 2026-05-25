@@ -5,7 +5,7 @@
  * Doctrine boutique-first — Mai 2026 :
  *   - un panier partagé actif n'empêche pas d'en créer un autre.
  *   - /mine restaure le dernier panier actif seulement comme raccourci de suivi.
- *   - "Voir le groupe" = consulter le panier actif, pas verrouiller le panier courant.
+ *   - la sidebar panier doit rester simple : état actif + voir le suivi, pas création permanente.
  *   - le backend reste source de vérité pour la limite de paniers actifs.
  */
 
@@ -219,8 +219,8 @@ export function refreshSharedBadges(isShared, cart = null) {
   const desktopShare = document.getElementById('k-sc-share');
   if (desktopBadge) desktopBadge.hidden = !isShared;
   if (desktopShare) {
-    desktopShare.hidden = false;
-    desktopShare.textContent = isShared ? 'Nouveau groupe' : 'Payer en groupe';
+    desktopShare.hidden = !!isShared;
+    desktopShare.textContent = 'Payer en groupe';
   }
   if (isShared) renderSidebarSummary(cart || {});
 
