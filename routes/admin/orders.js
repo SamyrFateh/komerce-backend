@@ -6,34 +6,9 @@ const router  = express.Router();
 const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const log = require('../../utils/logger').child({ module: 'admin/orders' });
+const { deleteOrderCascade } = require('./delete-order-cascade');
 
 const guard = [authenticate, requireRole(['admin'])];
-
-// Helper: supprime une commande et toutes ses dépendances
-// Tables enfants avec FK vers orders: order_items, scans, order_status_history, sms_log, disputes, ceremony_order_items
-// COPIE CONFORME de l'original routes/admin.js — NE PAS déplacer vers un service partagé dans ce lot.
-async function deleteOrderCascade(client_or_db, id) {
-  // Supprimer les tables enfants dans l'ordre correct
-  // Use SAVEPOINT to survive missing tables (PG aborts TX on error)
-  const childOps = [
-    ['DELETE FROM scans WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM ceremony_order_items WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM disputes WHERE order_id = $1::uuid', [id]],
-    ['UPDATE sms_log SET order_id = NULL WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM order_items WHERE order_id = $1::uuid', [id]],
-  ];
-  for (let i = 0; i < childOps.length; i++) {
-    try {
-      await client_or_db.query(`SAVEPOINT sp_del_${i}`);
-      await client_or_db.query(childOps[i][0], childOps[i][1]);
-      await client_or_db.query(`RELEASE SAVEPOINT sp_del_${i}`);
-    } catch (_) {
-      await client_or_db.query(`ROLLBACK TO SAVEPOINT sp_del_${i}`);
-    }
-  }
-  await client_or_db.query('DELETE FROM orders WHERE id = $1::uuid', [id]);
-}
 
 // ─── GET /api/admin/orders ─────────────────────────────────────────
 router.get('/orders', ...guard, async (req, res, next) => {

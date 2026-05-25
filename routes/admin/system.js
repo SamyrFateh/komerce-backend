@@ -8,32 +8,9 @@ const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
 const log = require('../../utils/logger').child({ module: 'admin/system' });
+const { deleteOrderCascade } = require('./delete-order-cascade');
 
 const guard = [authenticate, requireRole(['admin'])];
-
-// Helper local — réutilisé par seed-test pour le cleanup des KT-*
-// Copie conforme de deleteOrderCascade de routes/admin.js (GOD-FILES-2).
-// NE PAS déplacer vers un service partagé dans ce lot.
-async function deleteOrderCascade(client_or_db, id) {
-  const childOps = [
-    ['DELETE FROM scans WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM order_status_history WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM ceremony_order_items WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM disputes WHERE order_id = $1::uuid', [id]],
-    ['UPDATE sms_log SET order_id = NULL WHERE order_id = $1::uuid', [id]],
-    ['DELETE FROM order_items WHERE order_id = $1::uuid', [id]],
-  ];
-  for (let i = 0; i < childOps.length; i++) {
-    try {
-      await client_or_db.query(`SAVEPOINT sp_del_${i}`);
-      await client_or_db.query(childOps[i][0], childOps[i][1]);
-      await client_or_db.query(`RELEASE SAVEPOINT sp_del_${i}`);
-    } catch (_) {
-      await client_or_db.query(`ROLLBACK TO SAVEPOINT sp_del_${i}`);
-    }
-  }
-  await client_or_db.query('DELETE FROM orders WHERE id = $1::uuid', [id]);
-}
 
 // ─── GET /api/admin/counts ─────────────────────────────────────────
 router.get('/counts', ...guard, async (req, res, next) => {
