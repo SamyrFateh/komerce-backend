@@ -155,7 +155,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 - [ ] **GOD-FILES-2** — `routes/dashboard-finance.js` : 1 218 lignes, 4 routes. `GET /payments` = 627 lignes SQL inline. Extraire vers `services/dashboard-finance-service.js`.
 - [ ] **GOD-FILES-3** — `routes/parcel-api-v2.js` : 1 295 lignes, 8 routes. `syncParcelToOrders` (236 l) inline. Extraire vers `services/parcel-sync-service.js`.
 - [ ] **GOD-FILES-4** — `routes/admin.js` : 1 210 lignes, 20 routes. Lot **B4 planifié** dans `BACKEND_GOLIVE_ROADMAP.md`. Découper en `routes/admin-orders.js`, `routes/admin-partners.js`, etc.
-- [ ] **GOD-FILES-5** — `routes/hub-dashboard.js` : 1 020 lignes, 15 routes, logique métier inlinée. Non encore planifié dans la roadmap.
+- [x] **GOD-FILES-6** — `routes/hub-dashboard.js` : 1 020 → 619 lignes. Logique lecture extraite vers `services/hub-dashboard-queries.js`. Corrections : type `backorder`→`stock`, priority `medium`→`normal`, CHECK constraints alignées avec relay-dashboard. npm test vert.
 - [x] **GOD-FILES-5-SOURCING** — `routes/sourcing-engine.js` : 960 → 386 lignes. Logique lecture (getAnalysis, getAnalysisById, getSynthesis, getConfig) extraite vers `services/sourcing-analysis.js`. Mutations (PUT products/:id, PUT products/:id/variants, POST bulk-rail) conservées dans la route. npm test vert.
 - [ ] **COLLECTIVE-CLEANUP** — `services/collective-workspace-engine.js` (965 l) encore importé par `collective-close-order-service.js`, `collective-stock-reservation-service.js`, `collective-ready-to-order-orchestrator.js`, eux-mêmes appelés depuis `middleware/auth.js` et `routes/admin-collective-repairs.js`. Le tombstone PR #486 a désactivé les routes mais **pas nettoyé la chaîne de services**. Non bloquant go-live.
 
@@ -302,7 +302,7 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 | GOD-FILES-2 | Post go-live | `routes/dashboard-finance.js` 1 218 l — extraire SQL `/payments` en service |
 | GOD-FILES-3 | Post go-live | `routes/parcel-api-v2.js` 1 295 l — extraire `syncParcelToOrders` |
 | GOD-FILES-4 | Post go-live | `routes/admin.js` 1 210 l — lot B4 planifié dans BACKEND_GOLIVE_ROADMAP.md |
-| GOD-FILES-5 | Post go-live | `routes/hub-dashboard.js` 1 020 l — non encore planifié |
+| GOD-FILES-6 | ✅ Fait | `routes/hub-dashboard.js` 619 l (était 1 020). `services/hub-dashboard-queries.js` créé. |
 | B-MODAL-MOCK | Post go-live | Supprimer `b-modal-social-proof-mock.js` quand colonnes DB social proof prêtes |
 | SEC-1b | Conditionnel scale-out | Migrer `printTokens` Map in-memory si multi-instance strict |
 | BOUTIQUE-CSS-CLEANUP | Faible | Dead CSS `k-modal-open` dans `cart.css`. 2 hex `event.css` → tokens. |
@@ -399,7 +399,7 @@ Deux actions restantes dans les docs existants (pas de doc satellite) :
 | GOD-FILES-2 | routes/dashboard-finance.js 1 218 l — GET /payments = 627 l SQL inline | routes/ | 🟡 Moyenne | 2h | ⏳ Post go-live |
 | GOD-FILES-3 | routes/parcel-api-v2.js 1 295 l — syncParcelToOrders inline | routes/ | 🟡 Moyenne | 2h | ⏳ Post go-live |
 | GOD-FILES-4 | routes/admin.js 1 210 l — lot B4 planifié dans BACKEND_GOLIVE_ROADMAP | routes/ | 🟡 Moyenne | 3h | ⏳ Post go-live |
-| GOD-FILES-5 | routes/hub-dashboard.js 1 020 l — non planifié | routes/ | 🟡 Moyenne | 2h | ⏳ Post go-live |
+| GOD-FILES-6 | routes/hub-dashboard.js — logique lecture extraite | routes/ | 🟡 Moyenne | 2h | ✅ Fait — services/hub-dashboard-queries.js |
 | COLLECTIVE-CLEANUP | collective-workspace-engine.js encore importé par 3 services actifs post-tombstone | services/ | 🟡 Moyenne | 1h | ⏳ Post go-live |
 | BASKETS-1 | Prix snapshotés sans TTL ni alerte divergence | routes/baskets.js | 🟡 Moyenne | 1h | ⏳ À surveiller post go-live |
 
