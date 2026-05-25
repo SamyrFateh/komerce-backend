@@ -7,6 +7,7 @@
  *   - fully_funded : signal fort "Financé ! Validez".
  *   - expiration < 2h : urgence ambre.
  *   - statuts fermés : bannière masquée.
+ *   - auto-collapse : visible au boot, puis compacte pour ne pas polluer l'UX.
  */
 
 import { state } from './b-store.js';
@@ -14,7 +15,9 @@ import { sanitize } from './b-utils.js';
 
 const BANNER_ID = 'k-group-banner';
 const TICK_MS = 60_000;
+const AUTO_COLLAPSE_MS = 12_000;
 let _tickTimer = null;
+let _collapseTimer = null;
 
 function r(n) { return Math.round(Number(n) || 0); }
 
@@ -44,10 +47,17 @@ function ensureStyles() {
   const s = document.createElement('style');
   s.id = 'k-group-banner-p0-styles';
   s.textContent = `
+.k-group-banner .k-gbanner-inner{transition:transform .22s ease, opacity .22s ease, max-height .22s ease, padding .22s ease}
 .k-group-banner .k-gbanner-inner.is-funded{background:rgba(31,122,84,.14);border-color:rgba(31,122,84,.35);box-shadow:0 8px 24px rgba(31,122,84,.12)}
 .k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot{background:#1f7a54;animation:kGBPulse 1.4s ease-in-out infinite}
 .k-group-banner .k-gbanner-inner.is-urgent{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35)}
 .k-group-banner .k-gbanner-cta.is-funded{background:#1f7a54;color:white}
+.k-group-banner.is-compact .k-gbanner-inner{max-height:42px;overflow:hidden;padding-top:7px;padding-bottom:7px;opacity:.92}
+.k-group-banner.is-compact .k-gbanner-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.k-group-banner.is-compact .k-gbanner-timer{display:none}
+.k-group-banner.is-compact .k-gbanner-close{display:none}
+.k-group-banner.is-compact .k-gbanner-cta{font-size:12px;padding:6px 10px}
+.k-group-banner:hover .k-gbanner-inner,.k-group-banner:focus-within .k-gbanner-inner{opacity:1}
 @keyframes kGBPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 3px rgba(31,122,84,.12)}50%{transform:scale(1.18);box-shadow:0 0 0 7px rgba(31,122,84,.08)}}`;
   document.head.appendChild(s);
 }
@@ -105,6 +115,7 @@ function getOrCreateBanner() {
 
 function bindBanner(el) {
   el.querySelector('#k-gbanner-cta')?.addEventListener('click', () => {
+    expandBanner(el);
     import('./b-nav.js').then(({ switchView }) => {
       import('./b-group-view.js').then(({ renderGroupView }) => {
         document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
@@ -118,23 +129,50 @@ function bindBanner(el) {
 
   el.querySelector('#k-gbanner-close')?.addEventListener('click', () => {
     el.classList.remove('show');
-    stopTick();
+    stopTimers();
     try { sessionStorage.setItem('kmrc_banner_dismissed', '1'); } catch (_) {}
   });
+
+  el.addEventListener('mouseenter', () => expandBanner(el), { once: false });
+  el.addEventListener('focusin', () => expandBanner(el), { once: false });
+}
+
+function expandBanner(el) {
+  el.classList.remove('is-compact');
+  scheduleCollapse(el);
+}
+
+function shouldAutoCollapse(data) {
+  const status = data.status || state.shareStatus || 'active';
+  const expiresAt = data.expires_at || state.shareExpiry;
+  const funded = status === 'fully_funded';
+  const urgent = expiresAt && new Date(expiresAt) - Date.now() < 2 * 3_600_000;
+  return !funded && !urgent;
+}
+
+function scheduleCollapse(el, data = {}) {
+  if (_collapseTimer) clearTimeout(_collapseTimer);
+  if (!shouldAutoCollapse(data)) return;
+  _collapseTimer = setTimeout(() => {
+    el.classList.add('is-compact');
+  }, AUTO_COLLAPSE_MS);
 }
 
 function startTick(el, data) {
-  stopTick();
+  if (_tickTimer) clearInterval(_tickTimer);
   _tickTimer = setInterval(() => {
     const remaining = timeRemaining(data.expires_at || state.shareExpiry);
-    if (remaining === 'expiré') { stopTick(); hideBanner(); return; }
+    if (remaining === 'expiré') { hideBanner(); return; }
+    const wasCompact = el.classList.contains('is-compact');
     el.innerHTML = buildHTML(data);
     bindBanner(el);
+    if (wasCompact && shouldAutoCollapse(data)) el.classList.add('is-compact');
   }, TICK_MS);
 }
 
-function stopTick() {
+function stopTimers() {
   if (_tickTimer) { clearInterval(_tickTimer); _tickTimer = null; }
+  if (_collapseTimer) { clearTimeout(_collapseTimer); _collapseTimer = null; }
 }
 
 export function showBanner(data) {
@@ -148,16 +186,20 @@ export function showBanner(data) {
 
   ensureStyles();
   const el = getOrCreateBanner();
+  const wasCompact = el.classList.contains('is-compact');
   el.innerHTML = buildHTML(data);
   el.classList.add('show');
+  if (wasCompact && shouldAutoCollapse(data)) el.classList.add('is-compact');
+  else el.classList.remove('is-compact');
   bindBanner(el);
   startTick(el, data);
+  scheduleCollapse(el, data);
 }
 
 export function hideBanner() {
-  stopTick();
+  stopTimers();
   const el = document.getElementById(BANNER_ID);
-  if (el) el.classList.remove('show');
+  if (el) el.classList.remove('show', 'is-compact');
 }
 
 export function refreshBanner() {
