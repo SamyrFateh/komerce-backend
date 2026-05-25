@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : 2026-05-24 (session après-midi)
+> Mis à jour : 2026-05-25 (go-live readiness — panier partagé boutique-first)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -21,12 +21,45 @@ Lire dans cet ordre avant toute modification :
 
 ---
 
+## Doctrine produit active — panier partagé boutique-first
+
+Doctrine validée :
+
+```txt
+Tout commence dans la boutique.
+Tout se comprend dans la boutique.
+Tout revient dans la boutique.
+```
+
+Le modèle actif est le **panier partagé dans la boutique** :
+
+```txt
+/boutique
+→ panier boutique
+→ partager / payer ensemble
+→ /cart/shared/:token
+→ contributions Stripe
+→ fully_funded
+→ finalisation commande
+```
+
+Le modèle legacy `collective workspace / panier événement collectif` est déclassé depuis la PR #486 :
+
+- `/event/*` et `/workspace/*` redirigent vers `/boutique` ;
+- `/api/collective-workspaces` et `/api/collective-payments` retournent `410 collective_workspace_disabled` ;
+- `collective-payment-orchestrator` est un tombstone/no-op ;
+- les tables/migrations `collective_*` restent conservées temporairement, sans suppression DB destructive.
+
+Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution doit rester une capacité naturelle du panier boutique.
+
+---
+
 ## Invariants à garder en tête
 
 | ID | Invariant |
 |----|-----------|
 | I-01 | Ne jamais modifier `orders.status` hors machine de statut |
-| I-02 | Paiements Stripe/cash/wallet/shared cart/collectif → uniquement `pending → confirmed` |
+| I-02 | Paiements Stripe/cash/wallet/shared cart → uniquement `pending → confirmed`. Le collectif legacy est tombstone et ne doit plus créer de flux paiement actif. |
 | I-03 | Transitions scan/système : forward-only + idempotentes |
 | I-04 | Toute transition effective → trace dans `order_status_history` |
 | I-05 | Wallet : pas de suppression — créditer, débiter, contre-passer |
@@ -81,6 +114,9 @@ Lire dans cet ordre avant toute modification :
 | F1-TEST-FIX | ✅ Fait | Commit `f6aca040`. `pino-pretty` désactivé en `NODE_ENV=test`; fallback logger réparé. `npm test` vert sans worker Jest ouvert. |
 | P0-HELPER | ✅ Fait | PR #413 + #436. `npm run test:p0` reproductible |
 | P0-RUNTIME | ✅ Fait | `npm test` ✅, Railway `/health` ✅, `/api/health` ✅. Dry-run refund validé avec `P0_ORDER_ID` réel. Tous les checks P0 passent. |
+| P0-SHARED-CART | ✅ Fait | Panier partagé boutique actif : création depuis panier, téléphone créateur invité, `/mine`, sidebar/bannière/onglet Groupe, finalisation `fully_funded`, refund queue admin, `mark-refunded` manuel avec audit. |
+| WORKSPACE-DECOMMISSION | ✅ Fait | PR #486 mergée. `collective workspace` legacy : pages `/event/*` et `/workspace/*` redirigées vers `/boutique`, API collective en `410`, orchestrateur no-op. |
+| DOC-SYNC-BOUTIQUE-FIRST | 🔄 En cours | Alignement `STATUS.md` + docs boutique unifiées pour go-live ready. Pas de doc satellite. |
 | I-SWEEP-FINAL | ✅ Fait | Violation I-01 pickup-secret.js résolue (I-SWEEP-1 mergé). /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct. |
 | SEC-1 | ✅ Fait | Rate-limit brute-force en DB depuis migration 049. Migration 070 appliquée : printTokens → pickup_print_tokens (TTL 2 min), REVEAL_CACHE → pickup_reveal_codes (TTL 30 min). Cron startPickupTokenCleanupCron câblé dans bootstrap/crons.js. Multi-instance safe. |
 | GOD-FILES-0 | ✅ Fait | Cartographie + extractions : buildReceiptHTML → utils/pickup-receipt-html.js (−264 lignes), REVEAL_CACHE Map → table pickup_reveal_codes DB. pickup-secret.js : 1021 → 754 lignes. |
@@ -121,6 +157,8 @@ collective stock reservations repair dry-run PASS HTTP 200
 P0 runtime verdict: PASS (tous les checks validés)
 ```
 
+> Note 2026-05-25 : les lignes `collective ready_to_capture` et `collective stock reservations` sont historiques. Depuis PR #486, le runtime collectif est désactivé/tombstone. Les prochains tests go-live doivent cibler `/api/shared-carts/*`, `/cart/shared/:token`, la refund queue et `mark-refunded`.
+
 ---
 
 ## Pièges critiques à retenir
@@ -133,30 +171,32 @@ P0 runtime verdict: PASS (tous les checks validés)
 - `routes/parcels.js` et `routes/orders/parcels.js` sont deux fichiers distincts : ne pas supprimer comme doublon.
 - A4 : collisions 060/061 clarifiées — dette non bloquante ; ne pas renommer/supprimer de migration sans audit DB réel.
 - H1 complet : `server.js` (206 lignes) délègue maintenant à `bootstrap/env.js`, `security.js`, `api-routes.js`, `html-routes.js`, `crons.js`, `startup-migrations.js`. Les webhooks Stripe raw restent explicitement avant `express.json`.
+- I-07 / webhooks Stripe : ne jamais déplacer les raw body parsers derrière `express.json`. Cela concerne les webhooks paiement classiques et shared-carts. Le webhook collectif legacy peut rester monté techniquement mais il ne doit plus traiter de paiement produit actif.
 - Tests : `npm test` vert. Suite API intégration = skip propre sans env DB.
 - ✅ P0 FULL validé : tous les dry-runs passent, y compris refund avec `P0_ORDER_ID` réel.
 - I-SWEEP-FINAL ✅ — Violation I-01 pickup-secret.js résolue. /pay-cash → confirmPaymentCycle → transitionOrderStatus. /collect → transitionOrderStatus(source='patch'). Aucun UPDATE orders SET status direct.
 - SEC-1 ✅ — Maps in-memory pickup-secret.js migrées en DB (migration 070). Cron startPickupTokenCleanupCron toutes les 5 min dans bootstrap/crons.js.
+- Tokens pickup : `pickup_print_tokens` TTL 2 min et `pickup_reveal_codes` TTL 30 min sont DB-backed. `printTokens` Map reste in-memory, TTL 2 min, faible volume ; à migrer en SEC-1b si passage multi-instance strict.
+- SEC-3 ✅ — aucun `setItem` JWT en localStorage. Boutique sur cookies httpOnly. Toute réintroduction de JWT localStorage est une régression go-live.
 - BUG-CIRC-DEP ✅ — `calcPrix` et `calcPrixTenue` n'existaient nulle part. utils/pricing.js et routes/pricing.js s'auto-importaient (dépendance circulaire). 3 fichiers patchés. Warnings Node.js supprimés au boot.
-- `printTokens` Map (ligne 237 de pickup-secret.js) : toujours in-memory — tokens d'impression cash, TTL 2 min, volume très faible. À migrer en lot SEC-1b si passage multi-instance.
 
 ---
 
 ## Prochain lot recommandé
 
-### GOD-FILES-1 — Extraction pricing-recommend + pricing-dashboard
+### DOC-SYNC-BOUTIQUE-FIRST — Alignement docs go-live
 
 ```text
-Charge   : 1 session
-Risque   : moyen (20+ consommateurs de routes/pricing.js)
-Objectif : descendre routes/pricing.js de 1310 → ~350 lignes
+Charge   : 1 courte session
+Risque   : faible si diff relu
+Objectif : docs canoniques alignées avec le runtime boutique-first avant go-live ready
 ```
 
-Plan d'extraction validé en GOD-FILES-0 :
-- `services/pricing-recommend.js` ← /recommend + /recommend-batch (518 lignes sorties)
-- `services/pricing-dashboard.js` ← /dashboard + /benchmarks + /benchmarks-gap (445 lignes sorties)
+À faire dans les documents unifiés existants, sans doc satellite :
 
-Prérequis : vérifier que `_applies()` et `_arrondiPsycho()` ne sont pas importés directement ailleurs (privés actuellement). Lire CONTRACTS.md avant de toucher aux exports.
+- `docs/chantier/STATUS.md` — état chantier et garde-fous sécurité/tokens ;
+- `public/boutique/docs/BOUTIQUE_SOURCE_OF_TRUTH.md` — owner actif `b-share-cart.js`, legacy `b-group-cart-flow.js` ;
+- `public/boutique/docs/CARTOGRAPHY_360_BOUTIQUE.md` — `/event/*` et `/workspace/*` legacy redirigés vers `/boutique`.
 
 ### Rappel : actions manuelles DB en attente
 
@@ -173,20 +213,26 @@ psql $DATABASE_URL -f migrations/069_analytical_indexes.sql
 
 ## Dette sécurité séparée
 
-### I-SWEEP-FINAL — Correction violation I-01 active (`routes/pickup-secret.js:286`)
+### Tokens / sessions / secrets à garder visibles avant go-live
 
 ```text
-Charge   : 0.5 jour
-Risque   : moyen (modifier orders.status en dehors de la machine)
-Prérequis : lire CONTRACTS.md + order-status-machine.js avant de toucher
+Charge   : 0.5 jour si durcissement multi-instance strict
+Risque   : moyen si oublié avant scale-out
+Prérequis : lire CONTRACTS.md + pickup-secret.js + bootstrap/crons.js
 ```
 
-Cette dette reste importante, mais elle n'est pas le prochain lot si l'objectif immédiat est le chantier god files.
+Points à ne pas perdre :
 
-Contraintes :
-- passer par `order-status-machine.js` pour toute transition de statut ;
-- tracer dans `order_status_history` (I-04) ;
-- `npm test` vert après.
+- pickup reveal/print token DB-backed depuis migration 070 ;
+- `printTokens` Map encore in-memory, TTL court, faible volume ;
+- aucun JWT en localStorage ;
+- `ADMIN_PASSWORD` required au boot ;
+- rate-limits globaux/admin/auth/cash/scan/order actifs ;
+- webhooks Stripe raw body avant `express.json`.
+
+### I-SWEEP-FINAL — Correction violation I-01 active (`routes/pickup-secret.js:286`)
+
+Statut : ✅ résolu.
 
 ---
 
@@ -194,25 +240,24 @@ Contraintes :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| GOD-FILES-1 | ▶️ Maintenant | Extraction pricing-recommend.js + pricing-dashboard.js depuis routes/pricing.js |
-| R2 | Sécurité | POST /apply wallet sans guard order.status cancelled (15 min) |
-| R4 | Sécurité | ALLOW_FLUSH distinct de ALLOW_SEED dans admin.js (5 min) |
-| R7 | Sécurité | INSERT scans sans scan_code dans hub-dashboard (15 min) |
-| SEC-2 | ✅ Fait | ADMIN_PASSWORD promu en REQUIRED_ENV dans bootstrap/env.js |
-| SEC-3 | ✅ Fait | grep localStorage — clos, aucune exposition |
-| P0-FULL | ✅ Fait | `P0_ORDER_ID` fourni — dry-run refund PASS. P0 entièrement validé. |
-| PRICE-1 | Conditionnelle | Uniquement si P0-FULL révèle un ajustement pricing/catalogue |
+| DOC-SYNC-BOUTIQUE-FIRST | ▶️ Maintenant | Alignement des docs canoniques sur panier partagé boutique-first / workspace tombstone |
+| GO-LIVE-CHECK | Ensuite | Rejouer `npm test`, `/health`, `/api/health`, shared-cart create/contribute/finalize/refund-queue/mark-refunded |
+| M1 | Manuel DB | Confirmer/supprimer migration 068 cassée, appliquer 068_wallets_check_balance.sql |
+| M2 | Manuel DB | Appliquer migration 069 hors transaction |
+| SEC-1b | Conditionnel scale-out | Migrer le reliquat `printTokens` Map si multi-instance strict |
+| PRICE-1 | Conditionnelle | Uniquement si go-live checks révèlent un ajustement pricing/catalogue |
 
 ---
 
-## Dette mesurée au 23 mai 2026
+## Dette mesurée au 25 mai 2026
 
-- **`server.js`** : 206 lignes — tout le refactoring H1 terminé. Seuls les webhooks Stripe raw et le bloc `listen/shutdown` restent en place (intentionnel).
+- **`server.js`** : refactoring H1 terminé. Webhooks Stripe raw toujours explicitement avant `express.json`.
 - **`console.*`** : ✅ migration F1 terminée. Les seuls `console.*` tolérés sont dans le fallback interne de `utils/logger.js`.
-- **Migrations** : collisions 060/061 connues, non bloquantes, préservées documentairement.
-- **Tests** : 87 passés, 1 skipped propre — filet solide.
-- **God files** : GOD-FILES-0 terminé. pickup-secret.js : 1021 → 754 lignes. utils/pickup-receipt-html.js créé. routes/pricing.js et utils/pricing.js : dépendance circulaire supprimée, handlers réécrits.
-- **Migration 070** : pickup_print_tokens + pickup_reveal_codes créées. SEC-1 clos côté REVEAL_CACHE. printTokens Map encore in-memory (faible volume, non bloquant).
+- **Migrations** : collisions 060/061 connues, non bloquantes, préservées documentairement. M1/M2 manuels encore à confirmer.
+- **Tests** : 87 passés, 1 skipped propre dans la dernière validation connue — filet solide mais à rejouer avant go-live.
+- **Panier partagé** : modèle actif boutique-first. Backend financier sécurisé par webhook Stripe, anti-surfinancement, refund queue, mark-refunded manuel avec audit.
+- **Collective workspace** : runtime désactivé/tombstone depuis PR #486. Ne plus construire de nouvelle fonctionnalité dessus.
+- **Migration 070** : pickup_print_tokens + pickup_reveal_codes créées. SEC-1 clos côté REVEAL_CACHE. `printTokens` Map encore in-memory, faible volume, non bloquant court terme.
 - **calcPrix/calcPrixTenue** : fonctions fantômes supprimées. 3 fichiers patchés (utils/pricing.js, routes/pricing.js, routes/modules.js). Warnings circular dependency éliminés au boot.
 - **Routing init error** : message vide au boot — ensureRoutingColumns absorbe ses propres erreurs en interne, le log Railway est un artefact bénin (function ne throw pas). Non bloquant.
 
@@ -264,27 +309,30 @@ Contraintes :
 | ND5 | Vérification schema scans.scan_code NOT NULL | DB migrations | 🟡 Moyenne | 15 min | ✅ Fait |
 | ND6 | Exposition pickup_code dans endpoints client (client-account.js) | client-account.js | 🟡 Moyenne | 30 min | ✅ Fait |
 
-### Verdicts audits routes (session 24 mai)
+### Verdicts audits routes (session 25 mai)
 
 | Fichier | Verdict | Notes |
 |---|---|---|
-| routes/relay-dashboard.js | 🔴 À corriger | IDOR R1 — voir ci-dessus |
-| routes/shared-cart.js | ✅ OK | I-07 ✅, idempotence ✅, délègue engine ✅ |
-| routes/collective-workspaces.js | ✅ OK | Délègue services ✅, auth ✅ |
+| routes/relay-dashboard.js | ✅ Corrigé | R1 clos — guard scope relais sur GET /orders/:id |
+| routes/shared-cart.js | ✅ OK | I-07 ✅, idempotence ✅, délègue engine ✅, modèle actif panier partagé boutique-first |
+| routes/collective-workspaces.js | ✅ Tombstone | Legacy déclassé depuis PR #486 : répond `410 collective_workspace_disabled`, ne délègue plus aux services métier |
+| services/collective-payment-orchestrator.js | ✅ Tombstone | No-op : pas de cron, pas de PaymentIntent collectif, webhooks ignorés |
 | routes/client-tracking.js | ✅ OK | Lecture seule ✅ |
-| routes/client-account.js | 🟡 À surveiller | pickup_code exposition à vérifier (ND6) |
+| routes/client-account.js | ✅ OK | ND6 clos — exposition pickup_code traitée |
 | routes/baskets.js | 🟡 À surveiller | Prix snapshotés sans TTL ni alerte de divergence |
 | routes/orders/status.js | ✅ OK | 100% via transitionOrderStatus() ✅ |
 | routes/relais.js | ✅ OK | Court, CRUD propre, mutations admin only ✅ |
-| services/notification-service.js | 🟡 À surveiller | Pas de retry ni d'alerte sur échec (D4) |
+| services/notification-service.js | ✅ Corrigé | D4 clos — retry/alerte traité dans dette résiduelle |
 
-### Ordre de traitement recommandé (mis à jour 24 mai 2026)
+### Ordre de traitement recommandé (mis à jour 25 mai 2026)
 
-**Immédiat** : M1 (confirmer 068), M2 (appliquer 069 hors transaction), R2 (wallet guard), R4 (ALLOW_FLUSH), R7 (scan_code hub), GOD-FILES-1 (extraction pricing-recommend + pricing-dashboard).
+**Immédiat** : DOC-SYNC-BOUTIQUE-FIRST puis GO-LIVE-CHECK.
 
-**Sprint suivant** : R5, R6, D3 (plan scan_events), D4 (notification retry), ND2 (rates.js), ND5 (scan_code schema), ND6 (pickup_code client).
+**Avant go-live** : M1 (confirmer 068), M2 (appliquer 069 hors transaction), rejouer `npm test`, `/health`, `/api/health`, et le flux shared-cart complet.
 
-**Backlog** : R3 (lié M1), D2 (EXPLAIN), ND4 (cost-snapshot idempotence), ARCH-1/2/3.
+**Conditionnel scale-out** : SEC-1b si on veut supprimer le dernier reliquat in-memory `printTokens` avant multi-instance strict.
+
+**Backlog** : R3 (lié M1), D2 (EXPLAIN), ND4 (cost-snapshot idempotence), ARCH-1/2/3, PRICE-1 conditionnel.
 
 ---
 
