@@ -595,8 +595,10 @@ async function confirmContributionFromStripe(session) {
     // 2. IDEMPOTENCE : si déjà paid, ne rien faire
     if (contribution.status === 'paid') return null;
 
+    // FIX: 'failed' ou 'expired' = état terminal légitime (retry Stripe après expiration).
+    // Throw ici → 500 sur les retries. On retourne null pour que le webhook réponde 200.
     if (contribution.status !== 'pending') {
-      throw new Error(`Contribution dans un état inattendu : ${contribution.status}`);
+      return null;
     }
 
     // 3. Vérifier que Stripe confirme bien le paiement

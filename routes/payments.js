@@ -112,7 +112,7 @@ router.post('/stripe/webhook',
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
-      log.error('⚠️ Webhook Stripe signature invalide :', err.message);
+      log.error({ err }, 'Webhook Stripe signature invalide');
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -130,7 +130,7 @@ router.post('/stripe/webhook',
     } catch (e) {
       // Si la table n'existe pas (migration 048 pas passée), on log mais on continue
       // pour ne pas bloquer le webhook. L'idempotence dégradera sur payment_status.
-      log.warn('[STRIPE-WEBHOOK] stripe_events_processed unavailable:', e.message);
+      log.warn({ err: e }, '[STRIPE-WEBHOOK] stripe_events_processed unavailable');
     }
 
     // Variables d'état partagées entre les events
@@ -147,7 +147,7 @@ router.post('/stripe/webhook',
 
       // ── 1. Ignorer proprement les PI sans metadata order_id ──────────────
       if (!orderId) {
-        log.warn('[STRIPE-WEBHOOK] PI sans order_id metadata, ignored:', intent.id);
+        log.warn({ intent_id: intent.id }, '[STRIPE-WEBHOOK] PI sans order_id metadata, ignored');
         await _markEventProcessed(event, { ignored: 'no_metadata' });
         return res.json({ received: true, ignored: true });
       }
@@ -159,12 +159,12 @@ router.post('/stripe/webhook',
         'SELECT payment_status FROM orders WHERE id = $1', [orderId]
       );
       if (!existing) {
-        log.warn('[STRIPE-WEBHOOK] order_id not found:', orderId);
+        log.warn({ order_id: orderId }, '[STRIPE-WEBHOOK] order_id not found');
         await _markEventProcessed(event, { ignored: 'order_not_found', order_id: orderId });
         return res.json({ received: true, ignored: true });
       }
       if (existing.payment_status === 'paid') {
-        log.info('[STRIPE-WEBHOOK] order already paid, skipping:', orderId);
+        log.info({ order_id: orderId }, '[STRIPE-WEBHOOK] order already paid, skipping');
         await _markEventProcessed(event, { ignored: 'already_paid', order_id: orderId });
         return res.json({ received: true, idempotent: true });
       }
@@ -187,7 +187,7 @@ router.post('/stripe/webhook',
           return res.json({ received: true, idempotent: true });
         }
         if (!cycleResult.success) {
-          log.error('[STRIPE] Cycle rejected:', cycleResult.error);
+          log.error({ cycle_error: cycleResult.error }, '[STRIPE] Cycle rejected');
           await client.query('ROLLBACK');
           await _markEventProcessed(event, { rejected: 'confirm', error: cycleResult.error, order_id: orderId });
           return res.json({ received: true, rejected: true });
@@ -223,7 +223,7 @@ router.post('/stripe/webhook',
               ]
             );
           } catch (alertErr) {
-            log.error('[STRIPE-WEBHOOK] ⛔ FAILED TO INSERT ALERT for', orderReference, alertErr.message);
+            log.error({ err: alertErr, order_reference: orderReference }, '[STRIPE-WEBHOOK] FAILED TO INSERT ALERT');
           }
 
           log.error(`[STRIPE-WEBHOOK] ⛔ paid_but_stock_blocked: ${orderReference} — ${insufficientItems.length} produit(s) en rupture`);
@@ -261,7 +261,7 @@ router.post('/stripe/webhook',
           });
           await cacheCodeForReveal(orderId, genResult.code); // SEC-1: async depuis migration 070
         } catch(genErr) {
-          log.error('[STRIPE-WEBHOOK] ⚠ génération code échouée :', genErr.message);
+          log.error({ err: genErr }, '[STRIPE-WEBHOOK] génération code échouée');
         }
 
         // Marquer event traité DANS la même transaction
@@ -300,14 +300,14 @@ router.post('/stripe/webhook',
             order.user_phone,
             `Komerce · Paiement reçu pour la commande ${smsContext.order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
             'ordered', smsContext.order_id
-          ).catch(err => log.error('SMS webhook error:', err.message));
+          ).catch(err => log.error({ err }, 'SMS webhook error'));
         } else if (order?.user_phone && stockBlocked) {
           // Notif différente : paiement reçu mais traitement spécial
           sendSMS(
             order.user_phone,
             `Komerce · Paiement reçu pour ${smsContext.order_reference}. Notre équipe vous contacte sous 24h pour finaliser.`,
             'paid_pending_review', smsContext.order_id
-          ).catch(err => log.error('SMS webhook error:', err.message));
+          ).catch(err => log.error({ err }, 'SMS webhook error'));
         }
         log.info(`✅ Paiement Stripe confirmé : ${smsContext.order_reference}${stockBlocked ? ' (STOCK BLOCKED)' : ''}`);
 
@@ -321,17 +321,17 @@ router.post('/stripe/webhook',
                   log.info(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${smsContext.order_reference}`);
                 }
               })
-              .catch(e => log.error('[STRIPE-NOTIF] ❌', e.message));
-          } catch(e) { log.error('[STRIPE-NOTIF] require error:', e.message); }
+              .catch(e => log.error({ err: e }, '[STRIPE-NOTIF] notification failed'));
+          } catch(e) { log.error({ err: e }, '[STRIPE-NOTIF] require error'); }
         }
       }
 
       // ── Sourcing — uniquement si tout est nickel (pas de stock_blocked, pas de noop) ──
       if (triggerPurchasingFor) {
         triggerPurchasing(triggerPurchasingFor)
-          .then(r => log.info('[PURCHASING] Stripe trigger OK:', smsContext?.order_reference, r))
+          .then(r => log.info({ order_reference: smsContext?.order_reference }, '[PURCHASING] Stripe trigger OK'))
           .catch(async (e) => {
-            log.error('[PURCHASING] Stripe trigger error:', smsContext?.order_reference, e.message);
+            log.error({ err: e, order_reference: smsContext?.order_reference }, '[PURCHASING] Stripe trigger error');
             // Trace exploitable DB pour traitement manuel admin
             try {
               await db.query(
@@ -343,7 +343,7 @@ router.post('/stripe/webhook',
                 ]
               );
             } catch (alertErr) {
-              log.error('[PURCHASING] alert insert failed:', alertErr.message);
+              log.error({ err: alertErr }, '[PURCHASING] alert insert failed');
             }
           });
       }
@@ -355,7 +355,7 @@ router.post('/stripe/webhook',
       const orderId = intent.metadata?.order_id;
 
       if (!orderId) {
-        log.warn('[STRIPE-WEBHOOK] payment_failed sans order_id, ignored:', intent.id);
+        log.warn({ intent_id: intent.id }, '[STRIPE-WEBHOOK] payment_failed sans order_id, ignored');
         await _markEventProcessed(event, { ignored: 'no_metadata_failed' });
         return res.json({ received: true, ignored: true });
       }
@@ -390,7 +390,7 @@ async function _markEventProcessed(event, payloadSummary) {
       [event.id, event.type, JSON.stringify(payloadSummary || {})]
     );
   } catch (e) {
-    log.warn('[STRIPE-WEBHOOK] _markEventProcessed failed:', e.message);
+    log.warn({ err: e }, '[STRIPE-WEBHOOK] _markEventProcessed failed');
   }
 }
 
@@ -543,7 +543,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
           fullOrder.user_phone,
           `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande est confirmée et en cours de préparation. Délai : 3 à 5 semaines.`,
           'confirmation', order.id
-        ).catch(e => log.error('[CASH-SMS] ❌', e.message));
+        ).catch(e => log.error({ err: e }, '[CASH-SMS] SMS send failed'));
       }
 
       const notifSvc = require('../services/notification-service');
@@ -553,13 +553,13 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
             log.info(`🧾 [CASH] Invoice ${result.invoice} sent for ${order.reference}`);
           }
         })
-        .catch(e => log.error('[CASH-NOTIF] ❌', e.message));
+        .catch(e => log.error({ err: e }, '[CASH-NOTIF] notification failed'));
 
       triggerPurchasing(order.id)
-        .then(r => log.info('[PURCHASING] Cash trigger OK:', order.reference, r))
-        .catch(e => log.error('[PURCHASING] Cash trigger error:', order.reference, e.message));
+        .then(r => log.info({ order_reference: order.reference }, '[PURCHASING] Cash trigger OK'))
+        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] Cash trigger error'));
     } catch(e) {
-      log.error('[CASH-POSTCOMMIT] ❌ Non-fatal notification error:', e.message);
+      log.error({ err: e }, '[CASH-POSTCOMMIT] Non-fatal notification error');
     }
 
   } catch (err) {

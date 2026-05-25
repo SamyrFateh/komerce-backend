@@ -558,7 +558,8 @@ const parcels = {
     notes: Joi.string().max(500).optional(),
   }),
   updateStatus: Joi.object({
-    status: Joi.string().valid('preparing', 'shipped', 'in_transit', 'available', 'collected').required(),
+    // FIX: 'preparation' (enum DB réel) — 'preparing' n'existe pas dans la DB
+    status: Joi.string().valid('preparation', 'shipped', 'in_transit', 'available', 'collected').required(),
     notes: Joi.string().max(500).optional(),
   }),
   addItem: Joi.object({

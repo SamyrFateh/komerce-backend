@@ -502,7 +502,7 @@ async function allocateMonthlyFixedCosts(yearMonth, options = {}) {
     }
 
     if (dryRun) {
-      await client.query('ROLLBACK').catch(() => {});
+      // FIX: pas de BEGIN en dryRun → pas de ROLLBACK à appeler (évite warning PostgreSQL)
       return {
         year_month: yearMonth,
         dry_run: true,
@@ -696,35 +696,11 @@ async function computeOrderCostVariance(orderId) {
 // ═══════════════════════════════════════════════════════════════════════
 
 async function computeProductCostVariance(productId, options = {}) {
-  const fromDate = options.from || null;
-  const toDate = options.to || null;
+  // NOTE: options.from / options.to non supportés dans cette version — simpleSql lit tous les orders.
+  // La version filtrée par dates (sql complexe avec $${i-2}) avait un bug de paramétrage et n'était pas utilisée.
+  // À implémenter proprement si besoin filtrage par date.
 
-  const where = ['imp.product_id = $1'];
-  const params = [productId];
-  let i = 2;
-  if (fromDate) { where.push(`imp.created_at >= $${i++}`); params.push(fromDate); }
-  if (toDate)   { where.push(`imp.created_at <= $${i++}`); params.push(toDate); }
-
-  const sql = `
-    SELECT
-      imp.product_id,
-      SUM(imp.quantity) AS quantity_sold,
-      SUM(imp.estimated_business_complete_cost_kmf) AS total_estimated_business_kmf,
-      (SELECT COALESCE(SUM(amount_kmf), 0)
-       FROM order_item_real_cost_allocations alc
-       WHERE alc.order_item_id IN (
-         SELECT order_item_id FROM order_item_cost_imputations imp2
-         WHERE imp2.product_id = imp.product_id
-           ${fromDate ? `AND imp2.created_at >= $${fromDate ? i-2 : i}` : ''}
-       )
-      ) AS total_real_kmf,
-      COUNT(DISTINCT imp.order_id) AS orders_count
-    FROM order_item_cost_imputations imp
-    WHERE ${where.join(' AND ')}
-    GROUP BY imp.product_id
-  `;
-
-  // Version simplifiee robuste
+  // Version robuste (filtre uniquement par product_id)
   const simpleSql = `
     SELECT
       imp.product_id,
