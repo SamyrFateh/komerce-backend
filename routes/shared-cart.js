@@ -2,8 +2,8 @@
  * KOMERCE — Routes Panier Partagé (MVP Niveau 1)
  * ═══════════════════════════════════════════════════════════════════
  *
- * Doctrine : "Komerce transforme l'aide familiale en achat
- *             visible, traçable et livré."
+ * Doctrine v4 : panier ouvert = engagements indicatifs uniquement.
+ * Un participant ne peut payer qu'après l'action créateur "Passer au règlement".
  *
  * Endpoints :
  *
@@ -16,6 +16,7 @@
  *   POST   /api/shared-carts/from-basket
  *   GET    /api/shared-carts/mine
  *   GET    /api/shared-carts/:id
+ *   POST   /api/shared-carts/:id/open-settlement
  *   POST   /api/shared-carts/:id/finalize
  *   POST   /api/shared-carts/:id/cancel
  *
@@ -34,6 +35,7 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
+const settlement = require('../services/shared-cart-v4-settlement');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
 const { authenticate, requireAdmin } = require('../middleware/auth');
@@ -83,7 +85,7 @@ router.get('/public/:token', async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// ── PUBLIC : démarrer une contribution (crée Stripe Checkout) ─────────
+// ── PUBLIC : payer une contribution après passage au règlement ─────────
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/public/:token/contributions', async (req, res, next) => {
   try {
@@ -101,6 +103,10 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         error: 'Champs requis : amount_kmf, contributor_name, contributor_email',
       });
     }
+
+    // Doctrine v4 : un panier ouvert accepte des engagements, pas des paiements.
+    // Le créateur doit d'abord "Passer au règlement".
+    await settlement.assertCanAcceptParticipantPaymentByToken(token);
 
     // Conversion KMF → EUR pour Stripe
     const fxRate = await getFxKmfToEur();
@@ -127,8 +133,8 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         price_data: {
           currency: 'eur',
           product_data: {
-            name: `Contribution Komerce — ${cart.title || 'Panier de ' + cart.beneficiary_name_snapshot}`,
-            description: `Aide à financer le panier de ${cart.beneficiary_name_snapshot}`,
+            name: `Paiement Komerce — ${cart.title || 'Panier de ' + cart.beneficiary_name_snapshot}`,
+            description: `Règlement du panier partagé de ${cart.beneficiary_name_snapshot}`,
           },
           unit_amount: Math.round(amountEur * 100),
         },
@@ -156,6 +162,9 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       contribution_id: contribution.id,
     });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    }
     if (err.message && err.message.startsWith('Le panier ne nécessite plus')) {
       return res.status(400).json({ error: err.message, code: 'amount_exceeds_remaining' });
     }
@@ -382,6 +391,23 @@ router.get('/:id', authenticate, async (req, res, next) => {
       share_url: `${PUBLIC_BASE_URL}/cart/shared/${data.cart.token}`,
     });
   } catch (err) { next(err); }
+});
+
+router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
+  try {
+    const cart = await settlement.openSettlement(req.params.id, req.user.id, {
+      settlement_window_hours: req.body?.settlement_window_hours,
+    });
+    res.json({
+      ok: true,
+      label: 'panier_en_reglement',
+      message: 'Le panier est passé au règlement. Les participants peuvent maintenant payer.',
+      cart,
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
 });
 
 router.post('/:id/finalize', authenticate, async (req, res, next) => {

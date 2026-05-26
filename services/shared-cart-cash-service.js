@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const db = require('../db');
+const settlement = require('./shared-cart-v4-settlement');
 
 const MIN_KMF = 2500;
 const MAX_KMF = 500000;
@@ -41,11 +42,12 @@ function httpError(message, status = 400, code = null) {
 
 function assertOpen(cart) {
   if (!['active', 'partially_funded'].includes(cart.status)) {
-    throw httpError(`Ce panier n'accepte plus de contributions (statut : ${cart.status})`, 400);
+    throw httpError(`Ce panier n'accepte plus de paiements (statut : ${cart.status})`, 400);
   }
   if (new Date(cart.expires_at) < new Date()) {
     throw httpError('Ce panier partagé a expiré', 400);
   }
+  settlement.assertCartCanAcceptParticipantPayment(cart);
 }
 
 function validateAmount(amountKmf) {
@@ -94,7 +96,7 @@ async function createPendingCashContribution(token, body = {}) {
         amount,
         cashRef,
         body.relais_id || null,
-        JSON.stringify({ source: 'cash_intent', counted: false }),
+        JSON.stringify({ source: 'cash_settlement', counted: false }),
       ]
     );
 
@@ -104,6 +106,7 @@ async function createPendingCashContribution(token, body = {}) {
       amount_kmf: amount,
       cash_reference: cashRef,
       relais_id: body.relais_id || null,
+      settlement_open: true,
     });
 
     return { cart, contribution };
