@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅ · N4/072 ✅**)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -13,7 +13,7 @@ Lire dans cet ordre avant toute modification :
 2. **Socle architectural (4 documents canoniques)** :
    - `docs/CARTOGRAPHY_360.md` — quoi existe (domaines, surfaces, points de vérité)
    - `docs/ZONE_IMPACT.md` — quoi protéger (10 invariants + checklist)
-   - `docs/SCHEMA.md` — quoi est vrai en base (91 tables, 14 ENUMs, triggers)
+   - `docs/SCHEMA.md` — quoi est vrai en base (93 tables, 14 ENUMs, 31 triggers) — confirmé par dump Railway 26 mai 2026
    - `docs/CONTRACTS.md` — qui appelle quoi (contrats services critiques)
 3. `docs/BACKEND_AUDIT_CORRECTIONS.md` — corrections post-lecture code, fait foi contre l'audit initial
 4. `docs/BACKEND_GOLIVE_ROADMAP.md` — détail complet des lots
@@ -145,7 +145,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 - [x] **R5** — `_alertNotificationFailure` + INSERT alerts sur rejet `confirmed→ordered` ✅
 - [x] **R6** — DELETE + INSERT dans BEGIN/COMMIT dans `cost-allocation.js` ✅
 - [x] **R7** — `scan_code` synthétique généré pour scans hub automatiques ✅
-- [ ] **R3** — ❓ Lié à M1. Contrainte DB `CHECK (balance_kmf >= 0)` non confirmée. Dépend de la vérification que `068_wallets_check_balance.sql` est bien appliquée sur Railway.
+- [x] **R3** — ✅ Lié à M1. `068_wallets_check_balance.sql` confirmée appliquée sur Railway. Contrainte `CHECK (balance_kmf >= 0)` active en prod (§M1 ci-dessus).
 
 ### God files & refactoring
 
@@ -228,10 +228,10 @@ P0 runtime verdict: PASS (tous les checks validés)
 - **A4** : collisions 060/061 = dette non bloquante documentée. Ne pas renommer/supprimer de migration sans audit DB réel.
 - **H1 complet** : `server.js` (209 lignes) délègue aux 7 modules bootstrap. Webhooks Stripe raw explicitement avant `express.json`.
 - **I-07 / webhooks Stripe** : ne jamais déplacer les raw body parsers derrière `express.json`. Webhook collectif legacy peut rester monté techniquement mais ne doit plus traiter de paiement actif.
-- **SEC-1b** : `printTokens` Map encore in-memory (`routes/pickup-secret.js` ligne 237). Non bloquant go-live mono-instance. Conditionnel scale-out.
+- **SEC-1b** : ✅ RÉSOLU — `printTokens` Map supprimée de `pickup-secret.js`. Tokens d'impression persistés dans `pickup_print_tokens` DB (migration 070). Multi-instance safe.
 - **`sourcing-analysis.js`** : service extrait (GOD-FILES-5). Les helpers `loadSourcingConfig`, `getSales30d`, `analyzeProduct` sont aussi exportés pour usage dans `PUT /products/:id` de la route. Ne pas les déplacer sans adapter la route.
-- **`baskets.js`** : prix snapshotés à l'ajout sans TTL ni alerte de divergence. Si le prix d'un produit change entre l'ajout au panier et le paiement, le snapshot est stale. Non bloquant go-live mais à surveiller en cas de mise à jour prix catalogue fréquente.
-- **N4** : JWT révocation implémentée via `revoked_tokens` (migration 072) + `jti` dans les tokens. Cron cleanup à câbler dans `bootstrap/crons.js`. (2026-05-26)
+- **`baskets.js`** : ✅ BASKETS-1 résolu — alerte divergence prix implémentée (`snapshot_price_kmf` vs `current_price_kmf`, `log.warn` structuré, `price_changed` par item, `price_divergence` au niveau panier).
+- **N4** : JWT révocation — **migration 072 ✅** (`revoked_tokens` + index), **câblage applicatif ⏳**. Reste à faire : (1) `jti` uuid dans `generateToken` de `auth-guest.js`, (2) check `revoked_tokens` dans `authenticate` de `auth.js`, (3) INSERT `revoked_tokens` au logout dans `routes/auth.js`, (4) `startJwtRevocationCleanupCron` dans `bootstrap/crons.js`. Non bloquant go-live (token 90j, mono-user actuellement).
 - **`b-group-cart-flow.js`** : stub 14 lignes DEPRECATED PR-1. À supprimer lors du nettoyage `event/*.html`.
 - **`k-modal-open`** (boutique) : classe CSS legacy dead code dans `cart.css` — alias de `body.modal-open` pour `.k-wa-fab`. Le JS pose `modal-open`, jamais `k-modal-open`. À nettoyer dans une PR CSS dédiée.
 - **BUG checkout boutique** : si `checkoutCart()` pose `body.cart-open` et que le modal de commande est mal positionné, les cartes catalogue sont `pointer-events: none` sans sortie visible. À surveiller en test manuel go-live.
@@ -293,13 +293,12 @@ P0 runtime verdict: PASS (tous les checks validés)
 - **Tests** : 125 passés, 1 skipped propre — filet solide, à rejouer avant go-live.
 - **Panier partagé** : modèle actif boutique-first. Backend financier sécurisé (webhook Stripe, anti-surfinancement, refund queue, mark-refunded avec audit).
 - **Collective workspace** : routes désactivées/tombstone depuis PR #486. Mais **chaîne de services non nettoyée** : `collective-workspace-engine.js` (965 l) encore importé par 3 services, eux-mêmes appelés depuis `auth.js` et `admin-collective-repairs.js`. Dette post-tombstone à planifier (COLLECTIVE-CLEANUP).
-- **Tokens pickup** : `pickup_print_tokens` + `pickup_reveal_codes` DB-backed (migration 070). `printTokens` Map encore in-memory, TTL 2 min, faible volume — non bloquant mono-instance.
+- **Tokens pickup** : `pickup_print_tokens` + `pickup_reveal_codes` DB-backed (migrations 070). `printTokens` Map supprimée ✅ (SEC-1b). Multi-instance safe.
 - **Dépendances circulaires** : supprimées ✅. Zéro warning au boot.
 - **IDOR relay-dashboard** : GET /orders/:id protégé ✅.
-- **JWT stateless** : dette architecturale N4 connue. Non bloquant go-live.
-- **`baskets.js`** : prix snapshotés sans TTL/alerte de divergence — à surveiller.
-- **`utils/pricing.js`** : **ZOMBIE** — 1 330 lignes, router Express non monté, aucun import. À supprimer (ZOMBIE-1).
-- **God files restants** : `routes/dashboard-finance.js` (1 218 l), `routes/parcel-api-v2.js` (1 295 l), `routes/admin.js` (1 210 l, lot B4 planifié), `routes/hub-dashboard.js` (1 020 l). Backlog post go-live.
+- **JWT stateless** : dette architecturale N4 — migration 072 ✅. Câblage applicatif (`jti` + révocation DB + cron) à faire. Non bloquant go-live.
+- **`baskets.js`** : ✅ BASKETS-1 — alerte divergence prix snapshot/catalogue implémentée (2026-05-26).
+- **God files** : tous résolus ✅ — `dashboard-finance.js` (façade 48 l), `parcel-api-v2.js` (façade 3 l + sous-dossier), `admin.js` (façade 4 l + 5 sous-routes), `hub-dashboard.js` (619 l). `utils/pricing.js` ZOMBIE supprimé ✅.
 - **`services/scan-engine.js`** : refactorisé ✅ — `processScan()` 55 lignes, 4 sous-fonctions privées, `module.exports` inchangé. `tests/unit/scan-engine.test.js` : 7 cas. npm test vert.
 
 ### Boutique frontend
@@ -324,7 +323,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 | N1 | GET /relay/dashboard filtre relais_id | ✅ Corrigé | relay-dashboard.js — guard sur GET /orders/:id (ligne 432) |
 | N2 | Dual userCache Maps auth.js / auth-guest.js | ✅ Corrigé | utils/user-cache.js créé (44 lignes), partagé |
 | N3 | invalidateChargesCache() manquant après update orders_per_month | ✅ Corrigé | economic-engine.js lignes 569–574 |
-| N4 | JWT stateless 90j, pas de révocation | ✅ migration 072 créée — revoked_tokens + jti. Intégration auth.js + cron à câbler. (2026-05-26) |
+| N4 | JWT stateless 90j, pas de révocation | ⏳ Câblage en attente | migration 072 ✅ (`revoked_tokens` créée). Câblage applicatif non fait : `jti` dans `auth-guest.js::generateToken`, check `revoked_tokens` dans `auth.js::authenticate`, révocation au logout, cron cleanup. |
 | M1 | Migration 068 double — 068_check_balance_non_negative.sql cassé | ✅ Confirmé | Fichier cassé absent. 068_wallets_check_balance.sql appliquée et confirmée en prod. |
 | M2 | Migration 069 — CREATE INDEX CONCURRENTLY hors transaction | ✅ Confirmé | Appliquée manuellement sur Railway. Index analytiques actifs. |
 | I-01 | Violation pickup-secret.js | ✅ Résolu | I-SWEEP-FINAL — 0 UPDATE direct confirmé par analyse code |
@@ -389,7 +388,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 | routes/relais.js | ✅ OK | Court, CRUD propre, mutations admin only |
 | services/notification-service.js | ✅ Corrigé | D4 clos |
 | routes/pricing.js | ✅ Fait | 283 lignes (GOD-FILES-1). Import pricingEngine/pricingRecommend/pricingDashboard. Zéro coefficient dur. |
-| routes/pickup-secret.js | ✅ Fait | 756 lignes (GOD-FILES-0). Zéro UPDATE direct. buildReceiptHTML extrait. REVEAL_CACHE en DB. printTokens Map encore in-memory (SEC-1b). |
+| routes/pickup-secret.js | ✅ Fait | 756 lignes (GOD-FILES-0). Zéro UPDATE direct. buildReceiptHTML extrait. REVEAL_CACHE en DB. printTokens Map supprimée ✅ (SEC-1b, 2026-05-26). |
 | bootstrap/html-routes.js | ✅ OK | /event/* et /workspace/* → redirectToBoutique() confirmé |
 
 ### Ordre de traitement recommandé (25 mai 2026)
@@ -398,9 +397,9 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 **Avant go-live** : rejouer `npm test`, `/health`, `/api/health`, et le flux shared-cart complet en prod.
 
-**Conditionnel scale-out** : SEC-1b si multi-instance strict avant `printTokens` Map.
+**Conditionnel** : N4 câblage applicatif (JWT révocation complète) — migration 072 ✅, reste : jti + auth.js + logout + cron. Non bloquant go-live.
 
-**Backlog post go-live** : BASKETS-1 (alerte divergence prix), N4 (JWT révocation).
+**Backlog post go-live** : N4 câblage JWT révocation (jti + auth.js + logout + cron).
 
 ---
 
@@ -421,13 +420,13 @@ P0 runtime verdict: PASS (tous les checks validés)
 | A-BE-02 | docs / machine statut | `docs/CONTRACTS.md`, `services/order-status-machine.js` | 🟠 Haute | ✅ Fait 2026-05-26 | CONTRACTS.md aligné sur `newStatus` avec note de correction datée. |
 | A-BE-11 | paiements Stripe | `routes/payments.js` | 🟠 Haute | ✅ Fait 2026-05-26 | Réutilisation `stripe_payment_id` existant si état réutilisable. Idempotency key stable `order_pi_${order.id}` sur création. |
 | A-BE-03 | collective legacy | `server.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `startExpirationCron` supprimé de server.js. Tombstone commenté. Routes collective conservées (répondent 410). |
-| A-BE-18 | migrations / runtime | `routes/relay-dashboard.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `ensureRelayTables()` (42 l DDL runtime) retirée de la route. `migrations/071_relay_dashboard_tables.sql` créé (idempotent IF NOT EXISTS). **À appliquer manuellement sur Railway** (no-op si tables déjà présentes). |
+| A-BE-18 | migrations / runtime | `routes/relay-dashboard.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `ensureRelayTables()` (42 l DDL runtime) retirée de la route. `migrations/071_relay_dashboard_tables.sql` créé (idempotent IF NOT EXISTS). **Confirmé appliqué sur Railway** : `order_incidents` + `order_comments` présentes dans le dump du 26 mai 2026. |
 | A-BE-04 | auth guest / téléphone | `middleware/auth-guest.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `utils/phone.js` créé (57 l) — `normalizePhone(raw, defaultCountry)` unifie logique back conservatrice + règles +33/+269 du front. `auth-guest.js` importe depuis `utils/phone`, fonction locale supprimée. |
 | A-BE-16 | tests | `tests/unit/`, `tests/integration/` | 🟡 Moyenne | ✅ Fait 2026-05-26 | `tests/unit/shared-cart-financial-guard.test.js` (11 cas) + `tests/unit/shared-cart-refund-queue.test.js` (10 cas) créés. npm test : 125 passés, 1 skipped. |
 | A-BE-14 | purchasing | `routes/purchasing.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `POST /:order_id/confirm` vérifie le statut courant avant UPDATE. Retourne 409 si hors `['pending','notified']`. |
 | A-BE-06 | refunds | `services/refund-service.js` | 🟡 Moyenne | ✅ Fait 2026-05-26 | `processRefundWithFallback` aligné sur modèle `pending → completed`. INSERT en pending avant Stripe. ON CONFLICT DO NOTHING + UPDATE final. |
 | A-BE-07 | docs | `docs/CONTRACTS.md` | 🟡 Moyenne | ✅ Fait 2026-05-26 | CONTRACTS.md §2 : collective legacy biffé + section "Legacy tombstone — ne pas étendre" ajoutée. |
-| A-BE-05 | architecture | `routes/purchasing.js` | 🟠 Moyenne | ⏳ Backlog post go-live | Confirmé — 800+ lignes mélangeant route HTTP, sourcing, notifications, réception hub, transition commande. |
+| A-BE-05 | architecture | `routes/purchasing.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `services/purchasing-trigger-service.js` + `purchasing-receive-service.js` extraits. `routes/purchasing.js` : 841→413 lignes. 11 tests unitaires ajoutés. |
 | A-BE-09 | shared-cart refund | `services/shared-cart-refund-queue.js` | 🟡 Moyenne | ✅ Fait 2026-05-26 | tests/unit/shared-cart-lifecycle.test.js : 9 cas cancelSharedCart + expireOldCarts. npm test vert 145. |
 | A-BE-10 | observabilité | routes / services divers | 🟢 Faible | ✅ Fait 2026-05-26 | 0 appel non structuré restant. 55 occurrences migrées → `log.error({ err }, 'msg')`. |
 | A-BE-15 | scans / parcels | `routes/scans.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | safeSyncScanToParcels déplacé avant COMMIT dans QR path + client passé → atomique. Route collect déjà dans transaction. |
@@ -436,7 +435,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 | ID | Verdict | Détail |
 |---|---|---|
-| A-BE-12 | ⚠️ Risque réel, mécanisme mal décrit | L'audit dit "lit sans filtrer `reversed_at IS NULL`". En réalité le SELECT lit sans filtre, mais l'UPDATE final (ligne 308) filtre `AND reversed_at IS NULL`. Double recrédit impossible par l'UPDATE seul. **Le risque subsiste** sous forme de race condition concurrente (SELECT non verrouillé) si deux appels parallèles lisent avant que le premier ne commette. Correction recommandée : ajouter `FOR UPDATE` sur le SELECT initial. |
+| A-BE-12 | ✅ Corrigé (2026-05-26) | `FOR UPDATE` + `reversed_at IS NULL` ajoutés sur le SELECT initial dans `removeFromOrder()` (wallet.js lignes 283-293). Race condition concurrente fermée. |
 | A-BE-17 | ✅ Faux positif — déjà résolu | STATUS.md §M1 et §M2 cochés ✅ avec confirmation en prod. Migrations appliquées manuellement sur Railway, contrainte `CHECK (balance_kmf >= 0)` et index analytiques actifs. |
 
 ### Ordre de correction recommandé (issu de l'audit)

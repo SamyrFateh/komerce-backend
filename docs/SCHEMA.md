@@ -1,7 +1,7 @@
 # Schéma DB Komerce
 
 > **Statut** : schéma canonique de la base de production
-> **Source** : `pg_dump` PostgreSQL 18.4 — Railway — 24 mai 2026
+> **Source** : `pg_dump` PostgreSQL 18.4 — Railway — 26 mai 2026
 > **Méthode** : ce document est généré contre la DB live. Il fait foi contre `db/schema.sql` (obsolète, mars 2026) et les fichiers `migrations/*.sql` (référence manuelle, non exécutés automatiquement).
 > **Rappel** : 3 mécanismes de migration coexistent (cf. `SCHEMA_GAP_KOMERCE.md` §Architecture). `db/schema.sql` ne reflète pas l'état live.
 
@@ -102,11 +102,13 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 **Invariant I-10** : les codes sont en clair uniquement pendant leur fenêtre TTL, avec le même niveau de confiance que `DATABASE_URL`. Voir **SEC-1** dans `STATUS.md`.
 
+> **N4 — Dette technique connue** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` (révocation JWT par `jti`). **Cette migration n'est pas encore appliquée sur Railway** (confirmé : table absente du dump 26 mai 2026). Le câblage applicatif (`jti` dans `generateToken`, check au middleware, INSERT au logout, cron cleanup) reste à faire. Non bloquant go-live.
+
 ### 4.3 Wallet (4 tables)
 
 | Table | Rôle |
 |---|---|
-| `wallets` | Wallet client (1 par user, création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0) NOT VALID` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. |
+| `wallets` | Wallet client (1 par user, création lazy). **Contrainte DB** `chk_balance_non_negative CHECK (balance_kmf >= 0)` ajoutée en migration 068 — filet de sécurité contre un solde négatif même en cas de requête SQL directe. **Validée en prod** (confirmé dump Railway 26 mai 2026 : contrainte sans `NOT VALID`). |
 | `wallet_transactions` | Transactions immutables. |
 | `wallet_credit_lots` | Lots de crédits (consommation FIFO). |
 | `wallet_consumptions` | Consommations de lots (audit). **Append-only depuis migration 066** : suppression physique remplacée par marquage `reversed_at = NOW()` + `reversal_reason`. Index partiel `idx_wcons_active WHERE reversed_at IS NULL` pour filtrer les consommations actives. `wallet-service.removeFromOrder()` fait `UPDATE` et non `DELETE`. |

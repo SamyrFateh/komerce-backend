@@ -18,7 +18,7 @@ Aucune correction de code n'a été appliquée dans ce lot. Les écarts restent 
 
 ## Fournisseurs et mappings
 
-Surface : `routes/purchasing.js`.
+Surface : `routes/purchasing.js` (routes HTTP) + `services/purchasing-trigger-service.js` (engine — A-BE-05 ✅ 2026-05-26).
 
 ### Garanties constatées
 
@@ -35,7 +35,7 @@ Surface : `routes/purchasing.js`.
 
 - Le mapping ne semble pas vérifier explicitement que `product_id` existe avant insertion ; la contrainte FK doit donc protéger.
 - La suppression fournisseur n'est pas intégrée à une doctrine globale d'annulation commande ; G4 l'a déjà isolé.
-- `triggerPurchasing(orderId)` peut créer des POs si fournisseur mappé, mais l'idempotence anti-double PO reste à tester.
+- `triggerPurchasing(orderId)` peut créer des POs si fournisseur mappé. Idempotence anti-double PO (I-SWEEP-3B) couverte par tests unitaires A-BE-05 ✅.
 
 ## Création / modification produit catalogue
 
@@ -128,7 +128,7 @@ Surface : `routes/pricing.js`.
 
 ### Garanties constatées
 
-- `triggerPurchasing(orderId)` utilise les mappings `product_suppliers` actifs et fournisseurs actifs.
+- `triggerPurchasing(orderId)` (dans `services/purchasing-trigger-service.js`) utilise les mappings `product_suppliers` actifs et fournisseurs actifs.
 - Le meilleur fournisseur est choisi par `priority ASC`.
 - Les POs restent dans leur propre lifecycle ; l'ordre reste `ordered` jusqu'à réception complète.
 - Réception complète transitionne l'ordre vers `preparation` via machine.
