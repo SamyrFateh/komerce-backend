@@ -9,6 +9,9 @@
  *
  *   ── Public (lien partagé, pas d'auth) ──
  *   GET    /api/shared-carts/public/:token
+ *   GET    /api/shared-carts/public/:token/commitments
+ *   POST   /api/shared-carts/public/:token/commitments
+ *   POST   /api/shared-carts/public/:token/commitments/:commitmentId/withdraw
  *   POST   /api/shared-carts/public/:token/contributions
  *   POST   /api/shared-carts/stripe/webhook   (Stripe Checkout webhook)
  *
@@ -36,6 +39,7 @@ const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
 const settlement = require('../services/shared-cart-v4-settlement');
+const commitments = require('../services/shared-cart-commitment-service');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
 const { authenticate, requireAdmin } = require('../middleware/auth');
@@ -82,6 +86,50 @@ router.get('/public/:token', async (req, res, next) => {
 
     res.json(data);
   } catch (err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ── PUBLIC : engagements indicatifs, avant passage au règlement ────────
+// ═══════════════════════════════════════════════════════════════════════
+router.get('/public/:token/commitments', async (req, res, next) => {
+  try {
+    const data = await commitments.listCommitmentsByToken(req.params.token);
+    res.json(data);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+router.post('/public/:token/commitments', async (req, res, next) => {
+  try {
+    const result = await commitments.createOrUpdateCommitment(req.params.token, req.body || {});
+    res.status(result.updated ? 200 : 201).json({
+      ok: true,
+      updated: !!result.updated,
+      commitment: result.commitment,
+      message: result.updated
+        ? 'Engagement mis à jour.'
+        : 'Engagement indicatif enregistré.',
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+router.post('/public/:token/commitments/:commitmentId/withdraw', async (req, res, next) => {
+  try {
+    const result = await commitments.withdrawCommitment(
+      req.params.token,
+      req.params.commitmentId,
+      req.body || {}
+    );
+    res.json({ ok: true, commitment: result.commitment, message: 'Engagement retiré.' });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════
