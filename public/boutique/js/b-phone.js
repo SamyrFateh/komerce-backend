@@ -6,7 +6,6 @@
  * Utilisé par : b-checkout.js, b-tracking.js, event-create.js, event-public.js
  */
 
-'use strict';
 
 // ── Table des pays ────────────────────────────────────────────────
 // digits : nombre de chiffres locaux attendus (hors indicatif, hors 0 initial)
