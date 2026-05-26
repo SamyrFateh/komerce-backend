@@ -15,6 +15,7 @@
  */
 
 const db = require('../db');
+const commitments = require('./shared-cart-commitment-service');
 
 const OPEN_STATUSES = new Set(['draft', 'active', 'commitment_open']);
 const LEGACY_PAYMENT_COMPAT_STATUSES = new Set(['active', 'partially_funded']);
@@ -92,6 +93,9 @@ async function openSettlement(sharedCartId, userId, opts = {}) {
     if (CLOSED_STATUSES.has(cart.status)) {
       throw httpError(`Impossible de passer au règlement un panier au statut ${cart.status}`, 409, 'shared_cart_closed');
     }
+    if (isSettlementOpen(cart)) {
+      throw httpError('Ce panier est déjà en règlement', 409, 'settlement_already_open');
+    }
     if (!OPEN_STATUSES.has(cart.status) && !LEGACY_PAYMENT_COMPAT_STATUSES.has(cart.status)) {
       throw httpError(`Statut incompatible avec le passage au règlement : ${cart.status}`, 409, 'invalid_open_settlement_status');
     }
@@ -99,12 +103,17 @@ async function openSettlement(sharedCartId, userId, opts = {}) {
       throw httpError('Ce panier partagé a expiré', 400, 'shared_cart_expired');
     }
 
+    const lockedCommitments = await commitments.lockCommitmentsForSettlement(sharedCartId, userId, client);
+    const lockedTotalKmf = lockedCommitments.reduce((sum, row) => sum + Math.round(Number(row.amount_kmf) || 0), 0);
+
     const settlementWindowHours = Math.max(1, Math.min(168, Number(opts.settlement_window_hours) || 48));
     const payload = {
       settlement_open: true,
       settlement_opened_at: new Date().toISOString(),
       settlement_opened_by: userId,
       settlement_window_hours: settlementWindowHours,
+      locked_commitments_count: lockedCommitments.length,
+      locked_commitments_total_kmf: lockedTotalKmf,
       product_label: 'panier_en_reglement',
     };
 
