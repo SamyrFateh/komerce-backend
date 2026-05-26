@@ -151,7 +151,7 @@ La clôture signifie :
 Le panier est prêt. On passe au règlement.
 ```
 
-À la clôture : la version finale du panier est figée, le total est figé, les engagements attendus sont figés, une fenêtre de règlement s'ouvre, les participants sont notifiés, le créateur garde la main.
+À la clôture : la version du panier est gelée pour initier le règlement, le total initial attendu est défini, les engagements attendus sont figés, une fenêtre de règlement s'ouvre, les participants sont notifiés, et le créateur garde la main pour ajuster le panier en cas de défaut de paiement.
 
 La clôture n'est pas encore la commande ferme.
 
@@ -286,8 +286,8 @@ Branches :
 
 ```txt
 active / commitment_open → cancelled
-closed_for_settlement / settlement_in_progress → cancelled_pending_refund si paiements confirmés
-closed_for_settlement / settlement_in_progress → expired
+closed_for_settlement / settlement_in_progress / ready_to_finalize → cancelled_pending_refund si paiements confirmés
+closed_for_settlement / settlement_in_progress / ready_to_finalize → expired si aucun paiement confirmé
 ```
 
 Noms exacts à stabiliser côté backend.
