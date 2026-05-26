@@ -282,14 +282,14 @@ async function runGuestFlow() {
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = state.shareToken ? 'Voir le groupe' : 'Payer en groupe'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Payer en groupe'; }
   }
 }
 
 function captureShareClick(event) {
   const target = event.target?.closest?.('#k-cart-share, #k-sc-share');
   if (!target) return;
-  if (isConnected() || state.shareToken) return;
+  if (isConnected()) return;
   event.preventDefault();
   event.stopPropagation();
   event.stopImmediatePropagation();
