@@ -72,6 +72,8 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |
+
+> **Ajouté** : migration 071 (A-BE-18, 26 mai 2026). Ces tables étaient auparavant créées au runtime par `ensureRelayTables()` dans `routes/relay-dashboard.js`. Elles sont désormais versionnées dans `migrations/071_relay_dashboard_tables.sql` (idempotent). Colonnes : voir migration pour le DDL complet (types incidents, priorités, statuts, résolution). Index : `idx_incidents_order`, `idx_incidents_status`, `idx_comments_order`.
 | `order_item_cost_imputations` | Imputations de coûts par item (audit). |
 | `order_item_real_cost_allocations` | Allocations coût réel (post-livraison). |
 

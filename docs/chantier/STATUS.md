@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · **A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅**)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -191,8 +191,8 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 ### `npm test` après patch logger
 
 ```text
-Test Suites: 1 skipped, 8 passed, 8 of 9 total
-Tests:       1 skipped, 94 passed, 95 total
+Test Suites: 1 skipped, 11 passed, 11 of 12 total
+Tests:       1 skipped, 125 passed, 126 total
 Snapshots:   0 total
 Time:        ~1.1 s
 Ran all test suites.
@@ -243,7 +243,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 ### 1. GO-LIVE-CHECK (▶️ Maintenant — 1 session)
 
 ```text
-[ ] Rejouer npm test → doit rester vert (94 passés)
+[ ] Rejouer npm test → doit rester vert (125 passés)
 [ ] GET /health → HTTP 200
 [ ] GET /api/health → HTTP 200
 [ ] Flow shared-cart complet :
@@ -290,7 +290,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 - **`server.js`** : 209 lignes ✅. Refactoring H1 terminé. Webhooks Stripe raw toujours avant `express.json`.
 - **`console.*`** : ✅ migration F1 terminée. 0 occurrence dans `routes/`, `services/`, `bootstrap/`. Seul fallback `utils/logger.js` autorisé.
 - **Migrations** : collisions 060/061 documentées, non bloquantes. M1 + M2 confirmés en prod ✅.
-- **Tests** : 87 passés, 1 skipped propre — filet solide, à rejouer avant go-live.
+- **Tests** : 125 passés, 1 skipped propre — filet solide, à rejouer avant go-live.
 - **Panier partagé** : modèle actif boutique-first. Backend financier sécurisé (webhook Stripe, anti-surfinancement, refund queue, mark-refunded avec audit).
 - **Collective workspace** : routes désactivées/tombstone depuis PR #486. Mais **chaîne de services non nettoyée** : `collective-workspace-engine.js` (965 l) encore importé par 3 services, eux-mêmes appelés depuis `auth.js` et `admin-collective-repairs.js`. Dette post-tombstone à planifier (COLLECTIVE-CLEANUP).
 - **Tokens pickup** : `pickup_print_tokens` + `pickup_reveal_codes` DB-backed (migration 070). `printTokens` Map encore in-memory, TTL 2 min, faible volume — non bloquant mono-instance.
@@ -421,9 +421,9 @@ P0 runtime verdict: PASS (tous les checks validés)
 | A-BE-02 | docs / machine statut | `docs/CONTRACTS.md`, `services/order-status-machine.js` | 🟠 Haute | ✅ Fait 2026-05-26 | CONTRACTS.md aligné sur `newStatus` avec note de correction datée. |
 | A-BE-11 | paiements Stripe | `routes/payments.js` | 🟠 Haute | ✅ Fait 2026-05-26 | Réutilisation `stripe_payment_id` existant si état réutilisable. Idempotency key stable `order_pi_${order.id}` sur création. |
 | A-BE-03 | collective legacy | `server.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — webhook collectif monté ligne 70, routes collective-workspaces/collective-payments lignes 143-147, `startExpirationCron` ligne 150. Surface runtime no-op non nettoyée. |
-| A-BE-18 | migrations / runtime | `routes/relay-dashboard.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — `ensureRelayTables()` crée tables + index au chargement du module (lignes 29-67, appelé immédiatement ligne 67). Tables `order_incidents` et `order_comments` hors migrations versionnées. |
-| A-BE-04 | auth guest / téléphone | `middleware/auth-guest.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — pas de `utils/phone.js`, pas de `normalizePhone` dans le codebase. Normalisation front/back incohérente. |
-| A-BE-16 | tests | `tests/unit/`, `tests/integration/` | 🟡 Moyenne | ⏳ À corriger | Confirmé — aucun test pour `shared-cart-financial-guard`, refund queue, `paid_not_counted`, `mark-refunded`, flow `fully_funded`. |
+| A-BE-18 | migrations / runtime | `routes/relay-dashboard.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `ensureRelayTables()` (42 l DDL runtime) retirée de la route. `migrations/071_relay_dashboard_tables.sql` créé (idempotent IF NOT EXISTS). **À appliquer manuellement sur Railway** (no-op si tables déjà présentes). |
+| A-BE-04 | auth guest / téléphone | `middleware/auth-guest.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `utils/phone.js` créé (57 l) — `normalizePhone(raw, defaultCountry)` unifie logique back conservatrice + règles +33/+269 du front. `auth-guest.js` importe depuis `utils/phone`, fonction locale supprimée. |
+| A-BE-16 | tests | `tests/unit/`, `tests/integration/` | 🟡 Moyenne | ✅ Fait 2026-05-26 | `tests/unit/shared-cart-financial-guard.test.js` (11 cas) + `tests/unit/shared-cart-refund-queue.test.js` (10 cas) créés. npm test : 125 passés, 1 skipped. |
 | A-BE-14 | purchasing | `routes/purchasing.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `POST /:order_id/confirm` vérifie le statut courant avant UPDATE. Retourne 409 si hors `['pending','notified']`. |
 | A-BE-06 | refunds | `services/refund-service.js` | 🟡 Moyenne | ✅ Fait 2026-05-26 | `processRefundWithFallback` aligné sur modèle `pending → completed`. INSERT en pending avant Stripe. ON CONFLICT DO NOTHING + UPDATE final. |
 | A-BE-07 | docs | `docs/CONTRACTS.md` | 🟡 Moyenne | ✅ Fait 2026-05-26 | CONTRACTS.md §2 : collective legacy biffé + section "Legacy tombstone — ne pas étendre" ajoutée. |
@@ -454,9 +454,9 @@ P1 — Avant ouverture large :
   ✅ A-BE-06    — processRefundWithFallback aligné sur modèle pending → completed (2026-05-26)
   ✅ A-BE-07    — CONTRACTS.md : collectif legacy biffé + section tombstone ajoutée (2026-05-26)
   ⏳ A-BE-03    — Ne plus démarrer startExpirationCron. Clarifier si routes 410 restent nécessaires.
-  ⏳ A-BE-04    — Créer utils/phone.js avec normalizePhone(raw, defaultCountry)
-  ⏳ A-BE-18    — Déplacer ensureRelayTables() dans une migration versionnée
-  ⏳ A-BE-16    — Créer tests/unit/shared-cart-financial-guard.test.js + tests/unit/shared-cart-refund-queue.test.js + tests/integration/shared-cart-flow.test.js
+  ✅ A-BE-04    — utils/phone.js créé + auth-guest.js mis à jour (2026-05-26)
+  ✅ A-BE-18    — ensureRelayTables() retiré → migrations/071_relay_dashboard_tables.sql (2026-05-26). À appliquer sur Railway.
+  ✅ A-BE-16    — shared-cart-financial-guard.test.js (11 cas) + shared-cart-refund-queue.test.js (10 cas). 125 passés.
 
 P2 — Backlog post go-live :
   ⏳ A-BE-05    — Extraire services/purchasing-trigger-service.js + purchasing-notification-service.js + purchasing-receive-service.js

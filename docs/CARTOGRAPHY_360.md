@@ -177,6 +177,15 @@ Actifs dans `server.js` :
 - rate limiting spécialisé pour login/register, cash confirm, scans collect, création commande, dashboard et admin ;
 - webhooks Stripe en `express.raw` avant parser JSON.
 
+**Utilitaires partagés notables** :
+
+| Fichier | Rôle |
+|---|---|
+| `utils/phone.js` | `normalizePhone(raw, defaultCountry?)` — normalisation E.164 unifiée back/front. Sans `defaultCountry` : conservateur (pas de devinette pays). Avec `'+33'` / `'+269'` : applique les règles locales. Utilisé par `middleware/auth-guest.js` et disponible pour tout module gérant des numéros de téléphone. |
+| `utils/user-cache.js` | Cache partagé entre `auth.js` et `auth-guest.js` (N2 FIX). |
+| `utils/logger.js` | Logger structuré Pino. Seul fichier autorisé à contenir des `console.*` (fallback interne). |
+| `utils/rates.js` | Taux de change EUR↔KMF. |
+
 Variables **obligatoires** au boot (`REQUIRED_ENV`) :
 
 - `DATABASE_URL` ;
