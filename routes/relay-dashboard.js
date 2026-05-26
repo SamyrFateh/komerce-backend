@@ -25,46 +25,8 @@ const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 // ── Auth : relay + admin ────────────────────────────────────────────────────
 router.use(authenticate, requireRole(['admin', 'agent_relais']));
 
-// ── Auto-create tables (idempotent) ─────────────────────────────────────────
-async function ensureRelayTables() {
-  try {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS order_incidents (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-        reporter_id UUID REFERENCES users(id),
-        reporter_name TEXT,
-        type TEXT NOT NULL CHECK (type IN ('retard','blocage','paiement','stock','colis_endommage','colis_perdu','client_absent','autre')),
-        description TEXT,
-        priority TEXT DEFAULT 'normal' CHECK (priority IN ('low','normal','high','urgent')),
-        status TEXT DEFAULT 'open' CHECK (status IN ('open','in_progress','resolved','closed')),
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        resolved_at TIMESTAMPTZ,
-        resolved_by UUID REFERENCES users(id),
-        resolution_note TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS order_comments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-        author_id UUID REFERENCES users(id),
-        author_name TEXT,
-        author_role TEXT,
-        text TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_incidents_order ON order_incidents(order_id);
-      CREATE INDEX IF NOT EXISTS idx_incidents_status ON order_incidents(status);
-      CREATE INDEX IF NOT EXISTS idx_comments_order ON order_comments(order_id);
-    `);
-  } catch(e) {
-    log.warn('[RELAY] Table creation (non-fatal):', e.message);
-  }
-}
-
-// Run on module load
-ensureRelayTables();
+// A-BE-18 FIX : order_incidents et order_comments sont créées par
+// migrations/071_relay_dashboard_tables.sql — plus de DDL au runtime.
 
 // ── SECURITY HELPER — R1 FIX ─────────────────────────────────────────────────
 // Vérifie que la commande appartient bien au relais de l'agent connecté.

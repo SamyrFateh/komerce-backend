@@ -40,6 +40,8 @@ const db   = require('../db');
 const log = require('../utils/logger').child({ module: 'auth-guest' });
 // N2 FIX: cache partagé avec auth.js (même Map, même TTL, même invalidation)
 const userCache = require('../utils/user-cache');
+// A-BE-04 FIX: normalisation téléphone centralisée (back-end conservateur, sans devinette pays)
+const { normalizePhone } = require('../utils/phone');
 
 const _JWT_SECRET  = process.env.JWT_SECRET;
 const JWT_EXPIRES  = process.env.JWT_EXPIRES || '90d';
@@ -72,23 +74,6 @@ function extractToken(req) {
 
 function generateToken(user) {
   return jwt.sign({ id: user.id, role: user.role }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
-}
-
-// ── Normalisation téléphone en E.164 ──────────────────────────────────
-// Accepte "+33699272526", "0699272526", "+269 321 12 34" etc.
-// Retourne un E.164 normalisé ou null.
-function normalizePhone(raw) {
-  if (!raw) return null;
-  let s = String(raw).trim();
-  // Garder les + et chiffres uniquement
-  s = s.replace(/[^\d+]/g, '');
-  if (!s) return null;
-  // Si déjà E.164 : on retourne
-  if (s.startsWith('+')) return s;
-  // Si commence par 00 : on remplace par +
-  if (s.startsWith('00')) return '+' + s.slice(2);
-  // Sinon, on ne peut pas deviner le pays → on refuse
-  return null;
 }
 
 // ── Trouve ou crée un user par phone_payer ────────────────────────────
