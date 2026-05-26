@@ -8,12 +8,23 @@
  */
 
 const db = require('../db');
-const settlement = require('./shared-cart-v4-settlement');
 
 const MIN_COMMITMENT_KMF = 500;
 const MAX_COMMITMENT_KMF = 500000;
+const FUTURE_SETTLEMENT_STATUSES = new Set(['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize']);
 
 function r(n) { return Math.round(Number(n) || 0); }
+
+function metadataOf(cart) {
+  if (!cart?.metadata) return {};
+  if (typeof cart.metadata === 'object') return cart.metadata;
+  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
+}
+
+function isSettlementOpen(cart) {
+  const meta = metadataOf(cart);
+  return meta.settlement_open === true || FUTURE_SETTLEMENT_STATUSES.has(cart?.status);
+}
 
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
@@ -53,7 +64,7 @@ function assertCartOpenForCommitment(cart) {
   if (new Date(cart.expires_at) < new Date()) {
     throw httpError('Ce panier partagé a expiré', 400, 'shared_cart_expired');
   }
-  if (settlement.isSettlementOpen(cart)) {
+  if (isSettlementOpen(cart)) {
     throw httpError(
       'Le panier est déjà passé au règlement. Les engagements ne peuvent plus être modifiés.',
       409,
