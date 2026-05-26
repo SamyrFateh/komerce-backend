@@ -145,10 +145,7 @@ const collectivePaymentOrchestrator = require('./services/collective-payment-orc
 app.post('/api/collective-payments/stripe/webhook', collectiveWS.stripeWebhookHandler);
 app.use('/api/collective-workspaces', collectiveWS.router);
 app.use('/api/collective-payments',   collectiveWS.paymentsRouter);
-if (process.env.NODE_ENV !== 'test') {
-  const intervalMs = process.env.NODE_ENV === 'production' ? 5 * 60 * 1000 : 30 * 1000;
-  collectivePaymentOrchestrator.startExpirationCron(intervalMs);
-}
+// A-BE-03: startExpirationCron supprimé — tombstone no-op (2026-05-26)
 mountApiRoutesAfterStripeOwnedBlocks(app);
 
 

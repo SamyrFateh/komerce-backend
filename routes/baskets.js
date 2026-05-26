@@ -11,6 +11,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
+const log     = require('../utils/logger').child({ module: 'baskets' });
 const { authenticate } = require('../middleware/auth');
 const { generateBasketCode } = require('../utils/reference');
 const { sendSMS } = require('../utils/sms');
@@ -100,15 +101,50 @@ router.get('/:code([A-Z]-[A-Z0-9]{4})', async (req, res, next) => {
     );
     if (!basket) return res.status(404).json({ error: 'Panier introuvable ou expiré' });
 
+    // BASKETS-1 : alias explicites pour détecter la divergence snapshot vs catalogue (2026-05-26)
     const { rows: items } = await db.query(
-      'SELECT bi.*, p.name, p.emoji, p.category, p.price_kmf FROM basket_items bi JOIN products p ON p.id=bi.product_id WHERE bi.basket_id=$1',
+      `SELECT bi.product_id, bi.quantity, bi.added_by, bi.note,
+              bi.price_kmf  AS snapshot_price_kmf,
+              p.price_kmf   AS current_price_kmf,
+              p.name, p.emoji, p.category
+         FROM basket_items bi
+         JOIN products p ON p.id = bi.product_id
+        WHERE bi.basket_id = $1`,
       [basket.id]
     );
 
-    const total_kmf = items.reduce((s,i) => s + i.price_kmf * i.quantity, 0);
+    // Détection divergence prix snapshot vs catalogue
+    const divergedItems = items.filter(i => i.snapshot_price_kmf !== i.current_price_kmf);
+    if (divergedItems.length > 0) {
+      log.warn({
+        basket_code: basket.code,
+        basket_id: basket.id,
+        diverged: divergedItems.map(i => ({
+          product_id: i.product_id,
+          snapshot_price_kmf: i.snapshot_price_kmf,
+          current_price_kmf: i.current_price_kmf,
+          delta_kmf: i.current_price_kmf - i.snapshot_price_kmf,
+        })),
+      }, 'BASKETS-1 price_divergence: snapshot price differs from catalogue');
+    }
+
+    // On expose le prix snapshot (celui qui sera utilisé à la commande) + un flag divergence
+    const itemsForClient = items.map(i => ({
+      ...i,
+      price_kmf: i.snapshot_price_kmf,
+      price_changed: i.snapshot_price_kmf !== i.current_price_kmf,
+    }));
+
+    const total_kmf = itemsForClient.reduce((s, i) => s + i.snapshot_price_kmf * i.quantity, 0);
     const rates     = await getRates();
 
-    res.json({ basket, items, total_kmf, total_eur: Math.round(total_kmf/rates.eur_kmf) });
+    res.json({
+      basket,
+      items: itemsForClient,
+      total_kmf,
+      total_eur: Math.round(total_kmf / rates.eur_kmf),
+      price_divergence: divergedItems.length > 0,
+    });
   } catch(e) { next(e); }
 });
 

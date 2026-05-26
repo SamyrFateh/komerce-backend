@@ -388,7 +388,45 @@ Toute modif du format de code externe ou sceau = lot sécurité, jamais en commi
 
 ---
 
-## 12. Règle générale d'évolution d'un service critique
+## 11b. `services/purchasing-trigger-service.js` — triggerPurchasing
+
+> Extrait de `routes/purchasing.js` lors du lot **A-BE-05 (2026-05-26)**.
+> Contrat stable : les consommateurs historiques importent via `routes/purchasing.js` qui ré-exporte.
+
+### Export public
+
+```js
+module.exports = { triggerPurchasing };
+```
+
+### Contrat `triggerPurchasing`
+
+```js
+// Fire-and-forget — JAMAIS awaité dans une transaction active
+triggerPurchasing(orderId)  // UUID — requis
+  .then(({ purchase_orders }) => { /* array de résultats par item */ })
+  .catch(err => { /* logguer, ne pas propager */ });
+```
+
+**Retourne** `{ purchase_orders: Array<{ item, status, purchase_order_id, ... }> }`
+
+Statuts possibles par item : `no_supplier`, `already_exists`, `auto_ordered`, `api_failed_notified`, `whatsapp_sent`, `admin_notified`, `error`.
+
+**Idempotence I-SWEEP-3B** : si une PO non-cancelled existe déjà pour `(order_id, product_supplier_id)`, retourne `already_exists` sans créer de doublon.
+
+**Consommateurs directs** (via `require('./purchasing').triggerPurchasing`) :
+- `routes/payments.js` — post-webhook Stripe, fire-and-forget
+- `routes/pickup-secret.js` — post-commit cash, fire-and-forget
+- `services/repair-ordered-without-purchase-orders.js` — repair admin
+
+**Garde-fous** :
+- Ne jamais `await` dans une transaction ouverte.
+- Chaque item protégé par SAVEPOINT P2-7 : échec d'une PO n'annule pas les autres.
+- L'engine est dans `services/purchasing-trigger-service.js` ; la façade publique reste `routes/purchasing.js`.
+
+---
+
+
 
 1. Ouvrir CARTOGRAPHY, ZONE_IMPACT, SCHEMA et ce document.
 2. Vérifier les consommateurs (recherche `require\\(['"](.*\\)/${service}['"]\\)`).

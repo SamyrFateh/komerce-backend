@@ -45,10 +45,11 @@ describe('I-SWEEP invariants regression net', () => {
   });
 
   test('G2: triggerPurchasing prevents replay duplicates per order and product supplier mapping', () => {
-    const purchasing = read('routes/purchasing.js');
+    // Après A-BE-05 : logique métier dans services/purchasing-trigger-service.js
+    const triggerService = read('services/purchasing-trigger-service.js');
 
-    expect(purchasing).toContain('already_exists');
-    expect(purchasing).toMatch(/WHERE\s+order_id\s*=\s*\$1[\s\S]*AND\s+product_supplier_id\s*=\s*\$2[\s\S]*AND\s+status\s*!=\s*'cancelled'/i);
+    expect(triggerService).toContain('already_exists');
+    expect(triggerService).toMatch(/WHERE\s+order_id\s*=\s*\$1[\s\S]*AND\s+product_supplier_id\s*=\s*\$2[\s\S]*AND\s+status\s*!=\s*'cancelled'/i);
   });
 
   test('G3: collective repairs cover ready_to_capture sessions and stock reservations', () => {
