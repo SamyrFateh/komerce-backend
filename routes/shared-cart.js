@@ -132,6 +132,47 @@ router.post('/public/:token/commitments/:commitmentId/withdraw', async (req, res
   }
 });
 
+// ── PUBLIC : retrouver l'engagement verrouillé d'un participant ──────────────
+// Utilisée par l'UI règlement avant d'afficher le bouton payer.
+router.get('/public/:token/commitments/by-phone', async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const phone = req.query.phone;
+    if (!phone) return res.status(400).json({ error: 'phone requis', code: 'phone_required' });
+
+    const { rows: cartRows } = await db.query(
+      `SELECT id, status, metadata, expires_at FROM shared_carts WHERE token = $1`,
+      [token]
+    );
+    if (!cartRows.length) return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
+    const cart = cartRows[0];
+
+    if (!settlement.isSettlementOpen(cart)) {
+      return res.status(409).json({ error: "Le panier n'est pas encore en règlement.", code: 'settlement_not_open' });
+    }
+
+    const { rows } = await db.query(
+      `SELECT id, participant_name, amount_kmf, status, locked_at
+         FROM shared_cart_commitments
+        WHERE shared_cart_id = $1
+          AND participant_phone = $2
+          AND status = 'locked_for_settlement'
+        ORDER BY locked_at DESC
+        LIMIT 1`,
+      [cart.id, phone]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        error: 'Aucun engagement verrouillé trouvé pour ce numéro.',
+        code: 'commitment_not_found',
+      });
+    }
+
+    res.json({ commitment: rows[0] });
+  } catch (err) { next(err); }
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 // ── PUBLIC : payer une contribution après passage au règlement ─────────
 // ═══════════════════════════════════════════════════════════════════════
@@ -156,11 +197,74 @@ router.post('/public/:token/contributions', async (req, res, next) => {
     // Le créateur doit d'abord "Passer au règlement".
     await settlement.assertCanAcceptParticipantPaymentByToken(token);
 
+    // ── GAP 1 : liaison commitment → contribution ─────────────────────────────
+    // En phase règlement, on doit retrouver l'engagement verrouillé par téléphone
+    // et vérifier que le montant correspond exactement.
+    let lockedCommitment = null;
+    if (contributor_phone) {
+      const { rows: cartRows } = await db.query(
+        `SELECT id FROM shared_carts WHERE token = $1`, [token]
+      );
+      if (cartRows.length) {
+        const { rows: commitRows } = await db.query(
+          `SELECT * FROM shared_cart_commitments
+            WHERE shared_cart_id = $1
+              AND participant_phone = $2
+              AND status = 'locked_for_settlement'
+            ORDER BY locked_at DESC LIMIT 1`,
+          [cartRows[0].id, contributor_phone]
+        );
+        lockedCommitment = commitRows[0] || null;
+      }
+    }
+
+    // Si un engagement verrouillé existe, le montant doit correspondre exactement
+    if (lockedCommitment) {
+      const lockedAmount = Math.round(Number(lockedCommitment.amount_kmf) || 0);
+      const requestedAmount = Math.round(Number(amount_kmf) || 0);
+      if (requestedAmount !== lockedAmount) {
+        return res.status(409).json({
+          error: `Le montant doit correspondre à votre engagement verrouillé : ${lockedAmount} KMF`,
+          code: 'amount_must_match_locked_commitment',
+          locked_amount_kmf: lockedAmount,
+        });
+      }
+    }
+
     // Conversion KMF → EUR pour Stripe
     const fxRate = await getFxKmfToEur();
     const amountEur = Math.max(0.5, Math.round(Number(amount_kmf) * fxRate * 100) / 100);
 
-    // 1. Créer la contribution en pending
+    // ── GAP 4 : superseded — invalider les tentatives pending existantes ────────
+    if (lockedCommitment) {
+      await db.query(
+        `UPDATE shared_cart_contributions
+            SET status = 'failed',
+                failed_at = NOW(),
+                metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
+                updated_at = NOW()
+          WHERE commitment_id = $1
+            AND status = 'pending'`,
+        [lockedCommitment.id]
+      );
+    } else if (contributor_phone) {
+      const { rows: cartR } = await db.query(`SELECT id FROM shared_carts WHERE token = $1`, [token]);
+      if (cartR.length) {
+        await db.query(
+          `UPDATE shared_cart_contributions
+              SET status = 'failed',
+                  failed_at = NOW(),
+                  metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
+                  updated_at = NOW()
+            WHERE shared_cart_id = $1
+              AND contributor_phone = $2
+              AND status = 'pending'`,
+          [cartR[0].id, contributor_phone]
+        );
+      }
+    }
+
+    // 1. Créer la contribution en pending, liée à l'engagement verrouillé si présent
     const { contribution, cart } = await engine.startContribution(token, {
       name: contributor_name,
       email: contributor_email,
@@ -170,6 +274,7 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       currency: 'EUR',
       fxRate,
       message,
+      commitmentId: lockedCommitment?.id || null,
     });
 
     // 2. Créer la Stripe Checkout Session
