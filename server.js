@@ -130,11 +130,23 @@ const routingService   = require('./services/routing');
 const parcelSecurity   = require('./services/parcel-security');
 const sharedCart = require('./routes/shared-cart');
 const sharedCartRefundAdmin = require('./routes/shared-cart-refund-admin');
+const sharedCartItemsService = require('./services/shared-cart-items-service');
+const { authenticate } = require('./middleware/auth');
 
 mountApiRoutesBeforeStripeOwnedBlocks(app);
 
 // ═══ Panier Partagé MVP (Niveau 1) ═══
 app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
+app.put('/api/shared-carts/:id/items', authenticate, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await sharedCartItemsService.updateOpenSharedCartItems(req.params.id, req.user.id, body.cart_items || []);
+    res.json({ ok: true, message: 'Panier partagé mis à jour pendant la phase de concertation.', cart: result.cart, items: result.items });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
 app.use('/api/shared-carts',       sharedCart.router);
 app.use('/api/admin/shared-carts', sharedCartRefundAdmin.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
@@ -149,7 +161,7 @@ app.use('/api/collective-payments',   collectiveWS.paymentsRouter);
 mountApiRoutesAfterStripeOwnedBlocks(app);
 
 
-// ── Healthcheck ─────────────────────────────────────────────────────────────
+// ── Healthcheck ─────────────────────────────────────────────
 
 app.get('/api/health', async (req, res) => {
   try {
