@@ -136,6 +136,71 @@ async function listCommitmentsByToken(token) {
   return { cart, commitments: rows.map(publicCommitment) };
 }
 
+async function getMyLockedCommitmentByToken(token, phone) {
+  const participantPhone = String(phone || '').trim();
+  if (!participantPhone) throw httpError('Téléphone requis pour retrouver votre engagement', 400, 'participant_phone_required');
+
+  const { rows } = await db.query(
+    `SELECT sc.id, sc.participant_name, sc.participant_phone, sc.amount_kmf,
+            sc.status, sc.locked_at, sc.paid_at, sc.contribution_id
+       FROM shared_cart_commitments sc
+       JOIN shared_carts c ON c.id = sc.shared_cart_id
+      WHERE c.token = $1
+        AND sc.participant_phone = $2
+        AND sc.status IN ('locked_for_settlement', 'payment_pending', 'paid')
+      ORDER BY sc.locked_at DESC NULLS LAST, sc.updated_at DESC
+      LIMIT 1`,
+    [token, participantPhone]
+  );
+
+  if (!rows.length) throw httpError('Aucun engagement verrouillé trouvé pour ce téléphone', 404, 'locked_commitment_not_found');
+  return publicCommitment(rows[0]);
+}
+
+async function assertLockedCommitmentPayment(token, phone, amountKmf, client = db) {
+  const participantPhone = String(phone || '').trim();
+  if (!participantPhone) {
+    throw httpError('Téléphone requis pour payer votre engagement verrouillé', 400, 'participant_phone_required');
+  }
+
+  const { rows } = await client.query(
+    `SELECT sc.*
+       FROM shared_cart_commitments sc
+       JOIN shared_carts c ON c.id = sc.shared_cart_id
+      WHERE c.token = $1
+        AND sc.participant_phone = $2
+        AND sc.status IN ('locked_for_settlement', 'payment_pending')
+      ORDER BY sc.locked_at DESC NULLS LAST, sc.updated_at DESC
+      LIMIT 1`,
+    [token, participantPhone]
+  );
+
+  if (!rows.length) throw httpError('Aucun engagement à payer trouvé pour ce téléphone', 404, 'locked_commitment_not_found');
+
+  const commitment = rows[0];
+  const expected = r(commitment.amount_kmf);
+  const actual = r(amountKmf);
+  if (actual !== expected) {
+    throw httpError(`Le montant à payer doit correspondre à votre engagement verrouillé : ${expected} KMF`, 409, 'amount_must_match_locked_commitment');
+  }
+  return commitment;
+}
+
+async function markCommitmentPaymentPending(commitmentId, contributionId, client = db) {
+  const { rows } = await client.query(
+    `UPDATE shared_cart_commitments
+        SET status = 'payment_pending',
+            contribution_id = $2,
+            metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb,
+            updated_at = NOW()
+      WHERE id = $1
+        AND status IN ('locked_for_settlement', 'payment_pending')
+      RETURNING *`,
+    [commitmentId, contributionId, JSON.stringify({ payment_started_at: new Date().toISOString() })]
+  );
+  return rows[0] || null;
+}
+
 async function createOrUpdateCommitment(token, body = {}) {
   const payload = validatePayload(body);
   return tx(async (client) => {
@@ -247,9 +312,7 @@ async function withdrawCommitment(token, commitmentId, body = {}) {
       [...params, JSON.stringify({ reason: body.reason || null })]
     );
 
-    if (!updated.rows.length) {
-      throw httpError('Engagement introuvable ou non retirable', 404, 'commitment_not_found_or_locked');
-    }
+    if (!updated.rows.length) throw httpError('Engagement introuvable ou non retirable', 404, 'commitment_not_found_or_locked');
 
     await addEvent(client, cart.id, 'commitment_withdrawn', { type: 'participant' }, {
       commitment_id: updated.rows[0].id,
@@ -283,6 +346,9 @@ async function lockCommitmentsForSettlement(sharedCartId, userId, client) {
 
 module.exports = {
   listCommitmentsByToken,
+  getMyLockedCommitmentByToken,
+  assertLockedCommitmentPayment,
+  markCommitmentPaymentPending,
   createOrUpdateCommitment,
   withdrawCommitment,
   lockCommitmentsForSettlement,
