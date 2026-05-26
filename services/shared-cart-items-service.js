@@ -54,7 +54,7 @@ function normalizeItems(cartItems) {
   for (const raw of cartItems) {
     const productId = raw?.product_id;
     if (!productId) continue;
-    const qty = r(raw.quantity || 1);
+    const qty = r(raw.quantity ?? 1);
     if (qty <= 0) continue;
     qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
   }
