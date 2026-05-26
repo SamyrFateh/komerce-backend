@@ -193,7 +193,7 @@ export function refreshSharedBadges(isShared, cart = null) {
     desktopBadge.innerHTML = '';
   }
   if (desktopShare) {
-    desktopShare.hidden = !!isShared;
+    desktopShare.hidden = false;
     desktopShare.textContent = 'Payer en groupe';
   }
 
