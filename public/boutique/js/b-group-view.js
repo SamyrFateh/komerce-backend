@@ -2,11 +2,11 @@
  * @module b-group-view
  * @owner sélecteurs .k-group-* — onglet dédié panier partagé
  *
- * P0 UX/state — Mai 2026 :
- *   - le mode créateur tente une restauration backend /mine avant l'état vide.
- *   - les actions de partage vivent ici, pas dans la sidebar.
- *   - la finalisation devient action principale uniquement si fully_funded.
- *   - le formulaire contribution annonce et respecte remaining_kmf côté client.
+ * Doctrine v4.1 — Mai 2026 :
+ *   - panier ouvert = concertation + engagements indicatifs ;
+ *   - aucun paiement tant que le créateur n'a pas fait “Passer au règlement” ;
+ *   - panier en règlement = engagements verrouillés + paiements réels ;
+ *   - la bannière n'est qu'un rappel, le suivi réel vit ici.
  */
 
 import { state } from './b-store.js';
@@ -58,27 +58,70 @@ function stopPolling() {
 /* ── Helpers ───────────────────────────────────────────────────── */
 function r(n) { return Math.round(Number(n) || 0); }
 
-function pct(confirmed, total) {
-  if (!total) return 0;
-  return Math.max(0, Math.min(100, Math.round((confirmed / total) * 100)));
+function metadataOf(cart) {
+  if (!cart?.metadata) return {};
+  if (typeof cart.metadata === 'object') return cart.metadata;
+  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
 }
 
-function statusLabel(status) {
+function isSettlementOpen(cart) {
+  const meta = metadataOf(cart);
+  return meta.settlement_open === true || ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart?.status);
+}
+
+function isTerminal(cart) {
+  return ['converted_to_order', 'finalized', 'cancelled', 'expired', 'refunded'].includes(cart?.status);
+}
+
+function isOpenConcertation(cart) {
+  return !isTerminal(cart) && !isSettlementOpen(cart) && ['draft', 'active', 'commitment_open'].includes(cart?.status || 'active');
+}
+
+function pct(done, total) {
+  if (!total) return 0;
+  return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+}
+
+function statusLabel(cart) {
+  if (isSettlementOpen(cart)) return '🟣 En règlement';
   return {
-    active: '🟢 Ouvert',
-    partially_funded: '🟡 Partiellement financé',
-    fully_funded: '✅ Financé',
-    converted_to_order: '📦 Clôturé',
-    finalized: '📦 Clôturé',
+    draft: '🟢 Panier ouvert',
+    active: '🟢 Panier ouvert',
+    commitment_open: '🟢 Concertation',
+    partially_funded: '🟣 En règlement',
+    fully_funded: '✅ Réglé',
+    converted_to_order: '📦 Commande créée',
+    finalized: '📦 Commande créée',
     cancelled: '❌ Annulé',
     expired: '⏱️ Expiré',
-  }[status] || status;
+    refunded: '↩️ Remboursé',
+  }[cart?.status] || cart?.status || 'Panier groupe';
 }
 
 function remainingKmf(cart) {
   const total = r(cart.total_kmf_snapshot);
   const confirmed = r(cart.contributed_kmf);
   return Math.max(0, r(cart.remaining_kmf) || total - confirmed);
+}
+
+function commitmentTotal(commitments = []) {
+  return commitments
+    .filter(c => !['withdrawn', 'cancelled'].includes(c.status))
+    .reduce((sum, c) => sum + r(c.amount_kmf), 0);
+}
+
+function avgSuggestion(cart, commitments = []) {
+  const total = r(cart.total_kmf_snapshot);
+  const count = Math.max(1, commitments.filter(c => !['withdrawn', 'cancelled'].includes(c.status)).length || 1);
+  return r(total / count);
+}
+
+async function loadCommitments(token) {
+  if (!token) return [];
+  const data = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' })
+    .then(rsp => rsp.ok ? rsp.json() : null)
+    .catch(() => null);
+  return data?.commitments || [];
 }
 
 async function ensureCreatorCartState() {
@@ -93,106 +136,197 @@ async function ensureCreatorCartState() {
 }
 
 function showGroupStyles() {
-  if (document.getElementById('k-group-view-p0-styles')) return;
+  if (document.getElementById('k-group-view-v4-styles')) return;
   const s = document.createElement('style');
-  s.id = 'k-group-view-p0-styles';
+  s.id = 'k-group-view-v4-styles';
   s.textContent = `
-.k-group-funded-callout{border:1px solid rgba(31,122,84,.28);background:rgba(31,122,84,.09);border-radius:18px;padding:16px;margin-top:14px}
-.k-group-funded-callout strong{display:block;font-size:16px;margin-bottom:6px;color:var(--text)}
-.k-group-funded-callout p{font-size:13px;line-height:1.45;color:var(--text-muted);margin:0 0 12px}
+.k-group-phase{border:1px solid rgba(255,122,61,.24);background:rgba(255,122,61,.08);border-radius:18px;padding:14px;margin:12px 0;color:var(--text)}
+.k-group-phase strong{display:block;font-size:15px;margin-bottom:5px}.k-group-phase span{font-size:12px;color:var(--text-muted);line-height:1.45}
 .k-group-disabled-finalize{opacity:.72;cursor:not-allowed!important;background:var(--sand-dark)!important;color:var(--text-muted)!important}
-.k-group-share-hint,.k-group-finalize-hint{font-size:12px;line-height:1.45;color:var(--text-muted);margin:10px 0 0}
+.k-group-share-hint,.k-group-finalize-hint,.k-group-small-hint{font-size:12px;line-height:1.45;color:var(--text-muted);margin:10px 0 0}
 .k-group-self-toggle{margin-top:12px;width:100%;border:1px dashed var(--border);background:var(--sand);color:var(--text);border-radius:14px;padding:11px;font-weight:800;cursor:pointer}
-.k-group-self-panel[hidden]{display:none!important}`;
+.k-group-self-panel[hidden]{display:none!important}
+.k-group-commit-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(0,0,0,.06)}
+.k-group-commit-row:last-child{border-bottom:0}.k-group-commit-name{font-weight:800}.k-group-commit-status{font-size:12px;color:var(--text-muted)}
+.k-group-action-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.k-group-btn--settlement{background:var(--coral);color:white}`;
   document.head.appendChild(s);
 }
 
-/* ── Rendu progression ─────────────────────────────────────────── */
-function renderProgress(cart, contributions) {
-  const total = r(cart.total_kmf_snapshot);
-  const confirmed = r(cart.contributed_kmf);
-  const remaining = remainingKmf(cart);
-  const p = pct(confirmed, total);
-  const isOpen = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+/* ── Rendu items ───────────────────────────────────────────────── */
+function renderItems(items = []) {
+  const itemRows = items.map(it => `
+    <div class="k-group-item-row">
+      <span class="k-group-item-name">${sanitize(it.name || it.product_name_snapshot || 'Produit')}</span>
+      <span class="k-group-item-qty">×${r(it.quantity || 1)}</span>
+      <span class="k-group-item-price">${fmt(r(it.unit_price_kmf || it.unit_price_kmf_snapshot), 'KMF')}</span>
+    </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
 
-  const rows = contributions?.length
+  return `<div class="k-group-items-list">${itemRows}</div>`;
+}
+
+/* ── Rendu suivi v4 ────────────────────────────────────────────── */
+function renderProgress(cart, commitments = [], contributions = []) {
+  const total = r(cart.total_kmf_snapshot);
+  const paid = r(cart.contributed_kmf);
+  const pledged = commitmentTotal(commitments);
+  const phaseOpen = isOpenConcertation(cart);
+  const phaseSettlement = isSettlementOpen(cart);
+  const value = phaseOpen ? pledged : paid;
+  const p = pct(value, total);
+
+  const rows = commitments?.length
+    ? commitments.map(c => `
+        <div class="k-group-commit-row">
+          <span class="k-group-commit-name">${sanitize(c.participant_name?.split(' ')[0] || 'Anonyme')}</span>
+          <span class="k-group-commit-status">${c.status === 'withdrawn' ? 'retiré' : c.status === 'locked_for_settlement' ? 'verrouillé' : 'engagé'}</span>
+          <span class="k-group-contrib-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+        </div>`).join('')
+    : '<p class="k-group-contrib-empty">Aucun engagement encore.</p>';
+
+  const paidRows = !phaseOpen && contributions?.length
     ? contributions.map(c => `
         <div class="k-group-contrib-row">
-          <span class="k-group-contrib-name">${sanitize(c.contributor_name?.split(' ')[0] || c.first_name || 'Anonyme')}</span>
+          <span class="k-group-contrib-name">${sanitize(c.contributor_name?.split(' ')[0] || 'Anonyme')}</span>
           <span class="k-group-contrib-status k-group-contrib-status--${c.status}">${c.status === 'paid' || c.paid_at ? '✅' : '⏳'}</span>
           <span class="k-group-contrib-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
         </div>`).join('')
-    : '<p class="k-group-contrib-empty">Aucune contribution encore.</p>';
+    : '';
 
   return `
     <div class="k-group-progress-card" id="k-group-progress-card">
       <div class="k-group-card-head">
         <div>
           <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">${statusLabel(cart.status)}</div>
+          <div class="k-group-card-meta">${statusLabel(cart)}</div>
         </div>
       </div>
+      <div class="k-group-phase">
+        <strong>${phaseOpen ? 'Panier ouvert — phase de concertation' : phaseSettlement ? 'Panier en règlement' : statusLabel(cart)}</strong>
+        <span>${phaseOpen
+          ? 'Le panier et les engagements peuvent encore évoluer. Aucun paiement n’est possible.'
+          : phaseSettlement
+            ? 'Le panier est verrouillé. Les paiements sont maintenant possibles.'
+            : 'Ce panier n’est plus en phase active.'}</span>
+      </div>
       <div class="k-group-money">
-        <span>${fmt(confirmed, 'KMF')} collectés</span>
+        <span>${phaseOpen ? `${fmt(pledged, 'KMF')} engagés` : `${fmt(paid, 'KMF')} réglés`}</span>
         <strong>${fmt(total, 'KMF')} total</strong>
       </div>
       <div class="k-group-progress" aria-label="${p}%">
         <span style="width:${p}%" class="k-group-progress-bar"></span>
       </div>
-      ${remaining > 0 && isOpen
-        ? `<p class="k-group-remaining">Reste : <strong>${fmt(remaining, 'KMF')}</strong></p>`
-        : ''}
+      ${phaseOpen ? `<p class="k-group-remaining">À participation égale : <strong>${fmt(avgSuggestion(cart, commitments), 'KMF')}</strong> en moyenne.</p>` : ''}
+      ${phaseSettlement && remainingKmf(cart) > 0 ? `<p class="k-group-remaining">Reste à régler : <strong>${fmt(remainingKmf(cart), 'KMF')}</strong></p>` : ''}
       <div class="k-group-contribs">
-        <div class="k-group-contribs-label">Contributions (${contributions?.length || 0})</div>
+        <div class="k-group-contribs-label">Engagements (${commitments?.length || 0})</div>
         ${rows}
       </div>
+      ${paidRows ? `<div class="k-group-contribs"><div class="k-group-contribs-label">Paiements confirmés</div>${paidRows}</div>` : ''}
     </div>`;
 }
 
-/* ── Rendu actions créateur ────────────────────────────────────── */
+/* ── Actions créateur ──────────────────────────────────────────── */
 function renderCreatorActions(cart) {
-  const isOpen = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+  const phaseOpen = isOpenConcertation(cart);
+  const phaseSettlement = isSettlementOpen(cart);
+
   if (cart.status === 'converted_to_order' || cart.finalized_order_id) {
     return `
       <div class="k-group-card k-group-actions-card">
         <div class="k-group-section-title">Commande créée</div>
-        <p class="k-group-finalized-hint">Ce panier est clôturé et lié à une commande Komerce.</p>
+        <p class="k-group-finalized-hint">Ce panier est lié à une commande Komerce.</p>
         ${cart.finalized_order_id ? `<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>` : ''}
       </div>`;
   }
-  if (!isOpen) return `<p class="k-group-finalized-hint">Ce panier est clôturé.</p>`;
 
-  const fullyFunded = cart.status === 'fully_funded' || remainingKmf(cart) <= 0;
+  if (isTerminal(cart)) return `<p class="k-group-finalized-hint">Ce panier n’est plus actif.</p>`;
+
   return `
     <div class="k-group-card k-group-actions-card">
-      <div class="k-group-section-title">Partager le lien</div>
-      <div class="k-group-creator-actions">
+      <div class="k-group-section-title">Actions créateur</div>
+      <div class="k-group-action-split">
         <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
       </div>
-      <p class="k-group-share-hint">La commande se crée à 100% de financement confirmé.</p>
-      ${fullyFunded ? `
-        <div class="k-group-funded-callout">
-          <strong>✅ Tout est réglé</strong>
-          <p>Validez maintenant pour que la commande parte en préparation.</p>
-          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Valider et commander</button>
-        </div>` : `
-        <button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Valider disponible à 100%</button>`}
+      ${phaseOpen ? `
+        <p class="k-group-share-hint">Le panier est ouvert : vous pouvez encore ajuster le panier et les engagements.</p>
+        <button class="k-group-btn k-group-btn--settlement" id="k-group-open-settlement">Passer au règlement</button>` : ''}
+      ${phaseSettlement ? `
+        <p class="k-group-share-hint">Le panier est en règlement. Les paiements sont ouverts.</p>
+        ${remainingKmf(cart) <= 0
+          ? `<button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Finaliser la commande</button>`
+          : `<button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Finalisation après règlement ou compensation</button>`}` : ''}
       <p class="k-group-input-error" id="k-group-finalize-err"></p>
     </div>`;
 }
 
-/* ── Rendu formulaire contribution ─────────────────────────────── */
-function renderContributeForm(token, isCreator, cart) {
-  const remaining = remainingKmf(cart || {});
-  const placeholder = remaining > 0
-    ? `Max : ${fmt(remaining, 'KMF')} (reste à collecter)`
-    : 'Panier déjà financé';
-  const disabled = remaining <= 0;
-
+/* ── Form engagement ───────────────────────────────────────────── */
+function renderCommitmentForm(token, isCreator, cart) {
+  const suggestion = avgSuggestion(cart, []);
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-section-title">${isCreator ? '💸 Ma contribution' : '💸 Contribuer'}</div>
+      <div class="k-group-section-title">${isCreator ? '🤝 Mon engagement' : '🤝 Mon engagement indicatif'}</div>
+      <p class="k-group-small-hint">Aucun paiement maintenant. Vous indiquez seulement une intention de participation.</p>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gc-name">Prénom</label>
+        <input id="k-gc-name" class="k-group-input" type="text" placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name">
+      </div>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gc-phone">Téléphone (optionnel, conseillé)</label>
+        <input id="k-gc-phone" class="k-group-input" type="tel" placeholder="Ex : +269..." maxlength="30" autocomplete="tel">
+      </div>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gc-amount">Montant indicatif (KMF)</label>
+        <input id="k-gc-amount" class="k-group-input" type="number" min="500" step="100" placeholder="Ex : ${suggestion || 10000}" inputmode="numeric">
+      </div>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gc-msg">Message (optionnel)</label>
+        <input id="k-gc-msg" class="k-group-input" type="text" placeholder="Ex : Je participe" maxlength="200">
+      </div>
+      <p class="k-group-input-error" id="k-gc-err"></p>
+      <button class="k-group-btn k-group-btn--primary" id="k-gc-commit-btn">Enregistrer mon engagement</button>
+    </div>`;
+}
+
+function bindCommitmentForm(el, token) {
+  el.querySelector('#k-gc-commit-btn')?.addEventListener('click', async () => {
+    const name = (el.querySelector('#k-gc-name')?.value || '').trim();
+    const phone = (el.querySelector('#k-gc-phone')?.value || '').trim();
+    const amount = Number(el.querySelector('#k-gc-amount')?.value);
+    const msg = (el.querySelector('#k-gc-msg')?.value || '').trim();
+    const errEl = el.querySelector('#k-gc-err');
+    const btn = el.querySelector('#k-gc-commit-btn');
+
+    if (!name) { errEl.textContent = 'Prénom requis.'; return; }
+    if (!amount || amount < 500) { errEl.textContent = 'Minimum 500 KMF.'; return; }
+
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
+
+    try {
+      await apiPost(`/api/shared-carts/public/${token}/commitments`, {
+        participant_name: name,
+        ...(phone ? { participant_phone: phone } : {}),
+        amount_kmf: amount,
+        ...(msg ? { message: msg } : {}),
+      });
+      showToast('Engagement enregistré.', 'success');
+      btn.textContent = '✅ Engagement enregistré';
+      setTimeout(() => renderGroupView({ participantToken: token }), 500);
+    } catch (err) {
+      errEl.textContent = err?.message || 'Erreur.';
+      btn.disabled = false; btn.textContent = 'Enregistrer mon engagement';
+    }
+  });
+}
+
+/* ── Form paiement après règlement ─────────────────────────────── */
+function renderPaymentForm(token, isCreator, cart) {
+  const remaining = remainingKmf(cart || {});
+  const disabled = remaining <= 0;
+  return `
+    <div class="k-group-card k-group-contribute-card">
+      <div class="k-group-section-title">${isCreator ? '💸 Mon paiement' : '💸 Payer ma contribution'}</div>
       <div class="k-group-field">
         <label class="k-group-label" for="k-gc-name">Prénom</label>
         <input id="k-gc-name" class="k-group-input" type="text" placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name" ${disabled ? 'disabled' : ''}>
@@ -203,35 +337,26 @@ function renderContributeForm(token, isCreator, cart) {
       </div>
       <div class="k-group-field">
         <label class="k-group-label" for="k-gc-amount">Montant (KMF)</label>
-        <input id="k-gc-amount" class="k-group-input" type="number" min="100" step="100" placeholder="${placeholder}" inputmode="numeric" data-max-kmf="${remaining}" ${disabled ? 'disabled' : ''}>
-      </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gc-msg">Message (optionnel)</label>
-        <input id="k-gc-msg" class="k-group-input" type="text" placeholder="Ex : Bon courage !" maxlength="200" ${disabled ? 'disabled' : ''}>
+        <input id="k-gc-amount" class="k-group-input" type="number" min="100" step="100" placeholder="Max : ${fmt(remaining, 'KMF')}" inputmode="numeric" data-max-kmf="${remaining}" ${disabled ? 'disabled' : ''}>
       </div>
       <p class="k-group-input-error" id="k-gc-err"></p>
-      <button class="k-group-btn k-group-btn--primary" id="k-gc-pay-btn" ${disabled ? 'disabled' : ''}>${disabled ? '✅ Panier financé' : '💳 Payer ma contribution'}</button>
+      <button class="k-group-btn k-group-btn--primary" id="k-gc-pay-btn" ${disabled ? 'disabled' : ''}>${disabled ? '✅ Panier réglé' : '💳 Payer ma contribution'}</button>
     </div>`;
 }
 
-/* ── Bind contribution ─────────────────────────────────────────── */
-function bindContributeForm(el, token, cart) {
+function bindPaymentForm(el, token, cart) {
   el.querySelector('#k-gc-pay-btn')?.addEventListener('click', async () => {
     const name = (el.querySelector('#k-gc-name')?.value || '').trim();
     const email = (el.querySelector('#k-gc-email')?.value || '').trim();
     const amount = Number(el.querySelector('#k-gc-amount')?.value);
     const maxKmf = Number(el.querySelector('#k-gc-amount')?.dataset.maxKmf || remainingKmf(cart || {}));
-    const msg = (el.querySelector('#k-gc-msg')?.value || '').trim();
     const errEl = el.querySelector('#k-gc-err');
     const btn = el.querySelector('#k-gc-pay-btn');
 
     if (!name) { errEl.textContent = 'Prénom requis.'; return; }
     if (!email || !email.includes('@')) { errEl.textContent = 'Email valide requis.'; return; }
     if (!amount || amount < 100) { errEl.textContent = 'Minimum 100 KMF.'; return; }
-    if (maxKmf > 0 && amount > maxKmf) {
-      errEl.textContent = `Il ne reste que ${fmt(maxKmf, 'KMF')} à collecter.`;
-      return;
-    }
+    if (maxKmf > 0 && amount > maxKmf) { errEl.textContent = `Il ne reste que ${fmt(maxKmf, 'KMF')} à régler.`; return; }
 
     errEl.textContent = '';
     btn.disabled = true; btn.textContent = '⏳ Redirection…';
@@ -241,14 +366,9 @@ function bindContributeForm(el, token, cart) {
         amount_kmf: amount,
         contributor_name: name,
         contributor_email: email,
-        ...(msg ? { message: msg } : {}),
       });
-      if (res?.checkout_url) {
-        window.location.href = res.checkout_url;
-      } else {
-        showToast('Contribution enregistrée !', 'success');
-        btn.textContent = '✅ Enregistré';
-      }
+      if (res?.checkout_url) window.location.href = res.checkout_url;
+      else { showToast('Paiement enregistré !', 'success'); btn.textContent = '✅ Enregistré'; }
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
       btn.disabled = false; btn.textContent = '💳 Payer ma contribution';
@@ -264,10 +384,21 @@ function bindCreatorActions(el, cart, shareUrl, cartId) {
   });
 
   el.querySelector('#k-group-copy')?.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(shareUrl); showToast('Lien copié !', 'success'); }
+    catch (_) { showToast('Impossible de copier.', 'error'); }
+  });
+
+  el.querySelector('#k-group-open-settlement')?.addEventListener('click', async () => {
+    const btn = el.querySelector('#k-group-open-settlement');
+    btn.disabled = true; btn.textContent = '⏳ Passage au règlement…';
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      showToast('Lien copié !', 'success');
-    } catch (_) { showToast('Impossible de copier.', 'error'); }
+      await apiPost(`/api/shared-carts/${cartId}/open-settlement`, {});
+      showToast('Le panier est passé au règlement.', 'success');
+      renderGroupView();
+    } catch (err) {
+      showToast(err?.message || 'Erreur passage au règlement.', 'error');
+      btn.disabled = false; btn.textContent = 'Passer au règlement';
+    }
   });
 
   el.querySelector('#k-group-to-track')?.addEventListener('click', () => {
@@ -283,37 +414,24 @@ function bindCreatorActions(el, cart, shareUrl, cartId) {
   el.querySelector('#k-group-finalize')?.addEventListener('click', async () => {
     const btn = el.querySelector('#k-group-finalize');
     const errEl = el.querySelector('#k-group-finalize-err');
-    btn.disabled = true; btn.textContent = '⏳ Validation…';
-
+    btn.disabled = true; btn.textContent = '⏳ Finalisation…';
     try {
       const res = await apiPost(`/api/shared-carts/${cartId}/finalize`, {});
-
-      state.shareToken = null;
-      state.shareId = null;
-      state.cartName = '';
-      state.shareExpiry = null;
-      state.shareStatus = null;
+      state.shareToken = null; state.shareId = null; state.cartName = ''; state.shareExpiry = null; state.shareStatus = null;
       try { sessionStorage.removeItem('kmrc_share'); sessionStorage.removeItem('kmrc_banner_dismissed'); } catch (_) {}
-      refreshGroupBadge();
-      hideBanner();
+      refreshGroupBadge(); hideBanner();
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(false));
-
       el.innerHTML = `
         <div class="k-group-success">
           <div class="k-group-success-icon">🎉</div>
-          <strong>Panier clôturé !</strong>
+          <strong>Commande créée !</strong>
           <p>Commande <strong>${sanitize(res.order_reference || '')}</strong> créée.</p>
-          ${res.prepaid_kmf > 0 ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés.</p>` : ''}
           <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">📦 Voir ma commande</button>
         </div>`;
       bindCreatorActions(el, { ...cart, finalized_order_id: res.order_id }, shareUrl, cartId);
     } catch (err) {
-      if (err?.code === 'stock_issues' || err?.message?.includes('stock')) {
-        if (errEl) errEl.textContent = err.message || 'Problème de stock.';
-      } else {
-        showToast(err?.message || 'Erreur validation.', 'error');
-      }
-      btn.disabled = false; btn.textContent = '✓ Valider et commander';
+      if (errEl) errEl.textContent = err?.message || 'Erreur finalisation.';
+      btn.disabled = false; btn.textContent = '✓ Finaliser la commande';
     }
   });
 }
@@ -327,7 +445,7 @@ function renderEmpty(el) {
     <div class="k-group-empty">
       <div class="k-group-empty-icon">👥</div>
       <strong>Aucun panier groupe actif</strong>
-      <span>Créez-en un depuis votre panier avec "Payer en groupe".</span>
+      <span>Créez-en un depuis votre panier avec "Partager".</span>
     </div>`;
 }
 function renderError(el) {
@@ -353,35 +471,34 @@ export async function renderGroupView(opts = {}) {
   if (!isCreator) {
     const data = await fetch(`/api/shared-carts/public/${participantToken}`, { credentials: 'include' })
       .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
-
     if (!data?.cart) { renderError(el); return; }
+
     const cart = data.cart;
     const items = data.items || [];
+    const commitments = await loadCommitments(participantToken);
     const total = r(cart.total_kmf_snapshot);
-    const isOpen = ['active', 'partially_funded'].includes(cart.status);
-
-    const itemRows = items.map(it => `
-      <div class="k-group-item-row">
-        <span class="k-group-item-name">${sanitize(it.name || 'Produit')}</span>
-        <span class="k-group-item-qty">×${it.quantity || 1}</span>
-        <span class="k-group-item-price">${fmt(r(it.unit_price_kmf), 'KMF')}</span>
-      </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
+    const phaseOpen = isOpenConcertation(cart);
+    const phaseSettlement = isSettlementOpen(cart);
 
     el.innerHTML = `
       <div class="k-group-header">
         <h2>👥 Panier groupe</h2>
-        <p class="k-group-subhead">Contribution au panier de ${sanitize(cart.beneficiary_name_snapshot || '')}.</p>
+        <p class="k-group-subhead">${phaseOpen ? 'Le groupe se concerte encore.' : phaseSettlement ? 'Le panier est en règlement.' : 'Suivi du panier partagé.'}</p>
       </div>
       <div class="k-group-card k-group-items-card">
         <div class="k-group-card-head">
           <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">Total : ${fmt(total, 'KMF')} · ${statusLabel(cart.status)}</div>
+          <div class="k-group-card-meta">Total : ${fmt(total, 'KMF')} · ${statusLabel(cart)}</div>
         </div>
-        <div class="k-group-items-list">${itemRows}</div>
+        ${renderItems(items)}
       </div>
-      ${isOpen ? renderContributeForm(participantToken, false, cart) : `<div class="k-group-card"><strong>${cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : 'Ce panier n’accepte plus de contribution.'}</strong></div>`}`;
+      ${renderProgress(cart, commitments, data.contributions || [])}
+      ${phaseOpen ? renderCommitmentForm(participantToken, false, cart)
+        : phaseSettlement ? renderPaymentForm(participantToken, false, cart)
+          : `<div class="k-group-card"><strong>Ce panier n’accepte plus d’action.</strong></div>`}`;
 
-    if (isOpen) bindContributeForm(el, participantToken, cart);
+    if (phaseOpen) bindCommitmentForm(el, participantToken);
+    if (phaseSettlement) bindPaymentForm(el, participantToken, cart);
     return;
   }
 
@@ -392,9 +509,8 @@ export async function renderGroupView(opts = {}) {
   }
 
   let data;
-  try {
-    data = await apiGet(`/api/shared-carts/${state.shareId}`);
-  } catch (_) {
+  try { data = await apiGet(`/api/shared-carts/${state.shareId}`); }
+  catch (_) {
     data = await fetch(`/api/shared-carts/public/${state.shareToken}`, { credentials: 'include' })
       .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
   }
@@ -403,53 +519,45 @@ export async function renderGroupView(opts = {}) {
 
   const cart = data.cart;
   const contributions = data.contributions || [];
+  const commitments = await loadCommitments(state.shareToken);
   const cartId = state.shareId || cart.id;
   const shareUrl = data.share_url || state.shareUrl || `${window.location.origin}/cart/shared/${state.shareToken}`;
-  const isOpen = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
-  const showSelfContribution = isOpen && cart.status !== 'fully_funded' && remainingKmf(cart) > 0;
+  const phaseOpen = isOpenConcertation(cart);
+  const phaseSettlement = isSettlementOpen(cart);
 
   el.innerHTML = `
     <div class="k-group-header">
       <h2>👥 Mon panier groupe</h2>
-      <p class="k-group-subhead">Où en est la collecte, que faire maintenant ?</p>
+      <p class="k-group-subhead">${phaseOpen ? 'Concertation en cours.' : phaseSettlement ? 'Règlement en cours.' : 'Suivi du panier.'}</p>
     </div>
-    ${renderProgress(cart, contributions)}
-    ${showSelfContribution ? `
-      <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je contribue aussi</button>
-      <div class="k-group-self-panel" id="k-group-self-panel" hidden>
-        ${renderContributeForm(state.shareToken, true, cart)}
-      </div>` : ''}
+    <div class="k-group-card k-group-items-card">
+      <div class="k-group-section-title">Articles du panier</div>
+      ${renderItems(data.items || [])}
+      ${phaseOpen ? '<p class="k-group-small-hint">Vous pouvez encore ajuster les articles depuis le panier avant de passer au règlement.</p>' : ''}
+    </div>
+    ${renderProgress(cart, commitments, contributions)}
+    ${phaseOpen ? `
+      <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je m’engage aussi</button>
+      <div class="k-group-self-panel" id="k-group-self-panel" hidden>${renderCommitmentForm(state.shareToken, true, cart)}</div>` : ''}
+    ${phaseSettlement && remainingKmf(cart) > 0 ? `
+      <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je paie aussi</button>
+      <div class="k-group-self-panel" id="k-group-self-panel" hidden>${renderPaymentForm(state.shareToken, true, cart)}</div>` : ''}
     ${renderCreatorActions(cart)}`;
 
-  if (showSelfContribution) {
-    el.querySelector('#k-group-self-toggle')?.addEventListener('click', () => {
-      const panel = el.querySelector('#k-group-self-panel');
-      if (panel) panel.hidden = !panel.hidden;
-    });
-    bindContributeForm(el, state.shareToken, cart);
-  }
+  el.querySelector('#k-group-self-toggle')?.addEventListener('click', () => {
+    const panel = el.querySelector('#k-group-self-panel');
+    if (panel) panel.hidden = !panel.hidden;
+  });
+  if (phaseOpen) bindCommitmentForm(el, state.shareToken);
+  if (phaseSettlement) bindPaymentForm(el, state.shareToken, cart);
   bindCreatorActions(el, cart, shareUrl, cartId);
 
-  showBanner({
-    title: cart.title,
-    expires_at: cart.expires_at,
-    status: cart.status,
-    contributed_kmf: cart.contributed_kmf,
-    total_kmf_snapshot: cart.total_kmf_snapshot,
-  });
+  showBanner({ title: cart.title, status: cart.status });
 
-  if (isOpen) {
+  if (!isTerminal(cart)) {
     startPolling(cartId, (fresh) => {
-      const card = el.querySelector('#k-group-progress-card');
-      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions);
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
-      showBanner({
-        title: fresh.cart?.title,
-        expires_at: fresh.cart?.expires_at,
-        status: fresh.cart?.status,
-        contributed_kmf: fresh.cart?.contributed_kmf,
-        total_kmf_snapshot: fresh.cart?.total_kmf_snapshot,
-      });
+      showBanner({ title: fresh.cart?.title, status: fresh.cart?.status });
     });
   }
 }
