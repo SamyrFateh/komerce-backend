@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -152,13 +152,13 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 - [x] **GOD-FILES-0** — `buildReceiptHTML` extrait → `utils/pickup-receipt-html.js` (286 lignes) ✅. `pickup-secret.js` : 756 lignes. `REVEAL_CACHE` Map → table `pickup_reveal_codes` DB ✅.
 - [x] **GOD-FILES-1** — `routes/pricing.js` : 283 lignes ✅ (1318 → 283). `services/pricing-recommend.js` (507 l) ✅. `services/pricing-dashboard.js` (382 l) ✅. `utils/pricing-cache.js` (41 l) ✅.
 - [x] **ZOMBIE-1** ✅ — `utils/pricing.js` : **absent du repo** — confirmé par analyse du zip (2026-05-26). Fichier zombie déjà supprimé, aucune action requise.
-- [ ] **GOD-FILES-2** — `routes/dashboard-finance.js` : 1 218 lignes, 4 routes. `GET /payments` = 627 lignes SQL inline. Extraire vers `services/dashboard-finance-service.js`.
-- [ ] **GOD-FILES-3** — `routes/parcel-api-v2.js` : 1 295 lignes, 8 routes. `syncParcelToOrders` (236 l) inline. Extraire vers `services/parcel-sync-service.js`.
-- [ ] **GOD-FILES-4** — `routes/admin.js` : 1 210 lignes, 20 routes. Lot **B4 planifié** dans `BACKEND_GOLIVE_ROADMAP.md`. Découper en `routes/admin-orders.js`, `routes/admin-partners.js`, etc.
+- [x] **GOD-FILES-2** — `routes/dashboard-finance.js` : façade 48 l. SQL extrait vers `services/dashboard-finance-metrics.js` (1 046 l). ✅ Confirmé par analyse code (2026-05-26).
+- [x] **GOD-FILES-3** — `routes/parcel-api-v2.js` : façade 3 l. Découpé en `parcel-api-v2/read.js` (699 l) + `helpers.js` (448 l) + `scans.js` (107 l). ✅ Confirmé par analyse code (2026-05-26).
+- [x] **GOD-FILES-4** — `routes/admin.js` : façade 4 l. Découpé en `admin/index.js` + `orders.js` + `partners.js` + `users.js` + `system.js`. `deleteOrderCascade` dédupliquée → `admin/delete-order-cascade.js` (2026-05-26). ✅
 - [x] **GOD-FILES-6** — `routes/hub-dashboard.js` : 1 020 → 619 lignes. Logique lecture extraite vers `services/hub-dashboard-queries.js`. Corrections : type `backorder`→`stock`, priority `medium`→`normal`, CHECK constraints alignées avec relay-dashboard. npm test vert.
 - [x] **REFACTO-SCAN-ENGINE** ✅ — `services/scan-engine.js` : `processScan()` 311 → ~55 lignes. 4 sous-fonctions privées extraites : `_loadScanContext` (étapes 1-3), `_validateAndCatchup` (étapes 4-5, I-03 guards intacts, `parcelItems.splice()` PATCH P1-5 préservé), `_applyEvent` (étapes 6-9), `_finalizeAndLog` (étapes 10-12). Notifications post-commit (étape 14) et `logScanEventDirect` (catch) restent dans `processScan()`. `module.exports` inchangé. `tests/unit/scan-engine.test.js` créé : 7 cas, npm test vert.
 - [x] **GOD-FILES-5-SOURCING** — `routes/sourcing-engine.js` : 960 → 386 lignes. Logique lecture (getAnalysis, getAnalysisById, getSynthesis, getConfig) extraite vers `services/sourcing-analysis.js`. Mutations (PUT products/:id, PUT products/:id/variants, POST bulk-rail) conservées dans la route. npm test vert.
-- [ ] **COLLECTIVE-CLEANUP** — `services/collective-workspace-engine.js` (965 l) encore importé par `collective-close-order-service.js`, `collective-stock-reservation-service.js`, `collective-ready-to-order-orchestrator.js`, eux-mêmes appelés depuis `middleware/auth.js` et `routes/admin-collective-repairs.js`. Le tombstone PR #486 a désactivé les routes mais **pas nettoyé la chaîne de services**. Non bloquant go-live.
+- [x] **COLLECTIVE-CLEANUP** — `collective-close-order-service.js` et `collective-ready-to-order-orchestrator.js` tombstonés (2026-05-26). `collective-stock-reservation-service.js` conservé intact (utilisé par repair admin dry_run). `collective-workspace-engine` n'est plus importé que depuis ce seul service de maintenance.
 
 ### Workspace decommission
 
@@ -267,10 +267,10 @@ P0 runtime verdict: PASS (tous les checks validés)
 | B-SOT-AUDIT | Ensuite | ✅ Résolu — b-mobile-premium-v1 et b-mobile-modal-v1 confirmés orphelins, documentés dans SOT v1.6 |
 | DOC-SYNC-BOUTIQUE-FIRST | ✅ Fait | B-DOC-1 ✅ (§14 ajouté CARTOGRAPHY_360_BOUTIQUE) · B-DOC-2 ✅ (déjà à jour) · B-SOT-1 ✅ (SOT v1.6, 6 actifs + 3 orphelins) |
 | ZOMBIE-1 | ✅ Fait | `utils/pricing.js` absent du repo — déjà supprimé, confirmé par analyse code |
-| COLLECTIVE-CLEANUP | Post go-live | Nettoyer la chaîne de services collective-workspace-engine (tombstone incomplet) |
-| GOD-FILES-2 | Post go-live | `routes/dashboard-finance.js` 1 218 l — extraire SQL `/payments` en service |
-| GOD-FILES-3 | Post go-live | `routes/parcel-api-v2.js` 1 295 l — extraire `syncParcelToOrders` |
-| GOD-FILES-4 | Post go-live | `routes/admin.js` 1 210 l — lot B4 planifié dans BACKEND_GOLIVE_ROADMAP.md |
+| COLLECTIVE-CLEANUP | ✅ Fait | close-order + ready-to-order tombstonés (2026-05-26). stock-reservation conservé (repair admin). |
+| GOD-FILES-2 | ✅ Fait | `routes/dashboard-finance.js` façade 48 l — `services/dashboard-finance-metrics.js` (1 046 l). Confirmé 2026-05-26. |
+| GOD-FILES-3 | ✅ Fait | `routes/parcel-api-v2.js` façade 3 l — découpé en read/helpers/scans. Confirmé 2026-05-26. |
+| GOD-FILES-4 | ✅ Fait | `routes/admin.js` façade 4 l — découpé en 5 sous-routes. `deleteOrderCascade` dédupliquée → `delete-order-cascade.js`. 2026-05-26. |
 | GOD-FILES-6 | ✅ Fait | `routes/hub-dashboard.js` 619 l (était 1 020). `services/hub-dashboard-queries.js` créé. |
 | REFACTO-SCAN-ENGINE | ✅ Fait | `services/scan-engine.js` : `processScan()` ~55 l (était 311). 4 sous-fonctions privées. `tests/unit/scan-engine.test.js` : 7 cas. npm test vert. |
 | B-MODAL-MOCK | Post go-live | Supprimer `b-modal-social-proof-mock.js` quand colonnes DB social proof prêtes |
@@ -357,21 +357,21 @@ P0 runtime verdict: PASS (tous les checks validés)
 | ND4 | Audit services/order-cost-snapshot.js (idempotence) | — | 🟢 Faible | 30 min | ✅ Fait |
 | ND5 | Vérification schema scans.scan_code NOT NULL | DB migrations | 🟡 Moyenne | 15 min | ✅ Fait |
 | ND6 | Exposition pickup_code dans endpoints client | client-account.js | 🟡 Moyenne | 30 min | ✅ Fait |
-| B-CSS-1 | Dead CSS `k-modal-open` dans cart.css | boutique/css/cart.css | 🟢 Faible | 5 min | ⏳ Backlog nettoyage |
-| B-CSS-2 | 2 hex hardcodés dans event.css | boutique/css/event.css | 🟢 Faible | 15 min | ⏳ Hors périmètre principal |
-| B-HTML-1 | b-group-cart-flow.js stub à supprimer de event/*.html | boutique/event/ | 🟢 Faible | 15 min | ⏳ Post go-live |
-| B-PERF-1 | `<source type="image/webp">` manquant dans hero | boutique/index.html | 🟠 Moyenne | 15 min | ⏳ P1 boutique |
-| B-DOC-1 | CARTOGRAPHY_360_BOUTIQUE ne documente pas les redirections PR #486 | boutique/docs/ | 🟡 Moyenne | 20 min | ❌ **GAP CONFIRMÉ — À corriger** |
-| B-DOC-2 | BOUTIQUE_DOCS_INDEX ne liste pas MODAL_DESKTOP/MOBILE_ARCHITECTURE.md | boutique/docs/ | 🟢 Faible | 5 min | ❌ **GAP CONFIRMÉ — À corriger** |
-| B-SOT-1 | 6 fichiers actifs absents du BOUTIQUE_SOURCE_OF_TRUTH.md | boutique/docs/BOUTIQUE_SOURCE_OF_TRUTH.md | 🟠 Moyenne | 30 min | ❌ **GAP CONFIRMÉ** — b-share-phone-guard, b-group-view, b-group-banner, b-modal-approche-c-hybrid, b-pdp-curation-suggestions, b-home-premium-v1 |
-| B-SOT-2 | 2 fichiers à statut incertain absents du SOT | boutique/js/ | 🟡 Moyenne | 15 min | ⏳ À auditer — b-mobile-premium-v1.js, b-mobile-modal-v1.js (orphelins ?) |
-| B-MODAL-MOCK | b-modal-social-proof-mock.js marqué TEMPORAIRE dans son header | boutique/js/ | 🟢 Faible | 5 min | ⏳ Supprimer quand colonnes DB social proof prêtes |
-| ZOMBIE-1 | utils/pricing.js — router Express 1 330 l sans import, jamais monté | utils/pricing.js | 🔴 Haute | 2 min | ❌ **À supprimer sans risque** |
-| GOD-FILES-2 | routes/dashboard-finance.js 1 218 l — GET /payments = 627 l SQL inline | routes/ | 🟡 Moyenne | 2h | ⏳ Post go-live |
-| GOD-FILES-3 | routes/parcel-api-v2.js 1 295 l — syncParcelToOrders inline | routes/ | 🟡 Moyenne | 2h | ⏳ Post go-live |
-| GOD-FILES-4 | routes/admin.js 1 210 l — lot B4 planifié dans BACKEND_GOLIVE_ROADMAP | routes/ | 🟡 Moyenne | 3h | ⏳ Post go-live |
+| B-CSS-1 | Dead CSS `k-modal-open` dans cart.css | boutique/css/cart.css | 🟢 Faible | 5 min | ✅ Fait — sélecteur supprimé (2026-05-26). |
+| B-CSS-2 | 2 hex hardcodés dans event.css | boutique/css/event.css | 🟢 Faible | 15 min | ✅ Faux positif — variables CSS (--ev-border-soft, --ev-text-soft) via var(). Confirmé 2026-05-26. |
+| B-HTML-1 | b-group-cart-flow.js stub à supprimer de event/*.html | boutique/event/ | 🟢 Faible | 15 min | ✅ Fait — import supprimé de b-cart-product-open-style.js + fichier stub supprimé (2026-05-26). |
+| B-PERF-1 | `<source type="image/webp">` manquant dans hero | boutique/index.html | 🟠 Moyenne | 15 min | ✅ Faux positif — <picture> avec 2 sources responsive déjà en place. Confirmé 2026-05-26. |
+| B-DOC-1 | CARTOGRAPHY_360_BOUTIQUE ne documente pas les redirections PR #486 | boutique/docs/ | 🟡 Moyenne | 20 min | ✅ Fait — §14 ajouté (2026-05-26). |
+| B-DOC-2 | BOUTIQUE_DOCS_INDEX ne liste pas MODAL_DESKTOP/MOBILE_ARCHITECTURE.md | boutique/docs/ | 🟢 Faible | 5 min | ✅ Faux positif — déjà présents §1 et §5. Confirmé 2026-05-26. |
+| B-SOT-1 | 6 fichiers actifs absents du BOUTIQUE_SOURCE_OF_TRUTH.md | boutique/docs/BOUTIQUE_SOURCE_OF_TRUTH.md | 🟠 Moyenne | 30 min | ✅ Fait — SOT v1.6, 6 fichiers ajoutés §2B. Confirmé 2026-05-26. |
+| B-SOT-2 | 2 fichiers à statut incertain absents du SOT | boutique/js/ | 🟡 Moyenne | 15 min | ✅ Fait — confirmés orphelins, documentés SOT v1.6. |
+| B-MODAL-MOCK | b-modal-social-proof-mock.js marqué TEMPORAIRE dans son header | boutique/js/ | 🟢 Faible | 5 min | ✅ Fait — fichier supprimé (2026-05-26). |
+| ZOMBIE-1 | utils/pricing.js — router Express 1 330 l sans import, jamais monté | utils/pricing.js | 🔴 Haute | 2 min | ✅ Fait — fichier absent du repo, confirmé 2026-05-26 |
+| GOD-FILES-2 | routes/dashboard-finance.js façade 48 l — metrics en service | routes/ | 🟡 Moyenne | 2h | ✅ Fait — confirmé 2026-05-26 |
+| GOD-FILES-3 | routes/parcel-api-v2.js façade 3 l — découpé read/helpers/scans | routes/ | 🟡 Moyenne | 2h | ✅ Fait — confirmé 2026-05-26 |
+| GOD-FILES-4 | routes/admin.js façade 4 l — 5 sous-routes + deleteOrderCascade dédupliquée | routes/ | 🟡 Moyenne | 3h | ✅ Fait — 2026-05-26 |
 | GOD-FILES-6 | routes/hub-dashboard.js — logique lecture extraite | routes/ | 🟡 Moyenne | 2h | ✅ Fait — services/hub-dashboard-queries.js |
-| COLLECTIVE-CLEANUP | collective-workspace-engine.js encore importé par 3 services actifs post-tombstone | services/ | 🟡 Moyenne | 1h | ⏳ Post go-live |
+| COLLECTIVE-CLEANUP | collective-workspace-engine.js encore importé par 3 services actifs post-tombstone | services/ | 🟡 Moyenne | 1h | ✅ Fait — close-order + ready-to-order tombstonés (2026-05-26). stock-reservation conservé (repair admin dry_run). |
 | BASKETS-1 | Prix snapshotés sans TTL ni alerte divergence | routes/baskets.js | 🟡 Moyenne | 1h | ⏳ À surveiller post go-live |
 
 ### Verdicts audits routes (session 25 mai — confirmés par analyse code)
@@ -400,7 +400,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 **Conditionnel scale-out** : SEC-1b si multi-instance strict avant `printTokens` Map.
 
-**Backlog post go-live** : B-CSS-1/2 (dead CSS, hex event.css), B-HTML-1 (nettoyage b-group-cart-flow), B-PERF-1 (WebP hero), BASKETS-1 (alerte divergence prix), N4 (JWT révocation).
+**Backlog post go-live** : BASKETS-1 (alerte divergence prix), N4 (JWT révocation).
 
 ---
 

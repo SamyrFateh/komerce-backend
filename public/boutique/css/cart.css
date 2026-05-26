@@ -262,7 +262,6 @@ body.cart-open .k-hero { pointer-events: none; }
 }
 
 body.modal-open .k-wa-fab,
-body.k-modal-open .k-wa-fab,
 body.cart-open .k-wa-fab {
   opacity: 0;
   pointer-events: none;
