@@ -1,8 +1,8 @@
 # Doctrine Komerce — Panier partagé v4 à engagements indicatifs
 
-> Version 4.0 — 26 mai 2026  
+> Version 4.1 — 26 mai 2026  
 > Remplace conceptuellement la doctrine v3.0 fondée sur les contributions payées au fil de l'eau.  
-> Cible produit/backend : **engagements indicatifs avant clôture, paiements réels après clôture, créateur maître de la finalisation**.
+> Cible produit/backend : **panier ouvert en concertation, engagements indicatifs modifiables, paiements réels seulement après passage au règlement, créateur maître de la finalisation**.
 >
 > Important : le code actuel peut encore contenir l'ancien modèle de contribution payée avant finalisation. Les PR suivantes devront aligner backend et front.
 
@@ -15,18 +15,20 @@ Le panier partagé Komerce reste une capacité naturelle de la boutique, mais il
 Le nouveau modèle :
 
 ```txt
-Avant clôture
-→ les participants annoncent des engagements indicatifs
+Panier ouvert / concertation
+→ le créateur peut modifier le panier
+→ les participants peuvent modifier leurs engagements indicatifs
+→ le groupe converge vers une version acceptable
 → aucun paiement bloqué
 → aucune préautorisation Stripe
-→ le panier peut encore évoluer
+→ rien n'est encore figé
 
-Clôture
-→ le créateur arrête une version finale du panier
-→ les engagements attendus sont figés
+Passer au règlement
+→ le créateur arrête une version de référence du panier
+→ les engagements actifs sont verrouillés
 → une fenêtre de règlement s'ouvre
 
-Après clôture
+Panier en règlement
 → les participants paient réellement
 → si certains ne paient pas, le créateur ajuste, compense ou annule
 → la commande peut être finalisée malgré les écarts
@@ -35,7 +37,8 @@ Après clôture
 Philosophie :
 
 ```txt
-On s'organise d'abord.
+On se concerte d'abord.
+On fige quand le groupe est prêt.
 On règle ensuite.
 Le créateur garde la main pour conclure.
 ```
@@ -57,7 +60,7 @@ Le modèle cible est plus simple :
 
 ```txt
 Engagement indicatif d'abord.
-Paiement réel seulement après clôture.
+Paiement réel seulement après passage au règlement.
 Finalisation pilotée par le créateur.
 ```
 
@@ -91,11 +94,11 @@ Le backend ne doit jamais supposer que le nom est unique.
 
 | Acteur | Rôle |
 |---|---|
-| Créateur | Compose, invite, suit, clôture, ajuste, finalise ou annule |
-| Participant | Déclare un engagement indicatif puis paie après clôture |
+| Créateur | Compose, invite, suit, passe au règlement, ajuste, finalise ou annule |
+| Participant | Déclare/modifie un engagement indicatif puis paie après passage au règlement |
 | Bénéficiaire local | Peut recevoir/retrouver sans piloter le panier |
 | Stripe | Intervient seulement pendant le règlement réel |
-| Cash / agent relais | Peut confirmer un paiement local après clôture si activé |
+| Cash / agent relais | Peut confirmer un paiement local après passage au règlement si activé |
 | Backend | Trace, borne, expire, protège les transitions |
 | Admin | Supervise les exceptions, remboursements ou avoirs |
 
@@ -117,7 +120,23 @@ Panier boutique courant
 
 À ce stade : aucun participant n'a payé, aucun engagement n'est exigible, le panier peut encore évoluer, et le suivi vit dans l'onglet Groupe.
 
-### 5.2 Engagements indicatifs
+### 5.2 Panier ouvert : phase de concertation
+
+Le panier ouvert est une phase de réunion de groupe.
+
+Pendant cette phase :
+
+- le créateur peut ajouter, retirer ou ajuster des articles ;
+- les participants peuvent annoncer, augmenter, réduire ou retirer leurs engagements ;
+- le groupe peut discuter hors Komerce, par exemple sur WhatsApp ou en réunion familiale ;
+- l'interface peut afficher une contribution moyenne indicative ;
+- aucun paiement participant n'est possible ;
+- aucun argent n'est bloqué ;
+- le panier n'est pas encore une commande.
+
+Objectif : permettre au groupe de converger naturellement vers une version réaliste du panier.
+
+### 5.3 Engagements indicatifs
 
 Un participant peut annoncer :
 
@@ -129,9 +148,11 @@ Nadia : 20 000 KMF
 
 Ces engagements servent à piloter le panier. Ils ne sont pas un paiement, une dette gérée par Komerce, une autorisation Stripe bloquée, un solde retirable ou une garantie de paiement.
 
-### 5.3 Évolution avant clôture
+Tant que le panier est ouvert, ces engagements restent modifiables.
 
-Avant clôture, le créateur peut ajouter ou retirer des articles, changer des quantités, inviter, relancer, annuler ou ajuster l'information de contribution moyenne.
+### 5.4 Évolution avant passage au règlement
+
+Avant passage au règlement, le créateur peut ajouter ou retirer des articles, changer des quantités, inviter, relancer, annuler ou ajuster l'information de contribution moyenne.
 
 Si le total change, les engagements restent indicatifs.
 
@@ -143,30 +164,30 @@ Le système peut afficher une aide discrète :
 
 Cette suggestion n'est jamais contraignante.
 
-### 5.4 Clôture
+### 5.5 Passage au règlement
 
-La clôture signifie :
+Le passage au règlement signifie :
 
 ```txt
-Le panier est prêt. On passe au règlement.
+Le groupe a convergé. On fige et on passe au paiement.
 ```
 
-À la clôture : la version du panier est gelée pour initier le règlement, le total initial attendu est défini, les engagements attendus sont figés, une fenêtre de règlement s'ouvre, les participants sont notifiés, et le créateur garde la main pour ajuster le panier en cas de défaut de paiement.
+À ce moment : la version du panier est gelée pour initier le règlement, le total initial attendu est défini, les engagements actifs sont verrouillés, une fenêtre de règlement s'ouvre, les participants sont notifiés, et le créateur garde la main pour ajuster le panier en cas de défaut de paiement.
 
-La clôture n'est pas encore la commande ferme.
+Le passage au règlement n'est pas encore la commande ferme.
 
-### 5.5 Règlement après clôture
+### 5.6 Règlement après passage au règlement
 
-Les paiements partiels n'ont lieu que pendant la fenêtre de règlement après clôture.
+Les paiements partiels n'ont lieu que pendant la fenêtre de règlement.
 
 Modes possibles : Stripe, cash confirmé par agent/admin, compensation par le créateur.
 
 ```txt
-Avant clôture : engagement seulement.
-Après clôture : paiement réel.
+Panier ouvert : engagement seulement.
+Panier en règlement : paiement réel.
 ```
 
-### 5.6 Finalisation
+### 5.7 Finalisation
 
 Le créateur peut finaliser quand il a une solution viable.
 
@@ -195,9 +216,9 @@ soit parce qu'il annule.
 
 ## 6. Droits du créateur
 
-Avant clôture, le créateur peut modifier le panier, inviter, relancer, annuler, retirer un participant de la vue active si nécessaire, ajuster l'information de contribution moyenne, clôturer.
+Pendant le panier ouvert, le créateur peut modifier le panier, inviter, relancer, annuler, retirer un participant de la vue active si nécessaire, ajuster l'information de contribution moyenne, puis passer au règlement.
 
-Après clôture, il peut suivre les paiements, relancer, prolonger dans une limite backend, compenser lui-même, réduire ou ajuster la commande, finaliser, annuler.
+Après passage au règlement, il peut suivre les paiements, relancer, prolonger dans une limite backend, compenser lui-même, réduire ou ajuster la commande, finaliser, annuler.
 
 ---
 
@@ -205,7 +226,7 @@ Après clôture, il peut suivre les paiements, relancer, prolonger dans une limi
 
 ### 7.1 Engagement non honoré
 
-Un participant s'est engagé mais ne paie pas après clôture.
+Un participant s'est engagé mais ne paie pas après passage au règlement.
 
 Le backend doit afficher l'écart et laisser le créateur décider :
 
@@ -218,11 +239,11 @@ réduire la commande
 annuler
 ```
 
-### 7.2 Participant change d'avis avant clôture
+### 7.2 Participant change d'avis pendant le panier ouvert
 
 L'engagement étant indicatif, il peut être modifié ou retiré selon les règles UX. Le créateur voit l'évolution.
 
-### 7.3 Participant ne paie pas après clôture
+### 7.3 Participant ne paie pas après passage au règlement
 
 L'engagement devient `non honoré`. Le backend ne doit pas créer une dette complexe. Il doit exposer l'état :
 
@@ -234,11 +255,11 @@ relancé
 abandonné / remplacé / compensé
 ```
 
-### 7.4 Créateur annule avant clôture
+### 7.4 Créateur annule pendant le panier ouvert
 
 Effet : les engagements tombent, aucun remboursement, notification participants, panier `cancelled`.
 
-### 7.5 Créateur annule après clôture sans paiement
+### 7.5 Créateur annule après passage au règlement sans paiement
 
 Effet : engagements attendus annulés, aucun remboursement, notification participants.
 
@@ -298,8 +319,8 @@ Noms exacts à stabiliser côté backend.
 |---|---|
 | `pledged` | Engagement indicatif déclaré |
 | `updated` | Engagement modifié |
-| `withdrawn` | Engagement retiré avant clôture |
-| `locked_for_settlement` | Engagement figé à la clôture |
+| `withdrawn` | Engagement retiré avant passage au règlement |
+| `locked_for_settlement` | Engagement figé au passage au règlement |
 | `payment_pending` | Paiement attendu pendant la fenêtre |
 | `paid` | Paiement confirmé |
 | `not_honored` | Engagement non réglé dans le délai |
@@ -311,29 +332,30 @@ Noms exacts à stabiliser côté backend.
 ## 9. Règles financières cibles
 
 ```txt
-1. Avant clôture : aucun paiement requis.
-2. Avant clôture : aucun paiement Stripe bloqué.
-3. Avant clôture : les engagements sont indicatifs.
-4. Après clôture : la fenêtre de règlement ouvre les paiements réels.
-5. Le créateur peut compenser ou ajuster.
-6. La commande ferme naît seulement à la finalisation.
-7. Tout paiement confirmé doit être tracé.
-8. Aucun surplus ne doit disparaître silencieusement.
-9. Aucun paiement hors délai ne doit être compté silencieusement.
-10. Toute annulation avec paiements confirmés crée un traitement financier explicite.
+1. Panier ouvert : aucun paiement requis.
+2. Panier ouvert : aucun paiement Stripe bloqué.
+3. Panier ouvert : les engagements sont indicatifs et modifiables.
+4. Passage au règlement : les engagements actifs sont verrouillés.
+5. Panier en règlement : la fenêtre de règlement ouvre les paiements réels.
+6. Le créateur peut compenser ou ajuster.
+7. La commande ferme naît seulement à la finalisation.
+8. Tout paiement confirmé doit être tracé.
+9. Aucun surplus ne doit disparaître silencieusement.
+10. Aucun paiement hors délai ne doit être compté silencieusement.
+11. Toute annulation avec paiements confirmés crée un traitement financier explicite.
 ```
 
 ---
 
 ## 10. Ce qui est interdit
 
-Ne pas réintroduire : préautorisation Stripe avant clôture, blocage d'argent pendant la phase d'engagement, workspace séparé, tontine, pot commun retirable, dette complexe imposée aux participants, finalisation impossible parce qu'un participant n'a pas payé, absorption silencieuse d'un trop-payé, création d'une commande sans décision finale du créateur.
+Ne pas réintroduire : préautorisation Stripe avant passage au règlement, blocage d'argent pendant la phase d'engagement, workspace séparé, tontine, pot commun retirable, dette complexe imposée aux participants, finalisation impossible parce qu'un participant n'a pas payé, absorption silencieuse d'un trop-payé, création d'une commande sans décision finale du créateur.
 
 ---
 
 ## 11. Ce qui est autorisé
 
-Compatible doctrine : engagements libres, montant moyen suggéré, relances WhatsApp, retrait ou modification d'engagement avant clôture, clôture par le créateur, fenêtre de règlement courte, compensation par le créateur, ajustement du panier après non-paiement, annulation avant ou après clôture, remboursement/avoir si paiement confirmé puis annulation, plusieurs paniers partagés actifs dans la limite backend.
+Compatible doctrine : panier ouvert comme phase de concertation, engagements libres et modifiables, panier modifiable avant passage au règlement, montant moyen suggéré, relances WhatsApp, retrait ou modification d'engagement avant passage au règlement, passage au règlement par le créateur, fenêtre de règlement courte, compensation par le créateur, ajustement du panier après non-paiement, annulation avant ou après passage au règlement, remboursement/avoir si paiement confirmé puis annulation, plusieurs paniers partagés actifs dans la limite backend.
 
 ---
 
@@ -343,9 +365,10 @@ Compatible doctrine : engagements libres, montant moyen suggéré, relances What
 Panier partagé Komerce v4 =
   panier boutique réel
 + lien WhatsApp
-+ engagements indicatifs avant clôture
++ panier ouvert comme phase de concertation
++ engagements indicatifs modifiables
 + aucune préautorisation Stripe
-+ clôture créateur
++ passage au règlement par le créateur
 + fenêtre de règlement réel
 + ajustement ou compensation si engagements non honorés
 + finalisation créateur
@@ -356,7 +379,8 @@ La philosophie :
 
 ```txt
 On ne bloque pas l'argent trop tôt.
-On aide la famille à s'organiser.
+On laisse le groupe se concerter.
+On fige quand le groupe est prêt.
 On donne au créateur la main pour conclure.
 Le backend protège les transitions et trace les exceptions.
 ```
