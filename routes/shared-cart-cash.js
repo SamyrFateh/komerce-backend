@@ -36,6 +36,14 @@ router.post('/public/:token/contributions/cash', async (req, res, next) => {
 router.post('/contributions/:id/confirm-cash', authenticate, requireRole(['admin', 'agent_relais']), async (req, res, next) => {
   try {
     const result = await cash.confirmCashContribution(req.params.id, req.user, req.body || {});
+    if (result.rejected) {
+      return res.status(409).json({
+        ok: false,
+        error: result.error,
+        code: result.code,
+        contribution: result.contribution,
+      });
+    }
     res.json({
       ok: true,
       already_confirmed: !!result.already_confirmed,
