@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · **A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅**)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · **A-BE-05 ✅**)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -459,7 +459,7 @@ P1 — Avant ouverture large :
   ✅ A-BE-16    — shared-cart-financial-guard.test.js (11 cas) + shared-cart-refund-queue.test.js (10 cas). 125 passés.
 
 P2 — Backlog post go-live :
-  ⏳ A-BE-05    — Extraire services/purchasing-trigger-service.js + purchasing-notification-service.js + purchasing-receive-service.js
+  ✅ A-BE-05    — services/purchasing-trigger-service.js + purchasing-receive-service.js extraits. routes/purchasing.js : 841→413 lignes. 11 tests unitaires ajoutés. 2026-05-26
   ⏳ A-BE-09    — Tester explicitement refund queue pour expired/cancelled avec contributions
   ⏳ A-BE-10    — Nettoyage logs Pino non structurés
   ⏳ A-BE-15    — Ajouter job réparation ou sync colis dans la même transaction que collected
