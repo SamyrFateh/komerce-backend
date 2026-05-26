@@ -26,6 +26,20 @@ function isSettlementOpen(cart) {
   return meta.settlement_open === true || FUTURE_SETTLEMENT_STATUSES.has(cart?.status);
 }
 
+function maskPhone(phone) {
+  if (!phone) return null;
+  const value = String(phone);
+  if (value.length <= 4) return '****';
+  return `${'*'.repeat(Math.max(0, value.length - 4))}${value.slice(-4)}`;
+}
+
+function publicCommitment(row) {
+  return {
+    ...row,
+    participant_phone: maskPhone(row.participant_phone),
+  };
+}
+
 function httpError(message, status = 400, code = null) {
   const e = new Error(message);
   e.status = status;
@@ -121,7 +135,7 @@ async function listCommitmentsByToken(token) {
     [cart.id]
   );
 
-  return { cart, commitments: rows };
+  return { cart, commitments: rows.map(publicCommitment) };
 }
 
 async function createOrUpdateCommitment(token, body = {}) {
@@ -215,10 +229,10 @@ async function withdrawCommitment(token, commitmentId, body = {}) {
 
     const participantPhone = body.participant_phone || body.contributor_phone || null;
     const params = [commitmentId, cart.id];
-    let phoneClause = '';
+    let phoneClause = ' AND participant_phone IS NULL';
     if (participantPhone) {
       params.push(participantPhone);
-      phoneClause = ` AND participant_phone = $${params.length}`;
+      phoneClause = ` AND (participant_phone IS NULL OR participant_phone = $${params.length})`;
     }
 
     const updated = await client.query(
