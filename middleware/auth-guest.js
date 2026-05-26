@@ -73,7 +73,8 @@ function extractToken(req) {
 }
 
 function generateToken(user) {
-  return jwt.sign({ id: user.id, role: user.role }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  // N4 — jti unique pour permettre la révocation individuelle (migration 072)
+  return jwt.sign({ id: user.id, role: user.role, jti: crypto.randomUUID() }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
 // ── Trouve ou crée un user par phone_payer ────────────────────────────

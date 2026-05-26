@@ -9,7 +9,7 @@
  */
 
 const express      = require('express');
-const { randomBytes } = require('crypto');
+const { randomBytes, randomUUID } = require('crypto');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const db       = require('../db');
@@ -47,7 +47,8 @@ function setAuthCookie(res, token) { res.cookie(COOKIE_NAME, token, cookieOption
 function clearAuthCookie(res) { res.clearCookie(COOKIE_NAME, { httpOnly: true, path: '/' }); }
 
 function generateToken(user) {
-  return jwt.sign({ id: user.id, role: user.role }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
+  // N4 — jti unique pour permettre la révocation individuelle (migration 072)
+  return jwt.sign({ id: user.id, role: user.role, jti: randomUUID() }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
 function userResponse(user) {
@@ -259,7 +260,31 @@ router.post('/orders-by-phone', checkPhoneLookupRateLimit, validate(auth.ordersB
 });
 
 // ─── POST /api/auth/logout ──────────────────────────────────────────────────────────
-router.post('/logout', (req, res) => {
+// N4 — révocation du token JWT actif au moment du logout (migration 072)
+// jwt.decode() est utilisé (pas verify) car on veut révoquer même un token
+// qu'on ne pourrait pas vérifier (edge case). Non-fatal : si la DB échoue,
+// le cookie est quand même supprimé (le token expire naturellement sous 30j).
+router.post('/logout', async (req, res) => {
+  try {
+    const token =
+      req.cookies?.[COOKIE_NAME] ||
+      (req.headers.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.split(' ')[1]
+        : null);
+    if (token) {
+      const decoded = jwt.decode(token);
+      if (decoded?.jti && decoded?.exp) {
+        await db.query(
+          `INSERT INTO revoked_tokens (jti, expires_at)
+           VALUES ($1, to_timestamp($2))
+           ON CONFLICT (jti) DO NOTHING`,
+          [decoded.jti, decoded.exp]
+        );
+      }
+    }
+  } catch (err) {
+    log.warn({ err }, 'logout: échec INSERT revoked_tokens — non-fatal');
+  }
   clearAuthCookie(res);
   res.json({ message: 'Déconnexion réussie' });
 });

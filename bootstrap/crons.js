@@ -79,6 +79,7 @@ function startOperationalCrons() {
   startBackorderCron({ processBackorderReminders });
   startSnapshotRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
+  startJwtRevocationCleanupCron(); // N4 migration 072
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -137,10 +138,40 @@ function startPickupTokenCleanupCron() {
   log.info({ interval_min: 5 }, 'Pickup token cleanup cron scheduled');
 }
 
+// N4 — Purge des tokens JWT révoqués (migration 072)
+// Supprime les lignes dont expires_at < NOW() toutes les heures.
+// Les tokens expirés naturellement sont ignorés par jwt.verify — la purge évite
+// une table qui grossit sans fin pour des tokens qui ne seraient de toute façon
+// plus acceptés par l'authentification.
+function startJwtRevocationCleanupCron() {
+  const INTERVAL_MS = 60 * 60 * 1000; // 1h
+
+  const run = async () => {
+    try {
+      const db = require('../db');
+      const { rowCount } = await db.query(
+        'DELETE FROM revoked_tokens WHERE expires_at < NOW()'
+      );
+      if (rowCount > 0) {
+        log.info({ deleted: rowCount }, 'revoked_tokens cleanup done');
+      }
+    } catch (err) {
+      log.error({ err }, 'revoked_tokens cleanup cron failed');
+    }
+  };
+
+  // Première exécution 10 min après démarrage
+  setTimeout(run, 10 * 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+
+  log.info({ interval_h: 1 }, 'JWT revocation cleanup cron scheduled');
+}
+
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
   startBackorderCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
+  startJwtRevocationCleanupCron,
 };
