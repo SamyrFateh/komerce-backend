@@ -187,6 +187,20 @@ async function confirmContributionFromStripeSafely(session) {
       throw new Error('Confirmation contribution incohérente : update non appliqué');
     }
 
+    // GAP 4 — Marquer l'engagement lié comme paid
+    // Un commitment reste locked_for_settlement indéfiniment si on ne le met pas à jour ici.
+    if (updatedContribution.commitment_id) {
+      await client.query(
+        `UPDATE shared_cart_commitments
+            SET status = 'paid',
+                paid_at = NOW(),
+                updated_at = NOW()
+          WHERE id = $1
+            AND status = 'locked_for_settlement'`,
+        [updatedContribution.commitment_id]
+      );
+    }
+
     await addEvent(client, cart.id, 'contribution_paid',
       { type: 'stripe' },
       {

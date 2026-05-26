@@ -546,6 +546,33 @@ router.get('/:id', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GAP 8 — Recharge panier créateur depuis le snapshot
+// Retourne les items du snapshot sous la forme attendue par le localStorage boutique.
+// Permet au créateur de retrouver son panier depuis n'importe quel appareil.
+router.get('/:id/as-cart-items', authenticate, async (req, res, next) => {
+  try {
+    const data = await engine.getSharedCartForOwner(req.params.id, req.user.id);
+    if (!data) return res.status(404).json({ error: 'Panier introuvable' });
+
+    const cartItems = data.items.map(it => ({
+      product_id: it.product_id,
+      quantity: Number(it.quantity),
+      unit_price_kmf: Number(it.unit_price_kmf_snapshot),
+      product_name: it.product_name_snapshot,
+      product_image: it.product_image_snapshot,
+      product_category: it.product_category_snapshot,
+      line_total_kmf: Number(it.line_total_kmf_snapshot),
+    }));
+
+    res.json({
+      shared_cart_id: data.cart.id,
+      title: data.cart.title,
+      total_kmf: Number(data.cart.total_kmf_snapshot),
+      cart_items: cartItems,
+    });
+  } catch (err) { next(err); }
+});
+
 router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
   try {
     const cart = await settlement.openSettlement(req.params.id, req.user.id, {
@@ -570,6 +597,8 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
       {
         deliveryRelayId: req.body?.delivery_relay_id,
         acceptStockIssues: !!req.body?.accept_stock_issues,
+        // GAP 5 — Cas B doctrine v4.1 §5.7 : créateur compense le gap
+        creatorCoversGap: !!req.body?.accept_partial,
       }
     );
     res.json({
@@ -685,7 +714,12 @@ adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, nex
   try {
     const { rows } = await db.query(
       `UPDATE shared_carts SET status = 'expired', updated_at = NOW()
-        WHERE id = $1 AND status IN ('active', 'partially_funded')
+        WHERE id = $1
+          AND status IN (
+            'active', 'partially_funded',
+            'draft', 'commitment_open',
+            'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'
+          )
        RETURNING *`,
       [req.params.id]
     );

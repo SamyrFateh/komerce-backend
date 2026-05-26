@@ -80,6 +80,7 @@ function startOperationalCrons() {
   startSnapshotRetentionCron();
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
+  startNotHonoredCron(); // GAP 6 — doctrine v4.1 §7.3
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -167,6 +168,40 @@ function startJwtRevocationCleanupCron() {
   log.info({ interval_h: 1 }, 'JWT revocation cleanup cron scheduled');
 }
 
+// GAP 6 — doctrine v4.1 §7.3 : passe les engagements à not_honored quand la
+// fenêtre de règlement est expirée. Tourne toutes les heures. Idempotent.
+function startNotHonoredCron() {
+  const INTERVAL_MS = 60 * 60 * 1000; // 1h
+
+  const run = async () => {
+    try {
+      const db = require('../db');
+      const { rowCount } = await db.query(
+        `UPDATE shared_cart_commitments c
+            SET status = 'not_honored', updated_at = NOW()
+           FROM shared_carts sc
+          WHERE c.shared_cart_id = sc.id
+            AND c.status = 'locked_for_settlement'
+            AND (sc.metadata->>'settlement_opened_at')::timestamptz
+                + (COALESCE(sc.metadata->>'settlement_window_hours', '48')::int || ' hours')::interval
+                < NOW()
+            AND sc.status NOT IN ('converted_to_order', 'cancelled', 'expired', 'refunded')`
+      );
+      if (rowCount > 0) {
+        log.info({ marked_not_honored: rowCount }, 'shared_cart_commitments not_honored cron done');
+      }
+    } catch (err) {
+      log.error({ err }, 'not_honored cron failed');
+    }
+  };
+
+  // Première exécution 15 min après démarrage (laisser les migrations se stabiliser)
+  setTimeout(run, 15 * 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+
+  log.info({ interval_h: 1 }, 'Not-honored commitment cron scheduled');
+}
+
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
@@ -174,4 +209,5 @@ module.exports = {
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
   startJwtRevocationCleanupCron,
+  startNotHonoredCron,
 };

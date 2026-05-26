@@ -13,6 +13,14 @@ import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { refreshGroupBadge } from './b-group-view.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
+import {
+  PHONE_COUNTRIES,
+  buildPhoneSelect,
+  isValidLocalLength,
+  buildE164,
+  digitsOnly,
+  prettifyLocal,
+} from './b-phone.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -237,7 +245,24 @@ function ensureStyles() {
 .k-sm-btn-secondary{background:var(--sand);color:var(--text)}
 .k-sm-btn-secondary:hover{background:var(--sand-dark)}
 .k-sm-btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}
-.k-sm-btn-ghost:hover{background:var(--sand);color:var(--text)}}`;
+.k-sm-btn-ghost:hover{background:var(--sand);color:var(--text)}}
+/* Phone block inside modal */
+.k-sm-phone-row{display:flex;gap:8px;align-items:stretch}
+.k-sm-phone-sel{flex:0 0 auto;padding:11px 8px 11px 10px;border:2px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;font-family:var(--font);color:var(--text);
+  background:var(--white);outline:none;cursor:pointer;transition:border-color .2s;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.k-sm-phone-sel:focus{border-color:var(--violet)}
+.k-sm-phone-input{flex:1 1 auto;padding:11px 14px;border:2px solid var(--border);
+  border-radius:var(--radius-sm);font-size:15px;font-family:var(--font);color:var(--text);
+  background:var(--white);outline:none;box-sizing:border-box;transition:border-color .2s;
+  min-width:0}
+.k-sm-phone-input:focus{border-color:var(--violet)}
+.k-sm-phone-input.k-valid{border-color:#22c55e}
+.k-sm-phone-input.k-invalid{border-color:var(--red-danger-text)}
+.k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}`;
   document.head.appendChild(s);
 }
 
@@ -261,6 +286,11 @@ function closeModal(ov) {
 /* ── Étape A : formulaire init ──────────────────────────────────── */
 function promptInit(needsAuth) {
   return new Promise(resolve => {
+    // Construire les <option> du sélecteur pays depuis PHONE_COUNTRIES
+    const countryOpts = PHONE_COUNTRIES.map(c =>
+      `<option value="${c.code}">${c.flag} ${c.code}</option>`
+    ).join('');
+
     const ov = openModal(`
       <div class="k-sm-head">
         <span class="k-sm-title">🛒 Payer en groupe</span>
@@ -268,42 +298,115 @@ function promptInit(needsAuth) {
       </div>
       <p class="k-sm-hint">Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement, jusqu'au total du panier.</p>
       <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-title-f">Nom du panier (optionnel)</label>
+        <label class="k-sm-label" for="k-sm-title-f">Nom du panier <span style="font-weight:400;text-transform:none">(optionnel)</span></label>
         <input id="k-sm-title-f" class="k-sm-input" type="text"
           placeholder="Ex : Cadeau mariage Aïcha" maxlength="80" autocomplete="off">
       </div>
       ${needsAuth ? `
       <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-name-f">Votre prénom</label>
-        <input id="k-sm-name-f" class="k-sm-input" type="text" placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name">
+        <label class="k-sm-label" for="k-sm-name-f">Votre prénom <span style="color:var(--red-danger-text)">*</span></label>
+        <input id="k-sm-name-f" class="k-sm-input k-sm-name-input" type="text"
+          placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name"
+          pattern="[^\d]{2,}" required>
       </div>
       <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-phone-f">Votre numéro WhatsApp</label>
-        <input id="k-sm-phone-f" class="k-sm-input" type="tel" placeholder="+269… ou +33…" maxlength="20" autocomplete="tel">
+        <label class="k-sm-label" for="k-sm-phone-input">Votre numéro WhatsApp <span style="color:var(--red-danger-text)">*</span></label>
+        <div class="k-sm-phone-row">
+          <select id="k-sm-phone-sel" class="k-sm-phone-sel" aria-label="Indicatif pays">
+            ${countryOpts}
+          </select>
+          <input id="k-sm-phone-input" class="k-sm-phone-input" type="tel"
+            inputmode="numeric" autocomplete="tel"
+            placeholder="321 12 34">
+        </div>
       </div>` : ''}
       <p class="k-sm-err" id="k-sm-err"></p>
-      <button class="k-sm-btn" id="k-sm-submit">Créer le panier →</button>`);
+      <button class="k-sm-btn" id="k-sm-submit" disabled>Créer le panier →</button>`);
 
     const errEl = ov.querySelector('#k-sm-err');
-    const btn = ov.querySelector('#k-sm-submit');
+    const btn   = ov.querySelector('#k-sm-submit');
+    const titleInput = ov.querySelector('#k-sm-title-f');
+    const nameInput  = ov.querySelector('#k-sm-name-f');
+
+    // ── Validation phone via b-phone ───────────────────────────────
+    let currentE164 = '';
+    let phoneValid  = !needsAuth; // si auth pas requise, phone non bloquant
+
+    if (needsAuth) {
+      const phoneCtrl = buildPhoneSelect(
+        'k-sm-phone-sel',
+        'k-sm-phone-input',
+        '+269',
+        (e164, isValid) => {
+          currentE164 = e164;
+          phoneValid  = isValid;
+          const inputEl = ov.querySelector('#k-sm-phone-input');
+          if (inputEl && digitsOnly(inputEl.value).length > 0) {
+            inputEl.classList.toggle('k-valid',   isValid);
+            inputEl.classList.toggle('k-invalid', !isValid);
+          } else {
+            inputEl?.classList.remove('k-valid', 'k-invalid');
+          }
+          updateSubmit();
+          if (isValid) errEl.textContent = '';
+        }
+      );
+
+      // ── Validation prénom (letters only, min 2 chars) ─────────
+      nameInput?.addEventListener('input', () => {
+        updateSubmit();
+        if (nameInput.value.trim().length > 0) {
+          errEl.textContent = '';
+        }
+      });
+    }
+
+    function updateSubmit() {
+      if (!needsAuth) {
+        btn.disabled = false;
+        return;
+      }
+      const nameOk  = (nameInput?.value.trim().length >= 2) && !/\d/.test(nameInput.value);
+      btn.disabled  = !(nameOk && phoneValid);
+    }
+
+    // Activer le bouton dès que le titre est saisi (si pas auth requise)
+    if (!needsAuth) {
+      btn.disabled = false;
+    }
 
     btn.addEventListener('click', () => {
-      const title = (ov.querySelector('#k-sm-title-f')?.value || '').trim();
-      const name = (ov.querySelector('#k-sm-name-f')?.value || '').trim();
-      const phone = (ov.querySelector('#k-sm-phone-f')?.value || '').trim();
+      if (btn.disabled) return;
+      const title = (titleInput?.value || '').trim();
+      const name  = (nameInput?.value  || '').trim();
 
       if (needsAuth) {
-        if (!name) { errEl.textContent = 'Prénom requis.'; return; }
-        if (!phone || !/^\+?[\d\s\-]{8,20}$/.test(phone)) {
-          errEl.textContent = 'Numéro invalide (ex: +26932…)'; return;
+        // Double-vérification côté clic (défense en profondeur)
+        if (name.length < 2 || /\d/.test(name)) {
+          errEl.textContent = 'Prénom invalide (lettres uniquement, 2 caractères minimum).';
+          nameInput?.focus();
+          return;
+        }
+        if (!phoneValid) {
+          const country = PHONE_COUNTRIES.find(c => c.code === ov.querySelector('#k-sm-phone-sel')?.value);
+          errEl.textContent = country
+            ? `Numéro ${country.name} invalide — attendu : ${country.ph}`
+            : 'Numéro de téléphone invalide.';
+          ov.querySelector('#k-sm-phone-input')?.focus();
+          return;
         }
       }
+
+      errEl.textContent = '';
       closeModal(ov);
-      resolve({ title, name, phone });
+      resolve({ title, name, phone: currentE164 || null });
     });
 
     ov.querySelector('.k-sm-close').addEventListener('click', () => { closeModal(ov); resolve(null); });
-    ov.querySelector('#k-sm-title-f')?.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+    titleInput?.addEventListener('keydown', e => { if (e.key === 'Enter' && !btn.disabled) btn.click(); });
+
+    // Focus initial
+    setTimeout(() => (titleInput || nameInput)?.focus(), 80);
   });
 }
 

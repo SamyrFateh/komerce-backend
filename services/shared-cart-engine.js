@@ -505,7 +505,12 @@ async function startContribution(token, contributorInfo) {
     const cart = cartRows[0];
 
     // 2. Vérifier statut
-    if (!['active', 'partially_funded'].includes(cart.status)) {
+    const PAYMENT_ELIGIBLE_STATUSES = [
+      'active', 'partially_funded',
+      // Statuts v4 (migration 074) — settlement ouvert
+      'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize',
+    ];
+    if (!PAYMENT_ELIGIBLE_STATUSES.includes(cart.status)) {
       throw new Error(`Ce panier n'accepte plus de contributions (statut : ${cart.status})`);
     }
     if (new Date(cart.expires_at) < new Date()) {
@@ -513,7 +518,7 @@ async function startContribution(token, contributorInfo) {
     }
 
     // 3. Validation contributeur
-    const { name, email, phone, amountKmf, amountPaid, currency, message, fxRate } = contributorInfo;
+    const { name, email, phone, amountKmf, amountPaid, currency, message, fxRate, commitmentId } = contributorInfo;
     if (!name || !email) throw new Error('Nom et email du contributeur requis');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email invalide');
 
@@ -528,18 +533,18 @@ async function startContribution(token, contributorInfo) {
       throw new Error(`Le panier ne nécessite plus que ${cart.remaining_kmf} KMF (votre contribution : ${amount} KMF)`);
     }
 
-    // 4. Créer la contribution
+    // 4. Créer la contribution — commitment_id lié si engagement verrouillé présent
     const { rows: contribRows } = await client.query(
       `INSERT INTO shared_cart_contributions (
          shared_cart_id, contributor_name, contributor_email, contributor_phone,
          amount_kmf, amount_paid, currency_paid, fx_rate_used,
-         status, message
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)
+         status, message, commitment_id
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10)
        RETURNING *`,
       [
         cart.id, name.trim(), email.trim().toLowerCase(), phone || null,
         amount, amountPaid, currency || 'EUR', fxRate || null,
-        message || null,
+        message || null, commitmentId || null,
       ]
     );
     const contribution = contribRows[0];
@@ -733,7 +738,8 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     if (!cartRows.length) throw new Error('Panier partagé introuvable ou non autorisé');
     const cart = cartRows[0];
 
-    if (!['active', 'partially_funded', 'fully_funded'].includes(cart.status)) {
+    if (!['active', 'partially_funded', 'fully_funded',
+          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
       throw new Error(`Impossible de finaliser un panier au statut ${cart.status}`);
     }
     if (new Date(cart.expires_at) < new Date()) {
@@ -743,16 +749,20 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       throw new Error('Ce panier est déjà finalisé');
     }
 
-    // P0 stabilisation : ne pas créer de commande incomplète.
-    // Tant que le flux cash "mixed_shared_cart_cash" n'est pas industrialisé,
-    // la conversion n'est autorisée que lorsque le panier est entièrement financé.
     const prepaidKmf = r(cart.contributed_kmf);
     const totalKmf = r(cart.total_kmf_snapshot);
     const remainingCashKmf = Math.max(0, totalKmf - prepaidKmf);
 
     if (totalKmf <= 0) throw new Error('Total panier invalide');
-    if (remainingCashKmf > 0 || cart.status !== 'fully_funded') {
-      throw new Error('Impossible de finaliser : le panier partagé n\'est pas encore entièrement financé');
+
+    // Doctrine v4.1 §5.7 :
+    //   Cas A — tout payé → finalisation normale (confirmPaymentCycle)
+    //   Cas B — créateur compense le gap → options.creatorCoversGap = true requis
+    //   Cas C — créateur réduit le panier → géré côté items avant d'appeler finalize
+    if (remainingCashKmf > 0 && !options.creatorCoversGap) {
+      throw new Error(
+        `Il reste ${remainingCashKmf} KMF à financer. Passez creatorCoversGap=true si vous compensez la différence.`
+      );
     }
 
     // 2. Charger les items snapshot
@@ -882,8 +892,8 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
          'mixed_shared_cart_cash', 'pending',
          NULL, $9,
          'pending',
-         $10, $11, 0,
-         $12, $13, $14
+         $10, $11, $12,
+         $13, $14, $15
        )
        RETURNING *`,
       [
@@ -892,6 +902,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         totalKmf, totalEur,
         pickupCode,
         sharedCartId, prepaidKmf,
+        remainingCashKmf,
         routing.destination_island,
         routing.routing_mode,
         routing.transit_hub,
@@ -918,25 +929,30 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       );
     }
 
-    // 7. Panier 100% financé -> cycle central paiement + stock
-    const cycleResult = await confirmPaymentCycle({
-      orderId: order.id,
-      actor: { id: userId, role: 'system' },
-      source: 'shared_cart_full_payment',
-      dbClient: client,
-      note: 'Paiement intégral via panier partagé',
-    });
+    // 7. Cycle paiement + stock uniquement si 100 % financé (cas A)
+    //    Cas B (creatorCoversGap=true) : la commande reste en pending jusqu'à
+    //    ce que le créateur règle le solde — confirmPaymentCycle sera appelé
+    //    séparément lors de ce règlement.
+    if (remainingCashKmf === 0) {
+      const cycleResult = await confirmPaymentCycle({
+        orderId: order.id,
+        actor: { id: userId, role: 'system' },
+        source: 'shared_cart_full_payment',
+        dbClient: client,
+        note: 'Paiement intégral via panier partagé',
+      });
 
-    if (!cycleResult.success && !cycleResult.noop) {
-      throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
-    }
+      if (!cycleResult.success && !cycleResult.noop) {
+        throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
+      }
 
-    if (cycleResult.stockBlocked) {
-      throw new Error(JSON.stringify({
-        code: 'stock_issues',
-        message: 'Stock insuffisant pour finaliser le panier partagé',
-        items: cycleResult.insufficientItems,
-      }));
+      if (cycleResult.stockBlocked) {
+        throw new Error(JSON.stringify({
+          code: 'stock_issues',
+          message: 'Stock insuffisant pour finaliser le panier partagé',
+          items: cycleResult.insufficientItems,
+        }));
+      }
     }
 
     // 8. Marquer le panier comme converti
@@ -984,7 +1000,9 @@ async function cancelSharedCart(sharedCartId, userId, reason) {
     if (!rows.length) throw new Error('Panier introuvable ou non autorisé');
     const cart = rows[0];
 
-    if (!['active', 'partially_funded', 'fully_funded'].includes(cart.status)) {
+    if (!['active', 'partially_funded', 'fully_funded',
+          'draft', 'commitment_open',
+          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
       throw new Error(`Impossible d'annuler un panier au statut ${cart.status}`);
     }
 
