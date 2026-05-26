@@ -22,14 +22,27 @@ Pour les autres services (helpers locaux, services périphériques), pas de cont
 | Service | Domaine | Statut | Consommateurs |
 |---|---|---|---|
 | `order-status-machine.js` | Cycle de vie commande | Source de vérité absolue | Toutes routes mutantes commande |
-| `order-payment-confirmation.js` | Cycle paiement → stock | Point d'entrée unique paiement | `payments.js`, `cash.js`, `wallet.js`, `shared-cart`, `collective-payments` |
+| `order-payment-confirmation.js` | Cycle paiement → stock | Point d'entrée unique paiement | `payments.js`, `cash.js`, `wallet.js`, `shared-cart` |
 | `wallet-service.js` | Wallet client / avoirs | Argent client — critique | `routes/wallet.js`, `payments.js`, annulations, refunds |
 | `pricing-engine.js` | Pricing 4 niveaux + decision sourcing | Doctrine économique | `routes/pricing.js`, dashboards admin, sourcing |
 | `routing.js` | Routage logistique | Décision île à partir du relais | `orders/create.js`, parcels |
 | `parcel-security.js` | Codes externes, sceau, intégrité poids | Sécurité colis | `routes/parcels.js`, `parcel-api-v2.js`, scans |
 | `shared-cart-engine.js` | Panier partagé MVP | Argent + commande | `routes/shared-cart.js`, webhook Stripe partagé |
-| `collective-workspace-engine.js` | Workspace collectif | Argent + commande | `routes/collective-workspaces.js` |
-| `collective-payment-orchestrator.js` | Orchestration paiement collectif | Argent + commande + Stripe | `routes/collective-payments.js`, webhook collectif |
+| ~~`collective-workspace-engine.js`~~ | ~~Workspace collectif~~ | 🪦 **TOMBSTONE** — PR #486 | Ne pas étendre. Routes répondent 410. |
+| ~~`collective-payment-orchestrator.js`~~ | ~~Orchestration paiement collectif~~ | 🪦 **TOMBSTONE** — no-op | Ne pas étendre. Cron no-op. |
+
+> **Note A-BE-07 (2026-05-26)** : les deux services collectifs legacy sont déclassés depuis PR #486. Voir STATUS.md §WORKSPACE-DECOMMISSION. Ils ne doivent plus être étendus ni maintenus. Leurs sections de contrat sont conservées ci-dessous à titre historique uniquement.
+
+---
+
+## 2b. Legacy tombstone — ne pas étendre
+
+Les services suivants sont désactivés. Leur code est conservé pour la maintenance d'urgence (`admin-collective-repairs.js`) mais aucune feature ne doit y être ajoutée.
+
+| Service | Raison du tombstone | Maintenance |
+|---|---|---|
+| `collective-workspace-engine.js` | Remplacé par panier partagé boutique-first (PR #486) | Importé uniquement par `collective-stock-reservation-service.js` (repair admin dry_run) |
+| `collective-payment-orchestrator.js` | No-op complet. `startExpirationCron` = no-op. | Aucune |
 
 ---
 
@@ -56,7 +69,7 @@ module.exports = {
 ```js
 await transitionOrderStatus({
   orderId,        // UUID — requis
-  targetStatus,   // ENUM order_status — requis
+  newStatus,      // ENUM order_status — requis  [⚠️ A-BE-02 fix 2026-05-26 : était "targetStatus" dans la doc, le code attend "newStatus"]
   source,         // 'patch' | 'scan' | 'system' | 'stripe_webhook'
                   // | 'cash_confirm' | 'wallet_full_payment'
                   // | 'shared_cart_full_payment' | 'collective_payment'

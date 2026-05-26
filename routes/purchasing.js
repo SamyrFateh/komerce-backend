@@ -624,6 +624,23 @@ router.post('/:order_id/confirm', ...guard, async (req, res, next) => {
       return res.status(400).json({ error: 'purchase_order_id obligatoire' });
     }
 
+    // A-BE-14 (2026-05-26) : vérifier le statut courant avant UPDATE.
+    // La confirmation n'a de sens que pour une PO en attente ou notifiée.
+    // Confirmer une PO déjà reçue, partiellement reçue, annulée ou hub_received = erreur.
+    const { rows: [currentPo] } = await db.query(
+      'SELECT id, status FROM purchase_orders WHERE id = $1 AND order_id = $2',
+      [purchase_order_id, req.params.order_id]
+    );
+    if (!currentPo) return res.status(404).json({ error: 'Purchase order introuvable' });
+
+    const CONFIRMABLE_STATUSES = ['pending', 'notified'];
+    if (!CONFIRMABLE_STATUSES.includes(currentPo.status)) {
+      return res.status(409).json({
+        error: `Impossible de confirmer une PO au statut "${currentPo.status}". Statuts autorisés : pending, notified.`,
+        current_status: currentPo.status,
+      });
+    }
+
     const { rows: [po] } = await db.query(`
       UPDATE purchase_orders
       SET
@@ -794,9 +811,14 @@ router.delete('/po/:po_id', ...guard, async (req, res, next) => {
     );
     if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
 
-    if (po.status === 'hub_received' && !forceDelete) {
+    // A-BE-13 (2026-05-26) : bloquer l'annulation sur tous les statuts de réception,
+    // pas uniquement hub_received. La route de réception écrit 'received' et
+    // 'partially_received' — ces statuts doivent être également protégés.
+    const TERMINAL_RECEIVED = ['received', 'partially_received', 'hub_received'];
+    if (TERMINAL_RECEIVED.includes(po.status) && !forceDelete) {
       return res.status(409).json({
-        error: 'Impossible d\'annuler une PO déjà reçue au Hub.',
+        error: `Impossible d'annuler une PO au statut "${po.status}". Utilisez x-force-delete si l'annulation est intentionnelle.`,
+        current_status: po.status,
       });
     }
 

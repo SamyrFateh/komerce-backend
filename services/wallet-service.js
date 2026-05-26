@@ -280,13 +280,23 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
 
 // ── Checkout reversal : retirer wallet d'une commande ───────────────────────
 async function removeFromOrder(client, { orderId }) {
+  // A-BE-12 (2026-05-26) : SELECT avec FOR UPDATE et filtre reversed_at IS NULL.
+  // Sans FOR UPDATE, deux appels parallèles lisent les mêmes lignes et peuvent
+  // recréditer deux fois les mêmes lots (race condition concurrente).
+  // Le filtre IS NULL évite de retraiter des consommations déjà reversées.
   const cRes = await client.query(`
     SELECT wc.*, wl.wallet_id
     FROM wallet_consumptions wc
     JOIN wallet_credit_lots wl ON wl.id = wc.credit_lot_id
     WHERE wc.order_id = $1
+      AND wc.reversed_at IS NULL
+    FOR UPDATE
   `, [orderId]);
-  if (!cRes.rows.length) throw new Error('Aucun crédit wallet sur cette commande');
+
+  // No-op idempotent : toutes les consommations sont déjà reversées
+  if (!cRes.rows.length) {
+    return { transaction: null, reversed_kmf: 0, noop: true };
+  }
 
   const walletId = cRes.rows[0].wallet_id;
   let totalReversed = 0;

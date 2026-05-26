@@ -1040,7 +1040,10 @@ module.exports = {
   incrementViewCount,
   startContribution,
   attachStripeSession,
-  confirmContributionFromStripe,
+  // confirmContributionFromStripe — SUPPRIMÉ (A-BE-01/08, 2026-05-26)
+  // Le webhook Stripe utilise confirmContributionFromStripeSafely depuis shared-cart-financial-guard.js.
+  // L'ancien export est conservé en interne mais ne doit plus être appelé directement.
+  // grep anti-régression : grep -rn "confirmContributionFromStripe[^S]" routes/ services/ bootstrap/
   markContributionFailed,
   convertSharedCartToOrder,
   cancelSharedCart,

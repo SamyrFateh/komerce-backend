@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅)
+> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -401,6 +401,69 @@ P0 runtime verdict: PASS (tous les checks validés)
 **Conditionnel scale-out** : SEC-1b si multi-instance strict avant `printTokens` Map.
 
 **Backlog post go-live** : BASKETS-1 (alerte divergence prix), N4 (JWT révocation).
+
+---
+
+---
+
+## Audit backend consolidé — 2026-05-26
+
+> Source : audit ChatGPT (5 passes) + vérification croisée code réel par Claude (2026-05-26).
+> Périmètre : shared-cart, wallet, purchasing, paiements Stripe, refunds, relay-dashboard, tests, migrations, CONTRACTS.md.
+> Verdict global : backend non cassé, corrections ciblées avant ouverture large.
+
+### Findings vérifiés et confirmés
+
+| ID | Zone | Fichier(s) | Sévérité | Statut | Verdict code |
+|---|---|---|---|---|---|
+| A-BE-01 / A-BE-08 | shared-cart | `services/shared-cart-engine.js` | 🔴 Haute | ✅ Fait 2026-05-26 | `confirmContributionFromStripe` retirée de `module.exports`. Fonction conservée en interne. grep anti-régression dans le commentaire. |
+| A-BE-13 | purchasing | `routes/purchasing.js` | 🔴 Haute | ✅ Fait 2026-05-26 | `DELETE /po/:po_id` bloque désormais `['received','partially_received','hub_received']`. Réponse 409 avec `current_status`. |
+| A-BE-02 | docs / machine statut | `docs/CONTRACTS.md`, `services/order-status-machine.js` | 🟠 Haute | ✅ Fait 2026-05-26 | CONTRACTS.md aligné sur `newStatus` avec note de correction datée. |
+| A-BE-11 | paiements Stripe | `routes/payments.js` | 🟠 Haute | ✅ Fait 2026-05-26 | Réutilisation `stripe_payment_id` existant si état réutilisable. Idempotency key stable `order_pi_${order.id}` sur création. |
+| A-BE-03 | collective legacy | `server.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — webhook collectif monté ligne 70, routes collective-workspaces/collective-payments lignes 143-147, `startExpirationCron` ligne 150. Surface runtime no-op non nettoyée. |
+| A-BE-18 | migrations / runtime | `routes/relay-dashboard.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — `ensureRelayTables()` crée tables + index au chargement du module (lignes 29-67, appelé immédiatement ligne 67). Tables `order_incidents` et `order_comments` hors migrations versionnées. |
+| A-BE-04 | auth guest / téléphone | `middleware/auth-guest.js` | 🟠 Moyenne | ⏳ À corriger | Confirmé — pas de `utils/phone.js`, pas de `normalizePhone` dans le codebase. Normalisation front/back incohérente. |
+| A-BE-16 | tests | `tests/unit/`, `tests/integration/` | 🟡 Moyenne | ⏳ À corriger | Confirmé — aucun test pour `shared-cart-financial-guard`, refund queue, `paid_not_counted`, `mark-refunded`, flow `fully_funded`. |
+| A-BE-14 | purchasing | `routes/purchasing.js` | 🟠 Moyenne | ✅ Fait 2026-05-26 | `POST /:order_id/confirm` vérifie le statut courant avant UPDATE. Retourne 409 si hors `['pending','notified']`. |
+| A-BE-06 | refunds | `services/refund-service.js` | 🟡 Moyenne | ✅ Fait 2026-05-26 | `processRefundWithFallback` aligné sur modèle `pending → completed`. INSERT en pending avant Stripe. ON CONFLICT DO NOTHING + UPDATE final. |
+| A-BE-07 | docs | `docs/CONTRACTS.md` | 🟡 Moyenne | ✅ Fait 2026-05-26 | CONTRACTS.md §2 : collective legacy biffé + section "Legacy tombstone — ne pas étendre" ajoutée. |
+| A-BE-05 | architecture | `routes/purchasing.js` | 🟠 Moyenne | ⏳ Backlog post go-live | Confirmé — 800+ lignes mélangeant route HTTP, sourcing, notifications, réception hub, transition commande. |
+| A-BE-09 | shared-cart refund | `services/shared-cart-refund-queue.js` | 🟡 Moyenne | ⏳ Backlog post go-live | Confirmé — refund sur panier expiré/annulé repose sur traitement manuel admin. Pas de test de la queue. |
+| A-BE-10 | observabilité | routes / services divers | 🟢 Faible | ⏳ Backlog | Confirmé — quelques `log.error('msg:', err.message)` résiduels (second arg ignoré par Pino). |
+| A-BE-15 | scans / parcels | `routes/scans.js` | 🟠 Moyenne | ⏳ Backlog post go-live | Confirmé — ordre transite en `collected` avant sync colis post-commit. Crash entre commit et sync possible. |
+
+### Findings nuancés ou corrigés par le code réel
+
+| ID | Verdict | Détail |
+|---|---|---|
+| A-BE-12 | ⚠️ Risque réel, mécanisme mal décrit | L'audit dit "lit sans filtrer `reversed_at IS NULL`". En réalité le SELECT lit sans filtre, mais l'UPDATE final (ligne 308) filtre `AND reversed_at IS NULL`. Double recrédit impossible par l'UPDATE seul. **Le risque subsiste** sous forme de race condition concurrente (SELECT non verrouillé) si deux appels parallèles lisent avant que le premier ne commette. Correction recommandée : ajouter `FOR UPDATE` sur le SELECT initial. |
+| A-BE-17 | ✅ Faux positif — déjà résolu | STATUS.md §M1 et §M2 cochés ✅ avec confirmation en prod. Migrations appliquées manuellement sur Railway, contrainte `CHECK (balance_kmf >= 0)` et index analytiques actifs. |
+
+### Ordre de correction recommandé (issu de l'audit)
+
+```
+P0 — Avant ouverture large :
+  ✅ A-BE-01/08 — Export confirmContributionFromStripe supprimé + grep anti-régression (2026-05-26)
+  ✅ A-BE-13    — Annulation PO bloquée pour ['received','partially_received','hub_received'] (2026-05-26)
+  ✅ A-BE-14    — Confirmation manuelle PO limitée à ['pending','notified'], 409 sinon (2026-05-26)
+  ✅ A-BE-11    — Réutilisation stripe_payment_id + idempotency key order_pi_${order.id} (2026-05-26)
+  ✅ A-BE-02    — CONTRACTS.md aligné sur newStatus (2026-05-26)
+
+P1 — Avant ouverture large :
+  ✅ A-BE-12    — FOR UPDATE + filtre reversed_at IS NULL sur SELECT dans removeFromOrder() (2026-05-26)
+  ✅ A-BE-06    — processRefundWithFallback aligné sur modèle pending → completed (2026-05-26)
+  ✅ A-BE-07    — CONTRACTS.md : collectif legacy biffé + section tombstone ajoutée (2026-05-26)
+  ⏳ A-BE-03    — Ne plus démarrer startExpirationCron. Clarifier si routes 410 restent nécessaires.
+  ⏳ A-BE-04    — Créer utils/phone.js avec normalizePhone(raw, defaultCountry)
+  ⏳ A-BE-18    — Déplacer ensureRelayTables() dans une migration versionnée
+  ⏳ A-BE-16    — Créer tests/unit/shared-cart-financial-guard.test.js + tests/unit/shared-cart-refund-queue.test.js + tests/integration/shared-cart-flow.test.js
+
+P2 — Backlog post go-live :
+  ⏳ A-BE-05    — Extraire services/purchasing-trigger-service.js + purchasing-notification-service.js + purchasing-receive-service.js
+  ⏳ A-BE-09    — Tester explicitement refund queue pour expired/cancelled avec contributions
+  ⏳ A-BE-10    — Nettoyage logs Pino non structurés
+  ⏳ A-BE-15    — Ajouter job réparation ou sync colis dans la même transaction que collected
+```
 
 ---
 

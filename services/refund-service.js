@@ -99,10 +99,28 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
  *
  * P0 FIX : idempotency key stable partout (Stripe ET wallet fallback).
  * Avant le fix, le fallback utilisait Date.now() => jamais idempotent.
+ *
+ * A-BE-06 (2026-05-26) : INSERT pending AVANT l'appel Stripe, comme processRefund().
+ * Avant : INSERT seulement à la fin → si Stripe rembourse et que l'INSERT crash,
+ * argent remboursé sans trace DB.
+ * Maintenant : INSERT pending → Stripe/wallet → UPDATE completed.
  */
 async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, refundType, reason, initiatedBy, parcelId) {
   let refundMethod, stripeRefundId = null, walletTxId = null;
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
+
+  // A-BE-06 : INSERT refund en 'pending' AVANT tout appel Stripe ou wallet.
+  // ON CONFLICT DO NOTHING garantit l'idempotence sur retry.
+  const { rows: [pendingRefund] } = await dbClient.query(
+    `INSERT INTO refunds
+       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+        stripe_refund_id, store_credit_id, reason, initiated_by, status)
+     VALUES ($1,$2,$3,$4,'pending_stripe',NULL,NULL,$5,$6,'pending')
+     ON CONFLICT DO NOTHING
+     RETURNING id`,
+    [order.id, amountKmf, amountEur, refundType, reason || 'Annulation', initiatedBy]
+  );
+  const refundRowId = pendingRefund?.id;
 
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
     const amountCents = Math.round(amountEur * 100);
@@ -123,7 +141,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
       stripeRefundId = stripeRefund.id;
       refundMethod   = 'stripe';
     } catch (stripeErr) {
-      log.error('[refund-service] Stripe failed, using wallet:', stripeErr.message);
+      log.error({ err: stripeErr }, '[refund-service] Stripe failed, using wallet fallback');
       refundMethod = 'wallet_credit';
     }
   }
@@ -143,18 +161,27 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
     walletTxId = result.transaction.id;
   }
 
-  await dbClient.query(
-    `INSERT INTO refunds
-       (order_id, amount_kmf, amount_eur, refund_type, refund_method,
-        stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'completed',NOW())`,
-    [
-      order.id, amountKmf, amountEur,
-      refundType, refundMethod,
-      stripeRefundId, walletTxId,
-      reason || 'Annulation', initiatedBy,
-    ]
-  );
+  // Mettre à jour l'enregistrement refund avec les IDs réels + statut 'completed'
+  if (refundRowId) {
+    await dbClient.query(
+      `UPDATE refunds
+          SET refund_method = $1, stripe_refund_id = $2, store_credit_id = $3,
+              status = 'completed', completed_at = NOW()
+        WHERE id = $4`,
+      [refundMethod, stripeRefundId, walletTxId, refundRowId]
+    );
+  } else {
+    // Ligne déjà créée par un retry précédent (ON CONFLICT DO NOTHING) —
+    // mettre à jour si elle est encore en 'pending'
+    await dbClient.query(
+      `UPDATE refunds
+          SET refund_method = $1, stripe_refund_id = COALESCE($2, stripe_refund_id),
+              store_credit_id = COALESCE($3, store_credit_id),
+              status = 'completed', completed_at = COALESCE(completed_at, NOW())
+        WHERE order_id = $4 AND refund_type = $5 AND status = 'pending'`,
+      [refundMethod, stripeRefundId, walletTxId, order.id, refundType]
+    );
+  }
 
   return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
 }

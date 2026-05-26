@@ -59,8 +59,36 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
       return res.status(400).json({ error: 'Commande déjà payée' });
     }
 
+    // A-BE-11 (2026-05-26) — Idempotence PaymentIntent.
+    // Si un intent existe déjà pour cette commande, on le réutilise.
+    // Évite la création de multiples intents sur double-clic ou retry réseau.
+    if (order.stripe_payment_id) {
+      try {
+        const existing = await stripe.paymentIntents.retrieve(order.stripe_payment_id);
+        // Réutiliser uniquement si l'intent n'est pas dans un état terminal
+        const REUSABLE_STATES = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+        if (REUSABLE_STATES.includes(existing.status)) {
+          log.info(`[PAYMENTS] PaymentIntent existant réutilisé : ${existing.id} (status: ${existing.status})`);
+          return res.json({
+            client_secret:   existing.client_secret,
+            amount_eur:      order.total_eur,
+            amount_cents:    existing.amount,
+            order_reference: order.reference,
+          });
+        }
+        // Sinon (succeeded, canceled…) on crée un nouvel intent ci-dessous
+        log.warn(`[PAYMENTS] PaymentIntent ${existing.id} dans état non réutilisable (${existing.status}) — nouvel intent créé`);
+      } catch (retrieveErr) {
+        // Intent introuvable chez Stripe (supprimé, mauvaise clé…) → on recrée
+        log.warn({ err: retrieveErr }, `[PAYMENTS] Échec retrieve PaymentIntent ${order.stripe_payment_id} — nouvel intent créé`);
+      }
+    }
+
     // Stripe travaille en centimes
     const amount_cents = Math.round(parseFloat(order.total_eur) * 100);
+
+    // Idempotency key stable : garantit qu'un double appel simultané crée un seul intent
+    const idempotencyKey = `order_pi_${order.id}`;
 
     const intent = await stripe.paymentIntents.create({
       amount:   amount_cents,
@@ -71,7 +99,7 @@ router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), asy
         komerce:         'true',
       },
       description: `Komerce — Commande ${order.reference}`,
-    });
+    }, { idempotencyKey });
 
     // Stocker l'intent ID sur la commande
     await db.query(
