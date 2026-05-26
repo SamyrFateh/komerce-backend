@@ -196,12 +196,13 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
     }
 
     const printToken = crypto.randomBytes(24).toString('hex');
-    printTokens.set(printToken, {
-      orderId:    result.body.order_id,
-      code:       result.body.code,
-      payer_name: result.body.payer_name,
-      expires_at: Date.now() + 2 * 60 * 1000,
-    });
+    // SEC-1b : INSERT en DB (pickup_print_tokens) — survit aux redémarrages + multi-instance (2026-05-26)
+    await db.query(
+      `INSERT INTO pickup_print_tokens (token, order_id, code, payer_name, expires_at)
+       VALUES ($1, $2, $3, $4, NOW() + INTERVAL '2 minutes')
+       ON CONFLICT (token) DO NOTHING`,
+      [printToken, result.body.order_id, result.body.code, result.body.payer_name || null]
+    );
 
     res.json({
       success:     true,
@@ -232,17 +233,9 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
   } catch (err) { next(err); }
 });
 
-// Stockage mémoire temporaire des tokens d'impression
-// TODO : migrer vers Redis quand on passera multi-instance
-const printTokens = new Map();
-
-// GC des tokens expirés toutes les 5 min
-setInterval(() => {
-  const now = Date.now();
-  for (const [token, data] of printTokens.entries()) {
-    if (data.expires_at < now) printTokens.delete(token);
-  }
-}, 5 * 60 * 1000);
+// SEC-1b : printTokens Map in-memory supprimée (2026-05-26).
+// Les tokens d'impression sont persistés dans pickup_print_tokens (migration 070).
+// Le nettoyage est assuré par startPickupTokenCleanupCron (bootstrap/crons.js).
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 2. GET /receipt/:orderId?token=... — HTML imprimable du reçu
@@ -258,14 +251,17 @@ router.get('/receipt/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
       return res.status(400).send('<h1>Token manquant</h1>');
     }
 
-    const data = printTokens.get(token);
-    if (!data || data.orderId !== orderId) {
+    // SEC-1b : lecture depuis DB (pickup_print_tokens) (2026-05-26)
+    const { rows: [tokenData] } = await db.query(
+      `DELETE FROM pickup_print_tokens
+        WHERE token = $1 AND order_id = $2 AND expires_at > NOW()
+        RETURNING order_id, code, payer_name, expires_at`,
+      [token, orderId]
+    );
+    if (!tokenData) {
       return res.status(403).send('<h1>Token invalide ou expiré</h1>');
     }
-    if (data.expires_at < Date.now()) {
-      printTokens.delete(token);
-      return res.status(410).send('<h1>Token expiré (2 min). Relancez l\'encaissement.</h1>');
-    }
+    const data = { orderId: tokenData.order_id, code: tokenData.code, payer_name: tokenData.payer_name };
 
     // Récupérer les détails de la commande pour le reçu
     const { rows: [order] } = await db.query(`

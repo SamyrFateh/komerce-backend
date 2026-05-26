@@ -257,7 +257,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est prête, remise au transitaire à Dubai.`,
             'shipped', order_id
-          ).catch(err => log.error('SMS shipped error:', err.message));
+          ).catch(err => log.error({ err }, 'SMS shipped error'));
           sms_triggered = true;
         }
       }
@@ -274,7 +274,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est embarquée sur le bateau ! 🚢 Arrivée estimée 3–5 semaines.`,
             'in_transit', order_id
-          ).catch(err => log.error('SMS in_transit error:', err.message));
+          ).catch(err => log.error({ err }, 'SMS in_transit error'));
           sms_triggered = true;
         }
       }
@@ -294,7 +294,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
             fullOrder.recipient_phone,
             `Komerce · Bonjour ${fullOrder.full_name}, votre colis est disponible au ${fullOrder.relais_name} (${fullOrder.relais_address}). Code de retrait : ${fullOrder.pickup_code}`,
             'available', order_id
-          ).catch(err => log.error('SMS relais error:', err.message));
+          ).catch(err => log.error({ err }, 'SMS relais error'));
           sms_triggered = true;
         }
       }
@@ -309,7 +309,7 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
           `Komerce · Anomalie scan sur ${order.reference} à l'étape "${step}". Notes : ${notes || 'aucune'}`,
           'anomaly_alert', order_id
         ))
-      ).catch(err => log.error('SMS anomaly error:', err.message));
+      ).catch(err => log.error({ err }, 'SMS anomaly error'));
     }
 
     res.status(201).json({
@@ -548,7 +548,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
         fullOrder.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name}. Merci pour votre confiance !`,
         'collected', order.id
-      ).catch(err => log.error('SMS collect error:', err.message));
+      ).catch(err => log.error({ err }, 'SMS collect error'));
     }
 
     res.json({
@@ -761,20 +761,19 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
       ]
     );
 
-    await client.query('COMMIT');
-
-    // Parcel sync — AFTER commit (met à jour les statuts des colis vers 'collected').
-    // La machine a déjà écrit order_status_history dans la transaction ci-dessus.
-    // safeSyncScanToParcels appellera transitionOrderStatus(source='scan') qui
-    // retournera noop (statut identique) — aucune double écriture dans order_status_history.
-    // C'est le comportement attendu : parcelSync met à jour PARCELS, pas orders.
+    // A-BE-15 : sync colis dans la même transaction que collected (2026-05-26)
+    // safeSyncScanToParcels reçoit le client → atomique avec le COMMIT ci-dessous.
+    // transitionOrderStatus interne retourne noop (statut déjà collected) — zéro
+    // double écriture dans order_status_history. Seuls les parcels sont mis à jour.
     await safeSyncScanToParcels({
       order_id: order.id,
       step: 'collected',
       scan_id: scanRow?.id,
       scanned_by: req.user.id,
       notes: 'Retrait client via QR Code — token validé',
-    });
+    }, client);
+
+    await client.query('COMMIT');
 
     log.info(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
 
@@ -785,7 +784,7 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name || 'le destinataire'}. Merci pour votre confiance ! 🎉`,
         'collected',
         order.id
-      ).catch(err => log.error('SMS QR collect error:', err.message));
+      ).catch(err => log.error({ err }, 'SMS QR collect error'));
     }
 
     // Recalculer fidélité (non bloquant)
