@@ -24,8 +24,17 @@ function maskPhone(phone) {
 
 function publicCommitment(row) {
   return {
-    ...row,
+    id: row.id,
+    participant_name: row.participant_name,
     participant_phone: maskPhone(row.participant_phone),
+    amount_kmf: row.amount_kmf,
+    message: row.message,
+    status: row.status,
+    locked_at: row.locked_at,
+    withdrawn_at: row.withdrawn_at,
+    paid_at: row.paid_at,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
   };
 }
 
