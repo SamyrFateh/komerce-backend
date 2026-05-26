@@ -82,6 +82,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const autoDistributeRouter = require('../routes/auto-distribute-api');
   const hubMarkOrderedRouter = require('../routes/hub-mark-ordered');
   const sharesRouter = require('../routes/shares');
+  const sharedCartCashRouter = require('../routes/shared-cart-cash').router;
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
   const economicEngineRouter  = require('../routes/economic-engine');
   const adminFinanceConfig    = require('../routes/admin-finance-config');
@@ -141,6 +142,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/carriers',   carriersRouter);
   app.use('/api/wallet',     walletRouter);
   app.use('/api/payments',   paymentsRouter);
+  app.use('/api/shared-carts', sharedCartCashRouter);
   app.use('/api/scans',      scansRouter);
   app.use('/api/finance', (req, res) => {
     res.status(301).json({
