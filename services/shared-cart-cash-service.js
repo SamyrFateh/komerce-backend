@@ -133,12 +133,13 @@ async function confirmCashContribution(contributionId, actor = {}, body = {}) {
 
     const amount = r(contribution.amount_kmf);
     if (amount > r(cart.remaining_kmf)) {
-      await client.query(
+      const failedRes = await client.query(
         `UPDATE shared_cart_contributions
             SET status = 'failed', failed_at = NOW(),
                 metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
                 updated_at = NOW()
-          WHERE id = $1`,
+          WHERE id = $1
+          RETURNING *`,
         [contribution.id, JSON.stringify({ failure_reason: 'amount_exceeds_remaining_on_cash_confirmation', requires_manual_resolution: true })]
       );
       await event(client, cart.id, 'cash_contribution_rejected', { type: actor.role || 'agent_relais', id: actor.id || null }, {
@@ -146,7 +147,12 @@ async function confirmCashContribution(contributionId, actor = {}, body = {}) {
         amount_kmf: amount,
         remaining_kmf: cart.remaining_kmf,
       });
-      throw httpError(`Le panier ne nécessite plus que ${cart.remaining_kmf} KMF`, 409, 'amount_exceeds_remaining');
+      return {
+        contribution: failedRes.rows[0],
+        rejected: true,
+        error: `Le panier ne nécessite plus que ${cart.remaining_kmf} KMF`,
+        code: 'amount_exceeds_remaining',
+      };
     }
 
     const newContributed = r(cart.contributed_kmf) + amount;
