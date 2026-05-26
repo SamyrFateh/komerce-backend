@@ -22,7 +22,9 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   const adminCostComponentsRouter    = require('../routes/admin-cost-components');
   const categoriesRouter = require('../routes/categories');
   const adminBoutiqueCategoriesRouter = require('../routes/admin-boutique-categories');
+  const sharedCartV4PaymentsRouter = require('../routes/shared-cart-v4-payments').router;
 
+  app.use('/api/shared-carts', sharedCartV4PaymentsRouter);
   app.use('/api/transit-dashboard', transitDashRouter);
   app.use('/api/auth',       authRouter);
   app.use('/api/products',   productsRouter);
