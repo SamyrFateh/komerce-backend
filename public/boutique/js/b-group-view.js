@@ -209,7 +209,7 @@ function injectStyles() {
   border:1px solid var(--border);
   border-bottom:0;
   border-radius:24px 24px 0 0;
-  padding:24px 28px 10px;
+  padding:20px 28px 8px;
   box-shadow:0 18px 50px rgba(30,40,25,.08);
 }
 .k-group-view .k-group-header h2{
@@ -228,8 +228,8 @@ function injectStyles() {
   background:var(--white,#fff);
   border:1px solid var(--border);
   border-radius:0 0 24px 24px;
-  padding:22px 28px 28px;
-  margin:0 0 24px;
+  padding:20px 28px 22px;
+  margin:0 0 16px;
   box-shadow:0 18px 50px rgba(30,40,25,.08);
 }
 .k-group-view .k-group-card,
@@ -239,8 +239,8 @@ function injectStyles() {
   background:var(--white,#fff);
   border:1px solid var(--border);
   border-radius:24px;
-  padding:22px 28px;
-  margin:18px 0 0;
+  padding:20px 28px;
+  margin:12px 0 0;
   box-shadow:0 14px 42px rgba(30,40,25,.06);
 }
 .k-group-view .k-group-section-title{
@@ -263,7 +263,7 @@ function injectStyles() {
   border:1px dashed var(--border);
   border-radius:20px;
   padding:16px 18px;
-  margin:18px 0 0;
+  margin:12px 0 0;
   font-size:15px;
   box-shadow:0 10px 32px rgba(30,40,25,.04);
 }
@@ -322,7 +322,7 @@ function injectStyles() {
   #k-group-view.k-group-view{
     max-width:1240px!important;
     width:100%!important;
-    margin:24px auto 80px!important;
+    margin:8px auto 64px!important;
     padding:0 32px!important;
     box-sizing:border-box!important;
   }
@@ -350,7 +350,7 @@ function injectStyles() {
   #k-group-view.k-group-view{
     max-width:none!important;
     width:100%!important;
-    margin:22px auto 72px!important;
+    margin:12px auto 64px!important;
     padding:0 14px!important;
   }
 
