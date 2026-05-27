@@ -719,6 +719,188 @@ function injectStyles() {
   }
 }
 
+
+/* SAFE V2-C — condensation cockpit groupe */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    margin:-18px auto 44px!important;
+    padding:0 32px!important;
+  }
+
+  .k-group-cockpit{
+    grid-template-columns:minmax(600px,680px) minmax(300px,340px)!important;
+    gap:16px!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:12px 20px 7px!important;
+    border-radius:16px 16px 0 0!important;
+  }
+
+  .k-group-view .k-group-header h2{
+    font-size:21px!important;
+    margin:0 0 2px!important;
+    line-height:1.12!important;
+  }
+
+  .k-group-view .k-group-subhead{
+    font-size:13px!important;
+    line-height:1.25!important;
+  }
+
+  .k-group-view .k-group-progress-card{
+    padding:12px 20px 14px!important;
+    margin:0 0 8px!important;
+    border-radius:0 0 16px 16px!important;
+  }
+
+  .k-group-view .k-group-progress-card h3,
+  .k-group-view .k-group-progress-card strong{
+    margin-top:0!important;
+  }
+
+  .k-group-view .k-group-progress{
+    height:6px!important;
+    margin:7px 0!important;
+  }
+
+  .k-group-view .k-group-self-toggle{
+    margin:8px 0 0!important;
+    padding:9px 12px!important;
+    min-height:38px!important;
+    border-radius:14px!important;
+    font-size:13px!important;
+  }
+
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:12px 20px!important;
+    margin:8px 0 0!important;
+    border-radius:16px!important;
+  }
+
+  .k-group-view h3,
+  .k-group-view .k-group-section-title{
+    font-size:17px!important;
+    margin:0 0 8px!important;
+  }
+
+  .k-group-view .k-group-creator-actions{
+    gap:8px!important;
+  }
+
+  .k-group-view .k-group-btn{
+    min-height:38px!important;
+    padding:8px 12px!important;
+    font-size:13px!important;
+  }
+
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint{
+    margin:6px 0 0!important;
+    font-size:11.5px!important;
+    line-height:1.25!important;
+  }
+
+  .k-group-view hr{
+    margin:8px 0!important;
+  }
+
+  .k-group-view label{
+    font-size:12px!important;
+    margin-bottom:4px!important;
+  }
+
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea{
+    min-height:36px!important;
+    padding-top:7px!important;
+    padding-bottom:7px!important;
+    font-size:13px!important;
+  }
+
+  .k-group-side-panel{
+    top:84px!important;
+  }
+
+  .k-group-side-card{
+    padding:12px!important;
+    border-radius:16px!important;
+  }
+
+  .k-group-side-card + .k-group-side-card{
+    margin-top:8px!important;
+  }
+
+  .k-group-side-head{
+    margin-bottom:8px!important;
+  }
+
+  .k-group-side-head strong{
+    font-size:14px!important;
+  }
+
+  .k-group-side-head span{
+    font-size:11.5px!important;
+  }
+
+  .k-group-side-list{
+    gap:7px!important;
+  }
+
+  .k-group-side-item{
+    grid-template-columns:38px 1fr!important;
+    gap:8px!important;
+  }
+
+  .k-group-side-item img,
+  .k-group-side-item-fallback{
+    width:38px!important;
+    height:38px!important;
+    border-radius:10px!important;
+  }
+
+  .k-group-side-item-main strong{
+    font-size:12.5px!important;
+  }
+
+  .k-group-side-item-main span{
+    font-size:11.5px!important;
+    margin-top:2px!important;
+  }
+
+  .k-group-side-total{
+    margin-top:8px!important;
+    padding-top:8px!important;
+    font-size:12px!important;
+  }
+
+  .k-group-side-help ol{
+    margin-top:6px!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    margin:6px auto 48px!important;
+  }
+
+  .k-group-view .k-group-header,
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card,
+  .k-group-side-card{
+    padding:13px 14px!important;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
