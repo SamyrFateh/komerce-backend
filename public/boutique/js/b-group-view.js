@@ -22,6 +22,7 @@ import { showToast } from './b-cart-core.js';
 import { sanitize, fmt, apiGet, apiPost } from './b-utils.js';
 import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
 import { showBanner, hideBanner } from './b-group-banner.js';
+import { requireIdentity } from './b-identity.js';
 
 /* ── Token participant URL ─────────────────────────────────────── */
 export function detectParticipantToken() {
@@ -1286,6 +1287,29 @@ function injectStyles() {
   }
 }
 
+
+/* IDENTITY ENGAGEMENT — formulaire réduit montant + message */
+.k-group-identity-note{
+  background:rgba(239,125,95,.09);
+  border:1px solid rgba(239,125,95,.22);
+  border-radius:12px;
+  padding:8px 10px;
+  margin:6px 0 10px;
+}
+.k-group-identity-note strong{
+  display:block;
+  font-size:12.5px;
+  line-height:1.2;
+  color:var(--text);
+}
+.k-group-identity-note span{
+  display:block;
+  margin-top:2px;
+  font-size:11.5px;
+  line-height:1.3;
+  color:var(--text-muted);
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
@@ -1332,6 +1356,16 @@ function injectStyles() {
  * Collecte : nom + téléphone + montant indicatif
  * Aucun Stripe, aucun paiement.
  * ══════════════════════════════════════════════════════════════════ */
+
+function identityLabel(user) {
+  const name = user?.full_name || user?.name || user?.display_name || 'Client Komerce';
+  const phone = user?.phone || user?.whatsapp_phone || user?.whatsapp || '';
+  return {
+    name: String(name || '').trim(),
+    phone: String(phone || '').trim(),
+  };
+}
+
 function renderEngagementForm(token, cart, isCreator = false) {
   const meta = metaOf(cart);
   const lockedTotal = r(meta.locked_commitments_total_kmf || 0);
@@ -1364,13 +1398,9 @@ function renderEngagementForm(token, cart, isCreator = false) {
       ${splitHint}
       ${savedState}
       <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-name">Prénom / Nom</label>
-          <input id="k-ge-name" class="k-group-input" type="text" placeholder="Ex : Fatima Ali" maxlength="60" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
-        </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-phone">Téléphone (pour retrouver votre engagement)</label>
-          <input id="k-ge-phone" class="k-group-input" type="tel" placeholder="Ex : 0633000000" maxlength="20" autocomplete="tel" inputmode="tel" value="${sanitize(saved?.phone || '')}">
+        <div class="k-group-identity-note">
+          <strong>Identité sécurisée par OTP</strong>
+          <span>Votre numéro vérifié sera utilisé pour retrouver cet engagement. Vous pourrez utiliser un autre numéro si besoin.</span>
         </div>
         <div class="k-group-field">
           <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
@@ -1396,25 +1426,47 @@ function bindEngagementForm(el, token, cart, onSuccess) {
     const saved = el.querySelector('#k-ge-saved-state');
     if (fields) fields.hidden = false;
     if (saved) saved.hidden = true;
-    el.querySelector('#k-ge-name')?.focus();
+    el.querySelector('#k-ge-amount')?.focus();
   });
 
   el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
-    const name   = (el.querySelector('#k-ge-name')?.value || '').trim();
-    const phone  = (el.querySelector('#k-ge-phone')?.value || '').trim();
     const amount = Number(el.querySelector('#k-ge-amount')?.value);
     const msg    = (el.querySelector('#k-ge-msg')?.value || '').trim();
     const errEl  = el.querySelector('#k-ge-err');
     const btn    = el.querySelector('#k-ge-submit-btn');
 
     errEl.textContent = '';
-    if (!name)            { errEl.textContent = 'Prénom requis.'; return; }
-    if (!phone)           { errEl.textContent = 'Téléphone requis pour retrouver votre engagement.'; return; }
     if (!amount || amount < 500) { errEl.textContent = 'Minimum 500 KMF.'; return; }
 
-    btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
+    btn.disabled = true;
+    btn.textContent = '🔐 Vérification…';
 
     try {
+      const identity = await requireIdentity({
+        reason: 'participer au panier',
+        title: 'Sécuriser votre participation',
+        allowOtherPhone: true,
+      });
+
+      if (!identity) {
+        btn.disabled = false;
+        btn.textContent = '✋ Enregistrer mon engagement';
+        return;
+      }
+
+      const id = identityLabel(identity);
+      const name = id.name || 'Client Komerce';
+      const phone = id.phone;
+
+      if (!phone) {
+        errEl.textContent = 'Numéro vérifié introuvable. Réessayez avec un autre numéro.';
+        btn.disabled = false;
+        btn.textContent = '✋ Enregistrer mon engagement';
+        return;
+      }
+
+      btn.textContent = '⏳ Enregistrement…';
+
       const res = await apiPost(`/api/shared-carts/public/${token}/commitments`, {
         participant_name: name,
         participant_phone: phone,
@@ -1431,7 +1483,8 @@ function bindEngagementForm(el, token, cart, onSuccess) {
       onSuccess?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      btn.disabled = false; btn.textContent = '✋ Enregistrer mon engagement';
+      btn.disabled = false;
+      btn.textContent = '✋ Enregistrer mon engagement';
     }
   });
 }
