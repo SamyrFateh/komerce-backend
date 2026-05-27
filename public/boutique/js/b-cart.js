@@ -1138,7 +1138,13 @@ function renderSideCart() {
   // (--sc-offset / sc-open : plus utilisés depuis que .k-side-cart est en
   // position: fixed. La réserve de place est gérée par body.sc-reserve +
   // body:has(.k-side-cart.has-items) en CSS — voir boutique-desktop.css.)
-  if (!hasItems) return;
+  if (!hasItems) {
+    // Vider explicitement la liste DOM pour éviter les items fantômes
+    // si renderSideCart() est rappelé plus tard avec un panier de nouveau plein.
+    const itemsElEmpty = sc.querySelector('#k-sc-items');
+    if (itemsElEmpty) itemsElEmpty.innerHTML = '';
+    return;
+  }
 
   const qty = cartQty();
 

@@ -541,11 +541,11 @@ export async function startShareFlow(opts = {}) {
     const data = await createSharedCart(formData);
 
     // Doctrine v4.2 — N4-CLEAR
-    // Le backend signale que le panier boutique DB a été vidé atomiquement.
-    // On vide aussi le localStorage boutique pour rester cohérent.
-    if (data.clear_local_cart === true) {
-      clearCart();
-    }
+    // La création d'un panier partagé depuis la boutique vide toujours le panier local.
+    // On ne conditionne plus sur data.clear_local_cart (dépendance backend fragile) :
+    // si createSharedCart() n'a pas lancé d'exception, le panier DB a été vidé côté serveur,
+    // le localStorage doit l'être aussi — inconditionnellement.
+    clearCart();
 
     const title = formData.title || 'Panier groupe';
     const cart = {
