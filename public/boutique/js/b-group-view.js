@@ -196,10 +196,13 @@ function injectStyles() {
 
 
 .k-group-view{
-  max-width:900px;
-  margin:28px auto 80px;
-  padding:0 18px;
+  max-width:1180px;
+  margin:24px auto 80px;
+  padding:0 24px;
   box-sizing:border-box;
+}
+.k-group-view > *{
+  max-width:720px;
 }
 .k-group-view .k-group-header{
   background:var(--white,#fff);
@@ -278,7 +281,7 @@ function injectStyles() {
 }
 @media(min-width:1100px){
   .k-group-view{
-    max-width:920px;
+    max-width:1180px;
   }
 }
 @media(max-width:700px){
@@ -286,6 +289,9 @@ function injectStyles() {
     max-width:none;
     margin:22px auto 72px;
     padding:0 14px;
+  }
+  .k-group-view > *{
+    max-width:none;
   }
   .k-group-view .k-group-header{
     padding:20px 18px 8px;
