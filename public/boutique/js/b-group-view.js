@@ -1040,14 +1040,7 @@ export async function renderGroupView(opts = {}) {
   }
 
   bindCreatorActions(el, cart, shareUrl, cartId, refreshView);
-
-  showBanner({
-    title: cart.title,
-    expires_at: cart.expires_at,
-    status: cart.status,
-    contributed_kmf: cart.contributed_kmf,
-    total_kmf_snapshot: cart.total_kmf_snapshot,
-  });
+  hideBanner();
 
   if (isCartOpen) {
     // FIX — le callback reçoit freshCommitments (rafraîchi à chaque tick)
@@ -1055,13 +1048,6 @@ export async function renderGroupView(opts = {}) {
       const card = el.querySelector('#k-group-progress-card');
       if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshCommitments);
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
-      showBanner({
-        title: fresh.cart?.title,
-        expires_at: fresh.cart?.expires_at,
-        status: fresh.cart?.status,
-        contributed_kmf: fresh.cart?.contributed_kmf,
-        total_kmf_snapshot: fresh.cart?.total_kmf_snapshot,
-      });
     });
   }
 }

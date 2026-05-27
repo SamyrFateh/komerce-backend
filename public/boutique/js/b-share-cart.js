@@ -1,17 +1,17 @@
 ﻿/**
  * @module b-share-cart
- * @brief Flow "Payer en groupe" â€” cÃ´tÃ© crÃ©ateur.
+ * @brief Flow "Payer en groupe" — côté créateur.
  *
- * Doctrine boutique-first â€” Mai 2026 :
- *   - un panier partagÃ© actif n'empÃªche pas d'en crÃ©er un autre.
+ * Doctrine boutique-first — Mai 2026 :
+ *   - un panier partagé actif n'empêche pas d'en créer un autre.
  *   - /mine restaure le dernier panier actif seulement comme raccourci de suivi.
- *   - le checkout/sidebar reste le panier courant : pas d'Ã©tat ni suivi groupe.
- *   - le backend reste source de vÃ©ritÃ© pour la limite de paniers actifs.
+ *   - le checkout/sidebar reste le panier courant : pas d'état ni suivi groupe.
+ *   - le backend reste source de vérité pour la limite de paniers actifs.
  */
 
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
-import { clearCart } from './b-cart.js';  // Doctrine v4.2 â€” N4-CLEAR
+import { clearCart } from './b-cart.js';  // Doctrine v4.2 — N4-CLEAR
 import { refreshGroupBadge } from './b-group-view.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 import {
@@ -22,14 +22,14 @@ import {
   digitsOnly,
   prettifyLocal,
 } from './b-phone.js';
-// FIX UX â€” RÃ©utiliser les helpers checkout pour un style uniforme (padding, indicatifs)
+// FIX UX — Réutiliser les helpers checkout pour un style uniforme (padding, indicatifs)
 import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
 const ACTIVE_STATUSES = new Set(['active', 'partially_funded', 'fully_funded']);
 
-/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Helpers ───────────────────────────────────────────────────── */
 function r(n) { return Math.round(Number(n) || 0); }
 
 function pct(contributed, total) {
@@ -41,7 +41,7 @@ function pct(contributed, total) {
 function timeRemaining(expiresAt) {
   if (!expiresAt) return 'actif';
   const diffMs = new Date(expiresAt) - Date.now();
-  if (diffMs <= 0) return 'expirÃ©';
+  if (diffMs <= 0) return 'expiré';
   const h = Math.floor(diffMs / 3_600_000);
   const m = Math.floor((diffMs % 3_600_000) / 60_000);
   if (h >= 48) return `${Math.floor(h / 24)}j restants`;
@@ -74,7 +74,7 @@ function applyCartToState(cart) {
   return cart;
 }
 
-/* â”€â”€ Persistance session : cache uniquement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Persistance session : cache uniquement ─────────────────────── */
 function loadShareState() {
   try {
     const raw = sessionStorage.getItem('kmrc_share');
@@ -131,12 +131,12 @@ export function clearShareState() {
   refreshSharedBadges(false);
 }
 
-/* â”€â”€ Restauration backend : source de vÃ©ritÃ© P0 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Restauration backend : source de vérité P0 ─────────────────── */
 export async function restoreSharedCartFromBackend({ silent = true } = {}) {
   try {
     const res = await fetch(API_MINE, { credentials: 'include' });
     if (!res.ok) {
-      // FIX S2-05 â€” utilisateur non connectÃ© : ne pas effacer l'Ã©tat local chargÃ©
+      // FIX S2-05 — utilisateur non connecté : ne pas effacer l'état local chargé
       // depuis sessionStorage. Le shareToken restera valide pour startShareFlow().
       if (res.status === 401 || res.status === 403) return null;
       throw new Error(`GET /mine ${res.status}`);
@@ -145,8 +145,8 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
     const cart = pickActiveCart(data.carts || []);
 
     if (!cart) {
-      // FIX S2-05 â€” effacer uniquement si le backend confirme qu'il n'y a pas de
-      // panier actif (rÃ©ponse 200 + liste vide). Ne jamais effacer sur erreur rÃ©seau.
+      // FIX S2-05 — effacer uniquement si le backend confirme qu'il n'y a pas de
+      // panier actif (réponse 200 + liste vide). Ne jamais effacer sur erreur réseau.
       clearLocalShareState();
       refreshSharedBadges(false);
       hideBanner();
@@ -166,17 +166,17 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
     });
     return cart;
   } catch (err) {
-    if (!silent) showToast(`Panier groupe non restaurÃ© : ${err.message}`, 'error');
+    if (!silent) showToast(`Panier groupe non restauré : ${err.message}`, 'error');
     return null;
   }
 }
 
-/* â”€â”€ DÃ©tection session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Détection session ──────────────────────────────────────────── */
 function isConnected() {
   return window.K?.isConnected?.() || false;
 }
 
-/* â”€â”€ Sidebar / badges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sidebar / badges ───────────────────────────────────────────── */
 function ensureSidebarStyles() {
   if (document.getElementById('k-share-sidebar-p0-styles')) return;
   const s = document.createElement('style');
@@ -215,7 +215,7 @@ export function refreshSharedBadges(isShared, cart = null) {
   refreshGroupBadge();
 }
 
-/* â”€â”€ Modal gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Modal générique ────────────────────────────────────────────── */
 function ensureStyles() {
   if (document.getElementById('k-share-modal-styles')) return;
   const s = document.createElement('style');
@@ -290,8 +290,8 @@ function closeModal(ov) {
   setTimeout(() => ov.remove(), 150);
 }
 
-/* â”€â”€ Ã‰tape A : formulaire init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-// FIX UX â€” Rewritten to use checkout DOM builders (makeInput / makeIntlPhoneInput)
+/* ── Étape A : formulaire init ──────────────────────────────────── */
+// FIX UX — Rewritten to use checkout DOM builders (makeInput / makeIntlPhoneInput)
 // so padding, labels and phone selector match the checkout UX exactly.
 function promptInit(needsAuth) {
   return new Promise(resolve => {
@@ -304,34 +304,34 @@ function promptInit(needsAuth) {
     const sheet = document.createElement('div');
     sheet.className = 'k-share-modal-sheet';
 
-    // â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Header ────────────────────────────────────────────────────
     const head = document.createElement('div');
     head.className = 'k-sm-head';
     head.innerHTML =
-      '<span class="k-sm-title">ðŸ›’ Payer en groupe</span>' +
-      '<button class="k-sm-close" aria-label="Fermer">âœ•</button>';
+      '<span class="k-sm-title">🛒 Payer en groupe</span>' +
+      '<button class="k-sm-close" aria-label="Fermer">✕</button>';
     sheet.appendChild(head);
 
     const hint = document.createElement('p');
     hint.className = 'k-sm-hint';
-    hint.textContent = 'CrÃ©ez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement.';
+    hint.textContent = 'Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement.';
     sheet.appendChild(hint);
 
-    // â”€â”€ Champ titre (mÃªme style que k-ck-group du checkout) â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Champ titre (même style que k-ck-group du checkout) ────────
     const titleData = { title: '' };
-    const titleGroup = makeInput('k-sm-title-f', 'Nom du panier (optionnel)', 'text', 'Ex : Cadeau mariage AÃ¯cha', titleData, 'title');
+    const titleGroup = makeInput('k-sm-title-f', 'Nom du panier (optionnel)', 'text', 'Ex : Cadeau mariage Aïcha', titleData, 'title');
     titleGroup.querySelector('input')?.setAttribute('maxlength', '80');
     titleGroup.querySelector('input')?.setAttribute('autocomplete', 'off');
     sheet.appendChild(titleGroup);
 
-    // â”€â”€ Champs auth (prÃ©nom + tÃ©lÃ©phone avec indicatif) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Champs auth (prénom + téléphone avec indicatif) ───────────
     const nameData = { name: '' };
     let phoneData  = { phone: '' };
     let nameInput  = null;
 
     if (needsAuth) {
-      // FIX UX â€” "Nom et prÃ©nom" (full_name en DB) plutÃ´t que juste "prÃ©nom"
-      const nameGroup = makeInput('k-sm-name-f', 'Votre nom et prÃ©nom *', 'text', 'Ex : Fatima Ali', nameData, 'name');
+      // FIX UX — "Nom et prénom" (full_name en DB) plutôt que juste "prénom"
+      const nameGroup = makeInput('k-sm-name-f', 'Votre nom et prénom *', 'text', 'Ex : Fatima Ali', nameData, 'name');
       const ni = nameGroup.querySelector('input');
       if (ni) {
         ni.setAttribute('maxlength', '60');
@@ -340,9 +340,9 @@ function promptInit(needsAuth) {
       nameInput = ni;
       sheet.appendChild(nameGroup);
 
-      // makeIntlPhoneInput gÃ©nÃ¨re les classes k-ck-* du checkout â€” on les remplace
-      // par les classes k-sm-* du modal pour un rendu cohÃ©rent (padding, border, focus).
-      const phoneGroup = makeIntlPhoneInput('k-sm-ph', 'Votre numÃ©ro WhatsApp *', phoneData, 'phone');
+      // makeIntlPhoneInput génère les classes k-ck-* du checkout — on les remplace
+      // par les classes k-sm-* du modal pour un rendu cohérent (padding, border, focus).
+      const phoneGroup = makeIntlPhoneInput('k-sm-ph', 'Votre numéro WhatsApp *', phoneData, 'phone');
       phoneGroup.classList.replace('k-ck-group', 'k-sm-field');
       phoneGroup.querySelector('label')?.classList.replace('k-ck-label', 'k-sm-label');
       const phoneWrap = phoneGroup.querySelector('.k-ck-phone-wrap');
@@ -352,7 +352,7 @@ function promptInit(needsAuth) {
       sheet.appendChild(phoneGroup);
     }
 
-    // â”€â”€ Erreur + bouton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Erreur + bouton ────────────────────────────────────────────
     const errEl = document.createElement('p');
     errEl.className = 'k-sm-err';
     errEl.id = 'k-sm-err';
@@ -361,15 +361,15 @@ function promptInit(needsAuth) {
     const btn = document.createElement('button');
     btn.className = 'k-sm-btn';
     btn.id = 'k-sm-submit';
-    btn.textContent = 'CrÃ©er le panier â†’';
-    btn.disabled = !!needsAuth; // activÃ© seulement quand les champs obligatoires sont valides
+    btn.textContent = 'Créer le panier →';
+    btn.disabled = !!needsAuth; // activé seulement quand les champs obligatoires sont valides
     sheet.appendChild(btn);
 
     ov.appendChild(sheet);
     ov.addEventListener('click', e => { if (e.target === ov) { closeModal(ov); resolve(null); } });
     document.body.appendChild(ov);
 
-    // â”€â”€ Validation live (needsAuth uniquement) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Validation live (needsAuth uniquement) ─────────────────────
     function updateSubmit() {
       if (!needsAuth) { btn.disabled = false; return; }
       const nameOk  = nameData.name?.trim().length >= 3;
@@ -378,19 +378,19 @@ function promptInit(needsAuth) {
     }
 
     if (needsAuth) {
-      // Ã‰couter les mutations de nameData via l'input
+      // Écouter les mutations de nameData via l'input
       nameInput?.addEventListener('input', () => {
         nameData.name = nameInput.value;
         updateSubmit();
         if (nameInput.value.trim().length > 0) errEl.textContent = '';
       });
-      // makeIntlPhoneInput Ã©crit directement dans phoneData.phone Ã  chaque frappe
-      // On observe via MutationObserver ou simplement via input sur le champ gÃ©nÃ©rÃ©
+      // makeIntlPhoneInput écrit directement dans phoneData.phone à chaque frappe
+      // On observe via MutationObserver ou simplement via input sur le champ généré
       const phoneInput = sheet.querySelector('#k-sm-ph');
       phoneInput?.addEventListener('input', () => { updateSubmit(); errEl.textContent = ''; });
     }
 
-    // â”€â”€ Soumission â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Soumission ─────────────────────────────────────────────────
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
       const title = titleData.title.trim();
@@ -399,12 +399,12 @@ function promptInit(needsAuth) {
 
       if (needsAuth) {
         if (name.length < 3) {
-          errEl.textContent = 'Nom invalide (3 caractÃ¨res minimum).';
+          errEl.textContent = 'Nom invalide (3 caractères minimum).';
           nameInput?.focus();
           return;
         }
         if (phone.length < 8) {
-          errEl.textContent = 'NumÃ©ro de tÃ©lÃ©phone invalide.';
+          errEl.textContent = 'Numéro de téléphone invalide.';
           sheet.querySelector('#k-sm-ph')?.focus();
           return;
         }
@@ -425,7 +425,7 @@ function promptInit(needsAuth) {
   });
 }
 
-/* â”€â”€ Ã‰tape B : appel API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Étape B : appel API ────────────────────────────────────────── */
 async function createSharedCart(opts) {
   const cartItems = state.cart
     .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
@@ -450,9 +450,9 @@ async function createSharedCart(opts) {
   return res.json();
 }
 
-/* â”€â”€ Ã‰tape C : WhatsApp + switch groupe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Étape C : WhatsApp + switch groupe ─────────────────────────── */
 function openWhatsApp(title, shareUrl) {
-  const msg = `Salut ! J'ai crÃ©Ã© un panier commun sur Komerce : "${title || 'Panier groupe'}". Contribue ici : ${shareUrl}`;
+  const msg = `Salut ! J'ai créé un panier commun sur Komerce : "${title || 'Panier groupe'}". Contribue ici : ${shareUrl}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   navigator.clipboard?.writeText(shareUrl).catch(() => {});
 }
@@ -468,22 +468,22 @@ function switchToGroup() {
   });
 }
 
-/* â”€â”€ S2-05 â€” Modale panier actif dÃ©tectÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── S2-05 — Modale panier actif détecté ─────────────────────── */
 function promptActiveCartChoice(cartName) {
   return new Promise(resolve => {
     ensureStyles();
     const ov = openModal(`
       <div class="k-sm-head">
-        <span class="k-sm-title">ðŸ‘¥ Panier groupe actif</span>
-        <button class="k-sm-close" aria-label="Fermer">âœ•</button>
+        <span class="k-sm-title">👥 Panier groupe actif</span>
+        <button class="k-sm-close" aria-label="Fermer">✕</button>
       </div>
       <p class="k-sm-hint">
-        Vous avez dÃ©jÃ  un panier groupe actif :
+        Vous avez déjà un panier groupe actif :
         <strong>${String(cartName || 'Panier groupe').replace(/</g,'&lt;')}</strong>.
       </p>
       <div class="k-sm-choice">
-        <button class="k-sm-btn" id="k-sm-view-group">ðŸ‘¥ Voir mon groupe actif</button>
-        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-new-group">ï¼‹ CrÃ©er un nouveau groupe</button>
+        <button class="k-sm-btn" id="k-sm-view-group">👥 Voir mon groupe actif</button>
+        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-new-group">ï¼‹ Créer un nouveau groupe</button>
         <button class="k-sm-btn k-sm-btn-ghost" id="k-sm-cancel-choice">Annuler</button>
       </div>`);
 
@@ -502,12 +502,12 @@ function promptActiveCartChoice(cartName) {
   });
 }
 
-/* â”€â”€ Flow principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Flow principal ─────────────────────────────────────────────── */
 export async function startShareFlow(opts = {}) {
   const { reshare = false } = opts;
 
-  // FIX S2-05 â€” attendre la restauration backend avant d'utiliser state.shareToken
-  // Ã‰vite la race condition : clic rapide â†’ shareToken null car restore pas fini
+  // FIX S2-05 — attendre la restauration backend avant d'utiliser state.shareToken
+  // Évite la race condition : clic rapide → shareToken null car restore pas fini
   if (_restorePromise) {
     await _restorePromise;
     _restorePromise = null;
@@ -524,7 +524,7 @@ export async function startShareFlow(opts = {}) {
     return;
   }
 
-  // S2-05 â€” Si un panier actif existe dÃ©jÃ , proposer deux options
+  // S2-05 — Si un panier actif existe déjà, proposer deux options
   if (!reshare && state.shareToken) {
     const choice = await promptActiveCartChoice(state.cartName);
     if (!choice) return;
@@ -532,7 +532,7 @@ export async function startShareFlow(opts = {}) {
       switchToGroup();
       return;
     }
-    // choice === 'new' â†’ on continue vers promptInit
+    // choice === 'new' → on continue vers promptInit
   }
 
   const needsAuth = !isConnected();
@@ -540,7 +540,7 @@ export async function startShareFlow(opts = {}) {
   if (!formData) return;
 
   const btn = document.getElementById('k-cart-share') || document.getElementById('k-sc-share');
-  if (btn) { btn.disabled = true; btn.textContent = 'â³ CrÃ©ationâ€¦'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'â³ Création…'; }
 
   try {
     const data = await createSharedCart(formData);
@@ -559,9 +559,9 @@ export async function startShareFlow(opts = {}) {
       created_at: new Date().toISOString(),
     };
 
-    // Doctrine v4.2 â€” N4-CLEAR (ordre critique)
-    // 1. Poser l'Ã©tat groupe EN PREMIER â€” showBanner() vÃ©rifie state.shareToken.
-    // 2. Vider le panier EN SECOND, avec guard pour que cart:cleared ne dÃ©truise pas
+    // Doctrine v4.2 — N4-CLEAR (ordre critique)
+    // 1. Poser l'état groupe EN PREMIER — showBanner() vérifie state.shareToken.
+    // 2. Vider le panier EN SECOND, avec guard pour que cart:cleared ne détruise pas
     //    le shareToken qu'on vient de poser.
     applyCartToState(cart);
     refreshSharedBadges(true, cart);
@@ -591,10 +591,10 @@ async function handleShareClick() {
   return startShareFlow({ reshare: false });
 }
 
-/* â”€â”€ Installation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Installation ───────────────────────────────────────────────── */
 let _installed = false;
-let _restorePromise = null; // FIX S2-05 â€” permet d'attendre la restauration dans startShareFlow
-let _skipClearShareOnCartCleared = false; // FIX N4-CLEAR â€” Ã©vite que clearCart() efface shareToken juste posÃ©
+let _restorePromise = null; // FIX S2-05 — permet d'attendre la restauration dans startShareFlow
+let _skipClearShareOnCartCleared = false; // FIX N4-CLEAR — évite que clearCart() efface shareToken juste posé
 
 export function install() {
   if (_installed) return;
@@ -622,7 +622,7 @@ export function install() {
   document.getElementById('k-sc-group-view')?.addEventListener('click', switchToGroup);
 
   document.addEventListener('cart:cleared', () => {
-    if (_skipClearShareOnCartCleared) return; // N4-CLEAR â€” vidage intentionnel post-crÃ©ation groupe
+    if (_skipClearShareOnCartCleared) return; // N4-CLEAR — vidage intentionnel post-création groupe
     clearShareState();
     refreshSharedBadges(false);
   });
