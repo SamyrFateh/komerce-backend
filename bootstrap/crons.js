@@ -81,6 +81,7 @@ function startOperationalCrons() {
   startPickupTokenCleanupCron(); // SEC-1 migration 070
   startJwtRevocationCleanupCron(); // N4 migration 072
   startNotHonoredCron(); // GAP 6 — doctrine v4.1 §7.3
+  startExpireCartsCron(); // S3-04 — expire les paniers actifs dont expires_at < NOW()
 }
 
 // D1 FIX — Rétention economic_snapshots : purge les lignes > 90 jours, toutes les 24h.
@@ -189,6 +190,23 @@ function startNotHonoredCron() {
       );
       if (rowCount > 0) {
         log.info({ marked_not_honored: rowCount }, 'shared_cart_commitments not_honored cron done');
+        // S3-03 — événement tracé pour monitoring et audit
+        await db.query(
+          `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+             SELECT DISTINCT c.shared_cart_id, 'commitments_marked_not_honored', 'system',
+                    jsonb_build_object('count', sub.cnt)
+               FROM shared_cart_commitments c
+               JOIN (
+                 SELECT shared_cart_id, COUNT(*) AS cnt
+                   FROM shared_cart_commitments
+                  WHERE status = 'not_honored'
+                    AND updated_at >= NOW() - INTERVAL '5 minutes'
+                  GROUP BY shared_cart_id
+               ) sub ON sub.shared_cart_id = c.shared_cart_id`
+        ).catch(err => log.error({ err }, 'not_honored event insert failed'));
+      } else {
+        // S3-03 — silent run loggé pour monitoring (rowCount=0 = normal, mais traçable)
+        log.debug({ marked_not_honored: 0 }, 'not_honored cron silent run — nothing to process');
       }
     } catch (err) {
       log.error({ err }, 'not_honored cron failed');
@@ -202,6 +220,33 @@ function startNotHonoredCron() {
   log.info({ interval_h: 1 }, 'Not-honored commitment cron scheduled');
 }
 
+// S3-04 — Expiration des paniers partagés actifs dont expires_at est dépassé.
+// Délègue à engine.expireOldCarts() qui écrit les événements cart_expired.
+// Tourne toutes les 4h. Idempotent (la requête filtre expires_at < NOW()).
+function startExpireCartsCron() {
+  const INTERVAL_MS = 4 * 60 * 60 * 1000;
+
+  const run = async () => {
+    try {
+      const engine = require('../services/shared-cart-engine');
+      const count = await engine.expireOldCarts();
+      if (count > 0) {
+        log.info({ expired: count }, 'shared_carts expire cron done');
+      } else {
+        log.debug({ expired: 0 }, 'shared_carts expire cron silent run — nothing to expire');
+      }
+    } catch (err) {
+      log.error({ err }, 'shared_carts expire cron failed');
+    }
+  };
+
+  // Première exécution 20 min après démarrage (après les migrations)
+  setTimeout(run, 20 * 60 * 1000);
+  setInterval(run, INTERVAL_MS);
+
+  log.info({ interval_h: 4 }, 'Shared cart expire cron scheduled');
+}
+
 module.exports = {
   startOperationalCrons,
   startCashRelaisCron,
@@ -210,4 +255,5 @@ module.exports = {
   startPickupTokenCleanupCron,
   startJwtRevocationCleanupCron,
   startNotHonoredCron,
+  startExpireCartsCron,
 };

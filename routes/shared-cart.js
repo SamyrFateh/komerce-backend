@@ -46,6 +46,10 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
 const log = require('../utils/logger').child({ module: 'shared-cart' });
+const { sendTemplateWhatsApp } = require('./meta-whatsapp');
+// Templates Meta requis (à enregistrer dans Meta Business Suite) :
+//   shared_cart_settlement_open  — params : {{1}} prénom, {{2}} titre panier, {{3}} montant KMF, {{4}} URL
+//   shared_cart_created          — params : {{1}} URL du lien partagé
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -480,6 +484,32 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       expires_at: result.sharedCart.expires_at,
       items_count: result.items.length,
     });
+
+    // S3-02 — Notification WhatsApp au créateur (post-commit, best-effort)
+    // Template Meta requis : shared_cart_created
+    //   {{1}} URL du lien partagé
+    setImmediate(async () => {
+      try {
+        const trackingPhone = req.user?.tracking_phone || req.user?.phone;
+        if (!trackingPhone) return;
+        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${result.token}`;
+        const notif = await sendTemplateWhatsApp({
+          to: trackingPhone,
+          templateName: 'shared_cart_created',
+          components: [{
+            type: 'body',
+            parameters: [{ type: 'text', text: shareUrl }],
+          }],
+        });
+        if (!notif.success && !notif.skipped) {
+          log.warn({ phone: trackingPhone, error: notif.error }, '[S3-02] creator creation notification failed');
+        } else {
+          log.info({ cart_id: result.sharedCart.id }, '[S3-02] creator WhatsApp notification sent');
+        }
+      } catch (err) {
+        log.error({ err }, '[S3-02] creator notification failed');
+      }
+    });
   } catch (err) {
     if (err.message.includes('Limite atteinte') ||
         err.message.includes('vide') ||
@@ -583,6 +613,52 @@ router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
       label: 'panier_en_reglement',
       message: 'Le panier est passé au règlement. Les participants peuvent maintenant payer.',
       cart,
+    });
+
+    // S3-01 — Notifications WhatsApp aux participants (post-commit, best-effort)
+    // Template Meta requis : shared_cart_settlement_open
+    //   {{1}} prénom  {{2}} titre panier  {{3}} montant KMF  {{4}} URL lien partagé
+    setImmediate(async () => {
+      try {
+        const { rows: locked } = await db.query(
+          `SELECT phone, first_name, amount_kmf
+             FROM shared_cart_commitments
+            WHERE shared_cart_id = $1
+              AND status = 'locked_for_settlement'
+              AND phone IS NOT NULL`,
+          [req.params.id]
+        );
+
+        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${cart.token}`;
+        const title    = cart.title || 'Panier groupe';
+
+        for (const c of locked) {
+          const result = await sendTemplateWhatsApp({
+            to: c.phone,
+            templateName: 'shared_cart_settlement_open',
+            components: [{
+              type: 'body',
+              parameters: [
+                { type: 'text', text: c.first_name || 'Participant' },
+                { type: 'text', text: title },
+                { type: 'text', text: String(c.amount_kmf) },
+                { type: 'text', text: shareUrl },
+              ],
+            }],
+          });
+          if (!result.success && !result.skipped) {
+            log.warn({ phone: c.phone, error: result.error }, '[S3-01] settlement_notification_failed');
+            await db.query(
+              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+                 VALUES ($1, 'settlement_notification_failed', 'system', $2)`,
+              [req.params.id, { phone: c.phone, error: result.error }]
+            ).catch(() => {});
+          }
+        }
+        log.info({ cart_id: req.params.id, count: locked.length }, '[S3-01] settlement WhatsApp notifications attempted');
+      } catch (err) {
+        log.error({ err, cart_id: req.params.id }, '[S3-01] settlement notification batch failed');
+      }
     });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
