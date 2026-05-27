@@ -464,155 +464,6 @@ function injectStyles() {
   }
 }
 
-
-/* Groupe cockpit V2 — simple, lisible, desktop avec articles à droite */
-.k-group-cockpit{
-  display:grid;
-  gap:18px;
-}
-.k-group-main-col{
-  min-width:0;
-}
-.k-group-side-panel{
-  display:none;
-}
-.k-group-side-card{
-  background:var(--white,#fff);
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:16px;
-  box-shadow:0 14px 42px rgba(30,40,25,.06);
-}
-.k-group-side-card + .k-group-side-card{
-  margin-top:12px;
-}
-.k-group-side-head{
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:12px;
-}
-.k-group-side-head strong{
-  font-size:16px;
-  color:var(--text);
-}
-.k-group-side-head span{
-  font-size:12px;
-  color:var(--text-muted);
-}
-.k-group-side-list{
-  display:grid;
-  gap:10px;
-}
-.k-group-side-item{
-  display:grid;
-  grid-template-columns:46px 1fr;
-  gap:10px;
-  align-items:center;
-}
-.k-group-side-item img,
-.k-group-side-item-fallback{
-  width:46px;
-  height:46px;
-  border-radius:13px;
-  object-fit:cover;
-  background:var(--sand);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.k-group-side-item-main{
-  min-width:0;
-}
-.k-group-side-item-main strong{
-  display:block;
-  font-size:13px;
-  line-height:1.25;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  color:var(--text);
-}
-.k-group-side-item-main span{
-  display:block;
-  margin-top:3px;
-  font-size:12px;
-  color:var(--text-muted);
-}
-.k-group-side-empty{
-  margin:0;
-  font-size:13px;
-  color:var(--text-muted);
-}
-.k-group-side-help ol{
-  margin:10px 0 0 18px;
-  padding:0;
-  color:var(--text-muted);
-  font-size:13px;
-  line-height:1.55;
-}
-
-@media(min-width:1000px){
-  #k-group-view.k-group-view{
-    max-width:1240px!important;
-    margin:0 auto 56px!important;
-    padding:0 32px!important;
-  }
-  #k-group-view.k-group-view > *{
-    width:auto!important;
-    max-width:none!important;
-  }
-  .k-group-cockpit{
-    grid-template-columns:minmax(620px, 720px) minmax(300px, 360px);
-    align-items:start;
-    gap:22px;
-  }
-  .k-group-side-panel{
-    display:block;
-    position:sticky;
-    top:96px;
-  }
-  .k-group-main-col > .k-group-header,
-  .k-group-main-col > .k-group-progress-card,
-  .k-group-main-col > .k-group-card,
-  .k-group-main-col > .k-group-actions-card,
-  .k-group-main-col > .k-group-contribute-card,
-  .k-group-main-col > .k-group-items-card,
-  .k-group-main-col > .k-group-self-toggle{
-    width:100%!important;
-    max-width:none!important;
-  }
-  .k-group-view .k-group-header{
-    padding:16px 24px 8px!important;
-  }
-  .k-group-view .k-group-progress-card{
-    padding:16px 24px 18px!important;
-    margin:0 0 12px!important;
-  }
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card{
-    padding:16px 24px!important;
-    margin:10px 0 0!important;
-  }
-  .k-group-view .k-group-self-toggle{
-    margin:10px 0 0!important;
-    padding:12px 16px!important;
-  }
-}
-
-@media(max-width:999px){
-  .k-group-cockpit{
-    display:block;
-  }
-  .k-group-side-panel{
-    display:block;
-    margin-top:12px;
-  }
-}
-
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
@@ -1258,46 +1109,6 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 }
 
 
-
-function renderCreatorItemsPanel(items = [], cart) {
-  const rows = (items || []).slice(0, 8).map(it => {
-    const name = it.product_name || it.name || 'Produit';
-    const qty = Number(it.quantity || it.qty || 1);
-    const price = Number(it.unit_price_kmf || it.price_kmf || it.price || 0);
-    const img = it.product_image || it.product_image_url || it.image_url || '';
-    return `
-      <div class="k-group-side-item">
-        ${img ? `<img src="${sanitize(img)}" alt="">` : '<div class="k-group-side-item-fallback">📦</div>'}
-        <div class="k-group-side-item-main">
-          <strong>${sanitize(name)}</strong>
-          <span>×${qty} · ${fmt(r(price), 'KMF')}</span>
-        </div>
-      </div>`;
-  }).join('');
-
-  const count = (items || []).length;
-  return `
-    <aside class="k-group-side-panel">
-      <div class="k-group-side-card">
-        <div class="k-group-side-head">
-          <strong>Articles du panier</strong>
-          <span>${count} article${count > 1 ? 's' : ''}</span>
-        </div>
-        <div class="k-group-side-list">
-          ${rows || '<p class="k-group-side-empty">Aucun article trouvé.</p>'}
-        </div>
-      </div>
-      <div class="k-group-side-card k-group-side-help">
-        <strong>Flux simple</strong>
-        <ol>
-          <li>Partager le lien</li>
-          <li>Collecter les engagements</li>
-          <li>Passer au règlement</li>
-        </ol>
-      </div>
-    </aside>`;
-}
-
 function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
   const itemRows = items.map(it => `
     <div class="k-group-item-row">
@@ -1396,29 +1207,98 @@ export async function renderGroupView(opts = {}) {
     } catch (_) {}
 
     el.innerHTML = `
-    <div class="k-group-cockpit">
-      <div class="k-group-main-col">
-        <div class="k-group-header">
-          <h2>👥 Mon panier groupe</h2>
-          <p class="k-group-subhead">${settlementOpen
-            ? '🔐 Panier en règlement — les participants peuvent maintenant payer.'
-            : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
-        </div>
-        ${renderProgress(cart, contributions, commitmentsList)}
-        ${showSelfForm && !settlementOpen ? `
-          <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi m'engager</button>
-          <div class="k-group-self-panel" id="k-group-self-panel" hidden>
-            ${renderEngagementForm(state.shareToken, cart, true)}
-          </div>` : ''}
-        ${showSelfForm && settlementOpen ? `
-          <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi payer</button>
-          <div class="k-group-self-panel" id="k-group-self-panel" hidden>
-            ${renderPaymentForm(state.shareToken, cart)}
-          </div>` : ''}
-        ${renderCreatorActions(cart)}
+      <div class="k-group-header">
+        <h2>👥 Panier groupe</h2>
+        <p class="k-group-subhead">Panier de ${sanitize(cart.beneficiary_name_snapshot || '')}.</p>
       </div>
-      ${renderCreatorItemsPanel(creatorItems, cart)}
-    </div>`;
+      ${renderParticipantItemsAccordion(items, total, cart, settlementOpen)}
+      ${commitmentsList.length > 0 ? `
+        <div class="k-group-card" style="padding:14px 16px">
+          <div class="k-group-contribs-label">Engagements ${settlementOpen ? 'verrouillés' : 'indicatifs'} (${commitmentsList.length})</div>
+          <div class="k-group-commitment-list">
+            ${commitmentsList.map(c => `
+              <div class="k-group-commitment-row">
+                <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
+                <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+      ${isCartOpen && !settlementOpen
+        ? renderEngagementForm(participantToken, cart, false)
+        : isCartOpen && settlementOpen
+          ? renderPaymentForm(participantToken, cart)
+          : `<div class="k-group-card"><strong>${
+              cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : "Ce panier n'accepte plus de contribution."
+            }</strong></div>`}`;
+
+    bindParticipantItemsAccordion(el);
+
+    if (isCartOpen && !settlementOpen) {
+      bindEngagementForm(el, participantToken, cart, () => renderGroupView({ participantToken }));
+    } else if (isCartOpen && settlementOpen) {
+      bindPaymentForm(el, participantToken, cart);
+    }
+    return;
+  }
+
+  /* ─────────────────────────────────────────────────────────────── */
+  /* MODE CRÉATEUR                                                    */
+  /* ─────────────────────────────────────────────────────────────── */
+  if (!state.shareToken || !state.shareId) {
+    const restored = await ensureCreatorCartState();
+    if (!restored) { renderEmpty(el); return; }
+  }
+
+  let data;
+  try {
+    data = await apiGet(`/api/shared-carts/${state.shareId}`);
+  } catch (_) {
+    data = await fetch(`/api/shared-carts/public/${state.shareToken}`, { credentials: 'include' })
+      .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
+  }
+
+  if (!data?.cart) { renderError(el); return; }
+
+  const cart          = data.cart;
+  const contributions = data.contributions || [];
+  const cartId        = state.shareId || cart.id;
+  const shareUrl      = data.share_url || state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`;
+  const settlementOpen = isSettlementOpen(cart);
+  const isCartOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+
+  let commitmentsList = data.commitments || [];
+  // Fallback : si l'endpoint owner ne les inclut pas encore (compatibilité transitoire),
+  // on tente le fetch séparé
+  if (!commitmentsList.length && state.shareToken) {
+    try {
+      const cRes = await fetch(`/api/shared-carts/public/${state.shareToken}/commitments`, { credentials: 'include' });
+      if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
+    } catch (_) {}
+  }
+
+  const showSelfForm = isCartOpen && cart.status !== 'fully_funded' && remainingKmf(cart) > 0;
+
+  const refreshView = () => renderGroupView(opts);
+
+  el.innerHTML = `
+    <div class="k-group-header">
+      <h2>👥 Mon panier groupe</h2>
+      <p class="k-group-subhead">${settlementOpen
+        ? '🔐 Panier en règlement — les participants peuvent maintenant payer.'
+        : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
+    </div>
+    ${renderProgress(cart, contributions, commitmentsList)}
+    ${showSelfForm && !settlementOpen ? `
+      <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi m'engager</button>
+      <div class="k-group-self-panel" id="k-group-self-panel" hidden>
+        ${renderEngagementForm(state.shareToken, cart, true)}
+      </div>` : ''}
+    ${showSelfForm && settlementOpen ? `
+      <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi payer</button>
+      <div class="k-group-self-panel" id="k-group-self-panel" hidden>
+        ${renderPaymentForm(state.shareToken, cart)}
+      </div>` : ''}
+    ${renderCreatorActions(cart)}`;
 
   if (showSelfForm) {
     el.querySelector('#k-group-self-toggle')?.addEventListener('click', () => {
