@@ -321,6 +321,8 @@ function injectStyles() {
 .k-group-split-hint{background:#ede7f6;color:#4a2d9e;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;margin:0 0 12px;line-height:1.4}
 .k-group-self-toggle{margin-top:12px;width:100%;border:1px dashed var(--border);background:var(--sand);color:var(--text);border-radius:14px;padding:11px;font-weight:800;cursor:pointer}
 .k-group-self-panel[hidden]{display:none!important}
+.k-group-self-panel:not([hidden]) + .k-group-self-toggle{display:none!important}
+.k-group-self-toggle.is-open{display:none!important}
 .k-group-locked-amount{display:flex;align-items:center;gap:10px;background:rgba(31,122,84,.09);border:1px solid rgba(31,122,84,.2);border-radius:14px;padding:14px 16px;margin:12px 0}
 .k-group-locked-amount strong{font-size:20px;color:var(--text)}
 .k-group-locked-amount span{font-size:12px;color:var(--text-muted);line-height:1.3}
