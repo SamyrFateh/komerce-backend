@@ -680,91 +680,69 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     }
   });
 
-  // S2-06 — Modifier les articles du panier (phase ouverte uniquement)
+  // SC-EDIT-02/03 — "Modifier les articles" : charge le snapshot depuis le backend,
+  // reconstruit state.cart, active le contexte edit_shared_cart, bascule vers Boutique.
+  // Remplace l'ancien handler S2-06 (confirm + PUT inline) par un flux UX complet
+  // conforme à la doctrine v4.2 §Chemin B.
   el.querySelector('#k-group-edit-items')?.addEventListener('click', async () => {
     const btn = el.querySelector('#k-group-edit-items');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Chargement…'; }
 
-    // FIX CHARGER — Si state.cart est vide (vidé par N4-CLEAR à la création),
-    // charger le snapshot sauvegardé depuis le backend et repeupler state.cart.
-    // Cela permet au créateur de modifier les articles sans avoir à remettre
-    // manuellement des produits dans son panier boutique.
-    let cartItems = (state.cart || [])
-      .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
-      .filter(it => it.product_id);
+    try {
+      // SC-EDIT-03 — Toujours reconstruire depuis le snapshot backend
+      // (pas depuis state.cart courant qui peut être vide après N4-CLEAR
+      // ou contenir un panier personnel sans rapport avec le panier collectif).
+      const snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
 
-    const originalCartHadItems = cartItems.length > 0;
-    let snap = null;
-
-    if (!cartItems.length) {
-      try {
-        snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
-        if (snap?.cart_items?.length) {
-          // Repeupler state.cart depuis le snapshot pour que le panier boutique
-          // reflète l'état sauvegardé. Chaque item du snapshot devient un item
-          // compatible avec la structure { product, id, name, price, image, qty }.
-          state.cart = snap.cart_items.map(it => ({
-            product: {
-              id:             it.product_id,
-              name:           it.product_name || '',
-              // price_kmf = prix snapshot déjà promoé — promo_pct/is_promo mis à 0/false
-              // pour éviter une double application de promo dans renderSideCart et newTotal.
-              price_kmf:      it.unit_price_kmf || 0,
-              image_url:      it.product_image || '',
-              category:       it.product_category || '',
-              promo_pct:      0,      // pas de donnée promo dans le snapshot → neutralise le calcul de prix barré
-              is_promo:       false,  // idem — empêche la branche promo dans newTotal
-              // promo_price_kmf absent → buildCartShareURL tombera sur price_kmf (correct)
-              // variant_label absent → renderSideCart omet le chip (acceptable, non stocké dans snapshot)
-            },
-            id:    it.product_id,
-            name:  it.product_name || '',
-            price: it.unit_price_kmf || 0,
-            image: it.product_image || '',
-            qty:   it.quantity || 1,
-          }));
-          saveCart();  // persiste en localStorage pour badge + sidebar
-          cartItems = snap.cart_items.map(it => ({
-            product_id: it.product_id,
-            quantity: it.quantity || 1,
-          }));
-          showToast('Panier rechargé depuis la sauvegarde.', 'success');
-        } else {
-          showToast('Panier sauvegardé vide. Ajoutez des articles dans la boutique.', 'error');
-          if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
-          return;
-        }
-      } catch (err) {
-        showToast('Impossible de charger le panier sauvegardé.', 'error');
+      if (!snap?.cart_items?.length) {
+        showToast('Panier collectif vide — impossible de charger les articles.', 'error');
         if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
         return;
       }
-    }
 
-    const newTotal = (state.cart || []).reduce((sum, it) => {
-      const price = it.product?.promo_pct > 0 && it.product?.is_promo
-        ? Math.round((it.product.price_kmf || 0) * (1 - it.product.promo_pct / 100))
-        : Math.round(it.product?.price_kmf || 0);
-      return sum + price * (Number(it.qty) || 1);
-    }, 0);
+      // Reconstruit state.cart depuis le snapshot (doctrine §Chemin B).
+      // price_kmf = prix snapshot déjà promoé ; promo_pct/is_promo = 0/false
+      // pour éviter la double application de remise dans renderSideCart/newTotal.
+      // variant_label absent (non stocké dans le snapshot) → chip de variante omis, acceptable.
+      state.cart = snap.cart_items.map(it => ({
+        product: {
+          id:        it.product_id,
+          name:      it.product_name || '',
+          price_kmf: it.unit_price_kmf || 0,
+          image_url: it.product_image || '',
+          category:  it.product_category || '',
+          promo_pct: 0,
+          is_promo:  false,
+        },
+        id:    it.product_id,
+        name:  it.product_name || '',
+        price: it.unit_price_kmf || 0,
+        image: it.product_image || '',
+        qty:   it.quantity || 1,
+      }));
+      saveCart(); // persiste en localStorage — badge + sidebar cohérents
 
-    const isRebuiltFromSnapshot = !!(snap && !originalCartHadItems);
-    const totalLabel = isRebuiltFromSnapshot ? 'Total snapshot (le serveur recalculera les prix actuels)' : 'Total estimé';
-    const msg = `Remplacer les articles du panier partagé par le contenu actuel ?`
-      + (newTotal > 0 ? `\n\n${totalLabel} : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
-      + `\n\nLes participants seront notifiés.`;
+      // SC-EDIT-01 — Activer le contexte d'édition
+      state.editSharedCart = {
+        shared_cart_id: cartId,
+        token:          state.shareToken,
+        return_tab:     'group',
+        started_at:     Date.now(),
+      };
 
-    if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
-    if (!confirm(msg)) return;
+      // SC-EDIT-02 — Basculer vers l'onglet Boutique.
+      // Le side cart et le panier tiroir afficheront les CTAs edit (SC-EDIT-04/05).
+      import('./b-nav.js').then(({ switchView }) => {
+        document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+          .forEach(i => i.classList.toggle('active', i.dataset.tab === 'shop'));
+        switchView('shop');
+        // Forcer le rafraîchissement du side cart pour afficher le bandeau edit
+        if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
+      });
 
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Mise à jour…'; }
-
-    try {
-      await window.K.request(`/api/shared-carts/${cartId}/items`, 'PUT', { cart_items: cartItems });
-      showToast('Articles mis à jour. Les participants ont été notifiés.', 'success');
-      onSettlement?.(); // refreshView
+      showToast('Modifiez les articles, puis cliquez "Mettre à jour le panier collectif".', 'success');
     } catch (err) {
-      showToast(err?.message || 'Impossible de mettre à jour les articles.', 'error');
+      showToast(err?.message || 'Impossible de charger le panier sauvegardé.', 'error');
       if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
     }
   });

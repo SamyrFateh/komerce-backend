@@ -598,6 +598,102 @@ function quickRemove(productId, btnEl) {
     // PR-1 : le bouton "Payer à plusieurs" est statique dans index.html (#k-cart-share)
     // géré par b-share-cart.js — plus d'injection dynamique ici.
 
+    // SC-EDIT-04 — En mode édition panier collectif, masquer checkout + share
+    // et afficher un bandeau de confirmation dans le tiroir.
+    const editCtxDrawer = state.editSharedCart;
+    const cartCheckoutBtn = document.getElementById('k-cart-checkout');
+    const cartShareBtn    = document.getElementById('k-cart-share');
+    const cartClearBtn    = document.getElementById('k-cart-clear');
+    if (cartCheckoutBtn) cartCheckoutBtn.style.display = editCtxDrawer ? 'none' : '';
+    if (cartShareBtn)    cartShareBtn.style.display    = editCtxDrawer ? 'none' : '';
+
+    // Injecter/retirer le bloc d'action edit dans le footer du drawer
+    let drawerEditBar = document.getElementById('k-cart-edit-bar');
+    if (editCtxDrawer && !drawerEditBar) {
+      drawerEditBar = document.createElement('div');
+      drawerEditBar.id = 'k-cart-edit-bar';
+      drawerEditBar.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:8px;';
+      drawerEditBar.innerHTML = `
+        <div style="background:linear-gradient(135deg,#1a4a6e,#1f7a54);color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700">
+          ✏️ Mode édition — Panier collectif
+        </div>
+        <button id="k-cart-edit-update" type="button"
+          style="background:#1f7a54;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;width:100%">
+          ✅ Mettre à jour le panier collectif
+        </button>
+        <button id="k-cart-edit-cancel" type="button"
+          style="background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:13px;cursor:pointer;width:100%">
+          ✕ Annuler les modifications
+        </button>
+        <p id="k-cart-edit-err" style="color:#e53935;font-size:12px;margin:0;min-height:14px"></p>`;
+      // Insérer dans la zone boutons du footer
+      const footerBtns = document.querySelector('.k-cart-footer-btns');
+      if (footerBtns) footerBtns.after(drawerEditBar);
+      else dom.cartFooter.appendChild(drawerEditBar);
+
+      // SC-EDIT-06 — Câbler update dans le drawer
+      drawerEditBar.querySelector('#k-cart-edit-update')?.addEventListener('click', async () => {
+        const ctx    = state.editSharedCart;
+        const errEl  = drawerEditBar.querySelector('#k-cart-edit-err');
+        const upBtn  = drawerEditBar.querySelector('#k-cart-edit-update');
+        if (!ctx) return;
+        if (errEl) errEl.textContent = '';
+
+        const cartItems = (state.cart || [])
+          .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
+          .filter(it => it.product_id);
+        if (!cartItems.length) {
+          if (errEl) errEl.textContent = 'Le panier est vide. Ajoutez au moins un article.';
+          return;
+        }
+        upBtn.disabled = true; upBtn.textContent = '⏳ Mise à jour…';
+        try {
+          await fetch(`/api/shared-carts/${ctx.shared_cart_id}/items`, {
+            method: 'PUT', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cart_items: cartItems }),
+          }).then(async r => {
+            if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d?.error || d?.message || `Erreur ${r.status}`); }
+          });
+          state.editSharedCart = null;
+          clearCart();
+          // Fermer le tiroir
+          dom.cartOverlay?.classList.remove('open');
+          dom.cartDrawer?.classList.remove('open');
+          document.body.classList.remove('cart-open');
+          showToast('✅ Panier collectif mis à jour. Les participants ont été notifiés.', 'success');
+          import('./b-nav.js').then(({ switchView }) => {
+            document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+              .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
+            switchView('group');
+            import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+          });
+        } catch (err) {
+          if (errEl) errEl.textContent = err?.message || 'Impossible de mettre à jour.';
+          upBtn.disabled = false; upBtn.textContent = '✅ Mettre à jour le panier collectif';
+        }
+      });
+
+      // SC-EDIT-08 — Câbler annuler dans le drawer
+      drawerEditBar.querySelector('#k-cart-edit-cancel')?.addEventListener('click', () => {
+        if (!confirm('Annuler les modifications ? Le panier temporaire sera vidé.')) return;
+        state.editSharedCart = null;
+        clearCart();
+        dom.cartOverlay?.classList.remove('open');
+        dom.cartDrawer?.classList.remove('open');
+        document.body.classList.remove('cart-open');
+        showToast('Modifications annulées.', 'success');
+        import('./b-nav.js').then(({ switchView }) => {
+          document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+            .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
+          switchView('group');
+          import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+        });
+      });
+    } else if (!editCtxDrawer && drawerEditBar) {
+      drawerEditBar.remove();
+    }
+
     const qty = cartQty();
     const total = cartTotal();
 
@@ -1244,6 +1340,136 @@ function renderSideCart() {
       scroll.savedY = getScrollY();
       document.body.classList.add('cart-open');
     });
+  }
+
+  // SC-EDIT-04/05/06/07/08 — Mode édition panier collectif
+  // Quand state.editSharedCart est actif, masquer les CTAs classiques
+  // et afficher uniquement "Mettre à jour le panier collectif" + "Annuler".
+  const editCtx = state.editSharedCart;
+
+  // Gérer la visibilité des CTAs classiques
+  const scCheckout = sc.querySelector('#k-sc-checkout');
+  const scShare    = sc.querySelector('#k-sc-share');
+  const scSharedBadge = sc.querySelector('#k-sc-shared-badge');
+  if (scCheckout)   scCheckout.style.display   = editCtx ? 'none' : '';
+  if (scShare)      scShare.style.display       = editCtx ? 'none' : '';
+  if (scSharedBadge && editCtx) scSharedBadge.hidden = true;
+
+  // Injecter ou mettre à jour le bandeau d'édition
+  let editBar = sc.querySelector('#k-sc-edit-bar');
+  if (editCtx) {
+    if (!editBar) {
+      editBar = document.createElement('div');
+      editBar.id = 'k-sc-edit-bar';
+      editBar.style.cssText = [
+        'background:linear-gradient(135deg,#1a4a6e 0%,#1f7a54 100%)',
+        'border-radius:12px',
+        'padding:12px 14px',
+        'margin-top:8px',
+        'display:flex',
+        'flex-direction:column',
+        'gap:8px',
+      ].join(';');
+      editBar.innerHTML = `
+        <div style="color:#fff;font-size:12px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:6px">
+          <span>✏️</span>
+          <span>Mode édition — Panier collectif</span>
+        </div>
+        <button id="k-sc-edit-update" type="button"
+          style="background:#fff;color:#1a4a6e;border:none;border-radius:9px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;width:100%;line-height:1.2">
+          ✅ Mettre à jour le panier collectif
+        </button>
+        <button id="k-sc-edit-cancel" type="button"
+          style="background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.4);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;width:100%">
+          ✕ Annuler les modifications
+        </button>
+        <p id="k-sc-edit-err" style="color:#ffe0e0;font-size:11px;margin:0;min-height:14px"></p>`;
+
+      // Insérer après le bloc total/sous-total, avant items
+      const scHeader = sc.querySelector('.k-sc-header');
+      if (scHeader) scHeader.appendChild(editBar);
+      else sc.prepend(editBar);
+    }
+
+    // SC-EDIT-06 — Câbler "Mettre à jour le panier collectif"
+    const updateBtn = editBar.querySelector('#k-sc-edit-update');
+    if (updateBtn && !updateBtn._wired) {
+      updateBtn._wired = true;
+      updateBtn.addEventListener('click', async () => {
+        const ctx = state.editSharedCart;
+        if (!ctx) return;
+        const errEl = editBar.querySelector('#k-sc-edit-err');
+        if (errEl) errEl.textContent = '';
+
+        const cartItems = (state.cart || [])
+          .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
+          .filter(it => it.product_id);
+
+        if (!cartItems.length) {
+          if (errEl) errEl.textContent = 'Le panier est vide. Ajoutez au moins un article.';
+          return;
+        }
+
+        updateBtn.disabled = true;
+        updateBtn.textContent = '⏳ Mise à jour en cours…';
+
+        try {
+          // SC-EDIT-06 — Appel PUT /api/shared-carts/:id/items
+          await fetch(`/api/shared-carts/${ctx.shared_cart_id}/items`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cart_items: cartItems }),
+          }).then(async r => {
+            if (!r.ok) {
+              const d = await r.json().catch(() => ({}));
+              throw new Error(d?.error || d?.message || `Erreur ${r.status}`);
+            }
+            return r.json();
+          });
+
+          // SC-EDIT-07 — Succès : vider panier, supprimer contexte, retour onglet Groupe
+          state.editSharedCart = null;
+          clearCart(); // vide state.cart + localStorage + re-render
+
+          showToast('✅ Panier collectif mis à jour. Les participants ont été notifiés.', 'success');
+
+          // Retour onglet Groupe + refresh de la vue groupe
+          import('./b-nav.js').then(({ switchView }) => {
+            document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+              .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
+            switchView('group');
+            import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+          });
+        } catch (err) {
+          if (errEl) errEl.textContent = err?.message || 'Impossible de mettre à jour.';
+          updateBtn.disabled = false;
+          updateBtn.textContent = '✅ Mettre à jour le panier collectif';
+        }
+      });
+    }
+
+    // SC-EDIT-08 — Câbler "Annuler les modifications"
+    const cancelBtn = editBar.querySelector('#k-sc-edit-cancel');
+    if (cancelBtn && !cancelBtn._wired) {
+      cancelBtn._wired = true;
+      cancelBtn.addEventListener('click', () => {
+        if (!confirm('Annuler les modifications ? Le panier temporaire sera vidé.')) return;
+        state.editSharedCart = null;
+        clearCart(); // vide le panier temporaire
+        showToast('Modifications annulées.', 'success');
+        // Retour onglet Groupe sans PUT
+        import('./b-nav.js').then(({ switchView }) => {
+          document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
+            .forEach(i => i.classList.toggle('active', i.dataset.tab === 'group'));
+          switchView('group');
+          import('./b-group-view.js').then(({ renderGroupView }) => renderGroupView());
+        });
+      });
+    }
+  } else {
+    // Plus de contexte edit : retirer le bandeau s'il existait
+    editBar?.remove();
   }
 
   // Bouton "Commander"
