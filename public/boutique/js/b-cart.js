@@ -676,9 +676,9 @@ function quickRemove(productId, btnEl) {
 
       // SC-EDIT-08 — Câbler annuler dans le drawer
       drawerEditBar.querySelector('#k-cart-edit-cancel')?.addEventListener('click', () => {
-        if (!confirm('Annuler les modifications ? Le panier temporaire sera vidé.')) return;
+        if (!confirm('Annuler les modifications ? Vous revenez dans l\'onglet Groupe sans sauvegarder.')) return;
+        // Supprimer le contexte d'édition — le panier boutique est laissé intact.
         state.editSharedCart = null;
-        clearCart();
         dom.cartOverlay?.classList.remove('open');
         dom.cartDrawer?.classList.remove('open');
         document.body.classList.remove('cart-open');
@@ -1428,7 +1428,9 @@ function renderSideCart() {
             return r.json();
           });
 
-          // SC-EDIT-07 — Succès : vider panier, supprimer contexte, retour onglet Groupe
+          // SC-EDIT-07 — Succès : vider panier boutique, supprimer contexte, retour onglet Groupe.
+          // Le snapshot est maintenant sauvegardé en DB — le panier boutique redevient
+          // disponible pour des achats normaux (même logique que N4-CLEAR à la création).
           state.editSharedCart = null;
           clearCart(); // vide state.cart + localStorage + re-render
 
@@ -1454,9 +1456,9 @@ function renderSideCart() {
     if (cancelBtn && !cancelBtn._wired) {
       cancelBtn._wired = true;
       cancelBtn.addEventListener('click', () => {
-        if (!confirm('Annuler les modifications ? Le panier temporaire sera vidé.')) return;
+        if (!confirm('Annuler les modifications ? Vous revenez dans l\'onglet Groupe sans sauvegarder.')) return;
+        // SC-EDIT-08 — Supprimer le contexte d'édition — le panier boutique est laissé intact.
         state.editSharedCart = null;
-        clearCart(); // vide le panier temporaire
         showToast('Modifications annulées.', 'success');
         // Retour onglet Groupe sans PUT
         import('./b-nav.js').then(({ switchView }) => {
