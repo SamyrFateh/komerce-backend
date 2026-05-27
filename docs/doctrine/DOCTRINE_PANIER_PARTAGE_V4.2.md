@@ -1,7 +1,7 @@
 # Doctrine Komerce — Panier partagé v4 à engagements indicatifs
 
-> Version 4.1 — 26 mai 2026  
-> Remplace conceptuellement la doctrine v3.0 fondée sur les contributions payées au fil de l'eau.  
+> Version 4.2 — 27 mai 2026  
+> Remplace la doctrine v4.1. Étend v4.1 avec les mécaniques de cycle de vie du panier boutique (N4-CLEAR, rebuild snapshot, notifications d'update), le flow d'ajustement engagement participant, et le contrat UX des formulaires groupe.  
 > Cible produit/backend : **panier ouvert en concertation, engagements indicatifs modifiables, paiements réels seulement après passage au règlement, créateur maître de la finalisation**.
 >
 > Important : le code actuel peut encore contenir l'ancien modèle de contribution payée avant finalisation. Les PR suivantes devront aligner backend et front.
@@ -120,6 +120,33 @@ Panier boutique courant
 
 À ce stade : aucun participant n'a payé, aucun engagement n'est exigible, le panier peut encore évoluer, et le suivi vit dans l'onglet Groupe.
 
+#### N4-CLEAR — Vidage du panier boutique à la création
+
+À la création réussie d'un panier partagé, **le panier boutique du créateur est systématiquement vidé**, côté serveur et côté client.
+
+Raisons :
+
+```txt
+1. Le panier vient d'être capturé comme snapshot dans shared_cart_items.
+2. Laisser le panier rempli créerait une confusion : ce panier visible
+   en boutique n'est plus "son" panier, il appartient au groupe.
+3. La boutique doit redevenir disponible pour un nouveau panier personnel.
+```
+
+Règle N4-CLEAR :
+
+```txt
+Si createSharedCart() réussit sans exception :
+→ backend : clearCreatorBasketInTx() dans la même transaction
+→ frontend : clearCart() inconditionnellement après la réponse
+→ pas de condition sur clear_local_cart dans la réponse
+→ état localStorage aligné sur état DB
+```
+
+Le snapshot figé (`shared_cart_items`) survit indépendamment du vidage. Il reste la référence immuable des articles du groupe.
+
+Le créateur voit son panier boutique vide après création. C'est le comportement correct.
+
 ### 5.2 Panier ouvert : phase de concertation
 
 Le panier ouvert est une phase de réunion de groupe.
@@ -135,6 +162,56 @@ Pendant cette phase :
 - le panier n'est pas encore une commande.
 
 Objectif : permettre au groupe de converger naturellement vers une version réaliste du panier.
+
+#### Mécanique de modification du panier par le créateur
+
+Après N4-CLEAR, le panier boutique du créateur est vide. Pour modifier le panier partagé, il y a deux chemins :
+
+**Chemin A — le créateur remet des articles dans sa boutique :**
+
+```txt
+Le créateur navigue en boutique → ajoute les articles voulus
+→ clique "Modifier les articles" dans l'onglet Groupe
+→ les articles actuels du panier boutique remplacent le snapshot
+```
+
+**Chemin B — le panier boutique est toujours vide (cas habituel après création) :**
+
+```txt
+Le créateur clique "Modifier les articles"
+→ le frontend détecte que state.cart est vide
+→ appel GET /api/shared-carts/:id/as-cart-items
+→ le snapshot est rechargé en mémoire comme panier boutique temporaire
+→ state.cart est reconstruit depuis les items du snapshot
+→ saveCart() persiste en localStorage (badge + sidebar cohérents)
+→ le créateur voit ses articles comme s'il venait de les ajouter
+→ modale de confirmation avec total estimé (snapshot)
+→ PUT /api/shared-carts/:id/items avec { product_id, quantity }
+```
+
+Règles du rebuild snapshot :
+
+```txt
+- price_kmf dans l'objet produit reconstruit = unit_price_kmf_snapshot (déjà promoé)
+- promo_pct = 0 explicite (empêche double application de remise dans renderSideCart / newTotal)
+- is_promo = false explicite
+- variant_label absent (non stocké dans le snapshot) → chip de variante omis, acceptable
+- promo_price_kmf absent → buildCartShareURL retombe sur price_kmf → correct
+- Le total affiché dans la modale est le total snapshot, pas le prix DB courant
+  → le serveur recalcule toujours depuis la DB à la réception du PUT
+```
+
+#### Notifications d'update aux participants (S2-06)
+
+À chaque `PUT /:id/items` réussi, les participants qui ont un engagement actif (`pledged`, `locked_for_settlement`) et un numéro de téléphone sont notifiés par WhatsApp (template `shared_cart_items_updated`).
+
+Ces notifications sont **best-effort** (post-commit, `setImmediate`) : un échec de notification n'annule pas la modification du panier. Les erreurs sont tracées dans `shared_cart_events`.
+
+```txt
+Colonnes correctes : participant_phone, SPLIT_PART(participant_name, ' ', 1) AS first_name
+Statuts notifiés : 'pledged', 'locked_for_settlement'
+Statuts fantômes à ne pas utiliser : 'pending', 'confirmed' (n'existent pas dans l'enum)
+```
 
 ### 5.3 Engagements indicatifs
 
@@ -241,7 +318,42 @@ annuler
 
 ### 7.2 Participant change d'avis pendant le panier ouvert
 
-L'engagement étant indicatif, il peut être modifié ou retiré selon les règles UX. Le créateur voit l'évolution.
+L'engagement étant indicatif, il peut être modifié ou retiré à tout moment pendant la phase ouverte. Le créateur voit l'évolution en temps réel (polling 30s).
+
+#### Flow d'ajustement d'engagement participant
+
+```txt
+Participant ouvre le lien public du panier
+→ entre son numéro de téléphone
+→ GET /api/shared-carts/public/:token/commitments/by-phone
+→ si engagement existant trouvé :
+    formulaire prérempli (nom, montant, message)
+    bouton "Modifier mon engagement"
+    bouton "Retirer mon engagement"
+→ si aucun engagement trouvé :
+    formulaire vierge d'engagement indicatif
+```
+
+**Modification :**
+
+```txt
+PATCH /api/shared-carts/public/:token/commitments
+→ upsert par participant_phone
+→ statut écrit : 'updated' (distinct de 'pledged' pour traçabilité)
+→ lockCommitmentsForSettlement gère 'pledged' ET 'updated'
+→ le créateur voit le montant révisé dans l'onglet Groupe
+```
+
+**Retrait :**
+
+```txt
+DELETE /api/shared-carts/public/:token/commitments/:id (ou PATCH status='withdrawn')
+→ statut : 'withdrawn'
+→ engagement n'est plus affiché, n'est plus locké au passage au règlement
+→ le créateur voit l'engagement disparaître
+```
+
+Règle : un engagement `locked_for_settlement` ne peut plus être modifié ni retiré par le participant. Toute tentative doit retourner une erreur claire (`commitment_locked`).
 
 ### 7.3 Participant ne paie pas après passage au règlement
 
@@ -359,20 +471,88 @@ Compatible doctrine : panier ouvert comme phase de concertation, engagements lib
 
 ---
 
-## 12. Résumé exécutif
+## 12. Contrat UX — Formulaires groupe
+
+Les formulaires du panier partagé (engagement indicatif, paiement participant, identification par téléphone) **doivent être visuellement identiques aux formulaires du checkout boutique et du suivi de commande**.
+
+### 12.1 Pourquoi
 
 ```txt
-Panier partagé Komerce v4 =
+Le panier partagé est une capacité naturelle de la boutique (doctrine §1).
+Un formulaire visiblement différent rompt la cohérence et crée de la méfiance.
+Un participant qui voit un formulaire "inconnu" peut hésiter à s'engager.
+Le checkout et le suivi de commande ont déjà validé la confiance utilisateur.
+```
+
+### 12.2 Règles visuelles obligatoires
+
+| Élément | Référence à respecter |
+|---|---|
+| Couleur de fond des inputs | identique au checkout (`k-ck-input` / `k-ck-km-input`) |
+| Border-radius des inputs | identique |
+| Padding interne des inputs | identique |
+| Couleur de bordure (focus / erreur) | identique |
+| Label (position, taille, couleur) | identique au checkout |
+| Bouton principal | identique au CTA checkout (couleur, taille, font-weight) |
+| Bouton secondaire / ghost | identique aux actions secondaires du checkout |
+| Message d'erreur inline | même style que les erreurs de formulaire checkout |
+| Espacement entre champs | identique |
+
+### 12.3 Ce qui peut différer
+
+```txt
+- Le contenu des labels (les mots, pas le style)
+- Les icônes ou emoji d'accompagnement
+- Le titre de section (ex : "Déclarer mon engagement")
+- Les placeholders spécifiques au contexte groupe
+```
+
+### 12.4 Implémentation
+
+Les classes CSS `k-group-input`, `k-group-label`, `k-group-btn` doivent dériver visuellement des tokens checkout. En pratique :
+
+```css
+/* b-group-view / group-cart-flow.css */
+.k-group-input   { /* même apparence que k-ck-input */ }
+.k-group-label   { /* même apparence que k-ck-label */ }
+.k-group-btn--primary  { /* même apparence que le bouton primaire checkout */ }
+.k-group-btn--ghost    { /* même apparence que le bouton secondaire checkout */ }
+```
+
+Une divergence visible entre les deux formulaires est une non-conformité doctrine.
+
+### 12.5 Cohérence multi-contexte
+
+Le même contrat s'applique à tous les formulaires groupe :
+
+```txt
+- Formulaire d'engagement indicatif (participant, phase ouverte)
+- Formulaire de paiement (participant, phase règlement)
+- Formulaire d'identification par téléphone (retrouver un engagement)
+- Formulaire de modification d'engagement
+- Formulaire de création du panier partagé (titre, identité créateur guest)
+```
+
+---
+
+## 13. Résumé exécutif
+
+```txt
+Panier partagé Komerce v4.2 =
   panier boutique réel
 + lien WhatsApp
++ N4-CLEAR à la création (panier boutique vidé, snapshot préservé)
 + panier ouvert comme phase de concertation
-+ engagements indicatifs modifiables
++ engagements indicatifs modifiables par les participants
++ rebuild snapshot pour modification du panier par le créateur
++ notifications WhatsApp sur update articles (best-effort)
 + aucune préautorisation Stripe
 + passage au règlement par le créateur
 + fenêtre de règlement réel
 + ajustement ou compensation si engagements non honorés
 + finalisation créateur
 + annulation possible
++ formulaires groupe visuellement identiques au checkout
 ```
 
 La philosophie :
