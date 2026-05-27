@@ -901,6 +901,48 @@ function injectStyles() {
   }
 }
 
+
+/* SAFE V2-D — mini guide créateur dans la colonne gauche */
+.k-group-mini-guide{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  background:rgba(31,122,84,.06);
+  border:1px solid rgba(31,122,84,.14);
+  border-radius:14px;
+  padding:9px 10px;
+  margin:8px 0 8px;
+}
+.k-group-mini-guide span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  font-size:12px;
+  line-height:1.25;
+  color:var(--text);
+  white-space:nowrap;
+}
+.k-group-mini-guide b{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  flex:0 0 18px;
+  border-radius:999px;
+  background:var(--green,#2f8f46);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+}
+@media(max-width:700px){
+  .k-group-mini-guide{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
@@ -1547,6 +1589,25 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
 
 
+
+function renderCreatorMiniGuide(settlementOpen = false) {
+  if (settlementOpen) {
+    return `
+      <div class="k-group-mini-guide">
+        <span><b>1</b> Paiements ouverts</span>
+        <span><b>2</b> Suivez les règlements</span>
+        <span><b>3</b> Finalisez la commande</span>
+      </div>`;
+  }
+
+  return `
+    <div class="k-group-mini-guide">
+      <span><b>1</b> Partagez le lien</span>
+      <span><b>2</b> Les proches s'engagent</span>
+      <span><b>3</b> Lancez le règlement</span>
+    </div>`;
+}
+
 function renderCreatorArticlesPanel(items = [], cart = {}) {
   const safeItems = Array.isArray(items) ? items : [];
   const rows = safeItems.slice(0, 8).map(it => {
@@ -1582,15 +1643,6 @@ function renderCreatorArticlesPanel(items = [], cart = {}) {
           <span>Total panier</span>
           <strong>${fmt(total, 'KMF')}</strong>
         </div>
-      </div>
-
-      <div class="k-group-side-card k-group-side-help">
-        <strong>Comment ça marche ?</strong>
-        <ol>
-          <li>Partagez le lien</li>
-          <li>Chacun indique son engagement</li>
-          <li>Vous lancez le règlement</li>
-        </ol>
       </div>
     </aside>`;
 }
@@ -1783,6 +1835,7 @@ export async function renderGroupView(opts = {}) {
             ? '🔐 Panier en règlement — les participants peuvent maintenant payer.'
             : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
         </div>
+        ${renderCreatorMiniGuide(settlementOpen)}
         ${renderProgress(cart, contributions, commitmentsList)}
         ${showSelfForm && !settlementOpen ? `
           <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi m'engager</button>
