@@ -200,6 +200,46 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
 
 // ───────────────────────────────────────────────────────────────────────
 // Refresh 28/04/26 — Variante "from cart items"
+// ─── Doctrine v4.2 — N4-CLEAR ──────────────────────────────────────────────
+/**
+ * Vide le panier boutique DB du créateur dans la transaction en cours.
+ * Cible uniquement les paniers non verrouillés et non-gift.
+ *
+ * Appelé APRÈS l'insertion du shared_cart et de ses items (snapshot sauvegardé),
+ * DANS la même transaction — atomicité garantie.
+ * Si le snapshot a échoué, la transaction est déjà en ROLLBACK : on n'arrive
+ * jamais ici, le panier boutique reste intact.
+ *
+ * @param {object} client — client pg dans la transaction active
+ * @param {string} userId — id du créateur
+ * @returns {number} nombre de basket_items supprimés
+ */
+async function clearCreatorBasketInTx(client, userId) {
+  const { rows: baskets } = await client.query(
+    `SELECT id FROM baskets
+      WHERE owner_id = $1
+        AND is_locked = FALSE
+        AND type != 'gift'
+        AND expires_at > NOW()`,
+    [userId]
+  );
+  if (!baskets.length) return 0;
+
+  const basketIds = baskets.map(b => b.id);
+
+  const { rowCount } = await client.query(
+    `DELETE FROM basket_items WHERE basket_id = ANY($1)`,
+    [basketIds]
+  );
+  await client.query(
+    `UPDATE baskets SET updated_at = NOW() WHERE id = ANY($1)`,
+    [basketIds]
+  );
+
+  return rowCount || 0;
+}
+// ─── fin N4-CLEAR helper ────────────────────────────────────────────────────
+
 // Le panier mobile boutique vit en localStorage côté client (pas de basket
 // DB sync). Cette fonction crée un shared_cart à partir des items envoyés
 // directement.
@@ -352,7 +392,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       insertedItems.push(itemRows[0]);
     }
 
-    // 10. Audit
+    // 10. Audit création
     await addEvent(client, sharedCart.id, 'shared_cart_created',
       { type: 'user', id: userId },
       {
@@ -363,7 +403,24 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       }
     );
 
-    return { sharedCart, items: insertedItems, token };
+    // 11. Vider le panier boutique DB du créateur — Doctrine v4.2 N4-CLEAR
+    // Atomique avec la création : si le snapshot (étapes 8-9) a échoué,
+    // la transaction est déjà en ROLLBACK — on n'arrive jamais ici.
+    // Le flag clearLocalCart: true signale à la route de demander au client
+    // de vider son localStorage boutique.
+    const itemsCleared = await clearCreatorBasketInTx(client, userId);
+    if (itemsCleared > 0) {
+      await addEvent(client, sharedCart.id, 'creator_basket_cleared',
+        { type: 'user', id: userId },
+        {
+          basket_items_cleared: itemsCleared,
+          doctrine: 'v4.2_N4-CLEAR',
+          note: 'localStorage vidé via clearLocalCart flag dans la réponse HTTP',
+        }
+      );
+    }
+
+    return { sharedCart, items: insertedItems, token, clearLocalCart: true };
   });
 }
 
@@ -1052,6 +1109,7 @@ module.exports = {
   // API principale
   createSharedCartFromBasket,
   createSharedCartFromCartItems,         // Refresh 28/04/26
+  clearCreatorBasketInTx,                // Doctrine v4.2 N4-CLEAR — exposé pour tests
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,

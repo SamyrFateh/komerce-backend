@@ -476,6 +476,11 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       deliveryRelayId: delivery_relay_id,
     });
 
+    // Doctrine v4.2 — N4-CLEAR
+    // clear_local_cart: true signale au client (b-share-cart.js) de vider
+    // son localStorage boutique. Le vidage DB est déjà fait dans la transaction
+    // du engine (clearCreatorBasketInTx). Le flag ici couvre le localStorage
+    // mobile qui ne passe pas par la table baskets.
     res.json({
       shared_cart_id: result.sharedCart.id,
       token: result.token,
@@ -483,6 +488,7 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       total_kmf: result.sharedCart.total_kmf_snapshot,
       expires_at: result.sharedCart.expires_at,
       items_count: result.items.length,
+      clear_local_cart: result.clearLocalCart === true,  // N4-CLEAR
     });
 
     // S3-02 — Notification WhatsApp au créateur (post-commit, best-effort)

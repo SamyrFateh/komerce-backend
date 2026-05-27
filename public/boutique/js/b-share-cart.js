@@ -11,6 +11,7 @@
 
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
+import { clearCart } from './b-cart.js';  // Doctrine v4.2 — N4-CLEAR
 import { refreshGroupBadge } from './b-group-view.js';
 import { showBanner, hideBanner, refreshBanner } from './b-group-banner.js';
 import {
@@ -538,6 +539,13 @@ export async function startShareFlow(opts = {}) {
 
   try {
     const data = await createSharedCart(formData);
+
+    // Doctrine v4.2 — N4-CLEAR
+    // Le backend signale que le panier boutique DB a été vidé atomiquement.
+    // On vide aussi le localStorage boutique pour rester cohérent.
+    if (data.clear_local_cart === true) {
+      clearCart();
+    }
 
     const title = formData.title || 'Panier groupe';
     const cart = {
