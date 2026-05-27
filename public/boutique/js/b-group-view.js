@@ -464,6 +464,126 @@ function injectStyles() {
   }
 }
 
+
+/* SAFE V2 — cockpit groupe compact desktop, sans changement HTML */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    max-width:1240px!important;
+    width:100%!important;
+    margin:0 auto 56px!important;
+    padding:0 32px!important;
+    box-sizing:border-box!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:700px!important;
+    max-width:700px!important;
+    margin-left:0!important;
+    margin-right:auto!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:14px 22px 8px!important;
+    border-radius:18px 18px 0 0!important;
+  }
+
+  .k-group-view .k-group-header h2{
+    font-size:22px!important;
+    margin:0 0 3px!important;
+    line-height:1.15!important;
+  }
+
+  .k-group-view .k-group-subhead{
+    font-size:14px!important;
+    line-height:1.3!important;
+  }
+
+  .k-group-view .k-group-progress-card{
+    padding:14px 22px 16px!important;
+    margin:0 0 10px!important;
+    border-radius:0 0 18px 18px!important;
+  }
+
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:14px 22px!important;
+    margin:10px 0 0!important;
+    border-radius:18px!important;
+  }
+
+  .k-group-view .k-group-self-toggle{
+    margin:10px 0 0!important;
+    padding:11px 14px!important;
+    min-height:42px!important;
+    border-radius:16px!important;
+    font-size:14px!important;
+  }
+
+  .k-group-view .k-group-creator-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:10px!important;
+  }
+
+  .k-group-view .k-group-btn{
+    min-height:42px!important;
+    padding:9px 14px!important;
+    border-radius:999px!important;
+  }
+
+  .k-group-view h3,
+  .k-group-view .k-group-section-title{
+    font-size:18px!important;
+    margin:0 0 9px!important;
+  }
+
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint{
+    margin:7px 0 0!important;
+    font-size:12px!important;
+    line-height:1.3!important;
+  }
+
+  .k-group-view hr{
+    margin:10px 0!important;
+  }
+
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea{
+    min-height:40px!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    margin:10px auto 56px!important;
+    padding:0 14px!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:auto!important;
+    max-width:none!important;
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:15px 16px 8px!important;
+  }
+
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:15px 16px!important;
+    margin-top:10px!important;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
