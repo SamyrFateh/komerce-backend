@@ -1576,6 +1576,30 @@ function injectStyles() {
   }
 }
 
+
+/* POSITION — remonter le cockpit Groupe sous le header */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    margin-top:-118px!important;
+  }
+
+  .k-group-cockpit{
+    align-items:start!important;
+  }
+}
+
+@media(min-width:1400px){
+  #k-group-view.k-group-view{
+    margin-top:-132px!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    margin-top:0!important;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
