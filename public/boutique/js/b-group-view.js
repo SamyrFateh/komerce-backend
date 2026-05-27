@@ -943,6 +943,202 @@ function injectStyles() {
   }
 }
 
+
+/* SAFE V2-E — cockpit ultra compact desktop */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    margin:-34px auto 36px!important;
+    padding:0 32px!important;
+  }
+
+  .k-group-cockpit{
+    grid-template-columns:minmax(580px,660px) minmax(280px,330px)!important;
+    gap:14px!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:10px 18px 6px!important;
+    border-radius:14px 14px 0 0!important;
+  }
+
+  .k-group-view .k-group-header h2{
+    font-size:20px!important;
+    margin:0!important;
+    line-height:1.1!important;
+  }
+
+  .k-group-view .k-group-subhead{
+    font-size:12.5px!important;
+    line-height:1.22!important;
+    margin-top:3px!important;
+  }
+
+  .k-group-mini-guide{
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    padding:6px 8px!important;
+    margin:6px 0!important;
+    border-radius:12px!important;
+  }
+
+  .k-group-mini-guide span{
+    font-size:11.5px!important;
+    line-height:1.1!important;
+    white-space:nowrap!important;
+  }
+
+  .k-group-mini-guide b{
+    width:16px!important;
+    height:16px!important;
+    flex-basis:16px!important;
+    font-size:10px!important;
+  }
+
+  .k-group-view .k-group-progress-card{
+    padding:10px 18px 12px!important;
+    margin:0 0 6px!important;
+    border-radius:0 0 14px 14px!important;
+  }
+
+  .k-group-view .k-group-progress-card h3{
+    font-size:15px!important;
+    margin:0 0 2px!important;
+  }
+
+  .k-group-view .k-group-progress-card small,
+  .k-group-view .k-group-progress-card span,
+  .k-group-view .k-group-progress-card p{
+    font-size:12px!important;
+  }
+
+  .k-group-view .k-group-progress{
+    height:5px!important;
+    margin:5px 0!important;
+  }
+
+  .k-group-view .k-group-self-toggle{
+    margin:6px 0 0!important;
+    padding:7px 10px!important;
+    min-height:34px!important;
+    border-radius:12px!important;
+    font-size:12.5px!important;
+  }
+
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:10px 18px!important;
+    margin:6px 0 0!important;
+    border-radius:14px!important;
+  }
+
+  .k-group-view h3,
+  .k-group-view .k-group-section-title{
+    font-size:16px!important;
+    margin:0 0 7px!important;
+  }
+
+  .k-group-view .k-group-creator-actions{
+    gap:7px!important;
+  }
+
+  .k-group-view .k-group-btn{
+    min-height:34px!important;
+    padding:7px 10px!important;
+    font-size:12.5px!important;
+  }
+
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint{
+    margin:5px 0 0!important;
+    font-size:11px!important;
+    line-height:1.2!important;
+  }
+
+  .k-group-view hr{
+    margin:7px 0!important;
+  }
+
+  .k-group-view label{
+    font-size:11.5px!important;
+    margin-bottom:3px!important;
+  }
+
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea{
+    min-height:32px!important;
+    padding:6px 10px!important;
+    font-size:12.5px!important;
+    border-radius:10px!important;
+  }
+
+  .k-group-side-panel{
+    top:76px!important;
+  }
+
+  .k-group-side-card{
+    padding:10px!important;
+    border-radius:14px!important;
+  }
+
+  .k-group-side-card + .k-group-side-card{
+    margin-top:7px!important;
+  }
+
+  .k-group-side-head{
+    margin-bottom:7px!important;
+  }
+
+  .k-group-side-head strong{
+    font-size:13.5px!important;
+  }
+
+  .k-group-side-head span{
+    font-size:11px!important;
+  }
+
+  .k-group-side-list{
+    gap:6px!important;
+  }
+
+  .k-group-side-item{
+    grid-template-columns:34px 1fr!important;
+    gap:7px!important;
+  }
+
+  .k-group-side-item img,
+  .k-group-side-item-fallback{
+    width:34px!important;
+    height:34px!important;
+    border-radius:9px!important;
+  }
+
+  .k-group-side-item-main strong{
+    font-size:12px!important;
+    line-height:1.15!important;
+  }
+
+  .k-group-side-item-main span{
+    font-size:11px!important;
+    margin-top:1px!important;
+  }
+
+  .k-group-side-total{
+    margin-top:7px!important;
+    padding-top:7px!important;
+    font-size:11.5px!important;
+  }
+}
+
+@media(max-width:999px){
+  .k-group-mini-guide{
+    padding:8px 10px!important;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
