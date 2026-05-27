@@ -330,18 +330,25 @@ function promptInit(needsAuth) {
     let nameInput  = null;
 
     if (needsAuth) {
-      const nameGroup = makeInput('k-sm-name-f', 'Votre prénom *', 'text', 'Ex : Fatima', nameData, 'name');
+      // FIX UX — "Nom et prénom" (full_name en DB) plutôt que juste "prénom"
+      const nameGroup = makeInput('k-sm-name-f', 'Votre nom et prénom *', 'text', 'Ex : Fatima Ali', nameData, 'name');
       const ni = nameGroup.querySelector('input');
       if (ni) {
         ni.setAttribute('maxlength', '60');
-        ni.setAttribute('autocomplete', 'given-name');
+        ni.setAttribute('autocomplete', 'name');
       }
       nameInput = ni;
       sheet.appendChild(nameGroup);
 
-      // makeIntlPhoneInput crée le sélecteur d'indicatif + champ téléphone
-      // avec exactement le même rendu que le checkout (k-ck-phone-wrap/select/input)
+      // makeIntlPhoneInput génère les classes k-ck-* du checkout — on les remplace
+      // par les classes k-sm-* du modal pour un rendu cohérent (padding, border, focus).
       const phoneGroup = makeIntlPhoneInput('k-sm-ph', 'Votre numéro WhatsApp *', phoneData, 'phone');
+      phoneGroup.classList.replace('k-ck-group', 'k-sm-field');
+      phoneGroup.querySelector('label')?.classList.replace('k-ck-label', 'k-sm-label');
+      const phoneWrap = phoneGroup.querySelector('.k-ck-phone-wrap');
+      if (phoneWrap) phoneWrap.className = 'k-sm-phone-row';
+      phoneGroup.querySelector('.k-ck-phone-select')?.classList.replace('k-ck-phone-select', 'k-sm-phone-sel');
+      phoneGroup.querySelector('.k-ck-phone-input')?.classList.replace('k-ck-phone-input', 'k-sm-phone-input');
       sheet.appendChild(phoneGroup);
     }
 
@@ -365,7 +372,7 @@ function promptInit(needsAuth) {
     // ── Validation live (needsAuth uniquement) ─────────────────────
     function updateSubmit() {
       if (!needsAuth) { btn.disabled = false; return; }
-      const nameOk  = (nameData.name?.trim().length >= 2) && !/\d/.test(nameData.name);
+      const nameOk  = nameData.name?.trim().length >= 3;
       const phoneOk = (phoneData.phone || '').length >= 8;
       btn.disabled  = !(nameOk && phoneOk);
     }
@@ -391,8 +398,8 @@ function promptInit(needsAuth) {
       const phone = phoneData.phone || '';
 
       if (needsAuth) {
-        if (name.length < 2 || /\d/.test(name)) {
-          errEl.textContent = 'Prénom invalide (lettres uniquement, 2 caractères minimum).';
+        if (name.length < 3) {
+          errEl.textContent = 'Nom invalide (3 caractères minimum).';
           nameInput?.focus();
           return;
         }
@@ -538,13 +545,6 @@ export async function startShareFlow(opts = {}) {
   try {
     const data = await createSharedCart(formData);
 
-    // Doctrine v4.2 — N4-CLEAR
-    // La création d'un panier partagé depuis la boutique vide toujours le panier local.
-    // On ne conditionne plus sur data.clear_local_cart (dépendance backend fragile) :
-    // si createSharedCart() n'a pas lancé d'exception, le panier DB a été vidé côté serveur,
-    // le localStorage doit l'être aussi — inconditionnellement.
-    clearCart();
-
     const title = formData.title || 'Panier groupe';
     const cart = {
       id: data.shared_cart_id,
@@ -559,6 +559,10 @@ export async function startShareFlow(opts = {}) {
       created_at: new Date().toISOString(),
     };
 
+    // Doctrine v4.2 — N4-CLEAR (ordre critique)
+    // 1. Poser l'état groupe EN PREMIER — showBanner() vérifie state.shareToken.
+    // 2. Vider le panier EN SECOND, avec guard pour que cart:cleared ne détruise pas
+    //    le shareToken qu'on vient de poser.
     applyCartToState(cart);
     refreshSharedBadges(true, cart);
     showBanner({
@@ -569,6 +573,10 @@ export async function startShareFlow(opts = {}) {
       total_kmf_snapshot: data.total_kmf,
     });
     openWhatsApp(title, cart.share_url);
+
+    _skipClearShareOnCartCleared = true;
+    clearCart();
+    _skipClearShareOnCartCleared = false;
 
     setTimeout(switchToGroup, 600);
   } catch (err) {
@@ -585,6 +593,7 @@ async function handleShareClick() {
 /* ── Installation ───────────────────────────────────────────────── */
 let _installed = false;
 let _restorePromise = null; // FIX S2-05 — permet d'attendre la restauration dans startShareFlow
+let _skipClearShareOnCartCleared = false; // FIX N4-CLEAR — évite que clearCart() efface shareToken juste posé
 
 export function install() {
   if (_installed) return;
@@ -612,6 +621,7 @@ export function install() {
   document.getElementById('k-sc-group-view')?.addEventListener('click', switchToGroup);
 
   document.addEventListener('cart:cleared', () => {
+    if (_skipClearShareOnCartCleared) return; // N4-CLEAR — vidage intentionnel post-création groupe
     clearShareState();
     refreshSharedBadges(false);
   });

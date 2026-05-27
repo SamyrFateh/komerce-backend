@@ -207,7 +207,16 @@ export function refreshBanner() {
   fetch(`/api/shared-carts/public/${state.shareToken}`, { credentials: 'include' })
     .then(rsp => rsp.ok ? rsp.json() : null)
     .then(data => {
-      if (!data?.cart) { hideBanner(); return; }
+      if (!data?.cart) {
+        hideBanner();
+        // FIX — le panier n'existe plus en DB (supprimé ou expiré) :
+        // purger le sessionStorage pour ne pas réafficher la bannière au prochain boot.
+        try {
+          sessionStorage.removeItem('kmrc_share');
+          sessionStorage.removeItem('kmrc_banner_dismissed');
+        } catch (_) {}
+        return;
+      }
       state.shareExpiry = data.cart.expires_at;
       state.shareStatus = data.cart.status;
       state.shareTotalKmf = r(data.cart.total_kmf_snapshot);
