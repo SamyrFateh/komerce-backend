@@ -503,6 +503,15 @@ function renderCreatorActions(cart) {
             Fige les engagements et ouvre les paiements. Action irréversible.
           </p>
         </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items"
+            style="width:100%">
+            ✏️ Modifier les articles
+          </button>
+          <p class="k-group-share-hint" style="margin-top:4px">
+            Les participants seront notifiés du nouveau total.
+          </p>
+        </div>
         <p class="k-group-input-error" id="k-group-settlement-err"></p>
         ${cancelBtn}
       </div>`;
@@ -654,6 +663,46 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       onSettlement?.(); // refresh la vue
     } catch (err) {
       showToast(err?.message || 'Impossible d\'annuler.', 'error');
+    }
+  });
+
+  // S2-06 — Modifier les articles du panier (phase ouverte uniquement)
+  el.querySelector('#k-group-edit-items')?.addEventListener('click', async () => {
+    const btn = el.querySelector('#k-group-edit-items');
+    const cartItems = (state.cart || [])
+      .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
+      .filter(it => it.product_id);
+
+    if (!cartItems.length) {
+      showToast('Votre panier boutique est vide. Ajoutez des articles avant de mettre à jour.', 'error');
+      return;
+    }
+
+    const newTotal = (state.cart || []).reduce((sum, it) => {
+      const price = it.product?.promo_pct > 0 && it.product?.is_promo
+        ? Math.round((it.product.price_kmf || 0) * (1 - it.product.promo_pct / 100))
+        : Math.round(it.product?.price_kmf || 0);
+      return sum + price * (Number(it.qty) || 1);
+    }, 0);
+
+    const msg = `Remplacer les articles du panier partagé par le contenu actuel de votre boutique ?`
+      + (newTotal > 0 ? `
+
+Nouveau total estimé : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
+      + `
+
+Les participants seront notifiés.`;
+    if (!confirm(msg)) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Mise à jour…'; }
+
+    try {
+      await window.K.request(`/api/shared-carts/${cartId}/items`, 'PUT', { cart_items: cartItems });
+      showToast('Articles mis à jour. Les participants ont été notifiés.', 'success');
+      onSettlement?.(); // refreshView
+    } catch (err) {
+      showToast(err?.message || 'Impossible de mettre à jour les articles.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
     }
   });
 }

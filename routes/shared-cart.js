@@ -19,6 +19,7 @@
  *   POST   /api/shared-carts/from-basket
  *   GET    /api/shared-carts/mine
  *   GET    /api/shared-carts/:id
+ *   PUT    /api/shared-carts/:id/items          ← S2-06 : modifier les articles (phase ouverte)
  *   POST   /api/shared-carts/:id/open-settlement
  *   POST   /api/shared-carts/:id/finalize
  *   POST   /api/shared-carts/:id/cancel
@@ -45,6 +46,7 @@ const { listManualRefundQueue } = require('../services/shared-cart-refund-queue'
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
+const { updateOpenSharedCartItems }  = require('../services/shared-cart-items-service');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('./meta-whatsapp');
 // Templates Meta requis (à enregistrer dans Meta Business Suite) :
@@ -705,6 +707,71 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
         err.message.includes('requis')) {
       return res.status(400).json({ error: err.message });
     }
+    next(err);
+  }
+});
+
+// S2-06 — Modifier les articles du panier (phase ouverte uniquement)
+// Le service vérifie : statut actif, pas en règlement, zéro paiement confirmé.
+// Notifications WhatsApp aux participants post-commit, best-effort.
+router.put('/:id/items', authenticate, async (req, res, next) => {
+  try {
+    const { cart_items } = req.body;
+    if (!Array.isArray(cart_items) || cart_items.length === 0) {
+      return res.status(400).json({ error: 'cart_items requis', code: 'cart_items_required' });
+    }
+
+    const { cart, items } = await updateOpenSharedCartItems(req.params.id, req.user.id, cart_items);
+    res.json({ ok: true, cart, items, items_count: items.length });
+
+    // Notifications WhatsApp aux participants (post-commit, best-effort)
+    // Template Meta requis : shared_cart_items_updated
+    //   {{1}} prénom  {{2}} titre panier  {{3}} nouveau total KMF  {{4}} URL lien partagé
+    setImmediate(async () => {
+      try {
+        const { rows: participants } = await db.query(
+          `SELECT phone, first_name
+             FROM shared_cart_commitments
+            WHERE shared_cart_id = $1
+              AND status IN ('pending', 'confirmed', 'locked_for_settlement')
+              AND phone IS NOT NULL`,
+          [req.params.id]
+        );
+
+        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${cart.token}`;
+        const title    = cart.title || 'Panier groupe';
+        const total    = String(Math.round(Number(cart.total_kmf_snapshot) || 0));
+
+        for (const p of participants) {
+          const result = await sendTemplateWhatsApp({
+            to: p.phone,
+            templateName: 'shared_cart_items_updated',
+            components: [{
+              type: 'body',
+              parameters: [
+                { type: 'text', text: p.first_name || 'Participant' },
+                { type: 'text', text: title },
+                { type: 'text', text: total },
+                { type: 'text', text: shareUrl },
+              ],
+            }],
+          });
+          if (!result.success && !result.skipped) {
+            log.warn({ phone: p.phone, error: result.error }, '[S2-06] items_update_notification_failed');
+            await db.query(
+              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+                 VALUES ($1, 'items_update_notification_failed', 'system', $2)`,
+              [req.params.id, { phone: p.phone, error: result.error }]
+            ).catch(() => {});
+          }
+        }
+        log.info({ cart_id: req.params.id, count: participants.length }, '[S2-06] items update WhatsApp notifications attempted');
+      } catch (err) {
+        log.error({ err, cart_id: req.params.id }, '[S2-06] items update notification batch failed');
+      }
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     next(err);
   }
 });

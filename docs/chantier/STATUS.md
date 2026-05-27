@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-27** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
+> Mis à jour : **2026-05-27** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -69,6 +69,7 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 4. **Les erreurs WhatsApp ne bloquent jamais la route principale.** Toujours post-commit, best-effort.
 5. **Aucune surface ne sort l'utilisateur de la boutique durablement.** Pages externes ramènent toujours vers la boutique.
 6. **Les tokens publics ne révèlent pas les téléphones complets.** `maskPhone()` reste appliqué partout.
+7. **La modification d'articles ne peut intervenir qu'en phase ouverte.** `PUT /:id/items` bloque avec 409 si `settlement_open = true` ou statut fermé.
 
 ### Sprint 1 — Parcours contributeur
 
@@ -112,6 +113,12 @@ Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution 
 | S2-03 | Durée règlement choisie (24h / 48h / 7j, défaut 48h) | `b-group-view.js` | ✅ |
 | S2-04 | Expiration règlement affichée (rouge si < 6h) | `b-group-view.js` | ✅ |
 | S2-05 | Raccourci "Voir le groupe actif" dans la modale "Payer en groupe" | `b-share-cart.js` | ✅ |
+| S2-06 | Modification des articles du panier par le créateur → mise à jour participants | `routes/shared-cart.js`, `b-group-view.js`, `shared-cart-public.html` | ✅ |
+
+**✅ S2-06 implémenté (2026-05-27)** — Flux complet :
+- `routes/shared-cart.js` : import `shared-cart-items-service`, route `PUT /:id/items` (authenticate, guard 409 via service, notification WhatsApp post-commit best-effort aux participants en `pending/confirmed/locked_for_settlement`)
+- `b-group-view.js` : bouton "✏️ Modifier les articles" dans `renderCreatorActions` (branche `!settlementOpen` uniquement) + handler `#k-group-edit-items` dans `bindCreatorActions` → lit `state.cart`, confirme avec nouveau total estimé, appelle `window.K.request PUT /api/shared-carts/:id/items`, puis `refreshView`
+- `shared-cart-public.html` : `adaptApiShape` expose `items_updated_at` depuis `metadata.open_phase_items_updated_at` ; `render()` affiche le bandeau `#sc-items-updated-banner` (phase ouverte uniquement) avec date de mise à jour, nouveau total, CTA "Réviser mon engagement →" scroll vers le formulaire
 
 **✅ BUG S2-05 résolu (2026-05-27)** — Race condition dans `b-share-cart.js` : `restoreSharedCartFromBackend()` (async, fire-and-forget) pouvait s'exécuter après un clic rapide sur "Payer en groupe" et effacer le `state.shareToken` chargé par `loadShareState()`.
 
@@ -132,6 +139,14 @@ Corrections apportées :
 - `[S2-04-T2]` 2h restantes → affichage en rouge ☐
 - `[S2-05-T1]` Panier actif (`state.shareToken` non null) → modale propose deux options ☐
 - `[S2-05-T2]` "Voir le groupe actif" → bascule onglet Groupe, pas de redirect ☐
+- `[S2-06-T1]` Créateur phase ouverte → bouton "Modifier les articles" visible ☐
+- `[S2-06-T2]` Créateur phase règlement ou fermée → bouton absent ☐
+- `[S2-06-T3]` `PUT /:id/items` valide → 200 OK, articles mis à jour ☐
+- `[S2-06-T4]` 3 participants avec téléphone → 3 notifications WhatsApp tentées ☐
+- `[S2-06-T5]` Échec WhatsApp → route retourne 200, événement `shared_cart_items_updated` loggé ☐
+- `[S2-06-T6]` Participant recharge `GET /public/:token` → nouveau total et nouvelle liste d'articles ☐
+- `[S2-06-T7]` Bandeau "Le panier a été modifié" visible sur `shared-cart-public.html` après mise à jour ☐
+- `[S2-06-T8]` CTA révision engagement → formulaire commitment pré-rempli avec nouveau total suggéré ☐
 
 ### Sprint 3 — Notifications et crons
 
@@ -357,6 +372,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 - **`baskets.js`** : ✅ BASKETS-1 résolu — alerte divergence prix implémentée (`snapshot_price_kmf` vs `current_price_kmf`, `log.warn` structuré, `price_changed` par item, `price_divergence` au niveau panier).
 - **N4** : JWT révocation — **migration 072 ✅** (`revoked_tokens` + index), **câblage applicatif ⏳**. Reste à faire : (1) `jti` uuid dans `generateToken` de `auth-guest.js`, (2) check `revoked_tokens` dans `authenticate` de `auth.js`, (3) INSERT `revoked_tokens` au logout dans `routes/auth.js`, (4) `startJwtRevocationCleanupCron` dans `bootstrap/crons.js`. Non bloquant go-live (token 90j, mono-user actuellement).
 - **`b-group-cart-flow.js`** : stub 14 lignes DEPRECATED PR-1. À supprimer lors du nettoyage `event/*.html`.
+- **`PUT /:id/items` (S2-06)** : uniquement en phase ouverte (`settlement_open = false`, statut `active`). Ne jamais appeler `updateOpenSharedCartItems` en phase règlement ou fermée — guard 409 obligatoire. Notifications WhatsApp post-commit uniquement, never blocking.
 - **`k-modal-open`** (boutique) : classe CSS legacy dead code dans `cart.css` — alias de `body.modal-open` pour `.k-wa-fab`. Le JS pose `modal-open`, jamais `k-modal-open`. À nettoyer dans une PR CSS dédiée.
 - **BUG checkout boutique** : si `checkoutCart()` pose `body.cart-open` et que le modal de commande est mal positionné, les cartes catalogue sont `pointer-events: none` sans sortie visible. À surveiller en test manuel go-live.
 
@@ -367,18 +383,16 @@ P0 runtime verdict: PASS (tous les checks validés)
 ### 1. PANIER-V4.1 — Compléter l'implémentation (▶️ Maintenant)
 
 ```text
-Priorité immédiate :
-[ ] BUG S2-05 — Investiguer state.shareToken null dans b-share-cart.js
-    → ajouter log dans startShareFlow(), vérifier loadShareState() dans install()
-[ ] TX-02 — Montant moyen suggéré dans b-group-view.js (~30 min)
-[ ] BUG-C5 — Vérifier route auth /auto-register dans b-checkout.js (~1h)
-[ ] BUG-C6 — Vérifier payment_mode dans b-checkout.js (~30 min)
-[ ] BUG-C7 — Vérifier URL loadRelais() dans b-nav.js (~30 min)
-
-Tests à passer (voir §Sprint 1/2/3 ci-dessus) :
+Priorité immédiate — Tests à passer avant go-live :
 [ ] Tous les [S1-xx-Tx] — Sprint 1 parcours contributeur
-[ ] Tous les [S2-xx-Tx] — Sprint 2 actions créateur
+[ ] Tous les [S2-xx-Tx] — Sprint 2 actions créateur (inclus S2-06)
 [ ] Tous les [S3-xx-Tx] — Sprint 3 notifications et crons
+
+Complété en session 2026-05-27 :
+[x] BUG S2-05 — Race condition b-share-cart.js résolue
+[x] TX-02 — Montant moyen suggéré (b-group-view.js + shared-cart-public.html)
+[x] BUG-C5/C6/C7 — Faux positifs confirmés
+[x] S2-06 — Modification articles panier par créateur (PUT /:id/items, b-group-view.js, bandeau participant)
 ```
 
 ### 2. GO-LIVE-CHECK (Après PANIER-V4.1 — 1 session)
@@ -404,7 +418,7 @@ Tests à passer (voir §Sprint 1/2/3 ci-dessus) :
 
 | Lot | Priorité | Note |
 |-----|----------|------|
-| PANIER-V4.1 | ✅ Fait | BUG S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ — Tests à passer avant go-live |
+| PANIER-V4.1 | ✅ Fait | BUG S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅ — Tests à passer avant go-live |
 | GO-LIVE-CHECK | ▶️ Maintenant | Rejouer tests + flux shared-cart complet + vérifs prod |
 | B-SOT-AUDIT | Ensuite | ✅ Résolu — b-mobile-premium-v1 et b-mobile-modal-v1 confirmés orphelins, documentés dans SOT v1.6 |
 | DOC-SYNC-BOUTIQUE-FIRST | ✅ Fait | B-DOC-1 ✅ (§14 ajouté CARTOGRAPHY_360_BOUTIQUE) · B-DOC-2 ✅ (déjà à jour) · B-SOT-1 ✅ (SOT v1.6, 6 actifs + 3 orphelins) |

@@ -140,6 +140,12 @@
     .sc-toast.error{background:var(--red)}
 
     [hidden]{display:none!important}
+    /* S2-06 — Bandeau modification articles */
+    .sc-items-updated-banner{display:flex;align-items:flex-start;gap:10px;background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:12px 14px;margin:0 0 14px}
+    .sc-items-updated-banner .sc-iub-icon{font-size:20px;flex-shrink:0}
+    .sc-items-updated-banner .sc-iub-body{flex:1;font-size:13px;color:#7c5c00}
+    .sc-items-updated-banner .sc-iub-title{font-weight:700;margin-bottom:2px}
+    .sc-items-updated-banner .sc-iub-cta{display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:#1f7a54;text-decoration:underline;cursor:pointer;background:none;border:none;padding:0}
   </style>
 </head>
 <body>
@@ -184,6 +190,17 @@
     <div class="sc-hero-label" id="sc-hero-label">Panier partagé</div>
     <div class="sc-hero-sub" id="sc-hero-sub"></div>
     <div class="sc-hero-badge" id="sc-phase-badge" hidden></div>
+  </div>
+
+
+  <!-- S2-06 — Bandeau modification articles par le créateur -->
+  <div class="sc-items-updated-banner" id="sc-items-updated-banner" hidden>
+    <div class="sc-iub-icon">📝</div>
+    <div class="sc-iub-body">
+      <div class="sc-iub-title">Le créateur a modifié le panier</div>
+      <div id="sc-iub-detail"></div>
+      <button class="sc-iub-cta" id="sc-iub-cta">Réviser mon engagement →</button>
+    </div>
   </div>
 
   <!-- PROGRESS -->
@@ -376,6 +393,7 @@
 
     return{
       token,phase,
+      items_updated_at:meta.open_phase_items_updated_at||null,
       title:cart.title||cart.beneficiary_name_snapshot||'Panier partagé',
       sharer_name:cart.beneficiary_name_snapshot,
       status:cart.status,
@@ -415,6 +433,21 @@
     }
 
     document.getElementById('sc-main').hidden=false;
+
+    // S2-06 — Bandeau modification articles
+    const iubBanner=document.getElementById('sc-items-updated-banner');
+    const iubDetail=document.getElementById('sc-iub-detail');
+    if(d.items_updated_at&&d.phase==='open'){
+      const updatedDate=new Date(d.items_updated_at);
+      const dateStr=updatedDate.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      if(iubDetail)iubDetail.textContent='Mis à jour le '+dateStr+' · Nouveau total : '+fmt(d.total_kmf);
+      if(iubBanner)iubBanner.hidden=false;
+      document.getElementById('sc-iub-cta')?.addEventListener('click',()=>{
+        document.getElementById('sc-engagement-form')?.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    }else{
+      if(iubBanner)iubBanner.hidden=true;
+    }
 
     // Hero
     document.getElementById('sc-hero-icon').textContent=d.phase==='settlement'?'💳':'🧺';
