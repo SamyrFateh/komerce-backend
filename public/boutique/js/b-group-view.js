@@ -111,57 +111,7 @@ function isSettlementOpen(cart) {
 
 /* ── Persistance participant — source unique : onglet Groupe ─────────────── */
 const PARTICIPANT_TOKEN_KEY = 'kmrc_group_participant_token';
-function participantCommitmentKey(token) { return `kmrc_group_commitment_${token}
-/* Desktop cockpit layout : colonne gauche + réserve articles droite */
-@media(min-width:1000px){
-  #k-group-view{
-    width:100%;
-  }
-
-  #k-group-view.k-group-view{
-    max-width:1240px!important;
-    width:100%!important;
-    margin:24px auto 80px!important;
-    padding:0 32px!important;
-    box-sizing:border-box!important;
-  }
-
-  #k-group-view.k-group-view > *{
-    width:720px!important;
-    max-width:720px!important;
-    margin-left:0!important;
-    margin-right:auto!important;
-  }
-}
-
-@media(min-width:1400px){
-  #k-group-view.k-group-view{
-    max-width:1280px!important;
-  }
-
-  #k-group-view.k-group-view > *{
-    width:740px!important;
-    max-width:740px!important;
-  }
-}
-
-@media(max-width:999px){
-  #k-group-view.k-group-view{
-    max-width:none!important;
-    width:100%!important;
-    margin:22px auto 72px!important;
-    padding:0 14px!important;
-  }
-
-  #k-group-view.k-group-view > *{
-    width:auto!important;
-    max-width:none!important;
-    margin-left:0!important;
-    margin-right:0!important;
-  }
-}
-
-`; }
+function participantCommitmentKey(token) { return `kmrc_group_commitment_${token}`; }
 
 function readJsonStorage(key) {
   try {
@@ -363,6 +313,52 @@ function injectStyles() {
   }
   .k-group-view .k-group-creator-actions{
     grid-template-columns:1fr;
+  }
+}
+
+
+/* Desktop cockpit layout : colonne gauche + réserve articles droite */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    max-width:1240px!important;
+    width:100%!important;
+    margin:24px auto 80px!important;
+    padding:0 32px!important;
+    box-sizing:border-box!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:720px!important;
+    max-width:720px!important;
+    margin-left:0!important;
+    margin-right:auto!important;
+  }
+}
+
+@media(min-width:1400px){
+  #k-group-view.k-group-view{
+    max-width:1280px!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:740px!important;
+    max-width:740px!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    max-width:none!important;
+    width:100%!important;
+    margin:22px auto 72px!important;
+    padding:0 14px!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:auto!important;
+    max-width:none!important;
+    margin-left:0!important;
+    margin-right:0!important;
   }
 }
 
