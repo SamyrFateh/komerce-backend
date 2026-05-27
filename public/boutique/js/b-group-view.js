@@ -20,6 +20,7 @@
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { sanitize, fmt, apiGet, apiPost } from './b-utils.js';
+import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
 import { showBanner, hideBanner } from './b-group-banner.js';
 
 /* ── Token participant URL ─────────────────────────────────────── */
@@ -55,7 +56,17 @@ function startPolling(cartId, onRefresh) {
     }
     try {
       const fresh = await apiGet(`/api/shared-carts/${cartId}`);
-      if (fresh) onRefresh(fresh);
+      if (!fresh) return;
+      // FIX — rafraîchir les commitments à chaque tick (closure stale sinon)
+      let freshCommitments = [];
+      try {
+        const token = fresh.cart?.token;
+        if (token) {
+          const cRes = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' });
+          if (cRes.ok) { const cd = await cRes.json(); freshCommitments = cd.commitments || []; }
+        }
+      } catch (_) {}
+      onRefresh(fresh, freshCommitments);
     } catch (_) {}
   }, 30_000);
 }
@@ -669,13 +680,53 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
   // S2-06 — Modifier les articles du panier (phase ouverte uniquement)
   el.querySelector('#k-group-edit-items')?.addEventListener('click', async () => {
     const btn = el.querySelector('#k-group-edit-items');
-    const cartItems = (state.cart || [])
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Chargement…'; }
+
+    // FIX CHARGER — Si state.cart est vide (vidé par N4-CLEAR à la création),
+    // charger le snapshot sauvegardé depuis le backend et repeupler state.cart.
+    // Cela permet au créateur de modifier les articles sans avoir à remettre
+    // manuellement des produits dans son panier boutique.
+    let cartItems = (state.cart || [])
       .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
       .filter(it => it.product_id);
 
     if (!cartItems.length) {
-      showToast('Votre panier boutique est vide. Ajoutez des articles avant de mettre à jour.', 'error');
-      return;
+      try {
+        const snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
+        if (snap?.cart_items?.length) {
+          // Repeupler state.cart depuis le snapshot pour que le panier boutique
+          // reflète l'état sauvegardé. Chaque item du snapshot devient un item
+          // compatible avec la structure { product, id, name, price, image, qty }.
+          state.cart = snap.cart_items.map(it => ({
+            product: {
+              id: it.product_id,
+              name: it.product_name || '',
+              price_kmf: it.unit_price_kmf || 0,
+              image_url: it.product_image || '',
+              category: it.product_category || '',
+            },
+            id: it.product_id,
+            name: it.product_name || '',
+            price: it.unit_price_kmf || 0,
+            image: it.product_image || '',
+            qty: it.quantity || 1,
+          }));
+          saveCart();  // persiste en localStorage pour badge + sidebar
+          cartItems = snap.cart_items.map(it => ({
+            product_id: it.product_id,
+            quantity: it.quantity || 1,
+          }));
+          showToast('Panier rechargé depuis la sauvegarde.', 'success');
+        } else {
+          showToast('Panier sauvegardé vide. Ajoutez des articles dans la boutique.', 'error');
+          if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
+          return;
+        }
+      } catch (err) {
+        showToast('Impossible de charger le panier sauvegardé.', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
+        return;
+      }
     }
 
     const newTotal = (state.cart || []).reduce((sum, it) => {
@@ -685,13 +736,11 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       return sum + price * (Number(it.qty) || 1);
     }, 0);
 
-    const msg = `Remplacer les articles du panier partagé par le contenu actuel de votre boutique ?`
-      + (newTotal > 0 ? `
+    const msg = `Remplacer les articles du panier partagé par le contenu actuel ?`
+      + (newTotal > 0 ? `\n\nTotal estimé : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
+      + `\n\nLes participants seront notifiés.`;
 
-Nouveau total estimé : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
-      + `
-
-Les participants seront notifiés.`;
+    if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
     if (!confirm(msg)) return;
 
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Mise à jour…'; }
@@ -884,9 +933,10 @@ export async function renderGroupView(opts = {}) {
   });
 
   if (isCartOpen) {
-    startPolling(cartId, (fresh) => {
+    // FIX — le callback reçoit freshCommitments (rafraîchi à chaque tick)
+    startPolling(cartId, (fresh, freshCommitments = commitmentsList) => {
       const card = el.querySelector('#k-group-progress-card');
-      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], commitmentsList);
+      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshCommitments);
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
       showBanner({
         title: fresh.cart?.title,

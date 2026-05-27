@@ -22,6 +22,8 @@ import {
   digitsOnly,
   prettifyLocal,
 } from './b-phone.js';
+// FIX UX — Réutiliser les helpers checkout pour un style uniforme (padding, indicatifs)
+import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -289,134 +291,130 @@ function closeModal(ov) {
 }
 
 /* ── Étape A : formulaire init ──────────────────────────────────── */
+// FIX UX — Rewritten to use checkout DOM builders (makeInput / makeIntlPhoneInput)
+// so padding, labels and phone selector match the checkout UX exactly.
 function promptInit(needsAuth) {
   return new Promise(resolve => {
-    // Construire les <option> du sélecteur pays depuis PHONE_COUNTRIES
-    const countryOpts = PHONE_COUNTRIES.map(c =>
-      `<option value="${c.code}">${c.flag} ${c.code}</option>`
-    ).join('');
+    ensureStyles();
+    const ov = document.createElement('div');
+    ov.className = 'k-share-modal-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
 
-    const ov = openModal(`
-      <div class="k-sm-head">
-        <span class="k-sm-title">🛒 Payer en groupe</span>
-        <button class="k-sm-close" aria-label="Fermer">✕</button>
-      </div>
-      <p class="k-sm-hint">Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement, jusqu'au total du panier.</p>
-      <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-title-f">Nom du panier <span style="font-weight:400;text-transform:none">(optionnel)</span></label>
-        <input id="k-sm-title-f" class="k-sm-input" type="text"
-          placeholder="Ex : Cadeau mariage Aïcha" maxlength="80" autocomplete="off">
-      </div>
-      ${needsAuth ? `
-      <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-name-f">Votre prénom <span style="color:var(--red-danger-text)">*</span></label>
-        <input id="k-sm-name-f" class="k-sm-input k-sm-name-input" type="text"
-          placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name"
-          pattern="[^\d]{2,}" required>
-      </div>
-      <div class="k-sm-field">
-        <label class="k-sm-label" for="k-sm-phone-input">Votre numéro WhatsApp <span style="color:var(--red-danger-text)">*</span></label>
-        <div class="k-sm-phone-row">
-          <select id="k-sm-phone-sel" class="k-sm-phone-sel" aria-label="Indicatif pays">
-            ${countryOpts}
-          </select>
-          <input id="k-sm-phone-input" class="k-sm-phone-input" type="tel"
-            inputmode="numeric" autocomplete="tel"
-            placeholder="321 12 34">
-        </div>
-      </div>` : ''}
-      <p class="k-sm-err" id="k-sm-err"></p>
-      <button class="k-sm-btn" id="k-sm-submit" disabled>Créer le panier →</button>`);
+    const sheet = document.createElement('div');
+    sheet.className = 'k-share-modal-sheet';
 
-    const errEl = ov.querySelector('#k-sm-err');
-    const btn   = ov.querySelector('#k-sm-submit');
-    const titleInput = ov.querySelector('#k-sm-title-f');
-    const nameInput  = ov.querySelector('#k-sm-name-f');
+    // ── Header ────────────────────────────────────────────────────
+    const head = document.createElement('div');
+    head.className = 'k-sm-head';
+    head.innerHTML =
+      '<span class="k-sm-title">🛒 Payer en groupe</span>' +
+      '<button class="k-sm-close" aria-label="Fermer">✕</button>';
+    sheet.appendChild(head);
 
-    // ── Validation phone via b-phone ───────────────────────────────
-    let currentE164 = '';
-    let phoneValid  = !needsAuth; // si auth pas requise, phone non bloquant
+    const hint = document.createElement('p');
+    hint.className = 'k-sm-hint';
+    hint.textContent = 'Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement.';
+    sheet.appendChild(hint);
+
+    // ── Champ titre (même style que k-ck-group du checkout) ────────
+    const titleData = { title: '' };
+    const titleGroup = makeInput('k-sm-title-f', 'Nom du panier (optionnel)', 'text', 'Ex : Cadeau mariage Aïcha', titleData, 'title');
+    titleGroup.querySelector('input')?.setAttribute('maxlength', '80');
+    titleGroup.querySelector('input')?.setAttribute('autocomplete', 'off');
+    sheet.appendChild(titleGroup);
+
+    // ── Champs auth (prénom + téléphone avec indicatif) ───────────
+    const nameData = { name: '' };
+    let phoneData  = { phone: '' };
+    let nameInput  = null;
 
     if (needsAuth) {
-      // FIX — passer les éléments DOM directement (ov.querySelector) plutôt que
-      // document.getElementById() pour éviter les conflits si un autre élément
-      // partage le même ID ailleurs dans le DOM.
-      const phoneSelEl   = ov.querySelector('#k-sm-phone-sel');
-      const phoneInputEl = ov.querySelector('#k-sm-phone-input');
-
-      const phoneCtrl = buildPhoneSelect(
-        phoneSelEl,
-        phoneInputEl,
-        '+269',
-        (e164, isValid) => {
-          currentE164 = e164;
-          phoneValid  = isValid;
-          if (phoneInputEl && digitsOnly(phoneInputEl.value).length > 0) {
-            phoneInputEl.classList.toggle('k-valid',   isValid);
-            phoneInputEl.classList.toggle('k-invalid', !isValid);
-          } else {
-            phoneInputEl?.classList.remove('k-valid', 'k-invalid');
-          }
-          updateSubmit();
-          if (isValid) errEl.textContent = '';
-        }
-      );
-
-      // ── Validation prénom (letters only, min 2 chars) ─────────
-      nameInput?.addEventListener('input', () => {
-        updateSubmit();
-        if (nameInput.value.trim().length > 0) {
-          errEl.textContent = '';
-        }
-      });
-    }
-
-    function updateSubmit() {
-      if (!needsAuth) {
-        btn.disabled = false;
-        return;
+      const nameGroup = makeInput('k-sm-name-f', 'Votre prénom *', 'text', 'Ex : Fatima', nameData, 'name');
+      const ni = nameGroup.querySelector('input');
+      if (ni) {
+        ni.setAttribute('maxlength', '60');
+        ni.setAttribute('autocomplete', 'given-name');
       }
-      const nameOk  = (nameInput?.value.trim().length >= 2) && !/\d/.test(nameInput.value);
-      btn.disabled  = !(nameOk && phoneValid);
+      nameInput = ni;
+      sheet.appendChild(nameGroup);
+
+      // makeIntlPhoneInput crée le sélecteur d'indicatif + champ téléphone
+      // avec exactement le même rendu que le checkout (k-ck-phone-wrap/select/input)
+      const phoneGroup = makeIntlPhoneInput('k-sm-ph', 'Votre numéro WhatsApp *', phoneData, 'phone');
+      sheet.appendChild(phoneGroup);
     }
 
-    // Activer le bouton dès que le titre est saisi (si pas auth requise)
-    if (!needsAuth) {
-      btn.disabled = false;
+    // ── Erreur + bouton ────────────────────────────────────────────
+    const errEl = document.createElement('p');
+    errEl.className = 'k-sm-err';
+    errEl.id = 'k-sm-err';
+    sheet.appendChild(errEl);
+
+    const btn = document.createElement('button');
+    btn.className = 'k-sm-btn';
+    btn.id = 'k-sm-submit';
+    btn.textContent = 'Créer le panier →';
+    btn.disabled = !!needsAuth; // activé seulement quand les champs obligatoires sont valides
+    sheet.appendChild(btn);
+
+    ov.appendChild(sheet);
+    ov.addEventListener('click', e => { if (e.target === ov) { closeModal(ov); resolve(null); } });
+    document.body.appendChild(ov);
+
+    // ── Validation live (needsAuth uniquement) ─────────────────────
+    function updateSubmit() {
+      if (!needsAuth) { btn.disabled = false; return; }
+      const nameOk  = (nameData.name?.trim().length >= 2) && !/\d/.test(nameData.name);
+      const phoneOk = (phoneData.phone || '').length >= 8;
+      btn.disabled  = !(nameOk && phoneOk);
     }
 
+    if (needsAuth) {
+      // Écouter les mutations de nameData via l'input
+      nameInput?.addEventListener('input', () => {
+        nameData.name = nameInput.value;
+        updateSubmit();
+        if (nameInput.value.trim().length > 0) errEl.textContent = '';
+      });
+      // makeIntlPhoneInput écrit directement dans phoneData.phone à chaque frappe
+      // On observe via MutationObserver ou simplement via input sur le champ généré
+      const phoneInput = sheet.querySelector('#k-sm-ph');
+      phoneInput?.addEventListener('input', () => { updateSubmit(); errEl.textContent = ''; });
+    }
+
+    // ── Soumission ─────────────────────────────────────────────────
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
-      const title = (titleInput?.value || '').trim();
-      const name  = (nameInput?.value  || '').trim();
+      const title = titleData.title.trim();
+      const name  = nameData.name.trim();
+      const phone = phoneData.phone || '';
 
       if (needsAuth) {
-        // Double-vérification côté clic (défense en profondeur)
         if (name.length < 2 || /\d/.test(name)) {
           errEl.textContent = 'Prénom invalide (lettres uniquement, 2 caractères minimum).';
           nameInput?.focus();
           return;
         }
-        if (!phoneValid) {
-          const country = PHONE_COUNTRIES.find(c => c.code === ov.querySelector('#k-sm-phone-sel')?.value);
-          errEl.textContent = country
-            ? `Numéro ${country.name} invalide — attendu : ${country.ph}`
-            : 'Numéro de téléphone invalide.';
-          ov.querySelector('#k-sm-phone-input')?.focus();
+        if (phone.length < 8) {
+          errEl.textContent = 'Numéro de téléphone invalide.';
+          sheet.querySelector('#k-sm-ph')?.focus();
           return;
         }
       }
 
       errEl.textContent = '';
       closeModal(ov);
-      resolve({ title, name, phone: currentE164 || null });
+      resolve({ title, name, phone: phone || null });
     });
 
-    ov.querySelector('.k-sm-close').addEventListener('click', () => { closeModal(ov); resolve(null); });
-    titleInput?.addEventListener('keydown', e => { if (e.key === 'Enter' && !btn.disabled) btn.click(); });
+    head.querySelector('.k-sm-close').addEventListener('click', () => { closeModal(ov); resolve(null); });
+    sheet.querySelector('#k-sm-title-f')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !btn.disabled) btn.click();
+    });
 
     // Focus initial
-    setTimeout(() => (titleInput || nameInput)?.focus(), 80);
+    setTimeout(() => (sheet.querySelector('#k-sm-title-f') || nameInput)?.focus(), 80);
   });
 }
 
