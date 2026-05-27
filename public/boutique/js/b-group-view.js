@@ -95,6 +95,24 @@ function isSettlementOpen(cart) {
   return metaOf(cart).settlement_open === true;
 }
 
+function settlementExpiresAt(cart) {
+  const meta = metaOf(cart);
+  if (!meta.settlement_open || !meta.settlement_opened_at) return null;
+  const windowH = Number(meta.settlement_window_hours) || 48;
+  return new Date(new Date(meta.settlement_opened_at).getTime() + windowH * 3_600_000);
+}
+
+function timeRemaining(expiresAt) {
+  if (!expiresAt) return null;
+  const ms = new Date(expiresAt) - Date.now();
+  if (ms <= 0) return 'Expiré';
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  if (h >= 48) return `${Math.floor(h / 24)}j restants`;
+  if (h >= 1)  return `${h}h${m > 0 ? m + 'min' : ''} restantes`;
+  return `${Math.max(1, m)}min restantes`;
+}
+
 async function ensureCreatorCartState() {
   if (state.shareToken && state.shareId) return true;
   try {
@@ -428,8 +446,30 @@ function renderCreatorActions(cart) {
   if (!isCartOpen) return `<p class="k-group-finalized-hint">Ce panier est clôturé.</p>`;
 
   const fullyFunded = cart.status === 'fully_funded' || remainingKmf(cart) <= 0;
+  const gap = remainingKmf(cart);
+
+  // S2-04 — Expiration règlement
+  const expAt  = settlementExpiresAt(cart);
+  const expLeft = expAt ? timeRemaining(expAt) : null;
+  const expSoon = expAt && (expAt - Date.now() < 6 * 3_600_000);
+  const expirationHtml = settlementOpen && expLeft ? `
+    <p class="k-group-share-hint" style="margin-top:6px;${expSoon ? 'color:#e53935;font-weight:700' : ''}">
+      ⏱️ Règlement ouvert jusqu'au
+      ${expAt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+      — ${expLeft}
+    </p>` : '';
+
+  // S2-01 — Bouton annuler (présent dans les deux phases)
+  const cancelBtn = `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="k-group-btn k-group-btn--ghost" id="k-group-cancel"
+        style="color:#e53935;border-color:#e53935;opacity:.8;width:100%">
+        🗑 Annuler le panier
+      </button>
+    </div>`;
 
   if (!settlementOpen) {
+    // S2-03 — Sélecteur durée règlement intégré
     return `
       <div class="k-group-card k-group-actions-card">
         <div class="k-group-section-title">Gérer le panier</div>
@@ -439,6 +479,15 @@ function renderCreatorActions(cart) {
         </div>
         <p class="k-group-share-hint">Une fois que tout le monde a confirmé son engagement, passez au règlement.</p>
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">
+            Délai de paiement
+          </label>
+          <select id="k-group-settlement-window"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:10px">
+            <option value="24">24 heures</option>
+            <option value="48" selected>48 heures (défaut)</option>
+            <option value="168">7 jours</option>
+          </select>
           <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement" style="background:var(--accent,#1f7a54)">
             🔐 Passer au règlement
           </button>
@@ -447,26 +496,83 @@ function renderCreatorActions(cart) {
           </p>
         </div>
         <p class="k-group-input-error" id="k-group-settlement-err"></p>
+        ${cancelBtn}
       </div>`;
   }
+
+  // S2-02 — Finalisation avec gap
+  const finalizeBlock = fullyFunded
+    ? `<div class="k-group-funded-callout">
+        <strong>✅ Tout est réglé</strong>
+        <p>Validez maintenant pour que la commande parte en préparation.</p>
+        <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Valider et commander</button>
+      </div>`
+    : gap > 0
+      ? `<div class="k-group-funded-callout" style="border-color:rgba(230,130,0,.28);background:rgba(230,130,0,.08)">
+          <strong style="color:#b45309">Il manque ${r(gap).toLocaleString('fr-FR')} KMF</strong>
+          <p>Vous pouvez couvrir le reste et valider maintenant.</p>
+          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize-gap" style="background:#b45309">
+            Je couvre le reste et je valide
+          </button>
+        </div>
+        <button class="k-group-btn k-group-disabled-finalize" type="button" disabled style="margin-top:8px;width:100%">
+          Valider disponible à 100%
+        </button>`
+      : `<button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Valider disponible à 100%</button>`;
 
   return `
     <div class="k-group-card k-group-actions-card">
       <div class="k-group-section-title">Panier en règlement</div>
-      <div class="k-group-creator-actions">
+      ${expirationHtml}
+      <div class="k-group-creator-actions" style="margin-top:10px">
         <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 Relancer WhatsApp</button>
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
       </div>
       <p class="k-group-share-hint">Partagez le lien pour que les participants puissent payer leur engagement verrouillé.</p>
-      ${fullyFunded ? `
-        <div class="k-group-funded-callout">
-          <strong>✅ Tout est réglé</strong>
-          <p>Validez maintenant pour que la commande parte en préparation.</p>
-          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Valider et commander</button>
-        </div>` : `
-        <button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Valider disponible à 100%</button>`}
+      ${finalizeBlock}
       <p class="k-group-input-error" id="k-group-finalize-err"></p>
+      ${cancelBtn}
     </div>`;
+}
+
+/* ── helper finalize interne ─────────────────────────────────────── */
+async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
+  const btn   = el.querySelector(acceptPartial ? '#k-group-finalize-gap' : '#k-group-finalize');
+  const errEl = el.querySelector('#k-group-finalize-err');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Validation…'; }
+
+  try {
+    const res = await apiPost(`/api/shared-carts/${cartId}/finalize`,
+      acceptPartial ? { accept_partial: true } : {}
+    );
+
+    state.shareToken  = null; state.shareId = null;
+    state.cartName    = ''; state.shareExpiry = null; state.shareStatus = null;
+    try {
+      sessionStorage.removeItem('kmrc_share');
+      sessionStorage.removeItem('kmrc_banner_dismissed');
+    } catch (_) {}
+    refreshGroupBadge();
+    hideBanner();
+    import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(false));
+
+    el.innerHTML = `
+      <div class="k-group-success">
+        <div class="k-group-success-icon">🎉</div>
+        <strong>Panier clôturé !</strong>
+        <p>Commande <strong>${sanitize(res.order_reference || '')}</strong> créée.</p>
+        ${res.prepaid_kmf > 0 ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés.</p>` : ''}
+        <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">📦 Voir ma commande</button>
+      </div>`;
+    bindCreatorActions(el, { ...cart, finalized_order_id: res.order_id }, shareUrl, cartId);
+  } catch (err) {
+    if (err?.code === 'stock_issues' || err?.message?.includes('stock')) {
+      if (errEl) errEl.textContent = err.message || 'Problème de stock.';
+    } else {
+      showToast(err?.message || 'Erreur validation.', 'error');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = acceptPartial ? 'Je couvre le reste et je valide' : '✓ Valider et commander'; }
+  }
 }
 
 /* ── Bind actions créateur ─────────────────────────────────────── */
@@ -493,9 +599,11 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     });
   });
 
+  // S2-03 — open-settlement avec durée choisie
   el.querySelector('#k-group-open-settlement')?.addEventListener('click', async () => {
     const btn   = el.querySelector('#k-group-open-settlement');
     const errEl = el.querySelector('#k-group-settlement-err');
+    const windowH = Number(el.querySelector('#k-group-settlement-window')?.value) || 48;
 
     if (!confirm('Passer au règlement ? Les engagements seront verrouillés et les modifications du panier seront bloquées. Action irréversible.')) return;
 
@@ -503,7 +611,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     errEl.textContent = '';
 
     try {
-      await apiPost(`/api/shared-carts/${cartId}/open-settlement`, {});
+      await apiPost(`/api/shared-carts/${cartId}/open-settlement`, { settlement_window_hours: windowH });
       showToast('Panier passé au règlement. Les participants peuvent maintenant payer.', 'success');
       onSettlement?.();
     } catch (err) {
@@ -512,43 +620,32 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     }
   });
 
-  el.querySelector('#k-group-finalize')?.addEventListener('click', async () => {
-    const btn   = el.querySelector('#k-group-finalize');
-    const errEl = el.querySelector('#k-group-finalize-err');
-    btn.disabled = true; btn.textContent = '⏳ Validation…';
+  // S2-02 — Finaliser normalement
+  el.querySelector('#k-group-finalize')?.addEventListener('click', () =>
+    doFinalize(el, cartId, shareUrl, cart, false)
+  );
+
+  // S2-02 — Finaliser en couvrant le gap
+  el.querySelector('#k-group-finalize-gap')?.addEventListener('click', () => {
+    if (!confirm('Vous allez couvrir le montant manquant et valider la commande. Confirmer ?')) return;
+    doFinalize(el, cartId, shareUrl, cart, true);
+  });
+
+  // S2-01 — Annuler le panier
+  el.querySelector('#k-group-cancel')?.addEventListener('click', async () => {
+    const hasPaidContribs = r(cart.contributed_kmf) > 0;
+    const msg = hasPaidContribs
+      ? `⚠️ Ce panier a des contributions payées (${r(cart.contributed_kmf).toLocaleString('fr-FR')} KMF). L'annulation nécessitera des remboursements manuels. Confirmer quand même ?`
+      : 'Annuler le panier ? Cette action est irréversible.';
+    if (!confirm(msg)) return;
 
     try {
-      const res = await apiPost(`/api/shared-carts/${cartId}/finalize`, {});
-
-      state.shareToken  = null;
-      state.shareId     = null;
-      state.cartName    = '';
-      state.shareExpiry = null;
-      state.shareStatus = null;
-      try {
-        sessionStorage.removeItem('kmrc_share');
-        sessionStorage.removeItem('kmrc_banner_dismissed');
-      } catch (_) {}
-      refreshGroupBadge();
-      hideBanner();
-      import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(false));
-
-      el.innerHTML = `
-        <div class="k-group-success">
-          <div class="k-group-success-icon">🎉</div>
-          <strong>Panier clôturé !</strong>
-          <p>Commande <strong>${sanitize(res.order_reference || '')}</strong> créée.</p>
-          ${res.prepaid_kmf > 0 ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés.</p>` : ''}
-          <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">📦 Voir ma commande</button>
-        </div>`;
-      bindCreatorActions(el, { ...cart, finalized_order_id: res.order_id }, shareUrl, cartId);
+      await apiPost(`/api/shared-carts/${cartId}/cancel`, { reason: 'creator_cancel' });
+      import('./b-share-cart.js').then(m => m.clearShareState?.());
+      showToast('Panier annulé.', 'success');
+      onSettlement?.(); // refresh la vue
     } catch (err) {
-      if (err?.code === 'stock_issues' || err?.message?.includes('stock')) {
-        if (errEl) errEl.textContent = err.message || 'Problème de stock.';
-      } else {
-        showToast(err?.message || 'Erreur validation.', 'error');
-      }
-      btn.disabled = false; btn.textContent = '✓ Valider et commander';
+      showToast(err?.message || 'Impossible d\'annuler.', 'error');
     }
   });
 }

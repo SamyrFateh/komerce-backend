@@ -453,6 +453,40 @@ function switchToGroup() {
   });
 }
 
+/* ── S2-05 — Modale panier actif détecté ─────────────────────── */
+function promptActiveCartChoice(cartName) {
+  return new Promise(resolve => {
+    ensureStyles();
+    const ov = openModal(`
+      <div class="k-sm-head">
+        <span class="k-sm-title">👥 Panier groupe actif</span>
+        <button class="k-sm-close" aria-label="Fermer">✕</button>
+      </div>
+      <p class="k-sm-hint">
+        Vous avez déjà un panier groupe actif :
+        <strong>${String(cartName || 'Panier groupe').replace(/</g,'&lt;')}</strong>.
+      </p>
+      <div class="k-sm-choice">
+        <button class="k-sm-btn" id="k-sm-view-group">👥 Voir mon groupe actif</button>
+        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-new-group">＋ Créer un nouveau groupe</button>
+        <button class="k-sm-btn k-sm-btn-ghost" id="k-sm-cancel-choice">Annuler</button>
+      </div>`);
+
+    ov.querySelector('#k-sm-view-group').addEventListener('click', () => {
+      closeModal(ov); resolve('view');
+    });
+    ov.querySelector('#k-sm-new-group').addEventListener('click', () => {
+      closeModal(ov); resolve('new');
+    });
+    ov.querySelector('#k-sm-cancel-choice').addEventListener('click', () => {
+      closeModal(ov); resolve(null);
+    });
+    ov.querySelector('.k-sm-close').addEventListener('click', () => {
+      closeModal(ov); resolve(null);
+    });
+  });
+}
+
 /* ── Flow principal ─────────────────────────────────────────────── */
 export async function startShareFlow(opts = {}) {
   const { reshare = false } = opts;
@@ -466,6 +500,17 @@ export async function startShareFlow(opts = {}) {
     const shareUrl = state.shareUrl || `${window.location.origin}/cart/shared/${state.shareToken}`;
     openWhatsApp(state.cartName, shareUrl);
     return;
+  }
+
+  // S2-05 — Si un panier actif existe déjà, proposer deux options
+  if (!reshare && state.shareToken) {
+    const choice = await promptActiveCartChoice(state.cartName);
+    if (!choice) return;
+    if (choice === 'view') {
+      switchToGroup();
+      return;
+    }
+    // choice === 'new' → on continue vers promptInit
   }
 
   const needsAuth = !isConnected();
