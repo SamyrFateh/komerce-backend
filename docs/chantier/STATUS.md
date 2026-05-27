@@ -466,6 +466,115 @@ P2 — Backlog post go-live :
 
 ---
 
+## Dette — DOC-INTEGRITY (27 mai 2026)
+
+> Objectif : rendre les sources de vérité mécaniquement contraignantes, pas seulement déclaratives.
+> Constat déclencheur : `docs/audit/FRONTEND_AUDIT.md` (4 avril) a pollué plusieurs sessions d'analyse car rien ne signale visuellement qu'il est périmé. L'architecture a changé depuis sans que la doc soit archivée ou bandeautée.
+
+---
+
+### DOC-INT-1 — Bandeaux d'archive sur les docs périmées ☐
+
+**Problème** : les docs obsolètes sont indiscernables des docs actives à la lecture.
+
+**Action** : ajouter en tête de chaque doc non active le bandeau suivant :
+
+```markdown
+> ⚠️ **ARCHIVÉ — ne pas utiliser comme référence.**
+> Ce document date du [DATE] et ne reflète plus le code actuel.
+> Source de vérité active : `docs/chantier/STATUS.md` + socle 4 docs (`AGENTS.md` §1).
+```
+
+**Fichiers à traiter en priorité** :
+
+| Fichier | Raison |
+|---|---|
+| `docs/audit/FRONTEND_AUDIT.md` | Architecture refactorisée en ES modules depuis avril 2026 |
+| `docs/audit/batch_2.md` à `batch_6.md` | Sessions d'audit intégrées dans STATUS.md |
+| `docs/specs/collective-workspaces-v1.md` | Modèle collectif legacy tombstone depuis PR #486 |
+| `docs/specs/event-flow-v2.md` | Idem — flows event désactivés |
+| `docs/backend/PANIER_COLLECTIF_BACKEND_DELTA.md` | Remplacé par approche tombstone — PRs BE-A/B/C/D annulées |
+| `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` | Vérifier alignement avec BOUTIQUE_SOURCE_OF_TRUTH v1.6 |
+
+**Effort** : ~30 min. Aucun risque. Faire dans une PR dédiée `docs/archive-sweep-1`.
+
+---
+
+### DOC-INT-2 — Script `npm run check:socle` ☐
+
+**Problème** : les règles de `AGENTS.md` §3 (mettre à jour le socle dans la même PR) sont honneur system — aucune vérification automatique.
+
+**Action** : créer `scripts/check-socle.js` qui vérifie mécaniquement :
+
+```
+1. Chaque fichier dans routes/ est référencé dans CARTOGRAPHY_360.md
+2. Chaque migration *.sql dans migrations/ est mentionnée dans SCHEMA.md
+3. STATUS.md a été modifié dans les 7 derniers jours (alerte si non)
+4. Aucun fichier .md dans docs/ (hors _archive/) ne date de plus de 60 jours
+   sans être listé dans un INDEX explicite
+```
+
+**Usage** : `npm run check:socle` — sortie lisible, exit 1 si violations.
+
+**Effort** : ~2h. Priorité après go-live.
+
+---
+
+### DOC-INT-3 — CI bloquante sur divergence socle ☐
+
+**Problème** : une PR peut modifier `routes/` sans toucher `CARTOGRAPHY_360.md` et merger sans friction.
+
+**Action** : ajouter `.github/workflows/socle-check.yml` :
+
+```yaml
+# Sur chaque PR : si routes/ ou migrations/ modifiés,
+# vérifier que les docs socle correspondantes le sont aussi.
+# Bloquant (required check).
+```
+
+**Règles de blocage** :
+
+| Fichiers modifiés dans la PR | Doc socle requise |
+|---|---|
+| `routes/**` | `docs/CARTOGRAPHY_360.md` |
+| `migrations/*.sql` | `docs/SCHEMA.md` |
+| `services/*` (export modifié) | `docs/CONTRACTS.md` |
+| `public/boutique/**` | `public/boutique/docs/BOUTIQUE_SOURCE_OF_TRUTH.md` |
+| `docs/chantier/STATUS.md` absent | Bloquant systématique |
+
+**Effort** : ~3h. Priorité après go-live + DOC-INT-2.
+
+---
+
+### DOC-INT-4 — `docs/INDEX.md` — registre exhaustif des docs actives ☐
+
+**Problème** : il n'existe pas de liste exhaustive des docs actives. Impossible de savoir en un coup d'œil ce qui fait foi vs ce qui est historique.
+
+**Action** : créer `docs/INDEX.md` avec trois sections :
+
+```
+## Sources de vérité (ne jamais contredire)
+## Docs actives (à maintenir)
+## Archive (informationnel uniquement — ne pas citer comme référence)
+```
+
+Règle associée dans `AGENTS.md` : tout nouveau fichier `.md` créé dans `docs/` doit être ajouté à `INDEX.md` dans la même PR (actif ou archive).
+
+**Effort** : ~1h. Peut se faire en même temps que DOC-INT-1.
+
+---
+
+### Ordre d'exécution recommandé
+
+```
+1. DOC-INT-1  — Bandeaux archive         (~30 min, zéro risque, impact immédiat)
+2. DOC-INT-4  — docs/INDEX.md            (~1h, en parallèle ou après DOC-INT-1)
+3. DOC-INT-2  — npm run check:socle      (~2h, après go-live)
+4. DOC-INT-3  — CI bloquante             (~3h, après DOC-INT-2 opérationnel)
+```
+
+---
+
 ## Règle de fin de session
 
 Avant de terminer une session avec commit ou PR : mettre à jour ce fichier, vérifier le prochain lot, et vérifier `AGENTS.md` si un document socle bouge.
