@@ -91,6 +91,10 @@ Une identité vérifiée est requise avant :
 - accéder à un suivi privé de commande ;
 - retirer une commande en relais.
 
+La validation OTP remplace progressivement les vérifications manuelles répétées du numéro, notamment au moment du paiement cash ou du retrait relais.
+
+Cela ne supprime pas les contrôles métier utiles, mais évite de redemander au client de prouver son numéro plusieurs fois.
+
 ## 6. Flux générique
 
 ### Utilisateur non identifié
@@ -113,6 +117,18 @@ Action engageante
 → identité déjà connue
 → formulaire réduit
 → action immédiate
+```
+
+### Utilisateur identifié mais mauvais numéro
+
+```txt
+Action engageante
+→ Komerce affiche le numéro reconnu
+→ l’utilisateur peut continuer avec ce numéro
+→ ou choisir “Utiliser un autre numéro”
+→ nouveau numéro OTP
+→ JWT / identité courante mise à jour
+→ reprise du flux initial
 ```
 
 ## 7. Panier partagé — créateur
@@ -143,6 +159,8 @@ Avec un rappel rassurant :
 ```txt
 Vous participez en tant que Samyr · +33…
 ```
+
+Le créateur doit pouvoir utiliser un autre numéro si le navigateur est partagé ou si le panier doit être rattaché à un autre WhatsApp.
 
 ## 8. Panier partagé — participant
 
@@ -215,7 +233,79 @@ Carte / Cash
 
 Le checkout demande seulement les informations propres à la commande : bénéficiaire, relais, mode de paiement, instructions éventuelles.
 
-## 10. Effet de confiance
+## 10. OTP principal et numéro de secours
+
+Le canal principal est WhatsApp / téléphone.
+
+Mais Komerce doit éviter de bloquer un utilisateur qui ne reçoit pas le code : WhatsApp non installé, numéro inaccessible, réseau faible, téléphone prêté, changement temporaire de SIM, ou appareil partagé.
+
+Il faut donc prévoir une option de secours :
+
+```txt
+Je n’ai pas reçu le code
+→ Utiliser un autre numéro
+→ envoi OTP sur le nouveau numéro
+→ validation du nouveau numéro
+→ rattachement de l’action à ce numéro vérifié
+```
+
+Cette option ne viole pas la sécurité si elle reste encadrée :
+
+- seul le numéro qui reçoit et valide l’OTP devient l’identité active ;
+- l’OTP est court, expiré rapidement et utilisable une seule fois ;
+- les tentatives sont limitées ;
+- l’ancien numéro n’est pas automatiquement validé ;
+- le changement de numéro est journalisé ;
+- l’action en cours est rattachée au numéro effectivement vérifié.
+
+Le numéro de secours n’est pas un contournement de sécurité. C’est une autre preuve de possession, sur un autre numéro.
+
+## 11. Réseaux sociaux et identité
+
+Les réseaux sociaux peuvent être envisagés comme signaux d’identité ou options de connexion future, mais ils ne doivent pas remplacer le registre téléphone / WhatsApp dans le cœur Komerce.
+
+### Ce qui est envisageable
+
+Komerce peut, plus tard, proposer :
+
+```txt
+Continuer avec Facebook
+Continuer avec Google
+Continuer avec Apple
+```
+
+Cela peut aider à reconnaître un utilisateur ou à préremplir un profil.
+
+Mais même avec un social login, le téléphone reste nécessaire pour :
+
+- notifications WhatsApp ;
+- commande cash ;
+- suivi commande ;
+- relais ;
+- bénéficiaire local ;
+- preuve simple de contact.
+
+### Ce qui n’est pas recommandé comme OTP principal
+
+Envoyer un code OTP via DM Facebook, Instagram ou TikTok n’est pas recommandé comme socle principal :
+
+- accès API plus complexe et dépendant des plateformes ;
+- permissions variables ;
+- délivrabilité moins prévisible ;
+- l’utilisateur peut ne pas lire ses DM ;
+- comptes sociaux partagés, faux ou abandonnés ;
+- dépendance forte à des règles externes ;
+- moins adapté à la logistique terrain et au retrait relais.
+
+Conclusion :
+
+```txt
+Réseaux sociaux = option future de login ou de préremplissage.
+Téléphone / WhatsApp OTP = registre Komerce principal.
+Numéro de secours = fallback simple et robuste.
+```
+
+## 12. Effet de confiance
 
 L’OTP ne doit pas être présenté comme une contrainte.
 
@@ -225,6 +315,7 @@ Il doit être présenté comme une sécurité utile :
 - retrouver ses engagements ;
 - sécuriser son paiement ;
 - éviter qu’un autre utilise son numéro ;
+- faciliter le paiement cash ;
 - faciliter le retrait en relais ;
 - éviter de ressaisir ses informations ;
 - assurer que les notifications arrivent au bon WhatsApp.
@@ -243,7 +334,17 @@ Votre numéro permet de retrouver vos commandes et vos engagements.
 On vous reconnaîtra automatiquement la prochaine fois.
 ```
 
-## 11. Données minimales du profil
+Pour le secours :
+
+```txt
+Vous n’avez pas reçu le code ? Utilisez un autre numéro.
+```
+
+```txt
+Le numéro qui valide le code sera utilisé pour retrouver cette commande.
+```
+
+## 13. Données minimales du profil
 
 Le profil minimal peut contenir :
 
@@ -253,8 +354,10 @@ Le profil minimal peut contenir :
 - nom affiché si connu ;
 - rôle éventuel ;
 - date de vérification du numéro ;
+- téléphone de secours vérifié si applicable ;
 - préférences de notification ;
-- historique de liens avec commandes, paniers groupe, engagements.
+- historique de liens avec commandes, paniers groupe, engagements ;
+- journal des changements de numéro vérifié.
 
 Le profil minimal ne doit pas forcer :
 
@@ -263,7 +366,7 @@ Le profil minimal ne doit pas forcer :
 - adresse complète ;
 - informations administratives non nécessaires.
 
-## 12. Règle d’implémentation front
+## 14. Règle d’implémentation front
 
 Tout module qui a besoin d’une identité doit passer par une fonction commune.
 
@@ -272,6 +375,7 @@ Proposition :
 ```js
 await requireIdentity({
   reason: 'participer au panier',
+  allowOtherPhone: true,
   onSuccess: continuerLeFlux,
 });
 ```
@@ -279,13 +383,15 @@ await requireIdentity({
 Cette fonction doit :
 
 1. vérifier si un JWT / profil courant existe ;
-2. si oui, retourner l’identité connue ;
-3. si non, afficher le flow OTP ;
-4. après OTP, reprendre exactement l’action initiale.
+2. si oui, afficher l’identité reconnue quand `allowOtherPhone` est activé ;
+3. permettre “Continuer avec ce numéro” ;
+4. permettre “Utiliser un autre numéro” ;
+5. si aucun JWT, afficher le flow OTP ;
+6. après OTP, reprendre exactement l’action initiale.
 
 Aucun module métier ne doit recréer son propre faux formulaire d’identité.
 
-## 13. Règle d’implémentation backend
+## 15. Règle d’implémentation backend
 
 Le backend doit considérer le téléphone vérifié comme racine de confiance minimale.
 
@@ -299,9 +405,19 @@ normaliser téléphone
 → émettre JWT httpOnly
 ```
 
+En cas de numéro de secours :
+
+```txt
+normaliser nouveau numéro
+→ vérifier OTP du nouveau numéro
+→ rattacher l’action au nouveau numéro vérifié
+→ journaliser le changement
+→ émettre ou rafraîchir JWT httpOnly
+```
+
 Les endpoints engageants doivent pouvoir s’appuyer sur l’utilisateur courant au lieu de redemander nom / téléphone dans le payload.
 
-## 14. Fallback et changement d’identité
+## 16. Fallback et changement d’identité
 
 Komerce doit rester familial et souple.
 
@@ -319,16 +435,26 @@ Cette action doit :
 - rattacher l’action au nouveau numéro vérifié ;
 - ne pas casser le panier en cours.
 
-## 15. Doctrine courte
+Le fallback “autre numéro” est aussi utile quand le code n’arrive pas.
+
+Formulation :
+
+```txt
+Vous n’avez pas reçu le code ? Essayez avec un autre numéro.
+```
+
+## 17. Doctrine courte
 
 ```txt
 Komerce ne bloque pas la découverte.
 Komerce vérifie l’identité au dernier moment utile.
 Le téléphone vérifié devient le registre Komerce.
+Un autre numéro peut être validé par OTP si nécessaire.
+Les réseaux sociaux peuvent aider à reconnaître, mais ne remplacent pas le registre téléphone.
 Une fois reconnu, l’utilisateur ne ressaisit plus ce que Komerce connaît déjà.
 ```
 
-## 16. Priorité d’implémentation
+## 18. Priorité d’implémentation
 
 ### Lot 1 — Panier partagé
 
@@ -337,14 +463,23 @@ Une fois reconnu, l’utilisateur ne ressaisit plus ce que Komerce connaît déj
 - L’utiliser avant enregistrement d’un engagement.
 - Réduire le formulaire d’engagement à montant + message quand l’identité est connue.
 - Garder “Ce n’est pas vous ?” pour changer de numéro.
+- Ajouter “Je n’ai pas reçu le code → utiliser un autre numéro”.
 
 ### Lot 2 — Checkout classique
 
 - Appeler `requireIdentity()` avant validation finale.
 - Préremplir les données connues.
 - Demander seulement bénéficiaire, relais, paiement et instructions utiles.
+- Remplacer la vérification manuelle répétée du numéro par le numéro déjà vérifié.
 
-### Lot 3 — Suivi et relais
+### Lot 3 — Suivi, cash et relais
 
 - Utiliser l’identité légère pour retrouver les commandes.
-- Renforcer le retrait relais avec téléphone vérifié + code de retrait.
+- Paiement cash : rattacher l’encaissement à l’identité déjà validée.
+- Retrait relais : utiliser téléphone vérifié + code de retrait.
+
+### Lot 4 — Options d’identité futures
+
+- Étudier login social comme aide de reconnaissance.
+- Ne pas utiliser DM social comme canal OTP principal.
+- Garder téléphone / WhatsApp comme registre opérationnel central.
