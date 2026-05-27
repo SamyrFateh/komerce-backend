@@ -629,11 +629,13 @@ router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
     setImmediate(async () => {
       try {
         const { rows: locked } = await db.query(
-          `SELECT phone, first_name, amount_kmf
+          `SELECT participant_phone AS phone,
+                  SPLIT_PART(participant_name, ' ', 1) AS first_name,
+                  amount_kmf
              FROM shared_cart_commitments
             WHERE shared_cart_id = $1
               AND status = 'locked_for_settlement'
-              AND phone IS NOT NULL`,
+              AND participant_phone IS NOT NULL`,
           [req.params.id]
         );
 
@@ -730,11 +732,12 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
     setImmediate(async () => {
       try {
         const { rows: participants } = await db.query(
-          `SELECT phone, first_name
+          `SELECT participant_phone AS phone,
+                  SPLIT_PART(participant_name, ' ', 1) AS first_name
              FROM shared_cart_commitments
             WHERE shared_cart_id = $1
-              AND status IN ('pending', 'confirmed', 'locked_for_settlement')
-              AND phone IS NOT NULL`,
+              AND status IN ('pledged', 'locked_for_settlement')
+              AND participant_phone IS NOT NULL`,
           [req.params.id]
         );
 

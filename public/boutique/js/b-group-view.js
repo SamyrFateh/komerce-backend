@@ -57,15 +57,18 @@ function startPolling(cartId, onRefresh) {
     try {
       const fresh = await apiGet(`/api/shared-carts/${cartId}`);
       if (!fresh) return;
-      // FIX — rafraîchir les commitments à chaque tick (closure stale sinon)
-      let freshCommitments = [];
-      try {
-        const token = fresh.cart?.token;
-        if (token) {
-          const cRes = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' });
-          if (cRes.ok) { const cd = await cRes.json(); freshCommitments = cd.commitments || []; }
-        }
-      } catch (_) {}
+      // Priorité : commitments inclus dans la réponse owner (§2.4 — Option B)
+      // Fallback : fetch séparé si l'endpoint ne les inclut pas encore
+      let freshCommitments = fresh.commitments || [];
+      if (!freshCommitments.length) {
+        try {
+          const token = fresh.cart?.token;
+          if (token) {
+            const cRes = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' });
+            if (cRes.ok) { const cd = await cRes.json(); freshCommitments = cd.commitments || []; }
+          }
+        } catch (_) {}
+      }
       onRefresh(fresh, freshCommitments);
     } catch (_) {}
   }, 30_000);
@@ -690,26 +693,35 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       .map(it => ({ product_id: it.product?.id || it.id, quantity: Number(it.qty) || 1 }))
       .filter(it => it.product_id);
 
+    const originalCartHadItems = cartItems.length > 0;
+    let snap = null;
+
     if (!cartItems.length) {
       try {
-        const snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
+        snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
         if (snap?.cart_items?.length) {
           // Repeupler state.cart depuis le snapshot pour que le panier boutique
           // reflète l'état sauvegardé. Chaque item du snapshot devient un item
           // compatible avec la structure { product, id, name, price, image, qty }.
           state.cart = snap.cart_items.map(it => ({
             product: {
-              id: it.product_id,
-              name: it.product_name || '',
-              price_kmf: it.unit_price_kmf || 0,
-              image_url: it.product_image || '',
-              category: it.product_category || '',
+              id:             it.product_id,
+              name:           it.product_name || '',
+              // price_kmf = prix snapshot déjà promoé — promo_pct/is_promo mis à 0/false
+              // pour éviter une double application de promo dans renderSideCart et newTotal.
+              price_kmf:      it.unit_price_kmf || 0,
+              image_url:      it.product_image || '',
+              category:       it.product_category || '',
+              promo_pct:      0,      // pas de donnée promo dans le snapshot → neutralise le calcul de prix barré
+              is_promo:       false,  // idem — empêche la branche promo dans newTotal
+              // promo_price_kmf absent → buildCartShareURL tombera sur price_kmf (correct)
+              // variant_label absent → renderSideCart omet le chip (acceptable, non stocké dans snapshot)
             },
-            id: it.product_id,
-            name: it.product_name || '',
+            id:    it.product_id,
+            name:  it.product_name || '',
             price: it.unit_price_kmf || 0,
             image: it.product_image || '',
-            qty: it.quantity || 1,
+            qty:   it.quantity || 1,
           }));
           saveCart();  // persiste en localStorage pour badge + sidebar
           cartItems = snap.cart_items.map(it => ({
@@ -736,8 +748,10 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       return sum + price * (Number(it.qty) || 1);
     }, 0);
 
+    const isRebuiltFromSnapshot = !!(snap && !originalCartHadItems);
+    const totalLabel = isRebuiltFromSnapshot ? 'Total snapshot (le serveur recalculera les prix actuels)' : 'Total estimé';
     const msg = `Remplacer les articles du panier partagé par le contenu actuel ?`
-      + (newTotal > 0 ? `\n\nTotal estimé : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
+      + (newTotal > 0 ? `\n\n${totalLabel} : ${newTotal.toLocaleString('fr-FR')} KMF` : '')
       + `\n\nLes participants seront notifiés.`;
 
     if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
@@ -880,11 +894,15 @@ export async function renderGroupView(opts = {}) {
   const settlementOpen = isSettlementOpen(cart);
   const isCartOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
 
-  let commitmentsList = [];
-  try {
-    const cRes = await fetch(`/api/shared-carts/public/${state.shareToken}/commitments`, { credentials: 'include' });
-    if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
-  } catch (_) {}
+  let commitmentsList = data.commitments || [];
+  // Fallback : si l'endpoint owner ne les inclut pas encore (compatibilité transitoire),
+  // on tente le fetch séparé
+  if (!commitmentsList.length && state.shareToken) {
+    try {
+      const cRes = await fetch(`/api/shared-carts/public/${state.shareToken}/commitments`, { credentials: 'include' });
+      if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
+    } catch (_) {}
+  }
 
   const showSelfForm = isCartOpen && cart.status !== 'fully_funded' && remainingKmf(cart) > 0;
 

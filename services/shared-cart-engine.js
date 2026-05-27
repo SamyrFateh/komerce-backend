@@ -507,7 +507,16 @@ async function getSharedCartForOwner(sharedCartId, userId) {
     [cart.id]
   );
 
-  return { cart, items, contributions };
+  // Doctrine v4.2 — inclure les engagements pour éviter le double fetch fragile côté client
+  const { rows: commitments } = await db.query(
+    `SELECT id, participant_name, participant_phone, amount_kmf, status, locked_at, created_at
+       FROM shared_cart_commitments
+      WHERE shared_cart_id = $1
+      ORDER BY created_at DESC`,
+    [cart.id]
+  );
+
+  return { cart, items, contributions, commitments };
 }
 
 /**
@@ -569,6 +578,13 @@ async function startContribution(token, contributorInfo) {
     ];
     if (!PAYMENT_ELIGIBLE_STATUSES.includes(cart.status)) {
       throw new Error(`Ce panier n'accepte plus de contributions (statut : ${cart.status})`);
+    }
+    // Doctrine v4.2 §5.2 — aucun paiement participant en phase ouverte
+    if (['active', 'partially_funded'].includes(cart.status)) {
+      const meta = cart.metadata && typeof cart.metadata === 'object' ? cart.metadata : {};
+      if (!meta.settlement_open) {
+        throw new Error("Le panier est encore en phase ouverte. Le créateur doit d'abord passer au règlement.");
+      }
     }
     if (new Date(cart.expires_at) < new Date()) {
       throw new Error('Ce panier partagé a expiré');
@@ -1086,7 +1102,7 @@ async function expireOldCarts() {
   const { rows } = await db.query(
     `UPDATE shared_carts
         SET status = 'expired', updated_at = NOW()
-      WHERE status IN ('active', 'partially_funded')
+      WHERE status IN ('active', 'partially_funded', 'draft', 'commitment_open')
         AND expires_at < NOW()
       RETURNING id, beneficiary_user_id, contributed_kmf`
   );
