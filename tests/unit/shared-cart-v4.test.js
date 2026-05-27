@@ -48,6 +48,15 @@ jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
+// Mock commitment-service pour isoler openSettlement des effets de jest.resetModules()
+// dans les suites crons. lockCommitmentsForSettlement est remocké par test dans openSettlement.
+jest.mock('../../services/shared-cart-commitment-service', () => {
+  const actual = jest.requireActual('../../services/shared-cart-commitment-service');
+  return {
+    ...actual,
+    lockCommitmentsForSettlement: jest.fn().mockResolvedValue([]),
+  };
+});
 
 const db = require('../../db');
 
@@ -341,9 +350,6 @@ describe('openSettlement', () => {
 
     const client = makeClient([
       { rows: [cart] },        // SELECT FOR UPDATE
-      // lockCommitmentsForSettlement : UPDATE pledged → locked + INSERT event
-      { rows: [] },            // UPDATE commitments (0 pledged)
-      { rows: [] },            // INSERT event commitments_locked_for_settlement
       { rows: [updatedCart] }, // UPDATE shared_carts metadata RETURNING
       { rows: [] },            // INSERT event settlement_opened
     ]);
@@ -366,8 +372,6 @@ describe('openSettlement', () => {
 
     const client = makeClient([
       { rows: [cart] },
-      { rows: [] },
-      { rows: [] },
       { rows: [updatedCart] },
       { rows: [] },
     ]);
@@ -391,8 +395,6 @@ describe('openSettlement', () => {
 
     const client = makeClient([
       { rows: [cart] },
-      { rows: [] },
-      { rows: [] },
       { rows: [updatedCart] },
       { rows: [] },
     ]);
@@ -474,10 +476,10 @@ describe('lockCommitmentsForSettlement', () => {
     expect(result).toHaveLength(3);
     expect(result.every(r => r.status === 'locked_for_settlement')).toBe(true);
 
-    // Vérifier l'event
+    // Vérifier l'event — addEvent passe le type en $2 (paramètre), pas dans le SQL
     const eventCall = client.calls.find(c =>
       String(c.sql).includes('INSERT INTO shared_cart_events') &&
-      String(c.sql).includes('commitments_locked_for_settlement')
+      Array.isArray(c.params) && c.params[1] === 'commitments_locked_for_settlement'
     );
     expect(eventCall).toBeDefined();
   });
