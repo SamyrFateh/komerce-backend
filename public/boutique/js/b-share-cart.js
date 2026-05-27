@@ -24,6 +24,7 @@ import {
 } from './b-phone.js';
 // FIX UX — Réutiliser les helpers checkout pour un style uniforme (padding, indicatifs)
 import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
+import { requireIdentity } from './b-identity.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -535,8 +536,17 @@ export async function startShareFlow(opts = {}) {
     // choice === 'new' → on continue vers promptInit
   }
 
-  const needsAuth = !isConnected();
-  const formData = await promptInit(needsAuth);
+  // Doctrine identité légère Komerce :
+  // on ne demande pas nom/téléphone ici.
+  // Si l'utilisateur n'est pas encore reconnu, OTP WhatsApp puis JWT httpOnly.
+  const identity = await requireIdentity({
+    reason: 'créer un panier groupe',
+    title: 'Sécuriser votre panier groupe',
+  });
+  if (!identity) return;
+
+  // Après identité validée, il ne reste qu'un champ métier léger : le nom du panier.
+  const formData = await promptInit(false);
   if (!formData) return;
 
   const btn = document.getElementById('k-cart-share') || document.getElementById('k-sc-share');
