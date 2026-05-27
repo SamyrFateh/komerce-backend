@@ -274,4 +274,24 @@
   --red-deep-text:          #991b1b   ;  /* Rouge deep text */
   --red-soft:               #ff5e5e   ;  /* Rouge soft (alert léger) */
   --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
+
+  /* ── Groupe / panier partagé — tokens alpha (refactor group-cart-flow) ── */
+  --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
+  --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
+  --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */
+  --green-alpha-14:   rgba(31,122,84,.14);  /* mini-guide border */
+  --green-alpha-20:   rgba(31,122,84,.20);  /* locked-amount border */
+  --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
+  --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
+  --green-text-sett:  #1f7a54;              /* badge phase ouverte text */
+  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
+  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
+  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
+  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
+  --amber-bg-08:      rgba(230,130,0,.08);  /* funded-callout gap fond */
+  --amber-bg-12:      rgba(230,130,0,.12);  /* badge settlement fond */
+  --amber-border-28:  rgba(230,130,0,.28);  /* funded-callout gap border */
+  --amber-text-sett:  #b45309;              /* badge settlement text / finalize gap btn */
+  --violet-bg-light:  #ede7f6;              /* split-hint fond lavande */
+  --danger:           #e53935;              /* bouton / texte annulation danger */
 }

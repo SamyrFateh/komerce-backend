@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (bundle Sprint 3 · 2026-05-25)
+   KOMERCE — components.css (bundle Sprint 3 · 2026-05-27)
    components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
@@ -3379,7 +3379,6 @@ body.cart-open .k-hero { pointer-events: none; }
 }
 
 body.modal-open .k-wa-fab,
-body.k-modal-open .k-wa-fab,
 body.cart-open .k-wa-fab {
   opacity: 0;
   pointer-events: none;
@@ -4841,6 +4840,1544 @@ body.cart-open  #k-section-index { display:none; }
 /* ── group-cart-flow.css ─────────────────────────────────── */
 /* Flux simplifié panier collectif */
 .k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'👥 Payer à plusieurs';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'À plusieurs';font-size:12px}@media(min-width:600px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
+
+
+/* ══════════════════════════════════════════════════════════════════
+ * GROUPE COCKPIT — owner officiel des sélecteurs .k-group-*
+ * Migré depuis b-group-view.js → injectStyles() (PR-1)
+ * refactor(group): move group cockpit styles to CSS owner
+ * ══════════════════════════════════════════════════════════════════ */
+
+/* ── Bloc A — Structure de base ─────────────────────────────────── */
+
+.k-group-view {
+  max-width: 1180px;
+  margin: 24px auto 80px;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+.k-group-view > * {
+  max-width: 720px;
+}
+.k-group-view .k-group-header {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 28px 8px;
+  box-shadow: 0 18px 50px var(--border-text-08);
+}
+.k-group-view .k-group-header h2 {
+  margin: 0 0 8px;
+  font-size: 23px;
+  line-height: 1.2;
+  color: var(--text);
+}
+.k-group-view .k-group-subhead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.k-group-view .k-group-progress-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 0 0 24px 24px;
+  padding: 20px 28px 22px;
+  margin: 0 0 16px;
+  box-shadow: 0 18px 50px var(--border-text-08);
+}
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px 28px;
+  margin: 12px 0 0;
+  box-shadow: 0 14px 42px var(--border-text-06);
+}
+.k-group-view .k-group-section-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 14px;
+  color: var(--text);
+}
+.k-group-view .k-group-creator-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.k-group-view .k-group-btn {
+  min-height: 50px;
+  border-radius: 999px;
+}
+.k-group-view .k-group-self-toggle {
+  background: var(--white);
+  border: 1px dashed var(--border);
+  border-radius: 20px;
+  padding: 16px 18px;
+  margin: 12px 0 0;
+  font-size: 15px;
+  box-shadow: 0 10px 32px rgba(30,40,25,.04);
+}
+.k-group-view .k-group-progress {
+  height: 8px;
+  background: var(--green-alpha-12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.k-group-view .k-group-progress-bar {
+  display: block;
+  height: 100%;
+  background: var(--cta-green);
+  border-radius: 999px;
+}
+
+@media (min-width: 1100px) {
+  .k-group-view {
+    max-width: 1180px;
+  }
+}
+
+/* ── Bloc B — Responsive mobile de base (max-width:700px) ────────── */
+
+@media (max-width: 700px) {
+  .k-group-view {
+    max-width: none;
+    margin: 22px auto 72px;
+    padding: 0 14px;
+  }
+  .k-group-view > * {
+    max-width: none;
+  }
+  .k-group-view .k-group-header {
+    padding: 20px 18px 8px;
+    border-radius: 20px 20px 0 0;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 21px;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 18px;
+    border-radius: 0 0 20px 20px;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .k-group-view .k-group-creator-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Bloc C — Cockpit initial desktop (min-width:1000px) ─────────── */
+/* Note : breakpoint 1000px, exception documentée (standard projet = 900px) */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    margin: 0 auto 56px!important;
+    padding: 0 32px!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: 700px!important;
+    max-width: 700px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 16px 24px 8px!important;
+    border-radius: 20px 20px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 22px!important;
+    margin: 0 0 4px!important;
+  }
+  .k-group-view .k-group-subhead {
+    font-size: 14px!important;
+    line-height: 1.35!important;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 16px 24px 18px!important;
+    margin: 0 0 14px!important;
+    border-radius: 0 0 20px 20px!important;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 16px 24px!important;
+    margin: 12px 0 0!important;
+    border-radius: 20px!important;
+  }
+  .k-group-view .k-group-section-title,
+  .k-group-view h3 {
+    font-size: 18px!important;
+    margin: 0 0 10px!important;
+  }
+  .k-group-view .k-group-self-toggle {
+    margin: 10px 0 0!important;
+    padding: 13px 16px!important;
+    border-radius: 18px!important;
+    min-height: 46px!important;
+  }
+  .k-group-view .k-group-creator-actions {
+    gap: 10px!important;
+  }
+  .k-group-view .k-group-btn {
+    min-height: 44px!important;
+    padding: 10px 16px!important;
+  }
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint {
+    margin: 8px 0 0!important;
+    font-size: 12px!important;
+    line-height: 1.35!important;
+  }
+  .k-group-view hr {
+    margin: 12px 0!important;
+  }
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea {
+    min-height: 42px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    margin: 10px auto 56px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 16px 16px 8px!important;
+  }
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 16px!important;
+    margin-top: 10px!important;
+  }
+}
+
+/* ── Desktop cockpit layout : colonne gauche + réserve articles droite ── */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    max-width: 1240px!important;
+    width: 100%!important;
+    margin: 8px auto 64px!important;
+    padding: 0 32px!important;
+    box-sizing: border-box!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: 720px!important;
+    max-width: 720px!important;
+    margin-left: 0!important;
+    margin-right: auto!important;
+  }
+}
+
+@media (min-width: 1400px) {
+  #k-group-view.k-group-view {
+    max-width: 1280px!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: 740px!important;
+    max-width: 740px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    max-width: none!important;
+    width: 100%!important;
+    margin: 12px auto 64px!important;
+    padding: 0 14px!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: auto!important;
+    max-width: none!important;
+    margin-left: 0!important;
+    margin-right: 0!important;
+  }
+}
+
+/* ── SAFE V2 — cockpit groupe compact desktop ──────────────────── */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    max-width: 1240px!important;
+    width: 100%!important;
+    margin: 0 auto 56px!important;
+    padding: 0 32px!important;
+    box-sizing: border-box!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: 700px!important;
+    max-width: 700px!important;
+    margin-left: 0!important;
+    margin-right: auto!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 14px 22px 8px!important;
+    border-radius: 18px 18px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 22px!important;
+    margin: 0 0 3px!important;
+    line-height: 1.15!important;
+  }
+  .k-group-view .k-group-subhead {
+    font-size: 14px!important;
+    line-height: 1.3!important;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 14px 22px 16px!important;
+    margin: 0 0 10px!important;
+    border-radius: 0 0 18px 18px!important;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 14px 22px!important;
+    margin: 10px 0 0!important;
+    border-radius: 18px!important;
+  }
+  .k-group-view .k-group-self-toggle {
+    margin: 10px 0 0!important;
+    padding: 11px 14px!important;
+    min-height: 42px!important;
+    border-radius: 16px!important;
+    font-size: 14px!important;
+  }
+  .k-group-view .k-group-creator-actions {
+    display: grid!important;
+    grid-template-columns: 1fr 1fr!important;
+    gap: 10px!important;
+  }
+  .k-group-view .k-group-btn {
+    min-height: 42px!important;
+    padding: 9px 14px!important;
+    border-radius: 999px!important;
+  }
+  .k-group-view h3,
+  .k-group-view .k-group-section-title {
+    font-size: 18px!important;
+    margin: 0 0 9px!important;
+  }
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint {
+    margin: 7px 0 0!important;
+    font-size: 12px!important;
+    line-height: 1.3!important;
+  }
+  .k-group-view hr {
+    margin: 10px 0!important;
+  }
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea {
+    min-height: 40px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    margin: 10px auto 56px!important;
+    padding: 0 14px!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: auto!important;
+    max-width: none!important;
+    margin-left: 0!important;
+    margin-right: 0!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 15px 16px 8px!important;
+  }
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 15px 16px!important;
+    margin-top: 10px!important;
+  }
+}
+
+/* ── Bloc D — Colonne droite articles (SAFE V2-B) ──────────────── */
+
+.k-group-cockpit {
+  display: block;
+}
+.k-group-main-col {
+  min-width: 0;
+}
+.k-group-side-panel {
+  margin-top: 12px;
+}
+.k-group-side-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 14px 42px var(--border-text-06);
+}
+.k-group-side-card + .k-group-side-card {
+  margin-top: 10px;
+}
+.k-group-side-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.k-group-side-head strong {
+  font-size: 15px;
+  color: var(--text);
+}
+.k-group-side-head span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.k-group-side-list {
+  display: grid;
+  gap: 9px;
+}
+.k-group-side-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.k-group-side-item img,
+.k-group-side-item-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--sand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.k-group-side-item-main {
+  min-width: 0;
+}
+.k-group-side-item-main strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-group-side-item-main span {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.k-group-side-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.k-group-side-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+  font-size: 13px;
+}
+.k-group-side-total span {
+  color: var(--text-muted);
+}
+.k-group-side-total strong {
+  color: var(--text);
+}
+.k-group-side-help ol {
+  margin: 8px 0 0 18px;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    max-width: 1240px!important;
+    margin: 0 auto 56px!important;
+    padding: 0 32px!important;
+  }
+  #k-group-view.k-group-view > * {
+    width: auto!important;
+    max-width: none!important;
+  }
+  .k-group-cockpit {
+    display: grid;
+    grid-template-columns: minmax(620px, 700px) minmax(300px, 360px);
+    gap: 20px;
+    align-items: start;
+  }
+  .k-group-side-panel {
+    margin-top: 0;
+    position: sticky;
+    top: 96px;
+  }
+}
+
+@media (max-width: 999px) {
+  .k-group-cockpit {
+    display: block;
+  }
+}
+
+/* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    margin: -18px auto 44px!important;
+    padding: 0 32px!important;
+  }
+  .k-group-cockpit {
+    grid-template-columns: minmax(600px, 680px) minmax(300px, 340px)!important;
+    gap: 16px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 12px 20px 7px!important;
+    border-radius: 16px 16px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 21px!important;
+    margin: 0 0 2px!important;
+    line-height: 1.12!important;
+  }
+  .k-group-view .k-group-subhead {
+    font-size: 13px!important;
+    line-height: 1.25!important;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 12px 20px 14px!important;
+    margin: 0 0 8px!important;
+    border-radius: 0 0 16px 16px!important;
+  }
+  .k-group-view .k-group-progress-card h3,
+  .k-group-view .k-group-progress-card strong {
+    margin-top: 0!important;
+  }
+  .k-group-view .k-group-progress {
+    height: 6px!important;
+    margin: 7px 0!important;
+  }
+  .k-group-view .k-group-self-toggle {
+    margin: 8px 0 0!important;
+    padding: 9px 12px!important;
+    min-height: 38px!important;
+    border-radius: 14px!important;
+    font-size: 13px!important;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 12px 20px!important;
+    margin: 8px 0 0!important;
+    border-radius: 16px!important;
+  }
+  .k-group-view h3,
+  .k-group-view .k-group-section-title {
+    font-size: 17px!important;
+    margin: 0 0 8px!important;
+  }
+  .k-group-view .k-group-creator-actions {
+    gap: 8px!important;
+  }
+  .k-group-view .k-group-btn {
+    min-height: 38px!important;
+    padding: 8px 12px!important;
+    font-size: 13px!important;
+  }
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint {
+    margin: 6px 0 0!important;
+    font-size: 11.5px!important;
+    line-height: 1.25!important;
+  }
+  .k-group-view hr {
+    margin: 8px 0!important;
+  }
+  .k-group-view label {
+    font-size: 12px!important;
+    margin-bottom: 4px!important;
+  }
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea {
+    min-height: 36px!important;
+    padding-top: 7px!important;
+    padding-bottom: 7px!important;
+    font-size: 13px!important;
+  }
+  .k-group-side-panel {
+    top: 84px!important;
+  }
+  .k-group-side-card {
+    padding: 12px!important;
+    border-radius: 16px!important;
+  }
+  .k-group-side-card + .k-group-side-card {
+    margin-top: 8px!important;
+  }
+  .k-group-side-head {
+    margin-bottom: 8px!important;
+  }
+  .k-group-side-head strong {
+    font-size: 14px!important;
+  }
+  .k-group-side-head span {
+    font-size: 11.5px!important;
+  }
+  .k-group-side-list {
+    gap: 7px!important;
+  }
+  .k-group-side-item {
+    grid-template-columns: 38px 1fr!important;
+    gap: 8px!important;
+  }
+  .k-group-side-item img,
+  .k-group-side-item-fallback {
+    width: 38px!important;
+    height: 38px!important;
+    border-radius: 10px!important;
+  }
+  .k-group-side-item-main strong {
+    font-size: 12.5px!important;
+  }
+  .k-group-side-item-main span {
+    font-size: 11.5px!important;
+    margin-top: 2px!important;
+  }
+  .k-group-side-total {
+    margin-top: 8px!important;
+    padding-top: 8px!important;
+    font-size: 12px!important;
+  }
+  .k-group-side-help ol {
+    margin-top: 6px!important;
+    font-size: 12px!important;
+    line-height: 1.35!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    margin: 6px auto 48px!important;
+  }
+  .k-group-view .k-group-header,
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card,
+  .k-group-side-card {
+    padding: 13px 14px!important;
+  }
+}
+
+/* ── Bloc E — Mini guide créateur (SAFE V2-D) ──────────────────── */
+
+.k-group-mini-guide {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--green-alpha-06);
+  border: 1px solid var(--green-alpha-14);
+  border-radius: 14px;
+  padding: 9px 10px;
+  margin: 8px 0;
+}
+.k-group-mini-guide span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--text);
+  white-space: nowrap;
+}
+.k-group-mini-guide b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 999px;
+  background: var(--cta-green);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .k-group-mini-guide {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+/* ── SAFE V2-E — cockpit ultra compact desktop ─────────────────── */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    margin: -34px auto 36px!important;
+    padding: 0 32px!important;
+  }
+  .k-group-cockpit {
+    grid-template-columns: minmax(580px, 660px) minmax(280px, 330px)!important;
+    gap: 14px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 10px 18px 6px!important;
+    border-radius: 14px 14px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 20px!important;
+    margin: 0!important;
+    line-height: 1.1!important;
+  }
+  .k-group-view .k-group-subhead {
+    font-size: 12.5px!important;
+    line-height: 1.22!important;
+    margin-top: 3px!important;
+  }
+  .k-group-mini-guide {
+    display: flex!important;
+    align-items: center!important;
+    gap: 8px!important;
+    padding: 6px 8px!important;
+    margin: 6px 0!important;
+    border-radius: 12px!important;
+  }
+  .k-group-mini-guide span {
+    font-size: 11.5px!important;
+    line-height: 1.1!important;
+    white-space: nowrap!important;
+  }
+  .k-group-mini-guide b {
+    width: 16px!important;
+    height: 16px!important;
+    flex-basis: 16px!important;
+    font-size: 10px!important;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 10px 18px 12px!important;
+    margin: 0 0 6px!important;
+    border-radius: 0 0 14px 14px!important;
+  }
+  .k-group-view .k-group-progress-card h3 {
+    font-size: 15px!important;
+    margin: 0 0 2px!important;
+  }
+  .k-group-view .k-group-progress-card small,
+  .k-group-view .k-group-progress-card span,
+  .k-group-view .k-group-progress-card p {
+    font-size: 12px!important;
+  }
+  .k-group-view .k-group-progress {
+    height: 5px!important;
+    margin: 5px 0!important;
+  }
+  .k-group-view .k-group-self-toggle {
+    margin: 6px 0 0!important;
+    padding: 7px 10px!important;
+    min-height: 34px!important;
+    border-radius: 12px!important;
+    font-size: 12.5px!important;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 10px 18px!important;
+    margin: 6px 0 0!important;
+    border-radius: 14px!important;
+  }
+  .k-group-view h3,
+  .k-group-view .k-group-section-title {
+    font-size: 16px!important;
+    margin: 0 0 7px!important;
+  }
+  .k-group-view .k-group-creator-actions {
+    gap: 7px!important;
+  }
+  .k-group-view .k-group-btn {
+    min-height: 34px!important;
+    padding: 7px 10px!important;
+    font-size: 12.5px!important;
+  }
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint {
+    margin: 5px 0 0!important;
+    font-size: 11px!important;
+    line-height: 1.2!important;
+  }
+  .k-group-view hr {
+    margin: 7px 0!important;
+  }
+  .k-group-view label {
+    font-size: 11.5px!important;
+    margin-bottom: 3px!important;
+  }
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea {
+    min-height: 32px!important;
+    padding: 6px 10px!important;
+    font-size: 12.5px!important;
+    border-radius: 10px!important;
+  }
+  .k-group-side-panel {
+    top: 76px!important;
+  }
+  .k-group-side-card {
+    padding: 10px!important;
+    border-radius: 14px!important;
+  }
+  .k-group-side-card + .k-group-side-card {
+    margin-top: 7px!important;
+  }
+  .k-group-side-head {
+    margin-bottom: 7px!important;
+  }
+  .k-group-side-head strong {
+    font-size: 13.5px!important;
+  }
+  .k-group-side-head span {
+    font-size: 11px!important;
+  }
+  .k-group-side-list {
+    gap: 6px!important;
+  }
+  .k-group-side-item {
+    grid-template-columns: 34px 1fr!important;
+    gap: 7px!important;
+  }
+  .k-group-side-item img,
+  .k-group-side-item-fallback {
+    width: 34px!important;
+    height: 34px!important;
+    border-radius: 9px!important;
+  }
+  .k-group-side-item-main strong {
+    font-size: 12px!important;
+    line-height: 1.15!important;
+  }
+  .k-group-side-item-main span {
+    font-size: 11px!important;
+    margin-top: 1px!important;
+  }
+  .k-group-side-total {
+    margin-top: 7px!important;
+    padding-top: 7px!important;
+    font-size: 11.5px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  .k-group-mini-guide {
+    padding: 8px 10px!important;
+  }
+}
+
+/* ── Bloc F — Switcher paniers multi-groupe ─────────────────────── */
+
+.k-group-cart-switcher {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px;
+  margin: 6px 0;
+  box-shadow: 0 10px 30px rgba(30,40,25,.04);
+}
+.k-group-cart-switcher-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 0 2px 7px;
+}
+.k-group-cart-switcher-head strong {
+  font-size: 12px;
+  color: var(--text);
+}
+.k-group-cart-switcher-head span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.k-group-cart-tabs {
+  display: flex;
+  gap: 7px;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding-bottom: 1px;
+}
+.k-group-cart-tab {
+  flex: 0 0 auto;
+  min-width: 150px;
+  max-width: 210px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--sand);
+  border-radius: 12px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.k-group-cart-tab.is-active {
+  background: var(--coral-bg-12);
+  border-color: var(--coral-bg-38);
+  box-shadow: inset 0 0 0 1px var(--coral-bg-18);
+}
+.k-group-cart-tab strong {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.15;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-group-cart-tab span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 700px) {
+  .k-group-cart-tab {
+    min-width: 140px;
+  }
+}
+
+/* ── Bloc G — Note identité engagement ─────────────────────────── */
+
+.k-group-identity-note {
+  background: var(--coral-bg-09);
+  border: 1px solid rgba(239,125,95,.22);
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin: 6px 0 10px;
+}
+.k-group-identity-note strong {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--text);
+}
+.k-group-identity-note span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--text-muted);
+}
+
+/* ── ULTRA COMPACT — Groupe cockpit dense ──────────────────────── */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    margin: -42px auto 32px!important;
+    padding: 0 28px!important;
+  }
+  .k-group-cockpit {
+    grid-template-columns: minmax(560px, 640px) minmax(270px, 320px)!important;
+    gap: 12px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 8px 16px 5px!important;
+    border-radius: 13px 13px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 19px!important;
+    margin: 0!important;
+    line-height: 1.05!important;
+  }
+  .k-group-view .k-group-subhead {
+    font-size: 11.8px!important;
+    line-height: 1.18!important;
+    margin-top: 2px!important;
+  }
+  .k-group-cart-switcher {
+    padding: 6px!important;
+    margin: 5px 0!important;
+    border-radius: 12px!important;
+  }
+  .k-group-cart-switcher-head {
+    margin: 0 2px 5px!important;
+  }
+  .k-group-cart-switcher-head strong {
+    font-size: 11.5px!important;
+  }
+  .k-group-cart-switcher-head span {
+    font-size: 10.5px!important;
+  }
+  .k-group-cart-tabs {
+    gap: 5px!important;
+  }
+  .k-group-cart-tab {
+    min-width: 132px!important;
+    max-width: 180px!important;
+    padding: 5px 7px!important;
+    border-radius: 10px!important;
+  }
+  .k-group-cart-tab strong {
+    font-size: 11.5px!important;
+  }
+  .k-group-cart-tab span {
+    font-size: 10.2px!important;
+    margin-top: 2px!important;
+  }
+  .k-group-mini-guide {
+    padding: 5px 7px!important;
+    margin: 5px 0!important;
+    border-radius: 10px!important;
+    gap: 6px!important;
+  }
+  .k-group-mini-guide span {
+    font-size: 10.8px!important;
+    line-height: 1!important;
+  }
+  .k-group-mini-guide b {
+    width: 15px!important;
+    height: 15px!important;
+    flex-basis: 15px!important;
+    font-size: 9.5px!important;
+  }
+  .k-group-view .k-group-progress-card {
+    padding: 8px 16px 9px!important;
+    margin: 0 0 5px!important;
+    border-radius: 0 0 13px 13px!important;
+  }
+  .k-group-view .k-group-progress-card h3,
+  .k-group-view .k-group-progress-card strong {
+    font-size: 14px!important;
+    margin: 0 0 2px!important;
+    line-height: 1.12!important;
+  }
+  .k-group-view .k-group-progress-card p,
+  .k-group-view .k-group-progress-card span,
+  .k-group-view .k-group-progress-card small {
+    font-size: 11.3px!important;
+    line-height: 1.2!important;
+  }
+  .k-group-view .k-group-progress {
+    height: 4px!important;
+    margin: 4px 0!important;
+  }
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card {
+    padding: 8px 16px!important;
+    margin: 5px 0 0!important;
+    border-radius: 13px!important;
+  }
+  .k-group-view .k-group-section-title,
+  .k-group-view h3 {
+    font-size: 14.5px!important;
+    margin: 0 0 5px!important;
+    line-height: 1.15!important;
+  }
+  .k-group-view .k-group-self-toggle {
+    margin: 5px 0 0!important;
+    padding: 6px 9px!important;
+    min-height: 30px!important;
+    border-radius: 11px!important;
+    font-size: 12px!important;
+  }
+  .k-group-view .k-group-creator-actions {
+    gap: 6px!important;
+  }
+  .k-group-view .k-group-btn {
+    min-height: 31px!important;
+    padding: 6px 9px!important;
+    font-size: 11.8px!important;
+    line-height: 1.1!important;
+  }
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint,
+  .k-group-view .k-group-finalized-hint {
+    margin: 4px 0 0!important;
+    font-size: 10.8px!important;
+    line-height: 1.15!important;
+  }
+  .k-group-view label,
+  .k-group-view .k-group-label {
+    font-size: 10.5px!important;
+    margin-bottom: 2px!important;
+  }
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea {
+    min-height: 29px!important;
+    padding: 5px 8px!important;
+    font-size: 11.8px!important;
+    border-radius: 9px!important;
+  }
+  .k-group-view hr,
+  .k-group-actions-card [style*="border-top"] {
+    margin-top: 7px!important;
+    padding-top: 7px!important;
+  }
+  .k-group-identity-note {
+    padding: 6px 8px!important;
+    margin: 4px 0 7px!important;
+    border-radius: 10px!important;
+  }
+  .k-group-identity-note strong {
+    font-size: 11.5px!important;
+  }
+  .k-group-identity-note span {
+    font-size: 10.5px!important;
+    line-height: 1.18!important;
+  }
+  .k-group-side-panel {
+    top: 68px!important;
+  }
+  .k-group-side-card {
+    padding: 8px!important;
+    border-radius: 13px!important;
+  }
+  .k-group-side-head {
+    margin-bottom: 5px!important;
+  }
+  .k-group-side-head strong {
+    font-size: 12.5px!important;
+  }
+  .k-group-side-head span {
+    font-size: 10.5px!important;
+  }
+  .k-group-side-list {
+    gap: 5px!important;
+  }
+  .k-group-side-item {
+    grid-template-columns: 30px 1fr!important;
+    gap: 6px!important;
+  }
+  .k-group-side-item img,
+  .k-group-side-item-fallback {
+    width: 30px!important;
+    height: 30px!important;
+    border-radius: 8px!important;
+  }
+  .k-group-side-item-main strong {
+    font-size: 11px!important;
+    line-height: 1.1!important;
+  }
+  .k-group-side-item-main span {
+    font-size: 10px!important;
+    margin-top: 1px!important;
+  }
+  .k-group-side-total {
+    margin-top: 6px!important;
+    padding-top: 6px!important;
+    font-size: 10.8px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    margin: 4px auto 46px!important;
+    padding: 0 10px!important;
+  }
+  .k-group-view .k-group-header,
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card,
+  .k-group-side-card {
+    padding: 11px 12px!important;
+  }
+  .k-group-mini-guide {
+    padding: 7px 8px!important;
+  }
+}
+
+/* ── POSITION — remonter le cockpit sous le header ─────────────── */
+/* Valeur effective : margin-top final après toutes les passes SAFE  */
+
+@media (min-width: 1000px) {
+  #k-group-view.k-group-view {
+    margin-top: -118px!important;
+  }
+  .k-group-cockpit {
+    align-items: start!important;
+  }
+}
+
+@media (min-width: 1400px) {
+  #k-group-view.k-group-view {
+    margin-top: -132px!important;
+  }
+}
+
+@media (max-width: 999px) {
+  #k-group-view.k-group-view {
+    margin-top: 0!important;
+  }
+}
+
+/* ── MOBILE ONE SCREEN — engagement compact ─────────────────────── */
+
+@media (max-width: 700px) {
+  #k-group-view.k-group-view {
+    margin-top: -6px!important;
+    padding: 0 10px 72px!important;
+  }
+  .k-group-view .k-group-header {
+    padding: 9px 12px 6px!important;
+    border-radius: 16px 16px 0 0!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 18px!important;
+    line-height: 1.05!important;
+    margin: 0!important;
+  }
+  .k-group-view .k-group-subhead {
+    display: none!important;
+  }
+  .k-group-items-card {
+    margin-top: 8px!important;
+    padding: 10px 12px!important;
+    border-radius: 16px!important;
+  }
+  .k-group-items-toggle {
+    min-height: 44px!important;
+    padding: 0!important;
+  }
+  .k-group-items-toggle strong {
+    font-size: 17px!important;
+    line-height: 1.1!important;
+  }
+  .k-group-items-toggle span span {
+    font-size: 13px!important;
+    line-height: 1.2!important;
+  }
+  .k-group-contribute-card {
+    margin-top: 8px!important;
+    padding: 12px!important;
+    border-radius: 16px!important;
+  }
+  .k-group-phase-badge {
+    font-size: 11px!important;
+    padding: 5px 9px!important;
+    margin-bottom: 8px!important;
+    border-radius: 999px!important;
+  }
+  .k-group-contribute-card .k-group-section-title {
+    font-size: 22px!important;
+    line-height: 1.05!important;
+    margin: 0 0 8px!important;
+  }
+  .k-group-contribute-card > p[style*="font-size:13px"] {
+    display: none!important;
+  }
+  .k-group-split-hint,
+  .k-group-equal-hint,
+  .k-group-contribute-card [style*="rgba(112,73,190"] {
+    font-size: 12px!important;
+    line-height: 1.2!important;
+    padding: 7px 9px!important;
+    margin: 6px 0 8px!important;
+    border-radius: 10px!important;
+  }
+  .k-group-identity-note {
+    padding: 7px 9px!important;
+    margin: 6px 0 9px!important;
+    border-radius: 11px!important;
+  }
+  .k-group-identity-note strong {
+    font-size: 13px!important;
+    line-height: 1.1!important;
+  }
+  .k-group-identity-note span {
+    font-size: 11px!important;
+    line-height: 1.15!important;
+    margin-top: 2px!important;
+  }
+  .k-group-field {
+    margin-bottom: 8px!important;
+  }
+  .k-group-label {
+    font-size: 11px!important;
+    margin-bottom: 3px!important;
+    letter-spacing: .02em!important;
+  }
+  .k-group-input {
+    min-height: 42px!important;
+    height: 42px!important;
+    padding: 7px 10px!important;
+    font-size: 15px!important;
+    border-radius: 12px!important;
+  }
+  #k-ge-msg {
+    height: 40px!important;
+  }
+  .k-group-input-error {
+    min-height: 14px!important;
+    margin: 0 0 5px!important;
+    font-size: 11px!important;
+  }
+  #k-ge-submit-btn {
+    min-height: 44px!important;
+    height: 44px!important;
+    margin-top: 4px!important;
+    font-size: 14px!important;
+    border-radius: 999px!important;
+  }
+  .k-group-card,
+  .k-group-actions-card,
+  .k-group-progress-card,
+  .k-group-items-card {
+    box-shadow: 0 8px 24px rgba(30,40,25,.05)!important;
+  }
+}
+
+/* Mobile très court : encore plus dense */
+@media (max-width: 390px) {
+  .k-group-contribute-card {
+    padding: 10px!important;
+  }
+  .k-group-contribute-card .k-group-section-title {
+    font-size: 20px!important;
+  }
+  .k-group-identity-note span {
+    display: none!important;
+  }
+  .k-group-input {
+    height: 39px!important;
+    min-height: 39px!important;
+  }
+  #k-ge-submit-btn {
+    height: 41px!important;
+    min-height: 41px!important;
+  }
+}
+
+/* ── Bloc H — Sélecteurs utilitaires flat ──────────────────────── */
+
+.k-group-phase-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.k-group-phase-badge--open {
+  background: var(--green-alpha-12);
+  color: var(--green-text-sett);
+}
+.k-group-phase-badge--settlement {
+  background: var(--amber-bg-12);
+  color: var(--amber-text-sett);
+}
+.k-group-funded-callout {
+  border: 1px solid var(--green-alpha-28);
+  background: var(--green-alpha-09);
+  border-radius: 18px;
+  padding: 16px;
+  margin-top: 14px;
+}
+.k-group-funded-callout strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.k-group-funded-callout p {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+/* funded-callout variante gap (remplace les inline styles du template) */
+.k-group-funded-callout--gap {
+  border-color: var(--amber-border-28);
+  background: var(--amber-bg-08);
+}
+.k-group-funded-callout--gap strong {
+  color: var(--amber-text-sett);
+}
+.k-group-funded-callout--gap .k-group-btn--finalize {
+  background: var(--amber-text-sett);
+}
+
+.k-group-disabled-finalize {
+  opacity: .72;
+  cursor: not-allowed!important;
+  background: var(--sand-dark)!important;
+  color: var(--text-muted)!important;
+}
+.k-group-share-hint,
+.k-group-finalize-hint {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 10px 0 0;
+}
+/* État expiration imminente — remplace inline style ${expSoon} */
+.k-group-share-hint.is-exp-soon {
+  color: var(--danger);
+  font-weight: 700;
+}
+.k-group-split-hint {
+  background: var(--violet-bg-light);
+  color: var(--violet-dark);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+.k-group-self-toggle {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px dashed var(--border);
+  background: var(--sand);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.k-group-self-panel[hidden] { display: none!important; }
+.k-group-self-panel:not([hidden]) + .k-group-self-toggle { display: none!important; }
+.k-group-self-toggle.is-open { display: none!important; }
+.k-group-locked-amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--green-alpha-09);
+  border: 1px solid var(--green-alpha-20);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.k-group-locked-amount strong {
+  font-size: 20px;
+  color: var(--text);
+}
+.k-group-locked-amount span {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+.k-group-commitment-list { margin: 8px 0 0; }
+.k-group-commitment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.k-group-commitment-row:last-child { border-bottom: none; }
+.k-group-commitment-name { flex: 1; font-size: 14px; font-weight: 600; }
+.k-group-commitment-amount { font-size: 14px; color: var(--text); }
+.k-group-commitment-status { font-size: 12px; color: var(--text-muted); }
+.k-group-settlement-summary {
+  background: var(--sand);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.k-group-settlement-summary strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.k-group-saved-commitment {
+  border: 1px solid var(--green-alpha-24);
+  background: rgba(31,122,84,.08);
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin: 0 0 12px;
+}
+.k-group-saved-commitment strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+  color: var(--text);
+}
+.k-group-saved-commitment span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.k-group-saved-commitment button {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.k-group-eng-fields[hidden] { display: none!important; }
+.k-group-items-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.k-group-items-toggle strong { font-size: 15px; }
+.k-group-items-toggle span { font-size: 12px; color: var(--text-muted); }
+.k-group-items-chevron { transition: transform .2s ease; font-size: 13px!important; }
+.k-group-items-card.is-open .k-group-items-chevron { transform: rotate(180deg); }
+.k-group-items-list[hidden] { display: none!important; }
+.k-group-items-list {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+/* ── Bouton danger — annulation (remplace inline style du template) ─ */
+.k-group-btn--danger {
+  color: var(--danger)!important;
+  border-color: var(--danger)!important;
+  opacity: .8;
+  width: 100%;
+}
 
 
 /* ── shared-followup.css ─────────────────────────────────── */
