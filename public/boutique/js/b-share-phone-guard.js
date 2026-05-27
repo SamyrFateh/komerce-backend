@@ -252,7 +252,7 @@ async function runGuestFlow() {
   try {
     const data = await createSharedCart(formData);
     const title = formData.title || 'Panier groupe';
-    const shareUrl = data.share_url || `${window.location.origin}/cart/shared/${data.token}`;
+    const shareUrl = data.share_url || `${window.location.origin}/boutique/?p=${data.token}`;
 
     state.shareToken = data.token;
     state.shareId = data.shared_cart_id;

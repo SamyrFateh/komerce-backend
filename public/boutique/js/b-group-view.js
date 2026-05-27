@@ -868,7 +868,7 @@ export async function renderGroupView(opts = {}) {
   const cart          = data.cart;
   const contributions = data.contributions || [];
   const cartId        = state.shareId || cart.id;
-  const shareUrl      = data.share_url || state.shareUrl || `${window.location.origin}/cart/shared/${state.shareToken}`;
+  const shareUrl      = data.share_url || state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`;
   const settlementOpen = isSettlementOpen(cart);
   const isCartOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
 

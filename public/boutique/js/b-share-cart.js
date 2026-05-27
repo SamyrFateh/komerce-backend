@@ -69,7 +69,7 @@ function applyCartToState(cart) {
   state.shareTotalKmf = r(cart.total_kmf_snapshot);
   state.shareContributedKmf = r(cart.contributed_kmf);
   state.shareRemainingKmf = r(cart.remaining_kmf);
-  state.shareUrl = cart.share_url || (cart.token ? `${window.location.origin}/cart/shared/${cart.token}` : null);
+  state.shareUrl = cart.share_url || (cart.token ? `${window.location.origin}/boutique/?p=${cart.token}` : null);
   saveShareState();
   return cart;
 }
@@ -512,7 +512,7 @@ export async function startShareFlow(opts = {}) {
   }
 
   if (reshare && state.shareToken) {
-    const shareUrl = state.shareUrl || `${window.location.origin}/cart/shared/${state.shareToken}`;
+    const shareUrl = state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`;
     openWhatsApp(state.cartName, shareUrl);
     return;
   }
@@ -549,7 +549,7 @@ export async function startShareFlow(opts = {}) {
     const cart = {
       id: data.shared_cart_id,
       token: data.token,
-      share_url: data.share_url || `${window.location.origin}/cart/shared/${data.token}`,
+      share_url: data.share_url || `${window.location.origin}/boutique/?p=${data.token}`,
       title,
       status: 'active',
       total_kmf_snapshot: data.total_kmf,

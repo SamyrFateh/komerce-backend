@@ -486,7 +486,7 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
     res.json({
       shared_cart_id: result.sharedCart.id,
       token: result.token,
-      share_url: `${PUBLIC_BASE_URL}/cart/shared/${result.token}`,
+      share_url: `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
       total_kmf: result.sharedCart.total_kmf_snapshot,
       expires_at: result.sharedCart.expires_at,
       items_count: result.items.length,
@@ -500,7 +500,7 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       try {
         const trackingPhone = req.user?.tracking_phone || req.user?.phone;
         if (!trackingPhone) return;
-        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${result.token}`;
+        const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`;
         const notif = await sendTemplateWhatsApp({
           to: trackingPhone,
           templateName: 'shared_cart_created',
@@ -546,7 +546,7 @@ router.post('/from-basket', authenticate, async (req, res, next) => {
     res.json({
       shared_cart_id: result.sharedCart.id,
       token: result.token,
-      share_url: `${PUBLIC_BASE_URL}/cart/shared/${result.token}`,
+      share_url: `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
       total_kmf: result.sharedCart.total_kmf_snapshot,
       expires_at: result.sharedCart.expires_at,
       items_count: result.items.length,
@@ -567,7 +567,7 @@ router.get('/mine', authenticate, async (req, res, next) => {
     res.json({
       carts: carts.map(c => ({
         ...c,
-        share_url: `${PUBLIC_BASE_URL}/cart/shared/${c.token}`,
+        share_url: `${PUBLIC_BASE_URL}/boutique/?p=${c.token}`,
       })),
     });
   } catch (err) { next(err); }
@@ -579,7 +579,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
     if (!data) return res.status(404).json({ error: 'Panier introuvable' });
     res.json({
       ...data,
-      share_url: `${PUBLIC_BASE_URL}/cart/shared/${data.cart.token}`,
+      share_url: `${PUBLIC_BASE_URL}/boutique/?p=${data.cart.token}`,
     });
   } catch (err) { next(err); }
 });
@@ -639,7 +639,7 @@ router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
           [req.params.id]
         );
 
-        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${cart.token}`;
+        const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
         const title    = cart.title || 'Panier groupe';
 
         for (const c of locked) {
@@ -741,7 +741,7 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
           [req.params.id]
         );
 
-        const shareUrl = `${PUBLIC_BASE_URL}/cart/shared/${cart.token}`;
+        const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
         const title    = cart.title || 'Panier groupe';
         const total    = String(Math.round(Number(cart.total_kmf_snapshot) || 0));
 

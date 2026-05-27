@@ -606,6 +606,9 @@ function quickRemove(productId, btnEl) {
     const cartClearBtn    = document.getElementById('k-cart-clear');
     if (cartCheckoutBtn) cartCheckoutBtn.style.display = editCtxDrawer ? 'none' : '';
     if (cartShareBtn)    cartShareBtn.style.display    = editCtxDrawer ? 'none' : '';
+    // SC-EDIT-04 — Masquer aussi le bouton Vider en mode édition collective :
+    // vider le panier de travail détruirait silencieusement les articles en cours d'édition.
+    if (cartClearBtn)    cartClearBtn.style.display    = editCtxDrawer ? 'none' : '';
 
     // Injecter/retirer le bloc d'action edit dans le footer du drawer
     let drawerEditBar = document.getElementById('k-cart-edit-bar');
