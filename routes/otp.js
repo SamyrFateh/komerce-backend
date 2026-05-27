@@ -16,10 +16,79 @@ const MAX_ATTEMPTS = 5;       // Max verify attempts per OTP
 const RATE_LIMIT_MIN = 2;     // Min interval between OTP requests
 const OTP_BCRYPT_ROUNDS = 8;  // [P1-3] 8 rounds = équilibre sécu/perf (OTP expire en 10min)
 
+function normalizePhone(raw) {
+  let phone = String(raw || '').replace(/[\s\-()]/g, '');
+  if (!phone.startsWith('+')) {
+    // Assume Comoros (+269) if no country code
+    if (phone.startsWith('269')) phone = '+' + phone;
+    else phone = '+269' + phone;
+  }
+  return phone;
+}
+
+function jwtCookieOptions() {
+  const isProd = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    path: '/',
+  };
+}
+
+function buildUserPayload(user, phone) {
+  return {
+    id: user.id,
+    name: user.full_name,
+    full_name: user.full_name,
+    phone: phone || user.phone || user.whatsapp_phone,
+    role: user.role || 'client',
+  };
+}
+
+async function findUserByPhone(phone) {
+  const { rows } = await pool.query(
+    `SELECT id, full_name, phone, whatsapp_phone, email, role
+       FROM users
+      WHERE phone = $1 OR whatsapp_phone = $1
+      LIMIT 1`,
+    [phone]
+  );
+  return rows[0] || null;
+}
+
+async function createLightweightUser(phone) {
+  const resolvedEmail = phone.replace(/\D/g, '') + '@komerce.km';
+  const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+  const { rows: [user] } = await pool.query(
+    `INSERT INTO users (full_name, email, phone, whatsapp_phone, password_hash, role, country, currency_pref)
+     VALUES ($1, $2, $3, $4, $5, 'client', 'KM', 'KMF')
+     ON CONFLICT (email) DO UPDATE
+       SET phone = COALESCE(users.phone, EXCLUDED.phone),
+           whatsapp_phone = COALESCE(users.whatsapp_phone, EXCLUDED.whatsapp_phone),
+           updated_at = NOW()
+     RETURNING id, full_name, phone, whatsapp_phone, email, role`,
+    ['Client Komerce', resolvedEmail, phone, phone, passwordHash]
+  );
+  return user;
+}
+
+function signKomerceJwt(user, phone) {
+  return jwt.sign(
+    { id: user.id, role: user.role || 'client', phone, fullName: user.full_name, jti: crypto.randomUUID() },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES || '30d' }
+  );
+}
+
 /**
  * POST /api/auth/otp/request
  * Send a 6-digit OTP via WhatsApp to the given phone number.
  * Rate-limited: 1 request per 2 minutes per phone.
+ *
+ * Doctrine identité légère : on n'exige pas que l'utilisateur existe déjà.
+ * Le compte minimal est créé seulement après validation OTP.
  */
 router.post('/request', async (req, res) => {
   try {
@@ -28,33 +97,12 @@ router.post('/request', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Numéro de téléphone requis' });
     }
 
-    // Normalize phone: ensure E.164 format
-    phone = phone.replace(/[\s\-()]/g, '');
-    if (!phone.startsWith('+')) {
-      // Assume Comoros (+269) if no country code
-      if (phone.startsWith('269')) phone = '+' + phone;
-      else phone = '+269' + phone;
-    }
+    phone = normalizePhone(phone);
     if (!/^\+\d{8,15}$/.test(phone)) {
       return res.status(400).json({ success: false, error: 'Format de numéro invalide' });
     }
 
-    // Check if user exists with this phone
-    const userCheck = await pool.query(
-      `SELECT id, full_name FROM users WHERE phone = $1 OR whatsapp_phone = $1`,
-      [phone]
-    );
-    if (userCheck.rows.length === 0) {
-      // Don't reveal if user exists — but still return success
-      // (prevents enumeration attacks)
-      return res.json({
-        success: true,
-        message: 'Si ce numéro est enregistré, vous recevrez un code par WhatsApp.',
-        expiresIn: OTP_EXPIRY_MIN * 60
-      });
-    }
-
-    // Rate limit: check last OTP for this phone
+    // Rate limit: check last OTP for this phone before any user lookup/creation.
     const recentOtp = await pool.query(
       `SELECT created_at FROM otp_codes 
        WHERE phone = $1 AND created_at > NOW() - INTERVAL '${RATE_LIMIT_MIN} minutes'
@@ -83,8 +131,6 @@ router.post('/request', async (req, res) => {
     );
 
     // [P1-3] Hash du code avant stockage DB (ne jamais stocker en clair)
-    // La colonne `code` en DB continue d'être utilisée, mais contient désormais le hash bcrypt.
-    // La migration DB n'est pas requise : bcrypt hash fait ~60 chars, VARCHAR(64) ou TEXT supporte.
     const codeHash = await bcrypt.hash(code, OTP_BCRYPT_ROUNDS);
 
     // Store OTP (code hashé)
@@ -94,8 +140,10 @@ router.post('/request', async (req, res) => {
       [phone, codeHash, expiresAt]
     );
 
+    const existingUser = await findUserByPhone(phone);
+    const customerName = existingUser?.full_name || 'Client Komerce';
+
     // [P0-1] Envoi OTP via canal générique (WhatsApp Meta + fallback SMS)
-    const customerName = userCheck.rows[0].full_name || 'Client';
     const waResult = await sendOtpMessage({
       phone,
       code,
@@ -109,9 +157,6 @@ router.post('/request', async (req, res) => {
       success: true,
       message: 'Code envoyé par WhatsApp !',
       expiresIn: OTP_EXPIRY_MIN * 60,
-      // [P0-4] Sécurisé v2 : uniquement en NODE_ENV === 'development' (pas staging ni autre)
-      // ET seulement si la variable explicite OTP_DEV_ECHO=true est aussi définie.
-      // Ça évite qu'un staging accessible publiquement expose les codes.
       _dev: (process.env.NODE_ENV === 'development' && process.env.OTP_DEV_ECHO === 'true')
         ? { code, waResult: waResult.success }
         : undefined
@@ -133,13 +178,7 @@ router.post('/verify', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Numéro et code requis' });
     }
 
-    // Normalize phone
-    phone = phone.replace(/[\s\-()]/g, '');
-    if (!phone.startsWith('+')) {
-      if (phone.startsWith('269')) phone = '+' + phone;
-      else phone = '+269' + phone;
-    }
-
+    phone = normalizePhone(phone);
     code = String(code).trim();
     if (!/^\d{6}$/.test(code)) {
       return res.status(400).json({ success: false, error: 'Code à 6 chiffres requis' });
@@ -181,43 +220,29 @@ router.post('/verify', async (req, res) => {
     // Mark as verified
     await pool.query(`UPDATE otp_codes SET verified = TRUE WHERE id = $1`, [otp.id]);
 
-    // Find user
-    const userResult = await pool.query(
-      `SELECT id, full_name, phone, email, role FROM users
-       WHERE phone = $1 OR whatsapp_phone = $1`,
-      [phone]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Utilisateur introuvable' });
+    // Find or create lightweight user after phone ownership is proven.
+    let user = await findUserByPhone(phone);
+    let created = false;
+    if (!user) {
+      user = await createLightweightUser(phone);
+      created = true;
     }
 
-    const user = userResult.rows[0];
+    // Create unified JWT used by the main authenticate middleware.
+    const token = signKomerceJwt(user, phone);
 
-    // Create JWT (7 days for client tracking)
-    const token = jwt.sign(
-      { id: user.id, role: 'client', phone, fullName: user.full_name },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Unified auth cookie for boutique/API.
+    res.cookie('kmrc_jwt', token, jwtCookieOptions());
+    // Backward compatibility for any legacy client tracking code still reading kmrc_client.
+    res.cookie('kmrc_client', token, jwtCookieOptions());
 
-    // Set cookie for convenience
-    res.cookie('kmrc_client', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    log.info(`[OTP] ✅ Vérifié → ${user.full_name} (${phone})`);
+    log.info(`[OTP] ✅ Vérifié → ${user.full_name || 'Client Komerce'} (${phone})${created ? ' [created]' : ''}`);
 
     res.json({
       success: true,
       token,
-      user: {
-        name: user.full_name,
-        phone: phone
-      }
+      created,
+      user: buildUserPayload(user, phone)
     });
   } catch (err) {
     log.error('[OTP] ❌ verify error:', err.message);
