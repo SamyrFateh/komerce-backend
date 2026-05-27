@@ -1499,16 +1499,15 @@ function renderPaymentForm(token, cart) {
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-phase-badge k-group-phase-badge--settlement">Phase règlement — paiement</div>
       <div class="k-group-section-title">💳 Payer ma contribution</div>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 14px">
-        Le panier est passé au règlement. Entrez votre téléphone pour retrouver votre engagement verrouillé.
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
+        Le panier est passé au règlement. Komerce utilise votre numéro vérifié pour retrouver votre engagement verrouillé.
       </p>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gp-phone">Votre téléphone</label>
-        <input id="k-gp-phone" class="k-group-input" type="tel" placeholder="Ex : 0633000000"
-          maxlength="20" autocomplete="tel" inputmode="tel">
+      <div class="k-group-identity-note">
+        <strong>Identité sécurisée par OTP</strong>
+        <span>Vous pouvez continuer avec le numéro reconnu ou utiliser un autre numéro si l'engagement est rattaché ailleurs.</span>
       </div>
       <p class="k-group-input-error" id="k-gp-lookup-err"></p>
-      <button class="k-group-btn k-group-btn--ghost" id="k-gp-lookup-btn">🔍 Retrouver mon engagement</button>
+      <button class="k-group-btn k-group-btn--ghost" id="k-gp-lookup-btn">🔐 Retrouver mon engagement</button>
 
       <!-- Zone affichée après lookup -->
       <div id="k-gp-locked-zone" style="display:none;margin-top:14px">
@@ -1542,16 +1541,37 @@ function renderPaymentForm(token, cart) {
 function bindPaymentForm(el, token, cart) {
   const lookupBtn = el.querySelector('#k-gp-lookup-btn');
   lookupBtn?.addEventListener('click', async () => {
-    const phone    = (el.querySelector('#k-gp-phone')?.value || '').trim();
-    const errEl    = el.querySelector('#k-gp-lookup-err');
+    const errEl = el.querySelector('#k-gp-lookup-err');
     errEl.textContent = '';
-    if (!phone) { errEl.textContent = 'Téléphone requis.'; return; }
 
-    lookupBtn.disabled = true; lookupBtn.textContent = '⏳ Recherche…';
+    lookupBtn.disabled = true;
+    lookupBtn.textContent = '🔐 Vérification…';
+
     try {
+      const identity = await requireIdentity({
+        reason: 'payer ma contribution',
+        title: 'Sécuriser votre paiement',
+        allowOtherPhone: true,
+      });
+
+      if (!identity) {
+        lookupBtn.disabled = false;
+        lookupBtn.textContent = '🔐 Retrouver mon engagement';
+        return;
+      }
+
+      const id = identityLabel(identity);
+      const phone = id.phone;
+
+      if (!phone) {
+        throw new Error('Numéro vérifié introuvable. Réessayez avec un autre numéro.');
+      }
+
+      lookupBtn.textContent = '⏳ Recherche…';
+
       const res = await apiGet(`/api/shared-carts/public/${token}/commitments/by-phone?phone=${encodeURIComponent(phone)}`);
       const c = res?.commitment;
-      if (!c) throw new Error('Engagement introuvable.');
+      if (!c) throw new Error('Aucun engagement verrouillé trouvé pour ce numéro.');
 
       const zone        = el.querySelector('#k-gp-locked-zone');
       const amountEl    = el.querySelector('#k-gp-locked-amount-text');
@@ -1562,12 +1582,17 @@ function bindPaymentForm(el, token, cart) {
       payBtn.textContent   = `💳 Payer ${fmt(r(c.amount_kmf), 'KMF')}`;
       payBtn.dataset.amount = String(c.amount_kmf);
       payBtn.dataset.phone  = phone;
-      if (nameInput && c.participant_name) nameInput.value = c.participant_name;
+
+      if (nameInput) {
+        nameInput.value = c.participant_name || id.name || 'Client Komerce';
+      }
+
       zone.style.display = '';
       lookupBtn.textContent = '✅ Engagement trouvé';
     } catch (err) {
       errEl.textContent = err?.message || 'Aucun engagement verrouillé pour ce numéro.';
-      lookupBtn.disabled = false; lookupBtn.textContent = '🔍 Retrouver mon engagement';
+      lookupBtn.disabled = false;
+      lookupBtn.textContent = '🔐 Retrouver mon engagement';
     }
   });
 
