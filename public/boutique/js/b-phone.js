@@ -106,8 +106,9 @@ export function isValidLocalLength(code, rawInput) {
  * @returns {{ select: HTMLElement, input: HTMLElement, getValue: Function }}
  */
 export function buildPhoneSelect(selectId, inputId, defaultCode, onChange) {
-  const sel   = document.getElementById(selectId);
-  const input = document.getElementById(inputId);
+  // Accepte soit des IDs (string) soit des éléments DOM directement
+  const sel   = typeof selectId === 'string' ? document.getElementById(selectId) : selectId;
+  const input = typeof inputId  === 'string' ? document.getElementById(inputId)  : inputId;
   if (!sel || !input) return null;
 
   // Vider et repeupler

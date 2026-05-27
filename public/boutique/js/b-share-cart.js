@@ -337,19 +337,24 @@ function promptInit(needsAuth) {
     let phoneValid  = !needsAuth; // si auth pas requise, phone non bloquant
 
     if (needsAuth) {
+      // FIX — passer les éléments DOM directement (ov.querySelector) plutôt que
+      // document.getElementById() pour éviter les conflits si un autre élément
+      // partage le même ID ailleurs dans le DOM.
+      const phoneSelEl   = ov.querySelector('#k-sm-phone-sel');
+      const phoneInputEl = ov.querySelector('#k-sm-phone-input');
+
       const phoneCtrl = buildPhoneSelect(
-        'k-sm-phone-sel',
-        'k-sm-phone-input',
+        phoneSelEl,
+        phoneInputEl,
         '+269',
         (e164, isValid) => {
           currentE164 = e164;
           phoneValid  = isValid;
-          const inputEl = ov.querySelector('#k-sm-phone-input');
-          if (inputEl && digitsOnly(inputEl.value).length > 0) {
-            inputEl.classList.toggle('k-valid',   isValid);
-            inputEl.classList.toggle('k-invalid', !isValid);
+          if (phoneInputEl && digitsOnly(phoneInputEl.value).length > 0) {
+            phoneInputEl.classList.toggle('k-valid',   isValid);
+            phoneInputEl.classList.toggle('k-invalid', !isValid);
           } else {
-            inputEl?.classList.remove('k-valid', 'k-invalid');
+            phoneInputEl?.classList.remove('k-valid', 'k-invalid');
           }
           updateSubmit();
           if (isValid) errEl.textContent = '';
