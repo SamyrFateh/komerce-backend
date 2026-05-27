@@ -90,6 +90,17 @@ async function authenticate(req, res, next) {
       algorithms: ['HS256'],
     });
 
+    // N4 — vérifier que le jti n'est pas révoqué (logout explicite ou token compromis)
+    if (decoded.jti) {
+      const { rows: revoked } = await db.query(
+        'SELECT 1 FROM revoked_tokens WHERE jti = $1 LIMIT 1',
+        [decoded.jti]
+      );
+      if (revoked.length) {
+        return res.status(401).json({ error: 'Session expirée — reconnectez-vous' });
+      }
+    }
+
     let user = getCachedUser(decoded.id);
 
     if (!user) {
