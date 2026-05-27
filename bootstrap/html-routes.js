@@ -31,6 +31,12 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'mon-compte.html'));
   });
 
+  app.get('/cart/shared/success', (req, res) => {
+    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-success.html'));
+  });
+  app.get('/cart/shared/cancel', (req, res) => {
+    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-cancel.html'));
+  });
   app.get('/cart/shared/:token', (req, res) => {
     sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-public.html'));
   });
