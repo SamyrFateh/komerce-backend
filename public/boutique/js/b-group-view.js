@@ -109,6 +109,56 @@ function isSettlementOpen(cart) {
   return metaOf(cart).settlement_open === true;
 }
 
+/* ── Persistance participant — source unique : onglet Groupe ─────────────── */
+const PARTICIPANT_TOKEN_KEY = 'kmrc_group_participant_token';
+function participantCommitmentKey(token) { return `kmrc_group_commitment_${token}`; }
+
+function readJsonStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeJsonStorage(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+}
+
+function rememberParticipantToken(token) {
+  if (!token) return;
+  try { localStorage.setItem(PARTICIPANT_TOKEN_KEY, token); } catch (_) {}
+}
+
+function recallParticipantToken() {
+  try { return localStorage.getItem(PARTICIPANT_TOKEN_KEY) || null; } catch (_) { return null; }
+}
+
+function rememberParticipantCommitment(token, commitment) {
+  if (!token || !commitment) return;
+  writeJsonStorage(participantCommitmentKey(token), {
+    ...commitment,
+    saved_at: Date.now(),
+  });
+}
+
+function readParticipantCommitment(token) {
+  if (!token) return null;
+  return readJsonStorage(participantCommitmentKey(token));
+}
+
+function consumeSharedPaymentReturn() {
+  const url = new URL(window.location.href);
+  const value = url.searchParams.get('shared_payment');
+  if (!value) return null;
+  try {
+    url.searchParams.delete('shared_payment');
+    window.history.replaceState({}, '', url.toString());
+  } catch (_) {}
+  return value;
+}
+
 function settlementExpiresAt(cart) {
   const meta = metaOf(cart);
   if (!meta.settlement_open || !meta.settlement_opened_at) return null;
@@ -165,6 +215,19 @@ function injectStyles() {
 .k-group-commitment-status{font-size:12px;color:var(--text-muted)}
 .k-group-settlement-summary{background:var(--sand);border-radius:14px;padding:12px 14px;margin:10px 0;font-size:13px}
 .k-group-settlement-summary strong{display:block;font-size:15px;margin-bottom:6px}
+
+.k-group-saved-commitment{border:1px solid rgba(31,122,84,.24);background:rgba(31,122,84,.08);border-radius:14px;padding:13px 14px;margin:0 0 12px}
+.k-group-saved-commitment strong{display:block;font-size:14px;margin-bottom:3px;color:var(--text)}
+.k-group-saved-commitment span{display:block;font-size:12px;color:var(--text-muted);line-height:1.35}
+.k-group-saved-commitment button{margin-top:10px;width:100%;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:12px;padding:10px;font-weight:800;cursor:pointer}
+.k-group-eng-fields[hidden]{display:none!important}
+.k-group-items-toggle{width:100%;border:0;background:transparent;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.k-group-items-toggle strong{font-size:15px}
+.k-group-items-toggle span{font-size:12px;color:var(--text-muted)}
+.k-group-items-chevron{transition:transform .2s ease;font-size:13px!important}
+.k-group-items-card.is-open .k-group-items-chevron{transform:rotate(180deg)}
+.k-group-items-list[hidden]{display:none!important}
+.k-group-items-list{margin-top:12px;border-top:1px solid var(--border);padding-top:8px}
 `;
   document.head.appendChild(s);
 }
@@ -187,6 +250,15 @@ function renderEngagementForm(token, cart, isCreator = false) {
     ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
     : '';
 
+  const saved = !isCreator ? readParticipantCommitment(token) : null;
+  const savedState = saved ? `
+      <div class="k-group-saved-commitment" id="k-ge-saved-state">
+        <strong>✅ Engagement enregistré</strong>
+        <span>${sanitize(saved.name || 'Participant')} · ${fmt(r(saved.amount), 'KMF')}</span>
+        ${saved.phone ? `<span>Téléphone : ${sanitize(saved.phone)}</span>` : ''}
+        <button type="button" id="k-ge-edit-btn">✏️ Modifier mon engagement</button>
+      </div>` : '';
+
   return `
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
@@ -195,32 +267,43 @@ function renderEngagementForm(token, cart, isCreator = false) {
         Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
       </p>
       ${splitHint}
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-ge-name">Prénom / Nom</label>
-        <input id="k-ge-name" class="k-group-input" type="text" placeholder="Ex : Fatima Ali" maxlength="60" autocomplete="given-name">
+      ${savedState}
+      <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-name">Prénom / Nom</label>
+          <input id="k-ge-name" class="k-group-input" type="text" placeholder="Ex : Fatima Ali" maxlength="60" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
+        </div>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-phone">Téléphone (pour retrouver votre engagement)</label>
+          <input id="k-ge-phone" class="k-group-input" type="tel" placeholder="Ex : 0633000000" maxlength="20" autocomplete="tel" inputmode="tel" value="${sanitize(saved?.phone || '')}">
+        </div>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
+          <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
+            placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
+            inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+        </div>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
+          <input id="k-ge-msg" class="k-group-input" type="text" placeholder="Ex : Je participe avec plaisir !" maxlength="200" value="${sanitize(saved?.message || '')}">
+        </div>
+        <p class="k-group-input-error" id="k-ge-err"></p>
+        <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
+          ${saved ? '✏️ Mettre à jour mon engagement' : '✋ Enregistrer mon engagement'}
+        </button>
       </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-ge-phone">Téléphone (pour retrouver votre engagement)</label>
-        <input id="k-ge-phone" class="k-group-input" type="tel" placeholder="Ex : 0633000000" maxlength="20" autocomplete="tel" inputmode="tel">
-      </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
-        <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
-          placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
-          inputmode="numeric">
-      </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
-        <input id="k-ge-msg" class="k-group-input" type="text" placeholder="Ex : Je participe avec plaisir !" maxlength="200">
-      </div>
-      <p class="k-group-input-error" id="k-ge-err"></p>
-      <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
-        ✋ Enregistrer mon engagement
-      </button>
     </div>`;
 }
 
 function bindEngagementForm(el, token, cart, onSuccess) {
+  el.querySelector('#k-ge-edit-btn')?.addEventListener('click', () => {
+    const fields = el.querySelector('#k-ge-fields');
+    const saved = el.querySelector('#k-ge-saved-state');
+    if (fields) fields.hidden = false;
+    if (saved) saved.hidden = true;
+    el.querySelector('#k-ge-name')?.focus();
+  });
+
   el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
     const name   = (el.querySelector('#k-ge-name')?.value || '').trim();
     const phone  = (el.querySelector('#k-ge-phone')?.value || '').trim();
@@ -244,7 +327,11 @@ function bindEngagementForm(el, token, cart, onSuccess) {
         ...(msg ? { message: msg } : {}),
       });
 
+      rememberParticipantToken(token);
+      rememberParticipantCommitment(token, { name, phone, amount, message: msg });
+
       showToast(res?.updated ? 'Engagement mis à jour !' : 'Engagement enregistré !', 'success');
+      btn.disabled = false;
       btn.textContent = '✅ Engagement enregistré';
       onSuccess?.();
     } catch (err) {
@@ -748,6 +835,46 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
   });
 }
 
+
+function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
+  const itemRows = items.map(it => `
+    <div class="k-group-item-row">
+      <span class="k-group-item-name">${sanitize(it.name || 'Produit')}</span>
+      <span class="k-group-item-qty">×${it.quantity || 1}</span>
+      <span class="k-group-item-price">${fmt(r(it.unit_price_kmf), 'KMF')}</span>
+    </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
+
+  const count = items.length;
+  const openByDefault = count <= 3;
+  return `
+    <div class="k-group-card k-group-items-card ${openByDefault ? 'is-open' : ''}">
+      <button class="k-group-items-toggle" type="button" id="k-group-items-toggle" aria-expanded="${openByDefault ? 'true' : 'false'}">
+        <span>
+          <strong>${sanitize(cart.title || 'Panier groupe')}</strong><br>
+          <span>Total : ${fmt(total, 'KMF')} · ${statusLabel(cart.status, settlementOpen)} · ${count} article${count > 1 ? 's' : ''}</span>
+        </span>
+        <span class="k-group-items-chevron">⌄</span>
+      </button>
+      <div class="k-group-items-list" id="k-group-items-list" ${openByDefault ? '' : 'hidden'}>
+        ${itemRows}
+      </div>
+    </div>`;
+}
+
+function bindParticipantItemsAccordion(el) {
+  const btn = el.querySelector('#k-group-items-toggle');
+  const list = el.querySelector('#k-group-items-list');
+  const card = btn?.closest('.k-group-items-card');
+  if (!btn || !list) return;
+  btn.addEventListener('click', () => {
+    const nextOpen = btn.getAttribute('aria-expanded') !== 'true';
+    btn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+    list.hidden = !nextOpen;
+    card?.classList.toggle('is-open', nextOpen);
+  });
+}
+
+
 /* ── Loaders ────────────────────────────────────────────────────── */
 function renderLoading(el) {
   el.innerHTML = `<div class="k-group-loading"><div class="k-group-spin"></div><p>Chargement…</p></div>`;
@@ -778,13 +905,18 @@ export async function renderGroupView(opts = {}) {
   const el = getOrCreateEl();
   renderLoading(el);
 
-  const participantToken = opts.participantToken || null;
+  const paymentReturn = consumeSharedPaymentReturn();
+  if (paymentReturn === 'success') showToast('Contribution enregistrée !', 'success');
+  if (paymentReturn === 'cancel') showToast('Paiement annulé. Aucun montant prélevé.', 'info');
+
+  const participantToken = opts.participantToken || (!state.shareToken ? recallParticipantToken() : null);
   const isCreator = !participantToken || participantToken === state.shareToken;
 
   /* ─────────────────────────────────────────────────────────────── */
   /* MODE PARTICIPANT                                                 */
   /* ─────────────────────────────────────────────────────────────── */
   if (!isCreator) {
+    rememberParticipantToken(participantToken);
     const data = await fetch(`/api/shared-carts/public/${participantToken}`, { credentials: 'include' })
       .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
 
@@ -801,25 +933,12 @@ export async function renderGroupView(opts = {}) {
       if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
     } catch (_) {}
 
-    const itemRows = items.map(it => `
-      <div class="k-group-item-row">
-        <span class="k-group-item-name">${sanitize(it.name || 'Produit')}</span>
-        <span class="k-group-item-qty">×${it.quantity || 1}</span>
-        <span class="k-group-item-price">${fmt(r(it.unit_price_kmf), 'KMF')}</span>
-      </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
-
     el.innerHTML = `
       <div class="k-group-header">
         <h2>👥 Panier groupe</h2>
         <p class="k-group-subhead">Panier de ${sanitize(cart.beneficiary_name_snapshot || '')}.</p>
       </div>
-      <div class="k-group-card k-group-items-card">
-        <div class="k-group-card-head">
-          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">Total : ${fmt(total, 'KMF')} · ${statusLabel(cart.status, settlementOpen)}</div>
-        </div>
-        <div class="k-group-items-list">${itemRows}</div>
-      </div>
+      ${renderParticipantItemsAccordion(items, total, cart, settlementOpen)}
       ${commitmentsList.length > 0 ? `
         <div class="k-group-card" style="padding:14px 16px">
           <div class="k-group-contribs-label">Engagements ${settlementOpen ? 'verrouillés' : 'indicatifs'} (${commitmentsList.length})</div>
@@ -839,8 +958,10 @@ export async function renderGroupView(opts = {}) {
               cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : "Ce panier n'accepte plus de contribution."
             }</strong></div>`}`;
 
+    bindParticipantItemsAccordion(el);
+
     if (isCartOpen && !settlementOpen) {
-      bindEngagementForm(el, participantToken, cart);
+      bindEngagementForm(el, participantToken, cart, () => renderGroupView({ participantToken }));
     } else if (isCartOpen && settlementOpen) {
       bindPaymentForm(el, participantToken, cart);
     }
@@ -912,7 +1033,7 @@ export async function renderGroupView(opts = {}) {
       if (panel) panel.hidden = !panel.hidden;
     });
     if (!settlementOpen) {
-      bindEngagementForm(el, state.shareToken, cart);
+      bindEngagementForm(el, state.shareToken, cart, refreshView);
     } else {
       bindPaymentForm(el, state.shareToken, cart);
     }
