@@ -12,6 +12,20 @@ function redirectToBoutique(res) {
   res.redirect(302, '/boutique');
 }
 
+function safeToken(raw) {
+  const token = String(raw || '').trim();
+  return token && token.length <= 80 && /^[\w-]+$/.test(token) ? token : '';
+}
+
+function redirectToGroup(res, token, extra = '') {
+  const cleanToken = safeToken(token);
+  const params = new URLSearchParams();
+  if (cleanToken) params.set('p', cleanToken);
+  if (extra) params.set('shared_payment', extra);
+  params.set('tab', 'group');
+  res.redirect(302, '/boutique/?' + params.toString());
+}
+
 function mountHtmlRoutes(app, rootDir) {
   const publicDir = path.join(rootDir, 'public');
 
@@ -21,31 +35,32 @@ function mountHtmlRoutes(app, rootDir) {
 
   app.get('/c/:token', (req, res) => {
     const token = req.params.token;
-    if (!token || token.length > 20 || !/^[\w-]+$/.test(token)) {
-      return res.redirect('/Komerce_Boutique.html');
-    }
-    res.redirect(301, '/boutique/?share=' + encodeURIComponent(token));
+    if (!safeToken(token)) return res.redirect('/Komerce_Boutique.html');
+    redirectToGroup(res, token);
   });
 
   app.get('/mon-compte', (req, res) => {
     sendHtml(res, path.join(publicDir, 'mon-compte.html'));
   });
 
+  // Doctrine panier partagé : aucune page autonome fonctionnelle.
+  // Les anciennes URLs publiques restent compatibles mais ramènent toutes
+  // vers la boutique, onglet Groupe, qui est l'unique interface métier.
   app.get('/cart/shared/success', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-success.html'));
+    redirectToGroup(res, req.query.p || req.query.token, 'success');
   });
   app.get('/cart/shared/cancel', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-cancel.html'));
+    redirectToGroup(res, req.query.p || req.query.token, 'cancel');
   });
   app.get('/cart/shared/:token', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-public.html'));
+    redirectToGroup(res, req.params.token);
   });
   app.get('/cart/shared', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-public.html'));
+    redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
 
   app.get('/account/shared-carts', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'boutique', 'shared-cart-account.html'));
+    redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
 
   const ADMIN_DASHBOARD_PATHS = [
