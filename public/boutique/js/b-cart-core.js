@@ -25,12 +25,12 @@ import { state, dom, CART_VERSION } from './b-store.js';
  * @param {string} msg   - Texte à afficher
  * @param {string} [type] - Classe CSS : 'error' | 'success'
  */
-export function showToast(msg, type) {
+export function showToast(msg, type, duration) {
   type = type || '';
   dom.toast.innerHTML = '<div class="k-toast-simple">' + (msg || '') + '</div>';
   dom.toast.className = 'k-toast show' + (type ? ' ' + type : '');
   clearTimeout(dom.toast._t);
-  dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), 2800);
+  dom.toast._t = setTimeout(() => dom.toast.classList.remove('show'), duration || 2800);
 }
 
 // ──────────────────────────────────────────────

@@ -454,7 +454,7 @@ describe('lockCommitmentsForSettlement', () => {
   let lockCommitmentsForSettlement;
 
   beforeAll(() => {
-    ({ lockCommitmentsForSettlement } = require('../../services/shared-cart-commitment-service'));
+    ({ lockCommitmentsForSettlement } = jest.requireActual('../../services/shared-cart-commitment-service'));
   });
 
   beforeEach(() => jest.clearAllMocks());
