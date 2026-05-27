@@ -7,196 +7,139 @@
   <link rel="icon" href="/images/logo_komerce.png"/>
   <style>
     :root {
-      --red: #e53935;
-      --green: #2e7d32;
-      --amber: #f57c00;
-      --bg: #f5f5f5;
-      --card: #fff;
-      --text: #1a1a1a;
-      --muted: #757575;
-      --border: #e0e0e0;
-      --radius: 14px;
+      --red:#e53935; --green:#2e7d32; --amber:#f57c00;
+      --bg:#f5f5f5; --card:#fff; --text:#1a1a1a;
+      --muted:#757575; --border:#e0e0e0; --radius:14px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           background: var(--bg); color: var(--text); min-height: 100vh; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+         background:var(--bg);color:var(--text);min-height:100vh}
 
     /* HEADER */
-    .sc-header {
-      background: #fff;
-      padding: 14px 18px;
-      display: flex; align-items: center; gap: 12px;
-      border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
-    }
-    .sc-logo { height: 36px; }
-    .sc-header-title { font-size: 16px; font-weight: 700; }
-    .sc-header-sub   { font-size: 12px; color: var(--muted); }
+    .sc-header{background:#fff;padding:14px 18px;display:flex;align-items:center;
+               gap:12px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+    .sc-logo{height:36px}
+    .sc-header-title{font-size:16px;font-weight:700}
+    .sc-header-sub{font-size:12px;color:var(--muted)}
 
-    /* HERO banner */
-    .sc-hero {
-      background: linear-gradient(135deg, #c62828 0%, #e53935 60%, #ef9a9a 100%);
-      color: #fff;
-      padding: 28px 20px 22px;
-      text-align: center;
-    }
-    .sc-hero-icon { font-size: 44px; margin-bottom: 8px; }
-    .sc-hero-label { font-size: 22px; font-weight: 800; }
-    .sc-hero-sub   { font-size: 14px; opacity: .85; margin-top: 4px; }
-    .sc-hero-expires { font-size: 11px; opacity: .65; margin-top: 8px; }
+    /* HERO */
+    .sc-hero{background:linear-gradient(135deg,#c62828 0%,#e53935 60%,#ef9a9a 100%);
+             color:#fff;padding:28px 20px 22px;text-align:center}
+    .sc-hero-icon{font-size:44px;margin-bottom:8px}
+    .sc-hero-label{font-size:22px;font-weight:800}
+    .sc-hero-sub{font-size:14px;opacity:.85;margin-top:4px}
+    .sc-hero-badge{display:inline-block;background:rgba(255,255,255,.2);
+                   border:1px solid rgba(255,255,255,.4);
+                   border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;margin-top:10px}
+    .sc-hero-badge.settlement{background:rgba(255,248,225,.9);color:#f57c00;border-color:transparent}
+    .sc-hero-badge.expires-soon{background:rgba(255,235,235,.9);color:var(--red);border-color:transparent}
 
-    /* PROGRESS (mode event) */
-    .sc-progress-wrap {
-      background: #fff; margin: 12px 16px; border-radius: var(--radius);
-      padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    .sc-progress-bar-bg {
-      background: #eee; border-radius: 99px; height: 10px; overflow: hidden; margin: 8px 0;
-    }
-    .sc-progress-bar-fill {
-      background: linear-gradient(90deg, var(--green), #66bb6a);
-      height: 100%; border-radius: 99px;
-      transition: width .6s ease;
-    }
-    .sc-progress-labels {
-      display: flex; justify-content: space-between; font-size: 12px; color: var(--muted);
-    }
-    .sc-progress-label-main { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    /* CARD */
+    .sc-card{margin:12px 16px;background:var(--card);border-radius:var(--radius);
+             padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
-    /* CONTRIBUTIONS (mode event) */
-    .sc-contribs {
-      margin: 0 16px 12px; border-radius: var(--radius);
-      background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden;
-    }
-    .sc-contribs-title {
-      padding: 12px 16px 8px;
-      font-size: 13px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .05em;
-    }
-    .sc-contrib-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 16px; border-top: 1px solid var(--border);
-    }
-    .sc-contrib-avatar {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: var(--red); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px; font-weight: 800; flex-shrink: 0;
-    }
-    .sc-contrib-name { font-size: 14px; font-weight: 600; }
-    .sc-contrib-msg  { font-size: 12px; color: var(--muted); }
-    .sc-contrib-amount { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--green); }
-    .sc-contrib-empty { padding: 14px 16px; font-size: 13px; color: var(--muted); font-style: italic; }
+    /* PROGRESS */
+    .sc-progress-label{font-size:14px;font-weight:700;margin-bottom:8px}
+    .sc-progress-bg{background:#eee;border-radius:99px;height:10px;overflow:hidden;margin:6px 0}
+    .sc-progress-fill{background:linear-gradient(90deg,var(--green),#66bb6a);
+                      height:100%;border-radius:99px;transition:width .6s ease}
+    .sc-progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 
-    /* PLEDGE FORM (mode event) */
-    .sc-pledge {
-      margin: 0 16px 12px;
-      background: #fff; border-radius: var(--radius);
-      padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    .sc-pledge-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
-    .sc-pledge label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
-    .sc-pledge input, .sc-pledge textarea, .sc-pledge select {
-      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 14px; outline: none;
-      transition: border-color .2s;
-    }
-    .sc-pledge input:focus, .sc-pledge select:focus { border-color: var(--red); }
-    .sc-pledge-field { margin-bottom: 12px; }
-    .sc-pledge-modes { display: flex; gap: 8px; margin-bottom: 12px; }
-    .sc-pledge-mode-btn {
-      flex: 1; padding: 10px; border: 2px solid var(--border);
-      border-radius: 10px; font-size: 13px; font-weight: 600;
-      background: #fff; cursor: pointer; text-align: center;
-      transition: all .2s;
-    }
-    .sc-pledge-mode-btn.active {
-      border-color: var(--red); background: #fff3f3; color: var(--red);
-    }
-    .sc-pledge-submit {
-      width: 100%; padding: 13px; background: var(--red); color: #fff;
-      border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
-      cursor: pointer; transition: opacity .2s;
-    }
-    .sc-pledge-submit:disabled { opacity: .5; cursor: default; }
+    /* HINT */
+    .sc-split-hint{background:#ede7f6;color:#4a2d9e;padding:7px 14px;border-radius:8px;
+                   font-size:13px;font-weight:700;margin:8px 0;text-align:center}
 
-    /* ITEMS LIST */
-    .sc-items-title {
-      padding: 16px 16px 8px;
-      font-size: 13px; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .05em;
-    }
-    .sc-items { display: flex; flex-direction: column; gap: 10px; padding: 0 16px 12px; }
-    .sc-item {
-      display: flex; align-items: center; gap: 12px;
-      background: #fff; border-radius: 12px; padding: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.07);
-    }
-    .sc-item-img {
-      width: 70px; height: 70px; border-radius: 8px;
-      object-fit: cover; flex-shrink: 0; background: #f0f0f0;
-    }
-    .sc-item-info { flex: 1; min-width: 0; }
-    .sc-item-name { font-size: 14px; font-weight: 600;
-                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sc-item-qty  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .sc-item-price { font-size: 15px; font-weight: 800; color: var(--red);
-                     white-space: nowrap; }
-    .sc-item-pledged {
-      font-size: 11px; font-weight: 700; color: var(--green);
-      background: #e8f5e9; padding: 3px 8px; border-radius: 99px; margin-top: 4px;
-      display: inline-block;
-    }
+    /* COMMITMENTS LIST */
+    .sc-list-title{padding:12px 16px 8px;font-size:13px;font-weight:700;color:var(--muted);
+                   text-transform:uppercase;letter-spacing:.05em}
+    .sc-commit-row{display:flex;align-items:center;gap:12px;
+                   padding:10px 16px;border-top:1px solid var(--border)}
+    .sc-commit-avatar{width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:15px;font-weight:800;flex-shrink:0}
+    .sc-commit-name{font-size:14px;font-weight:600}
+    .sc-commit-meta{font-size:12px;color:var(--muted)}
+    .sc-commit-amount{margin-left:auto;font-size:14px;font-weight:700;color:var(--amber)}
+    .sc-commit-empty{padding:14px 16px;font-size:13px;color:var(--muted);font-style:italic}
 
-    /* TOTAL + CTA */
-    .sc-total {
-      background: #fff; margin: 0 16px 12px;
-      border-radius: var(--radius); padding: 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.08);
-    }
-    .sc-total-row {
-      display: flex; justify-content: space-between;
-      font-size: 15px; font-weight: 700;
-    }
-    .sc-total-remaining {
-      display: flex; justify-content: space-between;
-      font-size: 13px; color: var(--amber); font-weight: 600; margin-top: 6px;
-    }
-    .sc-cta {
-      padding: 0 16px 32px;
-    }
-    .sc-cta-btn {
-      display: block; width: 100%; padding: 15px;
-      background: var(--red); color: #fff; border: none;
-      border-radius: var(--radius); font-size: 16px; font-weight: 800;
-      text-align: center; text-decoration: none; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(229,57,53,.35);
-    }
-    .sc-cta-sub { font-size: 11px; text-align: center; color: var(--muted); margin-top: 8px; }
+    /* FORMS */
+    .sc-form{margin:0 16px 12px;background:var(--card);border-radius:var(--radius);
+             padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    .sc-form-title{font-size:15px;font-weight:700;margin-bottom:14px}
+    .sc-field{margin-bottom:12px}
+    .sc-field label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+    .sc-field input{width:100%;padding:10px 12px;border:1px solid var(--border);
+                    border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+    .sc-field input:focus{border-color:var(--red)}
+    .sc-field-hint{font-size:12px;color:#999;margin-top:4px}
+    .sc-submit{width:100%;padding:13px;background:var(--red);color:#fff;
+               border:none;border-radius:10px;font-size:15px;font-weight:700;
+               cursor:pointer;transition:opacity .2s}
+    .sc-submit:disabled{opacity:.5;cursor:default}
+    .sc-form-success{background:#e8f5e9;color:var(--green);border-radius:10px;
+                     padding:14px 16px;font-size:14px;font-weight:600;text-align:center}
+
+    /* SETTLEMENT lookup */
+    .sc-phone-lookup{margin-bottom:16px}
+    .sc-lookup-row{display:flex;gap:8px}
+    .sc-lookup-row input{flex:1}
+    .sc-lookup-btn{padding:10px 16px;background:var(--text);color:#fff;
+                   border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+    .sc-locked-info{background:#fff8e1;border-radius:10px;padding:12px 14px;margin-top:12px}
+    .sc-locked-label{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .sc-locked-amount{font-size:22px;font-weight:800;color:var(--amber)}
+    .sc-locked-name{font-size:13px;color:var(--muted);margin-top:2px}
+
+    /* ITEMS */
+    .sc-items{display:flex;flex-direction:column;gap:10px;padding:0 16px 12px}
+    .sc-item{display:flex;align-items:center;gap:12px;background:var(--card);
+             border-radius:12px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .sc-item-img{width:70px;height:70px;border-radius:8px;object-fit:cover;
+                 flex-shrink:0;background:#f0f0f0}
+    .sc-item-info{flex:1;min-width:0}
+    .sc-item-name{font-size:14px;font-weight:600;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sc-item-qty{font-size:12px;color:var(--muted);margin-top:2px}
+    .sc-item-price{font-size:15px;font-weight:800;color:var(--red);white-space:nowrap}
+
+    /* TOTAL */
+    .sc-total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:700}
+    .sc-total-remaining{display:flex;justify-content:space-between;
+                        font-size:13px;color:var(--amber);font-weight:600;margin-top:6px}
+
+    /* BOUTIQUE CTA */
+    .sc-boutique-cta{margin:12px 16px 8px;background:var(--card);border-radius:var(--radius);
+                     padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+    .sc-boutique-cta p{font-size:13px;color:var(--muted);margin-bottom:12px}
+    .sc-boutique-btn{display:block;width:100%;padding:14px;background:#1a1a1a;color:#fff;
+                     border:none;border-radius:10px;font-size:15px;font-weight:700;
+                     text-decoration:none;cursor:pointer}
+
+    /* CLOSED STATE */
+    .sc-closed{display:flex;flex-direction:column;align-items:center;justify-content:center;
+               min-height:60vh;gap:16px;text-align:center;padding:32px}
+    .sc-closed-icon{font-size:52px}
+    .sc-closed-msg{font-size:16px;font-weight:600;color:var(--muted)}
+    .sc-closed-btn{display:inline-block;padding:13px 28px;background:var(--red);color:#fff;
+                   border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;margin-top:8px}
 
     /* STATES */
-    .sc-loading, .sc-error {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 60vh; gap: 16px;
-      text-align: center; padding: 32px;
-    }
-    .sc-loading-icon { font-size: 48px; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .sc-error-icon { font-size: 52px; }
+    .sc-loading,.sc-error{display:flex;flex-direction:column;align-items:center;
+                          justify-content:center;min-height:60vh;gap:16px;
+                          text-align:center;padding:32px}
+    .sc-loading-icon{font-size:48px;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .sc-error-icon{font-size:52px}
 
     /* TOAST */
-    .sc-toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: #333; color: #fff; padding: 12px 22px; border-radius: 30px;
-      font-size: 14px; font-weight: 600; z-index: 999;
-      transition: transform .3s ease; pointer-events: none;
-    }
-    .sc-toast.show { transform: translateX(-50%) translateY(0); }
-    .sc-toast.success { background: var(--green); }
-    .sc-toast.error   { background: var(--red); }
+    .sc-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+              background:#333;color:#fff;padding:12px 22px;border-radius:30px;
+              font-size:14px;font-weight:600;z-index:999;transition:transform .3s ease;pointer-events:none}
+    .sc-toast.show{transform:translateX(-50%) translateY(0)}
+    .sc-toast.success{background:var(--green)}
+    .sc-toast.error{background:var(--red)}
 
-    /* HIDDEN */
-    [hidden] { display: none !important; }
+    [hidden]{display:none!important}
   </style>
 </head>
 <body>
@@ -220,7 +163,16 @@
 <div id="sc-error" class="sc-error" hidden>
   <div class="sc-error-icon">😕</div>
   <div id="sc-error-msg">Ce lien est introuvable ou a expiré.</div>
-  <a href="/" style="color:var(--red);font-weight:700;text-decoration:none">← Retour à la boutique</a>
+  <a href="/boutique" style="color:var(--red);font-weight:700;text-decoration:none;margin-top:8px">
+    🛍️ Voir la boutique
+  </a>
+</div>
+
+<!-- CLOSED STATE -->
+<div id="sc-closed" class="sc-closed" hidden>
+  <div class="sc-closed-icon" id="sc-closed-icon">✅</div>
+  <div class="sc-closed-msg" id="sc-closed-msg">Ce panier est fermé.</div>
+  <a href="/boutique" class="sc-closed-btn">🛍️ Voir la boutique</a>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -231,65 +183,95 @@
     <div class="sc-hero-icon" id="sc-hero-icon">🧺</div>
     <div class="sc-hero-label" id="sc-hero-label">Panier partagé</div>
     <div class="sc-hero-sub" id="sc-hero-sub"></div>
-    <div class="sc-hero-expires" id="sc-hero-expires"></div>
+    <div class="sc-hero-badge" id="sc-phase-badge" hidden></div>
   </div>
 
-  <!-- PROGRESS (event only) -->
-  <div class="sc-progress-wrap" id="sc-progress-wrap" hidden>
-    <div class="sc-progress-label-main" id="sc-progress-main">0 KMF collectés</div>
-    <div class="sc-progress-bar-bg">
-      <div class="sc-progress-bar-fill" id="sc-progress-fill" style="width:0%"></div>
+  <!-- PROGRESS -->
+  <div class="sc-card" id="sc-progress-wrap" hidden>
+    <div class="sc-progress-label" id="sc-progress-main">0 KMF collectés</div>
+    <div class="sc-progress-bg">
+      <div class="sc-progress-fill" id="sc-progress-fill" style="width:0%"></div>
     </div>
-    <div id="sc-split-hint" hidden style="background:#ede7f6;color:#4a2d9e;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;margin:8px 0;text-align:center;"></div>
-    <div class="sc-progress-labels">
+    <div id="sc-split-hint" class="sc-split-hint" hidden></div>
+    <div class="sc-progress-row">
       <span id="sc-progress-pct">0%</span>
       <span id="sc-progress-total"></span>
     </div>
   </div>
 
-  <!-- CONTRIBUTIONS LIST (event only) -->
-  <div class="sc-contribs" id="sc-contribs-wrap" hidden>
-    <div class="sc-contribs-title">Contributions</div>
-    <div id="sc-contribs-list"></div>
+  <!-- ═══ PHASE OUVERTE : liste des engagements ═══ -->
+  <div id="sc-commitments-section" hidden>
+    <div class="sc-list-title">Engagements</div>
+    <div class="sc-card" style="padding:0;overflow:hidden">
+      <div id="sc-commitments-list"></div>
+    </div>
   </div>
 
-  <!-- PLEDGE FORM (event only) -->
-  <div class="sc-pledge" id="sc-pledge-form" hidden>
-    <div class="sc-pledge-title">💛 Participer à ce panier</div>
-
-    <div class="sc-pledge-field">
-      <label>Ton prénom</label>
-      <input id="pledge-name" type="text" placeholder="Naïma, Youssouf…" autocomplete="given-name"/>
+  <!-- ═══ PHASE OUVERTE : formulaire engagement ═══ -->
+  <div class="sc-form" id="sc-engagement-form" hidden>
+    <div class="sc-form-title">💛 Je m'engage à participer</div>
+    <div id="sc-engagement-success" class="sc-form-success" hidden>
+      ✅ Engagement enregistré. Le créateur vous contactera pour le paiement.
     </div>
-
-    <div class="sc-pledge-field">
-      <label>Ton email <span style="color:#999">(reçu de paiement)</span></label>
-      <input id="pledge-email" type="email" placeholder="naima@example.com" autocomplete="email"/>
+    <div id="sc-engagement-fields">
+      <div class="sc-field">
+        <label>Votre prénom</label>
+        <input id="eng-name" type="text" placeholder="Naïma, Youssouf…" autocomplete="given-name"/>
+      </div>
+      <div class="sc-field">
+        <label>Votre téléphone</label>
+        <input id="eng-phone" type="tel" placeholder="+269 …" autocomplete="tel"/>
+      </div>
+      <div class="sc-field">
+        <label>Montant (KMF)</label>
+        <input id="eng-amount" type="number" min="2500" step="500" placeholder="ex: 5000"/>
+        <div class="sc-field-hint">Minimum : 2 500 KMF</div>
+      </div>
+      <div class="sc-field">
+        <label>Message <span style="color:#999">(optionnel)</span></label>
+        <input id="eng-message" type="text" placeholder="Avec plaisir ! 🎉" maxlength="200"/>
+      </div>
+      <button class="sc-submit" id="eng-submit-btn" onclick="submitEngagement()">
+        💛 Enregistrer mon engagement
+      </button>
     </div>
-
-    <!-- Mode montant uniquement en V1 (la spec dit pas de parts d'articles) -->
-    <div id="pledge-amount-section" class="sc-pledge-field">
-      <label>Montant (KMF)</label>
-      <input id="pledge-amount" type="number" min="2500" step="500" placeholder="ex: 5000"/>
-      <div style="font-size:12px;color:#999;margin-top:4px">Minimum : 2 500 KMF · paiement par carte</div>
-    </div>
-
-    <div class="sc-pledge-field">
-      <label>Message (optionnel)</label>
-      <input id="pledge-message" type="text" placeholder="Félicitations ! 🎉" maxlength="200"/>
-    </div>
-
-    <button class="sc-pledge-submit" id="pledge-submit-btn" onclick="submitPledge()">
-      💛 Continuer vers le paiement
-    </button>
   </div>
 
-  <!-- ITEMS -->
-  <div class="sc-items-title">Articles du panier</div>
+  <!-- ═══ PHASE RÈGLEMENT : formulaire paiement ═══ -->
+  <div class="sc-form" id="sc-settlement-form" hidden>
+    <div class="sc-form-title">💳 Régler ma part</div>
+
+    <!-- Étape 1 : lookup téléphone -->
+    <div id="sc-step-phone" class="sc-phone-lookup">
+      <div class="sc-field">
+        <label>Votre téléphone</label>
+        <div class="sc-lookup-row">
+          <input id="set-phone" type="tel" placeholder="+269 …" autocomplete="tel"/>
+          <button class="sc-lookup-btn" onclick="lookupPhone()">→</button>
+        </div>
+        <div class="sc-field-hint">Entrez le numéro avec lequel vous vous êtes engagé.</div>
+      </div>
+    </div>
+
+    <!-- Étape 2 : confirmation + email + paiement -->
+    <div id="sc-step-pay" hidden>
+      <div class="sc-locked-info" id="sc-locked-info"></div>
+      <div class="sc-field" style="margin-top:14px">
+        <label>Email <span style="color:#999">(pour recevoir votre reçu)</span></label>
+        <input id="set-email" type="email" placeholder="naima@example.com" autocomplete="email"/>
+      </div>
+      <button class="sc-submit" id="set-submit-btn" onclick="submitPayment()">
+        💳 Payer maintenant
+      </button>
+    </div>
+  </div>
+
+  <!-- ARTICLES -->
+  <div class="sc-list-title" id="sc-items-title">Articles du panier</div>
   <div class="sc-items" id="sc-items-list"></div>
 
   <!-- TOTAL -->
-  <div class="sc-total" id="sc-total-block">
+  <div class="sc-card" id="sc-total-block">
     <div class="sc-total-row">
       <span>Total</span>
       <span id="sc-total-val">—</span>
@@ -300,10 +282,10 @@
     </div>
   </div>
 
-  <!-- CTA -->
-  <div class="sc-cta">
-    <a id="sc-cta-btn" href="/" class="sc-cta-btn">🛍️ Commander en boutique</a>
-    <div class="sc-cta-sub" id="sc-cta-sub">Livraison 3-5 semaines · Paiement à la livraison</div>
+  <!-- CTA BOUTIQUE — toujours visible -->
+  <div class="sc-boutique-cta">
+    <p>Vous voulez aussi passer une commande ? La boutique est ouverte.</p>
+    <a href="/boutique" class="sc-boutique-btn">🛍️ Commander dans la boutique</a>
   </div>
 
 </div>
@@ -314,323 +296,353 @@
 <script>
 (function(){
   /* ── utils ── */
-  function fmt(n) {
-    return new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' KMF';
+  function fmt(n){
+    return new Intl.NumberFormat('fr-FR').format(Math.round(n))+' KMF';
   }
-  function toast(msg, type = '') {
-    const el = document.getElementById('sc-toast');
-    el.textContent = msg;
-    el.className = 'sc-toast show' + (type ? ' ' + type : '');
-    setTimeout(() => el.classList.remove('show'), 3000);
+  function toast(msg, type=''){
+    const el=document.getElementById('sc-toast');
+    el.textContent=msg;
+    el.className='sc-toast show'+(type?' '+type:'');
+    setTimeout(()=>el.classList.remove('show'),3500);
   }
-  function fmtExpires(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    const diff = Math.round((d - Date.now()) / 86400000);
-    if (diff < 0) return 'Expiré';
-    if (diff === 0) return 'Expire aujourd\'hui';
-    return 'Expire dans ' + diff + ' jour' + (diff > 1 ? 's' : '');
+  function initial(name){return(name||'?').trim().charAt(0).toUpperCase()}
+  function esc(s){
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
-  function initial(name) {
-    return (name || '?').trim().charAt(0).toUpperCase();
+  function fmtDate(iso){
+    if(!iso)return'';
+    return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }
+  function timeLeft(isoEnd){
+    const ms=new Date(isoEnd)-Date.now();
+    if(ms<=0)return'Expiré';
+    const h=Math.floor(ms/3600000);
+    const m=Math.floor((ms%3600000)/60000);
+    if(h<1)return m+'min';
+    return h+'h'+String(m).padStart(2,'0');
   }
 
   /* ── token from URL ── */
-  function getToken() {
-    const params = new URLSearchParams(location.search);
-    let token = params.get('share') || params.get('token');
-    if (!token) {
-      // /c/TOKEN fallback already redirected to ?share=TOKEN via server.js
-      // but try path as fallback
-      const m = location.pathname.match(/\/c\/([A-Za-z0-9]+)/);
-      if (m) token = m[1];
-    }
-    return token;
+  function getToken(){
+    // Support /cart/shared/:token (path) et ?share=... (query)
+    const m=location.pathname.match(/\/cart\/shared\/([^/?#]+)/);
+    if(m&&m[1])return m[1];
+    const p=new URLSearchParams(location.search);
+    return p.get('share')||p.get('token')||null;
   }
 
-  /* ── share data ── */
-  let shareData = null;
-  let pledgeMode = 'amount';
+  /* ── state ── */
+  let shareData=null;
+  let lockedCommitment=null; // en phase règlement
+  const token=getToken();
 
   /* ── load ── */
-  async function load() {
-    const token = getToken();
-    if (!token) {
-      showError('Aucun lien de panier détecté.');
-      return;
-    }
-    try {
-      /* Refresh 28/04/26 — Bascule de l'ancienne API /api/shares vers
-         la nouvelle /api/shared-carts/public/:token qui apporte :
-         - statut financier réel (basé sur paiements Stripe confirmés)
-         - vraies contributions payées (pas juste déclarées)
-         - protection privacy (prénom seulement, pas email/phone) */
-      const r = await fetch('/api/shared-carts/public/' + encodeURIComponent(token));
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        showError(j.error || 'Ce lien est introuvable ou a expiré.');
+  async function load(){
+    if(!token){showError('Aucun lien de panier détecté.');return}
+    try{
+      const r=await fetch('/api/shared-carts/public/'+encodeURIComponent(token));
+      if(!r.ok){
+        const j=await r.json().catch(()=>({}));
+        showError(j.error||'Ce lien est introuvable ou a expiré.');
         return;
       }
-      const raw = await r.json();
-      shareData = adaptApiShape(raw, token);
+      const raw=await r.json();
+      shareData=adaptApiShape(raw);
       render(shareData);
-    } catch(e) {
+    }catch(e){
       showError('Impossible de charger le panier. Vérifiez votre connexion.');
     }
   }
 
-  /* Refresh 28/04/26 — Adapte le shape de /api/shared-carts/public/:token
-     vers le shape interne historique (items[i].product, total_kmf, etc.).
-     Évite de réécrire toute la fonction render(). */
-  function adaptApiShape(raw, token) {
-    const cart = raw.cart || {};
-    const items = (raw.items || []).map(it => ({
-      qty: it.quantity,
-      product: {
-        id:        null, /* le backend ne l'expose plus pour anti-scraping */
-        name:      it.name,
-        price_kmf: it.unit_price_kmf,
-        images:    it.image ? [it.image] : [],
-      },
+  /* ── adaptApiShape ── */
+  function adaptApiShape(raw){
+    const cart=raw.cart||{};
+    const meta=cart.metadata||{};
+    const settlementOpen=meta.settlement_open===true;
+    const phase=settlementOpen?'settlement':'open';
+    const settlementWindowH=meta.settlement_window_hours||48;
+    const settlementOpenedAt=meta.settlement_opened_at||null;
+    const settlementExpiresAt=settlementOpen&&settlementOpenedAt
+      ?new Date(new Date(settlementOpenedAt).getTime()+settlementWindowH*3600000).toISOString()
+      :null;
+
+    const items=(raw.items||[]).map(it=>({
+      qty:it.quantity,
+      product:{name:it.name,price_kmf:it.unit_price_kmf,images:it.image?[it.image]:[]}
     }));
-    const contribs = (raw.contributions || []).map(c => ({
-      contributor_name: c.first_name,
-      message:          c.message,
-      amount_kmf:       c.amount_kmf,
-      product_id:       null, /* l'API publique n'expose pas l'item ciblé */
+    const contributions=(raw.contributions||[]).map(c=>({
+      contributor_name:c.first_name,message:c.message,amount_kmf:c.amount_kmf
     }));
-    return {
-      token:           token,
-      type:            'event',         /* la V1 panier familial = toujours "event" */
-      event_label:     cart.title || cart.beneficiary_name_snapshot || 'Panier famille',
-      sharer_name:     cart.beneficiary_name_snapshot,
-      expires_at:      cart.expires_at,
-      status:          (cart.status === 'active' || cart.status === 'partially_funded') ? 'active' : cart.status,
-      total_kmf:       cart.total_kmf_snapshot,
-      contributed_kmf: cart.contributed_kmf,
-      remaining_kmf:       cart.remaining_kmf,
-      split_mode:          cart.split_mode || 'free',
-      suggested_share_kmf: cart.suggested_share_kmf || null,
-      source_order_ref:    cart.source_order_reference || null,
-      items:               items,
-      contributions:       contribs,
+
+    return{
+      token,phase,
+      title:cart.title||cart.beneficiary_name_snapshot||'Panier partagé',
+      sharer_name:cart.beneficiary_name_snapshot,
+      status:cart.status,
+      total_kmf:cart.total_kmf_snapshot,
+      contributed_kmf:cart.contributed_kmf,
+      remaining_kmf:cart.remaining_kmf,
+      settlement_expires_at:settlementExpiresAt,
+      items,contributions,
     };
   }
 
-  function showError(msg) {
-    document.getElementById('sc-loading').hidden = true;
-    document.getElementById('sc-error-msg').textContent = msg;
-    document.getElementById('sc-error').hidden = false;
+  /* ── showError ── */
+  function showError(msg){
+    document.getElementById('sc-loading').hidden=true;
+    document.getElementById('sc-error-msg').textContent=msg;
+    document.getElementById('sc-error').hidden=false;
   }
+
+  /* ── CLOSED statuses ── */
+  const CLOSED_STATUSES={
+    converted_to_order:{icon:'✅',msg:'Ce panier a été commandé. Merci à tous !'},
+    expired:           {icon:'⏰',msg:'Ce panier a expiré.'},
+    cancelled:         {icon:'❌',msg:'Ce panier a été annulé.'},
+  };
 
   /* ── render ── */
-  function render(d) {
-    document.getElementById('sc-loading').hidden = true;
-    document.getElementById('sc-main').hidden = false;
+  function render(d){
+    document.getElementById('sc-loading').hidden=true;
 
-    const isEvent = d.type === 'event';
-
-    /* Hero */
-    document.getElementById('sc-hero-icon').textContent = d.source_order_ref ? '👥' : (isEvent ? '🎉' : '🧺');
-    document.getElementById('sc-hero-label').textContent =
-      d.event_label || (isEvent ? 'Événement collectif' : 'Panier partagé');
-    document.getElementById('sc-hero-sub').textContent =
-      d.source_order_ref
-        ? 'Commande ' + d.source_order_ref + (d.sharer_name ? ' · ' + d.sharer_name : '')
-        : (d.sharer_name ? 'Partagé par ' + d.sharer_name : '');
-    document.getElementById('sc-hero-expires').textContent = fmtExpires(d.expires_at);
-
-    /* Progress (event only) */
-    if (isEvent) {
-      const wrap = document.getElementById('sc-progress-wrap');
-      wrap.hidden = false;
-      const pct = d.total_kmf > 0
-        ? Math.min(100, Math.round(d.contributed_kmf / d.total_kmf * 100))
-        : 0;
-      document.getElementById('sc-progress-main').textContent = fmt(d.contributed_kmf) + ' collectés';
-      document.getElementById('sc-progress-fill').style.width = pct + '%';
-      document.getElementById('sc-progress-pct').textContent = pct + '%';
-      document.getElementById('sc-progress-total').textContent = 'Objectif : ' + fmt(d.total_kmf);
-
-      /* Part suggérée (mode equal) */
-      const splitHint = document.getElementById('sc-split-hint');
-      if (splitHint) {
-        if (d.split_mode === 'equal' && d.suggested_share_kmf) {
-          splitHint.hidden = false;
-          splitHint.textContent = 'Part suggérée : ' + fmt(d.suggested_share_kmf) + ' KMF';
-          // Pré-remplir le champ montant
-          const amtField = document.getElementById('sc-contrib-amount');
-          if (amtField && !amtField.value) amtField.value = d.suggested_share_kmf;
-        } else {
-          splitHint.hidden = true;
-        }
-      }
-
-      /* Contributions list */
-      renderContributions(d.contributions || []);
-      document.getElementById('sc-contribs-wrap').hidden = false;
-
-      /* Pledge form */
-      if (d.status === 'active') {
-        document.getElementById('sc-pledge-form').hidden = false;
-        /* Refresh 28/04/26 — Le mode "prendre un article" est retiré en V1
-           (la spec dit montant libre uniquement). buildItemSelect non appelé. */
-      }
-
-      /* Remaining */
-      const remRow = document.getElementById('sc-remaining-row');
-      remRow.hidden = false;
-      document.getElementById('sc-remaining-val').textContent = fmt(d.remaining_kmf);
-    }
-
-    /* Items */
-    renderItems(d.items || [], d.contributions || []);
-
-    /* Total */
-    document.getElementById('sc-total-val').textContent = fmt(d.total_kmf);
-
-    /* CTA */
-    const ctaBtn = document.getElementById('sc-cta-btn');
-    ctaBtn.href = '/?import_share=' + encodeURIComponent(d.token || getToken());
-    if (isEvent) {
-      ctaBtn.textContent = '🛍️ Voir la boutique';
-      document.getElementById('sc-cta-sub').textContent =
-        'Contribuez ou passez votre propre commande';
-    }
-  }
-
-  function renderContributions(contribs) {
-    const list = document.getElementById('sc-contribs-list');
-    if (!contribs.length) {
-      list.innerHTML = '<div class="sc-contrib-empty">Sois le premier à contribuer ! 💛</div>';
+    // Statuts fermés
+    const closed=CLOSED_STATUSES[d.status];
+    if(closed){
+      document.getElementById('sc-closed-icon').textContent=closed.icon;
+      document.getElementById('sc-closed-msg').textContent=closed.msg;
+      document.getElementById('sc-closed').hidden=false;
       return;
     }
-    list.innerHTML = contribs.map(c => `
-      <div class="sc-contrib-row">
-        <div class="sc-contrib-avatar">${initial(c.contributor_name)}</div>
+
+    document.getElementById('sc-main').hidden=false;
+
+    // Hero
+    document.getElementById('sc-hero-icon').textContent=d.phase==='settlement'?'💳':'🧺';
+    document.getElementById('sc-hero-label').textContent=d.title;
+    document.getElementById('sc-hero-sub').textContent=
+      d.sharer_name?'Partagé par '+d.sharer_name:'';
+
+    // Badge phase
+    const badge=document.getElementById('sc-phase-badge');
+    if(d.phase==='settlement'){
+      badge.hidden=false;
+      const exp=d.settlement_expires_at;
+      const left=exp?timeLeft(exp):'';
+      const soonH=exp&&(new Date(exp)-Date.now()<6*3600000);
+      badge.className='sc-hero-badge settlement'+(soonH?' expires-soon':'');
+      badge.textContent='Règlement ouvert'+(left?' · '+left:'');
+    }
+
+    // Progress
+    const wrap=document.getElementById('sc-progress-wrap');
+    wrap.hidden=false;
+    const pct=d.total_kmf>0?Math.min(100,Math.round(d.contributed_kmf/d.total_kmf*100)):0;
+    document.getElementById('sc-progress-main').textContent=fmt(d.contributed_kmf)+' collectés';
+    document.getElementById('sc-progress-fill').style.width=pct+'%';
+    document.getElementById('sc-progress-pct').textContent=pct+'%';
+    document.getElementById('sc-progress-total').textContent='Objectif : '+fmt(d.total_kmf);
+
+    // Remaining
+    const remRow=document.getElementById('sc-remaining-row');
+    if(d.remaining_kmf>0){
+      remRow.hidden=false;
+      document.getElementById('sc-remaining-val').textContent=fmt(d.remaining_kmf);
+    }
+
+    if(d.phase==='open'){
+      // Charger les engagements
+      loadCommitments(d);
+      // Formulaire engagement
+      document.getElementById('sc-engagement-form').hidden=false;
+    }else{
+      // Phase règlement
+      document.getElementById('sc-settlement-form').hidden=false;
+    }
+
+    // Items
+    renderItems(d.items);
+    document.getElementById('sc-total-val').textContent=fmt(d.total_kmf);
+  }
+
+  /* ── Load commitments (phase ouverte) ── */
+  async function loadCommitments(d){
+    try{
+      const r=await fetch('/api/shared-carts/public/'+encodeURIComponent(token)+'/commitments');
+      if(!r.ok)return;
+      const data=await r.json();
+      const commits=Array.isArray(data)?data:(data.commitments||[]);
+      renderCommitments(commits,d);
+      document.getElementById('sc-commitments-section').hidden=false;
+    }catch(e){/* silencieux */}
+  }
+
+  function renderCommitments(commits,d){
+    const list=document.getElementById('sc-commitments-list');
+    if(!commits.length){
+      list.innerHTML='<div class="sc-commit-empty">Soyez le premier à vous engager.</div>';
+      // Hint montant moyen
+      document.getElementById('sc-split-hint').hidden=true;
+      return;
+    }
+
+    // TX-02 : montant moyen suggéré
+    const total=commits.reduce((s,c)=>s+Number(c.amount_kmf||0),0);
+    const nb=commits.length;
+    const avg=Math.ceil((d.total_kmf||0)/(nb+1)/100)*100;
+    const hint=document.getElementById('sc-split-hint');
+    if(avg>=2500){hint.hidden=false;hint.textContent='À participation égale : environ '+fmt(avg)+' par personne'}
+
+    list.innerHTML=commits.map(c=>`
+      <div class="sc-commit-row">
+        <div class="sc-commit-avatar">${initial(c.participant_name||c.name)}</div>
         <div>
-          <div class="sc-contrib-name">${esc(c.contributor_name)}</div>
-          ${c.message ? '<div class="sc-contrib-msg">' + esc(c.message) + '</div>' : ''}
+          <div class="sc-commit-name">${esc(c.participant_name||c.name||'—')}</div>
+          <div class="sc-commit-meta">${c.status==='locked_for_settlement'?'🔒 Verrouillé':'En attente'}</div>
         </div>
-        <div class="sc-contrib-amount">${fmt(c.amount_kmf || 0)}</div>
+        <div class="sc-commit-amount">${fmt(c.amount_kmf||0)}</div>
       </div>
     `).join('');
   }
 
-  function renderItems(items, contribs) {
-    const pledgedIds = new Set(contribs.filter(c => c.product_id).map(c => c.product_id));
-    const list = document.getElementById('sc-items-list');
-    if (!items.length) {
-      list.innerHTML = '<div style="padding:16px;color:#999;font-style:italic">Panier vide</div>';
+  /* ── Items ── */
+  function renderItems(items){
+    const list=document.getElementById('sc-items-list');
+    if(!items.length){
+      list.innerHTML='<div style="padding:16px;color:#999;font-style:italic">Panier vide</div>';
       return;
     }
-    list.innerHTML = items.map(item => {
-      const p = item.product || {};
-      const img = (p.images && p.images[0]) || '/images/placeholder.jpg';
-      const isPledged = pledgedIds.has(p.id);
-      return `
+    list.innerHTML=items.map(item=>{
+      const p=item.product||{};
+      const img=(p.images&&p.images[0])||'/images/placeholder.jpg';
+      return`
         <div class="sc-item">
           <img src="${esc(img)}" class="sc-item-img" loading="lazy"
                onerror="this.src='/images/placeholder.jpg'"/>
           <div class="sc-item-info">
-            <div class="sc-item-name">${esc(p.name || 'Produit')}</div>
-            <div class="sc-item-qty">Qté : ${item.qty || 1}</div>
-            ${isPledged ? '<span class="sc-item-pledged">✓ Pris en charge</span>' : ''}
+            <div class="sc-item-name">${esc(p.name||'Produit')}</div>
+            <div class="sc-item-qty">Qté : ${item.qty||1}</div>
           </div>
-          <div class="sc-item-price">${fmt((p.price_kmf || 0) * (item.qty || 1))}</div>
+          <div class="sc-item-price">${fmt((p.price_kmf||0)*(item.qty||1))}</div>
         </div>
       `;
     }).join('');
   }
 
-  function buildItemSelect(items) {
-    const sel = document.getElementById('pledge-item-select');
-    const opts = items.map(item => {
-      const p = item.product || {};
-      return `<option value="${esc(p.id || '')}" data-price="${p.price_kmf || 0}">
-        ${esc(p.name || 'Produit')} — ${fmt((p.price_kmf||0)*(item.qty||1))}
-      </option>`;
-    });
-    sel.innerHTML = '<option value="">— Choisir un article —</option>' + opts.join('');
-  }
+  /* ══════════════════════════════════════════════
+     S1-03b — SOUMETTRE UN ENGAGEMENT (phase ouverte)
+     ══════════════════════════════════════════════ */
+  window.submitEngagement=async function(){
+    const name=document.getElementById('eng-name').value.trim();
+    if(!name){toast('Entrez votre prénom','error');return}
+    const phone=document.getElementById('eng-phone').value.trim();
+    if(!phone){toast('Entrez votre téléphone','error');return}
+    const amt=parseInt(document.getElementById('eng-amount').value);
+    if(!amt||amt<2500){toast('Montant minimum : 2 500 KMF','error');return}
+    const msg=document.getElementById('eng-message').value.trim();
 
-  /* ── pledge mode switch ── */
-  window.selectMode = function(mode) {
-    pledgeMode = mode;
-    document.querySelectorAll('.sc-pledge-mode-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.mode === mode);
-    });
-    document.getElementById('pledge-amount-section').hidden = (mode !== 'amount');
-    document.getElementById('pledge-item-section').hidden   = (mode !== 'item');
+    const btn=document.getElementById('eng-submit-btn');
+    btn.disabled=true;btn.textContent='⏳ Envoi…';
+
+    try{
+      const r=await fetch('/api/shared-carts/public/'+encodeURIComponent(token)+'/commitments',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          participant_name:name,
+          participant_phone:phone,
+          amount_kmf:amt,
+          message:msg||undefined,
+        }),
+      });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(j.error||'Erreur');
+      document.getElementById('sc-engagement-fields').hidden=true;
+      document.getElementById('sc-engagement-success').hidden=false;
+    }catch(e){
+      toast('Erreur : '+e.message,'error');
+      btn.disabled=false;btn.textContent='💛 Enregistrer mon engagement';
+    }
   };
 
-  /* ── submit pledge ── */
-  /* Refresh 28/04/26 — Bascule vers /api/shared-carts/public/:token/contributions
-     qui crée une session Stripe Checkout. On redirige l'user vers Stripe
-     plutôt que d'afficher un toast — le paiement est réel maintenant. */
-  window.submitPledge = async function() {
-    const name = document.getElementById('pledge-name').value.trim();
-    if (!name) { toast('Entre ton prénom 👋', 'error'); return; }
+  /* ══════════════════════════════════════════════
+     S1-03c — LOOKUP TÉLÉPHONE (phase règlement)
+     ══════════════════════════════════════════════ */
+  window.lookupPhone=async function(){
+    const phone=document.getElementById('set-phone').value.trim();
+    if(!phone){toast('Entrez votre téléphone','error');return}
 
-    const email = document.getElementById('pledge-email').value.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast('Email invalide', 'error'); return;
-    }
-
-    const amt = parseInt(document.getElementById('pledge-amount').value);
-    if (!amt || amt < 2500) { toast('Montant minimum : 2 500 KMF', 'error'); return; }
-
-    const remaining = shareData.remaining_kmf || 0;
-    if (amt > remaining) {
-      toast(`Il reste seulement ${fmt(remaining)} à couvrir`, 'error'); return;
-    }
-
-    const msg = document.getElementById('pledge-message').value.trim();
-
-    const body = {
-      contributor_name:  name,
-      contributor_email: email,
-      amount_kmf:        amt,
-      message:           msg || undefined,
-    };
-
-    const btn = document.getElementById('pledge-submit-btn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Préparation du paiement…';
-
-    try {
-      const token = shareData.token || getToken();
-      const r = await fetch(
-        '/api/shared-carts/public/' + encodeURIComponent(token) + '/contributions',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        }
+    try{
+      const r=await fetch(
+        '/api/shared-carts/public/'+encodeURIComponent(token)+'/commitments/by-phone?phone='+encodeURIComponent(phone)
       );
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || 'Erreur');
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok){
+        // TX-01
+        if(j.code==='settlement_not_open'){
+          toast("Le créateur n'a pas encore ouvert le règlement. Revenez plus tard.",'error');
+        }else if(j.code==='commitment_not_found'){
+          toast("Aucun engagement trouvé pour ce numéro. Contactez le créateur.",'error');
+        }else{
+          toast(j.error||'Erreur','error');
+        }
+        return;
       }
-      const result = await r.json();
-      if (!result.checkout_url) {
-        throw new Error('URL de paiement manquante');
-      }
-      btn.textContent = '✓ Redirection vers le paiement…';
-      /* Stripe gère la suite : paiement, success page, webhook qui marque
-         la contribution paid, recalcul du panier. */
-      window.location.href = result.checkout_url;
-    } catch(e) {
-      toast('Erreur : ' + e.message, 'error');
-      btn.disabled = false;
-      btn.textContent = '💛 Continuer vers le paiement';
+      lockedCommitment=j.commitment;
+      // Afficher l'étape 2
+      document.getElementById('sc-step-phone').hidden=true;
+      const info=document.getElementById('sc-locked-info');
+      info.innerHTML=`
+        <div class="sc-locked-label">Votre engagement verrouillé</div>
+        <div class="sc-locked-amount">${fmt(lockedCommitment.amount_kmf)}</div>
+        <div class="sc-locked-name">${esc(lockedCommitment.participant_name||'—')}</div>
+      `;
+      document.getElementById('sc-step-pay').hidden=false;
+    }catch(e){
+      toast('Erreur de connexion','error');
     }
   };
 
-  /* ── escape html ── */
-  function esc(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  /* ══════════════════════════════════════════════
+     SOUMETTRE LE PAIEMENT (phase règlement)
+     ══════════════════════════════════════════════ */
+  window.submitPayment=async function(){
+    if(!lockedCommitment){toast('Recherchez d\'abord votre engagement','error');return}
+    const email=document.getElementById('set-email').value.trim();
+    if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      toast('Email invalide','error');return;
+    }
+    const phone=document.getElementById('set-phone').value.trim();
+
+    const btn=document.getElementById('set-submit-btn');
+    btn.disabled=true;btn.textContent='⏳ Préparation…';
+
+    try{
+      const r=await fetch('/api/shared-carts/public/'+encodeURIComponent(token)+'/contributions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          amount_kmf:        lockedCommitment.amount_kmf,
+          contributor_name:  lockedCommitment.participant_name,
+          contributor_email: email,
+          contributor_phone: phone,
+        }),
+      });
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok){
+        // TX-01
+        if(j.code==='settlement_not_open'){
+          throw new Error("Le créateur n'a pas encore ouvert le règlement. Revenez plus tard.");
+        }
+        throw new Error(j.error||'Erreur');
+      }
+      if(!j.checkout_url)throw new Error('URL de paiement manquante');
+      btn.textContent='✓ Redirection…';
+      window.location.href=j.checkout_url;
+    }catch(e){
+      toast('Erreur : '+e.message,'error');
+      btn.disabled=false;btn.textContent='💳 Payer maintenant';
+    }
+  };
 
   /* ── init ── */
   load();

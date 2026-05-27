@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Paiement annulé — Komerce</title>
+  <link rel="icon" href="/images/logo_komerce.png"/>
+  <style>
+    :root { --red:#e53935; --bg:#f5f5f5; --muted:#757575; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+           background:var(--bg); color:#1a1a1a; min-height:100vh;
+           display:flex; flex-direction:column; align-items:center; justify-content:center;
+           padding:24px; }
+    .card {
+      background:#fff; border-radius:20px; padding:36px 28px;
+      box-shadow:0 4px 24px rgba(0,0,0,.09); max-width:400px; width:100%; text-align:center;
+    }
+    .icon { font-size:64px; margin-bottom:16px; }
+    h1 { font-size:22px; font-weight:800; margin-bottom:8px; }
+    .sub { font-size:15px; color:var(--muted); margin-bottom:24px; }
+    .btn {
+      display:block; width:100%; padding:15px;
+      background:var(--red); color:#fff; border:none; border-radius:12px;
+      font-size:16px; font-weight:800; text-decoration:none; cursor:pointer;
+      box-shadow:0 4px 16px rgba(229,57,53,.3);
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">↩️</div>
+  <h1>Paiement annulé</h1>
+  <div class="sub">Aucun montant n'a été prélevé. Vous pouvez réessayer.</div>
+  <a id="back-btn" href="/boutique" class="btn">← Retour au panier</a>
+</div>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const token  = params.get('token');
+  const btn    = document.getElementById('back-btn');
+  if (token) {
+    btn.href = '/cart/shared/' + encodeURIComponent(token);
+    btn.textContent = '← Retour au panier';
+  } else {
+    btn.href = '/boutique';
+    btn.textContent = '🛍️ Voir la boutique';
+  }
+})();
+</script>
+</body>
+</html>

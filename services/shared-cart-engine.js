@@ -380,7 +380,7 @@ async function getSharedCartForPublic(token) {
     `SELECT id, token, beneficiary_name_snapshot, title, message,
             currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
             status, expires_at, finalized_at, view_count,
-            created_at
+            created_at, metadata
        FROM shared_carts
       WHERE token = $1`,
     [token]

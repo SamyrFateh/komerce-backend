@@ -10,7 +10,7 @@
 const db = require('../db');
 const settlement = require('./shared-cart-v4-settlement');
 
-const MIN_COMMITMENT_KMF = 500;
+const MIN_COMMITMENT_KMF = 2500; // v4.1 — aligné sur le minimum Stripe
 const MAX_COMMITMENT_KMF = 500000;
 
 function r(n) { return Math.round(Number(n) || 0); }
