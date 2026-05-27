@@ -50,6 +50,113 @@ function ensureStyles() {
 .k-id-known strong{display:block;font-size:13px;color:var(--text)}
 .k-id-known span{display:block;font-size:12px;color:var(--text-muted);margin-top:2px}
 .k-id-known button{border:0;background:transparent;color:var(--coral,#ef7d5f);font-weight:900;cursor:pointer;font-size:12px}
+
+
+/* ULTRA COMPACT — Identity OTP modal */
+@media(min-width:640px){
+  .k-id-sheet{
+    max-width:380px!important;
+    padding:16px!important;
+    border-radius:18px!important;
+  }
+}
+
+.k-id-sheet{
+  padding-top:16px!important;
+}
+
+.k-id-head{
+  margin-bottom:8px!important;
+}
+
+.k-id-title{
+  font-size:16px!important;
+  line-height:1.12!important;
+}
+
+.k-id-sub{
+  margin-top:2px!important;
+  font-size:11.8px!important;
+  line-height:1.22!important;
+}
+
+.k-id-close{
+  width:28px!important;
+  height:28px!important;
+  font-size:13px!important;
+}
+
+.k-id-trust{
+  padding:7px 9px!important;
+  margin:0 0 9px!important;
+  border-radius:11px!important;
+  gap:3px!important;
+  font-size:10.8px!important;
+  line-height:1.2!important;
+}
+
+.k-id-trust strong{
+  font-size:11.8px!important;
+}
+
+.k-id-known{
+  padding:7px 9px!important;
+  margin-bottom:8px!important;
+  border-radius:11px!important;
+}
+
+.k-id-known strong{
+  font-size:11.8px!important;
+}
+
+.k-id-known span{
+  font-size:10.8px!important;
+  margin-top:1px!important;
+}
+
+.k-id-sheet .k-ck-group,
+.k-id-field{
+  margin-bottom:8px!important;
+}
+
+.k-id-field label,
+.k-id-sheet .k-ck-label{
+  font-size:10px!important;
+  margin-bottom:3px!important;
+}
+
+.k-id-sheet .k-ck-phone-select,
+.k-id-sheet .k-ck-phone-input,
+.k-id-input{
+  min-height:34px!important;
+  padding:6px 8px!important;
+  font-size:12px!important;
+  border-radius:9px!important;
+}
+
+.k-id-code-row{
+  gap:6px!important;
+}
+
+.k-id-link{
+  font-size:10.8px!important;
+  padding-bottom:8px!important;
+}
+
+.k-id-error{
+  min-height:14px!important;
+  margin:0 0 5px!important;
+  font-size:10.8px!important;
+}
+
+.k-id-btn{
+  min-height:36px!important;
+  font-size:12.8px!important;
+}
+
+.k-id-secondary{
+  margin-top:6px!important;
+}
 `;
   document.head.appendChild(s);
 }

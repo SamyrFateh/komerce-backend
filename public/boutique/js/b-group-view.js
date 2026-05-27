@@ -1310,6 +1310,272 @@ function injectStyles() {
   color:var(--text-muted);
 }
 
+
+/* ULTRA COMPACT — Groupe cockpit dense */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    margin:-42px auto 32px!important;
+    padding:0 28px!important;
+  }
+
+  .k-group-cockpit{
+    grid-template-columns:minmax(560px,640px) minmax(270px,320px)!important;
+    gap:12px!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:8px 16px 5px!important;
+    border-radius:13px 13px 0 0!important;
+  }
+
+  .k-group-view .k-group-header h2{
+    font-size:19px!important;
+    margin:0!important;
+    line-height:1.05!important;
+  }
+
+  .k-group-view .k-group-subhead{
+    font-size:11.8px!important;
+    line-height:1.18!important;
+    margin-top:2px!important;
+  }
+
+  .k-group-cart-switcher{
+    padding:6px!important;
+    margin:5px 0!important;
+    border-radius:12px!important;
+  }
+
+  .k-group-cart-switcher-head{
+    margin:0 2px 5px!important;
+  }
+
+  .k-group-cart-switcher-head strong{
+    font-size:11.5px!important;
+  }
+
+  .k-group-cart-switcher-head span{
+    font-size:10.5px!important;
+  }
+
+  .k-group-cart-tabs{
+    gap:5px!important;
+  }
+
+  .k-group-cart-tab{
+    min-width:132px!important;
+    max-width:180px!important;
+    padding:5px 7px!important;
+    border-radius:10px!important;
+  }
+
+  .k-group-cart-tab strong{
+    font-size:11.5px!important;
+  }
+
+  .k-group-cart-tab span{
+    font-size:10.2px!important;
+    margin-top:2px!important;
+  }
+
+  .k-group-mini-guide{
+    padding:5px 7px!important;
+    margin:5px 0!important;
+    border-radius:10px!important;
+    gap:6px!important;
+  }
+
+  .k-group-mini-guide span{
+    font-size:10.8px!important;
+    line-height:1!important;
+  }
+
+  .k-group-mini-guide b{
+    width:15px!important;
+    height:15px!important;
+    flex-basis:15px!important;
+    font-size:9.5px!important;
+  }
+
+  .k-group-view .k-group-progress-card{
+    padding:8px 16px 9px!important;
+    margin:0 0 5px!important;
+    border-radius:0 0 13px 13px!important;
+  }
+
+  .k-group-view .k-group-progress-card h3,
+  .k-group-view .k-group-progress-card strong{
+    font-size:14px!important;
+    margin:0 0 2px!important;
+    line-height:1.12!important;
+  }
+
+  .k-group-view .k-group-progress-card p,
+  .k-group-view .k-group-progress-card span,
+  .k-group-view .k-group-progress-card small{
+    font-size:11.3px!important;
+    line-height:1.2!important;
+  }
+
+  .k-group-view .k-group-progress{
+    height:4px!important;
+    margin:4px 0!important;
+  }
+
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:8px 16px!important;
+    margin:5px 0 0!important;
+    border-radius:13px!important;
+  }
+
+  .k-group-view .k-group-section-title,
+  .k-group-view h3{
+    font-size:14.5px!important;
+    margin:0 0 5px!important;
+    line-height:1.15!important;
+  }
+
+  .k-group-view .k-group-self-toggle{
+    margin:5px 0 0!important;
+    padding:6px 9px!important;
+    min-height:30px!important;
+    border-radius:11px!important;
+    font-size:12px!important;
+  }
+
+  .k-group-view .k-group-creator-actions{
+    gap:6px!important;
+  }
+
+  .k-group-view .k-group-btn{
+    min-height:31px!important;
+    padding:6px 9px!important;
+    font-size:11.8px!important;
+    line-height:1.1!important;
+  }
+
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint,
+  .k-group-view .k-group-finalized-hint{
+    margin:4px 0 0!important;
+    font-size:10.8px!important;
+    line-height:1.15!important;
+  }
+
+  .k-group-view label,
+  .k-group-view .k-group-label{
+    font-size:10.5px!important;
+    margin-bottom:2px!important;
+  }
+
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea{
+    min-height:29px!important;
+    padding:5px 8px!important;
+    font-size:11.8px!important;
+    border-radius:9px!important;
+  }
+
+  .k-group-view hr,
+  .k-group-actions-card [style*="border-top"]{
+    margin-top:7px!important;
+    padding-top:7px!important;
+  }
+
+  .k-group-identity-note{
+    padding:6px 8px!important;
+    margin:4px 0 7px!important;
+    border-radius:10px!important;
+  }
+
+  .k-group-identity-note strong{
+    font-size:11.5px!important;
+  }
+
+  .k-group-identity-note span{
+    font-size:10.5px!important;
+    line-height:1.18!important;
+  }
+
+  .k-group-side-panel{
+    top:68px!important;
+  }
+
+  .k-group-side-card{
+    padding:8px!important;
+    border-radius:13px!important;
+  }
+
+  .k-group-side-head{
+    margin-bottom:5px!important;
+  }
+
+  .k-group-side-head strong{
+    font-size:12.5px!important;
+  }
+
+  .k-group-side-head span{
+    font-size:10.5px!important;
+  }
+
+  .k-group-side-list{
+    gap:5px!important;
+  }
+
+  .k-group-side-item{
+    grid-template-columns:30px 1fr!important;
+    gap:6px!important;
+  }
+
+  .k-group-side-item img,
+  .k-group-side-item-fallback{
+    width:30px!important;
+    height:30px!important;
+    border-radius:8px!important;
+  }
+
+  .k-group-side-item-main strong{
+    font-size:11px!important;
+    line-height:1.1!important;
+  }
+
+  .k-group-side-item-main span{
+    font-size:10px!important;
+    margin-top:1px!important;
+  }
+
+  .k-group-side-total{
+    margin-top:6px!important;
+    padding-top:6px!important;
+    font-size:10.8px!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    margin:4px auto 46px!important;
+    padding:0 10px!important;
+  }
+
+  .k-group-view .k-group-header,
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card,
+  .k-group-side-card{
+    padding:11px 12px!important;
+  }
+
+  .k-group-mini-guide{
+    padding:7px 8px!important;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
