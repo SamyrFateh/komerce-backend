@@ -176,24 +176,11 @@ function stopTimers() {
 }
 
 export function showBanner(data) {
-  if (!data || !state.shareToken) return;
-  const status = data.status || state.shareStatus;
-  if (isClosedStatus(status)) { hideBanner(); return; }
-
-  try {
-    if (sessionStorage.getItem('kmrc_banner_dismissed') === '1') return;
-  } catch (_) {}
-
-  ensureStyles();
-  const el = getOrCreateBanner();
-  const wasCompact = el.classList.contains('is-compact');
-  el.innerHTML = buildHTML(data);
-  el.classList.add('show');
-  if (wasCompact && shouldAutoCollapse(data)) el.classList.add('is-compact');
-  else el.classList.remove('is-compact');
-  bindBanner(el);
-  startTick(el, data);
-  scheduleCollapse(el, data);
+  // Doctrine cockpit Groupe — mai 2026 :
+  // la bannière globale panier groupe est supprimée pour éviter de polluer la boutique.
+  // L'information active vit désormais dans l'onglet Groupe + badge header.
+  hideBanner();
+  return;
 }
 
 export function hideBanner() {
