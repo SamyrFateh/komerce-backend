@@ -133,6 +133,8 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
   try {
     const res = await fetch(API_MINE, { credentials: 'include' });
     if (!res.ok) {
+      // FIX S2-05 — utilisateur non connecté : ne pas effacer l'état local chargé
+      // depuis sessionStorage. Le shareToken restera valide pour startShareFlow().
       if (res.status === 401 || res.status === 403) return null;
       throw new Error(`GET /mine ${res.status}`);
     }
@@ -140,6 +142,8 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
     const cart = pickActiveCart(data.carts || []);
 
     if (!cart) {
+      // FIX S2-05 — effacer uniquement si le backend confirme qu'il n'y a pas de
+      // panier actif (réponse 200 + liste vide). Ne jamais effacer sur erreur réseau.
       clearLocalShareState();
       refreshSharedBadges(false);
       hideBanner();
@@ -491,6 +495,13 @@ function promptActiveCartChoice(cartName) {
 export async function startShareFlow(opts = {}) {
   const { reshare = false } = opts;
 
+  // FIX S2-05 — attendre la restauration backend avant d'utiliser state.shareToken
+  // Évite la race condition : clic rapide → shareToken null car restore pas fini
+  if (_restorePromise) {
+    await _restorePromise;
+    _restorePromise = null;
+  }
+
   if (!state.cart?.length) {
     showToast("Ajoutez d'abord des produits au panier.", 'error');
     return;
@@ -562,6 +573,7 @@ async function handleShareClick() {
 
 /* ── Installation ───────────────────────────────────────────────── */
 let _installed = false;
+let _restorePromise = null; // FIX S2-05 — permet d'attendre la restauration dans startShareFlow
 
 export function install() {
   if (_installed) return;
@@ -574,7 +586,7 @@ export function install() {
     refreshBanner();
   }
 
-  restoreSharedCartFromBackend({ silent: true });
+  _restorePromise = restoreSharedCartFromBackend({ silent: true });
 
   document.getElementById('k-cart-share')?.addEventListener('click', handleShareClick);
 

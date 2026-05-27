@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-26** (REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
+> Mis à jour : **2026-05-27** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -55,6 +55,130 @@ Le modèle legacy `collective workspace / panier événement collectif` est déc
 Règle produit : ne pas réintroduire un workspace parallèle. Toute évolution doit rester une capacité naturelle du panier boutique.
 
 ---
+
+## Panier partagé v4.1 — Suivi implémentation
+
+> Source : `SUIVI_IMPLEMENTATION_PANIER_PARTAGE.md` (27 mai 2026) — intégré dans STATUS.md.
+> Légende : ✅ Fait · ⏳ En cours · ☐ À faire · 🚫 Annulé
+
+### Invariants panier partagé (à respecter dans toutes les PRs)
+
+1. **Webhook Stripe = source de vérité.** Ne jamais incrémenter `contributed_kmf` sans webhook confirmé.
+2. **Aucun paiement participant sans `settlement_open = true`.** Guard dans `assertCanAcceptParticipantPaymentByToken()`.
+3. **La commande ferme naît uniquement à `POST /:id/finalize`.** Aucune PR ne réintroduit la création automatique.
+4. **Les erreurs WhatsApp ne bloquent jamais la route principale.** Toujours post-commit, best-effort.
+5. **Aucune surface ne sort l'utilisateur de la boutique durablement.** Pages externes ramènent toujours vers la boutique.
+6. **Les tokens publics ne révèlent pas les téléphones complets.** `maskPhone()` reste appliqué partout.
+
+### Sprint 1 — Parcours contributeur
+
+| ID | Description | Fichiers principaux | Statut |
+|---|---|---|---|
+| S1-01 | Page success → confirmation + retour boutique | `shared-cart-success.html` | ✅ |
+| S1-02 | Page cancel → retour panier | `shared-cart-cancel.html` | ✅ |
+| S1-03a | Détecter la phase depuis `metadata.settlement_open` | `shared-cart-public.html` | ✅ |
+| S1-03b | Phase ouverte — formulaire engagement sans email | `shared-cart-public.html` | ✅ |
+| S1-03c | Phase règlement — lookup téléphone + Stripe | `shared-cart-public.html` | ✅ |
+| S1-03d | CTA boutique en bas de page (toutes phases) | `shared-cart-public.html` | ✅ |
+| S1-03e | Messages statuts fermés (`converted_to_order`, `expired`, `cancelled`) | `shared-cart-public.html` | ✅ |
+| S1-04 | Minimum engagement 2 500 KMF | `shared-cart-commitment-service.js` | ✅ |
+| TX-01 | Erreur `settlement_not_open` lisible | `shared-cart-public.html` | ✅ |
+| TX-02 | Montant moyen suggéré — page publique | `shared-cart-public.html` | ✅ |
+| TX-02 | Montant moyen suggéré — onglet Groupe | `b-group-view.js` | ✅ |
+
+**Notes S1** : Email absent du formulaire d'engagement (phase ouverte) ✅ — présent uniquement à l'étape paiement (phase règlement) avec libellé "pour votre reçu" ✅.
+
+#### Tests Sprint 1 (à passer)
+
+- `[S1-01-T1]` URL valide → message confirmation + bouton boutique ☐
+- `[S1-01-T2]` URL sans token → message erreur + bouton boutique ☐
+- `[S1-02-T1]` URL avec token → bouton retour `/cart/shared/:token` ☐
+- `[S1-02-T2]` URL sans token → bouton retour `/boutique` ☐
+- `[S1-03-T1]` Phase ouverte → formulaire engagement, pas de Stripe ☐
+- `[S1-03-T2]` Phase règlement → formulaire paiement avec lookup téléphone ☐
+- `[S1-03-T3]` `POST /commitments` sans email → 201 OK ☐
+- `[S1-03-T4]` Paiement sans settlement → 409 → message lisible ☐
+- `[S1-03-T5]` Panier `converted_to_order` → message clôture + bouton boutique ☐
+- `[S1-03-T6]` CTA boutique visible dans toutes les phases ☐
+- `[S1-04-T1]` `POST /commitments` avec `amount_kmf: 1000` → 400 `amount_too_low` ☐
+- `[S1-04-T2]` `POST /commitments` avec `amount_kmf: 2500` → 201 OK ☐
+
+### Sprint 2 — Actions créateur dans la boutique
+
+| ID | Description | Fichiers principaux | Statut |
+|---|---|---|---|
+| S2-01 | Bouton "Annuler le panier" dans l'onglet Groupe | `b-group-view.js` | ✅ |
+| S2-02 | Finalisation avec gap — "je couvre le reste" | `b-group-view.js` | ✅ |
+| S2-03 | Durée règlement choisie (24h / 48h / 7j, défaut 48h) | `b-group-view.js` | ✅ |
+| S2-04 | Expiration règlement affichée (rouge si < 6h) | `b-group-view.js` | ✅ |
+| S2-05 | Raccourci "Voir le groupe actif" dans la modale "Payer en groupe" | `b-share-cart.js` | ✅ |
+
+**✅ BUG S2-05 résolu (2026-05-27)** — Race condition dans `b-share-cart.js` : `restoreSharedCartFromBackend()` (async, fire-and-forget) pouvait s'exécuter après un clic rapide sur "Payer en groupe" et effacer le `state.shareToken` chargé par `loadShareState()`.
+
+Corrections apportées :
+1. `_restorePromise` tracke la promesse de restauration dans `install()`
+2. `startShareFlow()` `await _restorePromise` avant d'utiliser `state.shareToken`
+3. Commentaire explicite dans `restoreSharedCartFromBackend` sur le cas 401/403
+
+#### Tests Sprint 2 (à passer)
+
+- `[S2-01-T1]` Sans contributions → annulation directe, retour onglet boutique ☐
+- `[S2-01-T2]` Avec contributions payées → dialog avertissement avant appel ☐
+- `[S2-02-T1]` `remaining_kmf > 0` → bouton "je couvre le reste" visible ☐
+- `[S2-02-T2]` Créateur couvre → `POST /finalize` avec `accept_partial: true` ☐
+- `[S2-03-T1]` Choix 24h → `metadata.settlement_window_hours === 24` ☐
+- `[S2-03-T2]` Pas de choix → 48h par défaut ☐
+- `[S2-04-T1]` 48h restantes → date affichée correctement ☐
+- `[S2-04-T2]` 2h restantes → affichage en rouge ☐
+- `[S2-05-T1]` Panier actif (`state.shareToken` non null) → modale propose deux options ☐
+- `[S2-05-T2]` "Voir le groupe actif" → bascule onglet Groupe, pas de redirect ☐
+
+### Sprint 3 — Notifications et crons
+
+| ID | Description | Fichiers principaux | Statut |
+|---|---|---|---|
+| S3-01 | Notification WhatsApp → ouverture règlement | `routes/shared-cart.js` → `/:id/open-settlement` | ✅ |
+| S3-02 | Notification WhatsApp → création panier | `routes/shared-cart.js` → `POST /from-cart-items` | ✅ |
+| S3-03 | Cron `not_honored` — vérifié, avec log structuré et événement | `bootstrap/crons.js` | ✅ |
+| S3-04 | Cron expiration paniers — planifié toutes les 4h | `bootstrap/crons.js` | ✅ |
+
+#### Tests Sprint 3 (à passer)
+
+- `[S3-01-T1]` 3 engagements avec téléphone → 3 appels WhatsApp tentés ☐
+- `[S3-01-T2]` Échec WhatsApp → route retourne 200, événement `settlement_notification_failed` loggé ☐
+- `[S3-02-T1]` Création avec `tracking_phone` → message envoyé ☐
+- `[S3-02-T2]` Sans téléphone → aucune erreur ☐
+- `[S3-03-T1]` Engagement `locked_for_settlement` + fenêtre expirée → passe `not_honored` ☐
+- `[S3-03-T2]` Deuxième run → 0 lignes (idempotent) ☐
+- `[S3-04-T1]` Panier `active` expiré sans contribution → passe `expired` ☐
+
+### Bugs frontend à vérifier (hors sprint)
+
+| ID | Description | Fichier | Effort |
+|---|---|---|---|
+| BUG-C5 | Route auth utilisée dans le checkout — vérifier `/auto-register` | `b-checkout.js` | ✅ Faux positif — `/api/orders` direct, cookie auth |
+| BUG-C6 | `payment_mode: 'card'` potentiellement invalide | `b-checkout.js` | ✅ Faux positif — valeurs : `cash_relais`, `mvola`, `stripe_eur` |
+| BUG-C7 | URL appelée par `loadRelais()` — vérifier `/api/relais` | `b-nav.js` | ✅ Faux positif — `b-nav` → `/api/relais/public`, `b-checkout` → `/api/relais` |
+
+### Backend PR doctrine — 🚫 Annulées
+
+> Les PRs BE-A/B/C/D sont **annulées** — remplacées par l'approche tombstone (PR #486).
+> `docs/backend/PANIER_COLLECTIF_BACKEND_DELTA.md` archivé (voir DOC-INT-1).
+
+| ID | Description | Statut |
+|---|---|---|
+| BE-A | `markSessionReadyToOrder()` — remplacer auto-création commande | 🚫 Annulé |
+| BE-B | `POST /api/collective-workspaces/:creatorToken/close` | 🚫 Annulé |
+| BE-C | Table `collective_stock_reservations` | 🚫 Annulé |
+| BE-D | Clarification statuts cash | 🚫 Annulé |
+
+### Hors scope v4.1
+
+| Item | Raison |
+|---|---|
+| Vue historique contributeur (`shared-cart-account.html`) | Sort l'utilisateur de la boutique. Reporté v4.2. |
+| UI paiement cash participant | Confirmé par agent relais. Hors MVP. Reporté v4.2. |
+
 
 ## Invariants à garder en tête
 
@@ -240,7 +364,24 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 ## 🎯 Prochain lot recommandé
 
-### 1. GO-LIVE-CHECK (▶️ Maintenant — 1 session)
+### 1. PANIER-V4.1 — Compléter l'implémentation (▶️ Maintenant)
+
+```text
+Priorité immédiate :
+[ ] BUG S2-05 — Investiguer state.shareToken null dans b-share-cart.js
+    → ajouter log dans startShareFlow(), vérifier loadShareState() dans install()
+[ ] TX-02 — Montant moyen suggéré dans b-group-view.js (~30 min)
+[ ] BUG-C5 — Vérifier route auth /auto-register dans b-checkout.js (~1h)
+[ ] BUG-C6 — Vérifier payment_mode dans b-checkout.js (~30 min)
+[ ] BUG-C7 — Vérifier URL loadRelais() dans b-nav.js (~30 min)
+
+Tests à passer (voir §Sprint 1/2/3 ci-dessus) :
+[ ] Tous les [S1-xx-Tx] — Sprint 1 parcours contributeur
+[ ] Tous les [S2-xx-Tx] — Sprint 2 actions créateur
+[ ] Tous les [S3-xx-Tx] — Sprint 3 notifications et crons
+```
+
+### 2. GO-LIVE-CHECK (Après PANIER-V4.1 — 1 session)
 
 ```text
 [ ] Rejouer npm test → doit rester vert (125 passés)
@@ -263,6 +404,7 @@ P0 runtime verdict: PASS (tous les checks validés)
 
 | Lot | Priorité | Note |
 |-----|----------|------|
+| PANIER-V4.1 | ✅ Fait | BUG S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ — Tests à passer avant go-live |
 | GO-LIVE-CHECK | ▶️ Maintenant | Rejouer tests + flux shared-cart complet + vérifs prod |
 | B-SOT-AUDIT | Ensuite | ✅ Résolu — b-mobile-premium-v1 et b-mobile-modal-v1 confirmés orphelins, documentés dans SOT v1.6 |
 | DOC-SYNC-BOUTIQUE-FIRST | ✅ Fait | B-DOC-1 ✅ (§14 ajouté CARTOGRAPHY_360_BOUTIQUE) · B-DOC-2 ✅ (déjà à jour) · B-SOT-1 ✅ (SOT v1.6, 6 actifs + 3 orphelins) |

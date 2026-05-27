@@ -137,6 +137,7 @@ function injectStyles() {
 .k-group-funded-callout p{font-size:13px;line-height:1.45;color:var(--text-muted);margin:0 0 12px}
 .k-group-disabled-finalize{opacity:.72;cursor:not-allowed!important;background:var(--sand-dark)!important;color:var(--text-muted)!important}
 .k-group-share-hint,.k-group-finalize-hint{font-size:12px;line-height:1.45;color:var(--text-muted);margin:10px 0 0}
+.k-group-split-hint{background:#ede7f6;color:#4a2d9e;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;margin:0 0 12px;line-height:1.4}
 .k-group-self-toggle{margin-top:12px;width:100%;border:1px dashed var(--border);background:var(--sand);color:var(--text);border-radius:14px;padding:11px;font-weight:800;cursor:pointer}
 .k-group-self-panel[hidden]{display:none!important}
 .k-group-locked-amount{display:flex;align-items:center;gap:10px;background:rgba(31,122,84,.09);border:1px solid rgba(31,122,84,.2);border-radius:14px;padding:14px 16px;margin:12px 0}
@@ -165,6 +166,12 @@ function renderEngagementForm(token, cart, isCreator = false) {
   const suggestion = lockedTotal > 0
     ? Math.round(r(cart.total_kmf_snapshot) / Math.max(1, r(meta.locked_commitments_count || 1) + 1) / 100) * 100
     : 0;
+  // TX-02 — montant moyen suggéré (hint visible, même logique que shared-cart-public.html)
+  const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
+  const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
+  const splitHint = avgSuggestion >= 2500
+    ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
+    : '';
 
   return `
     <div class="k-group-card k-group-contribute-card">
@@ -173,6 +180,7 @@ function renderEngagementForm(token, cart, isCreator = false) {
       <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">
         Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
       </p>
+      ${splitHint}
       <div class="k-group-field">
         <label class="k-group-label" for="k-ge-name">Prénom / Nom</label>
         <input id="k-ge-name" class="k-group-input" type="text" placeholder="Ex : Fatima Ali" maxlength="60" autocomplete="given-name">
