@@ -317,6 +317,108 @@ function injectStyles() {
 }
 
 
+
+/* Compact creator cockpit — optimiser la surface utile desktop */
+@media(min-width:1000px){
+  #k-group-view.k-group-view{
+    margin:0 auto 56px!important;
+    padding:0 32px!important;
+  }
+
+  #k-group-view.k-group-view > *{
+    width:700px!important;
+    max-width:700px!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:16px 24px 8px!important;
+    border-radius:20px 20px 0 0!important;
+  }
+
+  .k-group-view .k-group-header h2{
+    font-size:22px!important;
+    margin:0 0 4px!important;
+  }
+
+  .k-group-view .k-group-subhead{
+    font-size:14px!important;
+    line-height:1.35!important;
+  }
+
+  .k-group-view .k-group-progress-card{
+    padding:16px 24px 18px!important;
+    margin:0 0 14px!important;
+    border-radius:0 0 20px 20px!important;
+  }
+
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:16px 24px!important;
+    margin:12px 0 0!important;
+    border-radius:20px!important;
+  }
+
+  .k-group-view .k-group-section-title,
+  .k-group-view h3{
+    font-size:18px!important;
+    margin:0 0 10px!important;
+  }
+
+  .k-group-view .k-group-self-toggle{
+    margin:10px 0 0!important;
+    padding:13px 16px!important;
+    border-radius:18px!important;
+    min-height:46px!important;
+  }
+
+  .k-group-view .k-group-creator-actions{
+    gap:10px!important;
+  }
+
+  .k-group-view .k-group-btn{
+    min-height:44px!important;
+    padding:10px 16px!important;
+  }
+
+  .k-group-view .k-group-share-hint,
+  .k-group-view .k-group-finalize-hint{
+    margin:8px 0 0!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+
+  .k-group-view hr{
+    margin:12px 0!important;
+  }
+
+  .k-group-view select,
+  .k-group-view input,
+  .k-group-view textarea{
+    min-height:42px!important;
+  }
+}
+
+@media(max-width:999px){
+  #k-group-view.k-group-view{
+    margin:10px auto 56px!important;
+  }
+
+  .k-group-view .k-group-header{
+    padding:16px 16px 8px!important;
+  }
+
+  .k-group-view .k-group-progress-card,
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card{
+    padding:16px!important;
+    margin-top:10px!important;
+  }
+}
+
 /* Desktop cockpit layout : colonne gauche + réserve articles droite */
 @media(min-width:1000px){
   #k-group-view.k-group-view{
