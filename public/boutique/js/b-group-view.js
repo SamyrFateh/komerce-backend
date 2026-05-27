@@ -177,6 +177,81 @@ function timeRemaining(expiresAt) {
   return `${Math.max(1, m)}min restantes`;
 }
 
+
+function isVisibleOwnerCart(cart) {
+  if (!cart) return false;
+  return !['cancelled', 'expired', 'finalized', 'converted_to_order'].includes(cart.status);
+}
+
+function sortOwnerCarts(carts = []) {
+  return [...carts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+function pickOwnerCart(carts = [], preferredId = null) {
+  const visible = sortOwnerCarts(carts).filter(isVisibleOwnerCart);
+  if (!visible.length) return null;
+  if (preferredId) {
+    const found = visible.find(c => String(c.id) === String(preferredId));
+    if (found) return found;
+  }
+  return visible[0];
+}
+
+function applyOwnerCartToState(cart) {
+  if (!cart) return;
+  state.shareToken = cart.token || null;
+  state.shareId = cart.id || null;
+  state.shareExpiry = cart.expires_at || null;
+  state.cartName = cart.title || 'Panier groupe';
+  state.shareStatus = cart.status || null;
+  state.shareTotalKmf = r(cart.total_kmf_snapshot);
+  state.shareContributedKmf = r(cart.contributed_kmf);
+  state.shareRemainingKmf = r(cart.remaining_kmf);
+  state.shareUrl = cart.share_url || (cart.token ? `${window.location.origin}/boutique/?p=${cart.token}` : null);
+
+  try {
+    sessionStorage.setItem('kmrc_share', JSON.stringify({
+      token: state.shareToken,
+      id: state.shareId,
+      expiry: state.shareExpiry,
+      name: state.cartName,
+      status: state.shareStatus,
+      total_kmf: state.shareTotalKmf,
+      contributed_kmf: state.shareContributedKmf,
+      remaining_kmf: state.shareRemainingKmf,
+      share_url: state.shareUrl,
+    }));
+  } catch (_) {}
+}
+
+function renderCreatorCartSwitcher(carts = [], selectedId) {
+  const visible = sortOwnerCarts(carts).filter(isVisibleOwnerCart);
+  if (visible.length <= 1) return '';
+
+  return `
+    <div class="k-group-cart-switcher" aria-label="Mes paniers groupe">
+      <div class="k-group-cart-switcher-head">
+        <strong>Mes paniers groupe</strong>
+        <span>${visible.length} actifs</span>
+      </div>
+      <div class="k-group-cart-tabs">
+        ${visible.map(c => {
+          const active = String(c.id) === String(selectedId);
+          const total = r(c.total_kmf_snapshot);
+          const label = c.title || 'Panier groupe';
+          return `
+            <button
+              type="button"
+              class="k-group-cart-tab ${active ? 'is-active' : ''}"
+              data-k-group-cart-id="${sanitize(String(c.id))}">
+              <strong>${sanitize(label)}</strong>
+              <span>${fmt(total, 'KMF')} · ${sanitize(statusLabel(c.status, isSettlementOpen(c)).replace(/^../, '').trim())}</span>
+            </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
 async function ensureCreatorCartState() {
   if (state.shareToken && state.shareId) return true;
   try {
@@ -1139,6 +1214,78 @@ function injectStyles() {
   }
 }
 
+
+/* MULTI GROUP — switcher paniers créateur */
+.k-group-cart-switcher{
+  background:var(--white,#fff);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:8px;
+  margin:6px 0;
+  box-shadow:0 10px 30px rgba(30,40,25,.04);
+}
+.k-group-cart-switcher-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin:0 2px 7px;
+}
+.k-group-cart-switcher-head strong{
+  font-size:12px;
+  color:var(--text);
+}
+.k-group-cart-switcher-head span{
+  font-size:11px;
+  color:var(--text-muted);
+}
+.k-group-cart-tabs{
+  display:flex;
+  gap:7px;
+  overflow:auto;
+  scrollbar-width:thin;
+  padding-bottom:1px;
+}
+.k-group-cart-tab{
+  flex:0 0 auto;
+  min-width:150px;
+  max-width:210px;
+  text-align:left;
+  border:1px solid var(--border);
+  background:var(--sand,#f7f0e8);
+  border-radius:12px;
+  padding:7px 9px;
+  cursor:pointer;
+}
+.k-group-cart-tab.is-active{
+  background:rgba(239,125,95,.12);
+  border-color:rgba(239,125,95,.38);
+  box-shadow:inset 0 0 0 1px rgba(239,125,95,.18);
+}
+.k-group-cart-tab strong{
+  display:block;
+  font-size:12.5px;
+  line-height:1.15;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.k-group-cart-tab span{
+  display:block;
+  margin-top:3px;
+  font-size:11px;
+  color:var(--text-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+@media(max-width:700px){
+  .k-group-cart-tab{
+    min-width:140px;
+  }
+}
+
 .k-group-phase-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:10px}
 .k-group-phase-badge--open{background:rgba(31,122,84,.12);color:#1f7a54}
 .k-group-phase-badge--settlement{background:rgba(230,130,0,.12);color:#b45309}
@@ -1978,7 +2125,20 @@ export async function renderGroupView(opts = {}) {
   /* ─────────────────────────────────────────────────────────────── */
   /* MODE CRÉATEUR                                                    */
   /* ─────────────────────────────────────────────────────────────── */
-  if (!state.shareToken || !state.shareId) {
+  let ownerCarts = [];
+  try {
+    const mine = await apiGet('/api/shared-carts/mine');
+    ownerCarts = Array.isArray(mine?.carts) ? mine.carts : [];
+  } catch (_) {
+    ownerCarts = [];
+  }
+
+  if (ownerCarts.length) {
+    const selectedOwnerCart = pickOwnerCart(ownerCarts, opts.cartId || state.shareId);
+    if (selectedOwnerCart) {
+      applyOwnerCartToState(selectedOwnerCart);
+    }
+  } else if (!state.shareToken || !state.shareId) {
     const restored = await ensureCreatorCartState();
     if (!restored) { renderEmpty(el); return; }
   }
@@ -2031,6 +2191,7 @@ export async function renderGroupView(opts = {}) {
             ? '🔐 Panier en règlement — les participants peuvent maintenant payer.'
             : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
         </div>
+        ${renderCreatorCartSwitcher(ownerCarts, cartId)}
         ${renderCreatorMiniGuide(settlementOpen)}
         ${renderProgress(cart, contributions, commitmentsList)}
         ${showSelfForm && !settlementOpen ? `
@@ -2047,6 +2208,14 @@ export async function renderGroupView(opts = {}) {
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
+
+  el.querySelectorAll('[data-k-group-cart-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nextId = btn.dataset.kGroupCartId;
+      if (!nextId || String(nextId) === String(cartId)) return;
+      renderGroupView({ ...opts, cartId: nextId });
+    });
+  });
 
   if (showSelfForm) {
     el.querySelector('#k-group-self-toggle')?.addEventListener('click', () => {
