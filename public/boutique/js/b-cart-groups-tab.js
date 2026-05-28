@@ -92,8 +92,8 @@ export function setupCartGroupsTab() {
   if (installed) return;
   installed = true;
 
-  // Plus aucun onglet ajouté au drawer panier.
-  // On garde uniquement la mémorisation locale pour l'affichage dans Suivi.
-  window.addEventListener('kmrc:group-cart-created', (e) => addGroupFromShare(e.detail || {}));
-  patchFetchForWorkspaceCreation();
+  // Legacy désactivé.
+  // Le flux Groupe officiel vit dans b-group-view.js + group/group-api.js.
+  // Ne plus patcher window.fetch ni écrire kmrc_group_carts_v1 :
+  // cela recycle des paniers locaux obsolètes et peut provoquer des appels API invalides.
 }
