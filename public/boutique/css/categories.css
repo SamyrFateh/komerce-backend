@@ -480,7 +480,7 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   MOBILE PILL RAIL — max-width: 767px  (v2 — affinage)
+   MOBILE PILL RAIL — max-width: 767px  (v3 — compacité + lisibilité)
    Transforme le bloc catégories en rail horizontal de chips ovales.
    MOBILE ONLY — aucun impact desktop (desktop = min-width: 900px).
    Rollback : supprimer ce bloc entier.
@@ -493,10 +493,9 @@
     border: none;
     box-shadow: none;
     border-radius: 0;
-    margin: 6px 0 0;        /* espace propre sous bannière, sans chevauchement */
+    margin: 6px 0 0;
     padding: 0 0 2px;
     overflow: visible;
-    /* Filet discret sous le rail */
     border-bottom: 1px solid rgba(198, 168, 93, .16);
   }
 
@@ -511,10 +510,9 @@
     scroll-snap-type: x mandatory;
     scroll-padding-left: 12px;
     scrollbar-width: none;
-    gap: 6px;
-    padding: 7px 12px 9px;
+    gap: 8px;           /* v3 : 6px → 8px, aération entre capsules */
+    padding: 6px 12px 8px;
     align-items: center;
-    /* Annule le grid du bloc 899px */
     grid-template-columns: none;
   }
   .k-cats::-webkit-scrollbar { display: none; }
@@ -527,54 +525,61 @@
     flex: 0 0 4px;
   }
 
-  /* ── Chip : capsule ovale pill compacte ── */
+  /* ── Chip : capsule ovale pill ── */
+  /* v3 : hauteur portée à 48px (cible brief), photo 36px impose min-height cohérente.
+     Fond plus opaque (.92) pour meilleure lecture sur hero.
+     padding ajusté pour la photo agrandie. */
   .k-chip {
     flex: 0 0 auto;
     display: inline-flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 6px;
+    gap: 7px;
     width: auto;
     min-width: auto;
     max-width: none;
-    min-height: 42px;
-    height: 42px;
-    padding: 4px 11px 4px 5px;
+    height: 48px;
+    min-height: 48px;
+    padding: 4px 13px 4px 6px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, .80);
-    border: 1px solid rgba(198, 168, 93, .17);
-    box-shadow: 0 1px 4px rgba(28, 26, 23, .05);
+    background: rgba(255, 255, 255, .92); /* v3 : .80 → .92, lisibilité sur hero */
+    border: 1px solid rgba(198, 168, 93, .20);
+    box-shadow:
+      0 1px 4px rgba(28, 26, 23, .06),
+      0 0 0 0.5px rgba(198, 168, 93, .08); /* v3 : anneau subtil premium */
     text-align: left;
     scroll-snap-align: start;
-    /* Annule le grid du bloc 899px */
     grid-template-columns: none;
+    transition: transform .16s ease, box-shadow .16s ease;
   }
   .k-chip:active { transform: scale(.96); }
 
   /* ── Image ronde ── */
+  /* v3 : 32px → 36px (dans cible brief 36–40px) */
   .k-chip-photo {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
     border-radius: 50%;
     margin: 0;
-    border: 1px solid rgba(198, 168, 93, .20);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .52);
+    border: 1.5px solid rgba(198, 168, 93, .22);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .60);
     flex-shrink: 0;
     flex: 0 0 auto;
   }
   .k-chip-photo img {
     border-radius: 50%;
-    filter: saturate(1.18) contrast(1.04);
+    filter: saturate(1.20) contrast(1.05);
   }
 
-  /* ── Label compact ── */
+  /* ── Label ── */
+  /* v3 : 13.5px → 15px (cible brief 15–16px) */
   .k-chip-label {
-    font-size: 13.5px;
-    font-weight: 740;
+    font-size: 15px;
+    font-weight: 700;
     line-height: 1;
-    letter-spacing: -.02em;
+    letter-spacing: -.022em;
     color: var(--text);
     white-space: nowrap;
     overflow: visible;
@@ -584,22 +589,24 @@
     text-align: left;
   }
 
-  /* ── État actif — discret, chaleureux Komerce ── */
+  /* ── État actif — net et élégant, sans agrandissement ── */
+  /* v3 : fond pêche plus affirmé, bordure corail nette (.62 vs .38) */
   .k-chip.active {
-    background: rgba(255, 248, 232, .94);
-    border-color: rgba(216, 92, 43, .38);
-    box-shadow: 0 1px 5px rgba(216, 92, 43, .10);
-    /* Même taille que les autres chips — pas d'agrandissement */
-    transform: none;
+    background: rgba(255, 244, 224, .97);
+    border-color: rgba(216, 92, 43, .62);
+    box-shadow:
+      0 1px 6px rgba(216, 92, 43, .14),
+      0 0 0 0.5px rgba(216, 92, 43, .18);
+    transform: none; /* pas d'agrandissement */
   }
   .k-chip.active .k-chip-photo {
-    border-color: rgba(216, 92, 43, .45);
-    box-shadow: 0 0 0 1.5px rgba(216, 92, 43, .16);
+    border-color: rgba(216, 92, 43, .55);
+    box-shadow: 0 0 0 2px rgba(216, 92, 43, .18);
     transform: none;
   }
   .k-chip.active .k-chip-label {
     color: var(--coral-dark, #b84a1f);
-    font-weight: 780;
+    font-weight: 750;
   }
 
   /* Fades latéraux inutiles sur mobile pill */

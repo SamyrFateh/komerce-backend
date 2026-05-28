@@ -173,9 +173,9 @@
   .k-hero-cats-sticky {
     padding-top: 0;
     /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
-          Base hero.css : margin-top:-42px. Override précédent : -50px. Nouveau : -54px.
-          Chevauchement reste propre, rail catégories non masqué. */
-    margin-top: -54px;
+          Base hero.css : margin-top:-42px. Override précédent : -50px. v3 : -56px.
+          Compensé aussi par la photo chip plus haute (36px). Chevauchement propre. */
+    margin-top: -56px;
   }
 
   /* 3. Supprime le pseudo-spacer sous le rail (-4px). */
