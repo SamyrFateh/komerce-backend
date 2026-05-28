@@ -478,10 +478,10 @@ function _balancedPick(list, pageSize, maxPerCat) {
   }
   const flat = [];
   for (const section of rich) {
-    _shuffle(section.prods);
-    const take = Math.min(perCat, section.prods.length);
+    const shuffled = _shuffle([...section.prods]);
+    const take = Math.min(perCat, shuffled.length);
     const count = take >= 2 ? (take % 2 === 0 ? take : take - 1) : 0;
-    for (let i = 0; i < count; i++) flat.push(section.prods[i]);
+    for (let i = 0; i < count; i++) flat.push(shuffled[i]);
   }
   return flat;
 }

@@ -389,7 +389,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // FIX #1 — Bouton favori dans la modal
     const modalFavBtn = document.getElementById('k-modal-fav-btn');
     if (modalFavBtn) {
-      const favState = state.favs.includes(product.id);
+      const favState = state.favs.includes(String(product.id));
       modalFavBtn.classList.toggle('liked', favState);
       modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
     }
@@ -1167,7 +1167,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
           ? dom.grid.querySelector(`.k-card-fav[data-fav="${state.modalProduct.id}"]`)
           : null;
         if (gridFavBtn) {
-          const isNowFav = state.favs.includes(state.modalProduct.id);
+          const isNowFav = state.favs.includes(String(state.modalProduct.id));
           gridFavBtn.classList.toggle('liked', isNowFav);
           gridFavBtn.innerHTML = isNowFav ? '❤️' : '🤍';
         }

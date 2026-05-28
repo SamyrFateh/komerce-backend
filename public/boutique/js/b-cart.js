@@ -371,14 +371,15 @@ function quickRemove(productId, btnEl) {
  * @param {HTMLElement} [btn] - Bouton cœur
  */
   function toggleFav(id, btnEl) {
-    const idx = state.favs.indexOf(id);
+    const sid = String(id);
+    const idx = state.favs.indexOf(sid);
     if (idx >= 0) {
       state.favs.splice(idx, 1);
       btnEl.classList.remove('liked');
       btnEl.innerHTML = '🤍';
       showToast('Retiré des favoris');
     } else {
-      state.favs.push(id);
+      state.favs.push(sid);
       btnEl.classList.add('liked');
       btnEl.innerHTML = '❤️';
       btnEl.classList.add('k-pop');
@@ -1521,6 +1522,7 @@ export function clearCart() {
   state.cart = [];
   saveCart();
   renderCartBody();
+  document.dispatchEvent(new CustomEvent('cart:cleared'));
 }
 
 /**

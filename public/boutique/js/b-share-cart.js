@@ -484,7 +484,7 @@ function promptActiveCartChoice(cartName) {
       </p>
       <div class="k-sm-choice">
         <button class="k-sm-btn" id="k-sm-view-group">👥 Voir mon groupe actif</button>
-        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-new-group">ï¼‹ Créer un nouveau groupe</button>
+        <button class="k-sm-btn k-sm-btn-secondary" id="k-sm-new-group">+ Créer un nouveau groupe</button>
         <button class="k-sm-btn k-sm-btn-ghost" id="k-sm-cancel-choice">Annuler</button>
       </div>`);
 
