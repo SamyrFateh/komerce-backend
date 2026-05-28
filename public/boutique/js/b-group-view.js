@@ -19,10 +19,46 @@
 
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
-import { sanitize, fmt, apiGet, apiPost } from './b-utils.js';
+import { sanitize, fmt } from './b-utils.js';
 import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
 import { showBanner, hideBanner } from './b-group-banner.js';
 import { requireIdentity } from './b-identity.js';
+import {
+  getOwnerSharedCarts,
+  getSharedCartOwner,
+  getSharedCartPublic,
+  getSharedCartItems,
+  getCommitments,
+  createCommitment,
+  lookupCommitmentByPhone,
+  createContribution,
+  openSettlement,
+  finalizeSharedCart,
+  cancelSharedCart,
+} from './group/group-api.js';
+import {
+  isVisibleOwnerCart,
+  sortOwnerCarts,
+  pickOwnerCart,
+  applyOwnerCartToState,
+} from './group/group-state.js';
+import {
+  r,
+  pct,
+  statusLabel,
+  metaOf,
+  isSettlementOpen,
+  remainingKmf,
+  settlementExpiresAt,
+  timeRemaining,
+} from './group/group-helpers.js';
+import {
+  renderCreatorCartSwitcher,
+  renderCreatorMiniGuide,
+  renderCreatorArticlesPanel,
+  renderProgress,
+  renderCreatorActions,
+} from './group/group-render-creator.js';
 
 /* ── Token participant URL ─────────────────────────────────────── */
 export function detectParticipantToken() {
@@ -56,7 +92,7 @@ function startPolling(cartId, onRefresh) {
       stopPolling(); return;
     }
     try {
-      const fresh = await apiGet(`/api/shared-carts/${cartId}`);
+      const fresh = await getSharedCartOwner(cartId);
       if (!fresh) return;
       // Priorité : commitments inclus dans la réponse owner (§2.4 — Option B)
       // Fallback : fetch séparé si l'endpoint ne les inclut pas encore
@@ -64,10 +100,7 @@ function startPolling(cartId, onRefresh) {
       if (!freshCommitments.length) {
         try {
           const token = fresh.cart?.token;
-          if (token) {
-            const cRes = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' });
-            if (cRes.ok) { const cd = await cRes.json(); freshCommitments = cd.commitments || []; }
-          }
+          if (token) freshCommitments = await getCommitments(token);
         } catch (_) {}
       }
       onRefresh(fresh, freshCommitments);
@@ -78,37 +111,10 @@ function stopPolling() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
 }
 
-/* ── Helpers ───────────────────────────────────────────────────── */
-function r(n) { return Math.round(Number(n) || 0); }
-function pct(confirmed, total) {
-  if (!total) return 0;
-  return Math.max(0, Math.min(100, Math.round((confirmed / total) * 100)));
-}
-function statusLabel(status, isSettlementOpen) {
-  if (isSettlementOpen) return '🔐 En règlement';
-  return {
-    active: '🟢 Ouvert',
-    partially_funded: '🟡 Partiellement financé',
-    fully_funded: '✅ Financé',
-    converted_to_order: '📦 Clôturé',
-    finalized: '📦 Clôturé',
-    cancelled: '❌ Annulé',
-    expired: '⏱️ Expiré',
-  }[status] || status;
-}
-function remainingKmf(cart) {
-  const total = r(cart.total_kmf_snapshot);
-  const confirmed = r(cart.contributed_kmf);
-  return Math.max(0, r(cart.remaining_kmf) || total - confirmed);
-}
-function metaOf(cart) {
-  if (!cart?.metadata) return {};
-  if (typeof cart.metadata === 'object') return cart.metadata;
-  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
-}
-function isSettlementOpen(cart) {
-  return metaOf(cart).settlement_open === true;
-}
+/* r, pct, statusLabel, metaOf, isSettlementOpen, remainingKmf,
+ * settlementExpiresAt, timeRemaining
+ * → extraits dans group/group-helpers.js (refactor lot JS-2)
+ */
 
 /* ── Persistance participant — source unique : onglet Groupe ─────────────── */
 const PARTICIPANT_TOKEN_KEY = 'kmrc_group_participant_token';
@@ -160,98 +166,16 @@ function consumeSharedPaymentReturn() {
   return value;
 }
 
-function settlementExpiresAt(cart) {
-  const meta = metaOf(cart);
-  if (!meta.settlement_open || !meta.settlement_opened_at) return null;
-  const windowH = Number(meta.settlement_window_hours) || 48;
-  return new Date(new Date(meta.settlement_opened_at).getTime() + windowH * 3_600_000);
-}
-
-function timeRemaining(expiresAt) {
-  if (!expiresAt) return null;
-  const ms = new Date(expiresAt) - Date.now();
-  if (ms <= 0) return 'Expiré';
-  const h = Math.floor(ms / 3_600_000);
-  const m = Math.floor((ms % 3_600_000) / 60_000);
-  if (h >= 48) return `${Math.floor(h / 24)}j restants`;
-  if (h >= 1)  return `${h}h${m > 0 ? m + 'min' : ''} restantes`;
-  return `${Math.max(1, m)}min restantes`;
-}
+/* settlementExpiresAt, timeRemaining
+ * → extraits dans group/group-helpers.js (refactor lot JS-2)
+ */
 
 
-function isVisibleOwnerCart(cart) {
-  if (!cart) return false;
-  return !['cancelled', 'expired', 'finalized', 'converted_to_order'].includes(cart.status);
-}
+/* isVisibleOwnerCart, sortOwnerCarts, pickOwnerCart, applyOwnerCartToState
+ * → extraits dans group/group-state.js (refactor lot JS-1)
+ */
 
-function sortOwnerCarts(carts = []) {
-  return [...carts].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-}
-
-function pickOwnerCart(carts = [], preferredId = null) {
-  const visible = sortOwnerCarts(carts).filter(isVisibleOwnerCart);
-  if (!visible.length) return null;
-  if (preferredId) {
-    const found = visible.find(c => String(c.id) === String(preferredId));
-    if (found) return found;
-  }
-  return visible[0];
-}
-
-function applyOwnerCartToState(cart) {
-  if (!cart) return;
-  state.shareToken = cart.token || null;
-  state.shareId = cart.id || null;
-  state.shareExpiry = cart.expires_at || null;
-  state.cartName = cart.title || 'Panier groupe';
-  state.shareStatus = cart.status || null;
-  state.shareTotalKmf = r(cart.total_kmf_snapshot);
-  state.shareContributedKmf = r(cart.contributed_kmf);
-  state.shareRemainingKmf = r(cart.remaining_kmf);
-  state.shareUrl = cart.share_url || (cart.token ? `${window.location.origin}/boutique/?p=${cart.token}` : null);
-
-  try {
-    sessionStorage.setItem('kmrc_share', JSON.stringify({
-      token: state.shareToken,
-      id: state.shareId,
-      expiry: state.shareExpiry,
-      name: state.cartName,
-      status: state.shareStatus,
-      total_kmf: state.shareTotalKmf,
-      contributed_kmf: state.shareContributedKmf,
-      remaining_kmf: state.shareRemainingKmf,
-      share_url: state.shareUrl,
-    }));
-  } catch (_) {}
-}
-
-function renderCreatorCartSwitcher(carts = [], selectedId) {
-  const visible = sortOwnerCarts(carts).filter(isVisibleOwnerCart);
-  if (visible.length <= 1) return '';
-
-  return `
-    <div class="k-group-cart-switcher" aria-label="Mes paniers groupe">
-      <div class="k-group-cart-switcher-head">
-        <strong>Mes paniers groupe</strong>
-        <span>${visible.length} actifs</span>
-      </div>
-      <div class="k-group-cart-tabs">
-        ${visible.map(c => {
-          const active = String(c.id) === String(selectedId);
-          const total = r(c.total_kmf_snapshot);
-          const label = c.title || 'Panier groupe';
-          return `
-            <button
-              type="button"
-              class="k-group-cart-tab ${active ? 'is-active' : ''}"
-              data-k-group-cart-id="${sanitize(String(c.id))}">
-              <strong>${sanitize(label)}</strong>
-              <span>${fmt(total, 'KMF')} · ${sanitize(statusLabel(c.status, isSettlementOpen(c)).replace(/^../, '').trim())}</span>
-            </button>`;
-        }).join('')}
-      </div>
-    </div>`;
-}
+/* renderCreatorCartSwitcher → group/group-render-creator.js (lot JS-2) */
 
 async function ensureCreatorCartState() {
   if (state.shareToken && state.shareId) return true;
@@ -387,7 +311,7 @@ function bindEngagementForm(el, token, cart, onSuccess) {
 
       btn.textContent = '⏳ Enregistrement…';
 
-      const res = await apiPost(`/api/shared-carts/public/${token}/commitments`, {
+      const res = await createCommitment(token, {
         participant_name: name,
         participant_phone: phone,
         amount_kmf: amount,
@@ -489,7 +413,7 @@ function bindPaymentForm(el, token, cart) {
 
       lookupBtn.textContent = '⏳ Recherche…';
 
-      const res = await apiGet(`/api/shared-carts/public/${token}/commitments/by-phone?phone=${encodeURIComponent(phone)}`);
+      const res = await lookupCommitmentByPhone(token, phone);
       const c = res?.commitment;
       if (!c) throw new Error('Aucun engagement verrouillé trouvé pour ce numéro.');
 
@@ -533,7 +457,7 @@ function bindPaymentForm(el, token, cart) {
     payBtn.disabled = true; payBtn.textContent = '⏳ Redirection…';
 
     try {
-      const res = await apiPost(`/api/shared-carts/public/${token}/contributions`, {
+      const res = await createContribution(token, {
         amount_kmf: amount,
         contributor_name: name,
         contributor_email: email,
@@ -554,196 +478,10 @@ function bindPaymentForm(el, token, cart) {
 }
 
 /* ── Rendu progression ─────────────────────────────────────────── */
-function renderProgress(cart, contributions, commitmentsList) {
-  const settlementOpen = isSettlementOpen(cart);
-  const total       = r(cart.total_kmf_snapshot);
-  const confirmed   = r(cart.contributed_kmf);
-  const remaining   = remainingKmf(cart);
-  const p           = pct(confirmed, total);
-  const isCartOpen  = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
-  const meta        = metaOf(cart);
-
-  let commitmentRows = '';
-  if (settlementOpen && commitmentsList?.length) {
-    commitmentRows = `
-      <div class="k-group-contribs-label">Engagements verrouillés (${commitmentsList.length})</div>
-      <div class="k-group-commitment-list">
-        ${commitmentsList.map(c => {
-          const paid = contributions?.some(co =>
-            co.commitment_id === c.id && co.status === 'paid'
-          );
-          return `
-            <div class="k-group-commitment-row">
-              <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-              <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-              <span class="k-group-commitment-status">${paid ? '✅ Payé' : '⏳ En attente'}</span>
-            </div>`;
-        }).join('')}
-      </div>`;
-  } else if (!settlementOpen && commitmentsList?.length) {
-    commitmentRows = `
-      <div class="k-group-contribs-label">Engagements indicatifs (${commitmentsList.length})</div>
-      <div class="k-group-commitment-list">
-        ${commitmentsList.map(c => `
-          <div class="k-group-commitment-row">
-            <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-            <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-            <span class="k-group-commitment-status" style="color:var(--text-muted)">indicatif</span>
-          </div>`).join('')}
-      </div>`;
-  } else {
-    commitmentRows = `<p class="k-group-contrib-empty">${
-      settlementOpen
-        ? 'Aucun engagement verrouillé.'
-        : 'Aucun engagement encore — partagez le lien !'
-    }</p>`;
-  }
-
-  const settlementSummary = settlementOpen ? `
-    <div class="k-group-settlement-summary">
-      <strong>Panier en règlement 🔐</strong>
-      ${meta.locked_commitments_count > 0
-        ? `<span>${meta.locked_commitments_count} engagement(s) verrouillé(s) · total indicatif : ${fmt(r(meta.locked_commitments_total_kmf), 'KMF')}</span>`
-        : ''}
-    </div>` : '';
-
-  return `
-    <div class="k-group-progress-card" id="k-group-progress-card">
-      <div class="k-group-card-head">
-        <div>
-          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">${statusLabel(cart.status, settlementOpen)}</div>
-        </div>
-      </div>
-      ${settlementSummary}
-      <div class="k-group-money">
-        <span>${fmt(confirmed, 'KMF')} payés</span>
-        <strong>${fmt(total, 'KMF')} total</strong>
-      </div>
-      <div class="k-group-progress" aria-label="${p}%">
-        <span style="width:${p}%" class="k-group-progress-bar"></span>
-      </div>
-      ${remaining > 0 && isCartOpen && settlementOpen
-        ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
-        : ''}
-      <div class="k-group-contribs">
-        ${commitmentRows}
-      </div>
-    </div>`;
-}
+/* renderProgress → group/group-render-creator.js (lot JS-2) */
 
 /* ── Rendu actions créateur ────────────────────────────────────── */
-function renderCreatorActions(cart) {
-  const settlementOpen = isSettlementOpen(cart);
-  const isCartOpen = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
-
-  if (cart.status === 'converted_to_order' || cart.finalized_order_id) {
-    return `
-      <div class="k-group-card k-group-actions-card">
-        <div class="k-group-section-title">Commande créée</div>
-        <p class="k-group-finalized-hint">Ce panier est clôturé et lié à une commande Komerce.</p>
-        ${cart.finalized_order_id ? `<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>` : ''}
-      </div>`;
-  }
-  if (!isCartOpen) return `<p class="k-group-finalized-hint">Ce panier est clôturé.</p>`;
-
-  const fullyFunded = cart.status === 'fully_funded' || remainingKmf(cart) <= 0;
-  const gap = remainingKmf(cart);
-
-  // S2-04 — Expiration règlement
-  const expAt  = settlementExpiresAt(cart);
-  const expLeft = expAt ? timeRemaining(expAt) : null;
-  const expSoon = expAt && (expAt - Date.now() < 6 * 3_600_000);
-  const expirationHtml = settlementOpen && expLeft ? `
-    <p class="k-group-share-hint${expSoon ? ' is-exp-soon' : ''}" style="margin-top:6px">
-      ⏱️ Règlement ouvert jusqu'au
-      ${expAt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-      — ${expLeft}
-    </p>` : '';
-
-  // S2-01 — Bouton annuler (présent dans les deux phases)
-  const cancelBtn = `
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
-        🗑 Annuler le panier
-      </button>
-    </div>`;
-
-  if (!settlementOpen) {
-    // S2-03 — Sélecteur durée règlement intégré
-    return `
-      <div class="k-group-card k-group-actions-card">
-        <div class="k-group-section-title">Gérer le panier</div>
-        <div class="k-group-creator-actions">
-          <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
-          <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
-        </div>
-        <p class="k-group-share-hint">Une fois que tout le monde a confirmé son engagement, passez au règlement.</p>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">
-            Délai de paiement
-          </label>
-          <select id="k-group-settlement-window"
-            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:10px">
-            <option value="24">24 heures</option>
-            <option value="48" selected>48 heures (défaut)</option>
-            <option value="168">7 jours</option>
-          </select>
-          <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement" style="background:var(--accent,#1f7a54)">
-            🔐 Passer au règlement
-          </button>
-          <p class="k-group-share-hint" style="margin-top:6px">
-            Fige les engagements et ouvre les paiements. Action irréversible.
-          </p>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items"
-            style="width:100%">
-            ✏️ Modifier les articles
-          </button>
-          <p class="k-group-share-hint" style="margin-top:4px">
-            Les participants seront notifiés du nouveau total.
-          </p>
-        </div>
-        <p class="k-group-input-error" id="k-group-settlement-err"></p>
-        ${cancelBtn}
-      </div>`;
-  }
-
-  // S2-02 — Finalisation avec gap
-  const finalizeBlock = fullyFunded
-    ? `<div class="k-group-funded-callout">
-        <strong>✅ Tout est réglé</strong>
-        <p>Validez maintenant pour que la commande parte en préparation.</p>
-        <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Valider et commander</button>
-      </div>`
-    : gap > 0
-      ? `<div class="k-group-funded-callout k-group-funded-callout--gap">
-          <strong>Il manque ${r(gap).toLocaleString('fr-FR')} KMF</strong>
-          <p>Vous pouvez couvrir le reste et valider maintenant.</p>
-          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize-gap">
-            Je couvre le reste et je valide
-          </button>
-        </div>
-        <button class="k-group-btn k-group-disabled-finalize" type="button" disabled style="margin-top:8px;width:100%">
-          Valider disponible à 100%
-        </button>`
-      : `<button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Valider disponible à 100%</button>`;
-
-  return `
-    <div class="k-group-card k-group-actions-card">
-      <div class="k-group-section-title">Panier en règlement</div>
-      ${expirationHtml}
-      <div class="k-group-creator-actions" style="margin-top:10px">
-        <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 Relancer WhatsApp</button>
-        <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
-      </div>
-      <p class="k-group-share-hint">Partagez le lien pour que les participants puissent payer leur engagement verrouillé.</p>
-      ${finalizeBlock}
-      <p class="k-group-input-error" id="k-group-finalize-err"></p>
-      ${cancelBtn}
-    </div>`;
-}
+/* renderCreatorActions → group/group-render-creator.js (lot JS-2) */
 
 /* ── helper finalize interne ─────────────────────────────────────── */
 async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
@@ -752,7 +490,7 @@ async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Validation…'; }
 
   try {
-    const res = await apiPost(`/api/shared-carts/${cartId}/finalize`,
+    const res = await finalizeSharedCart(cartId,
       acceptPartial ? { accept_partial: true } : {}
     );
 
@@ -821,7 +559,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     errEl.textContent = '';
 
     try {
-      await apiPost(`/api/shared-carts/${cartId}/open-settlement`, { settlement_window_hours: windowH });
+      await openSettlement(cartId, { settlement_window_hours: windowH });
       showToast('Panier passé au règlement. Les participants peuvent maintenant payer.', 'success');
       onSettlement?.();
     } catch (err) {
@@ -850,7 +588,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     if (!confirm(msg)) return;
 
     try {
-      await apiPost(`/api/shared-carts/${cartId}/cancel`, { reason: 'creator_cancel' });
+      await cancelSharedCart(cartId, { reason: 'creator_cancel' });
       import('./b-share-cart.js').then(m => m.clearShareState?.());
       showToast('Panier annulé.', 'success');
       onSettlement?.(); // refresh la vue
@@ -871,7 +609,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       // SC-EDIT-03 — Toujours reconstruire depuis le snapshot backend
       // (pas depuis state.cart courant qui peut être vide après N4-CLEAR
       // ou contenir un panier personnel sans rapport avec le panier collectif).
-      const snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
+      const snap = await getSharedCartItems(cartId);
 
       if (!snap?.cart_items?.length) {
         showToast('Panier collectif vide — impossible de charger les articles.', 'error');
@@ -930,62 +668,9 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
 
 
-function renderCreatorMiniGuide(settlementOpen = false) {
-  if (settlementOpen) {
-    return `
-      <div class="k-group-mini-guide">
-        <span><b>1</b> Paiements ouverts</span>
-        <span><b>2</b> Suivez les règlements</span>
-        <span><b>3</b> Finalisez la commande</span>
-      </div>`;
-  }
+/* renderCreatorMiniGuide → group/group-render-creator.js (lot JS-2) */
 
-  return `
-    <div class="k-group-mini-guide">
-      <span><b>1</b> Partagez le lien</span>
-      <span><b>2</b> Les proches s'engagent</span>
-      <span><b>3</b> Lancez le règlement</span>
-    </div>`;
-}
-
-function renderCreatorArticlesPanel(items = [], cart = {}) {
-  const safeItems = Array.isArray(items) ? items : [];
-  const rows = safeItems.slice(0, 8).map(it => {
-    const name  = it.product_name || it.name || it.product?.name || 'Produit';
-    const qty   = Number(it.quantity || it.qty || 1);
-    const price = Number(it.unit_price_kmf || it.price_kmf || it.price || it.product?.price_kmf || 0);
-    const img   = it.product_image || it.product_image_url || it.image_url || it.image || it.product?.image_url || '';
-
-    return `
-      <div class="k-group-side-item">
-        ${img ? `<img src="${sanitize(img)}" alt="">` : '<div class="k-group-side-item-fallback">📦</div>'}
-        <div class="k-group-side-item-main">
-          <strong>${sanitize(name)}</strong>
-          <span>×${qty} · ${fmt(r(price), 'KMF')}</span>
-        </div>
-      </div>`;
-  }).join('');
-
-  const count = safeItems.length;
-  const total = r(cart.total_kmf_snapshot || 0);
-
-  return `
-    <aside class="k-group-side-panel">
-      <div class="k-group-side-card">
-        <div class="k-group-side-head">
-          <strong>Articles du panier</strong>
-          <span>${count} article${count > 1 ? 's' : ''}</span>
-        </div>
-        <div class="k-group-side-list">
-          ${rows || '<p class="k-group-side-empty">Aucun article à afficher.</p>'}
-        </div>
-        <div class="k-group-side-total">
-          <span>Total panier</span>
-          <strong>${fmt(total, 'KMF')}</strong>
-        </div>
-      </div>
-    </aside>`;
-}
+/* renderCreatorArticlesPanel → group/group-render-creator.js (lot JS-2) */
 
 function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
   const itemRows = items.map(it => `
@@ -1068,8 +753,7 @@ export async function renderGroupView(opts = {}) {
   /* ─────────────────────────────────────────────────────────────── */
   if (!isCreator) {
     rememberParticipantToken(participantToken);
-    const data = await fetch(`/api/shared-carts/public/${participantToken}`, { credentials: 'include' })
-      .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
+    const data = await getSharedCartPublic(participantToken);
 
     if (!data?.cart) { renderError(el); return; }
     const cart  = data.cart;
@@ -1080,8 +764,7 @@ export async function renderGroupView(opts = {}) {
 
     let commitmentsList = [];
     try {
-      const cRes = await fetch(`/api/shared-carts/public/${participantToken}/commitments`, { credentials: 'include' });
-      if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
+      commitmentsList = await getCommitments(participantToken);
     } catch (_) {}
 
     el.innerHTML = `
@@ -1124,7 +807,7 @@ export async function renderGroupView(opts = {}) {
   /* ─────────────────────────────────────────────────────────────── */
   let ownerCarts = [];
   try {
-    const mine = await apiGet('/api/shared-carts/mine');
+    const mine = await getOwnerSharedCarts();
     ownerCarts = Array.isArray(mine?.carts) ? mine.carts : [];
   } catch (_) {
     ownerCarts = [];
@@ -1142,10 +825,9 @@ export async function renderGroupView(opts = {}) {
 
   let data;
   try {
-    data = await apiGet(`/api/shared-carts/${state.shareId}`);
+    data = await getSharedCartOwner(state.shareId);
   } catch (_) {
-    data = await fetch(`/api/shared-carts/public/${state.shareToken}`, { credentials: 'include' })
-      .then(rsp => rsp.ok ? rsp.json() : null).catch(() => null);
+    data = await getSharedCartPublic(state.shareToken);
   }
 
   if (!data?.cart) { renderError(el); return; }
@@ -1157,7 +839,7 @@ export async function renderGroupView(opts = {}) {
 
   let creatorItems = [];
   try {
-    const snap = await apiGet(`/api/shared-carts/${cartId}/as-cart-items`);
+    const snap = await getSharedCartItems(cartId);
     creatorItems = snap?.cart_items || [];
   } catch (_) {
     creatorItems = data.items || data.cart_items || [];
@@ -1170,8 +852,7 @@ export async function renderGroupView(opts = {}) {
   // on tente le fetch séparé
   if (!commitmentsList.length && state.shareToken) {
     try {
-      const cRes = await fetch(`/api/shared-carts/public/${state.shareToken}/commitments`, { credentials: 'include' });
-      if (cRes.ok) { const cData = await cRes.json(); commitmentsList = cData.commitments || []; }
+      commitmentsList = await getCommitments(state.shareToken);
     } catch (_) {}
   }
 
