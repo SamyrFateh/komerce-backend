@@ -477,3 +477,134 @@
     padding-top: 2px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE PILL RAIL — max-width: 767px
+   Transforme le bloc catégories en rail horizontal de chips ovales.
+   MOBILE ONLY — aucun impact desktop (desktop = min-width: 900px).
+   Rollback : supprimer ce bloc entier.
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── Shell : fond discret, sans la card englobante ── */
+  .k-cats-shell {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    margin-top: 0;
+    overflow: visible;
+    /* Filet séparateur discret sous le rail */
+    border-bottom: 1px solid rgba(198, 168, 93, .18);
+    padding-bottom: 2px;
+    margin-bottom: 6px;
+  }
+
+  /* ── Rail horizontal scrollable ── */
+  .k-cats {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 12px;
+    scrollbar-width: none;
+    gap: 7px;
+    padding: 8px 12px 10px;
+    align-items: center;
+    /* Annule le grid du bloc 899px */
+    grid-template-columns: none;
+  }
+  .k-cats::-webkit-scrollbar { display: none; }
+
+  /* Espaceurs de bord */
+  .k-cats::before,
+  .k-cats::after {
+    display: block;
+    content: "";
+    flex: 0 0 4px;
+  }
+
+  /* ── Chip : capsule ovale pill ── */
+  .k-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    flex-direction: row;       /* image gauche + label droite — annule column du 899px */
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    width: auto;
+    min-width: auto;
+    max-width: none;
+    min-height: 46px;
+    height: auto;
+    padding: 6px 13px 6px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .82);
+    border: 1px solid rgba(198, 168, 93, .18);
+    box-shadow: 0 1px 5px rgba(28, 26, 23, .055);
+    text-align: left;
+    scroll-snap-align: start;
+    /* Annule le grid du bloc 899px */
+    grid-template-columns: none;
+  }
+  .k-chip:active { transform: scale(.96); }
+
+  /* ── Image ronde ── */
+  .k-chip-photo {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    border-radius: 50%;
+    margin: 0;
+    border: 1px solid rgba(198, 168, 93, .22);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55);
+    flex-shrink: 0;
+    flex: 0 0 auto;
+  }
+  .k-chip-photo img {
+    border-radius: 50%;
+    filter: saturate(1.2) contrast(1.04);
+  }
+
+  /* ── Label compact ── */
+  .k-chip-label {
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: none;
+    width: auto;
+    text-align: left;
+  }
+
+  /* ── État actif — chaleureux Komerce ── */
+  .k-chip.active {
+    background: rgba(255, 248, 230, .96);
+    border-color: rgba(216, 92, 43, .48);
+    box-shadow: 0 2px 8px rgba(216, 92, 43, .12);
+  }
+  .k-chip.active .k-chip-photo {
+    border-color: rgba(216, 92, 43, .55);
+    box-shadow: 0 0 0 2px rgba(216, 92, 43, .18);
+    transform: none;
+  }
+  .k-chip.active .k-chip-label {
+    color: var(--coral-dark, #b84a1f);
+    font-weight: 800;
+  }
+
+  /* Fades latéraux inutiles sur mobile pill */
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none;
+  }
+}
+/* ── FIN MOBILE PILL RAIL ──────────────────────────────────── */
