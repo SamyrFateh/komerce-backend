@@ -67,9 +67,13 @@
   display: flex; align-items: center; gap: 4px;
   font-size: 14px; font-weight: 600; color: var(--text);
   background: none; border: none; padding: 6px 10px;
-  border-radius: 50px; transition: opacity .15s; flex-shrink: 0;
+  border-radius: 50px; transition: opacity .15s;
+  /* FIX topbar overflow : flex-shrink:1 + min-width:0 permettent au bouton
+     de rétrécir sur petits écrans sans pousser la croix hors cadre. */
+  flex-shrink: 1; min-width: 0;
 }
-.k-modal-back svg { width: 18px; height: 18px; }
+.k-modal-back svg { width: 18px; height: 18px; flex-shrink: 0; }
+#k-modal-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .k-modal-back:active { opacity: .7; }
 #k-modal-nav { display: flex; align-items: center; gap: 4px; }
 .k-modal-nav-btn {
@@ -562,7 +566,7 @@
 .k-add-cart-btn { grid-column: 2; grid-row: 1; flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark); border-radius: 50px; font-size: 14px; font-weight: 600; transition: background .2s var(--ease), transform .15s var(--ease), border-color .2s, box-shadow .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-add-cart-btn svg { width: 18px; height: 18px; }
 .k-add-cart-btn:active { transform: scale(.97); background: var(--sand); }
-.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; }
+.k-modal-actions .k-buy-now-btn { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 48px; padding: 0 24px; background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-dark) 100%); color: var(--white); border-radius: 50px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; white-space: nowrap; overflow: hidden; }
 .k-modal-subtotal { font-size: 11px; color: var(--text-muted); grid-column: 1 / -1; text-align: right; padding-right: 4px; }
 .k-modal-subtotal strong { color: var(--coral); font-weight: 700; font-size: 13px; }
 
@@ -702,6 +706,11 @@
 @media (max-width: 899px) {
   #k-modal-overlay, #k-modal { max-width: 100vw; overflow-x: hidden; }
 
+  /* FIX topbar overflow mobile : #k-modal-nav (← N/total →) est réservé desktop.
+     Sans cette règle, les 5 éléments de la topbar dépassent sur écrans ≤390px
+     et poussent la croix ✕ hors du cadre. */
+  #k-modal-nav { display: none; }
+
   /* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
   #k-modal .k-modal-scroll {
     display: flex;
@@ -793,7 +802,7 @@
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
-  #k-modal #k-modal-nav { margin-left: 10px; }
+  #k-modal #k-modal-nav { display: flex; margin-left: 10px; } /* restore après hide mobile */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
   .k-topbar-search-trigger { display: none; }
   #k-modal .k-topbar-search-expanded { display: none; }

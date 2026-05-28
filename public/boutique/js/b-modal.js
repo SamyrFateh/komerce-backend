@@ -195,7 +195,10 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     if (dom.modalQtyVal) dom.modalQtyVal.textContent = state.modalQty;
     // Update "Ajouter" button label
     if (dom.addCartBtn) {
-      if (state.modalQty > 0) {
+      // FIX: tester item (produit réellement dans le panier), pas modalQty > 0
+      // modalQty vaut toujours 1 par défaut même hors panier → bouton montrait
+      // "Dans le panier" sur tout produit ouvert même vierge de tout ajout.
+      if (item) {
         dom.addCartBtn.classList.add('in-cart');
         dom.addCartBtn.innerHTML = '🧺 Dans le panier (' + state.modalQty + ')';
       } else {
