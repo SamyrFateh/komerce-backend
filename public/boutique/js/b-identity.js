@@ -12,7 +12,7 @@
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { sanitize } from './b-utils.js';
-import { makeIntlPhoneInput } from './b-checkout.js';
+import { makeIntlPhoneInput } from './b-phone.js';
 
 const STYLE_ID = 'k-identity-gate-styles';
 
@@ -327,9 +327,83 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
   });
 }
 
+/**
+ * Affiche un écran léger "Vous êtes reconnu" quand une identité existe
+ * et que allowOtherPhone:true est demandé.
+ * Résout immédiatement si l'utilisateur confirme, ou ouvre le flow OTP
+ * s'il veut utiliser un autre numéro. Résout null si l'overlay est fermé.
+ */
+function openKnownIdentityConfirm(user, options = {}) {
+  ensureStyles();
+  const { reason, title = 'Votre commande' } = options;
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'k-id-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+
+    const displayName = sanitize(user.full_name || user.name || user.phone || '');
+    const displayPhone = sanitize(user.phone || '');
+
+    ov.innerHTML = `
+      <div class="k-id-sheet">
+        <div class="k-id-head">
+          <div>
+            <span class="k-id-title">${sanitize(title)}</span>
+            <span class="k-id-sub">${sanitize(reasonText(reason))}</span>
+          </div>
+          <button class="k-id-close" type="button" aria-label="Fermer">✕</button>
+        </div>
+        <div class="k-id-known" role="status">
+          <div>
+            <strong>${displayName || displayPhone}</strong>
+            ${displayName && displayPhone ? `<span>${displayPhone}</span>` : ''}
+          </div>
+          <button type="button" id="k-id-change-btn">Ce n'est pas vous ?</button>
+        </div>
+        <p class="k-id-error" id="k-id-error"></p>
+        <button class="k-id-btn" type="button" id="k-id-confirm-btn">Continuer</button>
+        <button class="k-id-btn k-id-secondary" type="button" id="k-id-cancel">Annuler</button>
+      </div>`;
+
+    const confirmBtn = ov.querySelector('#k-id-confirm-btn');
+    const changeBtn  = ov.querySelector('#k-id-change-btn');
+
+    confirmBtn.addEventListener('click', () => {
+      closeOverlay(ov);
+      resolve(user);
+    });
+
+    changeBtn.addEventListener('click', async () => {
+      closeOverlay(ov);
+      const newUser = await openIdentityModal({
+        reason: 'changer d\'identité',
+        title: 'Utiliser un autre numéro',
+      });
+      resolve(newUser); // null si fermé sans OTP
+    });
+
+    ov.querySelector('#k-id-cancel')?.addEventListener('click',  () => { closeOverlay(ov); resolve(null); });
+    ov.querySelector('.k-id-close')?.addEventListener('click',   () => { closeOverlay(ov); resolve(null); });
+    ov.addEventListener('click', e => { if (e.target === ov) { closeOverlay(ov); resolve(null); } });
+    ov.addEventListener('keydown', e => { if (e.key === 'Enter') confirmBtn.click(); });
+
+    document.body.appendChild(ov);
+    setTimeout(() => confirmBtn?.focus(), 80);
+  });
+}
+
 export async function requireIdentity(options = {}) {
+  const { allowOtherPhone = false } = options;
   const existing = await restoreIdentity();
-  if (existing) return existing;
+  if (existing) {
+    if (allowOtherPhone) {
+      // Doctrine §7 / §16 : si identité connue et allowOtherPhone, montrer le
+      // bloc "Vous êtes reconnu · Ce n'est pas vous ?" avant de continuer.
+      return openKnownIdentityConfirm(existing, options);
+    }
+    return existing;
+  }
   return openIdentityModal(options);
 }
 

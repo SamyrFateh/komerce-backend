@@ -209,3 +209,106 @@ export function readEventPhone(selectId, inputId, errEl) {
   }
   return buildE164(sel.value, digitsOnly(rawInput));
 }
+
+/**
+ * makeIntlPhoneInput
+ *
+ * Crée un bloc téléphone international stylé (sélecteur indicatif + input E.164)
+ * compatible avec le checkout et la modale identité.
+ *
+ * Déplacé depuis b-checkout.js dans b-phone.js pour briser le cycle
+ * b-checkout ↔ b-identity (feat/checkout-otp).
+ * b-checkout.js ré-exporte cette fonction pour compatibilité.
+ *
+ * @param {string} id        - id de l'input (le select aura id+'-country')
+ * @param {string} label     - Label affiché
+ * @param {Object} dataObj   - Objet synchronisé avec la valeur E.164
+ * @param {string} key       - Clé dans dataObj
+ * @returns {HTMLElement}    - .k-ck-group prêt à insérer
+ */
+export function makeIntlPhoneInput(id, label, dataObj, key) {
+  const group = document.createElement('div');
+  group.className = 'k-ck-group';
+
+  const lbl = document.createElement('label');
+  lbl.className = 'k-ck-label';
+  lbl.textContent = label;
+  group.appendChild(lbl);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'k-ck-phone-wrap';
+
+  const sel = document.createElement('select');
+  sel.id = id + '-country';
+  sel.className = 'k-ck-phone-select';
+  PHONE_COUNTRIES.forEach(function(c) {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = c.flag + ' ' + c.code;
+    if (c.code === '+269') opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  const input = document.createElement('input');
+  input.type = 'tel';
+  input.id = id;
+  input.inputMode = 'numeric';
+  input.autocomplete = 'tel';
+  input.placeholder = '321 12 34';
+  input.className = 'k-ck-phone-input';
+
+  const help = document.createElement('div');
+  help.className = 'k-ck-phone-help';
+  help.textContent = '';
+
+  function currentCountry() {
+    return PHONE_COUNTRIES.find(c => c.code === sel.value) || PHONE_COUNTRIES[0];
+  }
+
+  function sync() {
+    const country = currentCountry();
+    input.placeholder = country.ph;
+    input.maxLength   = country.max + 3;
+
+    let rawDigits = digitsOnly(input.value).slice(0, country.max);
+    input.value = prettifyLocal(rawDigits, country);
+
+    const e164 = buildE164(country.code, rawDigits);
+    dataObj[key] = e164 || '';
+
+    const valid = isValidLocalLength(country.code, rawDigits);
+    if (rawDigits.length > 0) {
+      help.textContent = valid ? '' : `Format attendu : ${country.ph}`;
+      help.style.color = valid ? '' : 'var(--coral)';
+    } else {
+      help.textContent = '';
+    }
+  }
+
+  sel.addEventListener('change', function() {
+    input.value = '';
+    help.textContent = '';
+    sync();
+  });
+
+  input.addEventListener('blur', sync);
+  input.addEventListener('input', sync);
+
+  if (dataObj[key]) {
+    const existing = String(dataObj[key]).trim();
+    const found = PHONE_COUNTRIES.find(c => existing.startsWith(c.code));
+    if (found) {
+      sel.value = found.code;
+      const local = existing.slice(found.code.length);
+      input.value = prettifyLocal(local, found);
+    }
+  }
+
+  wrap.appendChild(sel);
+  wrap.appendChild(input);
+  group.appendChild(wrap);
+  group.appendChild(help);
+
+  sync();
+  return group;
+}

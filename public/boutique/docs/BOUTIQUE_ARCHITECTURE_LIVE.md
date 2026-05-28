@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-28T00:35:31.683Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-28T09:25:29.598Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -10,25 +10,24 @@
 
 ## 1. Inventaire CSS
 
-15 fichier(s) sur disque, 0 orphelin(s).
+14 fichier(s) sur disque, 0 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
-| `boutique-desktop.css` | 1554 | desktop.css |
-| `cart.css` | 1075 | components.css |
-| `categories.css` | 470 | components.css |
+| `boutique-desktop.css` | 1559 | desktop.css |
+| `cart.css` | 954 | components.css |
+| `categories.css` | 480 | components.css |
 | `desktop-commerce-skeleton.css` | 330 | desktop.css |
-| `event.css` | 861 | event.css |
-| `group-cart-flow.css` | 1711 | components.css |
+| `group-cart-flow.css` | 1915 | components.css |
 | `hero-cart-proxy.css` | 113 | components.css |
-| `hero.css` | 146 | base.css |
+| `hero.css` | 150 | base.css |
 | `interactions.css` | 529 | components.css |
 | `layout.css` | 765 | base.css |
 | `modal.css` | 1898 | components.css |
 | `products.css` | 737 | components.css |
 | `reset.css` | 86 | base.css |
 | `shared-followup.css` | 3 | components.css |
-| `tokens.css` | 298 | event.css |
+| `tokens.css` | 425 | event.css |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -47,7 +46,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 
 | Sélecteur | Owners trouvés (base / desktop) |
 |---|---|
-| `.k-chip` ⚠️ | `boutique-desktop.css` (6/5)<br>`categories.css` (27/0)<br>`interactions.css` (2/0) |
+| `.k-chip` ⚠️ | `boutique-desktop.css` (6/5)<br>`categories.css` (28/0)<br>`interactions.css` (2/0) |
 | `.k-cats-shell` ⚠️ | `boutique-desktop.css` (0/1)<br>`categories.css` (2/0)<br>`desktop-commerce-skeleton.css` (0/1)<br>`hero.css` (1/0) |
 | `.k-hero-cats-sticky` ⚠️ | `boutique-desktop.css` (0/1)<br>`hero.css` (2/0) |
 | `#k-subcats-wrap` | `boutique-desktop.css` (16/8) |
@@ -70,19 +69,15 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-2 occurrence(s) au total, répartition :
-
-| Fichier | Nombre |
-|---|---:|
-| `event.css` | 2 |
+Aucun. ✅
 
 ## 6. `!important` par fichier
 
-480 déclaration(s) au total.
+28 déclaration(s) au total.
 
 | Fichier | Nombre |
 |---|---:|
-| `group-cart-flow.css` | 467 |
+| `group-cart-flow.css` | 15 |
 | `hero-cart-proxy.css` | 6 |
 | `modal.css` | 3 |
 | `boutique-desktop.css` | 2 |
@@ -105,8 +100,8 @@ Aucun. ✅
 
 - **CSS orphelins** : 0 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 2 (cible : 0 ou allowlist)
-- **`!important`** : 480 (cible : <10, idéal 0)
+- **Hex hardcodés** : 0 (cible : 0 ou allowlist)
+- **`!important`** : 28 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 12 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 
 ---

@@ -11,6 +11,7 @@ import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js'
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
+import { requireIdentity, getCurrentIdentity }  from './b-identity.js';
 import {
   PHONE_COUNTRIES,
   digitsOnly as _digitsOnly,
@@ -18,6 +19,7 @@ import {
   prettifyLocal as _prettifyLocal,
   buildE164 as _buildE164,
   isValidLocalLength,
+  makeIntlPhoneInput as _makeIntlPhoneInput,
 } from './b-phone.js';
 
 // Stripe globals (initialized on demand)
@@ -363,6 +365,45 @@ export function renderCheckout() {
 
     renderFulfillmentSelector(body, od, refreshFulfillment);
 
+    // ── Bloc récap identité payeur (doctrine §9) ─────────────────────────────
+    // Affiché si une identité est déjà connue au moment de renderCheckout().
+    // Permet de voir avec quel numéro on commande, et d'en changer si besoin.
+    // Réutilise requireIdentity() — aucune logique parallèle.
+    const _knownUser = getCurrentIdentity();
+    if (_knownUser) {
+      const idRecap = document.createElement('div');
+      idRecap.id = 'ck-identity-recap';
+      idRecap.className = 'k-ck-identity-recap';
+      const _dName  = _knownUser.full_name || _knownUser.name || '';
+      const _dPhone = _knownUser.phone || '';
+      idRecap.innerHTML =
+        '<span class="k-ck-id-label">Vous commandez avec</span>'
+        + '<span class="k-ck-id-value">'
+        + (sanitize(_dName) + (_dName && _dPhone ? ' · ' : '') + sanitize(_dPhone))
+        + '</span>'
+        + '<button type="button" class="k-ck-id-change">Ce n'est pas vous ? Utiliser un autre numéro</button>';
+
+      idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
+        const newUser = await requireIdentity({
+          reason: 'changer d'identité',
+          title: 'Utiliser un autre numéro',
+          allowOtherPhone: true,
+        });
+        if (newUser) {
+          // Mettre à jour le bloc récap avec la nouvelle identité
+          const nameEl  = idRecap.querySelector('.k-ck-id-value');
+          if (nameEl) {
+            const n = newUser.full_name || newUser.name || '';
+            const p = newUser.phone || '';
+            nameEl.textContent = n + (n && p ? ' · ' : '') + p;
+          }
+        }
+      });
+
+      body.appendChild(idRecap);
+    }
+    // ── Fin récap identité ───────────────────────────────────────────────────
+
       body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
 
@@ -547,96 +588,11 @@ export function makeInput(id, label, type, placeholder, dataObj, key) {
    * @param {Object} dataObj  - Objet de données où écrire la valeur normalisée
    * @param {string} key      - Clé de l'objet dataObj à mettre à jour
    */
+// makeIntlPhoneInput — déplacé vers b-phone.js pour briser le cycle
+// b-checkout ↔ b-identity (feat/checkout-otp). Ré-exporté ici pour
+// compatibilité avec les modules qui l'importent depuis b-checkout.js.
 export function makeIntlPhoneInput(id, label, dataObj, key) {
-  const COUNTRIES = PHONE_COUNTRIES;
-
-  const group = document.createElement('div');
-  group.className = 'k-ck-group';
-
-  const lbl = document.createElement('label');
-  lbl.className = 'k-ck-label';
-  lbl.textContent = label;
-  group.appendChild(lbl);
-
-  const wrap = document.createElement('div');
-  wrap.className = 'k-ck-phone-wrap';
-
-  const sel = document.createElement('select');
-  sel.id = id + '-country';
-  sel.className = 'k-ck-phone-select';
-  COUNTRIES.forEach(function(c) {
-    const opt = document.createElement('option');
-    opt.value = c.code;
-    opt.textContent = c.flag + ' ' + c.code;
-    if (c.code === '+269') opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  const input = document.createElement('input');
-  input.type = 'tel';
-  input.id = id;
-  input.inputMode = 'numeric';
-  input.autocomplete = 'tel';
-  input.placeholder = '321 12 34';
-  input.className = 'k-ck-phone-input';
-
-  const help = document.createElement('div');
-  help.className = 'k-ck-phone-help';
-  help.textContent = '';
-
-  function currentCountry() {
-    return COUNTRIES.find(c => c.code === sel.value) || COUNTRIES[0];
-  }
-
-  function sync() {
-    const country = currentCountry();
-    input.placeholder = country.ph;
-    input.maxLength   = country.max + 3; // +3 pour les espaces visuels
-
-    let rawDigits = _digitsOnly(input.value).slice(0, country.max);
-    input.value = _prettifyLocal(rawDigits, country);
-
-    const e164 = _buildE164(country.code, rawDigits);
-    dataObj[key] = e164 || '';
-
-    // Feedback de validation live
-    const valid = isValidLocalLength(country.code, rawDigits);
-    if (rawDigits.length > 0) {
-      help.textContent = valid ? '' : `Format attendu : ${country.ph}`;
-      help.style.color = valid ? '' : 'var(--coral)';
-    } else {
-      help.textContent = '';
-    }
-  }
-
-  sel.addEventListener('change', function() {
-    input.value = '';
-    help.textContent = '';
-    sync();
-  });
-
-  input.addEventListener('blur', sync);
-  input.addEventListener('input', sync);
-
-  // Pré-remplissage depuis dataObj si déjà existant
-  if (dataObj[key]) {
-    const existing = String(dataObj[key]).trim();
-    const found = COUNTRIES.find(c => existing.startsWith(c.code));
-    if (found) {
-      sel.value = found.code;
-      const local = existing.slice(found.code.length);
-      input.value = _prettifyLocal(local, found);
-    }
-  }
-
-  wrap.appendChild(sel);
-  wrap.appendChild(input);
-  group.appendChild(wrap);
-  group.appendChild(help);
-
-  sync();
-
-  return group;
+  return _makeIntlPhoneInput(id, label, dataObj, key);
 }
 
   /**
@@ -712,10 +668,33 @@ export function updateWalletDisplay() {
   }
 
 export async function submitOrder(btn) {
+  // ── DOCTRINE IDENTITÉ LÉGÈRE (feat/checkout-otp) ──────────────────────────
+  // Appel requireIdentity() avant tout POST engageant.
+  // - Utilisateur reconnu : écran "Vous commandez avec X · Ce n'est pas vous ?"
+  // - Utilisateur inconnu : flow OTP complet.
+  // - Fermeture modale / annulation : identity === null → abort propre.
+  // Le panier n'est pas touché ici. clearCart() n'est appelé qu'après succès.
+  const identity = await requireIdentity({
+    reason: 'valider votre commande',
+    title: 'Sécuriser votre commande',
+    allowOtherPhone: true,
+  });
+
+  if (!identity) {
+    // L'utilisateur a fermé la modale OTP sans valider → on s'arrête proprement.
+    // Bouton déjà réactivé (jamais été busy), panier intact.
+    return;
+  }
+  // ── FIN GARDE IDENTITÉ ────────────────────────────────────────────────────
+
   const od = state.orderData;
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
   const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
 
+  // tracking_phone = téléphone vérifié du PAYEUR (≠ bénéficiaire local).
+  // On préfère l'identité vérifiée par OTP plutôt que le champ de saisie libre.
+  // Le champ of-sender-phone devient un fallback pour les cas où le payeur
+  // veut explicitement tracer sur un numéro différent de son identité Komerce.
   let senderPhone = (od.sender_phone || '').trim();
   if (senderPhone.length < 8) {
     const _phoneInput = document.getElementById('of-sender-phone');

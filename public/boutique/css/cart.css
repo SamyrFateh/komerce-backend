@@ -902,3 +902,52 @@ body.cart-open .k-wa-fab {
 }
 
 /* is-attention + is-expanded : déplacés dans boutique-desktop.css (owner §3). */
+
+/* ── Bloc récap identité payeur — checkout (feat/checkout-otp) ────────────
+   Owner : cart.css (CSS checkout)
+   Doctrine : §9 DOCTRINE_IDENTITE_LEGERE_KOMERCE — "Vous commandez avec X"
+   Réutilise les tokens checkout existants (.k-ck-* / --coral / --sand / --text)
+   -------------------------------------------------------------------------- */
+
+.k-ck-identity-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(31, 122, 84, .07);
+  border: 1.5px solid rgba(31, 122, 84, .18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.k-ck-id-label {
+  font-size: .72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.k-ck-id-value {
+  font-size: .94rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.k-ck-id-change {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--coral);
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.k-ck-id-change:hover {
+  text-decoration: underline;
+}
