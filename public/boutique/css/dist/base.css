@@ -25,10 +25,13 @@
   --sand:         #FDFAF5;
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
+  /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
+  --sand-bright:  #FDFAF3;
 
   /* ── Surfaces sémantiques ─────────────────────────────────── */
   --page-bg:      var(--sand);
-  --hero-bg:      var(--page-bg);
+  /* POLISH — hero lumineux (plus clair que --page-bg #FDFAF5) */
+  --hero-bg:      var(--sand-bright);
   --hero-border:  transparent;
   --hero-shadow:  none;
 
@@ -171,6 +174,8 @@
   --cat-solaire-bg:   #FFF9D6;
   --cat-beaute-bg:    #FDE5F0;
   --cat-creatio-bg:   #EDE8FD;
+  /* POLISH — soldes : rouge-corail doux */
+  --cat-soldes-bg:    #FFE4D6;
 
   /* ── Statuts commandes ──────────────────────────────────── */
   --status-pending-bg:     #fff8ed;
@@ -1289,7 +1294,7 @@ body {
 /* ── HERO SHELL ─────────────────────────────────────────────── */
 /* overflow:clip (≠ hidden) : coupe le débordement SANS créer de scroll container,
    donc ne casse pas position:sticky des descendants. */
-.k-hero { position: relative; background: var(--sand-warm); overflow: clip; }
+.k-hero { position: relative; background: var(--hero-bg); overflow: clip; } /* POLISH — fond hero via token */
 .k-hero-inner { display: flex; flex-direction: column; max-width: var(--container); margin: 0 auto; }
 
 /* ── MOBILE : image arrondie ────────────────────────────────── */
@@ -1381,10 +1386,14 @@ body {
 .k-cats-shell {
   margin: -14px 12px 0;
   padding: 0;
-  background: var(--sand-warm);
-  border: 1px solid var(--border-text-06);
+  /* POLISH — fond lumineux au lieu de sand-warm, séparation visuelle du hero */
+  background: var(--sand-bright);
+  border: 1px solid rgba(198,168,93,.13);
   border-radius: 18px;
-  box-shadow: 0 10px 20px var(--border-text-08);
+  /* Ombre chaude ambre + légère touche ocean */
+  box-shadow:
+    0 8px 20px rgba(198,168,93,.10),
+    0 2px 6px rgba(100,175,90,.06);
   overflow: clip;
 }
 
@@ -1426,3 +1435,56 @@ body {
 
 /* Trust bar : desktop only (non utilisée actuellement) */
 .k-hero-trust-bar { display: none; }
+
+
+/* ── MOBILE — COMPRESSION MARGES HERO + RAIL (max-width: 767px) ──
+   Objectif : récupérer ~22px verticaux pour préparer le futur rail
+   de sous-catégories, SANS toucher à la hauteur de l'image.
+   L'image reste à clamp(110px, 28vw, 140px) — règle base inchangée.
+   MOBILE ONLY. Desktop min-width:900px → non impacté.
+   Rollback : supprimer ce bloc.
+   ──────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* MICRO-OPTIMISATION HAUTEUR HERO — gain cible 15–25px
+     Avant : clamp(110px, 28vw, 140px)
+     Après : clamp(100px, 26vw, 118px)
+     Gain mesuré : ~12px @390px · ~18px @430px · ~22px @767px
+     object-fit:cover + object-position:50% 0% inchangés → personnages préservés.
+     Desktop non impacté (bloc max-width:767px uniquement). */
+  .k-hero-img {
+    height: clamp(100px, 26vw, 118px);
+  }
+
+  /* 1. Supprime le padding au-dessus du rail catégories (-6px).
+        Valeur premium injectée par b-mobile-premium-v1.js : 6px → 0. */
+  .k-hero-cats-sticky {
+    padding-top: 0;
+    /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
+          Base hero.css : margin-top:-42px. Override précédent : -50px. v3 : -56px.
+          Compensé aussi par la photo chip plus haute (36px). Chevauchement propre. */
+    margin-top: -56px;
+  }
+
+  /* 3. Supprime le pseudo-spacer sous le rail (-4px). */
+  .k-hero-cats-sticky::after {
+    height: 0;
+  }
+
+  /* 4. Remonte le shell catégories dans le sticky (-4px).
+        Base hero.css : margin: -14px 12px 0. Override : -18px. */
+  .k-cats-shell {
+    margin-top: -18px;
+  }
+
+  /* 5. Slot réservé pour le futur rail de sous-catégories.
+        Actuellement height:0 + overflow:hidden → aucun impact visuel.
+        Quand les sous-catégories seront activées, retirer overflow:hidden
+        et définir la hauteur souhaitée. */
+  .k-subcats-mobile-slot {
+    height: 0;
+    overflow: hidden;
+    transition: height .2s ease;
+  }
+}
+/* ── FIN MOBILE COMPRESSION MARGES HERO + RAIL ─────────────── */

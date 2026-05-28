@@ -798,8 +798,11 @@
     margin: 0;
     border-radius: 50%;
     border: 1px solid var(--overlay-white-72);
-    background: var(--surface-sand-92);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.62), 0 7px 16px var(--border-text-08);
+    /* POLISH — fond légèrement plus chaud pour soulever les images pâles */
+    background: var(--sand-warm);
+    box-shadow:
+      inset 0 0 0 1.5px rgba(255,255,255,.68),
+      0 6px 16px rgba(28,26,23,.08);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -813,6 +816,8 @@
     display: block;
     object-fit: cover;
     border-radius: 0;
+    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
+    filter: saturate(1.28) contrast(1.06) brightness(1.03);
   }
 
   .k-chip-fallback {
@@ -1679,8 +1684,8 @@
   /* ── Hero propre — image pleine, zéro voile sombre (LOT 14) ── */
 
   .k-hero-media {
-    /* Fond crème visible si image plus étroite que le viewport */
-    background: var(--sand-warm);
+    /* POLISH — fond lumineux cohérent avec --hero-bg */
+    background: var(--sand-bright);
     /* Hauteur compacte desktop (réduite depuis clamp(300px,24vw,340px) — PR hero-compact) */
     height: clamp(170px, 14vw, 200px);
     border-radius: 0;

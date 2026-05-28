@@ -200,3 +200,88 @@
   }
 }
 /* ── FIN MOBILE COMPRESSION MARGES HERO + RAIL ─────────────── */
+
+/* ══════════════════════════════════════════════════════════════
+   HERO v4 — IMAGE TAMISÉE 220px + RAIL PILLS TEXTE
+   Remplace : k-cats-shell (bulles photo)
+   Compatible desktop (non impacté — min-width:900px)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Image hero mobile : proportions naturelles du webp 1080×220 ── */
+@media (max-width: 899px) {
+  .k-hero-img {
+    /* Affiche le webp à sa vraie proportion sans crop.
+       Sur 390px de large → ~79px de haut (390 × 220/1080).
+       object-fit:contain + background transparent → pas de bande noire. */
+    height: auto;
+    aspect-ratio: 1080 / 220;
+    object-fit: cover;
+    object-position: 50% 50%;
+  }
+
+  /* Hero : colle le rail directement sous l'image, sans overlap */
+  .k-hero-cats-sticky {
+    margin-top: 0;
+  }
+  .k-hero-cats-sticky::after {
+    height: 0;
+  }
+
+  /* Suppression du mini-slogan dans l'image (trop petit à 220px) */
+  .k-hero-mini-slogan { display: none; }
+  .k-hero-bubble       { display: none; }
+}
+
+/* ── Rail pills texte — mobile-first ─────────────────────────── */
+.k-cats-rail {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  /* Masque la scrollbar */
+  scrollbar-width: none;
+}
+.k-cats-rail::-webkit-scrollbar { display: none; }
+
+/* Pill individuelle */
+.k-cpill {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(198, 168, 93, .20);
+  background: rgba(255, 255, 255, .80);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-cpill:active {
+  transform: scale(.94);
+}
+
+/* État actif */
+.k-cpill.active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--white);
+  box-shadow: 0 3px 10px rgba(var(--coral-rgb, 210,80,50), .28);
+}
+
+/* ── Desktop : rail caché (les cartes visuelles prennent le relais) ── */
+@media (min-width: 900px) {
+  .k-cats-rail { display: none; }
+}
+/* ══ FIN HERO v4 ══════════════════════════════════════════════ */
