@@ -57,61 +57,69 @@
 }
 .k-chip:active { transform: scale(.95); }
 
-/* Mobile target state — compact 2×4 pill grid, image left + label right. */
+/* Mobile target state — rail horizontal scrollable, une seule ligne. */
 @media (max-width: 899px) {
+  /* Shell — fond léger, border-radius réduit, séparateur discret en bas */
   .k-cats-shell {
     margin-top: 0;
-    border-radius: 20px;
-    /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
+    border-radius: 14px;
     background: var(--sand-bright);
-    border: 1px solid rgba(198,168,93,.13);
+    border: 1px solid rgba(198,168,93,.12);
+    border-bottom: 1px solid rgba(198,168,93,.20);
     box-shadow:
-      0 6px 18px rgba(198,168,93,.09),
-      0 1px 0 rgba(198,168,93,.07);
+      0 3px 10px rgba(198,168,93,.07),
+      0 1px 0 rgba(198,168,93,.05);
     overflow: hidden;
   }
 
+  /* Fades latéraux — réactivés pour signaler le scroll horizontal */
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right {
-    display: none;
+    display: block;
   }
 
+  /* Rail — flex horizontal, une ligne, scroll natif */
   .k-cats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px 6px;
-    padding: 6px 9px 6px;
-    overflow: visible;
-    scroll-snap-type: none;
-    scroll-padding-left: 0;
-    align-items: stretch;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 7px 4px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 12px;
+    scrollbar-width: none;
+    align-items: flex-start;
+    overscroll-behavior-x: contain;
   }
 
+  /* Espaceurs latéraux réactivés */
   .k-cats::before,
   .k-cats::after {
-    display: none;
+    display: block;
   }
 
+  /* Chip — vertical compact : image ronde + label centré dessous */
   .k-chip {
-    min-width: 0;
-    max-width: none;
-    width: 100%;
-    flex: none;
-    display: grid;
-    grid-template-columns: 26px minmax(0, 1fr);
+    flex: 0 0 auto;
+    min-width: 56px;
+    max-width: 68px;
+    width: auto;
+    display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: start;
-    gap: 5px;
-    min-height: 36px;
-    padding: 3px 5px 3px 3px;
-    border-radius: 999px;
-    /* POLISH — fond plus opaque, lecture des images améliorée */
-    background: rgba(255, 255, 255, .84);
-    border: 1px solid rgba(198, 168, 93, .14);
-    box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
-    overflow: hidden;
-    text-align: left;
-    scroll-snap-align: none;
+    gap: 4px;
+    min-height: auto;
+    padding: 4px 4px 5px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    text-align: center;
+    scroll-snap-align: start;
+    overflow: visible;
   }
 }
 
@@ -149,18 +157,18 @@
 
 @media (max-width: 899px) {
   .k-chip-photo {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    margin: 0;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    margin: 0 auto;
+    border-radius: 12px;
     border-width: 1px;
     /* POLISH — bord interne lumineux pour soulever l'image du fond */
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
   }
 
   .k-chip-photo img {
-    border-radius: 9px;
+    border-radius: 11px;
     /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
     filter: saturate(1.22) contrast(1.05);
   }
@@ -217,17 +225,20 @@
 
 @media (max-width: 899px) {
   .k-chip-label {
-    width: auto;
+    width: 100%;
     max-width: none;
     min-width: 0;
     margin: 0;
-    font-size: 10.8px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -.025em;
-    /* POLISH — texte quasi-plein pour contraste sur fond blanc */
-    color: var(--text);
-    text-align: left;
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.015em;
+    /* POLISH — texte centré sous la bulle */
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -245,25 +256,50 @@
 
 @media (max-width: 899px) {
   .k-chip.active {
-    background: rgba(255, 248, 232, .88);
-    border-color: rgba(198, 168, 93, .50);
-    box-shadow: 0 2px 7px rgba(198, 168, 93, .10);
+    background: rgba(255, 248, 232, .75);
+    border-radius: 10px;
   }
 
   .k-chip.active .k-chip-photo {
     border-color: rgba(198, 168, 93, .82);
-    box-shadow: 0 0 0 1.25px rgba(198, 168, 93, .34);
-    transform: none;
+    box-shadow:
+      0 0 0 2px rgba(198, 168, 93, .34),
+      inset 0 0 0 1px rgba(255,255,255,.58);
+    transform: scale(1.04);
   }
 
   .k-chip.active .k-chip-label {
     color: var(--coral-dark);
+    font-weight: 800;
   }
 }
 
 /* Sentinel spacer */
 #k-bar-sentinel { height: 0; margin: 0; padding: 0; }
 #k-bar-spacer   { display: none; }
+
+/* ── SÉPARATEUR DISCRET sous le rail catégories (mobile) ──────
+   Filet élégant sable/or très léger, 1px, ombre douce.
+   Structure la transition rail → produits sans agressivité. */
+@media (max-width: 899px) {
+  .k-cats-shell {
+    margin-bottom: 0;
+  }
+  .k-cats-shell::after {
+    content: '';
+    display: block;
+    height: 1px;
+    margin: 0 16px;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(198,168,93,.25) 20%,
+      rgba(198,168,93,.30) 50%,
+      rgba(198,168,93,.25) 80%,
+      transparent 100%
+    );
+  }
+}
 
 /* ── SOUS-CATÉGORIES ──────────────────────────────────────────
    Owner : boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP)
