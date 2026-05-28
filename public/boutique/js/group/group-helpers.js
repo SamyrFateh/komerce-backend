@@ -16,6 +16,7 @@ export function r(n) { return Math.round(Number(n) || 0); }
 
 /**
  * Calcule le pourcentage de progression (0–100, arrondi).
+ * Utilisé pour la barre "payé" — toujours plafonné à 100 %.
  * @param {number} confirmed  montant confirmé / payé
  * @param {number} total      montant total
  * @returns {number}
@@ -23,6 +24,25 @@ export function r(n) { return Math.round(Number(n) || 0); }
 export function pct(confirmed, total) {
   if (!total) return 0;
   return Math.max(0, Math.min(100, Math.round((confirmed / total) * 100)));
+}
+
+/**
+ * Calcule le pourcentage d'engagement (plafonné à 100 % pour affichage barre).
+ * La valeur brute (> 100) est renvoyée séparément pour le badge sur-couvert.
+ *
+ * @param {Array}  commitments  liste des engagements du panier
+ * @param {number} total        total du panier (cart.total_kmf_snapshot)
+ * @returns {{ pctCapped: number, pctRaw: number, engagementsTotal: number }}
+ *   pctCapped       : 0–100, pour la largeur de la barre intention
+ *   pctRaw          : valeur réelle (peut dépasser 100)
+ *   engagementsTotal: somme brute des amount_kmf
+ */
+export function engagementCoverage(commitments = [], total = 0) {
+  const engagementsTotal = commitments.reduce((s, c) => s + r(c.amount_kmf), 0);
+  if (!total) return { pctCapped: 0, pctRaw: 0, engagementsTotal };
+  const pctRaw    = Math.round((engagementsTotal / total) * 100);
+  const pctCapped = Math.min(100, pctRaw);
+  return { pctCapped, pctRaw, engagementsTotal };
 }
 
 /**

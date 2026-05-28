@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (bundle Sprint 3 · 2026-05-27)
+   KOMERCE — base.css (bundle Sprint 3 · 2026-05-28)
    base — tokens · reset · layout · hero
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
@@ -280,7 +280,149 @@
   --red-deep-text:          #991b1b   ;  /* Rouge deep text */
   --red-soft:               #ff5e5e   ;  /* Rouge soft (alert léger) */
   --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
+
+  /* ── Groupe / panier partagé — tokens alpha (refactor group-cart-flow) ── */
+  --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
+  --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
+  --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */
+  --green-alpha-14:   rgba(31,122,84,.14);  /* mini-guide border */
+  --green-alpha-20:   rgba(31,122,84,.20);  /* locked-amount border */
+  --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
+  --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
+  --green-text-sett:  #1f7a54;              /* badge phase ouverte text */
+  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
+  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
+  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
+  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
+  --amber-bg-08:      rgba(230,130,0,.08);  /* funded-callout gap fond */
+  --amber-bg-12:      rgba(230,130,0,.12);  /* badge settlement fond */
+  --amber-border-28:  rgba(230,130,0,.28);  /* funded-callout gap border */
+  --amber-text-sett:  #b45309;              /* badge settlement text / finalize gap btn */
+  --violet-bg-light:  #ede7f6;              /* split-hint fond lavande */
+  --danger:           #e53935;              /* bouton / texte annulation danger */
 }
+
+  /* ── PR-G6 : tokens rgba manquants (audit 2026-05-28) ──────────────────── */
+
+  /* Overlays noirs complémentaires */
+  --overlay-black-10:      rgba(0,0,0,.10);
+  --overlay-black-22:      rgba(0,0,0,.22);
+  --overlay-black-45:      rgba(0,0,0,.45);
+
+  /* Surface blanche semi-transparente */
+  --surface-white-10:      rgba(255,255,255,.10);
+
+  /* Overlay groupe (fond sheet flow panier partagé) */
+  --overlay-group-dark:    rgba(31,48,36,.52);
+
+  /* CTA green (42,122,62) — ombres boutons */
+  --shadow-cta-22:         rgba(42,122,62,.22);
+  --shadow-cta-30:         rgba(42,122,62,.3);
+  --shadow-cta-40:         rgba(42,122,62,.4);
+
+  /* WhatsApp (37,211,102) — ombres boutons */
+  --shadow-wa-24:          rgba(37,211,102,.24);
+  --shadow-wa-25:          rgba(37,211,102,.25);
+  --shadow-wa-28:          rgba(37,211,102,.28);
+  --shadow-wa-38:          rgba(37,211,102,.38);
+
+  /* Coral (200,92,45) — focus rings et ombres */
+  --coral-focus-08:        rgba(200,92,45,.08);
+  --coral-focus-10:        rgba(200,92,45,.1);
+  --coral-focus-12:        rgba(200,92,45,.12);
+  --coral-shadow-25:       rgba(200,92,45,.25);
+
+  /* Coral orange (255,107,53) — pay chips */
+  --coral-chip-07:         rgba(255,107,53,.07);
+  --coral-chip-10:         rgba(255,107,53,.10);
+  --coral-chip-16:         rgba(255,107,53,.16);
+  --coral-chip-18:         rgba(255,107,53,.18);
+
+  /* Salmon btn back (255,163,122) */
+  --coral-light-28:        rgba(255,163,122,.28);
+
+  /* Ocean (100,175,90) — bordures complémentaires */
+  --border-ocean-16:       rgba(100,175,90,.16);
+  --border-ocean-18:       rgba(100,175,90,.18);
+
+  /* Sand border (103,77,45) — dashed empty state */
+  --sand-border-25:        rgba(103,77,45,.25);
+
+  /* Forest shadows (49,81,30) */
+  --shadow-forest-07:      rgba(49,81,30,.07);
+
+  /* Green pay option (67,160,71) */
+  --green-pay-06:          rgba(67,160,71,.06);
+
+  /* Ring pulse alert (255,90,70) */
+  --ring-pulse-50:         rgba(255,90,70,.5);
+  --ring-pulse-0:          rgba(255,90,70,0);
+
+  /* Dark card shadows (30,40,25) */
+  --shadow-card-04:        rgba(30,40,25,.04);
+  --shadow-card-05:        rgba(30,40,25,.05);
+
+  /* Violet shadow */
+  --violet-shadow-30:      rgba(108,63,197,.3);
+
+  /* Coral settlement (239,125,95) */
+  --coral-sett-22:         rgba(239,125,95,.22);
+
+  /* Green alpha 08 (groupe mini-guide fond) */
+  --green-alpha-08:        rgba(31,122,84,.08);
+
+  /* ── PR-G6 suite : tokens rgba boutique-desktop + modal + layout ─────── */
+
+  /* Ocean alpha complémentaires */
+  --border-ocean-04:       rgba(100,175,90,.04);
+  --border-ocean-06:       rgba(100,175,90,.06);
+  --border-ocean-12:       rgba(100,175,90,.12);
+  --border-ocean-20:       rgba(100,175,90,.20);
+  --border-ocean-50:       rgba(100,175,90,.50);
+
+  /* Gold/sable doré (198,168,93) — desktop cards premium */
+  --gold-border-12:        rgba(198,168,93,.12);
+  --gold-border-16:        rgba(198,168,93,.16);
+  --gold-border-28:        rgba(198,168,93,.28);
+  --gold-border-36:        rgba(198,168,93,.36);
+  --gold-border-50:        rgba(198,168,93,.5);
+  --gold-border-62:        rgba(198,168,93,.62);
+  --gold-border-74:        rgba(198,168,93,.74);
+
+  /* Coral focus/shadow complémentaires */
+  --coral-focus-40:        rgba(200,92,45,.4);
+  --coral-focus-45:        rgba(200,92,45,.45);
+  --coral-shadow-18:       rgba(200,92,45,.18);
+
+  /* Surface sable desktop (248,246,241) */
+  --surface-sand-desktop:  rgba(248,246,241,0.82);
+
+  /* Surface blanche complémentaires */
+  --surface-white-18:      rgba(255,255,255,.18);
+  --surface-white-55:      rgba(255,255,255,.55);
+  --surface-white-62:      rgba(255,255,255,.62);
+  --surface-white-80:      rgba(255,255,255,.8);
+  --surface-white-85:      rgba(255,255,255,.85);
+  --surface-white-98:      rgba(255,255,255,.98);
+
+  /* WhatsApp shadow complémentaire */
+  --shadow-wa-30:          rgba(37,211,102,.30);
+
+  /* CTA green focus outline */
+  --focus-cta-45:          rgba(42,122,62,.45);
+
+  /* Pink complémentaire */
+  --pink-shadow-30:        rgba(233,30,99,.30);
+
+  /* Rouge mic pulse (220,38,38) */
+  --red-pulse-35:          rgba(220,38,38,.35);
+  --red-pulse-0:           rgba(220,38,38,0);
+
+  /* Overlay noir complémentaire */
+  --overlay-black-18:      rgba(0,0,0,.18);
+
+  /* Gradient transparent sable (244,241,236) */
+  --sand-gradient-0:       rgba(244,241,236,0);
 
 
 /* ── reset.css ───────────────────────────────────────────── */

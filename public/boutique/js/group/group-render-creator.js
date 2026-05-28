@@ -15,6 +15,7 @@ import { sortOwnerCarts, isVisibleOwnerCart } from './group-state.js';
 import {
   r,
   pct,
+  engagementCoverage,
   statusLabel,
   metaOf,
   isSettlementOpen,
@@ -149,7 +150,6 @@ export function renderProgress(cart, contributions, commitmentsList) {
   const total     = r(cart.total_kmf_snapshot);
   const confirmed = r(cart.contributed_kmf);
   const remaining = remainingKmf(cart);
-  const p         = pct(confirmed, total);
   const isOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
   const meta      = metaOf(cart);
 
@@ -197,6 +197,27 @@ export function renderProgress(cart, contributions, commitmentsList) {
         : ''}
     </div>` : '';
 
+  // ── Barre double lecture ───────────────────────────────────────────
+  // pPaid    : % réellement payé (0–100, barre verte de premier plan)
+  // eng      : couverture d'intention calculée depuis les engagements
+  // pctBadge : valeur brute pour le badge sur-couvert (peut dépasser 100)
+  const pPaid = pct(confirmed, total);
+  const eng   = engagementCoverage(commitmentsList, total);
+  const isOverCovered = eng.pctRaw > 100;
+
+  // Badge sur-couvert : affiché si engagements > total
+  const overBadge = isOverCovered
+    ? `<span class="k-group-progress-badge k-group-progress-badge--over"
+          aria-label="${eng.pctRaw}% engagé — sur-couvert">${eng.pctRaw}\u00a0% engagé</span>`
+    : '';
+
+  // Ligne de légende sous la barre
+  const legendPaid    = `<span class="k-group-progress-legend-paid">● payé&nbsp;: ${fmt(confirmed, 'KMF')}</span>`;
+  const legendEngaged = eng.engagementsTotal > 0
+    ? `<span class="k-group-progress-legend-engaged">● engagé&nbsp;: ${fmt(eng.engagementsTotal, 'KMF')}</span>`
+    : '';
+  const legendTotal   = `<span class="k-group-progress-legend-total">total&nbsp;: ${fmt(total, 'KMF')}</span>`;
+
   return `
     <div class="k-group-progress-card" id="k-group-progress-card">
       <div class="k-group-card-head">
@@ -206,12 +227,27 @@ export function renderProgress(cart, contributions, commitmentsList) {
         </div>
       </div>
       ${settlementSummary}
-      <div class="k-group-money">
-        <span>${fmt(confirmed, 'KMF')} payés</span>
-        <strong>${fmt(total, 'KMF')} total</strong>
-      </div>
-      <div class="k-group-progress" aria-label="${p}%">
-        <span style="width:${p}%" class="k-group-progress-bar"></span>
+      <div class="k-group-progress-wrap">
+        ${overBadge}
+        <div class="k-group-progress"
+             aria-label="Payé ${pPaid}% · Engagé ${eng.pctCapped}%"
+             role="group">
+          <!-- Couche intention (fond, toujours sous le payé) -->
+          ${eng.pctCapped > 0
+            ? `<span class="k-group-progress-bar k-group-progress-bar--engaged"
+                     style="width:${eng.pctCapped}%"
+                     aria-label="Engagé ${eng.pctCapped}%"></span>`
+            : ''}
+          <!-- Couche réelle (premier plan) -->
+          <span class="k-group-progress-bar k-group-progress-bar--paid"
+                style="width:${pPaid}%"
+                aria-label="Payé ${pPaid}%"></span>
+        </div>
+        <div class="k-group-progress-legend" aria-hidden="true">
+          ${legendPaid}
+          ${legendEngaged}
+          ${legendTotal}
+        </div>
       </div>
       ${remaining > 0 && isOpen && sOpen
         ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
