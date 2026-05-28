@@ -371,15 +371,14 @@ function quickRemove(productId, btnEl) {
  * @param {HTMLElement} [btn] - Bouton cœur
  */
   function toggleFav(id, btnEl) {
-    const sid = String(id);
-    const idx = state.favs.indexOf(sid);
+    const idx = state.favs.indexOf(id);
     if (idx >= 0) {
       state.favs.splice(idx, 1);
       btnEl.classList.remove('liked');
       btnEl.innerHTML = '🤍';
       showToast('Retiré des favoris');
     } else {
-      state.favs.push(sid);
+      state.favs.push(id);
       btnEl.classList.add('liked');
       btnEl.innerHTML = '❤️';
       btnEl.classList.add('k-pop');
@@ -405,8 +404,13 @@ function quickRemove(productId, btnEl) {
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
-    scroll.savedY = getScrollY();
-    document.body.classList.add('cart-open');
+    // BUG-07 — sur desktop le side-cart est inline, le drawer ne s'ouvre pas :
+    // ne pas sauvegarder le scroll ni ajouter cart-open (qui bloque le scroll body).
+    // closeCart() ne restaurera rien si savedY vaut 0, donc pas de saut de scroll.
+    if (!isDesktop()) {
+      scroll.savedY = getScrollY();
+      document.body.classList.add('cart-open');
+    }
   }
 
   /**
@@ -1522,7 +1526,6 @@ export function clearCart() {
   state.cart = [];
   saveCart();
   renderCartBody();
-  document.dispatchEvent(new CustomEvent('cart:cleared'));
 }
 
 /**

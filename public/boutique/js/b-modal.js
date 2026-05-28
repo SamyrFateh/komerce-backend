@@ -208,10 +208,18 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
 
   /* ── FIX: Back button = fermer modal au lieu de quitter le site ── */
   let _modalHistoryPushed = false;
+  // BUG-02 — garde contre la boucle popstate → closeModal → history.back() → popstate
+  // Sur Chrome Android / Samsung Internet, history.back() peut déclencher popstate
+  // de façon synchrone dans la même pile, rappelant closeModal() une seconde fois
+  // (double scroll-restore, saut visuel). Le flag _closingFromPopstate coupe court.
+  let _closingFromPopstate = false;
   window.addEventListener('popstate', (e) => {
+    if (_closingFromPopstate) return;
     if (dom.modalOverlay && dom.modalOverlay.classList.contains('open')) {
+      _closingFromPopstate = true;
       _modalHistoryPushed = false;
       closeModal();
+      _closingFromPopstate = false;
     }
   });
 
@@ -389,7 +397,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     // FIX #1 — Bouton favori dans la modal
     const modalFavBtn = document.getElementById('k-modal-fav-btn');
     if (modalFavBtn) {
-      const favState = state.favs.includes(String(product.id));
+      const favState = state.favs.includes(product.id);
       modalFavBtn.classList.toggle('liked', favState);
       modalFavBtn.innerHTML = favState ? '❤️' : '🤍';
     }
@@ -814,9 +822,13 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
     function closeModal() {
     hideModalFAB();
     // FIX: Pop history entry if we pushed one (don't pop if back button already did)
-    if (_modalHistoryPushed) {
+    // BUG-02 — si on est déjà dans le handler popstate (_closingFromPopstate), ne pas
+    // rappeler history.back() : c'est le popstate lui-même qui a déjà consommé l'entrée.
+    if (_modalHistoryPushed && !_closingFromPopstate) {
       _modalHistoryPushed = false;
       history.back();
+    } else {
+      _modalHistoryPushed = false;
     }
     dom.modalOverlay.classList.remove('open');
     // Unlock body scroll — CSS class drives layout
@@ -1167,7 +1179,7 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
           ? dom.grid.querySelector(`.k-card-fav[data-fav="${state.modalProduct.id}"]`)
           : null;
         if (gridFavBtn) {
-          const isNowFav = state.favs.includes(String(state.modalProduct.id));
+          const isNowFav = state.favs.includes(state.modalProduct.id);
           gridFavBtn.classList.toggle('liked', isNowFav);
           gridFavBtn.innerHTML = isNowFav ? '❤️' : '🤍';
         }

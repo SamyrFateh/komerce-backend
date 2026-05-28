@@ -14,7 +14,7 @@ import { checkoutCart, closeOrderModal } from './b-checkout.js';
 import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
-import { renderGroupView, detectParticipantToken } from './b-group-view.js';
+import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 
@@ -137,6 +137,14 @@ export function switchView(tab) {
   // partiellement vivants et perturbent le retour Boutique.
   if (wasShop && tab !== 'shop') {
     destroyMobilePager();
+  }
+
+  // BUG-05 — arrêter le polling groupe dès qu'on quitte l'onglet group.
+  // Le setInterval de 30s peut se déclencher 1-2 fois après le changement de vue
+  // et tenter d'écrire dans un DOM qui n'existe plus (#k-group-progress-card).
+  // renderGroupView() appellera stopPolling() puis startPolling() au retour.
+  if (tab !== 'group') {
+    stopPolling();
   }
 
   document.body.classList.remove('k-view-shop', 'k-view-fav', 'k-view-track', 'k-view-group');

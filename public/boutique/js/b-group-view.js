@@ -107,7 +107,7 @@ function startPolling(cartId, onRefresh) {
     } catch (_) {}
   }, 30_000);
 }
-function stopPolling() {
+export function stopPolling() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
 }
 
@@ -417,23 +417,14 @@ function bindPaymentForm(el, token, cart) {
       const c = res?.commitment;
       if (!c) throw new Error('Aucun engagement verrouillé trouvé pour ce numéro.');
 
-      // PR2 — si le panier est déjà entièrement financé, bloquer ici
-      if (res?.already_fully_funded) {
-        throw new Error('✅ Ce panier est déjà entièrement financé. Aucun paiement supplémentaire n\'est nécessaire.');
-      }
-
       const zone        = el.querySelector('#k-gp-locked-zone');
       const amountEl    = el.querySelector('#k-gp-locked-amount-text');
       const payBtn      = el.querySelector('#k-gp-pay-btn');
       const nameInput   = el.querySelector('#k-gp-name');
 
-      // PR2 — utiliser payable_amount (plafonné au remaining) si fourni par le backend,
-      // sinon fallback sur amount_kmf (engagement brut)
-      const effectiveAmount = r(c.payable_amount ?? c.amount_kmf);
-
-      amountEl.textContent = fmt(effectiveAmount, 'KMF');
-      payBtn.textContent   = `💳 Payer ${fmt(effectiveAmount, 'KMF')}`;
-      payBtn.dataset.amount = String(effectiveAmount);
+      amountEl.textContent = fmt(r(c.amount_kmf), 'KMF');
+      payBtn.textContent   = `💳 Payer ${fmt(r(c.amount_kmf), 'KMF')}`;
+      payBtn.dataset.amount = String(c.amount_kmf);
       payBtn.dataset.phone  = phone;
 
       if (nameInput) {
@@ -795,19 +786,17 @@ export async function renderGroupView(opts = {}) {
         </div>` : ''}
       ${isCartOpen && !settlementOpen
         ? renderEngagementForm(participantToken, cart, false)
-        : isCartOpen && settlementOpen && remainingKmf(cart) > 0
+        : isCartOpen && settlementOpen
           ? renderPaymentForm(participantToken, cart)
-          : isCartOpen && settlementOpen && remainingKmf(cart) <= 0
-            ? `<div class="k-group-card"><strong>✅ Ce panier est déjà entièrement financé — merci à tous !</strong></div>`
-            : `<div class="k-group-card"><strong>${
-                cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : "Ce panier n'accepte plus de contribution."
-              }</strong></div>`}`;
+          : `<div class="k-group-card"><strong>${
+              cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : "Ce panier n'accepte plus de contribution."
+            }</strong></div>`}`;
 
     bindParticipantItemsAccordion(el);
 
     if (isCartOpen && !settlementOpen) {
       bindEngagementForm(el, participantToken, cart, () => renderGroupView({ participantToken }));
-    } else if (isCartOpen && settlementOpen && remainingKmf(cart) > 0) {
+    } else if (isCartOpen && settlementOpen) {
       bindPaymentForm(el, participantToken, cart);
     }
     return;
