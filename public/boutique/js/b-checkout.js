@@ -385,7 +385,7 @@ export function renderCheckout() {
 
       idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
         const newUser = await requireIdentity({
-          reason: 'changer d'identité',
+          reason: "changer d'identité",
           title: 'Utiliser un autre numéro',
           allowOtherPhone: true,
         });
