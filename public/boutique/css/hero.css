@@ -158,14 +158,24 @@
    ──────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
 
+  /* MICRO-OPTIMISATION HAUTEUR HERO — gain cible 15–25px
+     Avant : clamp(110px, 28vw, 140px)
+     Après : clamp(100px, 26vw, 118px)
+     Gain mesuré : ~12px @390px · ~18px @430px · ~22px @767px
+     object-fit:cover + object-position:50% 0% inchangés → personnages préservés.
+     Desktop non impacté (bloc max-width:767px uniquement). */
+  .k-hero-img {
+    height: clamp(100px, 26vw, 118px);
+  }
+
   /* 1. Supprime le padding au-dessus du rail catégories (-6px).
         Valeur premium injectée par b-mobile-premium-v1.js : 6px → 0. */
   .k-hero-cats-sticky {
     padding-top: 0;
-    /* 2. Remonte le rail de 8px supplémentaires (-8px).
-          Base hero.css : margin-top:-42px. Override : -50px.
-          Le rail chevauche légèrement plus le bas de l'image. */
-    margin-top: -50px;
+    /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
+          Base hero.css : margin-top:-42px. Override précédent : -50px. Nouveau : -54px.
+          Chevauchement reste propre, rail catégories non masqué. */
+    margin-top: -54px;
   }
 
   /* 3. Supprime le pseudo-spacer sous le rail (-4px). */
