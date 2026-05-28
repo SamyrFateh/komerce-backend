@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (bundle Sprint 3 · 2026-05-27)
+   KOMERCE — components.css (bundle Sprint 3 · 2026-05-28)
    components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
@@ -6043,13 +6043,42 @@ body.cart-open  #k-section-index { display:none; }
   }
 }
 
-/* ── MOBILE ONE SCREEN — engagement compact ─────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+ * GROUP MOBILE COMPACT
+ * Vue participant — panier collectif — affichage 1 écran
+ *
+ * UX goal : le participant voit en un coup d'œil
+ *   1. le panier concerné (header + items)
+ *   2. le total + statut (phase badge)
+ *   3. le montant à engager (section-title + montant)
+ *   4. l'identité sécurisée OTP (identity-note — CONSERVÉ)
+ *   5. le message optionnel (champ msg)
+ *   6. le bouton d'action (submit btn — TOUJOURS VISIBLE)
+ *
+ * Masqué sur mobile (non essentiel à la confiance) :
+ *   - .k-group-subhead           → sous-titre descriptif du header
+ *   - .k-group-contribute-card > p.k-group-desc-text
+ *                                → paragraphe explicatif long
+ *
+ * Conservé intentionnellement :
+ *   - .k-group-identity-note strong  "Identité sécurisée par OTP"
+ *   - .k-group-identity-note span    possibilité d'utiliser un autre n°
+ *   - montant, message, CTA
+ *
+ * Owner : group-cart-flow.css — ne pas réintroduire dans b-group-view.js
+ * ════════════════════════════════════════════════════════════════════ */
+
+/* ── GROUP MOBILE COMPACT — max-width: 700px ───────────────────── */
 
 @media (max-width: 700px) {
+
+  /* — .k-group-view : conteneur principal — */
   #k-group-view.k-group-view {
     margin-top: -6px!important;
-    padding: 0 10px 72px!important;
+    padding: 0 10px 80px!important; /* bas 80px : CTA toujours dégagé du bas */
   }
+
+  /* — .k-group-header : en-tête du panier — */
   .k-group-view .k-group-header {
     padding: 9px 12px 6px!important;
     border-radius: 16px 16px 0 0!important;
@@ -6059,16 +6088,19 @@ body.cart-open  #k-section-index { display:none; }
     line-height: 1.05!important;
     margin: 0!important;
   }
+  /* Masqué mobile : sous-titre descriptif non essentiel */
   .k-group-view .k-group-subhead {
     display: none!important;
   }
+
+  /* — .k-group-items-card : bloc résumé panier (collapsible) — */
   .k-group-items-card {
     margin-top: 8px!important;
     padding: 10px 12px!important;
     border-radius: 16px!important;
   }
   .k-group-items-toggle {
-    min-height: 44px!important;
+    min-height: 44px!important; /* zone tactile confortable */
     padding: 0!important;
   }
   .k-group-items-toggle strong {
@@ -6079,25 +6111,39 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 13px!important;
     line-height: 1.2!important;
   }
+
+  /* — .k-group-contribute-card : carte engagement/paiement — */
   .k-group-contribute-card {
     margin-top: 8px!important;
     padding: 12px!important;
     border-radius: 16px!important;
   }
+
+  /* — .k-group-phase-badge : statut ouvert / règlement — */
   .k-group-phase-badge {
     font-size: 11px!important;
     padding: 5px 9px!important;
     margin-bottom: 8px!important;
     border-radius: 999px!important;
   }
+
+  /* — .k-group-section-title : titre de la carte contribution — */
   .k-group-contribute-card .k-group-section-title {
     font-size: 22px!important;
     line-height: 1.05!important;
     margin: 0 0 8px!important;
   }
+
+  /* Masqué mobile : texte explicatif long non essentiel
+     Cible le <p> descriptif ajouté en JS dans la carte contribution.
+     On cible via la classe utilitaire .k-group-desc-text si présente,
+     ou via le sélecteur inline legacy encore présent dans le template. */
+  .k-group-contribute-card .k-group-desc-text,
   .k-group-contribute-card > p[style*="font-size:13px"] {
     display: none!important;
   }
+
+  /* — Hints split / equal / violet callout — */
   .k-group-split-hint,
   .k-group-equal-hint,
   .k-group-contribute-card [style*="rgba(112,73,190"] {
@@ -6107,6 +6153,10 @@ body.cart-open  #k-section-index { display:none; }
     margin: 6px 0 8px!important;
     border-radius: 10px!important;
   }
+
+  /* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
+     "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
+     Ces informations sont nécessaires à la confiance du participant. */
   .k-group-identity-note {
     padding: 7px 9px!important;
     margin: 6px 0 9px!important;
@@ -6120,64 +6170,184 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 11px!important;
     line-height: 1.15!important;
     margin-top: 2px!important;
+    /* NE PAS masquer : indique la possibilité d'utiliser un autre numéro */
   }
+
+  /* — .k-group-field : champs du formulaire engagement — */
   .k-group-field {
     margin-bottom: 8px!important;
   }
-  .k-group-label {
+
+  /* — Labels — */
+  .k-group-label,
+  .k-group-contribute-card label {
     font-size: 11px!important;
     margin-bottom: 3px!important;
     letter-spacing: .02em!important;
   }
+
+  /* — .k-group-input : champs texte/nombre — */
   .k-group-input {
     min-height: 42px!important;
     height: 42px!important;
     padding: 7px 10px!important;
-    font-size: 15px!important;
+    font-size: 15px!important; /* 15px : évite le zoom auto iOS */
     border-radius: 12px!important;
   }
-  #k-ge-msg {
+  /* Champ message : hauteur réduite car 1 ligne suffit */
+  #k-ge-msg,
+  #k-gp-msg {
     height: 40px!important;
   }
+
+  /* — Erreurs inline — */
   .k-group-input-error {
     min-height: 14px!important;
     margin: 0 0 5px!important;
     font-size: 11px!important;
   }
-  #k-ge-submit-btn {
-    min-height: 44px!important;
-    height: 44px!important;
-    margin-top: 4px!important;
-    font-size: 14px!important;
+
+  /* — .k-group-btn : bouton d'action principal — */
+  .k-group-btn {
+    min-height: 48px!important; /* zone tactile large — visible au premier scroll */
+    border-radius: 999px!important;
+    font-size: 15px!important;
+    font-weight: 800!important;
+  }
+  /* Bouton submit spécifique : ancré visuellement en bas de carte */
+  #k-ge-submit-btn,
+  #k-gp-pay-btn {
+    min-height: 48px!important;
+    height: 48px!important;
+    margin-top: 6px!important;
+    font-size: 15px!important;
     border-radius: 999px!important;
   }
+
+  /* — Ombres allégées sur mobile — */
   .k-group-card,
   .k-group-actions-card,
   .k-group-progress-card,
-  .k-group-items-card {
+  .k-group-items-card,
+  .k-group-contribute-card {
     box-shadow: 0 8px 24px rgba(30,40,25,.05)!important;
   }
+
+  /* — Mini-guide : 1 colonne sur mobile (déjà dans Bloc E, rappel explicite) — */
+  .k-group-mini-guide {
+    grid-template-columns: 1fr!important;
+    gap: 6px!important;
+    padding: 8px 10px!important;
+  }
+
+  /* — Switcher multi-panier : tab plus petite sur mobile — */
+  .k-group-cart-tab {
+    min-width: 130px!important;
+  }
+
 }
 
-/* Mobile très court : encore plus dense */
+
+/* ── GROUP MOBILE COMPACT — sous-mode max-width: 390px (petits écrans) ── */
+/* Cible iPhone SE, Galaxy A, et tout écran < 390px.
+   Densification supplémentaire uniquement — on ne masque pas
+   l'identité OTP (strong conservé), seul le span détail peut être omis
+   car le titre "Identité sécurisée par OTP" suffit à la confiance. */
+
 @media (max-width: 390px) {
+
+  /* Conteneur encore plus serré */
+  #k-group-view.k-group-view {
+    padding: 0 8px 76px!important;
+  }
+
+  /* Header ultra-compact */
+  .k-group-view .k-group-header {
+    padding: 7px 10px 5px!important;
+  }
+  .k-group-view .k-group-header h2 {
+    font-size: 16px!important;
+  }
+
+  /* Carte contribution condensée */
   .k-group-contribute-card {
     padding: 10px!important;
   }
   .k-group-contribute-card .k-group-section-title {
     font-size: 20px!important;
+    margin: 0 0 6px!important;
+  }
+
+  /* Phase badge encore plus petit */
+  .k-group-phase-badge {
+    font-size: 10px!important;
+    padding: 4px 7px!important;
+    margin-bottom: 6px!important;
+  }
+
+  /* Identity note : on masque le span détail (le titre OTP reste)
+     Le titre "Identité sécurisée par OTP" seul suffit à rassurer.
+     La mention "autre numéro" est accessible via le flow OTP lui-même. */
+  .k-group-identity-note {
+    padding: 6px 8px!important;
+    margin: 5px 0 7px!important;
+  }
+  .k-group-identity-note strong {
+    font-size: 12px!important;
   }
   .k-group-identity-note span {
+    display: none!important; /* masqué <390px uniquement — voir commentaire ci-dessus */
+  }
+
+  /* Champs encore plus compacts */
+  .k-group-input {
+    height: 40px!important;
+    min-height: 40px!important;
+    font-size: 14px!important;
+    padding: 6px 9px!important;
+  }
+  #k-ge-msg,
+  #k-gp-msg {
+    height: 38px!important;
+  }
+  .k-group-field {
+    margin-bottom: 6px!important;
+  }
+  .k-group-label,
+  .k-group-contribute-card label {
+    font-size: 10px!important;
+    margin-bottom: 2px!important;
+  }
+
+  /* Bouton CTA : légèrement réduit mais toujours > 44px (WCAG) */
+  .k-group-btn {
+    min-height: 44px!important;
+    font-size: 14px!important;
+  }
+  #k-ge-submit-btn,
+  #k-gp-pay-btn {
+    height: 44px!important;
+    min-height: 44px!important;
+    font-size: 14px!important;
+    margin-top: 4px!important;
+  }
+
+  /* Items card encore plus serré */
+  .k-group-items-card {
+    padding: 8px 10px!important;
+  }
+  .k-group-items-toggle {
+    min-height: 40px!important;
+  }
+  .k-group-items-toggle strong {
+    font-size: 15px!important;
+  }
+
+  /* Mini-guide masqué sur très petits écrans (non essentiel) */
+  .k-group-mini-guide {
     display: none!important;
   }
-  .k-group-input {
-    height: 39px!important;
-    min-height: 39px!important;
-  }
-  #k-ge-submit-btn {
-    height: 41px!important;
-    min-height: 41px!important;
-  }
+
 }
 
 /* ── Bloc H — Sélecteurs utilitaires flat ──────────────────────── */
