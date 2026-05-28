@@ -505,36 +505,102 @@ export function renderCheckout() {
        * @param {Object} identity
        * @returns {boolean} true si préremplissage effectué
        */
+      /**
+       * Extrait le meilleur téléphone disponible depuis l'objet identité.
+       * Parcourt les propriétés dans l'ordre de priorité et retourne la
+       * première valeur non vide.  Retourne '' si aucune n'est trouvable.
+       * @param {Object} id - objet identité normalisé (ou brut)
+       * @returns {string} numéro brut (idéalement E.164)
+       */
+      function _getIdentityPhone(id) {
+        if (!id) return '';
+        // Priorité : objet normalisé (phone déjà résolu par normalizeUser)
+        // → puis propriétés alternatives connues en base Komerce
+        return (
+          id.phone          ||
+          id.phone_number   ||
+          id.whatsapp_phone ||
+          id.whatsapp       ||
+          id.mobile         ||
+          id.user?.phone    ||
+          id.profile?.phone ||
+          ''
+        ).trim();
+      }
+
+      /**
+       * Préremplie les champs bénéficiaire avec une identité validée.
+       * — Utilise PHONE_COUNTRIES (liste réelle des indicatifs) pour parser
+       *   le numéro E.164 → (dialCode, local).  Le regex /^(\+\d{1,4})(.*)/ 
+       *   est greedy et peut se tromper (ex. +2693… capturé à 4 chiffres 
+       *   au lieu de 3).  On cherche à la place le code connu le plus long
+       *   qui préfixe le numéro, puis on formate le local via prettifyLocal.
+       * — Ne fait rien si l'identité est admin/système/invalide ou si le
+       *   numéro est absent ou inexploitable.
+       * — Ne déclenche aucune modale, aucun OTP.
+       * @param {Object} identity
+       * @returns {boolean} true si préremplissage effectué
+       */
       function _prefillFromIdentity(identity) {
         const nameInput    = document.getElementById('of-beneficiary-name');
         const phoneInput   = document.getElementById('of-beneficiary-phone');
         const phoneCountry = document.getElementById('of-beneficiary-phone-country');
 
-        const _idName  = ((identity && (identity.full_name || identity.name)) || '').trim();
-        const _idPhone = ((identity && identity.phone) || '').trim();
-        const _isAdminName  = /admin|komerce|syst[eè]me?|test|demo/i.test(_idName);
-        const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_idPhone) || _idPhone.length < 8;
+        // ── Nom ──────────────────────────────────────────────────────
+        const _idName = ((identity && (identity.full_name || identity.name)) || '').trim();
+        const _isAdminName = /admin|komerce|syst[eè]me?|test|demo/i.test(_idName);
+
+        // ── Téléphone — source de vérité ─────────────────────────────
+        // On lit _getIdentityPhone() plutôt que identity.phone directement,
+        // pour couvrir les variantes de propriétés retournées par l'API.
+        const _rawPhone = _getIdentityPhone(identity);
+
+        // Validation préliminaire (avant parsing)
+        const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_rawPhone) || _rawPhone.length < 8;
         const _usable = identity && _idName && !_isAdminName && !_isAdminPhone;
+
+        console.debug('[checkout] _prefillFromIdentity identity=', identity,
+          'rawPhone=', _rawPhone, 'usable=', _usable);
 
         if (!_usable) return false;
 
+        // ── Prérempli nom ─────────────────────────────────────────────
         if (nameInput) {
           nameInput.value = _idName;
           od.beneficiary_name = _idName;
         }
+
+        // ── Prérempli téléphone — parsing via PHONE_COUNTRIES ─────────
+        // Cherche le code indicatif connu le plus long qui préfixe le numéro.
+        // Ex: +2693231452 → found = { code:'+269', digits:7 }
+        //                 → local = '3231452'
+        // Ex: +33612345678 → found = { code:'+33', digits:9 }
+        //                  → local = '612345678' → prettify → '06 12 34 56 78'
+        // Si aucun code connu n'est trouvé : on tente quand même de coller
+        // le numéro brut dans l'input pour ne pas bloquer l'utilisateur.
         if (phoneInput && phoneCountry) {
-          const match = _idPhone.match(/^(\+\d{1,4})(.*)/);
-          if (match) {
-            phoneCountry.value = match[1];
-            // bubbles:false — ce changement programmatique ne doit pas
-            // remonter vers d'autres listeners (payGrid, etc.)
+          // Trier par longueur décroissante pour matcher le plus long en premier
+          // (+269 avant +26, +212 avant +21, etc.)
+          const _sorted = PHONE_COUNTRIES.slice().sort((a, b) => b.code.length - a.code.length);
+          const _found  = _sorted.find(c => _rawPhone.startsWith(c.code));
+
+          if (_found) {
+            const _localRaw = _rawPhone.slice(_found.code.length);
+            const _localDisplay = _prettifyLocal(_localRaw, _found);
+
+            phoneCountry.value = _found.code;
+            // bubbles:false — changement programmatique, ne doit pas
+            // remonter vers les autres listeners (payGrid, etc.)
             phoneCountry.dispatchEvent(new Event('change', { bubbles: false }));
-            phoneInput.value = match[2].trim();
+            phoneInput.value = _localDisplay;
+            od.beneficiary_phone = _rawPhone; // stocker l'E.164 complet
           } else {
-            phoneInput.value = _idPhone;
+            // Indicatif inconnu — coller le brut, l'utilisateur peut corriger
+            phoneInput.value = _rawPhone;
+            od.beneficiary_phone = _rawPhone;
           }
-          od.beneficiary_phone = _idPhone;
         }
+
         return true;
       }
 
