@@ -1018,7 +1018,7 @@ body.cart-open .k-wa-fab {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: var(--green, #1F7A54);
+  accent-color: var(--cta-green);
   flex-shrink: 0;
 }
 
