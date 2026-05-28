@@ -142,6 +142,88 @@ function toBodyValues(variables = {}) {
 }
 
 // â”€â”€â”€ Appel gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+async function callAuthKeyText({ mobile, message }) {
+  if (!API_KEY) {
+    return { ok: false, error: 'missing_api_key' };
+  }
+
+  if (!message) {
+    return { ok: false, error: 'missing_message' };
+  }
+
+  const { country_code, mobile: cleanMobile } = parseMobile(mobile);
+
+  if (!cleanMobile || !country_code) {
+    return { ok: false, error: 'invalid_mobile', raw: mobile };
+  }
+
+  const body = {
+    country_code,
+    mobile: cleanMobile,
+    type: 'text',
+    message: String(message),
+  };
+
+  try {
+    const response = await fetch(AUTHKEY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${API_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+    const providerStatus = String(data.Status ?? data.status ?? '').trim().toLowerCase();
+    const providerMessage = data.Message || data.message || data.Error || data.error || null;
+    const messageId = data.MessageID || data.messageId || data.LogID || data.logId || data.log_id || data.id || null;
+
+    const providerFailed =
+      ['error', 'fail', 'failed', 'failure'].includes(providerStatus) ||
+      /invalid authkey|insufficient balance|wid|required|template/i.test(String(providerMessage || ''));
+
+    if (!response.ok || providerFailed) {
+      log.error({
+        status: response.status,
+        provider_status: providerStatus,
+        provider_message: providerMessage,
+        data,
+        country_code,
+        mobile: cleanMobile,
+      }, 'AuthKey free-text provider rejected request');
+
+      return {
+        ok: false,
+        error: providerMessage || `http_${response.status}`,
+        providerStatus,
+        messageId,
+        data,
+      };
+    }
+
+    log.info({
+      country_code,
+      mobile: cleanMobile,
+      message_id: messageId,
+      provider_status: providerStatus,
+    }, 'AuthKey free-text message accepted');
+
+    return {
+      ok: true,
+      messageId,
+      providerStatus,
+      data,
+    };
+  } catch (err) {
+    log.error({ err }, 'AuthKey free-text request failed');
+    return { ok: false, error: 'network_error', details: err.message };
+  }
+}
 async function callAuthKey({ wid, mobile, variables = {} }) {
   if (!API_KEY) {
     return { ok: false, error: 'missing_api_key' };
@@ -287,6 +369,7 @@ async function notifyAbandonedCart({ mobile, name, itemCount }) {
 
 module.exports = {
   callAuthKey,
+  callAuthKeyText,
   notifyOrderCreated,
   notifyPaymentConfirmed,
   notifyOrderShipped,
@@ -296,4 +379,5 @@ module.exports = {
   parseMobile,
   WID,
 };
+
 
