@@ -216,7 +216,7 @@ function renderEngagementForm(token, cart, isCreator = false) {
   const suggestion = lockedTotal > 0
     ? Math.round(r(cart.total_kmf_snapshot) / Math.max(1, r(meta.locked_commitments_count || 1) + 1) / 100) * 100
     : 0;
-  // TX-02 — montant moyen suggéré (hint visible, même logique que shared-cart-public.html)
+  // TX-02 — montant moyen suggéré (hint visible dans la vue groupe)
   const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
   const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
   const splitHint = avgSuggestion >= 2500

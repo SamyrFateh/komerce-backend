@@ -58,7 +58,7 @@ Posées exclusivement via `element.style.setProperty()` depuis le JS owner décl
 | `cart.css` | bundle `components` | Panier complet, `.k-card-add`, `.k-card-fav` |
 | `interactions.css` | bundle `components` | Animations, toasts, transitions chips |
 | `hero-cart-proxy.css` | bundle `components` | Proxy mobile uniquement, masque `.k-hero-bubble` |
-| `group-cart-flow.css` | bundle `components` | Flux paniers partagés (résiduel) |
+| `group-cart-flow.css` | bundle `components` | **Owner officiel** styles Groupe / panier partagé : cockpit créateur, vue participant, mobile compact. `b-group-view.js` ne doit plus injecter de CSS (injectStyles = no-op). |
 | `shared-followup.css` | bundle `components` | Followup partagé (résiduel) |
 | `boutique-desktop.css` | bundle `desktop` | **Owner desktop ≥900px** : chips, sticky bar, side-cart, k-card hover, mega-nav |
 | `desktop-commerce-skeleton.css` | bundle `desktop` | Layout desktop : header, hero shape, `#k-desktop-catalog-wrap` grid |
