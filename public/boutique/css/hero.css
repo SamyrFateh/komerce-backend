@@ -149,17 +149,35 @@
 .k-hero-trust-bar { display: none; }
 
 
-/* ── MOBILE PILL RAIL — espacement bannière (max-width: 767px) ──
-   Corrige le margin-top:-42px global qui colle/chevauche la bannière.
+/* ── MOBILE HERO COMPACT + PILL RAIL — (max-width: 767px) ──────
+   Hero compact : réduit la hauteur affichée ~35-45 px vs la règle
+   base clamp(110px,28vw,140px).  Gain vertical récupéré pour les
+   futures sous-catégories.  Image non recropée, object-fit:cover
+   conservé, object-position:50% 0% conservé.
    MOBILE ONLY. Desktop = min-width:900px → non impacté.
    Rollback : supprimer ce bloc.
    ──────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
+  /* ── Hero image : hauteur compacte 145-155 px ───────────────
+     clamp(145px, 40vw, 155px) :
+       360px → 145px  |  390px → 155px  |  767px → 155px
+     Gain vs ancienne règle : +35 à +45 px selon viewport.
+     object-fit:cover + object-position:50% 0% → cadrage haut
+     conservé, personnages et boutique visibles, zéro déformation. */
+  .k-hero-img {
+    height: clamp(145px, 40vw, 155px);
+    object-fit: cover;
+    object-position: 50% 0%;
+  }
+
+  /* ── Rail catégories : chevauchement ajusté au nouveau hero ─
+     Le margin-top négatif tire le rail vers le haut pour qu'il
+     s'ancre proprement sous le hero compact. */
   .k-hero-cats-sticky {
-    margin-top: -10px;   /* réduit le chevauchement hero → rail propre */
+    margin-top: -10px;   /* chevauchement hero → rail propre */
   }
   .k-hero-cats-sticky::after {
     height: 0;           /* supprime le pseudo-spacer inutile sous le rail */
   }
 }
-/* ── FIN MOBILE PILL RAIL hero spacing ─────────────────────── */
+/* ── FIN MOBILE HERO COMPACT + PILL RAIL spacing ───────────── */
