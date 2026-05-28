@@ -489,38 +489,81 @@ export function renderCheckout() {
     benfSection.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
     body.appendChild(benfSection);
 
-    // Logique case "c'est moi"
+    // ── Logique case "c'est moi" ─────────────────────────────────────────────
+    // DOCTRINE : ce handler ne déclenche JAMAIS requireIdentity() ni de modale.
+    // Il lit passivement l'identité déjà connue (getCurrentIdentity) ou tente
+    // une restauration silencieuse (restoreIdentity — cookie httpOnly, zéro OTP).
+    // requireIdentity() reste réservé à submitOrder() et au clic "Ce n'est pas vous ?".
     setTimeout(() => {
       const cbBenfMe = document.getElementById('cb-benf-is-me');
       if (!cbBenfMe) return;
-      cbBenfMe.addEventListener('change', function() {
+
+      /**
+       * Préremplie les champs bénéficiaire avec une identité validée.
+       * Ne fait rien si l'identité est admin/système/invalide.
+       * Ne déclenche aucune modale.
+       * @param {Object} identity
+       * @returns {boolean} true si préremplissage effectué
+       */
+      function _prefillFromIdentity(identity) {
         const nameInput    = document.getElementById('of-beneficiary-name');
         const phoneInput   = document.getElementById('of-beneficiary-phone');
         const phoneCountry = document.getElementById('of-beneficiary-phone-country');
-        if (this.checked) {
-          const identity = getCurrentIdentity();
-          // Garde sécurité : ne préremplir que si l'identité est un client réel
-          const _idName  = (identity && (identity.full_name || identity.name || '')).trim();
-          const _idPhone = (identity && identity.phone || '').trim();
-          const _isAdminName  = /admin|komerce|système|systeme|test|demo/i.test(_idName);
-          const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_idPhone) || _idPhone === '' || _idPhone.length < 8;
-          const _identityUsable = identity && _idName && !_isAdminName && !_isAdminPhone;
-          if (_identityUsable) {
-            if (nameInput)  { nameInput.value = _idName; od.beneficiary_name = nameInput.value; }
-            if (phoneInput && phoneCountry) {
-              const match = _idPhone.match(/^(\+\d{1,4})(.*)/);
-              if (match) {
-                phoneCountry.value = match[1];
-                phoneCountry.dispatchEvent(new Event('change', { bubbles: true }));
-                phoneInput.value = match[2].trim();
-              } else {
-                phoneInput.value = _idPhone;
-              }
-              od.beneficiary_phone = _idPhone;
-            }
-          }
+
+        const _idName  = ((identity && (identity.full_name || identity.name)) || '').trim();
+        const _idPhone = ((identity && identity.phone) || '').trim();
+        const _isAdminName  = /admin|komerce|syst[eè]me?|test|demo/i.test(_idName);
+        const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_idPhone) || _idPhone.length < 8;
+        const _usable = identity && _idName && !_isAdminName && !_isAdminPhone;
+
+        if (!_usable) return false;
+
+        if (nameInput) {
+          nameInput.value = _idName;
+          od.beneficiary_name = _idName;
         }
-        // Si décoché : on ne vide pas une saisie manuelle existante
+        if (phoneInput && phoneCountry) {
+          const match = _idPhone.match(/^(\+\d{1,4})(.*)/);
+          if (match) {
+            phoneCountry.value = match[1];
+            // bubbles:false — ce changement programmatique ne doit pas
+            // remonter vers d'autres listeners (payGrid, etc.)
+            phoneCountry.dispatchEvent(new Event('change', { bubbles: false }));
+            phoneInput.value = match[2].trim();
+          } else {
+            phoneInput.value = _idPhone;
+          }
+          od.beneficiary_phone = _idPhone;
+        }
+        return true;
+      }
+
+      cbBenfMe.addEventListener('change', function() {
+        if (!this.checked) {
+          // Décoché : on ne vide pas une saisie manuelle existante
+          return;
+        }
+
+        // 1. Lecture synchrone — identité déjà en mémoire
+        const syncIdentity = getCurrentIdentity();
+        if (syncIdentity) {
+          _prefillFromIdentity(syncIdentity);
+          return;
+        }
+
+        // 2. Pas d'identité en mémoire → tentative de restauration passive
+        //    (cookie httpOnly kmrc_jwt — aucun OTP, aucune modale)
+        //    Si la restauration échoue ou retourne null, on laisse les champs
+        //    libres pour saisie manuelle. On ne décoche pas la case.
+        restoreIdentity().then(restoredIdentity => {
+          // Vérifier que la case est toujours cochée (l'user n'a pas décoché
+          // pendant l'attente async)
+          if (!cbBenfMe.checked) return;
+          if (restoredIdentity) {
+            _prefillFromIdentity(restoredIdentity);
+          }
+          // Si toujours pas d'identité : champs manuels disponibles, aucune action
+        }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
       });
     }, 0);
     // ── Fin bloc bénéficiaire ────────────────────────────────────────────────
@@ -801,14 +844,26 @@ export function updateWalletDisplay() {
 export async function submitOrder(btn) {
   // ── DOCTRINE IDENTITÉ LÉGÈRE (feat/checkout-otp) ──────────────────────────
   // Appel requireIdentity() avant tout POST engageant.
-  // - Utilisateur reconnu : écran "Vous commandez avec X · Ce n'est pas vous ?"
+  // - Utilisateur reconnu + case "c'est moi" cochée : retour silencieux de
+  //   l'identité connue, SANS ouvrir la modale "Sécuriser votre commande".
+  //   L'user a déjà confirmé implicitement son identité en cochant la case.
+  // - Utilisateur reconnu + case non cochée : modale "Vous commandez avec X".
   // - Utilisateur inconnu : flow OTP complet.
   // - Fermeture modale / annulation : identity === null → abort propre.
   // Le panier n'est pas touché ici. clearCart() n'est appelé qu'après succès.
+
+  // La case "c'est moi" cochée = confirmation implicite de l'identité.
+  // Dans ce cas, si une identité est disponible, on ne redemande pas via modale.
+  const _cbBenfIsMe = document.getElementById('cb-benf-is-me');
+  const _benfIsMeChecked = !!(_cbBenfIsMe && _cbBenfIsMe.checked);
+
   const identity = await requireIdentity({
     reason: 'valider votre commande',
     title: 'Sécuriser votre commande',
-    allowOtherPhone: true,
+    // allowOtherPhone:false si la case "c'est moi" est cochée → identité connue
+    // retournée directement sans passer par openKnownIdentityConfirm (pas de modale).
+    // allowOtherPhone:true sinon → modale "Vous commandez avec X · Ce n'est pas vous ?"
+    allowOtherPhone: !_benfIsMeChecked,
   });
 
   if (!identity) {
