@@ -147,3 +147,19 @@
 
 /* Trust bar : desktop only (non utilisée actuellement) */
 .k-hero-trust-bar { display: none; }
+
+
+/* ── MOBILE PILL RAIL — espacement bannière (max-width: 767px) ──
+   Corrige le margin-top:-42px global qui colle/chevauche la bannière.
+   MOBILE ONLY. Desktop = min-width:900px → non impacté.
+   Rollback : supprimer ce bloc.
+   ──────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .k-hero-cats-sticky {
+    margin-top: -10px;   /* réduit le chevauchement hero → rail propre */
+  }
+  .k-hero-cats-sticky::after {
+    height: 0;           /* supprime le pseudo-spacer inutile sous le rail */
+  }
+}
+/* ── FIN MOBILE PILL RAIL hero spacing ─────────────────────── */
