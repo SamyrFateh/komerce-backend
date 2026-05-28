@@ -377,10 +377,11 @@ export function renderCheckout() {
       const _dName  = _knownUser.full_name || _knownUser.name || '';
       const _dPhone = _knownUser.phone || '';
       idRecap.innerHTML =
-        '<span class="k-ck-id-label">Vous commandez avec</span>'
+        '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
         + '<span class="k-ck-id-value">'
         + (sanitize(_dName) + (_dName && _dPhone ? ' · ' : '') + sanitize(_dPhone))
         + '</span>'
+        + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
         + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
 
       idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
@@ -430,10 +431,11 @@ export function renderCheckout() {
         const rName  = restoredUser.full_name || restoredUser.name || '';
         const rPhone = restoredUser.phone || '';
         idRecap.innerHTML =
-          '<span class="k-ck-id-label">Vous commandez avec</span>'
+          '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
           + '<span class="k-ck-id-value">'
           + (sanitize(rName) + (rName && rPhone ? ' · ' : '') + sanitize(rPhone))
           + '</span>'
+          + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
           + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
 
         idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
@@ -465,13 +467,63 @@ export function renderCheckout() {
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
-      body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-    body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
+    // ── Bloc bénéficiaire ────────────────────────────────────────────────────
+    const benfSection = document.createElement('div');
+    benfSection.className = 'ck-section-block';
+    const benfTitle = document.createElement('div');
+    benfTitle.className = 'ck-section-title';
+    benfTitle.textContent = 'POUR QUI EST LA COMMANDE ?';
+    benfSection.appendChild(benfTitle);
+    const benfHint = document.createElement('div');
+    benfHint.className = 'ck-section-hint';
+    benfHint.textContent = "Indiquez la personne qui recevra ou retirera les articles.";
+    benfSection.appendChild(benfHint);
+
+    // Case "c'est moi"
+    const benfMeWrap = document.createElement('label');
+    benfMeWrap.className = 'ck-benf-me-label';
+    benfMeWrap.innerHTML = "<input type=\"checkbox\" id=\"cb-benf-is-me\" class=\"ck-benf-me-cb\"> <span>Le b\u00e9n\u00e9ficiaire, c'est moi</span>";
+    benfSection.appendChild(benfMeWrap);
+
+    benfSection.appendChild(makeInput('of-beneficiary-name', 'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
+    benfSection.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
+    body.appendChild(benfSection);
+
+    // Logique case "c'est moi"
+    setTimeout(() => {
+      const cbBenfMe = document.getElementById('cb-benf-is-me');
+      if (!cbBenfMe) return;
+      cbBenfMe.addEventListener('change', function() {
+        const nameInput    = document.getElementById('of-beneficiary-name');
+        const phoneInput   = document.getElementById('of-beneficiary-phone');
+        const phoneCountry = document.getElementById('of-beneficiary-phone-country');
+        if (this.checked) {
+          const identity = getCurrentIdentity();
+          if (identity) {
+            if (nameInput)  { nameInput.value = identity.full_name || identity.name || ''; od.beneficiary_name = nameInput.value; }
+            if (phoneInput && phoneCountry) {
+              const rawPhone = identity.phone || '';
+              const match = rawPhone.match(/^(\+\d{1,4})(.*)/);
+              if (match) {
+                phoneCountry.value = match[1];
+                phoneCountry.dispatchEvent(new Event('change', { bubbles: true }));
+                phoneInput.value = match[2].trim();
+              } else {
+                phoneInput.value = rawPhone;
+              }
+              od.beneficiary_phone = rawPhone;
+            }
+          }
+        }
+        // Si décoché : on ne vide pas une saisie manuelle existante
+      });
+    }, 0);
+    // ── Fin bloc bénéficiaire ────────────────────────────────────────────────
 
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
-    sRelais.className = 'ck-label';
-    sRelais.textContent = 'Île de retrait *';
+    sRelais.className = 'ck-section-block';
+    sRelais.innerHTML = '<div class="ck-section-title">O\u00d9 SERA RETIR\u00c9E LA COMMANDE ?</div>';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -482,8 +534,8 @@ export function renderCheckout() {
 
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
-    s2.className = 'ck-label';
-    s2.textContent = 'Mode de paiement';
+    s2.className = 'ck-section-block';
+    s2.innerHTML = '<div class="ck-section-title">COMMENT VOULEZ-VOUS PAYER ?</div>';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -524,8 +576,21 @@ export function renderCheckout() {
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
 
-    const senderGroup2 = makeIntlPhoneInput('of-sender-phone', 'Recevoir le suivi (optionnel)', od, 'sender_phone');
-    body.appendChild(senderGroup2);
+    // ── Bloc contact suivi optionnel ────────────────────────────────────────────
+    const senderSectionWrap = document.createElement('div');
+    senderSectionWrap.className = 'ck-section-block';
+    const senderSectionTitle = document.createElement('div');
+    senderSectionTitle.className = 'ck-section-title';
+    senderSectionTitle.textContent = 'AJOUTER UN AUTRE CONTACT DE SUIVI ?';
+    senderSectionWrap.appendChild(senderSectionTitle);
+    const senderSectionHint = document.createElement('div');
+    senderSectionHint.className = 'ck-section-hint';
+    senderSectionHint.textContent = "Utile pour prévenir un proche en France ou aux Comores.";
+    senderSectionWrap.appendChild(senderSectionHint);
+    const senderGroup2 = makeIntlPhoneInput('of-sender-phone', 'Téléphone (optionnel)', od, 'sender_phone');
+    senderSectionWrap.appendChild(senderGroup2);
+    body.appendChild(senderSectionWrap);
+    // ── Fin contact suivi ─────────────────────────────────────────────────────
 
     function refreshFulfillment() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
