@@ -142,6 +142,10 @@ function recallParticipantToken() {
   try { return localStorage.getItem(PARTICIPANT_TOKEN_KEY) || null; } catch (_) { return null; }
 }
 
+function clearParticipantToken() {
+  try { localStorage.removeItem(PARTICIPANT_TOKEN_KEY); } catch (_) {}
+}
+
 function rememberParticipantCommitment(token, commitment) {
   if (!token || !commitment) return;
   writeJsonStorage(participantCommitmentKey(token), {
@@ -755,7 +759,7 @@ export async function renderGroupView(opts = {}) {
     rememberParticipantToken(participantToken);
     const data = await getSharedCartPublic(participantToken);
 
-    if (!data?.cart) { renderError(el); return; }
+    if (!data?.cart) { clearParticipantToken(); renderError(el); return; }
     const cart  = data.cart;
     const items = data.items || [];
     const total = r(cart.total_kmf_snapshot);
