@@ -88,7 +88,9 @@ export function isSettlementOpen(cart) {
 
 /**
  * Calcule le montant restant à payer (KMF).
- * Utilise cart.remaining_kmf si disponible, sinon total − confirmé.
+ * PR2 — utilise cart.remaining_kmf (calculé par le backend, source de vérité)
+ * si disponible, sinon fallback total − confirmé.
+ * Ne renvoie jamais de valeur négative.
  * @param {object} cart
  * @returns {number}
  */
