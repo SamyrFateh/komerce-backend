@@ -472,21 +472,21 @@ export function renderCheckout() {
     benfSection.className = 'ck-section-block';
     const benfTitle = document.createElement('div');
     benfTitle.className = 'ck-section-title';
-    benfTitle.textContent = 'POUR QUI EST LA COMMANDE ?';
+    benfTitle.textContent = 'QUI VA RETIRER LA COMMANDE ?';
     benfSection.appendChild(benfTitle);
     const benfHint = document.createElement('div');
     benfHint.className = 'ck-section-hint';
-    benfHint.textContent = "Indiquez la personne qui recevra ou retirera les articles.";
+    benfHint.textContent = "Indiquez la personne qui ira récupérer les articles au relais.";
     benfSection.appendChild(benfHint);
 
     // Case "c'est moi"
     const benfMeWrap = document.createElement('label');
     benfMeWrap.className = 'ck-benf-me-label';
-    benfMeWrap.innerHTML = "<input type=\"checkbox\" id=\"cb-benf-is-me\" class=\"ck-benf-me-cb\"> <span>Le b\u00e9n\u00e9ficiaire, c'est moi</span>";
+    benfMeWrap.innerHTML = "<input type=\"checkbox\" id=\"cb-benf-is-me\" class=\"ck-benf-me-cb\"> <span>C'est moi, je retirerai la commande</span>";
     benfSection.appendChild(benfMeWrap);
 
-    benfSection.appendChild(makeInput('of-beneficiary-name', 'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-    benfSection.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
+    benfSection.appendChild(makeInput('of-beneficiary-name', 'Nom de la personne qui retire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
+    benfSection.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
     body.appendChild(benfSection);
 
     // Logique case "c'est moi"
@@ -499,19 +499,24 @@ export function renderCheckout() {
         const phoneCountry = document.getElementById('of-beneficiary-phone-country');
         if (this.checked) {
           const identity = getCurrentIdentity();
-          if (identity) {
-            if (nameInput)  { nameInput.value = identity.full_name || identity.name || ''; od.beneficiary_name = nameInput.value; }
+          // Garde sécurité : ne préremplir que si l'identité est un client réel
+          const _idName  = (identity && (identity.full_name || identity.name || '')).trim();
+          const _idPhone = (identity && identity.phone || '').trim();
+          const _isAdminName  = /admin|komerce|système|systeme|test|demo/i.test(_idName);
+          const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_idPhone) || _idPhone === '' || _idPhone.length < 8;
+          const _identityUsable = identity && _idName && !_isAdminName && !_isAdminPhone;
+          if (_identityUsable) {
+            if (nameInput)  { nameInput.value = _idName; od.beneficiary_name = nameInput.value; }
             if (phoneInput && phoneCountry) {
-              const rawPhone = identity.phone || '';
-              const match = rawPhone.match(/^(\+\d{1,4})(.*)/);
+              const match = _idPhone.match(/^(\+\d{1,4})(.*)/);
               if (match) {
                 phoneCountry.value = match[1];
                 phoneCountry.dispatchEvent(new Event('change', { bubbles: true }));
                 phoneInput.value = match[2].trim();
               } else {
-                phoneInput.value = rawPhone;
+                phoneInput.value = _idPhone;
               }
-              od.beneficiary_phone = rawPhone;
+              od.beneficiary_phone = _idPhone;
             }
           }
         }
