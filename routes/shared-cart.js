@@ -147,7 +147,7 @@ router.get('/public/:token/commitments/by-phone', async (req, res, next) => {
     if (!phone) return res.status(400).json({ error: 'phone requis', code: 'phone_required' });
 
     const { rows: cartRows } = await db.query(
-      `SELECT id, status, metadata, expires_at FROM shared_carts WHERE token = $1`,
+      `SELECT id, status, metadata, expires_at, remaining_kmf FROM shared_carts WHERE token = $1`,
       [token]
     );
     if (!cartRows.length) return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
@@ -175,7 +175,21 @@ router.get('/public/:token/commitments/by-phone', async (req, res, next) => {
       });
     }
 
-    res.json({ commitment: rows[0] });
+    const commitment = rows[0];
+    const remainingKmf = Math.max(0, Math.round(Number(cart.remaining_kmf) || 0));
+    const commitmentAmount = Math.round(Number(commitment.amount_kmf) || 0);
+    // payable_amount = montant réellement encaissable = min(engagement, remaining)
+    // Le front l'affiche directement ; le backend revalide au POST.
+    const payableAmount = Math.min(commitmentAmount, remainingKmf);
+
+    res.json({
+      commitment: {
+        ...commitment,
+        payable_amount: payableAmount,          // ← clé consommée par bindPaymentForm
+        capped: payableAmount < commitmentAmount,
+        remaining_kmf: remainingKmf,
+      },
+    });
   } catch (err) { next(err); }
 });
 
@@ -203,43 +217,79 @@ router.post('/public/:token/contributions', async (req, res, next) => {
     // Le créateur doit d'abord "Passer au règlement".
     await settlement.assertCanAcceptParticipantPaymentByToken(token);
 
+    // ── Charger le panier pour lire remaining_kmf réel ───────────────────────
+    // On recharge ici (hors transaction) pour une réponse rapide avant la
+    // création Stripe. startContribution() revalidera avec FOR UPDATE.
+    const { rows: cartCheckRows } = await db.query(
+      `SELECT id, total_kmf_snapshot, contributed_kmf, remaining_kmf
+         FROM shared_carts WHERE token = $1`,
+      [token]
+    );
+    if (!cartCheckRows.length) {
+      return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
+    }
+    const cartCheck = cartCheckRows[0];
+    const remainingNow = Math.max(0, Math.round(Number(cartCheck.remaining_kmf) || 0));
+
+    // ── Refus immédiat si panier déjà entièrement financé ────────────────────
+    if (remainingNow <= 0) {
+      return res.status(409).json({
+        error: 'Ce panier est déjà entièrement financé. Aucun paiement supplémentaire ne peut être accepté.',
+        code: 'already_fully_funded',
+        remaining_kmf: 0,
+      });
+    }
+
     // ── GAP 1 : liaison commitment → contribution ─────────────────────────────
-    // En phase règlement, on doit retrouver l'engagement verrouillé par téléphone
-    // et vérifier que le montant correspond exactement.
+    // En phase règlement, on retrouve l'engagement verrouillé par téléphone.
+    // Le montant effectif est min(engagement verrouillé, remaining réel).
+    // On ne rejette plus si engagement > remaining : on plafonne.
     let lockedCommitment = null;
     if (contributor_phone) {
-      const { rows: cartRows } = await db.query(
-        `SELECT id FROM shared_carts WHERE token = $1`, [token]
+      const { rows: commitRows } = await db.query(
+        `SELECT * FROM shared_cart_commitments
+           WHERE shared_cart_id = $1
+             AND participant_phone = $2
+             AND status = 'locked_for_settlement'
+           ORDER BY locked_at DESC LIMIT 1`,
+        [cartCheck.id, contributor_phone]
       );
-      if (cartRows.length) {
-        const { rows: commitRows } = await db.query(
-          `SELECT * FROM shared_cart_commitments
-            WHERE shared_cart_id = $1
-              AND participant_phone = $2
-              AND status = 'locked_for_settlement'
-            ORDER BY locked_at DESC LIMIT 1`,
-          [cartRows[0].id, contributor_phone]
-        );
-        lockedCommitment = commitRows[0] || null;
-      }
+      lockedCommitment = commitRows[0] || null;
     }
 
-    // Si un engagement verrouillé existe, le montant doit correspondre exactement
-    if (lockedCommitment) {
-      const lockedAmount = Math.round(Number(lockedCommitment.amount_kmf) || 0);
-      const requestedAmount = Math.round(Number(amount_kmf) || 0);
-      if (requestedAmount !== lockedAmount) {
-        return res.status(409).json({
-          error: `Le montant doit correspondre à votre engagement verrouillé : ${lockedAmount} KMF`,
-          code: 'amount_must_match_locked_commitment',
-          locked_amount_kmf: lockedAmount,
-        });
-      }
+    // ── Calcul du montant payable réel ───────────────────────────────────────
+    // Règle doctrine : payable = min(engagement verrouillé, remaining)
+    // On ne fait jamais confiance au amount_kmf du front pour Stripe.
+    // Si pas d'engagement verrouillé trouvé, on accepte le montant front
+    // mais on le plafonne au remaining.
+    const requestedAmount = Math.round(Number(amount_kmf) || 0);
+    const commitmentAmount = lockedCommitment
+      ? Math.round(Number(lockedCommitment.amount_kmf) || 0)
+      : requestedAmount;
+    const payableAmount = Math.min(commitmentAmount, remainingNow);
+
+    if (payableAmount <= 0) {
+      return res.status(409).json({
+        error: 'Ce panier est déjà entièrement financé. Aucun paiement supplémentaire ne peut être accepté.',
+        code: 'already_fully_funded',
+        remaining_kmf: 0,
+      });
     }
 
-    // Conversion KMF → EUR pour Stripe
+    // Log si plafonnement effectif (traçabilité)
+    if (payableAmount < commitmentAmount) {
+      log.info({
+        token,
+        commitment_amount_kmf: commitmentAmount,
+        payable_amount_kmf: payableAmount,
+        remaining_kmf: remainingNow,
+        commitment_id: lockedCommitment?.id || null,
+      }, '[contribution] montant plafonné au remaining réel');
+    }
+
+    // Conversion KMF → EUR pour Stripe (sur payableAmount, pas amount_kmf front)
     const fxRate = await getFxKmfToEur();
-    const amountEur = Math.max(0.5, Math.round(Number(amount_kmf) * fxRate * 100) / 100);
+    const amountEur = Math.max(0.5, Math.round(payableAmount * fxRate * 100) / 100);
 
     // ── GAP 4 : superseded — invalider les tentatives pending existantes ────────
     if (lockedCommitment) {
@@ -254,28 +304,25 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         [lockedCommitment.id]
       );
     } else if (contributor_phone) {
-      const { rows: cartR } = await db.query(`SELECT id FROM shared_carts WHERE token = $1`, [token]);
-      if (cartR.length) {
-        await db.query(
-          `UPDATE shared_cart_contributions
-              SET status = 'failed',
-                  failed_at = NOW(),
-                  metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
-                  updated_at = NOW()
-            WHERE shared_cart_id = $1
-              AND contributor_phone = $2
-              AND status = 'pending'`,
-          [cartR[0].id, contributor_phone]
-        );
-      }
+      await db.query(
+        `UPDATE shared_cart_contributions
+            SET status = 'failed',
+                failed_at = NOW(),
+                metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
+                updated_at = NOW()
+          WHERE shared_cart_id = $1
+            AND contributor_phone = $2
+            AND status = 'pending'`,
+        [cartCheck.id, contributor_phone]
+      );
     }
 
-    // 1. Créer la contribution en pending, liée à l'engagement verrouillé si présent
+    // 1. Créer la contribution en pending pour payableAmount (≤ remaining réel)
     const { contribution, cart } = await engine.startContribution(token, {
       name: contributor_name,
       email: contributor_email,
       phone: contributor_phone,
-      amountKmf: amount_kmf,
+      amountKmf: payableAmount,        // ← montant plafonné, pas amount_kmf front
       amountPaid: amountEur,
       currency: 'EUR',
       fxRate,
@@ -283,7 +330,7 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       commitmentId: lockedCommitment?.id || null,
     });
 
-    // 2. Créer la Stripe Checkout Session
+    // 2. Créer la Stripe Checkout Session pour payableAmount
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -304,11 +351,10 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         shared_cart_id: cart.id,
         contribution_id: contribution.id,
         token: cart.token,
-        amount_kmf: String(amount_kmf),
+        amount_kmf: String(payableAmount),   // ← montant réel encaissé
       },
       success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_SUCCESS}?token=${cart.token}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
-      // Expiration de la session Stripe (30 min, défaut)
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
     });
 
@@ -319,13 +365,16 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       checkout_url: session.url,
       session_id: session.id,
       contribution_id: contribution.id,
+      payable_amount_kmf: payableAmount,            // montant réellement envoyé à Stripe
+      capped: payableAmount < commitmentAmount,      // true si plafonné au remaining
     });
   } catch (err) {
     if (err.status) {
       return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     }
     if (err.message && err.message.startsWith('Le panier ne nécessite plus')) {
-      return res.status(400).json({ error: err.message, code: 'amount_exceeds_remaining' });
+      // startContribution a rattrapé une race condition entre le check initial et le FOR UPDATE
+      return res.status(409).json({ error: err.message, code: 'already_fully_funded', remaining_kmf: 0 });
     }
     if (err.message && (
       err.message.includes('expiré') ||
