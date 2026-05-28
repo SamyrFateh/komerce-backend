@@ -62,9 +62,12 @@
   .k-cats-shell {
     margin-top: 0;
     border-radius: 20px;
-    background: var(--sand-warm);
-    border: 1px solid var(--border-text-08);
-    box-shadow: 0 6px 18px var(--border-text-10);
+    /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
+    background: var(--sand-bright);
+    border: 1px solid rgba(198,168,93,.13);
+    box-shadow:
+      0 6px 18px rgba(198,168,93,.09),
+      0 1px 0 rgba(198,168,93,.07);
     overflow: hidden;
   }
 
@@ -95,16 +98,17 @@
     width: 100%;
     flex: none;
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-columns: 26px minmax(0, 1fr);
     align-items: center;
     justify-content: start;
-    gap: 4px;
-    min-height: 34px;
-    padding: 3px 4px 3px 3px;
+    gap: 5px;
+    min-height: 36px;
+    padding: 3px 5px 3px 3px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, .58);
-    border: 1px solid rgba(42, 62, 44, .07);
-    box-shadow: 0 1px 3px rgba(31, 48, 36, .025);
+    /* POLISH — fond plus opaque, lecture des images améliorée */
+    background: rgba(255, 255, 255, .84);
+    border: 1px solid rgba(198, 168, 93, .14);
+    box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
     overflow: hidden;
     text-align: left;
     scroll-snap-align: none;
@@ -145,22 +149,27 @@
 
 @media (max-width: 899px) {
   .k-chip-photo {
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
     margin: 0;
     border-radius: 10px;
     border-width: 1px;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.46);
+    /* POLISH — bord interne lumineux pour soulever l'image du fond */
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
   }
 
   .k-chip-photo img {
     border-radius: 9px;
+    /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
+    filter: saturate(1.22) contrast(1.05);
   }
 }
 
 /* Fond par catégorie */
-.k-chip[data-cat="all"]         .k-chip-photo { background: var(--ocean-dark); }
+/* POLISH — fonds enrichis par catégorie */
+.k-chip[data-cat="all"]         .k-chip-photo { background: linear-gradient(135deg, var(--ocean-dark) 30%, var(--ocean) 100%); }
+.k-chip[data-cat="Soldes"]      .k-chip-photo { background: var(--cat-soldes-bg); }
 .k-chip[data-cat="Mode"]        .k-chip-photo { background: var(--cat-mode-bg); }
 .k-chip[data-cat="Beauté"]      .k-chip-photo { background: var(--cat-beaute-bg); }
 .k-chip[data-cat="Tech"]        .k-chip-photo { background: var(--cat-tech-bg); }
@@ -216,7 +225,8 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -.025em;
-    color: var(--text-alpha-82);
+    /* POLISH — texte quasi-plein pour contraste sur fond blanc */
+    color: var(--text);
     text-align: left;
   }
 }

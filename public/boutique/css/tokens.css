@@ -19,10 +19,13 @@
   --sand:         #FDFAF5;
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
+  /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
+  --sand-bright:  #FDFAF3;
 
   /* ── Surfaces sémantiques ─────────────────────────────────── */
   --page-bg:      var(--sand);
-  --hero-bg:      var(--page-bg);
+  /* POLISH — hero lumineux (plus clair que --page-bg #FDFAF5) */
+  --hero-bg:      var(--sand-bright);
   --hero-border:  transparent;
   --hero-shadow:  none;
 
@@ -165,6 +168,8 @@
   --cat-solaire-bg:   #FFF9D6;
   --cat-beaute-bg:    #FDE5F0;
   --cat-creatio-bg:   #EDE8FD;
+  /* POLISH — soldes : rouge-corail doux */
+  --cat-soldes-bg:    #FFE4D6;
 
   /* ── Statuts commandes ──────────────────────────────────── */
   --status-pending-bg:     #fff8ed;

@@ -117,8 +117,8 @@
   /* ── Hero propre — image pleine, zéro voile sombre (LOT 14) ── */
 
   .k-hero-media {
-    /* Fond crème visible si image plus étroite que le viewport */
-    background: var(--sand-warm);
+    /* POLISH — fond lumineux cohérent avec --hero-bg */
+    background: var(--sand-bright);
     /* Hauteur compacte desktop (réduite depuis clamp(300px,24vw,340px) — PR hero-compact) */
     height: clamp(170px, 14vw, 200px);
     border-radius: 0;

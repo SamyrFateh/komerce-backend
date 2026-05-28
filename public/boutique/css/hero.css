@@ -6,7 +6,7 @@
 /* ── HERO SHELL ─────────────────────────────────────────────── */
 /* overflow:clip (≠ hidden) : coupe le débordement SANS créer de scroll container,
    donc ne casse pas position:sticky des descendants. */
-.k-hero { position: relative; background: var(--sand-warm); overflow: clip; }
+.k-hero { position: relative; background: var(--hero-bg); overflow: clip; } /* POLISH — fond hero via token */
 .k-hero-inner { display: flex; flex-direction: column; max-width: var(--container); margin: 0 auto; }
 
 /* ── MOBILE : image arrondie ────────────────────────────────── */
@@ -98,10 +98,14 @@
 .k-cats-shell {
   margin: -14px 12px 0;
   padding: 0;
-  background: var(--sand-warm);
-  border: 1px solid var(--border-text-06);
+  /* POLISH — fond lumineux au lieu de sand-warm, séparation visuelle du hero */
+  background: var(--sand-bright);
+  border: 1px solid rgba(198,168,93,.13);
   border-radius: 18px;
-  box-shadow: 0 10px 20px var(--border-text-08);
+  /* Ombre chaude ambre + légère touche ocean */
+  box-shadow:
+    0 8px 20px rgba(198,168,93,.10),
+    0 2px 6px rgba(100,175,90,.06);
   overflow: clip;
 }
 
