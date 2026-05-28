@@ -11,7 +11,7 @@ import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js'
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
-import { requireIdentity, getCurrentIdentity }  from './b-identity.js';
+import { requireIdentity, getCurrentIdentity, restoreIdentity }  from './b-identity.js';
 import {
   PHONE_COUNTRIES,
   digitsOnly as _digitsOnly,
@@ -403,6 +403,67 @@ export function renderCheckout() {
       body.appendChild(idRecap);
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
+
+    // ── Restauration silencieuse de l'identité (cookie httpOnly kmrc_jwt) ────
+    // Si getCurrentIdentity() n'a rien trouvé en mémoire, on interroge le
+    // backend silencieusement (credentials: 'include' → le cookie httpOnly
+    // kmrc_jwt est envoyé automatiquement par le navigateur, jamais lu par JS).
+    // Si le backend confirme la session, on met à jour state.user puis on
+    // affiche ou rafraîchit le bloc "Vous commandez avec…".
+    // Aucun OTP n'est déclenché ici — requireIdentity() reste le garde-fou
+    // au clic final de submitOrder().
+    if (!_knownUser) {
+      restoreIdentity().then(restoredUser => {
+        if (!restoredUser) return;
+        // Mettre à jour l'état global
+        state.user = restoredUser;
+
+        // Construire ou remplacer le bloc récap dans le DOM
+        let idRecap = body.querySelector('#ck-identity-recap');
+        const isNew = !idRecap;
+        if (isNew) {
+          idRecap = document.createElement('div');
+          idRecap.id = 'ck-identity-recap';
+          idRecap.className = 'k-ck-identity-recap';
+        }
+
+        const rName  = restoredUser.full_name || restoredUser.name || '';
+        const rPhone = restoredUser.phone || '';
+        idRecap.innerHTML =
+          '<span class="k-ck-id-label">Vous commandez avec</span>'
+          + '<span class="k-ck-id-value">'
+          + (sanitize(rName) + (rName && rPhone ? ' · ' : '') + sanitize(rPhone))
+          + '</span>'
+          + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
+
+        idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
+          const newUser = await requireIdentity({
+            reason: "changer d'identité",
+            title: 'Utiliser un autre numéro',
+            allowOtherPhone: true,
+          });
+          if (newUser) {
+            const nameEl = idRecap.querySelector('.k-ck-id-value');
+            if (nameEl) {
+              const n = newUser.full_name || newUser.name || '';
+              const p = newUser.phone || '';
+              nameEl.textContent = n + (n && p ? ' · ' : '') + p;
+            }
+          }
+        });
+
+        if (isNew) {
+          // Insérer le bloc avant le premier champ (bénéficiaire) si possible
+          const firstInput = body.querySelector('.k-ck-group, .ck-label');
+          if (firstInput) {
+            body.insertBefore(idRecap, firstInput);
+          } else {
+            body.appendChild(idRecap);
+          }
+        }
+      }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
+    }
+    // ── Fin restauration silencieuse ─────────────────────────────────────────
 
       body.appendChild(makeInput('of-beneficiary-name',  'Nom du bénéficiaire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
     body.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone du bénéficiaire *', od, 'beneficiary_phone'));
