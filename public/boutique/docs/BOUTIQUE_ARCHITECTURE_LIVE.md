@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-27T22:51:28.772Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-28T00:35:31.683Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -19,7 +19,7 @@
 | `categories.css` | 470 | components.css |
 | `desktop-commerce-skeleton.css` | 330 | desktop.css |
 | `event.css` | 861 | event.css |
-| `group-cart-flow.css` | 1541 | components.css |
+| `group-cart-flow.css` | 1711 | components.css |
 | `hero-cart-proxy.css` | 113 | components.css |
 | `hero.css` | 146 | base.css |
 | `interactions.css` | 529 | components.css |
@@ -78,11 +78,11 @@ Aucun. ✅
 
 ## 6. `!important` par fichier
 
-448 déclaration(s) au total.
+480 déclaration(s) au total.
 
 | Fichier | Nombre |
 |---|---:|
-| `group-cart-flow.css` | 435 |
+| `group-cart-flow.css` | 467 |
 | `hero-cart-proxy.css` | 6 |
 | `modal.css` | 3 |
 | `boutique-desktop.css` | 2 |
@@ -106,7 +106,7 @@ Aucun. ✅
 - **CSS orphelins** : 0 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 2 (cible : 0 ou allowlist)
-- **`!important`** : 448 (cible : <10, idéal 0)
+- **`!important`** : 480 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 12 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 
 ---

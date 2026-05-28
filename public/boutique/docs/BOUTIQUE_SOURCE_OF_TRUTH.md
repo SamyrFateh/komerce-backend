@@ -4,11 +4,18 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.6 — 26 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation · B-SOT-1 résolu 26/05 (6 fichiers actifs ajoutés, 3 orphelins documentés)
+> Statut : **GEL v1.7 — 28 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation · B-SOT-1 résolu 26/05 (6 fichiers actifs ajoutés, 3 orphelins documentés) · **refactor/group-owner-css livré 28/05** (`group-cart-flow.css` owner officiel `.k-group-*`, `b-group-view.js` sans injection CSS)
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
 >
-> **Changelog v1.5 vs v1.4** :
+> **Changelog v1.7 vs v1.6** :
+> - **refactor/group-owner-css livré (28/05/2026)** : `group-cart-flow.css` devient owner officiel de tous les sélecteurs `.k-group-*` (cockpit groupe, panier partagé, vue participant)
+>   - `b-group-view.js` : `injectStyles()` réduit à no-op, 3 inline styles migués en classes CSS (−1 534 lignes CSS injectées par JS)
+>   - 18 tokens alpha groupe ajoutés dans `tokens.css` (`--green-alpha-*`, `--coral-bg-*`, `--amber-bg-*`, `--danger`, etc.)
+>   - Section `/* GROUP MOBILE COMPACT */` créée dans `group-cart-flow.css` (@media ≤700px + sous-mode ≤390px)
+>   - Multi-owner résiduel : 19 sélecteurs `.k-group-*` dans `cart.css` (legacy PR-0) — écrasés par `group-cart-flow.css`, nettoyage prévu lot suivant
+>
+
 > - **PR-1 livrée (24/05/2026)** : feature panier partagé côté créateur
 >   - `b-share-cart.js` créé — owner exclusif `.k-share-modal-*` (déclaré §2B) — flow A→B→C→D (nom + OTP + shared-cart API + WhatsApp)
 >   - `index.html` : bouton "En groupe" → "Partager" (mobile drawer + side-cart desktop), badge "Partagé" (hidden par défaut)
@@ -71,7 +78,7 @@ son propriétaire dans la table §2 ci-dessous.
 
 ---
 
-## 1. État de santé du projet (snapshot 22 mai 2026, post-PR-M3)
+## 1. État de santé du projet (snapshot 28 mai 2026, post-refactor/group-owner-css)
 
 Source officielle : `docs/BOUTIQUE_ARCHITECTURE_LIVE.md` (régénéré par `npm run audit:arch:live`).
 **En cas d'écart entre ce tableau et le LIVE, le LIVE fait foi** — relancer `audit:arch:live`
@@ -131,7 +138,7 @@ puis re-synchroniser cette section.
 | `cart.css` | `components` | État panier, rendu panier, `.k-card-add`, `.k-card-fav` | Panier complet | Rendu produit global, schéma catégories |
 | `interactions.css` | `components` | Animations, toasts, transitions chips, `.k-chip.transitioning` | Micro-interactions | Structure, layout, pager |
 | `hero-cart-proxy.css` | `components` | `.k-hero-bubble` proxy mobile uniquement | Bulle hero mobile | Desktop |
-| `group-cart-flow.css` | `components` | Flux paniers partagés — résiduel (3L) | Group cart flow | Hors group cart |
+| `group-cart-flow.css` | `components` | **Owner officiel de tous les styles Groupe / shared cart view** (refactor/group-owner-css, 28/05/2026) — cockpit créateur, vue participant, mobile compact | **Tous les `.k-group-*`** : `.k-group-view`, `.k-group-cockpit`, `.k-group-cart-switcher`, `.k-group-mini-guide`, `.k-group-side-panel`, `.k-group-identity-note`, et tous les sélecteurs `.k-group-*` — mobile ≤700px + ≤390px inclus | Hors group cart. **`b-group-view.js` ne doit plus injecter de CSS massif** (injectStyles() = no-op) |
 | `shared-followup.css` | `components` | Followup partagé — résiduel (3L) | Shared followup | Hors followup |
 | `boutique-desktop.css` | `desktop` | **Owner desktop ≥900px** : `.k-chip` desktop, `.k-cats-shell` desktop, mega-nav, side-cart, `.k-card` hover, footer | Tout premium desktop | Mobile pager, `#k-page-scroll`, `!important` contre mobile |
 | `desktop-commerce-skeleton.css` | `desktop` | Layout desktop : header shape, hero desktop, `#k-desktop-catalog-wrap` grid, `.k-card` overrides visuels | Squelette commerce desktop | `.k-chip`, `.k-cats` (→ `boutique-desktop.css`) |
@@ -197,7 +204,7 @@ puis re-synchroniser cette section.
 | `js/b-boutique-wow-style.js` | | Couche visuelle expérimentale réversible | Expérimentation | Vérité définitive, structure |
 | **PANIER PARTAGÉ — ACTIFS NON LISTÉS (ajout B-SOT-1, 26/05/2026)** | | | | |
 | `js/b-share-phone-guard.js` | | Guard numéro de téléphone avant partage panier — vérifie et demande le n° si absent avant de déclencher le flow WhatsApp | Validation téléphone pré-partage | Logique panier, flow commande |
-| `js/b-group-view.js` | | Rendu onglet Groupe du panier partagé (`renderGroupView`, `refreshGroupBadge`, `detectParticipantToken`). Importé par `b-nav.js`, `b-group-banner.js`, `b-share-cart.js`, `b-share-phone-guard.js` | **Onglet Groupe panier partagé** | Logique panier principal, modal |
+| `js/b-group-view.js` | | Rendu onglet Groupe du panier partagé (`renderGroupView`, `refreshGroupBadge`, `detectParticipantToken`). Importé par `b-nav.js`, `b-group-banner.js`, `b-share-cart.js`, `b-share-phone-guard.js` | **Onglet Groupe panier partagé** | Logique panier principal, modal. **Ne doit plus injecter de CSS** : `injectStyles()` = no-op depuis refactor/group-owner-css — tous les styles `.k-group-*` sont dans `group-cart-flow.css` |
 | `js/b-group-banner.js` | | Bannière statut panier partagé (auto-init si token actif dans l'URL). Import auto dans `boutique.js` ligne 80 | Bannière groupe | Onglet groupe, flow panier |
 | **PDP ENRICHIE — ACTIFS NON LISTÉS (ajout B-SOT-1, 26/05/2026)** | | | | |
 | `js/b-modal-approche-c-hybrid.js` | | Enrichissements PDP hybride approche-C : personnalisation fiche produit selon type. Branché dans `main.js` (`setupApprocheCHybridPdp`) | Enrichissement PDP type-C | Cycle modal de base |
