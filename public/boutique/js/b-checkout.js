@@ -381,7 +381,7 @@ export function renderCheckout() {
         + '<span class="k-ck-id-value">'
         + (sanitize(_dName) + (_dName && _dPhone ? ' · ' : '') + sanitize(_dPhone))
         + '</span>'
-        + '<button type="button" class="k-ck-id-change">Ce n'est pas vous ? Utiliser un autre numéro</button>';
+        + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
 
       idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
         const newUser = await requireIdentity({
