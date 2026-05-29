@@ -28,16 +28,8 @@ export function setupCartProductOpenStyle() {
       console.warn('[friendly-group-link] chargement impossible', err);
     });
 
-  // Bootstrap opportuniste de l'onglet Mes paniers partagés sans alourdir main.js.
-  import('./b-cart-groups-tab.js')
-    .then(function(mod) {
-      if (mod && typeof mod.setupCartGroupsTab === 'function') {
-        mod.setupCartGroupsTab();
-      }
-    })
-    .catch(function(err) {
-      console.warn('[cart-groups] chargement impossible', err);
-    });
+  // NOTE: b-cart-groups-tab.js retiré — setupCartGroupsTab() est vide (legacy désactivé).
+  // Le flux Groupe officiel vit dans b-group-view.js + group/group-api.js.
 
   // Desktop : la petite dame doit toujours ouvrir un vrai panier,
   // même dans Favoris/Suivi où le side-cart peut être invisible.

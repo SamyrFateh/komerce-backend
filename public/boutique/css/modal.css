@@ -211,13 +211,16 @@
 }
 
 
-/* ── BOUTON FAVORI MODALE (top-right de l'image) ─────────────
+/* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
    FIX favori absent dans modale produit : bouton ❤️ universel
-   mobile + desktop, posé sur l'image. Même langage visuel que
-   les cartes (.k-card-fav.liked) pour cohérence. */
+   mobile + desktop, posé sur la zone blanche details.
+   FIX: env(safe-area-inset-top) retiré — le bouton est positionné
+   relativement à .k-modal-details (position:relative) qui se trouve
+   SOUS la topbar et la zone image ; utiliser safe-area-inset-top ici
+   ajoutait un décalage erroné sur iPhone à encoche (44-59 px). */
 .k-modal-fav-btn {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top, 0px));
+  top: 10px;
   right: 10px;
   width: 42px; height: 42px;
   background: var(--surface-sand-94);
@@ -670,11 +673,14 @@
 
 /* ── F4 — TRUST BAR MOBILE ──────────────────────────────────── */
 /* 3 pills horizontaux au-dessus de .k-modal-actions.
-   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais. */
+   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais.
+   FIX: flex-shrink:0 — la trust bar est enfant flex direct de #k-modal après le déplacement
+   des actions par setupModal() ; sans cette propriété elle peut être écrasée sur petits écrans.
+   FIX: pas de border-top ici — .k-modal-actions en a déjà un ; double bordure supprimée. */
 .k-modal-trust-mobile {
   display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;
   gap: 6px; padding: 8px 14px 4px;
-  border-top: 1px solid var(--sand-dark);
+  flex-shrink: 0;
 }
 .k-modal-trust-mobile-item {
   display: inline-flex; align-items: center; gap: 4px;
