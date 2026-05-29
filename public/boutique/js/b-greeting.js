@@ -19,43 +19,9 @@ const STYLE_ID     = 'k-greeting-styles';
 const CHIP_ID      = 'k-greeting-chip';
 const DURATION     = 4000; // ms avant disparition
 
-function ensureStyles() {
-  if (document.getElementById(STYLE_ID)) return;
-  const s = document.createElement('style');
-  s.id = STYLE_ID;
-  s.textContent = `
-#k-greeting-chip {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  right: 14px;
-  z-index: 1800;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: var(--white, #fff);
-  border: 1.5px solid rgba(31,122,84,.18);
-  border-radius: 999px;
-  padding: 6px 12px 6px 8px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.10);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text, #1a1a1a);
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity .22s ease, transform .22s ease;
-}
-#k-greeting-chip.k-greeting-chip--visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-#k-greeting-chip.k-greeting-chip--out {
-  opacity: 0;
-  transform: translateY(-6px);
-}
-`;
-  document.head.appendChild(s);
-}
+// FIX BUG-L3 : styles migrés vers css/interactions.css (bundle components).
+// La fonction ensureStyles() est supprimée — plus d'injection CSS depuis le JS.
+function ensureStyles() { /* no-op — styles dans interactions.css */ }
 
 function firstName(fullName) {
   return (fullName || '').trim().split(/\s+/)[0] || '';

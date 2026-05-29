@@ -89,9 +89,9 @@ puis re-synchroniser cette section.
 | CSS orphelins | **0** ✅ | 0 | atteint |
 | Hex hardcodés hors tokens | **2** ✅ | 0 (ou allowlist) | 2 restants dans `event.css` (hors périmètre) |
 | `npm run audit:arch` | **0 violation** ✅ | 0 violation | atteint (PR-M4) |
-| `!important` total projet | **12** | < 10, idéal 0 | proche cible |
-| `!important` dans modal.css | **2** ✅ | < 5, idéal 2 légitimes | **atteint** (PR-M5) |
-| Sélecteurs multi-owner | **12** | 0 (ou documentés §3 ARCH) | stable, à arbitrer |
+| `!important` total projet | **35** ⚠️ | < 10, idéal 0 | +23 depuis refactor/group-owner-css (28/05) — group-cart-flow.css (15) + hero-cart-proxy.css (6) |
+| `!important` dans modal.css | **3** | < 5, idéal 2 légitimes | 3e ajouté dans @media (padding-bottom CTA bar) — légitime |
+| Sélecteurs multi-owner | **7** | 0 (ou documentés §3 ARCH) | ARCH-6 résolu : `.k-modal.is-scrolled` rapatrié dans `modal.css`. 5 restants légitimes (desktop overrides dans `@media`). |
 | Tokens cassés `var(--x)nnn` | **0** ✅ | 0 | atteint |
 | `modal-view-model.js` | **PRÉSENT** ✅ | Présent | livré PR-M1 le 20/05/2026 |
 | Sections `modal.css` | **6** ✅ | 6 (PR-M2) | atteint |
@@ -106,14 +106,31 @@ puis re-synchroniser cette section.
 
 > Les 2 hex `modal.css` (`#F0A500` et `#EBF5EE`) ont été migrés en PR-M4 (21/05/2026). `#F0A500` → `var(--star-gold)` (nouveau token). `#EBF5EE` → `var(--green-bg)` (réutilisation, ΔE ≈ 1.5 imperceptible). **Ne pas créer `--delivery-bg`** — cette décision est définitive.
 
-**Les 2 `!important` restants dans modal.css** (légitimes, **NE PAS RETIRER**) :
+**Les 3 `!important` restants dans modal.css** (légitimes, **NE PAS RETIRER**) :
 
 | Ligne | Sélecteur | Raison |
 |---|---|---|
-| 363 | `.k-sug-card.search-hidden { display: none !important }` | Classe posée par JS pour masquer une carte qui a `display:flex` en règle de base. Sans `!important`, le masquage est ignoré. |
-| 602 | `.k-sug-card.subcat-hidden { display: none !important }` | Idem — filtre sous-catégorie posé par JS. |
+| 370 | `.k-sug-card.search-hidden { display: none !important }` | Classe posée par JS pour masquer une carte qui a `display:flex` en règle de base. Sans `!important`, le masquage est ignoré. |
+| 562 | `#k-modal > .k-modal-scroll { padding-bottom: 0 !important }` | Dans `@media` CTA statique — écrase la règle de base qui compense la barre CTA en `position:fixed`. Légitime en `@media`. |
+| 635 | `.k-sug-card.subcat-hidden { display: none !important }` | Idem `.search-hidden` — filtre sous-catégorie posé par JS. |
 
-> Alternative future (hors PR-M5) : utiliser l'attribut HTML `hidden` au lieu d'une classe, ce qui permettrait de retirer ces 2 `!important`. Pas prioritaire.
+> Alternative future (hors PR-M5) : utiliser l'attribut HTML `hidden` au lieu d'une classe, ce qui permettrait de retirer les 2 `!important` de masquage. Pas prioritaire.
+
+**Note !important total (35) — détail par fichier source** :
+
+| Fichier | Occurrences | Statut |
+|---|---|---|
+| `group-cart-flow.css` | **15** | Intentionnel — owner `.k-group-*`, conflits avec `cart.css` résolus (refactor 28/05). À réduire au prochain chantier group-cart. |
+| `hero-cart-proxy.css` | **6** | Overrides mobile vs desktop — à auditer. |
+| `modal.css` | **3** | Légitimes (voir tableau ci-dessus). |
+| `layout.css` | 2 | À vérifier. |
+| `hero.css` | 2 | À vérifier. |
+| `boutique-desktop.css` | 2 | Overrides desktop — à auditer. |
+| `shared-followup.css` | 1 | À vérifier. |
+| `products.css` | 1 | À vérifier. |
+| `interactions.css` | 1 | Ajouté lors migration BUG-L3 (greeting chip). |
+| `categories.css` | 1 | À vérifier. |
+| `cart.css` | 1 | À vérifier. |
 
 > **Note historique** : la version v1.0 de ce doc annonçait "7 CSS orphelins" et "213 hex hardcodés".
 > Vérifié le 20/05/2026 : ces chiffres étaient hérités d'un snapshot antérieur. Les 7 fichiers
@@ -397,4 +414,4 @@ Conséquence directe : aucune règle `.k-chip`, `.k-cats-shell`, `.k-cats` dans
 
 ---
 
-*Komerce · Source de Vérité Unique · GEL v1.6 · 26 mai 2026 · Chantier modale CLÔTURÉ (5/5 PR) · B-SOT-1 résolu (6 actifs ajoutés, 3 orphelins documentés) · Un composant = une vérité = un fichier propriétaire*
+*Komerce · Source de Vérité Unique · GEL v1.7 · 28 mai 2026 · Chantier modale CLÔTURÉ (5/5 PR) · B-SOT-1 résolu (6 actifs ajoutés, 3 orphelins documentés) · Un composant = une vérité = un fichier propriétaire*

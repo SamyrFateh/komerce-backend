@@ -89,7 +89,7 @@ function readCache() {
   }
 }
 
-function writeCache(products) {
+export function writeCache(products) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(products));
 }
 

@@ -68,7 +68,7 @@ import {
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
 import {
-  setProducts, getAllProducts, getPromoProducts,
+  setProducts, getAllProducts, getPromoProducts, writeCache,
 }                             from './product-store.js';
 
 'use strict';
@@ -78,6 +78,11 @@ const _normalizeCat = normalizeCategoryKey;
 
 // Pager → catalog : centrer la chip active (découplage circulaire)
 bus.on('chip:center', function(chip) { centerActiveChip(chip); });
+
+// FIX BUG-M4 : b-modal.js utilisait un import direct de setActiveCat,
+// créant une dépendance circulaire (modal→catalog→modal via openModal).
+// On passe maintenant par le bus : b-modal.js émet 'cat:select', on écoute ici.
+bus.on('cat:select', function(cat) { setActiveCat(cat); });
 
 // Fix: écouter catalog:cat-changed émis par b-desktop-upgrade.js (merch cards, promo strip)
 // pour synchroniser le rail de chips desktop.
@@ -157,6 +162,7 @@ async function loadProducts() {
     if (typeof K === 'undefined' || !K.products) throw new Error('K non disponible');
     const data = await K.products.list({ limit: 1000 });
     const raw = (Array.isArray(data) ? data : data.products || []).filter(p => p.is_available !== false);
+    writeCache(raw);                       // FIX BUG-C2 : persistance offline
     products = setProducts(raw);           // product-store normalise + met en cache
   } catch (e) {
     console.warn('[loadProducts] API KO → fallback cache product-store');

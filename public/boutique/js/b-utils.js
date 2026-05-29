@@ -190,6 +190,22 @@ export function bindCarouselDots(card) {
 function _assertApi() {
   if (!window.K?.request) throw new Error('[Komerce] komerce-api.js manquant ou en erreur');
 }
+
+/**
+ * ARCH-4 : accès centralisé et guardé à l'API globale K.
+ * Tous les modules qui ont besoin de K doivent passer par getAPI()
+ * plutôt que d'accéder directement à window.K — permet de détecter
+ * les usages avant que komerce-api.js soit chargé.
+ * @returns {typeof K} L'instance K
+ * @throws {Error} Si K n'est pas encore disponible
+ */
+export function getAPI() {
+  if (typeof K === 'undefined' || !K) {
+    throw new Error('[Komerce] komerce-api.js non chargé — getAPI() appelé trop tôt');
+  }
+  return K;
+}
+
 export function apiGet(path) {
   _assertApi();
   return window.K.request(path, 'GET');

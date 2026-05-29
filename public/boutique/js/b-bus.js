@@ -10,13 +10,17 @@
  * Événements standard Komerce :
  *   modal:open       { id }              — ouvrir fiche produit
  *   modal:close      —                  — fermer modal
- *   cart:add         { product, qty }   — ajouter au panier
- *   cart:update      —                  — panier mis à jour (badge sync)
- *   cart:open        —                  — ouvrir tiroir panier
- *   cart:close       —                  — fermer tiroir panier
+ *   cart:update      —                  — panier mis à jour (badge sync) [émis par updateCartBadge]
+ *   side-cart:render —                  — forcer un re-rendu du side-cart desktop [ARCH-1]
+ *   checkout:open    —                  — ouvrir la modale de commande [ARCH-1]
+ *   product:open-from-cart { id }        — ouvrir fiche depuis le panier [ARCH-1]
  *   view:switch      { view }           — changer d'onglet (home/favs/suivi)
- *   search:query     { q }             — lancer recherche
- *   pager:navigate   { cat }           — naviguer vers catégorie Temu
+ *   cat:select       { cat }            — filtrer catalogue sur catégorie [b-modal → b-catalog]
+ *   chip:center      { chip }           — centrer chip active dans le pager [b-pager → b-catalog]
+ *   catalog:cat-changed { cat }         — catégorie active changée [b-catalog → b-desktop-upgrade]
+ *
+ * Événements retirés du JSDoc (déclarés mais jamais émis ni consommés) :
+ *   cart:add, cart:open, cart:close, search:query, pager:navigate
  */
 
 const _listeners = {};

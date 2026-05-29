@@ -107,14 +107,15 @@ const OWNERSHIP = [
 // I-3 : Allowlist hex hors tokens.css. Justifier chaque exception.
 const HEX_ALLOWLIST = [
   // Format : { file, hex, reason }
-  // Exemples acceptables (à activer cas par cas par PR) :
-  // { file: 'event.css', hex: '#25d366', reason: 'Vert WhatsApp officiel, jamais réutilisé ailleurs' },
+  // Fallbacks CSS dans var(--token, #hex) — l'auditeur ne distingue pas le contexte
+  { file: 'interactions.css', hex: '#fff',    reason: 'Fallback CSS dans var(--white, #fff) pour les navigateurs sans token — greeting chip §BUG-L3' },
+  { file: 'interactions.css', hex: '#1a1a1a', reason: 'Fallback CSS dans var(--text, #1a1a1a) pour les navigateurs sans token — greeting chip §BUG-L3' },
 ];
 
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup'],
+  'components.css': ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
   'desktop.css':    ['boutique-desktop', 'desktop-commerce-skeleton'],
   'event.css':      ['event'],
 };

@@ -23,7 +23,7 @@
     "check:cache:fix":    "node scripts/check-cache-buster.js --fix",
     "check:cache:init":   "node scripts/check-cache-buster.js --init",
 
-    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run audit:arch",
+    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch && npm run audit:arch:live",
     "check:all:verbose":  "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch",
 
     "precommit":          "npm run check:all"

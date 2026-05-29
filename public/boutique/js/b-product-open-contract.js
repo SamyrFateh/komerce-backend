@@ -168,7 +168,10 @@ export function setupProductOpenContract() {
   document.addEventListener('click', _onDocumentClick, true);
   _installBusSafetyNet();
 
-  if (typeof window !== 'undefined') {
-    window.__kmrcOpenProductFromCart = openProductFromCart;
-  }
+  // ARCH-1 : remplace window.__kmrcOpenProductFromCart par un listener bus.
+  // Les appelants doivent émettre bus.emit('product:open-from-cart', { id }).
+  bus.on('product:open-from-cart', function(payload) {
+    if (!payload?.id && payload?.id !== 0) return;
+    openProductFromCart(payload.id);
+  });
 }

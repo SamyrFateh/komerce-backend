@@ -6,7 +6,7 @@
  *  - Apparaît dès qu'un article est dans le panier, disparaît si vide.
  *  - Draggable (touch + mouse) — se snappe sur le bord gauche ou droit à la fin du drag.
  *  - Au clic (sans drag) → ouvre un mini-popover avec la liste des articles + total.
- *  - Se met à jour automatiquement via window.__kmrcCartPillSync() appelé par updateCartBadge.
+ *  - Se met à jour automatiquement via bus.on('cart:update') émis par updateCartBadge.
  *
  * Intégration :
  *   import './b-cart-pill.js';  // dans main.js, après boutique.js
@@ -453,22 +453,25 @@ function _init() {
   _pillInited = true;
 }
 
-// ─── Hook global ───────────────────────────────────────────────────────────
-// Appelé par updateCartBadge() via window.__kmrcCartPillSync
-window.__kmrcCartPillSync = function() {
+// ─── Hook bus (cart:update) ─────────────────────────────────────────────────
+// ARCH-1 : remplace le tableau window.__kmrcCartPillSyncHandlers par un
+// listener bus direct. Unifié avec l'ancien listener bus.on('cart:update')
+// qui était en doublon en bas du fichier.
+bus.on('cart:update', function() {
   if (isDesktop()) return;  // pill mobile uniquement
-  if (!_pillInited) _init();
+  if (!_pillInited) {
+    if (_isCataloguePage()) _init();
+    else return;
+  }
   _renderPill();
-  // Mettre à jour le popover si ouvert
   if (popover && popover.classList.contains('kpill-pop--open')) {
     _buildPopover();
   }
-};
+});
 
 // ─── Démarrage ─────────────────────────────────────────────────────────────
 // Uniquement sur le catalogue (index.html / page principale) ET mobile
 function _isCataloguePage() {
-  // La page catalogue contient #k-grid
   return !!document.getElementById('k-grid') || !!document.getElementById('k-catalog-section');
 }
 
@@ -483,10 +486,3 @@ if (document.readyState === 'loading') {
 } else {
   if (_shouldInit()) _init();
 }
-
-// Écouter les events bus pour se mettre à jour
-bus.on('cart:update', function() {
-  if (isDesktop()) return;
-  if (!_pillInited && _isCataloguePage()) _init();
-  _renderPill();
-});

@@ -56,9 +56,13 @@ function addGroupFromShare(detail) {
   showToast('Panier partagé ajouté au suivi', 'success');
 }
 
+// ARCH-1 : flag de guard migré de window.__kmrcGroupWorkspacePatch vers
+// une variable de module — évite la pollution du scope global.
+let _fetchPatched = false;
+
 function patchFetchForWorkspaceCreation() {
-  if (window.__kmrcGroupWorkspacePatch) return;
-  window.__kmrcGroupWorkspacePatch = true;
+  if (_fetchPatched) return;
+  _fetchPatched = true;
 
   const originalFetch = window.fetch;
   if (typeof originalFetch !== 'function') return;

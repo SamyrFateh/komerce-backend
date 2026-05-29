@@ -70,9 +70,11 @@ node --check b-identity.js     ✅
 
 ## Multi-owner résiduel connu (hors périmètre)
 
-19 sélecteurs `.k-group-*` existent encore dans `cart.css` (legacy PR-0).
-Ils sont écrasés par `group-cart-flow.css` (chargé après, avec `!important` là où nécessaire).
-Nettoyage prévu dans le lot suivant — voir `AUDIT_GROUP_CSS_REFACTOR.md §4 Risque 1`.
+~~19 sélecteurs `.k-group-*` existent encore dans `cart.css` (legacy PR-0).~~
+**✅ Nettoyé** — les 19 sélecteurs `.k-group-*` ont été retirés de `cart.css`.
+`group-cart-flow.css` est désormais le seul owner des règles `.k-group-*`.
+Les `!important` de `group-cart-flow.css` qui couvraient des conflits de cascade avec `cart.css`
+peuvent être revus au prochain chantier CSS (voir `ANALYSE_BOUTIQUE §ARCH-5`).
 
 ---
 

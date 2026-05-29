@@ -6,7 +6,7 @@
  *   - Vanilla JS/CSS, aucune dépendance externe.
  *   - Lecture état panier → state.cart, cartQty(), cartTotal() (b-cart-core.js)
  *   - Ouverture tiroir → dom.cartBtn.click() (câblé par setupDrawer dans b-nav.js)
- *   - Hook sync → window.__kmrcCartPillSync (appelé par updateCartBadge)
+ *   - Hook sync → bus.on('cart:update') émis par updateCartBadge (ARCH-1)
  *   - Desktop (≥900px) : no-op total (side-cart actif)
  *   - Mobile : pastille draggable, snap sur bord gauche/droit, position persistée
  */
@@ -372,7 +372,8 @@ export function setupMiniCart() {
     _openCartDrawer();
   });
 
-  window.__kmrcCartPillSync = _onCartUpdate;
+  // ARCH-1 : remplace le tableau window.__kmrcCartPillSyncHandlers par bus.on.
+  bus.on('cart:update', _onCartUpdate);
 
   // Sync au resize
   window.addEventListener('resize', () => {

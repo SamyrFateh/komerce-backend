@@ -9,13 +9,9 @@ export function setupCartProductOpenStyle() {
   // build. Provoquait "Refused to apply style ... MIME type 'text/html'" car
   // le serveur renvoyait l'index HTML en fallback SPA.
 
-  if (!document.getElementById('kmrc-shared-followup-css')) {
-    const link = document.createElement('link');
-    link.id = 'kmrc-shared-followup-css';
-    link.rel = 'stylesheet';
-    link.href = '/boutique/css/shared-followup.css?v=1';
-    document.head.appendChild(link);
-  }
+  // FIX BUG-H3 : shared-followup.css est déjà inclus dans components.css
+  // (bundle dist). Le chargement dynamique était redondant et utilisait un
+  // cache-buster ?v=1 incohérent avec le ?v=7 du bundle.
 
   // Compatibilité lien public court /g/:token → /event/w/:token.
   import('./b-friendly-group-redirect.js')

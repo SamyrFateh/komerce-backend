@@ -24,7 +24,8 @@ import {
   normalizeCategoryKey, getCategorySectionEmoji,
 }                         from './shop-schema.js';
 import { isDesktop, getScrollY, scrollToPosition } from './b-scroll-owner.js';
-import { setActiveCat }   from './b-catalog.js';
+// FIX BUG-M4 : import { setActiveCat } retiré — remplacé par bus.emit('cat:select').
+// Élimine la dépendance circulaire b-modal.js ↔ b-catalog.js.
 import { setupImageUX }     from './b-modal-image-ux.js';
 import { setupSocialProof } from './b-modal-social-proof.js';
 
@@ -1550,8 +1551,9 @@ bus.on('modal:open', function({ id }) { if (typeof openModal === 'function') ope
             _saveRecent(q);
             _resetSearchState();
             closeModal();
-            // Filtrer le catalogue sur cette catégorie + le terme
-            setActiveCat(cat);
+            // FIX BUG-M4 : remplace l'import direct setActiveCat (dépendance
+            // circulaire b-modal↔b-catalog). b-catalog.js écoute 'cat:select'.
+            bus.emit('cat:select', cat);
             var mainInput = dom.searchInput || document.getElementById('k-search-input');
             if (mainInput) {
               mainInput.value = q;

@@ -1,0 +1,183 @@
+/**
+ * identity.css — Komerce OTP / Identity gate styles
+ *
+ * @owner b-identity.js
+ * @bundle components (via bundle-css.js)
+ *
+ * FIX BUG-L3 : migré depuis l'injection JS ensureStyles() dans b-identity.js.
+ * Plus de createElement('style') dans le JS — tout le CSS passe par le pipeline.
+ */
+
+/* ── Overlay ─────────────────────────────────────────────────────── */
+.k-id-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  background: rgba(18,22,18,.48);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: kIdFade .18s ease;
+}
+@keyframes kIdFade { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 640px) { .k-id-overlay { align-items: center; } }
+
+/* ── Sheet ───────────────────────────────────────────────────────── */
+.k-id-sheet {
+  width: 100%;
+  max-width: 420px;
+  background: var(--white, var(--white, var(--white)));
+  border-radius: 22px 22px 0 0;
+  padding: 16px 18px calc(24px + env(safe-area-inset-bottom));
+  box-shadow: 0 24px 80px rgba(0,0,0,.22);
+  animation: kIdUp .24s ease;
+}
+@media (min-width: 640px) {
+  .k-id-sheet {
+    border-radius: 18px;
+    padding: 16px;
+    max-width: 380px;
+  }
+}
+@keyframes kIdUp { from { transform: translateY(28px); opacity: .9; } to { transform: none; opacity: 1; } }
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.k-id-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.k-id-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.12;
+}
+.k-id-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.8px;
+  line-height: 1.22;
+  color: var(--text-muted);
+}
+.k-id-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sand, var(--sand-warm, var(--sand-warm)));
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* ── Trust block ─────────────────────────────────────────────────── */
+.k-id-trust {
+  display: grid;
+  gap: 3px;
+  background: rgba(239,125,95,.10);
+  border: 1px solid rgba(239,125,95,.22);
+  border-radius: 11px;
+  padding: 7px 9px;
+  margin: 0 0 9px;
+  color: var(--text);
+  font-size: 10.8px;
+  line-height: 1.2;
+}
+.k-id-trust strong { font-size: 11.8px; color: var(--text); }
+
+/* ── Form fields ─────────────────────────────────────────────────── */
+.k-id-field { margin: 0 0 8px; }
+.k-id-field label,
+.k-id-sheet .k-ck-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.k-id-sheet .k-ck-group { margin: 0 0 8px; }
+.k-id-sheet .k-ck-phone-wrap { display: flex; gap: 8px; align-items: stretch; }
+.k-id-sheet .k-ck-phone-select {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  background: var(--white, var(--white));
+  color: var(--text);
+  font-weight: 700;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.k-id-sheet .k-ck-phone-input,
+.k-id-input {
+  width: 100%;
+  min-height: 34px;
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  padding: 6px 8px;
+  font-size: 12px;
+  box-sizing: border-box;
+  outline: none;
+  background: var(--white, var(--white));
+  color: var(--text);
+}
+.k-id-sheet .k-ck-phone-input:focus,
+.k-id-input:focus { border-color: var(--coral, var(--coral, var(--coral))); }
+
+/* ── Code row ────────────────────────────────────────────────────── */
+.k-id-code-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end; }
+.k-id-link {
+  border: 0;
+  background: transparent;
+  color: var(--coral, var(--coral, var(--coral)));
+  font-size: 10.8px;
+  font-weight: 900;
+  padding: 0 0 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.k-id-error {
+  min-height: 14px;
+  margin: 0 0 5px;
+  color: var(--red-danger-text, var(--red-danger, var(--red-danger)));
+  font-size: 10.8px;
+  line-height: 1.35;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.k-id-btn {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--coral, var(--coral, var(--coral)));
+  color: var(--white, var(--white));
+  font-size: 12.8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.k-id-btn:disabled { opacity: .58; cursor: not-allowed; }
+.k-id-secondary { margin-top: 6px; background: var(--sand, var(--sand-warm, var(--sand-warm))); color: var(--text); }
+
+/* ── Known user ──────────────────────────────────────────────────── */
+.k-id-known {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(31,122,84,.20);
+  background: rgba(31,122,84,.08);
+  border-radius: 11px;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+}
+.k-id-known strong { display: block; font-size: 11.8px; color: var(--text); }
+.k-id-known span   { display: block; font-size: 10.8px; color: var(--text-muted); margin-top: 1px; }
+.k-id-known button { border: 0; background: transparent; color: var(--coral, var(--coral, var(--coral))); font-weight: 900; cursor: pointer; font-size: 12px; }

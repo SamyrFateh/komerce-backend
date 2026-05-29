@@ -261,7 +261,8 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
     // Buy-now depuis la modal : rafraîchir le side-cart desktop silencieusement
     // (la modal gère elle-même le feedback visuel du bouton et l'ouverture du panier)
     if (isDesktop()) {
-      if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
+      // ARCH-1 : remplace window.__kmrcSideCart → bus.emit
+      bus.emit('side-cart:render');
     }
   } else if (sourceBtn) {
     // Toast de confirmation (grid / rail uniquement)
@@ -1487,7 +1488,9 @@ function renderSideCart() {
   if (ctaCheckout && !ctaCheckout._wired) {
     ctaCheckout._wired = true;
     ctaCheckout.addEventListener('click', () => {
-      if (typeof window.__kmrcCheckout === 'function') window.__kmrcCheckout();
+      // ARCH-1 : remplace l'appel window.__kmrcCheckout → bus.emit.
+      // boutique.js écoute 'checkout:open' et appelle checkoutCart().
+      bus.emit('checkout:open');
     });
   }
 
@@ -1510,8 +1513,10 @@ function renderSideCart() {
   }
 }
 
-// Hook global appelé par b-cart-core.js updateCartBadge()
-window.__kmrcSideCart = renderSideCart;
+// ARCH-1 : remplace window.__kmrcSideCart par un listener bus.
+// Appelé par updateCartBadge (b-cart-core.js) et les surfaces qui
+// ont besoin de forcer un re-rendu du side-cart desktop.
+bus.on('side-cart:render', renderSideCart);
 
 /* ── MUTATIONS CENTRALISÉES ─────────────────────────────────
  * Toute écriture sur state.cart doit passer par ces fonctions

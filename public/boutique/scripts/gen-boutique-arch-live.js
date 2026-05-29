@@ -87,7 +87,9 @@ function inventoryCss() {
   }
   const inBundle = {};
   for (const [bundle, files] of Object.entries(bundleConfig)) {
-    files.forEach(f => { inBundle[f] = bundle; });
+    // FIX BUG-C1 : first-write-wins — évite que tokens.css (présent dans base
+    // ET event) soit rapporté comme appartenant au dernier bundle itéré.
+    files.forEach(f => { if (!inBundle[f]) inBundle[f] = bundle; });
   }
 
   const rows = onDisk.map(f => {

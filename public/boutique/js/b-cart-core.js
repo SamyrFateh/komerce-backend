@@ -7,6 +7,7 @@
  */
 
 import { state, dom, CART_VERSION } from './b-store.js';
+import { bus } from './b-bus.js';
 
 // FIX vérité unique : CART_VERSION était redéfini ici en local (= 3) en plus
 // de b-store.js (export = 3). Si on bumpait l'un sans l'autre :
@@ -87,9 +88,10 @@ export function updateCartBadge() {
     badge.classList.toggle('show', hasItems);
   });
 
-  // Side cart + bnav total (implémenté dans b-cart.js, pas de circular import)
-  if (typeof window.__kmrcSideCart     === 'function') window.__kmrcSideCart();
-  if (typeof window.__kmrcCartPillSync === 'function') window.__kmrcCartPillSync();
+  // Side cart + bnav total (implémenté dans b-cart.js via bus 'side-cart:render')
+  bus.emit('side-cart:render');
+  // ARCH-1 : pill + mini-cart écoutent directement bus.on('cart:update')
+  bus.emit('cart:update');
 }
 
 // ──────────────────────────────────────────────

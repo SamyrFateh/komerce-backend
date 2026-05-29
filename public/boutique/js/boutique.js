@@ -159,9 +159,9 @@ function setupFooterLinks() {
 }
 
 // â”€â”€ Boot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// FIX Bug 2 : __kmrcCheckout assigné AVANT init() pour que renderSideCart
-// (via updateCartBadge) trouve la fonction définie dès le premier rendu.
-window.__kmrcCheckout = checkoutCart;
+// ARCH-1 : remplace window.__kmrcCheckout par un listener bus.
+// Assigné AVANT init() pour que renderSideCart trouve le handler dès le premier rendu.
+bus.on('checkout:open', checkoutCart);
 
 if (document.readyState === 'loading') {
   // Listener global cart:setqty (stepper) — enregistré UNE SEULE FOIS
@@ -177,7 +177,7 @@ if (document.readyState === 'loading') {
 }
 
 // â”€â”€ Side cart checkout : pont window pour éviter la dépendance circulaire b-cartâ†”b-checkout â”€â”€
-// (window.__kmrcCheckout already assigned above)
+// ARCH-1 : checkout désormais via bus.on('checkout:open') — voir plus haut.
 // Expose renderGrid pour le listener délégué sous-cats (b-subcat.js + boutique.js)
 if (typeof window !== 'undefined') window.renderGrid = renderGrid;
 

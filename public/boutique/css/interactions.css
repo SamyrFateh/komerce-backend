@@ -239,12 +239,8 @@ body.modal-open .k-bnav { opacity: .7; }
    TOPBAR ENRICHIE — apparaît au scroll dans la modal
    ═══════════════════════════════════════════════════════════════ */
 
-.k-modal-topbar-product { display:none; align-items:center; gap:10px; flex:1; min-width:0; opacity:0; transform:translateY(-6px); transition:opacity .25s ease, transform .25s ease; }
-.k-modal.is-scrolled .k-modal-back,
-.k-modal.is-scrolled #k-modal-nav { display:none; }
-.k-modal.is-scrolled .k-topbar-search-trigger { display:none; }
-.k-modal.is-scrolled .k-modal-topbar-product { display:flex; opacity:1; transform:translateY(0); }
-.k-modal.is-scrolled .k-modal-topbar-right   { display:flex; align-items:center; gap:8px; }
+/* ARCH-6 : .k-modal.is-scrolled migrés vers modal.css (owner principal .k-modal).
+   interactions.css ne doit pas être un owner secondaire de .k-modal. */
 
 .k-topbar-thumb        { flex:0 0 40px; width:40px; height:40px; border-radius:8px; overflow:hidden; background:var(--sand); box-shadow:0 1px 3px var(--overlay-black-sm); cursor:pointer; transition:transform .15s; }
 .k-topbar-thumb:active { transform:scale(.92); }
@@ -525,4 +521,36 @@ body.cart-open  #k-section-index { display:none; }
   20%  { opacity: 1; transform: translateX(-50%) translateY(0); }
   75%  { opacity: 1; }
   100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+}
+
+/* ── Greeting chip (#k-greeting-chip) ─────────────────────────────── */
+/* FIX BUG-L3 : migré depuis l'injection JS ensureStyles() dans b-greeting.js */
+#k-greeting-chip {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 14px;
+  z-index: 1800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--white, #fff);
+  border: 1.5px solid rgba(31,122,84,.18);
+  border-radius: 999px;
+  padding: 6px 12px 6px 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+#k-greeting-chip.k-greeting-chip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#k-greeting-chip.k-greeting-chip--out {
+  opacity: 0;
+  transform: translateY(-6px);
 }

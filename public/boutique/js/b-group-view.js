@@ -18,6 +18,7 @@
  */
 
 import { state } from './b-store.js';
+import { bus } from './b-bus.js';
 import { showToast } from './b-cart-core.js';
 import { sanitize, fmt } from './b-utils.js';
 import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
@@ -657,8 +658,8 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
         document.querySelectorAll('.k-bnav-item, .k-header-nav-btn')
           .forEach(i => i.classList.toggle('active', i.dataset.tab === 'shop'));
         switchView('shop');
-        // Forcer le rafraîchissement du side cart pour afficher le bandeau edit
-        if (typeof window.__kmrcSideCart === 'function') window.__kmrcSideCart();
+        // ARCH-1 : remplace window.__kmrcSideCart → bus.emit
+        bus.emit('side-cart:render');
       });
 
       showToast('Modifiez les articles, puis cliquez "Mettre à jour le panier collectif".', 'success');
