@@ -179,17 +179,62 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 
-  <!-- ═══ CATÉGORIES — rail pills texte (v4 sans bulles photo) ═══ -->
-  <nav class="k-cats-rail" id="k-cats" aria-label="Filtrer par catégorie">
-    <button class="k-cpill active" data-cat="all">Tout</button>
-    <button class="k-cpill" data-cat="Soldes">🔥 Soldes</button>
-    <button class="k-cpill" data-cat="Mode & Beauté">Mode</button>
-    <button class="k-cpill" data-cat="Maison">Maison</button>
-    <button class="k-cpill" data-cat="Tech">Tech</button>
-    <button class="k-cpill" data-cat="Bricolage">Bricolage</button>
-    <button class="k-cpill" data-cat="Créations personnelles">Perso.</button>
-    <button class="k-cpill" data-cat="Auto">Auto</button>
+  <!-- ═══ CATÉGORIES ═══ -->
+  <div class="k-cats-shell">
+  <div class="k-cats-wrap-fade-left"></div>
+  <nav class="k-cats" id="k-cats">
+    <!-- Rail v2 — 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
+    <button class="k-chip active" data-cat="all" aria-label="Toutes les catégories">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/all.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Tout</span>
+    </button>
+    <button class="k-chip" data-cat="Soldes" aria-label="Soldes">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/soldes.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Soldes</span>
+    </button>
+    <button class="k-chip" data-cat="Mode & Beauté" aria-label="Mode et Beauté">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/mode.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Mode</span>
+    </button>
+    <button class="k-chip" data-cat="Maison" aria-label="Maison">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/maison.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Maison</span>
+    </button>
+    <button class="k-chip" data-cat="Tech" aria-label="Tech">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/tech.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Tech</span>
+    </button>
+    <button class="k-chip" data-cat="Bricolage" aria-label="Bricolage">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/bricolage.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Bricolage</span>
+    </button>
+    <button class="k-chip" data-cat="Créations personnelles" aria-label="Créations personnelles">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/creations.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Perso.</span>
+    </button>
+    <button class="k-chip" data-cat="Auto" aria-label="Auto et Moto">
+      <span class="k-chip-photo">
+        <img src="/boutique/images/categories/auto.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Auto</span>
+    </button>
   </nav>
+  <div class="k-cats-wrap-fade-right"></div>
+  </div><!-- /k-cats-shell -->
   <!-- ═══ SOUS-CATÉGORIES ═══ -->
   <div id="k-subcats-wrap"></div>
 </div><!-- /k-hero-cats-sticky -->
