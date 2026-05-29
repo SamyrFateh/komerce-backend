@@ -178,9 +178,6 @@ if (document.readyState === 'loading') {
 
 // â”€â”€ Side cart checkout : pont window pour éviter la dépendance circulaire b-cartâ†”b-checkout â”€â”€
 // ARCH-1 : checkout désormais via bus.on('checkout:open') — voir plus haut.
-// Expose renderGrid pour le listener délégué sous-cats (b-subcat.js + boutique.js)
-if (typeof window !== 'undefined') window.renderGrid = renderGrid;
-
 // â”€â”€ Listener global délégué : modal carousel dots â”€â”€
 document.addEventListener('click', function(e) {
   var dot = e.target.closest('.k-modal-dot');

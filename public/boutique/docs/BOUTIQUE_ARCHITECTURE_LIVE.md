@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-28T09:25:29.598Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-29T11:58:47.623Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -10,24 +10,26 @@
 
 ## 1. Inventaire CSS
 
-14 fichier(s) sur disque, 0 orphelin(s).
+16 fichier(s) sur disque, 0 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
 | `boutique-desktop.css` | 1559 | desktop.css |
-| `cart.css` | 954 | components.css |
-| `categories.css` | 480 | components.css |
+| `cart.css` | 1025 | components.css |
+| `categories.css` | 618 | components.css |
 | `desktop-commerce-skeleton.css` | 330 | desktop.css |
+| `event.css` | 861 | event.css |
 | `group-cart-flow.css` | 1915 | components.css |
 | `hero-cart-proxy.css` | 113 | components.css |
-| `hero.css` | 150 | base.css |
-| `interactions.css` | 529 | components.css |
+| `hero.css` | 288 | base.css |
+| `identity.css` | 184 | components.css |
+| `interactions.css` | 557 | components.css |
 | `layout.css` | 765 | base.css |
-| `modal.css` | 1898 | components.css |
+| `modal.css` | 1918 | components.css |
 | `products.css` | 737 | components.css |
 | `reset.css` | 86 | base.css |
 | `shared-followup.css` | 3 | components.css |
-| `tokens.css` | 425 | event.css |
+| `tokens.css` | 425 | base.css |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -46,9 +48,9 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 
 | Sélecteur | Owners trouvés (base / desktop) |
 |---|---|
-| `.k-chip` ⚠️ | `boutique-desktop.css` (6/5)<br>`categories.css` (28/0)<br>`interactions.css` (2/0) |
-| `.k-cats-shell` ⚠️ | `boutique-desktop.css` (0/1)<br>`categories.css` (2/0)<br>`desktop-commerce-skeleton.css` (0/1)<br>`hero.css` (1/0) |
-| `.k-hero-cats-sticky` ⚠️ | `boutique-desktop.css` (0/1)<br>`hero.css` (2/0) |
+| `.k-chip` ⚠️ | `boutique-desktop.css` (6/5)<br>`categories.css` (32/0)<br>`interactions.css` (2/0) |
+| `.k-cats-shell` ⚠️ | `boutique-desktop.css` (0/1)<br>`categories.css` (3/0)<br>`desktop-commerce-skeleton.css` (0/1)<br>`hero.css` (2/0) |
+| `.k-hero-cats-sticky` ⚠️ | `boutique-desktop.css` (0/1)<br>`hero.css` (6/0) |
 | `#k-subcats-wrap` | `boutique-desktop.css` (16/8) |
 | `.k-subchip` | `boutique-desktop.css` (25/1) |
 | `.k-grid` ⚠️ | `cart.css` (2/0)<br>`interactions.css` (6/0)<br>`layout.css` (0/1)<br>`products.css` (3/3) |
@@ -59,7 +61,7 @@ Pour chaque sélecteur tracké : où il est défini (base = hors @media, desktop
 | `#k-desktop-catalog-wrap` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`layout.css` (1/6) |
 | `.k-header` ⚠️ | `desktop-commerce-skeleton.css` (0/1)<br>`hero-cart-proxy.css` (4/2)<br>`layout.css` (3/2) |
 | `.k-hero-media` ⚠️ | `desktop-commerce-skeleton.css` (0/2)<br>`hero.css` (1/0) |
-| `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`interactions.css` (4/0)<br>`modal.css` (1/2) |
+| `.k-modal` ⚠️ | `boutique-desktop.css` (0/1)<br>`desktop-commerce-skeleton.css` (0/1)<br>`modal.css` (5/2) |
 
 > ⚠️ = sélecteur défini dans plus d'un fichier. Vérifier que c'est conforme à `BOUTIQUE_ARCHITECTURE.md` §3.
 
@@ -69,7 +71,12 @@ Aucun. ✅
 
 ## 5. Hex hardcodés hors tokens.css
 
-Aucun. ✅
+4 occurrence(s) au total, répartition :
+
+| Fichier | Nombre |
+|---|---:|
+| `event.css` | 2 |
+| `interactions.css` | 2 |
 
 ## 6. `!important` par fichier
 
@@ -88,11 +95,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js/b-pager.js` (×1) |
-| `--pager-h` | `js/b-pager.js` (×1)<br>`js/b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js/b-pager.js` (×1) |
-| `--bnav-h` | `js/b-pager.js` (×1) |
-| `--modal-scroll-y` | `js/b-modal.js` (×1) |
+| `--pager-top` | `js\b-pager.js` (×1) |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1) |
+| `--bnav-h` | `js\b-pager.js` (×1) |
+| `--modal-scroll-y` | `js\b-modal.js` (×1) |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
@@ -100,7 +107,7 @@ Aucun. ✅
 
 - **CSS orphelins** : 0 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
-- **Hex hardcodés** : 0 (cible : 0 ou allowlist)
+- **Hex hardcodés** : 4 (cible : 0 ou allowlist)
 - **`!important`** : 28 (cible : <10, idéal 0)
 - **Sélecteurs multi-owner** : 12 (vérifier vs `BOUTIQUE_ARCHITECTURE.md` §3)
 
