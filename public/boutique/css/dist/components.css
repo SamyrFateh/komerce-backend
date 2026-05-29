@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (bundle Sprint 3 · 2026-05-28)
-   components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup
+   KOMERCE — components.css (bundle Sprint 3 · 2026-05-29)
+   components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup · identity
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -1576,13 +1576,16 @@
 }
 
 
-/* ── BOUTON FAVORI MODALE (top-right de l'image) ─────────────
+/* ── BOUTON FAVORI MODALE (top-right de la zone détails) ─────────────
    FIX favori absent dans modale produit : bouton ❤️ universel
-   mobile + desktop, posé sur l'image. Même langage visuel que
-   les cartes (.k-card-fav.liked) pour cohérence. */
+   mobile + desktop, posé sur la zone blanche details.
+   FIX: env(safe-area-inset-top) retiré — le bouton est positionné
+   relativement à .k-modal-details (position:relative) qui se trouve
+   SOUS la topbar et la zone image ; utiliser safe-area-inset-top ici
+   ajoutait un décalage erroné sur iPhone à encoche (44-59 px). */
 .k-modal-fav-btn {
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top, 0px));
+  top: 10px;
   right: 10px;
   width: 42px; height: 42px;
   background: var(--surface-sand-94);
@@ -1937,7 +1940,12 @@
 
 /* ── PRODUIT RAPPELÉ TOPBAR AU SCROLL ───────────────────────── */
 .k-modal-topbar-product { display: none; align-items: center; gap: 8px; min-width: 0; flex: 1; margin-left: 8px; opacity: 0; transform: translateY(-4px); transition: opacity .2s var(--ease), transform .2s var(--ease); }
-/* .k-modal.is-scrolled .k-modal-topbar-product → interactions.css (source de vérité) */
+/* ARCH-6 : règles is-scrolled rapatriées depuis interactions.css → owner unique ici */
+.k-modal.is-scrolled .k-modal-back,
+.k-modal.is-scrolled #k-modal-nav      { display: none; }
+.k-modal.is-scrolled .k-topbar-search-trigger { display: none; }
+.k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
+.k-modal.is-scrolled .k-modal-topbar-right   { display: flex; align-items: center; gap: 8px; }
 .k-topbar-thumb { width: 34px; height: 34px; border-radius: 10px; overflow: hidden; background: var(--sand); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
 .k-topbar-info { min-width: 0; display: flex; flex-direction: column; }
@@ -2035,11 +2043,14 @@
 
 /* ── F4 — TRUST BAR MOBILE ──────────────────────────────────── */
 /* 3 pills horizontaux au-dessus de .k-modal-actions.
-   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais. */
+   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais.
+   FIX: flex-shrink:0 — la trust bar est enfant flex direct de #k-modal après le déplacement
+   des actions par setupModal() ; sans cette propriété elle peut être écrasée sur petits écrans.
+   FIX: pas de border-top ici — .k-modal-actions en a déjà un ; double bordure supprimée. */
 .k-modal-trust-mobile {
   display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;
   gap: 6px; padding: 8px 14px 4px;
-  border-top: 1px solid var(--sand-dark);
+  flex-shrink: 0;
 }
 .k-modal-trust-mobile-item {
   display: inline-flex; align-items: center; gap: 4px;
@@ -4540,12 +4551,8 @@ body.modal-open .k-bnav { opacity: .7; }
    TOPBAR ENRICHIE — apparaît au scroll dans la modal
    ═══════════════════════════════════════════════════════════════ */
 
-.k-modal-topbar-product { display:none; align-items:center; gap:10px; flex:1; min-width:0; opacity:0; transform:translateY(-6px); transition:opacity .25s ease, transform .25s ease; }
-.k-modal.is-scrolled .k-modal-back,
-.k-modal.is-scrolled #k-modal-nav { display:none; }
-.k-modal.is-scrolled .k-topbar-search-trigger { display:none; }
-.k-modal.is-scrolled .k-modal-topbar-product { display:flex; opacity:1; transform:translateY(0); }
-.k-modal.is-scrolled .k-modal-topbar-right   { display:flex; align-items:center; gap:8px; }
+/* ARCH-6 : .k-modal.is-scrolled migrés vers modal.css (owner principal .k-modal).
+   interactions.css ne doit pas être un owner secondaire de .k-modal. */
 
 .k-topbar-thumb        { flex:0 0 40px; width:40px; height:40px; border-radius:8px; overflow:hidden; background:var(--sand); box-shadow:0 1px 3px var(--overlay-black-sm); cursor:pointer; transition:transform .15s; }
 .k-topbar-thumb:active { transform:scale(.92); }
@@ -4826,6 +4833,38 @@ body.cart-open  #k-section-index { display:none; }
   20%  { opacity: 1; transform: translateX(-50%) translateY(0); }
   75%  { opacity: 1; }
   100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+}
+
+/* ── Greeting chip (#k-greeting-chip) ─────────────────────────────── */
+/* FIX BUG-L3 : migré depuis l'injection JS ensureStyles() dans b-greeting.js */
+#k-greeting-chip {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 14px;
+  z-index: 1800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--white, #fff);
+  border: 1.5px solid rgba(31,122,84,.18);
+  border-radius: 999px;
+  padding: 6px 12px 6px 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .22s ease, transform .22s ease;
+}
+#k-greeting-chip.k-greeting-chip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#k-greeting-chip.k-greeting-chip--out {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 
@@ -6864,3 +6903,189 @@ body.cart-open  #k-section-index { display:none; }
 /* ── shared-followup.css ─────────────────────────────────── */
 /* Suivi — commandes + paniers partagés */
 .k-track-dashboard{display:grid;gap:18px;max-width:1280px;margin:0 auto}.k-track-orders-panel,.k-track-shared-panel{background:var(--white);border:1px solid rgba(103,77,45,.18);border-radius:22px;padding:18px;box-shadow:0 8px 28px rgba(42,62,44,.06)}.k-track-panel-head{margin-bottom:14px}.k-track-panel-head--row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.k-track-panel-head h2,.k-track-orders-panel h2{margin:0 0 5px;font-size:19px;font-weight:950;color:var(--text);letter-spacing:-.02em}.k-track-shared-count{min-width:28px;height:28px;border-radius:999px;background:var(--sand);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:950;color:var(--text)}.k-track-shared-list{display:grid;gap:12px}.k-track-shared-card{border:1px solid rgba(103,77,45,.18);border-radius:18px;background:linear-gradient(180deg,var(--sand) 0%,var(--sand) 100%);padding:14px;box-shadow:0 4px 16px rgba(42,62,44,.04)}.k-track-shared-card:first-child{border-color:rgba(61,109,17,.26);box-shadow:0 8px 24px rgba(61,109,17,.08)}.k-track-shared-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}.k-track-shared-title{font-size:14px;font-weight:950;color:var(--text);line-height:1.15}.k-track-shared-meta{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.25}.k-track-shared-pill{flex:0 0 auto;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:950}.k-track-shared-pill.is-open{background:var(--green-bg-leaf);color:var(--green-text-strong)}.k-track-shared-pill.is-paid{background:var(--blue-light-bg);color:var(--blue-link-deep)}.k-track-shared-money{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}.k-track-shared-money span{font-size:12px;color:var(--text-muted);font-weight:800}.k-track-shared-money strong{font-size:16px;color:var(--text);font-weight:950}.k-track-shared-progress{height:7px;border-radius:999px;background:rgba(42,62,44,.09);overflow:hidden;margin-bottom:10px}.k-track-shared-progress span{display:block;height:100%;border-radius:999px;background:var(--cta-green);min-width:0}.k-track-shared-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}.k-track-shared-bottom>span{font-size:11px;color:var(--text-muted);font-weight:800}.k-track-shared-actions{display:flex;gap:7px}.k-track-shared-actions button{width:36px;height:36px;border:1px solid rgba(103,77,45,.22);background:var(--white);border-radius:12px;cursor:pointer;font-size:15px;box-shadow:0 2px 8px rgba(42,62,44,.05)}.k-track-shared-actions button:active{transform:scale(.95)}.k-track-shared-empty{border:1px dashed rgba(103,77,45,.25);background:var(--sand);border-radius:18px;padding:28px 14px;text-align:center;color:var(--text-muted);display:grid;gap:4px}.k-track-shared-empty-icon{font-size:34px}.k-track-shared-empty strong{font-size:14px;color:var(--text)}.k-track-shared-empty span{font-size:12px}@media(max-width:899px){.k-track-view{padding-bottom:205px}.k-track-dashboard{display:block;padding:0 10px 205px;max-width:none}.k-track-orders-panel,.k-track-shared-panel{border-radius:18px;padding:13px;margin-bottom:12px;box-shadow:0 4px 18px rgba(42,62,44,.045)}.k-track-panel-head{margin-bottom:10px}.k-track-panel-head--row{align-items:center}.k-track-panel-head h2,.k-track-orders-panel h2{font-size:17px;line-height:1.15}.k-track-sub-hint{font-size:12px;line-height:1.28;margin-bottom:0}.k-track-shared-count{width:24px;height:24px;min-width:24px;font-size:11px}.k-track-shared-list{gap:9px}.k-track-shared-card{padding:11px 12px;border-radius:16px;box-shadow:none}.k-track-shared-card:first-child{box-shadow:0 4px 14px rgba(61,109,17,.055)}.k-track-shared-top{gap:8px;margin-bottom:8px}.k-track-shared-title{font-size:14px}.k-track-shared-meta{font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}.k-track-shared-pill{font-size:10px;padding:3px 8px}.k-track-shared-money{margin-bottom:6px;gap:8px}.k-track-shared-money span{font-size:12px}.k-track-shared-money strong{font-size:14px;max-width:145px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}.k-track-shared-progress{height:6px;margin-bottom:8px}.k-track-shared-bottom{gap:8px}.k-track-shared-bottom>span{font-size:11px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.k-track-shared-actions{gap:6px;margin-left:auto}.k-track-shared-actions button{width:32px;height:32px;border-radius:10px;font-size:14px}.k-track-shared-panel{position:static;top:auto}.k-track-view~.k-wa-fab,.k-track-view .k-wa-fab,body:has(#k-track-view:not(.u-hidden)) .k-wa-fab{display:none}.k-track-view~.k-mini-cart,.k-track-view~.k-mini-cart-fab,.k-track-view~.k-floating-cart,.k-track-view~.k-cart-float,.k-track-view .k-mini-cart,.k-track-view .k-mini-cart-fab,.k-track-view .k-floating-cart,.k-track-view .k-cart-float,body:has(#k-track-view:not(.u-hidden)) .k-mini-cart,body:has(#k-track-view:not(.u-hidden)) .k-mini-cart-fab,body:has(#k-track-view:not(.u-hidden)) .k-floating-cart,body:has(#k-track-view:not(.u-hidden)) .k-cart-float{display:none!important}.k-track-shared-empty{padding:22px 12px;border-radius:16px}.k-track-shared-empty-icon{font-size:30px}}@media(max-width:390px){.k-track-dashboard{padding-left:8px;padding-right:8px}.k-track-shared-meta{max-width:190px}.k-track-shared-money strong{max-width:118px}.k-track-shared-bottom>span{max-width:135px}}@media(min-width:900px){.k-track-dashboard{grid-template-columns:minmax(560px,1.05fr) minmax(420px,.95fr);align-items:start;padding:0 32px}.k-track-dashboard--search{grid-template-columns:minmax(520px,1fr) minmax(420px,.85fr)}.k-track-shared-panel{position:sticky;top:104px}}@media(min-width:1280px){.k-track-dashboard{grid-template-columns:minmax(620px,1fr) minmax(460px,.78fr)}}
+
+
+/* ── identity.css ────────────────────────────────────────── */
+/**
+ * identity.css — Komerce OTP / Identity gate styles
+ *
+ * @owner b-identity.js
+ * @bundle components (via bundle-css.js)
+ *
+ * FIX BUG-L3 : migré depuis l'injection JS ensureStyles() dans b-identity.js.
+ * Plus de createElement('style') dans le JS — tout le CSS passe par le pipeline.
+ */
+
+/* ── Overlay ─────────────────────────────────────────────────────── */
+.k-id-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  background: rgba(18,22,18,.48);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: kIdFade .18s ease;
+}
+@keyframes kIdFade { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 640px) { .k-id-overlay { align-items: center; } }
+
+/* ── Sheet ───────────────────────────────────────────────────────── */
+.k-id-sheet {
+  width: 100%;
+  max-width: 420px;
+  background: var(--white, var(--white, var(--white)));
+  border-radius: 22px 22px 0 0;
+  padding: 16px 18px calc(24px + env(safe-area-inset-bottom));
+  box-shadow: 0 24px 80px rgba(0,0,0,.22);
+  animation: kIdUp .24s ease;
+}
+@media (min-width: 640px) {
+  .k-id-sheet {
+    border-radius: 18px;
+    padding: 16px;
+    max-width: 380px;
+  }
+}
+@keyframes kIdUp { from { transform: translateY(28px); opacity: .9; } to { transform: none; opacity: 1; } }
+
+/* ── Header ──────────────────────────────────────────────────────── */
+.k-id-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.k-id-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.12;
+}
+.k-id-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.8px;
+  line-height: 1.22;
+  color: var(--text-muted);
+}
+.k-id-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sand, var(--sand-warm, var(--sand-warm)));
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* ── Trust block ─────────────────────────────────────────────────── */
+.k-id-trust {
+  display: grid;
+  gap: 3px;
+  background: rgba(239,125,95,.10);
+  border: 1px solid rgba(239,125,95,.22);
+  border-radius: 11px;
+  padding: 7px 9px;
+  margin: 0 0 9px;
+  color: var(--text);
+  font-size: 10.8px;
+  line-height: 1.2;
+}
+.k-id-trust strong { font-size: 11.8px; color: var(--text); }
+
+/* ── Form fields ─────────────────────────────────────────────────── */
+.k-id-field { margin: 0 0 8px; }
+.k-id-field label,
+.k-id-sheet .k-ck-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.k-id-sheet .k-ck-group { margin: 0 0 8px; }
+.k-id-sheet .k-ck-phone-wrap { display: flex; gap: 8px; align-items: stretch; }
+.k-id-sheet .k-ck-phone-select {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  background: var(--white, var(--white));
+  color: var(--text);
+  font-weight: 700;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.k-id-sheet .k-ck-phone-input,
+.k-id-input {
+  width: 100%;
+  min-height: 34px;
+  border: 2px solid var(--border);
+  border-radius: 9px;
+  padding: 6px 8px;
+  font-size: 12px;
+  box-sizing: border-box;
+  outline: none;
+  background: var(--white, var(--white));
+  color: var(--text);
+}
+.k-id-sheet .k-ck-phone-input:focus,
+.k-id-input:focus { border-color: var(--coral, var(--coral, var(--coral))); }
+
+/* ── Code row ────────────────────────────────────────────────────── */
+.k-id-code-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end; }
+.k-id-link {
+  border: 0;
+  background: transparent;
+  color: var(--coral, var(--coral, var(--coral)));
+  font-size: 10.8px;
+  font-weight: 900;
+  padding: 0 0 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.k-id-error {
+  min-height: 14px;
+  margin: 0 0 5px;
+  color: var(--red-danger-text, var(--red-danger, var(--red-danger)));
+  font-size: 10.8px;
+  line-height: 1.35;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.k-id-btn {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--coral, var(--coral, var(--coral)));
+  color: var(--white, var(--white));
+  font-size: 12.8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.k-id-btn:disabled { opacity: .58; cursor: not-allowed; }
+.k-id-secondary { margin-top: 6px; background: var(--sand, var(--sand-warm, var(--sand-warm))); color: var(--text); }
+
+/* ── Known user ──────────────────────────────────────────────────── */
+.k-id-known {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(31,122,84,.20);
+  background: rgba(31,122,84,.08);
+  border-radius: 11px;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+}
+.k-id-known strong { display: block; font-size: 11.8px; color: var(--text); }
+.k-id-known span   { display: block; font-size: 10.8px; color: var(--text-muted); margin-top: 1px; }
+.k-id-known button { border: 0; background: transparent; color: var(--coral, var(--coral, var(--coral))); font-weight: 900; cursor: pointer; font-size: 12px; }
