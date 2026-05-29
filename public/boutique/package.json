@@ -9,6 +9,10 @@
     "bundle:css":         "node scripts/bundle-css.js",
     "bundle:css:watch":   "node scripts/bundle-css.js && echo 'Bundle OK — relancez après chaque modif CSS'",
 
+    "bundle:js":          "node scripts/bundle-js.js",
+    "bundle:js:dev":      "node scripts/bundle-js.js --dev",
+    "bundle:js:watch":    "node scripts/bundle-js.js --dev --watch",
+
     "lint:css":           "stylelint \"css/*.css\" --ignore-path .stylelintignore",
     "lint:css:fix":       "stylelint \"css/*.css\" --fix",
     "lint:css:report":    "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
@@ -22,13 +26,14 @@
     "check:cache":        "node scripts/check-cache-buster.js",
     "check:cache:fix":    "node scripts/check-cache-buster.js --fix",
     "check:cache:init":   "node scripts/check-cache-buster.js --init",
+    "check:bundle":       "node scripts/check-js-bundle.js",
 
     "test:e2e":           "playwright test",
     "test:e2e:headed":    "playwright test --headed",
     "test:e2e:debug":     "playwright test --debug",
 
-    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch && npm run audit:arch:live && npm run test:e2e",
-    "check:all:verbose":  "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch",
+    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run check:bundle && npm run audit:arch && npm run audit:arch:live && npm run test:e2e",
+    "check:all:verbose":  "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run check:bundle && npm run audit:arch",
 
     "precommit":          "npm run check:all"
   },
@@ -37,6 +42,7 @@
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.44.0",
+    "esbuild": "^0.21.0",
     "stylelint": "^17.11.1",
     "stylelint-config-standard": "^40.0.0"
   }

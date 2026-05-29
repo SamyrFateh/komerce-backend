@@ -1,0 +1,5 @@
+# JS bundle — régénéré au build/déploiement
+js/dist/
+
+# Sauf le state (pour check:bundle sans rebuild)
+!js/dist/.bundle-state.json

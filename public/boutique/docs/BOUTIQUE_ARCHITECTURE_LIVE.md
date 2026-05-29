@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-05-29T11:58:47.623Z
+> Régénération : `npm run boutique:arch`. Date : 2026-05-29T23:05:21.679Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -95,11 +95,11 @@ Aucun. ✅
 
 | Variable | Owner(s) JS trouvé(s) |
 |---|---|
-| `--pager-top` | `js\b-pager.js` (×1) |
-| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1) ⚠️ multi-owner |
-| `--pager-w` | `js\b-pager.js` (×1) |
-| `--bnav-h` | `js\b-pager.js` (×1) |
-| `--modal-scroll-y` | `js\b-modal.js` (×1) |
+| `--pager-top` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--pager-h` | `js\b-pager.js` (×1)<br>`js\b-subcat.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×2) ⚠️ multi-owner |
+| `--pager-w` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--bnav-h` | `js\b-pager.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
+| `--modal-scroll-y` | `js\b-modal-core.js` (×1)<br>`js\dist\chunks\chunk-WCB2FJJ3.js` (×1) ⚠️ multi-owner |
 
 > ⚠️ multi-owner = variable posée par plusieurs fichiers JS. Vérifier la cohérence.
 
