@@ -23,7 +23,11 @@
     "check:cache:fix":    "node scripts/check-cache-buster.js --fix",
     "check:cache:init":   "node scripts/check-cache-buster.js --init",
 
-    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch && npm run audit:arch:live",
+    "test:e2e":           "playwright test",
+    "test:e2e:headed":    "playwright test --headed",
+    "test:e2e:debug":     "playwright test --debug",
+
+    "check:all":          "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch && npm run audit:arch:live && npm run test:e2e",
     "check:all:verbose":  "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run audit:arch",
 
     "precommit":          "npm run check:all"
@@ -32,6 +36,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.44.0",
     "stylelint": "^17.11.1",
     "stylelint-config-standard": "^40.0.0"
   }
