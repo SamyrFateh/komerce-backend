@@ -54,11 +54,15 @@ const OWNERSHIP = [
   // ── .k-hero-cats-sticky ─────────────────────────────────────────
   { selector: '.k-hero-cats-sticky', owner: 'hero.css',           scope: 'base' },
   { selector: '.k-hero-cats-sticky', owner: 'boutique-desktop.css', scope: 'desktop-override' },
+  { selector: '.k-hero-cats-sticky', owner: 'categories.css',     scope: 'desktop-override' }, // PALETTE-FIX-01 Sprint 4 S4.2
 
   // ── sous-cats (Lot I-2-A) ────────────────────────────────────────
   // Migré depuis categories.css → boutique-desktop.css (base + desktop).
+  // categories.css conserve les overrides couleur par thème catégorie (Sprint 4 S4.2).
   { selector: '#k-subcats-wrap',   owner: 'boutique-desktop.css', scope: 'all' },
+  { selector: '#k-subcats-wrap',   owner: 'categories.css',       scope: 'all' }, // color-theming subchip actif
   { selector: '.k-subchip',        owner: 'boutique-desktop.css', scope: 'all' },
+  { selector: '.k-subchip',        owner: 'categories.css',       scope: 'all' }, // color-theming subchip actif
 
   // ── .k-grid ──────────────────────────────────────────────────────
   // products.css : owner du layout de grille.
@@ -115,7 +119,7 @@ const HEX_ALLOWLIST = [
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
+  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
   'desktop.css':    ['boutique-desktop', 'desktop-commerce-skeleton'],
   'event.css':      ['event'],
 };

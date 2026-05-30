@@ -22,8 +22,8 @@ const bundles = [
   },
   {
     out: 'components.css',
-    label: 'components — categories · products · modal · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup · identity',
-    files: ['categories', 'products', 'modal', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
+    label: 'components — categories · products · modal-shell · modal-media · modal-product · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup · identity',
+    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
   },
   {
     out: 'desktop.css',

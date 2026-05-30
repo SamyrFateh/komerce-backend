@@ -1,0 +1,964 @@
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — modal-product.css
+   Infos produit, social proof, recherche interne, suggestions,
+   livraison, trust bar, variantes, guide des tailles,
+   zones desktop enrichies (ModalViewModel).
+   Découpage Sprint 6 — S6.2 (extrait de modal.css)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── INFOS PRODUIT ───────────────────────────────────────────── */
+.k-modal-details {
+  /* S2.2 — suppression du margin-top:-20px (rustine qui propageait une cascade
+     de compensations : padding-top clamp(20px), bottom:28px sur .k-modal-view-full).
+     Le chevauchement visuel est désormais porté par border-radius + l'image qui
+     garde toute sa hauteur. Positionnement structurel, zéro valeur magique. */
+  box-sizing: border-box; max-width: 100%;
+  flex: 0 0 auto; overflow: visible; min-height: 0;
+  background: var(--white); border-radius: 20px 20px 0 0;
+  margin-top: 0; position: relative; z-index: 2;
+  box-shadow: 0 -4px 20px var(--border-text-06);
+}
+.k-modal-promo-badge {
+  display: none; position: absolute; top: 6px; left: 6px;
+  background: var(--coral); color: var(--white);
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
+}
+.k-modal-promo-badge.show { display: inline-block; }
+.k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
+.k-modal-info h2 {
+  font-family: var(--font-display); font-size: 18px; font-weight: 500;
+  line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
+  font-variation-settings: 'opsz' 18;
+}
+.k-modal-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+.k-modal-price-row { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; flex-wrap: nowrap; }
+.k-modal-price { font-family: var(--font); font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -.015em; }
+/* F1 — prix promo en coral sur mobile (classe posée par b-modal.js openModal) */
+.k-modal--has-promo .k-modal-price { color: var(--coral); font-size: clamp(20px, 5vw, 26px); font-weight: 700; }
+/* F2 — ancien prix sur même ligne, aligné baseline, jamais stacked */
+.k-modal-old-price { font-size: 13px; color: var(--text-light); text-decoration: line-through; white-space: nowrap; flex-shrink: 0; }
+.k-modal-meta { display: flex; gap: 6px; margin-top: 6px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.k-modal-meta span { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; background: var(--sand); border-radius: 50px; }
+/* ── SOCIAL PROOF — badges vendus/note, conditionnels (données backend) ──
+   Si product.sold_count, product.rating ou product.rank sont absents,
+   injectSocialProof() laisse .k-modal-meta vide et il est display:none.
+   Aucun chiffre inventé. */
+.k-modal-meta:empty { display: none; }
+#k-modal .k-modal-meta-rank {
+  background: var(--coral-bg);
+  color: var(--coral);
+  border: 1px solid var(--coral-border);
+  font-weight: 700;
+}
+.k-modal-meta-star { color: var(--star-gold); font-size: 12px; }
+
+/* ── BARRE RECHERCHE INTERNE ─────────────────────────────────── */
+.k-modal-inner-search {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 12px 4px; padding: 9px 14px;
+  background: var(--sand); border-radius: 12px;
+  border: 1.5px solid transparent;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.k-modal-inner-search:focus-within { border-color: var(--ocean); background: var(--white); box-shadow: 0 0 0 3px rgba(100,175,90,.1); }
+.k-modal-inner-search-icon { width: 15px; height: 15px; color: var(--text-muted); flex-shrink: 0; }
+.k-modal-inner-search-input { flex: 1; border: none; background: transparent; font-size: 13px; font-family: var(--font); color: var(--text); outline: none; min-width: 0; }
+.k-modal-inner-search-input::placeholder { color: var(--text-muted); }
+.k-modal-inner-search-hint { font-size: 11px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.k-modal-inner-search:focus-within .k-modal-inner-search-hint { opacity: 1; }
+.k-sug-card.search-hidden { display: none !important; }
+.k-modal-search-clear {
+  display: none; width: 26px; height: 26px; border: none;
+  background: var(--sand-dark); border-radius: 50%; color: var(--text-muted);
+  font-size: 14px; font-weight: 600; line-height: 1; cursor: pointer;
+  transition: background .12s, color .12s, transform .12s;
+  flex-shrink: 0; align-items: center; justify-content: center; padding: 0;
+}
+.k-modal-search-clear:active { transform: scale(.88); }
+.k-modal-inner-search.has-value .k-modal-search-clear { display: flex; }
+.k-modal-inner-search.has-value .k-modal-inner-search-hint { display: none; }
+
+/* ── DROPDOWN RÉSULTATS SEARCH ───────────────────────────────── */
+.k-modal-search-dropdown {
+  display: none; margin: 0 12px 8px;
+  background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--elev-3); max-height: 340px;
+  overflow-y: auto; overflow-x: hidden; z-index: 20; position: relative;
+  scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  animation: k-msearch-drop-in .18s var(--ease);
+}
+.k-modal-search-dropdown.open { display: block; }
+@keyframes k-msearch-drop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.k-msearch-count { padding: 8px 14px 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--sand-dark); }
+.k-msearch-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+.k-msearch-item + .k-msearch-item { border-top: 1px solid var(--sand-dark); }
+.k-msearch-item:active { background: var(--sand-dark); }
+.k-msearch-item-img { width: 48px; height: 48px; border-radius: 8px; object-fit: contain; background: var(--sand); flex-shrink: 0; padding: 3px; }
+.k-msearch-item-info { flex: 1; min-width: 0; }
+.k-msearch-item-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.k-msearch-item-cat { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-msearch-item-right { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.k-msearch-item-price { font-size: 14px; font-weight: 700; color: var(--coral); white-space: nowrap; }
+.k-msearch-item-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); padding: 1px 6px; border-radius: 50px; }
+.k-msearch-empty { padding: 28px 16px; text-align: center; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.k-msearch-empty-icon { font-size: 36px; margin-bottom: 8px; line-height: 1; opacity: .6; }
+.k-msearch-footer { padding: 11px 14px; border-top: 1px solid var(--sand-dark); text-align: center; font-size: 12px; font-weight: 600; color: var(--ocean-dark); cursor: pointer; transition: background .12s, color .12s; -webkit-tap-highlight-color: transparent; }
+.k-msearch-footer:active { background: var(--sand); }
+.k-msearch-group + .k-msearch-group { border-top: 1.5px solid var(--sand-dark); }
+.k-msearch-group-header { display: flex; align-items: center; gap: 6px; padding: 9px 14px 5px; background: var(--sand); }
+.k-msearch-group-emoji { font-size: 14px; line-height: 1; flex-shrink: 0; }
+.k-msearch-group-label { font-size: 12px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-msearch-group-count { font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--white); padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
+.k-msearch-group-more { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--coral); cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+.k-msearch-group-more:active { background: var(--sand); }
+.k-msearch-recents-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 6px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.k-msearch-recents-clear { font-size: 11px; font-weight: 600; color: var(--coral); background: transparent; border: none; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: background .12s; text-transform: none; letter-spacing: 0; }
+.k-msearch-recents-clear:active { background: var(--sand); }
+.k-msearch-recent-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background .12s; -webkit-tap-highlight-color: transparent; }
+.k-msearch-recent-item + .k-msearch-recent-item { border-top: 1px solid var(--sand-dark); }
+.k-msearch-recent-item:active { background: var(--sand-dark); }
+.k-msearch-recent-icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-light); }
+.k-msearch-recent-label { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-msearch-recent-remove { width: 24px; height: 24px; border: none; background: transparent; color: var(--text-light); font-size: 16px; line-height: 1; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background .12s, color .12s; }
+.k-msearch-recent-remove:active { background: var(--sand-dark); color: var(--text); }
+
+/* ── SUGGESTIONS MOBILE ──────────────────────────────────────── */
+.k-modal-suggestions { padding: 0 12px calc(16px + env(safe-area-inset-bottom, 0px)); } /* FIX Bug 2: padding porté ici depuis .k-modal-scroll */
+.k-sug-section { padding: 14px 0 6px; }
+.k-sug-section + .k-sug-section { margin-top: 6px; border-top: 1px solid var(--sand); padding-top: 16px; }
+.k-sug-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(100,175,90,.10), rgba(100,175,90,.04));
+  border-left: 3px solid var(--ocean, var(--ocean));
+  border-radius: 0 10px 10px 0;
+}
+.k-sug-title-icon {
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(100,175,90,.20), rgba(100,175,90,.08));
+  flex-shrink: 0;
+}
+.k-sug-title-text {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text, var(--text));
+}
+.k-sug-title::after { display: none; }
+.k-sug-chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 0 10px; }
+
+.k-sug-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--sand-dark); background: var(--white); font-size: 12px; font-weight: 500; color: var(--text); cursor: pointer; transition: all .2s; white-space: nowrap; }
+.k-sug-chip.is-active { background: transparent; border-color: var(--coral); color: var(--text); font-weight: 700; }
+/* Fond couleur catégorie pour le chip actif — cohérence avec le rail principal */
+#k-modal-suggestions[data-cat="Mode & Beauté"] .k-sug-chip.is-active { background: var(--cat-mode-bg); }
+#k-modal-suggestions[data-cat="Maison"]         .k-sug-chip.is-active { background: var(--cat-maison-bg); }
+#k-modal-suggestions[data-cat="Tech"]           .k-sug-chip.is-active { background: var(--cat-tech-bg); }
+#k-modal-suggestions[data-cat="Bricolage"]      .k-sug-chip.is-active { background: var(--cat-brico-bg); }
+#k-modal-suggestions[data-cat="Créations personnelles"] .k-sug-chip.is-active { background: var(--cat-perso-bg); }
+#k-modal-suggestions[data-cat="Auto"]           .k-sug-chip.is-active { background: var(--cat-auto-bg); }
+.k-sug-card.subcat-hidden { display: none !important; }
+.k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
+.k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
+.k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--sand) 0%, var(--sand) 100%); border-radius: 10px 10px 0 0; }
+.k-sug-grid .k-sug-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 6px; display: block; }
+.k-sug-grid .k-sug-card-name { font-size: 13px; line-height: 1.3; padding: 6px 8px 2px; color: var(--text); font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
+.k-sug-grid .k-sug-card-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--coral); }
+.k-sug-card-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0; flex-shrink: 0; }
+/* Source de vérité .k-sug-step = bouton ± rond (stepper quantité).
+   interactions.css avait une homonyme sémantiquement différente → renommée .k-sug-order-step (phase7). */
+.k-sug-step { width: 28px; height: 28px; border-radius: 50%; background: var(--sand); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--ocean); cursor: pointer; flex-shrink: 0; transition: background .15s; }
+.k-sug-step:active { background: var(--sand-dark); transform: scale(.9); }
+.k-sug-qty { min-width: 22px; text-align: center; font-size: 13px; font-weight: 700; color: var(--ocean); user-select: none; }
+.k-sug-card-bottom { display: flex; align-items: center; justify-content: space-between; padding: 0 8px 8px; gap: 4px; }
+.k-sug-card-price { font-size: 13px; font-weight: 700; color: var(--coral); flex: 1; min-width: 0; white-space: nowrap; } /* BUGFIX: white-space:nowrap empêche le prix de se couper sur 2 lignes (ex: 12300 / KMF) */
+/* Source de vérité modale — .k-sug-add dans le contexte modal produit.
+   32×32px, transparent, sans bordure. Actif via b-modal.js.
+   Voir interactions.css pour la variante catalogue (40×40, rond, fond blanc). */
+.k-sug-add { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; touch-action: manipulation; }
+.k-sug-add:active { transform: scale(.88); }
+.k-sug-add img { width: 28px; height: 28px; display: block; mix-blend-mode: multiply; }
+.k-sug-promo-badge { position: absolute; top: 5px; left: 5px; background: var(--coral); color: var(--white); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 50px; pointer-events: none; z-index: 2; }
+
+/* ── F3 — LIVRAISON MOBILE ───────────────────────────────────── */
+/* Encart minimal toujours présent sur mobile.
+   Invariant : afficher "Livraison relais" en fallback si pas de données.
+   Masqué desktop : les blocs enrichis §6 prennent le relais (b-modal-desktop-enhancers.js). */
+.k-modal-delivery-mobile {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 14px 0;
+  padding: 9px 12px;
+  background: var(--green-bg); border-radius: 10px;
+  font-size: 12px; color: var(--text);
+}
+.k-modal-delivery-mobile-icon { font-size: 16px; flex-shrink: 0; }
+.k-modal-delivery-mobile-label { font-weight: 600; }
+.k-modal-delivery-mobile-delay { color: var(--text-muted); margin-left: 4px; }
+@media (min-width: 900px) { .k-modal-delivery-mobile { display: none; } }
+
+/* ── F4 — TRUST BAR MOBILE ──────────────────────────────────── */
+/* 3 pills horizontaux au-dessus de .k-modal-actions.
+   Masqué desktop : le trust bar §6 enrichi (b-modal-desktop-enhancers.js) prend le relais.
+   FIX: flex-shrink:0 — la trust bar est enfant flex direct de #k-modal après le déplacement
+   des actions par setupModal() ; sans cette propriété elle peut être écrasée sur petits écrans.
+   FIX: pas de border-top ici — .k-modal-actions en a déjà un ; double bordure supprimée. */
+.k-modal-trust-mobile {
+  display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap;
+  gap: 6px; padding: 8px 14px 4px;
+  flex-shrink: 0;
+}
+.k-modal-trust-mobile-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--sand); border: 1px solid rgba(0,0,0,.08);
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  white-space: nowrap;
+}
+@media (min-width: 900px) { .k-modal-trust-mobile { display: none; } }
+
+/* ══════════════════════════════════════════════════════════════
+   4. VARIANTES — SKUs couleur + grille tailles / pointures
+   Classes couleur : .k-vg / .k-vg-skus / .k-sku
+   Classes taille  : .k-vg / .k-vg-sizes / .k-vp
+   ══════════════════════════════════════════════════════════════ */
+
+/* Groupe variante */
+.k-vg {
+  padding: 0 0 4px;
+}
+
+/* Label "Couleur · Bleu" */
+.k-vg-label {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.k-vg-label-type { font-weight: 700; color: var(--text); }
+.k-vg-label-sep  { color: var(--text-muted); font-size: 11px; }
+.k-vg-label-val  { color: var(--text-muted); font-weight: 400; }
+
+/* ── SKUs couleur ────────────────────────────────────────────── */
+.k-vg-skus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Bouton SKU : image produit + nom couleur en dessous */
+.k-sku {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  padding: 3px 3px 6px;
+  cursor: pointer;
+  width: 68px;
+  position: relative;
+  transition: border-color .15s, box-shadow .15s, transform .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.k-sku img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 7px;
+  display: block;
+}
+/* F5 — Swatches couleur purs (pas d'image, data-color posé par renderVariants) :
+   forme ronde comme Temu. Ne s'applique pas aux cartes image (k-sku avec img). */
+.k-sku--color {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  padding: 0;
+  justify-content: center;
+}
+
+.k-sku-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 62px;
+  line-height: 1.2;
+}
+
+/* Hover */
+.k-sku:hover:not(.k-sku--out) {
+  border-color: var(--coral);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(200, 92, 45, .18);
+}
+
+/* Sélectionné */
+.k-sku.k-sku--active {
+  border-color: var(--coral);
+  box-shadow: 0 0 0 2px var(--coral);
+}
+.k-sku--active .k-sku-name {
+  color: var(--coral-dark);
+  font-weight: 700;
+}
+
+/* Épuisé */
+.k-sku--out {
+  opacity: .42;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Slash diagonale sur image épuisé */
+.k-sku-slash {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 60px;
+  height: 60px;
+  border-radius: 7px;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 1px),
+    var(--overlay-black-lg) calc(50% - 1px),
+    var(--overlay-black-lg) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  pointer-events: none;
+}
+
+/* ── Grille tailles / pointures ──────────────────────────────── */
+.k-vg-sizes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+}
+
+.k-vp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.k-vp:hover:not(:disabled) {
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 5%, var(--white));
+}
+.k-vp.k-vp--active {
+  border-color: var(--coral);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--coral) 8%, var(--white));
+  color: var(--coral-dark);
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--coral);
+}
+.k-vp--out {
+  opacity: .38;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* ── Desktop : SKUs et pills légèrement plus grands ──────────── */
+/* INTENTIONNEL @768px — composant de sélection produit (dialogue) :
+   passe en style élargi avant le breakpoint layout global @900px,
+   même logique que .k-sg-overlay/.k-sg-panel ci-dessous et .k-order-modal dans cart.css @600px. */
+@media (min-width: 768px) {
+  .k-sku        { width: 76px; }
+  .k-sku img    { width: 68px; height: 68px; }
+  .k-sku-name   { max-width: 70px; font-size: 11px; }
+  .k-sku-slash  { width: 68px; height: 68px; }
+  .k-vg-sizes   { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .k-vp         { height: 44px; font-size: 14px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GUIDE DES TAILLES — Overlay
+   ══════════════════════════════════════════════════════════════ */
+
+/* Lien/bouton dans le label variante */
+.k-vg-size-guide {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ocean, var(--blue-dark));
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color .15s, background .15s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.k-vg-size-guide:hover {
+  color: var(--ocean-dark, var(--blue-ocean-dark));
+  background: color-mix(in srgb, var(--ocean, var(--blue-dark)) 8%, transparent);
+}
+
+/* Overlay fond */
+.k-sg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100; /* au-dessus du modal produit */
+  background: var(--overlay-dark-md);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s var(--ease, ease);
+}
+.k-sg-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* INTENTIONNEL @768px — .k-sg-overlay (guide des tailles) : composant de type dialogue,
+   passe en alignement centré avant le breakpoint layout @900px. Voir aussi .k-sku @768px ci-dessus. */
+@media (min-width: 768px) {
+  .k-sg-overlay { align-items: center; }
+}
+
+/* Panel */
+.k-sg-panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88dvh;
+  background: var(--white, var(--white));
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(32px);
+  transition: transform .25s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 -4px 32px var(--overlay-black-md);
+}
+.k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
+/* INTENTIONNEL @768px — .k-sg-panel (guide des tailles) : panneau centré avec scale-in,
+   animation de type dialogue avant le layout desktop @900px. */
+@media (min-width: 768px) {
+  .k-sg-panel {
+    border-radius: 18px;
+    max-height: 80dvh;
+    transform: scale(.96);
+  }
+  .k-sg-overlay.is-open .k-sg-panel { transform: scale(1); }
+}
+
+/* Header */
+.k-sg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border, var(--border));
+  flex-shrink: 0;
+}
+.k-sg-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text, var(--text));
+  margin: 0;
+}
+.k-sg-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: var(--surface, var(--gray-bg));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted, var(--text-form-light));
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.k-sg-close svg { width: 16px; height: 16px; }
+.k-sg-close:hover { background: var(--border, var(--border)); color: var(--text, var(--text)); }
+
+/* Tabs */
+.k-sg-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border, var(--border));
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.k-sg-tabs::-webkit-scrollbar { display: none; }
+
+.k-sg-tab {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, var(--text-form-light));
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.k-sg-tab.is-active {
+  color: var(--coral, var(--coral));
+  border-bottom-color: var(--coral, var(--coral));
+}
+
+/* Body scrollable */
+.k-sg-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 20px;
+}
+
+/* Hint */
+.k-sg-hint {
+  font-size: 12.5px;
+  color: var(--text-muted, var(--text-form-soft-md));
+  line-height: 1.55;
+  margin: 0 0 14px;
+  background: color-mix(in srgb, var(--ocean, var(--blue-dark)) 6%, transparent);
+  border-left: 3px solid var(--ocean, var(--blue-dark));
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Table wrapper (scroll horizontal sur mobile) */
+.k-sg-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  border: 1px solid var(--border, var(--border));
+}
+
+.k-sg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 260px;
+}
+.k-sg-table thead th {
+  background: var(--surface, var(--gray-bg-lighter));
+  color: var(--text-muted, var(--text-form-mid));
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.k-sg-table tbody tr {
+  border-top: 1px solid var(--border, var(--border-lighter));
+  transition: background .1s;
+}
+.k-sg-table tbody tr:hover { background: var(--surface, var(--sand)); }
+.k-sg-table tbody td {
+  padding: 9px 12px;
+  color: var(--text, var(--text-strong));
+  font-weight: 500;
+  white-space: nowrap;
+}
+.k-sg-table tbody td:first-child {
+  font-weight: 700;
+  color: var(--coral-dark, var(--coral-text-deep));
+}
+
+/* Footer */
+.k-sg-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border, var(--border-lighter));
+  font-size: 12px;
+  color: var(--text-muted, var(--text-form-light));
+  text-align: center;
+  flex-shrink: 0;
+  background: var(--surface, var(--sand));
+}
+
+/* Prevent body scroll when guide open (stacks with modal-open) */
+body.k-sg-open { /* handled by overlay pointer-events */ }
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. ZONES DESKTOP ENRICHIES — Temu-style full page
+   Owner : modal.css (propriétaire de tous .k-modal-*)
+   Règle I-5 : exclusivement sous @media (min-width: 900px)
+   Règle I-3 : aucun hex — uniquement des tokens CSS
+   Mobile : toutes ces zones sont display:none (défaut hors MQ)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Base mobile : masquées par défaut ─────────────────────── */
+.k-modal-aed-price,
+.k-modal-flash-bar,
+.k-modal-stock-bar,
+.k-modal-delivery,
+.k-modal-payment { display: none; }
+
+/* ── PR-M3 ✅ — Blocs conditionnels par classes ModalViewModel ──
+   Invariant B-M-10 : chaque bloc optionnel est révélé UNIQUEMENT
+   si la classe contractuelle correspondante est posée sur .k-modal
+   par ModalViewModel (cf. js/view-models/modal-view-model.js).
+   Zéro logique de sourcing dans le CSS — B-M-09 respecté.
+
+   Couverts par CSS (blocs avec border/padding visibles même vides) :
+     .k-modal-aed-price → .k-modal--has-promo (not() ci-dessous)
+     .k-modal-flash-bar → .k-modal--has-promo (not() ci-dessous)
+     .k-modal-stock-bar → .k-modal--stock-low  (not() ci-dessous)
+     .k-modal-specs     → .k-modal--has-specs  (§3 desktop ci-dessous)
+
+   Intentionnellement toujours visibles desktop (blocs fonctionnels) :
+     .k-modal-delivery / .k-modal-payment → UX : toujours présents,
+       contenus générés par injectDelivery() / injectPayment()
+
+   Gérés côté JS sans risque de bloc fantôme (innerHTML vide → :empty) :
+     .k-modal-meta (social proof) → .k-modal-meta:empty { display:none }
+     .k-modal-variants → JS injecte/supprime le bloc entier
+   ──────────────────────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .k-modal:not(.k-modal--has-promo) .k-modal-aed-price,
+  .k-modal:not(.k-modal--has-promo) .k-modal-flash-bar,
+  .k-modal:not(.k-modal--stock-low) .k-modal-stock-bar {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) {
+
+  /* ── EUR reference line (remplace AED) ─────────────────── */
+  /* Ligne sobre sous le prix KMF : "≈ 6 €  -14%"           */
+  /* Pas de second bloc héro — le KMF est déjà en grand      */
+  .k-modal-aed-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 2px 0 6px;
+  }
+  .k-modal-eur-ref {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .k-modal-eur-ref strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .k-modal-eur-ref s {
+    font-size: 12px;
+    color: var(--text-light);
+    text-decoration: line-through;
+    margin-left: 4px;
+  }
+  .k-modal-aed-pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--coral-dark);
+    background: var(--border-coral-09);
+    border: 1px solid var(--border-coral-13);
+    padding: 2px 7px;
+    border-radius: 5px;
+    letter-spacing: .3px;
+  }
+
+  /* Chantier 2 — "· économie 5 233 KMF" suffixe sobre de la ligne aed-price */
+  .k-modal-price-saving {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .k-modal-price-saving-sep {
+    margin: 0 6px 0 -2px;
+    color: var(--text-light);
+  }
+
+  /* ── Bandeau promo sobre — FIX 2026-05-20 ──────────────── */
+  /* Remplace l'ancien flash bar avec timer aléatoire (supprimé).
+     Affiché uniquement si product.promo_pct existe (donnée réelle).
+     Aucun token amber — uniquement sand-warm + coral du système Komerce. */
+  .k-modal-flash-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--sand-warm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin: 8px 0 0;
+  }
+  .k-modal-flash-icon {
+    display: inline-flex;
+    width: 14px;
+    height: 14px;
+    background-color: var(--coral);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    flex-shrink: 0;
+  }
+  .k-modal-flash-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--coral);
+  }
+  .k-modal-flash-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--coral);
+    background: var(--border-coral-09);
+    border: 1px solid var(--border-coral-13);
+    padding: 1px 7px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  /* Chantier 2 — suffixe "sur ce produit" du flash-bar, discret */
+  .k-modal-flash-suffix {
+    font-size: 12px;
+    color: var(--coral);
+    font-weight: 500;
+    opacity: .85;
+  }
+
+  /* ── Stock disponible — FIX 2026-05-20 ─────────────────── */
+  /* Remplace la barre stock avec % simulé (supprimée).
+     Texte sobre affiché si stock réel ≤ 20. Pas de barre, pas de rouge. */
+  .k-modal-stock-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 6px 0 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .k-modal-stock-line-icon {
+    display: inline-flex;
+    width: 13px;
+    height: 13px;
+    background-color: var(--ocean);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E");
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    flex-shrink: 0;
+  }
+
+  /* ── Delivery section ───────────────────────────────────── */
+  .k-modal-delivery {
+    display: block;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .k-modal-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 10px;
+  }
+  .k-modal-delivery-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: var(--white);
+    margin-bottom: 7px;
+    user-select: none;
+  }
+  .k-modal-delivery-opt:last-child { margin-bottom: 0; }
+  .k-modal-delivery-opt:hover {
+    border-color: var(--ocean-light);
+    background: var(--ocean-bg-08);
+  }
+  .k-modal-delivery-opt.is-active {
+    border-color: var(--ocean);
+    background: var(--ocean-bg-08);
+  }
+  /* Radio visuel */
+  .k-modal-opt-radio {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    position: relative;
+    transition: border-color .15s;
+  }
+  .k-modal-delivery-opt.is-active .k-modal-opt-radio,
+  .k-modal-payment-opt.is-active .k-modal-opt-radio {
+    border-color: var(--ocean);
+  }
+  .k-modal-delivery-opt.is-active .k-modal-opt-radio::after,
+  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--ocean);
+  }
+  .k-modal-opt-body { flex: 1; min-width: 0; }
+  .k-modal-opt-row1 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .k-modal-opt-icon { font-size: 15px; flex-shrink: 0; }
+  .k-modal-opt-free {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ocean-dark);
+    background: var(--ocean-bg-08);
+    border: 1px solid var(--border-ocean-14);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .k-modal-opt-row2 {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .k-modal-islands {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 7px;
+  }
+  .k-modal-island-chip {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 4px;
+    background: var(--sand-dark);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Payment section ────────────────────────────────────── */
+  .k-modal-payment {
+    display: block;
+    border-top: 1px solid var(--sand-dark);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .k-modal-payment-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .k-modal-payment-opt {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    background: var(--white);
+    user-select: none;
+  }
+  .k-modal-payment-opt:hover {
+    border-color: var(--violet);
+    background: var(--violet-light);
+  }
+  .k-modal-payment-opt.is-active {
+    border-color: var(--violet);
+    background: var(--violet-light);
+  }
+  .k-modal-payment-opt.is-active .k-modal-opt-radio {
+    border-color: var(--violet);
+  }
+  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
+    background: var(--violet);
+  }
+  .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
+  .k-modal-pay-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .k-modal-pay-sub {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+  .k-modal-pay-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .k-modal-pay-badge--stripe {
+    background: var(--blue-stripe-bg);
+    color: var(--blue-stripe-text);
+    border: 1px solid var(--blue-border);
+  }
+  .k-modal-pay-badge--group {
+    background: var(--violet-light);
+    color: var(--violet-dark);
+    border: 1px solid var(--violet-mid);
+  }
+}
+
+
