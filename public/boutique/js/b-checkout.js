@@ -16,6 +16,7 @@ import {
   renderFulfillmentSelector as _renderFulfillmentSelector,
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
+  buildIdentityRecapDOM,
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
@@ -341,24 +342,10 @@ export function renderCheckout() {
     renderFulfillmentSelector(body, od, refreshFulfillment);
 
     // ── Bloc récap identité payeur (doctrine §9) ─────────────────────────────
-    // Affiché si une identité est déjà connue au moment de renderCheckout().
-    // Permet de voir avec quel numéro on commande, et d'en changer si besoin.
-    // Réutilise requireIdentity() — aucune logique parallèle.
+    // S3.1 — construction DOM déléguée à buildIdentityRecapDOM (b-checkout-render.js)
     const _knownUser = getCurrentIdentity();
     if (_knownUser) {
-      const idRecap = document.createElement('div');
-      idRecap.id = 'ck-identity-recap';
-      idRecap.className = 'k-ck-identity-recap';
-      const _dName  = _knownUser.full_name || _knownUser.name || '';
-      const _dPhone = _knownUser.phone || '';
-      idRecap.innerHTML =
-        '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
-        + '<span class="k-ck-id-value">'
-        + (sanitize(_dName) + (_dName && _dPhone ? ' · ' : '') + sanitize(_dPhone))
-        + '</span>'
-        + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
-        + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
-
+      const idRecap = buildIdentityRecapDOM(_knownUser);
       idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
         const newUser = await requireIdentity({
           reason: "changer d'identité",
@@ -366,8 +353,7 @@ export function renderCheckout() {
           allowOtherPhone: true,
         });
         if (newUser) {
-          // Mettre à jour le bloc récap avec la nouvelle identité
-          const nameEl  = idRecap.querySelector('.k-ck-id-value');
+          const nameEl = idRecap.querySelector('.k-ck-id-value');
           if (nameEl) {
             const n = newUser.full_name || newUser.name || '';
             const p = newUser.phone || '';
@@ -375,7 +361,6 @@ export function renderCheckout() {
           }
         }
       });
-
       body.appendChild(idRecap);
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
@@ -395,23 +380,19 @@ export function renderCheckout() {
         state.user = restoredUser;
 
         // Construire ou remplacer le bloc récap dans le DOM
+        // S3.1 — construction DOM déléguée à buildIdentityRecapDOM
         let idRecap = body.querySelector('#ck-identity-recap');
         const isNew = !idRecap;
         if (isNew) {
-          idRecap = document.createElement('div');
-          idRecap.id = 'ck-identity-recap';
-          idRecap.className = 'k-ck-identity-recap';
+          idRecap = buildIdentityRecapDOM(restoredUser);
+        } else {
+          const nameEl = idRecap.querySelector('.k-ck-id-value');
+          if (nameEl) {
+            const n = restoredUser.full_name || restoredUser.name || '';
+            const p = restoredUser.phone || '';
+            nameEl.textContent = n + (n && p ? ' · ' : '') + p;
+          }
         }
-
-        const rName  = restoredUser.full_name || restoredUser.name || '';
-        const rPhone = restoredUser.phone || '';
-        idRecap.innerHTML =
-          '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
-          + '<span class="k-ck-id-value">'
-          + (sanitize(rName) + (rName && rPhone ? ' · ' : '') + sanitize(rPhone))
-          + '</span>'
-          + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
-          + "<button type=\"button\" class=\"k-ck-id-change\">Ce n'est pas vous ? Utiliser un autre numéro</button>";
 
         idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
           const newUser = await requireIdentity({
@@ -430,13 +411,9 @@ export function renderCheckout() {
         });
 
         if (isNew) {
-          // Insérer le bloc avant le premier champ (bénéficiaire) si possible
           const firstInput = body.querySelector('.k-ck-group, .ck-label');
-          if (firstInput) {
-            body.insertBefore(idRecap, firstInput);
-          } else {
-            body.appendChild(idRecap);
-          }
+          if (firstInput) body.insertBefore(idRecap, firstInput);
+          else body.appendChild(idRecap);
         }
       }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
     }

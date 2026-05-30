@@ -15,7 +15,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
 | **Modal produit** `.k-modal*` | modal-shell.css (18), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (11), layout.css (9) | 2 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (14), layout.css (9) | 2 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (22), boutique-desktop.css (4), desktop-commerce-skeleton.css (2), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (15), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (17), hero.css (1), tokens.css (1) | 3 | 🔴 |
@@ -109,21 +109,17 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 
 ## 4. Dette CSS
 
-### `!important` — total : 22
+### `!important` — total : 8
 
 | Fichier | Occurrences |
 |---------|:-----------:|
-| layout.css | 8 |
-| boutique-desktop.css | 2 |
-| group-cart-flow.css | 2 |
 | hero.css | 2 |
-| modal-product.css | 2 |
 | cart.css | 1 |
 | categories.css | 1 |
+| group-cart-flow.css | 1 |
 | interactions.css | 1 |
-| modal-shell.css | 1 |
+| layout.css | 1 |
 | products.css | 1 |
-| shared-followup.css | 1 |
 
 ### CSS injecté via JS (devrait être 0 — le CSS vit dans .css)
 
@@ -141,6 +137,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Modules JS écrivant le DOM | 40 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
 | Violations breakpoint | 3 | 0 |
-| `!important` | 22 | < 5 |
+| `!important` | 8 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

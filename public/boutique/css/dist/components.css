@@ -4799,6 +4799,107 @@ body.cart-open .k-wa-fab {
 }
 
 
+/* ── S3.2 — Mode édition panier collectif (tiré de b-cart.js inline styles) ── */
+/* Drawer panier (k-cart-edit-bar) */
+#k-cart-edit-bar {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-cart-edit-header {
+  background: linear-gradient(135deg, var(--collective-navy), var(--green-text-sett));
+  color: var(--white);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+#k-cart-edit-update {
+  background: var(--green-text-sett);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 800;
+  font-size: .875rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+#k-cart-edit-cancel {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: .8125rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+#k-cart-edit-err {
+  color: var(--collective-err);
+  font-size: .75rem;
+  margin: 0;
+  min-height: 14px;
+}
+
+/* Side-cart (k-sc-edit-bar) */
+#k-sc-edit-bar {
+  background: linear-gradient(135deg, var(--collective-navy) 0%, var(--green-text-sett) 100%);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.k-sc-edit-header {
+  color: var(--white);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#k-sc-edit-update {
+  background: var(--white);
+  color: var(--collective-navy);
+  border: none;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: .8125rem;
+  cursor: pointer;
+  width: 100%;
+  line-height: 1.2;
+}
+
+#k-sc-edit-cancel {
+  background: transparent;
+  color: rgba(255 255 255 / .85);
+  border: 1px solid rgba(255 255 255 / .4);
+  border-radius: 9px;
+  padding: 8px 14px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+
+#k-sc-edit-err {
+  color: var(--collective-err-light);
+  font-size: .6875rem;
+  margin: 0;
+  min-height: 14px;
+}
+
 
 /* ── interactions.css ────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════

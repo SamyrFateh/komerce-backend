@@ -282,3 +282,28 @@ export function buildOrderSuccessDOM(body, order) {
     trackBtn: body.querySelector('#k-order-track-btn'),
   };
 }
+
+// ── Récapitulatif identité (S3.1) ─────────────────────────────────────────────
+
+/**
+ * Construit l'élément DOM du bloc "CONTACT RECONNU" pour le checkout.
+ * Fonction pure : ne lit pas state, ne déclenche aucun appel réseau.
+ *
+ * @param {Object} identity - { full_name?, name?, phone? }
+ * @returns {HTMLElement} div#ck-identity-recap
+ */
+export function buildIdentityRecapDOM(identity) {
+  const el = document.createElement('div');
+  el.id = 'ck-identity-recap';
+  el.className = 'k-ck-identity-recap';
+  const dName  = identity.full_name || identity.name  || '';
+  const dPhone = identity.phone || '';
+  el.innerHTML =
+    '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
+    + '<span class="k-ck-id-value">'
+    + sanitize(dName) + (dName && dPhone ? ' · ' : '') + sanitize(dPhone)
+    + '</span>'
+    + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
+    + '<button type="button" class="k-ck-id-change">Ce n\'est pas vous\u00a0? Utiliser un autre numéro</button>';
+  return el;
+}
