@@ -953,6 +953,12 @@ body {
   body.sc-reserve .k-header-inner,
   body:has(.k-side-cart.has-items) .k-header-inner {
     max-width: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
+    /* FIX décalage gauche : margin:0 auto dans un body avec padding-right:240px
+       centre dans (100vw - 240px) → décale le contenu vers la gauche de 120px.
+       On aligne à gauche avec margin-right:auto pour que le contenu reste
+       justifié à gauche et ne soit pas re-centré dans la zone réduite. */
+    margin-left: 0;
+    margin-right: auto;
   }
 
   #k-catalog-section {
@@ -1152,7 +1158,13 @@ body {
     align-items: flex-start;
     gap: 20px;
     max-width: none;
-    margin: 0 auto;
+    /* FIX décalage gauche :
+       body:has(.k-side-cart.has-items) pose padding-right:240px sur body.
+       margin:0 auto centrait dans (100vw - 240px) → contenu décalé à gauche de 120px.
+       On supprime margin:0 auto et on laisse le wrap s'étirer naturellement
+       dans l'espace utile du body (width:100% implicite suffit).
+       Le side-cart fixed reste collé à droite, hors du flux. */
+    margin: 0;
     padding: 12px 20px 0;
   }
 
