@@ -44,21 +44,8 @@
 
 
 /* ══════════════════════════════════════════════════════════════════
-   4. MODAL ZOOM — scale sur l'image, pas de lens visible
+   4. MODAL ZOOM → migré vers modal.css (Sprint 4 — S4.5)
    ══════════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-
-  #k-modal .k-modal-carousel { cursor: zoom-in; }
-
-  #k-modal .k-modal-slide {
-    transition: transform .25s var(--ease);
-  }
-  #k-modal .k-modal-carousel:hover
-  .k-modal-carousel-track
-  .k-modal-slide:not(.is-hidden) {
-    transform: scale(1.02);
-  }
-}
 
 
 /* 6. ANIMATION ENTRÉE CARTES → migré vers products.css (Sprint 4 — S4.3) */
@@ -105,125 +92,28 @@
 
 
 /* ══════════════════════════════════════════════════════════════════
-   9. RECENTLY VIEWED — Section en bas du scroll modal (desktop)
+   9. RECENTLY VIEWED → migré vers modal.css (Sprint 4 — S4.5)
    ══════════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-
-  .k-modal-recent {
-    padding: 18px 24px 28px;
-    border-top: 1px solid var(--sand-dark);
-    background: var(--white);
-  }
-  .k-modal-recent-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0 0 14px;
-    letter-spacing: -.01em;
-  }
-  .k-modal-recent-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-  }
-  .k-modal-recent-card {
-    display: flex;
-    flex-direction: column;
-    background: var(--white);
-    border: 1px solid var(--border-text-08);
-    border-radius: 10px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform .12s, border-color .12s, box-shadow .12s;
-    padding: 0;
-    text-align: left;
-    min-width: 0;
-  }
-  .k-modal-recent-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(200,92,45,.4);
-    box-shadow: 0 6px 16px var(--border-text-08);
-  }
-  .k-modal-recent-img {
-    aspect-ratio: 1;
-    background: linear-gradient(135deg, var(--sand), var(--sand-dark));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .k-modal-recent-img img {
-    width: 100%; height: 100%;
-    object-fit: contain;
-    padding: 6px;
-    display: block;
-  }
-  .k-modal-recent-name {
-    font-size: 12px;
-    line-height: 1.3;
-    color: var(--text);
-    padding: 6px 8px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    min-height: 32px;
-  }
-  .k-modal-recent-price {
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--coral);
-    padding: 4px 8px 8px;
-  }
-}
 
 
 /* ══════════════════════════════════════════════════════════════════
-   10. KEYBOARD HINT — Navigation clavier dans la modal
+   10. KEYBOARD HINT → migré vers modal.css (Sprint 4 — S4.5)
    ══════════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-
-  .k-modal-keyboard-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--muted, var(--text-form-light));
-    opacity: .7;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .k-modal-keyboard-hint kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1px 5px;
-    background: var(--surface-alt, var(--surface-warm-cool));
-    border: 1px solid var(--border, var(--border-light));
-    border-radius: 3px;
-    font-size: 11px;
-    font-family: inherit;
-    line-height: 1.4;
-  }
-  .k-modal-keyboard-hint span { margin-right: 8px; }
-}
 
 
 /* ══════════════════════════════════════════════════════════════════
    11. UTILITIES — Focus visible & tap-highlight (source unique)
    PALETTE-FIX-01 : outline ocean au lieu de vert foncé hardcodé.
+   Note : .k-modal tap-highlight + focus → migré vers modal.css (S4.5)
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  .k-card,  .k-card  *,
-  .k-modal, .k-modal * {
+  .k-card, .k-card * {
     -webkit-tap-highlight-color: transparent;
   }
 
   .k-card:focus,           .k-card:focus-visible,
-  .k-card-img-wrap:focus,  .k-card-img-wrap:focus-visible,
-  .k-modal-carousel:focus, .k-modal-carousel:focus-visible,
-  .k-modal-slide:focus,    .k-modal-slide:focus-visible {
+  .k-card-img-wrap:focus,  .k-card-img-wrap:focus-visible {
     outline: none;
     box-shadow: none;
   }

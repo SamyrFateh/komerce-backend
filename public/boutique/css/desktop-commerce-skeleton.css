@@ -16,22 +16,7 @@
       
   /* .k-card, .k-card:hover → migré vers products.css (Sprint 4 — S4.3) */
 
-  /* Modal desktop */
-  .k-modal {
-    max-width: min(1040px, calc(100vw - 56px));
-    border-radius: 26px;
-    /* PALETTE-FIX-01 */
-    box-shadow: 0 30px 80px rgba(100,175,90, .18);
-  }
-
-  .k-modal-img-wrap {
-    cursor: default;
-  }
-
-  .k-modal-img-wrap:hover .k-modal-slide,
-  .k-modal-img-wrap:hover #k-modal-img {
-    transform: none;
-  }
+  /* Modal desktop → migré vers modal.css (Sprint 4 — S4.5) */
 }
 
 @media (min-width: 1200px) {

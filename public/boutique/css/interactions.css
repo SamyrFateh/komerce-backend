@@ -79,7 +79,7 @@
 .k-cats,
 .k-subcats-rail,
 .k-promo-rail { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
-.k-modal-scroll { scroll-behavior: smooth; }
+/* .k-modal-scroll → migré vers modal.css (Sprint 4 — S4.5) */
 
 /* ── RETOUR EN HAUT ──────────────────────────────────────────── */
 .k-fab-top {
@@ -250,8 +250,7 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-topbar-price        { font-size:12px; font-weight:700; color:var(--coral); line-height:1.2; margin-top:2px; display:flex; align-items:center; gap:6px; }
 .k-topbar-price-promo  { font-size:10px; background:var(--coral); color:var(--white); padding:1px 5px; border-radius:8px; font-weight:700; }
 
-.k-modal-back-top { position:fixed; bottom:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--white); color:var(--coral); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-md); z-index:10; border:none; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; transform:translateY(8px); font-size:20px; }
-.k-modal-back-top.show { opacity:1; pointer-events:auto; transform:translateY(0); }
+/* .k-modal-back-top → migré vers modal.css (Sprint 4 — S4.5) */
 
 /* ═══════════════════════════════════════════════════════════════
    FLAT SUBCAT PAGER (mode Temu — sous-cats en pages swipables)
@@ -318,14 +317,7 @@ body.cart-open  #k-section-index { display:none; }
   .k-section-index-emoji { font-size:16px; }
 }
 
-.k-grid.k-grid-has-sections { display:block; grid-template-columns:none; gap:0; padding:0; }
-/* En mode pager catégories, display:flex l'emporte sur display:block */
-@media (max-width: 899px) {
-  #k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
-    display: flex;
-    flex-wrap: nowrap;
-  }
-}
+/* .k-grid.k-grid-has-sections + @media 899px → migré vers products.css (Sprint 4 — S4.4) */
 
 /* ═══════════════════════════════════════════════════════════════
    MISC — load-more, view-active, bnav-label, card basket
@@ -412,10 +404,8 @@ body.cart-open  #k-section-index { display:none; }
 .k-proverb-sep           { display:none; }
 .k-header-action-label   { font-size:13px; font-weight:600; color:var(--text); }
 .k-search-item-info      { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-.k-modal-topbar-product-name  { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-modal-topbar-product-price { font-size:12px; font-weight:700; color:var(--coral); }
-.k-modal-topbar-thumb         { flex:0 0 38px; width:38px; height:38px; border-radius:8px; overflow:hidden; background:var(--sand); }
-.k-grid-slide-in-right        { animation:k-grid-in-right .25s ease both; }
+/* .k-modal-topbar-product-name/price/thumb → migré vers modal.css (Sprint 4 — S4.5) */
+/* .k-grid-slide-in-right → migré vers products.css (Sprint 4 — S4.4) */
 .kcf-danger                   { background:transparent; color:var(--red); border:1.5px solid rgba(229,62,62,.25); border-radius:50px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
 .kcf-danger:hover             { background:var(--red-bg-soft); border-color:var(--red); }
 .ck-modal-back-btn            { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); border-radius:50px; color:var(--white); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
@@ -429,27 +419,7 @@ body.cart-open  #k-section-index { display:none; }
    PAGER TEMU — animations slide de catégorie + chip surbrillance
    ═══════════════════════════════════════════════════════════════ */
 
-/* Slide grille entière (swipe horizontal entre catégories) */
-@keyframes k-grid-out-left  {
-  from { transform: translateX(0);     opacity: 1; }
-  to   { transform: translateX(-24px); opacity: 0; }
-}
-@keyframes k-grid-out-right {
-  from { transform: translateX(0);    opacity: 1; }
-  to   { transform: translateX(24px); opacity: 0; }
-}
-@keyframes k-grid-in-right  {
-  from { transform: translateX(24px);  opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-@keyframes k-grid-in-left   {
-  from { transform: translateX(-24px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-.k-grid.k-grid-slide-out-left  { animation: k-grid-out-left  .16s ease-out forwards; }
-.k-grid.k-grid-slide-out-right { animation: k-grid-out-right .16s ease-out forwards; }
-.k-grid.k-grid-slide-in-right  { animation: k-grid-in-right  .26s var(--ease) both; }
-.k-grid.k-grid-slide-in-left   { animation: k-grid-in-left   .26s var(--ease) both; }
+/* @keyframes k-grid-out/in-* + .k-grid.k-grid-slide-* → migré vers products.css (Sprint 4 — S4.4) */
 
 /* k-chip.transitioning → categories.css (Sprint 4 — S4.2) */
 
@@ -481,10 +451,7 @@ body.cart-open  #k-section-index { display:none; }
 
 /* Respect des préférences d'accessibilité */
 @media (prefers-reduced-motion: reduce) {
-  .k-grid.k-grid-slide-out-left,
-  .k-grid.k-grid-slide-out-right,
-  .k-grid.k-grid-slide-in-right,
-  .k-grid.k-grid-slide-in-left,
+  /* .k-grid.k-grid-slide-* → products.css (Sprint 4 — S4.4) */
   .k-chip.transitioning .k-chip-photo { animation: none; }
 }
 

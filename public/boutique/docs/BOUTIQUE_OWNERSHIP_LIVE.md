@@ -2,7 +2,7 @@
 
 > ⚠️ **NE PAS ÉDITER À LA MAIN.** Généré par `scripts/gen-ownership.js` depuis le code réel.
 > Régénérer après chaque PR : `node scripts/gen-ownership.js`
-> Dernière génération : 2026-05-30 (post Sprint 4 — S4.1, S4.2, S4.3)
+> Dernière génération : 2026-05-30
 
 Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'impacte ?**
 
@@ -14,10 +14,10 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal.css (19), boutique-desktop.css (2), interactions.css (2), desktop-commerce-skeleton.css (1) | 4 | 🔴 |
+| **Modal produit** `.k-modal*` | modal.css (22), interactions.css (2), boutique-desktop.css (1) | 3 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (11), layout.css (9) | 2 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (22), boutique-desktop.css (4), desktop-commerce-skeleton.css (2), layout.css (1) | 4 | 🔴 |
-| **Grille produits** `.k-grid*` | interactions.css (9), layout.css (6), products.css (6), cart.css (2) | 4 | 🔴 |
+| **Grille produits** `.k-grid*` | products.css (15), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (17), hero.css (1), tokens.css (1) | 3 | 🔴 |
 | **Hero** `.k-hero*` | hero.css (3), cart.css (1) | 2 | 🔴 |
 | **Chips catégories** `.k-chip*` | categories.css (45), layout.css (2), interactions.css (1) | 3 | 🔴 |

@@ -830,3 +830,52 @@
     box-shadow: 0 12px 28px rgba(100,175,90, .10);
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   GRILLE — Animations slide (pager Temu) + sections
+   Migré depuis interactions.css (Sprint 4 — S4.4)
+   Source de vérité grille → products.css
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Mode sections : la grille passe en display:block pour afficher les .k-cat-section */
+.k-grid.k-grid-has-sections { display:block; grid-template-columns:none; gap:0; padding:0; }
+
+/* En mode pager catégories, display:flex l'emporte sur display:block */
+@media (max-width: 899px) {
+  #k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+}
+
+/* Slide grille entière (swipe horizontal entre catégories) */
+@keyframes k-grid-out-left  {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-24px); opacity: 0; }
+}
+@keyframes k-grid-out-right {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(24px); opacity: 0; }
+}
+@keyframes k-grid-in-right  {
+  from { transform: translateX(24px);  opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes k-grid-in-left   {
+  from { transform: translateX(-24px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+.k-grid.k-grid-slide-out-left  { animation: k-grid-out-left  .16s ease-out forwards; }
+.k-grid.k-grid-slide-out-right { animation: k-grid-out-right .16s ease-out forwards; }
+.k-grid.k-grid-slide-in-right  { animation: k-grid-in-right  .26s var(--ease) both; }
+.k-grid.k-grid-slide-in-left   { animation: k-grid-in-left   .26s var(--ease) both; }
+
+/* Respect des préférences d'accessibilité — grille */
+@media (prefers-reduced-motion: reduce) {
+  .k-grid.k-grid-slide-out-left,
+  .k-grid.k-grid-slide-out-right,
+  .k-grid.k-grid-slide-in-right,
+  .k-grid.k-grid-slide-in-left { animation: none; }
+}

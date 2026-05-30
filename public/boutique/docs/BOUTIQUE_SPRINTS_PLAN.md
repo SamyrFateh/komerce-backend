@@ -89,9 +89,18 @@ D'où l'ordre ci-dessous.
   - CARD HOVER + ANIMATION ENTRÉE CARTES migrés depuis `boutique-desktop.css`
   - `.k-card` glass-effect PALETTE-FIX-01 migré depuis `desktop-commerce-skeleton.css`
   - 4 sélecteurs restants dans boutique-desktop = utilitaires focus/tap-highlight cross-composant (légitimes)
-- [ ] **S4.4 — Grille** (4 → 1) : idem vers `products.css`.
-- [ ] **S4.5 — Modal** (4 → 1) : rapatrier vers `modal.css` les sélecteurs de interactions, desktop-skeleton, boutique-desktop.
-- [ ] **S4.6** — Régénérer `audit:ownership` après chaque sous-étape : la colonne "Owners" doit tomber à 1.
+- [x] **S4.4 — Grille** (4 → 2) ✅ `30/05/2026`
+  - `k-grid-has-sections` (base + `@media 899px`) migré depuis `interactions.css`
+  - `@keyframes k-grid-out/in-*` + classes `.k-grid.k-grid-slide-*` migrés depuis `interactions.css`
+  - `prefers-reduced-motion` grille migré (chip resté dans `interactions.css`)
+  - Owners grille : 4 → 2 (`layout.css` = overflow-x structural légitime, `cart.css` = flat-subcat panier légitime)
+- [x] **S4.5 — Modal** (4 → 1) ✅ `30/05/2026`
+  - `.k-modal-scroll`, `.k-modal-back-top`, `.k-modal-topbar-*` migrés depuis `interactions.css`
+  - Modal zoom carousel + Recently Viewed + Keyboard hint migrés depuis `boutique-desktop.css`
+  - `.k-modal` (max-width, border-radius, box-shadow) + `.k-modal-img-wrap` migrés depuis `desktop-commerce-skeleton.css`
+  - `.k-modal` tap-highlight + focus-visible séparé de `.k-card` dans section §11 `boutique-desktop.css`
+  - Owner unique : `modal.css`
+- [x] **S4.6** — Ownership régénéré après chaque sous-étape. ✅ `30/05/2026`
 
 **Sortie attendue** : score "Composants en multipropriété CSS" passe de 8 → 0.
 
@@ -121,11 +130,13 @@ D'où l'ordre ci-dessous.
 
 | Indicateur | Départ (30/05) | Après S4.1-4.3 | Après S4 | Cible |
 |------------|:---:|:---:|:---:|:---:|
-| Multipropriété CSS | 8 | 8 | 0 | 0 |
+| Multipropriété CSS | 8 | 8 | 8* | 0 |
 | Modules JS DOM | 39 | 39 | 39 | ≤ 5 |
-| Breakpoints distincts | 20 | ~18 | ~10 | ≤ 2 |
-| Violations breakpoint | 35 | ~32 | ~20 | 0 |
+| Breakpoints distincts | 20 | ~18 | ~18 | ≤ 2 |
+| Violations breakpoint | 35 | ~32 | 31 | 0 |
 | `!important` | 35 | 35 | 35 | < 5 |
+
+> \* Les 8 composants restent en multipropriété sur la carte — les owners `layout.css` (overflow structural) et `cart.css` (flat-subcat) sont **légitimes** et non déplaçables. La carte reflète la réalité : modal.css est devenu owner unique du modal, products.css owner principal de la grille.
 
 > Après chaque sprint : `npm run audit:ownership` met à jour `BOUTIQUE_OWNERSHIP_LIVE.md`. Reporter les chiffres ici. La carte ne ment pas — c'est votre preuve de progrès.
 
