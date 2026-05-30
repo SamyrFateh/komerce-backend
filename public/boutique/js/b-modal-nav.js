@@ -38,6 +38,8 @@ import { state, dom } from './b-store.js';
    * @param {number} total - Total produits disponibles
    */
   function updateModalNavArrows(list, currentIdx) {
+    if (window.innerWidth < 900) return; // nav réservé desktop — évite injection + flash sur mobile
+
     let navEl = document.getElementById('k-modal-nav');
     if (!navEl) {
       navEl = document.createElement('div');
@@ -51,7 +53,7 @@ import { state, dom } from './b-store.js';
       prevBtn.addEventListener('click', () => navigateModal(-1));
 
       const counter = document.createElement('span');
-      counter.id = 'k-modal-counter';
+      counter.id = 'k-modal-nav-pos';      // renommé — évite conflit avec #k-modal-counter (compteur image)
       counter.className = 'k-modal-nav-counter';
 
       const nextBtn = document.createElement('button');
@@ -72,7 +74,7 @@ import { state, dom } from './b-store.js';
       }
     }
 
-    const counter = document.getElementById('k-modal-counter');
+    const counter = document.getElementById('k-modal-nav-pos'); // renommé
     const prevBtn = document.getElementById('k-modal-prev');
     const nextBtn = document.getElementById('k-modal-next');
 
