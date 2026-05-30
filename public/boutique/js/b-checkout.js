@@ -13,6 +13,14 @@ import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity }  from './b-identity.js';
 import {
+  renderFulfillmentSelector as _renderFulfillmentSelector,
+  renderRelaisForIle        as _renderRelaisForIle,
+  setCheckoutConfirmButton  as _setCheckoutConfirmButton,
+  buildOrderSuccessDOM,
+  makeInput                 as _makeInputRender,
+  makePhoneInput            as _makePhoneInputRender,
+} from './b-checkout-render.js';
+import {
   PHONE_COUNTRIES,
   digitsOnly as _digitsOnly,
   normalizeLocal as _normalizeLocal,
@@ -252,31 +260,9 @@ function readIntlPhoneValue(id, fallbackValue) {
   return _buildE164(countrySel.value, digits);
 }
 
+/* S3.1 — rendu délégué à b-checkout-render.js */
 function renderFulfillmentSelector(container, od, onChange) {
-  const wrap = document.createElement('div');
-  wrap.className = 'ck-fulfillment-switch';
-  wrap.innerHTML =
-    '<button type="button" class="ck-fulfillment-btn" data-zone="comoros">Retrait aux Comores</button>' +
-    '<button type="button" class="ck-fulfillment-btn" data-zone="france">Retrait en France</button>';
-
-  function syncActive() {
-    wrap.querySelectorAll('.ck-fulfillment-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.zone === od.fulfillment_zone);
-    });
-  }
-
-  wrap.querySelectorAll('.ck-fulfillment-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (od.fulfillment_zone === btn.dataset.zone) return;
-      od.fulfillment_zone = btn.dataset.zone;
-      od.selectedRelaisId = null;
-      syncActive();
-      onChange();
-    });
-  });
-
-  syncActive();
-  container.appendChild(wrap);
+  _renderFulfillmentSelector(container, od, onChange);
 }
 
 function getDefaultPhoneCodeForZone(zone) {
@@ -312,19 +298,9 @@ function markRelaySelectionError() {
   document.getElementById('ck-relais-section')?.classList.add('is-error');
 }
 
+/* S3.1 — rendu délégué à b-checkout-render.js */
 function setCheckoutConfirmButton(button, mainText, subText) {
-  if (!button) return;
-  button.innerHTML = '';
-  const main = document.createElement('span');
-  main.className = 'ck-confirm-main';
-  main.textContent = mainText;
-  button.appendChild(main);
-  if (subText) {
-    const sub = document.createElement('span');
-    sub.className = 'ck-confirm-subtext';
-    sub.textContent = subText;
-    button.appendChild(sub);
-  }
+  _setCheckoutConfirmButton(button, mainText, subText);
 }
 
 function refreshCheckoutComputedUI() {
@@ -802,23 +778,10 @@ export function renderCheckout() {
  * @param {string} placeholder
  * @returns {HTMLElement}
  */
+/* S3.1 — rendu délégué à b-checkout-render.js */
 export function makeInput(id, label, type, placeholder, dataObj, key) {
-    const group = document.createElement('div');
-    group.className = 'k-ck-group';
-    const lbl = document.createElement('label');
-    lbl.className = 'k-ck-label';
-    lbl.textContent = label;
-    group.appendChild(lbl);
-    const input = document.createElement('input');
-    input.type = type;
-    input.id = id;
-    input.className = 'k-ck-input';
-    input.placeholder = placeholder;
-    input.value = dataObj[key] || '';
-    input.addEventListener('input', () => { dataObj[key] = input.value; });
-    group.appendChild(input);
-    return group;
-  }
+  return _makeInputRender(id, label, type, placeholder, dataObj, key);
+}
 
 
   /**
@@ -838,40 +801,10 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   /**
    * Crée un champ téléphone simplifié (sans sélecteur d'indicatif) pour les Comores.
    */
+/* S3.1 — rendu délégué à b-checkout-render.js */
 export function makePhoneInput(id, label, dataObj, key) {
-    const group = document.createElement('div');
-    group.className = 'k-ck-group';
-    if (label) {
-      const lbl = document.createElement('label');
-      lbl.className = 'k-ck-label k-ck-label--sm';
-      lbl.textContent = label;
-      group.appendChild(lbl);
-    }
-    const wrap = document.createElement('div');
-    wrap.className = 'k-ck-km-wrap';
-    const prefix = document.createElement('div');
-    prefix.className = 'k-ck-km-prefix';
-    prefix.innerHTML = '🇰🇲 <span class="k-ck-km-code">+269</span>';
-    wrap.appendChild(prefix);
-    const input = document.createElement('input');
-    input.type = 'tel';
-    input.id = id;
-    input.className = 'k-ck-km-input';
-    input.placeholder = '321 12 34';
-    input.value = dataObj[key] || '';
-    input.maxLength = 10;
-    input.addEventListener('input', () => {
-      let raw = input.value.replace(/[^0-9]/g, '');
-      if (raw.length > 7) raw = raw.substring(0, 7);
-      if (raw.length >= 4) raw = raw.substring(0,3) + ' ' + raw.substring(3);
-      if (raw.length >= 7) raw = raw.substring(0,6) + ' ' + raw.substring(6);
-      input.value = raw;
-      dataObj[key] = raw;
-    });
-    wrap.appendChild(input);
-    group.appendChild(wrap);
-    return group;
-  }
+  return _makePhoneInputRender(id, label, dataObj, key);
+}
 
 
   /* ── Wallet ── */
@@ -1057,100 +990,45 @@ export async function submitOrder(btn) {
   }
 }
 
+/* S3.1 — DOM délégué à buildOrderSuccessDOM (b-checkout-render.js).
+   Logique métier (listeners clipboard, navigation, track) reste ici. */
 export function renderOrderSuccess(order, recipientName, clientEmail, fullResult) {
-    const body = dom.orderBody;
-    body.innerHTML = '';
-    body.classList.remove('k-order-body--checkout');
-    dom.orderTitle.textContent = '✅ Commande confirmée';
-    body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
-    body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
+  const body = dom.orderBody;
+  body.classList.remove('k-order-body--checkout');
+  dom.orderTitle.textContent = '✅ Commande confirmée';
+  body.parentElement.querySelectorAll('.ck-confirm-btn').forEach(b => b.remove());
+  body.querySelectorAll('.ck-back-btn').forEach(b => b.remove());
 
-    const wrap = document.createElement('div');
-    wrap.className = 'k-confirm-wrap k-confirm-simple';
+  // Construction DOM pure — séparée de la logique
+  const { copyBtn, closeBtn, trackBtn } = buildOrderSuccessDOM(body, order);
 
-    const emoji = document.createElement('div');
-    emoji.className = 'k-confirm-emoji';
-    emoji.textContent = '🎉';
-    wrap.appendChild(emoji);
-
-    const title = document.createElement('h3');
-    title.className = 'k-confirm-title';
-    title.textContent = 'Commande confirmée !';
-    wrap.appendChild(title);
-
-    const refBlock = document.createElement('div');
-    refBlock.className = 'k-confirm-ref-block';
-    refBlock.innerHTML =
-      '<div class="k-confirm-ref-label">Votre référence</div>' +
-      '<div class="k-confirm-ref">' + sanitize(order.reference || '—') + '</div>' +
-      '<button id="k-copy-ref-btn" class="k-confirm-copy">📋 Copier</button>';
-    wrap.appendChild(refBlock);
-
-    const orderQty = order.items_count || (order.items && order.items.length) || null;
-    const orderTotal = order.total_kmf != null ? order.total_kmf : null;
-    if (orderQty && orderTotal) {
-      const recapLine = document.createElement('div');
-      recapLine.className = 'k-confirm-recap';
-      recapLine.innerHTML =
-        '<span class="k-confirm-recap-qty">' + orderQty + ' article' + (orderQty > 1 ? 's' : '') + '</span>' +
-        '<span class="k-confirm-recap-sep">•</span>' +
-        '<span class="k-confirm-recap-amount">' + fmt(orderTotal, 'KMF') + '</span>';
-      wrap.appendChild(recapLine);
+  // Listeners métier (clipboard, navigation, tracking)
+  setTimeout(() => {
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(order.reference || '').then(() => {
+            showToast('📋 Référence copiée !', 'success');
+            copyBtn.textContent = '✓ Copié';
+            setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
+          });
+        }
+      });
     }
-
-    if (order.cash_ref_code && order.payment_mode === 'cash_relais') {
-      const cashBlock = document.createElement('div');
-      cashBlock.className = 'k-confirm-cash-block';
-      cashBlock.innerHTML =
-        '<div class="k-confirm-cash-label">🏪 Code à présenter au relais</div>' +
-        '<div class="k-confirm-cash-code">' + sanitize(order.cash_ref_code) + '</div>';
-      wrap.appendChild(cashBlock);
+    if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); scrollPageToTop('smooth'); });
+    if (trackBtn) {
+      trackBtn.addEventListener('click', () => {
+        closeOrderModal();
+        if (typeof renderTrackView === 'function') renderTrackView();
+        if (typeof switchView === 'function') switchView('track');
+        document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
+        const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
+        if (trackNav) trackNav.classList.add('active');
+        setTimeout(() => {
+          const refInput = document.getElementById('k-otp-ref');
+          if (refInput) { refInput.value = order.reference || ''; document.getElementById('k-otp-ref-btn')?.click(); }
+        }, 350);
+      });
     }
-
-    const notices = document.createElement('div');
-    notices.className = 'k-confirm-notices';
-    notices.innerHTML =
-      '<div class="k-confirm-notice-row">📲 Vous allez recevoir un WhatsApp de confirmation</div>' +
-      '<div class="k-confirm-notice-row">🏪 Rendez-vous au relais avec cette référence</div>';
-    wrap.appendChild(notices);
-
-    const actions = document.createElement('div');
-    actions.className = 'k-confirm-actions';
-    actions.innerHTML =
-      '<button id="k-order-track-btn" class="k-confirm-btn k-confirm-btn-primary">📍 Suivre ma commande</button>' +
-      '<button id="k-order-close-btn" class="k-confirm-btn k-confirm-btn-secondary">🛍️ Continuer mes achats</button>';
-    wrap.appendChild(actions);
-    body.appendChild(wrap);
-
-    setTimeout(() => {
-      const copyBtn = document.getElementById('k-copy-ref-btn');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(order.reference || '').then(() => {
-              showToast('📋 Référence copiée !', 'success');
-              copyBtn.textContent = '✓ Copié';
-              setTimeout(() => { copyBtn.textContent = '📋 Copier'; }, 2000);
-            });
-          }
-        });
-      }
-      const closeBtn = document.getElementById('k-order-close-btn');
-      if (closeBtn) closeBtn.addEventListener('click', () => { closeOrderModal(); scrollPageToTop('smooth'); });
-      const trackBtn = document.getElementById('k-order-track-btn');
-      if (trackBtn) {
-        trackBtn.addEventListener('click', () => {
-          closeOrderModal();
-          if (typeof renderTrackView === 'function') renderTrackView();
-          if (typeof switchView === 'function') switchView('track');
-          document.querySelectorAll('.k-bnav-item').forEach(i => i.classList.remove('active'));
-          const trackNav = document.querySelector('.k-bnav-item[data-tab="track"]');
-          if (trackNav) trackNav.classList.add('active');
-          setTimeout(() => {
-            const refInput = document.getElementById('k-otp-ref');
-            if (refInput) { refInput.value = order.reference || ''; document.getElementById('k-otp-ref-btn')?.click(); }
-          }, 350);
-        });
-      }
-    }, 0);
-  }
+  }, 0);
+}

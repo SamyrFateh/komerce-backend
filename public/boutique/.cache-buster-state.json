@@ -1,12 +1,12 @@
 {
   "version": 9,
   "hashes": {
-    "base.css": "f92d690b665f",
-    "components.css": "c7148799e875",
+    "base.css": "3b27a8f565a2",
+    "components.css": "79ca85336409",
     "desktop.css": "929cf0aec4cd",
     "event.css": "3db21c6da569"
   },
-  "updatedAt": "2026-05-30T11:08:25.399Z",
+  "updatedAt": "2026-05-30T13:22:10.920Z",
   "bumpedFrom": 8,
-  "reason": "4 bundle(s) modifié(s) : base.css, components.css, desktop.css, event.css"
+  "reason": "1 bundle(s) modifié(s) : components.css"
 }

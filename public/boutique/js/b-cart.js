@@ -520,7 +520,6 @@ function quickRemove(productId, btnEl) {
         imgBox.textContent = productEmoji(p);
       }
       // Clic sur l'image → fermer le panier puis rouvrir la fiche produit
-      imgBox.style.cursor = 'pointer';
       imgBox.addEventListener('click', () => {
         closeCart();
         bus.emit('modal:open', { id: p.id });
@@ -535,7 +534,6 @@ function quickRemove(productId, btnEl) {
       name.className = 'k-cart-item-name';
       name.textContent = p.name || 'Produit';
       // Clic sur le nom → fermer le panier puis rouvrir la fiche produit
-      name.style.cursor = 'pointer';
       name.addEventListener('click', () => {
         closeCart();
         bus.emit('modal:open', { id: p.id });
