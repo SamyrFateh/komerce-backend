@@ -66,7 +66,7 @@
 .k-modal-inner-search-input::placeholder { color: var(--text-muted); }
 .k-modal-inner-search-hint { font-size: 11px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; opacity: 0; transition: opacity .2s; pointer-events: none; }
 .k-modal-inner-search:focus-within .k-modal-inner-search-hint { opacity: 1; }
-.k-sug-card.search-hidden { display: none !important; }
+.k-sug-card.search-hidden { display: none; }
 .k-modal-search-clear {
   display: none; width: 26px; height: 26px; border: none;
   background: var(--sand-dark); border-radius: 50%; color: var(--text-muted);
@@ -170,7 +170,7 @@
 #k-modal-suggestions[data-cat="Bricolage"]      .k-sug-chip.is-active { background: var(--cat-brico-bg); }
 #k-modal-suggestions[data-cat="Créations personnelles"] .k-sug-chip.is-active { background: var(--cat-perso-bg); }
 #k-modal-suggestions[data-cat="Auto"]           .k-sug-chip.is-active { background: var(--cat-auto-bg); }
-.k-sug-card.subcat-hidden { display: none !important; }
+.k-sug-card.subcat-hidden { display: none; }
 .k-sug-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 2px; }
 .k-sug-grid .k-sug-card { display: flex; flex-direction: column; height: auto; overflow: visible; width: 100%; }
 .k-sug-grid .k-sug-card-img { aspect-ratio: 1; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--sand) 0%, var(--sand) 100%); border-radius: 10px 10px 0 0; }

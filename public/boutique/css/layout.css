@@ -782,7 +782,7 @@ body:has(#k-page-scroll.k-pager-active) {
    le side cart sur les onglets suivi et favoris sans toucher au JS. */
 #k-page-scroll[data-tab="track"] .k-side-cart,
 #k-page-scroll[data-tab="fav"]   .k-side-cart {
-  display: none !important;
+  display: none;
 }
 
 /* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
@@ -877,14 +877,14 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Filet de sécurité : avatar dame toujours visible (ex hero-cart-proxy.css) */
   .k-header .k-cart-btn,
   .k-cart-btn.k-header-action {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: flex;
+    visibility: visible;
+    opacity: 1;
   }
   .k-header .k-cart-avatar {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: block;
+    visibility: visible;
+    opacity: 1;
   }
 
   /* Nav buttons (ex boutique-desktop.css) */

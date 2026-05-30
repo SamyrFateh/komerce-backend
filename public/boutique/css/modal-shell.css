@@ -223,7 +223,7 @@
 }
 /* Quand la barre CTA est en position statique (flex), le padding compensatoire est inutile */
 #k-modal > .k-modal-scroll {
-  padding-bottom: 0 !important;
+  padding-bottom: 0;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
