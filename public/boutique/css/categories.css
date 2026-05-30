@@ -615,3 +615,226 @@
   }
 }
 /* ── FIN MOBILE PILL RAIL ──────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════
+   CHIPS DESKTOP — migré depuis boutique-desktop.css
+   Sprint 4 — S4.2 : owner unique = categories.css
+   ══════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   CATÉGORIES DESKTOP — CARTES VISUELLES (source de vérité unique)
+   PALETTE-FIX-01 : ombres chip hover ocean, barre sticky ocean.
+   ══════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+
+  /* Sticky wrapper */
+  .k-hero-cats-sticky {
+    position: sticky;
+    top: 68px;
+    z-index: 180;
+    margin-top: 0;
+    background: rgba(248, 246, 241, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 0 0 20px 20px;
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+    box-shadow:
+      0 8px 32px rgba(100,175,90,.10),
+      0 1px 0 rgba(198,168,93,.12);
+    padding-bottom: 14px;
+  }
+
+  .k-cats-shell {
+    position: relative;
+    top: auto;
+    z-index: 120;
+    max-width: 1480px;
+    margin: 28px auto 0;
+    padding: 0 20px;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+  }
+
+  .k-cats {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(92px, 1fr));
+    gap: 12px;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    align-items: stretch;
+    scroll-snap-type: none;
+  }
+
+  .k-cats::before,
+  .k-cats::after,
+  .k-cats-wrap-fade-left,
+  .k-cats-wrap-fade-right {
+    display: none;
+  }
+
+  .k-chip {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    height: 106px;
+    min-height: 106px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 10px 10px 9px;
+    border-radius: 24px;
+    border: 1px solid var(--border-text-08);
+    border-bottom-color: var(--border-text-08);
+    background: var(--surface-white-64);
+    color: var(--text-alpha-82);
+    box-shadow: 0 4px 12px var(--border-text-04);
+    cursor: pointer;
+    text-align: center;
+    overflow: hidden;
+    white-space: normal;
+    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+  }
+
+  .k-chip:hover {
+    transform: translateY(-2px);
+    background: var(--white);
+    border-color: rgba(198,168,93,.36);
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+    box-shadow: 0 12px 24px rgba(100,175,90,.12);
+    color: var(--text);
+  }
+
+  .k-chip-photo,
+  .k-chip-photo.k-chip-photo--img {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    margin: 0;
+    border-radius: 50%;
+    border: 1px solid var(--overlay-white-72);
+    /* POLISH — fond légèrement plus chaud pour soulever les images pâles */
+    background: var(--sand-warm);
+    box-shadow:
+      inset 0 0 0 1.5px rgba(255,255,255,.68),
+      0 6px 16px rgba(28,26,23,.08);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none;
+  }
+
+  .k-chip-photo img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 0;
+    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
+    filter: saturate(1.28) contrast(1.06) brightness(1.03);
+  }
+
+  .k-chip-fallback {
+    display: none;
+  }
+
+  .k-chip-photo.is-img-error .k-chip-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 900;
+    background: var(--text);
+  }
+
+  .k-chip-label {
+    max-width: 100%;
+    color: inherit;
+    font-size: 13.5px;
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .k-chip.active {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
+    color: var(--coral-dark);
+    border-color: rgba(198,168,93,.62);
+    border-bottom-color: rgba(198,168,93,.62);
+    box-shadow: 0 12px 26px rgba(198,168,93,.16);
+  }
+
+  .k-chip.active .k-chip-photo {
+    border-color: rgba(198,168,93,.74);
+    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
+    opacity: 1;
+  }
+
+  .k-chip.active .k-chip-label {
+    color: var(--coral-dark);
+    font-weight: 900;
+  }
+
+  .k-sec-subcats { display: none; }
+  .k-sec-see-all { display: none; }
+  .k-sec-header  { display: none; }
+
+  #k-desktop-sidebar,
+  .k-desktop-sidebar {
+    display: none;
+  }
+
+  .k-desktop-universe-nav {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1180px) {
+  .k-cats {
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+  }
+}
+
+/* Fond couleur catégorie sur subchip actif — migré depuis boutique-desktop.css */
+/* Fond couleur catégorie sur subchip actif */
+.k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
+.k-chip[data-cat="Maison"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: var(--cat-maison-bg); }
+.k-chip[data-cat="Tech"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: var(--cat-tech-bg); }
+.k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: var(--cat-brico-bg); }
+.k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
+.k-chip[data-cat="Auto"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
+
+
+/* Chip animation — migré depuis interactions.css (Sprint 4 — S4.2) */
+/* Chip en surbrillance pendant la transition (scale + ring) */
+@keyframes k-chip-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); box-shadow: 0 0 0 3px rgba(200,92,45,.35); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+.k-chip.transitioning .k-chip-photo {
+  animation: k-chip-pulse .4s var(--ease-spring) both;
+}

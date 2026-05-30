@@ -451,15 +451,7 @@ body.cart-open  #k-section-index { display:none; }
 .k-grid.k-grid-slide-in-right  { animation: k-grid-in-right  .26s var(--ease) both; }
 .k-grid.k-grid-slide-in-left   { animation: k-grid-in-left   .26s var(--ease) both; }
 
-/* Chip en surbrillance pendant la transition (scale + ring) */
-@keyframes k-chip-pulse {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.12); box-shadow: 0 0 0 3px rgba(200,92,45,.35); }
-  100% { transform: scale(1); box-shadow: none; }
-}
-.k-chip.transitioning .k-chip-photo {
-  animation: k-chip-pulse .4s var(--ease-spring) both;
-}
+/* k-chip.transitioning → categories.css (Sprint 4 — S4.2) */
 
 /* Indicateur pager : points en bas de chaque section */
 .k-pager-dots {

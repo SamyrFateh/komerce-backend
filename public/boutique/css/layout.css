@@ -514,13 +514,13 @@ body {
   /* Bnav caché desktop */
   .k-bnav { display: none; }
 
-  /* .k-cats, .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+  /* .k-cats, .k-chip desktop → source de vérité : categories.css (Sprint 4 — S4.2) */
 
   /* .k-cats-wrap fades : masqués desktop */
   .k-cats-wrap-fade-left,
   .k-cats-wrap-fade-right { display: none; }  /* pas de fade desktop */
 
-  /* .k-chip desktop → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+  /* .k-chip desktop → source de vérité : categories.css (Sprint 4 — S4.2) */
 
   /* Section titre catégorie */
   .k-sec-header {
@@ -535,7 +535,7 @@ body {
     padding: 0 clamp(16px, 3vw, 40px);
   }
 
-  /* .k-card desktop → source de vérité : products.css (base) + desktop-commerce-skeleton.css (overrides)
+  /* .k-card desktop → source de vérité : products.css (Sprint 4 — S4.3)
      Règles supprimées de layout.css (P3 ownership audit 2026-05-15) — étaient réécrites après dans la cascade. */
   /* .k-card-add / .k-card-fav → cart.css @900px (source de vérité : 46×46px / 32×32px) */
 
@@ -792,3 +792,197 @@ body {
 /* Hero desktop compact : voir boutique-desktop.css (BANDEAU PREMIUM, source de vérité). */
 /* margin-top side-cart : 52px, intégré dans le bloc consolidé LOT 9 ci-dessus. */
 
+
+/* ══════════════════════════════════════════════════════════════════
+   HEADER — owner unique : layout.css
+   Migré depuis : hero-cart-proxy.css (11), boutique-desktop.css (9),
+                  desktop-commerce-skeleton.css (7)
+   Sprint 4 — S4.1
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile : avatar dame dans le vrai bouton header ─────────────
+   (migré depuis hero-cart-proxy.css)
+   Contexte : tue le hero-bubble sur mobile, restaure le k-cart-btn header. */
+@media (max-width: 899px) {
+  .k-header-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 0;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .k-header .k-cart-btn,
+  .k-cart-btn.k-header-action,
+  .k-header .k-cart-btn.is-empty,
+  .k-cart-btn.k-header-action.is-empty,
+  .k-header .k-cart-btn.hidden,
+  .k-cart-btn.k-header-action.hidden {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+    width: 42px;
+    height: 42px;
+    margin-left: 2px;
+    margin-right: -2px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+    pointer-events: auto;
+  }
+
+  .k-header .k-cart-avatar,
+  .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+    width: 44px;
+    height: 50px;
+    object-fit: contain;
+    object-position: center bottom;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    mix-blend-mode: multiply;
+    margin-top: -10px;
+    margin-bottom: -2px;
+  }
+
+  .k-header .k-cart-badge,
+  .k-cart-btn.k-header-action .k-cart-badge {
+    top: 0;
+    right: -1px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 9px;
+    border-width: 2px;
+    z-index: 20;
+  }
+
+  /* Empty cart: hide only the badge, never the avatar. */
+  .k-header .k-cart-btn.is-empty .k-cart-badge,
+  .k-cart-btn.k-header-action.is-empty .k-cart-badge,
+  .k-header .k-cart-badge:not(.show),
+  .k-cart-btn.k-header-action .k-cart-badge:not(.show) {
+    display: none;
+  }
+}
+
+/* ── Desktop : header nav-btns, header-actions, k-header glass ───
+   (migré depuis boutique-desktop.css + desktop-commerce-skeleton.css) */
+@media (min-width: 900px) {
+  /* Filet de sécurité : avatar dame toujours visible (ex hero-cart-proxy.css) */
+  .k-header .k-cart-btn,
+  .k-cart-btn.k-header-action {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .k-header .k-cart-avatar {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  /* Nav buttons (ex boutique-desktop.css) */
+  .k-header-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background .15s var(--ease), border-color .15s, color .15s;
+    white-space: nowrap;
+    /* Skeleton override: height 38px, padding 0 13px, border-radius 999px merged below */
+    height: 38px;
+    padding: 0 13px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.58);
+    border: 1px solid rgba(100,175,90, .08);
+  }
+  .k-header-nav-btn svg {
+    width: 18px; height: 18px;
+    stroke: currentColor; fill: none; stroke-width: 2;
+    flex-shrink: 0;
+  }
+  .k-header-nav-btn:hover {
+    background: var(--white);
+    border-color: rgba(198, 168, 93, .38);
+  }
+  .k-header-nav-btn:active { background: var(--sand-dark); }
+  .k-header-nav-btn.active {
+    background: var(--sand-warm);
+    border-color: var(--border);
+    font-weight: 700;
+  }
+
+  /* Bouton Groupe desktop */
+  .k-header-nav-btn--group { position: relative; }
+  .k-header-nav-btn--group.has-active {
+    background: var(--green-bg-leaf);
+    border-color: var(--cta-green);
+    color: var(--green-text-strong);
+  }
+  .k-header-group-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cta-green);
+    border: 2px solid var(--white);
+    display: none;
+  }
+  .k-header-group-badge.show { display: block; }
+
+  /* Header actions bar */
+  .k-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    /* skeleton: gap: 8px merged — keeping boutique-desktop gap:4px as tighter default */
+  }
+
+  /* k-cart-btn.k-header-action desktop bubble (ex skeleton) */
+  .k-cart-btn.k-header-action {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: var(--white);
+    border: 1px solid rgba(198, 168, 93, .32);
+    box-shadow: 0 8px 18px rgba(100,175,90, .08);
+  }
+
+  /* Header glass effect (ex desktop-commerce-skeleton.css) */
+  .k-header {
+    z-index: 220;
+    background: rgba(255, 252, 244, .92);
+    border-bottom: 1px solid rgba(100,175,90, .10);
+    box-shadow: 0 8px 24px rgba(100,175,90, .07);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  /* k-header-inner max-width (skeleton was 1480px, layout was container) — skeleton wins on desktop */
+  .k-header-inner {
+    max-width: 1480px;
+    min-height: 68px;
+    gap: 18px;
+  }
+}
