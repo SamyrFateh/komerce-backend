@@ -1333,13 +1333,9 @@
   margin: 0 0 8px;
 }
 
-/* Masqué mobile : texte explicatif long non essentiel
-   Cible le <p> descriptif ajouté en JS dans la carte contribution.
-   On cible via la classe utilitaire .k-group-desc-text si présente,
-   ou via le sélecteur inline legacy encore présent dans le template. */
-.k-group-contribute-card .k-group-desc-text,
-.k-group-contribute-card > p[style*="font-size:13px"] {
-  display: none!important;
+/* Masqué mobile : texte explicatif long non essentiel */
+.k-group-contribute-card .k-group-desc-text {
+  display: none;
 }
 
 /* — Hints split / equal / violet callout — */

@@ -241,7 +241,7 @@ function renderEngagementForm(token, cart, isCreator = false) {
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
       <div class="k-group-section-title">${isCreator ? '💸 Enregistrer ma participation' : '💸 Participer'}</div>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">
+      <p class="k-group-desc-text">
         Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
       </p>
       ${splitHint}
@@ -348,7 +348,7 @@ function renderPaymentForm(token, cart) {
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-phase-badge k-group-phase-badge--settlement">Phase règlement — paiement</div>
       <div class="k-group-section-title">💳 Payer ma contribution</div>
-      <p style="font-size:13px;color:var(--text-muted);margin:0 0 10px">
+      <p class="k-group-desc-text">
         Le panier est passé au règlement. Komerce utilise votre numéro vérifié pour retrouver votre engagement verrouillé.
       </p>
       <div class="k-group-identity-note">

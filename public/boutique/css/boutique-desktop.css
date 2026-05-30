@@ -1096,13 +1096,17 @@
   /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
      on libère le padding pour que l'overlay puisse occuper toute
      la largeur sans laisser une bande sand-94 résiduelle. */
-  body.modal-open,
-  body.cart-open {
-    padding-right: 0 !important;
+  /* Spécificité montée via :not(#\9) pour battre body:has(.k-side-cart.has-items) (0-2-1) */
+  body.modal-open:not(#\9),
+  body.cart-open:not(#\9) {
+    padding-right: 0;
   }
+  /* 0-3-1 pour battre .k-side-cart.has-items (0-2-0) */
   body.modal-open .k-side-cart,
-  body.cart-open  .k-side-cart {
-    display: none !important;
+  body.modal-open .k-side-cart.has-items,
+  body.cart-open  .k-side-cart,
+  body.cart-open  .k-side-cart.has-items {
+    display: none;
   }
 }
 
