@@ -14,7 +14,6 @@ import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.
 import { requireIdentity, getCurrentIdentity, restoreIdentity }  from './b-identity.js';
 import {
   renderFulfillmentSelector as _renderFulfillmentSelector,
-  renderRelaisForIle        as _renderRelaisForIle,
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
   makeInput                 as _makeInputRender,
