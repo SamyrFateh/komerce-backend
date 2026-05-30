@@ -1088,17 +1088,17 @@
      Le `body` reçoit le padding par une OU l'autre — pas un + un,
      donc pas de risque de doublage.
      ────────────────────────────────────────────────────────── */
-  body:has(.k-side-cart.has-items),
+  /* :where() zéroïse la spécificité du has() → 0-1-0
+     body.modal-open (0-1-1) gagne par ordre source ✓ */
+  body:where(:has(.k-side-cart.has-items)),
   body.sc-reserve {
     padding-right: var(--sc-reserve-w, 240px); /* VIS-1 — token défini dans layout.css */
   }
 
   /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
-     on libère le padding pour que l'overlay puisse occuper toute
-     la largeur sans laisser une bande sand-94 résiduelle. */
-  /* Spécificité montée via :not(#\9) pour battre body:has(.k-side-cart.has-items) (0-2-1) */
-  body.modal-open:not(#\9),
-  body.cart-open:not(#\9) {
+     on libère le padding : 0-1-1 > 0-1-0 ✓ */
+  body.modal-open,
+  body.cart-open {
     padding-right: 0;
   }
   /* 0-3-1 pour battre .k-side-cart.has-items (0-2-0) */
