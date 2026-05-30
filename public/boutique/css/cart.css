@@ -140,10 +140,8 @@ body.cart-open .k-hero { pointer-events: none; }
 .kcf-whatsapp-mini { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; background: transparent; color: var(--whatsapp); border: 1.5px solid var(--whatsapp); border-radius: 50px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
 .kcf-whatsapp-mini:hover { background: var(--whatsapp-bg-hover); transform: translateY(-1px); }
 
-@media (max-width: 380px) {
-  #k-cart-whatsapp { font-size: .72rem; padding: 10px 6px; gap: 4px; }
-  #k-cart-whatsapp svg { width: 14px; height: 14px; }
-}
+#k-cart-whatsapp { font-size: .72rem; padding: 10px 6px; gap: 4px; }
+#k-cart-whatsapp svg { width: 14px; height: 14px; }
 
 /* -- MODAL COMMANDE ------------------------------------------- */
 .k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: center; align-items: stretch; }
@@ -160,7 +158,7 @@ body.cart-open .k-hero { pointer-events: none; }
 
 /* 600px intentionnel : .k-order-modal uniquement � popup centr� d�s 480px de large,
    ind�pendant du breakpoint layout. Ne pas aligner sur 900px. */
-@media (min-width: 600px) {
+@media (min-width: 900px) {
   .k-order-modal { max-width: 480px; height: auto; max-height: 92vh; border-radius: var(--radius-lg); }
   .k-order-overlay { align-items: center; }
 }
@@ -320,69 +318,67 @@ body.cart-open .k-wa-fab {
 /* --------------------------------------------------------------
    PAGER TEMU � scroll biaxial (horizontal cat�gories + vertical produits)
    -------------------------------------------------------------- */
-@media (max-width: 899px) {
 
 
-  /* -- PAGER SLIDE � pas de layout sp�cial, juste animations --- */
-  /* Le swipe change de cat�gorie via animation CSS slide            */
-  /* Pas de position:absolute, pas d'overflow:hidden sur les parents */
+/* -- PAGER SLIDE � pas de layout sp�cial, juste animations --- */
+/* Le swipe change de cat�gorie via animation CSS slide            */
+/* Pas de position:absolute, pas d'overflow:hidden sur les parents */
 
-  /* -- Indicateur bounce bas ? cat�gorie suivante --------------- */
-  @keyframes k-pager-bounce-hint {
-    0%   { transform: translateY(0);   opacity: 0; }
-    20%  { opacity: 1; }
-    60%  { transform: translateY(8px);  opacity: 1; }
-    100% { transform: translateY(0);   opacity: 0; }
-  }
-  .k-pager-next-hint {
-    position: sticky;
-    bottom: calc(var(--bnav-h) + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 16px;
-    background: rgba(31,48,36,.82);
-    color: var(--white);
-    font-size: 12px;
-    font-weight: 600;
-    border-radius: 50px;
-    white-space: nowrap;
-    pointer-events: none;
-    animation: k-pager-bounce-hint .8s var(--ease) forwards;
-    z-index: 5;
-  }
-  .k-pager-next-hint::after { content: '?'; font-size: 14px; }
-
-  /* -- Animations slide horizontal (chip ? section) -------------- */
-  @keyframes k-pager-in-right  {
-    from { opacity: .4; transform: translateX(20px);  }
-    to   { opacity: 1;  transform: translateX(0); }
-  }
-  @keyframes k-pager-in-left   {
-    from { opacity: .4; transform: translateX(-20px); }
-    to   { opacity: 1;  transform: translateX(0); }
-  }
-  .k-pager-slide-in-right { animation: k-pager-in-right .28s var(--ease) both; }
-  .k-pager-slide-in-left  { animation: k-pager-in-left  .28s var(--ease) both; }
-
-  /* -- Carousel dans le pager : d�sactiver scroll-snap horizontal -- */
-  #k-page-scroll.k-pager-active .k-card-carousel {
-    overflow-x: hidden;
-    scroll-snap-type: none;
-  }
-
-  /* -- Flat subcat legacy --------------------------------------- */
-  .k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
-    flex: 0 0 100vw; width: 100vw; min-width: 100vw; max-width: 100vw;
-    overflow-y: auto; overflow-x: hidden;
-    scroll-snap-align: start; scroll-snap-stop: always;
-  }
-  .k-grid.k-grid-flat-subcat .k-card-carousel { overflow-x: hidden; scroll-snap-type: none; }
-
-  #k-page-scroll { padding-bottom: 0; }
+/* -- Indicateur bounce bas ? cat�gorie suivante --------------- */
+@keyframes k-pager-bounce-hint {
+  0%   { transform: translateY(0);   opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { transform: translateY(8px);  opacity: 1; }
+  100% { transform: translateY(0);   opacity: 0; }
 }
+.k-pager-next-hint {
+  position: sticky;
+  bottom: calc(var(--bnav-h) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: rgba(31,48,36,.82);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 50px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: k-pager-bounce-hint .8s var(--ease) forwards;
+  z-index: 5;
+}
+.k-pager-next-hint::after { content: '?'; font-size: 14px; }
+
+/* -- Animations slide horizontal (chip ? section) -------------- */
+@keyframes k-pager-in-right  {
+  from { opacity: .4; transform: translateX(20px);  }
+  to   { opacity: 1;  transform: translateX(0); }
+}
+@keyframes k-pager-in-left   {
+  from { opacity: .4; transform: translateX(-20px); }
+  to   { opacity: 1;  transform: translateX(0); }
+}
+.k-pager-slide-in-right { animation: k-pager-in-right .28s var(--ease) both; }
+.k-pager-slide-in-left  { animation: k-pager-in-left  .28s var(--ease) both; }
+
+/* -- Carousel dans le pager : d�sactiver scroll-snap horizontal -- */
+#k-page-scroll.k-pager-active .k-card-carousel {
+  overflow-x: hidden;
+  scroll-snap-type: none;
+}
+
+/* -- Flat subcat legacy --------------------------------------- */
+.k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
+  flex: 0 0 100vw; width: 100vw; min-width: 100vw; max-width: 100vw;
+  overflow-y: auto; overflow-x: hidden;
+  scroll-snap-align: start; scroll-snap-stop: always;
+}
+.k-grid.k-grid-flat-subcat .k-card-carousel { overflow-x: hidden; scroll-snap-type: none; }
+
+#k-page-scroll { padding-bottom: 0; }
 
 /* -- PHONE INPUT COMPACT -------------------------------------- */
 .k-ck-phone-wrap { max-width: 100%; height: 34px; align-items: stretch; }
@@ -391,9 +387,7 @@ body.cart-open .k-wa-fab {
 
 /* Drawer plein �cran sous 768px � mobile �troit.
    Migr� depuis interactions.css (�tait isol� du reste des r�gles .k-cart-drawer). */
-@media (max-width: 768px) {
-  .k-cart-drawer { width: 100%; max-width: 100%; border-radius: 0; }
-}
+.k-cart-drawer { width: 100%; max-width: 100%; border-radius: 0; }
 
 /* .k-cart-drawer max-width/width ? layout.css @900px (source de v�rit� : 420px)
    Note Phase 8 : ce bloc @900px n'est PAS un doublon de layout.css.
@@ -638,7 +632,7 @@ body.cart-open .k-wa-fab {
 /* INTENTIONNEL @600px � compl�ment du bloc L160 (.k-order-modal centr�).
    Fix Bug 4 : r�tablit overflow:hidden pour le border-radius sur tablette/desktop,
    compatible avec .ck-confirm-btn toujours visible (dernier enfant flex, hors scroll). */
-@media (min-width:600px) {
+@media (min-width: 900px) {
   .k-order-overlay.open .k-order-modal { height:auto; max-height:92vh; overflow:hidden; }
   /* Sur desktop le modal a une hauteur fixe (92vh) : on r�tablit overflow:hidden pour
      le border-radius, mais le bouton confirmer est le dernier enfant flex ?
@@ -731,41 +725,39 @@ body.cart-open .k-wa-fab {
    FLAT SUBCAT � layout natif scroll-snap (b-subcat.js)
    S�par� du pager cat�gories (b-pager.js / slide animation)
    -------------------------------------------------------------- */
-@media (max-width: 899px) {
-  #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat {
-    display: flex;
-    width: 100%;
-    height: var(--pager-h);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    /* Annuler tout translateX r�siduel du pager cat�gories */
-    transform: none;
-    transition: none;
-    gap: 0;
-    padding: 0;
-    margin: 0;
-    grid-template-columns: none;
-  }
-  #k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
-    flex: 0 0 100%;
-    width: 100%;
-    min-width: 100%;
-    height: var(--pager-h);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    -webkit-overflow-scrolling: touch;
-    box-sizing: border-box;
-    padding-bottom: calc(var(--bnav-h) + 64px);
-  }
-  /* Pendant le drag flat, d�sactiver le scroll-snap pour fluidit� */
-  #k-grid.k-grid-flat-subcat.is-flat-dragging {
-    scroll-snap-type: none;
-  }
+#k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat {
+  display: flex;
+  width: 100%;
+  height: var(--pager-h);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* Annuler tout translateX r�siduel du pager cat�gories */
+  transform: none;
+  transition: none;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  grid-template-columns: none;
+}
+#k-page-scroll.k-pager-active #k-grid.k-grid-flat-subcat > .k-flat-subcat-page {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  height: var(--pager-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+  padding-bottom: calc(var(--bnav-h) + 64px);
+}
+/* Pendant le drag flat, d�sactiver le scroll-snap pour fluidit� */
+#k-grid.k-grid-flat-subcat.is-flat-dragging {
+  scroll-snap-type: none;
 }
 
 /* --------------------------------------------------------------

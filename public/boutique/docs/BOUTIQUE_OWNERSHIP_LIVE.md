@@ -14,7 +14,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal.css (22), interactions.css (2), boutique-desktop.css (1) | 3 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (18), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
 | **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (11), layout.css (9) | 2 | 🔴 |
 | **Carte produit** `.k-card*` | products.css (22), boutique-desktop.css (4), desktop-commerce-skeleton.css (2), layout.css (1) | 4 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (15), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
@@ -82,43 +82,46 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 
 Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste est une violation.
 
-**Breakpoints distincts trouvés (20)** : 140px, 380px, 390px, 400px, 520px, 600px, 640px, 700px, 767px, 768px, 899px, 900px, 999px, 1000px, 1100px, 1180px, 1200px, 1280px, 1400px, 1500px
+**Breakpoints distincts trouvés (5)** : 140px, 400px, 899px, 900px, 1200px
 
 | Fichier CSS | Breakpoints utilisés | Violations |
 |-------------|----------------------|:----------:|
-| group-cart-flow.css | 600px, 700px, 1100px, 1000px, 999px, 1400px, 390px | 🔴 600px, 700px, 1100px, 1000px, 999px, 1400px, 390px |
-| cart.css | 380px, 600px, 900px, 899px, 768px | 🔴 380px, 600px, 899px, 768px |
-| modal.css | 899px, 900px, 600px, 400px, 1200px, 768px | 🔴 899px, 600px, 400px, 768px |
-| hero.css | 140px, 767px, 899px, 900px | 🔴 140px, 767px, 899px |
-| shared-followup.css | 899px, 390px, 900px, 1280px | 🔴 899px, 390px, 1280px |
-| categories.css | 899px, 900px, 1200px, 767px | 🔴 899px, 767px |
-| interactions.css | 600px, 899px | 🔴 600px, 899px |
-| layout.css | 899px, 900px, 1200px, 1180px | 🔴 899px, 1180px |
-| products.css | 600px, 900px, 1200px, 899px | 🔴 600px, 899px |
-| desktop-commerce-skeleton.css | 900px, 1200px, 1500px | 🔴 1500px |
-| event.css | 520px, 900px | 🔴 520px |
-| hero-cart-proxy.css | 899px, 900px | 🔴 899px |
-| identity.css | 640px | 🔴 640px |
-| reset.css | 900px, 899px | 🔴 899px |
-| tokens.css | 768px, 900px, 1200px | 🔴 768px |
+| hero.css | 140px, 900px | 🔴 140px |
+| interactions.css | 899px | 🔴 899px |
+| modal-media.css | 400px, 900px | 🔴 400px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
+| cart.css | 900px | ✅ |
+| categories.css | 900px, 1200px | ✅ |
+| desktop-commerce-skeleton.css | 900px, 1200px | ✅ |
+| event.css | 900px | ✅ |
+| group-cart-flow.css | 900px, 1200px | ✅ |
+| hero-cart-proxy.css | 900px | ✅ |
+| identity.css | 900px | ✅ |
+| layout.css | 900px, 1200px | ✅ |
+| modal-product.css | 900px | ✅ |
+| modal-shell.css | 900px, 1200px | ✅ |
+| products.css | 900px, 1200px | ✅ |
+| reset.css | 900px | ✅ |
+| shared-followup.css | 900px, 1200px | ✅ |
+| tokens.css | 900px, 1200px | ✅ |
 
 ---
 
 ## 4. Dette CSS
 
-### `!important` — total : 35
+### `!important` — total : 22
 
 | Fichier | Occurrences |
 |---------|:-----------:|
-| group-cart-flow.css | 15 |
 | layout.css | 8 |
-| modal.css | 3 |
 | boutique-desktop.css | 2 |
+| group-cart-flow.css | 2 |
 | hero.css | 2 |
+| modal-product.css | 2 |
 | cart.css | 1 |
 | categories.css | 1 |
 | interactions.css | 1 |
+| modal-shell.css | 1 |
 | products.css | 1 |
 | shared-followup.css | 1 |
 
@@ -136,8 +139,8 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
 | Modules JS écrivant le DOM | 40 | ≤ 5 |
-| Breakpoints distincts | 20 | ≤ 2 |
-| Violations breakpoint | 35 | 0 |
-| `!important` | 35 | < 5 |
+| Breakpoints distincts | 5 | ≤ 2 |
+| Violations breakpoint | 3 | 0 |
+| `!important` | 22 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

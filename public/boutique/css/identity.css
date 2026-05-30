@@ -20,7 +20,7 @@
   animation: kIdFade .18s ease;
 }
 @keyframes kIdFade { from { opacity: 0; } to { opacity: 1; } }
-@media (min-width: 640px) { .k-id-overlay { align-items: center; } }
+@media ((min-width: 900px)) { .k-id-overlay { align-items: center; } }
 
 /* ── Sheet ───────────────────────────────────────────────────────── */
 .k-id-sheet {
@@ -32,7 +32,7 @@
   box-shadow: 0 24px 80px rgba(0,0,0,.22);
   animation: kIdUp .24s ease;
 }
-@media (min-width: 640px) {
+@media ((min-width: 900px)) {
   .k-id-sheet {
     border-radius: 18px;
     padding: 16px;

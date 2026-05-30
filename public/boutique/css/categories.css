@@ -58,61 +58,59 @@
 .k-chip:active { transform: scale(.95); }
 
 /* Mobile target state — compact 2×4 pill grid, image left + label right. */
-@media (max-width: 899px) {
-  .k-cats-shell {
-    margin-top: 0;
-    border-radius: 20px;
-    /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
-    background: var(--sand-bright);
-    border: 1px solid rgba(198,168,93,.13);
-    box-shadow:
-      0 6px 18px rgba(198,168,93,.09),
-      0 1px 0 rgba(198,168,93,.07);
-    overflow: hidden;
-  }
+.k-cats-shell {
+  margin-top: 0;
+  border-radius: 20px;
+  /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
+  background: var(--sand-bright);
+  border: 1px solid rgba(198,168,93,.13);
+  box-shadow:
+    0 6px 18px rgba(198,168,93,.09),
+    0 1px 0 rgba(198,168,93,.07);
+  overflow: hidden;
+}
 
-  .k-cats-wrap-fade-left,
-  .k-cats-wrap-fade-right {
-    display: none;
-  }
+.k-cats-wrap-fade-left,
+.k-cats-wrap-fade-right {
+  display: none;
+}
 
-  .k-cats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px 6px;
-    padding: 6px 9px 6px;
-    overflow: visible;
-    scroll-snap-type: none;
-    scroll-padding-left: 0;
-    align-items: stretch;
-  }
+.k-cats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px 6px;
+  padding: 6px 9px 6px;
+  overflow: visible;
+  scroll-snap-type: none;
+  scroll-padding-left: 0;
+  align-items: stretch;
+}
 
-  .k-cats::before,
-  .k-cats::after {
-    display: none;
-  }
+.k-cats::before,
+.k-cats::after {
+  display: none;
+}
 
-  .k-chip {
-    min-width: 0;
-    max-width: none;
-    width: 100%;
-    flex: none;
-    display: grid;
-    grid-template-columns: 26px minmax(0, 1fr);
-    align-items: center;
-    justify-content: start;
-    gap: 5px;
-    min-height: 36px;
-    padding: 3px 5px 3px 3px;
-    border-radius: 999px;
-    /* POLISH — fond plus opaque, lecture des images améliorée */
-    background: rgba(255, 255, 255, .84);
-    border: 1px solid rgba(198, 168, 93, .14);
-    box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
-    overflow: hidden;
-    text-align: left;
-    scroll-snap-align: none;
-  }
+.k-chip {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  flex: none;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 5px;
+  min-height: 36px;
+  padding: 3px 5px 3px 3px;
+  border-radius: 999px;
+  /* POLISH — fond plus opaque, lecture des images améliorée */
+  background: rgba(255, 255, 255, .84);
+  border: 1px solid rgba(198, 168, 93, .14);
+  box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
+  overflow: hidden;
+  text-align: left;
+  scroll-snap-align: none;
 }
 
 /* Photo circle */
@@ -147,23 +145,21 @@
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
 .k-chip-photo svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-@media (max-width: 899px) {
-  .k-chip-photo {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    margin: 0;
-    border-radius: 10px;
-    border-width: 1px;
-    /* POLISH — bord interne lumineux pour soulever l'image du fond */
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
-  }
+.k-chip-photo {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  margin: 0;
+  border-radius: 10px;
+  border-width: 1px;
+  /* POLISH — bord interne lumineux pour soulever l'image du fond */
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
+}
 
-  .k-chip-photo img {
-    border-radius: 9px;
-    /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
-    filter: saturate(1.22) contrast(1.05);
-  }
+.k-chip-photo img {
+  border-radius: 9px;
+  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
+  filter: saturate(1.22) contrast(1.05);
 }
 
 /* Fond par catégorie */
@@ -215,20 +211,18 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 899px) {
-  .k-chip-label {
-    width: auto;
-    max-width: none;
-    min-width: 0;
-    margin: 0;
-    font-size: 10.8px;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -.025em;
-    /* POLISH — texte quasi-plein pour contraste sur fond blanc */
-    color: var(--text);
-    text-align: left;
-  }
+.k-chip-label {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  font-size: 10.8px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.025em;
+  /* POLISH — texte quasi-plein pour contraste sur fond blanc */
+  color: var(--text);
+  text-align: left;
 }
 
 /* État actif mobile */
@@ -243,22 +237,20 @@
 .k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: var(--white); }
 .k-chip.active .k-chip-label { color: var(--coral); font-weight: 800; }
 
-@media (max-width: 899px) {
-  .k-chip.active {
-    background: rgba(255, 248, 232, .88);
-    border-color: rgba(198, 168, 93, .50);
-    box-shadow: 0 2px 7px rgba(198, 168, 93, .10);
-  }
+.k-chip.active {
+  background: rgba(255, 248, 232, .88);
+  border-color: rgba(198, 168, 93, .50);
+  box-shadow: 0 2px 7px rgba(198, 168, 93, .10);
+}
 
-  .k-chip.active .k-chip-photo {
-    border-color: rgba(198, 168, 93, .82);
-    box-shadow: 0 0 0 1.25px rgba(198, 168, 93, .34);
-    transform: none;
-  }
+.k-chip.active .k-chip-photo {
+  border-color: rgba(198, 168, 93, .82);
+  box-shadow: 0 0 0 1.25px rgba(198, 168, 93, .34);
+  transform: none;
+}
 
-  .k-chip.active .k-chip-label {
-    color: var(--coral-dark);
-  }
+.k-chip.active .k-chip-label {
+  color: var(--coral-dark);
 }
 
 /* Sentinel spacer */
@@ -276,10 +268,8 @@
 .k-cat-section  { margin-bottom: 4px; }
 
 /* Padding interne des sections dans le pager mobile */
-@media (max-width: 899px) {
-  .k-cat-section { padding: 0 12px; }
-  .k-sec-grid    { padding: 4px 0 12px; }
-}
+.k-cat-section { padding: 0 12px; }
+.k-sec-grid    { padding: 4px 0 12px; }
 .k-sec-header {
   display: flex;
   align-items: center;
@@ -451,31 +441,29 @@
 }
 
 /* ── MOBILE POLISH — entrée catalogue sous rail catégories ───── */
-@media (max-width: 899px) {
-  .k-sec-header {
-    padding: 10px 0 6px;
-    margin-bottom: 2px;
-    border-bottom: 1.5px solid rgba(200, 92, 45, .72);
-  }
+.k-sec-header {
+  padding: 10px 0 6px;
+  margin-bottom: 2px;
+  border-bottom: 1.5px solid rgba(200, 92, 45, .72);
+}
 
-  .k-sec-header-emoji {
-    font-size: 17px;
-  }
+.k-sec-header-emoji {
+  font-size: 17px;
+}
 
-  .k-sec-header-name {
-    font-size: 15.5px;
-    letter-spacing: -.02em;
-  }
+.k-sec-header-name {
+  font-size: 15.5px;
+  letter-spacing: -.02em;
+}
 
-  .k-sec-header-count {
-    font-size: 11.5px;
-    padding: 1px 8px;
-    background: rgba(31, 48, 36, .045);
-  }
+.k-sec-header-count {
+  font-size: 11.5px;
+  padding: 1px 8px;
+  background: rgba(31, 48, 36, .045);
+}
 
-  .k-sec-grid {
-    padding-top: 2px;
-  }
+.k-sec-grid {
+  padding-top: 2px;
 }
 
 
@@ -486,133 +474,131 @@
    MOBILE ONLY — aucun impact desktop (desktop = min-width: 900px).
    Rollback : supprimer ce bloc entier.
    ══════════════════════════════════════════════════════════════ */
-@media (max-width: 767px) {
 
-  /* ── Shell : fond transparent, séparation légère ── */
-  .k-cats-shell {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-    margin: 4px 0 0;
-    padding: 0 0 2px;
-    overflow: visible;
-    border-bottom: 1px solid rgba(198, 168, 93, .14);
-  }
+/* ── Shell : fond transparent, séparation légère ── */
+.k-cats-shell {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  margin: 4px 0 0;
+  padding: 0 0 2px;
+  overflow: visible;
+  border-bottom: 1px solid rgba(198, 168, 93, .14);
+}
 
-  /* ── Rail horizontal scrollable ── */
-  .k-cats {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-padding-left: 16px;
-    scrollbar-width: none;
-    gap: 14px;
-    padding: 9px 16px 9px;
-    align-items: center;
-    grid-template-columns: none;
-  }
-  .k-cats::-webkit-scrollbar { display: none; }
+/* ── Rail horizontal scrollable ── */
+.k-cats {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 16px;
+  scrollbar-width: none;
+  gap: 14px;
+  padding: 9px 16px 9px;
+  align-items: center;
+  grid-template-columns: none;
+}
+.k-cats::-webkit-scrollbar { display: none; }
 
-  .k-cats::before,
-  .k-cats::after {
-    display: block;
-    content: "";
-    flex: 0 0 2px;
-  }
+.k-cats::before,
+.k-cats::after {
+  display: block;
+  content: "";
+  flex: 0 0 2px;
+}
 
-  /* ── Chip : colonne icône + label ── */
-  .k-chip {
-    flex: 0 0 auto;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0;
-    width: auto;
-    min-width: auto;
-    max-width: none;
-    height: auto;
-    min-height: auto;
-    padding: 7px 8px 8px;
-    border-radius: 14px;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    text-align: center;
-    scroll-snap-align: start;
-    grid-template-columns: none;
-    transition: transform .16s ease, opacity .16s ease;
-  }
-  .k-chip:active { transform: scale(.93); }
+/* ── Chip : colonne icône + label ── */
+.k-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: auto;
+  min-width: auto;
+  max-width: none;
+  height: auto;
+  min-height: auto;
+  padding: 7px 8px 8px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  text-align: center;
+  scroll-snap-align: start;
+  grid-template-columns: none;
+  transition: transform .16s ease, opacity .16s ease;
+}
+.k-chip:active { transform: scale(.93); }
 
-  /* ── Image ronde 42px — sweet spot lisibilité/compacité ── */
-  .k-chip-photo {
-    display: none;
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    border-radius: 50%;
-    margin: 0;
-    border: 2px solid transparent;
-    box-shadow:
-      0 1px 4px rgba(28, 26, 23, .10),
-      inset 0 0 0 1px rgba(255, 255, 255, .50);
-    flex-shrink: 0;
-    flex: 0 0 auto;
-  }
-  .k-chip-photo img {
-    border-radius: 50%;
-    filter: saturate(1.18) contrast(1.04);
-  }
+/* ── Image ronde 42px — sweet spot lisibilité/compacité ── */
+.k-chip-photo {
+  display: none;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 50%;
+  margin: 0;
+  border: 2px solid transparent;
+  box-shadow:
+    0 1px 4px rgba(28, 26, 23, .10),
+    inset 0 0 0 1px rgba(255, 255, 255, .50);
+  flex-shrink: 0;
+  flex: 0 0 auto;
+}
+.k-chip-photo img {
+  border-radius: 50%;
+  filter: saturate(1.18) contrast(1.04);
+}
 
-  /* ── Label sous l'icône ── */
-  .k-chip-label {
-    font-size: 14px;
-    font-weight: 650;
-    line-height: 1;
-    letter-spacing: -.01em;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 82px;
-    width: auto;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-  }
+/* ── Label sous l'icône ── */
+.k-chip-label {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -.01em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 82px;
+  width: auto;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
 
-  /* ── État actif ── */
-  .k-chip.active {
-    background: var(--surface-sand-94);
-    box-shadow: 0 1px 5px var(--border-text-10);
-  }
-  .k-chip.active .k-chip-label {
-    color: var(--coral-dark);
-    font-weight: 700;
-  }
+/* ── État actif ── */
+.k-chip.active {
+  background: var(--surface-sand-94);
+  box-shadow: 0 1px 5px var(--border-text-10);
+}
+.k-chip.active .k-chip-label {
+  color: var(--coral-dark);
+  font-weight: 700;
+}
 
-  /* Fades latéraux inutiles */
-  .k-cats-wrap-fade-left,
-  .k-cats-wrap-fade-right {
-    display: none;
-  }
+/* Fades latéraux inutiles */
+.k-cats-wrap-fade-left,
+.k-cats-wrap-fade-right {
+  display: none;
+}
 
-  /* ── Titre section + grille : rapprocher sous le rail ── */
-  .k-sec-header {
-    padding-top: 8px;
-    padding-bottom: 5px;
-    margin-bottom: 2px;
-  }
-  .k-cat-section {
-    margin-bottom: 2px;
-  }
+/* ── Titre section + grille : rapprocher sous le rail ── */
+.k-sec-header {
+  padding-top: 8px;
+  padding-bottom: 5px;
+  margin-bottom: 2px;
+}
+.k-cat-section {
+  margin-bottom: 2px;
 }
 /* ── FIN MOBILE PILL RAIL ──────────────────────────────────── */
 

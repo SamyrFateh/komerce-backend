@@ -7,11 +7,9 @@
  */
 
 /* Mobile : tue la bulle hero-cart-proxy */
-@media (max-width: 899px) {
-  .k-hero-bubble,
-  .k-hero-bubble.k-hero-cart-proxy {
-    display: none;
-  }
+.k-hero-bubble,
+.k-hero-bubble.k-hero-cart-proxy {
+  display: none;
 }
 
 /* Desktop : idem */

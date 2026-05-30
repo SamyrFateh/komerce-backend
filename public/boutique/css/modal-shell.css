@@ -172,62 +172,58 @@
 }
 /* Fix panier flottant transparent : forcer fond opaque sur mobile/tablette
    (backdrop-filter déclaré supporté mais non rendu sur Samsung/Chrome Android) */
-@media (max-width: 899px) {
-  #k-modal .k-modal-actions {
-    background: var(--white);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+#k-modal .k-modal-actions {
+  background: var(--white);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 /* Sur mobile, avec display:contents sur product-zone, actions sort du flux normal.
    order:3 la place après img(order:0), details(order:0), suggestions(order:2). */
-@media (max-width: 899px) {
-  .k-modal-actions {
-    order: 3;
-    flex-shrink: 0;
-    /* FIX Bug 2: position:sticky dans un overflow-y:auto flex container ne colle PAS
-       en bas — l'élément reste dans le flux scrollable.
-       Solution: position:fixed en bas, avec padding-bottom compensatoire
-       sur .k-modal-scroll pour que le contenu ne passe pas derrière. */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
-    border-radius: 0; /* pleine largeur en fixed */
-    box-shadow: 0 -2px 12px var(--overlay-black-sm);
-    /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
-       crée un stacking context qui piège position:fixed et empêche le repaint du fond.
-       translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-  /* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
-     (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
-     passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
-  .k-modal-scroll {
-    padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
-  }
-  .k-modal-suggestions { order: 2; }
+.k-modal-actions {
+  order: 3;
+  flex-shrink: 0;
+  /* FIX Bug 2: position:sticky dans un overflow-y:auto flex container ne colle PAS
+     en bas — l'élément reste dans le flux scrollable.
+     Solution: position:fixed en bas, avec padding-bottom compensatoire
+     sur .k-modal-scroll pour que le contenu ne passe pas derrière. */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 350; /* sous la topbar (400) mais au-dessus du contenu */
+  border-radius: 0; /* pleine largeur en fixed */
+  box-shadow: 0 -2px 12px var(--overlay-black-sm);
+  /* FIX transparence Android : l'animation k-slide-up (transform) sur .k-modal
+     crée un stacking context qui piège position:fixed et empêche le repaint du fond.
+     translateZ(0) force un layer GPU propre — le fond blanc est garanti opaque. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+/* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
+   (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
+   passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
+.k-modal-scroll {
+  padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
+}
+.k-modal-suggestions { order: 2; }
 
-  /* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
-     => enfant flex direct de #k-modal => position statique, flex gere l'ancrage.
-     Selecteur enfant direct (>) => ne s'applique QUE si le JS a fait le deplacement.
-     Si le JS echoue, l'ancien position:fixed reste en fallback. */
-  #k-modal > .k-modal-actions {
-    position: static;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    z-index: auto;
-    border-radius: 0;
-  }
-  /* Quand la barre CTA est en position statique (flex), le padding compensatoire est inutile */
-  #k-modal > .k-modal-scroll {
-    padding-bottom: 0 !important;
-  }
+/* FIX ARCHITECTURE v5: .k-modal-actions sorti du scroll par JS (setupModal)
+   => enfant flex direct de #k-modal => position statique, flex gere l'ancrage.
+   Selecteur enfant direct (>) => ne s'applique QUE si le JS a fait le deplacement.
+   Si le JS echoue, l'ancien position:fixed reste en fallback. */
+#k-modal > .k-modal-actions {
+  position: static;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  border-radius: 0;
+}
+/* Quand la barre CTA est en position statique (flex), le padding compensatoire est inutile */
+#k-modal > .k-modal-scroll {
+  padding-bottom: 0 !important;
 }
 .k-qty { grid-column: 1; grid-row: 1; display: flex; align-items: center; background: var(--sand); border-radius: 50px; overflow: hidden; height: 44px; flex-shrink: 0; }
 .k-qty-btn { width: 38px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; transition: background .15s; touch-action: manipulation; cursor: pointer; }
@@ -277,78 +273,76 @@
    Haute spécificité (#k-modal) pour contrecarrer d'éventuels conflits.
    DOIT répéter flex:1 et min-height:0 car elle écrase la règle base.
    ══════════════════════════════════════════════════════════════ */
-@media (max-width: 899px) {
-  #k-modal-overlay, #k-modal { max-width: 100vw; overflow-x: hidden; }
+#k-modal-overlay, #k-modal { max-width: 100vw; overflow-x: hidden; }
 
-  /* FIX topbar overflow mobile : #k-modal-nav (← N/total →) est réservé desktop.
-     Sans cette règle, les 5 éléments de la topbar dépassent sur écrans ≤390px
-     et poussent la croix ✕ hors du cadre. */
-  #k-modal-nav { display: none; visibility: hidden; } /* VIS-4: visibility:hidden élimine le flash d'une frame avant résolution media query */
+/* FIX topbar overflow mobile : #k-modal-nav (← N/total →) est réservé desktop.
+   Sans cette règle, les 5 éléments de la topbar dépassent sur écrans ≤390px
+   et poussent la croix ✕ hors du cadre. */
+#k-modal-nav { display: none; visibility: hidden; } /* VIS-4: visibility:hidden élimine le flash d'une frame avant résolution media query */
 
-  /* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
-  #k-modal .k-modal-scroll {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 0;        /* OBLIGATOIRE : écrasé depuis la base par spécificité ID */
-    min-height: 0;      /* OBLIGATOIRE : idem */
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    width: 100%;
-    max-width: 100%;
-    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px)); /* BUGFIX: §2 guard ne doit pas écraser le 150px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
-  }
-
-  /* Pas de débordement horizontal sur aucun enfant.
-     ATTENTION : overflow-x:hidden sur un bloc transforme automatiquement
-     overflow-y de visible en auto. Donc on l'applique UNIQUEMENT sur les
-     blocs où le scroll vertical interne est ok ou inexistant.
-     On EXCLUT les conteneurs verticaux dont le contenu doit "remonter"
-     vers le scroll-owner parent (.k-modal-scroll) :
-       - .k-modal-suggestions  (contenu vertical, doit déborder vers le parent)
-       - #k-sug-rail           (idem)
-       - .k-sug-section        (idem)
-     Pour eux : juste max-width:100%, et on contraint les enfants. */
-  #k-modal .k-modal-img-wrap,
-  #k-modal .k-modal-carousel,
-  #k-modal .k-modal-details,
-  #k-modal .k-modal-info,
-  #k-modal .k-modal-actions,
-  #k-modal .k-modal-topbar,
-  #k-modal .k-modal-meta,
-  #k-modal .k-modal-price-row,
-  #k-modal .k-modal-share-row,
-  #k-modal .k-modal-specs {
-    width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden;
-  }
-  /* Conteneurs verticaux : pas de overflow-x:hidden sinon overflow-y se
-     cale automatiquement sur auto et casse le scroll de .k-modal-scroll */
-  #k-modal .k-modal-suggestions,
-  #k-modal #k-sug-rail,
-  #k-modal .k-sug-section {
-    width: 100%; max-width: 100%; min-width: 0;
-  }
-  #k-modal .k-modal-slide { max-width: 100%; min-width: 100%; }
-  #k-modal .k-sug-grid {
-    width: 100%; max-width: 100%; min-width: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow-x: hidden;
-  }
-  #k-modal .k-sug-card, #k-modal .k-sug-card-img,
-  #k-modal .k-sug-card-bottom, #k-modal .k-sug-card-actions { min-width: 0; max-width: 100%; }
-  #k-modal .k-modal-info h2, #k-modal .k-modal-desc,
-  #k-modal .k-sug-card-name, #k-modal .k-msearch-item-name,
-  #k-modal .k-msearch-item-cat { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
-  #k-modal .k-modal-inner-search, #k-modal .k-modal-search-dropdown {
-    width: auto; max-width: calc(100% - 24px); margin-left: 12px; margin-right: 12px;
-  }
-  #k-modal .k-msearch-item, #k-modal .k-msearch-item-info { min-width: 0; max-width: 100%; }
-  #k-modal .k-modal-actions { left: auto; right: auto; margin-left: 0; margin-right: 0; }
-  #k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
-  #k-modal .k-qty { min-width: 0; max-width: 100%; }
-  #k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
-  #k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
+/* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
+#k-modal .k-modal-scroll {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;        /* OBLIGATOIRE : écrasé depuis la base par spécificité ID */
+  min-height: 0;      /* OBLIGATOIRE : idem */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px)); /* BUGFIX: §2 guard ne doit pas écraser le 150px de §1 (bug scroll sous CTA + badges sur bouton Acheter) */
 }
+
+/* Pas de débordement horizontal sur aucun enfant.
+   ATTENTION : overflow-x:hidden sur un bloc transforme automatiquement
+   overflow-y de visible en auto. Donc on l'applique UNIQUEMENT sur les
+   blocs où le scroll vertical interne est ok ou inexistant.
+   On EXCLUT les conteneurs verticaux dont le contenu doit "remonter"
+   vers le scroll-owner parent (.k-modal-scroll) :
+     - .k-modal-suggestions  (contenu vertical, doit déborder vers le parent)
+     - #k-sug-rail           (idem)
+     - .k-sug-section        (idem)
+   Pour eux : juste max-width:100%, et on contraint les enfants. */
+#k-modal .k-modal-img-wrap,
+#k-modal .k-modal-carousel,
+#k-modal .k-modal-details,
+#k-modal .k-modal-info,
+#k-modal .k-modal-actions,
+#k-modal .k-modal-topbar,
+#k-modal .k-modal-meta,
+#k-modal .k-modal-price-row,
+#k-modal .k-modal-share-row,
+#k-modal .k-modal-specs {
+  width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden;
+}
+/* Conteneurs verticaux : pas de overflow-x:hidden sinon overflow-y se
+   cale automatiquement sur auto et casse le scroll de .k-modal-scroll */
+#k-modal .k-modal-suggestions,
+#k-modal #k-sug-rail,
+#k-modal .k-sug-section {
+  width: 100%; max-width: 100%; min-width: 0;
+}
+#k-modal .k-modal-slide { max-width: 100%; min-width: 100%; }
+#k-modal .k-sug-grid {
+  width: 100%; max-width: 100%; min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow-x: hidden;
+}
+#k-modal .k-sug-card, #k-modal .k-sug-card-img,
+#k-modal .k-sug-card-bottom, #k-modal .k-sug-card-actions { min-width: 0; max-width: 100%; }
+#k-modal .k-modal-info h2, #k-modal .k-modal-desc,
+#k-modal .k-sug-card-name, #k-modal .k-msearch-item-name,
+#k-modal .k-msearch-item-cat { min-width: 0; overflow-wrap: anywhere; word-break: normal; }
+#k-modal .k-modal-inner-search, #k-modal .k-modal-search-dropdown {
+  width: auto; max-width: calc(100% - 24px); margin-left: 12px; margin-right: 12px;
+}
+#k-modal .k-msearch-item, #k-modal .k-msearch-item-info { min-width: 0; max-width: 100%; }
+#k-modal .k-modal-actions { left: auto; right: auto; margin-left: 0; margin-right: 0; }
+#k-modal .k-add-cart-btn, #k-modal .k-modal-actions .k-buy-now-btn,
+#k-modal .k-qty { min-width: 0; max-width: 100%; }
+#k-modal .k-add-cart-btn { overflow: hidden; text-overflow: ellipsis; }
+#k-modal .k-topbar-search-expanded { width: 100%; max-width: 100%; overflow-x: hidden; }
 
 
 /* ══════════════════════════════════════════════════════════════

@@ -187,9 +187,6 @@
 }
 
 /* padding latéral tablette — intermédiaire entre mobile (16px) et desktop (28px) */
-@media (min-width: 768px) {
-  :root { --pad-x: 24px; }
-}
 @media (min-width: 900px) {
   :root {
     --header-h: 68px;   /* hauteur réelle du .k-header desktop (layout.css) */

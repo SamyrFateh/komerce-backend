@@ -156,48 +156,46 @@
    MOBILE ONLY. Desktop min-width:900px → non impacté.
    Rollback : supprimer ce bloc.
    ──────────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
 
-  /* MICRO-OPTIMISATION HAUTEUR HERO — gain cible 15–25px
-     Avant : clamp(110px, 28vw, 140px)
-     Après : clamp(100px, 26vw, 118px)
-     Gain mesuré : ~12px @390px · ~18px @430px · ~22px @767px
-     object-fit:cover + object-position:50% 0% inchangés → personnages préservés.
-     Desktop non impacté (bloc max-width:767px uniquement). */
-  .k-hero-img {
-    height: clamp(100px, 26vw, 118px);
-  }
+/* MICRO-OPTIMISATION HAUTEUR HERO — gain cible 15–25px
+   Avant : clamp(110px, 28vw, 140px)
+   Après : clamp(100px, 26vw, 118px)
+   Gain mesuré : ~12px @390px · ~18px @430px · ~22px @767px
+   object-fit:cover + object-position:50% 0% inchangés → personnages préservés.
+   Desktop non impacté (bloc max-width:767px uniquement). */
+.k-hero-img {
+  height: clamp(100px, 26vw, 118px);
+}
 
-  /* 1. Supprime le padding au-dessus du rail catégories (-6px).
-        Valeur premium injectée par b-mobile-premium-v1.js : 6px → 0. */
-  .k-hero-cats-sticky {
-    padding-top: 0;
-    /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
-          Base hero.css : margin-top:-42px. Override précédent : -50px. v3 : -56px.
-          Compensé aussi par la photo chip plus haute (36px). Chevauchement propre. */
-    margin-top: -56px;
-  }
+/* 1. Supprime le padding au-dessus du rail catégories (-6px).
+      Valeur premium injectée par b-mobile-premium-v1.js : 6px → 0. */
+.k-hero-cats-sticky {
+  padding-top: 0;
+  /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
+        Base hero.css : margin-top:-42px. Override précédent : -50px. v3 : -56px.
+        Compensé aussi par la photo chip plus haute (36px). Chevauchement propre. */
+  margin-top: -56px;
+}
 
-  /* 3. Supprime le pseudo-spacer sous le rail (-4px). */
-  .k-hero-cats-sticky::after {
-    height: 0;
-  }
+/* 3. Supprime le pseudo-spacer sous le rail (-4px). */
+.k-hero-cats-sticky::after {
+  height: 0;
+}
 
-  /* 4. Remonte le shell catégories dans le sticky (-4px).
-        Base hero.css : margin: -14px 12px 0. Override : -18px. */
-  .k-cats-shell {
-    margin-top: -18px;
-  }
+/* 4. Remonte le shell catégories dans le sticky (-4px).
+      Base hero.css : margin: -14px 12px 0. Override : -18px. */
+.k-cats-shell {
+  margin-top: -18px;
+}
 
-  /* 5. Slot réservé pour le futur rail de sous-catégories.
-        Actuellement height:0 + overflow:hidden → aucun impact visuel.
-        Quand les sous-catégories seront activées, retirer overflow:hidden
-        et définir la hauteur souhaitée. */
-  .k-subcats-mobile-slot {
-    height: 0;
-    overflow: hidden;
-    transition: height .2s ease;
-  }
+/* 5. Slot réservé pour le futur rail de sous-catégories.
+      Actuellement height:0 + overflow:hidden → aucun impact visuel.
+      Quand les sous-catégories seront activées, retirer overflow:hidden
+      et définir la hauteur souhaitée. */
+.k-subcats-mobile-slot {
+  height: 0;
+  overflow: hidden;
+  transition: height .2s ease;
 }
 /* ── FIN MOBILE COMPRESSION MARGES HERO + RAIL ─────────────── */
 
@@ -208,29 +206,27 @@
    ══════════════════════════════════════════════════════════════ */
 
 /* ── Image hero mobile : proportions naturelles du webp 1080×220 ── */
-@media (max-width: 899px) {
-  .k-hero-img {
-    /* Affiche le webp à sa vraie proportion sans crop.
-       Sur 390px de large → ~79px de haut (390 × 220/1080).
-       object-fit:contain + background transparent → pas de bande noire. */
-    height: auto;
-    aspect-ratio: 1080 / 220;
-    object-fit: cover;
-    object-position: 50% 50%;
-  }
-
-  /* Hero : colle le rail directement sous l'image, sans overlap */
-  .k-hero-cats-sticky {
-    margin-top: 0;
-  }
-  .k-hero-cats-sticky::after {
-    height: 0;
-  }
-
-  /* Suppression du mini-slogan dans l'image (trop petit à 220px) */
-  .k-hero-mini-slogan { display: none; }
-  .k-hero-bubble       { display: none; }
+.k-hero-img {
+  /* Affiche le webp à sa vraie proportion sans crop.
+     Sur 390px de large → ~79px de haut (390 × 220/1080).
+     object-fit:contain + background transparent → pas de bande noire. */
+  height: auto;
+  aspect-ratio: 1080 / 220;
+  object-fit: cover;
+  object-position: 50% 50%;
 }
+
+/* Hero : colle le rail directement sous l'image, sans overlap */
+.k-hero-cats-sticky {
+  margin-top: 0;
+}
+.k-hero-cats-sticky::after {
+  height: 0;
+}
+
+/* Suppression du mini-slogan dans l'image (trop petit à 220px) */
+.k-hero-mini-slogan { display: none; }
+.k-hero-bubble       { display: none; }
 
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {

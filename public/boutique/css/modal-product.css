@@ -396,7 +396,7 @@
 /* INTENTIONNEL @768px — composant de sélection produit (dialogue) :
    passe en style élargi avant le breakpoint layout global @900px,
    même logique que .k-sg-overlay/.k-sg-panel ci-dessous et .k-order-modal dans cart.css @600px. */
-@media (min-width: 768px) {
+@media ((min-width: 900px)) {
   .k-sku        { width: 76px; }
   .k-sku img    { width: 68px; height: 68px; }
   .k-sku-name   { max-width: 70px; font-size: 11px; }
@@ -453,7 +453,7 @@
 }
 /* INTENTIONNEL @768px — .k-sg-overlay (guide des tailles) : composant de type dialogue,
    passe en alignement centré avant le breakpoint layout @900px. Voir aussi .k-sku @768px ci-dessus. */
-@media (min-width: 768px) {
+@media ((min-width: 900px)) {
   .k-sg-overlay { align-items: center; }
 }
 
@@ -474,7 +474,7 @@
 .k-sg-overlay.is-open .k-sg-panel { transform: translateY(0); }
 /* INTENTIONNEL @768px — .k-sg-panel (guide des tailles) : panneau centré avec scale-in,
    animation de type dialogue avant le layout desktop @900px. */
-@media (min-width: 768px) {
+@media ((min-width: 900px)) {
   .k-sg-panel {
     border-radius: 18px;
     max-height: 80dvh;

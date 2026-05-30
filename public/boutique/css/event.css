@@ -520,14 +520,12 @@ body {
 }
 
 /* ─── RESPONSIVE ─── */
-@media(max-width:520px) {
-  .ev-hero-title { font-size: 23px; }
-  .ev-hero-amount-num { font-size: 24px; }
-  .ev-btn-row { flex-direction: column; }
-  .ev-btn-row .ev-btn { width: 100%; }
-  .ev-amounts { gap: 6px; }
-  .ev-amount-value { font-size: 14px; }
-}
+.ev-hero-title { font-size: 23px; }
+.ev-hero-amount-num { font-size: 24px; }
+.ev-btn-row { flex-direction: column; }
+.ev-btn-row .ev-btn { width: 100%; }
+.ev-amounts { gap: 6px; }
+.ev-amount-value { font-size: 14px; }
 
 /* ════════════════════════════════════════════════════════════════
    ALIAS DE RÉTROCOMPATIBILITÉ

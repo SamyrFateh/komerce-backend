@@ -538,7 +538,7 @@
 
 /* INTENTIONNEL @600px — enrichissement carte produit sur mobile large/tablette,
    avant layout desktop @900px. Affiche catégorie, prix EUR, disponibilité. */
-@media (min-width: 600px) {
+@media ((min-width: 900px)) {
   .k-card-category {
     display: block;
   }
@@ -623,59 +623,57 @@
 
 
 /* ── Pager mobile : #k-grid = rail horizontal, .k-cat-section = pages ── */
-@media (max-width: 899px) {
-  /* Cage : #k-page-scroll.k-pager-active est déjà fixed dans layout.css */
+/* Cage : #k-page-scroll.k-pager-active est déjà fixed dans layout.css */
 
-  /* Rail horizontal */
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) {
-    display: flex;
-    flex-wrap: nowrap;
-    width: 100%;
-    height: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: none; /* FIX ghost-gauche : contain bloquait le delta touch sur iOS */
-    gap: 0;
-    padding: 0;
-    margin: 0;
-    grid-template-columns: none;
-    scrollbar-width: none;
-  }
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat)::-webkit-scrollbar {
-    display: none;
-  }
+/* Rail horizontal */
+#k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: none; /* FIX ghost-gauche : contain bloquait le delta touch sur iOS */
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  grid-template-columns: none;
+  scrollbar-width: none;
+}
+#k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat)::-webkit-scrollbar {
+  display: none;
+}
 
-  /* Chaque page = pleine hauteur + pleine largeur */
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section {
-    flex: 0 0 100%;
-    width: 100%;
-    min-width: 100%;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    -webkit-overflow-scrolling: touch;
-    /* PATCH iOS : "none" coupe le rubber-band qui simulait du scroll dans le
-       vide quand la liste de produits était courte. "contain" laissait passer
-       l'overscroll élastique de Safari. */
-    overscroll-behavior-y: none;
-    box-sizing: border-box;
-    padding: 0 12px 80px;
-  }
+/* Chaque page = pleine hauteur + pleine largeur */
+#k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  -webkit-overflow-scrolling: touch;
+  /* PATCH iOS : "none" coupe le rubber-band qui simulait du scroll dans le
+     vide quand la liste de produits était courte. "contain" laissait passer
+     l'overscroll élastique de Safari. */
+  overscroll-behavior-y: none;
+  box-sizing: border-box;
+  padding: 0 12px 80px;
+}
 
-  /* Grille 2 colonnes dans chaque page */
-  #k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section > .k-sec-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 4px 0 12px;
-  }
+/* Grille 2 colonnes dans chaque page */
+#k-grid.k-grid-cat-pager:not(.k-grid-flat-subcat) > .k-cat-section > .k-sec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 0 12px;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -842,11 +840,9 @@
 .k-grid.k-grid-has-sections { display:block; grid-template-columns:none; gap:0; padding:0; }
 
 /* En mode pager catégories, display:flex l'emporte sur display:block */
-@media (max-width: 899px) {
-  #k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
-    display: flex;
-    flex-wrap: nowrap;
-  }
+#k-grid.k-grid-has-sections.k-grid-cat-pager:not(.k-grid-flat-subcat) {
+  display: flex;
+  flex-wrap: nowrap;
 }
 
 /* Slide grille entière (swipe horizontal entre catégories) */

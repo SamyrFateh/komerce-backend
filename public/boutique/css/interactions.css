@@ -311,11 +311,9 @@ body.modal-open .k-bnav { opacity: .7; }
 body.modal-open #k-section-index,
 body.cart-open  #k-section-index { display:none; }
 
-@media (max-width:600px) {
-  #k-section-index { right:4px; gap:2px; padding:4px 3px; }
-  .k-section-index-btn { width:32px; height:32px; }
-  .k-section-index-emoji { font-size:16px; }
-}
+#k-section-index { right:4px; gap:2px; padding:4px 3px; }
+.k-section-index-btn { width:32px; height:32px; }
+.k-section-index-emoji { font-size:16px; }
 
 /* .k-grid.k-grid-has-sections + @media 899px → migré vers products.css (Sprint 4 — S4.4) */
 

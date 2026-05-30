@@ -76,11 +76,9 @@ ul, ol  { list-style: none; }
 /* ── MODE PAGER TEMU : le document reste toujours cadré ──────
    Le rail horizontal est #k-grid uniquement.
    html/body ne doivent jamais devenir scrollables horizontalement. */
-@media (max-width: 899px) {
-  html,
-  body,
-  body:has(#k-page-scroll.k-pager-active) {
-    overflow-x: hidden;
-    max-width: 100vw;
-  }
+html,
+body,
+body:has(#k-page-scroll.k-pager-active) {
+  overflow-x: hidden;
+  max-width: 100vw;
 }

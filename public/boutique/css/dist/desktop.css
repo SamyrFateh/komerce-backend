@@ -1152,7 +1152,7 @@
      (240→254px) via boutique-desktop.css. */
 }
 
-@media (min-width: 1500px) {
+@media ((min-width: 1200px)) {
   /* PR-SC2 v3.3 — #k-desktop-catalog-wrap retiré de cette règle :
      le wrapper du catalogue exploite toute la zone utile (pas de
      max-width). Les autres conteneurs gardent leur centrage à 1540px. */

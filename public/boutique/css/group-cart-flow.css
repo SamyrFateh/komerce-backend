@@ -1,5 +1,5 @@
 /* Flux simplifié panier collectif */
-.k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'👥 Payer à plusieurs';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'À plusieurs';font-size:12px}@media(min-width:600px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
+.k-group-flow-overlay{position:fixed;inset:0;z-index:1800;background:rgba(31,48,36,.52);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center}.k-group-flow-sheet{width:100%;max-width:420px;background:var(--white);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -12px 40px rgba(0,0,0,.22);animation:kGroupFlowUp .22s ease}.k-group-flow-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.k-group-flow-title{font-size:18px;font-weight:900;color:var(--text);margin:0}.k-group-flow-close{border:0;background:var(--sand);width:34px;height:34px;border-radius:999px;cursor:pointer;font-weight:900}.k-group-flow-hero{text-align:center;padding:8px 4px 16px}.k-group-flow-icon{font-size:46px;line-height:1;margin-bottom:8px}.k-group-flow-big{font-size:20px;font-weight:950;color:var(--text);margin:0 0 6px}.k-group-flow-sub{font-size:13px;color:var(--text-muted);line-height:1.35;margin:0}.k-group-flow-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}.k-group-flow-stat{background:var(--sand);border:1px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center}.k-group-flow-stat b{display:block;font-size:14px;color:var(--text);font-weight:950}.k-group-flow-stat span{display:block;font-size:10px;color:var(--text-muted);font-weight:800;margin-top:2px}.k-group-flow-link{display:flex;align-items:center;gap:8px;background:var(--sand);border:1px dashed var(--border);border-radius:14px;padding:10px 12px;margin:10px 0 12px}.k-group-flow-link span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted)}.k-group-flow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.k-group-flow-btn{border:0;border-radius:14px;padding:13px 10px;font-size:14px;font-weight:950;cursor:pointer;min-height:46px}.k-group-flow-btn:active{transform:scale(.98)}.k-group-flow-btn--primary{background:var(--cta-green);color:var(--white)}.k-group-flow-btn--wa{background:var(--whatsapp);color:var(--white)}.k-group-flow-btn--ghost{background:var(--sand);color:var(--text);border:1px solid var(--border);grid-column:1/-1}.k-group-flow-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 0;font-weight:900;color:var(--text)}.k-group-flow-spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--sand-dark);border-top-color:var(--cta-green);animation:kGroupSpin .8s linear infinite}.k-cart-event-btn,.k-sc-btn-group{font-weight:950}.k-cart-event-btn{font-size:0}.k-cart-event-btn:after{content:'👥 Payer à plusieurs';font-size:14px}.k-sc-btn-group-label{font-size:0}.k-sc-btn-group-label:after{content:'À plusieurs';font-size:12px}@media(min-width:900px){.k-group-flow-overlay{align-items:center}.k-group-flow-sheet{border-radius:22px;padding:20px;max-width:390px}}@keyframes kGroupFlowUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}@keyframes kGroupSpin{to{transform:rotate(360deg)}}
 
 
 /* ══════════════════════════════════════════════════════════════════
@@ -153,13 +153,11 @@
 .k-group-progress-legend-engaged { color: rgba(100,175,90,.75); }
 .k-group-progress-legend-total   { margin-left: auto; color: var(--text-muted); font-weight: 600; }
 
-@media (max-width: 700px) {
-  .k-group-view .k-group-progress { height: 8px; }
-  .k-group-progress-legend { font-size: 10.5px; gap: 7px; }
-  .k-group-progress-badge  { font-size: 10.5px; padding: 2px 7px; }
-}
+.k-group-view .k-group-progress { height: 8px; }
+.k-group-progress-legend { font-size: 10.5px; gap: 7px; }
+.k-group-progress-badge  { font-size: 10.5px; padding: 2px 7px; }
 
-@media (min-width: 1100px) {
+@media ((min-width: 1200px)) {
   .k-group-view {
     max-width: 1180px;
   }
@@ -167,42 +165,40 @@
 
 /* ── Bloc B — Responsive mobile de base (max-width:700px) ────────── */
 
-@media (max-width: 700px) {
-  .k-group-view {
-    max-width: none;
-    margin: 22px auto 72px;
-    padding: 0 14px;
-  }
-  .k-group-view > * {
-    max-width: none;
-  }
-  .k-group-view .k-group-header {
-    padding: 20px 18px 8px;
-    border-radius: 20px 20px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 21px;
-  }
-  .k-group-view .k-group-progress-card {
-    padding: 18px;
-    border-radius: 0 0 20px 20px;
-  }
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 18px;
-    border-radius: 20px;
-  }
-  .k-group-view .k-group-creator-actions {
-    grid-template-columns: 1fr;
-  }
+.k-group-view {
+  max-width: none;
+  margin: 22px auto 72px;
+  padding: 0 14px;
+}
+.k-group-view > * {
+  max-width: none;
+}
+.k-group-view .k-group-header {
+  padding: 20px 18px 8px;
+  border-radius: 20px 20px 0 0;
+}
+.k-group-view .k-group-header h2 {
+  font-size: 21px;
+}
+.k-group-view .k-group-progress-card {
+  padding: 18px;
+  border-radius: 0 0 20px 20px;
+}
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card {
+  padding: 18px;
+  border-radius: 20px;
+}
+.k-group-view .k-group-creator-actions {
+  grid-template-columns: 1fr;
 }
 
-/* ── Bloc C — Cockpit initial desktop (min-width:1000px) ─────────── */
+/* ── Bloc C — Cockpit initial desktop ((min-width: 900px)) ─────────── */
 /* Note : breakpoint 1000px, exception documentée (standard projet = 900px) */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     margin: 0 auto 56px;
     padding: 0 32px;
@@ -270,26 +266,24 @@
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    margin: 10px auto 56px;
-  }
-  .k-group-view .k-group-header {
-    padding: 16px 16px 8px;
-  }
-  .k-group-view .k-group-progress-card,
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 16px;
-    margin-top: 10px;
-  }
+#k-group-view.k-group-view {
+  margin: 10px auto 56px;
+}
+.k-group-view .k-group-header {
+  padding: 16px 16px 8px;
+}
+.k-group-view .k-group-progress-card,
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card {
+  padding: 16px;
+  margin-top: 10px;
 }
 
 /* ── Desktop cockpit layout : colonne gauche + réserve articles droite ── */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     max-width: 1240px;
     width: 100%;
@@ -305,7 +299,7 @@
   }
 }
 
-@media (min-width: 1400px) {
+@media ((min-width: 1200px)) {
   #k-group-view.k-group-view {
     max-width: 1280px;
   }
@@ -315,24 +309,22 @@
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    max-width: none;
-    width: 100%;
-    margin: 12px auto 64px;
-    padding: 0 14px;
-  }
-  #k-group-view.k-group-view > * {
-    width: auto;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
-  }
+#k-group-view.k-group-view {
+  max-width: none;
+  width: 100%;
+  margin: 12px auto 64px;
+  padding: 0 14px;
+}
+#k-group-view.k-group-view > * {
+  width: auto;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* ── SAFE V2 — cockpit groupe compact desktop ──────────────────── */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     max-width: 1240px;
     width: 100%;
@@ -410,28 +402,26 @@
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    margin: 10px auto 56px;
-    padding: 0 14px;
-  }
-  #k-group-view.k-group-view > * {
-    width: auto;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
-  }
-  .k-group-view .k-group-header {
-    padding: 15px 16px 8px;
-  }
-  .k-group-view .k-group-progress-card,
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card {
-    padding: 15px 16px;
-    margin-top: 10px;
-  }
+#k-group-view.k-group-view {
+  margin: 10px auto 56px;
+  padding: 0 14px;
+}
+#k-group-view.k-group-view > * {
+  width: auto;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+.k-group-view .k-group-header {
+  padding: 15px 16px 8px;
+}
+.k-group-view .k-group-progress-card,
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card {
+  padding: 15px 16px;
+  margin-top: 10px;
 }
 
 /* ── Bloc D — Colonne droite articles (SAFE V2-B) ──────────────── */
@@ -537,7 +527,7 @@
   line-height: 1.5;
 }
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     max-width: 1240px;
     margin: 0 auto 56px;
@@ -560,15 +550,13 @@
   }
 }
 
-@media (max-width: 999px) {
-  .k-group-cockpit {
-    display: block;
-  }
+.k-group-cockpit {
+  display: block;
 }
 
 /* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     margin: -18px auto 44px;
     padding: 0 32px;
@@ -703,19 +691,17 @@
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    margin: 6px auto 48px;
-  }
-  .k-group-view .k-group-header,
-  .k-group-view .k-group-progress-card,
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card,
-  .k-group-side-card {
-    padding: 13px 14px;
-  }
+#k-group-view.k-group-view {
+  margin: 6px auto 48px;
+}
+.k-group-view .k-group-header,
+.k-group-view .k-group-progress-card,
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card,
+.k-group-side-card {
+  padding: 13px 14px;
 }
 
 /* ── Bloc E — Mini guide créateur (SAFE V2-D) ──────────────────── */
@@ -754,16 +740,14 @@
   font-weight: 800;
 }
 
-@media (max-width: 700px) {
-  .k-group-mini-guide {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
+.k-group-mini-guide {
+  grid-template-columns: 1fr;
+  gap: 6px;
 }
 
 /* ── SAFE V2-E — cockpit ultra compact desktop ─────────────────── */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     margin: -34px auto 36px;
     padding: 0 32px;
@@ -919,10 +903,8 @@
   }
 }
 
-@media (max-width: 999px) {
-  .k-group-mini-guide {
-    padding: 8px 10px;
-  }
+.k-group-mini-guide {
+  padding: 8px 10px;
 }
 
 /* ── Bloc F — Switcher paniers multi-groupe ─────────────────────── */
@@ -992,10 +974,8 @@
   text-overflow: ellipsis;
 }
 
-@media (max-width: 700px) {
-  .k-group-cart-tab {
-    min-width: 140px;
-  }
+.k-group-cart-tab {
+  min-width: 140px;
 }
 
 /* ── Bloc G — Note identité engagement ─────────────────────────── */
@@ -1023,7 +1003,7 @@
 
 /* ── ULTRA COMPACT — Groupe cockpit dense ──────────────────────── */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     margin: -42px auto 32px;
     padding: 0 28px;
@@ -1224,29 +1204,27 @@
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    margin: 4px auto 46px;
-    padding: 0 10px;
-  }
-  .k-group-view .k-group-header,
-  .k-group-view .k-group-progress-card,
-  .k-group-view .k-group-card,
-  .k-group-view .k-group-actions-card,
-  .k-group-view .k-group-contribute-card,
-  .k-group-view .k-group-items-card,
-  .k-group-side-card {
-    padding: 11px 12px;
-  }
-  .k-group-mini-guide {
-    padding: 7px 8px;
-  }
+#k-group-view.k-group-view {
+  margin: 4px auto 46px;
+  padding: 0 10px;
+}
+.k-group-view .k-group-header,
+.k-group-view .k-group-progress-card,
+.k-group-view .k-group-card,
+.k-group-view .k-group-actions-card,
+.k-group-view .k-group-contribute-card,
+.k-group-view .k-group-items-card,
+.k-group-side-card {
+  padding: 11px 12px;
+}
+.k-group-mini-guide {
+  padding: 7px 8px;
 }
 
 /* ── POSITION — remonter le cockpit sous le header ─────────────── */
 /* Valeur effective : margin-top final après toutes les passes SAFE  */
 
-@media (min-width: 1000px) {
+@media ((min-width: 900px)) {
   #k-group-view.k-group-view {
     margin-top: -118px;
   }
@@ -1255,16 +1233,14 @@
   }
 }
 
-@media (min-width: 1400px) {
+@media ((min-width: 1200px)) {
   #k-group-view.k-group-view {
     margin-top: -132px;
   }
 }
 
-@media (max-width: 999px) {
-  #k-group-view.k-group-view {
-    margin-top: 0;
-  }
+#k-group-view.k-group-view {
+  margin-top: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1294,182 +1270,180 @@
 
 /* ── GROUP MOBILE COMPACT — max-width: 700px ───────────────────── */
 
-@media (max-width: 700px) {
 
-  /* — .k-group-view : conteneur principal — */
-  #k-group-view.k-group-view {
-    margin-top: -6px;
-    padding: 0 10px 80px; /* bas 80px : CTA toujours dégagé du bas */
-  }
-
-  /* — .k-group-header : en-tête du panier — */
-  .k-group-view .k-group-header {
-    padding: 9px 12px 6px;
-    border-radius: 16px 16px 0 0;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 18px;
-    line-height: 1.05;
-    margin: 0;
-  }
-  /* Masqué mobile : sous-titre descriptif non essentiel */
-  .k-group-view .k-group-subhead {
-    display: none;
-  }
-
-  /* — .k-group-items-card : bloc résumé panier (collapsible) — */
-  .k-group-items-card {
-    margin-top: 8px;
-    padding: 10px 12px;
-    border-radius: 16px;
-  }
-  .k-group-items-toggle {
-    min-height: 44px; /* zone tactile confortable */
-    padding: 0;
-  }
-  .k-group-items-toggle strong {
-    font-size: 17px;
-    line-height: 1.1;
-  }
-  .k-group-items-toggle span span {
-    font-size: 13px;
-    line-height: 1.2;
-  }
-
-  /* — .k-group-contribute-card : carte engagement/paiement — */
-  .k-group-contribute-card {
-    margin-top: 8px;
-    padding: 12px;
-    border-radius: 16px;
-  }
-
-  /* — .k-group-phase-badge : statut ouvert / règlement — */
-  .k-group-phase-badge {
-    font-size: 11px;
-    padding: 5px 9px;
-    margin-bottom: 8px;
-    border-radius: 999px;
-  }
-
-  /* — .k-group-section-title : titre de la carte contribution — */
-  .k-group-contribute-card .k-group-section-title {
-    font-size: 22px;
-    line-height: 1.05;
-    margin: 0 0 8px;
-  }
-
-  /* Masqué mobile : texte explicatif long non essentiel
-     Cible le <p> descriptif ajouté en JS dans la carte contribution.
-     On cible via la classe utilitaire .k-group-desc-text si présente,
-     ou via le sélecteur inline legacy encore présent dans le template. */
-  .k-group-contribute-card .k-group-desc-text,
-  .k-group-contribute-card > p[style*="font-size:13px"] {
-    display: none!important;
-  }
-
-  /* — Hints split / equal / violet callout — */
-  .k-group-split-hint,
-  .k-group-equal-hint,
-  .k-group-contribute-card [style*="rgba(112,73,190"] {
-    font-size: 12px;
-    line-height: 1.2;
-    padding: 7px 9px;
-    margin: 6px 0 8px;
-    border-radius: 10px;
-  }
-
-  /* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
-     "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
-     Ces informations sont nécessaires à la confiance du participant. */
-  .k-group-identity-note {
-    padding: 7px 9px;
-    margin: 6px 0 9px;
-    border-radius: 11px;
-  }
-  .k-group-identity-note strong {
-    font-size: 13px;
-    line-height: 1.1;
-  }
-  .k-group-identity-note span {
-    font-size: 11px;
-    line-height: 1.15;
-    margin-top: 2px;
-    /* NE PAS masquer : indique la possibilité d'utiliser un autre numéro */
-  }
-
-  /* — .k-group-field : champs du formulaire engagement — */
-  .k-group-field {
-    margin-bottom: 8px;
-  }
-
-  /* — Labels — */
-  .k-group-label,
-  .k-group-contribute-card label {
-    font-size: 11px;
-    margin-bottom: 3px;
-    letter-spacing: .02em;
-  }
-
-  /* — .k-group-input : champs texte/nombre — */
-  .k-group-input {
-    min-height: 42px;
-    height: 42px;
-    padding: 7px 10px;
-    font-size: 15px; /* 15px : évite le zoom auto iOS */
-    border-radius: 12px;
-  }
-  /* Champ message : hauteur réduite car 1 ligne suffit */
-  #k-ge-msg,
-  #k-gp-msg {
-    height: 40px;
-  }
-
-  /* — Erreurs inline — */
-  .k-group-input-error {
-    min-height: 14px;
-    margin: 0 0 5px;
-    font-size: 11px;
-  }
-
-  /* — .k-group-btn : bouton d'action principal — */
-  .k-group-btn {
-    min-height: 48px; /* zone tactile large — visible au premier scroll */
-    border-radius: 999px;
-    font-size: 15px;
-    font-weight: 800;
-  }
-  /* Bouton submit spécifique : ancré visuellement en bas de carte */
-  #k-ge-submit-btn,
-  #k-gp-pay-btn {
-    min-height: 48px;
-    height: 48px;
-    margin-top: 6px;
-    font-size: 15px;
-    border-radius: 999px;
-  }
-
-  /* — Ombres allégées sur mobile — */
-  .k-group-card,
-  .k-group-actions-card,
-  .k-group-progress-card,
-  .k-group-items-card,
-  .k-group-contribute-card {
-    box-shadow: 0 8px 24px rgba(30,40,25,.05);
-  }
-
-  /* — Mini-guide : 1 colonne sur mobile (déjà dans Bloc E, rappel explicite) — */
-  .k-group-mini-guide {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 8px 10px;
-  }
-
-  /* — Switcher multi-panier : tab plus petite sur mobile — */
-  .k-group-cart-tab {
-    min-width: 130px;
-  }
-
+/* — .k-group-view : conteneur principal — */
+#k-group-view.k-group-view {
+  margin-top: -6px;
+  padding: 0 10px 80px; /* bas 80px : CTA toujours dégagé du bas */
 }
+
+/* — .k-group-header : en-tête du panier — */
+.k-group-view .k-group-header {
+  padding: 9px 12px 6px;
+  border-radius: 16px 16px 0 0;
+}
+.k-group-view .k-group-header h2 {
+  font-size: 18px;
+  line-height: 1.05;
+  margin: 0;
+}
+/* Masqué mobile : sous-titre descriptif non essentiel */
+.k-group-view .k-group-subhead {
+  display: none;
+}
+
+/* — .k-group-items-card : bloc résumé panier (collapsible) — */
+.k-group-items-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+.k-group-items-toggle {
+  min-height: 44px; /* zone tactile confortable */
+  padding: 0;
+}
+.k-group-items-toggle strong {
+  font-size: 17px;
+  line-height: 1.1;
+}
+.k-group-items-toggle span span {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+/* — .k-group-contribute-card : carte engagement/paiement — */
+.k-group-contribute-card {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+/* — .k-group-phase-badge : statut ouvert / règlement — */
+.k-group-phase-badge {
+  font-size: 11px;
+  padding: 5px 9px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+}
+
+/* — .k-group-section-title : titre de la carte contribution — */
+.k-group-contribute-card .k-group-section-title {
+  font-size: 22px;
+  line-height: 1.05;
+  margin: 0 0 8px;
+}
+
+/* Masqué mobile : texte explicatif long non essentiel
+   Cible le <p> descriptif ajouté en JS dans la carte contribution.
+   On cible via la classe utilitaire .k-group-desc-text si présente,
+   ou via le sélecteur inline legacy encore présent dans le template. */
+.k-group-contribute-card .k-group-desc-text,
+.k-group-contribute-card > p[style*="font-size:13px"] {
+  display: none!important;
+}
+
+/* — Hints split / equal / violet callout — */
+.k-group-split-hint,
+.k-group-equal-hint,
+.k-group-contribute-card [style*="rgba(112,73,190"] {
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 7px 9px;
+  margin: 6px 0 8px;
+  border-radius: 10px;
+}
+
+/* — .k-group-identity-note : identité OTP — CONSERVÉ INTENTIONNELLEMENT —
+   "Identité sécurisée par OTP" + "vous pouvez utiliser un autre numéro"
+   Ces informations sont nécessaires à la confiance du participant. */
+.k-group-identity-note {
+  padding: 7px 9px;
+  margin: 6px 0 9px;
+  border-radius: 11px;
+}
+.k-group-identity-note strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
+.k-group-identity-note span {
+  font-size: 11px;
+  line-height: 1.15;
+  margin-top: 2px;
+  /* NE PAS masquer : indique la possibilité d'utiliser un autre numéro */
+}
+
+/* — .k-group-field : champs du formulaire engagement — */
+.k-group-field {
+  margin-bottom: 8px;
+}
+
+/* — Labels — */
+.k-group-label,
+.k-group-contribute-card label {
+  font-size: 11px;
+  margin-bottom: 3px;
+  letter-spacing: .02em;
+}
+
+/* — .k-group-input : champs texte/nombre — */
+.k-group-input {
+  min-height: 42px;
+  height: 42px;
+  padding: 7px 10px;
+  font-size: 15px; /* 15px : évite le zoom auto iOS */
+  border-radius: 12px;
+}
+/* Champ message : hauteur réduite car 1 ligne suffit */
+#k-ge-msg,
+#k-gp-msg {
+  height: 40px;
+}
+
+/* — Erreurs inline — */
+.k-group-input-error {
+  min-height: 14px;
+  margin: 0 0 5px;
+  font-size: 11px;
+}
+
+/* — .k-group-btn : bouton d'action principal — */
+.k-group-btn {
+  min-height: 48px; /* zone tactile large — visible au premier scroll */
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+}
+/* Bouton submit spécifique : ancré visuellement en bas de carte */
+#k-ge-submit-btn,
+#k-gp-pay-btn {
+  min-height: 48px;
+  height: 48px;
+  margin-top: 6px;
+  font-size: 15px;
+  border-radius: 999px;
+}
+
+/* — Ombres allégées sur mobile — */
+.k-group-card,
+.k-group-actions-card,
+.k-group-progress-card,
+.k-group-items-card,
+.k-group-contribute-card {
+  box-shadow: 0 8px 24px rgba(30,40,25,.05);
+}
+
+/* — Mini-guide : 1 colonne sur mobile (déjà dans Bloc E, rappel explicite) — */
+.k-group-mini-guide {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+/* — Switcher multi-panier : tab plus petite sur mobile — */
+.k-group-cart-tab {
+  min-width: 130px;
+}
+
 
 
 /* ── GROUP MOBILE COMPACT — sous-mode max-width: 390px (petits écrans) ── */
@@ -1478,101 +1452,99 @@
    l'identité OTP (strong conservé), seul le span détail peut être omis
    car le titre "Identité sécurisée par OTP" suffit à la confiance. */
 
-@media (max-width: 390px) {
 
-  /* Conteneur encore plus serré */
-  #k-group-view.k-group-view {
-    padding: 0 8px 76px;
-  }
-
-  /* Header ultra-compact */
-  .k-group-view .k-group-header {
-    padding: 7px 10px 5px;
-  }
-  .k-group-view .k-group-header h2 {
-    font-size: 16px;
-  }
-
-  /* Carte contribution condensée */
-  .k-group-contribute-card {
-    padding: 10px;
-  }
-  .k-group-contribute-card .k-group-section-title {
-    font-size: 20px;
-    margin: 0 0 6px;
-  }
-
-  /* Phase badge encore plus petit */
-  .k-group-phase-badge {
-    font-size: 10px;
-    padding: 4px 7px;
-    margin-bottom: 6px;
-  }
-
-  /* Identity note : on masque le span détail (le titre OTP reste)
-     Le titre "Identité sécurisée par OTP" seul suffit à rassurer.
-     La mention "autre numéro" est accessible via le flow OTP lui-même. */
-  .k-group-identity-note {
-    padding: 6px 8px;
-    margin: 5px 0 7px;
-  }
-  .k-group-identity-note strong {
-    font-size: 12px;
-  }
-  .k-group-identity-note span {
-    display: none; /* masqué <390px uniquement — voir commentaire ci-dessus */
-  }
-
-  /* Champs encore plus compacts */
-  .k-group-input {
-    height: 40px;
-    min-height: 40px;
-    font-size: 14px;
-    padding: 6px 9px;
-  }
-  #k-ge-msg,
-  #k-gp-msg {
-    height: 38px;
-  }
-  .k-group-field {
-    margin-bottom: 6px;
-  }
-  .k-group-label,
-  .k-group-contribute-card label {
-    font-size: 10px;
-    margin-bottom: 2px;
-  }
-
-  /* Bouton CTA : légèrement réduit mais toujours > 44px (WCAG) */
-  .k-group-btn {
-    min-height: 44px;
-    font-size: 14px;
-  }
-  #k-ge-submit-btn,
-  #k-gp-pay-btn {
-    height: 44px;
-    min-height: 44px;
-    font-size: 14px;
-    margin-top: 4px;
-  }
-
-  /* Items card encore plus serré */
-  .k-group-items-card {
-    padding: 8px 10px;
-  }
-  .k-group-items-toggle {
-    min-height: 40px;
-  }
-  .k-group-items-toggle strong {
-    font-size: 15px;
-  }
-
-  /* Mini-guide masqué sur très petits écrans (non essentiel) */
-  .k-group-mini-guide {
-    display: none;
-  }
-
+/* Conteneur encore plus serré */
+#k-group-view.k-group-view {
+  padding: 0 8px 76px;
 }
+
+/* Header ultra-compact */
+.k-group-view .k-group-header {
+  padding: 7px 10px 5px;
+}
+.k-group-view .k-group-header h2 {
+  font-size: 16px;
+}
+
+/* Carte contribution condensée */
+.k-group-contribute-card {
+  padding: 10px;
+}
+.k-group-contribute-card .k-group-section-title {
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+
+/* Phase badge encore plus petit */
+.k-group-phase-badge {
+  font-size: 10px;
+  padding: 4px 7px;
+  margin-bottom: 6px;
+}
+
+/* Identity note : on masque le span détail (le titre OTP reste)
+   Le titre "Identité sécurisée par OTP" seul suffit à rassurer.
+   La mention "autre numéro" est accessible via le flow OTP lui-même. */
+.k-group-identity-note {
+  padding: 6px 8px;
+  margin: 5px 0 7px;
+}
+.k-group-identity-note strong {
+  font-size: 12px;
+}
+.k-group-identity-note span {
+  display: none; /* masqué <390px uniquement — voir commentaire ci-dessus */
+}
+
+/* Champs encore plus compacts */
+.k-group-input {
+  height: 40px;
+  min-height: 40px;
+  font-size: 14px;
+  padding: 6px 9px;
+}
+#k-ge-msg,
+#k-gp-msg {
+  height: 38px;
+}
+.k-group-field {
+  margin-bottom: 6px;
+}
+.k-group-label,
+.k-group-contribute-card label {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+/* Bouton CTA : légèrement réduit mais toujours > 44px (WCAG) */
+.k-group-btn {
+  min-height: 44px;
+  font-size: 14px;
+}
+#k-ge-submit-btn,
+#k-gp-pay-btn {
+  height: 44px;
+  min-height: 44px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* Items card encore plus serré */
+.k-group-items-card {
+  padding: 8px 10px;
+}
+.k-group-items-toggle {
+  min-height: 40px;
+}
+.k-group-items-toggle strong {
+  font-size: 15px;
+}
+
+/* Mini-guide masqué sur très petits écrans (non essentiel) */
+.k-group-mini-guide {
+  display: none;
+}
+
 
 /* ── Bloc H — Sélecteurs utilitaires flat ──────────────────────── */
 
