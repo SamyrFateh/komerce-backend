@@ -1,9 +1,9 @@
-Ôªø<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <script>
-/* Nuclear SW reset v302 ‚Äî runs ONCE to clear all old caches */
+/* Nuclear SW reset v302 ó runs ONCE to clear all old caches */
 (function(){
   if(localStorage.getItem('sw_reset_v326'))return;
   localStorage.setItem('sw_reset_v326','1');
@@ -28,7 +28,7 @@ if('serviceWorker' in navigator){
 
   navigator.serviceWorker.addEventListener('message', function(e){
     if(e.data && e.data.type === 'sw-updated'){
-      console.log('[SW] Nouvelle version', e.data.version, '‚Üí reload auto');
+      console.log('[SW] Nouvelle version', e.data.version, '? reload auto');
       location.reload();
     }
   });
@@ -44,10 +44,10 @@ if('serviceWorker' in navigator){
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
-<title>Komerce ‚Äî Boutique en ligne</title>
-<meta name="description" content="La boutique en ligne des Comores. Mode, tech, maison, beaut√© ‚Äî commandez depuis l'Europe, retirez en cash chez votre relais local.">
-<meta property="og:title" content="Komerce ‚Äî La boutique comorienne">
-<meta property="og:description" content="Mode, tech, maison, beaut√© ‚Äî livr√© aux Comores. Paiement cash, retrait relais.">
+<title>Komerce ó Boutique en ligne</title>
+<meta name="description" content="La boutique en ligne des Comores. Mode, tech, maison, beautÈ ó commandez depuis l'Europe, retirez en cash chez votre relais local.">
+<meta property="og:title" content="Komerce ó La boutique comorienne">
+<meta property="og:description" content="Mode, tech, maison, beautÈ ó livrÈ aux Comores. Paiement cash, retrait relais.">
 <meta property="og:image" content="/images/og-cover.jpg">
 <meta property="og:url" content="https://komerce.fr">
 <meta property="og:type" content="website">
@@ -57,36 +57,36 @@ if('serviceWorker' in navigator){
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Preload hero image pour am√©liorer le LCP (Largest Contentful Paint) -->
+<!-- Preload hero image pour amÈliorer le LCP (Largest Contentful Paint) -->
 <link rel="preload" as="image" href="/images/komerce_hero_mobile_1080x220.webp" type="image/webp" media="(max-width: 899px)"  fetchpriority="high">
 <link rel="preload" as="image" href="/images/Hero_1600x360.png"  media="(min-width: 900px)"   fetchpriority="high">
-<!-- CSS Komerce v3 ‚Äî bundl√© (Sprint 3) : 4 fichiers au lieu de 13 -->
+<!-- CSS Komerce v3 ó bundlÈ (Sprint 3) : 4 fichiers au lieu de 13 -->
 <!-- base    = tokens + reset + layout + hero -->
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop + desktop-commerce-skeleton -->
-<!-- event   = charg√© sur toutes les pages pour l'instant (√† isoler sur /event/*) -->
+<!-- event   = chargÈ sur toutes les pages pour l'instant (‡ isoler sur /event/*) -->
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=3">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=14">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=15">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=3">
 
-<!-- Stripe: NO defer ‚Äî must be ready before boutique.js runs -->
+<!-- Stripe: NO defer ó must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
 
-<!-- v11: inline mobile CSS removed ‚Äî all styles in boutique.css -->
+<!-- v11: inline mobile CSS removed ó all styles in boutique.css -->
 </head>
 <body>
 
-<!-- ‚ïê‚ïê‚ïê HEADER ‚ïê‚ïê‚ïê -->
+<!-- --- HEADER --- -->
 <header class="k-header" id="k-header">
   <div class="k-header-inner">
-    <a href="/" class="k-logo" aria-label="Komerce ‚Äî accueil">
+    <a href="/" class="k-logo" aria-label="Komerce ó accueil">
       <span class="k-logo-icon" aria-hidden="true">
-        <!-- Logo V3 ‚Äî M√©daille drapeau comorien : disque sage + croissant + 4 √©toiles blanches.
-             Inspiration directe du drapeau des Comores : croissant repr√©sente l'islam/union,
-             4 √©toiles = les 4 √Æles (Grande Comore, Anjouan, Moh√©li, Mayotte). -->
+        <!-- Logo V3 ó MÈdaille drapeau comorien : disque sage + croissant + 4 Ètoiles blanches.
+             Inspiration directe du drapeau des Comores : croissant reprÈsente l'islam/union,
+             4 Ètoiles = les 4 Óles (Grande Comore, Anjouan, MohÈli, Mayotte). -->
         <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Croissant + 4 √©toiles ‚Äî flottant, sans fond -->
+          <!-- Croissant + 4 Ètoiles ó flottant, sans fond -->
           <path d="M 26 20 A 8 8 0 1 1 20 12 A 6 6 0 1 0 26 20 Z" fill="#2A3E2C"/>
           <circle cx="21.5" cy="14.5" r="1.1" fill="#C8B87A"/>
           <circle cx="24.5" cy="17" r="1.1" fill="#C8B87A"/>
@@ -123,44 +123,44 @@ if('serviceWorker' in navigator){
   </div>
 </header>
 
-<!-- ‚ïê‚ïê‚ïê HERO FIXED WRAP (mobile: fixed; desktop: normal flow) ‚ïê‚ïê‚ïê -->
+<!-- --- HERO FIXED WRAP (mobile: fixed; desktop: normal flow) --- -->
 <div id="k-hero-fixed-wrap">
 
-<!-- ‚ïê‚ïê‚ïê HERO IMAGE (scrolls normally, visible first) ‚ïê‚ïê‚ïê -->
-<h1 class="sr-only">Komerce ‚Äî La boutique en ligne des Comores</h1>
+<!-- --- HERO IMAGE (scrolls normally, visible first) --- -->
+<h1 class="sr-only">Komerce ó La boutique en ligne des Comores</h1>
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
       <picture>
         <source media="(min-width: 900px)" srcset="/images/Hero_1600x360.png" width="1600" height="360">
-        <!-- WebP mobile tamis√© (prioritaire ‚Äî ~50% plus l√©ger) -->
+        <!-- WebP mobile tamisÈ (prioritaire ó ~50% plus lÈger) -->
         <source media="(max-width: 899px)" type="image/webp" srcset="/images/komerce_hero_mobile_1080x220.webp" width="1080" height="220">
         <!-- PNG mobile fallback (navigateurs sans WebP) -->
         <source media="(max-width: 899px)" srcset="/images/Hero_1080x420.png" width="1080" height="420">
-        <img class="k-hero-img" src="/images/Hero_Pano_v2.png" width="2902" height="542" alt="Komerce ‚Äî La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+        <img class="k-hero-img" src="/images/Hero_Pano_v2.png" width="2902" height="542" alt="Komerce ó La boutique en ligne des Comores" loading="eager" fetchpriority="high">
       </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>
         <span class="k-line-1">Qui cherche&nbsp;!</span>
-        <span class="k-line-2">Trouve&nbsp;!</span><!-- masqu√© desktop Option B via boutique-desktop.css -->
-        <p class="k-hero-sub">Mode, tech, beaut√© ‚Äî tout ce que vous aimez, livr√© aux Comores</p>
+        <span class="k-line-2">Trouve&nbsp;!</span><!-- masquÈ desktop Option B via boutique-desktop.css -->
+        <p class="k-hero-sub">Mode, tech, beautÈ ó tout ce que vous aimez, livrÈ aux Comores</p>
         <div class="k-hero-cta-row">
-          <button class="k-hero-cta-primary">D√©couvrir le catalogue ‚Üí</button>
-          <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">üì¶ Suivre ma commande</button>
+          <button class="k-hero-cta-primary">DÈcouvrir le catalogue ?</button>
+          <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">?? Suivre ma commande</button>
         </div>
         <div class="k-hero-trust">
-          <span>450+ produits</span><span class="k-trust-sep">¬∑</span><span>Paiement cash</span><span class="k-trust-sep">¬∑</span><span>Retrait relais</span>
+          <span>450+ produits</span><span class="k-trust-sep">∑</span><span>Paiement cash</span><span class="k-trust-sep">∑</span><span>Retrait relais</span>
         </div>
       </div>
-      <div class="k-hero-bubble" aria-hidden="true">üëÄ</div>
+      <div class="k-hero-bubble" aria-hidden="true">??</div>
     </div>
   </div>
 </section>
 
-<!-- ‚ïê‚ïê‚ïê SENTINEL (invisible marker for IntersectionObserver) ‚ïê‚ïê‚ïê -->
+<!-- --- SENTINEL (invisible marker for IntersectionObserver) --- -->
 <div id="k-bar-sentinel"></div>
 
-<!-- ‚ïê‚ïê‚ïê SLOGAN + PILLS + CAT√âGORIES (sticks on scroll) ‚ïê‚ïê‚ïê -->
+<!-- --- SLOGAN + PILLS + CAT…GORIES (sticks on scroll) --- -->
 <div class="k-hero-cats-sticky" id="k-sticky-bar">
   <div class="k-hero-overlay">
     <div class="k-hero-text-left">
@@ -172,19 +172,19 @@ if('serviceWorker' in navigator){
 
     <div class="k-hero-right-col">
       <div class="k-hero-pills">
-        <span class="k-hero-pill">üì¶ Retrait relais</span>
-        <span class="k-hero-pill">üí≥ Paiement cash</span>
+        <span class="k-hero-pill">?? Retrait relais</span>
+        <span class="k-hero-pill">?? Paiement cash</span>
       </div>
       <span class="k-hero-proverb-inline" id="k-proverb-text"></span>
     </div>
   </div>
 
-  <!-- ‚ïê‚ïê‚ïê CAT√âGORIES ‚ïê‚ïê‚ïê -->
+  <!-- --- CAT…GORIES --- -->
   <div class="k-cats-shell">
   <div class="k-cats-wrap-fade-left"></div>
   <nav class="k-cats" id="k-cats">
-    <!-- Rail v2 ‚Äî 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
-    <button class="k-chip active" data-cat="all" aria-label="Toutes les cat√©gories">
+    <!-- Rail v2 ó 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
+    <button class="k-chip active" data-cat="all" aria-label="Toutes les catÈgories">
       <span class="k-chip-photo">
         <img src="/boutique/categories/all.jpg" alt="" loading="eager" width="80" height="80">
       </span>
@@ -196,7 +196,7 @@ if('serviceWorker' in navigator){
       </span>
       <span class="k-chip-label">Soldes</span>
     </button>
-    <button class="k-chip" data-cat="Mode & Beaut√©" aria-label="Mode et Beaut√©">
+    <button class="k-chip" data-cat="Mode & BeautÈ" aria-label="Mode et BeautÈ">
       <span class="k-chip-photo">
         <img src="/boutique/categories/mode.jpg" alt="" loading="eager" width="80" height="80">
       </span>
@@ -220,7 +220,7 @@ if('serviceWorker' in navigator){
       </span>
       <span class="k-chip-label">Bricolage</span>
     </button>
-    <button class="k-chip" data-cat="Cr√©ations personnelles" aria-label="Cr√©ations personnelles">
+    <button class="k-chip" data-cat="CrÈations personnelles" aria-label="CrÈations personnelles">
       <span class="k-chip-photo">
         <img src="/boutique/categories/creations.jpg" alt="" loading="eager" width="80" height="80">
       </span>
@@ -235,17 +235,17 @@ if('serviceWorker' in navigator){
   </nav>
   <div class="k-cats-wrap-fade-right"></div>
   </div><!-- /k-cats-shell -->
-  <!-- ‚ïê‚ïê‚ïê SOUS-CAT√âGORIES ‚ïê‚ïê‚ïê -->
+  <!-- --- SOUS-CAT…GORIES --- -->
   <div id="k-subcats-wrap"></div>
 </div><!-- /k-hero-cats-sticky -->
 </div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer"></div>
 
 <div id="k-page-scroll">
-  <!-- ‚ïê‚ïê‚ïê PROVERBE S√âPARATEUR ‚ïê‚ïê‚ïê -->
+  <!-- --- PROVERBE S…PARATEUR --- -->
   <div class="k-proverb-sep"></div>
 
-  <!-- ‚ïê‚ïê‚ïê CATALOGUE PRODUITS ‚ïê‚ïê‚ïê -->
+  <!-- --- CATALOGUE PRODUITS --- -->
   <div id="k-desktop-catalog-wrap">
     <section class="k-section" id="k-catalog-section">
       <div class="k-grid" id="k-grid">
@@ -255,11 +255,11 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
-    <!-- Side cart desktop ‚Äî panneau fixe droit.
+    <!-- Side cart desktop ó panneau fixe droit.
          Layout vertical : header sticky (sous-total + CTAs) en haut,
          puis liste items scrollable. -->
-    <aside id="k-side-cart" class="k-side-cart" aria-label="Aper√ßu panier">
-      <!-- ‚îÄ‚îÄ HEADER : sous-total + CTAs (Temu top block) ‚îÄ‚îÄ -->
+    <aside id="k-side-cart" class="k-side-cart" aria-label="AperÁu panier">
+      <!-- -- HEADER : sous-total + CTAs (Temu top block) -- -->
       <div class="k-sc-header">
         <div class="k-sc-subtotal-row">
           <span class="k-sc-subtotal-label">
@@ -276,21 +276,21 @@ if('serviceWorker' in navigator){
           Commander (<span id="k-sc-count-inline">0</span>)
         </button>
         <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
-        <!-- Badge "Partag√©" ‚Äî visible uniquement quand shareToken actif -->
+        <!-- Badge "PartagÈ" ó visible uniquement quand shareToken actif -->
         <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
           <div class="k-sc-shared-badge-row">
             <span class="k-sc-shared-dot" aria-hidden="true"></span>
-            <span class="k-sc-shared-label">Panier partag√© actif</span>
-            <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">üì≤ Re-partager</button>
+            <span class="k-sc-shared-label">Panier partagÈ actif</span>
+            <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">?? Re-partager</button>
           </div>
           <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">
-            üë• Suivre les participations ‚Üí
+            ?? Suivre les participations ?
           </button>
         </div>
-        <!-- Bouton "Payer √† plusieurs" (PR-1) ‚Äî g√©r√© par b-share-cart.js -->
-        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Payer √† plusieurs">
+        <!-- Bouton "Payer ‡ plusieurs" (PR-1) ó gÈrÈ par b-share-cart.js -->
+        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Payer ‡ plusieurs">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span class="k-sc-btn-share-label">Payer √† plusieurs</span>
+          <span class="k-sc-btn-share-label">Payer ‡ plusieurs</span>
         </button>
         <button id="k-sc-clear" class="k-sc-clear" type="button" aria-label="Vider le panier" title="Vider le panier">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6h12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -298,13 +298,13 @@ if('serviceWorker' in navigator){
         </button>
       </div>
 
-      <!-- ‚îÄ‚îÄ ITEMS : zone scrollable, prend le reste de la hauteur ‚îÄ‚îÄ -->
+      <!-- -- ITEMS : zone scrollable, prend le reste de la hauteur -- -->
       <div id="k-sc-items" class="k-sc-items"></div>
     </aside>
   </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->
 
-<!-- ‚ïê‚ïê‚ïê PRODUCT MODAL ‚ïê‚ïê‚ïê -->
+<!-- --- PRODUCT MODAL --- -->
 <div class="k-modal-overlay" id="k-modal-overlay">
   <div class="k-modal" id="k-modal">
     <div class="k-modal-topbar">
@@ -317,11 +317,11 @@ if('serviceWorker' in navigator){
           <img src="/images/avatar_seule.png" class="k-cart-avatar" width="28" height="28" alt="Panier">
           <span class="k-modal-cart-badge" id="k-modal-cart-badge"></span>
         </button>
-        <button class="k-modal-close" id="k-modal-close">‚úï</button>
+        <button class="k-modal-close" id="k-modal-close">?</button>
       </div>
     </div>
     <div class="k-modal-scroll">
-      <!-- Zone produit : 2 colonnes image | d√©tails (desktop) -->
+      <!-- Zone produit : 2 colonnes image | dÈtails (desktop) -->
       <div class="k-modal-product-zone">
         <div class="k-modal-img-wrap">
           <div class="k-modal-carousel" id="k-modal-carousel">
@@ -336,33 +336,33 @@ if('serviceWorker' in navigator){
           <div class="k-modal-info">
             <div class="k-modal-name-row">
               <h2 id="k-modal-name"></h2>
-              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris">ü§ç</button>
+              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris">??</button>
             </div>
             <div class="k-modal-price-row">
               <span class="k-modal-price" id="k-modal-price"></span>
               <span class="k-modal-old-price" id="k-modal-old-price"></span>
             </div>
-            <!-- ‚îÄ‚îÄ Zones desktop enrichies ‚Äî peupl√©es par b-modal-desktop-enhancers.js ‚îÄ‚îÄ -->
-            <!-- Masqu√©es mobile (display:none par d√©faut) ¬∑ r√©v√©l√©es ‚â•900px via modal.css -->
+            <!-- -- Zones desktop enrichies ó peuplÈes par b-modal-desktop-enhancers.js -- -->
+            <!-- MasquÈes mobile (display:none par dÈfaut) ∑ rÈvÈlÈes =900px via modal.css -->
             <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
             <div id="k-modal-flash-bar" class="k-modal-flash-bar"></div>
             <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
-            <!-- Variant picker (Taille / Couleur / Pointure) ‚Äî juste apr√®s le prix -->
+            <!-- Variant picker (Taille / Couleur / Pointure) ó juste aprËs le prix -->
             <div id="k-modal-variants" class="k-modal-variants"></div>
             <p class="k-modal-desc" id="k-modal-desc"></p>
             <div class="k-modal-meta">
               <span id="k-modal-cat"></span>
               <span id="k-modal-stock"></span>
             </div>
-            <!-- ‚îÄ‚îÄ Livraison + Paiement ‚Äî inject√©s par b-modal-desktop-enhancers.js ‚îÄ‚îÄ -->
+            <!-- -- Livraison + Paiement ó injectÈs par b-modal-desktop-enhancers.js -- -->
             <div id="k-modal-delivery" class="k-modal-delivery"></div>
             <div id="k-modal-payment" class="k-modal-payment"></div>
           </div><!-- end .k-modal-info -->
         <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
-        <!-- Sur mobile : display:contents rend product-zone transparent ‚Üí ordre naturel -->
+        <!-- Sur mobile : display:contents rend product-zone transparent ? ordre naturel -->
         <div class="k-modal-actions">
           <div class="k-qty">
-            <button class="k-qty-btn" id="k-qty-minus">‚àí</button>
+            <button class="k-qty-btn" id="k-qty-minus">-</button>
             <span class="k-qty-val" id="k-qty-val">1</span>
             <button class="k-qty-btn" id="k-qty-plus">+</button>
           </div>
@@ -370,7 +370,7 @@ if('serviceWorker' in navigator){
             <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
             Ajouter
           </button>
-          <button class="k-buy-now-btn" id="k-buy-now-btn">‚ö° Acheter</button>
+          <button class="k-buy-now-btn" id="k-buy-now-btn">? Acheter</button>
         </div>
       </div><!-- end .k-modal-product-zone -->
       <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
@@ -381,21 +381,21 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 </div>
-</div><!-- /#k-modal-overlay ‚Äî FIX HTML 2026-05-19 v3.1 : il manquait DEUX </div> au total pour fermer k-modal-overlay (v3 n'en avait ajout√© qu'une). Le parser strict (avec gestion commentaires) montre que sans cette balise, k-modal-overlay reste ouvert et capture k-cart-overlay, k-cart-drawer, k-order-modal comme enfants. -->
+</div><!-- /#k-modal-overlay ó FIX HTML 2026-05-19 v3.1 : il manquait DEUX </div> au total pour fermer k-modal-overlay (v3 n'en avait ajoutÈ qu'une). Le parser strict (avec gestion commentaires) montre que sans cette balise, k-modal-overlay reste ouvert et capture k-cart-overlay, k-cart-drawer, k-order-modal comme enfants. -->
 
-<!-- ‚ïê‚ïê‚ïê CART DRAWER ‚ïê‚ïê‚ïê -->
+<!-- --- CART DRAWER --- -->
 <div id="k-cart-overlay" class="k-cart-overlay"></div>
 <div id="k-cart-drawer" class="k-cart-drawer">
   <div class="k-cart-header" id="k-cart-header">
     <span id="k-cart-header-title">Mon Panier</span>
-    <button id="k-cart-close" class="k-modal-close">‚úï</button>
+    <button id="k-cart-close" class="k-modal-close">?</button>
   </div>
   <div id="k-cart-body" class="k-cart-body"></div>
   <div id="k-cart-footer" class="k-cart-footer u-hidden">
-    <!-- Badge partag√© (drawer mobile) -->
+    <!-- Badge partagÈ (drawer mobile) -->
     <div class="k-share-badge-row" id="k-share-badge-row" hidden>
       <span class="k-share-badge-dot" aria-hidden="true"></span>
-      <span class="k-share-badge-label">Partag√©</span>
+      <span class="k-share-badge-label">PartagÈ</span>
       <button id="k-cart-reshare" class="k-share-reshare-btn" type="button">Re-partager</button>
     </div>
     <div class="k-cart-total-row">
@@ -406,37 +406,37 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-cart-footer-btns">
-      <button id="k-cart-continue" class="kcf-btn kcf-secondary">‚Üê Continuer</button>
-      <button id="k-cart-clear" class="kcf-btn kcf-danger">üóë</button>
-      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Payer √† plusieurs">
+      <button id="k-cart-continue" class="kcf-btn kcf-secondary">? Continuer</button>
+      <button id="k-cart-clear" class="kcf-btn kcf-danger">??</button>
+      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Payer ‡ plusieurs">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Payer √† plusieurs
+        Payer ‡ plusieurs
       </button>
-      <button id="k-cart-checkout" class="kcf-btn kcf-primary">‚úÖ Commander</button>
+      <button id="k-cart-checkout" class="kcf-btn kcf-primary">? Commander</button>
     </div>
   </div>
 </div>
 
-<!-- ‚ïê‚ïê‚ïê ORDER MODAL ‚ïê‚ïê‚ïê -->
+<!-- --- ORDER MODAL --- -->
 <div id="k-order-modal" class="k-order-overlay">
   <div class="k-order-modal">
     <div class="k-order-header">
       <span id="k-order-title">Commande</span>
-      <button id="k-order-close" class="k-modal-close">‚úï</button>
+      <button id="k-order-close" class="k-modal-close">?</button>
     </div>
     <div id="k-order-body" class="k-order-body"></div>
   </div>
 </div>
 
-<!-- ‚ïê‚ïê‚ïê FAV TOAST ‚ïê‚ïê‚ïê -->
+<!-- --- FAV TOAST --- -->
 <div class="k-toast" id="k-toast"></div>
 
-<!-- ‚ïê‚ïê‚ïê WHATSAPP FAB ‚ïê‚ïê‚ïê -->
+<!-- --- WHATSAPP FAB --- -->
 <a id="k-wa-fab" class="k-wa-fab" href="https://wa.me/33699272526?text=Bonjour%20Komerce%20!%20Je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20vos%20produits%20%F0%9F%9B%8D" target="_blank" rel="noopener" aria-label="WhatsApp">
   <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
 </a>
 
-<!-- ‚ïê‚ïê‚ïê FOOTER RICHE ‚Äî desktop uniquement ‚ïê‚ïê‚ïê -->
+<!-- --- FOOTER RICHE ó desktop uniquement --- -->
 <footer class="k-footer" id="k-footer" aria-label="Pied de page Komerce">
   <div class="k-footer-grid">
     <div>
@@ -463,7 +463,7 @@ if('serviceWorker' in navigator){
     </div>
     <div>
       <div class="k-footer-col-title">Aide &amp; contact</div>
-      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%20Komerce%2C%20comment%20%C3%A7a%20marche%20%3F" target="_blank" rel="noopener">Comment √ßa marche</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%20Komerce%2C%20comment%20%C3%A7a%20marche%20%3F" target="_blank" rel="noopener">Comment Áa marche</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20je%20souhaite%20suivre%20ma%20commande" target="_blank" rel="noopener">Suivi de commande</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20o%C3%B9%20se%20trouve%20le%20relais%20le%20plus%20proche%20%3F" target="_blank" rel="noopener">Trouver un relais</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526" target="_blank" rel="noopener">Contact WhatsApp</a>
@@ -471,7 +471,7 @@ if('serviceWorker' in navigator){
     </div>
     <div>
       <div class="k-footer-col-title">Newsletter</div>
-      <p class="k-footer-newsletter-desc">Nouveaut√©s et promos exclusives, avant tout le monde.</p>
+      <p class="k-footer-newsletter-desc">NouveautÈs et promos exclusives, avant tout le monde.</p>
       <form class="k-footer-newsletter-form" novalidate>
         <input class="k-footer-newsletter-input" type="email" placeholder="votre@email.com" aria-label="Adresse e-mail newsletter" required>
         <button class="k-footer-newsletter-btn" type="submit">S'inscrire</button>
@@ -479,16 +479,16 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="k-footer-bottom">
-    <span class="k-footer-copy">¬© 2026 Komerce ¬∑ Tous droits r√©serv√©s</span>
-    <nav class="k-footer-legal-links" aria-label="Liens l√©gaux" style="display:none;">
-      <a class="k-footer-legal-link">Mentions l√©gales</a>
+    <span class="k-footer-copy">© 2026 Komerce ∑ Tous droits rÈservÈs</span>
+    <nav class="k-footer-legal-links" aria-label="Liens lÈgaux" style="display:none;">
+      <a class="k-footer-legal-link">Mentions lÈgales</a>
       <a class="k-footer-legal-link">CGV</a>
-      <a class="k-footer-legal-link">Confidentialit√©</a>
+      <a class="k-footer-legal-link">ConfidentialitÈ</a>
     </nav>
   </div>
 </footer>
 
-<!-- ‚ïê‚ïê‚ïê BOTTOM NAV ‚ïê‚ïê‚ïê -->
+<!-- --- BOTTOM NAV --- -->
 <nav class="k-bnav" id="k-bnav">
   <button class="k-bnav-item active" data-tab="shop">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -514,7 +514,7 @@ if('serviceWorker' in navigator){
   </button>
 </nav>
 
-<!-- side cart d√©plac√© dans #k-desktop-catalog-wrap -->
+<!-- side cart dÈplacÈ dans #k-desktop-catalog-wrap -->
 
 <script>
 // Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop
@@ -524,14 +524,14 @@ if('serviceWorker' in navigator){
 
   function isMobile(){ return window.innerWidth <= 899; }
 
-  // ‚îÄ‚îÄ MOBILE : tout le wrap est fixe, on mesure sa hauteur ‚îÄ‚îÄ
+  // -- MOBILE : tout le wrap est fixe, on mesure sa hauteur --
   function setupMobile(){
     if (!isMobile()) return;   // desktop : ne pas poser style.top
     var wrap = document.getElementById('k-hero-fixed-wrap');
     if (!wrap) return;
     function update(){
       if (!isMobile()) {
-        // Desktop : remettre √† z√©ro les styles inline pos√©s par mobile
+        // Desktop : remettre ‡ zÈro les styles inline posÈs par mobile
         var scroll = document.getElementById('k-page-scroll');
         if (scroll) { scroll.style.top = ''; scroll.style.position = ''; }
         return;
@@ -544,13 +544,13 @@ if('serviceWorker' in navigator){
       }
     }
     update();
-    // Re-mesure apr√®s chargement de l'image hero
+    // Re-mesure aprËs chargement de l'image hero
     var img = wrap.querySelector('.k-hero-img');
     if (img && !img.complete) img.addEventListener('load', update);
     window.addEventListener('resize', update);
   }
 
-  // ‚îÄ‚îÄ DESKTOP : IntersectionObserver sticky bar ‚îÄ‚îÄ
+  // -- DESKTOP : IntersectionObserver sticky bar --
   function setupDesktop(){
     var sentinel = document.getElementById('k-bar-sentinel');
     var bar = document.getElementById('k-sticky-bar');
@@ -571,9 +571,9 @@ if('serviceWorker' in navigator){
     });
   }
 
-  // Bouton "D√©couvrir le catalogue" : scroll vers le catalogue (mobile ET desktop).
+  // Bouton "DÈcouvrir le catalogue" : scroll vers le catalogue (mobile ET desktop).
   // Note : le listener desktop ci-dessous (dans le bloc else) cible #k-catalog-section
-  // en priorit√©. Ce listener universel assure le fonctionnement mobile.
+  // en prioritÈ. Ce listener universel assure le fonctionnement mobile.
   (function() {
     var ctaP = document.querySelector('.k-hero-cta-primary');
     if (ctaP) {
@@ -596,59 +596,59 @@ if('serviceWorker' in navigator){
         if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
-    // .k-hero-cta-ghost a aussi class k-header-nav-btn ‚Üí d√©j√† g√©r√© par setupBnav().
-    // Pas de listener suppl√©mentaire ici pour √©viter le doublon (switchView 2√ó).
+    // .k-hero-cta-ghost a aussi class k-header-nav-btn ? dÈj‡ gÈrÈ par setupBnav().
+    // Pas de listener supplÈmentaire ici pour Èviter le doublon (switchView 2◊).
   }
 
-  // ‚îÄ‚îÄ Proxy window.scrollY/scrollTo supprim√© (Sprint 3) ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
-  // Remplac√© par getScrollY() / scrollToPosition() / scrollPageToTop()
-  // dans b-scroll-owner.js ‚Äî import√© par chaque module JS concern√©.
+  // -- Proxy window.scrollY/scrollTo supprimÈ (Sprint 3) -----------------
+  // RemplacÈ par getScrollY() / scrollToPosition() / scrollPageToTop()
+  // dans b-scroll-owner.js ó importÈ par chaque module JS concernÈ.
   // Stripe.js, analytics et libs tierces retrouvent window.scrollY natif.
 })();
 
-  /* ‚ïê‚ïê Proverbe africain rotatif ‚ïê‚ïê */
+  /* -- Proverbe africain rotatif -- */
   (function() {
     var proverbes = [
-      /* √∞≈∏≈í¬ç Afrique de l'Est / Swahili */
-      "¬´ Haba na haba hujaza kibaba. ¬ª ‚Äî Grain √† grain, on remplit la mesure. (Swahili)",
-      "¬´ Haraka haraka haina baraka. ¬ª ‚Äî La pr√©cipitation n'apporte pas de b√©n√©diction. (Swahili)",
-      "¬´ Akili ni nywele, kila mtu ana zake. ¬ª ‚Äî L'intelligence est comme les cheveux, chacun a les siennes. (Swahili)",
-      "¬´ Umoja ni nguvu, utengano ni udhaifu. ¬ª ‚Äî L'union est force, la division est faiblesse. (Swahili)",
-      "¬´ Asiyekuwepo na lake halipo. ¬ª ‚Äî Celui qui n'est pas l√†¬†, ses affaires n'avancent pas. (Swahili)",
-      "¬´ Mchagua jembe si mkulima. ¬ª ‚Äî Celui qui choisit sa houe n'est pas cultivateur. (Swahili)",
+      /* üåç Afrique de l'Est / Swahili */
+      "´ Haba na haba hujaza kibaba. ª ó Grain ‡ grain, on remplit la mesure. (Swahili)",
+      "´ Haraka haraka haina baraka. ª ó La prÈcipitation n'apporte pas de bÈnÈdiction. (Swahili)",
+      "´ Akili ni nywele, kila mtu ana zake. ª ó L'intelligence est comme les cheveux, chacun a les siennes. (Swahili)",
+      "´ Umoja ni nguvu, utengano ni udhaifu. ª ó L'union est force, la division est faiblesse. (Swahili)",
+      "´ Asiyekuwepo na lake halipo. ª ó Celui qui n'est pas l‡†, ses affaires n'avancent pas. (Swahili)",
+      "´ Mchagua jembe si mkulima. ª ó Celui qui choisit sa houe n'est pas cultivateur. (Swahili)",
 
-      /* √∞≈∏≈í¬ç Afrique de l'Ouest */
-      "¬´ Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble. ¬ª ‚Äî Proverbe africain",
-      "¬´ La for√™t serait silencieuse si aucun oiseau ne chantait que le mieux. ¬ª ‚Äî Proverbe africain",
-      "¬´ L'enfant qui n'est pas √©lev√© par son village br√ªlera ce village pour se r√©chauffer. ¬ª ‚Äî Proverbe africain",
-      "¬´ Jusqu'√† ce que le lion apprenne √† √©crire, les histoires de chasse glorifieront toujours le chasseur. ¬ª ‚Äî Proverbe africain",
-      "¬´ Une seule main ne peut pas applaudir. ¬ª ‚Äî Proverbe peul",
-      "¬´ La pluie ne tombe pas sur un seul toit. ¬ª ‚Äî Proverbe camerounais",
-      "¬´ Celui qui pose des questions ne se perd jamais. ¬ª ‚Äî Proverbe haoussa",
+      /* üåç Afrique de l'Ouest */
+      "´ Si tu veux aller vite, marche seul. Si tu veux aller loin, marche ensemble. ª ó Proverbe africain",
+      "´ La forÍt serait silencieuse si aucun oiseau ne chantait que le mieux. ª ó Proverbe africain",
+      "´ L'enfant qui n'est pas ÈlevÈ par son village br˚lera ce village pour se rÈchauffer. ª ó Proverbe africain",
+      "´ Jusqu'‡ ce que le lion apprenne ‡ Ècrire, les histoires de chasse glorifieront toujours le chasseur. ª ó Proverbe africain",
+      "´ Une seule main ne peut pas applaudir. ª ó Proverbe peul",
+      "´ La pluie ne tombe pas sur un seul toit. ª ó Proverbe camerounais",
+      "´ Celui qui pose des questions ne se perd jamais. ª ó Proverbe haoussa",
 
-      /* √∞≈∏≈í¬ç Afrique du Nord / Comores */
-      "¬´ Saba'u 'ilm ‚Äî walau il√¢ s-s√Æn. ¬ª ‚Äî Cherche le savoir, m√™me jusqu'en Chine. (Arabe / Islam)",
-      "¬´ Man sabara zafira. ¬ª ‚Äî Celui qui patiente r√©ussit. (Arabe)",
-      "¬´ Al-waqt ka-s-sayf, in lam taqta'hu qata'ak. ¬ª ‚Äî Le temps est comme une √©p√©e : si tu ne le coupes pas, il te coupe. (Arabe)",
+      /* üåç Afrique du Nord / Comores */
+      "´ Saba'u 'ilm ó walau il‚ s-sÓn. ª ó Cherche le savoir, mÍme jusqu'en Chine. (Arabe / Islam)",
+      "´ Man sabara zafira. ª ó Celui qui patiente rÈussit. (Arabe)",
+      "´ Al-waqt ka-s-sayf, in lam taqta'hu qata'ak. ª ó Le temps est comme une ÈpÈe : si tu ne le coupes pas, il te coupe. (Arabe)",
 
-      /* √∞≈∏≈í¬è Asie */
-      "¬´ Une crise est une occasion qui se pr√©sente √† cheval. ¬ª ‚Äî Proverbe chinois",
-      "¬´ La meilleure heure pour planter un arbre, c'√©tait il y a 20 ans. La deuxi√®me meilleure, c'est maintenant. ¬ª ‚Äî Proverbe chinois",
-      "¬´ Tombe sept fois, rel√®ve-toi huit. ¬ª ‚Äî Proverbe japonais (Nana korobi ya oki)",
-      "¬´ M√™me un voyage de mille lieues commence par un premier pas. ¬ª ‚Äî Lao Tseu",
-      "¬´ Mieux vaut allumer une bougie que maudire l'obscurit√©. ¬ª ‚Äî Proverbe chinois",
-      "¬´ L'eau qui coule doucement creuse la roche. ¬ª ‚Äî Proverbe japonais",
+      /* üåè Asie */
+      "´ Une crise est une occasion qui se prÈsente ‡ cheval. ª ó Proverbe chinois",
+      "´ La meilleure heure pour planter un arbre, c'Ètait il y a 20 ans. La deuxiËme meilleure, c'est maintenant. ª ó Proverbe chinois",
+      "´ Tombe sept fois, relËve-toi huit. ª ó Proverbe japonais (Nana korobi ya oki)",
+      "´ MÍme un voyage de mille lieues commence par un premier pas. ª ó Lao Tseu",
+      "´ Mieux vaut allumer une bougie que maudire l'obscuritÈ. ª ó Proverbe chinois",
+      "´ L'eau qui coule doucement creuse la roche. ª ó Proverbe japonais",
 
-      /* √∞≈∏≈í≈Ω Am√©riques / Europe */
-      "¬´ Vouloir, c'est pouvoir. ¬ª ‚Äî Proverbe latin",
-      "¬´ Chaque saint a son pass√©, chaque p√©cheur a son avenir. ¬ª ‚Äî Oscar Wilde",
-      "¬´ La vie, c'est ce qui arrive pendant qu'on fait d'autres projets. ¬ª ‚Äî John Lennon",
-      "¬´ Le bonheur n'est pas quelque chose de tout fait. Il vient de vos propres actions. ¬ª ‚Äî Dalai Lama",
+      /* üåé AmÈriques / Europe */
+      "´ Vouloir, c'est pouvoir. ª ó Proverbe latin",
+      "´ Chaque saint a son passÈ, chaque pÈcheur a son avenir. ª ó Oscar Wilde",
+      "´ La vie, c'est ce qui arrive pendant qu'on fait d'autres projets. ª ó John Lennon",
+      "´ Le bonheur n'est pas quelque chose de tout fait. Il vient de vos propres actions. ª ó Dalai Lama",
 
-      /* ‚ú® Citations inspirantes */
-      "¬´ Le succ√®s c'est d'aller d'√©chec en √©chec sans perdre son enthousiasme. ¬ª ‚Äî Churchill",
-      "¬´ Commence l√† o√π tu es. Utilise ce que tu as. Fais ce que tu peux. ¬ª ‚Äî Arthur Ashe",
-      "¬´ La seule fa√ßon de faire du bon travail, c'est d'aimer ce que vous faites. ¬ª ‚Äî Steve Jobs",
+      /* ? Citations inspirantes */
+      "´ Le succËs c'est d'aller d'Èchec en Èchec sans perdre son enthousiasme. ª ó Churchill",
+      "´ Commence l‡ o˘ tu es. Utilise ce que tu as. Fais ce que tu peux. ª ó Arthur Ashe",
+      "´ La seule faÁon de faire du bon travail, c'est d'aimer ce que vous faites. ª ó Steve Jobs",
     ];
     var el = document.getElementById('k-proverb-text');
     if (!el) return;
@@ -656,7 +656,7 @@ if('serviceWorker' in navigator){
     el.textContent = proverbes[idx];
   })();
 </script>
-<!-- ‚ö†Ô∏è DEV ONLY ‚Äî Donn√©es de test (supprimer en production) -->
+<!-- ?? DEV ONLY ó DonnÈes de test (supprimer en production) -->
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script src="/boutique/js/komerce-api.js?v=339"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
@@ -670,7 +670,7 @@ if('serviceWorker' in navigator){
      tabindex="-1"></a>
 
 </body>
-<!-- KOMERCE MOBILE FIX v8.0 ‚Äî inline setProperty important ‚Äî NOTHING overrides this -->
+<!-- KOMERCE MOBILE FIX v8.0 ó inline setProperty important ó NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
 
