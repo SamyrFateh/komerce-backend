@@ -1449,7 +1449,7 @@
 }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
-.k-modal-topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 10px; } /* VIS-5: gap 8→10 + padding-right 2→10 */
+.k-modal-topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 10px; } /* VIS-5: gap 8→10 + padding-right 2→10 pour éviter chevauchement badge/✕ */
 .k-modal-cart-btn {
   position: relative; width: auto; height: auto; border-radius: 0;
   background: transparent; border: none; cursor: pointer;
@@ -1457,7 +1457,7 @@
 }
 .k-modal-cart-btn .k-cart-avatar { width: 36px; height: 36px; mix-blend-mode: multiply; } /* FIX: était 52px → poussait la croix hors écran */
 .k-modal-cart-badge {
-  position: absolute; top: -4px; right: -4px; /* VIS-5 */
+  position: absolute; top: -4px; right: -4px; /* VIS-5: décalage -2→-4 pour sortir du gap topbar-right */
   min-width: 16px; height: 16px;
   background: var(--coral); color: var(--white);
   font-size: 10px; font-weight: 700; border-radius: 99px;
@@ -2084,7 +2084,7 @@
   /* FIX topbar overflow mobile : #k-modal-nav (← N/total →) est réservé desktop.
      Sans cette règle, les 5 éléments de la topbar dépassent sur écrans ≤390px
      et poussent la croix ✕ hors du cadre. */
-  #k-modal-nav { display: none; visibility: hidden; } /* VIS-4 */
+  #k-modal-nav { display: none; visibility: hidden; } /* VIS-4: visibility:hidden élimine le flash d'une frame avant résolution media query */
 
   /* Scroll owner mobile : flex colonne, prend tout l'espace disponible */
   #k-modal .k-modal-scroll {
@@ -2177,7 +2177,7 @@
   /* ── Topbar ──────────────────────────────────────────────── */
   #k-modal .k-modal-topbar { position: relative; top: auto; left: auto; right: auto; min-height: 58px; padding: 9px 18px; background: rgba(253,250,245,.97); border-bottom: 1px solid var(--border-text-08); box-shadow: 0 8px 24px var(--border-text-06); flex-shrink: 0; }
   #k-modal .k-modal-back { padding: 7px 12px; font-size: 13px; }
-  #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* VIS-4 restore */
+  #k-modal #k-modal-nav { display: flex; visibility: visible; margin-left: 10px; } /* restore après hide mobile (VIS-4) */
   #k-modal .k-modal-cart-btn .k-cart-avatar { width: 44px; height: 44px; mix-blend-mode: multiply; }
   .k-topbar-search-trigger { display: none; }
   #k-modal .k-topbar-search-expanded { display: none; }
