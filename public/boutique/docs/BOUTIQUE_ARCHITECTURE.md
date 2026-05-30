@@ -203,16 +203,3 @@ git diff boutique/docs/BOUTIQUE_ARCHITECTURE_LIVE.md   # diff de la photo réell
 
 Si `audit:arch` passe et que le diff de `LIVE` est cohérent avec l'intention de la PR,
 la PR est mergeable côté archi. Le visuel et le fonctionnel restent à valider à part.
-
-### I-7. Le bundle JS est toujours régénéré avant commit
-`npm run bundle:js` doit avoir tourné. `check:all` inclut `check:bundle`
-qui plante si `js/dist/` est désynchronisé avec `index.html`.
-
-### I-8. `komerce-api.js` reste hors bundle
-Script classique `window.K`, chargé via `<script src>` avant `main.js`.
-Ne pas fusionner dans le bundle sans PR dédiée refactorant la couche API.
-
-### I-9. Les `import()` dynamiques restent des chunks séparés
-Le flag `--splitting` d'esbuild garantit que les 25 imports dynamiques
-existants génèrent des chunks lazy. Ne pas les convertir en imports statiques
-sans justification explicite dans la PR.

@@ -89,7 +89,7 @@ function collectJsFiles(dir) {
     try { entries = fs.readdirSync(d, { withFileTypes: true }); }
     catch { return; }
     for (const entry of entries) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules' || entry.name === 'dist') continue;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
       const full = path.join(d, entry.name);
       if (entry.isDirectory()) { walk(full); continue; }
       if (entry.name.endsWith('.js')) results.push(full);
