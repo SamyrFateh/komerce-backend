@@ -1418,6 +1418,7 @@
 
 /* ── TOP BAR ─────────────────────────────────────────────────── */
 .k-modal-topbar {
+  box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que padding ne déborde jamais du viewport */
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 400;
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
@@ -1449,7 +1450,7 @@
 }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
-.k-modal-topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 10px; } /* VIS-5: gap 8→10 + padding-right 2→10 pour éviter chevauchement badge/✕ */
+.k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
 .k-modal-cart-btn {
   position: relative; width: auto; height: auto; border-radius: 0;
   background: transparent; border: none; cursor: pointer;
@@ -1474,13 +1475,10 @@
 
 /* ── SCROLL AREA (mobile : seul scroll owner) ────────────────── */
 .k-modal-scroll {
+  box-sizing: border-box; max-width: 100%; /* S2.1 */
   flex: 1; overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch; scrollbar-width: thin; min-height: 0;
   display: flex; flex-direction: column; padding-top: 0;
-  /* FIX Bug 2: padding-bottom ici crée un espace sous le sticky .k-modal-actions
-     → le contenu scrollait DERRIÈRE le bouton Acheter. On retire le padding
-     du scroll container et on le reporte sur .k-modal-suggestions pour
-     que le dernier élément reste visible au-dessus du safe-area. */
   padding-bottom: 0;
 }
 
@@ -1558,7 +1556,7 @@
    Pill semi-transparent injecté par b-modal-image-ux.js.
    Masqué sur desktop (le zoom loupe suffit). */
 .k-modal-view-full {
-  position: absolute; bottom: 28px; left: 10px; z-index: 3; /* BUGFIX: bottom:28px > 20px (margin-top:-20px de .k-modal-details z-index:2) → bouton hors zone de chevauchement */
+  position: absolute; bottom: 12px; left: 10px; z-index: 3; /* S2.3 — bottom revient à 12px ; était 28px pour éviter la zone de chevauchement margin-top:-20px, supprimée en S2.2 */
   display: flex; align-items: center; gap: 5px;
   padding: 4px 12px;
   background: var(--overlay-dark-md); color: var(--white);
@@ -1680,10 +1678,15 @@
 
 /* ── INFOS PRODUIT ───────────────────────────────────────────── */
 .k-modal-details {
+  /* S2.2 — suppression du margin-top:-20px (rustine qui propageait une cascade
+     de compensations : padding-top clamp(20px), bottom:28px sur .k-modal-view-full).
+     Le chevauchement visuel est désormais porté par border-radius + l'image qui
+     garde toute sa hauteur. Positionnement structurel, zéro valeur magique. */
+  box-sizing: border-box; max-width: 100%;
   flex: 0 0 auto; overflow: visible; min-height: 0;
   background: var(--white); border-radius: 20px 20px 0 0;
-  margin-top: -20px; position: relative; z-index: 2;
-  box-shadow: 0 -2px 16px var(--border-text-06);
+  margin-top: 0; position: relative; z-index: 2;
+  box-shadow: 0 -4px 20px var(--border-text-06);
 }
 .k-modal-promo-badge {
   display: none; position: absolute; top: 6px; left: 6px;
@@ -1691,7 +1694,7 @@
   font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
 }
 .k-modal-promo-badge.show { display: inline-block; }
-.k-modal-info { padding: clamp(20px, 5vw, 26px) 12px 12px; display: flex; flex-direction: column; } /* VIS-3B — était 12px partout ; top ≥ 20px pour compenser margin-top:-20px de .k-modal-details */
+.k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
   line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
@@ -1836,22 +1839,12 @@
 
 /* ── ACTIONS (mobile : sticky bas, flex-shrink:0) ────────────── */
 .k-modal-actions {
+  box-sizing: border-box; max-width: 100%; /* S2.1 — garantit que la barre CTA ne déborde jamais */
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px)); /* VIS-3C — fallback 12px : Android safe-area-inset-bottom=0 mais barre nav peut quand même déborder */
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px));
   border-top: 1px solid var(--sand-dark);
   flex-shrink: 0;
-  /* FIX scroll qui traverse le bouton Acheter mobile :
-     1. Fond passé de var(--surface-white-96) → opaque pur. Le backdrop-filter
-        n'était pas appliqué de façon fiable sur Samsung Internet et Chrome
-        Android ancien quand l'élément est position:sticky dans un scrollable
-        → on voyait le contenu derrière transparaître.
-     2. touch-action: none sur le conteneur empêche le navigateur de
-        traduire un drag vertical en scroll du parent .k-modal-scroll
-        (= "scroll qui traverse"). Les boutons enfants gardent leur propre
-        touch-action et restent cliquables/tappables normalement.
-     3. pointer-events: auto explicite : aucun ancêtre ne pose none, mais
-        on est défensif. */
   background: var(--white);
   touch-action: none;
   pointer-events: auto;
