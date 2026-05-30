@@ -728,12 +728,12 @@ function renderEmpty(el) {
       <span>Créez-en un depuis votre panier avec "Payer en groupe".</span>
     </div>`;
 }
-function renderError(el) {
+function renderError(el, msg = 'Ce lien est peut-être expiré ou invalide.') {
   el.innerHTML = `
     <div class="k-group-empty">
       <div class="k-group-empty-icon">❌</div>
       <strong>Panier introuvable</strong>
-      <span>Ce lien est peut-être expiré ou invalide.</span>
+      <span>${msg}</span>
     </div>`;
 }
 
@@ -761,6 +761,16 @@ export async function renderGroupView(opts = {}) {
     const data = await getSharedCartPublic(participantToken);
 
     if (!data?.cart) { clearParticipantToken(); renderError(el); return; }
+    if (data.cart.status === 'cancelled') {
+      clearParticipantToken();
+      renderError(el, 'Ce panier a été annulé par son créateur.');
+      return;
+    }
+    if (data.cart.status === 'expired') {
+      clearParticipantToken();
+      renderError(el, 'Ce panier a expiré.');
+      return;
+    }
     const cart  = data.cart;
     const items = data.items || [];
     const total = r(cart.total_kmf_snapshot);
