@@ -734,3 +734,99 @@
   /* Card fav opacity — source de vérité : boutique-desktop.css */
 
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   CARTE PRODUIT DESKTOP — owner unique : products.css
+   Migré depuis : boutique-desktop.css (18), desktop-commerce-skeleton.css (2)
+   Sprint 4 — S4.3
+   ══════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   3. CARD HOVER — bouton fav + bouton panier
+   Overlay JS désactivé : plus de voile vert.
+   Le hover CSS natif (translateY + shadow) suffit.
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  .k-card { position: relative; }
+
+  /* Fav natif : masqué par défaut, révélé au hover, toujours visible si liké */
+  .k-card-fav { opacity: 0; }
+  .k-card:hover .k-card-fav { opacity: 1; }
+  .k-card-fav.liked { opacity: 1; }
+
+  /* ── BOUTON PANIER desktop : taille réduite + stepper compact ───────── */
+  /* Override de la taille mobile (32px) : plus discret sur desktop.       */
+  .k-card-add {
+    width: 26px;
+    height: 26px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  /* Stepper − qty + : plus compact sur desktop (mobile = 68-86px).
+     Surchargé depuis products.css @900px (100px → 80px).                */
+  .k-card-add.in-cart {
+    width: 80px;
+    height: 28px;
+    border-radius: 18px;
+    background-color: var(--white);
+    box-shadow: var(--elev-2);
+  }
+
+  .k-card-add.in-cart .k-add-minus,
+  .k-card-add.in-cart .k-add-plus-ic {
+    flex: 0 0 22px;
+    font-size: 16px;
+  }
+
+  .k-card-add.in-cart .k-add-qty {
+    font-size: 12px;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   6. ANIMATION ENTRÉE CARTES — stagger Temu-style
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  .k-card {
+    animation: k-card-in .22s var(--ease) both;
+  }
+
+  @keyframes k-card-in {
+    from { opacity: 0; transform: translateY(16px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);   }
+  }
+
+  .k-card:nth-child(1)  { animation-delay: .02s; }
+  .k-card:nth-child(2)  { animation-delay: .04s; }
+  .k-card:nth-child(3)  { animation-delay: .06s; }
+  .k-card:nth-child(4)  { animation-delay: .08s; }
+  .k-card:nth-child(5)  { animation-delay: .10s; }
+  .k-card:nth-child(6)  { animation-delay: .12s; }
+  .k-card:nth-child(7)  { animation-delay: .14s; }
+  .k-card:nth-child(8)  { animation-delay: .16s; }
+  .k-card:nth-child(9)  { animation-delay: .18s; }
+  .k-card:nth-child(10) { animation-delay: .20s; }
+
+  .k-card:hover { transform: translateY(-1px); }
+}
+
+
+
+/* Carte produit — look glass desktop (PALETTE-FIX-01, ex desktop-commerce-skeleton.css) */
+@media (min-width: 900px) {
+  /* PALETTE-FIX-01 : ocean au lieu de rgba(42,62,44,…) / rgba(31,48,36,…) */
+  .k-card {
+    border-radius: 18px;
+    border: 1px solid rgba(100,175,90, .08);
+    background: var(--white);
+    box-shadow: 0 5px 16px rgba(100,175,90, .05);
+  }
+
+  .k-card:hover {
+    border-color: rgba(198,168,93,.32);
+    box-shadow: 0 12px 28px rgba(100,175,90, .10);
+  }
+}

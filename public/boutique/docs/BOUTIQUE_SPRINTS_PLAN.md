@@ -77,9 +77,18 @@ D'où l'ordre ci-dessous.
 
 > Attaquer dans l'ordre du risque décroissant vu sur la carte.
 
-- [ ] **S4.1 — Header** (5 fichiers → 1) : `.k-header*` doit vivre dans UN fichier. Aujourd'hui éclaté entre hero-cart-proxy, layout, desktop-skeleton, hero, tokens. Décider l'owner (probablement `layout.css`) et rapatrier.
-- [ ] **S4.2 — Chips** (4 fichiers → 1) : `categories.css` possède 33 sélecteurs, c'est l'owner naturel. Rapatrier les 11 de boutique-desktop + les 2+2 de interactions/layout.
-- [ ] **S4.3 — Carte produit** (4 → 1) : `products.css` est owner désigné par la doc. Rapatrier boutique-desktop (18 !), desktop-skeleton, layout.
+- [x] **S4.1 — Header** (5 fichiers → layout.css) ✅ `30/05/2026`
+  - `k-header*` rapatrié dans `layout.css` depuis hero-cart-proxy (11), boutique-desktop (9), desktop-skeleton (7)
+  - `hero-cart-proxy.css` réduit aux seules règles `k-hero-bubble`
+  - Owners : 5 → 3 (hero.css = commentaire, tokens.css = variable `--header-h`, non déplaçables)
+- [x] **S4.2 — Chips** (4 fichiers → categories.css) ✅ `30/05/2026`
+  - Section CARTES VISUELLES + fonds subchip migrés depuis `boutique-desktop.css`
+  - Animation `k-chip-pulse` + `.k-chip.transitioning` migrés depuis `interactions.css`
+  - Owners : 4 → 3 (layout.css = 2 commentaires-redirects, interactions.css = 1 ref `prefers-reduced-motion`)
+- [x] **S4.3 — Carte produit** (4 fichiers → products.css) ✅ `30/05/2026`
+  - CARD HOVER + ANIMATION ENTRÉE CARTES migrés depuis `boutique-desktop.css`
+  - `.k-card` glass-effect PALETTE-FIX-01 migré depuis `desktop-commerce-skeleton.css`
+  - 4 sélecteurs restants dans boutique-desktop = utilitaires focus/tap-highlight cross-composant (légitimes)
 - [ ] **S4.4 — Grille** (4 → 1) : idem vers `products.css`.
 - [ ] **S4.5 — Modal** (4 → 1) : rapatrier vers `modal.css` les sélecteurs de interactions, desktop-skeleton, boutique-desktop.
 - [ ] **S4.6** — Régénérer `audit:ownership` après chaque sous-étape : la colonne "Owners" doit tomber à 1.
@@ -110,12 +119,12 @@ D'où l'ordre ci-dessous.
 
 ## Tableau de progression (régénéré par `npm run audit:ownership`)
 
-| Indicateur | Départ (30/05) | Après S1-2 | Après S4 | Cible |
+| Indicateur | Départ (30/05) | Après S4.1-4.3 | Après S4 | Cible |
 |------------|:---:|:---:|:---:|:---:|
 | Multipropriété CSS | 8 | 8 | 0 | 0 |
 | Modules JS DOM | 39 | 39 | 39 | ≤ 5 |
-| Breakpoints distincts | 20 | ~16 | ~10 | ≤ 2 |
-| Violations breakpoint | 35 | ~28 | ~20 | 0 |
+| Breakpoints distincts | 20 | ~18 | ~10 | ≤ 2 |
+| Violations breakpoint | 35 | ~32 | ~20 | 0 |
 | `!important` | 35 | 35 | 35 | < 5 |
 
 > Après chaque sprint : `npm run audit:ownership` met à jour `BOUTIQUE_OWNERSHIP_LIVE.md`. Reporter les chiffres ici. La carte ne ment pas — c'est votre preuve de progrès.

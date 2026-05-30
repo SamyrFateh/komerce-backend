@@ -1,112 +1,23 @@
 /**
- * @component Boutique / Mobile Header Cart Avatar
+ * @component Boutique / Hero Cart Proxy
  * @owner hero-cart-proxy.css
  *
- * Historical mobile pattern:
- * - left side: logo/crescent marker
- * - center: search
- * - right side: real cart button with the cart lady avatar
- *
- * The cart lady belongs to #k-cart-btn in the header, not to .k-hero-bubble.
+ * Masque le hero-bubble expérimental sur mobile et desktop.
+ * Les règles k-header* ont été migrées vers layout.css (Sprint 4 — S4.1).
  */
 
+/* Mobile : tue la bulle hero-cart-proxy */
 @media (max-width: 899px) {
-  /* Kill the hero-bubble experiment completely on mobile. */
   .k-hero-bubble,
   .k-hero-bubble.k-hero-cart-proxy {
-    display: none;
-  }
-
-  /* Restore the real header cart button as the right-side cart lady. */
-  .k-header-actions {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 0;
-    visibility: visible;
-    opacity: 1;
-  }
-
-  .k-header .k-cart-btn,
-  .k-cart-btn.k-header-action,
-  .k-header .k-cart-btn.is-empty,
-  .k-cart-btn.k-header-action.is-empty,
-  .k-header .k-cart-btn.hidden,
-  .k-cart-btn.k-header-action.hidden {
-    display: flex;
-    visibility: visible;
-    opacity: 1;
-    width: 42px;
-    height: 42px;
-    margin-left: 2px;
-    margin-right: -2px;
-    padding: 0;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    overflow: visible;
-    pointer-events: auto;
-  }
-
-  .k-header .k-cart-avatar,
-  .k-cart-btn.k-header-action .k-cart-avatar,
-  .k-header .k-cart-btn.is-empty .k-cart-avatar,
-  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
-  .k-header .k-cart-btn.hidden .k-cart-avatar,
-  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
-    display: block;
-    visibility: visible;
-    opacity: 1;
-    width: 44px;
-    height: 50px;
-    object-fit: contain;
-    object-position: center bottom;
-    border: 0;
-    box-shadow: none;
-    background: transparent;
-    mix-blend-mode: multiply;
-    margin-top: -10px;
-    margin-bottom: -2px;
-  }
-
-  .k-header .k-cart-badge,
-  .k-cart-btn.k-header-action .k-cart-badge {
-    top: 0;
-    right: -1px;
-    min-width: 18px;
-    height: 18px;
-    font-size: 9px;
-    border-width: 2px;
-    z-index: 20;
-  }
-
-  /* Empty cart: hide only the badge, never the avatar. */
-  .k-header .k-cart-btn.is-empty .k-cart-badge,
-  .k-cart-btn.k-header-action.is-empty .k-cart-badge,
-  .k-header .k-cart-badge:not(.show),
-  .k-cart-btn.k-header-action .k-cart-badge:not(.show) {
     display: none;
   }
 }
 
+/* Desktop : idem */
 @media (min-width: 900px) {
   .k-hero-bubble,
   .k-hero-bubble.k-hero-cart-proxy {
     display: none;
-  }
-
-  /* Filet de sécurité desktop : l'avatar dame est toujours visible. */
-  .k-header .k-cart-btn,
-  .k-cart-btn.k-header-action {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  .k-header .k-cart-avatar {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
   }
 }
