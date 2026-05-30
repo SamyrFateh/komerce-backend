@@ -8,7 +8,7 @@
  */
 
 import { bus } from './b-bus.js';
-import { state } from './b-store.js';
+import { state, modalZone } from './b-store.js'; // S5 — hook DOM centralisé
 import { fmtPrice } from './b-utils.js';
 import { isDesktop } from './b-scroll-owner.js';
 import { closeModal } from './b-modal.js';
@@ -374,7 +374,7 @@ function ensureIntentQty() {
   const qtyVal = document.getElementById('k-qty-val');
   if (qtyVal && Number(qtyVal.textContent || 0) < 1) qtyVal.textContent = '1';
 
-  const subtotal = document.querySelector('.k-modal-subtotal');
+  const subtotal = modalZone('.k-modal-subtotal');
   if (subtotal && state.modalProduct.price_kmf) {
     clearNode(subtotal);
     appendText(subtotal, 'Sous-total : ');
@@ -406,9 +406,9 @@ function installQtyGuard() {
 }
 
 function moveActionsAfterDelivery() {
-  const info = document.querySelector('#k-modal .k-modal-info');
+  const info = modalZone('.k-modal-info');
   const delivery = document.getElementById('k-modal-delivery');
-  const actions = document.querySelector('#k-modal .k-modal-actions');
+  const actions = modalZone('.k-modal-actions');
   if (!info || !delivery || !actions) return;
 
   if (!_actionsHome && actions.parentElement) {
@@ -423,7 +423,7 @@ function moveActionsAfterDelivery() {
 }
 
 function restoreActionsHome() {
-  const actions = document.querySelector('#k-modal .k-modal-actions');
+  const actions = modalZone('.k-modal-actions');
   if (!actions || !_actionsHome || !_actionsHome.parent) return;
 
   actions.classList.remove('k-buybox-actions-inline');

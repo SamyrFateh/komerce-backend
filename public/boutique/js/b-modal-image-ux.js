@@ -22,8 +22,9 @@
  * Dépendances : b-bus.js, b-store.js
  */
 
-import { bus }   from './b-bus.js';
-import { state } from './b-store.js';
+import { bus }        from './b-bus.js';
+import { state }      from './b-store.js';
+import { modalZone }  from './b-store.js';           // S5 — hook DOM centralisé
 
 'use strict';
 
@@ -44,9 +45,9 @@ let _installed   = false;
 // ═══════════════════════════════════════════════════════════════
 
 function _getSlides() {
-  return Array.from(
-    document.querySelectorAll('.k-modal-carousel-track .k-modal-slide')
-  );
+  var track = modalZone('.k-modal-carousel-track');
+  if (!track) return [];
+  return Array.from(track.querySelectorAll('.k-modal-slide'));
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -54,19 +55,19 @@ function _getSlides() {
 // ═══════════════════════════════════════════════════════════════
 
 function _refreshCounter(idx) {
-  var counterEl = document.querySelector('.k-modal-counter');
+  var counterEl = modalZone('.k-modal-counter');
   if (!counterEl) return;
   var total = _fsImages.length;
   if (total > COUNTER_THRESHOLD) {
     counterEl.textContent = (idx + 1) + '\u202f/\u202f' + total;
     counterEl.classList.add('is-visible');
     // Masquer les dots — illisibles quand il y en a > 5
-    var dots = document.querySelector('.k-modal-dots');
+    var dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = 'none';
   } else {
     counterEl.classList.remove('is-visible');
     // Réafficher les dots si on revient sur un produit avec peu d'images
-    var dots = document.querySelector('.k-modal-dots');
+    var dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = '';
   }
 }
@@ -76,7 +77,7 @@ function _refreshCounter(idx) {
 // ═══════════════════════════════════════════════════════════════
 
 function _injectViewFullBtn() {
-  var imgWrap = document.querySelector('.k-modal-img-wrap');
+  var imgWrap = modalZone('.k-modal-img-wrap');
   if (!imgWrap) return;
 
   // Éviter les doublons à chaque ouverture
@@ -190,7 +191,7 @@ function _setupFsHandlers() {
 // ═══════════════════════════════════════════════════════════════
 
 function _setupCarouselTap() {
-  var carousel = document.querySelector('.k-modal-carousel');
+  var carousel = modalZone('.k-modal-carousel');
   if (!carousel) return;
   // cursor:zoom-in piloté par CSS sur mobile ; pas de cursor sur desktop
   // (le zoom loupe est géré par setupZoom dans b-modal-desktop-enhancers.js)

@@ -331,3 +331,75 @@ Si tu modifies boutique-wow.css, considère-le comme temporaire et prépare la m
 N'ajoute jamais de règle .k-chip, .k-cats-shell ou .k-cats dans desktop-commerce-skeleton.css — boutique-desktop.css en est le seul propriétaire.
 N'ajoute jamais de règle .k-grid ou .k-card de base hors de products.css.
 ```
+
+---
+
+## Contrat DOM modal — 3 owners (Sprint 5)
+
+> Ajouté le 30/05/2026 — source : `docs/BOUTIQUE_SPRINTS_PLAN.md` S5.1
+
+La modal produit est découpée en **3 zones de responsabilité DOM** :
+
+### `core` — `b-modal-core.js`
+Propriétaire du shell modal, du cycle de vie et des zones structurelles.
+
+Zones DOM owned :
+- `#k-modal-overlay` — overlay + état `open`
+- `#k-modal` — root modal
+- `.k-modal-topbar` — barre de navigation haut
+- `.k-modal-img-wrap` + `.k-modal-carousel` + `.k-modal-carousel-track` — zone image
+- `.k-modal-scroll` — conteneur scrollable
+- `.k-modal-product-zone` — grille desktop image/détails
+- Historique navigateur (`history.pushState`, `popstate`)
+- `body.modal-open`, `body.modal-has-cart`
+
+Interdictions : ne pas écrire dans `.k-modal-info`, `.k-modal-meta`, `.k-modal-actions` directement (passer par les événements bus).
+
+### `product` — `b-modal-product.js`
+Propriétaire du contenu fiche produit.
+
+Zones DOM owned :
+- `.k-modal-info` — section détails textuels
+- `.k-modal-meta` — ligne social proof (rank, sold, rating)
+- `.k-modal-actions` — boutons Ajouter/Acheter
+- `.k-modal-details` — zone détails (description, variantes)
+- Carousel slides (`buildCarouselSlides`)
+
+Interdictions : ne pas piloter l'ouverture/fermeture, ne pas écrire dans `.k-modal-topbar`.
+
+### `nav` — `b-modal-nav.js`
+Propriétaire de la navigation entre produits.
+
+Zones DOM owned :
+- Flèches `#k-modal-prev` / `#k-modal-next`
+- Position counter dans la liste filtrée
+
+Interdictions : ne pas accéder au contenu produit, ne pas ouvrir/fermer l'overlay.
+
+---
+
+### Hook partagé : `modalZone(selector)`
+
+```js
+import { modalZone } from './b-store.js';
+const info = modalZone('.k-modal-info'); // null-safe, scoped à dom.modal
+```
+
+Tous les enhancers (`b-modal-desktop-enhancers`, `b-modal-image-ux`, `b-modal-social-proof`, `b-modal-suggestions`, `b-modal-approche-c-hybrid`) **doivent** passer par ce hook au lieu de faire leurs propres `querySelector` sur le document ou `dom.modal`. Ce hook est défini dans `b-store.js` pour éviter les cycles d'import.
+
+**Zones officielles (contrat S5) :**
+
+| Sélecteur | Owner | Notes |
+|-----------|-------|-------|
+| `.k-modal-img-wrap` | core | zone image principale |
+| `.k-modal-topbar` | core | barre navigation haut |
+| `.k-modal-carousel` | core | carousel wrapper |
+| `.k-modal-carousel-track` | core | piste du carousel |
+| `.k-modal-scroll` | core | conteneur scroll |
+| `.k-modal-product-zone` | core | grille desktop |
+| `.k-modal-info` | product | section texte/détails |
+| `.k-modal-meta` | product | social proof |
+| `.k-modal-actions` | product | CTA achat |
+| `.k-modal-subtotal` | product | sous-total desktop |
+
+**Exception :** `.k-modal-fullscreen` est appended sur `document.body` (pas dans `dom.modal`) → utiliser `document.querySelector('.k-modal-fullscreen')` directement.

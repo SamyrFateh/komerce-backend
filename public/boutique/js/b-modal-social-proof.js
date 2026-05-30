@@ -17,8 +17,9 @@
  * À appeler depuis bus.on('modal:opened') dans le bootstrap.
  */
 
-import { bus }   from './b-bus.js';
-import { state } from './b-store.js';
+import { bus }       from './b-bus.js';
+import { state }     from './b-store.js';
+import { modalZone } from './b-store.js';           // S5 — hook DOM centralisé
 
 'use strict';
 
@@ -39,7 +40,7 @@ function _fmtCount(n) {
 // ═══════════════════════════════════════════════════════════════
 
 function injectSocialProof() {
-  var meta = document.querySelector('.k-modal-meta');
+  var meta = modalZone('.k-modal-meta');
   if (!meta) return;
 
   var product = state.modalProduct;

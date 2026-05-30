@@ -23,7 +23,7 @@
  */
 
 import { bus }                            from './b-bus.js';
-import { state, dom }                     from './b-store.js';
+import { state, dom, modalZone }           from './b-store.js'; // S5 — hook DOM centralisé
 import { sanitize, fmtPrice, optimizeImgUrl } from './b-utils.js';
 import { isDesktop }                      from './b-scroll-owner.js';
 import { addToCart, quickAdd, quickRemove } from './b-cart.js';
@@ -46,8 +46,8 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
       sugSection.classList.toggle('k-modal-suggestions--desktop-list', _isDesktop);
       // Desktop: ensure suggestions are a direct child of .k-modal-scroll (after product-zone)
       if (_isDesktop) {
-        const scroll = dom.modal.querySelector('.k-modal-scroll');
-        const productZone = dom.modal.querySelector('.k-modal-product-zone');
+        const scroll = modalZone('.k-modal-scroll');
+        const productZone = modalZone('.k-modal-product-zone');
         if (scroll && productZone && sugSection.parentElement !== scroll) {
           scroll.appendChild(sugSection);
         }
@@ -229,7 +229,7 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 
     // ── Modal infini : auto-advance subcats quand fin de scroll ──
     if (window.innerWidth < 900) {
-      var _mScrollEl = document.querySelector('.k-modal-scroll');
+      var _mScrollEl = modalZone('.k-modal-scroll');
       if (_mScrollEl) {
         if (_mScrollEl._sugInfinite) {
           _mScrollEl.removeEventListener('scrollend', _mScrollEl._sugInfinite);

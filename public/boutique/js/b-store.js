@@ -148,6 +148,18 @@ export const scroll = {
 export const dom = {};
 
 /**
+ * @hook modalZone(selector)
+ * @brief Lookup scopé au root #k-modal — évite que chaque enhancer fasse
+ *   son propre `dom.modal ? dom.modal.querySelector(...) : null`.
+ *   Zones : .k-modal-img-wrap, .k-modal-topbar, .k-modal-info, .k-modal-actions,
+ *           .k-modal-scroll, .k-modal-meta, .k-modal-carousel[-track], .k-modal-product-zone
+ * Usage : import { modalZone } from './b-store.js';
+ */
+export function modalZone(selector) {
+  return dom.modal ? dom.modal.querySelector(selector) : null;
+}
+
+/**
  * Setter léger — mutation d'état + bus, SANS renderGrid().
  *
  * Réservé aux contextes scroll où le pager gère déjà l'affichage :

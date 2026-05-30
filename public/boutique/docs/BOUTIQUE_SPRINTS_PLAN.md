@@ -108,9 +108,9 @@ D'où l'ordre ci-dessous.
 
 ## SPRINT 5 — Contrat DOM (réduit les 39 modules) 🔴
 
-- [ ] **S5.1** — Définir 3 owners DOM du modal : `core` (shell), `product` (contenu), `nav` (navigation). Documenter dans `BOUTIQUE_COMPONENT_OWNERSHIP.md`.
-- [ ] **S5.2** — `enhancers`, `hybrid`, `image-ux`, `social-proof`, `suggestions` : exposer des hooks depuis core/product au lieu de `querySelector + appendChild` direct.
-- [ ] **S5.3** — Supprimer le dead import `b-greeting` dans main.js (importé, jamais appelé).
+- [x] **S5.1** — 3 owners DOM modal documentés (`core`, `product`, `nav`) dans `BOUTIQUE_COMPONENT_OWNERSHIP.md`. ✅ `30/05/2026`
+- [x] **S5.2** — Hook `modalZone(selector)` ajouté dans `b-store.js` (sans cycle). Migré dans `b-modal-desktop-enhancers`, `b-modal-image-ux`, `b-modal-social-proof`, `b-modal-suggestions`, `b-modal-approche-c-hybrid`. ✅ `30/05/2026`
+- [x] **S5.3** — `b-greeting` est importé ET appelé (`greetIfKnown()` dans `setupBoutiqueRuntime`). Déjà corrigé avant ce sprint — rien à faire. ✅
 
 **Sortie attendue** : score "Modules JS écrivant le DOM" baisse nettement.
 

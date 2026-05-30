@@ -23,6 +23,7 @@ import { state, dom }           from './b-store.js';
 import { fmtPrice }             from './b-utils.js';
 import { showToast }            from './b-cart-core.js';
 import { openModal }            from './b-modal.js';
+import { modalZone }            from './b-store.js';           // S5 — hook DOM centralisé
 import { setActiveCat }         from './b-catalog.js';
 import { normalizeCategoryKey } from './shop-schema.js';
 import { isDesktop }            from './b-scroll-owner.js';
@@ -42,7 +43,7 @@ let _zoomPreview = null;
 function setupZoom() {
   if (!isDesktop()) return;
 
-  var imgWrap = dom.modal ? dom.modal.querySelector('.k-modal-img-wrap') : null;
+  var imgWrap = modalZone('.k-modal-img-wrap');
   if (!imgWrap) return;
 
   var carousel = imgWrap.querySelector('.k-modal-carousel');
@@ -121,7 +122,7 @@ function _onZoomLeave() {
 
 function injectBreadcrumb() {
   if (!isDesktop()) return;
-  var topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
+  var topbar = modalZone('.k-modal-topbar');
   if (!topbar) return;
   var product = state.modalProduct;
   if (!product) return;
@@ -169,7 +170,7 @@ function injectBreadcrumb() {
 
 function injectShareRow() {
   if (!isDesktop()) return;
-  var info = dom.modal ? dom.modal.querySelector('.k-modal-info') : null;
+  var info = modalZone('.k-modal-info');
   if (!info) return;
   var product = state.modalProduct;
   if (!product) return;
@@ -215,7 +216,7 @@ function injectShareRow() {
 
 function injectSpecs() {
   if (!isDesktop()) return;
-  var info = dom.modal ? dom.modal.querySelector('.k-modal-info') : null;
+  var info = modalZone('.k-modal-info');
   if (!info) return;
   var product = state.modalProduct;
   if (!product) return;
@@ -268,7 +269,7 @@ function injectSpecs() {
 
 function injectTrustBadges() {
   if (!isDesktop()) return;
-  var info = dom.modal ? dom.modal.querySelector('.k-modal-info') : null;
+  var info = modalZone('.k-modal-info');
   if (!info) return;
 
   var old = info.querySelector('.k-modal-trust');
@@ -538,7 +539,7 @@ function injectPayment() {
 
 function updateSubtotal() {
   // Visible sur mobile ET desktop : sous-total dynamique dans les actions modal
-  var actions = dom.modal ? dom.modal.querySelector('.k-modal-actions') : null;
+  var actions = modalZone('.k-modal-actions');
   if (!actions) return;
   var product = state.modalProduct;
   if (!product) return;
@@ -567,7 +568,7 @@ function updateSubtotal() {
  */
 function injectRecentlyViewed() {
   if (!isDesktop()) return;
-  var scrollEl = dom.modal ? dom.modal.querySelector('.k-modal-scroll') : null;
+  var scrollEl = modalZone('.k-modal-scroll');
   if (!scrollEl) return;
   var product = state.modalProduct;
   if (!product) return;

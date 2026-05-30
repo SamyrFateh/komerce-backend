@@ -1287,6 +1287,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
 
 // setupImageZoneTouch est ré-exporté par la façade b-modal.js (surface publique inchangée).
+
+// modalZone() → b-store.js (S5 — évite les cycles core ↔ enhancers)
 export {
   openModal, closeModal, modalGoBack, setupModal,
   setupImageZoneTouch,
