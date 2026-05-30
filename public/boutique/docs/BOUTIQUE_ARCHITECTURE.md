@@ -42,6 +42,25 @@ mobile-critique (voir §4).
 Liste verrouillée : `--pager-top`, `--pager-h`, `--pager-w`, `--bnav-h`, `--modal-scroll-y`.
 Posées exclusivement via `element.style.setProperty()` depuis le JS owner déclaré au §5.
 
+### I-7. La dette structurelle ne peut que décroître (cliquet)
+Deux compteurs sont gelés dans une baseline et ne peuvent **jamais augmenter** :
+
+1. **Breakpoints hors charte** — tout `@media` doit cibler `900px` (desktop) ou `1200px` (large).
+   Tout autre breakpoint (`480`, `600`, `768`…) est une violation. Baseline :
+   `scripts/.breakpoints-baseline.json`. Vérifié par `npm run check:breakpoints`.
+2. **Exceptions multi-owner** — la liste `allowedAlso` / scopes multiples de
+   `scripts/audit-boutique-arch.js` (I-2) est une **dette à rembourser**, pas un débarras.
+   On ne peut pas y ajouter une entrée pour faire taire `audit:arch` : il faut résoudre
+   le conflit (rapatrier le sélecteur chez son owner unique).
+
+**Pourquoi cet invariant existe** : sans lui, I-2 et I-5 se contournent en ajoutant des
+exceptions. Le build reste vert pendant que le contrôle réel se dégrade (cas observé au
+30/05/2026 : 29 exceptions multi-owner, 35 breakpoints hors charte, alors qu'`audit:arch`
+était vert). I-7 transforme ces listes en cliquet : elles ne tournent que vers 0.
+
+**Quand on résout une violation** : régénérer la baseline avec `npm run check:breakpoints:save`
+pour verrouiller le gain — on ne pourra plus jamais remonter au-dessus du nouveau compte.
+
 ---
 
 ## 2. Inventaire CSS — statut attendu

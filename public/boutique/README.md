@@ -63,9 +63,11 @@ boutique/
 
 **Si tu modifies du CSS Boutique**, lis aussi :
 - [`docs/BOUTIQUE_CSS_PIPELINE.md`](docs/BOUTIQUE_CSS_PIPELINE.md) — pipeline source → bundle → dist
-- [`docs/BOUTIQUE_MODAL_ARCHITECTURE.md`](docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1813 lignes, 7 sections)
+- [`docs/BOUTIQUE_MODAL_ARCHITECTURE.md`](docs/BOUTIQUE_MODAL_ARCHITECTURE.md) si tu touches `modal.css` (1916 lignes, 7 sections)
 - [`docs/MODAL_MOBILE_ARCHITECTURE.md`](docs/MODAL_MOBILE_ARCHITECTURE.md) si tu touches le modal mobile (GEL — 13 invariants)
 - [`docs/MODAL_DESKTOP_ARCHITECTURE.md`](docs/MODAL_DESKTOP_ARCHITECTURE.md) si tu touches le modal desktop (5 PR M1-M5 livrées — chantier clôturé)
+
+> ⚠️ **Le modal JS est éclaté (ARCH-2 livré).** `b-modal.js` n'est qu'une **façade** qui ré-exporte. La logique réelle vit dans **`b-modal-core.js`** (cycle/overlay/scroll), **`b-modal-product.js`** (fiche), **`b-modal-nav.js`** (navigation), **`b-modal-cart.js`** (panier), **`b-modal-suggestions.js`** (rail). Ne cherche pas la logique modal dans `b-modal.js` — édite le bon sous-module. La carte exacte "qui touche le DOM modal" est dans **`docs/BOUTIQUE_OWNERSHIP_LIVE.md`** (généré).
 
 ---
 
@@ -81,6 +83,7 @@ Détail dans `docs/BOUTIQUE_ARCHITECTURE.md` §1. Validés automatiquement par `
 | I-4 | Aucun pattern `var(--token)xxx` (résidu de migration cassée) |
 | I-5 | Toute modif desktop sous `@media (min-width: 900px)` |
 | I-6 | Variables CSS owned par JS jamais posées par CSS (`--pager-top`, `--bnav-h`, etc.) |
+| I-7 | **La dette ne peut que décroître** : nb de breakpoints hors 900/1200 et nb d'exceptions multi-owner ≤ baseline gelée (jamais d'ajout) |
 
 ---
 
@@ -97,7 +100,9 @@ Tous lancés depuis `boutique/` (`cd boutique && npm run ...`). Aucune config ex
 | `npm run check:imports` | Imports JS : existence, cycles, dead exports |
 | `npm run check:body-classes` | Chaque `classList.add` body a son `remove` |
 | `npm run check:cache` | `?v=N` dans `index.html` synchro avec les bundles CSS |
-| `npm run check:all` | Enchaîne les 4 garde-fous — à lancer avant tout commit |
+| `npm run check:breakpoints` | **Garde-fou I-7** : aucun breakpoint hors 900/1200 ajouté vs baseline |
+| `npm run audit:ownership` | Régénère `docs/BOUTIQUE_OWNERSHIP_LIVE.md` (carte qui-touche-quoi, depuis le code) |
+| `npm run check:all` | Enchaîne tous les garde-fous — à lancer avant tout commit |
 
 ---
 
@@ -160,7 +165,12 @@ boutique/
 │
 ├── js/
 │   ├── boutique.js         # orchestrateur principal
-│   ├── b-modal.js          # modal produit
+│   ├── b-modal.js          # ⚠️ FAÇADE PURE (ré-exporte, 0 logique) — voir note ci-dessous
+│   ├── b-modal-core.js     # modal : cycle open/close, overlay, scroll-lock, carousel, zoom
+│   ├── b-modal-product.js  # modal : rendu fiche (prix, images, variants, trust/delivery mobile)
+│   ├── b-modal-nav.js      # modal : navigation prev/next, retour catalogue, historique
+│   ├── b-modal-cart.js     # modal : stepper qty + ajout panier
+│   ├── b-modal-suggestions.js # modal : rail suggestions + filtre sous-cat
 │   ├── b-modal-desktop-enhancers.js
 │   ├── b-pager.js          # 🔒 FICHIER VERROUILLÉ — moteur cage mobile
 │   ├── b-store.js          # 🔒 FICHIER VERROUILLÉ — refs DOM partagées

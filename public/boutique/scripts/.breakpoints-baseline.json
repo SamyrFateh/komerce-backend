@@ -1,0 +1,71 @@
+{
+  "total": 35,
+  "perFile": {
+    "cart.css": [
+      "380",
+      "600",
+      "768",
+      "899"
+    ],
+    "categories.css": [
+      "767",
+      "899"
+    ],
+    "desktop-commerce-skeleton.css": [
+      "1500"
+    ],
+    "event.css": [
+      "520"
+    ],
+    "group-cart-flow.css": [
+      "390",
+      "600",
+      "700",
+      "999",
+      "1000",
+      "1100",
+      "1400"
+    ],
+    "hero-cart-proxy.css": [
+      "899"
+    ],
+    "hero.css": [
+      "140",
+      "767",
+      "899"
+    ],
+    "identity.css": [
+      "640"
+    ],
+    "interactions.css": [
+      "600",
+      "899"
+    ],
+    "layout.css": [
+      "899",
+      "1180"
+    ],
+    "modal.css": [
+      "480",
+      "600",
+      "768",
+      "899"
+    ],
+    "products.css": [
+      "600",
+      "899"
+    ],
+    "reset.css": [
+      "899"
+    ],
+    "shared-followup.css": [
+      "390",
+      "899",
+      "1280"
+    ],
+    "tokens.css": [
+      "768"
+    ]
+  },
+  "savedAt": "2026-05-30T12:14:54.265Z"
+}
