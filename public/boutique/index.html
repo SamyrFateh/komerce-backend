@@ -45,25 +45,30 @@ if('serviceWorker' in navigator){
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f0f5e6">
 <title>Komerce — Boutique en ligne</title>
+<meta name="description" content="La boutique en ligne des Comores. Mode, tech, maison, beauté — commandez depuis l'Europe, retirez en cash chez votre relais local.">
+<meta property="og:title" content="Komerce — La boutique comorienne">
+<meta property="og:description" content="Mode, tech, maison, beauté — livré aux Comores. Paiement cash, retrait relais.">
+<meta property="og:image" content="/images/og-cover.jpg">
+<meta property="og:url" content="https://komerce.fr">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://res.cloudinary.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Preload hero image pour améliorer le LCP (Largest Contentful Paint) -->
-<link rel="preload" as="image" href="/images/hero_banner.png" fetchpriority="high">
-<!-- CSS Komerce v2 — refactorisé, 0 !important, encodage UTF-8 propre -->
-<link rel="stylesheet" href="/boutique/css/tokens.css?v=326">
-<link rel="stylesheet" href="/boutique/css/reset.css?v=326">
-<link rel="stylesheet" href="/boutique/css/layout.css?v=326">
-<link rel="stylesheet" href="/boutique/css/hero.css?v=326">
-<link rel="stylesheet" href="/boutique/css/categories.css?v=326">
-<link rel="stylesheet" href="/boutique/css/products.css?v=326">
-<link rel="stylesheet" href="/boutique/css/modal.css?v=326">
-<link rel="stylesheet" href="/boutique/css/cart.css?v=326">
-<link rel="stylesheet" href="/boutique/css/interactions.css?v=326">
-<link rel="stylesheet" href="/boutique/css/event.css?v=326">
-<link rel="stylesheet" href="/boutique/css/desktop-upgrade.css?v=326">
+<link rel="preload" as="image" href="/images/komerce_hero_mobile_1080x220.webp" type="image/webp" media="(max-width: 899px)"  fetchpriority="high">
+<link rel="preload" as="image" href="/images/Hero_1600x360.png"  media="(min-width: 900px)"   fetchpriority="high">
+<!-- CSS Komerce v3 — bundlé (Sprint 3) : 4 fichiers au lieu de 13 -->
+<!-- base    = tokens + reset + layout + hero -->
+<!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
+<!-- desktop = boutique-desktop + desktop-commerce-skeleton -->
+<!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=3">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=7">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=4">
+<link rel="stylesheet" href="/boutique/css/dist/event.css?v=3">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -105,6 +110,11 @@ if('serviceWorker' in navigator){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>Suivi</span>
       </button>
+      <button class="k-header-nav-btn k-header-nav-btn--group" data-tab="group" aria-label="Panier Groupe" id="k-header-group-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Groupe</span>
+        <span class="k-header-group-badge" id="k-header-group-badge"></span>
+      </button>
       <button class="k-cart-btn k-header-action" id="k-cart-btn" aria-label="Panier">
         <img src="/images/avatar_seule.png" class="k-cart-avatar" alt="">
         <span class="k-cart-badge" id="k-cart-badge">0</span>
@@ -117,17 +127,25 @@ if('serviceWorker' in navigator){
 <div id="k-hero-fixed-wrap">
 
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
+<h1 class="sr-only">Komerce — La boutique en ligne des Comores</h1>
 <section class="k-hero" id="k-hero">
   <div class="k-hero-inner">
     <div class="k-hero-media">
-      <img class="k-hero-img" src="/images/hero_banner.png" width="1600" height="896" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      <picture>
+        <source media="(min-width: 900px)" srcset="/images/Hero_1600x360.png" width="1600" height="360">
+        <!-- WebP mobile tamisé (prioritaire — ~50% plus léger) -->
+        <source media="(max-width: 899px)" type="image/webp" srcset="/images/komerce_hero_mobile_1080x220.webp" width="1080" height="220">
+        <!-- PNG mobile fallback (navigateurs sans WebP) -->
+        <source media="(max-width: 899px)" srcset="/images/Hero_1080x420.png" width="1080" height="420">
+        <img class="k-hero-img" src="/images/Hero_Pano_v2.png" width="2902" height="542" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+      </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>
-        <span class="k-line-1">Qui cherche !</span>
-        <span class="k-line-2">Trouve&nbsp;!</span>
+        <span class="k-line-1">Qui cherche&nbsp;!</span>
+        <span class="k-line-2">Trouve&nbsp;!</span><!-- masqué desktop Option B via boutique-desktop.css -->
         <p class="k-hero-sub">Mode, tech, beauté — tout ce que vous aimez, livré aux Comores</p>
         <div class="k-hero-cta-row">
-          <button class="k-hero-cta-primary" onclick="document.getElementById('k-grid').scrollIntoView({behavior:'smooth'})">Découvrir le catalogue →</button>
+          <button class="k-hero-cta-primary">Découvrir le catalogue →</button>
           <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">📦 Suivre ma commande</button>
         </div>
         <div class="k-hero-trust">
@@ -165,53 +183,54 @@ if('serviceWorker' in navigator){
   <div class="k-cats-shell">
   <div class="k-cats-wrap-fade-left"></div>
   <nav class="k-cats" id="k-cats">
-    <button class="k-chip active" data-cat="all">
+    <!-- Rail v2 — 8 chips : 2 filtres transverses + 6 piliers (architecture comorienne) -->
+    <button class="k-chip active" data-cat="all" aria-label="Toutes les catégories">
       <span class="k-chip-photo">
-        <span>Tout</span>
+        <img src="/boutique/categories/all.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Tout</span>
     </button>
-    <button class="k-chip" data-cat="Soldes">
+    <button class="k-chip" data-cat="Soldes" aria-label="Soldes">
       <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <img src="/boutique/categories/soldes.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Soldes</span>
     </button>
-    <button class="k-chip" data-cat="Mode & Beauté">
+    <button class="k-chip" data-cat="Mode & Beauté" aria-label="Mode et Beauté">
       <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
+        <img src="/boutique/categories/mode.jpg" alt="" loading="eager" width="80" height="80">
       </span>
-      <span class="k-chip-label">Mode & Beauté</span>
+      <span class="k-chip-label">Mode</span>
     </button>
-    <button class="k-chip" data-cat="Tech">
+    <button class="k-chip" data-cat="Maison" aria-label="Maison">
       <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      </span>
-      <span class="k-chip-label">Tech</span>
-    </button>
-    <button class="k-chip" data-cat="Enfant">
-      <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="5"/><path d="M12 12v10M7 22h10"/></svg>
-      </span>
-      <span class="k-chip-label">Enfant</span>
-    </button>
-    <button class="k-chip" data-cat="Maison">
-      <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <img src="/boutique/categories/maison.jpg" alt="" loading="eager" width="80" height="80">
       </span>
       <span class="k-chip-label">Maison</span>
     </button>
-    <button class="k-chip" data-cat="Sport">
+    <button class="k-chip" data-cat="Tech" aria-label="Tech">
       <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M6.5 6.5 17.5 17.5M4 12h.01M20 12h.01M12 4v.01M12 20v.01"/></svg>
+        <img src="/boutique/categories/tech.jpg" alt="" loading="eager" width="80" height="80">
       </span>
-      <span class="k-chip-label">Sport</span>
+      <span class="k-chip-label">Tech</span>
     </button>
-    <button class="k-chip" data-cat="Sur-mesure">
+    <button class="k-chip" data-cat="Bricolage" aria-label="Bricolage">
       <span class="k-chip-photo">
-        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+        <img src="/boutique/categories/bricolage.jpg" alt="" loading="eager" width="80" height="80">
       </span>
-      <span class="k-chip-label">Pour vous…</span>
+      <span class="k-chip-label">Bricolage</span>
+    </button>
+    <button class="k-chip" data-cat="Créations personnelles" aria-label="Créations personnelles">
+      <span class="k-chip-photo">
+        <img src="/boutique/categories/creations.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Perso.</span>
+    </button>
+    <button class="k-chip" data-cat="Auto" aria-label="Auto et Moto">
+      <span class="k-chip-photo">
+        <img src="/boutique/categories/auto.jpg" alt="" loading="eager" width="80" height="80">
+      </span>
+      <span class="k-chip-label">Auto</span>
     </button>
   </nav>
   <div class="k-cats-wrap-fade-right"></div>
@@ -228,8 +247,6 @@ if('serviceWorker' in navigator){
 
   <!-- ═══ CATALOGUE PRODUITS ═══ -->
   <div id="k-desktop-catalog-wrap">
-    <!-- Sidebar catégories desktop (LOT 11) — masquée mobile via CSS -->
-    <aside id="k-desktop-sidebar" class="k-desktop-sidebar" aria-label="Catégories"></aside>
     <section class="k-section" id="k-catalog-section">
       <div class="k-grid" id="k-grid">
         <!-- JS fills -->
@@ -238,6 +255,52 @@ if('serviceWorker' in navigator){
         <div class="k-spinner"></div>
       </div>
     </section>
+    <!-- Side cart desktop — panneau fixe droit.
+         Layout vertical : header sticky (sous-total + CTAs) en haut,
+         puis liste items scrollable. -->
+    <aside id="k-side-cart" class="k-side-cart" aria-label="Aperçu panier">
+      <!-- ── HEADER : sous-total + CTAs (Temu top block) ── -->
+      <div class="k-sc-header">
+        <div class="k-sc-subtotal-row">
+          <span class="k-sc-subtotal-label">
+            <svg class="k-sc-subtotal-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h2l1.5 7h7.5l1.5-5H4.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/><circle cx="6.5" cy="13.5" r="1" fill="currentColor"/><circle cx="12" cy="13.5" r="1" fill="currentColor"/></svg>
+            Sous-total
+          </span>
+          <strong id="k-sc-total" class="k-sc-subtotal-amount"></strong>
+        </div>
+        <div class="k-sc-free-ship">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 5l5 3 5-3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 5v6l5 3 5-3V5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          Livraison incluse aux Comores
+        </div>
+        <button id="k-sc-checkout" class="k-sc-btn-checkout" type="button">
+          Commander (<span id="k-sc-count-inline">0</span>)
+        </button>
+        <button id="k-sc-cta" class="k-sc-btn-cart" type="button">Voir le panier</button>
+        <!-- Badge "Partagé" — visible uniquement quand shareToken actif -->
+        <div class="k-sc-shared-badge" id="k-sc-shared-badge" hidden>
+          <div class="k-sc-shared-badge-row">
+            <span class="k-sc-shared-dot" aria-hidden="true"></span>
+            <span class="k-sc-shared-label">Panier partagé actif</span>
+            <button id="k-sc-reshare" class="k-sc-reshare-btn" type="button" aria-label="Re-partager le lien">📲 Re-partager</button>
+          </div>
+          <button id="k-sc-group-view" class="k-sc-group-view-btn" type="button">
+            👥 Suivre les participations →
+          </button>
+        </div>
+        <!-- Bouton "Payer à plusieurs" (PR-1) — géré par b-share-cart.js -->
+        <button id="k-sc-share" class="k-sc-btn-share" type="button" aria-label="Payer à plusieurs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span class="k-sc-btn-share-label">Payer à plusieurs</span>
+        </button>
+        <button id="k-sc-clear" class="k-sc-clear" type="button" aria-label="Vider le panier" title="Vider le panier">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6h12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Vider</span>
+        </button>
+      </div>
+
+      <!-- ── ITEMS : zone scrollable, prend le reste de la hauteur ── -->
+      <div id="k-sc-items" class="k-sc-items"></div>
+    </aside>
   </div><!-- /k-desktop-catalog-wrap -->
 </div><!-- /k-page-scroll -->
 
@@ -258,48 +321,67 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="k-modal-scroll">
-      <div class="k-modal-img-wrap">
-        <div class="k-modal-carousel" id="k-modal-carousel">
-          <div class="k-modal-carousel-track" id="k-modal-carousel-track">
-            <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+      <!-- Zone produit : 2 colonnes image | détails (desktop) -->
+      <div class="k-modal-product-zone">
+        <div class="k-modal-img-wrap">
+          <div class="k-modal-carousel" id="k-modal-carousel">
+            <div class="k-modal-carousel-track" id="k-modal-carousel-track">
+              <img id="k-modal-img" src="" alt="" class="k-modal-slide">
+            </div>
           </div>
+          <div class="k-modal-dots" id="k-modal-dots"></div>
+          <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
         </div>
-        <div class="k-modal-dots" id="k-modal-dots"></div>
-        <span class="k-modal-promo-badge" id="k-modal-promo-badge"></span>
-      </div>
-      <div class="k-modal-details" id="k-modal-details">
-        <div class="k-modal-info">
-          <h2 id="k-modal-name"></h2>
-          <p class="k-modal-desc" id="k-modal-desc"></p>
-          <div class="k-modal-price-row">
-            <span class="k-modal-price" id="k-modal-price"></span>
-            <span class="k-modal-old-price" id="k-modal-old-price"></span>
+        <div class="k-modal-details" id="k-modal-details">
+          <div class="k-modal-info">
+            <div class="k-modal-name-row">
+              <h2 id="k-modal-name"></h2>
+              <button class="k-modal-fav-btn" id="k-modal-fav-btn" aria-label="Ajouter aux favoris">🤍</button>
+            </div>
+            <div class="k-modal-price-row">
+              <span class="k-modal-price" id="k-modal-price"></span>
+              <span class="k-modal-old-price" id="k-modal-old-price"></span>
+            </div>
+            <!-- ── Zones desktop enrichies — peuplées par b-modal-desktop-enhancers.js ── -->
+            <!-- Masquées mobile (display:none par défaut) · révélées ≥900px via modal.css -->
+            <div id="k-modal-aed-price" class="k-modal-aed-price"></div>
+            <div id="k-modal-flash-bar" class="k-modal-flash-bar"></div>
+            <div id="k-modal-stock-bar" class="k-modal-stock-bar"></div>
+            <!-- Variant picker (Taille / Couleur / Pointure) — juste après le prix -->
+            <div id="k-modal-variants" class="k-modal-variants"></div>
+            <p class="k-modal-desc" id="k-modal-desc"></p>
+            <div class="k-modal-meta">
+              <span id="k-modal-cat"></span>
+              <span id="k-modal-stock"></span>
+            </div>
+            <!-- ── Livraison + Paiement — injectés par b-modal-desktop-enhancers.js ── -->
+            <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <div id="k-modal-payment" class="k-modal-payment"></div>
+          </div><!-- end .k-modal-info -->
+        <!-- Actions : dans product-zone pour le grid desktop (col droite, row 2) -->
+        <!-- Sur mobile : display:contents rend product-zone transparent → ordre naturel -->
+        <div class="k-modal-actions">
+          <div class="k-qty">
+            <button class="k-qty-btn" id="k-qty-minus">−</button>
+            <span class="k-qty-val" id="k-qty-val">1</span>
+            <button class="k-qty-btn" id="k-qty-plus">+</button>
           </div>
-          <div class="k-modal-meta">
-            <span id="k-modal-cat"></span>
-            <span id="k-modal-stock"></span>
-          </div>
+          <button class="k-add-cart-btn" id="k-add-cart-btn">
+            <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="" aria-hidden="true">
+            Ajouter
+          </button>
+          <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
         </div>
-        <div class="k-modal-suggestions" id="k-modal-suggestions">
-          <h3>Vous aimerez aussi</h3>
-          <div class="k-sug-rail" id="k-sug-rail"></div>
-        </div>
+      </div><!-- end .k-modal-product-zone -->
+      <!-- Suggestions : pleine largeur desktop, dans le scroll mobile -->
+      <div class="k-modal-suggestions" id="k-modal-suggestions">
+        <h3>Vous aimerez aussi</h3>
+        <div class="k-sug-rail" id="k-sug-rail"></div>
       </div>
-    </div>
-    <div class="k-modal-actions">
-      <div class="k-qty">
-        <button class="k-qty-btn" id="k-qty-minus">−</button>
-        <span class="k-qty-val" id="k-qty-val">1</span>
-        <button class="k-qty-btn" id="k-qty-plus">+</button>
-      </div>
-      <button class="k-add-cart-btn" id="k-add-cart-btn">
-        <img src="/images/panier_tresse_vert.png" width="20" height="20" alt="">
-        Ajouter
-      </button>
-      <button class="k-buy-now-btn" id="k-buy-now-btn">⚡ Acheter</button>
     </div>
   </div>
 </div>
+</div><!-- /#k-modal-overlay — FIX HTML 2026-05-19 v3.1 : il manquait DEUX </div> au total pour fermer k-modal-overlay (v3 n'en avait ajouté qu'une). Le parser strict (avec gestion commentaires) montre que sans cette balise, k-modal-overlay reste ouvert et capture k-cart-overlay, k-cart-drawer, k-order-modal comme enfants. -->
 
 <!-- ═══ CART DRAWER ═══ -->
 <div id="k-cart-overlay" class="k-cart-overlay"></div>
@@ -310,6 +392,12 @@ if('serviceWorker' in navigator){
   </div>
   <div id="k-cart-body" class="k-cart-body"></div>
   <div id="k-cart-footer" class="k-cart-footer u-hidden">
+    <!-- Badge partagé (drawer mobile) -->
+    <div class="k-share-badge-row" id="k-share-badge-row" hidden>
+      <span class="k-share-badge-dot" aria-hidden="true"></span>
+      <span class="k-share-badge-label">Partagé</span>
+      <button id="k-cart-reshare" class="k-share-reshare-btn" type="button">Re-partager</button>
+    </div>
     <div class="k-cart-total-row">
       <span>Total</span>
       <div>
@@ -320,7 +408,10 @@ if('serviceWorker' in navigator){
     <div class="k-cart-footer-btns">
       <button id="k-cart-continue" class="kcf-btn kcf-secondary">← Continuer</button>
       <button id="k-cart-clear" class="kcf-btn kcf-danger">🗑</button>
-      <button id="k-cart-whatsapp" class="kcf-btn kcf-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>Partager à un proche</button>
+      <button id="k-cart-share" class="kcf-btn kcf-share" type="button" aria-label="Payer à plusieurs">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Payer à plusieurs
+      </button>
       <button id="k-cart-checkout" class="kcf-btn kcf-primary">✅ Commander</button>
     </div>
   </div>
@@ -345,6 +436,58 @@ if('serviceWorker' in navigator){
   <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
 </a>
 
+<!-- ═══ FOOTER RICHE — desktop uniquement ═══ -->
+<footer class="k-footer" id="k-footer" aria-label="Pied de page Komerce">
+  <div class="k-footer-grid">
+    <div>
+      <div class="k-footer-brand-logo">Komerce</div>
+      <p class="k-footer-tagline">La boutique en ligne qui livre aux Comores. Commandez depuis l'Europe, retirez en cash chez votre relais local.</p>
+      <div class="k-footer-socials">
+        <a class="k-footer-social-btn" href="https://wa.me/33699272526?text=Bonjour%20Komerce%20!" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
+        </a>
+        <a class="k-footer-social-btn" href="https://instagram.com/komerce" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+        <a class="k-footer-social-btn" href="https://facebook.com/komerce" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div>
+      <div class="k-footer-col-title">Boutique</div>
+      <button class="k-footer-col-link" data-footer-cat="all">Tous les produits</button>
+      <button class="k-footer-col-link" data-footer-cat="Soldes">Soldes &amp; promotions</button>
+      <button class="k-footer-col-link" data-footer-cat="Sur-mesure">Sur-mesure</button>
+      <a class="k-footer-col-link" href="/event/create">Panier collectif</a>
+    </div>
+    <div>
+      <div class="k-footer-col-title">Aide &amp; contact</div>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%20Komerce%2C%20comment%20%C3%A7a%20marche%20%3F" target="_blank" rel="noopener">Comment ça marche</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20je%20souhaite%20suivre%20ma%20commande" target="_blank" rel="noopener">Suivi de commande</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20o%C3%B9%20se%20trouve%20le%20relais%20le%20plus%20proche%20%3F" target="_blank" rel="noopener">Trouver un relais</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526" target="_blank" rel="noopener">Contact WhatsApp</a>
+      <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20j%27ai%20une%20question" target="_blank" rel="noopener">FAQ</a>
+    </div>
+    <div>
+      <div class="k-footer-col-title">Newsletter</div>
+      <p class="k-footer-newsletter-desc">Nouveautés et promos exclusives, avant tout le monde.</p>
+      <form class="k-footer-newsletter-form" novalidate>
+        <input class="k-footer-newsletter-input" type="email" placeholder="votre@email.com" aria-label="Adresse e-mail newsletter" required>
+        <button class="k-footer-newsletter-btn" type="submit">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+  <div class="k-footer-bottom">
+    <span class="k-footer-copy">© 2026 Komerce · Tous droits réservés</span>
+    <nav class="k-footer-legal-links" aria-label="Liens légaux" style="display:none;">
+      <a class="k-footer-legal-link">Mentions légales</a>
+      <a class="k-footer-legal-link">CGV</a>
+      <a class="k-footer-legal-link">Confidentialité</a>
+    </nav>
+  </div>
+</footer>
+
 <!-- ═══ BOTTOM NAV ═══ -->
 <nav class="k-bnav" id="k-bnav">
   <button class="k-bnav-item active" data-tab="shop">
@@ -355,6 +498,11 @@ if('serviceWorker' in navigator){
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
     <span>Suivi</span>
   </button>
+  <button class="k-bnav-item" data-tab="group">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span class="k-bnav-group-label">Groupe</span>
+    <span class="k-bnav-badge k-bnav-badge--group" id="k-bnav-group-badge"></span>
+  </button>
   <button class="k-bnav-item" data-tab="fav">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
     <span>Favoris</span>
@@ -362,9 +510,11 @@ if('serviceWorker' in navigator){
   <button class="k-bnav-item" data-tab="cart">
     <img src="/images/panier_tresse_vert.png" class="k-bnav-basket" width="24" height="24" alt="Panier">
     <span class="k-bnav-badge" id="k-bnav-cart-badge"></span>
-    <span>Panier</span>
+    <span id="k-bnav-cart-label">Panier</span>
   </button>
 </nav>
+
+<!-- side cart déplacé dans #k-desktop-catalog-wrap -->
 
 <script>
 // Hero sticky logic: fixed wrap on mobile, IntersectionObserver on desktop
@@ -421,6 +571,19 @@ if('serviceWorker' in navigator){
     });
   }
 
+  // Bouton "Découvrir le catalogue" : scroll vers le catalogue (mobile ET desktop).
+  // Note : le listener desktop ci-dessous (dans le bloc else) cible #k-catalog-section
+  // en priorité. Ce listener universel assure le fonctionnement mobile.
+  (function() {
+    var ctaP = document.querySelector('.k-hero-cta-primary');
+    if (ctaP) {
+      ctaP.addEventListener('click', function() {
+        var target = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  })();
+
   if (isMobile()) {
     setupMobile();
   } else {
@@ -429,52 +592,18 @@ if('serviceWorker' in navigator){
     var ctaPrimary = document.querySelector('.k-hero-cta-primary');
     if (ctaPrimary) {
       ctaPrimary.addEventListener('click', function() {
-        var catalog = document.getElementById('k-catalog-section');
+        var catalog = document.getElementById('k-catalog-section') || document.getElementById('k-grid');
         if (catalog) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
-    var ctaGhost = document.querySelector('.k-hero-cta-ghost');
-    if (ctaGhost) {
-      ctaGhost.addEventListener('click', function() {
-        // "Suivre ma commande" → tab track
-        var trackBtn = document.querySelector('.k-bnav-item[data-tab="track"]');
-        if (trackBtn) trackBtn.click();
-        else {
-          var trackNav = document.querySelector('[data-tab="track"]');
-          if (trackNav) trackNav.click();
-        }
-      });
-    }
+    // .k-hero-cta-ghost a aussi class k-header-nav-btn → déjà géré par setupBnav().
+    // Pas de listener supplémentaire ici pour éviter le doublon (switchView 2×).
   }
 
-  // ── Proxy window.scrollY / window.scrollTo — resize-safe ──
-  // Installé une fois ; réévalue isMobile() à chaque appel (pas au load).
-  // Mobile  → redirige vers #k-page-scroll (scroll container fixe)
-  // Desktop → délègue à la fonction native sauvegardée (_nativeScrollTo)
-  try {
-    var _nativeScrollTo = window.scrollTo.bind(window);
-    Object.defineProperty(window, 'scrollY', {
-      get: function(){
-        if (isMobile()) { var s=document.getElementById('k-page-scroll'); return s?s.scrollTop:0; }
-        return window.pageYOffset;
-      },
-      configurable: true
-    });
-    window.scrollTo = function(x, y){
-      if (isMobile()) {
-        var s = document.getElementById('k-page-scroll');
-        if (!s) return;
-        if (x !== null && typeof x === 'object') {
-          s.scrollTo({ top: x.top||0, behavior: x.behavior||'auto' });
-        } else {
-          s.scrollTop = (typeof y === 'number') ? y : 0;
-        }
-      } else {
-        if (x !== null && typeof x === 'object') { _nativeScrollTo(x); }
-        else { _nativeScrollTo(x, y); }
-      }
-    };
-  } catch(e) {}
+  // ── Proxy window.scrollY/scrollTo supprimé (Sprint 3) ─────────────────
+  // Remplacé par getScrollY() / scrollToPosition() / scrollPageToTop()
+  // dans b-scroll-owner.js — importé par chaque module JS concerné.
+  // Stripe.js, analytics et libs tierces retrouvent window.scrollY natif.
 })();
 
   /* ══ Proverbe africain rotatif ══ */
@@ -527,13 +656,33 @@ if('serviceWorker' in navigator){
     el.textContent = proverbes[idx];
   })();
 </script>
-<script src="/boutique/js/komerce-api.js?v=326"></script>
+<!-- ⚠️ DEV ONLY — Données de test (supprimer en production) -->
+<!-- <script src="/boutique/js/mock-data.js"></script> -->
+<script src="/boutique/js/komerce-api.js?v=339"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=326"></script>
+<script type="module" src="/boutique/js/main.js?v=339"></script>
+
+  <!-- Contract DOM: required by b-store.js initDom(); kept hidden unless cart UI enables it -->
+  <a id="k-cart-whatsapp"
+     href="#"
+     hidden
+     aria-hidden="true"
+     tabindex="-1"></a>
+
 </body>
 <!-- KOMERCE MOBILE FIX v8.0 — inline setProperty important — NOTHING overrides this -->
 <!-- fixMobile removed v19 -->
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 
