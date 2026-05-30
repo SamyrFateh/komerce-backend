@@ -1,8 +1,10 @@
 -- ============================================================
--- Migration 071 : Shared cart v4 commitments
+-- Migration 071b : Shared cart v4 commitments
 -- Date : mai 2026
---
--- Doctrine v4 :
+-- NOTE W5: renommé de 071_ → 071b_ (collision avec 071_relay_dashboard_tables.sql).
+--   Suit la convention suffixe-b de GAPS.md. Idempotent — IF NOT EXISTS protège
+--   les envs qui ont déjà appliqué l'original 071_.
+-- ============================================================
 --   - avant passage au règlement : engagements indicatifs uniquement ;
 --   - après passage au règlement : paiements réels via contributions.
 --

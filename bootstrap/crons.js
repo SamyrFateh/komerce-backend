@@ -72,7 +72,8 @@ function startBackorderCron({ processBackorderReminders }) {
 }
 
 function startOperationalCrons() {
-  const { processCashRelaisReminders, processBackorderReminders } = require('../utils/sms');
+  // ZG-1: migré de utils/sms (Africa's Talking, désactivé) → services/cash-reminder-service (WhatsApp)
+  const { processCashRelaisReminders, processBackorderReminders } = require('../services/cash-reminder-service');
   const { getRuleNumber } = require('../utils/rules');
 
   startCashRelaisCron({ processCashRelaisReminders, processBackorderReminders, getRuleNumber });

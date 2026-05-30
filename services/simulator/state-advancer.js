@@ -201,7 +201,7 @@ async function scanAdvance(orderId, tracked, targetStep) {
     await db.query(
       "INSERT INTO scans (parcel_id, step, notes, created_at) VALUES ($1, $2, $3, NOW())",
       [parcel.id, targetStep, 'Simulateur — ' + targetStep]
-    ).catch(function(e) { log.warn('[SIM] scan insert:', e.message); });
+    ).catch(function(e) { log.warn({ err: e }, '[SIM] scan insert:'); });
 
     const result = await transitionOrderStatus({
       orderId,

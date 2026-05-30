@@ -1530,7 +1530,7 @@
      ────────────────────────────────────────────────────────── */
   body:has(.k-side-cart.has-items),
   body.sc-reserve {
-    padding-right: 240px;
+    padding-right: var(--sc-reserve-w, 240px); /* VIS-1 — token défini dans layout.css */
   }
 
   /* Pendant qu'un overlay plein écran est ouvert (modal/cart drawer),
@@ -1553,6 +1553,6 @@
   }
   body:has(.k-side-cart.has-items),
   body.sc-reserve {
-    padding-right: 254px;
+    padding-right: var(--sc-reserve-w, 254px); /* VIS-1 — token défini dans layout.css @1200px */
   }
 }

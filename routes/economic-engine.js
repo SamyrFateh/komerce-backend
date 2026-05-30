@@ -134,7 +134,7 @@ async function seedEconomicData() {
 
 // Run seed on load
 seedEconomicData().catch(function(err) {
-  log.error('[Economic] Seed error:', err.message);
+  log.error({ err }, '[Economic] Seed error:');
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────

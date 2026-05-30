@@ -1,4 +1,17 @@
 'use strict';
+/**
+ * routes/client-account.js — NON MONTÉ (dead code)
+ *
+ * Ce module N'EST PAS require()'d par bootstrap/api-routes.js ni server.js.
+ * Son rôle a été repris par routes/client-auth.js (magic-link → kmrc_jwt)
+ * et routes/otp.js (OTP → kmrc_jwt).
+ *
+ * Conservé pour référence historique et pour les tests unitaires éventuels
+ * de requireClientAuth. Ne pas monter sans audit préalable des routes dupliquées.
+ *
+ * Cookie canonique : kmrc_jwt (posé par client-auth.js + otp.js)
+ * Payload canonique : { id, role } (client-auth) ou { id, name, phone } (otp)
+ */
 
 const express = require('express');
 const router = express.Router();
@@ -8,7 +21,12 @@ const log = require('../utils/logger').child({ module: 'client-account' });
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const BASE_URL = process.env.BASE_URL || 'https://komerce.km';
-const CLIENT_COOKIE = 'komerce_client';
+const CLIENT_COOKIE = 'kmrc_jwt'; // cookie canonique unique — auth.js, auth-guest.js, client-auth.js, otp.js
+// CONSOLIDATION AUTH (2026-05-30) :
+//   - Supprimé : kmrc_client (OTP ne le pose plus), komerce_client (legacy magic-link client-account.js non monté).
+//   - client-auth.js (magic-link actif) pose kmrc_jwt avec payload {id, role, fullName}.
+//   - otp.js pose kmrc_jwt avec payload {id, name, full_name, phone}.
+//   - Les deux shapes ont 'id' → req.clientUserId = decoded.id.
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function maskPhone(phone) {
@@ -25,14 +43,14 @@ function canEchoMagicLink() {
 // ─── Auth middleware for client routes ───────────────────────────────
 
 function requireClientAuth(req, res, next) {
-  const token = req.cookies && req.cookies[CLIENT_COOKIE];
-  if (!token) {
-    return res.status(401).json({ error: 'Non authentifié' });
-  }
+  const token = req.cookies?.[CLIENT_COOKIE] || null;
+  if (!token) return res.status(401).json({ error: 'Non authentifié' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
-    req.clientUserId = decoded.userId;
-    req.clientPhone = decoded.phone;
+    // Normalise les deux shapes : {id} (OTP/client-auth) et {userId} (legacy, plus produit)
+    req.clientUserId = decoded.id || decoded.userId || null;
+    req.clientPhone  = decoded.phone || null;
+    if (!req.clientUserId) return res.status(401).json({ error: 'Session invalide' });
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Session expirée' });

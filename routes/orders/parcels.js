@@ -19,7 +19,7 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
-const { sendSMS }                   = require('../../utils/sms');
+const { notifyText } = require('../../services/notification-service'); // ZG-1: remplace sendSMS
 const { getRule, getRuleNumber }    = require('../../utils/rules');
 const { generateParcelRef }         = require('../../utils/reference');
 const { processRefundWithFallback } = require('../../services/refund-service');
@@ -330,7 +330,7 @@ router.post('/:id/partial-ship', authenticate, requireRole(['admin', 'agent_hub'
     if (autoNotify && order.user_phone) {
       const boCount  = allBackorderItems.reduce((s, i) => s + i.quantity, 0);
       const smsText  = `Komerce : Commande ${order.reference} — expedition partielle : ${availableQty} article(s) expedie(s), ${boCount} en attente (backorder). Ref colis : ${psRef}`;
-      sendSMS(order.user_phone, smsText, 'partial_ship', id).catch(err => log.error({ err }, 'SMS send failed'));
+      notifyText(order.user_phone, smsText, 'partial_ship', id).catch(err => log.error({ err }, 'Notification partial_ship failed'));
     }
 
     // ── Réponse ─────────────────────────────────────────────────────────────
@@ -557,7 +557,7 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
     // SMS client (non bloquant) — sur shipped / available / collected
     if (parcel.user_phone && PARCEL_SMS[status]) {
       const smsText = PARCEL_SMS[status](parcel.reference, parcel.relais_name);
-      sendSMS(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(err => log.error({ err }, 'SMS send failed'));
+      notifyText(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(err => log.error({ err }, 'Notification parcel status failed'));
     }
 
     res.json({
@@ -711,7 +711,7 @@ router.post('/:id/cancel-backorder', authenticate, validate(orders.cancelBackord
         ? `${refundAmountEur.toFixed(2)}EUR rembourse via Stripe`
         : `${Number(backorderValueKmf).toLocaleString('fr-FR')} KMF credite sur votre compte`;
       const smsText = `Komerce : Backorder ${parcel.reference} annule. ${creditStr}. Merci de votre comprehension.`;
-      sendSMS(order.user_phone, smsText, 'backorder_cancelled', id).catch(err => log.error({ err }, 'SMS send failed'));
+      notifyText(order.user_phone, smsText, 'backorder_cancelled', id).catch(err => log.error({ err }, 'Notification backorder_cancelled failed'));
     }
 
     res.json({

@@ -21,7 +21,7 @@ const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { generateShipmentRef } = require('../utils/reference');
 const PDFDocument = require('pdfkit');
-const { sendSMS }   = require('../utils/sms');
+const { notifyText } = require('../services/notification-service'); // ZG-1: remplace sendSMS
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const QRCode = require('qrcode');
 const { validate } = require('../middleware/validate');
@@ -109,12 +109,12 @@ router.patch('/shipments/:id', ...adminOnly, validate(logistics.updateShipment),
       // SMS per parcel (R1: 1 SMS per available parcel)
       const smsTargets = shipmentParcels.filter(sp => sp.phone);
       Promise.all(
-        smsTargets.map(sp => sendSMS(
+        smsTargets.map(sp => notifyText(
           sp.phone,
           `Komerce · Colis ${sp.parcel_ref || sp.order_ref} disponible au ${sp.relais_name} (${sp.relais_addr}).`,
           'available', null
         ))
-      ).catch(err => log.error('SMS parcel batch error:', err.message));
+      ).catch(err => log.error({ err }, 'Notification parcel batch error'));
     }
 
     res.json(rows[0]);

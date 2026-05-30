@@ -21,9 +21,9 @@ function startServerLifecycle({
   runAllSeeds,
   port = process.env.PORT || 3000,
 }) {
-  walletService.ensureWalletTables().catch(e => log.error('Wallet init error:', e.message));
-  routingService.ensureRoutingColumns(db).catch(e => log.error('Routing init error:', e.message));
-  parcelSecurity.ensureSecurityTables(db).catch(e => log.error('Security init error:', e.message));
+  walletService.ensureWalletTables().catch(e => log.error({ err: e }, 'Wallet init error:'));
+  routingService.ensureRoutingColumns(db).catch(e => log.error({ err: e }, 'Routing init error:'));
+  parcelSecurity.ensureSecurityTables(db).catch(e => log.error({ err: e }, 'Security init error:'));
 
   const server = app.listen(port, () => {
     log.info(`KOMERCE API v12.4 — port ${port} — démarrage immédiat — migrations en background`);

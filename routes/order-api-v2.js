@@ -429,12 +429,12 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
           log.info(`ðŸ§¾ Invoice ${result.invoice} sent for ${order.reference}`);
         }
       })
-      .catch(e => log.error('[CONFIRM-NOTIF] âŒ', e.message));
+      .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF] âŒ'));
 
     if (parcelResult.success) {
       const notifSvc = require('../services/notification-service');
       notifSvc.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
-        .catch(e => log.error('[AUTO-PARCEL-NOTIF] âŒ', e.message));
+        .catch(e => log.error({ err: e }, '[AUTO-PARCEL-NOTIF] âŒ'));
     }
 
     res.json({
@@ -515,7 +515,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     // NOTIFICATIONS (fire-and-forget)
     const notifSvc = require('../services/notification-service');
     notifSvc.notifyParcelCreated(result.parcel.reference, order.id, order.reference)
-      .catch(e => log.error('[CREATE-NOTIF] âŒ', e.message));
+      .catch(e => log.error({ err: e }, '[CREATE-NOTIF] âŒ'));
 
     res.json({
       success: true,

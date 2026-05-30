@@ -42,7 +42,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendSMS } = require('../utils/sms');
+const { notifyText, notifyStatusChange } = require('../services/notification-service'); // ZG-1: remplace sendSMS
 const { validate } = require('../middleware/validate');
 const { scans } = require('../validators');
 
@@ -93,14 +93,11 @@ async function triggerScan3(order_id, scanned_by = null) {
     return { skipped: true, reason: `statut_invalide: ${order.status}` };
   }
 
-  // SMS client
+  // Notification préparation (ZG-1: sendSMS → notifyText/WhatsApp)
   const smsClient = `Bonjour ${order.first_name}, votre commande Komerce ref ${order.reference} est en cours de préparation à Dubai. Vous serez notifié(e) dès l'expédition. 🛍️`;
 
-  try {
-    await sendSMS(order.client_phone, smsClient);
-  } catch (smsErr) {
-    log.error(`[SCAN3] SMS client échoué (order ${order_id}):`, smsErr.message);
-  }
+  notifyText(order.client_phone, smsClient, 'preparation', order_id)
+    .catch(err => log.error({ err }, '[SCAN3] notification préparation échouée'));
 
   // [B9] scans (pas scan_logs) | [B10] created_at auto | [B11] scan_code NOT NULL | [B12] scanned_by optionnel
   let scan_id = null;
@@ -253,34 +250,34 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
            WHERE o.id = $1`, [order_id]
         );
         if (fullOrder?.user_phone) {
-          sendSMS(
+          notifyText(
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est prête, remise au transitaire à Dubai.`,
             'shipped', order_id
-          ).catch(err => log.error({ err }, 'SMS shipped error'));
+          ).catch(err => log.error({ err }, 'Notification shipped error'));
           sms_triggered = true;
         }
       }
 
       if (step === 'in_transit') {
-        // SMS au commanditaire — confirmation embarquement bateau
+        // Notification commanditaire — confirmation embarquement bateau
         const { rows: [fullOrder] } = await db.query(
           `SELECT o.*, u.phone AS user_phone
            FROM orders o LEFT JOIN users u ON u.id = o.user_id
            WHERE o.id = $1`, [order_id]
         );
         if (fullOrder?.user_phone) {
-          sendSMS(
+          notifyText(
             fullOrder.user_phone,
             `Komerce · Votre commande ${order.reference} est embarquée sur le bateau ! 🚢 Arrivée estimée 3–5 semaines.`,
             'in_transit', order_id
-          ).catch(err => log.error({ err }, 'SMS in_transit error'));
+          ).catch(err => log.error({ err }, 'Notification in_transit error'));
           sms_triggered = true;
         }
       }
 
       if (step === 'relais_received') {
-        // SMS au destinataire — non bloquant
+        // Notification destinataire — non bloquant
         const { rows: [fullOrder] } = await db.query(
           `SELECT o.pickup_code, rc.phone AS recipient_phone, rc.full_name,
                   r.name AS relais_name, r.address AS relais_address
@@ -290,26 +287,26 @@ router.post('/', authenticate, validate(scans.create), async (req, res, next) =>
            WHERE o.id = $1`, [order_id]
         );
         if (fullOrder?.recipient_phone) {
-          sendSMS(
+          notifyText(
             fullOrder.recipient_phone,
             `Komerce · Bonjour ${fullOrder.full_name}, votre colis est disponible au ${fullOrder.relais_name} (${fullOrder.relais_address}). Code de retrait : ${fullOrder.pickup_code}`,
             'available', order_id
-          ).catch(err => log.error({ err }, 'SMS relais error'));
+          ).catch(err => log.error({ err }, 'Notification available error'));
           sms_triggered = true;
         }
       }
     } else {
-      // Anomalie → alerte admin par SMS — non bloquant
+      // Anomalie → alerte admin — non bloquant
       const { rows: adminUsers } = await db.query(
         `SELECT phone FROM users WHERE role = 'admin' AND phone IS NOT NULL`
       );
       Promise.all(
-        adminUsers.map(a => sendSMS(
+        adminUsers.map(a => notifyText(
           a.phone,
           `Komerce · Anomalie scan sur ${order.reference} à l'étape "${step}". Notes : ${notes || 'aucune'}`,
           'anomaly_alert', order_id
         ))
-      ).catch(err => log.error({ err }, 'SMS anomaly error'));
+      ).catch(err => log.error({ err }, 'Notification anomaly error'));
     }
 
     res.status(201).json({
@@ -461,7 +458,7 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
             [attempts, blockUntil, order.id]
           );
         } catch (e) {
-          log.warn('[SCAN-COLLECT] update attempts failed:', e.message);
+          log.warn({ err: e }, '[SCAN-COLLECT] update attempts failed:');
         }
 
         log.warn(`[SCAN-COLLECT] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait order ${order.reference} (relais ${order.relais_id}) — attempts=${attempts}/5`);
@@ -537,18 +534,18 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
 
     await client.query('COMMIT');
 
-    // SMS confirmation au commanditaire
+    // Notification confirmation au commanditaire (ZG-1)
     const { rows: [fullOrder] } = await db.query(
       `SELECT u.phone AS user_phone FROM orders o
        LEFT JOIN users u ON u.id = o.user_id WHERE o.id = $1`,
       [order.id]
     );
     if (fullOrder?.user_phone) {
-      sendSMS(
+      notifyText(
         fullOrder.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name}. Merci pour votre confiance !`,
         'collected', order.id
-      ).catch(err => log.error({ err }, 'SMS collect error'));
+      ).catch(err => log.error({ err }, 'Notification collect error'));
     }
 
     res.json({
@@ -777,21 +774,21 @@ router.post('/verify-qr', authenticate, requireRole(['admin', 'agent_relais']), 
 
     log.info(`[VERIFY-QR] ✅ ${order.reference} remis à ${order.recipient_name} via QR`);
 
-    // SMS confirmation au commanditaire (non bloquant)
+    // Notification confirmation au commanditaire (non bloquant) — ZG-1
     if (order.user_phone) {
-      sendSMS(
+      notifyText(
         order.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name || 'le destinataire'}. Merci pour votre confiance ! 🎉`,
         'collected',
         order.id
-      ).catch(err => log.error({ err }, 'SMS QR collect error'));
+      ).catch(err => log.error({ err }, 'Notification QR collect error'));
     }
 
     // Recalculer fidélité (non bloquant)
     if (order.user_id) {
       const { recalculateLoyalty } = require('./loyalty');
       recalculateLoyalty(db, order.user_id)
-        .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
+        .catch(e => log.error({ err: e }, '[LOYALTY] recalculate error:'));
     }
 
     res.json({

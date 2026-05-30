@@ -218,7 +218,7 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
       const loyaltyService = require('../services/loyalty-service');
       loyaltyService.handleOrderConfirmed({ orderId: result.body.order_id })
         .then(r => { if (r && !r.skipped) log.info('[loyalty] hook OK:', r); })
-        .catch(e => log.warn('[loyalty] hook error:', e.message));
+        .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
     } catch (_) { /* non-bloquant */ }
 
     try {
@@ -227,7 +227,7 @@ router.post('/pay-cash/:orderId', authenticate, requireRelaisOrAdmin, async (req
         .then(r => log.info('[PURCHASING] Pickup cash trigger OK:', result.body.order_ref, r))
         .catch(e => log.error('[PURCHASING] Pickup cash trigger error:', result.body.order_ref, e.message));
     } catch (e) {
-      log.error('[PICKUP-CASH-POSTCOMMIT] triggerPurchasing load error:', e.message);
+      log.error({ err: e }, '[PICKUP-CASH-POSTCOMMIT] triggerPurchasing load error:');
     }
 
   } catch (err) { next(err); }

@@ -1,4 +1,18 @@
 /**
+ * utils/sms.js — ARCHIVÉ (dead code depuis 2026-05-30)
+ *
+ * ══════════════════════════════════════════════════════════════════════════════
+ * Ce fichier N'EST PLUS APPELÉ PAR AUCUN CODE ACTIF.
+ * Migration ZG-1 : Africa's Talking SMS → WhatsApp AuthKey (notification-service)
+ *   processCashRelaisReminders / processBackorderReminders
+ *   → services/cash-reminder-service.js (notifyText / WhatsApp)
+ * Conservé pour les tests unitaires (mock sendSMS) et l'historique CRIT-01/02.
+ * À supprimer lors du prochain nettoyage de dette.
+ * ══════════════════════════════════════════════════════════════════════════════
+ * @deprecated 2026-05-30
+ */
+
+/**
  * KOMERCE — Utilitaire SMS via Africa's Talking (sécurisé)
  *
  * ╔══════════════════════════════════════════════════════════════════════╗

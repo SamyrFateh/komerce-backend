@@ -13,7 +13,7 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   const productsRouter   = require('../routes/products');
   const ordersRouter     = require('../routes/orders');
   const relaisRouter     = require('../routes/relais');
-  const dashboardRouter  = require('../routes/dashboard');
+  // ZG-4: dashboardRouter retiré du bloc Before — monté uniquement via /api/dashboard dans le bloc After
   const financeRouter    = require('../routes/finance');
   const transitDashRouter = require('../routes/transit-dashboard');
   const adminCustomsShipmentsRouter = require('../routes/admin-customs-shipments');
@@ -29,8 +29,9 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   app.use('/api/orders',     ordersRouter);
   app.use('/api/relais',     relaisRouter);
   app.use('/api/admin/finance',  financeRouter);
-  app.use('/api/admin/pilotage', dashboardRouter);
-  app.use('/api/admin/stats',    dashboardRouter);
+  // ZG-4: /api/admin/pilotage et /api/admin/stats supprimés — alias historiques de /api/dashboard.
+  // Path canonique unique : /api/dashboard (ligne ~110, chargé dans le bloc After).
+  // Les clients qui appellent encore /api/admin/pilotage recevront un 404 — ils doivent migrer.
   app.use('/api/admin/customs-shipments', adminCustomsShipmentsRouter);
   app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
   app.use('/api/categories', categoriesRouter);
@@ -91,12 +92,12 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const sourcingScannerRouter = require('../routes/sourcing-scanner');
   const signalsRouter         = require('../routes/signals');
   const adminRiskProvisionsRouter = require('../routes/admin-risk-provisions');
-  const adminCollectiveRepairsRouter = require('../routes/admin-collective-repairs');
+  // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
+  // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
   app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
   app.use('/api/admin/costing',     require('../routes/admin-costing'));
-  app.use('/api/admin/collective', adminCollectiveRepairsRouter);
   app.use('/api/admin',      adminRouter);
   app.use('/api/admin/rules', adminRulesRouter);
   app.use('/api/admin/radar', adminRadarRouter);

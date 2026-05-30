@@ -325,7 +325,7 @@
   font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
 }
 .k-modal-promo-badge.show { display: inline-block; }
-.k-modal-info { padding: 12px; display: flex; flex-direction: column; }
+.k-modal-info { padding: clamp(20px, 5vw, 26px) 12px 12px; display: flex; flex-direction: column; } /* VIS-3B — était 12px partout ; top ≥ 20px pour compenser margin-top:-20px de .k-modal-details */
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
   line-height: 1.2; letter-spacing: -.01em; margin: 0; color: var(--text);
@@ -472,7 +472,7 @@
 .k-modal-actions {
   display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
   gap: 10px; align-items: center;
-  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 12px)); /* VIS-3C — fallback 12px : Android safe-area-inset-bottom=0 mais barre nav peut quand même déborder */
   border-top: 1px solid var(--sand-dark);
   flex-shrink: 0;
   /* FIX scroll qui traverse le bouton Acheter mobile :
@@ -536,12 +536,11 @@
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
-  /* Compensation: éviter que le contenu scrollable disparaisse derrière la barre fixe.
-     Hauteur exacte CTA = padding-top(10) + row1-qty(44) + gap(10) + row2-buy(48) + padding-bottom(10) = 122px.
-     + 28px marge = 150px. Fallback env() à 48px pour Android où safe-area-inset-bottom = 0
-     mais la barre home/nav peut quand même chevaucher le contenu en edge-to-edge. */
+  /* VIS-3D FIX — Remplace le magic-number 150px par la hauteur CTA réellement mesurée
+     (--k-modal-cta-h, posée par _syncScrollPadding en JS). Fallback 150px si JS pas encore
+     passé. Le safe-area fallback 12px est cohérent avec VIS-3C (actions padding). */
   .k-modal-scroll {
-    padding-bottom: calc(150px + env(safe-area-inset-bottom, 48px));
+    padding-bottom: calc(var(--k-modal-cta-h, 150px) + env(safe-area-inset-bottom, 12px));
   }
   .k-modal-suggestions { order: 2; }
 

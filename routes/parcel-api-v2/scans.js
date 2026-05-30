@@ -83,7 +83,7 @@ router.post('/:ref/scan', async (req, res, next) => {
     // ── Notifications (fire-and-forget) ──────────────────────────────────
     const notif = require('../../services/notification-service');
     notif.notifyParcelScan(parcel.id, parcel.reference, result.parcel?.status || engineEventType)
-      .catch(e => log.error('[SCAN-NOTIF] ❌', e.message));
+      .catch(e => log.error({ err: e }, '[SCAN-NOTIF] ❌'));
 
     res.json({
       success: true,

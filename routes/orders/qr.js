@@ -221,7 +221,7 @@ router.get('/retrait/:token', async (req, res, next) => {
     res.send(html);
 
   } catch (err) {
-    log.error('[orders/retrait] Erreur:', err.message);
+    log.error({ err }, '[orders/retrait] Erreur:');
     res.status(500).send('<h1>Erreur serveur</h1>');
   }
 });

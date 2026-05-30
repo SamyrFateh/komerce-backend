@@ -97,7 +97,7 @@ router.get('/', async function(req, res) {
       offset:  offset
     });
   } catch (err) {
-    log.error('[signals] list error:', err.message);
+    log.error({ err }, '[signals] list error:');
     res.status(500).json({ error: err.message });
   }
 });
@@ -142,7 +142,7 @@ router.get('/stats', async function(req, res) {
       byFamily:   byFamily
     });
   } catch (err) {
-    log.error('[signals] stats error:', err.message);
+    log.error({ err }, '[signals] stats error:');
     res.status(500).json({ error: err.message });
   }
 });
@@ -157,7 +157,7 @@ router.post('/generate', async function(req, res) {
     var result = await signalService.generateSignals(types);
     res.json({ ok: true, result: result });
   } catch (err) {
-    log.error('[signals] generate error:', err.message);
+    log.error({ err }, '[signals] generate error:');
     res.status(500).json({ error: err.message });
   }
 });

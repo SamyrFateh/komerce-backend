@@ -28,7 +28,7 @@ router.get('/', ...guard, async (req, res) => {
     const invoices = await invoiceService.listInvoices({ limit, offset });
     res.json({ ok: true, invoices, count: invoices.length });
   } catch (err) {
-    log.error('[INVOICE] List error:', err.message);
+    log.error({ err }, '[INVOICE] List error:');
     res.status(500).json({ error: err.message });
   }
 });
@@ -52,7 +52,7 @@ router.get('/:orderId', ...guard, async (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err) {
-    log.error('[INVOICE] Generate error:', err.message);
+    log.error({ err }, '[INVOICE] Generate error:');
     if (err.message.includes('introuvable')) {
       return res.status(404).json({ error: err.message });
     }
@@ -69,7 +69,7 @@ router.get('/:orderId/json', ...guard, async (req, res) => {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     res.json({ ok: true, invoice });
   } catch (err) {
-    log.error('[INVOICE] JSON error:', err.message);
+    log.error({ err }, '[INVOICE] JSON error:');
     res.status(err.message.includes('introuvable') ? 404 : 500).json({ error: err.message });
   }
 });
@@ -86,7 +86,7 @@ router.get('/:orderId/download', ...guard, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(html);
   } catch (err) {
-    log.error('[INVOICE] Download error:', err.message);
+    log.error({ err }, '[INVOICE] Download error:');
     res.status(500).json({ error: err.message });
   }
 });
@@ -104,7 +104,7 @@ router.post('/:orderId/deliver', ...guard, async (req, res) => {
     
     res.json({ ok: true, message: `Facture ${invoice.invoice_number} marquée comme délivrée via ${via}` });
   } catch (err) {
-    log.error('[INVOICE] Deliver error:', err.message);
+    log.error({ err }, '[INVOICE] Deliver error:');
     res.status(500).json({ error: err.message });
   }
 });

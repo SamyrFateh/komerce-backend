@@ -219,7 +219,7 @@ router.get('/', requireClientAuth, async (req, res) => {
       count: result.length
     });
   } catch (err) {
-    log.error('[CLIENT-TRACKING] ❌', err.message);
+    log.error({ err }, '[CLIENT-TRACKING] ❌');
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

@@ -112,7 +112,7 @@ router.post('/ship', ...guard, async (req, res, next) => {
     try {
       const { notifyParcelScan } = require('../services/notification-service');
       notifyParcelScan(parcel_id, parcel.reference, 'in_transit')
-        .catch(err => log.warn('[TRANSITAIRE] Notification error:', err.message));
+        .catch(err => log.warn({ err }, '[TRANSITAIRE] Notification error:'));
     } catch (e) { /* notification service not available */ }
 
     res.json({

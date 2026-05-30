@@ -70,7 +70,7 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     // ── Recalculer le palier fidélité après collecte ──────────────────────
     if (status === 'collected' && order.user_id) {
       recalculateLoyalty(db, order.user_id)
-        .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
+        .catch(e => log.error({ err: e }, '[LOYALTY] recalculate error:'));
     }
 
     // SMS notification (non bloquant)

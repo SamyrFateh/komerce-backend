@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (bundle Sprint 3 · 2026-05-29)
+   KOMERCE — base.css (bundle Sprint 3 · 2026-05-30)
    base — tokens · reset · layout · hero
    Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
@@ -940,6 +940,21 @@ body {
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
+  /* VIS-1 FIX — Token de réserve side-cart (source de vérité partagée avec boutique-desktop.css).
+     Problème : body.sc-reserve pose padding-right:240px, mais #k-catalog-section et .k-header-inner
+     sont en max-width:var(--container)=1400px + margin:0 auto. Dès que (100vw - réserve) < 1400px
+     (typique Windows 125% → viewport effectif ~1520px → 1266px dispo < 1400), margin:0 auto
+     part en marges négatives → clip gauche (logo + titre + 1ère carte). Solution : caper la
+     largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
+  :root { --sc-reserve-w: 240px; }
+
+  body.sc-reserve #k-catalog-section,
+  body:has(.k-side-cart.has-items) #k-catalog-section,
+  body.sc-reserve .k-header-inner,
+  body:has(.k-side-cart.has-items) .k-header-inner {
+    max-width: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
+  }
+
   #k-catalog-section {
     max-width: var(--container);
     margin: 0 auto;
@@ -1074,6 +1089,9 @@ body {
 
 /* ── 1200px : raffinements supplémentaires ───────────────────── */
 @media (min-width: 1200px) {
+
+  /* VIS-1 FIX — token réserve 254px aligné sur boutique-desktop.css (@1200px) */
+  :root { --sc-reserve-w: 254px; }
 
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }

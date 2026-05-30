@@ -177,7 +177,7 @@ async function authenticateOrCreateGuest(req, res, next) {
         // Si token valide mais user introuvable → on crée en guest
       } catch (err) {
         if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
-          log.warn('[auth-guest] erreur verif token:', err.message);
+          log.warn({ err }, '[auth-guest] erreur verif token:');
         }
         // → fallthrough vers création guest
       }

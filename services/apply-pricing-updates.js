@@ -27,7 +27,7 @@ async function computeServerSurvival(product) {
     const survival = Number(doctrine?.survival_price_kmf || 0);
     return Number.isFinite(survival) && survival > 0 ? survival : null;
   } catch (err) {
-    log.warn('[pricing-apply] survival compute skipped:', err.message);
+    log.warn({ err }, '[pricing-apply] survival compute skipped:');
     return null;
   }
 }

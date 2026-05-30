@@ -86,7 +86,7 @@ async function ensureWalletTables() {
     `);
     log.info('✅ Wallet tables ready');
   } catch (err) {
-    log.error('⚠️ Wallet migration error:', err.message);
+    log.error({ err }, '⚠️ Wallet migration error:');
   } finally {
     client.release();
   }

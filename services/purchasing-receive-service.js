@@ -20,7 +20,7 @@ let triggerScan3;
 try {
   triggerScan3 = require('../routes/scans').triggerScan3;
 } catch (e) {
-  log.warn('[purchasing-receive] triggerScan3 non disponible:', e.message);
+  log.warn({ err: e }, '[purchasing-receive] triggerScan3 non disponible:');
   triggerScan3 = async () => {};
 }
 

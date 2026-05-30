@@ -79,7 +79,7 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
       try { await db.query(m); } catch(e) { /* column may already exist */ }
     }
     log.info('[HUB-DASH] Tables + migrations OK');
-  } catch(e) { log.warn('Hub-dash tables init (non-fatal):', e.message); }
+  } catch(e) { log.warn({ err: e }, 'Hub-dash tables init (non-fatal):'); }
 })();
 
 // ── GET /dashboard — KPIs Hub (défensif) ────────────────────────────────────

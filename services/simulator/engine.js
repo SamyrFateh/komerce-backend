@@ -48,7 +48,7 @@ async function start(cfg) {
   await tick();
 
   intervalId = setInterval(async () => {
-    try { await tick(); } catch(e) { log.error('[SIM] Tick error:', e.message); }
+    try { await tick(); } catch(e) { log.error({ err: e }, '[SIM] Tick error:'); }
   }, config.cadence_minutes * 60 * 1000);
 
   return getStatus();

@@ -12,7 +12,7 @@
  */
 
 const db  = require('../db');
-const { sendSMS } = require('../utils/sms');
+const { notifyText } = require('../services/notification-service'); // ZG-1: remplace sendSMS
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 // ─── Numéro WhatsApp admin (notifications manuelles) ──────────────────────────
@@ -35,7 +35,7 @@ async function notifyAdminNoSupplier(order, item) {
   ].join('\n');
 
   if (process.env.ADMIN_PHONE) {
-    sendSMS(process.env.ADMIN_PHONE, msg, 'sourcing_alert', order.id).catch(err => log.error({ err }, 'SMS send failed'));
+    notifyText(process.env.ADMIN_PHONE, msg, 'sourcing_alert', order.id).catch(err => log.error({ err }, 'Notification sourcing_alert failed'));
   }
   log.warn('[PURCHASING] Aucun fournisseur pour produit:', item.product_name, '— commande:', order.reference);
 }
@@ -57,7 +57,7 @@ async function notifyAdminManual(order, item, ps, purchaseOrderId) {
   ].filter(Boolean).join('\n');
 
   if (process.env.ADMIN_PHONE) {
-    sendSMS(process.env.ADMIN_PHONE, msg, 'purchase_manual', order.id).catch(err => log.error({ err }, 'SMS send failed'));
+    notifyText(process.env.ADMIN_PHONE, msg, 'purchase_manual', order.id).catch(err => log.error({ err }, 'Notification purchase_manual failed'));
   }
   log.info('[PURCHASING] Notification admin — commande manuelle:', order.reference, ps.supplier_name);
 }

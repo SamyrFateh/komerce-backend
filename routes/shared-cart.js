@@ -48,7 +48,7 @@ const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
 const { updateOpenSharedCartItems }  = require('../services/shared-cart-items-service');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
-const { sendTemplateWhatsApp } = require('./meta-whatsapp');
+const { sendTemplateWhatsApp } = require('../services/whatsapp-meta'); // FIX B1 — était './meta-whatsapp' (exporte router, pas le sender)
 // Templates Meta requis (à enregistrer dans Meta Business Suite) :
 //   shared_cart_settlement_open  — params : {{1}} prénom, {{2}} titre panier, {{3}} montant KMF, {{4}} URL
 //   shared_cart_created          — params : {{1}} URL du lien partagé
@@ -87,7 +87,7 @@ router.get('/public/:token', async (req, res, next) => {
 
     // Tracker la vue (best-effort, n'échoue pas silencieusement)
     engine.incrementViewCount(req.params.token).catch(err =>
-      log.error('[shared-cart] view_count fail', err.message)
+      log.error({ err }, '[shared-cart] view_count fail')
     );
 
     res.json(data);
@@ -400,7 +400,7 @@ async function isStripeEventProcessed(event) {
     );
     return rows.length > 0;
   } catch (e) {
-    log.warn('[shared-cart webhook] stripe_events_processed unavailable:', e.message);
+    log.warn({ err: e }, '[shared-cart webhook] stripe_events_processed unavailable:');
     return false;
   }
 }
@@ -414,7 +414,7 @@ async function markStripeEventProcessed(event, payloadSummary = {}) {
       [event.id, event.type, JSON.stringify(payloadSummary || {})]
     );
   } catch (e) {
-    log.warn('[shared-cart webhook] mark event processed failed:', e.message);
+    log.warn({ err: e }, '[shared-cart webhook] mark event processed failed:');
   }
 }
 
@@ -432,7 +432,7 @@ async function stripeWebhookHandler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
-    log.error('[shared-cart webhook] signature invalide :', err.message);
+    log.error({ err }, '[shared-cart webhook] signature invalide :');
     return res.status(400).send(`Webhook signature invalid: ${err.message}`);
   }
 

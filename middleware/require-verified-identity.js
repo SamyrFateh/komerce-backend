@@ -99,7 +99,7 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
         code: 'identity_required',
       });
     }
-    log.error('[require-verified-identity] erreur inattendue:', err.message);
+    log.error({ err }, '[require-verified-identity] erreur inattendue:');
     return next(err);
   }
 }

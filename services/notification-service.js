@@ -826,6 +826,50 @@ async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCo
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  ZG-1 FIX — notifyText : wrapper texte libre pour les événements sans template
+//
+//  Remplace les anciens sendSMS() de utils/sms.js (Africa's Talking, désactivé).
+//  Utilise callAuthKeyText (WhatsApp AuthKey) + logNotification.
+//  Signature intentionnellement proche de sendSMS pour minimiser la friction
+//  de migration : notifyText(phone, message, event, orderId?)
+//
+//  Événements couverts (pas encore de template dédié) :
+//   preparation, in_transit, available, anomaly_alert, partial_ship,
+//   backorder_cancelled, parcel_status, sourcing_alert, purchase_manual
+// ══════════════════════════════════════════════════════════════════════════════
+async function notifyText(phone, message, event, orderId = null) {
+  if (!phone || !message) {
+    log.warn({ event, order_id: orderId }, '[notifyText] skipped: no phone or message');
+    return { ok: false, reason: 'no_phone_or_message' };
+  }
+
+  try {
+    const result = await callAuthKeyText({ mobile: phone, message });
+
+    await logNotification({
+      orderRef: orderId || null,
+      channel: 'whatsapp',
+      event,
+      recipient: phone,
+      status: result.ok ? 'sent' : 'failed',
+      detail: result.ok
+        ? { messageId: result.messageId }
+        : { error: result.error },
+    });
+
+    if (!result.ok) {
+      log.warn({ event, phone, order_id: orderId, error: result.error }, '[notifyText] delivery failed');
+    }
+
+    return result;
+  } catch (err) {
+    log.error({ err, event, phone, order_id: orderId }, '[notifyText] error');
+    _alertNotificationFailure({ event, orderId, error: err.message });
+    return { ok: false, error: err.message };
+  }
+}
+
 module.exports = {
   // Fonctions historiques (flux commande)
   notifyOrderCreated,
@@ -839,10 +883,13 @@ module.exports = {
   sendOtpMessage,
   sendMagicLink,
 
-  // FidÃ©litÃ©
+  // ZG-1 — texte libre (remplace sendSMS legacy)
+  notifyText,
+
+  // Fidélité
   notifyLoyaltyEarned,
 
-  // Helper interne exposÃ© pour tests
+  // Helper interne exposé pour tests
   _loadOrderFromParcel,
 };
 

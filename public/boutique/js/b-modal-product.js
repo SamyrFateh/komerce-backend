@@ -271,14 +271,19 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     if (window.innerWidth >= 900) return;
     var actBar = dom.modal && dom.modal.querySelector('.k-modal-actions');
     // FIX v5: si .k-modal-actions est enfant direct de #k-modal (architecture statique),
-    // le layout flex gere l'ancrage => pas de padding compensatoire necessaire.
-    if (!actBar || actBar.parentNode === dom.modal) return;
-    // Fallback legacy: position:fixed => compenser via padding
+    // le layout flex gère l'ancrage. On expose quand même la hauteur mesurée en CSS var
+    // pour que le padding-bottom du scroll soit toujours exact (VIS-3D).
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        var scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
-        if (!scrollEl) return;
-        scrollEl.style.paddingBottom = (actBar.offsetHeight + 20) + 'px';
+        if (!actBar) return;
+        var h = actBar.offsetHeight || 0;
+        // Source unique : var CSS mesurée → consommée par modal.css
+        document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
+        // Fallback legacy si actions pas encore en flex statique (position:fixed)
+        if (actBar.parentNode !== dom.modal) {
+          var scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+          if (scrollEl) scrollEl.style.paddingBottom = (h + 20) + 'px';
+        }
       });
     });
   }
@@ -317,15 +322,20 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
   }
 
   /* ── F4 — TRUST BAR MOBILE ──────────────────────────────────────
-     Injecte 3 pills de réassurance avant .k-modal-actions.
-     Masqué desktop par CSS (display:none @min-width:900px).       */
+     Injecte 3 pills de réassurance en FIN de .k-modal-info (dans le scroll).
+     FIX VIS-3A : l'ancienne version faisait insertBefore(.k-modal-actions) —
+     mais après Fix-v5, .k-modal-actions est SORTI du scroll (enfant direct de
+     #k-modal via setupModal). Ancrer sur parentNode(actions) plaçait la trust-bar
+     hors du scroll en sibling épinglé → gonflement de la zone basse fixe →
+     description + CTA débordaient. Solution : ancrer sur .k-modal-info (stable,
+     toujours dans le scroll), masqué ≥900px par modal.css.                   */
   function _injectMobileTrust() {
     if (!dom.modal) return;
     var old = dom.modal.querySelector('[data-mobile-trust]');
     if (old) old.remove();
 
-    var actions = dom.modal.querySelector('.k-modal-actions');
-    if (!actions || !actions.parentNode) return;
+    var info = dom.modal.querySelector('.k-modal-info'); /* ancre STABLE dans le scroll */
+    if (!info) return;
 
     var el = document.createElement('div');
     el.className = 'k-modal-trust-mobile';
@@ -335,7 +345,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       '<span class="k-modal-trust-mobile-item">💵 Paiement cash</span>' +
       '<span class="k-modal-trust-mobile-item">🔄 Échange 14 j</span>';
 
-    actions.parentNode.insertBefore(el, actions);
+    info.appendChild(el); /* dernier élément scrollable, avant la CTA épinglée */
   }
 
   /* ════ TOPBAR ENRICHIE + RETOUR HAUT ════ */

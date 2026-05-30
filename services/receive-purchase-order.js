@@ -105,7 +105,7 @@ async function receivePurchaseOrder({ poId, qtyReceived, actor, triggerScan3 }) 
 
     if (shouldTriggerScan3 && typeof triggerScan3 === 'function') {
       triggerScan3(triggerOrderId, actor?.id || null)
-        .catch(e => log.error('[purchasing/receive] Erreur SMS SCAN3:', e.message));
+        .catch(e => log.error({ err: e }, '[purchasing/receive] Erreur SMS SCAN3:'));
     }
 
     const itemsMissing = total - recus;

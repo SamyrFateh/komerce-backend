@@ -47,7 +47,7 @@ async function loadEcoVars() {
     _varsCacheAt = Date.now();
     return map;
   } catch (err) {
-    log.error('[ECO-BRIDGE] loadEcoVars error:', err.message);
+    log.error({ err }, '[ECO-BRIDGE] loadEcoVars error:');
     return _varsCache || {};
   }
 }
@@ -133,7 +133,7 @@ async function loadChargesSummary() {
     _chargesCacheAt = Date.now();
     return result;
   } catch (err) {
-    log.error('[ECO-BRIDGE] loadChargesSummary error:', err.message);
+    log.error({ err }, '[ECO-BRIDGE] loadChargesSummary error:');
     return _chargesCache || {
       charges: [], per_order_total: 0, monthly_total: 0,
       monthly_per_order: 0, total_cost_per_order: 0, orders_per_month: 100,

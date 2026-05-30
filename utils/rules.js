@@ -44,7 +44,7 @@ async function getRule(key, defaultValue) {
     return val !== undefined ? val : defaultValue;
   } catch (err) {
     // DB inaccessible → fallback silencieux
-    log.error('[RULES] getRule error (fallback used):', err.message);
+    log.error({ err }, '[RULES] getRule error (fallback used):');
     return defaultValue;
   }
 }

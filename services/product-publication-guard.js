@@ -45,7 +45,7 @@ async function auditProductStockChange(q = db, {
     );
     return { inserted: true };
   } catch (err) {
-    log.warn('[product-publication-guard] stock audit skipped:', err.message);
+    log.warn({ err }, '[product-publication-guard] stock audit skipped:');
     return { skipped: true, reason: err.message };
   }
 }

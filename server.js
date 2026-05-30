@@ -67,7 +67,7 @@ applySecurity(app);
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
-app.use('/api/collective-payments/stripe/webhook', express.raw({ type: 'application/json' }));
+// /api/collective-payments/stripe/webhook supprimé — collective_workspaces démonté 2026-05-30
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -137,27 +137,18 @@ mountApiRoutesBeforeStripeOwnedBlocks(app);
 
 // ═══ Panier Partagé MVP (Niveau 1) ═══
 app.post('/api/shared-carts/stripe/webhook', sharedCart.stripeWebhookHandler);
-app.put('/api/shared-carts/:id/items', authenticate, async (req, res, next) => {
-  try {
-    const body = req.body || {};
-    const result = await sharedCartItemsService.updateOpenSharedCartItems(req.params.id, req.user.id, body.cart_items || []);
-    res.json({ ok: true, message: 'Panier partagé mis à jour pendant la phase de concertation.', cart: result.cart, items: result.items });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
+// FIX B2 — l'ancien app.put('/api/shared-carts/:id/items') inline a été SUPPRIMÉ ici.
+// Il masquait le handler complet du router (S2-06, avec notifs WhatsApp participants).
+// Le handler canonique est dans routes/shared-cart.js — sharedCart.router le couvre.
 app.use('/api/shared-carts',       sharedCart.router);
 app.use('/api/admin/shared-carts', sharedCartRefundAdmin.router);
 app.use('/api/admin/shared-carts', sharedCart.adminRouter);
 
-// ═══ Panier Événement Collectif V1 ═══
-const collectiveWS = require('./routes/collective-workspaces');
-const collectivePaymentOrchestrator = require('./services/collective-payment-orchestrator');
-app.post('/api/collective-payments/stripe/webhook', collectiveWS.stripeWebhookHandler);
-app.use('/api/collective-workspaces', collectiveWS.router);
-app.use('/api/collective-payments',   collectiveWS.paymentsRouter);
-// A-BE-03: startExpirationCron supprimé — tombstone no-op (2026-05-26)
+// ═══ Panier Événement Collectif V1 — DÉMONTÉ ═══
+// collective-workspaces.js est un tombstone 410 depuis 2026-05-26.
+// Le module n'est plus chargé pour ne pas alourdir le démarrage.
+// Les tables collective_* restent en DB (données historiques).
+// Si un ancien client appelle ces routes → 404 (acceptable, le tombstone était déjà 410).
 mountApiRoutesAfterStripeOwnedBlocks(app);
 
 

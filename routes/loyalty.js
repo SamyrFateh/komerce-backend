@@ -113,7 +113,7 @@ async function getLoyaltyDiscount(db, userId) {
     };
   } catch (err) {
     // En cas d'erreur DB, on ne bloque pas la commande — remise = 0
-    log.error('[LOYALTY] getLoyaltyDiscount error:', err.message);
+    log.error({ err }, '[LOYALTY] getLoyaltyDiscount error:');
     return { discountPct: 0, discountLabel: null };
   }
 }
@@ -127,7 +127,7 @@ async function recalculateLoyalty(db, userId) {
   try {
     await db.query('SELECT recalculate_loyalty($1)', [userId]);
   } catch (err) {
-    log.error('[LOYALTY] recalculateLoyalty error:', err.message);
+    log.error({ err }, '[LOYALTY] recalculateLoyalty error:');
   }
 }
 

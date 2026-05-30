@@ -19,7 +19,7 @@ const router  = express.Router();
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { sendSMS }  = require('../utils/sms');
+// ZG-1: sendSMS (utils/sms — Africa's Talking, désactivé) supprimé — remplacé par notification-service
 const { getRates } = require('../utils/rates');
 const { triggerPurchasing } = require('./purchasing'); // Sourcing semi-automatisé v7.6
 const { validate } = require('../middleware/validate');
@@ -333,27 +333,9 @@ async function _handleStripeSucceeded(event, intent, res) {
 
   // ── Chemin 7 (stockBlocked) et 8 (nominal) : SMS post-commit ──────────
   if (smsContext) {
-    const { rows: [order] } = await db.query(
-      `SELECT o.*, u.phone AS user_phone
-       FROM orders o LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.id = $1`,
-      [smsContext.order_id]
-    );
-    if (order?.user_phone && !stockBlocked) {
-      sendSMS(
-        order.user_phone,
-        `Komerce · Paiement reçu pour la commande ${smsContext.order_reference}. Votre commande est lancée — achat en cours à Dubai.`,
-        'ordered', smsContext.order_id
-      ).catch(err => log.error({ err }, 'SMS webhook error'));
-    } else if (order?.user_phone && stockBlocked) {
-      // Chemin 7 : notif différente paiement reçu + traitement manuel
-      sendSMS(
-        order.user_phone,
-        `Komerce · Paiement reçu pour ${smsContext.order_reference}. Notre équipe vous contacte sous 24h pour finaliser.`,
-        'paid_pending_review', smsContext.order_id
-      ).catch(err => log.error({ err }, 'SMS webhook error'));
-    }
     log.info(`✅ Paiement Stripe confirmé : ${smsContext.order_reference}${stockBlocked ? ' (STOCK BLOCKED)' : ''}`);
+    // ZG-1: sendSMS (Africa's Talking, désactivé) supprimé — notifyPaymentConfirmed ci-dessous
+    // couvre les deux chemins nominal + stockBlocked via WhatsApp AuthKey.
 
     // ── Chemin 8 : notifications complètes uniquement si nominal ─────────
     if (processedOk) {
@@ -562,20 +544,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 
     // ── POST-COMMIT: Notifications crash-safe (fire-and-forget) ──
     try {
-      const { rows: [fullOrder] } = await db.query(
-        `SELECT o.*, u.phone AS user_phone
-         FROM orders o LEFT JOIN users u ON u.id = o.user_id
-         WHERE o.id = $1`,
-        [order.id]
-      );
-      if (fullOrder?.user_phone) {
-        sendSMS(
-          fullOrder.user_phone,
-          `Komerce · Paiement reçu pour la commande ${order.reference} (${order.total_kmf.toLocaleString('fr-FR')} KMF). Votre commande est confirmée et en cours de préparation. Délai : 3 à 5 semaines.`,
-          'confirmation', order.id
-        ).catch(e => log.error({ err: e }, '[CASH-SMS] SMS send failed'));
-      }
-
+      // ZG-1: sendSMS (Africa's Talking, désactivé) supprimé — notifyPaymentConfirmed ci-dessous.
       const notifSvc = require('../services/notification-service');
       notifSvc.notifyPaymentConfirmed(order.id, order.reference)
         .then(result => {

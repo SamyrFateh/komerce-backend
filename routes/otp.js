@@ -27,13 +27,13 @@ const ALLOWED_PURPOSES = new Set([
   'pickup',
 ]);
 
+const { normalizePhone: _normalizePhoneUtil } = require('../utils/phone');
+
+// FIX W2 — normalisePhone unifié via utils/phone.js (indicatif +269 par défaut Comores).
+// Supprimé : normalizer local qui forçait +269 sans validation longueur/format.
+// utils/phone.js : normalizePhone(raw, defaultCountry) — valide E.164, refuse si invalide.
 function normalizePhone(raw) {
-  let phone = String(raw || '').replace(/[\s\-()]/g, '');
-  if (!phone.startsWith('+')) {
-    if (phone.startsWith('269')) phone = '+' + phone;
-    else phone = '+269' + phone;
-  }
-  return phone;
+  return _normalizePhoneUtil(raw, '+269');
 }
 
 function normalizePurpose(raw) {
@@ -231,7 +231,7 @@ router.post('/request', async (req, res) => {
         : undefined,
     });
   } catch (err) {
-    log.error('[OTP] request error:', err.message);
+    log.error({ err }, '[OTP] request error:');
     return res.status(500).json({
       ok: false,
       success: false,
@@ -351,7 +351,8 @@ router.post('/verify', async (req, res) => {
     const token = signKomerceJwt(user, phone);
 
     res.cookie('kmrc_jwt', token, jwtCookieOptions());
-    res.cookie('kmrc_client', token, jwtCookieOptions());
+    // CONSOLIDATION AUTH — kmrc_client supprimé (jamais lu par middleware/auth.js ni auth-guest.js).
+    // Cookie canonique unique : kmrc_jwt. requireClientAuth lit désormais kmrc_jwt directement.
 
     log.info(`[OTP] Vérifié → ${user.full_name || 'Client Komerce'} (${phone}) / purpose=${purpose}${created ? ' [created]' : ''}`);
 
@@ -363,7 +364,7 @@ router.post('/verify', async (req, res) => {
       user: buildUserPayload(user, phone),
     });
   } catch (err) {
-    log.error('[OTP] verify error:', err.message);
+    log.error({ err }, '[OTP] verify error:');
     return res.status(500).json({
       ok: false,
       success: false,

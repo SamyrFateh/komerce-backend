@@ -68,7 +68,7 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
 
     return res.sendStatus(200);
   } catch (e) {
-    log.error('[META-WA][WEBHOOK][ERROR]', e.message);
+    log.error({ err: e }, '[META-WA][WEBHOOK][ERROR]');
     return res.sendStatus(500);
   }
 });

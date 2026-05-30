@@ -55,7 +55,7 @@ async function createStripeOrderIntent({ orderReference, user }) {
         intent = existing;
       }
     } catch (e) {
-      log.warn('[STRIPE-INTENT] existing intent retrieve failed:', e.message);
+      log.warn({ err: e }, '[STRIPE-INTENT] existing intent retrieve failed:');
     }
   }
 

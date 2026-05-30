@@ -963,7 +963,7 @@ async function getSalesAnalysis(query) {
     GROUP BY cohort_month, offset_months
     ORDER BY cohort_month ASC, offset_months ASC
   `, [cohortLimitMonths, cohortLimitMonths]).catch(err => {
-    log.warn('[dashboard-finance-metrics/sales] cohortes failed:', err.message);
+    log.warn({ err }, '[dashboard-finance-metrics/sales] cohortes failed:');
     return { rows: [] };
   });
 

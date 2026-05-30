@@ -10,7 +10,7 @@
  */
 
 const db = require('../db');
-const { sendSMS } = require('../utils/sms');
+const { notifyText } = require('../services/notification-service'); // ZG-1: remplace sendSMS
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
 const log = require('../utils/logger').child({ module: 'verify-qr-collection' });
@@ -140,19 +140,19 @@ async function verifyQrCollection({ token, orderId, user }) {
     await client.query('COMMIT');
 
     if (order.user_phone) {
-      sendSMS(
+      notifyText(
         order.user_phone,
         `Komerce · Votre colis ${order.reference} a bien été récupéré par ${order.recipient_name || 'le destinataire'}. Merci pour votre confiance ! 🎉`,
         'collected',
         order.id
-      ).catch(err => log.error('SMS QR collect error:', err.message));
+      ).catch(err => log.error({ err }, 'Notification QR collect error'));
     }
 
     if (order.user_id) {
       try {
         const { recalculateLoyalty } = require('../routes/loyalty');
         recalculateLoyalty(db, order.user_id)
-          .catch(e => log.error('[LOYALTY] recalculate error:', e.message));
+          .catch(e => log.error({ err: e }, '[LOYALTY] recalculate error:'));
       } catch (_) { /* non-bloquant */ }
     }
 

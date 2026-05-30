@@ -117,7 +117,7 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
         `confirmed→ordered rejeté — order ${orderId}`,
         JSON.stringify({ orderId, error: orderResult.error }),
       ]
-    ).catch(e => log.error('[confirmPaymentCycle] Échec INSERT alerte confirmed→ordered:', e.message));
+    ).catch(e => log.error({ err: e }, '[confirmPaymentCycle] Échec INSERT alerte confirmed→ordered:'));
   }
 
   // ── Étape 3 : vérification stock + décrémentage (FOR UPDATE atomique) ─────

@@ -436,7 +436,7 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
          WHERE share_token = $2
            AND converted_order_id IS NULL`,
         [order.id, share_token]
-      ).catch(e => log.error('[SHARES] linkShareToOrder error:', e.message));
+      ).catch(e => log.error({ err: e }, '[SHARES] linkShareToOrder error:'));
     }
 
     // ── Notifications post-commit (multi-numéros) ──────────────────────────
@@ -465,7 +465,7 @@ const emailItems = items.map(i => {
 
 
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
-  .catch(err => log.error('[ORDER-CREATED] ❌', err.message));
+  .catch(err => log.error({ err }, '[ORDER-CREATED] ❌'));
 
     return res.status(201).json({
       discount_pct: order.discount_pct || 0,

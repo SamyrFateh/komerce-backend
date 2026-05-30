@@ -97,7 +97,7 @@ async function insertBlockingAlert(q, { orderId, orderReference, actor, reason, 
     );
   } catch (err) {
     // Ne jamais casser l'annulation métier uniquement parce que l'alerte échoue.
-    log.error('[I-SWEEP-5A] failed to insert purchasing cancel alert:', err.message);
+    log.error({ err }, '[I-SWEEP-5A] failed to insert purchasing cancel alert:');
   }
 }
 

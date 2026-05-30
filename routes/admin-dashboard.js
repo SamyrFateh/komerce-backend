@@ -779,7 +779,7 @@ async function _fetchTopAlerts(limit = 5) {
       created_at: row.created_at,
     }));
   } catch (e) {
-    log.warn('[admin-dashboard] _fetchTopAlerts non-fatal:', e.message);
+    log.warn({ err: e }, '[admin-dashboard] _fetchTopAlerts non-fatal:');
     return [];
   }
 }
