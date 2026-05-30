@@ -174,7 +174,10 @@ async function recommend(input, options = {}) {
   let estimatedContribution = null;
   if (currentPrice > 0) {
     estimatedMarginPct    = ((currentPrice - cdr.cost_complete_estimated_kmf) / currentPrice) * 100;
-    estimatedContribution = currentPrice - (cdr.variable_cost_estimated_kmf - cdr.risk_provision_estimated_kmf);
+    // P1 fix : variable_cost_estimated_kmf inclut DÉJÀ la provision de risque (cf. pricing-cdr).
+    // La contribution doit donc se calculer directement dessus, comme le chemin fallback,
+    // sinon on surestime la contribution et on sous-estime le seuil de rentabilité.
+    estimatedContribution = currentPrice - cdr.variable_cost_estimated_kmf;
   }
 
   // ── 4. Seuil de rentabilité ───────────────────────────────────────

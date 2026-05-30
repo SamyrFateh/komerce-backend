@@ -227,6 +227,11 @@ function computeCDR(product, ctx = {}) {
     const customsAmt = baseDouane * (Number(cat.douane_pct) || 0) / 100;
     const tvaAmt     = baseDouane * (Number(cat.tva_pct) || 0) / 100;
     const taxAddAmt  = baseDouane * (Number(cat.taxe_add_pct) || 0) / 100;
+    // P2 fix : la matrice catégorie est la source de vérité douane (ADR-004).
+    // Retirer la douane éventuellement déjà imputée par des cost_components
+    // (details.customs = somme brute des composants douane à ce stade) afin
+    // d'éviter un double-comptage dans runningSubtotal. No-op si aucun composant douane.
+    runningSubtotal -= details.customs;
     details.customs = r(customsAmt + tvaAmt + taxAddAmt);
     runningSubtotal += customsAmt + tvaAmt + taxAddAmt;
   }
