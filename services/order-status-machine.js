@@ -315,20 +315,45 @@ async function transitionOrderStatus({
       }
     }
 
-    // Stock restore
-    const { rows: items } = await q.query(
-      'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
-      [orderId]
-    );
-    for (const item of items) {
-      await q.query(
-        'UPDATE products SET stock = stock + $1 WHERE id = $2',
-        [item.quantity, item.product_id]
+    // Stock restore — UNIQUEMENT si le stock avait réellement été décrémenté.
+    // Le décrément se fait au passage pending → confirmed (order-payment-confirmation.js).
+    // Annuler une commande jamais confirmée (pending / pending_group_payment) ne doit
+    // PAS rendre de stock, sinon on crée du stock fantôme.
+    const stockWasDecremented = STATUS_RANK[previousStatus] >= STATUS_RANK.confirmed;
+    if (stockWasDecremented) {
+      // Symétrie avec le décrément : restaurer stock produit ET stock variantes.
+      const { rows: items } = await q.query(
+        `SELECT oi.product_id, oi.quantity, oi.variant_combo, p.has_variants
+           FROM order_items oi
+           JOIN products p ON p.id = oi.product_id
+          WHERE oi.order_id = $1`,
+        [orderId]
       );
-    }
-    cancelEffects.stockItemsRestored = items.length;
-    if (items.length > 0) {
-      log.info({ order_id: orderId, items_count: items.length }, 'Stock restored after order cancellation');
+      for (const item of items) {
+        await q.query(
+          'UPDATE products SET stock = stock + $1 WHERE id = $2',
+          [item.quantity, item.product_id]
+        );
+        // Variantes — miroir exact de la décrémentation (VAGUE 3).
+        if (item.has_variants && item.variant_combo) {
+          for (const [vType, vValue] of Object.entries(item.variant_combo)) {
+            await q.query(
+              `UPDATE product_variants
+                  SET stock = stock + $1
+                WHERE product_id = $2 AND variant_type = $3 AND variant_value = $4
+                  AND stock IS NOT NULL`,
+              [item.quantity, item.product_id, vType, vValue]
+            );
+          }
+        }
+      }
+      cancelEffects.stockItemsRestored = items.length;
+      if (items.length > 0) {
+        log.info({ order_id: orderId, items_count: items.length, previous_status: previousStatus }, 'Stock restored after order cancellation');
+      }
+    } else {
+      cancelEffects.stockItemsRestored = 0;
+      log.info({ order_id: orderId, previous_status: previousStatus }, 'Stock non restauré : commande jamais confirmée (stock jamais décrémenté)');
     }
 
     // Purchase orders sync — pending/notified auto-cancelled, engaged POs alerted.

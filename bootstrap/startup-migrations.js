@@ -315,19 +315,19 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
   } catch(e) { log.warn({ err: e }, 'Migration 036 (non-fatal):'); }
 
   try {
-    const migration037 = require('./scripts/migration-037-fix-products');
+    const migration037 = require('../scripts/migration-037-fix-products');
     await migration037(db);
     log.info('âœ… Migration 037: products is_active + subcategory fixed');
   } catch(e) { log.warn({ err: e }, 'Migration 037 (non-fatal):'); }
 
   try {
-    const migration038 = require('./scripts/migration-038-replace-products');
+    const migration038 = require('../scripts/migration-038-replace-products');
     await migration038(db);
     log.info('âœ… Migration 038: product catalog replaced');
   } catch(e) { log.warn({ err: e }, 'Migration 038 (non-fatal):'); }
 
   try {
-    const migration039 = require('./scripts/migration-039-french-descriptions');
+    const migration039 = require('../scripts/migration-039-french-descriptions');
     await migration039();
     log.info('âœ… Migration 039: descriptions updated to French');
   } catch(e) { log.warn({ err: e }, 'Migration 039 (non-fatal):'); }
@@ -596,6 +596,18 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
       log.info('âœ… Migration 052: charges already seeded, skipping');
     }
   } catch(e) { log.warn({ err: e }, 'Migration 052 (non-fatal):'); }
+
+  // ── Runner de migrations fichier (migrations/NNN*.sql) ───────────────────
+  // Auto-applique les migrations .sql non encore enregistrées dans
+  // schema_migrations. SÛR : ne fait rien tant que la base n'a pas été baselinée
+  // (cf. scripts/run-migrations.js --baseline). Non-fatal.
+  try {
+    const { runPendingSafe } = require('../scripts/run-migrations');
+    const res = await runPendingSafe();
+    if (res.applied && res.applied.length) {
+      log.info({ applied: res.applied }, '✅ Runner: migrations fichier appliquées');
+    }
+  } catch (e) { log.warn({ err: e }, 'Runner migrations fichier (non-fatal):'); }
 
   log.info('âœ… Migrations et seeds terminÃ©es');
 }
