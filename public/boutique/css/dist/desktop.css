@@ -1135,3 +1135,28 @@
     max-width: 1540px;
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   HERO — RÉSERVE SIDE-CART (VIS-1 extension)
+   Owner : boutique-desktop.css (owner side-cart, charge en dernier).
+   Problème : #k-hero-fixed-wrap reste width:100% quand le side-cart
+   est actif → l'image déborde sous le panneau fixed et la dame
+   de droite se fait écraser par le compteur panier.
+   Fix : on cale le hero sur la même largeur utile que le catalog.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
+  body.sc-reserve #k-hero-fixed-wrap {
+    max-width: calc(100vw - var(--sc-reserve-w, 240px));
+    /* overflow:clip évite tout débordement de l'image hors de la zone utile */
+    overflow: clip;
+  }
+}
+@media (min-width: 1200px) {
+  body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
+  body.sc-reserve #k-hero-fixed-wrap {
+    max-width: calc(100vw - var(--sc-reserve-w, 254px));
+  }
+}
+/* ══ FIN HERO RÉSERVE SIDE-CART ════════════════════════════════ */
