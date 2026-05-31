@@ -49,7 +49,6 @@ const OWNERSHIP = [
   { selector: '.k-cats-shell',     owner: 'categories.css',                    scope: 'base' },
   { selector: '.k-cats-shell',     owner: 'boutique-desktop.css',              scope: 'desktop-override' },
   { selector: '.k-cats-shell',     owner: 'hero.css',                          scope: 'base' },      // contexte hero mobile
-  { selector: '.k-cats-shell',     owner: 'desktop-commerce-skeleton.css',     scope: 'desktop' },   // max-width ≥1500px
 
   // ── .k-hero-cats-sticky ─────────────────────────────────────────
   { selector: '.k-hero-cats-sticky', owner: 'hero.css',           scope: 'base' },
@@ -84,7 +83,6 @@ const OWNERSHIP = [
   // skeleton : skin desktop (border-radius, shadow) — cascade §7 skeleton gagne.
   { selector: '.k-card',           owner: 'products.css',         scope: 'base' },
   { selector: '.k-card',           owner: 'boutique-desktop.css', scope: 'desktop-override' },
-  { selector: '.k-card',           owner: 'desktop-commerce-skeleton.css', scope: 'desktop' }, // skin desktop global
 
   // ── .k-card-add / .k-card-fav ────────────────────────────────────
   // products.css : base + états (boutons sur la card).
@@ -104,7 +102,6 @@ const OWNERSHIP = [
   // ── #k-desktop-catalog-wrap ──────────────────────────────────────
   // skeleton : grid layout desktop (owner principal).
   // layout.css : overflow/sticky fixes — structural, ne peut pas vivre dans skeleton (PATCH#227).
-  { selector: '#k-desktop-catalog-wrap', owner: 'desktop-commerce-skeleton.css', scope: 'desktop' },
   { selector: '#k-desktop-catalog-wrap', owner: 'layout.css',     scope: 'all' }, // overflow sticky fixes
 ];
 
@@ -120,7 +117,7 @@ const HEX_ALLOWLIST = [
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
   'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
-  'desktop.css':    ['boutique-desktop', 'desktop-commerce-skeleton'],
+  'desktop.css':    ['boutique-desktop'],
   'event.css':      ['event'],
 };
 

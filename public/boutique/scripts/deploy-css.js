@@ -50,7 +50,7 @@ const BUNDLES = [
   },
   {
     out: 'desktop.css',
-    files: ['boutique-desktop', 'desktop-commerce-skeleton'],
+    files: ['boutique-desktop'],
   },
   {
     out: 'event.css',
@@ -155,7 +155,8 @@ for (const bundle of BUNDLES) {
     process.exit(1);
   }
 
-  newHashes[bundle.out] = sha1(Buffer.from(output, 'utf8'));
+  // Hash sur les SOURCES uniquement (pas le header daté) → déterministe d'un jour à l'autre.
+  newHashes[bundle.out] = sha1(Buffer.from(parts.join('\n\n'), 'utf8'));
   console.log(`  ${GRN}✓${R}  ${bundle.out.padEnd(18)} ${(output.split('\n').length + ' lignes').padEnd(12)} ${DIM}← ${bundle.files.join(' + ')}${R}`);
 }
 

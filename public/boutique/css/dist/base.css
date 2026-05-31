@@ -1,7 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (bundle Sprint 3 · 2026-05-30)
-   base — tokens · reset · layout · hero
-   Généré par scripts/bundle-css.js — éditer les sources.
+   KOMERCE — base.css (2026-05-31)
+   Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -1271,8 +1270,12 @@ body:has(#k-page-scroll.k-pager-active) {
   html { overflow-x: visible; overflow-y: auto; }
   body { overflow-x: visible; overflow-y: visible; }
   #k-page-scroll,
-  #k-desktop-catalog-wrap,
-  #k-catalog-section { overflow: visible; }
+  #k-desktop-catalog-wrap { overflow: visible; }
+  /* #k-catalog-section RETIRÉ de ce bloc (était un bug : overflow:visible
+     annulait overflow-x:clip posé l.701). Il DOIT conserver overflow-x:clip
+     pour contenir le painting de la grille hors de la zone du side-cart fixed.
+     Sibling du side-cart → le clip ne le touche pas. Voir I-DESK-2 dans
+     BOUTIQUE_DESKTOP_LAYOUT_CONTRACT.md. */
 }
 
 

@@ -27,8 +27,8 @@ const bundles = [
   },
   {
     out: 'desktop.css',
-    label: 'desktop — boutique-desktop · desktop-commerce-skeleton',
-    files: ['boutique-desktop', 'desktop-commerce-skeleton'],
+    label: 'desktop — boutique-desktop',
+    files: ['boutique-desktop'],
   },
   {
     out: 'event.css',
