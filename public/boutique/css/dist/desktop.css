@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop.css (2026-05-31)
-   Généré par deploy-css.js — éditer les sources CSS.
+   KOMERCE — desktop.css (bundle Sprint 3 · 2026-05-31)
+   desktop — boutique-desktop
+   Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
 /* ── boutique-desktop.css ────────────────────────────────── */
 /* ══════════════════════════════════════════════════════════════════
@@ -293,6 +294,28 @@
     transition: color .12s;
   }
   .k-footer-legal-link:hover { color: var(--violet-mid-bright); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FOOTER — SIDE-CART BACKGROUND EXTENSION FIX
+   Problème : body:has(.k-side-cart.has-items) reçoit padding-right:--sc-reserve-w,
+   ce qui raccourcit le footer à (100vw - 240px). Le fond vert s'arrête 240px
+   avant le bord droit du viewport, laissant une zone blanche sous le side-cart.
+   Fix : box-shadow rightward pour étendre le fond vert sans toucher au box-model
+   ni au contenu (le side-cart, z-index:200, s'affiche bien au-dessus).
+   Owner : boutique-desktop.css (owner unique du footer + du side-cart).
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  body:has(.k-side-cart.has-items) .k-footer,
+  body.sc-reserve .k-footer {
+    box-shadow: var(--sc-reserve-w, 240px) 0 0 0 var(--green-bg-leaf);
+  }
+}
+@media (min-width: 1200px) {
+  body:has(.k-side-cart.has-items) .k-footer,
+  body.sc-reserve .k-footer {
+    box-shadow: var(--sc-reserve-w, 254px) 0 0 0 var(--green-bg-leaf);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════
