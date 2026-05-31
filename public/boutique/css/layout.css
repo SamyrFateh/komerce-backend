@@ -423,15 +423,19 @@ body:has(#k-page-scroll.k-pager-active) {
      largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
   :root { --sc-reserve-w: 240px; }
 
-  body.sc-reserve #k-catalog-section,
-  body:has(.k-side-cart.has-items) #k-catalog-section,
+  /* ROOT CAUSE FIX : le max-width de #k-catalog-section a UN SEUL owner
+     (#k-desktop-catalog-wrap #k-catalog-section, plus bas). On ne se bat plus
+     en spécificité : l'état "panier docké" bascule juste une variable.
+     Panier vide → --catalog-max absent → fallback none (pleine largeur).
+     Panier docké → --catalog-max = zone utile → la section se cappe. */
+  body.sc-reserve,
+  body:has(.k-side-cart.has-items) {
+    --catalog-max: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
+  }
+
   body.sc-reserve .k-header-inner,
   body:has(.k-side-cart.has-items) .k-header-inner {
     max-width: min(var(--container), calc(100vw - var(--sc-reserve-w) - 16px));
-    /* FIX décalage gauche : margin:0 auto dans un body avec padding-right:240px
-       centre dans (100vw - 240px) → décale le contenu vers la gauche de 120px.
-       On aligne à gauche avec margin-right:auto pour que le contenu reste
-       justifié à gauche et ne soit pas re-centré dans la zone réduite. */
     margin-left: 0;
     margin-right: auto;
   }
@@ -647,7 +651,7 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-desktop-catalog-wrap #k-catalog-section {
     flex: 1 1 0;
     min-width: 0;
-    max-width: none;
+    max-width: var(--catalog-max, none);
     margin: 0;
     padding: 0;
     /* overflow-x:clip au lieu de hidden: rogne sans créer de scroll container */
