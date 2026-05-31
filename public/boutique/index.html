@@ -65,7 +65,7 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=7">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=8">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=19">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=19">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=5">
@@ -132,12 +132,14 @@ if('serviceWorker' in navigator){
   <div class="k-hero-inner">
     <div class="k-hero-media">
       <picture>
-        <source media="(min-width: 900px)" srcset="/images/Hero_1600x360.png" width="1600" height="360">
+        <!-- Desktop ≥900px : bannière cadrée à 360px de haut via CSS -->
+        <source media="(min-width: 900px)" srcset="/images/Hero_1600x360.png" width="1456" height="720">
         <!-- WebP mobile tamisé (prioritaire — ~50% plus léger) -->
         <source media="(max-width: 899px)" type="image/webp" srcset="/images/komerce_hero_mobile_1080x220.webp" width="1080" height="220">
         <!-- PNG mobile fallback (navigateurs sans WebP) -->
-        <source media="(max-width: 899px)" srcset="/images/Hero_1080x420.png" width="1080" height="420">
-        <img class="k-hero-img" src="/images/Hero_Pano_v2.png" width="2902" height="542" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+        <source media="(max-width: 899px)" srcset="/images/Hero_1080x420.png" width="1456" height="720">
+        <!-- Fallback universel : image desktop existante (Hero_Pano_v2.png introuvable) -->
+        <img class="k-hero-img" src="/images/Hero_1600x360.png" width="1456" height="720" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
       </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>

@@ -281,3 +281,36 @@
   .k-cats-rail { display: none; }
 }
 /* ══ FIN HERO v4 ══════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   HERO DESKTOP OVERRIDE — @min-width:900px
+   Annule le aspect-ratio:1080/220 posé par hero v4 (mobile only).
+   Image réelle : 1456×720 → on cadre à 360px de haut avec object-fit:cover.
+   object-position:50% 20% : cadre le haut du visuel (personnages).
+   Source de vérité pour la hauteur hero desktop.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  .k-hero-img {
+    height: 360px;
+    aspect-ratio: unset;
+    object-fit: cover;
+    object-position: 50% 20%;
+  }
+
+  /* Retire le border-radius mobile sur desktop */
+  .k-hero-media {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Réinitialise les marges mobiles du sticky */
+  .k-hero-cats-sticky {
+    margin-top: 0;
+  }
+
+  /* Mini-slogan masqué desktop (géré par boutique-desktop.css) */
+  .k-hero-mini-slogan { display: none; }
+  .k-hero-bubble       { display: none; }
+}
+/* ══ FIN HERO DESKTOP OVERRIDE ════════════════════════════════ */
