@@ -5,9 +5,8 @@
  * Extrait de routes/parcel-api-v2.js — lot GOD-FILES-4 (2026-05-25)
  *
  * Helpers partagés : cache, SLA, alert engine, reconciliation,
- * middleware relay-scope, syncParcelToOrders.
+ * middleware relay-scope.
  *
- * ⚠️  syncParcelToOrders : présente dans l'original mais non appelée
  *     (le POST /scan délègue à scan-engine). Conservée à l'identique —
  *     ne pas supprimer dans ce lot. Signalée dans STATUS.md.
  */
@@ -191,55 +190,6 @@ async function relayAgentScopeMiddleware(req, res, next) {
   } catch (err) {
     return next(err);
   }
-}
-
-// ─── Sync parcel → orders ─────────────────────────────────────────────────────
-// ⚠️  Non appelée dans ce fichier depuis la migration vers scan-engine.
-//     Conservée à l'identique — à supprimer dans un lot ultérieur dédié.
-
-async function syncParcelToOrders(client, parcelId, newStatus) {
-  const statusMap = {
-    shipped:    'shipped',
-    in_transit: 'in_transit',
-    available:  'available',
-    collected:  'collected',
-    cancelled:  'cancelled',
-  };
-
-  const orderStatus = statusMap[newStatus];
-  if (!orderStatus) return 0; // draft, preparation → no sync
-
-  const { rows: orderIds } = await client.query(`
-    SELECT DISTINCT o.id
-    FROM orders o
-    WHERE o.id IN (
-      SELECT order_id FROM parcels WHERE id = $1 AND order_id IS NOT NULL
-      UNION
-      SELECT oi.order_id
-      FROM parcel_items pi
-      JOIN order_items oi ON oi.id = pi.order_item_id
-      WHERE pi.parcel_id = $1
-    )
-  `, [parcelId]);
-
-  let synced = 0;
-  for (const { id: orderId } of orderIds) {
-    const result = await transitionOrderStatus({
-      orderId,
-      newStatus:  orderStatus,
-      actor:      { id: null, role: 'system' },
-      source:     'scan',
-      note:       `Synced from parcel scan: ${newStatus}`,
-      dbClient:   client,
-    });
-    if (result.success) {
-      synced++;
-    } else {
-      log.warn(`[PARCEL-SYNC] transition ${orderStatus} failed for order ${orderId}: ${result.error}`);
-    }
-  }
-
-  return synced;
 }
 
 // ─── Reconciliation ───────────────────────────────────────────────────────────
@@ -441,7 +391,6 @@ module.exports = {
   parcelBelongsToRelais,
   sendScopedRelayKpis,
   relayAgentScopeMiddleware,
-  syncParcelToOrders,
   reconcileParcel,
   computeParcelAlerts,
   checkScanSequence,

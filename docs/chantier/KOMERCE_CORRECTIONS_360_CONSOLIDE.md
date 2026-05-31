@@ -19,13 +19,13 @@
 
 | Bloc | Intitulé | Tâches | ☑ Faites |
 |---|---|---|---|
-| 0 | Désambiguïsation de la vérité (préalable) | 9 | 0 |
+| 0 | Désambiguïsation de la vérité (préalable) | 9 | 6 |
 | 1 | Sécurité | 19 | 0 |
 | 2 | Control Tower vivant (admin-legacy) | 4 | 1 |
 | 3 | Métier & parcours | 11 | 0 |
 | 4 | Hygiène & dette | 6 | 0 |
 | 5 | Décision structurante (humaine) | 1 | 1 |
-| **Total** | | **50** | **2** |
+| **Total** | | **50** | **8** |
 
 ---
 
@@ -52,15 +52,15 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 
 | ID | Action | Chemin (vérifié) | Vérif | Prio | Statut |
 |---|---|---|---|---|---|
-| Z1 | Supprimer le backend servi en statique (fuite SQL/auth) | `public/js/dashboard.js` (2529 l.) | ✔ | 🔴 | ☐ |
-| Z2 | Supprimer le middleware orphelin (0 require) | `middleware/auth-middleware.js` | ✔ | 🟡 | ☐ |
-| Z3 | Supprimer le CT zombie (non servi, blanchi par re-audit) | `public/js/ct-*.js` (30 fichiers) | ✔ | 🟡 | ☐ |
+| Z1 | Supprimer le backend servi en statique (fuite SQL/auth) | `public/js/dashboard.js` (2529 l.) | ✔ | 🔴 | ☑ |
+| Z2 | Supprimer le middleware orphelin (0 require) | `middleware/auth-middleware.js` | ✔ | 🟡 | ☑ |
+| Z3 | Supprimer le CT zombie (non servi, blanchi par re-audit) | `public/js/ct-*.js` (30 fichiers) | ✔ | 🟡 | ☑ |
 | Z4 | Geler `admin-legacy/js/*` comme **owner CT** (doc + commentaire d'en-tête) | `dashboards/admin-legacy/` | ✔ | 🟡 | ☐ |
 | Z5 | Committer un schéma unique depuis la prod ; supprimer les refs à `schema_railway.sql` (absent) | `db/schema.sql` + docs | ✔ | 🔴 | ☐ |
 | Z6 | Fusionner les 3 `CARTOGRAPHY_360` en une seule canonique datée | `docs/CARTOGRAPHY_360.md` (+ chantier + boutique) | ✔ | 🟢 | ☐ |
-| Z7 | Supprimer/quarantaine du dead code non monté à endpoints dupliqués | `routes/client-account.js` | | 🟡 | ☐ |
-| Z8 | Supprimer dead code chargé au boot | `utils/sms.js`, `utils/parcelSync-v2.js`, `parcel-api-v2/helpers.syncParcelToOrders` | | 🟢 | ☐ |
-| Z9 | Supprimer le mock prod + la page tombstone 410 | `b-modal-social-proof-mock.js`, `event-create.js` | | 🟡 | ☐ |
+| Z7 | Supprimer/quarantaine du dead code non monté à endpoints dupliqués | `routes/client-account.js` | ✔ | 🟡 | ☑ |
+| Z8 | Supprimer dead code chargé au boot | `utils/sms.js`, `utils/parcelSync-v2.js`, `parcel-api-v2/helpers.syncParcelToOrders` | ✔ | 🟢 | ☑ |
+| Z9 | Supprimer le mock prod + la page tombstone 410 | `b-modal-social-proof-mock.js`, `event-create.js` | ✔ | 🟡 | ☑ |
 
 ---
 
@@ -148,6 +148,8 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 |---|---|---|---|---|
 | 2026-05-31 | D1 | Décision **B (purge)** retenue + appliquée : `founder`/`super_admin` retirés de 7 routes backend | `D1_purge_founder.patch` | — |
 | 2026-05-31 | CT2 | `ct-platform.js` aliasing `agent_relais`/`agent_hub`, fallback `none`, logout `null` ; 0 résidu, `node --check` OK | `D1_purge_founder.patch` | — |
+| 2026-05-31 | Z1-Z3,Z7,Z9 | Suppressions zombies (37 fichiers : `dashboard.js`, `auth-middleware.js`, `client-account.js`, `ct-*`×30, mock, `event-create.js`) — 0 référence active, intégrité ✓ | `git rm` | — |
+| 2026-05-31 | Z8 | `sms.js` + `parcelSync-v2.js` supprimés ; `syncParcelToOrders` retiré de `helpers.js` (0 appelant) ; commentaire `parcels.js` nettoyé ; `node --check` OK | `bloc0_edits.patch` + `git rm` | — |
 
 ---
 

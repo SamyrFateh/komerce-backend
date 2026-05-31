@@ -93,7 +93,7 @@ const STATUS_WEIGHT = Object.freeze({
  *
  *  ⚠️  Cette fonction ne doit PAS être appelée avec un tableau vide si l'on
  *      veut un vrai statut métier. L'appelant est responsable de ce garde
- *      (ex: parcelSync-v2 retourne { skipped: true } si aucun colis).
+ *      (ex: parcelSync retourne { skipped: true } si aucun colis).
  *      Un tableau vide ici = absence de contexte logistique → null = skip.
  *
  * ─── RÈGLES MÉTIER (par ordre de priorité) ─────────────────────────────────────
