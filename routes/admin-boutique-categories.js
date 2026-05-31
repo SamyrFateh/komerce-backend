@@ -25,7 +25,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-const guard = [authenticate, requireRole(['admin', 'founder'])];
+const guard = [authenticate, requireRole(['admin'])];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

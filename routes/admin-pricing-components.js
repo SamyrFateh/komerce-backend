@@ -25,7 +25,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-const guard = [authenticate, requireRole(['founder', 'admin'])];
+const guard = [authenticate, requireRole(['admin'])];
 
 // Validation
 const VALID_CATEGORIES = ['sourcing', 'transit', 'douane', 'hub', 'distribution', 'paiement'];

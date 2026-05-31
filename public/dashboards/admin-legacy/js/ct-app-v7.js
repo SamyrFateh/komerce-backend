@@ -157,7 +157,7 @@ CT.app = {
     try { await CT.api.logout(); } catch(_) {}
     localStorage.removeItem('kmrc_logged_in');
     CT.platform.state.user = null;
-    CT.platform.state.role = 'founder';
+    CT.platform.state.role = null;
     CT.app.showLogin();
   },
 
@@ -243,8 +243,8 @@ CT.app = {
       });
     });
 
-    /* Admin tools — founder/admin only, BO only */
-    if (shell === 'bo' && (role === 'founder' || role === 'admin')) {
+    /* Admin tools — admin only, BO only */
+    if (shell === 'bo' && role === 'admin') {
       html += '<div class="ct-section-title">🔧 Admin</div>';
       html += '<button class="ct-nav-item ct-nav-item-admin" data-action="seed">' +
                 '<span class="ct-nav-emoji">🌱</span><span class="ct-nav-label">Seed test</span></button>';

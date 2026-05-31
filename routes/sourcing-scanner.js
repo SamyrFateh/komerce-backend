@@ -59,8 +59,8 @@ const CONNECTORS = {
 
 function requireAdminOrFounder(req, res, next) {
   const role = req.user?.role;
-  if (role !== 'admin' && role !== 'founder') {
-    return res.status(403).json({ error: 'Accès admin/founder requis' });
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Accès admin requis' });
   }
   next();
 }

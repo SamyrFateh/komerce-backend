@@ -26,9 +26,8 @@ CT.platform = {
 
   /* ─── ROLES ──────────────────────────────────────────────────── */
   ROLES: {
-    super_admin: { label: 'Super Admin',    level: 110, shells: ['ct','bo'], canConfig: true  },
-    founder:  { label: 'Fondateur',      level: 100, shells: ['ct','bo'], canConfig: true  },
     admin:    { label: 'Administrateur', level: 90,  shells: ['ct','bo'], canConfig: true  },
+    none:     { label: 'Aucun accès',    level: 0,   shells: [],          canConfig: false },
     finance:  { label: 'Finance',        level: 50,  shells: ['ct','bo'], canConfig: false },
     sourcing: { label: 'Sourcing',       level: 50,  shells: ['ct','bo'], canConfig: false },
     hub:      { label: 'Agent Hub',      level: 30,  shells: ['bo'],      canConfig: false },
@@ -98,7 +97,7 @@ CT.platform = {
       id:    'pilotage_op',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🚦',  label:   'Vue Aujourd\'hui',
-      roles: ['founder','admin','hub','support'],
+      roles: ['admin','hub','support'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: ['support']
@@ -107,7 +106,7 @@ CT.platform = {
       id:    'sante',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🏥',  label:   'Santé Business',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance']
@@ -116,7 +115,7 @@ CT.platform = {
       id:    'actionCenter',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '⚡',  label:   'Alertes & Incidents',
-      roles: ['founder','admin'],
+      roles: ['admin'],
       tabs:  ['all','ops','eco','sourcing','disputes'],
       supportedFilters: ['severity','owner_role'],
       readOnly: []
@@ -125,7 +124,7 @@ CT.platform = {
       id:    'problems',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🚨',  label:   'Problèmes',
-      roles: ['founder','admin'],
+      roles: ['admin'],
       tabs:  [],
       supportedFilters: ['type','severity'],
       readOnly: []
@@ -134,7 +133,7 @@ CT.platform = {
       id:    'dashboard',
       shell: 'ct',  section: 'pilotage_op',
       emoji: '🎯',  label:   'Dashboard global',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: ['finance'],
@@ -159,7 +158,7 @@ CT.platform = {
       id:    'economic',
       shell: 'ct',  section: 'sante_eco',
       emoji: '📊',  label:   'Santé Globale',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance']
@@ -168,7 +167,7 @@ CT.platform = {
       id:    'pilotage_fin',
       shell: 'ct',  section: 'sante_eco',
       emoji: '💸',  label:   'Projection & Mix',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['period','category'],
       readOnly: ['finance'],
@@ -182,7 +181,7 @@ CT.platform = {
       id:    'pricing',
       shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '🧮',  label:   'Construction du Prix',
-      roles: ['founder','admin','finance','sourcing'],
+      roles: ['admin','finance','sourcing'],
       tabs:  [],
       supportedFilters: ['category'],
       readOnly: ['finance','sourcing']
@@ -191,7 +190,7 @@ CT.platform = {
       id:    'sourcing',
       shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '🔍',  label:   'Intelligence Sourcing',
-      roles: ['founder','admin','sourcing'],
+      roles: ['admin','sourcing'],
       tabs:  ['portfolio','opportunities','risks'],
       supportedFilters: ['category','rail'],
       readOnly: []
@@ -200,7 +199,7 @@ CT.platform = {
       id:    'sourcing_scanner',
       shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '📡',  label:   'Scanner Catalogue Fournisseur',
-      roles: ['founder','admin','sourcing'],
+      roles: ['admin','sourcing'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -209,7 +208,7 @@ CT.platform = {
       id:    'pricing_workshop',
       shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '⚙️',  label:   'Configuration des coûts',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
@@ -223,7 +222,7 @@ CT.platform = {
       id:    'pricing_strategy',
       shell: 'ct',  section: 'atelier_prix_sourcing',
       emoji: '💰',  label:   'Stratégie de prix',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: [],
       readOnly: ['finance'],
@@ -237,7 +236,7 @@ CT.platform = {
       id:    'orders',
       shell: 'bo',  section: 'operations',
       emoji: '📋',  label:   'Commandes & Colis',
-      roles: ['founder','admin','hub','relais','support'],
+      roles: ['admin','hub','relais','support'],
       tabs:  ['all','free','parceled','parcels'],
       supportedFilters: ['status','date','client','search'],
       readOnly: []
@@ -246,7 +245,7 @@ CT.platform = {
       id:    'pendingCash',
       shell: 'bo',  section: 'operations',
       emoji: '💰',  label:   'Paiements cash',
-      roles: ['founder','admin','relais'],
+      roles: ['admin','relais'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -255,7 +254,7 @@ CT.platform = {
       id:    'createParcel',
       shell: 'bo',  section: 'operations',
       emoji: '📦',  label:   'Créer colis',
-      roles: ['founder','admin','hub'],
+      roles: ['admin','hub'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -266,7 +265,7 @@ CT.platform = {
       id:    'alerts',
       shell: 'bo',  section: 'alerting',
       emoji: '⚠️',  label:   'Alertes',
-      roles: ['founder','admin','hub','support'],
+      roles: ['admin','hub','support'],
       tabs:  [],
       supportedFilters: ['severity'],
       readOnly: []
@@ -275,7 +274,7 @@ CT.platform = {
       id:    'incidents',
       shell: 'bo',  section: 'alerting',
       emoji: '🔥',  label:   'Incidents',
-      roles: ['founder','admin','hub','support'],
+      roles: ['admin','hub','support'],
       tabs:  [],
       supportedFilters: ['severity','status'],
       readOnly: []
@@ -290,7 +289,7 @@ CT.platform = {
       id:    'invoices',
       shell: 'bo',  section: 'finance_bo',
       emoji: '🧾',  label:   'Factures',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['status','date','search'],
       readOnly: []
@@ -305,7 +304,7 @@ CT.platform = {
       id:    'sales',
       shell: 'ct',  section: 'sante_eco',
       emoji: '💰',  label:   'Ventes',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: ['finance'],
@@ -317,7 +316,7 @@ CT.platform = {
       id:    'hub',
       shell: 'bo',  section: 'operations',
       emoji: '🏭',  label:   'Hub Dubai',
-      roles: ['founder','admin','hub'],
+      roles: ['admin','hub'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -326,7 +325,7 @@ CT.platform = {
       id:    'relais',
       shell: 'bo',  section: 'operations',
       emoji: '📦',  label:   'Relais',
-      roles: ['founder','admin','relais'],
+      roles: ['admin','relais'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -335,7 +334,7 @@ CT.platform = {
       id:    'transitaire',
       shell: 'bo',  section: 'operations',
       emoji: '🚢',  label:   'Transitaire',
-      roles: ['founder','admin','hub'],
+      roles: ['admin','hub'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -344,7 +343,7 @@ CT.platform = {
       id:    'inventory',
       shell: 'bo',  section: 'operations',
       emoji: '📋',  label:   'Inventaire',
-      roles: ['founder','admin','hub'],
+      roles: ['admin','hub'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -357,7 +356,7 @@ CT.platform = {
       id:    'parcel_reconciliation',
       shell: 'bo',  section: 'operations',
       emoji: '⚖️',  label:   'Colis à réconcilier',
-      roles: ['founder','admin','hub','support'],
+      roles: ['admin','hub','support'],
       tabs:  [],
       supportedFilters: ['status'],
       readOnly: []
@@ -369,7 +368,7 @@ CT.platform = {
       id:    'accounting',
       shell: 'bo',  section: 'finance_bo',
       emoji: '📊',  label:   'Comptabilité',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: []
@@ -378,7 +377,7 @@ CT.platform = {
       id:    'customs',
       shell: 'bo',  section: 'finance_bo',
       emoji: '📦',  label:   'Historique Douane',
-      roles: ['founder','admin','finance'],
+      roles: ['admin','finance'],
       tabs:  [],
       supportedFilters: ['period'],
       readOnly: []
@@ -389,7 +388,7 @@ CT.platform = {
       id:    'suppliers',
       shell: 'bo',  section: 'config',
       emoji: '🏭',  label:   'Fournisseurs',
-      roles: ['founder','admin','sourcing'],
+      roles: ['admin','sourcing'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -398,7 +397,7 @@ CT.platform = {
       id:    'shared_carts',
       shell: 'bo',  section: 'operations',
       emoji: '🤝',  label:   'Paniers Partagés',
-      roles: ['founder','admin','support'],
+      roles: ['admin','support'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -407,7 +406,7 @@ CT.platform = {
       id:    'settings',
       shell: 'bo',  section: 'config',
       emoji: '⚙️',  label:   'Paramètres',
-      roles: ['founder','admin'],
+      roles: ['admin'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -416,7 +415,7 @@ CT.platform = {
       id:    'simulator',
       shell: 'bo',  section: 'config',
       emoji: '🤖',  label:   'Simulateur Flux',
-      roles: ['founder','admin'],
+      roles: ['admin'],
       tabs:  [],
       supportedFilters: [],
       readOnly: []
@@ -427,7 +426,7 @@ CT.platform = {
       id:    'clients',
       shell: 'ct',  section: 'pilotage_fin',
       emoji: '👥',  label:   'Clients',
-      roles: ['founder','admin','finance','support'],
+      roles: ['admin','finance','support'],
       tabs:  [],
       supportedFilters: ['period','island','segment'],
       readOnly: ['finance','support']
@@ -443,7 +442,7 @@ CT.platform = {
   /* ─── STATE ──────────────────────────────────────────────────── */
   state: {
     shell: 'ct',
-    role:  'founder',
+    role:  'none',
     user:  null
   },
 
@@ -452,22 +451,20 @@ CT.platform = {
      ═══════════════════════════════════════════════════════════════ */
 
   resolveRole: function(user) {
-    if (!user) return 'founder';
-    var raw = String(user.role || 'founder').trim().toLowerCase();
+    if (!user) return 'none';
+    var raw = String(user.role || 'none').trim().toLowerCase();
     var aliases = {
-      superadmin: 'super_admin',
-      'super-admin': 'super_admin',
-      super_admin: 'super_admin',
-      founder: 'founder',
       admin: 'admin',
       finance: 'finance',
       sourcing: 'sourcing',
+      agent_hub: 'hub',
       hub: 'hub',
+      agent_relais: 'relais',
       relais: 'relais',
       support: 'support'
     };
     var r = aliases[raw] || raw;
-    return CT.platform.ROLES[r] ? r : 'founder';
+    return CT.platform.ROLES[r] ? r : 'none';
   },
 
   normalizeRole: function(role) {
@@ -475,8 +472,8 @@ CT.platform = {
   },
 
   getShellsForRole: function(role) {
-    var r = CT.platform.ROLES[role || 'founder'];
-    return r ? r.shells.slice() : ['ct', 'bo'];
+    var r = CT.platform.ROLES[role || 'none'];
+    return r ? r.shells.slice() : [];
   },
 
   canAccessShell: function(shell, role) {
@@ -534,7 +531,7 @@ CT.platform = {
   canAccess: function(viewId, role) {
     role = CT.platform.normalizeRole(role);
     if (CT.platform.LEGACY_VIEWS.indexOf(viewId) !== -1) {
-      return role === 'founder' || role === 'admin' || role === 'super_admin';
+      return role === 'admin';
     }
     var v = CT.platform.getView(viewId);
     return v ? v.roles.indexOf(role) !== -1 : false;

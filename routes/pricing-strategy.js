@@ -27,12 +27,12 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate } = require('../middleware/auth');
 
-// Admin guard (founder/admin only)
+// Admin guard (admin only)
 const adminOnly = [
   authenticate,
   (req, res, next) => {
-    if (!['founder', 'admin'].includes(req.user?.role)) {
-      return res.status(403).json({ error: 'Reserved to admin/founder' });
+    if (!['admin'].includes(req.user?.role)) {
+      return res.status(403).json({ error: 'Reserved to admin' });
     }
     next();
   }

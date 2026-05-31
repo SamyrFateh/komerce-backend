@@ -16,7 +16,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 
-const guard = [authenticate, requireRole(['founder', 'admin'])];
+const guard = [authenticate, requireRole(['admin'])];
 
 // ─── GET /api/admin/customs-categories ─────────────────────────────
 router.get('/', authenticate, async (req, res, next) => {
