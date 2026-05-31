@@ -150,7 +150,7 @@
 
   .k-footer-grid {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
     gap: 32px;
     /* Réserve l'espace du side-cart comme la grille produits : quand sc-reserve
        est actif, --catalog-max plafonne à la zone utile (sinon la 4e colonne
