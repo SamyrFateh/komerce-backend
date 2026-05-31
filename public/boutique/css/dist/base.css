@@ -1368,9 +1368,6 @@ body:has(#k-page-scroll.k-pager-active) {
   display: block;
   visibility: visible;
   opacity: 1;
-  /* FIX détourage : mix-blend-mode:multiply restitué maintenant que le fond du bouton
-     est var(--sand-warm) et non blanc — le multiply efface le fond blanc de l'image PNG
-     en le fondant dans le sable. Sur fond blanc pur il n'avait aucun effet. */
   width: 64px;
   height: 72px;
   object-fit: contain;
@@ -1379,18 +1376,17 @@ body:has(#k-page-scroll.k-pager-active) {
   box-shadow: none;
   background: transparent;
   mix-blend-mode: multiply;
-  margin-top: -16px;
-  margin-bottom: -4px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .k-header .k-cart-badge,
 .k-cart-btn.k-header-action .k-cart-badge {
-  /* FIX badge : positionné en bas à droite du bouton — sur le panier que tient l'avatar,
-     pas sur sa tête. L'avatar déborde vers le haut (margin-top négatif),
-     donc top positif = tête. On l'ancre en bas. */
-  top: auto;
-  bottom: 2px;
-  right: 2px;
+  /* FIX badge : bouton agrandi = même référentiel que l'avatar.
+     top:-6px / right:-6px = coin supérieur droit, légèrement hors du bouton. */
+  top: -6px;
+  right: -6px;
+  bottom: auto;
   min-width: 18px;
   height: 18px;
   font-size: 9px;
@@ -1490,15 +1486,17 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* k-cart-btn.k-header-action desktop bubble (ex skeleton) */
   .k-cart-btn.k-header-action {
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
-    /* FIX détourage avatar : fond sand-warm au lieu de white.
-       mix-blend-mode:multiply efface le blanc de l'image en le fondant dans le sable.
-       Sur fond blanc pur (var(--white)) le multiply ne peut rien effacer. */
+    /* FIX avatar dame : bouton agrandi à 64×72px pour englober l'avatar réel.
+       Avant (42×42px) l'avatar débordait via margin-top négatif → le badge
+       se positionnait dans le bouton mais la tête était hors du bouton.
+       Maintenant le bouton = la taille de l'avatar → badge top:4px/right:4px = coin tête. */
+    width: 64px;
+    height: 72px;
+    border-radius: 16px;
     background: var(--sand-warm);
     border: 1px solid rgba(198, 168, 93, .32);
     box-shadow: 0 8px 18px rgba(100,175,90, .08);
+    overflow: visible;
   }
 
   /* Header glass effect (ex desktop-commerce-skeleton.css) */
