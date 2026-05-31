@@ -1801,14 +1801,16 @@ body:has(#k-page-scroll.k-pager-active) {
    Source de vérité pour la hauteur hero desktop.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
+  /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
+     object-position:50% 45% : centre vertical sur les personnages. */
   .k-hero-img {
-    height: 360px;
+    height: 320px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 20%;
+    object-position: 50% 45%;
   }
 
-  /* Retire le border-radius mobile sur desktop */
+  /* Retire le border-radius et marges mobiles sur desktop */
   .k-hero-media {
     margin: 0;
     border-radius: 0;
