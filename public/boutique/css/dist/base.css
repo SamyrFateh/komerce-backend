@@ -695,6 +695,8 @@ body {
 .k-cart-badge.show { transform: scale(1); }
 
 /* Avatar dame panier */
+/* FIX visibilité : mix-blend-mode:multiply retiré — noyait l'image sur fond crème/sable.
+   L'avatar est le symbole de la marque, il doit rester pleinement visible. */
 .k-cart-avatar {
   width: 40px;
   height: 40px;
@@ -703,7 +705,7 @@ body {
   border: none;
   box-shadow: none;
   background: transparent;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
   transition: opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
 .k-header .k-cart-avatar { width: 40px; height: 40px; }
@@ -1366,15 +1368,17 @@ body:has(#k-page-scroll.k-pager-active) {
   display: block;
   visibility: visible;
   opacity: 1;
-  width: 44px;
-  height: 50px;
+  /* FIX visibilité avatar dame : agrandi 44→52px, mix-blend-mode:multiply retiré.
+     multiply noyait les couleurs sur fond crème — symbole de marque doit rester net. */
+  width: 52px;
+  height: 58px;
   object-fit: contain;
   object-position: center bottom;
   border: 0;
   box-shadow: none;
   background: transparent;
-  mix-blend-mode: multiply;
-  margin-top: -10px;
+  mix-blend-mode: normal;
+  margin-top: -12px;
   margin-bottom: -2px;
 }
 
