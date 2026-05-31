@@ -1717,14 +1717,16 @@ body:has(#k-page-scroll.k-pager-active) {
    ══════════════════════════════════════════════════════════════ */
 
 /* ── Image hero mobile : proportions naturelles du webp 1080×220 ── */
-.k-hero-img {
-  /* Affiche le webp à sa vraie proportion sans crop.
-     Sur 390px de large → ~79px de haut (390 × 220/1080).
-     object-fit:contain + background transparent → pas de bande noire. */
-  height: auto;
-  aspect-ratio: 1080 / 220;
-  object-fit: cover;
-  object-position: 50% 50%;
+/* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
+@media (max-width: 899px) {
+  .k-hero-img {
+    /* Affiche le webp à sa vraie proportion sans crop.
+       Sur 390px de large → ~79px de haut (390 × 220/1080). */
+    height: auto;
+    aspect-ratio: 1080 / 220;
+    object-fit: cover;
+    object-position: 50% 50%;
+  }
 }
 
 /* Hero : colle le rail directement sous l'image, sans overlap */
@@ -1804,10 +1806,10 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
      object-position:50% 45% : centre vertical sur les personnages. */
   .k-hero-img {
-    height: 240px;
+    height: 200px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 30%;
+    object-position: 50% 15%;
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */

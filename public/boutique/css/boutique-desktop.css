@@ -1144,13 +1144,24 @@
   body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
   body.sc-reserve #k-hero-fixed-wrap {
     max-width: calc(100vw - var(--sc-reserve-w, 240px));
-    /* overflow:clip évite tout débordement de l'image hors de la zone utile */
     overflow: clip;
+  }
+  /* L'image elle-même doit aussi être contrainte à la largeur utile
+     pour que object-fit:cover centre bien sur la zone visible,
+     et non sur toute la largeur viewport avec la dame coupée à droite. */
+  body:has(.k-side-cart.has-items) .k-hero-img,
+  body.sc-reserve .k-hero-img {
+    max-width: calc(100vw - var(--sc-reserve-w, 240px));
+    object-position: 48% 15%;
   }
 }
 @media (min-width: 1200px) {
   body:has(.k-side-cart.has-items) #k-hero-fixed-wrap,
   body.sc-reserve #k-hero-fixed-wrap {
+    max-width: calc(100vw - var(--sc-reserve-w, 254px));
+  }
+  body:has(.k-side-cart.has-items) .k-hero-img,
+  body.sc-reserve .k-hero-img {
     max-width: calc(100vw - var(--sc-reserve-w, 254px));
   }
 }
