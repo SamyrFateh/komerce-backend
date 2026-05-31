@@ -695,11 +695,11 @@ body {
 .k-cart-badge.show { transform: scale(1); }
 
 /* Avatar dame panier */
-/* FIX visibilité : mix-blend-mode:multiply retiré — noyait l'image sur fond crème/sable.
+/* FIX visibilité : mix-blend-mode:multiply retiré + taille portée à 56px.
    L'avatar est le symbole de la marque, il doit rester pleinement visible. */
 .k-cart-avatar {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   border-radius: 0;
   object-fit: contain;
   border: none;
@@ -708,7 +708,7 @@ body {
   mix-blend-mode: normal;
   transition: opacity .3s, transform .3s cubic-bezier(.34,1.56,.64,1);
 }
-.k-header .k-cart-avatar { width: 40px; height: 40px; }
+.k-header .k-cart-avatar { width: 56px; height: 56px; }
 
 @keyframes panierArrive {
   0%   { transform: scale(.85) rotate(-8deg); }
@@ -1019,7 +1019,7 @@ body:has(#k-page-scroll.k-pager-active) {
     border-radius: 0;
     padding: 4px;
   }
-  .k-cart-avatar { width: 36px; height: 36px; }
+  .k-cart-avatar { width: 64px; height: 64px; }
 
   /* Badge panier */
   .k-cart-badge {
@@ -1368,24 +1368,26 @@ body:has(#k-page-scroll.k-pager-active) {
   display: block;
   visibility: visible;
   opacity: 1;
-  /* FIX visibilité avatar dame : agrandi 44→52px, mix-blend-mode:multiply retiré.
-     multiply noyait les couleurs sur fond crème — symbole de marque doit rester net. */
-  width: 52px;
-  height: 58px;
+  /* FIX visibilité avatar dame : agrandi à 64×72px, mix-blend-mode:multiply retiré.
+     Symbole de marque — doit être clairement lisible dans le header. */
+  width: 64px;
+  height: 72px;
   object-fit: contain;
   object-position: center bottom;
   border: 0;
   box-shadow: none;
   background: transparent;
   mix-blend-mode: normal;
-  margin-top: -12px;
-  margin-bottom: -2px;
+  margin-top: -16px;
+  margin-bottom: -4px;
 }
 
 .k-header .k-cart-badge,
 .k-cart-btn.k-header-action .k-cart-badge {
-  top: 0;
-  right: -1px;
+  /* FIX badge : décalé vers le coin supérieur droit du bouton,
+     hors de la tête de l'avatar (avatar agrandi + margin-top négatif). */
+  top: 2px;
+  right: 2px;
   min-width: 18px;
   height: 18px;
   font-size: 9px;

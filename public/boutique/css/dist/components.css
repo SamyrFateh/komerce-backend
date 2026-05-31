@@ -4408,7 +4408,8 @@ body.cart-open .k-wa-fab {
 }
 .k-cart-btn.ring-pulse .k-cart-avatar,
 .k-cart-btn.avatar-wave .k-cart-avatar {
-  mix-blend-mode: multiply; /* re-forcer pendant les animations pour �viter le fond blanc */
+  /* FIX visibilite avatar : multiply retire, noie les couleurs sur fond creme */
+  mix-blend-mode: normal; /* re-forcer pendant les animations pour �viter le fond blanc */
 }
 
 /* Bouton ajouter "confirmed" */
