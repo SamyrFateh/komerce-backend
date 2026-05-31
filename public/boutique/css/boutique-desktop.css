@@ -143,15 +143,23 @@
     border-top: 2px solid var(--ocean-light);
   }
 
+  /* Le FOND du footer s'arrête avant le side-cart (doctrine RÉSERVE, comme le
+     contenu). margin-right = largeur réservée quand le panier est docké ; le
+     padding-right du body ne contraint que le flux, pas la peinture du fond.
+     Voir BOUTIQUE_SIDE_CART_DOCTRINE.md. */
+  body.sc-reserve .k-footer,
+  body:has(.k-side-cart.has-items) .k-footer {
+    margin-right: var(--sc-reserve-w, 240px);
+  }
+
   .k-footer-grid {
     display: grid;
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
     gap: 32px;
-    /* Réserve l'espace du side-cart comme la grille produits : quand sc-reserve
-       est actif, --catalog-max plafonne à la zone utile (sinon la 4e colonne
-       newsletter, cappée à --container=1400, déborde sous le panneau). Doctrine
-       unifiée — voir BOUTIQUE_SIDE_CART_DOCTRINE.md. */
-    max-width: var(--catalog-max, var(--container));
+    /* max-width = --container : le parent .k-footer réserve déjà l'espace
+       side-cart via margin-right, donc le contenu se cale dedans normalement
+       (pas de double réserve). minmax(0,…) garde les colonnes rétractables. */
+    max-width: var(--container);
     margin: 0 auto;
     padding-bottom: 32px;
     border-bottom: 1px solid var(--border-ocean-14);
@@ -267,7 +275,7 @@
   .k-footer-newsletter-btn:active { transform: scale(.98); }
 
   .k-footer-bottom {
-    max-width: var(--catalog-max, var(--container));
+    max-width: var(--container);
     margin: 0 auto;
     padding: 16px 0 20px;
     display: flex;
