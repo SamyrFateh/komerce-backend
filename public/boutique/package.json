@@ -21,12 +21,15 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "check:all": "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run test:e2e",
+    "check:all": "npm run check:html && npm run check:imports && npm run check:body-classes && npm run deploy:css && npm run check:breakpoints && npm run audit:arch && npm run audit:arch:live && npm run audit:ownership && npm run test:e2e",
     "check:all:verbose": "npm run check:html && npm run check:imports && npm run check:body-classes && npm run check:cache && npm run check:breakpoints && npm run audit:arch && npm run audit:ownership",
     "precommit": "npm run check:all",
     "audit:ownership": "node scripts/gen-ownership.js",
     "check:breakpoints": "node scripts/check-breakpoints.js --strict",
-    "check:breakpoints:save": "node scripts/check-breakpoints.js --save"
+    "check:breakpoints:save": "node scripts/check-breakpoints.js --save",
+    "deploy:css": "node scripts/deploy-css.js",
+    "deploy:css:force": "node scripts/deploy-css.js --force",
+    "deploy:css:dry": "node scripts/deploy-css.js --dry"
   },
   "keywords": [],
   "author": "",

@@ -1,12 +1,21 @@
 {
-  "version": 13,
-  "hashes": {
-    "base.css": "34e7643eba7f",
-    "components.css": "6174ef5155bb",
-    "desktop.css": "d19e83b3311c",
-    "event.css": "5f2f3fe4bd85"
+  "versions": {
+    "base.css": 4,
+    "components.css": 15,
+    "desktop.css": 17,
+    "event.css": 4
   },
-  "updatedAt": "2026-05-30T21:23:11.294Z",
-  "bumpedFrom": 12,
-  "reason": "4 bundle(s) modifié(s) : base.css, components.css, desktop.css, event.css"
+  "hashes": {
+    "base.css": "89bd34571e01",
+    "components.css": "48c42846f93e",
+    "desktop.css": "89ec21b4e119",
+    "event.css": "80c1cd4f9b5c"
+  },
+  "updatedAt": "2026-05-30T23:22:25.532Z",
+  "changedBundles": [
+    "base.css",
+    "components.css",
+    "desktop.css",
+    "event.css"
+  ]
 }
