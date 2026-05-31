@@ -594,9 +594,13 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
     try {
       await cancelSharedCart(cartId, { reason: 'creator_cancel' });
-      import('./b-share-cart.js').then(m => m.clearShareState?.());
+      // Purge l'état local AVANT le re-render, et on attend pour que badges/banner
+      // soient à jour quand la vue se reconstruit.
+      await import('./b-share-cart.js').then(m => m.clearShareState?.()).catch(() => {});
       showToast('Panier annulé.', 'success');
-      onSettlement?.(); // refresh la vue
+      // Refresh avec opts vierge : on ne traîne pas l'opts.cartId du panier annulé,
+      // qui pointerait sur un panier désormais non affichable.
+      renderGroupView({}); // → renderEmpty si plus aucun panier actif
     } catch (err) {
       showToast(err?.message || 'Impossible d\'annuler.', 'error');
     }
@@ -821,19 +825,29 @@ export async function renderGroupView(opts = {}) {
   /* MODE CRÉATEUR                                                    */
   /* ─────────────────────────────────────────────────────────────── */
   let ownerCarts = [];
+  let ownerFetchOk = false;
   try {
     const mine = await getOwnerSharedCarts();
     ownerCarts = Array.isArray(mine?.carts) ? mine.carts : [];
+    ownerFetchOk = true;
   } catch (_) {
     ownerCarts = [];
   }
 
-  if (ownerCarts.length) {
-    const selectedOwnerCart = pickOwnerCart(ownerCarts, opts.cartId || state.shareId);
-    if (selectedOwnerCart) {
-      applyOwnerCartToState(selectedOwnerCart);
-    }
-  } else if (!state.shareToken || !state.shareId) {
+  // pickOwnerCart exclut déjà cancelled / expired / finalized / converted_to_order.
+  const selectedOwnerCart = pickOwnerCart(ownerCarts, opts.cartId || state.shareId);
+
+  if (selectedOwnerCart) {
+    applyOwnerCartToState(selectedOwnerCart);
+  } else if (ownerFetchOk) {
+    // Le backend a répondu et ne renvoie AUCUN panier affichable (liste vide,
+    // ou tous annulés/expirés/finalisés). Source de vérité : il n'y a plus de
+    // panier groupe actif → état "vide", surtout PAS "introuvable".
+    import('./b-share-cart.js').then(m => m.clearShareState?.()).catch(() => {});
+    renderEmpty(el);
+    return;
+  } else {
+    // /mine a échoué (réseau/auth) : dernier recours, restauration sessionStorage.
     const restored = await ensureCreatorCartState();
     if (!restored) { renderEmpty(el); return; }
   }
@@ -842,10 +856,17 @@ export async function renderGroupView(opts = {}) {
   try {
     data = await getSharedCartOwner(state.shareId);
   } catch (_) {
-    data = await getSharedCartPublic(state.shareToken);
+    data = state.shareToken ? await getSharedCartPublic(state.shareToken) : null;
   }
 
-  if (!data?.cart) { renderError(el); return; }
+  // Filet de sécurité : panier clôturé/disparu côté backend entre-temps.
+  // Pour le CRÉATEUR c'est "plus de panier actif", pas un lien cassé.
+  const TERMINAL = ['cancelled', 'expired', 'finalized', 'converted_to_order'];
+  if (!data?.cart || TERMINAL.includes(data.cart.status)) {
+    import('./b-share-cart.js').then(m => m.clearShareState?.()).catch(() => {});
+    renderEmpty(el);
+    return;
+  }
 
   const cart          = data.cart;
   const contributions = data.contributions || [];
