@@ -300,21 +300,26 @@
    FOOTER — SIDE-CART BACKGROUND EXTENSION FIX
    Problème : body:has(.k-side-cart.has-items) reçoit padding-right:--sc-reserve-w,
    ce qui raccourcit le footer à (100vw - 240px). Le fond vert s'arrête 240px
-   avant le bord droit du viewport, laissant une zone blanche sous le side-cart.
-   Fix : box-shadow rightward pour étendre le fond vert sans toucher au box-model
-   ni au contenu (le side-cart, z-index:200, s'affiche bien au-dessus).
+   avant le bord droit du viewport ; la zone droite reste visible en blanc
+   SOUS le side-cart (z-index:200, fond blanc) qui la couvre sans la combler.
+   Un box-shadow ne fonctionne pas ici : il s'affiche derrière le side-cart blanc.
+   Fix : margin-right négatif étend le footer jusqu'au bord viewport (100vw),
+   + padding-right compensatoire garde le contenu dans la zone utile hors side-cart.
+   body { overflow-x:visible } @900px (layout.css l.608) confirme : pas de clip.
    Owner : boutique-desktop.css (owner unique du footer + du side-cart).
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   body:has(.k-side-cart.has-items) .k-footer,
   body.sc-reserve .k-footer {
-    box-shadow: var(--sc-reserve-w, 240px) 0 0 0 var(--green-bg-leaf);
+    margin-right: calc(-1 * var(--sc-reserve-w, 240px));
+    padding-right: calc(var(--sc-reserve-w, 240px) + clamp(20px, 4vw, 60px));
   }
 }
 @media (min-width: 1200px) {
   body:has(.k-side-cart.has-items) .k-footer,
   body.sc-reserve .k-footer {
-    box-shadow: var(--sc-reserve-w, 254px) 0 0 0 var(--green-bg-leaf);
+    margin-right: calc(-1 * var(--sc-reserve-w, 254px));
+    padding-right: calc(var(--sc-reserve-w, 254px) + clamp(20px, 4vw, 60px));
   }
 }
 
