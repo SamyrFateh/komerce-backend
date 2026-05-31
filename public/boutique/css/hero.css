@@ -293,10 +293,10 @@
   /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
      object-position:50% 45% : centre vertical sur les personnages. */
   .k-hero-img {
-    height: 320px;
+    height: 240px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 45%;
+    object-position: 50% 30%;
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */
