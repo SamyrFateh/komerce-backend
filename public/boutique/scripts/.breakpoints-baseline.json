@@ -1,5 +1,9 @@
 {
-  "total": 0,
-  "perFile": {},
-  "savedAt": "2026-05-30T21:21:33.244Z"
+  "total": 1,
+  "perFile": {
+    "modal-shell.css": [
+      "max:1120"
+    ]
+  },
+  "savedAt": "2026-05-31T15:52:20.411Z"
 }

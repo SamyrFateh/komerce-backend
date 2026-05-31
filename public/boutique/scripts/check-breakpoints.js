@@ -26,13 +26,28 @@ function scan() {
     var f = files[i];
     var raw = fs.readFileSync(f, 'utf8');
     var src = raw.replace(/\/\*[\s\S]*?\*\//g, '');
-    var re = /@media[^{]*?(\d{2,4})px/g;
-    var m;
+    // Ne scanner QUE l'intérieur des @media (pas les propriétés min/max-width
+    // sur des éléments normaux). On capture la condition média complète, puis
+    // on en extrait type + valeur. Un max-width:(N-1) est le complément mobile
+    // légitime d'un min-width:N canonique (mobile ≤899 / desktop ≥900).
+    var mediaRe = /@media([^{]*?)\{/g;
+    var mm;
     var found = [];
-    while ((m = re.exec(src)) !== null) {
-      if (found.indexOf(m[1]) === -1) found.push(m[1]);
+    function isAllowed(type, val) {
+      if (ALLOWED.has(val)) return true;
+      if (type === 'max' && ALLOWED.has(String(parseInt(val, 10) + 1))) return true;
+      return false;
     }
-    var violations = found.filter(function(b) { return !ALLOWED.has(b); }).sort(function(a, b) { return a - b; });
+    while ((mm = mediaRe.exec(src)) !== null) {
+      var cond = mm[1];
+      var bpRe = /(min|max)-width:\s*(\d{2,4})px/g;
+      var b;
+      while ((b = bpRe.exec(cond)) !== null) {
+        var key = b[1] + ':' + b[2];
+        if (!isAllowed(b[1], b[2]) && found.indexOf(key) === -1) found.push(key);
+      }
+    }
+    var violations = found.sort();
     if (violations.length) {
       perFile[path.basename(f)] = violations;
       total += violations.length;
