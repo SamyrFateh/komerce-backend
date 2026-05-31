@@ -1,12 +1,12 @@
 {
-  "version": 23,
+  "version": 24,
   "hashes": {
     "base.css": "784066d76331",
     "components.css": "4464137764de",
-    "desktop.css": "45e54f12bead",
+    "desktop.css": "32be6a23d15b",
     "event.css": "e25ebe5399a1"
   },
-  "updatedAt": "2026-05-31T13:30:11.379Z",
-  "bumpedFrom": 22,
+  "updatedAt": "2026-05-31T15:23:02.509Z",
+  "bumpedFrom": 23,
   "reason": "1 bundle(s) modifié(s) : desktop.css"
 }

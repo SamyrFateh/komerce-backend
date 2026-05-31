@@ -305,14 +305,18 @@
 @media (min-width: 900px) {
   body:has(.k-side-cart.has-items) .k-footer,
   body.sc-reserve .k-footer {
-    margin-right: calc(-1 * var(--sc-reserve-w, 240px));
+    /* 100% = body content-width = viewport - padding-right(240px).
+       On ajoute 240px → footer = viewport entier. Le fond vert couvre
+       la zone sous le side-cart (position:fixed, z-index:200 par-dessus).
+       margin-right:-240 NE marche PAS : ne change pas la width, juste le flow. */
+    width: calc(100% + var(--sc-reserve-w, 240px));
     padding-right: calc(var(--sc-reserve-w, 240px) + clamp(20px, 4vw, 60px));
   }
 }
 @media (min-width: 1200px) {
   body:has(.k-side-cart.has-items) .k-footer,
   body.sc-reserve .k-footer {
-    margin-right: calc(-1 * var(--sc-reserve-w, 254px));
+    width: calc(100% + var(--sc-reserve-w, 254px));
     padding-right: calc(var(--sc-reserve-w, 254px) + clamp(20px, 4vw, 60px));
   }
 }
