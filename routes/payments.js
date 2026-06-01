@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes paiement v8.2 (REFACTO-PAYMENTS)
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)
@@ -570,7 +570,7 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
 });
 
 // ── GET /api/payments/rates ───────────────────────────────────────────────────
-router.get('/rates', async (req, res, next) => {
+router.get('/rates', authenticate, async (req, res, next) => {
   try {
     const rates = await getRates();
     res.json({
@@ -589,3 +589,4 @@ router.get('/config', (req, res) => {
 });
 
 module.exports = router;
+
