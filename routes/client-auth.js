@@ -1,10 +1,11 @@
-'use strict';
+﻿'use strict';
 
 const express = require('express');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
+const { authenticate } = require('../middleware/auth');
 const { sendMagicLink } = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'client-auth' });
 
@@ -118,7 +119,7 @@ router.get('/magic-link/validate', async (req, res) => {
 
     // Create JWT session (30 days)
     const jwtToken = jwt.sign(
-      { id: user.id, role: user.role, fullName: user.full_name },
+      { id: user.id, role: user.role, fullName: user.full_name, jti: crypto.randomUUID() },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -142,18 +143,9 @@ router.get('/magic-link/validate', async (req, res) => {
  * GET /api/client/orders
  * Returns orders for the authenticated client
  */
-router.get('/orders', async (req, res) => {
+router.get('/orders', authenticate, async (req, res) => {
   try {
-    // Get user from JWT cookie
-    const token = req.cookies?.kmrc_jwt;
-    if (!token) return res.status(401).json({ error: 'Non authentifié' });
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-    } catch (e) {
-      return res.status(401).json({ error: 'Session expirée' });
-    }
+    const userId = req.user.id;
 
     const { rows: orders } = await pool.query(`
       SELECT 
@@ -166,7 +158,7 @@ router.get('/orders', async (req, res) => {
       LEFT JOIN relais r ON r.id = o.relais_id
       WHERE o.user_id = $1
       ORDER BY o.created_at DESC
-    `, [decoded.id]);
+    `, [userId]);
 
     // Get items + parcels for each order
     for (const order of orders) {
@@ -206,17 +198,9 @@ router.get('/orders', async (req, res) => {
  * GET /api/client/invoices
  * Returns invoices for the authenticated client
  */
-router.get('/invoices', async (req, res) => {
+router.get('/invoices', authenticate, async (req, res) => {
   try {
-    const token = req.cookies?.kmrc_jwt;
-    if (!token) return res.status(401).json({ error: 'Non authentifié' });
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-    } catch (e) {
-      return res.status(401).json({ error: 'Session expirée' });
-    }
+    const userId = req.user.id;
 
     const { rows: invoices } = await pool.query(`
       SELECT 
@@ -228,7 +212,7 @@ router.get('/invoices', async (req, res) => {
       JOIN orders o ON o.id = inv.order_id
       WHERE o.user_id = $1
       ORDER BY inv.created_at DESC
-    `, [decoded.id]);
+    `, [userId]);
 
     res.json({
       invoices: invoices.map(inv => ({
@@ -258,3 +242,4 @@ function getStatusLabel(status) {
 }
 
 module.exports = router;
+
