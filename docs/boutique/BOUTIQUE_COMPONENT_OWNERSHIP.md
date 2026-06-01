@@ -1,4 +1,4 @@
-# Boutique Komerce — Component Ownership Doctrine
+﻿# Boutique Komerce — Component Ownership Doctrine
 
 ## Objectif
 
@@ -40,11 +40,11 @@ Pas de JS qui recrée ce qu'un renderer sait déjà faire.
 | Carte produit | `public/boutique/js/render/render-product-card.js` | HTML d'une carte produit | mutation panier/favoris, ouverture modale directe, pagination |
 | Panier | `public/boutique/js/b-cart.js` et modules cart dédiés | état panier, rendu panier, actions panier | rendu produit global, schéma catégories |
 | Modal produit | `public/boutique/js/b-modal.js` | cycle d'ouverture/fermeture modal, rendu détail produit | correction pager, correction hero, navigation globale |
-| Styles catégories base/mobile | `public/boutique/css/categories.css` | visuel base/mobile des chips et subchips | mega-nav desktop complet, correction JS pager |
+| Styles catégories mobile + desktop | `public/boutique/css/categories.css` | visuel des chips catégories principales mobile + desktop, `.k-cats`, `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` | sous-catégories desktop complètes, correction JS pager |
 | Hero base/mobile | `public/boutique/css/hero.css` | hero mobile/base, sticky bar visuelle | neutralisation de la cage pager mobile |
 | Grille produits + cartes (toutes tailles) | `public/boutique/css/products.css` | `.k-grid`, `.k-sec-grid`, `.k-card` base et overrides desktop — source de vérité unique | layout desktop global, panier, modal |
-| Chips catégories desktop (mega-nav) | `public/boutique/css/boutique-desktop.css` | `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` desktop — bloc P0 + patch P1V-2 | redéclarer le layout chip dans un fichier chargé après |
-| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, mega-nav catégories, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
+| Sous-catégories desktop | `public/boutique/css/boutique-desktop.css` | rail sous-catégories desktop `#k-subcats-wrap`, `.k-subcats-rail`, `.k-subchip`, enrichissements desktop hors chips principales | redéclarer `.k-cats`, `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active` |
+| Desktop premium | `public/boutique/css/boutique-desktop.css` | layout desktop, side-cart, hero desktop, sous-catégories desktop, footer desktop | comportement mobile, cage `#k-page-scroll`, fix mobile hero/pager, redéclarer `.k-grid` |
 | Overrides desktop `.k-card` | `public/boutique/css/desktop-commerce-skeleton.css` | `border-radius`, `border`, `box-shadow` desktop de `.k-card` ; side-cart sticky ; largeurs max ≥1200px | layout `.k-chip`, `.k-cats-shell`, `.k-cats` — propriété de `boutique-desktop.css` |
 | Mini-cart / accès panier | `public/boutique/js/b-desktop-global-cart-access.js` et CSS dédié | accès global panier desktop, fallback drawer | bottom nav mobile, rendu complet panier |
 | Couche wow temporaire | `public/boutique/css/boutique-wow.css` | expérimentation visuelle réversible | vérité définitive, structure, pager, métier |
@@ -168,7 +168,7 @@ Note : les overrides desktop de `.k-card` (border-radius, box-shadow, border hov
 
 ### `boutique-desktop.css`
 
-Responsabilité : porter uniquement l'expérience desktop premium, dont le mega-nav catégories (`.k-chip`, `.k-cats-shell`, `.k-cats`).
+Responsabilité : porter uniquement l'expérience desktop premium hors chips principales : side-cart, hero desktop, footer desktop, sous-catégories desktop.
 
 Interdictions :
 
@@ -180,12 +180,12 @@ Do not fix mobile hero overlap from desktop CSS.
 Do not redeclare .k-grid columns or gap — source of truth is products.css.
 ```
 
-Propriété du mega-nav chip :
+Propriété du rail catégories principal :
 
 ```txt
-Source de vérité unique pour .k-chip desktop : bloc P0 (≥900px) + patch P1V-2 (.k-chip.active fond coral).
-Tout fichier CSS chargé après boutique-desktop.css (ex: desktop-commerce-skeleton.css)
-ne doit pas redéclarer .k-chip, .k-chip-photo, .k-chip-label, .k-chip.active, .k-cats-shell, .k-cats.
+Source de vérité unique pour .k-chip desktop : `categories.css`, bloc ≥900px "IMAGES FLOTTANTES".
+Tout fichier CSS chargé après `categories.css`
+ne doit pas redéclarer `.k-chip`, `.k-chip-photo`, `.k-chip-label`, `.k-chip.active`, `.k-cats-shell`, `.k-cats`.
 Un tel redéclaration écraserait silencieusement le mega-nav et rendrait le rail catégories invisible.
 ```
 
@@ -331,3 +331,4 @@ Si tu modifies boutique-wow.css, considère-le comme temporaire et prépare la m
 N'ajoute jamais de règle .k-chip, .k-cats-shell ou .k-cats dans desktop-commerce-skeleton.css — boutique-desktop.css en est le seul propriétaire.
 N'ajoute jamais de règle .k-grid ou .k-card de base hors de products.css.
 ```
+

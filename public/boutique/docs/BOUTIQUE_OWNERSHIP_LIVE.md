@@ -2,7 +2,7 @@
 
 > ⚠️ **NE PAS ÉDITER À LA MAIN.** Généré par `scripts/gen-ownership.js` depuis le code réel.
 > Régénérer après chaque PR : `node scripts/gen-ownership.js`
-> Dernière génération : 2026-05-30
+> Dernière génération : 2026-06-01
 
 Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'impacte ?**
 
@@ -15,12 +15,12 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
 | **Modal produit** `.k-modal*` | modal-shell.css (18), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (14), layout.css (9) | 2 | 🔴 |
-| **Carte produit** `.k-card*` | products.css (22), boutique-desktop.css (4), desktop-commerce-skeleton.css (2), layout.css (1) | 4 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (19), layout.css (9) | 2 | 🔴 |
+| **Carte produit** `.k-card*` | products.css (22), boutique-desktop.css (4), layout.css (1) | 3 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (15), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
 | **Header** `.k-header*` | layout.css (17), hero.css (1), tokens.css (1) | 3 | 🔴 |
 | **Hero** `.k-hero*` | hero.css (3), cart.css (1) | 2 | 🔴 |
-| **Chips catégories** `.k-chip*` | categories.css (45), layout.css (2), interactions.css (1) | 3 | 🔴 |
+| **Chips catégories** `.k-chip*` | categories.css (51), layout.css (2), interactions.css (1) | 3 | 🔴 |
 | **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2) | 2 | 🔴 |
 
 ---
@@ -33,10 +33,11 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 |-----------|:---:|:-------:|:-----------:|-------------------|
 | `b-cart.js` | 58 | 35 | 1/5 | Modal produit, Side-cart desktop, Panier, Carte produit, Header, Chips catégories, Bottom-nav mobile |
 | `b-modal-core.js` | 33 | 52 | 2/3 | Modal produit, Side-cart desktop, Carte produit |
-| `b-checkout.js` | 71 | 2 | 0/1 | Bottom-nav mobile |
-| `b-checkout-render.js` | 50 | 0 | 0/0 | — |
+| `b-checkout.js` | 67 | 2 | 0/1 | Bottom-nav mobile |
+| `b-checkout-render.js` | 52 | 0 | 0/0 | — |
 | `b-modal-desktop-enhancers.js` | 44 | 6 | 4/2 | Modal produit |
 | `b-modal-product.js` | 42 | 6 | 0/1 | Modal produit |
+| `b-phone.js` | 16 | 17 | 0/0 | — |
 | `b-modal-approche-c-hybrid.js` | 31 | 0 | 2/0 | Modal produit |
 | `b-cart-pill.js` | 8 | 18 | 3/0 | Grille produits, Section catalogue |
 | `b-share-cart.js` | 25 | 1 | 0/0 | Panier, Header, Bottom-nav mobile |
@@ -44,7 +45,6 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-mini-cart.js` | 4 | 19 | 2/0 | Panier |
 | `b-modal-nav.js` | 10 | 9 | 1/4 | Modal produit |
 | `b-pager.js` | 3 | 16 | 2/1 | Grille produits, Header, Hero, Chips catégories, Bottom-nav mobile |
-| `b-phone.js` | 16 | 1 | 0/0 | — |
 | `event-public.js` | 2 | 13 | 0/0 | — |
 | `b-pdp-curation-suggestions.js` | 14 | 0 | 1/0 | Modal produit |
 | `b-tracking.js` | 14 | 0 | 0/0 | Section catalogue |
@@ -60,7 +60,6 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-home-premium-v1.js` | 6 | 0 | 1/0 | Side-cart desktop, Header, Hero, Chips catégories, Section catalogue |
 | `b-mobile-premium-v1.js` | 4 | 2 | 1/0 | Modal produit, Carte produit, Grille produits, Header, Hero, Chips catégories, Section catalogue |
 | `b-nav.js` | 5 | 1 | 0/1 | Panier, Grille produits, Header, Hero, Panier groupe, Bottom-nav mobile, Section catalogue |
-| `event-create.js` | 1 | 5 | 0/0 | — |
 | `b-favs.js` | 5 | 0 | 0/0 | Carte produit, Grille produits, Bottom-nav mobile, Section catalogue |
 | `boutique.js` | 0 | 5 | 2/0 | Modal produit, Grille produits, Chips catégories |
 | `b-group-banner.js` | 4 | 0 | 0/0 | Header, Panier groupe, Bottom-nav mobile |
@@ -86,13 +85,12 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 
 | Fichier CSS | Breakpoints utilisés | Violations |
 |-------------|----------------------|:----------:|
-| hero.css | 140px, 900px | 🔴 140px |
+| hero.css | 140px, 899px, 900px | 🔴 140px, 899px |
 | interactions.css | 899px | 🔴 899px |
 | modal-media.css | 400px, 900px | 🔴 400px |
 | boutique-desktop.css | 900px, 1200px | ✅ |
 | cart.css | 900px | ✅ |
 | categories.css | 900px, 1200px | ✅ |
-| desktop-commerce-skeleton.css | 900px, 1200px | ✅ |
 | event.css | 900px | ✅ |
 | group-cart-flow.css | 900px, 1200px | ✅ |
 | hero-cart-proxy.css | 900px | ✅ |
@@ -134,9 +132,9 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Indicateur | Valeur | Cible |
 |------------|:------:|:-----:|
 | Composants en multipropriété CSS | 8 | 0 |
-| Modules JS écrivant le DOM | 40 | ≤ 5 |
+| Modules JS écrivant le DOM | 39 | ≤ 5 |
 | Breakpoints distincts | 5 | ≤ 2 |
-| Violations breakpoint | 3 | 0 |
+| Violations breakpoint | 4 | 0 |
 | `!important` | 8 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

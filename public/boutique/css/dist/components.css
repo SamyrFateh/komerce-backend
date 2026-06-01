@@ -1,10 +1,9 @@
-﻿/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (bundle Sprint 3 · 2026-06-01)
-   components — categories · products · modal-shell · modal-media · modal-product · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup · identity
-   Généré par scripts/bundle-css.js — éditer les sources.
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — components.css (2026-06-01)
+   Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — categories.css
    Chips catégories + sous-catégories + promo rail.
    Mobile-first, zéro !important.
@@ -893,6 +892,7 @@
 .k-chip.transitioning .k-chip-photo {
   animation: k-chip-pulse .4s var(--ease-spring) both;
 }
+
 
 /* ── products.css ────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -7581,4 +7581,3 @@ body.cart-open  #k-section-index { display:none; }
 .k-id-known strong { display: block; font-size: 11.8px; color: var(--text); }
 .k-id-known span   { display: block; font-size: 10.8px; color: var(--text-muted); margin-top: 1px; }
 .k-id-known button { border: 0; background: transparent; color: var(--coral, var(--coral, var(--coral))); font-weight: 900; cursor: pointer; font-size: 12px; }
-
