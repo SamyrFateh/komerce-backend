@@ -15,7 +15,7 @@
 'use strict';
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { createStoreCredit } = require('./store-credits');
+const walletService = require('../services/wallet-service'); // [M3] remplace createStoreCredit (D5)
 const log = require('../utils/logger').child({ module: 'refunds' });
 
 /**
@@ -73,15 +73,17 @@ async function processRefund(client, {
       return { refund: failedRefund, error: stripeErr.message };
     }
   } else {
-    // ── Cash relais → crédit boutique ──────────────────────────────────────
+    // [M3] Cash relais → wallet (createStoreCredit DEPRECATED D5 → walletService.credit)
     refundMethod = 'store_credit';
-    const credit = await createStoreCredit(client, {
-      userId: order.user_id,
+    const walletTx = await walletService.credit(client, {
+      userId:         order.user_id,
       amountKmf,
-      reason: `cancellation_refund`,
-      sourceOrderId: order.id,
+      reason:         'order_cancel',
+      referenceId:    order.id,
+      idempotencyKey: `refund_cancel_${order.id}`,
+      note:           `Avoir auto — remboursement commande ${order.reference}`,
     });
-    storeCreditId = credit.id;
+    storeCreditId = walletTx.transaction_id || walletTx.id;
   }
 
   // ── Enregistrer le remboursement ────────────────────────────────────────

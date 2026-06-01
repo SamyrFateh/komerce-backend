@@ -23,6 +23,8 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { confirmPaymentCycle } = require('../services/order-payment-confirmation'); // [M2]
+const log = require('../utils/logger').child({ module: 'cash' }); // [M2/M4]
 
 // ── Helper : is admin or relay agent ────────────────────────────────────────
 function isRelaisOrAdmin(req) {
@@ -42,59 +44,122 @@ function requireRelaisOrAdmin(req, res, next) {
 // ══════════════════════════════════════════════════════════════════════════════
 // Option C : montant = order.total_kmf, pas de saisie manuelle
 router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req, res, next) => {
+  const client = await db.getClient();
   try {
+    await client.query('BEGIN');
     const { orderId } = req.params;
     const agentId = req.user.id;
 
-    // 1. Vérifier que la commande existe et est cash
-    const { rows: [order] } = await db.query(`
-      SELECT id, total_kmf, payment_mode, status
-      FROM orders WHERE id = $1
+    // 1. Vérifier que la commande existe et est cash (FOR UPDATE — évite les race conditions)
+    const { rows: [order] } = await client.query(`
+      SELECT id, total_kmf, payment_mode, status, relais_id
+      FROM orders WHERE id = $1 FOR UPDATE
     `, [orderId]);
 
     if (!order) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Commande introuvable' });
     }
     if (order.payment_mode !== 'cash_relais') {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
     }
 
-    // PATCH P1-7 : guard statut — pas de collecte sur commande annulée, remboursée ou déjà collectée.
+    // PATCH P1-7 : guard statut
     const INVALID_COLLECT_STATUSES = ['cancelled', 'refunded', 'collected'];
     if (INVALID_COLLECT_STATUSES.includes(order.status)) {
+      await client.query('ROLLBACK');
       return res.status(409).json({
         error: `Collecte impossible — commande en statut '${order.status}'`,
         current_status: order.status,
       });
     }
 
-    // 2. Vérifier pas de doublon
-    const { rows: existing } = await db.query(`
-      SELECT id FROM cash_collections WHERE order_id = $1
-    `, [orderId]);
+    // [M4] CROSS-RELAIS CHECK — agent_relais ne peut encaisser qu'au relais où il est affecté
+    if (req.user.role === 'agent_relais') {
+      let agentRelaisId = null;
+      let checkPossible = true;
+      try {
+        const { rows: [agent] } = await client.query(
+          'SELECT relais_id FROM users WHERE id = $1', [req.user.id]
+        );
+        agentRelaisId = agent?.relais_id || null;
+      } catch (e) {
+        checkPossible = false;
+        log.warn(\`[CASH-COLLECT] users.relais_id query failed: \${e.message}\`);
+      }
 
+      if (!checkPossible || !agentRelaisId) {
+        await client.query('ROLLBACK');
+        db.query(
+          \`INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)\`,
+          [\`agent_relais sans relais_id tente cash_collect: user=\${req.user.id}\`,
+           JSON.stringify({ order_id: orderId, user_id: req.user.id })]
+        ).catch(() => {});
+        return res.status(403).json({ error: 'Configuration agent incomplète — contactez un admin' });
+      }
+
+      if (String(agentRelaisId) !== String(order.relais_id)) {
+        await client.query('ROLLBACK');
+        log.warn(\`[CASH-COLLECT] ⛔ Cross-relais refusé — agent \${req.user.id} (relais \${agentRelaisId}) tentait commande \${orderId} (relais \${order.relais_id})\`);
+        db.query(
+          \`INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)\`,
+          [\`Cross-relais refusé — order \${orderId}\`,
+           JSON.stringify({ user_id: req.user.id, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id })]
+        ).catch(() => {});
+        return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\'encaisser' });
+      }
+    }
+
+    // 2. Vérifier pas de doublon
+    const { rows: existing } = await client.query(
+      'SELECT id FROM cash_collections WHERE order_id = $1', [orderId]
+    );
     if (existing.length > 0) {
-      return res.status(409).json({
-        error: 'Cash déjà déclaré pour cette commande',
-        collection_id: existing[0].id,
-      });
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Cash déjà déclaré pour cette commande', collection_id: existing[0].id });
     }
 
     // 3. Option C : montant = order.total_kmf (auto)
     const amountKmf = Number(order.total_kmf);
 
-    const { rows: [collection] } = await db.query(`
+    const { rows: [collection] } = await client.query(`
       INSERT INTO cash_collections (order_id, amount_kmf, collected_by, relais_id)
       VALUES ($1, $2, $3, $4)
       RETURNING *
-    `, [orderId, amountKmf, agentId, null]);
+    `, [orderId, amountKmf, agentId, order.relais_id]);
+
+    // [M2] Déclencher le cycle paiement → stock (confirmPaymentCycle)
+    // Avant ce fix, la commande restait en 'pending' après encaissement cash.
+    const cycleResult = await confirmPaymentCycle({
+      orderId,
+      actor:    { id: req.user.id, role: req.user.role },
+      source:   'cash_confirm',
+      dbClient: client,
+    });
+
+    if (cycleResult.stockBlocked) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Stock insuffisant — encaissement annulé',
+        insufficient_items: cycleResult.insufficientItems,
+      });
+    }
+
+    await client.query('COMMIT');
 
     res.status(201).json({
       success: true,
       message: `Cash confirmé : ${amountKmf.toLocaleString('fr-FR')} KMF`,
       collection,
+      payment_cycle: { noop: cycleResult.noop },
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 });
 
 // ══════════════════════════════════════════════════════════════════════════════

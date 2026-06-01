@@ -716,7 +716,7 @@ router.get('/reveal-once/:orderId', authenticate, async (req, res, next) => {
 
     return res.json({
       order_ref:   order.reference,
-      code:        cached.code,
+      code:        revealRow.code, // [M1] fix: cached n'existe pas ici, la source est revealRow
       qr_payload:  qrPayload,
       channel:     order.pickup_secret_channel,
       total_kmf:   Number(order.total_kmf || 0),
