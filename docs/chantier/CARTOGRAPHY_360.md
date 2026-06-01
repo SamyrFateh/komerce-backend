@@ -1,15 +1,15 @@
 # CARTOGRAPHY_360 — redirection chantier
 
-La cartographie canonique est désormais :
+La cartographie canonique est :
 
 `../CARTOGRAPHY_360.md`
 
-Ce fichier chantier est conservé uniquement pour compatibilité avec les anciens liens.
+Ce fichier n'est conservé que pour compatibilité avec d'anciens liens. **Ne plus le mettre à jour.**
+Toute modification structurelle se fait dans `docs/CARTOGRAPHY_360.md`.
 
-Règles :
-
-- ne plus mettre à jour ce doublon ;
-- toute modification structurelle doit être faite dans `docs/CARTOGRAPHY_360.md` ;
-- le Control Tower vivant est le dashboard admin moderne : `public/dashboards/admin/` ;
-- la vue principale CT est `public/dashboards/admin/js/views/ControlTowerView.js` ;
-- les anciens fichiers `public/js/ct-*.js` ont été supprimés comme zombies non servis.
+## Dashboards admin (état vérifié 2026-06-01)
+- **Migration en cours, deux portes servies en parallèle** :
+  - `public/dashboards/admin/` (moderne, SPA) — servi sur `/admin/pilotage`, `/admin/control-tower`, `/admin/costing`, etc. (cible).
+  - `public/dashboards/admin-legacy/control-tower.html` — servi sur l'URL héritée `/control-tower.html` (encore vivant).
+- **Ne pas supprimer `admin-legacy/` tant que `/control-tower.html` n'est pas redirigé vers `/admin/control-tower`.**
+- Les anciens `public/js/ct-*.js` ont bien été supprimés (zombies non servis).

@@ -346,7 +346,7 @@ Pour mettre à jour ce document après une migration DB :
 ```bash
 # 1. Exporter le schéma depuis Railway
 pg_dump --schema-only --no-owner --no-privileges \
-  "$DATABASE_URL_PROD" > /tmp/schema_railway.sql
+  "$DATABASE_URL_PROD" > /tmp/db_schema.sql
 
 # 2. Confronter à ce document :
 # - lister les nouvelles tables (`grep "^CREATE TABLE"`)

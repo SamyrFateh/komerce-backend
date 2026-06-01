@@ -160,7 +160,8 @@ window.K = (() => {
     },
 
     getUser() { return _state.user; },
-    isConnected() { return !!_state.user || !!localStorage.getItem('komerce_session'); },
+    // Hint UI uniquement — la vérité de session est le cookie httpOnly kmrc_jwt (voir /api/auth/me).
+    isConnected() { return !!_state.user; },
 
     setUrl(url) {
       _state.api = normalizeApiUrl(url);

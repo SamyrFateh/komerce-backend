@@ -99,7 +99,7 @@ const _apiDel  = (p)    => _api('DELETE', p);
 function _userCanApply() {
   // Le rôle vit dans CT.platform.state.role (pas CT.platform.role)
   const role = (window.CT && CT.platform && CT.platform.state && CT.platform.state.role) || '';
-  return role === 'admin' || role === 'founder';
+  return role === 'admin';
 }
 
 /* ─── CHARGEMENT DES DONNÉES ─────────────────────────────────────────── */
