@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes risk_provisions (Étape 2 — ADR-011)
  *
  * Provisions risques en % à appliquer sur chaque commande (Niveau 3).
@@ -24,7 +24,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const guard = [authenticate, requireRole(['admin'])];
 
 // ─── GET /api/admin/risk-provisions ────────────────────────────────────────
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', ...guard, async (req, res, next) => {
   try {
     const { active } = req.query;
     let sql = 'SELECT * FROM risk_provisions';
@@ -42,7 +42,7 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 // ─── GET /api/admin/risk-provisions/:id ────────────────────────────────────
-router.get('/:id', authenticate, async (req, res, next) => {
+router.get('/:id', ...guard, async (req, res, next) => {
   try {
     const { rows: [row] } = await db.query(
       'SELECT * FROM risk_provisions WHERE id = $1', [req.params.id]
@@ -186,3 +186,4 @@ router.delete('/:id', ...guard, async (req, res, next) => {
 });
 
 module.exports = router;
+
