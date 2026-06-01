@@ -7,9 +7,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // GET / — Recent notifications
-router.get('/', async (req, res, next) => {
+router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { parcel_ref, order_ref, channel, event, limit: lim } = req.query;
     const maxRows = Math.min(Number(lim) || 50, 200);
@@ -44,7 +45,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // GET /stats — Stats by channel
-router.get('/stats', async (req, res, next) => {
+router.get('/stats', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows: byChannel } = await db.query(`
       SELECT channel, status, COUNT(*)::int AS count
