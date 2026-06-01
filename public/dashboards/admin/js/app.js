@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE Dashboard — App
  * ════════════════════════════════════════════════════════════════════════
  * Routing SPA (pushState) + render shell + dispatch sur la vue.
@@ -19,6 +19,54 @@
     { path: '/admin/sourcing',         view: null,                   label: 'Sourcing',               icon: '🔎', section: 'AUTRES' },
     { path: '/admin/alerts',           view: null,                   label: 'Alertes',                icon: '🚨', section: 'AUTRES' },
   ];
+
+  let currentUser = null;
+
+  function loginUrl() {
+    const next = window.location.pathname + window.location.search + window.location.hash;
+    return '/login.html?next=' + encodeURIComponent(next);
+  }
+
+  function redirectToLogin() {
+    window.location.replace(loginUrl());
+  }
+
+  async function requireAdminSession() {
+    const res = await fetch('/api/auth/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!res.ok) {
+      redirectToLogin();
+      throw new Error('unauthorized');
+    }
+
+    const user = await res.json();
+
+    if (user.role !== 'admin') {
+      window.location.replace('/');
+      throw new Error('forbidden');
+    }
+
+    currentUser = user;
+    global.KOMERCE_AUTH_USER = user;
+    return user;
+  }
+
+  function hydrateHeaderUser() {
+    if (!currentUser) return;
+
+    const name = currentUser.full_name || currentUser.email || 'Admin';
+    const avatar = document.getElementById('user-avatar');
+    const nameEl = document.getElementById('user-name');
+    const roleEl = document.querySelector('.header-user-role');
+
+    if (avatar) avatar.textContent = String(name).trim().charAt(0).toUpperCase() || 'A';
+    if (nameEl) nameEl.textContent = name;
+    if (roleEl) roleEl.textContent = currentUser.role || 'admin';
+  }
 
   function renderShell() {
     document.body.innerHTML = `
@@ -170,9 +218,16 @@
     });
   }
 
-  function init() {
+  async function init() {
+    try {
+      await requireAdminSession();
+    } catch (_) {
+      return;
+    }
+
     KmcFilters.init();
     renderShell();
+    hydrateHeaderUser();
     dispatchView();
 
     // Gestion du bouton retour navigateur
@@ -192,3 +247,4 @@
 
 // Auto-init
 document.addEventListener('DOMContentLoaded', () => window.KmcApp.init());
+
