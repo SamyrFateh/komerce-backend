@@ -38,15 +38,32 @@ CT.app = {
       });
     }
 
-    /* Check existing session */
-    if (localStorage.getItem('kmrc_logged_in')) {
+    /* [CT1] Check existing session — /api/auth/me est la source de vérité canonique.
+       On ne fait plus confiance au seul localStorage ; le rôle admin est vérifié côté
+       serveur à chaque chargement. Si window.KOMERCE_AUTH_USER est déjà rempli par le
+       dashboard moderne on l'utilise directement, sinon on appelle /api/auth/me. */
+    var cachedUser = window.KOMERCE_AUTH_USER || null;
+    if (cachedUser) {
+      if (cachedUser.role !== 'admin') {
+        localStorage.removeItem('kmrc_logged_in');
+        window.location.replace('/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.hash));
+        return;
+      }
+      localStorage.setItem('kmrc_logged_in', '1');
+      CT.app.onLogin(cachedUser);
+    } else {
       CT.api.me().then(function(user) {
+        if (!user || user.role !== 'admin') {
+          localStorage.removeItem('kmrc_logged_in');
+          window.location.replace('/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.hash));
+          return;
+        }
+        localStorage.setItem('kmrc_logged_in', '1');
         CT.app.onLogin(user);
       }).catch(function() {
+        localStorage.removeItem('kmrc_logged_in');
         CT.app.showLogin();
       });
-    } else {
-      CT.app.showLogin();
     }
   },
 
@@ -348,7 +365,29 @@ CT.app = {
     var viewFn = CT.app._resolveViewFn(view);
 
     if (viewFn) {
-      viewFn(main);
+      /* [CT4] Afficher les erreurs de rendu plutôt que les avaler silencieusement */
+      try {
+        var maybePromise = viewFn(main);
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.catch(function(err) {
+            main.innerHTML =
+              '<div class="ct-error">' +
+                '<div style="font-size:32px;margin-bottom:8px">⚠️</div>' +
+                '<h3>Erreur de chargement</h3>' +
+                '<p style="color:#64748b;margin-top:8px">' + (err.message || 'Erreur inconnue') + '</p>' +
+              '</div>';
+            console.error('[CT] View error (' + view + '):', err);
+          });
+        }
+      } catch (err) {
+        main.innerHTML =
+          '<div class="ct-error">' +
+            '<div style="font-size:32px;margin-bottom:8px">⚠️</div>' +
+            '<h3>Erreur de chargement</h3>' +
+            '<p style="color:#64748b;margin-top:8px">' + (err.message || 'Erreur inconnue') + '</p>' +
+          '</div>';
+        console.error('[CT] View error (' + view + '):', err);
+      }
       if (history && history.replaceState) {
         history.replaceState(null, '', '#' + view);
       }

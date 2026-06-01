@@ -110,8 +110,9 @@ CT.api = {
   hubParcels: function() { return this.get("/api/v2/parcels"); },
 
   // ---- Relais operational ----
-  relaisScanArrival: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "available" }); },
-  relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { step: "collected" }); },
+  // [CT3] fix — payload utilise event_type (attendu par l'API v2) et non step
+  relaisScanArrival: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { event_type: "arrived" }); },
+  relaisScanCollect: function(parcelId) { return this.post("/api/v2/parcels/" + parcelId + "/scan", { event_type: "collected" }); },
 
 
   // ---- Auto-Distribution ----
