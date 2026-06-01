@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-bus
  * @brief Event bus léger pour découpler les modules sans imports circulaires.
  *
@@ -68,5 +68,12 @@ export const bus = {
   },
 };
 
-// Expose pour debug en dev (pas en prod)
-if (typeof window !== 'undefined') window._kbus = bus;
+// Expose pour debug en dev/local uniquement (pas en prod)
+if (
+  typeof window !== 'undefined' &&
+  window.location &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname)
+) {
+  window._kbus = bus;
+}
+

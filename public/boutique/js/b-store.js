@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-store
  * @brief Source de vérité unique pour l'état applicatif et les constantes.
  *
@@ -113,8 +113,14 @@ export const state = {
   editSharedCart: null,
 };
 
-// Debug global (read-only)
-if (typeof window !== 'undefined') window._kstate = state;
+// Debug global (read-only) — dev/local uniquement (pas en prod)
+if (
+  typeof window !== 'undefined' &&
+  window.location &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname)
+) {
+  window._kstate = state;
+}
 
 /* ── SCROLL SHARED STATE ─────────────────────────────────── */
 
@@ -276,3 +282,4 @@ export function updateMobileScrollTop() {
   requestAnimationFrame(doUpdate);
   setTimeout(doUpdate, 400);
 }
+
