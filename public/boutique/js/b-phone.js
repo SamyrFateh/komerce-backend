@@ -46,6 +46,15 @@ export function normalizeLocal(code, digits) {
 }
 
 /**
+ * Longueur maximum visuelle autorisée dans l'input.
+ * On ne peut pas faire country.max + 3 : un numéro FR complet
+ * "06 12 34 56 78" contient 10 chiffres + 4 espaces = 14 caractères.
+ */
+function formattedMaxLength(country) {
+  return Math.max(country.max + 6, String(country.ph || '').length);
+}
+
+/**
  * Formate visuellement les chiffres selon le pays (espaces, groupes).
  * Utilisé uniquement pour l'affichage dans l'input — ne pas envoyer à l'API.
  */
@@ -128,7 +137,7 @@ export function buildPhoneSelect(selectId, inputId, defaultCode, onChange) {
   function sync() {
     const country = currentCountry();
     input.placeholder = country.ph;
-    input.maxLength   = country.max + 3; // +3 pour les espaces visuels
+    input.maxLength   = formattedMaxLength(country);
     const raw     = digitsOnly(input.value).slice(0, country.max);
     input.value   = prettifyLocal(raw, country);
     const e164    = buildE164(country.code, raw);
@@ -175,7 +184,7 @@ export function phoneBlockHTML(selectId, inputId, defaultCode) {
 
   return `<select class="ev-phone-prefix" id="${selectId}" aria-label="Indicatif">${opts}</select>`
        + `<input type="tel" id="${inputId}" name="${inputId}" class="ev-input" `
-       + `placeholder="${country.ph}" inputmode="numeric" autocomplete="tel" maxlength="${country.max + 3}">`;
+       + `placeholder="${country.ph}" inputmode="numeric" autocomplete="tel" maxlength="${formattedMaxLength(country)}">`;
 }
 
 /**
@@ -268,7 +277,7 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   function sync() {
     const country = currentCountry();
     input.placeholder = country.ph;
-    input.maxLength   = country.max + 3;
+    input.maxLength   = formattedMaxLength(country);
 
     let rawDigits = digitsOnly(input.value).slice(0, country.max);
     input.value = prettifyLocal(rawDigits, country);
