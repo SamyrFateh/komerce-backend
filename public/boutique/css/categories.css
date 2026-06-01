@@ -135,10 +135,12 @@
   justify-content: center;
 }
 .k-chip-photo img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 9px;
+  border-radius: inherit;
   /* saturation + micro-contraste pour lisibilité à petite taille */
   filter: saturate(1.22) contrast(1.05);
 }
@@ -736,11 +738,13 @@
   }
 
   .k-chip-photo img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: block;
     object-fit: cover;
-    object-position: center 20%;  /* cadrage haut : les visages/objets iconiques y sont */
+    object-position: center 20%;
     border-radius: 0;
     /* MÊME LANGAGE — même traitement image que .k-subchip-photo (boutique-desktop.css) */
     filter: saturate(1.32) contrast(1.07) brightness(1.02);

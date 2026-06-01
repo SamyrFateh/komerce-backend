@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-06-01)
-   Généré par deploy-css.js — éditer les sources CSS.
+   KOMERCE — components.css (bundle Sprint 3 · 2026-06-01)
+   components — categories · products · modal-shell · modal-media · modal-product · cart · interactions · hero-cart-proxy · group-cart-flow · shared-followup · identity
+   Généré par scripts/bundle-css.js — éditer les sources.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -140,10 +141,12 @@
   justify-content: center;
 }
 .k-chip-photo img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 9px;
+  border-radius: inherit;
   /* saturation + micro-contraste pour lisibilité à petite taille */
   filter: saturate(1.22) contrast(1.05);
 }
@@ -741,13 +744,23 @@
   }
 
   .k-chip-photo img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: block;
     object-fit: cover;
+    object-position: center 20%;
     border-radius: 0;
-    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
-    filter: saturate(1.28) contrast(1.06) brightness(1.03);
+    /* MÊME LANGAGE — même traitement image que .k-subchip-photo (boutique-desktop.css) */
+    filter: saturate(1.32) contrast(1.07) brightness(1.02);
+    transition: filter .25s ease, transform .25s ease;
+  }
+
+  /* Si une vraie image charge, on masque le span fallback */
+  .k-chip-photo:has(img[src]:not([src=""])) > span,
+  .k-chip-photo:has(img[src]:not([src=""])) .k-chip-fallback {
+    display: none;
   }
 
   .k-chip-fallback {
