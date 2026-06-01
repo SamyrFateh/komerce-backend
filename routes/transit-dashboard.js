@@ -7,7 +7,7 @@ const log = require('../utils/logger').child({ module: 'transit-dashboard' });
 // ─────────────────────────────────────────────
 // GET — colis prêts pour transit (shipped)
 // ─────────────────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', authenticate, requireAdmin, async (req, res) => {
   try {
     const result = await db.query(`
       SELECT reference, destination_island, destination_relais AS relais_name, weight_kg, created_at
