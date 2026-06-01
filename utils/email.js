@@ -1,11 +1,11 @@
-/*  utils/email.js — Brevo REST API v3
+﻿/*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
     Variable requise : BREVO_API_KEY (commence par xkeysib-)
     Optionnel : BREVO_SENDER_EMAIL, APP_URL
 */
 
 const BREVO_KEY = process.env.BREVO_API_KEY || '';
-const SENDER    = process.env.BREVO_SENDER_EMAIL || 'fatehsamyr@gmail.com';
+const SENDER    = process.env.BREVO_SENDER_EMAIL || 'no-reply@komerce.km';
 const APP       = process.env.APP_URL || 'https://komerce-backend-production.up.railway.app';
 
 /* ─── template wrapper ──────────────────────────────────── */
@@ -211,3 +211,4 @@ async function sendOrderEmail(order, status) {
 }
 
 module.exports = { sendOrderEmail, templates };
+

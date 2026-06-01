@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes admin pour customs_categories (Étape 0 audit)
  *
  * Permet à l'admin de gérer les catégories douanières dans la BDD au lieu
@@ -19,7 +19,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const guard = [authenticate, requireRole(['admin'])];
 
 // ─── GET /api/admin/customs-categories ─────────────────────────────
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', ...guard, async (req, res, next) => {
   try {
     const { active } = req.query;
     let sql = 'SELECT * FROM customs_categories';
@@ -38,7 +38,7 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 // ─── GET /api/admin/customs-categories/:key ────────────────────────
-router.get('/:key', authenticate, async (req, res, next) => {
+router.get('/:key', ...guard, async (req, res, next) => {
   try {
     const { rows: [row] } = await db.query(
       'SELECT * FROM customs_categories WHERE key = $1', [req.params.key]
@@ -146,3 +146,4 @@ router.delete('/:key', ...guard, async (req, res, next) => {
 });
 
 module.exports = router;
+
