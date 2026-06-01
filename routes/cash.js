@@ -86,14 +86,14 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
         agentRelaisId = agent?.relais_id || null;
       } catch (e) {
         checkPossible = false;
-        log.warn(\`[CASH-COLLECT] users.relais_id query failed: \${e.message}\`);
+        log.warn(`[CASH-COLLECT] users.relais_id query failed: \${e.message}`);
       }
 
       if (!checkPossible || !agentRelaisId) {
         await client.query('ROLLBACK');
         db.query(
-          \`INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)\`,
-          [\`agent_relais sans relais_id tente cash_collect: user=\${req.user.id}\`,
+          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)`,
+          [`agent_relais sans relais_id tente cash_collect: user=\${req.user.id}`,
            JSON.stringify({ order_id: orderId, user_id: req.user.id })]
         ).catch(() => {});
         return res.status(403).json({ error: 'Configuration agent incomplète — contactez un admin' });
@@ -101,10 +101,10 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
 
       if (String(agentRelaisId) !== String(order.relais_id)) {
         await client.query('ROLLBACK');
-        log.warn(\`[CASH-COLLECT] ⛔ Cross-relais refusé — agent \${req.user.id} (relais \${agentRelaisId}) tentait commande \${orderId} (relais \${order.relais_id})\`);
+        log.warn(`[CASH-COLLECT] ⛔ Cross-relais refusé — agent \${req.user.id} (relais \${agentRelaisId}) tentait commande \${orderId} (relais \${order.relais_id})`);
         db.query(
-          \`INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)\`,
-          [\`Cross-relais refusé — order \${orderId}\`,
+          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)`,
+          [`Cross-relais refusé — order \${orderId}`,
            JSON.stringify({ user_id: req.user.id, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id })]
         ).catch(() => {});
         return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\'encaisser' });
