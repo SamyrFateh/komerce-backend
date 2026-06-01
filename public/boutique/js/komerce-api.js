@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — API Unifiée v1.1
    Couche unique pour tous les écrans (Hub, Pipeline, Relais, Dashboard, Admin)
 
@@ -15,11 +15,31 @@
 window.K = (() => {
   'use strict';
 
+  function normalizeApiUrl(raw) {
+    const fallback = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
+    if (!raw) return fallback;
+
+    try {
+      const url = new URL(String(raw), fallback || undefined);
+      const current = (typeof window !== 'undefined' && window.location) ? window.location : null;
+      const isSameOrigin = current && url.origin === current.origin;
+      const isLocalDev = current
+        && ['localhost', '127.0.0.1'].includes(current.hostname)
+        && ['localhost', '127.0.0.1'].includes(url.hostname);
+
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return fallback;
+      if (!isSameOrigin && !isLocalDev) return fallback;
+
+      return url.origin;
+    } catch (_) {
+      return fallback;
+    }
+  }
   // ── STATE ──────────────────────────────────────────────────
   const _state = {
     // Défaut : même origine (Railway ou localhost)
     // Si l'utilisateur a défini une URL custom, on l'utilise.
-    api: localStorage.getItem('komerce_api_url') || (typeof window !== 'undefined' ? window.location.origin : ''),
+    api: normalizeApiUrl(localStorage.getItem('komerce_api_url')),
     user: null,
   };
 
@@ -106,7 +126,7 @@ window.K = (() => {
   const auth = {
     async login(email, password, apiUrl) {
       if (apiUrl) {
-        _state.api = apiUrl.replace(/\/$/, '');
+        _state.api = normalizeApiUrl(apiUrl);
         localStorage.setItem('komerce_api_url', _state.api);
       }
       const health = await request('/api/health');
@@ -143,7 +163,7 @@ window.K = (() => {
     isConnected() { return !!_state.user || !!localStorage.getItem('komerce_session'); },
 
     setUrl(url) {
-      _state.api = url.replace(/\/$/, '');
+      _state.api = normalizeApiUrl(url);
       localStorage.setItem('komerce_api_url', _state.api);
     },
   };
@@ -327,3 +347,4 @@ window.K = (() => {
     ui,
   };
 })();
+

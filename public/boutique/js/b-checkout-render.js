@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-checkout-render
  * @brief S3.1 — Fonctions de rendu DOM pures extraites de b-checkout.js
  *
@@ -71,9 +71,9 @@ export function renderRelaisForIle(listEl, relaisList, selectionRef, onSelect, o
     item.className = 'ck-relais-item' + (compact ? ' ck-relais-item--compact selected' : '');
     item.dataset.id = r.id;
     item.innerHTML =
-      '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' +
+      '<span class="ck-relais-name">' + sanitize(r.name || r.nom || '') + '</span>' +
       (r.address || r.adresse || r.location
-        ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>'
+        ? '<span class="ck-relais-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>'
         : '');
     return item;
   };
@@ -307,3 +307,4 @@ export function buildIdentityRecapDOM(identity) {
     + '<button type="button" class="k-ck-id-change">Ce n\'est pas vous\u00a0? Utiliser un autre numéro</button>';
   return el;
 }
+
