@@ -197,6 +197,198 @@
   function getLoyaltyHistory(params)           { return fetchJSON(apiUrl('/admin/loyalty/history', params)); }
   function createLoyaltyAction(id, body)       { return fetchMutation(apiUrl('/admin/loyalty/' + id), 'POST', body); }
 
+  // ── Vague 1 — Transitaire ────────────────────────────────────────────────
+
+  /**
+   * Transitaire — KPIs (ready_to_ship, in_transit, total_weight_shipped,
+   *               avg_wait_hours, overdue_shipments)
+   */
+  function getTransitaireStats()          { return fetchJSON(apiUrl('/transitaire/stats')); }
+
+  /**
+   * Transitaire — colis prêts à expédier (Hub → Transit)
+   * Retourne { parcels: [{ id, reference, order_ref, customer_name,
+   *   destination_island, relais_name, nb_items, weight_kg, shipped_at }] }
+   */
+  function getTransitaireParcels()        { return fetchJSON(apiUrl('/transitaire/parcels')); }
+
+  /**
+   * Transitaire — historique des transits récents
+   * Retourne { events: [{ parcel_ref, order_ref, actor_name, created_at, notes }] }
+   */
+  function getTransitaireHistory()        { return fetchJSON(apiUrl('/transitaire/history')); }
+
+  /**
+   * Transitaire — expédier un colis (Hub → Transit)
+   * @param {string|number} parcelId
+   * @param {string}        notes     Optionnel
+   * @returns {{ success: boolean, error?: string }}
+   */
+  function shipTransitaireParcel(parcelId, notes) {
+    return fetchMutation(apiUrl('/transitaire/ship'), 'POST', {
+      parcel_id: parcelId,
+      notes: notes || '',
+    });
+  }
+
+  // ── Vague 1 — Signals (ActionCenterView) ─────────────────────────────────
+
+  /**
+   * Signals — KPIs globaux (total, par sévérité)
+   * Retourne { total, urgent, critical, warning, info }
+   */
+  function getSignalsStats() { return fetchJSON(apiUrl('/admin/signals/stats')); }
+
+  /**
+   * Signals — liste des signaux actifs
+   * @param {object} params  { limit?, severity?, signal_type? }
+   * Retourne { signals: [{ id, signal_type, severity, title, summary,
+   *   recommendation, entity_id, target_view, target_filters, created_at }] }
+   */
+  function getSignalsList(params) { return fetchJSON(apiUrl('/admin/signals', params)); }
+
+  /**
+   * Signals — régénérer tous les signaux (recalcul moteur)
+   * @param {string[]} types  Optionnel — limiter aux types donnés
+   */
+  function generateSignals(types) {
+    return fetchMutation(apiUrl('/admin/signals/generate'), 'POST', types ? { types } : {});
+  }
+
+  /** Signals — marquer un signal comme vu */
+  function acknowledgeSignal(id) {
+    return fetchMutation(apiUrl('/admin/signals/' + id + '/acknowledge'), 'POST');
+  }
+
+  /**
+   * Signals — reporter un signal
+   * @param {string|number} id
+   * @param {number}        hours  Durée du snooze (défaut 24h)
+   */
+  function snoozeSignal(id, hours) {
+    return fetchMutation(apiUrl('/admin/signals/' + id + '/snooze'), 'POST', { hours: hours || 24 });
+  }
+
+  /** Signals — marquer un signal comme résolu */
+  function resolveSignal(id) {
+    return fetchMutation(apiUrl('/admin/signals/' + id + '/resolve'), 'POST');
+  }
+
+  // ── Vague 1 — Orders (ProblemsView) ──────────────────────────────────────
+
+  /**
+   * Orders — liste des commandes
+   * @param {object} params  { limit?, status?, search?, island?, … }
+   * Retourne { orders: [...] }
+   */
+  function getOrders(params) { return fetchJSON(apiUrl('/orders', params)); }
+
+  // ── Vague 1 — Hub & Relais (HubRelaisView) ───────────────────────────────
+
+  /**
+   * Hub — marquer une commande comme "commandée" (confirmed → ordered)
+   * @param {string} ref  Référence commande
+   */
+  function hubMarkOrdered(ref) {
+    return fetchMutation(apiUrl('/hub/orders/mark-ordered'), 'POST', { reference: ref });
+  }
+
+  /**
+   * Hub — expédier un colis depuis le Hub (scan shipped)
+   * @param {string} ref  Référence colis
+   */
+  function hubShip(ref) {
+    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
+      reference: ref,
+      action: 'shipped',
+      note: 'Expédié Hub — CT',
+    });
+  }
+
+  /**
+   * Hub — lancer la distribution automatique des commandes en colis
+   * Retourne { distributed, skipped, parcels_created }
+   */
+  function autoDistribute() {
+    return fetchMutation(apiUrl('/hub/auto-distribute'), 'POST');
+  }
+
+  /**
+   * Hub — récupérer l'état de distribution actuel
+   * Retourne { parcels: [...], unassigned_orders: [...] }
+   */
+  function getDistribution() { return fetchJSON(apiUrl('/hub/auto-distribute')); }
+
+  /**
+   * Relais — confirmer l'encaissement cash d'une commande
+   * @param {string} ref  Référence commande
+   */
+  function relaisConfirmCash(ref) {
+    return fetchMutation(apiUrl('/v2/orders/' + ref + '/confirm-cash'), 'POST');
+  }
+
+  /**
+   * Relais — scanner l'arrivée d'un colis au relais
+   * @param {string} ref  Référence colis
+   */
+  function relaisReceive(ref) {
+    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
+      reference: ref,
+      action: 'arrived',
+      note: 'Réception relais — CT',
+    });
+  }
+
+  /**
+   * Relais — scanner la remise client (collecté)
+   * @param {string} ref  Référence colis
+   */
+  function relaisCollect(ref) {
+    return fetchMutation(apiUrl('/v2/scan'), 'POST', {
+      reference: ref,
+      action: 'collected',
+      note: 'Remis client — CT',
+    });
+  }
+
+  // ── Vague 1 — Inventaire Hub (InventoryView) ──────────────────────────────
+
+  /**
+   * Inventaire — KPIs (received, proposed, assigned, buffered,
+   *              open_parcels, overdue)
+   */
+  function getHubInventoryStats() { return fetchJSON(apiUrl('/hub/inventory/stats')); }
+
+  /**
+   * Inventaire — articles avec leur proposition d'assignation
+   * Retourne { items: [{ id, status, product_name, order_ref, destination_island,
+   *   wait_minutes, proposed_parcel_id, proposed_parcel_ref, buffer_reason }] }
+   */
+  function getHubInventoryProposals() { return fetchJSON(apiUrl('/hub/inventory/proposals')); }
+
+  /**
+   * Inventaire — colis ouverts disponibles pour l'assignation manuelle
+   * Retourne { parcels: [{ id, reference, destination_island, item_count }] }
+   */
+  function getHubInventoryOpenParcels() { return fetchJSON(apiUrl('/hub/inventory/open-parcels')); }
+
+  /**
+   * Inventaire — assigner manuellement un article à un colis (scan)
+   * @param {{ inventory_item_id: string|number, parcel_id: string|number }} body
+   * Retourne { matched_proposal: boolean, parcel_ref: string }
+   */
+  function hubInventoryScanAssign(body) {
+    return fetchMutation(apiUrl('/hub/inventory/scan-assign'), 'POST', body);
+  }
+
+  /**
+   * Inventaire — recalculer toutes les propositions d'assignation (moteur)
+   * Retourne { proposed, skipped }
+   */
+  function hubInventoryProposeAll() {
+    return fetchMutation(apiUrl('/hub/inventory/propose-all'), 'POST');
+  }
+
   // ── Cache ─────────────────────────────────────────────────────────────────
 
   async function clearCache(prefix) {
@@ -231,6 +423,10 @@
     getParcelAlerts,
     getParcelCritical,
     getParcelReconciliation,
+    getTransitaireStats,
+    getTransitaireParcels,
+    getTransitaireHistory,
+    shipTransitaireParcel,
 
     // Vague 2 — Finance
     getFinance,
