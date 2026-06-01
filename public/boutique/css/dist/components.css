@@ -119,24 +119,34 @@
 }
 
 /* Photo circle */
+/* OWNER UNIQUE — .k-chip-photo (mobile). Fusion des 2 anciens blocs
+   (40px puis override 26px) en une seule vérité = valeur effective 26px.
+   Rendu inchangé, lisibilité restaurée. Desktop : @media ≥900px plus bas. */
 .k-chip-photo {
   position: relative;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  margin: 0 auto;
-  border-radius: 11px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  margin: 0;
+  border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--overlay-black-xs);
   background: var(--sand-dark);
-  box-shadow: var(--elev-1);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
   transition: box-shadow .2s var(--ease), transform .2s var(--ease);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.k-chip-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.k-chip-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 9px;
+  /* saturation + micro-contraste pour lisibilité à petite taille */
+  filter: saturate(1.22) contrast(1.05);
+}
 .k-chip-photo > span {
   display: flex;
   align-items: center;
@@ -149,23 +159,6 @@
 }
 .k-chip[data-cat="all"] .k-chip-photo > span { font-size: 9px; }
 .k-chip-photo svg { width: 15px; height: 15px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-.k-chip-photo {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  margin: 0;
-  border-radius: 10px;
-  border-width: 1px;
-  /* POLISH — bord interne lumineux pour soulever l'image du fond */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
-}
-
-.k-chip-photo img {
-  border-radius: 9px;
-  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
-  filter: saturate(1.22) contrast(1.05);
-}
 
 /* Fond par catégorie */
 /* POLISH — fonds enrichis par catégorie */
@@ -230,33 +223,23 @@
   text-align: left;
 }
 
-/* État actif mobile */
-.k-chip.active .k-chip-photo {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2.5px var(--coral), var(--elev-2);
-  transform: scale(1.05);
-}
-.k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
-.k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
-.k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-.k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: var(--white); }
-.k-chip.active .k-chip-label { color: var(--coral); font-weight: 800; }
-
+/* État actif mobile — OWNER UNIQUE (fusion des 2 anciens blocs corail+doré
+   qui se contredisaient ; on garde la valeur effective = doré, rendu inchangé) */
 .k-chip.active {
   background: rgba(255, 248, 232, .88);
   border-color: rgba(198, 168, 93, .50);
   box-shadow: 0 2px 7px rgba(198, 168, 93, .10);
 }
-
 .k-chip.active .k-chip-photo {
   border-color: rgba(198, 168, 93, .82);
   box-shadow: 0 0 0 1.25px rgba(198, 168, 93, .34);
   transform: none;
 }
-
-.k-chip.active .k-chip-label {
-  color: var(--coral-dark);
-}
+.k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
+.k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
+.k-chip.active .k-chip-photo svg { stroke: var(--coral); }
+.k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: var(--white); }
+.k-chip.active .k-chip-label { color: var(--coral-dark); font-weight: 800; }
 
 /* Sentinel spacer */
 #k-bar-sentinel { height: 0; margin: 0; padding: 0; }

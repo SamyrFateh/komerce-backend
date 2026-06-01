@@ -34,17 +34,8 @@ déclencheur.** Aucune zone ne doit inventer son propre flag.
 |---|---|---|
 | **Grille / sections** | `#k-catalog-section` cappé par `--catalog-max` (flex → besoin du max-width) | `layout.css` |
 | **Header** | `.k-header-inner` cappé par le même calcul `min(...)` quand `sc-reserve` | `layout.css` |
-| **Footer** | `.k-footer { margin-right: var(--sc-reserve-w) }` quand `sc-reserve` actif. Le `padding-right` du body ne contraint QUE le flux, **pas la peinture du fond** : sans margin-right, le fond vert déborde sous le panneau. Le contenu interne (`footer-grid`, `footer-bottom`) reste en `--container` — le parent réserve déjà, pas de double compensation. | `boutique-desktop.css` |
-| **Toute nouvelle zone pleine largeur** | voir « Deux mécanismes » ci-dessous | la zone |
-
-### Deux mécanismes de réserve — choisir selon la nature de l'élément
-
-| Cas | Mécanisme | Pourquoi |
-|---|---|---|
-| Élément en **flex/grid** dans le wrap (ex. `#k-catalog-section`) | cap `max-width: var(--catalog-max, …)` **+ `minmax(0, Nfr)`** sur les colonnes | le flex/grid ignore le padding du body ; et `fr` nu refuse de rétrécir sous son contenu → il faut `minmax(0,…)` pour que le cap morde |
-| Bloc **enfant direct de `<body>` qui porte un fond** (ex. `.k-footer`) | `margin-right: var(--sc-reserve-w)` quand `sc-reserve` | le fond doit s'arrêter avant le panneau ; le padding body ne suffit pas pour la peinture. **Le contenu interne reste en `--container`** (le parent réserve) |
-
-> Règle : **une seule réserve par chaîne**. Si le parent réserve (margin-right), les enfants ne re-cappent pas (sinon double décalage).
+| **Footer** | **rien de spécial** : enfant direct de `<body>`, le `padding-right` du body le contraint déjà. Il s'arrête avant le side-cart, fond compris. | — (hérite du body) |
+| **Toute nouvelle zone pleine largeur** | si enfant de `<body>` → rien à faire (padding body). Si flex/grid qui ignore le padding → capper via `--catalog-max` ou `max-width: calc(100vw - var(--sc-reserve-w) - 16px)` | la zone |
 
 ---
 

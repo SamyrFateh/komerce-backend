@@ -1822,7 +1822,7 @@ body:has(#k-page-scroll.k-pager-active) {
     grid-template-columns: 1.25fr 0.9fr;
     align-items: stretch;
     background: var(--sand-warm);
-    min-height: 240px;
+    min-height: 210px;
     position: relative;
   }
 
@@ -1936,7 +1936,7 @@ body:has(#k-page-scroll.k-pager-active) {
     grid-row: 1 / -1;
     width: 100%;
     height: 100%;
-    min-height: 240px;
+    min-height: 210px;
     aspect-ratio: unset;
     object-fit: cover;
     object-position: 50% 35%;
