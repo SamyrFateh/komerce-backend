@@ -1,9 +1,9 @@
-'use strict';
+﻿'use strict';
 
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const router = express.Router();
 const pool = require('../db');
+const { authenticate } = require('../middleware/auth');
 const { computeOrderStatusDetail, getOrderStatusDetailMessage } = require('../utils/parcels');
 const log = require('../utils/logger').child({ module: 'client-tracking' });
 
@@ -25,33 +25,14 @@ const STATUS_ORDER = [
   'in_transit', 'available', 'collected'
 ];
 
-/**
- * Middleware: extract client JWT from cookie or Authorization header
- */
-function requireClientAuth(req, res, next) {
-  const token = req.cookies?.kmrc_client
-    || req.cookies?.token
-    || (req.headers.authorization?.startsWith('Bearer ') && req.headers.authorization.slice(7));
-
-  if (!token) {
-    return res.status(401).json({ error: 'Non authentifié. Veuillez vous connecter avec votre numéro.' });
-  }
-
-  try {
-    req.client = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
-    next();
-  } catch (e) {
-    return res.status(401).json({ error: 'Session expirée. Veuillez vous reconnecter.' });
-  }
-}
 
 /**
  * GET /api/client/tracking
  * Returns ALL orders for the authenticated client with full timelines
  */
-router.get('/', requireClientAuth, async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   try {
-    const userId = req.client.id;
+    const userId = req.user.id;
 
     // Fetch all orders for this user
     const { rows: orders } = await pool.query(`
@@ -254,3 +235,4 @@ function buildTimeline(order) {
 }
 
 module.exports = router;
+
