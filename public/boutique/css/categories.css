@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    KOMERCE — categories.css
    Chips catégories + sous-catégories + promo rail.
    Mobile-first, zéro !important.
@@ -411,7 +411,7 @@
 
 @media (min-width: 900px) {
 
-  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
+  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → owner unique : categories.css */
   /* .k-subcats-rail desktop max-width → boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
 
 }
@@ -616,12 +616,18 @@
 /* ── FIN MOBILE PILL RAIL ──────────────────────────────────── */
 
 /* ══════════════════════════════════════════════════════════════════
-   CHIPS DESKTOP — migré depuis boutique-desktop.css
+   CHIPS DESKTOP — images flottantes
    Sprint 4 — S4.2 : owner unique = categories.css
+
+   Intention UX :
+   - .k-chip = zone cliquable invisible
+   - .k-chip-photo = seul visuel fort, image flottante de catégorie
+   - .k-chip-label = libellé court sous l'image
+   - pas de carte blanche, pas de container dominant
    ══════════════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════════
-   CATÉGORIES DESKTOP — CARTES VISUELLES (source de vérité unique)
-   PALETTE-FIX-01 : ombres chip hover ocean, barre sticky ocean.
+   CATÉGORIES DESKTOP — IMAGES FLOTTANTES
+   PALETTE-FIX-01 : ombres sobres, état actif par halo image.
    ══════════════════════════════════════════════════════════════════ */
 
 @media (min-width: 900px) {
@@ -636,7 +642,6 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 0 0 20px 20px;
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
     box-shadow:
       0 8px 32px rgba(100,175,90,.10),
       0 1px 0 rgba(198,168,93,.12);
@@ -661,10 +666,6 @@
 
   .k-cats {
     display: grid;
-    /* auto-fit : autant de colonnes que la largeur permet (≥120px chacune).
-       Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
-       4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
-       sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
     max-width: none;
@@ -687,55 +688,67 @@
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 80px;
-    min-height: 80px;
+    height: 78px;
+    min-height: 78px;
+
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 8px 8px 7px;
-    border-radius: 24px;
-    border: 1px solid var(--border-text-08);
-    border-bottom-color: var(--border-text-08);
-    background: var(--surface-white-64);
+    gap: 5px;
+
+    padding: 4px 6px 5px;
+    border: none;
+    border-radius: 18px;
+    background: transparent;
     color: var(--text-alpha-82);
-    box-shadow: 0 4px 12px var(--border-text-04);
+    box-shadow: none;
+
     cursor: pointer;
     text-align: center;
-    overflow: hidden;
+    overflow: visible;
     white-space: normal;
-    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+
+    transition:
+      transform .16s var(--ease),
+      color .16s var(--ease),
+      opacity .16s var(--ease);
   }
 
   .k-chip:hover {
     transform: translateY(-2px);
-    background: var(--white);
-    border-color: rgba(198,168,93,.36);
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
-    box-shadow: 0 12px 24px rgba(100,175,90,.12);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
     color: var(--text);
   }
 
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
-    position: relative; /* FIX — ancrage pour img position:absolute enfant */
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+    position: relative;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
     margin: 0;
+
     border-radius: 50%;
-    border: 1px solid var(--overlay-white-72);
-    /* POLISH — fond légèrement plus chaud pour soulever les images pâles */
-    background: var(--sand-warm);
+    border: 1px solid rgba(255,255,255,.78);
+    background: transparent;
+
     box-shadow:
-      inset 0 0 0 1.5px rgba(255,255,255,.68),
-      0 6px 16px rgba(28,26,23,.08);
+      0 10px 22px rgba(28,26,23,.13),
+      0 2px 5px rgba(28,26,23,.08);
+
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+
     transform: none;
+    transition:
+      transform .18s var(--ease),
+      box-shadow .18s var(--ease),
+      border-color .18s var(--ease);
   }
 
   .k-chip-photo img {
@@ -744,12 +757,28 @@
     width: 100%;
     height: 100%;
     display: block;
+
     object-fit: cover;
     object-position: center 20%;
-    border-radius: 0;
-    /* MÊME LANGAGE — même traitement image que .k-subchip-photo (boutique-desktop.css) */
-    filter: saturate(1.32) contrast(1.07) brightness(1.02);
-    transition: filter .25s ease, transform .25s ease;
+    border-radius: inherit;
+
+    filter: saturate(1.18) contrast(1.04) brightness(1.02);
+    transition:
+      filter .25s ease,
+      transform .25s ease;
+  }
+
+  .k-chip:hover .k-chip-photo {
+    transform: translateY(-2px) scale(1.04);
+    border-color: rgba(198,168,93,.62);
+    box-shadow:
+      0 14px 28px rgba(28,26,23,.16),
+      0 3px 8px rgba(28,26,23,.10);
+  }
+
+  .k-chip:hover .k-chip-photo img {
+    filter: saturate(1.26) contrast(1.06) brightness(1.03);
+    transform: scale(1.035);
   }
 
   /* Si une vraie image charge, on masque le span fallback */
@@ -788,20 +817,27 @@
 
   .k-chip.active {
     transform: translateY(-1px);
-    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
+    background: transparent;
     color: var(--coral-dark);
-    border-color: rgba(198,168,93,.62);
-    border-bottom-color: rgba(198,168,93,.62);
-    box-shadow: 0 12px 26px rgba(198,168,93,.16);
+    border-color: transparent;
+    box-shadow: none;
   }
 
   .k-chip.active .k-chip-photo {
     border-color: var(--coral);
-    box-shadow: 0 0 0 2px var(--coral), 0 8px 18px var(--border-coral-22);
+    box-shadow:
+      0 0 0 2px var(--coral),
+      0 12px 24px var(--border-coral-22);
     opacity: 1;
   }
-  .k-chip.active .k-chip-photo img { filter: saturate(1.12) contrast(1.05); }
-  .k-chip.active .k-chip-photo::after { opacity: 0; }
+
+  .k-chip.active .k-chip-photo img {
+    filter: saturate(1.22) contrast(1.06) brightness(1.02);
+  }
+
+  .k-chip.active .k-chip-photo::after {
+    opacity: 0;
+  }
 
   .k-chip.active .k-chip-label {
     color: var(--coral-dark);
