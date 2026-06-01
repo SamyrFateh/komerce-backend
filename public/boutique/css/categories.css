@@ -719,6 +719,7 @@
 
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
+    position: relative; /* FIX — ancrage pour img position:absolute enfant */
     width: 44px;
     height: 44px;
     min-width: 44px;
