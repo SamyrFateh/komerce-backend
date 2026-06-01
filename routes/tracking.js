@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const express = require('express');
 const crypto = require('crypto');
@@ -32,26 +32,58 @@ const STATUS_ORDER = [
   'in_transit', 'available', 'collected'
 ];
 
-const PICKUP_VERIFY_WINDOW_MS = 15 * 60 * 1000;
+const PICKUP_VERIFY_WINDOW_MINUTES = 15;
 const PICKUP_VERIFY_MAX_ATTEMPTS = 5;
-const pickupVerifyAttempts = new Map();
 
-function pickupAttemptKey(token, req) {
-  return `${token}:${req.ip || req.headers['x-forwarded-for'] || 'unknown'}`;
+function pickupClientIp(req) {
+  const raw = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  return String(raw).split(',')[0].trim() || 'unknown';
 }
 
-function checkPickupVerifyLimit(token, req) {
+function pickupIpHash(req) {
+  return crypto.createHash('sha256').update(pickupClientIp(req)).digest('hex');
+}
+
+function pickupAttemptKey(token, req) {
+  return crypto.createHash('sha256')
+    .update(`${token}:${pickupIpHash(req)}`)
+    .digest('hex');
+}
+
+async function checkPickupVerifyLimit(token, req) {
   const key = pickupAttemptKey(token, req);
-  const now = Date.now();
-  let entry = pickupVerifyAttempts.get(key);
-  if (!entry || entry.resetAt <= now) {
-    entry = { count: 0, resetAt: now + PICKUP_VERIFY_WINDOW_MS };
-  }
-  entry.count += 1;
-  pickupVerifyAttempts.set(key, entry);
+  const ipHash = pickupIpHash(req);
+
+  await pool.query(
+    'DELETE FROM pickup_verify_attempts WHERE reset_at <= NOW()'
+  );
+
+  const { rows: [entry] } = await pool.query(`
+    INSERT INTO pickup_verify_attempts (attempt_key, token, ip_hash, count, reset_at)
+    VALUES ($1, $2, $3, 1, NOW() + ($4 || ' minutes')::interval)
+    ON CONFLICT (attempt_key)
+    DO UPDATE SET
+      count = CASE
+        WHEN pickup_verify_attempts.reset_at <= NOW() THEN 1
+        ELSE pickup_verify_attempts.count + 1
+      END,
+      reset_at = CASE
+        WHEN pickup_verify_attempts.reset_at <= NOW()
+          THEN NOW() + ($4 || ' minutes')::interval
+        ELSE pickup_verify_attempts.reset_at
+      END,
+      updated_at = NOW()
+    RETURNING count, reset_at
+  `, [key, token, ipHash, PICKUP_VERIFY_WINDOW_MINUTES]);
+
+  const retryAfter = Math.max(
+    1,
+    Math.ceil((new Date(entry.reset_at).getTime() - Date.now()) / 1000)
+  );
+
   return {
     allowed: entry.count <= PICKUP_VERIFY_MAX_ATTEMPTS,
-    retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+    retryAfter,
   };
 }
 
@@ -249,7 +281,7 @@ router.post('/:token/verify-pickup', async (req, res) => {
     if (!token || !code) {
       return res.status(400).json({ valid: false, error: 'Token et code requis' });
     }
-    const limit = checkPickupVerifyLimit(token, req);
+    const limit = await checkPickupVerifyLimit(token, req);
     if (!limit.allowed) {
       return res.status(429).json({
         valid: false,
@@ -329,3 +361,4 @@ function maskPhone(phone) {
 router.generatePickupCode = generatePickupCode;
 router.generateTrackingToken = generateTrackingToken;
 module.exports = router;
+
