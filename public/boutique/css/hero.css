@@ -292,29 +292,149 @@
    Source de vérité pour la hauteur hero desktop.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
-     object-position:50% 45% : centre vertical sur les personnages. */
-  .k-hero-img {
-    height: 200px;
-    aspect-ratio: unset;
-    object-fit: cover;
-    object-position: 50% 15%;
-  }
-
-  /* Retire le border-radius et marges mobiles sur desktop */
+  /* ══ HERO ÉDITORIAL DESKTOP (refactor 31/05) ═══════════════════
+     Fusion : panneau texte premium à gauche + illustration compacte à droite.
+     Le markup reste intact (sticky-bar/sentinel/catégories non touchés) :
+     on réorganise .k-hero-media en 2 colonnes et on réaffiche le bloc
+     .k-hero-mini-slogan--premium (déjà rempli : badge, titre, sous-titre,
+     CTA, trust) qui était masqué. Le titre du sticky (.k-hero-text-left)
+     reste masqué → pas de doublon. ══════════════════════════════ */
   .k-hero-media {
     margin: 0;
     border-radius: 0;
     box-shadow: none;
+    display: grid;
+    grid-template-columns: 1.25fr 0.9fr;
+    align-items: stretch;
+    background: var(--sand-warm);
+    min-height: 240px;
+    position: relative;
   }
 
-  /* Réinitialise les marges mobiles du sticky */
+  /* Colonne 1 — panneau texte premium (réaffiché) */
+  .k-hero-media .k-hero-mini-slogan {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0;
+    position: static;
+    padding: 30px 34px;
+    background: none;
+    inset: auto;
+    text-align: left;
+    z-index: 2;
+  }
+  .k-hero-media .k-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--coral-dark);
+    background: var(--cream-peach);
+    border: 1px solid var(--border-coral-22);
+    padding: 4px 11px;
+    border-radius: 20px;
+    margin-bottom: 13px;
+  }
+  .k-hero-media .k-line-1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+  .k-hero-media .k-line-2 { display: none; }
+  .k-hero-media .k-hero-sub {
+    display: block;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 9px 0 18px;
+    max-width: 92%;
+  }
+  .k-hero-media .k-hero-cta-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .k-hero-media .k-hero-cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--coral);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background .15s, transform .12s;
+  }
+  .k-hero-media .k-hero-cta-primary:hover { background: var(--coral-dark); }
+  .k-hero-media .k-hero-cta-primary:active { transform: scale(.98); }
+  .k-hero-media .k-hero-cta-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 12.5px;
+    padding: 11px 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--sand);
+    cursor: pointer;
+    font-family: var(--font);
+  }
+  .k-hero-media .k-hero-trust {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  /* Colonne 2 — illustration compacte, fondu sable sur le bord gauche */
+  .k-hero-media picture,
+  .k-hero-media .k-hero-img {
+    grid-column: 2;
+    width: 100%;
+    height: 100%;
+  }
+  .k-hero-img {
+    height: 100%;
+    min-height: 240px;
+    aspect-ratio: unset;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+  /* fondu : l'image se fond dans le panneau sable à gauche */
+  .k-hero-media::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(1.25 / 2.15 * 100%);
+    width: 70px;
+    background: linear-gradient(90deg, var(--sand-warm) 0%, transparent 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
   .k-hero-cats-sticky {
     margin-top: 0;
   }
-
-  /* Mini-slogan masqué desktop (géré par boutique-desktop.css) */
-  .k-hero-mini-slogan { display: none; }
-  .k-hero-bubble       { display: none; }
+  .k-hero-bubble { display: none; }
 }
 /* ══ FIN HERO DESKTOP OVERRIDE ════════════════════════════════ */
