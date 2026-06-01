@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-checkout
  * @brief §11 CHECKOUT — Commande, paiement, wallet, order success
  *
@@ -217,9 +217,9 @@ function _renderRelaisForIle(listEl, relaisList, od) {
     item.className = 'ck-relais-item ck-relais-item--compact selected';
     item.dataset.id = r.id;
     item.innerHTML =
-      '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' +
+      '<span class="ck-relais-name">' + sanitize(r.name || r.nom || '') + '</span>' +
       (r.address || r.adresse || r.location
-        ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>'
+        ? '<span class="ck-relais-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>'
         : '');
     od.selectedRelaisId = r.id;
     clearRelaySelectionError();
@@ -230,7 +230,7 @@ function _renderRelaisForIle(listEl, relaisList, od) {
 
   visibleRelais.forEach(r => {
     const item = document.createElement('div'); item.className = 'ck-relais-item'; item.dataset.id = r.id;
-    item.innerHTML = '<span class="ck-relais-name">' + (r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + (r.address || r.adresse || r.location) + '</span>' : '');
+    item.innerHTML = '<span class="ck-relais-name">' + sanitize(r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>' : '');
     item.addEventListener('click', () => {
       listEl.querySelectorAll('.ck-relais-item').forEach(i => i.classList.remove('selected'));
       item.classList.add('selected');
@@ -510,9 +510,6 @@ export function renderCheckout() {
         // Validation préliminaire (avant parsing)
         const _isAdminPhone = /^(\+\d{1,4})?0{4,}/.test(_rawPhone) || _rawPhone.length < 8;
         const _usable = identity && _idName && !_isAdminName && !_isAdminPhone;
-
-        console.debug('[checkout] _prefillFromIdentity identity=', identity,
-          'rawPhone=', _rawPhone, 'usable=', _usable);
 
         if (!_usable) return false;
 
@@ -1008,3 +1005,4 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
     }
   }, 0);
 }
+
