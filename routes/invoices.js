@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Invoice Routes — Komerce
  * 
  * GET  /api/invoices/:orderId          → Generate/get invoice HTML (add ?mode=thermal for receipt)
@@ -11,6 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const invoiceService = require('../services/invoice-service');
+const db = require('../db');
 const { authenticate } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'invoices' });
 
@@ -20,6 +21,37 @@ const guard = [authenticate, (req, res, next) => {
   next();
 }];
 
+async function requireInvoiceOrderAccess(req, res, next) {
+  try {
+    const orderId = req.params.orderId;
+    const role = req.user?.role;
+
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId requis' });
+    }
+
+    if (['admin', 'agent_hub', 'agent_relais'].includes(role)) {
+      return next();
+    }
+
+    const { rows } = await db.query(
+      'SELECT user_id FROM orders WHERE id = $1 LIMIT 1',
+      [orderId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+
+    if (String(rows[0].user_id) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Accès refusé à cette facture' });
+    }
+
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
 // ── GET /api/invoices — List all invoices (admin) ──
 router.get('/', ...guard, async (req, res) => {
   try {
@@ -34,7 +66,7 @@ router.get('/', ...guard, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId — Generate and display invoice HTML ──
-router.get('/:orderId', ...guard, async (req, res) => {
+router.get('/:orderId', ...guard, requireInvoiceOrderAccess, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     const mode = req.query.mode || 'a5'; // 'a5' or 'thermal'
@@ -64,7 +96,7 @@ router.get('/:orderId', ...guard, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId/json — Invoice data as JSON ──
-router.get('/:orderId/json', ...guard, async (req, res) => {
+router.get('/:orderId/json', ...guard, requireInvoiceOrderAccess, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     res.json({ ok: true, invoice });
@@ -75,7 +107,7 @@ router.get('/:orderId/json', ...guard, async (req, res) => {
 });
 
 // ── GET /api/invoices/:orderId/download — Download standalone HTML ──
-router.get('/:orderId/download', ...guard, async (req, res) => {
+router.get('/:orderId/download', ...guard, requireInvoiceOrderAccess, async (req, res) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     const mode = req.query.mode || 'a5';
@@ -92,7 +124,7 @@ router.get('/:orderId/download', ...guard, async (req, res) => {
 });
 
 // ── POST /api/invoices/:orderId/deliver — Mark as delivered ──
-router.post('/:orderId/deliver', ...guard, async (req, res) => {
+router.post('/:orderId/deliver', ...guard, requireInvoiceOrderAccess, async (req, res) => {
   try {
     const { via } = req.body; // 'print', 'email', 'whatsapp'
     if (!via || !['print', 'email', 'whatsapp'].includes(via)) {
@@ -110,3 +142,4 @@ router.post('/:orderId/deliver', ...guard, async (req, res) => {
 });
 
 module.exports = router;
+

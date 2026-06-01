@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * KOMERCE — Routes pricing admin
@@ -101,7 +101,7 @@ router.post('/couture', async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 // GET /api/pricing/rates — taux actuels
 // ═══════════════════════════════════════════════════════════════════
-router.get('/rates', async (req, res, next) => {
+router.get('/rates', authenticate, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
@@ -281,3 +281,4 @@ router.get('/dashboard', authenticate, async (req, res, next) => {
 });
 
 module.exports = router;
+
