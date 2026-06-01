@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * KOMERCE — Middleware requireVerifiedIdentityForCheckout
@@ -43,6 +43,14 @@ function extractToken(req) {
   return null;
 }
 
+async function isTokenRevoked(jti) {
+  if (!jti) return false;
+  const { rows } = await db.query(
+    'SELECT 1 FROM revoked_tokens WHERE jti = $1 LIMIT 1',
+    [jti]
+  );
+  return rows.length > 0;
+}
 /**
  * requireVerifiedIdentityForCheckout
  *
@@ -64,6 +72,14 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
+
+    // N4 — une identité vérifiée avec un JWT révoqué n'est plus valide.
+    if (await isTokenRevoked(decoded.jti)) {
+      return res.status(401).json({
+        error: 'Session expirée — confirmez à nouveau votre WhatsApp.',
+        code: 'identity_required',
+      });
+    }
 
     let user = userCache.get(decoded.id);
     if (!user) {
@@ -105,3 +121,5 @@ async function requireVerifiedIdentityForCheckout(req, res, next) {
 }
 
 module.exports = { requireVerifiedIdentityForCheckout };
+
+
