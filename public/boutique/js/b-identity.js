@@ -20,7 +20,6 @@ const STYLE_ID = 'k-identity-gate-styles';
 // La fonction ensureStyles() est supprimée — plus d'injection CSS depuis le JS.
 function ensureStyles() { /* no-op — styles dans identity.css */ }
 
-
 function normalizeUser(raw) {
   if (!raw) return null;
   const user = raw.user || raw;
@@ -58,12 +57,32 @@ function closeOverlay(ov) {
 
 function reasonText(reason) {
   if (/groupe|panier/i.test(reason || '')) return 'Confirmez votre WhatsApp pour sécuriser votre panier groupe.';
-  if (/commande|checkout/i.test(reason || '')) return 'Confirmez votre WhatsApp pour sécuriser votre commande.';
+  if (/commande|checkout/i.test(reason || '')) return 'Vous allez recevoir un code sur WhatsApp pour votre première commande.';
   if (/particip/i.test(reason || '')) return 'Confirmez votre WhatsApp pour retrouver votre participation.';
   return 'Confirmez votre WhatsApp pour continuer en sécurité.';
 }
 
-function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp' } = {}) {
+function getCheckoutPhone() {
+  const ids = ['of-beneficiary-phone', 'of-sender-phone'];
+  for (const id of ids) {
+    const input = document.getElementById(id);
+    const country = document.getElementById(id + '-country');
+    const raw = String(input?.value || '').replace(/\D/g, '');
+    if (!raw) continue;
+    const code = String(country?.value || '').trim();
+    if (code) return code + raw;
+    return raw;
+  }
+  return '';
+}
+
+function maskPhone(phone) {
+  const value = String(phone || '').trim();
+  if (value.length <= 6) return value;
+  return value.slice(0, 4) + '••••' + value.slice(-2);
+}
+
+function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre WhatsApp', phone = '' } = {}) {
   ensureStyles();
   return new Promise(resolve => {
     const ov = document.createElement('div');
@@ -71,7 +90,10 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
     ov.setAttribute('role', 'dialog');
     ov.setAttribute('aria-modal', 'true');
 
-    const phoneData = { phone: '' };
+    const initialPhone = String(phone || getCheckoutPhone() || '').trim();
+    const hasKnownPhone = initialPhone.length >= 8;
+    const phoneData = { phone: initialPhone };
+
     ov.innerHTML = `
       <div class="k-id-sheet">
         <div class="k-id-head">
@@ -81,39 +103,39 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
           </div>
           <button class="k-id-close" type="button" aria-label="Fermer">✕</button>
         </div>
-        <div class="k-id-trust">
-          <strong>Votre numéro devient votre registre Komerce.</strong>
-          <span>On pourra retrouver vos paniers, engagements et commandes sans vous redemander les mêmes informations.</span>
-        </div>
-        <div id="k-id-phone-host"></div>
+        <div id="k-id-phone-host" ${hasKnownPhone ? 'hidden' : ''}></div>
+        <p class="k-id-sent" id="k-id-sent" ${hasKnownPhone ? '' : 'hidden'}></p>
         <div class="k-id-code-row" id="k-id-code-row" hidden>
           <div class="k-id-field">
             <label for="k-id-code">Code reçu</label>
-            <input id="k-id-code" class="k-id-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+            <input id="k-id-code" class="k-id-input" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 chiffres">
           </div>
           <button class="k-id-link" type="button" id="k-id-resend">Renvoyer</button>
         </div>
         <p class="k-id-error" id="k-id-error"></p>
-        <button class="k-id-btn" type="button" id="k-id-next">Recevoir le code</button>
+        <button class="k-id-btn" type="button" id="k-id-next">${hasKnownPhone ? 'Envoi du code…' : 'Recevoir le code'}</button>
         <button class="k-id-btn k-id-secondary" type="button" id="k-id-cancel">Annuler</button>
       </div>`;
 
     const host = ov.querySelector('#k-id-phone-host');
-    const phoneGroup = makeIntlPhoneInput('k-id-phone', 'Votre numéro WhatsApp', phoneData, 'phone');
-    host.appendChild(phoneGroup);
+    if (!hasKnownPhone) {
+      const phoneGroup = makeIntlPhoneInput('k-id-phone', 'Votre numéro WhatsApp', phoneData, 'phone');
+      host.appendChild(phoneGroup);
+    }
 
     const err = ov.querySelector('#k-id-error');
     const next = ov.querySelector('#k-id-next');
+    const sent = ov.querySelector('#k-id-sent');
     const codeRow = ov.querySelector('#k-id-code-row');
     const codeInput = ov.querySelector('#k-id-code');
-    let step = 'phone';
+    let step = hasKnownPhone ? 'sending' : 'phone';
     let sending = false;
 
     const fail = (message) => { err.textContent = message || 'Erreur.'; };
 
     async function requestCode() {
-      const phone = String(phoneData.phone || '').trim();
-      if (phone.length < 8) { fail('Numéro WhatsApp invalide.'); return; }
+      const phoneValue = String(phoneData.phone || '').trim();
+      if (phoneValue.length < 8) { fail('Numéro WhatsApp invalide.'); return; }
       sending = true;
       next.disabled = true;
       next.textContent = 'Envoi du code…';
@@ -123,16 +145,21 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ phone }),
+          body: JSON.stringify({ phone: phoneValue }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) throw new Error(data.error || 'Impossible d’envoyer le code.');
         step = 'code';
         codeRow.hidden = false;
+        if (sent) {
+          sent.hidden = false;
+          sent.textContent = 'Code envoyé au ' + maskPhone(phoneValue);
+        }
         next.textContent = 'Confirmer';
         setTimeout(() => codeInput?.focus(), 50);
       } catch (e) {
         fail(e.message);
+        step = 'phone';
         next.textContent = 'Recevoir le code';
       } finally {
         sending = false;
@@ -141,7 +168,7 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
     }
 
     async function verifyCode() {
-      const phone = String(phoneData.phone || '').trim();
+      const phoneValue = String(phoneData.phone || '').trim();
       const code = String(codeInput?.value || '').replace(/\D/g, '');
       if (!/^\d{6}$/.test(code)) { fail('Code à 6 chiffres requis.'); return; }
       next.disabled = true;
@@ -152,7 +179,7 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ phone, code }),
+          body: JSON.stringify({ phone: phoneValue, code }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) throw new Error(data.error || 'Code invalide.');
@@ -163,7 +190,7 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
         }
         showToast('WhatsApp confirmé.', 'success');
         closeOverlay(ov);
-        resolve(user || data.user || { phone });
+        resolve(user || data.user || { phone: phoneValue });
       } catch (e) {
         fail(e.message);
         next.disabled = false;
@@ -183,7 +210,8 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
     ov.addEventListener('keydown', e => { if (e.key === 'Enter') next.click(); });
 
     document.body.appendChild(ov);
-    setTimeout(() => ov.querySelector('#k-id-phone')?.focus(), 80);
+    if (hasKnownPhone) setTimeout(requestCode, 80);
+    else setTimeout(() => ov.querySelector('#k-id-phone')?.focus(), 80);
   });
 }
 
@@ -239,8 +267,9 @@ function openKnownIdentityConfirm(user, options = {}) {
       const newUser = await openIdentityModal({
         reason: 'changer d\'identité',
         title: 'Utiliser un autre numéro',
+        phone: '',
       });
-      resolve(newUser); // null si fermé sans OTP
+      resolve(newUser);
     });
 
     ov.querySelector('#k-id-cancel')?.addEventListener('click',  () => { closeOverlay(ov); resolve(null); });
@@ -269,7 +298,7 @@ export async function requireIdentity(options = {}) {
 
 export function bindChangeIdentity(el, selector, onChanged) {
   el?.querySelector(selector)?.addEventListener('click', async () => {
-    const user = await openIdentityModal({ reason: 'changer d’identité', title: 'Utiliser un autre numéro' });
+    const user = await openIdentityModal({ reason: 'changer d’identité', title: 'Utiliser un autre numéro', phone: '' });
     if (user) onChanged?.(user);
   });
 }
