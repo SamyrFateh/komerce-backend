@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-05-31)
+   KOMERCE — components.css (2026-06-01)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -546,22 +546,50 @@
 /* ── Image ronde 42px — sweet spot lisibilité/compacité ── */
 .k-chip-photo {
   display: none;
+  position: relative;
   width: 42px;
   height: 42px;
   min-width: 42px;
   border-radius: 50%;
   margin: 0;
-  border: 2px solid transparent;
+  border: 2px solid var(--border);
   box-shadow:
     0 1px 4px rgba(28, 26, 23, .10),
     inset 0 0 0 1px rgba(255, 255, 255, .50);
   flex-shrink: 0;
   flex: 0 0 auto;
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
 }
 .k-chip-photo img {
   border-radius: 50%;
-  filter: saturate(1.18) contrast(1.04);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Harmonisation : uniformise des photos d'origines variées (fonds, expo)
+     pour un rendu cohérent. Robuste — vaut pour les futures vraies images. */
+  filter: saturate(1.05) contrast(1.02) brightness(1.01);
+  transition: filter .25s ease, transform .25s ease;
 }
+/* Voile sable très léger au repos → adoucit les fonds disparates */
+.k-chip-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--surface-sand-91);
+  mix-blend-mode: normal;
+  opacity: .10;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+/* Hover : l'image se révèle en pleine couleur, le voile s'efface */
+.k-chip:hover .k-chip-photo {
+  border-color: var(--border-coral-22);
+  transform: translateY(-1px);
+}
+.k-chip:hover .k-chip-photo img { filter: saturate(1.12) contrast(1.05); transform: scale(1.04); }
+.k-chip:hover .k-chip-photo::after { opacity: 0; }
 
 /* ── Label sous l'icône ── */
 .k-chip-label {
@@ -777,10 +805,12 @@
   }
 
   .k-chip.active .k-chip-photo {
-    border-color: rgba(198,168,93,.74);
-    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
+    border-color: var(--coral);
+    box-shadow: 0 0 0 2px var(--coral), 0 8px 18px var(--border-coral-22);
     opacity: 1;
   }
+  .k-chip.active .k-chip-photo img { filter: saturate(1.12) contrast(1.05); }
+  .k-chip.active .k-chip-photo::after { opacity: 0; }
 
   .k-chip.active .k-chip-label {
     color: var(--coral-dark);
@@ -4408,8 +4438,7 @@ body.cart-open .k-wa-fab {
 }
 .k-cart-btn.ring-pulse .k-cart-avatar,
 .k-cart-btn.avatar-wave .k-cart-avatar {
-  /* FIX visibilite avatar : multiply retire, noie les couleurs sur fond creme */
-  mix-blend-mode: normal; /* re-forcer pendant les animations pour �viter le fond blanc */
+  mix-blend-mode: multiply; /* re-forcer pendant les animations pour �viter le fond blanc */
 }
 
 /* Bouton ajouter "confirmed" */
