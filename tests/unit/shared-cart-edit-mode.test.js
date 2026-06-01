@@ -32,7 +32,27 @@ const {
 } = require('../../services/shared-cart-items-service');
 
 // ── Mock db ──────────────────────────────────────────────────────
-jest.mock('../../db', () => ({ query: jest.fn() }));
+// Le service lit tout via client.query() dans une transaction getClient().
+// On route donc client.query vers db.query (que les tests pilotent),
+// en laissant passer BEGIN/COMMIT/ROLLBACK comme des no-op résolus.
+jest.mock('../../db', () => {
+  const query = jest.fn();
+  const client = {
+    query: jest.fn(async (sql, params) => {
+      const verb = String(sql).trim().toUpperCase();
+      if (verb === 'BEGIN' || verb === 'COMMIT' || verb === 'ROLLBACK') {
+        return { rows: [] };
+      }
+      return query(sql, params);
+    }),
+    release: jest.fn(),
+  };
+  return {
+    query,
+    getClient: jest.fn(async () => client),
+    pool: { connect: jest.fn(async () => client) },
+  };
+});
 const db = require('../../db');
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -139,21 +159,22 @@ describe('SC-EDIT-09 — guard PUT /api/shared-carts/:id/items', () => {
   test('[SC-EDIT-09-T4] Paiements confirmés existants → 409 paid_contributions_exist', async () => {
     const cart = makeCart({ status: 'active', metadata: JSON.stringify({ settlement_open: false }) });
     db.query
-      .mockResolvedValueOnce({ rows: [cart] })                // SELECT cart
-      .mockResolvedValueOnce({ rows: [{ total: 10000 }] });  // SUM confirmed > 0
+      .mockResolvedValueOnce({ rows: [cart] })            // SELECT cart FOR UPDATE
+      .mockResolvedValueOnce({ rows: [{ n: 1 }] });       // COUNT contributions status='paid' > 0
 
     await expect(
       updateOpenSharedCartItems('42', 'user-1', VALID_ITEMS)
     ).rejects.toMatchObject({ status: 409, code: 'paid_contributions_exist' });
   });
 
-  test('[SC-EDIT-09-T5] Mauvais propriétaire → 403 not_owner', async () => {
-    const cart = makeCart({ creator_user_id: 'other-user' });
-    db.query.mockResolvedValueOnce({ rows: [cart] });
+  test('[SC-EDIT-09-T5] Mauvais propriétaire → 404 (filtré par beneficiary_user_id en SQL)', async () => {
+    // Le service filtre l'owner dans la requête (WHERE beneficiary_user_id = $2).
+    // Un mauvais propriétaire ne ramène donc aucune ligne → 404 shared_cart_not_found.
+    db.query.mockResolvedValueOnce({ rows: [] });
 
     await expect(
       updateOpenSharedCartItems('42', 'user-1', VALID_ITEMS)
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ status: 404, code: 'shared_cart_not_found' });
   });
 
   test('[SC-EDIT-09-T6] Panier introuvable → 404', async () => {

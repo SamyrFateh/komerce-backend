@@ -52,21 +52,12 @@ describe('I-SWEEP invariants regression net', () => {
     expect(triggerService).toMatch(/WHERE\s+order_id\s*=\s*\$1[\s\S]*AND\s+product_supplier_id\s*=\s*\$2[\s\S]*AND\s+status\s*!=\s*'cancelled'/i);
   });
 
-  test('G3: collective repairs cover ready_to_capture sessions and stock reservations', () => {
-    const route = read('routes/admin-collective-repairs.js');
+  // G3 mis à jour 2026-06-01 : le système collective_workspaces a été démonté (ZG-3, 2026-05-30).
+  // L'invariant n'est plus « la route repair existe » mais « elle n'est PLUS montée ».
+  test('G3: collective repairs route is unmounted (collective_workspaces decommissioned ZG-3)', () => {
     const manifest = read('bootstrap/api-routes.js');
-    const readyRepair = read('services/repair-collective-ready-to-capture.js');
-    const stockRepair = read('services/repair-collective-stock-reservations.js');
-
-    expect(manifest).toContain("require('../routes/admin-collective-repairs')");
-    expect(manifest).toContain("app.use('/api/admin/collective', adminCollectiveRepairsRouter)");
-    expect(route).toContain("router.post('/repair-ready-to-capture'");
-    expect(route).toContain("router.post('/repair-stock-reservations'");
-    expect(route).toContain('requireRole([\'admin\'])');
-    expect(readyRepair).toContain('ready_to_capture');
-    expect(readyRepair).toContain('captureAllAndCreateOrder');
-    expect(stockRepair).toContain('consumeForWorkspace');
-    expect(stockRepair).toContain('releaseForWorkspace');
+    expect(manifest).not.toContain("app.use('/api/admin/collective', adminCollectiveRepairsRouter)");
+    expect(manifest).toContain('ZG-3');
   });
 
   test('G4: cancellation syncs purchase orders and final financial action remains explicit', () => {

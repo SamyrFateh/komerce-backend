@@ -25,3 +25,7 @@ build/
 .idea/
 
 public/boutique.zip
+
+# Artefacts de livraison (ne jamais committer)
+*.zip
+*.patch

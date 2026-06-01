@@ -152,45 +152,16 @@ router.put('/me', authenticate, validate(auth.updateProfile), async (req, res, n
   }
 });
 
-// ─── POST /api/auth/guest-checkout ───────────────────────────────────────────────
-
-const _guestCheckoutAttempts = new Map();
-
-function guestCheckoutRateLimit(req, res, next) {
-  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-  const now = Date.now();
-  const WIN = 15 * 60 * 1000; const MAX = 5;
-  let entry = _guestCheckoutAttempts.get(ip);
-  if (!entry || now > entry.resetAt) entry = { count: 0, resetAt: now + WIN };
-  entry.count++; _guestCheckoutAttempts.set(ip, entry);
-  if (entry.count > MAX) return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
-  next();
-}
-
-router.post('/guest-checkout', guestCheckoutRateLimit, validate(auth.guestCheckout), async (req, res, next) => {
-  try {
-    const { full_name, phone, email, country = 'KM', whatsapp_phone } = req.body;
-    if (!phone) return res.status(400).json({ error: 'Téléphone obligatoire' });
-    const { rows: existing } = await db.query('SELECT * FROM users WHERE phone = $1 LIMIT 1', [phone]);
-    if (existing.length) {
-      const user = existing[0];
-      // Update whatsapp_phone if provided (diaspora number for notifications)
-      if (whatsapp_phone) {
-        await db.query('UPDATE users SET whatsapp_phone = $1, updated_at = NOW() WHERE id = $2', [whatsapp_phone, user.id]);
-      }
-      setAuthCookie(res, generateToken(user));
-      return res.json({ user: userResponse(user), created: false });
-    }
-    const resolvedEmail = email || (phone.replace(/\D/g, '') + '@komerce.km');
-    const password_hash = await bcrypt.hash(randomBytes(32).toString('hex'), 10);
-    const { rows: [user] } = await db.query(
-      `INSERT INTO users (full_name, email, phone, whatsapp_phone, password_hash, role, country, currency_pref)
-       VALUES ($1, $2, $3, $4, $5, 'client', $6, 'KMF') RETURNING *`,
-      [full_name || 'Client Komerce', resolvedEmail, phone, whatsapp_phone || null, password_hash, country]
-    );
-    setAuthCookie(res, generateToken(user));
-    res.status(201).json({ user: userResponse(user), created: true });
-  } catch(err) { next(err); }
+// ─── POST /api/auth/guest-checkout — SUPPRIMÉ (faille de sécurité) ───────────────
+// Cette route créait un compte (ou réutilisait un compte EXISTANT) et posait une
+// session SANS vérification OTP → prise de contrôle de compte possible en tapant
+// directement l'API. RÈGLE SANS EXCEPTION : toute commande exige une identité
+// vérifiée par OTP. Le checkout passe désormais par /api/auth/otp/request+verify.
+router.post('/guest-checkout', (req, res) => {
+  return res.status(410).json({
+    error: 'Cette voie a été retirée. Vérifiez votre numéro par OTP pour commander.',
+    code: 'guest_checkout_removed',
+  });
 });
 
 // ─── POST /api/auth/auto-register ─────────────────────────────────────────────────

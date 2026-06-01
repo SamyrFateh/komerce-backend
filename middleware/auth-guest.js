@@ -190,44 +190,30 @@ async function authenticateOrCreateGuest(req, res, next) {
           req.user = user;
           return next();
         }
-        // Si token valide mais user introuvable → on crée en guest
+        // Token valide mais user introuvable → identité requise (pas de création auto)
+        return res.status(401).json({ error: 'Identité requise', code: 'identity_required' });
       } catch (err) {
         if (err.name !== 'JsonWebTokenError' && err.name !== 'TokenExpiredError') {
           log.warn({ err }, '[auth-guest] erreur verif token:');
         }
-        // → fallthrough vers création guest
+        // token invalide/expiré → tombe vers le refus ci-dessous
       }
     }
 
-    // ── CAS 2 : Pas de token valide → création guest ─────────────────
-    const payerPhone = req.body?.tracking_phone || req.body?.recipient_phone;
-    const benefPhone = req.body?.recipient_phone;
-    const fullName   = req.body?.recipient_name;
-
-    if (!payerPhone) {
-      return res.status(400).json({
-        error: 'Téléphone manquant — renseignez au moins le numéro du bénéficiaire',
-      });
-    }
-
-    const user = await findOrCreateUser({
-      payerPhone,
-      beneficiaryPhone: benefPhone,
-      fullName,
+    // ── CAS 2 : Pas de session vérifiée ──────────────────────────────
+    // RÈGLE SANS EXCEPTION : aucune commande sans identité vérifiée par OTP.
+    // La création de compte se fait UNIQUEMENT via /api/auth/otp/verify
+    // (seul endroit où la possession du numéro est prouvée).
+    // Le front gère ce 401 en déclenchant requireIdentity() → flux OTP.
+    //
+    // HOOK AGENT (tablette/comptoir, à câbler le jour venu) :
+    //   un agent authentifié pourra créer une commande pour un tiers ici,
+    //   borné à son relais — son identité (login) remplace l'OTP client.
+    //   Pour l'instant : refus strict, aucune exception.
+    return res.status(401).json({
+      error: 'Vérification du numéro requise pour commander',
+      code: 'identity_required',
     });
-
-    if (!user) {
-      return res.status(400).json({
-        error: 'Impossible de créer le compte — format de téléphone invalide (attendu : +33... ou +269...)',
-      });
-    }
-
-    // Pose du cookie JWT (session 90 jours)
-    const newToken = generateToken(user);
-    res.cookie(COOKIE_NAME, newToken, cookieOptions());
-
-    setCachedUser(user.id, user);
-    req.user = user;
     req.guestCreated = true; // flag pour que la route sache que c'est un nouveau guest
     return next();
 

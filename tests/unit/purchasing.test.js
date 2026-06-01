@@ -29,7 +29,7 @@ jest.mock('../../db', () => ({
   getClient: (...args) => mockGetClient(...args),
 }));
 
-jest.mock('../../utils/sms', () => ({ sendSMS: jest.fn().mockResolvedValue({}) }));
+jest.mock('../../services/notification-service', () => ({ notifyText: jest.fn().mockResolvedValue({}) }));
 
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),

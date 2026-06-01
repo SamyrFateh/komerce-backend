@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+# Annule les runs obsolètes sur une même branche
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1 — Tests unitaires : rapides, aucune base de données.
+  # C'est le filet qui doit être vert sur CHAQUE push/PR.
+  # ─────────────────────────────────────────────────────────────
+  unit:
+    name: Unit tests (no DB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npx jest --testPathPatterns="tests/unit" --ci --runInBand
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2 — Tests d'intégration : Postgres jetable (service container).
+  # Charge le schéma db/schema.sql puis lance les tests integration.
+  # ─────────────────────────────────────────────────────────────
+  integration:
+    name: Integration tests (Postgres)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        # Attend que Postgres soit prêt avant de lancer les tests
+        options: >-
+          --health-cmd "pg_isready -U komerce"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Load DB schema
+        run: psql "$DATABASE_URL" -f db/schema.sql
+
+      - name: Run integration tests (one suite per process)
+        # Chaque suite d'intégration importe server.js et partage la même DB.
+        # On les lance dans des process Jest séparés pour éviter toute pollution
+        # d'état entre suites (pool DB / cache de modules). Déterministe.
+        run: |
+          for f in tests/integration/*.test.js; do
+            echo "── $f ──"
+            npx jest "$f" --ci --forceExit || exit 1
+          done
