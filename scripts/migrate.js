@@ -18,6 +18,7 @@ require('dotenv').config();
 
 const { fixAdminHash, fixMissingSchema } = require('./fix-schema');
 const { runAllSeeds }                     = require('./seed');
+const { run: runMigrations }              = require('./run-migrations');
 const db                                  = require('../db');
 
 (async () => {
@@ -26,6 +27,7 @@ const db                                  = require('../db');
   try {
     await fixAdminHash();
     await fixMissingSchema();
+    await runMigrations();   // applique migrations/*.sql en attente
     await runAllSeeds();
     console.log(`✅ Migrations terminées en ${Date.now() - t0}ms`);
     process.exit(0);

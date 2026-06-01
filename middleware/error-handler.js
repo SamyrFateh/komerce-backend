@@ -11,9 +11,9 @@ try {
   log = require('../utils/logger').child({ module: 'error-handler' });
 } catch (_) {
   log = {
-    error: (...args) => log.error('[error-handler]', ...args),
-    warn:  (...args) => log.warn('[error-handler]', ...args),
-    info:  (...args) => log.info('[error-handler]', ...args),
+    error: (...args) => console.error('[error-handler]', ...args),
+    warn:  (...args) => console.warn('[error-handler]', ...args),
+    info:  (...args) => console.log('[error-handler]', ...args),
   };
 }
 
@@ -71,7 +71,7 @@ function getUserMessage(classification, err) {
 function errorHandler(err, req, res, _next) {
   const classification = classifyError(err);
   const statusCode = getStatusCode(err, classification);
-  const requestId = req.id || req.headers?.['x-request-id'] || null;
+  const requestId = req.requestId || req.headers?.['x-request-id'] || null;
   const userMessage = getUserMessage(classification, err);
 
   if (statusCode >= 500) {
@@ -118,7 +118,7 @@ function notFoundHandler(req, res) {
     error: 'Route introuvable',
     code: 'not_found',
     path: req.originalUrl,
-    requestId: req.id || null,
+    requestId: req.requestId || null,
   });
 }
 

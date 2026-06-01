@@ -72,7 +72,7 @@ export const bus = {
 if (
   typeof window !== 'undefined' &&
   window.location &&
-  ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  (() => { const h = window.location.hostname; return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local'); })()
 ) {
   window._kbus = bus;
 }

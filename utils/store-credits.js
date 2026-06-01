@@ -11,6 +11,8 @@
 
 'use strict';
 
+const log = require('../utils/logger').child({ module: 'store-credits' });
+
 const DEPRECATED_MSG = 'store-credits.js est DEPRECATED (D5). Utiliser services/wallet-service.js à la place.';
 
 async function createStoreCredit() {

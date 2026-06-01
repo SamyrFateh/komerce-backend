@@ -32,55 +32,7 @@ const hubQueries = require('../services/hub-dashboard-queries');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
-// ── Auto-create + migrate tables (handles both hub and relay schemas) ────────
-(async () => {
-  try {
-    // Create tables if not exist
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS order_incidents (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-        reporter_id UUID REFERENCES users(id),
-        reporter_name TEXT,
-        type TEXT NOT NULL DEFAULT 'autre' CHECK (type IN ('retard','blocage','paiement','stock','colis_endommage','colis_perdu','client_absent','autre')),
-        description TEXT,
-        priority TEXT DEFAULT 'normal' CHECK (priority IN ('low','normal','high','urgent')),
-        status TEXT DEFAULT 'open',
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        resolved_at TIMESTAMPTZ,
-        resolved_by UUID REFERENCES users(id),
-        resolution_note TEXT
-      );
-      CREATE TABLE IF NOT EXISTS order_comments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-        author_id UUID REFERENCES users(id),
-        author_name TEXT,
-        author_role TEXT,
-        text TEXT NOT NULL DEFAULT '',
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-      CREATE INDEX IF NOT EXISTS idx_oi_order ON order_incidents(order_id);
-      CREATE INDEX IF NOT EXISTS idx_oi_status ON order_incidents(status);
-      CREATE INDEX IF NOT EXISTS idx_oc_order ON order_comments(order_id);
-    `);
-    // Migrate: if table was created with old hub schema (severity/reported_by/content)
-    // Add missing columns defensively
-    const migrations = [
-      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'normal'",
-      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS reporter_id UUID",
-      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS reporter_name TEXT",
-      "ALTER TABLE order_incidents ADD COLUMN IF NOT EXISTS resolution_note TEXT",
-      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS author_name TEXT",
-      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS author_role TEXT",
-      "ALTER TABLE order_comments ADD COLUMN IF NOT EXISTS text TEXT DEFAULT ''",
-    ];
-    for (const m of migrations) {
-      try { await db.query(m); } catch(e) { /* column may already exist */ }
-    }
-    log.info('[HUB-DASH] Tables + migrations OK');
-  } catch(e) { log.warn({ err: e }, 'Hub-dash tables init (non-fatal):'); }
-})();
+// ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
 
 // ── GET /dashboard — KPIs Hub (défensif) ────────────────────────────────────
 router.get('/dashboard', ...hubAuth, async (req, res, next) => {

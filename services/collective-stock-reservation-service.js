@@ -3,28 +3,7 @@
 const db = require('../db');
 const engine = require('./collective-workspace-engine');
 
-let ensured = false;
-
-async function ensureTable(client = db) {
-  if (ensured) return;
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS collective_stock_reservations (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      workspace_id UUID NOT NULL REFERENCES collective_workspaces(id) ON DELETE CASCADE,
-      product_id UUID NOT NULL REFERENCES products(id),
-      quantity INTEGER NOT NULL CHECK (quantity > 0),
-      status TEXT NOT NULL DEFAULT 'reserved',
-      reserved_until TIMESTAMPTZ NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      consumed_at TIMESTAMPTZ NULL,
-      released_at TIMESTAMPTZ NULL,
-      expired_at TIMESTAMPTZ NULL
-    )
-  `);
-  await client.query(`CREATE INDEX IF NOT EXISTS idx_collective_stock_res_active ON collective_stock_reservations(product_id, status, reserved_until)`);
-  await client.query(`CREATE INDEX IF NOT EXISTS idx_collective_stock_res_workspace ON collective_stock_reservations(workspace_id, status)`);
-  ensured = true;
-}
+// ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
 
 function asInt(v) {
   return parseInt(v, 10) || 0;
@@ -44,8 +23,7 @@ async function reserveForWorkspace(workspaceId, opts = {}) {
 
   try {
     await client.query('BEGIN');
-    await ensureTable(client);
-
+  
     const ws = (await client.query('SELECT id, status FROM collective_workspaces WHERE id = $1 FOR UPDATE', [workspaceId])).rows[0];
     if (!ws) throw new Error('workspace_not_found');
     if (!['conception', 'payment_pending', 'ready_to_order'].includes(ws.status)) {
@@ -144,8 +122,7 @@ async function releaseForWorkspace(workspaceId, reason = 'released') {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    await ensureTable(client);
-    await client.query(
+      await client.query(
       `UPDATE collective_stock_reservations
           SET status = CASE WHEN reserved_until <= NOW() THEN 'expired' ELSE 'released' END,
               released_at = CASE WHEN reserved_until > NOW() THEN NOW() ELSE released_at END,
@@ -165,7 +142,6 @@ async function releaseForWorkspace(workspaceId, reason = 'released') {
 }
 
 async function consumeForWorkspace(workspaceId, client = db) {
-  await ensureTable(client);
   await client.query(
     `UPDATE collective_stock_reservations
         SET status = 'consumed', consumed_at = NOW()

@@ -40,9 +40,12 @@ router.get('/', async (req, res, next) => {
       min_price,
       max_price,
       in_stock,
-      limit  = 1000,
+      limit  = 100,
       offset = 0,
     } = req.query;
+
+    const MAX_LIMIT = 200;
+    const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 100), MAX_LIMIT);
 
     const conditions = ['p.is_active = TRUE'];
     const params     = [];
@@ -107,7 +110,7 @@ router.get('/', async (req, res, next) => {
        WHERE ${where}
        ORDER BY p.sort_order ASC, p.created_at DESC
        LIMIT $${pi} OFFSET $${pi + 1}`,
-      [...params, Number(limit), Number(offset)]
+      [...params, safeLimit, Number(offset)]
     );
 
     const { rows: [{ count }] } = await db.query(
@@ -118,7 +121,7 @@ router.get('/', async (req, res, next) => {
     res.json({
       products: rows,
       total: Number(count),
-      limit: Number(limit),
+      limit: safeLimit,
       offset: Number(offset),
     });
 

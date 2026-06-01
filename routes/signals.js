@@ -17,6 +17,7 @@ var router = express.Router();
 var db = require('../db');
 var { authenticate, requireAdmin } = require('../middleware/auth');
 var signalService = require('../services/signal-service');
+var log = require('../utils/logger').child({ module: 'signals' });
 
 /* All routes require authentication + admin role */
 router.use(authenticate, requireAdmin);
