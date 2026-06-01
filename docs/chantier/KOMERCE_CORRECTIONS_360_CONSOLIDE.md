@@ -19,13 +19,13 @@
 
 | Bloc | Intitulé | Tâches | ☑ Faites |
 |---|---|---|---|
-| 0 | Désambiguïsation de la vérité (préalable) | 9 | 6 |
+| 0 | Désambiguïsation de la vérité (préalable) | 9 | 8 |
 | 1 | Sécurité | 19 | 0 |
-| 2 | Control Tower vivant (admin-legacy) | 4 | 1 |
+| 2 | Control Tower vivant (dashboard admin moderne) | 4 | 1 |
 | 3 | Métier & parcours | 11 | 0 |
 | 4 | Hygiène & dette | 6 | 0 |
 | 5 | Décision structurante (humaine) | 1 | 1 |
-| **Total** | | **50** | **8** |
+| **Total** | | **50** | **10** |
 
 ---
 
@@ -40,9 +40,9 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 | F3 | Endpoints sans auth | notification/transit/rates publics | confirmés consommés par l'UI | PII réellement atteignable |
 | F4 | Parcours retrait cassé ×3 | `cached.code` → 500 | cookie mort `kmrc_client` + timeline divergente | Client ne reçoit ni code ni suivi |
 | F5 | Erreurs avalées | `log` non importé, fallback récursif | `.catch(()=>{})` / `return {}` | Observabilité aveugle des deux côtés |
-| F6 | Sources de vérité divergentes | `schema_railway.sql` absent du dépôt, `db/schema.sql` seul | 3 copies CT, 3 cartos, clés localStorage | On audite/édite parfois une fiction |
+| F6 | Sources de vérité divergentes | ancien nom `schema_railway.sql` retiré des sources de vérité ; source canonique attendue `db/schema.sql` | CT zombie supprimé ; carto chantier redirigée vers la carto canonique | On réduit le risque d'auditer/éditer une fiction |
 
-> **Trouvaille méta (F6)** : l'audit L7 a porté sur `public/js/ct-*` (zombie non servi) alors que le CT vivant est `dashboards/admin-legacy/js/*`. Vérifié : les bugs sont jumeaux sur les deux copies → findings valides, **chemins à corriger**.
+> **Trouvaille méta (F6)** : l'audit L7 a porté sur `public/js/ct-*` (zombie non servi). Ces fichiers ont été supprimés. Le CT vivant à viser désormais est le dashboard admin moderne : `public/dashboards/admin/`, vue principale `public/dashboards/admin/js/views/ControlTowerView.js`.
 
 ---
 
@@ -55,9 +55,9 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 | Z1 | Supprimer le backend servi en statique (fuite SQL/auth) | `public/js/dashboard.js` (2529 l.) | ✔ | 🔴 | ☑ |
 | Z2 | Supprimer le middleware orphelin (0 require) | `middleware/auth-middleware.js` | ✔ | 🟡 | ☑ |
 | Z3 | Supprimer le CT zombie (non servi, blanchi par re-audit) | `public/js/ct-*.js` (30 fichiers) | ✔ | 🟡 | ☑ |
-| Z4 | Geler `admin-legacy/js/*` comme **owner CT** (doc + commentaire d'en-tête) | `dashboards/admin-legacy/` | ✔ | 🟡 | ☐ |
-| Z5 | Committer un schéma unique depuis la prod ; supprimer les refs à `schema_railway.sql` (absent) | `db/schema.sql` + docs | ✔ | 🔴 | ☐ |
-| Z6 | Fusionner les 3 `CARTOGRAPHY_360` en une seule canonique datée | `docs/CARTOGRAPHY_360.md` (+ chantier + boutique) | ✔ | 🟢 | ☐ |
+| Z4 | Geler le dashboard admin moderne comme **owner CT** (doc) | `public/dashboards/admin/` + `ControlTowerView.js` | ✔ | 🟡 | ☑ |
+| Z5 | Committer un schéma unique depuis la prod ; supprimer les refs à l'ancien nom temporaire `schema_railway.sql` | `db/schema.sql` + docs | ✔ | 🔴 | ☐ |
+| Z6 | Fusionner les `CARTOGRAPHY_360` en une seule canonique datée | `docs/CARTOGRAPHY_360.md` ; `docs/chantier/CARTOGRAPHY_360.md` devient redirection | ✔ | 🟢 | ☑ |
 | Z7 | Supprimer/quarantaine du dead code non monté à endpoints dupliqués | `routes/client-account.js` | ✔ | 🟡 | ☑ |
 | Z8 | Supprimer dead code chargé au boot | `utils/sms.js`, `utils/parcelSync-v2.js`, `parcel-api-v2/helpers.syncParcelToOrders` | ✔ | 🟢 | ☑ |
 | Z9 | Supprimer le mock prod + la page tombstone 410 | `b-modal-social-proof-mock.js`, `event-create.js` | ✔ | 🟡 | ☑ |
@@ -90,14 +90,14 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 
 ---
 
-## 5. BLOC 2 — Control Tower vivant *(chemins re-audités → `dashboards/admin-legacy/js/`)*
+## 5. BLOC 2 — Control Tower vivant *(chemins re-audités → `public/dashboards/admin/`)*
 
 | ID | Fichier | Défaut → Correction | Vérif | Prio | Statut |
 |---|---|---|---|---|---|
-| CT1 | `…/ct-views-pickup-secret.js:728` | `isAdmin` lit `CT.user.role` (jamais assigné, →false) → `CT.platform.state.role === 'admin'` | ✔ | 🔴 | ☐ |
-| CT2 | `…/ct-platform.js` (aliases + `:160`) | `agent_relais`/`agent_hub` non aliasés → fallback `founder` ; logout pose aussi `founder` → aliaser + fallback rôle minimal | ✔ | 🔴 | ☑ |
-| CT3 | `…/ct-api.js:113-114` | `relaisScanArrival/Collect` envoient `{step}` → `{event_type}` (cf. `:67`) | ✔ | 🟢 | ☐ |
-| CT4 | `…/ct-views-v7.js:661` | `.catch(function(){return {}})` avale l'erreur dashboard → afficher feedback | ✔ | 🟡 | ☐ |
+| CT1 | `public/dashboards/admin/js/views/ControlTowerView.js` | vérifier le rôle admin via l'état auth canonique du dashboard moderne | ✔ | 🔴 | ☐ |
+| CT2 | `public/dashboards/admin/js/app.js` / store auth associé | aliasing/fallback rôles à garder cohérent avec `user_role` DB | ✔ | 🔴 | ☑ |
+| CT3 | API utilisée par `ControlTowerView.js` | vérifier payload relais scan : `event_type`, pas `{step}` | ✔ | 🟢 | ☐ |
+| CT4 | vues dashboard modernes | ne pas avaler les erreurs ; afficher un feedback exploitable | ✔ | 🟡 | ☐ |
 
 ---
 
@@ -136,36 +136,29 @@ Le risque ne vit pas dans une couche, mais dans la **couture**. Six familles rel
 
 | ID | Sujet | Options | Statut |
 |---|---|---|---|
-| D1 | Rôles `founder` / `super_admin` (absents de l'enum `user_role`) | **A)** `ALTER TYPE user_role ADD VALUE` + `requireRole(['admin','founder'])` partout · **B)** purge → `['admin']` partout | ☑ **B retenu** (purgé) |
+| D1 | Rôles `founder` / `super_admin` (absents de l'enum `user_role`) | **A)** `ALTER TYPE user_role ADD VALUE` + `requireRole(['admin','founder'])` partout. **B)** purge : ne garder que `admin`. | **Décision prise : B — purge.** |
 
-> ✅ **D1 résolu (option B)** — appliqué le 2026-05-31 : front `ct-platform.js` (ROLES, aliases +`agent_relais`/`agent_hub`, fallback `none`, état initial, LEGACY_VIEWS) + `ct-app-v7.js` (logout `null`, tools admin-only) **et les 7 routes backend** qui testaient `founder` : `pricing-strategy`, `sourcing-scanner`, `admin-cost-components`, `admin-boutique-categories`, `admin-risk-provisions`, `admin-pricing-components`, `admin-customs-categories`. Vérif : 0 résidu `founder`/`super_admin`, `node --check` OK sur les 9 fichiers. *(Le décompte initial « 5 routes » était sous-estimé — 7 réelles.)*
+Conséquence : CT2 + routes backend concernées doivent converger vers `admin` uniquement.
 
 ---
 
-## 9. Journal d'exécution *(Sonnet ajoute une ligne par tâche traitée)*
+## 9. Journal des corrections
 
-| Date | ID | Action réalisée | PR / commit | Par |
+| Date | IDs | Résumé | Patch / Commit | Notes |
 |---|---|---|---|---|
 | 2026-05-31 | D1 | Décision **B (purge)** retenue + appliquée : `founder`/`super_admin` retirés de 7 routes backend | `D1_purge_founder.patch` | — |
 | 2026-05-31 | CT2 | `ct-platform.js` aliasing `agent_relais`/`agent_hub`, fallback `none`, logout `null` ; 0 résidu, `node --check` OK | `D1_purge_founder.patch` | — |
 | 2026-05-31 | Z1-Z3,Z7,Z9 | Suppressions zombies (37 fichiers : `dashboard.js`, `auth-middleware.js`, `client-account.js`, `ct-*`×30, mock, `event-create.js`) — 0 référence active, intégrité ✓ | `git rm` | — |
 | 2026-05-31 | Z8 | `sms.js` + `parcelSync-v2.js` supprimés ; `syncParcelToOrders` retiré de `helpers.js` (0 appelant) ; commentaire `parcels.js` nettoyé ; `node --check` OK | `bloc0_edits.patch` + `git rm` | — |
+| 2026-06-01 | Z4,Z6 | Source CT clarifiée : owner = `public/dashboards/admin/`, vue principale `ControlTowerView.js`. `docs/chantier/CARTOGRAPHY_360.md` transformé en redirection vers `docs/CARTOGRAPHY_360.md`. | PR docs | Z5 reste ouvert tant que `db/schema.sql` n'est pas un vrai dump prod. |
+| 2026-06-01 | Z5 | Ancien nom temporaire `schema_railway.sql` retiré des sources de vérité actives. `db/schema.sql` réservé comme cible canonique. | PR docs | Ne pas marquer done avant remplacement par un vrai `pg_dump --schema-only`. |
 
 ---
 
-## 10. Définition de « terminé » & règle permanente
+## 10. Critères de sortie globaux
 
-**Une tâche est `☑` quand** : correction appliquée sur le chemin exact, testée, Statut coché, Journal §9 renseigné, et — si couture F1–F6 — la moitié back **et** front livrées ensemble.
-
-**Règle permanente (à coller en tête de la carto fusionnée)**
-1. Un fichier servi par chemin ; toute copie non chargée est supprimée, pas archivée dans `public/`.
-2. Le dépôt ne référence que des fichiers présents (pas de `schema_railway.sql` fantôme).
-3. Un rôle n'existe que dans l'enum DB ; le frontend ne référence jamais un rôle absent.
-4. Pas de fallback de rôle vers un privilège : l'inconnu retombe sur le rôle **minimal**, jamais `founder`.
-5. « legacy » dans un nom = soit mort, soit renommé ; un dossier servi ne porte pas « legacy ».
-6. À chaque PR auth/rôle/endpoint : mettre à jour §1, la carto §1 du manifeste, et la matrice de sécurité.
-
----
-
-*Document unique de correction & vision 360 · Komerce · v1.0 · 2026-05-31*
-*Sources : audits backend L1–L9 + frontend L1–L8, forensique dépôt réel, re-audit CT vivant.*
+1. `npm test` ou équivalent smoke passe.
+2. Le dépôt ne référence que des fichiers présents comme sources de vérité actives.
+3. Les chemins CT documentés pointent vers `public/dashboards/admin/`.
+4. `docs/CARTOGRAPHY_360.md` est la cartographie canonique ; le doublon chantier n'est plus édité.
+5. `db/schema.sql` contient le vrai schéma prod avant fermeture Z5.
