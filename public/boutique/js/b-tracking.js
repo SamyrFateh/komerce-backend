@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-tracking
  * @brief Suivi commandes uniquement.
  * Les paniers partagés sont gérés dans b-group-view.js (onglet Groupe).
@@ -79,7 +79,7 @@ export function renderOrdersHistory(orders, container) {
   container.innerHTML = orders.map(o => `
     <div class="k-order-card">
       <div class="k-order-card-head">
-        <span class="k-order-ref">${o.reference || o.id}</span>
+        <span class="k-order-ref">${sanitize(o.reference || o.id || "")}</span>
         <span class="k-order-date">${o.created_at ? new Date(o.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
       <div class="k-order-card-total">${fmt(o.total_amount || 0, 'KMF')}</div>
@@ -91,7 +91,7 @@ export function renderOrderDetail(order, container) {
   container.innerHTML = `
     <div class="k-order-card">
       <div class="k-order-card-head">
-        <span class="k-order-ref">${order.reference || order.id}</span>
+        <span class="k-order-ref">${sanitize(order.reference || order.id || "")}</span>
         <span class="k-order-date">${order.created_at ? new Date(order.created_at).toLocaleDateString('fr-FR') : ''}</span>
       </div>
       <div class="k-order-card-total">${fmt(order.total_amount || 0, 'KMF')}</div>
@@ -339,7 +339,7 @@ export function renderTrackViewSearchMode(el) {
         el.querySelector('#k-otp-step3').classList.remove('u-hidden');
         el.querySelector('#k-orders-list').innerHTML = `
           <div class="k-search-empty">
-            <p>✅ Numéro vérifié ! Bienvenue <strong>${verifyResult.user?.name || ''}</strong></p>
+            <p>✅ Numéro vérifié ! Bienvenue <strong>${sanitize(verifyResult.user?.name || "")}</strong></p>
             <p class="k-confirm-notice-item">Aucune commande trouvée pour ce numéro.</p>
           </div>`;
       }
@@ -374,3 +374,5 @@ export function renderTrackViewSearchMode(el) {
 
   el.querySelector('#k-otp-back-btn').addEventListener('click', () => renderTrackView());
 }
+
+
