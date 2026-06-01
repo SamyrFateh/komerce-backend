@@ -12,7 +12,13 @@
 import { state } from './b-store.js';
 import { showToast } from './b-cart-core.js';
 import { sanitize } from './b-utils.js';
-import { makeIntlPhoneInput } from './b-phone.js';
+import {
+  PHONE_COUNTRIES,
+  buildE164,
+  digitsOnly,
+  isValidLocalLength,
+  makeIntlPhoneInput,
+} from './b-phone.js';
 
 const STYLE_ID = 'k-identity-gate-styles';
 
@@ -62,18 +68,22 @@ function reasonText(reason) {
   return 'Confirmez votre WhatsApp pour continuer en sécurité.';
 }
 
+function readValidatedPhoneFromField(id) {
+  const input = document.getElementById(id);
+  const countrySel = document.getElementById(id + '-country');
+  if (!input || !countrySel) return '';
+
+  const code = String(countrySel.value || '').trim();
+  const country = PHONE_COUNTRIES.find(c => c.code === code);
+  if (!country || !isValidLocalLength(code, input.value)) return '';
+
+  return buildE164(code, digitsOnly(input.value));
+}
+
 function getCheckoutPhone() {
-  const ids = ['of-beneficiary-phone', 'of-sender-phone'];
-  for (const id of ids) {
-    const input = document.getElementById(id);
-    const country = document.getElementById(id + '-country');
-    const raw = String(input?.value || '').replace(/\D/g, '');
-    if (!raw) continue;
-    const code = String(country?.value || '').trim();
-    if (code) return code + raw;
-    return raw;
-  }
-  return '';
+  return readValidatedPhoneFromField('of-beneficiary-phone')
+      || readValidatedPhoneFromField('of-sender-phone')
+      || '';
 }
 
 function maskPhone(phone) {
