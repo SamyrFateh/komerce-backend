@@ -740,9 +740,17 @@
     height: 100%;
     display: block;
     object-fit: cover;
+    object-position: center 20%;  /* cadrage haut : les visages/objets iconiques y sont */
     border-radius: 0;
-    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
-    filter: saturate(1.28) contrast(1.06) brightness(1.03);
+    /* MÊME LANGAGE — même traitement image que .k-subchip-photo (boutique-desktop.css) */
+    filter: saturate(1.32) contrast(1.07) brightness(1.02);
+    transition: filter .25s ease, transform .25s ease;
+  }
+
+  /* Si une vraie image charge, on masque le span fallback */
+  .k-chip-photo:has(img[src]:not([src=""])) > span,
+  .k-chip-photo:has(img[src]:not([src=""])) .k-chip-fallback {
+    display: none;
   }
 
   .k-chip-fallback {

@@ -513,6 +513,53 @@
   flex-shrink: 0;
 }
 .k-subchip:active { transform: scale(.94); }
+
+/* MÊME LANGAGE — miniature image dans la pilule sous-catégorie.
+   Miroir du .k-chip-photo (categories.css) à l'échelle pilule.
+   Owner unique : boutique-desktop.css (S4.IMAGE)
+   HTML attendu : <span class="k-subchip-photo"><img src="…" alt=""></span>
+   Fallback  : si pas de src, le fond --cat-{x}-bg s'affiche (hérité de la section parente). */
+.k-subchip-photo {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--overlay-black-xs);
+  background: var(--sand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .16s var(--ease);
+}
+.k-subchip-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 20%;
+  /* Même traitement que .k-chip-photo img — langage unifié */
+  filter: saturate(1.32) contrast(1.07) brightness(1.02);
+  transition: filter .2s ease, transform .2s ease;
+}
+/* Fallback emoji/initiale quand pas d'img assignée */
+.k-subchip-photo .k-subchip-fallback {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+/* Couleur de fond héritée de la catégorie parente (même tokens que .k-chip-photo) */
+[data-cat="Maison"]                 .k-subchip-photo { background: var(--cat-maison-bg); }
+[data-cat="Mode"]                   .k-subchip-photo { background: var(--cat-mode-bg); }
+[data-cat="Beauté"]                 .k-subchip-photo { background: var(--cat-beaute-bg); }
+[data-cat="Tech"]                   .k-subchip-photo { background: var(--cat-tech-bg); }
+[data-cat="Bricolage"]              .k-subchip-photo { background: var(--cat-brico-bg); }
+[data-cat="Auto"]                   .k-subchip-photo { background: var(--cat-auto-bg); }
+[data-cat="Créations personnelles"] .k-subchip-photo { background: var(--cat-perso-bg); }
+[data-cat="Soldes"]                 .k-subchip-photo { background: var(--cat-soldes-bg); }
+
+/* .k-subchip-icon : conservé intact pour les sous-cats sans .k-subchip-photo (rétrocompat) */
 .k-subchip-icon  { font-size: 14px; line-height: 1; }
 .k-subchip-label { font-size: 13px; font-weight: 700; color: var(--text-muted); transition: color .16s; }
 .k-subchip.active {
@@ -648,6 +695,23 @@
 
 #k-subcats-wrap .k-subchip[data-subcat=""] {
   display: none;
+}
+
+/* MÊME LANGAGE — taille photo légèrement plus grande dans le rail sticky 44px */
+#k-subcats-wrap .k-subchip-photo {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 7px;
+}
+#k-subcats-wrap .k-subchip:hover .k-subchip-photo {
+  transform: scale(1.06);
+}
+#k-subcats-wrap .k-subchip:hover .k-subchip-photo img {
+  filter: saturate(1.40) contrast(1.08);
+}
+#k-subcats-wrap .k-subchip.active .k-subchip-photo {
+  box-shadow: 0 0 0 1.5px rgba(198,168,93,.60);
 }
 
 #k-subcats-wrap .k-subchip-icon {
