@@ -347,6 +347,12 @@ function setupCardHoverObserver() {
    ou l'input .k-header-search, selon ce qui est présent dans le DOM).
    Mobile non touché : .k-hero-media est display:none mobile. */
 function setupHeroSearchBar() {
+  // DÉSACTIVÉ (31/05) : vestige "Option B". Cette barre injectée dans
+  // .k-hero-media faisait doublon avec la recherche du header et se
+  // superposait au hero éditorial 2-colonnes. La recherche du header
+  // (#k-search-input) reste la barre unique. Code conservé si besoin futur.
+  return;
+
   if (!isDesktop()) return;
 
   var media = document.querySelector('#k-hero-fixed-wrap .k-hero-media');

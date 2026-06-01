@@ -1921,18 +1921,26 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   /* Colonne 2 — illustration compacte, fondu sable sur le bord gauche */
-  .k-hero-media picture,
-  .k-hero-media .k-hero-img {
+  .k-hero-media picture {
     grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: stretch;
     width: 100%;
     height: 100%;
+    display: block;
+    position: relative;
+    overflow: hidden;
   }
-  .k-hero-img {
+  .k-hero-media .k-hero-img {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    width: 100%;
     height: 100%;
     min-height: 240px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 30%;
+    object-position: 50% 35%;
+    display: block;
   }
   /* fondu : l'image se fond dans le panneau sable à gauche */
   .k-hero-media::before {
@@ -1941,7 +1949,7 @@ body:has(#k-page-scroll.k-pager-active) {
     top: 0;
     bottom: 0;
     left: calc(1.25 / 2.15 * 100%);
-    width: 70px;
+    width: 80px;
     background: linear-gradient(90deg, var(--sand-warm) 0%, transparent 100%);
     z-index: 1;
     pointer-events: none;
