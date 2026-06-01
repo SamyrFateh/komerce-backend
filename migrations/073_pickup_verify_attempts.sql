@@ -1,4 +1,4 @@
-﻿-- 073_pickup_verify_attempts.sql
+-- 073_pickup_verify_attempts.sql
 -- Persist rate-limit attempts for public pickup-code verification.
 -- S17 — avoids in-memory reset after redeploy.
 

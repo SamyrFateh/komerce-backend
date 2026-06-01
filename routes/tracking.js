@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const express = require('express');
 const crypto = require('crypto');
@@ -361,4 +361,3 @@ function maskPhone(phone) {
 router.generatePickupCode = generatePickupCode;
 router.generateTrackingToken = generateTrackingToken;
 module.exports = router;
-
