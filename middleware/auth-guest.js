@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * KOMERCE — Middleware d'authentification avec auto-création (guest checkout)
@@ -77,6 +77,15 @@ function generateToken(user) {
   return jwt.sign({ id: user.id, role: user.role, jti: crypto.randomUUID() }, _JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
+async function isTokenRevoked(jti) {
+  if (!jti) return false;
+  const { rows } = await db.query(
+    'SELECT 1 FROM revoked_tokens WHERE jti = $1 LIMIT 1',
+    [jti]
+  );
+  return rows.length > 0;
+}
+
 // ── Trouve ou crée un user par phone_payer ────────────────────────────
 async function findOrCreateUser({ payerPhone, beneficiaryPhone, fullName }) {
   const payerNorm = normalizePhone(payerPhone);
@@ -149,6 +158,13 @@ async function authenticateOrCreateGuest(req, res, next) {
     if (token) {
       try {
         const decoded = jwt.verify(token, _JWT_SECRET, { algorithms: ['HS256'] });
+
+        // N4 — refuser explicitement les JWT révoqués.
+        // Ne pas fallthrough vers création guest : une session révoquée doit rester invalide.
+        if (await isTokenRevoked(decoded.jti)) {
+          return res.status(401).json({ error: 'Session expirée — reconnectez-vous' });
+        }
+
         let user = getCachedUser(decoded.id);
 
         if (!user) {
@@ -231,4 +247,8 @@ module.exports = {
   invalidateUserCache,
   normalizePhone, // exporté au cas où d'autres modules en ont besoin
 };
+
+
+
+
 
