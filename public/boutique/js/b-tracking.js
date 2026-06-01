@@ -18,11 +18,12 @@ import {
 'use strict';
 
 const TRACK_STEPS = [
-  { key: 'pending',    label: 'Commande reçue',         icon: '✓',  sub: 'Enregistrée avec succès' },
-  { key: 'preparing',  label: 'En préparation',          icon: '⚙️', sub: 'Nous préparons votre colis' },
-  { key: 'in_transit', label: 'En route vers le relais', icon: '🚚', sub: '' },
-  { key: 'at_relay',   label: 'Disponible au relais',    icon: '🏪', sub: 'Prêt à être retiré' },
-  { key: 'delivered',  label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' },
+  { key: 'pending',      label: 'Commande reçue',         icon: '✓',  sub: 'Enregistrée avec succès' },
+  { key: 'preparation',  label: 'En préparation',          icon: '⚙️', sub: 'Nous préparons votre colis' },
+  { key: 'shipped',      label: 'Expédiée',                icon: '🚢', sub: 'Remise au transitaire' },
+  { key: 'in_transit',   label: 'En route vers le relais', icon: '🚚', sub: '' },
+  { key: 'available',    label: 'Disponible au relais',    icon: '🏪', sub: 'Prêt à être retiré' },
+  { key: 'collected',    label: 'Retiré',                  icon: '✅', sub: 'Commande clôturée' },
 ];
 
 export function buildTimeline(status) {

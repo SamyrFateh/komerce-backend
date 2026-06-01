@@ -917,7 +917,7 @@ adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, nex
       `UPDATE shared_carts SET status = 'expired', updated_at = NOW()
         WHERE id = $1
           AND status IN (
-            'active', 'partially_funded',
+            'active', 'partially_funded', 'fully_funded',
             'draft', 'commitment_open',
             'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'
           )

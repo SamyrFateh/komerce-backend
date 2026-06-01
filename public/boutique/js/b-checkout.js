@@ -130,9 +130,15 @@ export function closeOrderModal() {
    * Rend l'interface complète de passage de commande (récap + formulaire contact + paiement).
    * Gère les étapes : validation panier → saisie infos → confirmation.
    */
+let _relaisAbortController = null;
+
 async function _loadRelaisSection(container, od) {
+  // Abort toute requête relais précédente encore en cours
+  if (_relaisAbortController) _relaisAbortController.abort();
+  _relaisAbortController = new AbortController();
+  const signal = _relaisAbortController.signal;
   try {
-    const data = await apiGet('/api/relais');
+    const data = await apiGet('/api/relais', { signal });
     const list = Array.isArray(data) ? data : (data.relais || data.data || []);
     if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
     const byIle = {};
@@ -162,7 +168,7 @@ async function _loadRelaisSection(container, od) {
     container.appendChild(ileGrid);
     container.appendChild(listWrap);
     const firstBtn = ileGrid.querySelector('.ck-relais-ile-btn'); if (firstBtn) firstBtn.click();
-  } catch(e) { container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>'; console.warn('[checkout] relais:', e); }
+  } catch(e) { if (e && e.name === 'AbortError') return; container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>'; console.warn('[checkout] relais:', e); }
 }
 
 function classifyRelayGroup(relais) {
@@ -309,9 +315,13 @@ function refreshCheckoutComputedUI() {
   const od = state.orderData || {};
   const mode = document.querySelector('input[name="payment_mode"]:checked')?.value || od.payment_mode || 'cash_relais';
   const relayName = document.querySelector('#ck-relais-section .ck-relais-item.selected .ck-relais-name')?.textContent?.trim() || '';
+  const total = cartTotal();
+  const cb = document.getElementById('cb-use-wallet');
+  const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
+  const netAmount = total - walletApplied;
   const mainText = mode === 'stripe_eur'
-    ? '💳 Payer ' + fmt(cartTotal(), 'KMF')
-    : '✅ Confirmer — ' + fmt(cartTotal(), 'KMF');
+    ? '💳 Payer ' + fmt(total, 'KMF')
+    : '✅ Confirmer — ' + fmt(netAmount, 'KMF') + (walletApplied > 0 ? ' (net wallet)' : '');
   const subText = mode === 'stripe_eur'
     ? (relayName ? 'Carte via Stripe • ' + relayName : 'Carte via Stripe')
     : (relayName ? 'Cash au relais • ' + relayName : 'Cash au relais');
@@ -811,6 +821,7 @@ export function updateWalletDisplay() {
     } else {
       ded.classList.remove('is-visible');
     }
+    refreshCheckoutComputedUI();
   }
 
 export async function submitOrder(btn) {

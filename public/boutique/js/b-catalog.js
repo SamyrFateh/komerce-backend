@@ -209,7 +209,8 @@ function renderPromos() {
   }
 
   dom.promoRail.innerHTML = promos.map(p => {
-    const oldPrice = Math.round(p.price_kmf / (1 - p.promo_pct / 100));
+    const divisor = 1 - p.promo_pct / 100;
+    const oldPrice = divisor > 0 ? Math.round(p.price_kmf / divisor) : p.price_kmf;
     return `
       <div class="k-promo-card" data-id="${p.id}">
         <img class="k-promo-card-img" src="${promoImgUrl(p.image_url, 400)}" alt="${sanitize(p.name)}" loading="lazy" decoding="async">

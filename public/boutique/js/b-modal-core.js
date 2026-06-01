@@ -152,7 +152,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     if (_variantContainer) _variantContainer.innerHTML = '';
     if (product.has_variants) {
       var _variantProductId = product.id;
-      fetch('/api/products/' + _variantProductId)
+      fetch('/api/products/' + _variantProductId, { credentials: 'include' })
         .then(function(r) { return r.json(); })
         .then(function(full) {
           // Guard: modal may have moved to another product by the time fetch returns
@@ -172,7 +172,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     dom.modalQtyVal.textContent = state.modalQty;  // FIX: show cart qty, not hardcoded 1
 
     if (product.promo_pct) {
-      const old = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
+      const _div = 1 - product.promo_pct / 100;
+      const old = _div > 0 ? Math.round(product.price_kmf / _div) : product.price_kmf;
       dom.modalOldPrice.textContent = fmtPrice(old);
       dom.modalOldPrice.classList.remove('u-hidden');
       dom.modalPromoBadge.textContent = `-${product.promo_pct}%`;
