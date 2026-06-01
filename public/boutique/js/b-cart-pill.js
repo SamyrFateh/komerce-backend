@@ -16,7 +16,7 @@ import { bus }                         from './b-bus.js';
 import { isDesktop }               from './b-scroll-owner.js';
 import { state }                       from './b-store.js';
 import { cartQty, cartTotal }          from './b-cart-core.js';
-import { fmt }                         from './b-utils.js';
+import { fmt, sanitize }               from './b-utils.js';
 
 // ─── Constantes ────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'kmrc_pill_pos';
@@ -83,12 +83,13 @@ function _buildPopover() {
   const rows = items.map(({ product: p, qty: q }) => {
     const price = (p.price_kmf || 0) * q;
     const name  = p.name || p.title || 'Produit';
+    const label = name.length > 28 ? name.slice(0, 27) + '…' : name;
     const img   = (Array.isArray(p.images) ? p.images[0] : p.image) || '';
     return `
       <div class="kpill-pop-row">
-        ${img ? `<img class="kpill-pop-img" src="${img}" alt="" loading="lazy">` : '<div class="kpill-pop-img kpill-pop-img--empty">📦</div>'}
+        ${img ? `<img class="kpill-pop-img" src="${sanitize(img)}" alt="" loading="lazy">` : '<div class="kpill-pop-img kpill-pop-img--empty">📦</div>'}
         <div class="kpill-pop-info">
-          <span class="kpill-pop-name">${name.length > 28 ? name.slice(0,27) + '…' : name}</span>
+          <span class="kpill-pop-name">${sanitize(label)}</span>
           <span class="kpill-pop-meta">×${q} · ${fmt(price, 'KMF')}</span>
         </div>
       </div>`;
