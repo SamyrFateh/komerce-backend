@@ -246,10 +246,20 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
 
   const wrap = document.createElement('div');
   wrap.className = 'k-ck-phone-wrap';
+  wrap.style.display = 'grid';
+  wrap.style.gridTemplateColumns = '82px minmax(0, 1fr)';
+  wrap.style.gap = '6px';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.height = '42px';
+  wrap.style.maxWidth = '100%';
 
   const sel = document.createElement('select');
   sel.id = id + '-country';
   sel.className = 'k-ck-phone-select';
+  sel.style.width = '82px';
+  sel.style.height = '42px';
+  sel.style.boxSizing = 'border-box';
+  sel.style.flex = '0 0 82px';
   PHONE_COUNTRIES.forEach(function(c) {
     const opt = document.createElement('option');
     opt.value = c.code;
@@ -265,10 +275,17 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
   input.autocomplete = 'tel';
   input.placeholder = '321 12 34';
   input.className = 'k-ck-phone-input';
+  input.style.width = '100%';
+  input.style.minWidth = '0';
+  input.style.height = '42px';
+  input.style.boxSizing = 'border-box';
+  input.style.flex = '1 1 auto';
 
   const help = document.createElement('div');
   help.className = 'k-ck-phone-help';
   help.textContent = '';
+  help.hidden = true;
+  help.style.display = 'none';
 
   function currentCountry() {
     return PHONE_COUNTRIES.find(c => c.code === sel.value) || PHONE_COUNTRIES[0];
@@ -285,13 +302,11 @@ export function makeIntlPhoneInput(id, label, dataObj, key) {
     const e164 = buildE164(country.code, rawDigits);
     dataObj[key] = e164 || '';
 
-    const valid = isValidLocalLength(country.code, rawDigits);
-    if (rawDigits.length > 0) {
-      help.textContent = valid ? '' : `Format attendu : ${country.ph}`;
-      help.style.color = valid ? '' : 'var(--coral)';
-    } else {
-      help.textContent = '';
-    }
+    // Validation conservée, mais pas d'annotation rouge sous le champ.
+    // Le checkout garde ses propres erreurs bloquantes au moment de valider.
+    help.textContent = '';
+    help.hidden = true;
+    help.style.display = 'none';
   }
 
   sel.addEventListener('change', function() {
