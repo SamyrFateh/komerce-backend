@@ -825,37 +825,10 @@ export function updateWalletDisplay() {
   }
 
 export async function submitOrder(btn) {
-  // ── DOCTRINE IDENTITÉ LÉGÈRE (feat/checkout-otp) ──────────────────────────
-  // Appel requireIdentity() avant tout POST engageant.
-  // - Utilisateur reconnu + case "c'est moi" cochée : retour silencieux de
-  //   l'identité connue, SANS ouvrir la modale "Sécuriser votre commande".
-  //   L'user a déjà confirmé implicitement son identité en cochant la case.
-  // - Utilisateur reconnu + case non cochée : modale "Vous commandez avec X".
-  // - Utilisateur inconnu : flow OTP complet.
-  // - Fermeture modale / annulation : identity === null → abort propre.
-  // Le panier n'est pas touché ici. clearCart() n'est appelé qu'après succès.
-
-  // La case "c'est moi" cochée = confirmation implicite de l'identité.
-  // Dans ce cas, si une identité est disponible, on ne redemande pas via modale.
-  const _cbBenfIsMe = document.getElementById('cb-benf-is-me');
-  const _benfIsMeChecked = !!(_cbBenfIsMe && _cbBenfIsMe.checked);
-
-  const identity = await requireIdentity({
-    reason: 'valider votre commande',
-    title: 'Sécuriser votre commande',
-    // allowOtherPhone:false si la case "c'est moi" est cochée → identité connue
-    // retournée directement sans passer par openKnownIdentityConfirm (pas de modale).
-    // allowOtherPhone:true sinon → modale "Vous commandez avec X · Ce n'est pas vous ?"
-    allowOtherPhone: !_benfIsMeChecked,
-  });
-
-  if (!identity) {
-    // L'utilisateur a fermé la modale OTP sans valider → on s'arrête proprement.
-    // Bouton déjà réactivé (jamais été busy), panier intact.
-    return;
-  }
-  // ── FIN GARDE IDENTITÉ ────────────────────────────────────────────────────
-
+  // ── VALIDATION D'ABORD, OTP ENSUITE ───────────────────────────────────────
+  // Fix : ne jamais déclencher l'OTP (modale WhatsApp) tant que les données ne
+  // sont pas valides. On vérifie nom + téléphone + relais ; SEULEMENT si tout
+  // est bon, on demande l'identité (requireIdentity) puis on poste.
   const od = state.orderData;
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
   const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
@@ -900,6 +873,20 @@ export async function submitOrder(btn) {
     showToast('Veuillez choisir un point relais pour la livraison.', 'error');
     return;
   }
+
+  // ── GARDE IDENTITÉ (OTP) — APRÈS validation des données ───────────────────
+  // Les données sont valides → on demande l'identité. Case "c'est moi" cochée =
+  // confirmation implicite (identité connue retournée sans modale). Inconnu →
+  // flow OTP complet. Fermeture/annulation → identity null → abort propre.
+  const _cbBenfIsMe = document.getElementById('cb-benf-is-me');
+  const _benfIsMeChecked = !!(_cbBenfIsMe && _cbBenfIsMe.checked);
+  const identity = await requireIdentity({
+    reason: 'valider votre commande',
+    title: 'Sécuriser votre commande',
+    allowOtherPhone: !_benfIsMeChecked,
+  });
+  if (!identity) return; // modale fermée sans valider → arrêt propre, panier intact
+  // ── FIN GARDE IDENTITÉ ────────────────────────────────────────────────────
 
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
