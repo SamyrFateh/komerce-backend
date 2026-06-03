@@ -429,29 +429,62 @@ export function renderCheckout() {
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
-    // ── Bloc bénéficiaire ────────────────────────────────────────────────────
+    // ── Bloc « Qui récupère ? » — toggle (champs révélés si quelqu'un d'autre) ─
     const benfSection = document.createElement('div');
     benfSection.className = 'ck-section-block';
     const benfTitle = document.createElement('div');
     benfTitle.className = 'ck-section-title';
-    benfTitle.textContent = 'QUI VA RETIRER LA COMMANDE ?';
+    benfTitle.textContent = 'QUI RÉCUPÈRE ?';
     benfSection.appendChild(benfTitle);
-    const benfHint = document.createElement('div');
-    benfHint.className = 'ck-section-hint';
-    benfHint.textContent = "Indiquez la personne qui ira récupérer les articles au relais.";
-    benfSection.appendChild(benfHint);
 
-    // Case "c'est moi"
-    const benfMeWrap = document.createElement('label');
-    benfMeWrap.className = 'ck-benf-me-label';
-    benfMeWrap.innerHTML = "<input type=\"checkbox\" id=\"cb-benf-is-me\" class=\"ck-benf-me-cb\"> <span>C'est moi, je retirerai la commande</span>";
-    benfSection.appendChild(benfMeWrap);
+    // Input d'état caché : conservé car submitOrder() + le préremplissage le lisent.
+    // checked = « je récupère moi-même » (défaut).
+    const benfMeState = document.createElement('input');
+    benfMeState.type = 'checkbox';
+    benfMeState.id = 'cb-benf-is-me';
+    benfMeState.className = 'ck-benf-me-cb';
+    benfMeState.checked = true;
+    benfMeState.hidden = true;
+    benfSection.appendChild(benfMeState);
 
-    benfSection.appendChild(makeInput('of-beneficiary-name', 'Nom de la personne qui retire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
-    benfSection.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
+    // Toggle visuel à 2 options
+    const benfToggle = document.createElement('div');
+    benfToggle.className = 'ck-recip-toggle';
+    benfToggle.innerHTML =
+      '<button type="button" class="ck-recip-opt is-active" data-recip="me">Je récupère moi-même</button>'
+      + '<button type="button" class="ck-recip-opt" data-recip="other">Quelqu\'un d\'autre récupère</button>';
+    benfSection.appendChild(benfToggle);
+
+    // Note contextuelle (visible seulement en « quelqu'un d'autre »)
+    const benfNote = document.createElement('div');
+    benfNote.className = 'ck-recip-note';
+    benfNote.hidden = true;
+    benfNote.textContent = 'Le suivi WhatsApp sera envoyé à vous deux.';
+    benfSection.appendChild(benfNote);
+
+    // Champs retraitant — masqués par défaut, révélés si « quelqu'un d'autre »
+    const benfFields = document.createElement('div');
+    benfFields.className = 'ck-recip-fields';
+    benfFields.hidden = true;
+    benfFields.appendChild(makeInput('of-beneficiary-name', 'Nom de la personne qui retire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
+    benfFields.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
+    benfSection.appendChild(benfFields);
     body.appendChild(benfSection);
 
-    // ── Logique case "c'est moi" ─────────────────────────────────────────────
+    // Logique du toggle : bascule l'état caché + montre/cache les champs
+    const _setRecipMode = (mode) => {
+      const isOther = mode === 'other';
+      benfToggle.querySelectorAll('.ck-recip-opt').forEach(b => b.classList.toggle('is-active', b.dataset.recip === mode));
+      benfMeState.checked = !isOther;
+      benfFields.hidden = !isOther;
+      benfNote.hidden = !isOther;
+      benfMeState.dispatchEvent(new Event('change', { bubbles: true })); // déclenche le préremplissage existant
+    };
+    benfToggle.querySelectorAll('.ck-recip-opt').forEach(btn => {
+      btn.addEventListener('click', () => _setRecipMode(btn.dataset.recip));
+    });
+
+    // ── Logique préremplissage (inchangée : lit #cb-benf-is-me) ───────────────
     // DOCTRINE : ce handler ne déclenche JAMAIS requireIdentity() ni de modale.
     // Il lit passivement l'identité déjà connue (getCurrentIdentity) ou tente
     // une restauration silencieuse (restoreIdentity — cookie httpOnly, zéro OTP).
@@ -590,6 +623,10 @@ export function renderCheckout() {
           // Si toujours pas d'identité : champs manuels disponibles, aucune action
         }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
       });
+
+      // État initial : « je récupère moi-même » coché par défaut → préremplissage
+      // une fois au chargement (équivaut à sélectionner l'option « me » du toggle).
+      if (cbBenfMe.checked) cbBenfMe.dispatchEvent(new Event('change', { bubbles: true }));
     }, 0);
     // ── Fin bloc bénéficiaire ────────────────────────────────────────────────
 

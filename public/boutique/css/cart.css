@@ -994,25 +994,50 @@ body.cart-open .k-wa-fab {
   margin-bottom: 2px;
 }
 
-/* Case à cocher "Le bénéficiaire, c'est moi" */
-.ck-benf-me-label {
+/* Input d'état caché (conservé pour le câblage submitOrder + préremplissage) */
+.ck-benf-me-cb { display: none; }
+
+/* ── Toggle « Qui récupère ? » ── */
+.ck-recip-toggle {
   display: flex;
-  align-items: center;
   gap: 6px;
-  font-size: .82rem;
-  font-weight: 600;
+  background: var(--surface-sand-96);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-top: 4px;
+}
+.ck-recip-opt {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  padding: 9px 8px;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.ck-recip-opt.is-active {
+  background: var(--white);
   color: var(--text);
-  cursor: pointer;
-  margin-bottom: 8px;
-  user-select: none;
+  box-shadow: 0 1px 4px var(--overlay-black-xs);
 }
-.ck-benf-me-cb {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: var(--cta-green);
-  flex-shrink: 0;
+.ck-recip-note {
+  font-size: .76rem;
+  color: var(--coral-dark);
+  font-weight: 600;
+  margin-top: 8px;
 }
+.ck-recip-fields {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ck-recip-fields[hidden] { display: none; }
 
 
 /* ── S3.2 — Mode édition panier collectif (tiré de b-cart.js inline styles) ── */
