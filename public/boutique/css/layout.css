@@ -1007,3 +1007,58 @@ body:has(#k-page-scroll.k-pager-active) {
   }
   html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
 }
+
+/* ── Premium desktop home — header / search / catalog (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-header {
+    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--sand) 82%, var(--white));
+    border-bottom: 1px solid var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-logo-text {
+    font-weight: 900;
+    letter-spacing: -.025em;
+  }
+
+  html.k-home-premium-v1 .k-search {
+    min-height: 54px;
+    border-radius: 999px;
+    box-shadow: 0 14px 36px var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-search input::placeholder {
+    color: color-mix(in srgb, var(--text-muted) 78%, transparent);
+  }
+
+  html.k-home-premium-v1 #k-catalog-section { padding-top: 22px; }
+
+  html.k-home-premium-v1 #k-catalog-section::before {
+    content: 'Bons plans du moment';
+    display: block;
+    max-width: 1500px;
+    margin: 0 auto 6px;
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(26px, 2.2vw, 36px);
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--text);
+  }
+
+  html.k-home-premium-v1 #k-catalog-section::after {
+    content: 'Des produits utiles, bien placés, faciles à commander et à retirer en relais.';
+    display: block;
+    max-width: 1500px;
+    margin: -2px auto 18px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* Masquer les pseudo-éléments éditoriaux hors vue boutique.
+     Même spécificité que les règles ci-dessus, placé après : cascade naturelle, sans !important. */
+  body:not(.k-view-shop) #k-catalog-section::before,
+  body:not(.k-view-shop) #k-catalog-section::after {
+    content: none;
+    display: none;
+  }
+}

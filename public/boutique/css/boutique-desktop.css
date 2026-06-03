@@ -1202,3 +1202,62 @@
     pointer-events: none !important;
   }
 }
+
+/* ── Premium desktop home — side-cart + blocs éditoriaux (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-side-cart {
+    box-shadow: -14px 0 44px var(--border-text-08);
+    border-left: 1px solid var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-sc-btn-checkout { border-radius: 18px; }
+
+  /* Blocs éditoriaux injectés dynamiquement par b-home-premium-v1.js */
+  html.k-home-premium-v1 .k-home-curation {
+    display: block;
+    padding: 22px clamp(26px, 3.4vw, 56px) 14px;
+    background:
+      radial-gradient(circle at 84% 4%, color-mix(in srgb, var(--coral) 10%, transparent), transparent 22%),
+      var(--sand);
+  }
+
+  /* Cascade naturelle sans !important : body:not(.k-view-shop) a même spécificité,
+     placé après la règle show — la visibilité JS (u-hidden) reste autorité principale. */
+  body:not(.k-view-shop) .k-home-curation { display: none; }
+
+  html.k-home-premium-v1 .k-home-curation-inner {
+    max-width: 1500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+  }
+
+  html.k-home-premium-v1 .k-home-baseline {
+    margin: 0;
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(20px, 1.6vw, 26px);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    color: var(--text);
+  }
+
+  html.k-home-premium-v1 .k-home-promise-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  html.k-home-premium-v1 .k-home-promise-chip {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--white) 78%, transparent);
+    border: 1px solid var(--border-text-06);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
