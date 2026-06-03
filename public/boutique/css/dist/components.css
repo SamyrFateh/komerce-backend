@@ -684,8 +684,8 @@
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 120px;
-    min-height: 100px;
+    height: 100px;
+    min-height: 88px;
     /* Ancrage des enfants absolus */
     position: relative;
     display: block;
@@ -776,7 +776,7 @@
     background: linear-gradient(
       to bottom,
       transparent 28%,
-      rgba(18, 12, 6, .56) 100%
+      rgba(18, 12, 6, .44) 100%
     );
     border-radius: inherit;
     pointer-events: none;
@@ -822,6 +822,11 @@
     text-shadow:
       0 1px 6px rgba(200,92,45,.65),
       0 1px 3px rgba(0,0,0,.55);
+  }
+
+  /* Override "Tout" — all.jpg fond sombre, compenser la densité */
+  .k-chip[data-cat="all"] .k-chip-photo img {
+    filter: saturate(1.10) contrast(0.96) brightness(1.18);
   }
 
   .k-sec-subcats { display: none; }
