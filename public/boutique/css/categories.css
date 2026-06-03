@@ -828,12 +828,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — catégories (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2)
    Scopé à l'état html.k-mobile-premium-v1 posé par le JS. Owner officiel des chips.
-   !important CONSERVÉS pour l'instant (rapatriement iso-comportemental) — leur
-   retrait éventuel = Lot 4 après test. ═══════════════════════════════════════ */
+   !important retirés (L4-S11) — spécificité 0-2-0 suffit à battre les règles base. ═══ */
 html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
 html.k-mobile-premium-v1 .k-cats {
-  display: flex !important;
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -849,15 +848,15 @@ html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
 html.k-mobile-premium-v1 .k-chip,
 html.k-mobile-premium-v1 .k-chip.is-active,
 html.k-mobile-premium-v1 .k-chip.active {
-  flex: 0 0 auto !important;
-  width: 64px !important;
-  min-width: 64px !important;
-  max-width: 64px !important;
-  height: 84px !important;
-  min-height: 84px !important;
-  padding: 6px 4px 6px !important;
-  border-radius: 16px !important;
-  display: flex !important;
+  flex: 0 0 auto;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  height: 84px;
+  min-height: 84px;
+  padding: 6px 4px 6px;
+  border-radius: 16px;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
@@ -868,8 +867,8 @@ html.k-mobile-premium-v1 .k-chip.active {
 }
 
 html.k-mobile-premium-v1 .k-chip-photo {
-  width: 44px !important;
-  height: 44px !important;
+  width: 44px;
+  height: 44px;
   flex: 0 0 44px;
   border-radius: 12px;
   object-fit: cover;
@@ -894,9 +893,9 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (max-width: 360px) {
   html.k-mobile-premium-v1 .k-chip,
   html.k-mobile-premium-v1 .k-chip.active {
-    width: 60px !important;
-    min-width: 60px !important;
-    max-width: 60px !important;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
   }
 }
 
