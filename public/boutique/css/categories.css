@@ -227,30 +227,30 @@
 
 /* État actif mobile */
 .k-chip.active .k-chip-photo {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 2.5px var(--coral), var(--elev-2);
+  border-color: var(--ocean-dark);
+  box-shadow: 0 0 0 2.5px var(--ocean-dark), var(--elev-2);
   transform: scale(1.05);
 }
-.k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
+.k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--ocean-dark); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
-.k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-.k-chip.active .k-chip-emoji { border-color: var(--coral); color: var(--coral); }
-.k-chip.active .k-chip-label { color: var(--ocean-dark); font-weight: 800; }
+.k-chip.active .k-chip-photo svg { stroke: var(--white); }
+.k-chip.active .k-chip-emoji { background: var(--ocean-dark); border-color: var(--ocean-dark); color: var(--white); }
+.k-chip.active .k-chip-label { color: var(--white); font-weight: 800; }
 
 .k-chip.active {
-  background: var(--green-bg-leaf);
-  border-color: rgba(74, 144, 64, .35);
-  box-shadow: 0 2px 7px rgba(74, 144, 64, .10);
+  background: var(--ocean-dark);
+  border-color: var(--ocean-dark);
+  box-shadow: 0 2px 8px rgba(74, 144, 64, .30);
 }
 
 .k-chip.active .k-chip-photo {
-  border-color: var(--coral);
-  box-shadow: 0 0 0 1.25px rgba(216, 90, 48, .50);
+  border-color: var(--ocean-dark);
+  box-shadow: 0 0 0 1.25px rgba(74, 144, 64, .50);
   transform: none;
 }
 
 .k-chip.active .k-chip-label {
-  color: var(--ocean-dark);
+  color: var(--white);
 }
 
 /* Sentinel spacer */
@@ -577,11 +577,12 @@
 
 /* ── État actif ── */
 .k-chip.active {
-  background: var(--green-bg-leaf);
-  box-shadow: 0 1px 5px rgba(74, 144, 64, .12);
+  background: var(--ocean-dark);
+  border-color: var(--ocean-dark);
+  box-shadow: 0 2px 8px rgba(74, 144, 64, .30);
 }
 .k-chip.active .k-chip-label {
-  color: var(--ocean-dark);
+  color: var(--white);
   font-weight: 700;
 }
 
@@ -812,12 +813,14 @@
     z-index: 2;
   }
 
-  /* ── État actif — ring coral discret ── */
+  /* ── État actif — vert plein ── */
   .k-chip.active {
     transform: translateY(-2px);
+    background: var(--ocean-dark);
+    border-color: var(--ocean-dark);
     box-shadow:
-      0 0 0 2.5px var(--coral),
-      0 10px 24px rgba(200,92,45,.18);
+      0 0 0 2.5px var(--ocean-dark),
+      0 10px 24px rgba(74,144,64,.22);
   }
 
   .k-chip.active .k-chip-photo img {
@@ -988,19 +991,19 @@ html.k-mobile-premium-v1 .k-chip-label {
 
   /* État actif coral affirmé — SANS scale ni changement de hauteur */
   .k-chip.active {
-    background: color-mix(in srgb, var(--coral) 9%, var(--white));
-    border-color: color-mix(in srgb, var(--coral) 45%, transparent);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--coral) 18%, transparent);
+    background: var(--ocean-dark);
+    border-color: var(--ocean-dark);
+    box-shadow: 0 2px 8px rgba(74, 144, 64, .30);
   }
   .k-chip.active .k-chip-photo {
-    border-color: var(--coral);
+    border-color: var(--ocean-dark);
     box-shadow:
-      0 0 0 1.5px var(--coral),
+      0 0 0 1.5px var(--ocean-dark),
       inset 0 0 0 1px rgba(255, 255, 255, .60);
     transform: none;
   }
   .k-chip.active .k-chip-label {
-    color: var(--coral-dark);
+    color: var(--white);
     font-weight: 800;
   }
 }
