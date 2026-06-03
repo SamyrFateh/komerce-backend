@@ -174,7 +174,10 @@ export function renderSubcatRail(catKey, opts = {}) {
     chip.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      state.activeSubcat = chip.dataset.subcat || null;
+      const next = chip.dataset.subcat || null;
+      // Toggle : re-clic sur la sous-cat active → retour à tout l'univers
+      // (la pill « Tout voir » est masquée en desktop, ce toggle la remplace).
+      state.activeSubcat = (next && state.activeSubcat === next) ? null : next;
       renderSubcatRail(catKey);
       renderGrid();
     });

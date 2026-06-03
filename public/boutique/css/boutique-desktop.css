@@ -647,16 +647,16 @@
   #k-subcats-wrap .k-subchip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 36px;
-    padding: 0 16px;
+    gap: 5px;
+    height: 32px;
+    padding: 0 14px;
     border-radius: 999px;
     border: 1.5px solid var(--border-text-08);
     background: var(--surface-white-88);
     color: var(--text-alpha-82);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: -.018em;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: -.012em;
     white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(28,26,23,.06);
@@ -674,14 +674,15 @@
     color: var(--white);
     border-color: var(--coral);
     box-shadow: 0 4px 14px rgba(200,92,45,.28);
-    font-weight: 800;
+    font-weight: 700;
   }
 
   #k-subcats-wrap .k-subchip[data-subcat=""] { display: none; }
 
   #k-subcats-wrap .k-subchip-icon {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1;
+    opacity: .85;
   }
 }
 
