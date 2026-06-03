@@ -630,6 +630,19 @@
     padding-bottom: 8px;
   }
 
+  /* ── Lot 2 / :has() — raccord sticky↔sous-cats ──────────────────
+     Quand #k-subcats-wrap est peuplé par le JS, la barre sticky
+     perd son rayon bas et son padding-bottom : les sous-cats
+     viennent se coller directement sous les cartes catégories.
+     CSS-only, aucun JS nécessaire.
+     ──────────────────────────────────────────────────────────────── */
+  .k-hero-cats-sticky:has(#k-subcats-wrap:not(:empty)) {
+    border-radius: 0;
+    padding-bottom: 0;
+    box-shadow:
+      0 2px 0 rgba(198,168,93,.10);
+  }
+
   .k-cats-shell {
     position: relative;
     top: auto;
