@@ -139,7 +139,15 @@ async function _loadRelaisSection(container, od) {
   const signal = _relaisAbortController.signal;
   try {
     const data = await apiGet('/api/relais', { signal });
-    const list = Array.isArray(data) ? data : (data.relais || data.data || []);
+    let list = Array.isArray(data) ? data : (data.relais || data.data || []);
+    // PANSEMENT TEMPORAIRE : écarter les relais de test/staging (ex. "AAA E2E
+    // Relais Test") qui ne devraient pas apparaître en prod. La VRAIE solution
+    // est de les désactiver/supprimer dans la DB (is_active=false côté backend).
+    // Ce filtre par nom est un garde-fou d'affichage, à retirer une fois la DB nettoyée.
+    list = list.filter(r => {
+      const hay = ((r.name || '') + ' ' + (r.address || '')).toLowerCase();
+      return !/\b(e2e|staging|test)\b/.test(hay);
+    });
     if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
     const byIle = {};
     list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
@@ -429,7 +437,10 @@ export function renderCheckout() {
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
-    // ── Bloc « Qui récupère ? » — toggle (champs révélés si quelqu'un d'autre) ─
+    // ── Bloc « Qui récupère ? » — case simple (décocher = quelqu'un d'autre) ──
+    // Format volontairement discret (≠ onglets) : on a déjà 2 onglets pays en
+    // haut, on n'ajoute pas un 2e système d'onglets. Case cochée = je récupère
+    // (champs masqués) ; décochée = quelqu'un d'autre (champs révélés).
     const benfSection = document.createElement('div');
     benfSection.className = 'ck-section-block';
     const benfTitle = document.createElement('div');
@@ -437,32 +448,22 @@ export function renderCheckout() {
     benfTitle.textContent = 'QUI RÉCUPÈRE ?';
     benfSection.appendChild(benfTitle);
 
-    // Input d'état caché : conservé car submitOrder() + le préremplissage le lisent.
-    // checked = « je récupère moi-même » (défaut).
-    const benfMeState = document.createElement('input');
-    benfMeState.type = 'checkbox';
-    benfMeState.id = 'cb-benf-is-me';
-    benfMeState.className = 'ck-benf-me-cb';
-    benfMeState.checked = true;
-    benfMeState.hidden = true;
-    benfSection.appendChild(benfMeState);
+    // Case à cocher (visible) — #cb-benf-is-me lu par submitOrder + préremplissage
+    const benfMeWrap = document.createElement('label');
+    benfMeWrap.className = 'ck-benf-me-label';
+    benfMeWrap.innerHTML =
+      '<input type="checkbox" id="cb-benf-is-me" class="ck-benf-me-cb" checked> '
+      + '<span>C\'est moi qui récupère la commande</span>';
+    benfSection.appendChild(benfMeWrap);
 
-    // Toggle visuel à 2 options
-    const benfToggle = document.createElement('div');
-    benfToggle.className = 'ck-recip-toggle';
-    benfToggle.innerHTML =
-      '<button type="button" class="ck-recip-opt is-active" data-recip="me">Je récupère moi-même</button>'
-      + '<button type="button" class="ck-recip-opt" data-recip="other">Quelqu\'un d\'autre récupère</button>';
-    benfSection.appendChild(benfToggle);
-
-    // Note contextuelle (visible seulement en « quelqu'un d'autre »)
+    // Note contextuelle (visible seulement si quelqu'un d'autre)
     const benfNote = document.createElement('div');
     benfNote.className = 'ck-recip-note';
     benfNote.hidden = true;
     benfNote.textContent = 'Le suivi WhatsApp sera envoyé à vous deux.';
     benfSection.appendChild(benfNote);
 
-    // Champs retraitant — masqués par défaut, révélés si « quelqu'un d'autre »
+    // Champs retraitant — masqués par défaut, révélés si case décochée
     const benfFields = document.createElement('div');
     benfFields.className = 'ck-recip-fields';
     benfFields.hidden = true;
@@ -471,18 +472,15 @@ export function renderCheckout() {
     benfSection.appendChild(benfFields);
     body.appendChild(benfSection);
 
-    // Logique du toggle : bascule l'état caché + montre/cache les champs
-    const _setRecipMode = (mode) => {
-      const isOther = mode === 'other';
-      benfToggle.querySelectorAll('.ck-recip-opt').forEach(b => b.classList.toggle('is-active', b.dataset.recip === mode));
-      benfMeState.checked = !isOther;
+    // Logique : la case montre/cache les champs (le préremplissage est géré par
+    // le handler 'change' existant plus bas, qui lit #cb-benf-is-me).
+    const _benfCb = benfMeWrap.querySelector('#cb-benf-is-me');
+    const _syncRecipFields = () => {
+      const isOther = !_benfCb.checked;     // décochée = quelqu'un d'autre
       benfFields.hidden = !isOther;
       benfNote.hidden = !isOther;
-      benfMeState.dispatchEvent(new Event('change', { bubbles: true })); // déclenche le préremplissage existant
     };
-    benfToggle.querySelectorAll('.ck-recip-opt').forEach(btn => {
-      btn.addEventListener('click', () => _setRecipMode(btn.dataset.recip));
-    });
+    _benfCb.addEventListener('change', _syncRecipFields);
 
     // ── Logique préremplissage (inchangée : lit #cb-benf-is-me) ───────────────
     // DOCTRINE : ce handler ne déclenche JAMAIS requireIdentity() ni de modale.

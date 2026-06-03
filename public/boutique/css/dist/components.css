@@ -4780,36 +4780,24 @@ body.cart-open .k-wa-fab {
   margin-bottom: 2px;
 }
 
-/* Input d'état caché (conservé pour le câblage submitOrder + préremplissage) */
-.ck-benf-me-cb { display: none; }
-
-/* ── Toggle « Qui récupère ? » ── */
-.ck-recip-toggle {
+/* ── Case « C'est moi qui récupère » (format simple, ≠ onglets) ── */
+.ck-benf-me-label {
   display: flex;
-  gap: 6px;
-  background: var(--surface-sand-96);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
+  align-items: center;
+  gap: 9px;
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
   margin-top: 4px;
 }
-.ck-recip-opt {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  border-radius: 9px;
-  padding: 9px 8px;
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--text-muted);
+.ck-benf-me-cb {
+  width: 18px;
+  height: 18px;
   cursor: pointer;
-  font-family: inherit;
-  transition: background .15s, color .15s, box-shadow .15s;
-}
-.ck-recip-opt.is-active {
-  background: var(--white);
-  color: var(--text);
-  box-shadow: 0 1px 4px var(--overlay-black-xs);
+  accent-color: var(--cta-green);
+  flex-shrink: 0;
 }
 .ck-recip-note {
   font-size: .76rem;
