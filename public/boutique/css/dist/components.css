@@ -2118,13 +2118,17 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-modal.is-scrolled .k-topbar-search-trigger { display: none; }
 .k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
 .k-modal.is-scrolled .k-modal-topbar-right   { display: flex; align-items: center; gap: 8px; }
-.k-topbar-thumb { width: 34px; height: 34px; border-radius: 10px; overflow: hidden; background: var(--sand); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+/* ── TOPBAR MODAL — source de vérité (fusionné depuis interactions.css, Lot 5) ── */
+.k-topbar-thumb { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--sand);
+  flex: 0 0 40px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px var(--overlay-black-sm); cursor: pointer; transition: transform .15s; }
+.k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
-.k-topbar-info { min-width: 0; display: flex; flex-direction: column; }
-.k-topbar-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; }
+.k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.k-topbar-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
 .k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 999px; padding: 2px 6px; }
+.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }
@@ -5746,8 +5750,8 @@ body.cart-open .k-wa-fab {
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, var(--ocean-dark, #4A9040), #2e6b28);
-  color: #fff;
+  background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-dark-deep));
+  color: var(--white);
   border-radius: 50px;
   box-shadow: 0 4px 18px rgba(42,122,62,.35), 0 1px 4px rgba(0,0,0,.15);
   font-family: inherit;
@@ -5775,8 +5779,8 @@ body.cart-open .k-wa-fab {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: #fff;
-  color: var(--ocean-dark, #4A9040);
+  background: var(--white);
+  color: var(--ocean-dark);
   border-radius: 50px;
   font-size: 11px;
   font-weight: 800;
@@ -5797,8 +5801,8 @@ body.cart-open .k-wa-fab {
   position: fixed;
   z-index: 1501;
   width: 270px;
-  background: var(--white, #fff);
-  border: 1px solid var(--border, #E3D9C9);
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: var(--radius, 12px);
   box-shadow: var(--shadow-lg, 0 8px 30px rgba(31,48,36,.12));
   overflow: hidden;
@@ -5818,8 +5822,8 @@ body.cart-open .k-wa-fab {
   align-items: center;
   justify-content: space-between;
   padding: 11px 14px 9px;
-  background: var(--ocean-dark, #4A9040);
-  color: #fff;
+  background: var(--ocean-dark);
+  color: var(--white);
 }
 .kpill-pop-title {
   font-size: 13px;
@@ -5837,7 +5841,7 @@ body.cart-open .k-wa-fab {
 .kpill-pop-close {
   background: rgba(255,255,255,.2);
   border: none;
-  color: #fff;
+  color: var(--white);
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -5863,7 +5867,7 @@ body.cart-open .k-wa-fab {
   padding: 7px 14px;
   transition: background .12s;
 }
-.kpill-pop-row:hover { background: #f7f4ee; }
+.kpill-pop-row:hover { background: var(--sand-hover); }
 
 .kpill-pop-img {
   width: 40px;
@@ -5871,14 +5875,14 @@ body.cart-open .k-wa-fab {
   object-fit: cover;
   border-radius: var(--radius-sm, 8px);
   flex-shrink: 0;
-  border: 1px solid var(--border, #E3D9C9);
+  border: 1px solid var(--border);
 }
 .kpill-pop-img--empty {
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  background: #f5f0e8;
+  background: var(--sand-warm);
 }
 
 .kpill-pop-info {
@@ -5890,14 +5894,14 @@ body.cart-open .k-wa-fab {
 .kpill-pop-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text, #1F3024);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .kpill-pop-meta {
   font-size: 11px;
-  color: var(--text-muted, #6B7B63);
+  color: var(--text-muted);
 }
 
 .kpill-pop-footer {
@@ -5905,18 +5909,18 @@ body.cart-open .k-wa-fab {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-top: 1px solid var(--border, #E3D9C9);
-  background: #faf6ed;
+  border-top: 1px solid var(--border);
+  background: var(--sand-footer);
 }
 .kpill-pop-label {
   font-size: 12px;
-  color: var(--text-muted, #6B7B63);
+  color: var(--text-muted);
   font-weight: 600;
 }
 .kpill-pop-total {
   font-size: 14px;
   font-weight: 800;
-  color: var(--ocean-dark, #4A9040);
+  color: var(--ocean-dark);
 }
 
 
@@ -6036,7 +6040,9 @@ body.cart-open .k-wa-fab {
   box-shadow: 0 1px 4px rgba(74,144,64,.3);
 }
 
-/* ── TOPBAR ENRICHIE (modal paiement) ───────────────────────── */
+/* ── TOPBAR ENRICHIE (modal paiement) — owner : cart.css
+   Aucun usage détecté dans JS/HTML au 3 juin 2026 — conservé en attente de confirmation.
+   Si ce sélecteur n'est plus utilisé, supprimer en Lot 6. ── */
 .k-topbar-cart-btn-back { display: flex; align-items: center; gap: 6px; background: none; border: none; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; padding: 6px 10px; border-radius: 50px; transition: opacity .15s; }
 .k-topbar-cart-btn-back:active { opacity: .7; }
 .k-topbar-cart-btn-back svg { width: 18px; height: 18px; }
@@ -6162,18 +6168,10 @@ body.modal-open .k-bnav { opacity: .7; }
    TOPBAR ENRICHIE — apparaît au scroll dans la modal
    ═══════════════════════════════════════════════════════════════ */
 
-/* ARCH-6 : .k-modal.is-scrolled migrés vers modal.css (owner principal .k-modal).
-   interactions.css ne doit pas être un owner secondaire de .k-modal. */
+/* ARCH-6 : .k-modal.is-scrolled + .k-topbar-* → migrés vers modal-shell.css (S4.5 / Lot 5).
+   Owner définitif = modal-shell.css. interactions.css ne doit pas être owner secondaire de .k-modal. */
 
-.k-topbar-thumb        { flex:0 0 40px; width:40px; height:40px; border-radius:8px; overflow:hidden; background:var(--sand); box-shadow:0 1px 3px var(--overlay-black-sm); cursor:pointer; transition:transform .15s; }
-.k-topbar-thumb:active { transform:scale(.92); }
-.k-topbar-thumb img    { width:100%; height:100%; object-fit:cover; display:block; }
-.k-topbar-info         { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
-.k-topbar-name         { font-size:13px; font-weight:600; line-height:1.2; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-topbar-price        { font-size:12px; font-weight:700; color:var(--coral); line-height:1.2; margin-top:2px; display:flex; align-items:center; gap:6px; }
-.k-topbar-price-promo  { font-size:10px; background:var(--coral); color:var(--white); padding:1px 5px; border-radius:8px; font-weight:700; }
-
-/* .k-modal-back-top → migré vers modal.css (Sprint 4 — S4.5) */
+/* .k-modal-back-top → migré vers modal-shell.css (Sprint 4 — S4.5) */
 
 /* ═══════════════════════════════════════════════════════════════
    FLAT SUBCAT PAGER (mode Temu — sous-cats en pages swipables)
@@ -6413,14 +6411,14 @@ body.cart-open  #k-section-index { display:none; }
   display: flex;
   align-items: center;
   gap: 7px;
-  background: var(--white, #fff);
+  background: var(--white);
   border: 1.5px solid rgba(31,122,84,.18);
   border-radius: 999px;
   padding: 6px 12px 6px 8px;
   box-shadow: 0 2px 12px rgba(0,0,0,.10);
   font-size: 13px;
   font-weight: 700;
-  color: var(--text, #1a1a1a);
+  color: var(--text);
   pointer-events: none;
   opacity: 0;
   transform: translateY(-6px);
@@ -8360,7 +8358,7 @@ body.cart-open  #k-section-index { display:none; }
   box-shadow: 0 8px 24px rgba(31,122,84,.12);
 }
 .k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot {
-  background: #1f7a54;
+  background: var(--green-text-sett);
   animation: kGBPulse 1.4s ease-in-out infinite;
 }
 .k-group-banner .k-gbanner-inner.is-urgent {
@@ -8368,7 +8366,7 @@ body.cart-open  #k-section-index { display:none; }
   border-color: rgba(245,158,11,.35);
 }
 .k-group-banner .k-gbanner-cta.is-funded {
-  background: #1f7a54;
+  background: var(--green-text-sett);
   color: white;
 }
 .k-group-banner.is-compact .k-gbanner-inner {

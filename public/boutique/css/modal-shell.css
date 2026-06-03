@@ -244,13 +244,17 @@
 .k-modal.is-scrolled .k-topbar-search-trigger { display: none; }
 .k-modal.is-scrolled .k-modal-topbar-product { display: flex; opacity: 1; transform: translateY(0); }
 .k-modal.is-scrolled .k-modal-topbar-right   { display: flex; align-items: center; gap: 8px; }
-.k-topbar-thumb { width: 34px; height: 34px; border-radius: 10px; overflow: hidden; background: var(--sand); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+/* ── TOPBAR MODAL — source de vérité (fusionné depuis interactions.css, Lot 5) ── */
+.k-topbar-thumb { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: var(--sand);
+  flex: 0 0 40px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 3px var(--overlay-black-sm); cursor: pointer; transition: transform .15s; }
+.k-topbar-thumb:active { transform: scale(.92); }
 .k-topbar-thumb-img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
-.k-topbar-info { min-width: 0; display: flex; flex-direction: column; }
-.k-topbar-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.k-topbar-price { display: flex; align-items: center; gap: 6px; }
+.k-topbar-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.k-topbar-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-topbar-price { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--coral); line-height: 1.2; margin-top: 2px; }
 .k-topbar-price-val { font-size: 12px; font-weight: 800; color: var(--coral); }
-.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 999px; padding: 2px 6px; }
+.k-topbar-price-promo { font-size: 10px; font-weight: 700; color: var(--white); background: var(--coral); border-radius: 8px; padding: 2px 6px; }
 .k-modal-back-top { position: fixed; right: 16px; bottom: calc(var(--bnav-h) + 18px + env(safe-area-inset-bottom, 0px)); width: 42px; height: 42px; border-radius: 50%; background: var(--white); color: var(--text); border: 1px solid var(--sand-dark); box-shadow: var(--elev-2); display: none; align-items: center; justify-content: center; z-index: 420; }
 .k-modal-back-top.visible { display: flex; }
 .k-modal-back-top svg { width: 20px; height: 20px; }

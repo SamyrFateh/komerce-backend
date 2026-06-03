@@ -18,12 +18,15 @@
   --violet-dark:  #4a2d9e;
   --violet-light: rgba(108,63,197,.08);
   --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
-  --ocean-dark:   #4A9040;
-  --cta-green:    #2a7a3e;
+  --ocean-dark:       #4A9040;
+  --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
+  --cta-green:        #2a7a3e;
 
   --sand:         #FDFAF5;
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
+  --sand-hover:   #f7f4ee;  /* hover row — kpill popover liste */
+  --sand-footer:  #faf6ed;  /* fond footer — kpill popover total */
   /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
   --sand-bright:  #FDFAF3;
 
@@ -1907,7 +1910,8 @@ body:has(#k-page-scroll.k-pager-active) {
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — hero (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2).
    Scopé html.k-mobile-premium-v1, dans @media max 899px (mobile). Owner du hero.
-   !important conservés (iso-comportemental) — retrait éventuel = Lot 4. ════════ */
+   !important retirés (Lot 5) — spécificité 0-2-0 bat la règle base 0-1-0 (.k-hero-overlay etc. { display:none }).
+   Aucune règle CSS ou JS ne remet ces éléments visible. ════════ */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-hero-fixed-wrap {
     background:
@@ -1963,7 +1967,7 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-mobile-premium-v1 .k-hero-bubble,
   html.k-mobile-premium-v1 .k-hero-sub,
   html.k-mobile-premium-v1 .k-hero-overlay {
-    display: none !important;
+    display: none;
   }
 
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }

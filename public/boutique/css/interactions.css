@@ -113,7 +113,9 @@
   box-shadow: 0 1px 4px rgba(74,144,64,.3);
 }
 
-/* ── TOPBAR ENRICHIE (modal paiement) ───────────────────────── */
+/* ── TOPBAR ENRICHIE (modal paiement) — owner : cart.css
+   Aucun usage détecté dans JS/HTML au 3 juin 2026 — conservé en attente de confirmation.
+   Si ce sélecteur n'est plus utilisé, supprimer en Lot 6. ── */
 .k-topbar-cart-btn-back { display: flex; align-items: center; gap: 6px; background: none; border: none; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; padding: 6px 10px; border-radius: 50px; transition: opacity .15s; }
 .k-topbar-cart-btn-back:active { opacity: .7; }
 .k-topbar-cart-btn-back svg { width: 18px; height: 18px; }
@@ -239,18 +241,10 @@ body.modal-open .k-bnav { opacity: .7; }
    TOPBAR ENRICHIE — apparaît au scroll dans la modal
    ═══════════════════════════════════════════════════════════════ */
 
-/* ARCH-6 : .k-modal.is-scrolled migrés vers modal.css (owner principal .k-modal).
-   interactions.css ne doit pas être un owner secondaire de .k-modal. */
+/* ARCH-6 : .k-modal.is-scrolled + .k-topbar-* → migrés vers modal-shell.css (S4.5 / Lot 5).
+   Owner définitif = modal-shell.css. interactions.css ne doit pas être owner secondaire de .k-modal. */
 
-.k-topbar-thumb        { flex:0 0 40px; width:40px; height:40px; border-radius:8px; overflow:hidden; background:var(--sand); box-shadow:0 1px 3px var(--overlay-black-sm); cursor:pointer; transition:transform .15s; }
-.k-topbar-thumb:active { transform:scale(.92); }
-.k-topbar-thumb img    { width:100%; height:100%; object-fit:cover; display:block; }
-.k-topbar-info         { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
-.k-topbar-name         { font-size:13px; font-weight:600; line-height:1.2; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.k-topbar-price        { font-size:12px; font-weight:700; color:var(--coral); line-height:1.2; margin-top:2px; display:flex; align-items:center; gap:6px; }
-.k-topbar-price-promo  { font-size:10px; background:var(--coral); color:var(--white); padding:1px 5px; border-radius:8px; font-weight:700; }
-
-/* .k-modal-back-top → migré vers modal.css (Sprint 4 — S4.5) */
+/* .k-modal-back-top → migré vers modal-shell.css (Sprint 4 — S4.5) */
 
 /* ═══════════════════════════════════════════════════════════════
    FLAT SUBCAT PAGER (mode Temu — sous-cats en pages swipables)
