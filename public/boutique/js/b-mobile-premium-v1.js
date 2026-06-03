@@ -32,65 +32,10 @@ function injectStyles() {
   /* Hero premium mobile (#k-hero-fixed-wrap, .k-hero-*, .k-hero-cats-sticky)
      → DÉPLACÉ vers hero.css (owner). Lot 2 / L2-S2. */
 
-  html.k-mobile-premium-v1 .k-header-inner {
-    gap: 8px;
-    padding-inline: 10px;
-  }
-
-  html.k-mobile-premium-v1 .k-search {
-    min-height: 42px;
-    border-radius: 999px;
-    box-shadow: 0 10px 22px var(--border-text-06);
-  }
-
-  html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
-
-  /* Catégories premium mobile (.k-cats-shell/.k-cats/.k-chip/.k-chip-photo/
-     .k-chip-label + responsive 360px) → DÉPLACÉ vers categories.css (owner).
-     Lot 2 / L2-S2. Le JS ne pose plus que la classe d'état html.k-mobile-premium-v1. */
-
-  html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
-  html.k-mobile-premium-v1 .k-proverb-sep { display: none; }
-  html.k-mobile-premium-v1 #k-catalog-section { padding-top: 6px; }
-
-  html.k-mobile-premium-v1 .k-section-title,
-  html.k-mobile-premium-v1 .k-cat-title { margin-top: 8px; }
-
-  html.k-mobile-premium-v1 .k-grid {
-    gap: 14px;
-    padding-inline: 12px;
-  }
-
-  html.k-mobile-premium-v1 .k-card {
-    border-radius: 22px;
-    overflow: hidden;
-    box-shadow: 0 12px 30px var(--border-text-06);
-  }
-
-  html.k-mobile-premium-v1 .k-card-title {
-    font-size: 16px;
-    line-height: 1.15;
-  }
-
-  html.k-mobile-premium-v1 .k-card-desc {
-    font-size: 12px;
-    line-height: 1.25;
-    max-height: 2.5em;
-    overflow: hidden;
-  }
-
-  html.k-mobile-premium-v1 .k-card-price {
-    font-size: 22px;
-    letter-spacing: -.035em;
-  }
-
-  html.k-mobile-premium-v1 .k-wa-fab {
-    width: 50px;
-    height: 50px;
-    right: 16px;
-    bottom: 98px;
-    box-shadow: 0 12px 30px color-mix(in srgb, #25D366 28%, transparent);
-  }
+  /* Header/recherche premium mobile → DÉPLACÉ vers layout.css (owner). Lot 2/L2-S2.
+     Catégories premium mobile → DÉPLACÉ vers categories.css. Lot 2/L2-S2.
+     Catalogue/grille/cartes/fab premium mobile → DÉPLACÉ vers products.css. Lot 2/L2-S2.
+     Le JS ne pose plus que la classe d'état html.k-mobile-premium-v1. */
 
   /* PDP mobile : assumer une vraie sheet tactile. */
   html.k-mobile-premium-v1 #k-modal .k-modal-scroll {

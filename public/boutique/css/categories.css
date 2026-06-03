@@ -899,3 +899,8 @@ html.k-mobile-premium-v1 .k-chip-label {
     max-width: 60px !important;
   }
 }
+
+/* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
+@media (max-width: 899px) {
+  html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
+}

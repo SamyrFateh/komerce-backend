@@ -992,3 +992,18 @@ body:has(#k-page-scroll.k-pager-active) {
     gap: 18px;
   }
 }
+
+/* ═══ PREMIUM MOBILE V1 — header/recherche (rapatrié de b-mobile-premium-v1.js,
+   Lot 2/L2-S2). Scopé html.k-mobile-premium-v1, @media max 899px. ═══ */
+@media (max-width: 899px) {
+  html.k-mobile-premium-v1 .k-header-inner {
+    gap: 8px;
+    padding-inline: 10px;
+  }
+  html.k-mobile-premium-v1 .k-search {
+    min-height: 42px;
+    border-radius: 999px;
+    box-shadow: 0 10px 22px var(--border-text-06);
+  }
+  html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
+}
