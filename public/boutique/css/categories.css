@@ -957,6 +957,52 @@ html.k-mobile-premium-v1 .k-chip-label {
 /* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
+
+  /* ── Polish léger catégories mobile (hauteur du rail INCHANGÉE → pager safe) ──
+     On ne touche ni min-height, ni padding, ni la grille, ni la taille 26×26 de
+     la vignette. Uniquement : opacité/bord, netteté image, et état actif coral. */
+
+  /* Pill : fond plus opaque + bord un peu plus présent → meilleur contraste */
+  .k-chip {
+    background: rgba(255, 255, 255, .92);
+    border-color: rgba(198, 168, 93, .22);
+    box-shadow: 0 1px 5px rgba(28, 26, 23, .06);
+  }
+
+  /* Vignette plus nette (dimensions inchangées) */
+  .k-chip-photo {
+    border-color: rgba(28, 26, 23, .10);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, .70),
+      0 1px 3px rgba(28, 26, 23, .12);
+  }
+  .k-chip-photo img {
+    filter: saturate(1.3) contrast(1.08) brightness(1.02);
+  }
+
+  /* Label : contraste renforcé, taille/poids inchangés (pas de poussée) */
+  .k-chip-label {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  /* État actif coral affirmé — SANS scale ni changement de hauteur */
+  .k-chip.active {
+    background: color-mix(in srgb, var(--coral) 9%, var(--white));
+    border-color: color-mix(in srgb, var(--coral) 45%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--coral) 18%, transparent);
+  }
+  .k-chip.active .k-chip-photo {
+    border-color: var(--coral);
+    box-shadow:
+      0 0 0 1.5px var(--coral),
+      inset 0 0 0 1px rgba(255, 255, 255, .60);
+    transform: none;
+  }
+  .k-chip.active .k-chip-label {
+    color: var(--coral-dark);
+    font-weight: 800;
+  }
 }
 
 /* ── Premium desktop home — catégories (rapatrié de b-home-premium-v1.js, Lot 3) ── */
