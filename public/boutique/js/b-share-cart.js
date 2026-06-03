@@ -392,7 +392,7 @@ function promptInit(needsAuth) {
     }
 
     // ── Soumission ─────────────────────────────────────────────────
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (btn.disabled) return;
       const title = titleData.title.trim();
       const name  = nameData.name.trim();
@@ -411,9 +411,31 @@ function promptInit(needsAuth) {
         }
       }
 
+      // Cohérence avec le flow participant : requireIdentity au moment du Confirmer,
+      // pas à l ouverture du formulaire.
+      btn.disabled = true;
+      btn.textContent = '🔐 Vérification…';
       errEl.textContent = '';
-      closeModal(ov);
-      resolve({ title, name, phone: phone || null });
+
+      try {
+        const identity = await requireIdentity({
+          reason: 'créer un panier groupe',
+          title: 'Sécuriser votre panier groupe',
+        });
+
+        if (!identity) {
+          btn.disabled = false;
+          btn.textContent = 'Créer le panier →';
+          return;
+        }
+
+        closeModal(ov);
+        resolve({ title, name, phone: phone || null });
+      } catch (err) {
+        errEl.textContent = err?.message || 'Erreur de vérification.';
+        btn.disabled = false;
+        btn.textContent = 'Créer le panier →';
+      }
     });
 
     head.querySelector('.k-sm-close').addEventListener('click', () => { closeModal(ov); resolve(null); });
@@ -536,16 +558,9 @@ export async function startShareFlow(opts = {}) {
     // choice === 'new' → on continue vers promptInit
   }
 
-  // Doctrine identité légère Komerce :
-  // on ne demande pas nom/téléphone ici.
-  // Si l'utilisateur n'est pas encore reconnu, OTP WhatsApp puis JWT httpOnly.
-  const identity = await requireIdentity({
-    reason: 'créer un panier groupe',
-    title: 'Sécuriser votre panier groupe',
-  });
-  if (!identity) return;
-
-  // Après identité validée, il ne reste qu'un champ métier léger : le nom du panier.
+  // Doctrine identité Komerce — cohérence avec le flow participant :
+  // requireIdentity() se déclenche au clic "Confirmer" dans promptInit,
+  // pas à l'ouverture du formulaire.
   const formData = await promptInit(false);
   if (!formData) return;
 
