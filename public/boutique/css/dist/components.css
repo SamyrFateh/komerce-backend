@@ -833,12 +833,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — catégories (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2)
    Scopé à l'état html.k-mobile-premium-v1 posé par le JS. Owner officiel des chips.
-   !important CONSERVÉS pour l'instant (rapatriement iso-comportemental) — leur
-   retrait éventuel = Lot 4 après test. ═══════════════════════════════════════ */
+   !important retirés (L4-S11) — spécificité 0-2-0 suffit à battre les règles base. ═══ */
 html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
 html.k-mobile-premium-v1 .k-cats {
-  display: flex !important;
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -854,15 +853,15 @@ html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
 html.k-mobile-premium-v1 .k-chip,
 html.k-mobile-premium-v1 .k-chip.is-active,
 html.k-mobile-premium-v1 .k-chip.active {
-  flex: 0 0 auto !important;
-  width: 64px !important;
-  min-width: 64px !important;
-  max-width: 64px !important;
-  height: 84px !important;
-  min-height: 84px !important;
-  padding: 6px 4px 6px !important;
-  border-radius: 16px !important;
-  display: flex !important;
+  flex: 0 0 auto;
+  width: 64px;
+  min-width: 64px;
+  max-width: 64px;
+  height: 84px;
+  min-height: 84px;
+  padding: 6px 4px 6px;
+  border-radius: 16px;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
@@ -873,8 +872,8 @@ html.k-mobile-premium-v1 .k-chip.active {
 }
 
 html.k-mobile-premium-v1 .k-chip-photo {
-  width: 44px !important;
-  height: 44px !important;
+  width: 44px;
+  height: 44px;
   flex: 0 0 44px;
   border-radius: 12px;
   object-fit: cover;
@@ -899,15 +898,52 @@ html.k-mobile-premium-v1 .k-chip-label {
 @media (max-width: 360px) {
   html.k-mobile-premium-v1 .k-chip,
   html.k-mobile-premium-v1 .k-chip.active {
-    width: 60px !important;
-    min-width: 60px !important;
-    max-width: 60px !important;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
   }
 }
 
 /* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
+}
+
+/* ── Premium desktop home — catégories (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-cats-shell { padding-top: 18px; }
+
+  html.k-home-premium-v1 .k-cats::before {
+    content: 'Explorer par univers';
+    position: absolute;
+    left: clamp(24px, 3vw, 46px);
+    top: -34px;
+    font-family: var(--font-display, var(--font));
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -.025em;
+    color: var(--text);
+  }
+
+  html.k-home-premium-v1 .k-cats {
+    position: relative;
+    gap: 14px;
+  }
+
+  html.k-home-premium-v1 .k-chip {
+    border-radius: 24px;
+    min-width: 164px;
+    background: color-mix(in srgb, var(--white) 78%, transparent);
+    box-shadow: 0 14px 34px var(--border-text-06);
+    transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
+  }
+
+  html.k-home-premium-v1 .k-chip:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 44px var(--border-text-08);
+  }
+
+  html.k-home-premium-v1 .k-chip-label { font-weight: 850; }
 }
 
 
@@ -4025,6 +4061,470 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
   }
 }
 
+/* ---------------------------------------------------------------
+   PDP CURATION SUGGESTIONS — layout desktop (≥900px)
+   Rapatrié depuis b-pdp-curation-suggestions.js (L3-S9)
+   Owner : modal-product.css
+   --------------------------------------------------------------- */
+
+@media (min-width: 900px) {
+  #k-modal-suggestions.k-pdp-curation {
+    background:
+      radial-gradient(circle at 14% 0%, color-mix(in srgb, var(--ocean-bg-08) 60%, transparent), transparent 26%),
+      linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    border-top: 1px solid var(--border-text-06);
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-section {
+    max-width: 1480px;
+    margin-inline: auto;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-section + .k-sug-section {
+    margin-top: 34px;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-title {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-title-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--white);
+    box-shadow: 0 10px 24px var(--border-text-06);
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-title-text {
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(24px, 2.2vw, 34px);
+    letter-spacing: -.03em;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-subtitle {
+    grid-column: 2;
+    margin-top: -7px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--complements {
+    padding: 22px;
+    border-radius: 26px;
+    background: color-mix(in srgb, var(--white) 72%, transparent);
+    border: 1px solid var(--border-text-06);
+    box-shadow: 0 18px 46px var(--border-text-06);
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--complements .k-sug-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
+    gap: 14px;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--same .k-sug-grid,
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-section--editorial .k-sug-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-pdp-curation-badge {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 2;
+    height: 24px;
+    padding: 0 9px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ocean) 92%, var(--text));
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 850;
+    box-shadow: 0 8px 18px var(--border-text-12);
+  }
+
+  /* Si la carte porte déjà un badge promo, masquer le badge curation —
+     la promo a priorité commerciale sur le même coin haut-gauche. */
+  #k-modal-suggestions.k-pdp-curation .k-sug-card-img:has(.k-sug-promo-badge) .k-pdp-curation-badge {
+    display: none;
+  }
+
+  #k-modal-suggestions.k-pdp-curation .k-sug-card-img { position: relative; }
+}
+
+
+/* ── modal-product-lot4-hybrid.css ───────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   Approche C hybride desktop — PDP Komerce
+   Rapatrié de b-modal-approche-c-hybrid.js (Lot 4)
+   Owner : modal-product.css
+   Scope : @media (min-width: 900px) uniquement
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* ── Zone produit : layout grille hybride ── */
+  #k-modal .k-modal-product-zone {
+    grid-template-columns: minmax(0, 48%) minmax(0, 52%);
+    background:
+      radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--sand-warm) 60%, transparent), transparent 28%),
+      var(--white);
+  }
+
+  #k-modal .k-modal-product-zone .k-modal-img-wrap {
+    background:
+      radial-gradient(circle at 62% 20%, color-mix(in srgb, var(--ocean) 10%, transparent), transparent 30%),
+      linear-gradient(135deg, var(--sand) 0%, var(--sand-warm) 100%);
+  }
+
+  #k-modal .k-modal-slide { padding: 22px 30px 22px 92px; }
+
+  #k-modal .k-modal-product-zone .k-modal-details {
+    background: linear-gradient(180deg, var(--white) 0%, color-mix(in srgb, var(--sand) 48%, var(--white)) 100%);
+    padding: 0 clamp(28px, 4.4vw, 72px);
+  }
+
+  #k-modal .k-modal-product-zone .k-modal-info {
+    max-width: 760px;
+    padding-top: clamp(22px, 3vh, 42px);
+    padding-bottom: 14px;
+  }
+
+  /* ── Typographie titre + prix ── */
+  #k-modal .k-modal-info h2 {
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(30px, 3vw, 46px);
+    line-height: .98;
+    font-weight: 700;
+    letter-spacing: -.035em;
+    color: var(--text);
+    max-width: 760px;
+  }
+
+  #k-modal .k-modal-name-row { margin-top: 10px; align-items: flex-start; }
+  #k-modal .k-modal-fav-btn  { margin-top: 2px; }
+
+  #k-modal .k-modal-price-row  { margin-top: 18px; gap: 12px; }
+  #k-modal .k-modal-price      { font-size: clamp(34px, 4vw, 56px); letter-spacing: -.04em; color: var(--coral); }
+  #k-modal .k-modal-price-unit { font-size: .34em; letter-spacing: .06em; }
+  #k-modal .k-modal-old-price  { font-size: 16px; opacity: .72; }
+  #k-modal .k-modal-aed-price  { margin-top: 8px; margin-bottom: 10px; }
+
+  #k-modal .k-modal-eur-ref,
+  #k-modal .k-modal-price-saving { font-size: 13px; }
+
+  #k-modal .k-modal-flash-bar { display: none; }
+
+  #k-modal .k-modal-desc {
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin-top: 8px;
+    max-width: 680px;
+  }
+
+  /* ── Livraison + paiement ── */
+  #k-modal .k-modal-delivery,
+  #k-modal .k-modal-payment {
+    display: block;
+    border-top: 0;
+    margin-top: 18px;
+    padding-top: 0;
+  }
+
+  /* ── Retrait relais card ── */
+  #k-modal .k-buybox-relay-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 15px 16px;
+    border-radius: 18px;
+    border: 1px solid var(--border-ocean-14);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ocean-bg-08) 78%, var(--white)) 0%, var(--white) 100%);
+    box-shadow: 0 12px 28px var(--border-text-06);
+  }
+
+  #k-modal .k-buybox-relay-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--ocean-bg-08);
+    border: 1px solid var(--border-ocean-14);
+    font-size: 22px;
+  }
+
+  #k-modal .k-buybox-relay-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  #k-modal .k-buybox-relay-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  #k-modal .k-buybox-relay-free {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ocean-dark);
+    background: var(--ocean-bg-08);
+    border: 1px solid var(--border-ocean-14);
+    border-radius: 999px;
+    padding: 5px 10px;
+    white-space: nowrap;
+  }
+
+  /* ── Actions inline (stepper + CTA) ── */
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) minmax(210px, 1.15fr);
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 0 4px;
+    background: transparent;
+    border-top: 0;
+    box-shadow: none;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty,
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn,
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
+    min-height: 50px;
+    border-radius: 999px;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-qty {
+    background: var(--sand);
+    box-shadow: inset 0 0 0 1px var(--border-text-06);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-add-cart-btn {
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-buy-now-btn {
+    font-size: 15px;
+    font-weight: 900;
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--ocean) 24%, transparent);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal {
+    grid-column: 3;
+    justify-self: center;
+    margin-top: -2px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  #k-modal .k-modal-info > .k-modal-actions.k-buybox-actions-inline .k-modal-subtotal strong {
+    color: var(--coral);
+    font-size: 15px;
+  }
+
+  /* ── Onglets paiement ── */
+  #k-modal .k-modal-payment .k-modal-section-title { margin-bottom: 9px; }
+
+  #k-modal .k-buybox-payment-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #k-modal .k-buybox-payment-tab {
+    height: 42px;
+    border-radius: 13px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      border-color .16s var(--ease),
+      background .16s var(--ease),
+      color .16s var(--ease),
+      box-shadow .16s var(--ease),
+      transform .16s var(--ease);
+  }
+
+  #k-modal .k-buybox-payment-tab:hover {
+    transform: translateY(-1px);
+    border-color: var(--ocean-light);
+    box-shadow: 0 8px 18px var(--border-text-06);
+  }
+
+  #k-modal .k-buybox-payment-tab.is-active {
+    border-color: var(--ocean);
+    background: var(--ocean-bg-08);
+    color: var(--ocean-dark);
+    box-shadow: inset 0 0 0 1px var(--border-ocean-14);
+  }
+
+  #k-modal .k-buybox-payment-detail {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 22px var(--border-text-06);
+  }
+
+  #k-modal .k-buybox-payment-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 2px solid var(--ocean);
+    position: relative;
+  }
+
+  #k-modal .k-buybox-payment-check::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: inherit;
+    background: var(--ocean);
+  }
+
+  #k-modal .k-buybox-payment-icon { font-size: 18px; line-height: 1; }
+  #k-modal .k-buybox-payment-copy { min-width: 0; }
+
+  #k-modal .k-buybox-payment-copy strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.15;
+  }
+
+  #k-modal .k-buybox-payment-copy small {
+    display: block;
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #k-modal .k-buybox-payment-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 9px;
+    border-radius: 8px;
+    color: var(--violet-dark);
+    background: var(--violet-light);
+    border: 1px solid var(--violet-mid);
+  }
+
+  /* ── Trust + partage ── */
+  #k-modal .k-modal-trust {
+    border-top: 0;
+    margin-top: 12px;
+    padding: 0;
+    gap: 8px;
+  }
+
+  #k-modal .k-modal-trust-item {
+    background: color-mix(in srgb, var(--sand) 76%, var(--white));
+    border: 1px solid var(--border-text-06);
+    min-height: 30px;
+  }
+
+  #k-modal .k-modal-share-row {
+    border-top: 0;
+    margin-top: 10px;
+    padding-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  #k-modal .k-modal-share-row::before {
+    content: 'Partager ce produit :';
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  #k-modal .k-modal-share-btn,
+  #k-modal .k-modal-share-btn.k-modal-share-btn--wa {
+    width: auto;
+    min-height: 0;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--sand) 78%, var(--white));
+    color: var(--text-muted);
+    border: 1px solid var(--border-text-06);
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  #k-modal .k-modal-share-btn svg { width: 13px; height: 13px; }
+  #k-modal .k-modal-share-btn.k-modal-share-btn--wa svg { fill: currentColor; }
+
+  /* Masquer la recherche interne en bas du panneau desktop.
+     Spécificité : 1-2-0 → bat le base .k-modal-inner-search (0-1-0). Sans !important. */
+  #k-modal .k-modal-details > .k-modal-inner-search { display: none; }
+
+  /* ── Suggestions desktop list ── */
+  #k-modal-suggestions.k-modal-suggestions--desktop-list {
+    background: linear-gradient(180deg, var(--sand) 0%, var(--sand-warm) 100%);
+    padding: 34px clamp(32px, 5vw, 72px) 56px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title {
+    border-bottom: 0;
+    margin-bottom: 18px;
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-title-text {
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(22px, 2vw, 30px);
+    line-height: 1;
+    letter-spacing: -.025em;
+    color: var(--text);
+  }
+
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--same,
+  #k-modal-suggestions.k-modal-suggestions--desktop-list .k-sug-grid--other {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+  }
+}
+
 
 /* ── cart.css ────────────────────────────────────────────── */
 /* ---------------------------------------------------------------
@@ -5231,6 +5731,193 @@ body.cart-open .k-wa-fab {
   color: var(--text);
 }
 .k-ck-guest-ic { font-size: 1.1rem; flex: 0 0 auto; }
+
+/* ---------------------------------------------------------------
+   CART PILL — pastille panier flottante + popover (mobile uniquement)
+   Rapatrié depuis b-cart-pill.js (L3-S6)
+   Owner : cart.css
+   --------------------------------------------------------------- */
+
+/* ── Cart Pill ─────────────────────────────── */
+.kpill {
+  position: fixed;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--ocean-dark, #4A9040), #2e6b28);
+  color: #fff;
+  border-radius: 50px;
+  box-shadow: 0 4px 18px rgba(42,122,62,.35), 0 1px 4px rgba(0,0,0,.15);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.75);
+  transition: opacity .2s ease, transform .25s var(--ease, ease);
+  will-change: transform;
+}
+.kpill--visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+.kpill:active { cursor: grabbing; }
+
+.kpill-icon { font-size: 16px; line-height: 1; }
+
+.kpill-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #fff;
+  color: var(--ocean-dark, #4A9040);
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpill-total {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: .95;
+  white-space: nowrap;
+}
+
+/* ── Popover ───────────────────────────────── */
+.kpill-pop {
+  position: fixed;
+  z-index: 1501;
+  width: 270px;
+  background: var(--white, #fff);
+  border: 1px solid var(--border, #E3D9C9);
+  border-radius: var(--radius, 12px);
+  box-shadow: var(--shadow-lg, 0 8px 30px rgba(31,48,36,.12));
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.94) translateY(6px);
+  transition: opacity .18s ease, transform .18s var(--ease, ease);
+}
+.kpill-pop--open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1) translateY(0);
+}
+
+.kpill-pop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px 9px;
+  background: var(--ocean-dark, #4A9040);
+  color: #fff;
+}
+.kpill-pop-title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kpill-pop-qty {
+  background: rgba(255,255,255,.25);
+  border-radius: 50px;
+  padding: 1px 7px;
+  font-size: 11px;
+}
+.kpill-pop-close {
+  background: rgba(255,255,255,.2);
+  border: none;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.kpill-pop-close:hover { background: rgba(255,255,255,.35); }
+
+.kpill-pop-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.kpill-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  transition: background .12s;
+}
+.kpill-pop-row:hover { background: #f7f4ee; }
+
+.kpill-pop-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm, 8px);
+  flex-shrink: 0;
+  border: 1px solid var(--border, #E3D9C9);
+}
+.kpill-pop-img--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: #f5f0e8;
+}
+
+.kpill-pop-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.kpill-pop-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text, #1F3024);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpill-pop-meta {
+  font-size: 11px;
+  color: var(--text-muted, #6B7B63);
+}
+
+.kpill-pop-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border, #E3D9C9);
+  background: #faf6ed;
+}
+.kpill-pop-label {
+  font-size: 12px;
+  color: var(--text-muted, #6B7B63);
+  font-weight: 600;
+}
+.kpill-pop-total {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ocean-dark, #4A9040);
+}
 
 
 /* ── interactions.css ────────────────────────────────────── */
@@ -7657,6 +8344,58 @@ body.cart-open  #k-section-index { display:none; }
   transition: background .12s;
 }
 .k-gbanner-close:hover { background: rgba(0,0,0,.08); }
+
+/* ---------------------------------------------------------------
+   GROUP BANNER — états dynamiques (.is-funded, .is-urgent, .is-compact)
+   Rapatrié depuis b-group-banner.js (L3-S8)
+   Owner : group-cart-flow.css
+   --------------------------------------------------------------- */
+
+.k-group-banner .k-gbanner-inner {
+  transition: transform .22s ease, opacity .22s ease, max-height .22s ease, padding .22s ease;
+}
+.k-group-banner .k-gbanner-inner.is-funded {
+  background: rgba(31,122,84,.14);
+  border-color: rgba(31,122,84,.35);
+  box-shadow: 0 8px 24px rgba(31,122,84,.12);
+}
+.k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot {
+  background: #1f7a54;
+  animation: kGBPulse 1.4s ease-in-out infinite;
+}
+.k-group-banner .k-gbanner-inner.is-urgent {
+  background: rgba(245,158,11,.13);
+  border-color: rgba(245,158,11,.35);
+}
+.k-group-banner .k-gbanner-cta.is-funded {
+  background: #1f7a54;
+  color: white;
+}
+.k-group-banner.is-compact .k-gbanner-inner {
+  max-height: 42px;
+  overflow: hidden;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  opacity: .92;
+}
+.k-group-banner.is-compact .k-gbanner-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-group-banner.is-compact .k-gbanner-timer { display: none; }
+.k-group-banner.is-compact .k-gbanner-close { display: none; }
+.k-group-banner.is-compact .k-gbanner-cta {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.k-group-banner:hover .k-gbanner-inner,
+.k-group-banner:focus-within .k-gbanner-inner { opacity: 1; }
+
+@keyframes kGBPulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 3px rgba(31,122,84,.12); }
+  50%       { transform: scale(1.18); box-shadow: 0 0 0 7px rgba(31,122,84,.08); }
+}
 
 
 /* ── shared-followup.css ─────────────────────────────────── */
