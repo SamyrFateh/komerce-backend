@@ -1526,6 +1526,61 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
 }
 
+/* ── Premium desktop home — header / search / catalog (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-header {
+    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--sand) 82%, var(--white));
+    border-bottom: 1px solid var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-logo-text {
+    font-weight: 900;
+    letter-spacing: -.025em;
+  }
+
+  html.k-home-premium-v1 .k-search {
+    min-height: 54px;
+    border-radius: 999px;
+    box-shadow: 0 14px 36px var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-search input::placeholder {
+    color: color-mix(in srgb, var(--text-muted) 78%, transparent);
+  }
+
+  html.k-home-premium-v1 #k-catalog-section { padding-top: 22px; }
+
+  html.k-home-premium-v1 #k-catalog-section::before {
+    content: 'Bons plans du moment';
+    display: block;
+    max-width: 1500px;
+    margin: 0 auto 6px;
+    font-family: var(--font-display, var(--font));
+    font-size: clamp(26px, 2.2vw, 36px);
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--text);
+  }
+
+  html.k-home-premium-v1 #k-catalog-section::after {
+    content: 'Des produits utiles, bien placés, faciles à commander et à retirer en relais.';
+    display: block;
+    max-width: 1500px;
+    margin: -2px auto 18px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* Masquer les pseudo-éléments éditoriaux hors vue boutique.
+     Même spécificité que les règles ci-dessus, placé après : cascade naturelle, sans !important. */
+  body:not(.k-view-shop) #k-catalog-section::before,
+  body:not(.k-view-shop) #k-catalog-section::after {
+    content: none;
+    display: none;
+  }
+}
+
 
 /* ── hero.css ────────────────────────────────────────────── */
 ﻿/* ═══════════════════════════════════════════════════════════════
@@ -1912,4 +1967,56 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
+}
+
+/* ── Premium desktop home — hero (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 #k-hero-fixed-wrap {
+    background:
+      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
+      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+  }
+
+  html.k-home-premium-v1 .k-hero-inner {
+    max-width: none;
+    padding-inline: clamp(26px, 3.6vw, 60px);
+  }
+
+  html.k-home-premium-v1 .k-hero-media {
+    border-radius: 0 0 28px 28px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px var(--border-text-06);
+  }
+
+  html.k-home-premium-v1 .k-hero-mini-slogan--premium { max-width: 510px; }
+
+  html.k-home-premium-v1 .k-hero-badge { letter-spacing: .06em; }
+
+  html.k-home-premium-v1 .k-hero-sub {
+    margin-top: 14px;
+    max-width: 470px;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  html.k-home-premium-v1 .k-hero-cta-primary {
+    min-height: 44px;
+    border-radius: 14px;
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--coral) 22%, transparent);
+  }
+
+  html.k-home-premium-v1 .k-hero-cta-ghost {
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--white) 78%, transparent);
+  }
+
+  html.k-home-premium-v1 .k-hero-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--white) 78%, transparent);
+    border: 1px solid var(--border-text-06);
+  }
 }
