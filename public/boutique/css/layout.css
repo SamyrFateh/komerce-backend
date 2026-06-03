@@ -1033,7 +1033,12 @@ body:has(#k-page-scroll.k-pager-active) {
 
   html.k-home-premium-v1 #k-catalog-section { padding-top: 22px; }
 
-  html.k-home-premium-v1 #k-catalog-section::before {
+  /* Titre éditorial « Bons plans du moment » : ACCUEIL uniquement.
+     #k-grid porte .k-grid-has-sections en mode accueil (univers « Tout ») et
+     la perd en grille plate d'univers. On scope donc le titre à ce seul état
+     → dès qu'un univers est actif, le titre d'accueil disparaît (le titre de
+     l'univers vit dans la barre contextuelle). CSS pur, aucun JS, aucune classe body. */
+  html.k-home-premium-v1 #k-catalog-section:has(#k-grid.k-grid-has-sections)::before {
     content: 'Bons plans du moment';
     display: block;
     max-width: 1500px;
@@ -1045,7 +1050,7 @@ body:has(#k-page-scroll.k-pager-active) {
     color: var(--text);
   }
 
-  html.k-home-premium-v1 #k-catalog-section::after {
+  html.k-home-premium-v1 #k-catalog-section:has(#k-grid.k-grid-has-sections)::after {
     content: 'Des produits utiles, bien placés, faciles à commander et à retirer en relais.';
     display: block;
     max-width: 1500px;

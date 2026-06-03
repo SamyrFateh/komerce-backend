@@ -37,10 +37,18 @@ function makeEl(tag, className, text) {
   return el;
 }
 
-function syncHomeScope(tab) {
+// Visibilité contextuelle de la bande promesse :
+// elle n'a de sens que sur l'ACCUEIL (univers « Tout ») et la vue shop.
+// Dès qu'un univers/filtre est actif, elle parasite la navigation produit → masquée.
+let _currentTab = 'shop';
+let _currentCat = 'all';
+
+function applyHomeCurationVisibility() {
   const section = document.querySelector('.k-home-curation');
   if (!section) return;
-  section.classList.toggle('u-hidden', tab !== 'shop');
+  const onHome = !_currentCat || _currentCat === 'all';
+  const visible = _currentTab === 'shop' && onHome;
+  section.classList.toggle('u-hidden', !visible);
 }
 
 function injectHomeBlocks() {
@@ -80,7 +88,8 @@ function injectHomeBlocks() {
   section.appendChild(inner);
 
   pageScroll.insertBefore(section, catalogWrap);
-  syncHomeScope(document.body.classList.contains('k-view-shop') ? 'shop' : 'other');
+  _currentTab = document.body.classList.contains('k-view-shop') ? 'shop' : 'other';
+  applyHomeCurationVisibility();
 }
 
 export function setupHomePremiumV1() {
@@ -94,5 +103,6 @@ export function setupHomePremiumV1() {
     injectHomeBlocks();
   }
 
-  bus.on('view:changed', syncHomeScope);
+  bus.on('view:changed', function(tab) { _currentTab = tab; applyHomeCurationVisibility(); });
+  bus.on('catalog:cat-changed', function(cat) { _currentCat = cat; applyHomeCurationVisibility(); });
 }
