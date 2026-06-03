@@ -492,6 +492,20 @@ export function renderCheckout() {
         _benfTitle.textContent = "Quelqu'un d'autre récupère";
         _benfSub.textContent = 'Le suivi WhatsApp sera envoyé à vous deux';
         benfFields.hidden = false;
+        // SÉCURITÉ : vider systématiquement les champs bénéficiaire quand
+        // on bascule sur "quelqu'un d'autre". Sans ça, les champs restent
+        // pré-remplis avec les propres infos du payeur → il pourrait valider
+        // sans les modifier, et l'OTP serait envoyé à son propre numéro au
+        // lieu de celui du vrai destinataire.
+        const nameInput    = document.getElementById('of-beneficiary-name');
+        const phoneInput   = document.getElementById('of-beneficiary-phone');
+        const phoneCountry = document.getElementById('of-beneficiary-phone-country');
+        if (nameInput)    { nameInput.value = ''; od.beneficiary_name = ''; }
+        if (phoneInput)   { phoneInput.value = ''; }
+        if (phoneCountry) { phoneCountry.value = getDefaultPhoneCodeForZone(od.fulfillment_zone || 'comoros'); }
+        od.beneficiary_phone = '';
+        // Focus sur le premier champ pour guider l'user
+        setTimeout(() => nameInput?.focus(), 50);
       }
     };
     _benfCb.addEventListener('change', _syncRecipFields);
@@ -896,6 +910,19 @@ export async function submitOrder(btn) {
   const recipPhone = benfIsMe
     ? identity.phone || ''
     : readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
+
+  // SÉCURITÉ : quand "quelqu'un d'autre récupère", interdire que le bénéficiaire
+  // ait le même numéro que le payeur OTP. Ce cas survient si l'user a mis
+  // son propre numéro dans le champ bénéficiaire (contournement du suivi double).
+  // On bloque et on demande à corriger le champ — sans annuler la commande entière.
+  if (!benfIsMe && recipPhone && trackingPhone && recipPhone === trackingPhone) {
+    showToast('Le numéro de la personne qui récupère doit être différent du vôtre.', 'error');
+    document.getElementById('of-beneficiary-phone')?.focus();
+    btn.disabled = false;
+    btn.dataset.busy = '0';
+    refreshCheckoutComputedUI();
+    return;
+  }
 
   const clientEmail = undefined;
   const isStripe = od.payment_mode === 'stripe_eur';
