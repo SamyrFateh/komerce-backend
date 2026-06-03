@@ -859,23 +859,10 @@ export function updateWalletDisplay() {
   }
 
 export async function submitOrder(btn) {
-  // ── VALIDATION D'ABORD, OTP ENSUITE ───────────────────────────────────────
-  // Fix : ne jamais déclencher l'OTP (modale WhatsApp) tant que les données ne
-  // sont pas valides. On vérifie nom + téléphone + relais ; SEULEMENT si tout
-  // est bon, on demande l'identité (requireIdentity) puis on poste.
   const od = state.orderData;
-  const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
-  const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
+  const benfIsMe = !!(document.getElementById('cb-benf-is-me')?.checked);
 
-  const clientName = recipName;
-  const fullRecipPhone = recipPhone;
-  const clientEmail = undefined;
-
-  if (!recipName) { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
-  if (!recipPhone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return; }
-
-  const isStripe = od.payment_mode === 'stripe_eur';
-
+  // ── Relais toujours requis ────────────────────────────────────────────────
   if (!od.selectedRelaisId) {
     markRelaySelectionError();
     document.getElementById('ck-relais-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -883,17 +870,35 @@ export async function submitOrder(btn) {
     return;
   }
 
-  // ── GARDE IDENTITÉ (OTP) — APRÈS validation des données ───────────────────
-  // Les données sont valides → on demande l'identité. Case "c'est moi" cochée =
-  // confirmation implicite (identité connue retournée sans modale). Inconnu →
-  // flow OTP complet. Fermeture/annulation → identity null → abort propre.
+  // ── Si quelqu'un d'autre récupère : valider ses champs avant l'OTP ────────
+  if (!benfIsMe) {
+    const _name  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
+    const _phone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
+    if (!_name)  { showToast('Indiquez le nom de la personne qui récupère.', 'error'); return; }
+    if (!_phone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return; }
+  }
+
+  // ── OTP — identifie le payeur ─────────────────────────────────────────────
+  // "Je récupère moi-même" : nom + tél viennent de l'identité OTP.
+  // "Quelqu'un d'autre"    : champs bénéficiaire déjà validés ci-dessus.
   const identity = await requireIdentity({
     reason: 'valider votre commande',
     title: 'Sécuriser votre commande',
   });
-  if (!identity) return; // modale fermée sans valider → arrêt propre, panier intact
-  // ── FIN GARDE IDENTITÉ ────────────────────────────────────────────────────
-  const trackingPhone = identity.phone || null; // téléphone OTP du payeur
+  if (!identity) return; // annulé → panier intact
+
+  const trackingPhone = identity.phone || null;
+
+  // ── Résoudre nom + tél bénéficiaire après OTP ─────────────────────────────
+  const recipName  = benfIsMe
+    ? (identity.full_name || identity.name || '').trim()
+    : (document.getElementById('of-beneficiary-name')?.value || '').trim();
+  const recipPhone = benfIsMe
+    ? identity.phone || ''
+    : readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
+
+  const clientEmail = undefined;
+  const isStripe = od.payment_mode === 'stripe_eur';
 
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
@@ -916,7 +921,7 @@ export async function submitOrder(btn) {
       if (!state.pendingStripeOrderRef) {
         apiResult = await apiPost('/api/orders', {
           items, relais_id: od.selectedRelaisId || undefined,
-          recipient_name: recipName, recipient_phone: fullRecipPhone,
+          recipient_name: recipName, recipient_phone: recipPhone,
           payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
           tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
         }, { idempotencyKey: state.checkoutAttemptKey });
@@ -928,7 +933,7 @@ export async function submitOrder(btn) {
     } else {
       apiResult = await apiPost('/api/orders', {
         items, relais_id: od.selectedRelaisId || undefined,
-        recipient_name: recipName, recipient_phone: fullRecipPhone,
+        recipient_name: recipName, recipient_phone: recipPhone,
         payment_mode: od.payment_mode, use_wallet: od.use_wallet || false,
         tracking_phone: trackingPhone || undefined, share_token: state.shareToken || undefined
       });
@@ -942,7 +947,7 @@ export async function submitOrder(btn) {
       const intentResult = await apiPost('/api/payments/stripe/intent', { order_reference: orderData.reference });
       btn.textContent = '💳 Validation en cours…';
       const stripeResult = await _stripe.confirmCardPayment(intentResult.client_secret, {
-        payment_method: { card: _stripeCard, billing_details: { name: clientName, email: clientEmail || undefined } }
+        payment_method: { card: _stripeCard, billing_details: { name: recipName, email: clientEmail || undefined } }
       });
       if (stripeResult.error) {
         const errEl = document.getElementById('stripe-card-error');

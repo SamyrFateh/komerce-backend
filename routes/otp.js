@@ -73,7 +73,7 @@ async function findUserByPhone(phone) {
   return rows[0] || null;
 }
 
-async function createLightweightUser(phone) {
+async function createLightweightUser(phone, name) {
   const resolvedEmail = phone.replace(/\D/g, '') + '@komerce.km';
   const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
 
@@ -85,7 +85,7 @@ async function createLightweightUser(phone) {
            whatsapp_phone = COALESCE(users.whatsapp_phone, EXCLUDED.whatsapp_phone),
            updated_at = NOW()
      RETURNING id, full_name, phone, whatsapp_phone, email, role`,
-    ['Client Komerce', resolvedEmail, phone, phone, passwordHash]
+    [name || 'Client', resolvedEmail, phone, phone, passwordHash]
   );
 
   return user;
@@ -245,7 +245,7 @@ router.post('/request', async (req, res) => {
  */
 router.post('/verify', async (req, res) => {
   try {
-    let { phone, code, purpose = 'login' } = req.body || {};
+    let { phone, code, name, purpose = 'login' } = req.body || {};
 
     if (!phone || !code) {
       return res.status(400).json({
@@ -344,7 +344,8 @@ router.post('/verify', async (req, res) => {
     let created = false;
 
     if (!user) {
-      user = await createLightweightUser(phone);
+      const safeName = name && String(name).trim().slice(0, 50) || null;
+      user = await createLightweightUser(phone, safeName);
       created = true;
     }
 
