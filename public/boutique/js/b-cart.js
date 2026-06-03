@@ -403,15 +403,19 @@ function quickRemove(productId, btnEl) {
   function openCart() {
     renderCartBody();
     dom.cartHeaderTitle.textContent = 'Mon Panier (' + cartQty() + ')';
+    // Desktop : le panier EST le side-cart inline (liste + total toujours visibles
+    // à droite). Cliquer la dame n'ouvre donc pas un drawer-liste en doublon :
+    // ça lance DIRECTEMENT le checkout, même flux que le bouton « Commander » du
+    // side-cart (bus 'checkout:open' → checkoutCart(), qui gère le panier vide).
+    if (isDesktop()) {
+      bus.emit('checkout:open');
+      return;
+    }
+    // ── Mobile uniquement (le return desktop est passé avant) ──
     dom.cartOverlay.classList.add('open');
     dom.cartDrawer.classList.add('open');
-    // BUG-07 — sur desktop le side-cart est inline, le drawer ne s'ouvre pas :
-    // ne pas sauvegarder le scroll ni ajouter cart-open (qui bloque le scroll body).
-    // closeCart() ne restaurera rien si savedY vaut 0, donc pas de saut de scroll.
-    if (!isDesktop()) {
-      scroll.savedY = getScrollY();
-      document.body.classList.add('cart-open');
-    }
+    scroll.savedY = getScrollY();
+    document.body.classList.add('cart-open');
   }
 
   /**
