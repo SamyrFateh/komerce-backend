@@ -4,9 +4,19 @@
 > Il gèle la version gagnante de chaque composant : fichier propriétaire, rôle exact,
 > état du code, et dette connue.
 >
-> Statut : **GEL v1.7 — 28 mai 2026** · PR-M3 livrée 22/05 · PR-1 livrée 24/05 (panier partagé créateur + fix scroll-to-top modal) · audit 0 violation · B-SOT-1 résolu 26/05 (6 fichiers actifs ajoutés, 3 orphelins documentés) · **refactor/group-owner-css livré 28/05** (`group-cart-flow.css` owner officiel `.k-group-*`, `b-group-view.js` sans injection CSS)
+> Statut : **GEL v1.8 — 03 juin 2026** · Refacto CSS/JS Lots 1–4 livré · zéro `createElement('style')` dans le périmètre audité · I-8 ajouté à `BOUTIQUE_ARCHITECTURE.md`
 > Hiérarchie : se place sous `BOUTIQUE_ARCHITECTURE.md` (normatif) et au-dessus des docs composants.
 > Mis à jour uniquement lors d'une PR qui change un propriétaire ou un rôle.
+>
+> **Changelog v1.8 vs v1.7** :
+> - **Refacto CSS injection Lots 1–4 livré (03/06/2026)** : audit complet (L1-S0/L1-S1) + neutralisation de 7 injecteurs JS (L2→L3) + nettoyage `!important` (L4)
+>   - CSS extrait du JS vers owners : `cart.css` (`.kpill*`), `group-cart-flow.css` (`.k-gbanner*`), `modal-product.css` (`.k-pdp-curation*`), `categories.css` + `hero.css` (états premium scopés)
+>   - `b-cart.js` confirmé conforme (zéro injection structurelle)
+>   - 16 `!important` retirés de `categories.css` (spécificité scopée suffit) — 2 conservés et documentés dans I-8
+>   - ~827 lignes de CSS sorties du JS → fichiers owners
+>   - Nouvel invariant **I-8** dans `BOUTIQUE_ARCHITECTURE.md` : le CSS vit dans `.css`, pas dans le JS
+>   - Table §3 `BOUTIQUE_ARCHITECTURE.md` complétée : `.kpill*`, `.k-gbanner*`, `.k-pdp-curation*`, états premium scopés
+>   - `BOUTIQUE_CSS_INJECTION_DOCTRINE.md` créé (doc compagnon détaillé — référence pour onboarding)
 >
 > **Changelog v1.7 vs v1.6** :
 > - **refactor/group-owner-css livré (28/05/2026)** : `group-cart-flow.css` devient owner officiel de tous les sélecteurs `.k-group-*` (cockpit groupe, panier partagé, vue participant)

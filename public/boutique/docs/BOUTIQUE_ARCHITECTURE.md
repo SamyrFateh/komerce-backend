@@ -61,6 +61,40 @@ exceptions. Le build reste vert pendant que le contrôle réel se dégrade (cas 
 **Quand on résout une violation** : régénérer la baseline avec `npm run check:breakpoints:save`
 pour verrouiller le gain — on ne pourra plus jamais remonter au-dessus du nouveau compte.
 
+### I-8. Le CSS vit dans les fichiers `.css`, jamais dans le JS
+
+Aucun module JS ne doit appeler `document.createElement('style')` pour injecter des règles
+structurelles. Le JS pose des **classes d'état** sur le DOM ; le CSS qui réagit à ces classes
+vit dans le fichier owner du composant concerné.
+
+```js
+// ✅ CONFORME
+documentElement.classList.add('k-mobile-premium-v1');
+element.classList.toggle('kpill--visible', hasItems);
+
+// ❌ VIOLATION — détectée par audit:arch
+const s = document.createElement('style');
+s.textContent = `.k-chip { width: 64px; }`;
+document.head.appendChild(s);
+```
+
+**Convention pour les états premium scopés :** les variantes visuelles premium s'ajoutent
+dans l'owner du composant, préfixées `html.k-*-premium-v1` :
+
+```css
+/* Dans categories.css — owner des chips */
+html.k-mobile-premium-v1 .k-chip { width: 64px; height: 84px; }
+```
+
+La spécificité du sélecteur scopé (0-2-0) bat les règles de base (0-1-0) sans `!important`.
+
+**Exceptions `!important` légitimes** (registre exhaustif — tout ajout requiert une PR) :
+
+| Fichier | Sélecteur | Motif |
+|---|---|---|
+| `boutique-desktop.css` | `.k-cart-drawer.open`, `.k-cart-overlay.open` @900px | Garde drawer desktop : doit écraser `.open` posé par JS (inversion de cascade réelle, spécificité identique) |
+| `hero.css` | `html.k-mobile-premium-v1 .k-hero-*` | `display:none` de masquage absolu — pratique légitime et conforme MDN |
+
 ---
 
 ## 2. Inventaire CSS — statut attendu
@@ -135,6 +169,11 @@ soit tu importes le fichier owner (cascade), soit tu changes l'owner ici dans la
 | `.k-header` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
 | `.k-hero-media`, `.k-hero-mini-slogan` (desktop) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
 | `.k-modal` (desktop overrides) | `desktop-commerce-skeleton.css` | ≥900px | Owner desktop |
+| `.kpill*`, `.kpill-pop*` | `cart.css` | tous | Pastille panier mobile — rapatrié de b-cart-pill.js (L3-S6) |
+| `.k-gbanner*`, `.is-funded`, `.is-urgent`, `.is-compact` | `group-cart-flow.css` | tous | Bannière groupe — rapatrié de b-group-banner.js (L3-S8) |
+| `.k-pdp-curation*` @900px | `modal-product.css` | ≥900px | Suggestions curation desktop — rapatrié de b-pdp-curation-suggestions.js (L3-S9) |
+| `html.k-mobile-premium-v1 .k-chip*`, `.k-cats*` | `categories.css` | tous | État premium mobile scopé — rapatrié de b-mobile-premium-v1.js (L2-S2) |
+| `html.k-home-premium-v1 .k-hero-cta*`, `.k-hero-badge` | `hero.css` | tous | État premium accueil scopé — rapatrié de b-home-premium-v1.js (L2-S3) |
 
 **Note importante sur `.k-side-cart`** : l'état actuel a deux owners (layout.css + skeleton.css)
 avec des `top` incompatibles. C'est la **violation principale** à traiter en priorité.
