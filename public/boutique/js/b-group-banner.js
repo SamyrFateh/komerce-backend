@@ -42,25 +42,8 @@ function isClosedStatus(status) {
   return ['converted_to_order', 'finalized', 'cancelled', 'expired', 'refunded'].includes(status);
 }
 
-function ensureStyles() {
-  if (document.getElementById('k-group-banner-p0-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'k-group-banner-p0-styles';
-  s.textContent = `
-.k-group-banner .k-gbanner-inner{transition:transform .22s ease, opacity .22s ease, max-height .22s ease, padding .22s ease}
-.k-group-banner .k-gbanner-inner.is-funded{background:rgba(31,122,84,.14);border-color:rgba(31,122,84,.35);box-shadow:0 8px 24px rgba(31,122,84,.12)}
-.k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot{background:#1f7a54;animation:kGBPulse 1.4s ease-in-out infinite}
-.k-group-banner .k-gbanner-inner.is-urgent{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.35)}
-.k-group-banner .k-gbanner-cta.is-funded{background:#1f7a54;color:white}
-.k-group-banner.is-compact .k-gbanner-inner{max-height:42px;overflow:hidden;padding-top:7px;padding-bottom:7px;opacity:.92}
-.k-group-banner.is-compact .k-gbanner-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.k-group-banner.is-compact .k-gbanner-timer{display:none}
-.k-group-banner.is-compact .k-gbanner-close{display:none}
-.k-group-banner.is-compact .k-gbanner-cta{font-size:12px;padding:6px 10px}
-.k-group-banner:hover .k-gbanner-inner,.k-group-banner:focus-within .k-gbanner-inner{opacity:1}
-@keyframes kGBPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 3px rgba(31,122,84,.12)}50%{transform:scale(1.18);box-shadow:0 0 0 7px rgba(31,122,84,.08)}}`;
-  document.head.appendChild(s);
-}
+// ensureStyles() supprimé (L3-S8) — CSS géré par group-cart-flow.css
+function ensureStyles() {}
 
 function buildHTML(data) {
   const status = data.status || state.shareStatus || 'active';
