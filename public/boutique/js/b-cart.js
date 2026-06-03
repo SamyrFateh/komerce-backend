@@ -623,20 +623,18 @@ function quickRemove(productId, btnEl) {
     if (editCtxDrawer && !drawerEditBar) {
       drawerEditBar = document.createElement('div');
       drawerEditBar.id = 'k-cart-edit-bar';
-      drawerEditBar.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:8px;';
+      // Lot 2 — styles inline supprimés ; owner : cart.css § k-cart-edit-bar
       drawerEditBar.innerHTML = `
-        <div style="background:linear-gradient(135deg,#1a4a6e,#1f7a54);color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700">
+        <div class="k-cart-edit-header">
           ✏️ Mode édition — Panier collectif
         </div>
-        <button id="k-cart-edit-update" type="button"
-          style="background:#1f7a54;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;width:100%">
+        <button id="k-cart-edit-update" type="button">
           ✅ Mettre à jour le panier collectif
         </button>
-        <button id="k-cart-edit-cancel" type="button"
-          style="background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;padding:10px;font-size:13px;cursor:pointer;width:100%">
+        <button id="k-cart-edit-cancel" type="button">
           ✕ Annuler les modifications
         </button>
-        <p id="k-cart-edit-err" style="color:#e53935;font-size:12px;margin:0;min-height:14px"></p>`;
+        <p id="k-cart-edit-err"></p>`;
       // Insérer dans la zone boutons du footer
       const footerBtns = document.querySelector('.k-cart-footer-btns');
       if (footerBtns) footerBtns.after(drawerEditBar);
@@ -1372,29 +1370,19 @@ function renderSideCart() {
     if (!editBar) {
       editBar = document.createElement('div');
       editBar.id = 'k-sc-edit-bar';
-      editBar.style.cssText = [
-        'background:linear-gradient(135deg,#1a4a6e 0%,#1f7a54 100%)',
-        'border-radius:12px',
-        'padding:12px 14px',
-        'margin-top:8px',
-        'display:flex',
-        'flex-direction:column',
-        'gap:8px',
-      ].join(';');
+      // Lot 2 — styles inline supprimés ; owner : cart.css § k-sc-edit-bar
       editBar.innerHTML = `
-        <div style="color:#fff;font-size:12px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:6px">
+        <div class="k-sc-edit-header">
           <span>✏️</span>
           <span>Mode édition — Panier collectif</span>
         </div>
-        <button id="k-sc-edit-update" type="button"
-          style="background:#fff;color:#1a4a6e;border:none;border-radius:9px;padding:10px 14px;font-weight:800;font-size:13px;cursor:pointer;width:100%;line-height:1.2">
+        <button id="k-sc-edit-update" type="button">
           ✅ Mettre à jour le panier collectif
         </button>
-        <button id="k-sc-edit-cancel" type="button"
-          style="background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.4);border-radius:9px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;width:100%">
+        <button id="k-sc-edit-cancel" type="button">
           ✕ Annuler les modifications
         </button>
-        <p id="k-sc-edit-err" style="color:#ffe0e0;font-size:11px;margin:0;min-height:14px"></p>`;
+        <p id="k-sc-edit-err"></p>`;
 
       // Insérer après le bloc total/sous-total, avant items
       const scHeader = sc.querySelector('.k-sc-header');
