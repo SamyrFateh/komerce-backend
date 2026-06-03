@@ -8,7 +8,12 @@ Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeu
 
 1. `docs/chantier/STATUS.md` — état du jour et prochain lot à exécuter
 2. **Socle architectural** (les 4 documents de référence — voir §1 ci-dessous)
-3. `boutique/docs/BOUTIQUE_ARCHITECTURE.md` si la modification touche la Boutique
+3. Si la modification touche la Boutique :
+   - `docs/boutique/BOUTIQUE_CSS_PIPELINE.md` pour le pipeline CSS canonique ;
+   - `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` pour l'ownership composants ;
+   - `public/boutique/README.md` pour les commandes et garde-fous locaux.
+
+> Note chemin : le frontend Boutique vit dans `public/boutique/**`. Les anciens chemins `boutique/**` ou `boutique/docs/**` ne doivent plus être utilisés comme chemins repo.
 
 ---
 
@@ -20,7 +25,7 @@ Komerce repose sur quatre documents qui font foi sur **l'état de l'art** du pro
 |---|---|---|
 | `docs/CARTOGRAPHY_360.md` | **Quoi existe** (domaines API, surfaces HTML, points de vérité, env vars) | Canonique |
 | `docs/ZONE_IMPACT.md` | **Quoi protéger** (10 invariants, fichiers à haut risque, checklist) | Canonique |
-| `docs/SCHEMA.md` | **Quoi est vrai en base** (91 tables, 14 ENUMs, triggers, contraintes) | Canonique |
+| `docs/SCHEMA.md` | **Quoi est vrai en base** (tables, ENUMs, triggers, contraintes) | Canonique |
 | `docs/CONTRACTS.md` | **Qui appelle quoi** (contrats publics des services critiques) | Canonique |
 
 **Règle absolue** : si une information sur l'architecture, le schéma, les invariants ou les contrats est ailleurs et contredit ces quatre documents, **ces documents gagnent**. Toute autre documentation doit être alignée sur eux ou archivée dans `docs/_archive/`.
@@ -65,6 +70,7 @@ Toute PR qui touche structurellement le projet doit mettre à jour les documents
 | Migration SQL (table, ENUM, colonne, contrainte) | `SCHEMA.md` (régénérer depuis `pg_dump`) |
 | Modification d'une signature publique de service critique | `CONTRACTS.md` § correspondant |
 | Ajout d'un invariant ou modification d'un existant | `ZONE_IMPACT.md` §2 |
+| Modification Boutique structurelle | `docs/boutique/*` pertinent + `public/boutique/README.md` si workflow/commande change |
 
 **Une PR qui modifie un de ces points sans mettre à jour la doc correspondante doit être refusée ou commitée avec une dette explicite dans STATUS.md.**
 
@@ -74,27 +80,39 @@ Toute PR qui touche structurellement le projet doit mettre à jour les documents
 
 Si une modification touche :
 
-- `boutique/**`
-- `public/Komerce_Boutique.html`
-- `boutique/docs/*BOUTIQUE*`
+- `public/boutique/**`
+- `docs/boutique/**`
+- un script racine qui affecte la Boutique (`scripts/*boutique*`, `package.json` build, etc.)
 
-alors il faut lire et respecter `boutique/docs/BOUTIQUE_ARCHITECTURE.md` avant d'écrire du code.
+alors il faut lire et respecter les docs Boutique canoniques avant d'écrire du code.
+
+### Source documentaire Boutique
+
+| Besoin | Lire |
+|---|---|
+| Pipeline CSS source → dist → cache-buster | `docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
+| Ownership JS / composants | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
+| Commandes locales, garde-fous, workflow | `public/boutique/README.md` |
+| Docs historiques ou générées | `public/boutique/docs/**` — subordonnées, à synchroniser si elles contredisent `docs/boutique/**` |
 
 Toute PR Boutique doit indiquer :
 
 - les fichiers Boutique touchés ;
 - le composant owner concerné ;
 - pourquoi le fichier modifié est le bon propriétaire ;
-- comment le mobile pager et le desktop ont été préservés.
+- comment le mobile, le desktop, le panier et le checkout ont été préservés ;
+- si du CSS source change : `cd public/boutique && npm run deploy:css` doit être exécuté et les bundles/caches modifiés committés.
 
 ### Interdictions Boutique
 
 - Ne pas créer une deuxième source de vérité.
 - Ne pas déplacer du CSS dans un fichier non propriétaire.
+- Ne pas éditer `public/boutique/css/dist/*.css` directement.
+- Ne pas réintroduire de CSS durable dans le JS : `createElement('style')`, `style.textContent`, `style.cssText`, `innerHTML style=`.
 - Ne pas casser le moteur mobile hero fixed + `#k-page-scroll` + `b-pager.js`.
 - Ne pas corriger le desktop avec un hack mobile.
-- Ne pas ajouter de règle `.k-chip`, `.k-cats`, `.k-cats-shell` hors fichier propriétaire.
-- Ne pas dupliquer `.k-grid` ou `.k-card` hors `products.css`.
+- Ne pas ajouter de règle `.k-chip`, `.k-cats`, `.k-cats-shell` hors fichier propriétaire documenté.
+- Ne pas dupliquer `.k-grid` ou `.k-card` hors owner documenté.
 
 ---
 
@@ -108,14 +126,14 @@ Toute mutation de paiement (Stripe, cash, wallet, panier partagé, panier collec
 
 ## 6. Règle de fin de session
 
-Avant tout commit ou PR, mettre à jour `docs/chantier/STATUS.md` :
+Avant tout commit ou PR, mettre à jour `docs/chantier/STATUS.md` ou documenter explicitement pourquoi le lot est uniquement documentaire / opportuniste et ne change pas le chantier courant.
 
-- cocher le lot terminé (☐ → ✅)
-- mettre à jour la section **PROCHAIN LOT À EXÉCUTER**
-- mettre à jour la date en tête de fichier (`> Mis à jour : YYYY-MM-DD`)
-- si une divergence doc ↔ code ↔ DB a été détectée : ajouter une ligne dans "Pièges critiques"
+À vérifier :
 
-Sans cette mise à jour, le prochain agent repart sur le mauvais lot.
+- lot terminé ou dette ajoutée ;
+- date de mise à jour si le chantier courant change ;
+- divergence doc ↔ code ↔ DB signalée dans "Pièges critiques" si détectée ;
+- commandes de garde-fou exécutées ou raison de non-exécution.
 
 ---
 
@@ -123,15 +141,17 @@ Sans cette mise à jour, le prochain agent repart sur le mauvais lot.
 
 Pour mémoire, en cas de doute sur quelle doc fait foi :
 
-```
-1. SCHEMA.md            ← état DB (généré depuis pg_dump live)
-2. CONTRACTS.md         ← signatures publiques services critiques
-3. ZONE_IMPACT.md       ← invariants à ne pas casser
-4. CARTOGRAPHY_360.md   ← cartographie domaines et points de vérité
-5. ADR-001 à ADR-011    ← décisions historisées (justifient le présent)
-6. boutique/docs/BOUTIQUE_ARCHITECTURE.md + boutique/docs/
-7. Autres docs spécialisées (DOCTRINE_*, SPEC_*, ROADMAP_*)
-8. docs/_archive/       ← archive (informationnel uniquement)
+```txt
+1. SCHEMA.md                         ← état DB (généré depuis pg_dump live)
+2. CONTRACTS.md                      ← signatures publiques services critiques
+3. ZONE_IMPACT.md                    ← invariants à ne pas casser
+4. CARTOGRAPHY_360.md                ← cartographie domaines et points de vérité
+5. ADR-001 à ADR-012                 ← décisions historisées
+6. docs/boutique/*                   ← gouvernance Boutique canonique actuelle
+7. public/boutique/README.md         ← workflow local Boutique
+8. public/boutique/docs/*            ← docs Boutique historiques/générées, subordonnées
+9. autres docs spécialisées          ← DOCTRINE_*, SPEC_*, ROADMAP_*
+10. docs/_archive/                   ← archive informationnelle uniquement
 ```
 
-Une doc ancienne qui contredit le socle (1-4) est **toujours subordonnée**, même si elle est plus détaillée.
+Une doc ancienne qui contredit le socle ou les docs Boutique canoniques est **toujours subordonnée**, même si elle est plus détaillée.
