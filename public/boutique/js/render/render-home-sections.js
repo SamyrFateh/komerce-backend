@@ -76,20 +76,25 @@ export function renderHomeSections({
         products = byCategoryMobile[category];
       }
 
-      if (!products || products.length === 0) continue;
-
+      const isEmpty = !products || products.length === 0;
       const emoji = getCategorySectionEmoji(category);
-      parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '">');
+      const emptyAttr = isEmpty ? ' data-empty="1"' : '';
+      parts.push('<div class="k-cat-section" data-cat="' + sanitize(category) + '"' + emptyAttr + '>');
       parts.push(
         '<div class="k-sec-header" data-cat="' + sanitize(category) + '">' +
         '<span class="k-sec-header-emoji">' + emoji + '</span>' +
         '<span class="k-sec-header-name">' + sanitize(category) + '</span>' +
-        '<span class="k-sec-header-count">' + products.length + '</span>' +
+        (isEmpty ? '' : '<span class="k-sec-header-count">' + products.length + '</span>') +
         '</div>'
       );
-      parts.push('<div class="k-sec-grid">');
-      for (const product of products) parts.push(renderCard(product));
-      parts.push('</div></div>');
+      if (isEmpty) {
+        parts.push('<div class="k-sec-empty"><span class="k-sec-empty-icon">📦</span><span class="k-sec-empty-msg">Bientôt disponible</span></div>');
+      } else {
+        parts.push('<div class="k-sec-grid">');
+        for (const product of products) parts.push(renderCard(product));
+        parts.push('</div>');
+      }
+      parts.push('</div>');
     }
 
     return parts.join('');
