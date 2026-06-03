@@ -29,11 +29,8 @@ function injectStyles() {
   style.id = 'k-mobile-premium-v1-style';
   style.textContent = `
 @media (max-width: 899px) {
-  html.k-mobile-premium-v1 #k-hero-fixed-wrap {
-    background:
-      radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--ocean-bg-08) 68%, transparent), transparent 26%),
-      var(--sand-warm);
-  }
+  /* Hero premium mobile (#k-hero-fixed-wrap, .k-hero-*, .k-hero-cats-sticky)
+     → DÉPLACÉ vers hero.css (owner). Lot 2 / L2-S2. */
 
   html.k-mobile-premium-v1 .k-header-inner {
     gap: 8px;
@@ -48,63 +45,6 @@ function injectStyles() {
 
   html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
 
-  html.k-mobile-premium-v1 .k-hero-inner { padding: 0 10px; }
-
-  html.k-mobile-premium-v1 .k-hero-media {
-    border-radius: 22px;
-    height: 118px;
-    max-height: 118px;
-    overflow: hidden;
-    box-shadow: 0 10px 24px var(--border-text-06);
-  }
-
-  html.k-mobile-premium-v1 .k-hero-img {
-    height: 118px;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  /* Slogan overlay : visible mais discret. Plus de scale (qui floutait le texte).
-     On garde le badge "La boutique comorienne" + le slogan court (ligne 1/2),
-     dans le coin gauche, sur fond image. */
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    padding: 10px 12px 0;
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-hero-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 88%, transparent);
-    color: var(--text);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    box-shadow: 0 2px 6px var(--border-text-08);
-    margin-bottom: 6px;
-  }
-
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-1,
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
-    text-align: left;
-    font-size: 18px;
-    line-height: 1.05;
-  }
-
-  /* On masque toujours les CTAs / trust / pills / overlay desktop sur mobile.
-     Le hero reste un overlay d'identité, pas un bloc d'action. */
-  html.k-mobile-premium-v1 .k-hero-cta-row,
-  html.k-mobile-premium-v1 .k-hero-trust,
-  html.k-mobile-premium-v1 .k-hero-bubble,
-  html.k-mobile-premium-v1 .k-hero-sub,
-  html.k-mobile-premium-v1 .k-hero-overlay {
-    display: none !important;
-  }
-
-  html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
   /* Catégories premium mobile (.k-cats-shell/.k-cats/.k-chip/.k-chip-photo/
      .k-chip-label + responsive 360px) → DÉPLACÉ vers categories.css (owner).
      Lot 2 / L2-S2. Le JS ne pose plus que la classe d'état html.k-mobile-premium-v1. */
