@@ -28,7 +28,7 @@
 
 import { state, dom, $$, setActiveCatState } from '../b-store.js';
 import { renderCategoryRailMarkup } from '../render/render-categories.js';
-import { getSubcategories, getRailCategories } from '../shop-schema.js';
+import { getSubcategories, getRailCategories, getCategorySectionEmoji, getCategoryLabel } from '../shop-schema.js';
 import { renderGrid, setActiveCat } from '../b-catalog.js';
 import { scrollPageToTop, scrollPageToElement } from '../b-scroll-owner.js';
 
@@ -65,66 +65,118 @@ function scrollToCatalog() {
 }
 
 /**
- * Rail contextuel desktop sous les grandes pastilles imagées.
+ * Surface contextuelle desktop UNIQUE sous les grandes pastilles imagées.
  *
- * Doctrine desktop retenue :
- * - le rail principal choisit l'univers ;
- * - ce rail contextuel affine l'univers ;
- * - le flat header catalogue est masqué en desktop par CSS pour éviter doublon.
+ * Doctrine desktop retenue (NAV-DESKTOP — consolidation 1 surface) :
+ * - le rail principal (pastilles imagées) choisit l'univers ;
+ * - cette barre sticky #k-subcats-wrap porte TOUT le contexte de l'univers :
+ *     · ligne titre : retour « Toutes les catégories » + emoji + label + compteur ;
+ *     · ligne pills : « Tout voir » + sous-catégories (labels simples, data-driven).
+ * - elle reste visible en haut au scroll (sticky) → les sous-cats ne sont jamais cachées.
+ * - b-catalog.js NE rend PLUS de header/subchips dans la grille (doublon supprimé).
  *
- * Mobile reste inchangé : cette fonction ne participe pas au pager mobile.
+ * Source unique : shop-schema.js (toutes les sous-cats, modifiables sans code).
+ * Owner : home-controller.js (« subcats desktop + active state ») — cf. ownership doctrine.
+ * Mobile reste inchangé : early return, aucune participation au pager mobile.
+ *
+ * @param {string|null} catKey  Univers actif ('all'/null = barre masquée).
+ * @param {{count?:number}} [opts]  Compteur produits de l'univers (mis en cache
+ *        sur le wrap pour rester stable quel que soit le point d'appel).
  */
-export function renderSubcatRail(catKey) {
+export function renderSubcatRail(catKey, opts = {}) {
   if (!isDesktop()) return;
 
   const wrap = document.getElementById('k-subcats-wrap');
   if (!wrap) return;
 
-  const subcats = catKey && catKey !== 'all' ? getSubcategories(catKey) : [];
-  if (!catKey || catKey === 'all' || !subcats.length) {
+  // 'all' / vide → barre masquée (le pilotage display reste une classe d'état JS,
+  // le visuel/layout est porté par boutique-desktop.css).
+  if (!catKey || catKey === 'all') {
     wrap.style.display = 'none';
     wrap.innerHTML = '';
     delete wrap.dataset.parentCat;
+    delete wrap.dataset.catCount;
     document.documentElement.style.removeProperty('--sidebar-top');
     return;
+  }
+
+  // Compteur : valeur passée > valeur cachée > omis. Stable entre appels
+  // (bus catalog:cat-changed, see-all, etc. rappellent sans recompter).
+  let count = null;
+  if (opts && opts.count != null) {
+    count = opts.count;
+    wrap.dataset.catCount = String(count);
+  } else if (wrap.dataset.catCount) {
+    count = Number(wrap.dataset.catCount);
   }
 
   wrap.style.display = '';
   wrap.dataset.parentCat = catKey;
 
+  const label = getCategoryLabel(catKey) || catKey;
+  const emoji = getCategorySectionEmoji(catKey) || '';
+  const subcats = getSubcategories(catKey) || [];
   const activeSubcat = state.activeSubcat || '';
-  const buttons = [
-    `<button type="button" class="k-subchip ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(catKey)}">
-      <span class="k-subchip-label">Tout voir</span>
-    </button>`,
-    ...subcats.map((sub) => {
-      const key = escapeHtml(sub.key);
-      const label = escapeHtml(sub.shortLabel || sub.label || sub.key);
-      const icon = escapeHtml(sub.icon || '✨');
-      const active = activeSubcat === sub.key ? ' active' : '';
-      return `<button type="button" class="k-subchip${active}" data-subcat="${key}">
-        <span class="k-subchip-icon" aria-hidden="true">${icon}</span>
-        <span class="k-subchip-label">${label}</span>
-      </button>`;
-    }),
-  ].join('');
 
-  wrap.innerHTML = `
-    <div class="k-subcats-rail k-desktop-rayons-rail k-subcats-visible" data-cat-label="${escapeHtml(catKey)}">
-      ${buttons}
-    </div>
-  `;
+  // ── Ligne titre : retour + emoji + label + compteur ──
+  const header = `
+    <div class="k-subcats-context" data-cat-label="${escapeHtml(catKey)}">
+      <button type="button" class="k-subcats-back" data-back-all="1" aria-label="Retour à toutes les catégories">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Toutes les catégories</span>
+      </button>
+      <span class="k-subcats-title">
+        ${emoji ? `<span class="k-subcats-emoji" aria-hidden="true">${escapeHtml(emoji)}</span>` : ''}
+        <span class="k-subcats-name">${escapeHtml(label)}</span>
+        ${count != null ? `<span class="k-subcats-count">${count}</span>` : ''}
+      </span>
+    </div>`;
 
+  // ── Ligne pills : « Tout voir » + sous-catégories (uniquement si elles existent) ──
+  let pills = '';
+  if (subcats.length) {
+    const buttons = [
+      `<button type="button" class="k-subchip ${activeSubcat ? '' : 'active'}" data-subcat="" aria-label="Voir tous les produits ${escapeHtml(label)}">
+        <span class="k-subchip-label">Tout voir</span>
+      </button>`,
+      ...subcats.map((sub) => {
+        const key = escapeHtml(sub.key);
+        const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
+        const icon = escapeHtml(sub.icon || '✨');
+        const active = activeSubcat === sub.key ? ' active' : '';
+        return `<button type="button" class="k-subchip${active}" data-subcat="${key}">
+          <span class="k-subchip-icon" aria-hidden="true">${icon}</span>
+          <span class="k-subchip-label">${lbl}</span>
+        </button>`;
+      }),
+    ].join('');
+    pills = `<div class="k-subcats-rail k-desktop-rayons-rail k-subcats-visible" data-cat-label="${escapeHtml(catKey)}">${buttons}</div>`;
+  }
+
+  wrap.innerHTML = header + pills;
+
+  // Retour → univers « Tout ». setActiveCat re-render la grille et émet
+  // catalog:cat-changed, qui rappelle renderSubcatRail(null) → barre masquée.
+  const backBtn = wrap.querySelector('[data-back-all="1"]');
+  if (backBtn) {
+    backBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      syncRailActiveState('all', { center: false });
+      setActiveCat('all');
+      scrollPageToTop('smooth');
+    });
+  }
+
+  // Clic sous-cat → filtre. Re-render local (état actif) + grille.
+  // Pas de scroll : l'utilisateur est déjà dans le catalogue.
   wrap.querySelectorAll('.k-subchip').forEach((chip) => {
     chip.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const subcat = chip.dataset.subcat || null;
-      state.activeSubcat = subcat || null;
+      state.activeSubcat = chip.dataset.subcat || null;
       renderSubcatRail(catKey);
       renderGrid();
-      // Pas de scroll sur clic subcat : l'utilisateur est déjà
-      // dans le catalogue, un scrollToCatalog() ferait sauter la vue.
     });
   });
 }

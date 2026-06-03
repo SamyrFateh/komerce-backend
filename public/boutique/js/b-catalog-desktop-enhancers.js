@@ -422,7 +422,12 @@ function _setupViewChangedGuard() {
 
 export function setupCatalogDesktopEnhancers() {
   if (!isDesktop()) return;
-  setupSubcatOnHover();
+  // [DÉSACTIVÉ — NAV-DESKTOP consolidation] setupSubcatOnHover() peuplait la barre
+  // contextuelle au survol d'une chip, ce qui affichait les sous-cats d'une catégorie
+  // SURVOLÉE alors que la grille montrait la catégorie ACTIVE → effet fantôme + désync.
+  // La barre est désormais pilotée uniquement par la sélection (clic), via
+  // home-controller.renderSubcatRail. Survol = no-op. Fonction conservée (réversible).
+  // setupSubcatOnHover();
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();
