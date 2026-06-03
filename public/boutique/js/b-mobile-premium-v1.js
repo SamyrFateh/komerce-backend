@@ -105,81 +105,9 @@ function injectStyles() {
   }
 
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
-  html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
-
-  /* V3 catégories mobile : UNE seule rangée scrollable horizontalement.
-     Affordance "il y a plus à droite" + gain hauteur ≈ 100px vs grid 4×2.
-     Les fades gauche/droite déjà présents dans le DOM (.k-cats-wrap-fade-*)
-     prennent le relais visuel. */
-  html.k-mobile-premium-v1 .k-cats {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 10px;
-    padding: 6px 12px 10px;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
-
-  html.k-mobile-premium-v1 .k-chip,
-  html.k-mobile-premium-v1 .k-chip.is-active,
-  html.k-mobile-premium-v1 .k-chip.active {
-    flex: 0 0 auto !important;
-    width: 64px !important;
-    min-width: 64px !important;
-    max-width: 64px !important;
-    height: 84px !important;
-    min-height: 84px !important;
-    padding: 6px 4px 6px !important;
-    border-radius: 16px !important;
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 5px;
-    background: color-mix(in srgb, var(--white) 86%, transparent);
-    box-shadow: 0 6px 14px var(--border-text-06);
-    scroll-snap-align: start;
-  }
-
-  html.k-mobile-premium-v1 .k-chip-photo {
-    width: 44px !important;
-    height: 44px !important;
-    flex: 0 0 44px;
-    border-radius: 12px;
-    object-fit: cover;
-    object-position: center;
-  }
-
-  html.k-mobile-premium-v1 .k-chip-label {
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    white-space: normal;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 1.15;
-    font-size: 10.5px;
-    font-weight: 800;
-    text-align: center;
-  }
-
-  /* Petits écrans : chips encore un peu plus serrées pour qu'on en voie 5 d'un coup. */
-  @media (max-width: 360px) {
-    html.k-mobile-premium-v1 .k-chip,
-    html.k-mobile-premium-v1 .k-chip.active {
-      width: 60px !important;
-      min-width: 60px !important;
-      max-width: 60px !important;
-    }
-  }
+  /* Catégories premium mobile (.k-cats-shell/.k-cats/.k-chip/.k-chip-photo/
+     .k-chip-label + responsive 360px) → DÉPLACÉ vers categories.css (owner).
+     Lot 2 / L2-S2. Le JS ne pose plus que la classe d'état html.k-mobile-premium-v1. */
 
   html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
   html.k-mobile-premium-v1 .k-proverb-sep { display: none; }

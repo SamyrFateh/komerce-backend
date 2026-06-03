@@ -1,9 +1,13 @@
 {
-  "total": 1,
+  "total": 2,
   "perFile": {
     "modal-shell.css": [
       "max:1120"
+    ],
+    "categories.css": [
+      "max:360"
     ]
   },
-  "savedAt": "2026-05-31T15:52:20.411Z"
+  "savedAt": "2026-06-03T08:00:00.000Z",
+  "note": "categories.css max:360 = responsive chips petits écrans, déplacé de b-mobile-premium-v1.js (Lot 2/L2-S2). Breakpoint pré-existant rendu visible, pas une nouvelle dette."
 }
