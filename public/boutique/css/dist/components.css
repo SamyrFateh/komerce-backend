@@ -239,23 +239,23 @@
 .k-chip.active[data-cat="all"] .k-chip-photo  { background: var(--coral); }
 .k-chip.active[data-cat="all"] .k-chip-photo > span { color: var(--white); }
 .k-chip.active .k-chip-photo svg { stroke: var(--coral); }
-.k-chip.active .k-chip-emoji { background: var(--coral); border-color: var(--coral); color: var(--white); }
-.k-chip.active .k-chip-label { color: var(--coral); font-weight: 800; }
+.k-chip.active .k-chip-emoji { border-color: var(--coral); color: var(--coral); }
+.k-chip.active .k-chip-label { color: var(--ocean-dark); font-weight: 800; }
 
 .k-chip.active {
-  background: rgba(255, 248, 232, .88);
-  border-color: rgba(198, 168, 93, .50);
-  box-shadow: 0 2px 7px rgba(198, 168, 93, .10);
+  background: var(--green-bg-leaf);
+  border-color: rgba(74, 144, 64, .35);
+  box-shadow: 0 2px 7px rgba(74, 144, 64, .10);
 }
 
 .k-chip.active .k-chip-photo {
-  border-color: rgba(198, 168, 93, .82);
-  box-shadow: 0 0 0 1.25px rgba(198, 168, 93, .34);
+  border-color: var(--coral);
+  box-shadow: 0 0 0 1.25px rgba(216, 90, 48, .50);
   transform: none;
 }
 
 .k-chip.active .k-chip-label {
-  color: var(--coral-dark);
+  color: var(--ocean-dark);
 }
 
 /* Sentinel spacer */
@@ -582,11 +582,11 @@
 
 /* ── État actif ── */
 .k-chip.active {
-  background: var(--surface-sand-94);
-  box-shadow: 0 1px 5px var(--border-text-10);
+  background: var(--green-bg-leaf);
+  box-shadow: 0 1px 5px rgba(74, 144, 64, .12);
 }
 .k-chip.active .k-chip-label {
-  color: var(--coral-dark);
+  color: var(--ocean-dark);
   font-weight: 700;
 }
 
@@ -1045,6 +1045,42 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 
   html.k-home-premium-v1 .k-chip-label { font-weight: 850; }
+}
+
+/* ── ANIMATION CHANGEMENT DE CATÉGORIE ───────────────────────────
+   Slide-up staggeré : les cartes montent en décalé à l'entrée.
+   Déclenchée par .k-grid-entering posé par b-catalog.js.
+   Owner : categories.css (changement de catégorie = interaction chip).
+   prefers-reduced-motion : animation supprimée. ──────────────────── */
+
+@keyframes k-card-enter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes k-chip-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+.k-grid-entering .k-card {
+  animation: k-card-enter .28s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.k-grid-entering .k-card:nth-child(1)  { animation-delay:   0ms; }
+.k-grid-entering .k-card:nth-child(2)  { animation-delay:  45ms; }
+.k-grid-entering .k-card:nth-child(3)  { animation-delay:  90ms; }
+.k-grid-entering .k-card:nth-child(4)  { animation-delay: 135ms; }
+.k-grid-entering .k-card:nth-child(5)  { animation-delay: 175ms; }
+.k-grid-entering .k-card:nth-child(6)  { animation-delay: 210ms; }
+.k-grid-entering .k-card:nth-child(n+7) { animation-delay: 240ms; }
+
+.k-chip.chip-pop { animation: k-chip-pop .22s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .k-grid-entering .k-card { animation: none; }
+  .k-chip.chip-pop          { animation: none; }
 }
 
 

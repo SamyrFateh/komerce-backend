@@ -259,6 +259,34 @@ export function setActiveCat(cat, sub = null) {
   bus.emit('catalog:cat-changed', cat);
 }
 
+/* ── ANIMATION ENTRÉE GRILLE ────────────────────────────────────
+ * Pose k-grid-entering sur dom.grid pour déclencher le slide-up
+ * staggeré défini dans categories.css. Retire la classe après la
+ * dernière carte animée (~280ms) pour ne pas bloquer les interactions.
+ * Gère aussi le micro-pop sur le chip actif.
+ * ─────────────────────────────────────────────────────────────── */
+function _triggerGridEnterAnim() {
+  if (!dom.grid) return;
+  dom.grid.classList.remove('k-grid-entering');
+  void dom.grid.offsetWidth;
+  dom.grid.classList.add('k-grid-entering');
+  setTimeout(function() {
+    if (dom.grid) dom.grid.classList.remove('k-grid-entering');
+  }, 520);
+
+  if (state.activeCat) {
+    var chip = document.querySelector('.k-chip[data-cat="' + state.activeCat + '"]');
+    if (chip) {
+      chip.classList.remove('chip-pop');
+      void chip.offsetWidth;
+      chip.classList.add('chip-pop');
+      chip.addEventListener('animationend', function() {
+        chip.classList.remove('chip-pop');
+      }, { once: true });
+    }
+  }
+}
+
 function renderGrid() {
   state.page = 0;
   const _isMobile = !isDesktop();
@@ -285,6 +313,7 @@ function renderGrid() {
     destroyMobilePager();
     dom.grid.classList.add('k-grid-has-sections', 'k-grid-flat-subcat');
     dom.grid.innerHTML = _renderFlatSubcat();
+    _triggerGridEnterAnim();
     _mountFlatSubcatChrome();
     _bindGridEvents();
     _bindFlatSubcatControls();
@@ -329,6 +358,7 @@ function renderGrid() {
       normalizeCategory: _normalizeCat,
       shuffle:           _shuffle,
     });
+    _triggerGridEnterAnim();
     _bindGridEvents();
     if (_isMobile) {
       var _ps = dom.pageScroll;
@@ -383,6 +413,7 @@ function renderGrid() {
   }
 
   dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
+  _triggerGridEnterAnim();
   dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));
 }
 
