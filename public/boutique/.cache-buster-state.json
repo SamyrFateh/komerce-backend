@@ -3,18 +3,16 @@
     "base.css": 21,
     "components.css": 36,
     "desktop.css": 31,
-    "event.css": 7
+    "event.css": 8
   },
   "hashes": {
     "base.css": "dce2cf0d2fe6",
     "components.css": "573356e7885f",
     "desktop.css": "e5c74bdc099a",
-    "event.css": "9ba7925b6c73"
+    "event.css": "9d48dca878bf"
   },
-  "updatedAt": "2026-06-03T09:59:45.815Z",
+  "updatedAt": "2026-06-03T10:36:14.482Z",
   "changedBundles": [
-    "base.css",
-    "components.css",
     "event.css"
   ]
 }
