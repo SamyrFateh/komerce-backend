@@ -322,9 +322,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — hero (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2).
    Scopé html.k-mobile-premium-v1, dans @media max 899px (mobile). Owner du hero.
-   !important conservés (iso-comportemental) — ⚠️ à vérifier en Lot 5 :
-   spécificité html.k-mobile-premium-v1 .k-hero-X (0-2-0) devrait suffire
-   sans !important si aucune règle concurrente n'est plus spécifique. ════════ */
+   !important retirés (Lot 5) — spécificité 0-2-0 bat la règle base 0-1-0 (.k-hero-overlay etc. { display:none }).
+   Aucune règle CSS ou JS ne remet ces éléments visible. ════════ */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-hero-fixed-wrap {
     background:
@@ -380,7 +379,7 @@
   html.k-mobile-premium-v1 .k-hero-bubble,
   html.k-mobile-premium-v1 .k-hero-sub,
   html.k-mobile-premium-v1 .k-hero-overlay {
-    display: none !important;
+    display: none;
   }
 
   html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
