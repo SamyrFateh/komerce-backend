@@ -1,7 +1,7 @@
 # Pipeline CSS Boutique
 
 > **Statut** : doc d'architecture du système CSS Boutique
-> **Date** : 18 mai 2026 — lot CSS-4
+> **Date** : 3 juin 2026 — lot CSS-5 (mise à jour post-Sprint 4)
 > **Périmètre** : `boutique/css/*.css` (sources) + `boutique/css/dist/*.css` (production)
 
 ---
@@ -23,22 +23,36 @@
 
 ## 2. Le bundler
 
-Fichier : `boutique/scripts/bundle-css.js`
+**Source de vérité** : `boutique/scripts/deploy-css.js`
 Commande : `cd boutique && npm run bundle:css`
 
-**Comportement** : concat naïf des sources dans l'ordre déclaré, avec headers générés.
+> ⚠️ `bundle-css.js` est **obsolète** (Sprint 3, jamais mis à jour). Ne pas l'utiliser
+> comme référence. Le script actif est `deploy-css.js`, qui fait bundle + cache-bust
+> en une opération atomique.
+
+**Comportement** : concat naïf des sources dans l'ordre déclaré, avec headers générés,
+puis hash SHA-1 de chaque bundle pour bumper les `?v=N` dans `index.html` uniquement
+si le contenu a changé.
 
 ```js
-const bundles = [
-  { out: 'base.css',       files: ['tokens', 'reset', 'layout', 'hero'] },
-  { out: 'components.css', files: ['categories', 'products', 'modal', 'cart', 'interactions',
-                                   'hero-cart-proxy', 'group-cart-flow', 'shared-followup'] },
-  { out: 'desktop.css',    files: ['boutique-desktop', 'desktop-commerce-skeleton'] },
-  { out: 'event.css',      files: ['tokens', 'event'] },
+// deploy-css.js — état au 3 juin 2026
+const BUNDLES = [
+  { out: 'base.css',
+    files: ['tokens', 'reset', 'layout', 'hero'] },
+  { out: 'components.css',
+    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product',
+            'modal-product-lot4-hybrid',   // ← extension officielle Lot 4
+            'cart', 'interactions', 'hero-cart-proxy',
+            'group-cart-flow', 'shared-followup', 'identity'] },
+  { out: 'desktop.css',
+    files: ['boutique-desktop'] },
+  { out: 'event.css',
+    files: ['tokens', 'event'] },
 ];
 ```
 
-**Pas de minification, pas de tree-shaking, pas de validation.** Si une source est manquante, le bundler émet un warning et continue.
+**Pas de minification, pas de tree-shaking.** Validation taille minimale (1 000 octets par
+bundle) : exit 1 si un bundle est vide ou partiel.
 
 ---
 
@@ -53,25 +67,32 @@ const bundles = [
 | `layout.css` | Squelette page (#k-page-scroll, footer, safe-area) | ~740 |
 | `hero.css` | Hero mobile (base + max-w 899) | ~145 |
 
-### `components.css` (8 sources)
+### `components.css` (12 sources)
 
 | Source | Rôle | Lignes |
 |---|---|---:|
-| `categories.css` | Chips de catégories mobile, sec headers | ~470 |
-| `products.css` | Cartes produit, grille | ~720 |
-| `modal.css` | **Modal produit** (1736L, voir BOUTIQUE_MODAL_ARCHITECTURE.md) | 1736 |
-| `cart.css` | Panier flottant, side cart (mobile + base) | ~900 |
-| `interactions.css` | Animations, transitions, micro-interactions | ~530 |
-| `hero-cart-proxy.css` | Proxy hero ↔ cart | ~110 |
-| `group-cart-flow.css` | Placeholder (2 lignes) | 2 |
+| `categories.css` | Chips de catégories mobile + desktop overrides (Sprint 4) | ~942 |
+| `products.css` | Cartes produit, grille | ~921 |
+| `modal-shell.css` | Squelette modal (overlay, conteneur, animations d'entrée/sortie) | ~792 |
+| `modal-media.css` | Carrousel images, dots, fav, recently viewed, keyboard hint | ~305 |
+| `modal-product.css` | Contenu PDP : buybox, variantes, livraison, suggestions | ~1186 |
+| `modal-product-lot4-hybrid.css` | **Extension officielle** de `modal-product.css` — Approche C hybride desktop (`@media ≥ 900px` uniquement), rapatrié de `b-modal-approche-c-hybrid.js` (Lot 4). Chargé immédiatement après `modal-product.css`. | ~360 |
+| `cart.css` | Panier flottant, side cart (mobile + base) | ~1391 |
+| `interactions.css` | Animations, transitions, micro-interactions | ~513 |
+| `hero-cart-proxy.css` | Proxy hero ↔ cart | ~21 |
+| `group-cart-flow.css` | Achat groupé : flow, états, boutons | ~1935 |
 | `shared-followup.css` | Placeholder (2 lignes) | 2 |
+| `identity.css` | Identité vendeur, avatar, badge | ~183 |
 
-### `desktop.css` (2 sources)
+### `desktop.css` (1 source)
 
 | Source | Rôle | Lignes |
 |---|---|---:|
-| `boutique-desktop.css` | Tous les enrichissements desktop : mega-nav, side cart, k-subchip, hero refonte, **et certaines règles .k-modal-* desktop-only** (recent grid, keyboard hint) | ~1480 |
-| `desktop-commerce-skeleton.css` | Squelette commerce desktop : hero, layout général, .k-modal-img-wrap hover | ~325 |
+| `boutique-desktop.css` | Tous les enrichissements desktop : mega-nav, side cart, k-subchip, hero desktop, blocs premium, `.k-cart-drawer` override, `.k-modal-recent-*`, `.k-modal-keyboard-hint` | ~1263 |
+
+> ℹ️ `desktop-commerce-skeleton.css` est **référencé dans l'ancienne doc** mais absent
+> du bundler actuel (`deploy-css.js`). Il ne génère aucune sortie en prod. Si le fichier
+> existe sur disque, son contenu est orphelin jusqu'à réintégration explicite documentée.
 
 ### `event.css` (2 sources)
 
@@ -92,9 +113,10 @@ const bundles = [
 | `.k-cats-*`, `.k-chip` desktop overrides | `boutique-desktop.css` | `desktop.css` |
 | `.k-subchip*`, `#k-subcats-wrap` | `boutique-desktop.css` | `desktop.css` |
 | `.k-grid`, `.k-card` | `products.css` | `components.css` |
-| `.k-modal-*` base + mobile + desktop core | `modal.css` | `components.css` |
+| `.k-modal-*` base + mobile + desktop core | `modal-shell.css` + `modal-product.css` + `modal-media.css` | `components.css` |
+| `.k-modal-*` Approche C hybride (desktop only) | `modal-product-lot4-hybrid.css` (**extension officielle**) | `components.css` |
 | `.k-modal-recent-*`, `.k-modal-keyboard-hint` | `boutique-desktop.css` | `desktop.css` |
-| `.k-modal-img-wrap` hover | `desktop-commerce-skeleton.css` | `desktop.css` |
+| `.k-modal-img-wrap` hover desktop | `boutique-desktop.css` | `desktop.css` |
 | `.k-cart-*`, `.k-side-cart`, `.k-sc-*` base | `cart.css` | `components.css` |
 | `#k-side-cart .k-sc-btn-*` overrides desktop | `boutique-desktop.css` | `desktop.css` |
 | `.k-vg*`, `.k-sku`, `.k-vp` (variants) | `modal.css` | `components.css` |
@@ -103,11 +125,11 @@ const bundles = [
 
 **Remarques importantes** :
 
-1. **Le modal a TROIS sources qui contribuent** (`modal.css`, `boutique-desktop.css`, `desktop-commerce-skeleton.css`). Ce n'est pas un bug, c'est intentionnel — chaque source a son périmètre. Mais c'était caché jusqu'à maintenant.
+1. **Le modal a QUATRE sources qui contribuent** : `modal-shell.css`, `modal-product.css`, `modal-media.css` (toutes dans `components.css`), et `modal-product-lot4-hybrid.css` (extension officielle Lot 4, également dans `components.css`). La couche desktop (`boutique-desktop.css`) ajoute `.k-modal-recent-*` et `.k-modal-keyboard-hint`. Ce n'est pas un bug — chaque source a un périmètre distinct documenté.
 
 2. **`#k-side-cart .k-sc-btn-*` est dans `boutique-desktop.css`** (avec spécificité préfixée, plus haute que les versions non préfixées de `cart.css`).
 
-3. **Les chips de catégories ont 2 owners** : mobile dans `categories.css`, desktop dans `boutique-desktop.css`. Avant la migration, c'était dispersé dans 3 fichiers (triplon `k-subchip` corrigé par ChatGPT le 17/05).
+3. **Les chips de catégories ont 2 owners** : mobile/base dans `categories.css`, desktop dans `boutique-desktop.css`. Le triplon `.k-subchip` (corrigé le 17/05) ne doit pas revenir.
 
 ---
 
@@ -168,26 +190,30 @@ Pour vérifier si le dist est synchro avec les sources, lancer :
 
 ```bash
 cd boutique
-node scripts/bundle-css.js
-git status css/dist/
-# Si la commande affiche des modifs : le dist était désynchro AVANT votre PR
-# Si elle n'affiche rien : le dist est à jour
+node scripts/deploy-css.js --dry
+# Affiche ce qui changerait sans toucher aux fichiers
+# Si des bundles apparaissent : le dist était désynchro AVANT votre PR
+# Si rien n'apparaît : le dist est à jour
 ```
 
 **À automatiser dans un hook pre-commit** : refuser le commit si `css/dist/` est out of date par rapport aux sources.
 
 ---
 
-## 8. Dette connue (au 18 mai 2026)
+## 8. Dette connue (au 3 juin 2026)
 
 | Élément | Statut |
 |---|:-:|
-| Cadavre `.k-mega-dropdown` dans dist/desktop.css | ✅ Nettoyé par ChatGPT le 17/05 |
-| Triplon `.k-subchip` (categories + dist/components + dist/desktop) | ✅ Nettoyé par ChatGPT le 17/05, owner = boutique-desktop.css |
+| Cadavre `.k-mega-dropdown` dans dist/desktop.css | ✅ Nettoyé le 17/05 |
+| Triplon `.k-subchip` (categories + dist/components + dist/desktop) | ✅ Nettoyé le 17/05, owner = boutique-desktop.css |
 | 45 nouveautés `modal.css` (enrichissements Temu) non bundlées | ✅ Bundle régénéré le 18/05 (CSS-3) |
 | 30 nouveautés `boutique-desktop.css` (subchip + side cart moderne) non bundlées | ✅ Bundle régénéré le 18/05 (CSS-3) |
-| 12 règles `.k-hero-*` orphelines dans dist/base.css (ancien design) | ✅ Disparues au rebundle, remplacées par desktop-commerce-skeleton.css |
+| 12 règles `.k-hero-*` orphelines dans dist/base.css (ancien design) | ✅ Disparues au rebundle |
 | 7 règles `#k-side-cart .k-sc-btn-*` orphelines dans dist/desktop.css | ✅ Rapatriées dans boutique-desktop.css source le 18/05 (CSS-2) |
+| `modal-product-lot4-hybrid.css` non documentée dans pipeline | ✅ Corrigé (CSS-5, 3 juin 2026) — extension officielle documentée |
+| `bundle-css.js` obsolète référencé comme source de vérité | ✅ Corrigé (CSS-5) — source de vérité = `deploy-css.js` |
+| `!important` hero.css L381 (premium V1, commenté "retrait = Lot 4") | ⏳ À vérifier en Lot 5 — spécificité `html.k-mobile-premium-v1 .k-hero-X` peut suffire |
+| Hex `#2e6b28` dans `cart.css` gradient — pas de token candidat exact | ⏳ Lot 5 — créer `--ocean-forest-deep` ou vérifier si `--cta-green` suffit |
 | Pas de hook pre-commit qui vérifie la synchro | ⏳ À ajouter (lot futur) |
 
 ---
@@ -205,22 +231,14 @@ git status css/dist/
 
 Le pipeline CSS Boutique est accompagné de **3 scripts Node.js** dans `boutique/scripts/`. Chacun a un rôle précis et complémentaire.
 
-### 11.1 `bundle-css.js` — Construire le dist
+### 11.1 `bundle-css.js` — ⚠️ OBSOLÈTE — ne pas utiliser
 
-**Rôle** : concaténer les sources dans les 4 bundles dist.
+Ce script est la version Sprint 3 du bundler. Il est **désynchronisé** : il ne contient
+pas `modal-product-lot4-hybrid`, référence `modal.css` qui n'existe plus (éclaté en
+`modal-shell` + `modal-product` + `modal-media`), et inclut `desktop-commerce-skeleton`
+qui n'est plus actif.
 
-**Commande** :
-```bash
-cd boutique
-npm run bundle:css
-```
-
-**Quand l'utiliser** :
-- Après toute modification d'un fichier source CSS
-- Avant tout commit qui touche `boutique/css/*.css`
-- Avant déploiement prod (vérification finale)
-
-**Sortie** : régénère les 4 fichiers `boutique/css/dist/*.css` avec un header daté.
+**Utiliser `deploy-css.js` à la place** (voir §11.2).
 
 ---
 
@@ -289,11 +307,11 @@ L'ordre **strict** d'une PR qui modifie un CSS Boutique :
 
 ```bash
 # 1. Modifier les fichiers sources
-vim boutique/css/modal.css
+vim boutique/css/modal-product.css
 
-# 2. Régénérer le bundle
+# 2. Régénérer le bundle (bundle + cache-bust atomique)
 cd boutique
-npm run bundle:css
+npm run bundle:css        # ← appelle deploy-css.js
 
 # 3. Régénérer la photo de l'archi (descriptif)
 npm run boutique:arch
@@ -335,4 +353,6 @@ npm run boutique:audit || {
 
 ## 12. Évolution de la doc
 
-Si tu ajoutes une source dans `boutique/css/`, mets à jour `bundle-css.js` ET cette doc dans la même PR. Sinon les agents suivants ne sauront pas qu'elle existe.
+Si tu ajoutes une source dans `boutique/css/`, mets à jour **`deploy-css.js`** ET cette doc dans la même PR. Sinon les agents suivants ne sauront pas qu'elle existe.
+
+Ne jamais modifier `bundle-css.js` — il est conservé à titre d'archive historique uniquement.

@@ -1897,7 +1897,7 @@
   box-shadow: 0 8px 24px rgba(31,122,84,.12);
 }
 .k-group-banner .k-gbanner-inner.is-funded .k-gbanner-dot {
-  background: #1f7a54;
+  background: var(--green-text-sett);
   animation: kGBPulse 1.4s ease-in-out infinite;
 }
 .k-group-banner .k-gbanner-inner.is-urgent {
@@ -1905,7 +1905,7 @@
   border-color: rgba(245,158,11,.35);
 }
 .k-group-banner .k-gbanner-cta.is-funded {
-  background: #1f7a54;
+  background: var(--green-text-sett);
   color: white;
 }
 .k-group-banner.is-compact .k-gbanner-inner {

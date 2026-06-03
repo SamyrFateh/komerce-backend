@@ -1217,8 +1217,8 @@ body.cart-open .k-wa-fab {
   align-items: center;
   gap: 6px;
   padding: 10px 14px;
-  background: linear-gradient(135deg, var(--ocean-dark, #4A9040), #2e6b28);
-  color: #fff;
+  background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-dark-deep));
+  color: var(--white);
   border-radius: 50px;
   box-shadow: 0 4px 18px rgba(42,122,62,.35), 0 1px 4px rgba(0,0,0,.15);
   font-family: inherit;
@@ -1246,8 +1246,8 @@ body.cart-open .k-wa-fab {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: #fff;
-  color: var(--ocean-dark, #4A9040);
+  background: var(--white);
+  color: var(--ocean-dark);
   border-radius: 50px;
   font-size: 11px;
   font-weight: 800;
@@ -1268,8 +1268,8 @@ body.cart-open .k-wa-fab {
   position: fixed;
   z-index: 1501;
   width: 270px;
-  background: var(--white, #fff);
-  border: 1px solid var(--border, #E3D9C9);
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: var(--radius, 12px);
   box-shadow: var(--shadow-lg, 0 8px 30px rgba(31,48,36,.12));
   overflow: hidden;
@@ -1289,8 +1289,8 @@ body.cart-open .k-wa-fab {
   align-items: center;
   justify-content: space-between;
   padding: 11px 14px 9px;
-  background: var(--ocean-dark, #4A9040);
-  color: #fff;
+  background: var(--ocean-dark);
+  color: var(--white);
 }
 .kpill-pop-title {
   font-size: 13px;
@@ -1308,7 +1308,7 @@ body.cart-open .k-wa-fab {
 .kpill-pop-close {
   background: rgba(255,255,255,.2);
   border: none;
-  color: #fff;
+  color: var(--white);
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -1334,7 +1334,7 @@ body.cart-open .k-wa-fab {
   padding: 7px 14px;
   transition: background .12s;
 }
-.kpill-pop-row:hover { background: #f7f4ee; }
+.kpill-pop-row:hover { background: var(--sand-hover); }
 
 .kpill-pop-img {
   width: 40px;
@@ -1342,14 +1342,14 @@ body.cart-open .k-wa-fab {
   object-fit: cover;
   border-radius: var(--radius-sm, 8px);
   flex-shrink: 0;
-  border: 1px solid var(--border, #E3D9C9);
+  border: 1px solid var(--border);
 }
 .kpill-pop-img--empty {
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
-  background: #f5f0e8;
+  background: var(--sand-warm);
 }
 
 .kpill-pop-info {
@@ -1361,14 +1361,14 @@ body.cart-open .k-wa-fab {
 .kpill-pop-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text, #1F3024);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .kpill-pop-meta {
   font-size: 11px;
-  color: var(--text-muted, #6B7B63);
+  color: var(--text-muted);
 }
 
 .kpill-pop-footer {
@@ -1376,16 +1376,16 @@ body.cart-open .k-wa-fab {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-top: 1px solid var(--border, #E3D9C9);
-  background: #faf6ed;
+  border-top: 1px solid var(--border);
+  background: var(--sand-footer);
 }
 .kpill-pop-label {
   font-size: 12px;
-  color: var(--text-muted, #6B7B63);
+  color: var(--text-muted);
   font-weight: 600;
 }
 .kpill-pop-total {
   font-size: 14px;
   font-weight: 800;
-  color: var(--ocean-dark, #4A9040);
+  color: var(--ocean-dark);
 }

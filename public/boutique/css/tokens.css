@@ -13,12 +13,15 @@
   --violet-dark:  #4a2d9e;
   --violet-light: rgba(108,63,197,.08);
   --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
-  --ocean-dark:   #4A9040;
-  --cta-green:    #2a7a3e;
+  --ocean-dark:       #4A9040;
+  --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
+  --cta-green:        #2a7a3e;
 
   --sand:         #FDFAF5;
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
+  --sand-hover:   #f7f4ee;  /* hover row — kpill popover liste */
+  --sand-footer:  #faf6ed;  /* fond footer — kpill popover total */
   /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
   --sand-bright:  #FDFAF3;
 

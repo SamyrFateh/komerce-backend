@@ -322,7 +322,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — hero (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2).
    Scopé html.k-mobile-premium-v1, dans @media max 899px (mobile). Owner du hero.
-   !important conservés (iso-comportemental) — retrait éventuel = Lot 4. ════════ */
+   !important conservés (iso-comportemental) — ⚠️ à vérifier en Lot 5 :
+   spécificité html.k-mobile-premium-v1 .k-hero-X (0-2-0) devrait suffire
+   sans !important si aucune règle concurrente n'est plus spécifique. ════════ */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-hero-fixed-wrap {
     background:
