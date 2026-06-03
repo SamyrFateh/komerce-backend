@@ -670,57 +670,67 @@
     display: none;
   }
 
+  /* ── FULL-BLEED PREMIUM — S6.4 : photo = le cadre lui-même ── */
+  /* Remplace le modèle vignette ronde + label flow.              */
+  /* Scope strict desktop @900px — mobile inchangé.              */
+
   .k-chip {
+    /* Géométrie carte */
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 80px;
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 8px 7px;
-    border-radius: 24px;
-    border: 1px solid var(--border-text-08);
-    border-bottom-color: var(--border-text-08);
-    background: var(--surface-white-64);
-    color: var(--text-alpha-82);
-    box-shadow: 0 4px 12px var(--border-text-04);
+    height: 120px;
+    min-height: 100px;
+    /* Ancrage des enfants absolus */
+    position: relative;
+    display: block;
+    padding: 0;
+    /* Visuel premium */
+    border-radius: 18px;
+    border: none;
+    background: var(--sand-warm);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
-    text-align: center;
     overflow: hidden;
-    white-space: normal;
-    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+    /* Transitions lift */
+    transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
+  /* Lift au survol */
   .k-chip:hover {
-    transform: translateY(-2px);
-    background: var(--white);
-    border-color: rgba(198,168,93,.36);
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
-    box-shadow: 0 12px 24px rgba(100,175,90,.12);
-    color: var(--text);
+    transform: translateY(-4px);
+    box-shadow:
+      0 16px 32px rgba(28,26,23,.13),
+      0 2px 6px rgba(28,26,23,.06);
   }
 
+  /* Neutralise le transform global sur .k-chip-photo (hérité de @hover:hover) */
+  .k-chip:hover .k-chip-photo {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Zoom discret sur l'image au survol */
+  .k-chip:hover .k-chip-photo img {
+    transform: scale(1.07);
+    filter: saturate(1.32) contrast(1.06) brightness(1.06);
+  }
+
+  /* ── Photo = le cadre ── */
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     margin: 0;
-    border-radius: 50%;
-    border: 1px solid var(--overlay-white-72);
-    /* POLISH — fond légèrement plus chaud pour soulever les images pâles */
+    padding: 0;
+    border-radius: 0;
+    border: none;
     background: var(--sand-warm);
-    box-shadow:
-      inset 0 0 0 1.5px rgba(255,255,255,.68),
-      0 6px 16px rgba(28,26,23,.08);
+    box-shadow: none;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     transform: none;
   }
 
@@ -730,10 +740,11 @@
     display: block;
     object-fit: cover;
     border-radius: 0;
-    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
-    filter: saturate(1.28) contrast(1.06) brightness(1.03);
+    filter: saturate(1.20) contrast(1.04) brightness(1.02);
+    transition: transform .30s var(--ease), filter .30s var(--ease);
   }
 
+  /* Fallback image erreur */
   .k-chip-fallback {
     display: none;
   }
@@ -742,44 +753,70 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
     color: var(--white);
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 900;
-    background: var(--text);
+    background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-light));
   }
 
+  /* ── Gradient overlay — scrim bas ──                                */
+  /* Sur la carte (.k-chip::after), z-index 1 : au-dessus de la photo */
+  /* et en-dessous du label.                                          */
+  .k-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 28%,
+      rgba(18, 12, 6, .56) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── Label overlay bas ── */
   .k-chip-label {
-    max-width: 100%;
-    color: inherit;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 7px 10px 9px;
+    color: var(--white);
     font-size: 12px;
     font-weight: 800;
     line-height: 1.05;
-    letter-spacing: -.025em;
+    letter-spacing: -.02em;
+    text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
+    text-shadow: 0 1px 4px rgba(0,0,0,.50);
+    z-index: 2;
   }
 
+  /* ── État actif — ring coral discret ── */
   .k-chip.active {
-    transform: translateY(-1px);
-    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
-    color: var(--coral-dark);
-    border-color: rgba(198,168,93,.62);
-    border-bottom-color: rgba(198,168,93,.62);
-    box-shadow: 0 12px 26px rgba(198,168,93,.16);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 2.5px var(--coral),
+      0 10px 24px rgba(200,92,45,.18);
   }
 
-  .k-chip.active .k-chip-photo {
-    border-color: rgba(198,168,93,.74);
-    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
-    opacity: 1;
+  .k-chip.active .k-chip-photo img {
+    filter: saturate(1.28) contrast(1.06) brightness(1.05);
   }
 
   .k-chip.active .k-chip-label {
-    color: var(--coral-dark);
+    color: var(--white);
     font-weight: 900;
+    text-shadow:
+      0 1px 6px rgba(200,92,45,.65),
+      0 1px 3px rgba(0,0,0,.55);
   }
 
   .k-sec-subcats { display: none; }
