@@ -675,57 +675,67 @@
     display: none;
   }
 
+  /* ── FULL-BLEED PREMIUM — S6.4 : photo = le cadre lui-même ── */
+  /* Remplace le modèle vignette ronde + label flow.              */
+  /* Scope strict desktop @900px — mobile inchangé.              */
+
   .k-chip {
+    /* Géométrie carte */
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 80px;
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 8px 7px;
-    border-radius: 24px;
-    border: 1px solid var(--border-text-08);
-    border-bottom-color: var(--border-text-08);
-    background: var(--surface-white-64);
-    color: var(--text-alpha-82);
-    box-shadow: 0 4px 12px var(--border-text-04);
+    height: 120px;
+    min-height: 100px;
+    /* Ancrage des enfants absolus */
+    position: relative;
+    display: block;
+    padding: 0;
+    /* Visuel premium */
+    border-radius: 18px;
+    border: none;
+    background: var(--sand-warm);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
-    text-align: center;
     overflow: hidden;
-    white-space: normal;
-    transition: transform .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease), color .16s var(--ease);
+    /* Transitions lift */
+    transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
+  /* Lift au survol */
   .k-chip:hover {
-    transform: translateY(-2px);
-    background: var(--white);
-    border-color: rgba(198,168,93,.36);
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
-    box-shadow: 0 12px 24px rgba(100,175,90,.12);
-    color: var(--text);
+    transform: translateY(-4px);
+    box-shadow:
+      0 16px 32px rgba(28,26,23,.13),
+      0 2px 6px rgba(28,26,23,.06);
   }
 
+  /* Neutralise le transform global sur .k-chip-photo (hérité de @hover:hover) */
+  .k-chip:hover .k-chip-photo {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Zoom discret sur l'image au survol */
+  .k-chip:hover .k-chip-photo img {
+    transform: scale(1.07);
+    filter: saturate(1.32) contrast(1.06) brightness(1.06);
+  }
+
+  /* ── Photo = le cadre ── */
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     margin: 0;
-    border-radius: 50%;
-    border: 1px solid var(--overlay-white-72);
-    /* POLISH — fond légèrement plus chaud pour soulever les images pâles */
+    padding: 0;
+    border-radius: 0;
+    border: none;
     background: var(--sand-warm);
-    box-shadow:
-      inset 0 0 0 1.5px rgba(255,255,255,.68),
-      0 6px 16px rgba(28,26,23,.08);
+    box-shadow: none;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     transform: none;
   }
 
@@ -735,10 +745,11 @@
     display: block;
     object-fit: cover;
     border-radius: 0;
-    /* POLISH — saturation pour que les photos ressortent sur le fond sable */
-    filter: saturate(1.28) contrast(1.06) brightness(1.03);
+    filter: saturate(1.20) contrast(1.04) brightness(1.02);
+    transition: transform .30s var(--ease), filter .30s var(--ease);
   }
 
+  /* Fallback image erreur */
   .k-chip-fallback {
     display: none;
   }
@@ -747,44 +758,70 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
     color: var(--white);
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 900;
-    background: var(--text);
+    background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-light));
   }
 
+  /* ── Gradient overlay — scrim bas ──                                */
+  /* Sur la carte (.k-chip::after), z-index 1 : au-dessus de la photo */
+  /* et en-dessous du label.                                          */
+  .k-chip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 28%,
+      rgba(18, 12, 6, .56) 100%
+    );
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── Label overlay bas ── */
   .k-chip-label {
-    max-width: 100%;
-    color: inherit;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 7px 10px 9px;
+    color: var(--white);
     font-size: 12px;
     font-weight: 800;
     line-height: 1.05;
-    letter-spacing: -.025em;
+    letter-spacing: -.02em;
+    text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
+    text-shadow: 0 1px 4px rgba(0,0,0,.50);
+    z-index: 2;
   }
 
+  /* ── État actif — ring coral discret ── */
   .k-chip.active {
-    transform: translateY(-1px);
-    background: linear-gradient(180deg, var(--cream-warm), var(--cream-pearl));
-    color: var(--coral-dark);
-    border-color: rgba(198,168,93,.62);
-    border-bottom-color: rgba(198,168,93,.62);
-    box-shadow: 0 12px 26px rgba(198,168,93,.16);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 2.5px var(--coral),
+      0 10px 24px rgba(200,92,45,.18);
   }
 
-  .k-chip.active .k-chip-photo {
-    border-color: rgba(198,168,93,.74);
-    box-shadow: 0 0 0 2px rgba(198,168,93,.28), 0 8px 18px rgba(198,168,93,.12);
-    opacity: 1;
+  .k-chip.active .k-chip-photo img {
+    filter: saturate(1.28) contrast(1.06) brightness(1.05);
   }
 
   .k-chip.active .k-chip-label {
-    color: var(--coral-dark);
+    color: var(--white);
     font-weight: 900;
+    text-shadow:
+      0 1px 6px rgba(200,92,45,.65),
+      0 1px 3px rgba(0,0,0,.55);
   }
 
   .k-sec-subcats { display: none; }
@@ -5552,27 +5589,27 @@ body.cart-open .k-wa-fab {
 
 /* Titre de section court en capslock */
 .ck-section-title {
-  font-size: .68rem;
+  font-size: .62rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .07em;
   color: var(--text-muted);
   line-height: 1;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 /* Aide pédagogique discrète sous le titre */
 .ck-section-hint {
-  font-size: .78rem;
+  font-size: .75rem;
   color: var(--text-muted);
-  line-height: 1.35;
-  margin-bottom: 8px;
+  line-height: 1.3;
+  margin-bottom: 6px;
 }
 
-/* Bloc de section avec séparateur visuel */
+/* Bloc de section — mobile-first ultra compact */
 .ck-section-block {
-  padding-top: 12px;
-  margin-top: 4px;
+  padding-top: 8px;
+  margin-top: 2px;
   border-top: 1px solid var(--border, rgba(0,0,0,.08));
 }
 .ck-section-block:first-child {
@@ -5582,41 +5619,129 @@ body.cart-open .k-wa-fab {
 
 /* Label section pour le titre VOUS COMMANDEZ AVEC */
 .k-ck-id-label--section {
-  font-size: .68rem;
+  font-size: .62rem;
   letter-spacing: .07em;
   margin-bottom: 2px;
 }
 
-/* ── Case « Je récupère moi-même » (format image 2 : titre + sous-texte) ── */
+/* ── Case « Je récupère moi-même » compactée ── */
 .ck-benf-me-label {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 9px;
   cursor: pointer;
   user-select: none;
-  margin-top: 4px;
+  margin-top: 3px;
   background: var(--green-bg-leaf);
   border: 1px solid var(--leaf-border, var(--border));
-  border-radius: 11px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 .ck-benf-me-cb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: var(--cta-green);
   flex-shrink: 0;
 }
 .ck-benf-me-text { display: flex; flex-direction: column; gap: 1px; }
-.ck-benf-me-title { font-size: .86rem; font-weight: 700; color: var(--text); }
-.ck-benf-me-sub { font-size: .72rem; color: var(--text-muted); }
+.ck-benf-me-title { font-size: .82rem; font-weight: 700; color: var(--text); }
+.ck-benf-me-sub { font-size: .68rem; color: var(--text-muted); }
 .ck-recip-fields {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 .ck-recip-fields[hidden] { display: none; }
+
+/* ── Checkout body ultra-compact sur mobile ── */
+.k-order-body--checkout {
+  padding: 8px 10px calc(74px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Guest hint plus compact */
+.k-ck-guest-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--cream-peach);
+  border: 1px solid var(--border-coral-22, var(--border));
+  border-radius: 9px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+  font-size: .75rem;
+  line-height: 1.3;
+  color: var(--text);
+}
+.k-ck-guest-ic { font-size: 1rem; flex: 0 0 auto; }
+
+/* Recap identité compact */
+.k-ck-identity-recap {
+  gap: 2px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+/* Relais plus aéré mais compact */
+.ck-relais-ile-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.ck-relais-ile-btn {
+  min-height: 32px;
+  font-size: .74rem;
+}
+.ck-relais-item {
+  padding: 6px 8px 6px 28px;
+  margin-bottom: 4px;
+}
+.ck-relais-name { font-size: .84rem; }
+.ck-relais-addr { font-size: .68rem; }
+
+/* Paiement chips compact */
+.ck-pay-grid { gap: 5px; margin-bottom: 4px; }
+.ck-pay-chip { min-height: 38px; padding: 2px 3px; }
+.ck-chip-icon { font-size: .95rem; }
+.ck-chip-lbl { font-size: .68rem; }
+
+/* Bouton confirmer compact */
+.ck-confirm-btn {
+  min-height: 56px;
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+}
+.ck-confirm-main  { font-size: .92rem; }
+.ck-confirm-amount { font-size: 1rem; }
+.ck-confirm-subtext { font-size: .67rem; }
+
+/* Helper cash compact */
+.ck-pay-helper {
+  margin: 3px 0 5px;
+  padding: 5px 8px;
+  font-size: .68rem;
+}
+
+/* Fulfillment switch compact */
+.ck-fulfillment-switch { gap: 5px; margin: 0 0 8px; }
+.ck-fulfillment-btn { min-height: 28px; font-size: .76rem; }
+
+/* Wallet section compact */
+.k-wallet-section { margin-top: 4px; padding: 6px 8px; }
+.k-wallet-title { font-size: .8rem; }
+.k-wallet-balance { font-size: .68rem; }
+
+/* Sur desktop, restaurer les tailles normales */
+@media (min-width: 600px) {
+  .k-order-body--checkout {
+    padding: 12px 12px calc(90px + env(safe-area-inset-bottom)) !important;
+  }
+  .ck-section-block { padding-top: 12px; }
+  .ck-section-title { font-size: .68rem; margin-bottom: 4px; }
+  .ck-benf-me-label { padding: 10px 12px; }
+  .ck-confirm-btn { min-height: 64px; }
+  .ck-relais-ile-btn { min-height: 36px; font-size: .78rem; }
+}
 
 
 /* ── S3.2 — Mode édition panier collectif (tiré de b-cart.js inline styles) ── */
