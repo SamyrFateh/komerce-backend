@@ -292,11 +292,7 @@ function setIntlPhoneDefault(id, zone, force) {
   const sel   = document.getElementById(id + '-country');
   const input = document.getElementById(id);
   if (!sel) return;
-  // Le champ suivi (of-sender-phone) est toujours présumé diaspora (+33),
-  // indépendamment de la zone de livraison.
-  const nextCode = (id === 'of-sender-phone')
-    ? getDefaultSenderPhoneCode()
-    : getDefaultPhoneCodeForZone(zone);
+  const nextCode = getDefaultPhoneCodeForZone(zone);
   const hasValue = !!String(input?.value || '').trim();
   if (force || !hasValue) {
     sel.value = nextCode;
@@ -703,25 +699,9 @@ export function renderCheckout() {
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
 
-    // ── Bloc contact suivi optionnel ────────────────────────────────────────────
-    const senderSectionWrap = document.createElement('div');
-    senderSectionWrap.className = 'ck-section-block';
-    const senderSectionTitle = document.createElement('div');
-    senderSectionTitle.className = 'ck-section-title';
-    senderSectionTitle.textContent = 'AJOUTER UN AUTRE CONTACT DE SUIVI ?';
-    senderSectionWrap.appendChild(senderSectionTitle);
-    const senderSectionHint = document.createElement('div');
-    senderSectionHint.className = 'ck-section-hint';
-    senderSectionHint.textContent = "Utile pour prévenir un proche en France ou aux Comores.";
-    senderSectionWrap.appendChild(senderSectionHint);
-    const senderGroup2 = makeIntlPhoneInput('of-sender-phone', 'Téléphone (optionnel)', od, 'sender_phone');
-    senderSectionWrap.appendChild(senderGroup2);
-    body.appendChild(senderSectionWrap);
-    // ── Fin contact suivi ─────────────────────────────────────────────────────
 
     function refreshFulfillment() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
-      setIntlPhoneDefault('of-sender-phone', od.fulfillment_zone, !od.sender_phone);
       _loadRelaisSection(relaisSection, od);
     }
     refreshFulfillment();
@@ -887,30 +867,6 @@ export async function submitOrder(btn) {
   const recipName  = (document.getElementById('of-beneficiary-name')?.value || '').trim();
   const recipPhone = readIntlPhoneValue('of-beneficiary-phone', od.beneficiary_phone);
 
-  // tracking_phone = téléphone vérifié du PAYEUR (≠ bénéficiaire local).
-  // On préfère l'identité vérifiée par OTP plutôt que le champ de saisie libre.
-  // Le champ of-sender-phone devient un fallback pour les cas où le payeur
-  // veut explicitement tracer sur un numéro différent de son identité Komerce.
-  let senderPhone = (od.sender_phone || '').trim();
-  if (senderPhone.length < 8) {
-    const _phoneInput = document.getElementById('of-sender-phone');
-    const _countrySel = document.getElementById('of-sender-phone-country');
-    const _code = _countrySel?.value || '+269';
-    const RULES = { '+33': 9, '+269': 7, '+262': 9, '+32': 9, '+41': 9, '+44': 10, '+1': 10, '+971': 9, '+966': 9, '+60': 9, '+212': 9 };
-    let _digits = String(_phoneInput?.value || '').replace(/\D/g, '');
-    if (['+33', '+262', '+32', '+41', '+44', '+971', '+966', '+60', '+212'].includes(_code) && _digits.startsWith('0')) {
-      _digits = _digits.slice(1);
-    }
-    if (_digits.length > 0) {
-      const expected = RULES[_code] || 9;
-      if (_digits.length !== expected) {
-        showToast(`Numéro invalide pour ${_code}. ${expected} chiffres attendus.`, 'error');
-        return;
-      }
-      senderPhone = _code + _digits;
-    }
-  }
-
   const clientName = recipName;
   const fullRecipPhone = recipPhone;
   const clientEmail = undefined;
@@ -919,7 +875,6 @@ export async function submitOrder(btn) {
   if (!recipPhone) { showToast('Indiquez un téléphone valide pour le bénéficiaire.', 'error'); return; }
 
   const isStripe = od.payment_mode === 'stripe_eur';
-  const trackingPhone = senderPhone && senderPhone.length >= 8 ? senderPhone : null;
 
   if (!od.selectedRelaisId) {
     markRelaySelectionError();
@@ -932,15 +887,13 @@ export async function submitOrder(btn) {
   // Les données sont valides → on demande l'identité. Case "c'est moi" cochée =
   // confirmation implicite (identité connue retournée sans modale). Inconnu →
   // flow OTP complet. Fermeture/annulation → identity null → abort propre.
-  const _cbBenfIsMe = document.getElementById('cb-benf-is-me');
-  const _benfIsMeChecked = !!(_cbBenfIsMe && _cbBenfIsMe.checked);
   const identity = await requireIdentity({
     reason: 'valider votre commande',
     title: 'Sécuriser votre commande',
-    allowOtherPhone: !_benfIsMeChecked,
   });
   if (!identity) return; // modale fermée sans valider → arrêt propre, panier intact
   // ── FIN GARDE IDENTITÉ ────────────────────────────────────────────────────
+  const trackingPhone = identity.phone || null; // téléphone OTP du payeur
 
   if (btn.dataset.busy === '1') return;
   btn.dataset.busy = '1';
