@@ -381,7 +381,7 @@ export function renderCheckout() {
       };
       idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange);
       idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange);
-      body.appendChild(idRecap);
+      body.insertBefore(idRecap, body.firstChild); // carte en tête du checkout
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
 
@@ -396,24 +396,23 @@ export function renderCheckout() {
     if (!_knownUser) {
       restoreIdentity().then(restoredUser => {
         if (!restoredUser) return;
-        // Mettre à jour l'état global
         state.user = restoredUser;
 
-        // Construire ou remplacer le bloc récap dans le DOM
-        // S3.1 — construction DOM déléguée à buildIdentityRecapDOM
+        // Anti-doublon : si la carte existe déjà (rendu concurrent), on rafraîchit juste.
         let idRecap = body.querySelector('#ck-identity-recap');
-        const isNew = !idRecap;
-        if (isNew) {
-          idRecap = buildIdentityRecapDOM(restoredUser);
-        } else {
+        if (idRecap) {
           const nameEl = idRecap.querySelector('.k-ck-id-value');
           if (nameEl) {
             const n = restoredUser.full_name || restoredUser.name || '';
             const p = restoredUser.phone || '';
             nameEl.textContent = n + (n && p ? ' · ' : '') + p;
           }
+          return;
         }
 
+        // Construction + insertion EN TÊTE du body (fiable, indépendant de la
+        // structure interne — on ne cherche plus un .k-ck-group qui peut manquer).
+        idRecap = buildIdentityRecapDOM(restoredUser);
         const _onIdChange2 = async () => {
           const newUser = await requireIdentity({
             reason: "changer d'identité",
@@ -431,13 +430,12 @@ export function renderCheckout() {
         };
         idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange2);
         idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange2);
-
-        if (isNew) {
-          const firstInput = body.querySelector('.k-ck-group, .ck-label');
-          if (firstInput) body.insertBefore(idRecap, firstInput);
-          else body.appendChild(idRecap);
-        }
-      }).catch(() => { /* restauration silencieuse — on ignore les erreurs réseau */ });
+        body.insertBefore(idRecap, body.firstChild); // toujours en haut
+      }).catch(err => {
+        // On n'avale plus silencieusement : une erreur réseau est normale (non
+        // connecté), mais une erreur de construction DOM doit être visible.
+        if (err && err.name !== 'TypeError') console.warn('[checkout] restauration identité:', err);
+      });
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
