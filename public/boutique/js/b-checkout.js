@@ -364,7 +364,7 @@ export function renderCheckout() {
     const _knownUser = getCurrentIdentity();
     if (_knownUser) {
       const idRecap = buildIdentityRecapDOM(_knownUser);
-      idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
+      const _onIdChange = async () => {
         const newUser = await requireIdentity({
           reason: "changer d'identité",
           title: 'Utiliser un autre numéro',
@@ -378,7 +378,9 @@ export function renderCheckout() {
             nameEl.textContent = n + (n && p ? ' · ' : '') + p;
           }
         }
-      });
+      };
+      idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange);
+      idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange);
       body.appendChild(idRecap);
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
@@ -412,7 +414,7 @@ export function renderCheckout() {
           }
         }
 
-        idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', async () => {
+        const _onIdChange2 = async () => {
           const newUser = await requireIdentity({
             reason: "changer d'identité",
             title: 'Utiliser un autre numéro',
@@ -426,7 +428,9 @@ export function renderCheckout() {
               nameEl.textContent = n + (n && p ? ' · ' : '') + p;
             }
           }
-        });
+        };
+        idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange2);
+        idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange2);
 
         if (isNew) {
           const firstInput = body.querySelector('.k-ck-group, .ck-label');
@@ -437,10 +441,10 @@ export function renderCheckout() {
     }
     // ── Fin restauration silencieuse ─────────────────────────────────────────
 
-    // ── Bloc « Qui récupère ? » — case simple (décocher = quelqu'un d'autre) ──
-    // Format volontairement discret (≠ onglets) : on a déjà 2 onglets pays en
-    // haut, on n'ajoute pas un 2e système d'onglets. Case cochée = je récupère
-    // (champs masqués) ; décochée = quelqu'un d'autre (champs révélés).
+    // ── Bloc « Qui récupère ? » ───────────────────────────────────────────────
+    // Logique : utilisateur reconnu → ses infos sont DÉJÀ dans la carte du haut.
+    // Donc « Je récupère moi-même » → AUCUN champ (pas de doublon).
+    // « Quelqu'un d'autre récupère » → on révèle les champs Nom/Tél du retraitant.
     const benfSection = document.createElement('div');
     benfSection.className = 'ck-section-block';
     const benfTitle = document.createElement('div');
@@ -453,17 +457,14 @@ export function renderCheckout() {
     benfMeWrap.className = 'ck-benf-me-label';
     benfMeWrap.innerHTML =
       '<input type="checkbox" id="cb-benf-is-me" class="ck-benf-me-cb" checked> '
-      + '<span>C\'est moi qui récupère la commande</span>';
+      + '<span class="ck-benf-me-text">'
+      +   '<span class="ck-benf-me-title">Je récupère moi-même</span>'
+      +   '<span class="ck-benf-me-sub">Les infos ci-dessus sont utilisées</span>'
+      + '</span>';
     benfSection.appendChild(benfMeWrap);
 
-    // Note contextuelle (visible seulement si quelqu'un d'autre)
-    const benfNote = document.createElement('div');
-    benfNote.className = 'ck-recip-note';
-    benfNote.hidden = true;
-    benfNote.textContent = 'Le suivi WhatsApp sera envoyé à vous deux.';
-    benfSection.appendChild(benfNote);
-
-    // Champs retraitant — masqués par défaut, révélés si case décochée
+    // Champs retraitant — MASQUÉS si « je récupère » (infos déjà dans la carte),
+    // révélés seulement si « quelqu'un d'autre ».
     const benfFields = document.createElement('div');
     benfFields.className = 'ck-recip-fields';
     benfFields.hidden = true;
@@ -472,15 +473,23 @@ export function renderCheckout() {
     benfSection.appendChild(benfFields);
     body.appendChild(benfSection);
 
-    // Logique : la case montre/cache les champs (le préremplissage est géré par
-    // le handler 'change' existant plus bas, qui lit #cb-benf-is-me).
+    // La case pilote le sous-texte + l'affichage des champs.
     const _benfCb = benfMeWrap.querySelector('#cb-benf-is-me');
+    const _benfTitle = benfMeWrap.querySelector('.ck-benf-me-title');
+    const _benfSub = benfMeWrap.querySelector('.ck-benf-me-sub');
     const _syncRecipFields = () => {
-      const isOther = !_benfCb.checked;     // décochée = quelqu'un d'autre
-      benfFields.hidden = !isOther;
-      benfNote.hidden = !isOther;
+      if (_benfCb.checked) {
+        _benfTitle.textContent = 'Je récupère moi-même';
+        _benfSub.textContent = 'Les infos ci-dessus sont utilisées';
+        benfFields.hidden = true;
+      } else {
+        _benfTitle.textContent = "Quelqu'un d'autre récupère";
+        _benfSub.textContent = 'Le suivi WhatsApp sera envoyé à vous deux';
+        benfFields.hidden = false;
+      }
     };
     _benfCb.addEventListener('change', _syncRecipFields);
+    _syncRecipFields();
 
     // ── Logique préremplissage (inchangée : lit #cb-benf-is-me) ───────────────
     // DOCTRINE : ce handler ne déclenche JAMAIS requireIdentity() ni de modale.

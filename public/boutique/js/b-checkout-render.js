@@ -298,13 +298,22 @@ export function buildIdentityRecapDOM(identity) {
   el.className = 'k-ck-identity-recap';
   const dName  = identity.full_name || identity.name  || '';
   const dPhone = identity.phone || '';
+  const initials = (dName.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2) || '·').toUpperCase();
   el.innerHTML =
-    '<span class="k-ck-id-label k-ck-id-label--section">CONTACT RECONNU</span>'
-    + '<span class="k-ck-id-value">'
-    + sanitize(dName) + (dName && dPhone ? ' · ' : '') + sanitize(dPhone)
-    + '</span>'
-    + '<span class="k-ck-id-hint">Ce contact recevra le suivi et pourra sécuriser la commande.</span>'
-    + '<button type="button" class="k-ck-id-change">Ce n\'est pas vous\u00a0? Utiliser un autre numéro</button>';
+    '<span class="k-ck-id-label k-ck-id-label--section">VOUS COMMANDEZ AVEC</span>'
+    + '<div class="k-ck-id-card">'
+    +   '<span class="k-ck-id-avatar" aria-hidden="true">' + sanitize(initials) + '</span>'
+    +   '<span class="k-ck-id-ident">'
+    +     '<span class="k-ck-id-value">' + sanitize(dName) + (dName && dPhone ? ' · ' : '') + sanitize(dPhone) + '</span>'
+    +   '</span>'
+    +   '<span class="k-ck-id-badge">Déjà connu</span>'
+    + '</div>'
+    + '<div class="k-ck-id-autofill">✓ Auto-rempli depuis votre compte</div>'
+    + '<div class="k-ck-id-actions">'
+    +   'Numéro changé\u00a0? <button type="button" class="k-ck-id-link k-ck-id-modify">Modifier</button>'
+    +   '<span class="k-ck-id-sep">·</span>'
+    +   '<button type="button" class="k-ck-id-link k-ck-id-change">Pas vous\u00a0?</button>'
+    + '</div>';
   return el;
 }
 
