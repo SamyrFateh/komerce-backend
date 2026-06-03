@@ -61,6 +61,15 @@ function injectHomeBlocks() {
   _blocksInjected = true;
   document.documentElement.classList.add('k-home-premium-v1');
 
+  // Bande promesse (slogan « Achetez pour vous… » + chips réassurance)
+  // DÉSACTIVÉE : elle retardait l'arrivée des produits, sur l'accueil comme en
+  // navigation. On conserve la classe k-home-premium-v1 (elle pilote tout le
+  // style desktop premium) mais on n'injecte plus la section.
+  // → repasser SHOW_CURATION à true pour la rétablir (visibilité contextuelle
+  //   gérée par applyHomeCurationVisibility / les listeners bus ci-dessous).
+  const SHOW_CURATION = false;
+  if (!SHOW_CURATION) return;
+
   // Bloc allégé : une ligne sobre (citation Brand Truth §Vérité de marque)
   // + chips de promesse en pilule, centrés. Aucun titre serif, aucun
   // bloc éditorial lourd — la doctrine BRAND_TRUTH §Règle de simplicité

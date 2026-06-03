@@ -1031,33 +1031,11 @@ body:has(#k-page-scroll.k-pager-active) {
     color: color-mix(in srgb, var(--text-muted) 78%, transparent);
   }
 
-  html.k-home-premium-v1 #k-catalog-section { padding-top: 22px; }
-
-  /* Titre éditorial « Bons plans du moment » : ACCUEIL uniquement.
-     #k-grid porte .k-grid-has-sections en mode accueil (univers « Tout ») et
-     la perd en grille plate d'univers. On scope donc le titre à ce seul état
-     → dès qu'un univers est actif, le titre d'accueil disparaît (le titre de
-     l'univers vit dans la barre contextuelle). CSS pur, aucun JS, aucune classe body. */
-  html.k-home-premium-v1 #k-catalog-section:has(#k-grid.k-grid-has-sections)::before {
-    content: 'Bons plans du moment';
-    display: block;
-    max-width: 1500px;
-    margin: 0 auto 6px;
-    font-family: var(--font-display, var(--font));
-    font-size: clamp(26px, 2.2vw, 36px);
-    line-height: 1;
-    letter-spacing: -.03em;
-    color: var(--text);
-  }
-
-  html.k-home-premium-v1 #k-catalog-section:has(#k-grid.k-grid-has-sections)::after {
-    content: 'Des produits utiles, bien placés, faciles à commander et à retirer en relais.';
-    display: block;
-    max-width: 1500px;
-    margin: -2px auto 18px;
-    color: var(--text-muted);
-    font-size: 14px;
-  }
+  /* Catalogue desktop : cartes directement sous la nav.
+     Titre éditorial « Bons plans du moment » + sous-titre SUPPRIMÉS (ils
+     retardaient l'arrivée des produits). Le contexte d'univers vit dans la
+     barre contextuelle sticky ; l'accueil va droit aux cartes. */
+  html.k-home-premium-v1 #k-catalog-section { padding-top: 12px; }
 
   /* Masquer les pseudo-éléments éditoriaux hors vue boutique.
      Même spécificité que les règles ci-dessus, placé après : cascade naturelle, sans !important. */
