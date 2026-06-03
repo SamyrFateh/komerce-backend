@@ -1036,12 +1036,4 @@ body:has(#k-page-scroll.k-pager-active) {
      retardaient l'arrivée des produits). Le contexte d'univers vit dans la
      barre contextuelle sticky ; l'accueil va droit aux cartes. */
   html.k-home-premium-v1 #k-catalog-section { padding-top: 12px; }
-
-  /* Masquer les pseudo-éléments éditoriaux hors vue boutique.
-     Même spécificité que les règles ci-dessus, placé après : cascade naturelle, sans !important. */
-  body:not(.k-view-shop) #k-catalog-section::before,
-  body:not(.k-view-shop) #k-catalog-section::after {
-    content: none;
-    display: none;
-  }
 }
