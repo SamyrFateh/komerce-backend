@@ -1186,3 +1186,19 @@ body.cart-open .k-wa-fab {
   margin: 0;
   min-height: 14px;
 }
+
+/* ── Invitation douce « Nouveau ? » (checkout sans cookie) ── */
+.k-ck-guest-hint {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--cream-peach);
+  border: 1px solid var(--border-coral-22, var(--border));
+  border-radius: 11px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: .8rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+.k-ck-guest-ic { font-size: 1.1rem; flex: 0 0 auto; }

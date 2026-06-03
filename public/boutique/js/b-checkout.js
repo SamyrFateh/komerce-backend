@@ -395,7 +395,19 @@ export function renderCheckout() {
     // au clic final de submitOrder().
     if (!_knownUser) {
       restoreIdentity().then(restoredUser => {
-        if (!restoredUser) return;
+        if (!restoredUser) {
+          // Cas SANS cookie (nouvel utilisateur) : invitation douce, informative,
+          // non bloquante. L'OTP réel se déclenchera au clic « Confirmer ».
+          if (!body.querySelector('#ck-identity-recap') && !body.querySelector('#ck-guest-hint')) {
+            const hint = document.createElement('div');
+            hint.id = 'ck-guest-hint';
+            hint.className = 'k-ck-guest-hint';
+            hint.innerHTML = '<span class="k-ck-guest-ic" aria-hidden="true">👋</span>'
+              + '<span><b>Nouveau ?</b> Vous validerez votre numéro WhatsApp au moment de la commande.</span>';
+            body.insertBefore(hint, body.firstChild);
+          }
+          return;
+        }
         state.user = restoredUser;
 
         // Anti-doublon : si la carte existe déjà (rendu concurrent), on rafraîchit juste.
