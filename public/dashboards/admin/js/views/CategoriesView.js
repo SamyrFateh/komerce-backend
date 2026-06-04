@@ -152,7 +152,10 @@
         <input name="db_keys" class="form-input" style="width:100%;" placeholder="ex: Mode,Beauté"></label><br><br>
       <label>Ordre d'affichage<br><input name="display_order" type="number" class="form-input" value="99" style="width:80px;"></label><br><br>
       <label><input name="show_in_rail" type="checkbox" checked> Afficher dans le rail</label><br>
-      <label><input name="show_in_sections" type="checkbox" checked> Afficher comme section</label>
+      <label><input name="show_in_sections" type="checkbox" checked> Afficher comme section</label><br><br>
+      <label>Image URL<br><input name="image_url" class="form-input" style="width:100%;" placeholder="https://..."></label><br><br>
+      <label>Theme token<br><input name="theme_token" class="form-input" style="width:100%;" placeholder="ex: indigo"></label><br><br>
+      <label>Accent token<br><input name="accent_token" class="form-input" style="width:100%;" placeholder="ex: violet"></label>
     `, async (fd) => {
       const dbKeysRaw = (fd.get('db_keys') || '').trim();
       const dbKeys = dbKeysRaw ? dbKeysRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
@@ -167,6 +170,9 @@
           display_order:  parseInt(fd.get('display_order') || '99'),
           show_in_rail:   fd.get('show_in_rail') === 'on',
           show_in_sections: fd.get('show_in_sections') === 'on',
+          image_url:      fd.get('image_url').trim() || null,
+          theme_token:    fd.get('theme_token').trim() || null,
+          accent_token:   fd.get('accent_token').trim() || null,
         }),
       });
       toast('Catégorie créée !');
@@ -183,7 +189,11 @@
         <input name="db_keys" value="${(cat.db_keys || []).join(',')}" class="form-input" style="width:100%;"></label><br><br>
       <label>Ordre d'affichage<br><input name="display_order" type="number" value="${cat.display_order || 99}" class="form-input" style="width:80px;"></label><br><br>
       <label><input name="show_in_rail" type="checkbox" ${cat.show_in_rail ? 'checked' : ''}> Afficher dans le rail</label><br>
-      <label><input name="show_in_sections" type="checkbox" ${cat.show_in_sections ? 'checked' : ''}> Afficher comme section</label>
+      <label><input name="show_in_sections" type="checkbox" ${cat.show_in_sections ? 'checked' : ''}> Afficher comme section</label><br><br>
+      ${cat.image_url ? `<img src="${cat.image_url}" style="width:160px;height:64px;object-fit:cover;border-radius:6px;margin-bottom:8px;display:block;">` : ''}
+      <label>Image URL<br><input name="image_url" value="${cat.image_url || ''}" class="form-input" style="width:100%;"></label><br><br>
+      <label>Theme token<br><input name="theme_token" value="${cat.theme_token || ''}" class="form-input" style="width:100%;"></label><br><br>
+      <label>Accent token<br><input name="accent_token" value="${cat.accent_token || ''}" class="form-input" style="width:100%;"></label>
     `, async (fd) => {
       const dbKeysRaw = (fd.get('db_keys') || '').trim();
       const dbKeys = dbKeysRaw ? dbKeysRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
@@ -197,6 +207,9 @@
           display_order:  parseInt(fd.get('display_order') || '99'),
           show_in_rail:   fd.get('show_in_rail') === 'on',
           show_in_sections: fd.get('show_in_sections') === 'on',
+          image_url:      fd.get('image_url').trim() || null,
+          theme_token:    fd.get('theme_token').trim() || null,
+          accent_token:   fd.get('accent_token').trim() || null,
         }),
       });
       toast('Catégorie modifiée !');
