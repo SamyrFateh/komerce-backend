@@ -106,8 +106,9 @@ router.post('/', ...guard, async (req, res, next) => {
     const { rows: [row] } = await db.query(`
       INSERT INTO boutique_categories
         (key, label, short_label, section_emoji, icon_svg, db_keys,
-         filter_type, display_order, show_in_rail, show_in_sections, is_active)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         filter_type, display_order, show_in_rail, show_in_sections, is_active,
+         image_url, theme_token, accent_token)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       RETURNING *`,
       [
         b.key,
@@ -121,6 +122,9 @@ router.post('/', ...guard, async (req, res, next) => {
         b.show_in_rail      !== false,
         b.show_in_sections  !== false,
         b.is_active         !== false,
+        b.image_url         || null,
+        b.theme_token       || null,
+        b.accent_token      || null,
       ]
     );
     row.subcategories = [];
@@ -136,6 +140,7 @@ router.put('/:key', ...guard, async (req, res, next) => {
       'label', 'short_label', 'section_emoji', 'icon_svg',
       'db_keys', 'filter_type', 'display_order',
       'show_in_rail', 'show_in_sections', 'is_active',
+      'image_url', 'theme_token', 'accent_token',
     ];
     const updates = [], values = [];
     let pi = 1;

@@ -45,6 +45,9 @@ router.get('/', async (req, res, next) => {
         bc.display_order,
         bc.show_in_rail,
         bc.show_in_sections,
+        bc.image_url,
+        bc.theme_token,
+        bc.accent_token,
         COALESCE(
           json_agg(
             json_build_object(
@@ -62,7 +65,8 @@ router.get('/', async (req, res, next) => {
       WHERE bc.is_active = TRUE
       GROUP BY bc.key, bc.label, bc.short_label, bc.section_emoji, bc.icon_svg,
                bc.db_keys, bc.filter_type, bc.display_order,
-               bc.show_in_rail, bc.show_in_sections
+               bc.show_in_rail, bc.show_in_sections,
+               bc.image_url, bc.theme_token, bc.accent_token
       ORDER BY bc.display_order
     `);
 
