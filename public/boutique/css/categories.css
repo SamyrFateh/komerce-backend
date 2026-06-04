@@ -1,10 +1,10 @@
-/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — categories.css
-   Chips catégories + sous-catégories + promo rail.
-   Mobile-first, zéro !important.
-   ═══════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   KOMERCE â€” categories.css
+   Chips catÃ©gories + sous-catÃ©gories + promo rail.
+   Mobile-first, zÃ©ro !important.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── CHIPS SHELL + FADES ─────────────────────────────────────── */
+/* â”€â”€ CHIPS SHELL + FADES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .k-cats-shell { position: relative; }
 .k-cats-wrap-fade-left,
 .k-cats-wrap-fade-right {
@@ -17,7 +17,7 @@
 .k-cats-wrap-fade-left  { left: 0;  background: linear-gradient(to right, var(--sand-warm) 35%, transparent); }
 .k-cats-wrap-fade-right { right: 0; background: linear-gradient(to left,  var(--sand-warm) 35%, transparent); }
 
-/* ── CHIPS RAIL ─────────────────────────────────────────────── */
+/* â”€â”€ CHIPS RAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .k-cats {
   display: flex;
   flex-wrap: nowrap;
@@ -36,7 +36,7 @@
 .k-cats::before,
 .k-cats::after { content: ""; flex: 0 0 12px; }
 
-/* ── CHIP (mobile-first : legacy horizontal rail fallback) ───── */
+/* â”€â”€ CHIP (mobile-first : legacy horizontal rail fallback) â”€â”€â”€â”€â”€ */
 .k-chip {
   flex: 0 0 38px;
   min-width: 38px;
@@ -57,11 +57,11 @@
 }
 .k-chip:active { transform: scale(.95); }
 
-/* Mobile target state — compact 2×4 pill grid, image left + label right. */
+/* Mobile target state â€” compact 2Ã—4 pill grid, image left + label right. */
 .k-cats-shell {
   margin-top: 0;
   border-radius: 20px;
-  /* POLISH — fond lumineux cohérent avec hero, séparé visuellement */
+  /* POLISH â€” fond lumineux cohÃ©rent avec hero, sÃ©parÃ© visuellement */
   background: var(--sand-bright);
   border: 1px solid rgba(198,168,93,.13);
   box-shadow:
@@ -104,7 +104,7 @@
   min-height: 36px;
   padding: 3px 5px 3px 3px;
   border-radius: 999px;
-  /* POLISH — fond plus opaque, lecture des images améliorée */
+  /* POLISH â€” fond plus opaque, lecture des images amÃ©liorÃ©e */
   background: rgba(255, 255, 255, .84);
   border: 1px solid rgba(198, 168, 93, .14);
   box-shadow: 0 1px 4px rgba(28, 26, 23, .048);
@@ -152,34 +152,34 @@
   margin: 0;
   border-radius: 10px;
   border-width: 1px;
-  /* POLISH — bord interne lumineux pour soulever l'image du fond */
+  /* POLISH â€” bord interne lumineux pour soulever l'image du fond */
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.58);
 }
 
 .k-chip-photo img {
   border-radius: 9px;
-  /* POLISH — saturation + micro-contraste pour lisibilité à petite taille */
+  /* POLISH â€” saturation + micro-contraste pour lisibilitÃ© Ã  petite taille */
   filter: saturate(1.22) contrast(1.05);
 }
 
-/* Fond par catégorie */
-/* POLISH — fonds enrichis par catégorie */
+/* Fond par catÃ©gorie */
+/* POLISH â€” fonds enrichis par catÃ©gorie */
 .k-chip[data-cat="all"]         .k-chip-photo { background: linear-gradient(135deg, var(--ocean-dark) 30%, var(--ocean) 100%); }
 .k-chip[data-cat="Soldes"]      .k-chip-photo { background: var(--cat-soldes-bg); }
 .k-chip[data-cat="Mode"]        .k-chip-photo { background: var(--cat-mode-bg); }
-.k-chip[data-cat="Beauté"]      .k-chip-photo { background: var(--cat-beaute-bg); }
+.k-chip[data-cat="BeautÃ©"]      .k-chip-photo { background: var(--cat-beaute-bg); }
 .k-chip[data-cat="Tech"]        .k-chip-photo { background: var(--cat-tech-bg); }
 .k-chip[data-cat="Enfant"]      .k-chip-photo { background: var(--red-bg); }
 .k-chip[data-cat="Maison"]      .k-chip-photo { background: var(--cat-maison-bg); }
 .k-chip[data-cat="Sport"]       .k-chip-photo { background: var(--cat-auto-bg); }
 .k-chip[data-cat="Sur-mesure"]  .k-chip-photo { background: var(--cat-perso-bg); }
-/* Nouvelles catégories — background mobile (sinon héritent du style desktop transparent) */
+/* Nouvelles catÃ©gories â€” background mobile (sinon hÃ©ritent du style desktop transparent) */
 .k-chip[data-cat="Solaire"]                  .k-chip-photo { background: var(--cat-solaire-bg); }
 .k-chip[data-cat="Creatio"]                  .k-chip-photo { background: var(--cat-creatio-bg); }
-/* Architecture v2 — piliers Bricolage et Auto */
+/* Architecture v2 â€” piliers Bricolage et Auto */
 .k-chip[data-cat="Bricolage"]                .k-chip-photo { background: var(--cat-brico-bg); }
 .k-chip[data-cat="Auto"]                     .k-chip-photo { background: var(--cat-auto-bg); }
-.k-chip[data-cat="Créations personnelles"]   .k-chip-photo { background: var(--cat-perso-bg); }
+.k-chip[data-cat="CrÃ©ations personnelles"]   .k-chip-photo { background: var(--cat-perso-bg); }
 
 /* Emoji variant */
 .k-chip-emoji {
@@ -220,12 +220,12 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -.025em;
-  /* POLISH — texte quasi-plein pour contraste sur fond blanc */
+  /* POLISH â€” texte quasi-plein pour contraste sur fond blanc */
   color: var(--text);
   text-align: left;
 }
 
-/* État actif mobile */
+/* Ã‰tat actif mobile */
 .k-chip.active .k-chip-photo {
   border-color: var(--ocean-dark);
   box-shadow: 0 0 0 2.5px var(--ocean-dark), var(--elev-2);
@@ -257,12 +257,12 @@
 #k-bar-sentinel { height: 0; margin: 0; padding: 0; }
 #k-bar-spacer   { display: none; }
 
-/* ── SOUS-CATÉGORIES ──────────────────────────────────────────
+/* â”€â”€ SOUS-CATÃ‰GORIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    Owner : boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP)
-   Le rail #k-subcats-wrap est masqué par défaut et révélé en desktop.
-   Tout le visuel (rail, subchip, couleurs par catégorie, animations)
+   Le rail #k-subcats-wrap est masquÃ© par dÃ©faut et rÃ©vÃ©lÃ© en desktop.
+   Tout le visuel (rail, subchip, couleurs par catÃ©gorie, animations)
    vit dans boutique-desktop.css depuis le Lot I2-A.
-   ──────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /* Section subcats (dans chaque section catalogue) */
 .k-cat-section  { margin-bottom: 4px; }
@@ -275,7 +275,7 @@
   align-items: center;
   gap: 8px;
   padding: 16px 0 8px;
-  border-bottom: 2px solid var(--coral); /* mobile → écrasé desktop par products.css (var(--sand-dark)) */
+  border-bottom: 2px solid var(--coral); /* mobile â†’ Ã©crasÃ© desktop par products.css (var(--sand-dark)) */
   margin-bottom: 4px;
   position: relative;
   scroll-margin-top: 70px;
@@ -308,10 +308,10 @@
   background: var(--coral); color: var(--white); border-color: var(--coral);
 }
 
-/* ── PROMO RAIL ──────────────────────────────────────────────── */
+/* â”€â”€ PROMO RAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 /* FIX ghost-droite : le rail utilise une animation CSS translateX (pas de scroll natif).
-   overflow:hidden contient le k-promo-rail-inner (width:max-content × 2) dans le viewport.
-   scroll-snap et overflow-x:auto retirés — ils exposaient la largeur totale du inner. */
+   overflow:hidden contient le k-promo-rail-inner (width:max-content Ã— 2) dans le viewport.
+   scroll-snap et overflow-x:auto retirÃ©s â€” ils exposaient la largeur totale du inner. */
 .k-promo-rail {
   display: flex;
   gap: 10px;
@@ -386,10 +386,10 @@
 .k-promo-card-price  { font-size: 12px; font-weight: 700; color: var(--coral); margin-top: 2px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-promo-card-old    { font-size: 10px; color: var(--text-light); text-decoration: line-through; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Section soldes masquée si vide */
+/* Section soldes masquÃ©e si vide */
 #k-promos-section[data-empty="1"] { display: none; }
 
-/* ── ESPACEMENT PROMOS / CATALOGUE ──────────────────────────── */
+/* â”€â”€ ESPACEMENT PROMOS / CATALOGUE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #k-promos-section {
   margin-bottom: 4px;
 }
@@ -397,17 +397,17 @@
   padding-top: 0;
 }
 
-/* #k-subcats-wrap, .k-subchip, .k-subcats-rail, @keyframes : tout est désormais
+/* #k-subcats-wrap, .k-subchip, .k-subcats-rail, @keyframes : tout est dÃ©sormais
    dans boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
-/* [supprimé] ancien bloc k-chip grille desktop — remplacé par le bloc pill L518 */
-/* [supprimé] k-chip-photo grille + k-sec-grid 1200px → voir products.css */
+/* [supprimÃ©] ancien bloc k-chip grille desktop â€” remplacÃ© par le bloc pill L518 */
+/* [supprimÃ©] k-chip-photo grille + k-sec-grid 1200px â†’ voir products.css */
 @media (hover: hover) and (pointer: fine) {
   .k-chip:hover .k-chip-photo { transform: scale(1.06); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
   .k-sec-see-all:hover { background: rgba(67,160,71,.08); }
 }
 
 
-/* ── PROMO RAIL WRAPPERS — déplacés depuis interactions.css ───── */
+/* â”€â”€ PROMO RAIL WRAPPERS â€” dÃ©placÃ©s depuis interactions.css â”€â”€â”€â”€â”€ */
 .k-promo-rail-wrap   { position: relative; overflow: hidden; }
 .k-promo-rail-more   {
   display: inline-flex; align-items: center; justify-content: center;
@@ -420,27 +420,27 @@
 .k-promo-rail-more:hover  { border-color: var(--coral); color: var(--coral); }
 .k-promo-card-prices { display: flex; flex-direction: column; gap: 1px; }
 
-/* ══════════════════════════════════════════════════════════════
-   DESKTOP PREMIUM — catégories
-   ══════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   DESKTOP PREMIUM â€” catÃ©gories
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media (min-width: 900px) {
 
-  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label → source de vérité : boutique-desktop.css (bloc CARTES VISUELLES) */
-  /* .k-subcats-rail desktop max-width → boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
+  /* .k-cats, .k-chip, .k-chip-photo, .k-chip-label â†’ source de vÃ©ritÃ© : boutique-desktop.css (bloc CARTES VISUELLES) */
+  /* .k-subcats-rail desktop max-width â†’ boutique-desktop.css (bloc SOUS-CATEGORIES DESKTOP, Lot I2-A) */
 
 }
 
 @media (min-width: 1200px) {
-  /* .k-cats-shell top → géré par var(--header-h) à 1200px via tokens.css */
+  /* .k-cats-shell top â†’ gÃ©rÃ© par var(--header-h) Ã  1200px via tokens.css */
 }
 
-/* Desktop — fades latéraux inutiles en mode wrap */
+/* Desktop â€” fades latÃ©raux inutiles en mode wrap */
 @media (min-width: 900px) {
   .k-cats-wrap-fade-left, .k-cats-wrap-fade-right { display: none; }
 }
 
-/* ── MOBILE POLISH — entrée catalogue sous rail catégories ───── */
+/* â”€â”€ MOBILE POLISH â€” entrÃ©e catalogue sous rail catÃ©gories â”€â”€â”€â”€â”€ */
 .k-sec-header {
   padding: 10px 0 6px;
   margin-bottom: 2px;
@@ -467,15 +467,15 @@
 }
 
 
-/* ══════════════════════════════════════════════════════════════
-   MOBILE PILL RAIL — max-width: 767px  (v4 — icône + label compact)
-   Chips icône ronde 44px + label 11px en dessous.
-   Hero prend sa place, chips discrètes, cartes s'annoncent en bas.
-   MOBILE ONLY — aucun impact desktop (desktop = min-width: 900px).
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   MOBILE PILL RAIL â€” max-width: 767px  (v4 â€” icÃ´ne + label compact)
+   Chips icÃ´ne ronde 44px + label 11px en dessous.
+   Hero prend sa place, chips discrÃ¨tes, cartes s'annoncent en bas.
+   MOBILE ONLY â€” aucun impact desktop (desktop = min-width: 900px).
    Rollback : supprimer ce bloc entier.
-   ══════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ── Shell : fond transparent, séparation légère ── */
+/* â”€â”€ Shell : fond transparent, sÃ©paration lÃ©gÃ¨re â”€â”€ */
 .k-cats-shell {
   background: transparent;
   border: none;
@@ -487,7 +487,7 @@
   border-bottom: 1px solid rgba(198, 168, 93, .14);
 }
 
-/* ── Rail horizontal scrollable ── */
+/* â”€â”€ Rail horizontal scrollable â”€â”€ */
 .k-cats {
   display: flex;
   flex-direction: row;
@@ -513,7 +513,7 @@
   flex: 0 0 2px;
 }
 
-/* ── Chip : colonne icône + label ── */
+/* â”€â”€ Chip : colonne icÃ´ne + label â”€â”€ */
 .k-chip {
   flex: 0 0 auto;
   display: inline-flex;
@@ -538,7 +538,7 @@
 }
 .k-chip:active { transform: scale(.93); }
 
-/* ── Image ronde 42px — sweet spot lisibilité/compacité ── */
+/* â”€â”€ Image ronde 42px â€” sweet spot lisibilitÃ©/compacitÃ© â”€â”€ */
 .k-chip-photo {
   display: none;
   width: 42px;
@@ -558,7 +558,7 @@
   filter: saturate(1.18) contrast(1.04);
 }
 
-/* ── Label sous l'icône ── */
+/* â”€â”€ Label sous l'icÃ´ne â”€â”€ */
 .k-chip-label {
   font-size: 14px;
   font-weight: 650;
@@ -575,7 +575,7 @@
   padding: 0;
 }
 
-/* ── État actif ── */
+/* â”€â”€ Ã‰tat actif â”€â”€ */
 .k-chip.active {
   background: var(--ocean-dark);
   border-color: var(--ocean-dark);
@@ -586,13 +586,13 @@
   font-weight: 700;
 }
 
-/* Fades latéraux inutiles */
+/* Fades latÃ©raux inutiles */
 .k-cats-wrap-fade-left,
 .k-cats-wrap-fade-right {
   display: none;
 }
 
-/* ── Titre section + grille : rapprocher sous le rail ── */
+/* â”€â”€ Titre section + grille : rapprocher sous le rail â”€â”€ */
 .k-sec-header {
   padding-top: 8px;
   padding-bottom: 5px;
@@ -601,16 +601,16 @@
 .k-cat-section {
   margin-bottom: 2px;
 }
-/* ── FIN MOBILE PILL RAIL ──────────────────────────────────── */
+/* â”€â”€ FIN MOBILE PILL RAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/* ══════════════════════════════════════════════════════════════════
-   CHIPS DESKTOP — migré depuis boutique-desktop.css
-   Sprint 4 — S4.2 : owner unique = categories.css
-   ══════════════════════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════════════════════
-   CATÉGORIES DESKTOP — CARTES VISUELLES (source de vérité unique)
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CHIPS DESKTOP â€” migrÃ© depuis boutique-desktop.css
+   Sprint 4 â€” S4.2 : owner unique = categories.css
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CATÃ‰GORIES DESKTOP â€” CARTES VISUELLES (source de vÃ©ritÃ© unique)
    PALETTE-FIX-01 : ombres chip hover ocean, barre sticky ocean.
-   ══════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @media (min-width: 900px) {
 
@@ -624,19 +624,19 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-radius: 0 0 20px 20px;
-    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
+    /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,â€¦) */
     box-shadow:
       0 8px 32px rgba(100,175,90,.10),
       0 1px 0 rgba(198,168,93,.12);
     padding-bottom: 8px;
   }
 
-  /* ── Lot 2 / :has() — raccord sticky↔sous-cats ──────────────────
-     Quand #k-subcats-wrap est peuplé par le JS, la barre sticky
+  /* â”€â”€ Lot 2 / :has() â€” raccord stickyâ†”sous-cats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     Quand #k-subcats-wrap est peuplÃ© par le JS, la barre sticky
      perd son rayon bas et son padding-bottom : les sous-cats
-     viennent se coller directement sous les cartes catégories.
-     CSS-only, aucun JS nécessaire.
-     ──────────────────────────────────────────────────────────────── */
+     viennent se coller directement sous les cartes catÃ©gories.
+     CSS-only, aucun JS nÃ©cessaire.
+     â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .k-hero-cats-sticky:has(#k-subcats-wrap:not(:empty)) {
     border-radius: 0;
     padding-bottom: 0;
@@ -662,10 +662,10 @@
 
   .k-cats {
     display: grid;
-    /* auto-fit : autant de colonnes que la largeur permet (≥120px chacune).
-       Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
-       4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
-       sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
+    /* auto-fit : autant de colonnes que la largeur permet (â‰¥120px chacune).
+       Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forÃ§ait
+       4 colonnes quand 8Ã—92px ne tenaient pas. auto-fit fait Ã§a nativement,
+       sans breakpoint intermÃ©diaire. Voir check-breakpoints (900/1200 only). */
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 10px;
     max-width: none;
@@ -684,12 +684,12 @@
     display: none;
   }
 
-  /* ── FULL-BLEED PREMIUM — S6.4 : photo = le cadre lui-même ── */
-  /* Remplace le modèle vignette ronde + label flow.              */
-  /* Scope strict desktop @900px — mobile inchangé.              */
+  /* â”€â”€ FULL-BLEED PREMIUM â€” S6.4 : photo = le cadre lui-mÃªme â”€â”€ */
+  /* Remplace le modÃ¨le vignette ronde + label flow.              */
+  /* Scope strict desktop @900px â€” mobile inchangÃ©.              */
 
   .k-chip {
-    /* Géométrie carte */
+    /* GÃ©omÃ©trie carte */
     min-width: 0;
     max-width: none;
     width: 100%;
@@ -718,7 +718,7 @@
       0 2px 6px rgba(28,26,23,.06);
   }
 
-  /* Neutralise le transform global sur .k-chip-photo (hérité de @hover:hover) */
+  /* Neutralise le transform global sur .k-chip-photo (hÃ©ritÃ© de @hover:hover) */
   .k-chip:hover .k-chip-photo {
     transform: none;
     box-shadow: none;
@@ -730,7 +730,7 @@
     filter: saturate(1.32) contrast(1.06) brightness(1.06);
   }
 
-  /* ── Photo = le cadre ── */
+  /* â”€â”€ Photo = le cadre â”€â”€ */
   .k-chip-photo,
   .k-chip-photo.k-chip-photo--img {
     position: absolute;
@@ -775,7 +775,7 @@
     background: linear-gradient(135deg, var(--ocean-dark), var(--ocean-light));
   }
 
-  /* ── Gradient overlay — scrim bas ──                                */
+  /* â”€â”€ Gradient overlay â€” scrim bas â”€â”€                                */
   /* Sur la carte (.k-chip::after), z-index 1 : au-dessus de la photo */
   /* et en-dessous du label.                                          */
   .k-chip::after {
@@ -792,7 +792,7 @@
     z-index: 1;
   }
 
-  /* ── Label overlay bas ── */
+  /* â”€â”€ Label overlay bas â”€â”€ */
   .k-chip-label {
     position: absolute;
     bottom: 0;
@@ -813,7 +813,7 @@
     z-index: 2;
   }
 
-  /* ── État actif — vert plein ── */
+  /* â”€â”€ Ã‰tat actif â€” vert plein â”€â”€ */
   .k-chip.active {
     transform: translateY(-2px);
     background: var(--ocean-dark);
@@ -835,7 +835,7 @@
       0 1px 3px rgba(0,0,0,.55);
   }
 
-  /* Override "Tout" — all.jpg fond sombre, compenser la densité */
+  /* Override "Tout" â€” all.jpg fond sombre, compenser la densitÃ© */
   .k-chip[data-cat="all"] .k-chip-photo img {
     filter: saturate(1.10) contrast(0.96) brightness(1.18);
   }
@@ -854,26 +854,26 @@
   }
 }
 
-/* (Palier @900-1180px supprimé : auto-fit dans .k-cats @900px gère l'adaptation
-   du nombre de colonnes sans breakpoint intermédiaire. — 31/05) */
+/* (Palier @900-1180px supprimÃ© : auto-fit dans .k-cats @900px gÃ¨re l'adaptation
+   du nombre de colonnes sans breakpoint intermÃ©diaire. â€” 31/05) */
 
-/* Fond couleur catégorie sur subchip actif — migré depuis boutique-desktop.css */
-/* Fond couleur catégorie sur subchip actif */
-.k-chip[data-cat="Mode & Beauté"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Mode & Beauté"] .k-subchip.active { background: var(--cat-mode-bg); }
+/* Fond couleur catÃ©gorie sur subchip actif â€” migrÃ© depuis boutique-desktop.css */
+/* Fond couleur catÃ©gorie sur subchip actif */
+.k-chip[data-cat="Mode & BeautÃ©"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="Mode & BeautÃ©"] .k-subchip.active { background: var(--cat-mode-bg); }
 .k-chip[data-cat="Maison"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Maison"] .k-subchip.active         { background: var(--cat-maison-bg); }
 .k-chip[data-cat="Tech"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Tech"] .k-subchip.active           { background: var(--cat-tech-bg); }
 .k-chip[data-cat="Bricolage"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Bricolage"] .k-subchip.active      { background: var(--cat-brico-bg); }
-.k-chip[data-cat="Créations personnelles"] ~ * .k-subchip.active,
-#k-subcats-wrap[data-parent-cat="Créations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
+.k-chip[data-cat="CrÃ©ations personnelles"] ~ * .k-subchip.active,
+#k-subcats-wrap[data-parent-cat="CrÃ©ations personnelles"] .k-subchip.active { background: var(--cat-perso-bg); }
 .k-chip[data-cat="Auto"] ~ * .k-subchip.active,
 #k-subcats-wrap[data-parent-cat="Auto"] .k-subchip.active           { background: var(--cat-auto-bg); }
 
 
-/* Chip animation — migré depuis interactions.css (Sprint 4 — S4.2) */
+/* Chip animation â€” migrÃ© depuis interactions.css (Sprint 4 â€” S4.2) */
 /* Chip en surbrillance pendant la transition (scale + ring) */
 @keyframes k-chip-pulse {
   0%   { transform: scale(1); }
@@ -883,10 +883,10 @@
 .k-chip.transitioning .k-chip-photo {
   animation: k-chip-pulse .4s var(--ease-spring) both;
 }
-/* ═══════════════════════════════════════════════════════════════════════════
-   PREMIUM MOBILE V1 — catégories (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2)
-   Scopé à l'état html.k-mobile-premium-v1 posé par le JS. Owner officiel des chips.
-   !important retirés (L4-S11) — spécificité 0-2-0 suffit à battre les règles base. ═══ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PREMIUM MOBILE V1 â€” catÃ©gories (rapatriÃ© de b-mobile-premium-v1.js, Lot 2/L2-S2)
+   ScopÃ© Ã  l'Ã©tat html.k-mobile-premium-v1 posÃ© par le JS. Owner officiel des chips.
+   !important retirÃ©s (L4-S11) â€” spÃ©cificitÃ© 0-2-0 suffit Ã  battre les rÃ¨gles base. â•â•â• */
 html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
 html.k-mobile-premium-v1 .k-cats {
@@ -907,9 +907,9 @@ html.k-mobile-premium-v1 .k-chip,
 html.k-mobile-premium-v1 .k-chip.is-active,
 html.k-mobile-premium-v1 .k-chip.active {
   flex: 0 0 auto;
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
+  width: clamp(60px, 16vw, 64px);
+  min-width: clamp(60px, 16vw, 64px);
+  max-width: clamp(60px, 16vw, 64px);
   height: 84px;
   min-height: 84px;
   padding: 6px 4px 6px;
@@ -948,31 +948,22 @@ html.k-mobile-premium-v1 .k-chip-label {
   text-align: center;
 }
 
-@media (max-width: 360px) {
-  html.k-mobile-premium-v1 .k-chip,
-  html.k-mobile-premium-v1 .k-chip.active {
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
-  }
-}
-
-/* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
+/* Premium mobile : sous-catÃ©gories (rapatriÃ© de b-mobile-premium-v1.js, L2-S2). */
 @media (max-width: 899px) {
   html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
 
-  /* ── Polish léger catégories mobile (hauteur du rail INCHANGÉE → pager safe) ──
-     On ne touche ni min-height, ni padding, ni la grille, ni la taille 26×26 de
-     la vignette. Uniquement : opacité/bord, netteté image, et état actif coral. */
+  /* â”€â”€ Polish lÃ©ger catÃ©gories mobile (hauteur du rail INCHANGÃ‰E â†’ pager safe) â”€â”€
+     On ne touche ni min-height, ni padding, ni la grille, ni la taille 26Ã—26 de
+     la vignette. Uniquement : opacitÃ©/bord, nettetÃ© image, et Ã©tat actif coral. */
 
-  /* Pill : fond plus opaque + bord un peu plus présent → meilleur contraste */
+  /* Pill : fond plus opaque + bord un peu plus prÃ©sent â†’ meilleur contraste */
   .k-chip {
     background: rgba(255, 255, 255, .92);
     border-color: rgba(198, 168, 93, .22);
     box-shadow: 0 1px 5px rgba(28, 26, 23, .06);
   }
 
-  /* Vignette plus nette (dimensions inchangées) */
+  /* Vignette plus nette (dimensions inchangÃ©es) */
   .k-chip-photo {
     border-color: rgba(28, 26, 23, .10);
     box-shadow:
@@ -983,13 +974,13 @@ html.k-mobile-premium-v1 .k-chip-label {
     filter: saturate(1.3) contrast(1.08) brightness(1.02);
   }
 
-  /* Label : contraste renforcé, taille/poids inchangés (pas de poussée) */
+  /* Label : contraste renforcÃ©, taille/poids inchangÃ©s (pas de poussÃ©e) */
   .k-chip-label {
     color: var(--text);
     font-weight: 800;
   }
 
-  /* État actif coral affirmé — SANS scale ni changement de hauteur */
+  /* Ã‰tat actif coral affirmÃ© â€” SANS scale ni changement de hauteur */
   .k-chip.active {
     background: var(--ocean-dark);
     border-color: var(--ocean-dark);
@@ -1008,7 +999,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   }
 }
 
-/* ── Premium desktop home — catégories (rapatrié de b-home-premium-v1.js, Lot 3) ── */
+/* â”€â”€ Premium desktop home â€” catÃ©gories (rapatriÃ© de b-home-premium-v1.js, Lot 3) â”€â”€ */
 @media (min-width: 900px) {
   html.k-home-premium-v1 .k-cats-shell { padding-top: 18px; }
 
@@ -1045,11 +1036,11 @@ html.k-mobile-premium-v1 .k-chip-label {
   html.k-home-premium-v1 .k-chip-label { font-weight: 850; }
 }
 
-/* ── ANIMATION CHANGEMENT DE CATÉGORIE ───────────────────────────
-   Slide-up staggeré : les cartes montent en décalé à l'entrée.
-   Déclenchée par .k-grid-entering posé par b-catalog.js.
-   Owner : categories.css (changement de catégorie = interaction chip).
-   prefers-reduced-motion : animation supprimée. ──────────────────── */
+/* â”€â”€ ANIMATION CHANGEMENT DE CATÃ‰GORIE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Slide-up staggerÃ© : les cartes montent en dÃ©calÃ© Ã  l'entrÃ©e.
+   DÃ©clenchÃ©e par .k-grid-entering posÃ© par b-catalog.js.
+   Owner : categories.css (changement de catÃ©gorie = interaction chip).
+   prefers-reduced-motion : animation supprimÃ©e. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 @keyframes k-card-enter {
   from { opacity: 0; transform: translateY(16px); }
