@@ -1,19 +1,19 @@
 /**
- * KOMERCE Dashboard â€” Vue /admin/products
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ * KOMERCE Dashboard — Vue /admin/products
+ * ════════════════════════════════════════════════════════════════════════
  * Gestion CRUD des produits boutique depuis le dashboard admin.
  * API: GET/POST/PUT/DELETE /api/products
  *      GET /api/categories (dropdowns taxonomie)
  *
  * Lots couverts:
- *   L1-T1 : liste paginÃ©e + modal formulaire (name/price_kmf/stock/image_url/is_active)
- *   L1-T2 : <select> category alimentÃ© par /api/categories
+ *   L1-T1 : liste paginée + modal formulaire (name/price_kmf/stock/image_url/is_active)
+ *   L1-T2 : <select> category alimenté par /api/categories
  *   L1-T3 : <select> subcategory dynamique selon category choisie
  *   L1-T4 : validation client avant soumission (category/subcategory dans payload)
- *   L2-T1 : panneau preview mini-carte mis Ã  jour live
+ *   L2-T1 : panneau preview mini-carte mis à jour live
  *   L2-T2 : fallback image placeholder dans la preview
  *   L2-T3 : badges promo / nouveau / premium dans la preview
- *   L4-T1..T5 : onglet Diagnostic produits non classÃ©s
+ *   L4-T1..T5 : onglet Diagnostic produits non classés
  */
 
 (function (global) {
@@ -24,14 +24,14 @@
 
   const PAGE_SIZE = 50;
 
-  // â”€â”€â”€ Cache catÃ©gories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Cache catégories ──────────────────────────────────────────────────────
 
   let _categoriesPayload = null; // tableau brut /api/categories
 
   async function loadCategories() {
     if (_categoriesPayload) return _categoriesPayload;
     const res = await fetch(API_CATEGORIES, { credentials: 'include' });
-    if (!res.ok) throw new Error('Impossible de charger les catÃ©gories');
+    if (!res.ok) throw new Error('Impossible de charger les catégories');
     _categoriesPayload = await res.json();
     return _categoriesPayload;
   }
@@ -50,7 +50,7 @@
     return cat ? (cat.subcategories || []) : [];
   }
 
-  // â”€â”€â”€ Helpers UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Helpers UI ───────────────────────────────────────────────────────────
 
   function toast(msg, type = 'success') {
     const t = document.createElement('div');
@@ -68,11 +68,11 @@
   }
 
   function fmt(n) {
-    if (n == null) return 'â€”';
+    if (n == null) return '—';
     return Number(n).toLocaleString('fr-FR') + ' KMF';
   }
 
-  // â”€â”€â”€ Preview mini-carte (L2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Preview mini-carte (L2) ───────────────────────────────────────────────
 
   function buildPreviewHTML(p) {
     const imgSrc = p.image_url || '/images/placeholder-product.png';
@@ -93,14 +93,14 @@
             ${p.name || '(sans nom)'}
           </div>
           <div style="color:var(--primary,#6366f1);font-weight:700;">
-            ${p.price_kmf ? fmt(p.price_kmf) : 'â€”'}
+            ${p.price_kmf ? fmt(p.price_kmf) : '—'}
           </div>
-          ${p.category ? `<div style="font-size:11px;color:var(--text-secondary,#6b7280);margin-top:4px;">${p.category}${p.subcategory ? ' â€º ' + p.subcategory : ''}</div>` : ''}
+          ${p.category ? `<div style="font-size:11px;color:var(--text-secondary,#6b7280);margin-top:4px;">${p.category}${p.subcategory ? ' › ' + p.subcategory : ''}</div>` : ''}
         </div>
       </div>`;
   }
 
-  // â”€â”€â”€ Modal gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Modal générique ───────────────────────────────────────────────────────
 
   function modal(title, bodyHTML, onSubmit) {
     const overlay = document.createElement('div');
@@ -108,7 +108,7 @@
 
     overlay.innerHTML = `
       <div style="background:var(--bg-surface,#fff);border-radius:12px;padding:24px;width:760px;max-width:96vw;max-height:90vh;overflow-y:auto;position:relative;">
-        <button id="modal-close" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;">âœ•</button>
+        <button id="modal-close" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
         <h2 style="margin:0 0 20px;font-size:18px;">${title}</h2>
         <div style="display:flex;gap:24px;align-items:flex-start;">
           <form id="product-form" style="flex:1;">
@@ -120,7 +120,7 @@
             </div>
           </form>
           <div id="product-preview" style="flex:0 0 auto;padding-top:4px;">
-            <div style="font-size:12px;color:var(--text-secondary,#6b7280);margin-bottom:8px;font-weight:600;">APERÃ‡U</div>
+            <div style="font-size:12px;color:var(--text-secondary,#6b7280);margin-bottom:8px;font-weight:600;">APERÇU</div>
             <div id="preview-card">${buildPreviewHTML({})}</div>
           </div>
         </div>
@@ -167,7 +167,7 @@
     return overlay;
   }
 
-  // â”€â”€â”€ Construction HTML du formulaire produit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Construction HTML du formulaire produit ───────────────────────────────
 
   function buildFormHTML(cats, p = {}) {
     // Options category
@@ -175,7 +175,7 @@
       `<option value="${c.key}" ${p.category === c.key ? 'selected' : ''}>${c.label} (${c.key})</option>`
     ).join('');
 
-    // Options subcategory initiales (selon catÃ©gorie courante si edit)
+    // Options subcategory initiales (selon catégorie courante si edit)
     const initSubs = p.category ? subcatsForCategory(cats, p.category) : [];
     const subOptions = initSubs.map(s =>
       `<option value="${s.key}" ${p.subcategory === s.key ? 'selected' : ''}>${s.label}</option>`
@@ -194,13 +194,13 @@
           <input name="stock" type="number" min="0" class="form-input" style="width:100%;" value="${p.stock != null ? p.stock : ''}">
         </label>
 
-        <label>CatÃ©gorie *<br>
+        <label>Catégorie *<br>
           <select name="category" required class="form-input" style="width:100%;" id="sel-category">
             <option value="">-- Choisir --</option>
             ${catOptions}
           </select>
         </label>
-        <label>Sous-catÃ©gorie<br>
+        <label>Sous-catégorie<br>
           <select name="subcategory" class="form-input" style="width:100%;" id="sel-subcategory">
             <option value="">-- (optionnel) --</option>
             ${subOptions}
@@ -223,15 +223,15 @@
       </div>`;
   }
 
-  // â”€â”€â”€ Validation client (L1-T4) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Validation client (L1-T4) ─────────────────────────────────────────────
 
   function validateCategoryChoice(fd, cats) {
     const catKey = fd.get('category');
-    if (!catKey) throw new Error('La catÃ©gorie est obligatoire.');
+    if (!catKey) throw new Error('La catégorie est obligatoire.');
 
     const validKeys = validCategoryKeys(cats);
     if (!validKeys.has(catKey)) {
-      throw new Error(`CatÃ©gorie invalide : "${catKey}". Choisissez dans la liste.`);
+      throw new Error(`Catégorie invalide : "${catKey}". Choisissez dans la liste.`);
     }
 
     const subKey = fd.get('subcategory');
@@ -239,12 +239,12 @@
       const subs = subcatsForCategory(cats, catKey);
       const validSubs = new Set(subs.map(s => s.key));
       if (!validSubs.has(subKey)) {
-        throw new Error(`Sous-catÃ©gorie invalide : "${subKey}" pour la catÃ©gorie "${catKey}".`);
+        throw new Error(`Sous-catégorie invalide : "${subKey}" pour la catégorie "${catKey}".`);
       }
     }
   }
 
-  // â”€â”€â”€ Wiring dynamique subcategory (L1-T3) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Wiring dynamique subcategory (L1-T3) ──────────────────────────────────
 
   function wireSubcategoryDropdown(overlayEl, cats) {
     const selCat = overlayEl.querySelector('#sel-category');
@@ -258,7 +258,7 @@
     });
   }
 
-  // â”€â”€â”€ CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── CRUD ─────────────────────────────────────────────────────────────────
 
   async function apiFetch(path, opts = {}) {
     const res = await fetch(API_PRODUCTS + path, {
@@ -290,7 +290,7 @@
     const overlay = modal('Nouveau produit', buildFormHTML(cats), async (fd) => {
       validateCategoryChoice(fd, cats);
       await apiFetch('', { method: 'POST', body: JSON.stringify(formDataToProduct(fd)) });
-      toast('Produit crÃ©Ã© !');
+      toast('Produit créé !');
       await onRefresh();
     });
     wireSubcategoryDropdown(overlay, cats);
@@ -300,24 +300,24 @@
     const overlay = modal(`Modifier "${product.name}"`, buildFormHTML(cats, product), async (fd) => {
       validateCategoryChoice(fd, cats);
       await apiFetch(`/${product.id}`, { method: 'PUT', body: JSON.stringify(formDataToProduct(fd)) });
-      toast('Produit modifiÃ© !');
+      toast('Produit modifié !');
       await onRefresh();
     });
     wireSubcategoryDropdown(overlay, cats);
   }
 
   async function toggleActive(product, onRefresh) {
-    const verb = product.is_active ? 'dÃ©sactiver' : 'activer';
+    const verb = product.is_active ? 'désactiver' : 'activer';
     if (!window.confirm(`Confirmer : ${verb} "${product.name}" ?`)) return;
     await apiFetch(`/${product.id}`, {
       method: 'PUT',
       body: JSON.stringify({ is_active: !product.is_active }),
     });
-    toast(`Produit ${product.is_active ? 'dÃ©sactivÃ©' : 'activÃ©'}`);
+    toast(`Produit ${product.is_active ? 'désactivé' : 'activé'}`);
     await onRefresh();
   }
 
-  // â”€â”€â”€ Rendu liste â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Rendu liste ──────────────────────────────────────────────────────────
 
   function renderProductRow(p, cats, onRefresh) {
     const row = document.createElement('tr');
@@ -329,21 +329,21 @@
                style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:#f3f4f6;">
           <div>
             <div style="font-weight:600;font-size:13px;">${p.name}</div>
-            <div style="font-size:11px;color:var(--text-secondary,#6b7280);">${p.category || 'â€”'}${p.subcategory ? ' â€º ' + p.subcategory : ''}</div>
+            <div style="font-size:11px;color:var(--text-secondary,#6b7280);">${p.category || '—'}${p.subcategory ? ' › ' + p.subcategory : ''}</div>
           </div>
         </div>
       </td>
       <td style="padding:10px 12px;text-align:right;font-weight:600;">${fmt(p.price_kmf)}</td>
-      <td style="padding:10px 12px;text-align:center;">${p.stock != null ? p.stock : 'â€”'}</td>
+      <td style="padding:10px 12px;text-align:center;">${p.stock != null ? p.stock : '—'}</td>
       <td style="padding:10px 12px;text-align:center;">
         <span style="padding:2px 8px;border-radius:12px;font-size:12px;background:${p.is_active ? 'var(--success-bg,#dcfce7)' : 'var(--danger-bg,#fee2e2)'};color:${p.is_active ? 'var(--success,#16a34a)' : 'var(--danger,#dc2626)'};">
           ${p.is_active ? 'Actif' : 'Inactif'}
         </span>
       </td>
       <td style="padding:10px 12px;text-align:right;">
-        <button class="btn btn-sm btn-secondary" data-action="edit" style="margin-right:6px;">âœï¸</button>
+        <button class="btn btn-sm btn-secondary" data-action="edit" style="margin-right:6px;">✏️</button>
         <button class="btn btn-sm ${p.is_active ? 'btn-warning' : 'btn-success'}" data-action="toggle">
-          ${p.is_active ? 'ðŸš«' : 'âœ…'}
+          ${p.is_active ? '🚫' : '✅'}
         </button>
       </td>`;
 
@@ -355,10 +355,10 @@
     return row;
   }
 
-  // â”€â”€â”€ Onglet Diagnostic (L4) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Onglet Diagnostic (L4) ────────────────────────────────────────────────
 
   async function renderDiagnostic(container, cats) {
-    container.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement du diagnosticâ€¦</div>';
+    container.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement du diagnostic…</div>';
 
     const [prodRes] = await Promise.all([
       fetch(API_PRODUCTS + '?limit=500', { credentials: 'include' }).then(r => r.json()),
@@ -381,7 +381,7 @@
     container.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
         ${[
-          ['Sans catÃ©gorie valide', withoutValidCat.length, '#fee2e2', '#dc2626'],
+          ['Sans catégorie valide', withoutValidCat.length, '#fee2e2', '#dc2626'],
           ['Actifs sans image',     withoutImage.length,    '#fef3c7', '#d97706'],
           ['Sous-cat. invalide',    withBadSub.length,      '#ede9fe', '#7c3aed'],
           ['Total actifs',          totalActive,            '#dcfce7', '#16a34a'],
@@ -393,11 +393,11 @@
       </div>
 
       ${withoutValidCat.length ? `
-        <h3 style="margin-bottom:12px;">âš ï¸ CatÃ©gorie invalide (${withoutValidCat.length})</h3>
+        <h3 style="margin-bottom:12px;">⚠️ Catégorie invalide (${withoutValidCat.length})</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
           <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
-            <th style="padding:8px 12px;">CatÃ©gorie actuelle</th>
+            <th style="padding:8px 12px;">Catégorie actuelle</th>
           </tr></thead>
           <tbody>
             ${withoutValidCat.map(p => `
@@ -406,31 +406,31 @@
                 <td style="padding:8px 12px;color:var(--danger,#dc2626);">${p.category || '(vide)'}</td>
               </tr>`).join('')}
           </tbody>
-        </table>` : '<p style="color:var(--success,#16a34a);">âœ… Toutes les catÃ©gories sont valides.</p>'}
+        </table>` : '<p style="color:var(--success,#16a34a);">✅ Toutes les catégories sont valides.</p>'}
 
       ${withoutImage.length ? `
-        <h3 style="margin-bottom:12px;">ðŸ–¼ï¸ Actifs sans image (${withoutImage.length})</h3>
+        <h3 style="margin-bottom:12px;">🖼️ Actifs sans image (${withoutImage.length})</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
           <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
-            <th style="padding:8px 12px;">CatÃ©gorie</th>
+            <th style="padding:8px 12px;">Catégorie</th>
           </tr></thead>
           <tbody>
             ${withoutImage.map(p => `
               <tr style="border-top:1px solid var(--border,#e5e7eb);">
                 <td style="padding:8px 12px;">${p.name}</td>
-                <td style="padding:8px 12px;">${p.category || 'â€”'}</td>
+                <td style="padding:8px 12px;">${p.category || '—'}</td>
               </tr>`).join('')}
           </tbody>
-        </table>` : '<p style="color:var(--success,#16a34a);">âœ… Tous les produits actifs ont une image.</p>'}
+        </table>` : '<p style="color:var(--success,#16a34a);">✅ Tous les produits actifs ont une image.</p>'}
 
       ${withBadSub.length ? `
-        <h3 style="margin-bottom:12px;">ðŸ” Sous-catÃ©gorie invalide (${withBadSub.length})</h3>
+        <h3 style="margin-bottom:12px;">🔍 Sous-catégorie invalide (${withBadSub.length})</h3>
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
-            <th style="padding:8px 12px;">CatÃ©gorie</th>
-            <th style="padding:8px 12px;">Sous-catÃ©gorie</th>
+            <th style="padding:8px 12px;">Catégorie</th>
+            <th style="padding:8px 12px;">Sous-catégorie</th>
           </tr></thead>
           <tbody>
             ${withBadSub.map(p => `
@@ -444,14 +444,14 @@
     `;
   }
 
-  // â”€â”€â”€ Vue principale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Vue principale ────────────────────────────────────────────────────────
 
   let _currentPage  = 1;
   let _searchQuery  = '';
   let _activeCats   = null;
 
   async function ProductsView(container) {
-    container.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargementâ€¦</div>';
+    container.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement…</div>';
 
     let cats;
     try {
@@ -462,11 +462,11 @@
       return;
     }
 
-    // â”€â”€ Shell
+    // ── Shell
     container.innerHTML = `
       <div style="padding:24px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-          <h1 style="margin:0;font-size:22px;">ðŸ›ï¸ Produits boutique</h1>
+          <h1 style="margin:0;font-size:22px;">🛍️ Produits boutique</h1>
           <button id="btn-new-product" class="btn btn-primary">+ Nouveau produit</button>
         </div>
 
@@ -479,7 +479,7 @@
         <!-- Onglet Liste -->
         <div id="tab-content-list">
           <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-            <input id="search-input" type="search" placeholder="Rechercherâ€¦" class="form-input"
+            <input id="search-input" type="search" placeholder="Rechercher…" class="form-input"
                    style="width:260px;" value="${_searchQuery}">
           </div>
           <div id="products-table-wrap"></div>
@@ -529,7 +529,7 @@
       const qs = new URLSearchParams({ limit: PAGE_SIZE, offset });
       if (_searchQuery) qs.set('search', _searchQuery);
 
-      tableWrap.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargementâ€¦</div>';
+      tableWrap.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Chargement…</div>';
 
       const data = await fetch(`${API_PRODUCTS}?${qs}`, { credentials: 'include' }).then(r => r.json());
       const products = data.products || [];
@@ -537,7 +537,7 @@
       const totalPages = Math.ceil(total / PAGE_SIZE);
 
       if (!products.length) {
-        tableWrap.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Aucun produit trouvÃ©.</div>';
+        tableWrap.innerHTML = '<div style="padding:20px;color:var(--text-secondary,#6b7280);">Aucun produit trouvé.</div>';
         pagination.innerHTML = '';
         return;
       }
@@ -564,18 +564,18 @@
 
       // Pagination
       pagination.innerHTML = `
-        <span style="font-size:13px;color:var(--text-secondary,#6b7280);">${total} produit(s) â€” Page ${page}/${totalPages || 1}</span>`;
+        <span style="font-size:13px;color:var(--text-secondary,#6b7280);">${total} produit(s) — Page ${page}/${totalPages || 1}</span>`;
       if (page > 1) {
         const prev = document.createElement('button');
         prev.className = 'btn btn-sm btn-secondary';
-        prev.textContent = 'â† PrÃ©cÃ©dent';
+        prev.textContent = '← Précédent';
         prev.addEventListener('click', () => loadPage(page - 1));
         pagination.appendChild(prev);
       }
       if (page < totalPages) {
         const next = document.createElement('button');
         next.className = 'btn btn-sm btn-secondary';
-        next.textContent = 'Suivant â†’';
+        next.textContent = 'Suivant →';
         next.addEventListener('click', () => loadPage(page + 1));
         pagination.appendChild(next);
       }
