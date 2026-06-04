@@ -1,24 +1,38 @@
 /**
  * KOMERCE — Route publique GET /api/categories
  *
- * Retourne le schéma complet de la boutique (catégories + sous-catégories)
- * depuis les tables boutique_categories et boutique_subcategories.
+ * DSC-B1 — Stratégie de cache (§4.3) :
+ *   Cache-Control: no-cache    → revalidation systématique (pas de max-age fixe).
+ *   ETag: "v<version>-<ts>"    → 304 Not Modified si le schéma n'a pas changé.
+ *   X-Schema-Version: <n>      → debug / polling léger côté front.
  *
- * Consommé par shop-schema.js au boot de la boutique et par l'admin.
+ *   Après une écriture admin (POST/PUT/DELETE), invalidateCategoriesCache()
+ *   incrémente la version → le prochain GET reçoit un nouvel ETag → 200 + arbre.
  *
- * Cache-Control: 5 min (les catégories changent rarement).
- * Fallback: si les tables n'existent pas encore (pre-migration), retourne [].
+ * Retourne le schéma complet (catégories + sous-catégories actives) depuis
+ * boutique_categories et boutique_subcategories.
+ * Fallback : si les tables n'existent pas encore (pré-migration), retourne [].
  */
 
 'use strict';
 
-const express = require('express');
-const router  = express.Router();
-const db      = require('../db');
+const express  = require('express');
+const router   = express.Router();
+const db       = require('../db');
+const { getCategoriesETag, getCategoriesVersion } = require('../utils/categories-cache');
 
 // ─── GET /api/categories ──────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
+    const etag = getCategoriesETag();
+
+    // Revalidation : 304 si le client a déjà la bonne version
+    if (req.headers['if-none-match'] === etag) {
+      res.setHeader('ETag', etag);
+      res.setHeader('X-Schema-Version', getCategoriesVersion());
+      return res.status(304).end();
+    }
+
     const { rows } = await db.query(`
       SELECT
         bc.key,
@@ -52,7 +66,9 @@ router.get('/', async (req, res, next) => {
       ORDER BY bc.display_order
     `);
 
-    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('ETag', etag);
+    res.setHeader('X-Schema-Version', getCategoriesVersion());
     res.json(rows);
   } catch (err) {
     // Table absente (migration non encore jouée) → retour gracieux

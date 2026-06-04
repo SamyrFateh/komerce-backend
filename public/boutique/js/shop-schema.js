@@ -11,11 +11,18 @@
  *   - commercial_filter : filtre transversal, ex. Soldes / Promos ;
  *   - system : entrée technique, ex. Tout.
  *
- * Stratégie de chargement:
- *   1. Fetch démarré immédiatement à l'import du module (parallèle au boot).
- *   2. loadShopSchema() attendue dans boutique init avant le premier rendu.
- *   3. Si l'API échoue (pré-migration, réseau) → fallback hardcodé identique
- *      à l'ancienne version (0 régression).
+ * Stratégie de chargement (DSC-A0) :
+ *   - Par défaut : fetch GET /api/categories au boot (chemin DB).
+ *   - Fallback opt-in explicite : window.KOMERCE_FORCE_FALLBACK_CATEGORIES === true
+ *     (injection serveur, tests, ou urgence ops).
+ *   - Dégradation gracieuse : si le fetch échoue → fallback.
+ *   - Le fallback (_FALLBACK_CATEGORIES) est un sous-ensemble strict du seed 061
+ *     (DSC-A1) ; il ne présente jamais une taxonomie divergente de la DB.
+ *
+ * Contrat d'invariants (DSC-A3) :
+ *   §3.1 — desktop et mobile lisent réellement GET /api/categories par défaut.
+ *   §3.2 — même en dégradé, jamais de taxonomie divergente du seed 061.
+ *   §6.2 — aucune liste de catégories codée en dur hors de ce fichier.
  *
  * Tous les exports publics restent compatibles: getCategoryList(),
  * getSubcategories(), normalizeCategoryKey(), etc.
@@ -24,10 +31,12 @@
  * - docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md
  */
 
-// ─── Fallback hardcodé — architecture v2 (marché comorien / diaspora) ────────
-// Utilisé si GET /api/categories échoue ou est appelé avant résolution.
-// Labels, icônes et sous-catégories modifiables via backoffice (/api/categories)
-// sans toucher à ce fichier. Seuls `key`, `dbKeys` et `filterType` sont stables.
+// ─── Fallback hardcodé — sous-ensemble strict du seed 061 (DSC-A1) ───────────
+// Utilisé UNIQUEMENT si :
+//   (a) GET /api/categories échoue (réseau, pré-migration), ou
+//   (b) window.KOMERCE_FORCE_FALLBACK_CATEGORIES === true (opt-in explicite).
+// Toutes les clés de ce fallback sont présentes dans le seed 061.
+// Ne pas ajouter de catégorie ici sans l'ajouter d'abord dans la migration 061.
 
 const NAV_TYPES = {
   SYSTEM: 'system',
@@ -36,62 +45,129 @@ const NAV_TYPES = {
 };
 
 const _ICON_SVGS = {
-  Soldes:                   '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-  'Mode & Beauté':          '<svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>',
-  Maison:                   '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-  Tech:                     '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
-  Bricolage:                '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
-  'Créations personnelles': '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
-  Auto:                     '<svg viewBox="0 0 24 24"><path d="M14 16H9m10 0h3v-3.15a2 2 0 0 0-1.1-1.8l-2.5-1.25A4 4 0 0 0 15.75 9H8.25a4 4 0 0 0-2.65 1.8L3.1 12.05A2 2 0 0 0 2 13.85V16h2m14 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>',
+  Soldes:           '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  'Mode & Beauté':  '<svg viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>',
+  Tech:             '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+  Enfant:           '<svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="5"/><path d="M12 12v10M7 22h10"/></svg>',
+  Maison:           '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  Sport:            '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M6.5 6.5 17.5 17.5M4 12h.01M20 12h.01M12 4v.01M12 20v.01"/></svg>',
+  'Sur-mesure':     '<svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
 };
 
+// ─── _CATEGORY_IMAGES — aligné sur les clés du seed 061 (DSC-A2 partiel) ─────
+// Clés orphelines (bricolage, creations, auto) retirées — absentes du seed 061.
+// Clés manquantes (enfant, sport, sur-mesure) : placeholder neutre en attendant
+// les assets définitifs (DSC-A2).
 const _CATEGORY_IMAGES = {
-  all:                       '/boutique/categories/all.jpg',
-  Soldes:                    '/boutique/categories/soldes.jpg',
-  'Mode & Beauté':           '/boutique/categories/mode.jpg',
-  Maison:                    '/boutique/categories/maison.jpg',
-  Tech:                      '/boutique/categories/tech.jpg',
-  Bricolage:                 '/boutique/categories/bricolage.jpg',
-  'Créations personnelles':  '/boutique/categories/creations.jpg',
-  Auto:                      '/boutique/categories/auto.jpg',
+  all:              '/boutique/categories/all.jpg',
+  Soldes:           '/boutique/categories/soldes.jpg',
+  'Mode & Beauté':  '/boutique/categories/mode.jpg',
+  Tech:             '/boutique/categories/tech.jpg',
+  Enfant:           '/boutique/categories/enfant.jpg',       // DSC-A2 : asset à créer
+  Maison:           '/boutique/categories/maison.jpg',
+  Sport:            '/boutique/categories/sport.jpg',        // DSC-A2 : asset à créer
+  'Sur-mesure':     '/boutique/categories/sur-mesure.jpg',   // DSC-A2 : asset à créer
 };
 
+// Fallback — sous-ensemble strict du seed 061. Ordre = display_order du seed.
 const _FALLBACK_CATEGORIES = [
-  { key: 'all', label: 'Tout', shortLabel: 'Tout', type: NAV_TYPES.SYSTEM, sectionEmoji: '🔥', iconSvg: null, image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, filter: null, displayOrder: 0, showInRail: true, showInSections: false, showInMobileRail: true, subcategories: [] },
-  { key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes', type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes, image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true }, displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [] },
-  { key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode', type: NAV_TYPES.UNIVERSE, sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'], image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté', 'Sport', 'Enfant'], filterType: null, filter: null, displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Femme', label: 'Femme', shortLabel: 'Femme', icon: '👗' },
-    { key: 'Homme', label: 'Homme', shortLabel: 'Homme', icon: '👔' },
-    { key: 'Enfant', label: 'Enfant & Bébé', shortLabel: 'Enfant', icon: '🍼' },
-    { key: 'Beauté', label: 'Beauté & Bien-être', shortLabel: 'Beauté', icon: '💄' },
-  ] },
-  { key: 'Maison', label: 'Maison', shortLabel: 'Maison', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison, image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison', 'Solaire', 'Énergie', 'Jouets'], filterType: null, filter: null, displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Confort', label: 'Confort & Énergie', shortLabel: 'Confort', icon: '🔋' },
-    { key: 'Cuisine', label: 'Cuisine', shortLabel: 'Cuisine', icon: '🍳' },
-    { key: 'Déco', label: 'Déco & Rangement', shortLabel: 'Déco', icon: '🖼️' },
-    { key: 'Enfants', label: 'Enfants & Scolaire', shortLabel: 'Enfants', icon: '🧸' },
-  ] },
-  { key: 'Tech', label: 'Tech', shortLabel: 'Tech', type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech, image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech', 'Phones', 'Téléphonie'], filterType: null, filter: null, displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Phones', label: 'Téléphones', shortLabel: 'Tél.', icon: '📱' },
-    { key: 'Audio', label: 'Audio & Accessoires', shortLabel: 'Audio', icon: '🎧' },
-    { key: 'Montres', label: 'Montres & Gadgets', shortLabel: 'Montres', icon: '⌚' },
-  ] },
-  { key: 'Bricolage', label: 'Bricolage', shortLabel: 'Bricol.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔧', iconSvg: _ICON_SVGS.Bricolage, image: _CATEGORY_IMAGES.Bricolage, dbKeys: ['Bricolage', 'Quincaillerie'], filterType: null, filter: null, displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Outillage', label: 'Outils & Fixation', shortLabel: 'Outils', icon: '🔧' },
-    { key: 'Electricité', label: 'Électricité & Plomberie', shortLabel: 'Élec.', icon: '⚡' },
-    { key: 'Sécurité', label: 'Serrures & Sécurité', shortLabel: 'Sécu.', icon: '🔐' },
-  ] },
-  { key: 'Créations personnelles', label: 'Personnalisé', shortLabel: 'Perso.', type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Créations personnelles'], image: _CATEGORY_IMAGES['Créations personnelles'], dbKeys: ['Sur-mesure', 'Créations', 'Personnalisé'], filterType: null, filter: null, displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Cérémonie', label: 'Tenues de cérémonie', shortLabel: 'Cérémo.', icon: '👑' },
-    { key: 'Cadeau', label: 'Cadeaux personnalisés', shortLabel: 'Cadeau', icon: '🎁' },
-    { key: 'Impression', label: 'Impression & Design', shortLabel: 'Imprim.', icon: '🖨️' },
-  ] },
-  { key: 'Auto', label: 'Auto & Moto', shortLabel: 'Auto', type: NAV_TYPES.UNIVERSE, sectionEmoji: '🔩', iconSvg: _ICON_SVGS.Auto, image: _CATEGORY_IMAGES.Auto, dbKeys: ['Auto', 'Moto', 'Pièces'], filterType: null, filter: null, displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true, subcategories: [
-    { key: 'Filtres', label: 'Filtres & Entretien', shortLabel: 'Filtres', icon: '🔧' },
-    { key: 'Freinage', label: 'Freinage & Sécurité', shortLabel: 'Frein.', icon: '🛑' },
-    { key: 'Éclairage', label: 'Éclairage & Électrique', shortLabel: 'Éclai.', icon: '💡' },
-    { key: 'Moto', label: 'Moto', shortLabel: 'Moto', icon: '🏍️' },
-  ] },
+  {
+    key: 'all', label: 'Tout', shortLabel: 'Tout',
+    type: NAV_TYPES.SYSTEM, sectionEmoji: '🔥', iconSvg: null,
+    image: _CATEGORY_IMAGES.all, dbKeys: [], filterType: null, filter: null,
+    displayOrder: 0, showInRail: true, showInSections: false, showInMobileRail: true,
+    subcategories: [],
+  },
+  {
+    key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes',
+    type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes,
+    image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true },
+    displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [],
+  },
+  {
+    key: 'Mode & Beauté', label: 'Mode & Beauté', shortLabel: 'Mode',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '👗', iconSvg: _ICON_SVGS['Mode & Beauté'],
+    image: _CATEGORY_IMAGES['Mode & Beauté'], dbKeys: ['Mode', 'Beauté'], filterType: null, filter: null,
+    displayOrder: 2, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Femme',      label: 'Femme',      shortLabel: 'Femme',    icon: '👗', dbKeys: ['Femme'] },
+      { key: 'Homme',      label: 'Homme',      shortLabel: 'Homme',    icon: '👔', dbKeys: ['Homme'] },
+      { key: 'Hijab',      label: 'Hijab',      shortLabel: 'Hijab',    icon: '🧕', dbKeys: ['Hijab'] },
+      { key: 'Boubou',     label: 'Boubou',     shortLabel: 'Boubou',   icon: '👘', dbKeys: ['Boubou'] },
+      { key: 'Shoes',      label: 'Shoes',      shortLabel: 'Shoes',    icon: '👟', dbKeys: ['Shoes'] },
+      { key: 'Parfums',    label: 'Parfum',     shortLabel: 'Parfum',   icon: '🌸', dbKeys: ['Parfums'] },
+      { key: 'Soins',      label: 'Soin',       shortLabel: 'Soin',     icon: '🧴', dbKeys: ['Soins'] },
+      { key: 'Cheveux',    label: 'Cheveux',    shortLabel: 'Cheveux',  icon: '💇', dbKeys: ['Cheveux'] },
+      { key: 'Maquillage', label: 'Maquil.',    shortLabel: 'Maquil.',  icon: '💄', dbKeys: ['Maquillage'] },
+      { key: 'Ongles',     label: 'Ongles',     shortLabel: 'Ongles',   icon: '💅', dbKeys: ['Ongles'] },
+    ],
+  },
+  {
+    key: 'Tech', label: 'Tech', shortLabel: 'Tech',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '📱', iconSvg: _ICON_SVGS.Tech,
+    image: _CATEGORY_IMAGES.Tech, dbKeys: ['Tech'], filterType: null, filter: null,
+    displayOrder: 3, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Phones',  label: 'Tél.',    shortLabel: 'Tél.',    icon: '📱', dbKeys: ['Phones'] },
+      { key: 'Ordi',    label: 'Ordi',    shortLabel: 'Ordi',    icon: '💻', dbKeys: ['Ordi'] },
+      { key: 'Audio',   label: 'Audio',   shortLabel: 'Audio',   icon: '🎧', dbKeys: ['Audio'] },
+      { key: 'Montres', label: 'Montres', shortLabel: 'Montres', icon: '⌚', dbKeys: ['Montres'] },
+      { key: 'Gaming',  label: 'Gaming',  shortLabel: 'Gaming',  icon: '🎮', dbKeys: ['Gaming'] },
+    ],
+  },
+  {
+    key: 'Enfant', label: 'Enfant', shortLabel: 'Enfant',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🧒', iconSvg: _ICON_SVGS.Enfant,
+    image: _CATEGORY_IMAGES.Enfant, dbKeys: ['Enfant'], filterType: null, filter: null,
+    displayOrder: 4, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Bébé',   label: 'Bébé',   shortLabel: 'Bébé',   icon: '🍼', dbKeys: ['Bébé'] },
+      { key: 'Garçon', label: 'Garçon', shortLabel: 'Garçon', icon: '👦', dbKeys: ['Garçon'] },
+      { key: 'Fille',  label: 'Fille',  shortLabel: 'Fille',  icon: '👧', dbKeys: ['Fille'] },
+      { key: 'Jouets', label: 'Jouets', shortLabel: 'Jouets', icon: '🧸', dbKeys: ['Jouets'] },
+      { key: 'École',  label: 'École',  shortLabel: 'École',  icon: '📚', dbKeys: ['École'] },
+    ],
+  },
+  {
+    key: 'Maison', label: 'Maison', shortLabel: 'Maison',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '🏠', iconSvg: _ICON_SVGS.Maison,
+    image: _CATEGORY_IMAGES.Maison, dbKeys: ['Maison'], filterType: null, filter: null,
+    displayOrder: 5, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Cuisine',    label: 'Cuisine',  shortLabel: 'Cuisine',  icon: '🍳', dbKeys: ['Cuisine'] },
+      { key: 'Salon',      label: 'Salon',    shortLabel: 'Salon',    icon: '🛋', dbKeys: ['Salon'] },
+      { key: 'Chambre',    label: 'Chambre',  shortLabel: 'Chambre',  icon: '🛏', dbKeys: ['Chambre'] },
+      { key: 'Déco',       label: 'Déco',     shortLabel: 'Déco',     icon: '🖼', dbKeys: ['Déco'] },
+      { key: 'Rangement',  label: 'Rangem.',  shortLabel: 'Rangem.',  icon: '📦', dbKeys: ['Rangement'] },
+    ],
+  },
+  {
+    key: 'Sport', label: 'Sport', shortLabel: 'Sport',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '⚽', iconSvg: _ICON_SVGS.Sport,
+    image: _CATEGORY_IMAGES.Sport, dbKeys: ['Sport'], filterType: null, filter: null,
+    displayOrder: 6, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Foot',     label: 'Foot',     shortLabel: 'Foot',     icon: '⚽', dbKeys: ['Foot'] },
+      { key: 'Fitness',  label: 'Fitness',  shortLabel: 'Fitness',  icon: '💪', dbKeys: ['Fitness'] },
+      { key: 'Natation', label: 'Natation', shortLabel: 'Natation', icon: '🏊', dbKeys: ['Natation'] },
+      { key: 'Yoga',     label: 'Yoga',     shortLabel: 'Yoga',     icon: '🧘', dbKeys: ['Yoga'] },
+      { key: 'Outdoor',  label: 'Outdoor',  shortLabel: 'Outdoor',  icon: '🏕', dbKeys: ['Outdoor'] },
+    ],
+  },
+  {
+    key: 'Sur-mesure', label: 'Sur-mesure', shortLabel: 'Pour vous...',
+    type: NAV_TYPES.UNIVERSE, sectionEmoji: '✨', iconSvg: _ICON_SVGS['Sur-mesure'],
+    image: _CATEGORY_IMAGES['Sur-mesure'], dbKeys: ['Sur-mesure'], filterType: null, filter: null,
+    displayOrder: 7, showInRail: true, showInSections: true, showInMobileRail: true,
+    subcategories: [
+      { key: 'Couture',  label: 'Couture',  shortLabel: 'Couture',  icon: '🧵', dbKeys: ['Couture'] },
+      { key: 'Design',   label: 'Design',   shortLabel: 'Design',   icon: '✏️',  dbKeys: ['Design'] },
+      { key: 'Mesure',   label: 'Mesure',   shortLabel: 'Mesure',   icon: '📏', dbKeys: ['Mesure'] },
+      { key: 'Broderie', label: 'Broderie', shortLabel: 'Broderie', icon: '🪡', dbKeys: ['Broderie'] },
+      { key: 'Premium',  label: 'Premium',  shortLabel: 'Premium',  icon: '⭐', dbKeys: ['Premium'] },
+    ],
+  },
 ];
 
 let _categories = null;
@@ -114,7 +190,7 @@ function _buildFilter(row) {
 }
 
 function _buildFromRows(rows) {
-  const cats = rows.map(row => {
+  return rows.map(row => {
     const type = _inferNavType(row);
     return {
       key:            row.key,
@@ -141,7 +217,6 @@ function _buildFromRows(rows) {
       })) : [],
     };
   });
-  return cats;
 }
 
 function _buildIndex(cats) {
@@ -168,7 +243,9 @@ async function _doFetch() {
   }
 }
 
-const _FORCE_FALLBACK = (typeof window !== 'undefined') && (window.KOMERCE_FORCE_FALLBACK_CATEGORIES !== false);
+// DSC-A0 : le chemin DB est le défaut.
+// Le fallback n'est actif que si window.KOMERCE_FORCE_FALLBACK_CATEGORIES === true (opt-in explicite).
+const _FORCE_FALLBACK = (typeof window !== 'undefined') && (window.KOMERCE_FORCE_FALLBACK_CATEGORIES === true);
 if (typeof window !== 'undefined' && typeof fetch !== 'undefined' && !_FORCE_FALLBACK) {
   _loadPromise = _doFetch();
 } else {

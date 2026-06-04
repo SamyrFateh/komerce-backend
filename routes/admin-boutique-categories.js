@@ -15,7 +15,7 @@
  *   GET    /api/admin/boutique-categories/:key/subcategories          → liste
  *   POST   /api/admin/boutique-categories/:key/subcategories          → créer
  *   PUT    /api/admin/boutique-categories/:key/subcategories/:subKey  → modifier
- *   DELETE /api/admin/boutique-categories/:key/subcategories/:subKey  → supprimer
+ *   DELETE /api/admin/boutique-categories/:key/subcategories/:subKey  → soft-delete (is_active=FALSE) | ?hard=true pour purge
  */
 
 'use strict';
@@ -24,6 +24,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { invalidateCategoriesCache } = require('../utils/categories-cache');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -123,6 +124,7 @@ router.post('/', ...guard, async (req, res, next) => {
       ]
     );
     row.subcategories = [];
+    invalidateCategoriesCache();
     res.status(201).json(row);
   } catch (err) { next(err); }
 });
@@ -154,6 +156,7 @@ router.put('/:key', ...guard, async (req, res, next) => {
       values
     );
     if (!row) return res.status(404).json({ error: 'Catégorie introuvable' });
+    invalidateCategoriesCache();
     res.json(await getCategoryWithSubcats(row.key));
   } catch (err) { next(err); }
 });
@@ -169,6 +172,7 @@ router.delete('/:key', ...guard, async (req, res, next) => {
       [req.params.key]
     );
     if (!row) return res.status(404).json({ error: 'Catégorie introuvable' });
+    invalidateCategoriesCache();
     res.json({ deactivated: true, category: row });
   } catch (err) { next(err); }
 });
@@ -221,6 +225,7 @@ router.post('/:key/subcategories', ...guard, async (req, res, next) => {
         b.is_active     !== false,
       ]
     );
+    invalidateCategoriesCache();
     res.status(201).json(row);
   } catch (err) {
     if (err.code === '23505') {
@@ -254,22 +259,40 @@ router.put('/:key/subcategories/:subKey', ...guard, async (req, res, next) => {
       values
     );
     if (!row) return res.status(404).json({ error: 'Sous-catégorie introuvable' });
+    invalidateCategoriesCache();
     res.json(row);
   } catch (err) { next(err); }
 });
 
 // ─── DELETE /api/admin/boutique-categories/:key/subcategories/:subKey ─────────
-// Hard delete: les produits référencent subcategory en texte libre (pas de FK)
+// DSC-B2 — Soft-delete : is_active = FALSE (les produits référencent subcategory en texte libre)
 router.delete('/:key/subcategories/:subKey', ...guard, async (req, res, next) => {
   try {
-    const { rows: [row] } = await db.query(
-      `DELETE FROM boutique_subcategories
-        WHERE category_key = $1 AND key = $2
-        RETURNING *`,
-      [req.params.key, req.params.subKey]
-    );
+    // ?hard=true réservé admin pour purge explicite
+    const hardDelete = req.query.hard === 'true';
+
+    let row;
+    if (hardDelete) {
+      ({ rows: [row] } = await db.query(
+        `DELETE FROM boutique_subcategories
+          WHERE category_key = $1 AND key = $2
+          RETURNING *`,
+        [req.params.key, req.params.subKey]
+      ));
+    } else {
+      ({ rows: [row] } = await db.query(
+        `UPDATE boutique_subcategories
+            SET is_active = FALSE
+          WHERE category_key = $1 AND key = $2
+          RETURNING *`,
+        [req.params.key, req.params.subKey]
+      ));
+    }
     if (!row) return res.status(404).json({ error: 'Sous-catégorie introuvable' });
-    res.json({ deleted: true, subcategory: row });
+    invalidateCategoriesCache();
+    res.json(hardDelete
+      ? { deleted: true, subcategory: row }
+      : { deactivated: true, subcategory: row });
   } catch (err) { next(err); }
 });
 
