@@ -912,9 +912,9 @@ html.k-mobile-premium-v1 .k-chip,
 html.k-mobile-premium-v1 .k-chip.is-active,
 html.k-mobile-premium-v1 .k-chip.active {
   flex: 0 0 auto;
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
+  width: clamp(60px, 16vw, 64px);
+  min-width: clamp(60px, 16vw, 64px);
+  max-width: clamp(60px, 16vw, 64px);
   height: 84px;
   min-height: 84px;
   padding: 6px 4px 6px;
@@ -951,15 +951,6 @@ html.k-mobile-premium-v1 .k-chip-label {
   font-size: 10.5px;
   font-weight: 800;
   text-align: center;
-}
-
-@media (max-width: 360px) {
-  html.k-mobile-premium-v1 .k-chip,
-  html.k-mobile-premium-v1 .k-chip.active {
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
-  }
 }
 
 /* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
