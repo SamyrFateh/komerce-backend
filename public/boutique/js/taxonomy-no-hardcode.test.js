@@ -147,6 +147,98 @@ describe('DSC-A3.2 — fallback ⊆ seed 061', () => {
   });
 });
 
+// ─── (4) Cohérence ordre chips ↔ pages swipables ─────────────────────────────
+describe('DSC-A3.4 — ordre chips rail = ordre pages pager mobile', () => {
+  const shopSchemaContent = fs.readFileSync(SHOP_SCHEMA, 'utf8');
+
+  /**
+   * Extrait les clés des catégories du fallback dans l'ordre d'apparition.
+   * On parse le bloc _FALLBACK_CATEGORIES directement dans la source JS
+   * pour ne pas avoir à importer le module (évite les dépendances browser).
+   */
+  function extractFallbackOrder() {
+    const block = shopSchemaContent.match(
+      /const _FALLBACK_CATEGORIES\s*=\s*\[([\s\S]*?)\];\s*\nlet/
+    )?.[1] || '';
+
+    const entries = [];
+    // Chaque objet { key: '...', ..., showInRail: ..., showInSections: ..., ... }
+    const objRe = /\{[\s\S]*?\}/g;
+    let m;
+    while ((m = objRe.exec(block)) !== null) {
+      const obj = m[0];
+      const keyMatch       = obj.match(/\bkey\s*:\s*'([^']+)'/);
+      const railMatch      = obj.match(/\bshowInRail\s*:\s*(true|false)/);
+      const sectionsMatch  = obj.match(/\bshowInSections\s*:\s*(true|false)/);
+      const mobileMatch    = obj.match(/\bshowInMobileRail\s*:\s*(true|false)/);
+      if (!keyMatch) continue;
+      entries.push({
+        key:              keyMatch[1],
+        showInRail:       railMatch    ? railMatch[1]    === 'true' : true,
+        showInSections:   sectionsMatch ? sectionsMatch[1] === 'true' : true,
+        showInMobileRail: mobileMatch  ? mobileMatch[1]  === 'true' : true,
+      });
+    }
+    return entries;
+  }
+
+  test('getRailCategories() et getSectionOrder() partagent la même source (getCategoryList triée par displayOrder)', () => {
+    // Les deux fonctions appellent getCategoryList() triée par displayOrder.
+    // On vérifie que le source de shop-schema expose bien ces deux exports
+    // et qu'ils dérivent de getCategoryList.
+    expect(shopSchemaContent).toMatch(/export function getRailCategories/);
+    expect(shopSchemaContent).toMatch(/export function getSectionOrder/);
+    expect(shopSchemaContent).toMatch(/getCategoryList\(\)\.filter.*showInRail/);
+    expect(shopSchemaContent).toMatch(/getCategoryList\(\)\.filter.*showInSections/);
+  });
+
+  test('"Tout" (all) est showInRail=true mais showInSections=false dans le fallback', () => {
+    const entries = extractFallbackOrder();
+    const tout = entries.find(e => e.key === 'all');
+    expect(tout).toBeDefined();
+    expect(tout.showInRail).toBe(true);
+    expect(tout.showInSections).toBe(false);
+    // Garanti en position 0 (displayOrder=0)
+    expect(entries[0].key).toBe('all');
+  });
+
+  test('les catégories showInSections=true du fallback apparaissent dans le même ordre relatif que les chips showInRail=true', () => {
+    const entries = extractFallbackOrder();
+    const chipKeys    = entries.filter(e => e.showInRail).map(e => e.key);
+    const sectionKeys = entries.filter(e => e.showInSections).map(e => e.key);
+
+    // Chaque clé de section doit apparaître dans les chips, dans le même ordre relatif
+    const sectionKeysInChips = chipKeys.filter(k => sectionKeys.includes(k));
+    expect(sectionKeysInChips).toEqual(sectionKeys);
+  });
+
+  test('renderCategoryRail() dans home-controller re-rend si alreadyInSync=false et reset data-bound', () => {
+    const homeController = fs.readFileSync(
+      path.join(__dirname, 'controllers/home-controller.js'), 'utf8'
+    );
+    // Vérifie que le guard data-bound est bien supprimé après un re-render
+    expect(homeController).toMatch(/delete\s+catsEl\.dataset\.bound/);
+    // Vérifie que alreadyInSync conditionne bien le re-render
+    expect(homeController).toMatch(/alreadyInSync/);
+    expect(homeController).toMatch(/if\s*\(\s*!alreadyInSync\s*\)/);
+  });
+
+  test('loadProducts() appelle setupCats() avant renderGrid() pour resync les chips depuis le schema DB', () => {
+    const catalogContent = fs.readFileSync(
+      path.join(__dirname, 'b-catalog.js'), 'utf8'
+    );
+    // setupCats() doit apparaître dans le corps de loadProducts, avant renderGrid()
+    const loadProductsBlock = catalogContent.match(
+      /async function loadProducts\(\)\s*\{([\s\S]*?)\n\}/
+    )?.[1] || '';
+    const setupCatsPos  = loadProductsBlock.indexOf('setupCats()');
+    const renderGridPos = loadProductsBlock.indexOf('renderGrid()');
+    expect(setupCatsPos).toBeGreaterThan(-1);
+    expect(renderGridPos).toBeGreaterThan(-1);
+    expect(setupCatsPos).toBeLessThan(renderGridPos);
+  });
+});
+
 // ─── (3) Anti-régression : défaut = fetch, fallback = opt-in === true ─────────
 describe('DSC-A3.3 — défaut fetch, fallback opt-in strict', () => {
   const content = fs.readFileSync(SHOP_SCHEMA, 'utf8');

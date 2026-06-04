@@ -221,6 +221,9 @@ export function renderCategoryRail() {
 
   if (!alreadyInSync) {
     catsEl.innerHTML = renderCategoryRailMarkup(state.activeCat);
+    // Réinitialiser le guard de binding pour que setupHomeController
+    // repose les listeners de click sur les nouveaux éléments.
+    delete catsEl.dataset.bound;
   }
 
   return catsEl;

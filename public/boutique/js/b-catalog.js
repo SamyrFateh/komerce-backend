@@ -59,7 +59,7 @@ import {
 import { renderProductCard }  from './render/render-product-card.js';
 import { renderHomeSections } from './render/render-home-sections.js';
 import {
-  setupHomeController as _setupHomeController,
+  setupHomeController  as _setupHomeController,
   centerRailChip       as _centerRailChip,
   renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
@@ -175,6 +175,11 @@ async function loadProducts() {
   // Synchroniser state avec le store centralisé
   state.products = getAllProducts();
   state.filtered  = [...state.products];
+
+  // Re-sync le rail de chips avec l'ordre DB : le schema async peut s'être résolu
+  // après le premier renderCategoryRail() synchrone du boot (race condition).
+  // setupCats() re-rend les chips ET repose les listeners de click si le HTML a changé.
+  setupCats();
 
   renderGrid();
   markAllCartButtons();
