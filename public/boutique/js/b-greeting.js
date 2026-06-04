@@ -31,8 +31,8 @@ function buildLabel(user) {
   const prenom = firstName(user.full_name);
   const badge  = user.loyalty_badge ? ` ${user.loyalty_badge}` : '';
   return prenom
-    ? `Kwezi ${prenom}${badge} 😊`
-    : `Kwezi${badge} 😊`;
+    ? `Karibu ${prenom}${badge} 😊`
+    : `Karibu${badge} 😊`;
 }
 
 function showGreetingChip(label) {
