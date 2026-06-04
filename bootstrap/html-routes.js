@@ -43,9 +43,9 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'mon-compte.html'));
   });
 
-  // Doctrine panier partagé : aucune page autonome fonctionnelle.
-  // Les anciennes URLs publiques restent compatibles mais ramènent toutes
-  // vers la boutique, onglet Groupe, qui est l'unique interface métier.
+  // Doctrine panier partagÃ© : aucune page autonome fonctionnelle.
+  // Les anciennes URLs publiques restent compatibles mais ramÃ¨nent toutes
+  // vers la boutique, onglet Groupe, qui est l'unique interface mÃ©tier.
   app.get('/cart/shared/success', (req, res) => {
     redirectToGroup(res, req.query.p || req.query.token, 'success');
   });
@@ -72,6 +72,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/sourcing',
     '/admin/alerts',
     '/admin/categories',
+    '/admin/products',
   ];
   ADMIN_DASHBOARD_PATHS.forEach(p => {
     app.get(p, (req, res) => {
@@ -94,7 +95,7 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
   });
 
-  // Ancien parcours "Panier Événement Collectif / Workspace" désactivé.
+  // Ancien parcours "Panier Ã‰vÃ©nement Collectif / Workspace" dÃ©sactivÃ©.
   // Doctrine actuelle : tout commence et finit dans la boutique.
   app.get('/event/create', (req, res) => redirectToBoutique(res));
   app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));
