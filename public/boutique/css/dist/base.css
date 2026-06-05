@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-04)
+   KOMERCE — base.css (2026-06-05)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -1387,8 +1387,11 @@ body:has(#k-page-scroll.k-pager-active) {
 
 .k-header .k-cart-badge,
 .k-cart-btn.k-header-action .k-cart-badge {
-  top: 0;
-  right: -1px;
+  /* FIX badge : déplacé en bas-droite (sur l'épaule) pour ne plus
+     recouvrir le panier que la dame porte sur la tête. */
+  top: auto;
+  bottom: -2px;
+  right: -2px;
   min-width: 18px;
   height: 18px;
   font-size: 9px;
