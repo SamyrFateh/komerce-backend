@@ -861,7 +861,7 @@ body:has(#k-page-scroll.k-pager-active) {
   bottom: 0;            /* épaules calées sur le bas du bouton */
   margin: 0 auto;       /* centrage horizontal sans transform (n'interfère pas
                            avec les animations panierArrive / avatarWave) */
-  width: 44px;          /* ↑/↓ pour agrandir/réduire la dame */
+  width: 42px;          /* ↑/↓ pour agrandir/réduire la dame */
   height: auto;         /* ratio naturel ; le panier dépasse en haut */
   object-fit: contain;
   object-position: center bottom;
