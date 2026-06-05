@@ -113,10 +113,24 @@ export function buildProductCardViewModel(product = {}, options = {}) {
     ? Math.round(priceKmf / (1 - promoPct / 100))
     : 0;
 
-  const imageUrl = normalizeString(
+  // Objet catégorie (optionnel) — fourni par render-product-card.js via options.category.
+  // Permet de résoudre : image de fallback catégorie, theme_token, accent_token.
+  const categoryObj = (options.category && typeof options.category === 'object')
+    ? options.category
+    : null;
+
+  // Image : product > category > placeholder
+  const rawImageUrl = normalizeString(
     product.image_url || product.imageUrl || product.images?.[0]?.url || product.images?.[0],
-    DEFAULT_IMAGE_URL
+    ''
   );
+  const imageUrl = rawImageUrl
+    || normalizeString(categoryObj?.imageUrl || categoryObj?.image_url, '')
+    || DEFAULT_IMAGE_URL;
+
+  // Thème visuel — depuis la catégorie DB
+  const themeToken  = categoryObj?.themeToken  || categoryObj?.theme_token  || null;
+  const accentToken = categoryObj?.accentToken || categoryObj?.accent_token || null;
 
   const fulfillmentType = inferFulfillmentType(product);
   const availabilityStatus = inferAvailabilityStatus(product);
@@ -161,5 +175,8 @@ export function buildProductCardViewModel(product = {}, options = {}) {
     availabilityStatus,
     hasVariants,
     dataQualityScore,
+    // Thème catégorie (depuis /api/categories via options.category)
+    themeToken,
+    accentToken,
   };
 }

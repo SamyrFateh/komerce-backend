@@ -16,6 +16,7 @@ import {
 } from '../b-utils.js';
 import { isFav } from '../b-cart-core.js';
 import { buildProductCardViewModel } from '../view-models/product-card-view-model.js';
+import { getCategoryByKey } from '../shop-schema.js';
 
 function getCartQty(productId) {
   const inCart = state.cart.find((item) => String(item.product.id) === String(productId));
@@ -37,7 +38,11 @@ function renderAddControl(productId, qty, variant) {
 }
 
 function renderGridCard(product, qty) {
-  const vm = buildProductCardViewModel(product, { variant: 'grid', imageSize: 400 });
+  const vm = buildProductCardViewModel(product, {
+    variant: 'grid',
+    imageSize: 400,
+    category: getCategoryByKey(product.category) || null,
+  });
 
   return `
     <div class="k-card ${vm.cssClassName}" data-id="${vm.id}">
@@ -66,7 +71,11 @@ function renderGridCard(product, qty) {
 }
 
 function renderSuggestionCard(product, qty) {
-  const vm = buildProductCardViewModel(product, { variant: 'suggestion', imageSize: 200 });
+  const vm = buildProductCardViewModel(product, {
+    variant: 'suggestion',
+    imageSize: 200,
+    category: getCategoryByKey(product.category) || null,
+  });
 
   return `
     <div class="k-sug-card ${vm.cssClassName}" data-id="${vm.id}" data-subcat="${sanitize(vm.raw.subcategory || '')}">
