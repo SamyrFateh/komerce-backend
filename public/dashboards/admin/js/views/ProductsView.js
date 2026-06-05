@@ -74,35 +74,86 @@
 
   // ─── Preview mini-carte (L2) ───────────────────────────────────────────────
 
-  function buildPreviewHTML(p) {
-    const imgSrc = p.image_url || '/images/placeholder-product.png';
-    const badges = [];
-    if (p.promo_pct > 0)  badges.push(`<span class="k-card--badge k-card--badge-promo">-${p.promo_pct}%</span>`);
+  /**
+   * Construit le HTML de preview carte produit via KProductCardModel.resolve().
+   * Si le resolver n'est pas chargé (script manquant), bascule sur le rendu minimal.
+   *
+   * @param {Object} p       - Données produit brutes (formulaire ou objet produit)
+   * @param {Object} [catObj] - Objet catégorie complet depuis /api/categories
+   */
+  function buildPreviewHTML(p, catObj) {
+    // ── Résolution via KProductCardModel (no-code card config) ────────────────
+    var model;
+    if (window.KProductCardModel) {
+      model = window.KProductCardModel.resolve(p || {}, catObj || {});
+    } else {
+      // Fallback défensif si le script n'est pas chargé
+      model = {
+        imageUrl:   p && p.image_url || '/images/placeholder-product.png',
+        title:      p && p.name      || '(sans nom)',
+        subtitle:   p && (p.subcategory || p.category) || '',
+        priceLabel: p && p.price_kmf ? fmt(p.price_kmf) : '—',
+        badges:     (p && p.promo_pct > 0) ? [{ type: 'promo', label: '-' + p.promo_pct + '%' }] : [],
+        themeToken:  null,
+        accentToken: null,
+        isAvailable: true,
+      };
+    }
 
-    return `
-      <div class="k-card" style="max-width:220px;border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;font-size:13px;">
-        <div style="position:relative;background:#f3f4f6;height:160px;display:flex;align-items:center;justify-content:center;">
-          <img src="${imgSrc}" alt="" style="max-height:160px;max-width:100%;object-fit:contain;"
-               onerror="this.src='/images/placeholder-product.png'">
-          <div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;">
-            ${badges.join('')}
-          </div>
-        </div>
-        <div style="padding:10px;">
-          <div style="font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${p.name || '(sans nom)'}
-          </div>
-          <div style="color:var(--primary,#6366f1);font-weight:700;">
-            ${p.price_kmf ? fmt(p.price_kmf) : '—'}
-          </div>
-          ${p.category ? `<div style="font-size:11px;color:var(--text-secondary,#6b7280);margin-top:4px;">${p.category}${p.subcategory ? ' › ' + p.subcategory : ''}</div>` : ''}
-        </div>
-      </div>`;
+    // ── Rendu des badges ──────────────────────────────────────────────────────
+    var badgesHTML = model.badges.map(function (b) {
+      var cls = b.type === 'promo' ? 'k-card--badge k-card--badge-promo'
+              : b.type === 'stock' ? 'k-card--badge k-card--badge-stock'
+              : 'k-card--badge';
+      return '<span class="' + cls + '">' + b.label + '</span>';
+    }).join('');
+
+    // ── Style thème (si token dispo) ──────────────────────────────────────────
+    var accentStyle = model.accentToken
+      ? 'color:' + model.accentToken + ';'
+      : 'color:var(--primary,#6366f1);';
+
+    // ── Sous-titre ────────────────────────────────────────────────────────────
+    var subtitleHTML = model.subtitle
+      ? '<div style="font-size:11px;color:var(--text-secondary,#6b7280);margin-top:4px;">' + model.subtitle + '</div>'
+      : '';
+
+    return (
+      '<div class="k-card" style="max-width:220px;border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;font-size:13px;">' +
+        '<div style="position:relative;background:#f3f4f6;height:160px;display:flex;align-items:center;justify-content:center;">' +
+          '<img src="' + model.imageUrl + '" alt="" style="max-height:160px;max-width:100%;object-fit:contain;"' +
+               ' onerror="this.src=\'/images/placeholder-product.png\'">' +
+          '<div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;">' +
+            badgesHTML +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:10px;">' +
+          '<div style="font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+            model.title +
+          '</div>' +
+          '<div style="font-weight:700;' + accentStyle + '">' +
+            model.priceLabel +
+          '</div>' +
+          subtitleHTML +
+        '</div>' +
+      '</div>'
+    );
   }
 
   // ─── Modal générique ───────────────────────────────────────────────────────
 
-  function modal(title, bodyHTML, onSubmit) {
+  /**
+   * @param {string}   title
+   * @param {string}   bodyHTML
+   * @param {Function} onSubmit
+   * @param {Object}   [opts]
+   * @param {Function} [opts.getCategoryByKey]  - (key: string) => catObj | null
+   */
+  function modal(title, bodyHTML, onSubmit, opts) {
+    const getCategoryByKey = (opts && typeof opts.getCategoryByKey === 'function')
+      ? opts.getCategoryByKey
+      : function () { return null; };
+
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;';
 
@@ -121,7 +172,7 @@
           </form>
           <div id="product-preview" style="flex:0 0 auto;padding-top:4px;">
             <div style="font-size:12px;color:var(--text-secondary,#6b7280);margin-bottom:8px;font-weight:600;">APERÇU</div>
-            <div id="preview-card">${buildPreviewHTML({})}</div>
+            <div id="preview-card">${buildPreviewHTML({}, null)}</div>
           </div>
         </div>
       </div>`;
@@ -132,20 +183,26 @@
     const errEl = overlay.querySelector('#form-error');
     const previewEl = overlay.querySelector('#preview-card');
 
-    // Live preview
+    // Live preview — résout l'objet catégorie complet pour transmettre image_url / theme_token
     function refreshPreview() {
       const fd = new FormData(form);
-      previewEl.innerHTML = buildPreviewHTML({
-        name:      fd.get('name') || '',
-        price_kmf: fd.get('price_kmf') || '',
-        image_url: fd.get('image_url') || '',
-        category:  fd.get('category') || '',
+      const product = {
+        name:        fd.get('name')        || '',
+        price_kmf:   fd.get('price_kmf')   || '',
+        image_url:   fd.get('image_url')   || '',
+        category:    fd.get('category')    || '',
         subcategory: fd.get('subcategory') || '',
-        promo_pct: parseFloat(fd.get('promo_pct')) || 0,      });
+        promo_pct:   parseFloat(fd.get('promo_pct')) || 0,
+		stock:       fd.get('stock') !== '' ? parseInt(fd.get('stock'), 10) : undefined,
+      };
+      const catObj = getCategoryByKey(product.category) || {};
+      previewEl.innerHTML = buildPreviewHTML(product, catObj);
     }
 
     form.addEventListener('input', refreshPreview);
     form.addEventListener('change', refreshPreview);
+    // Appel initial : en édition, la preview s'affiche dès l'ouverture sans attendre un input.
+    refreshPreview();
 
     function close() { overlay.remove(); }
     overlay.querySelector('#modal-close').addEventListener('click', close);
@@ -287,22 +344,40 @@
   }
 
   async function showCreateModal(cats, onRefresh) {
-    const overlay = modal('Nouveau produit', buildFormHTML(cats), async (fd) => {
-      validateCategoryChoice(fd, cats);
-      await apiFetch('', { method: 'POST', body: JSON.stringify(formDataToProduct(fd)) });
-      toast('Produit créé !');
-      await onRefresh();
-    });
+    const overlay = modal(
+      'Nouveau produit',
+      buildFormHTML(cats),
+      async (fd) => {
+        validateCategoryChoice(fd, cats);
+        await apiFetch('', { method: 'POST', body: JSON.stringify(formDataToProduct(fd)) });
+        toast('Produit créé !');
+        await onRefresh();
+      },
+      { getCategoryByKey: (key) => cats.find(c =>
+          c.key === key ||
+          (Array.isArray(c.db_keys) && c.db_keys.includes(key))
+        ) || null
+      }
+    );
     wireSubcategoryDropdown(overlay, cats);
   }
 
   async function showEditModal(product, cats, onRefresh) {
-    const overlay = modal(`Modifier "${product.name}"`, buildFormHTML(cats, product), async (fd) => {
-      validateCategoryChoice(fd, cats);
-      await apiFetch(`/${product.id}`, { method: 'PUT', body: JSON.stringify(formDataToProduct(fd)) });
-      toast('Produit modifié !');
-      await onRefresh();
-    });
+    const overlay = modal(
+      `Modifier "${product.name}"`,
+      buildFormHTML(cats, product),
+      async (fd) => {
+        validateCategoryChoice(fd, cats);
+        await apiFetch(`/${product.id}`, { method: 'PUT', body: JSON.stringify(formDataToProduct(fd)) });
+        toast('Produit modifié !');
+        await onRefresh();
+      },
+      { getCategoryByKey: (key) => cats.find(c =>
+          c.key === key ||
+          (Array.isArray(c.db_keys) && c.db_keys.includes(key))
+        ) || null
+      }
+    );
     wireSubcategoryDropdown(overlay, cats);
   }
 
