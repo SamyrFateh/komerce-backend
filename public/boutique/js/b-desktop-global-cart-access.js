@@ -41,6 +41,14 @@ function isCartTrigger(target) {
 }
 
 function openDrawerFallback() {
+  // FIX scroll bloqué : si le panier est VIDE, ne pas ouvrir le drawer.
+  // checkoutCart() a déjà affiché le toast « Votre panier est vide » et s'est
+  // arrêté. Sans ce garde-fou, le fallback ouvrait quand même overlay + drawer
+  // + body.cart-open pour un panier vide → l'overlay restait posé par-dessus la
+  // page et captait le scroll (molette/tactile KO, seul l'ascenseur marchait).
+  const cartBtn = document.getElementById('k-cart-btn');
+  if (cartBtn && cartBtn.classList.contains('is-empty')) return;
+
   const overlay = document.getElementById('k-cart-overlay');
   const drawer = document.getElementById('k-cart-drawer');
   if (!overlay || !drawer) return;

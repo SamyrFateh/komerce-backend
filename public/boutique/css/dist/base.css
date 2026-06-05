@@ -1371,18 +1371,26 @@ body:has(#k-page-scroll.k-pager-active) {
   display: block;
   visibility: visible;
   opacity: 1;
-  /* FIX visibilité avatar dame : agrandi 44→52px, mix-blend-mode:multiply retiré.
-     multiply noyait les couleurs sur fond crème — symbole de marque doit rester net. */
-  width: 52px;
-  height: 58px;
+  /* FIX cadrage avatar dame : calage sur la LARGEUR (épaules) + ancrage bas.
+     Les 2 visuels (vide/plein) partagent le même gabarit → visage et épaules
+     restent à la même place ; seul le panier déborde vers le haut quand le
+     panier se remplit (overflow:visible déjà posé sur .k-cart-btn / .k-header).
+     mix-blend-mode:multiply retiré — il noyait l'avatar sur fond crème. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;            /* épaules calées sur le bas du bouton */
+  margin: 0 auto;       /* centrage horizontal sans transform (n'interfère pas
+                           avec les animations panierArrive / avatarWave) */
+  width: 44px;          /* ↑/↓ pour agrandir/réduire la dame */
+  height: auto;         /* ratio naturel ; le panier dépasse en haut */
   object-fit: contain;
   object-position: center bottom;
+  transform-origin: bottom center;
   border: 0;
   box-shadow: none;
   background: transparent;
   mix-blend-mode: normal;
-  margin-top: -12px;
-  margin-bottom: -2px;
 }
 
 .k-header .k-cart-badge,

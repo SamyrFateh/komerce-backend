@@ -622,7 +622,9 @@ body.cart-open .k-wa-fab {
 }
 .k-cart-btn.ring-pulse .k-cart-avatar,
 .k-cart-btn.avatar-wave .k-cart-avatar {
-  mix-blend-mode: multiply; /* re-forcer pendant les animations pour �viter le fond blanc */
+  /* FIX : multiply retiré — l'avatar est désormais détouré (fond transparent),
+     multiply le salissait sur fond crème pendant l'animation d'ajout. */
+  mix-blend-mode: normal;
 }
 
 /* Bouton ajouter "confirmed" */
