@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 const express = require('express');
 const crypto = require('crypto');
@@ -9,6 +9,9 @@ const router = express.Router();
 const pool = require('../db');
 const { sendOtpMessage } = require('../services/notification-service');
 const log = require('../utils/logger').child({ module: 'otp' });
+
+// ── TEST MODE (jamais actif en production) ──────────────────────────
+const { isOtpTestMode, getMasterCode, isMasterCode } = require('../services/otp-test-mode');
 
 // ─── Config ─────────────────────────────────────────────────
 const OTP_LENGTH = 6;
@@ -29,9 +32,6 @@ const ALLOWED_PURPOSES = new Set([
 
 const { normalizePhone: _normalizePhoneUtil } = require('../utils/phone');
 
-// FIX W2 — normalisePhone unifié via utils/phone.js (indicatif +269 par défaut Comores).
-// Supprimé : normalizer local qui forçait +269 sans validation longueur/format.
-// utils/phone.js : normalizePhone(raw, defaultCountry) — valide E.164, refuse si invalide.
 function normalizePhone(raw) {
   return _normalizePhoneUtil(raw, '+269');
 }
@@ -105,11 +105,30 @@ function signKomerceJwt(user, phone) {
   );
 }
 
+// ════════════════════════════════════════════════════════════════════
+// Helper interne : émet la session vérifiée (cookie + payload).
+// Factorisé pour être réutilisé par le chemin normal ET le chemin test.
+// ════════════════════════════════════════════════════════════════════
+async function issueVerifiedSession(res, phone, name) {
+  let user = await findUserByPhone(phone);
+  let created = false;
+
+  if (!user) {
+    const safeName = (name && String(name).trim().slice(0, 50)) || null;
+    user = await createLightweightUser(phone, safeName);
+    created = true;
+  }
+
+  const token = signKomerceJwt(user, phone);
+  res.cookie('kmrc_jwt', token, jwtCookieOptions());
+
+  return { user, created };
+}
+
 /**
  * POST /api/auth/otp/request
  *
- * UX Komerce :
- * téléphone → code OTP → session client légère.
+ * UX Komerce : téléphone → code OTP → session client légère.
  */
 router.post('/request', async (req, res) => {
   try {
@@ -141,6 +160,22 @@ router.post('/request', async (req, res) => {
         error: 'Usage OTP invalide',
       });
     }
+
+    // ── TEST MODE : court-circuit, pas d'envoi WhatsApp, code maître ──
+    // Renvoie immédiatement le code maître pour que le test l'utilise.
+    // (jamais atteint en production : isOtpTestMode() y est toujours false)
+    if (isOtpTestMode()) {
+      log.warn(`[OTP][TEST] /request court-circuité pour ${phone} (code maître)`);
+      return res.json({
+        ok: true,
+        success: true,
+        message: 'Code envoyé (TEST MODE)',
+        expiresIn: OTP_EXPIRY_MIN * 60,
+        retryAfter: 0,
+        _test: { mode: true, code: getMasterCode() },
+      });
+    }
+    // ── /TEST MODE ────────────────────────────────────────────────────
 
     const recentOtp = await pool.query(
       `SELECT created_at
@@ -275,6 +310,23 @@ router.post('/verify', async (req, res) => {
       });
     }
 
+    // ── TEST MODE : le code maître valide pour n'importe quel numéro ──
+    // Court-circuite la vérification DB/bcrypt → session immédiate.
+    // (jamais atteint en production : isMasterCode() y est toujours false)
+    if (isMasterCode(code)) {
+      const { user, created } = await issueVerifiedSession(res, phone, name);
+      log.warn(`[OTP][TEST] Vérif court-circuitée (code maître) → ${phone}${created ? ' [created]' : ''}`);
+      return res.json({
+        ok: true,
+        success: true,
+        message: 'Numéro vérifié (TEST MODE)',
+        created,
+        user: buildUserPayload(user, phone),
+        _test: { mode: true },
+      });
+    }
+    // ── /TEST MODE ────────────────────────────────────────────────────
+
     const otpResult = await pool.query(
       `SELECT id, code, attempts
          FROM otp_codes
@@ -340,20 +392,7 @@ router.post('/verify', async (req, res) => {
       [otp.id]
     );
 
-    let user = await findUserByPhone(phone);
-    let created = false;
-
-    if (!user) {
-      const safeName = name && String(name).trim().slice(0, 50) || null;
-      user = await createLightweightUser(phone, safeName);
-      created = true;
-    }
-
-    const token = signKomerceJwt(user, phone);
-
-    res.cookie('kmrc_jwt', token, jwtCookieOptions());
-    // CONSOLIDATION AUTH — kmrc_client supprimé (jamais lu par middleware/auth.js ni auth-guest.js).
-    // Cookie canonique unique : kmrc_jwt. requireClientAuth lit désormais kmrc_jwt directement.
+    const { user, created } = await issueVerifiedSession(res, phone, name);
 
     log.info(`[OTP] Vérifié → ${user.full_name || 'Client Komerce'} (${phone}) / purpose=${purpose}${created ? ' [created]' : ''}`);
 
@@ -372,6 +411,52 @@ router.post('/verify', async (req, res) => {
       error: 'Erreur serveur',
     });
   }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// POST /api/auth/otp/test-reset   (TEST MODE uniquement)
+// ════════════════════════════════════════════════════════════════════
+// Efface le cookie de session côté serveur (kmrc_jwt est httpOnly →
+// JS navigateur ne peut PAS le supprimer, d'où ce endpoint) et, si un
+// `phone` est fourni, purge le user de test léger + ses OTP, pour
+// rejouer un parcours d'authentification "à neuf".
+//
+// Sécurité : 404 si hors mode test (donc invisible/inerte en production).
+router.post('/test-reset', async (req, res) => {
+  if (!isOtpTestMode()) {
+    return res.status(404).json({ ok: false, error: 'Not found' });
+  }
+
+  // 1) Efface la session courante (cookie httpOnly)
+  res.clearCookie('kmrc_jwt', { httpOnly: true, path: '/' });
+
+  // 2) Purge optionnelle du user de test + ses OTP
+  let purged = null;
+  try {
+    const rawPhone = req.body && req.body.phone;
+    if (rawPhone) {
+      const phone = normalizePhone(rawPhone);
+      await pool.query('DELETE FROM otp_codes WHERE phone = $1', [phone]);
+
+      // On ne supprime QUE les comptes légers synthétiques (@komerce.km),
+      // jamais un vrai compte admin/agent.
+      const { rows } = await pool.query(
+        `DELETE FROM users
+          WHERE (phone = $1 OR whatsapp_phone = $1)
+            AND email LIKE '%@komerce.km'
+            AND role = 'client'
+          RETURNING id, phone`,
+        [phone]
+      );
+      purged = { phone, deletedUsers: rows.length };
+      log.warn(`[OTP][TEST] test-reset → ${phone} (users supprimés: ${rows.length})`);
+    }
+  } catch (err) {
+    log.error({ err }, '[OTP][TEST] test-reset purge error');
+    return res.status(500).json({ ok: false, error: 'Erreur purge test' });
+  }
+
+  return res.json({ ok: true, success: true, cleared: 'kmrc_jwt', purged });
 });
 
 module.exports = router;
