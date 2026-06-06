@@ -1379,14 +1379,16 @@ body:has(#k-page-scroll.k-pager-active) {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;            /* épaules calées sur le bas du bouton */
-  margin: 0 auto;       /* centrage horizontal sans transform (n'interfère pas
-                           avec les animations panierArrive / avatarWave) */
-  width: 42px;          /* ↑/↓ pour agrandir/réduire la dame */
-  height: auto;         /* ratio naturel ; le panier dépasse en haut */
+  top: 50%;             /* BUG-AVATAR-2b : ancrage centre vertical.
+                           bottom:0 faisait déborder avatar_panier.png vers le haut,
+                           coupé par position:sticky top:0 du header au scroll. */
+  transform: translateY(-50%);
+  margin: 0 auto;
+  width: 38px;          /* légèrement réduit pour que panier+tête tiennent dans 52px */
+  height: auto;
   object-fit: contain;
-  object-position: center bottom;
-  transform-origin: bottom center;
+  object-position: center center;
+  transform-origin: center center;
   border: 0;
   box-shadow: none;
   background: transparent;
