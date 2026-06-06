@@ -723,7 +723,7 @@ export function renderCheckout() {
 
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
-    s2.className = 'ck-section-block';
+    s2.className = 'ck-section-block ck-fill-above';
     s2.innerHTML = '<div class="ck-section-title">PAIEMENT</div>';
     body.appendChild(s2);
 

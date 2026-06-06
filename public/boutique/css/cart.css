@@ -1279,7 +1279,14 @@ body.cart-open .k-wa-fab {
 /* ── Checkout body ultra-compact sur mobile ── */
 .k-order-body--checkout {
   padding: 8px 10px calc(74px + env(safe-area-inset-bottom)) !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
+/* Comble le vide quand le form est court : le bloc paiement gravite vers le bas
+   (près du bouton Confirmer). La marge auto se rétracte d'elle-même dès que le
+   contenu grandit (bénéficiaire, carte Stripe, wallet) → plus de scroll, plus de trou. */
+.k-order-body--checkout .ck-fill-above { margin-top: auto; }
 
 /* Guest hint plus compact */
 .k-ck-guest-hint {
