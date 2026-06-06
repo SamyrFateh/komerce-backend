@@ -713,10 +713,12 @@ body {
 }
 .k-header .k-cart-avatar { width: 40px; height: 40px; }
 
+/* BUG-AVATAR-ANIM : translateY(-50%) doit être présent dans chaque keyframe,
+   sinon l'animation l'écrase et la dame saute au chargement / à chaque ajout. */
 @keyframes panierArrive {
-  0%   { transform: scale(.85) rotate(-8deg); }
-  50%  { transform: scale(1.12) rotate(4deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0%   { transform: translateY(-50%) scale(.85) rotate(-8deg); }
+  50%  { transform: translateY(-50%) scale(1.12) rotate(4deg); }
+  100% { transform: translateY(-50%) scale(1) rotate(0deg); }
 }
 .k-cart-btn.has-items .k-cart-avatar,
 .k-modal-cart-btn.has-items .k-cart-avatar {
@@ -726,12 +728,12 @@ body {
 .k-modal-cart-btn.is-empty .k-modal-cart-badge { display: none; }
 
 @keyframes avatarWave {
-  0%   { transform: scale(1) rotate(0deg); }
-  20%  { transform: scale(1.25) rotate(-10deg); }
-  40%  { transform: scale(1.2) rotate(12deg); }
-  60%  { transform: scale(1.22) rotate(-8deg); }
-  80%  { transform: scale(1.18) rotate(6deg); }
-  100% { transform: scale(1) rotate(0deg); }
+  0%   { transform: translateY(-50%) scale(1) rotate(0deg); }
+  20%  { transform: translateY(-50%) scale(1.25) rotate(-10deg); }
+  40%  { transform: translateY(-50%) scale(1.2) rotate(12deg); }
+  60%  { transform: translateY(-50%) scale(1.22) rotate(-8deg); }
+  80%  { transform: translateY(-50%) scale(1.18) rotate(6deg); }
+  100% { transform: translateY(-50%) scale(1) rotate(0deg); }
 }
 .k-cart-btn.avatar-wave .k-cart-avatar { animation: avatarWave .9s cubic-bezier(.34,1.56,.64,1); }
 
@@ -1393,12 +1395,13 @@ body:has(#k-page-scroll.k-pager-active) {
   mix-blend-mode: normal;
 }
 
-.k-header .k-cart-badge,
-.k-cart-btn.k-header-action .k-cart-badge {
-  /* Badge épaule droite : coin bas-droit du bouton, dans le bouton */
-  top: auto;
-  bottom: 2px;
-  right: 0px;
+/* Badge desktop : épaule basse droite — hors @media car s'applique dès le header desktop */
+.k-header .k-cart-btn.k-header-action .k-cart-badge {
+  position: absolute;
+  top: unset;
+  bottom: 0px;
+  right: -2px;
+  left: auto;
   min-width: 16px;
   height: 16px;
   font-size: 9px;
