@@ -1027,11 +1027,12 @@ body:has(#k-page-scroll.k-pager-active) {
   }
   .k-cart-avatar { width: 36px; height: 36px; }
 
-  /* Badge panier desktop — épaule basse droite de l'avatar (bouton 40px, avatar 30px → right:5px) */
+  /* Badge desktop — coin bas-droit avatar (30px centré dans 40px → left:calc(50% + 7px)) */
   .k-header .k-cart-btn.k-header-action .k-cart-badge {
     top: auto;
     bottom: 2px;
-    right: 5px;
+    left: calc(50% + 7px);
+    right: auto;
     min-width: 16px;
     height: 16px;
     font-size: 9px;
@@ -1397,15 +1398,15 @@ body:has(#k-page-scroll.k-pager-active) {
   mix-blend-mode: normal;
 }
 
-/* Badge desktop : épaule basse droite de l'avatar.
-   Bouton = 40px large, avatar = 30px large centré → marge latérale = 5px.
-   right:5px place le badge au bord droit de l'avatar. */
+/* Badge desktop : coin bas-droit de l'avatar.
+   Avatar 30px centré dans bouton 40px → son bord droit = 50% + 15px = 35px depuis la gauche.
+   Le badge (16px) se place à left:calc(50% + 15px - 8px) = left:calc(50% + 7px). */
 .k-header .k-cart-btn.k-header-action .k-cart-badge {
   position: absolute;
   top: auto;
   bottom: 2px;
-  right: 5px;
-  left: auto;
+  left: calc(50% + 7px);
+  right: auto;
   min-width: 16px;
   height: 16px;
   font-size: 9px;
