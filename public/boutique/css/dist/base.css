@@ -1379,12 +1379,10 @@ body:has(#k-page-scroll.k-pager-active) {
   position: absolute;
   left: 0;
   right: 0;
-  top: 50%;             /* BUG-AVATAR-2b : ancrage centre vertical.
-                           bottom:0 faisait déborder avatar_panier.png vers le haut,
-                           coupé par position:sticky top:0 du header au scroll. */
+  top: 50%;
   transform: translateY(-50%);
   margin: 0 auto;
-  width: 38px;          /* légèrement réduit pour que panier+tête tiennent dans 52px */
+  width: 30px;          /* BUG-AVATAR-2c : taille réduite, tient dans 44px sans déborder */
   height: auto;
   object-fit: contain;
   object-position: center center;
@@ -1397,15 +1395,14 @@ body:has(#k-page-scroll.k-pager-active) {
 
 .k-header .k-cart-badge,
 .k-cart-btn.k-header-action .k-cart-badge {
-  /* FIX badge : déplacé en bas-droite (sur l'épaule) pour ne plus
-     recouvrir le panier que la dame porte sur la tête. */
+  /* Badge épaule droite : coin bas-droit du bouton, dans le bouton */
   top: auto;
-  bottom: -2px;
-  right: -2px;
-  min-width: 18px;
-  height: 18px;
+  bottom: 2px;
+  right: 0px;
+  min-width: 16px;
+  height: 16px;
   font-size: 9px;
-  border-width: 2px;
+  border-width: 1.5px;
   z-index: 20;
 }
 
@@ -1505,9 +1502,9 @@ body:has(#k-page-scroll.k-pager-active) {
      Fix : fond transparent, hauteur étendue vers le haut pour absorber le débordement,
      overflow:visible confirmé, badge repositionné sur l'épaule (déjà dans les règles .k-header). */
   .k-cart-btn.k-header-action {
-    width: 46px;
-    height: 52px;           /* absorbe le débordement panier vers le haut */
-    border-radius: 0;       /* plus de clipping cercle */
+    width: 40px;
+    height: 44px;
+    border-radius: 0;
     background: transparent;
     border: none;
     box-shadow: none;
