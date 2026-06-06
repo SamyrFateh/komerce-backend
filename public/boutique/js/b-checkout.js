@@ -829,7 +829,13 @@ export function renderCheckout() {
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
         wrap.classList.toggle('is-visible', isStripe);
-        if (isStripe) { const ed = document.getElementById('stripe-eur-display'); if (ed) ed.classList.add('is-visible'); }
+        if (isStripe) {
+          const ed = document.getElementById('stripe-eur-display');
+          if (ed) ed.classList.add('is-visible');
+          // Scroll le champ carte dans la zone visible — 150ms laisse le temps
+          // à la transition CSS d'ouvrir le bloc avant le scroll.
+          setTimeout(() => wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+        }
       }
 
       if (isStripe && !_stripeCard) {
