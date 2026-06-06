@@ -549,8 +549,10 @@ body {
 
 /* ── HEADER ─────────────────────────────────────────────────── */
 .k-header {
-  position: sticky;
+  position: fixed; /* PATCH header-fixed — sticky ne survit pas à body:overflow:hidden (pager actif) */
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   height: var(--header-h);
   padding: 0 var(--pad-x);
@@ -977,6 +979,8 @@ body:has(#k-page-scroll.k-pager-active) {
     height: 68px;
     position: sticky;
     top: 0;
+    left: auto;   /* reset PATCH header-fixed */
+    right: auto;  /* reset PATCH header-fixed */
     z-index: 200;
     background: var(--surface-sand-94);
     backdrop-filter: blur(14px);
