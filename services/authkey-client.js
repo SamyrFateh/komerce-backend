@@ -14,6 +14,37 @@ const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
 const log = require('../utils/logger').child({ module: 'authkey-client' });
 
+// ── Staging whitelist guard ────────────────────────────────────────────────
+// En dehors de production, les notifications WhatsApp ne partent que vers
+// les numéros listés dans AUTHKEY_ALLOWED_PHONES (séparés par virgule).
+// Ex : AUTHKEY_ALLOWED_PHONES="+2693301234,+33612345678"
+// Si la variable est absente en staging, AUCUN message ne part (fail-safe).
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const _allowedPhones = IS_PRODUCTION
+  ? null  // prod : pas de filtre
+  : new Set(
+      (process.env.AUTHKEY_ALLOWED_PHONES || '')
+        .split(',')
+        .map(p => p.trim().replace(/\D/g, ''))
+        .filter(Boolean)
+    );
+
+/**
+ * Vérifie si un numéro est autorisé à recevoir un message en staging.
+ * Normalise en digits purs pour la comparaison (insensible au format).
+ * En production, retourne toujours true.
+ */
+function _isStagingAllowed(rawPhone) {
+  if (IS_PRODUCTION) return true;
+  if (!_allowedPhones || _allowedPhones.size === 0) return false;
+  const digits = String(rawPhone || '').replace(/\D/g, '');
+  // Tente la correspondance sur le suffixe (ex: "3301234" matche "+2693301234")
+  for (const allowed of _allowedPhones) {
+    if (allowed.endsWith(digits) || digits.endsWith(allowed)) return true;
+  }
+  return false;
+}
+
 // WID des templates â€” surchargeable via env au cas oÃ¹ Meta regÃ©nÃ¨re les IDs
 const WID = {
   ordercreated:     process.env.WID_ORDER_CREATED     || '32183',
@@ -158,6 +189,12 @@ async function callAuthKeyText({ mobile, message }) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
   }
 
+  // ── Staging guard ──────────────────────────────────────────────────────
+  if (!_isStagingAllowed(mobile)) {
+    log.warn({ mobile, event: 'free_text' }, '[authkey] staging: numéro non autorisé — message bloqué');
+    return { ok: false, reason: 'staging_not_allowed', mobile };
+  }
+
   const body = {
     country_code,
     mobile: cleanMobile,
@@ -235,6 +272,12 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
   const { country_code, mobile: cleanMobile } = parseMobile(mobile);
   if (!cleanMobile || !country_code) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
+  }
+
+  // ── Staging guard ──────────────────────────────────────────────────────
+  if (!_isStagingAllowed(mobile)) {
+    log.warn({ mobile, wid }, '[authkey] staging: numéro non autorisé — WID bloqué');
+    return { ok: false, reason: 'staging_not_allowed', mobile };
   }
 
   const bodyValues = toBodyValues(variables);

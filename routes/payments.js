@@ -342,11 +342,6 @@ async function _handleStripeSucceeded(event, intent, res) {
       try {
         const notifSvc = require('../services/notification-service');
         notifSvc.notifyPaymentConfirmed(smsContext.order_id, smsContext.order_reference)
-          .then(result => {
-            if (result?.invoice) {
-              log.info(`🧾 [STRIPE] Invoice ${result.invoice} sent for ${smsContext.order_reference}`);
-            }
-          })
           .catch(e => log.error({ err: e }, '[STRIPE-NOTIF] notification failed'));
       } catch(e) { log.error({ err: e }, '[STRIPE-NOTIF] require error'); }
     }
@@ -547,11 +542,6 @@ router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']
       // ZG-1: sendSMS (Africa's Talking, désactivé) supprimé — notifyPaymentConfirmed ci-dessous.
       const notifSvc = require('../services/notification-service');
       notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .then(result => {
-          if (result?.invoice) {
-            log.info(`🧾 [CASH] Invoice ${result.invoice} sent for ${order.reference}`);
-          }
-        })
         .catch(e => log.error({ err: e }, '[CASH-NOTIF] notification failed'));
 
       triggerPurchasing(order.id)
