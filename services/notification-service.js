@@ -220,6 +220,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       `SELECT
          o.id, o.reference,
          o.tracking_phone,
+         o.payment_mode,
          o.user_id, o.recipient_id,
          u.phone         AS user_phone,
          u.full_name     AS user_full_name,
@@ -264,6 +265,27 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
       status: result.ok ? 'sent' : 'failed',
       detail: result.ok ? { messageId: result.messageId } : { error: result.error },
     });
+
+    // ── Lien facture post-paiement (fire-and-forget, non-bloquant) ─────────
+    // stripe_eur  → facture disponible immédiatement (paiement déjà encaissé)
+    // cash_relais → facture disponible après confirmPaymentCycle (payment_status='paid')
+    // Dans les deux cas, on est appelé POST-COMMIT : payment_status est déjà 'paid'.
+    try {
+      const invoiceService = require('./invoice-service');
+      const invoice = await invoiceService.getOrCreateInvoice(orderId);
+      const appUrl = process.env.APP_URL || process.env.PUBLIC_URL || 'https://app.komerce.km';
+      const invoiceUrl = `${appUrl}/api/invoices/${orderId}`;
+
+      const msg = order.payment_mode === 'cash_relais'
+        ? `Komerce : votre paiement est enregistre. Recapitulatif : ${invoiceUrl}`
+        : `Komerce : votre facture est disponible : ${invoiceUrl}`;
+
+      await notifyText(phone, msg, 'invoice_ready', orderId);
+      log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '🧾 Invoice link sent');
+    } catch (invErr) {
+      // Non-bloquant : race condition payment_status possible, on log et on passe.
+      log.warn({ err: invErr, order_ref: orderReference }, '🧾 Invoice notification skipped (non-fatal)');
+    }
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
     // D4 FIX â€” remonter dans alerts pour visibilitÃ© radar
@@ -336,7 +358,9 @@ async function notifyStatusChange(order, newStatus) {
 //  4. Annulation
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyCancellation(order, smsRefundInfo) {
-  const phone = pickPhone(order);
+  // P3 FIX — utilise pickRecipients (stratégie 'order_cancelled' = payeur uniquement)
+  const recipients = pickRecipients(order, 'order_cancelled');
+  const phone = recipients[0]?.phone || null;
   const name = firstName(order.recipient_name || order.user_full_name);
 
   if (!phone) {
