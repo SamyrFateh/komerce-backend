@@ -5568,14 +5568,8 @@ body.cart-open .k-wa-fab {
    -------------------------------------------------------------------------- */
 
 .k-ck-identity-recap {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  background: rgba(31, 122, 84, .07);
-  border: 1.5px solid rgba(31, 122, 84, .18);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+  display: block;
+  margin-bottom: 14px;
 }
 
 .k-ck-id-label {
@@ -5595,47 +5589,106 @@ body.cart-open .k-wa-fab {
 }
 
 .k-ck-id-change {
+  margin-left: auto;
+  align-self: center;
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
-  padding: 0;
-  font-size: .74rem;
+  padding: 4px 2px;
+  font-size: .8rem;
   font-weight: 700;
-  color: var(--coral);
+  color: var(--ocean-dark);
   cursor: pointer;
-  text-align: left;
+  text-align: right;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .k-ck-id-change:hover {
   text-decoration: underline;
 }
 
-/* ── Carte commandeur « VOUS COMMANDEZ AVEC » ── */
+/* Lien secondaire discret « Ce n'est pas vous ? » (cas mauvaise reconnaissance) */
+.k-ck-id-notyou {
+  display: block;
+  margin: 7px 2px 0;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+}
+.k-ck-id-notyou span {
+  color: var(--ocean-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* ── Carte commandeur — ligne calme « avatar · nom/tél · Changer » ── */
 .k-ck-id-card {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 11px;
-  padding: 9px 11px;
-  margin-top: 3px;
+  border-radius: 13px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px var(--border-text-04);
 }
 .k-ck-id-avatar {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--ocean-light);
+  background: var(--ocean);
   color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .8rem;
+  font-size: .82rem;
   font-weight: 800;
 }
-.k-ck-id-ident { flex: 1; min-width: 0; }
+.k-ck-id-check {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ocean-dark);
+  border: 1.5px solid var(--green-bg-leaf);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .58rem;
+  font-weight: 900;
+}
+.k-ck-id-ident {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 .k-ck-id-card .k-ck-id-value {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-ck-id-num {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5677,6 +5730,97 @@ body.cart-open .k-wa-fab {
 }
 .k-ck-id-link:hover { text-decoration: underline; }
 .k-ck-id-sep { color: var(--border); }
+
+/* ── COMMIT 2 — Point de retrait : ligne repliée + picker pays → île ──────── */
+/* Ligne résumé (remplace les chips d'îles + la carte relais lourde). */
+.ck-relais-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: var(--green-bg-leaf, #e8f3ec);
+  border: 1px solid var(--border-ocean-14);
+  border-radius: 14px;
+  padding: 11px 13px;
+  cursor: pointer;
+  font: inherit;
+}
+.ck-relais-summary-pin { font-size: 1rem; flex: 0 0 auto; }
+.ck-relais-summary-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ck-relais-summary-main {
+  font-size: .88rem; font-weight: 700; color: var(--text); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ck-relais-summary-sub { font-size: .74rem; font-weight: 600; color: var(--ocean-dark); line-height: 1.2; }
+.ck-relais-summary-change { margin-left: auto; flex: 0 0 auto; font-size: .8rem; font-weight: 700; color: var(--ocean-dark); }
+.ck-relais-section.is-error .ck-relais-summary { border-color: var(--coral); background: rgba(200,92,45,.06); }
+
+/* Feuille (bottom sheet) pays → île. */
+.ck-relais-overlay {
+  position: fixed; inset: 0; z-index: 2450;
+  background: rgba(20,40,30,.42);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; transition: opacity .2s; -webkit-tap-highlight-color: transparent;
+}
+.ck-relais-overlay.is-open { opacity: 1; }
+@media (min-width: 900px) { .ck-relais-overlay { align-items: center; } }
+.ck-relais-sheet {
+  width: 100%; max-width: 460px; background: var(--white);
+  border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom);
+  transform: translateY(110%); transition: transform .28s cubic-bezier(.3,.9,.3,1);
+  max-height: 88vh; display: flex; flex-direction: column;
+}
+@media (min-width: 900px) { .ck-relais-sheet { border-radius: 22px; } }
+.ck-relais-overlay.is-open .ck-relais-sheet { transform: none; }
+.ck-relais-grab { width: 38px; height: 4px; border-radius: 999px; background: var(--border); margin: 10px auto 2px; }
+.ck-relais-sheet-top { display: flex; align-items: center; padding: 8px 18px 12px; }
+.ck-relais-sheet-title { font-size: 1rem; font-weight: 800; color: var(--text); }
+.ck-relais-sheet-x {
+  margin-left: auto; width: 28px; height: 28px; border: 0; border-radius: 999px;
+  background: var(--border-text-06); color: var(--text-muted); font-weight: 700; cursor: pointer;
+}
+.ck-relais-sheet-body { padding: 4px 18px 18px; overflow: auto; }
+.ck-relais-step {
+  display: flex; align-items: center; gap: 7px; margin: 0 2px 9px;
+  font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);
+}
+.ck-relais-step-n {
+  width: 16px; height: 16px; border-radius: 999px; background: var(--ocean); color: var(--white);
+  font-size: .62rem; display: flex; align-items: center; justify-content: center;
+}
+.ck-relais-country { display: flex; gap: 8px; margin-bottom: 20px; }
+.ck-relais-country button,
+.ck-relais-iles button {
+  flex: 1; border: 1px solid var(--border-text-10); border-radius: 12px;
+  background: var(--white); font: inherit; font-weight: 700; color: var(--text-muted); cursor: pointer;
+}
+.ck-relais-country button { padding: 12px; font-size: .85rem; }
+.ck-relais-iles { display: flex; gap: 8px; margin-bottom: 18px; }
+.ck-relais-iles button { padding: 11px 4px; font-size: .8rem; }
+.ck-relais-country button.on,
+.ck-relais-iles button.on {
+  border-color: var(--ocean); background: var(--green-bg-leaf, #e8f3ec); color: var(--ocean-dark);
+  box-shadow: 0 0 0 1px var(--ocean) inset;
+}
+.ck-relais-auto {
+  display: flex; align-items: center; gap: 11px;
+  background: var(--green-bg-leaf, #e8f3ec); border: 1px solid var(--border-ocean-14);
+  border-radius: 13px; padding: 13px;
+}
+.ck-relais-auto-ok {
+  width: 24px; height: 24px; flex: 0 0 auto; border-radius: 999px; background: var(--ocean); color: var(--white);
+  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: .8rem;
+}
+.ck-relais-auto-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ck-relais-auto-name { font-size: .88rem; font-weight: 700; color: var(--text); }
+.ck-relais-auto-addr { font-size: .74rem; font-weight: 600; color: var(--ocean-dark); }
+.ck-relais-auto-cap { font-size: .72rem; font-weight: 600; color: var(--text-muted); font-style: italic; margin: 9px 4px 0; }
+.ck-relais-sheet-cta {
+  width: 100%; margin-top: 16px; border: 0; border-radius: 13px; cursor: pointer;
+  background: var(--ocean); color: var(--white); font: inherit; font-weight: 800; font-size: .95rem; padding: 14px;
+}
+.ck-relais-sheet-cta[disabled] { opacity: .5; cursor: default; }
 
 /* ── UX REFONTE CHECKOUT — Sections pédagogiques (2026-05) ─────────────────
    Patch minimal : nouveaux wrappers de section, titres, aides, case "c'est moi".
@@ -5774,9 +5918,7 @@ body.cart-open .k-wa-fab {
 
 /* Recap identité compact */
 .k-ck-identity-recap {
-  gap: 2px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 /* Relais plus aéré mais compact */
@@ -5798,7 +5940,7 @@ body.cart-open .k-wa-fab {
 
 /* Paiement chips compact */
 .ck-pay-grid { gap: 5px; margin-bottom: 4px; }
-.ck-pay-chip { min-height: 38px; padding: 2px 3px; }
+.ck-pay-chip { min-height: 34px; padding: 1px 3px; gap: 1px; }
 .ck-chip-icon { font-size: .95rem; }
 .ck-chip-lbl { font-size: .68rem; }
 

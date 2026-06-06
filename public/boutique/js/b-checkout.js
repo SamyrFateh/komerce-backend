@@ -144,40 +144,155 @@ async function _loadRelaisSection(container, od) {
     // PANSEMENT TEMPORAIRE : écarter les relais de test/staging (ex. "AAA E2E
     // Relais Test") qui ne devraient pas apparaître en prod. La VRAIE solution
     // est de les désactiver/supprimer dans la DB (is_active=false côté backend).
-    // Ce filtre par nom est un garde-fou d'affichage, à retirer une fois la DB nettoyée.
     list = list.filter(r => {
       const hay = ((r.name || '') + ' ' + (r.address || '')).toLowerCase();
       return !/\b(e2e|staging|test)\b/.test(hay);
     });
     if (!list.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
-    const byIle = {};
-    list.forEach(r => { const ile = classifyRelayGroup(r); if (!byIle[ile]) byIle[ile] = []; byIle[ile].push(r); });
-    container.classList.remove('is-error');
-    container.innerHTML = '';
-    const zone = od.fulfillment_zone || 'comoros';
-    const groups = getRelayGroupOrder(Object.keys(byIle)).filter(ile => zone === 'france' ? ile === 'France' : ile !== 'France');
-    if (!groups.length) {
-      container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible pour cette zone</div>';
-      return;
-    }
 
-    const ileLabel = document.createElement('div'); ileLabel.className = 'ck-relais-ile-label'; ileLabel.textContent = ''; container.appendChild(ileLabel);
-    const ileGrid = document.createElement('div'); ileGrid.className = 'ck-relais-ile-grid';
-    const listWrap = document.createElement('div'); listWrap.id = 'ck-relais-list';
-    groups.forEach(ile => {
-      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ck-relais-ile-btn'; btn.textContent = ile; btn.dataset.ile = ile;
-      btn.addEventListener('click', () => {
-        clearRelaySelectionError();
-        ileGrid.querySelectorAll('.ck-relais-ile-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        _renderRelaisForIle(listWrap, byIle[ile], od);
-      });
-      ileGrid.appendChild(btn);
+    // 1 relais par île : on retient le premier visible de chaque groupe.
+    const byIle = {};
+    list.forEach(r => {
+      const ile = classifyRelayGroup(r);
+      const hay = [r.name, r.nom, r.address, r.adresse, r.location].filter(Boolean).join(' ').toLowerCase();
+      if (hay.includes('domoni')) return;          // filtre historique
+      if (!byIle[ile]) byIle[ile] = r;             // 1 seul relais / île
     });
-    container.appendChild(ileGrid);
-    container.appendChild(listWrap);
-    const firstBtn = ileGrid.querySelector('.ck-relais-ile-btn'); if (firstBtn) firstBtn.click();
-  } catch(e) { if (e && e.name === 'AbortError') return; container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>'; console.warn('[checkout] relais:', e); }
+    const allIles = getRelayGroupOrder(Object.keys(byIle));
+    if (!allIles.length) { container.innerHTML = '<div class="ck-relais-empty">Aucun relais disponible</div>'; return; }
+
+    _ensureRelaisSelection(od, byIle, allIles);
+    _renderRelaisSummary(container, od, byIle, allIles);
+    refreshCheckoutComputedUI();
+  } catch(e) {
+    if (e && e.name === 'AbortError') return;
+    container.innerHTML = '<div class="ck-relais-error">Erreur chargement relais — réessayez</div>';
+    console.warn('[checkout] relais:', e);
+  }
+}
+
+/** Garantit une sélection cohérente (relais déjà choisi, sinon 1ʳᵉ île de la zone). */
+function _ensureRelaisSelection(od, byIle, allIles) {
+  if (od.selectedRelaisId) {
+    for (const ile of allIles) {
+      if (byIle[ile] && byIle[ile].id === od.selectedRelaisId) {
+        od.selectedIsland     = ile;
+        od.fulfillment_zone   = (ile === 'France') ? 'france' : 'comoros';
+        od.selectedRelaisName = byIle[ile].name || byIle[ile].nom || '';
+        return;
+      }
+    }
+  }
+  const zone = od.fulfillment_zone || 'comoros';
+  const inZone = allIles.filter(i => zone === 'france' ? i === 'France' : i !== 'France');
+  const pick = inZone[0] || allIles[0];
+  const r = byIle[pick];
+  od.selectedIsland     = pick;
+  od.fulfillment_zone   = (pick === 'France') ? 'france' : 'comoros';
+  od.selectedRelaisId   = r.id;
+  od.selectedRelaisName  = r.name || r.nom || '';
+}
+
+/** Ligne repliée « 📍 Relais · Île · Pays » + lien Changer → ouvre le picker. */
+function _renderRelaisSummary(container, od, byIle, allIles) {
+  container.classList.remove('is-error');
+  const flag  = od.fulfillment_zone === 'france' ? '🇫🇷' : '🇰🇲';
+  const zone  = od.fulfillment_zone === 'france' ? 'France' : 'Comores';
+  container.innerHTML =
+    '<button type="button" class="ck-relais-summary" id="ck-relais-summary">'
+    + '<span class="ck-relais-summary-pin" aria-hidden="true">📍</span>'
+    + '<span class="ck-relais-summary-body">'
+    +   '<span class="ck-relais-summary-main">' + flag + ' ' + sanitize(od.selectedRelaisName || '') + '</span>'
+    +   '<span class="ck-relais-summary-sub">' + sanitize(od.selectedIsland || '') + ' · ' + zone + '</span>'
+    + '</span>'
+    + '<span class="ck-relais-summary-change">Changer</span>'
+    + '</button>';
+  container.querySelector('#ck-relais-summary').addEventListener('click', () => {
+    _openRelaisPicker(od, byIle, allIles, () => {
+      clearRelaySelectionError();
+      _renderRelaisSummary(container, od, byIle, allIles);
+      setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
+      refreshCheckoutComputedUI();
+    });
+  });
+}
+
+/** Feuille pays → île, relais auto. Remplace renderFulfillmentSelector + chips d'îles. */
+function _openRelaisPicker(od, byIle, allIles, onDone) {
+  const islandsComoros = allIles.filter(i => i !== 'France');
+  const hasFrance = allIles.includes('France');
+  const draft = { zone: od.fulfillment_zone || 'comoros', island: od.selectedIsland || null };
+  if (draft.zone === 'france') draft.island = 'France';
+  else if (!islandsComoros.includes(draft.island)) draft.island = islandsComoros[0] || null;
+
+  const relOf = () => draft.zone === 'france' ? byIle['France'] : byIle[draft.island];
+
+  const ov = document.createElement('div');
+  ov.className = 'ck-relais-overlay';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+
+  function close() { ov.classList.remove('is-open'); setTimeout(() => ov.remove(), 280); }
+
+  function paint() {
+    const isFr = draft.zone === 'france';
+    const r = relOf();
+    ov.innerHTML =
+      '<div class="ck-relais-sheet">'
+      + '<div class="ck-relais-grab" aria-hidden="true"></div>'
+      + '<div class="ck-relais-sheet-top"><span class="ck-relais-sheet-title">📍 Point de retrait</span>'
+      +   '<button type="button" class="ck-relais-sheet-x" aria-label="Fermer">✕</button></div>'
+      + '<div class="ck-relais-sheet-body">'
+      +   (hasFrance
+            ? '<div class="ck-relais-step"><span class="ck-relais-step-n">1</span> Pays</div>'
+              + '<div class="ck-relais-country">'
+              +   '<button type="button" data-zone="comoros" class="' + (isFr ? '' : 'on') + '">🇰🇲 Comores</button>'
+              +   '<button type="button" data-zone="france" class="' + (isFr ? 'on' : '') + '">🇫🇷 France</button>'
+              + '</div>'
+            : '')
+      +   (isFr ? ''
+            : '<div class="ck-relais-step"><span class="ck-relais-step-n">' + (hasFrance ? '2' : '1') + '</span> Île</div>'
+              + '<div class="ck-relais-iles">'
+              +   islandsComoros.map(i => '<button type="button" data-ile="' + sanitize(i) + '" class="' + (draft.island === i ? 'on' : '') + '">' + sanitize(i) + '</button>').join('')
+              + '</div>')
+      +   (r
+            ? '<div class="ck-relais-auto"><span class="ck-relais-auto-ok" aria-hidden="true">✓</span>'
+              + '<span class="ck-relais-auto-body"><span class="ck-relais-auto-name">' + sanitize(r.name || r.nom || '') + '</span>'
+              + (r.address || r.adresse || r.location ? '<span class="ck-relais-auto-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>' : '')
+              + '</span></div>'
+              + '<div class="ck-relais-auto-cap">Un seul relais par ' + (isFr ? 'zone' : 'île') + ' — sélectionné automatiquement.</div>'
+            : '<div class="ck-relais-empty">Aucun relais disponible</div>')
+      +   '<button type="button" class="ck-relais-sheet-cta"' + (r ? '' : ' disabled') + '>Valider'
+      +     (isFr ? ' France' : (draft.island ? ' ' + sanitize(draft.island) : '')) + '</button>'
+      + '</div></div>';
+
+    ov.querySelector('.ck-relais-country')?.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      draft.zone = b.dataset.zone;
+      if (draft.zone === 'france') draft.island = 'France';
+      else if (!islandsComoros.includes(draft.island)) draft.island = islandsComoros[0] || null;
+      paint();
+    });
+    ov.querySelector('.ck-relais-iles')?.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      draft.island = b.dataset.ile; paint();
+    });
+    ov.querySelector('.ck-relais-sheet-x').addEventListener('click', close);
+    ov.querySelector('.ck-relais-sheet-cta').addEventListener('click', () => {
+      const sel = relOf(); if (!sel) return;
+      od.fulfillment_zone   = draft.zone;
+      od.selectedIsland     = draft.zone === 'france' ? 'France' : draft.island;
+      od.selectedRelaisId   = sel.id;
+      od.selectedRelaisName = sel.name || sel.nom || '';
+      close();
+      onDone && onDone();
+    });
+  }
+
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  document.body.appendChild(ov);
+  paint();
+  requestAnimationFrame(() => ov.classList.add('is-open'));
 }
 
 function classifyRelayGroup(relais) {
@@ -211,57 +326,6 @@ function getRelayGroupOrder(groups) {
     if (bi === -1) return -1;
     return ai - bi;
   });
-}
-
-function _renderRelaisForIle(listEl, relaisList, od) {
-  listEl.innerHTML = '';
-  const visibleRelais = relaisList.filter(r => {
-    const haystack = [
-      r.name,
-      r.nom,
-      r.address,
-      r.adresse,
-      r.location,
-    ].filter(Boolean).join(' ').toLowerCase();
-    return !haystack.includes('domoni');
-  });
-
-  if (visibleRelais.length === 1) {
-    const r = visibleRelais[0];
-    const item = document.createElement('div');
-    item.className = 'ck-relais-item ck-relais-item--compact selected';
-    item.dataset.id = r.id;
-    item.innerHTML =
-      '<span class="ck-relais-name">' + sanitize(r.name || r.nom || '') + '</span>' +
-      (r.address || r.adresse || r.location
-        ? '<span class="ck-relais-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>'
-        : '');
-    od.selectedRelaisId = r.id;
-    clearRelaySelectionError();
-    listEl.appendChild(item);
-    refreshCheckoutComputedUI();
-    return;
-  }
-
-  visibleRelais.forEach(r => {
-    const item = document.createElement('div'); item.className = 'ck-relais-item'; item.dataset.id = r.id;
-    item.innerHTML = '<span class="ck-relais-name">' + sanitize(r.name || r.nom || '') + '</span>' + (r.address || r.adresse || r.location ? '<span class="ck-relais-addr">' + sanitize(r.address || r.adresse || r.location) + '</span>' : '');
-    item.addEventListener('click', () => {
-      listEl.querySelectorAll('.ck-relais-item').forEach(i => i.classList.remove('selected'));
-      item.classList.add('selected');
-      od.selectedRelaisId = r.id;
-      clearRelaySelectionError();
-      refreshCheckoutComputedUI();
-    });
-    listEl.appendChild(item);
-  });
-
-  const first = listEl.querySelector('.ck-relais-item');
-  if (first && !od.selectedRelaisId) {
-    first.click();
-  } else {
-    refreshCheckoutComputedUI();
-  }
 }
 
 function readIntlPhoneValue(id, fallbackValue) {
@@ -319,7 +383,9 @@ function refreshCheckoutComputedUI() {
   if (!confirmBtn) return;
   const od = state.orderData || {};
   const mode = document.querySelector('input[name="payment_mode"]:checked')?.value || od.payment_mode || 'cash_relais';
-  const relayName = document.querySelector('#ck-relais-section .ck-relais-item.selected .ck-relais-name')?.textContent?.trim() || '';
+  const relayName = od.selectedRelaisName || '';
+  const island    = od.selectedIsland || '';
+  const where     = relayName ? (relayName + (island ? ' • ' + island : '')) : '';
   const total = cartTotal();
   const cb = document.getElementById('cb-use-wallet');
   const walletApplied = (cb && cb.checked && state.walletBalance > 0) ? Math.min(state.walletBalance, total) : 0;
@@ -328,11 +394,9 @@ function refreshCheckoutComputedUI() {
     ? '💳 Payer ' + fmt(total, 'KMF')
     : '✅ Confirmer — ' + fmt(netAmount, 'KMF') + (walletApplied > 0 ? ' (net wallet)' : '');
   const subText = mode === 'stripe_eur'
-    ? (relayName ? 'Carte via Stripe • ' + relayName : 'Carte via Stripe')
-    : (relayName ? 'Cash au relais • ' + relayName : 'Cash au relais');
+    ? (where ? 'Carte via Stripe • ' + where : 'Carte via Stripe')
+    : (where ? 'Cash au relais • ' + where : 'Cash au relais');
   setCheckoutConfirmButton(confirmBtn, mainText, subText);
-  const cashHelper = document.getElementById('ck-pay-cash-helper');
-  if (cashHelper) cashHelper.hidden = mode !== 'cash_relais';
 }
 
 // renderCheckoutCompact supprimée — doublon de renderCheckout(), jamais activée (07/05/2026)
@@ -354,7 +418,8 @@ export function renderCheckout() {
       });
     }
 
-    renderFulfillmentSelector(body, od, refreshFulfillment);
+    // Pays/zone (Comores/France) déplacé DANS le picker de relais (cf. _openRelaisPicker) :
+    // il n'a pas sa place sur l'écran principal — il est le 1er cran du choix de retrait.
 
     // ── Bloc récap identité payeur (doctrine §9) ─────────────────────────────
     // S3.1 — construction DOM déléguée à buildIdentityRecapDOM (b-checkout-render.js)
@@ -364,10 +429,9 @@ export function renderCheckout() {
       // FIX : « Changer » câblé sur bindChangeIdentity → ouvre vraiment la modale
       // (openIdentityModal). L'ancien requireIdentity() court-circuitait via
       // restoreIdentity() et renvoyait l'identité existante sans rien afficher.
-      bindChangeIdentity(idRecap, '.k-ck-id-change', (newUser) => {
-        state.user = newUser;
-        applyIdentityToCard(idRecap, newUser);
-      });
+      const _onIdChanged = (newUser) => { state.user = newUser; applyIdentityToCard(idRecap, newUser); };
+      bindChangeIdentity(idRecap, '.k-ck-id-change', _onIdChanged);
+      bindChangeIdentity(idRecap, '.k-ck-id-notyou', _onIdChanged);
       body.insertBefore(idRecap, body.firstChild); // carte en tête du checkout
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
@@ -407,10 +471,9 @@ export function renderCheckout() {
         // Construction + insertion EN TÊTE du body (fiable, indépendant de la
         // structure interne — on ne cherche plus un .k-ck-group qui peut manquer).
         idRecap = buildIdentityRecapDOM(restoredUser);
-        bindChangeIdentity(idRecap, '.k-ck-id-change', (newUser) => {
-          state.user = newUser;
-          applyIdentityToCard(idRecap, newUser);
-        });
+        const _onIdChanged2 = (newUser) => { state.user = newUser; applyIdentityToCard(idRecap, newUser); };
+        bindChangeIdentity(idRecap, '.k-ck-id-change', _onIdChanged2);
+        bindChangeIdentity(idRecap, '.k-ck-id-notyou', _onIdChanged2);
         body.insertBefore(idRecap, body.firstChild); // toujours en haut
       }).catch(err => {
         // On n'avale plus silencieusement : une erreur réseau est normale (non
@@ -633,7 +696,7 @@ export function renderCheckout() {
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
-    sRelais.innerHTML = '<div class="ck-section-title">O\u00d9 SERA RETIR\u00c9E LA COMMANDE ?</div>';
+    sRelais.innerHTML = '<div class="ck-section-title">POINT DE RETRAIT</div>';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -645,7 +708,7 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block';
-    s2.innerHTML = '<div class="ck-section-title">COMMENT VOULEZ-VOUS PAYER ?</div>';
+    s2.innerHTML = '<div class="ck-section-title">PAIEMENT</div>';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
@@ -666,12 +729,8 @@ export function renderCheckout() {
       + '</label>';
     body.appendChild(payGrid);
 
-    const cashHelper = document.createElement('div');
-    cashHelper.id = 'ck-pay-cash-helper';
-    cashHelper.className = 'ck-pay-helper';
-    cashHelper.hidden = true;
-    cashHelper.textContent = 'Un code de paiement vous sera envoyé pour régler au relais.';
-    body.appendChild(cashHelper);
+    // Point 8 : « Un code de paiement vous sera envoyé… » supprimé du formulaire.
+    // L'info de paiement arrive au bon moment — sur l'écran de confirmation de commande.
 
     // Stripe card wrap : inline dans le scroll, juste sous les chips paiement
     // FIX: supprimer tout ancien wrap (sinon doublons => Stripe casse en silence)
@@ -687,9 +746,11 @@ export function renderCheckout() {
     body.appendChild(stripeCardWrap);
 
 
+    // Le pays/zone est désormais piloté par le picker de relais (_openRelaisPicker),
+    // qui rafraîchit lui-même le défaut du téléphone bénéficiaire. Ici on ne fait
+    // que poser le défaut initial — la section relais est chargée une seule fois ci-dessus.
     function refreshFulfillment() {
       setIntlPhoneDefault('of-beneficiary-phone', od.fulfillment_zone, !od.beneficiary_phone);
-      _loadRelaisSection(relaisSection, od);
     }
     refreshFulfillment();
 

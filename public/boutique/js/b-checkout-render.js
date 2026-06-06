@@ -316,7 +316,8 @@ export function buildIdentityRecapDOM(identity) {
     +     (dName && dPhone ? '<span class="k-ck-id-num">' + sanitize(dPhone) + '</span>' : '')
     +   '</span>'
     +   '<button type="button" class="k-ck-id-change">Changer</button>'
-    + '</div>';
+    + '</div>'
+    + '<button type="button" class="k-ck-id-notyou">Ce n\u2019est pas vous\u00a0? <span>Cliquez ici</span></button>';
   return el;
 }
 
