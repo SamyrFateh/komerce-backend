@@ -6455,6 +6455,131 @@ body.cart-open .k-wa-fab {
   color: var(--ocean-dark);
 }
 
+/* ── Écran de confirmation commande (buildOrderSuccessDOM) ───────────────────
+   Mobile-first compact : tout tient dans l'écran sans scroller.
+   Owner : cart.css — conforme R3/R4/R5.
+   ─────────────────────────────────────────────────────────────────────────── */
+.k-confirm-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 20px;
+  text-align: center;
+}
+.k-confirm-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+.k-confirm-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.2;
+}
+.k-confirm-ref-block {
+  width: 100%;
+  background: var(--green-bg-leaf);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.k-confirm-ref-label {
+  font-size: .62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+}
+.k-confirm-ref {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: .06em;
+  font-family: monospace;
+  line-height: 1;
+}
+.k-confirm-copy {
+  border: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--ocean-dark);
+  cursor: pointer;
+}
+.k-confirm-recap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .82rem;
+  color: var(--text-muted);
+}
+.k-confirm-recap-amount { font-weight: 800; color: var(--text); }
+.k-confirm-recap-sep    { color: var(--text-muted); }
+.k-confirm-cash-block {
+  width: 100%;
+  border: 2px dashed var(--ocean);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.k-confirm-cash-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ocean-dark);
+}
+.k-confirm-cash-code {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--ocean-dark);
+  letter-spacing: .12em;
+  font-family: monospace;
+  line-height: 1;
+}
+.k-confirm-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.k-confirm-notice-row {
+  font-size: .78rem;
+  color: var(--text-muted);
+  text-align: left;
+  line-height: 1.3;
+}
+.k-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+.k-confirm-btn {
+  width: 100%;
+  border: none;
+  border-radius: 50px;
+  padding: 13px 20px;
+  font: inherit;
+  font-size: .92rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.k-confirm-btn:active     { opacity: .85; }
+.k-confirm-btn-primary    { background: var(--ocean); color: var(--white); }
+.k-confirm-btn-secondary  { background: var(--green-bg-leaf); color: var(--ocean-dark); border: 1px solid var(--border); }
+
 
 /* ── interactions.css ────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
