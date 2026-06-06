@@ -1181,7 +1181,7 @@ body.cart-open .k-wa-fab {
   letter-spacing: .07em;
   color: var(--text-muted);
   line-height: 1;
-  margin-bottom: 3px;
+  margin-bottom: 8px;
 }
 
 /* Aide pédagogique discrète sous le titre */
@@ -1189,18 +1189,18 @@ body.cart-open .k-wa-fab {
   font-size: .75rem;
   color: var(--text-muted);
   line-height: 1.3;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
-/* Bloc de section — mobile-first ultra compact */
+/* Bloc de section — mobile-first aéré */
 .ck-section-block {
-  padding-top: 8px;
-  margin-top: 2px;
+  padding-top: 16px;
+  margin-top: 4px;
   border-top: 1px solid var(--border, rgba(0,0,0,.08));
 }
 .ck-section-block:first-child {
   border-top: none;
-  padding-top: 0;
+  padding-top: 4px;
 }
 
 /* Label section pour le titre VOUS COMMANDEZ AVEC */
@@ -1248,16 +1248,17 @@ body.cart-open .k-wa-fab {
   background: var(--border-text-06);
   border-radius: 12px;
   padding: 3px;
+  margin-bottom: 4px;
 }
 .ck-recip-seg button {
   flex: 1;
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: .82rem;
+  font-size: .85rem;
   font-weight: 700;
   color: var(--text-muted);
-  padding: 9px 6px;
+  padding: 11px 6px;
   border-radius: 9px;
   cursor: pointer;
 }
@@ -1278,9 +1279,10 @@ body.cart-open .k-wa-fab {
 
 /* ── Checkout body ultra-compact sur mobile ── */
 .k-order-body--checkout {
-  padding: 8px 10px calc(74px + env(safe-area-inset-bottom)) !important;
+  padding: 12px 14px calc(74px + env(safe-area-inset-bottom)) !important;
   display: flex;
   flex-direction: column;
+  gap: 4px;
   min-height: 0;
 }
 /* Le vide entre Relais et Paiement est désormais comblé par .ck-self-pickup-info
@@ -1324,7 +1326,7 @@ body.cart-open .k-wa-fab {
 
 /* Recap identité compact */
 .k-ck-identity-recap {
-  margin-bottom: 12px;
+  margin-bottom: 4px;
 }
 
 /* Relais plus aéré mais compact */
@@ -1378,10 +1380,10 @@ body.cart-open .k-wa-fab {
 /* Sur desktop, restaurer les tailles normales */
 @media (min-width: 600px) {
   .k-order-body--checkout {
-    padding: 12px 12px calc(90px + env(safe-area-inset-bottom)) !important;
+    padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) !important;
   }
-  .ck-section-block { padding-top: 12px; }
-  .ck-section-title { font-size: .68rem; margin-bottom: 4px; }
+  .ck-section-block { padding-top: 18px; }
+  .ck-section-title { font-size: .68rem; margin-bottom: 6px; }
   .ck-benf-me-label { padding: 10px 12px; }
   .ck-confirm-btn { min-height: 64px; }
   .ck-relais-ile-btn { min-height: 36px; font-size: .78rem; }
