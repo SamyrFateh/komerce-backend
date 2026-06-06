@@ -1234,11 +1234,16 @@ body.cart-open .k-wa-fab {
 .ck-benf-me-title { font-size: .82rem; font-weight: 700; color: var(--text); }
 .ck-benf-me-sub { font-size: .68rem; color: var(--text-muted); }
 .ck-recip-fields {
-  margin-top: 11px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
 }
+.ck-recip-fields .k-ck-group { margin-bottom: 0; }
+.ck-recip-fields .k-ck-label { margin-bottom: 2px; font-size: .76rem; }
+.ck-recip-fields .k-ck-input { min-height: 34px; font-size: .9rem; }
+.ck-recip-fields .k-ck-km-wrap { height: 34px; }
+.ck-recip-fields .k-ck-km-input { font-size: .9rem; }
 .ck-recip-fields[hidden] { display: none; }
 
 /* « Qui récupère ? » — segment Moi / Quelqu'un d'autre (remplace la case à cocher) */
