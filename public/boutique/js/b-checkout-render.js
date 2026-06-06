@@ -302,9 +302,8 @@ export function buildIdentityRecapDOM(identity) {
   el.className = 'k-ck-identity-recap';
   const dName  = identity.full_name || identity.name  || '';
   const dPhone = identity.phone || '';
-  // Ligne calme : avatar + check + nom / téléphone + un seul lien « Changer ».
-  // Plus de badge « Déjà connu », plus de « Auto-rempli », plus du double
-  // « Modifier · Pas vous ? » (qui ne déclenchait rien — cf. bindChangeIdentity).
+  // Ligne calme et aérée : avatar + check · 👋 nom / téléphone · actions à droite
+  // (« Changer » + « Ce n'est pas vous ? » regroupés dans le même coin).
   el.innerHTML =
     '<div class="k-ck-id-card">'
     +   '<span class="k-ck-id-avatar" aria-hidden="true">'
@@ -312,12 +311,15 @@ export function buildIdentityRecapDOM(identity) {
     +     '<span class="k-ck-id-check" title="Identité vérifiée">✓</span>'
     +   '</span>'
     +   '<span class="k-ck-id-ident">'
-    +     '<span class="k-ck-id-value">' + sanitize(dName || dPhone) + '</span>'
+    +     '<span class="k-ck-id-value"><span class="k-ck-id-hi" aria-hidden="true">👋</span> '
+    +       '<span class="k-ck-id-name">' + sanitize(dName || dPhone) + '</span></span>'
     +     (dName && dPhone ? '<span class="k-ck-id-num">' + sanitize(dPhone) + '</span>' : '')
     +   '</span>'
-    +   '<button type="button" class="k-ck-id-change">Changer</button>'
-    + '</div>'
-    + '<button type="button" class="k-ck-id-notyou">Ce n\u2019est pas vous\u00a0? <span>Cliquez ici</span></button>';
+    +   '<span class="k-ck-id-actions-col">'
+    +     '<button type="button" class="k-ck-id-change">Changer</button>'
+    +     '<button type="button" class="k-ck-id-notyou">Ce n\u2019est pas vous\u00a0?</button>'
+    +   '</span>'
+    + '</div>';
   return el;
 }
 
@@ -332,7 +334,7 @@ export function applyIdentityToCard(card, identity) {
   const n = identity.full_name || identity.name || '';
   const p = identity.phone || '';
   const iv = card.querySelector('.k-ck-id-initials'); if (iv) iv.textContent = _idInitials(n || p);
-  const nv = card.querySelector('.k-ck-id-value');    if (nv) nv.textContent = n || p;
+  const nv = card.querySelector('.k-ck-id-name');     if (nv) nv.textContent = n || p;
   let pv = card.querySelector('.k-ck-id-num');
   if (n && p) {
     if (!pv) {

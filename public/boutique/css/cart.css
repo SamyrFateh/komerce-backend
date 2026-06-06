@@ -905,7 +905,7 @@ body.cart-open .k-wa-fab {
 
 .k-ck-identity-recap {
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .k-ck-id-label {
@@ -918,20 +918,32 @@ body.cart-open .k-wa-fab {
 }
 
 .k-ck-id-value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
   font-size: .94rem;
   font-weight: 700;
   color: var(--text);
   line-height: 1.25;
+  min-width: 0;
 }
+.k-ck-id-hi { font-size: .95rem; flex: 0 0 auto; }
+.k-ck-id-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.k-ck-id-change {
+/* Actions regroupées dans le même coin (dans le padding de la carte) */
+.k-ck-id-actions-col {
   margin-left: auto;
-  align-self: center;
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+.k-ck-id-change {
   border: 0;
   background: transparent;
-  padding: 4px 2px;
-  font-size: .8rem;
+  padding: 0;
+  font-size: .82rem;
   font-weight: 700;
   color: var(--ocean-dark);
   cursor: pointer;
@@ -939,27 +951,25 @@ body.cart-open .k-wa-fab {
   line-height: 1.2;
   white-space: nowrap;
 }
-
 .k-ck-id-change:hover {
   text-decoration: underline;
 }
 
-/* Lien secondaire discret « Ce n'est pas vous ? » (cas mauvaise reconnaissance) */
+/* « Ce n'est pas vous ? » — discret, sous Changer, même coin */
 .k-ck-id-notyou {
-  display: block;
-  margin: 7px 2px 0;
   border: 0;
   background: transparent;
-  padding: 2px 0;
-  font-size: .76rem;
+  padding: 0;
+  font-size: .72rem;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  text-align: left;
+  text-align: right;
+  line-height: 1.2;
+  white-space: nowrap;
 }
-.k-ck-id-notyou span {
+.k-ck-id-notyou:hover {
   color: var(--ocean-dark);
-  font-weight: 700;
   text-decoration: underline;
 }
 
@@ -967,11 +977,11 @@ body.cart-open .k-wa-fab {
 .k-ck-id-card {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 13px;
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 13px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 13px 14px;
   box-shadow: 0 1px 2px var(--border-text-04);
 }
 .k-ck-id-avatar {
@@ -1423,14 +1433,14 @@ body.cart-open .k-wa-fab {
 .k-ck-guest-hint {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 11px;
   background: var(--cream-peach);
   border: 1px solid var(--border-coral-22, var(--border));
-  border-radius: 11px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  border-radius: 13px;
+  padding: 13px 14px;
+  margin-bottom: 18px;
   font-size: .8rem;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--text);
 }
 .k-ck-guest-ic { font-size: 1.1rem; flex: 0 0 auto; }

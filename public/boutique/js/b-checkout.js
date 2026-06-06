@@ -453,8 +453,8 @@ export function renderCheckout() {
             const hint = document.createElement('div');
             hint.id = 'ck-guest-hint';
             hint.className = 'k-ck-guest-hint';
-            hint.innerHTML = '<span class="k-ck-guest-ic" aria-hidden="true">👋</span>'
-              + '<span><b>Nouveau ?</b> Vous validerez votre numéro WhatsApp au moment de la commande.</span>';
+            hint.innerHTML = '<span class="k-ck-guest-ic" aria-hidden="true">✍️</span>'
+              + '<span><b>Première commande ?</b> Votre compte se crée en validant votre numéro WhatsApp.</span>';
             body.insertBefore(hint, body.firstChild);
           }
           return;
