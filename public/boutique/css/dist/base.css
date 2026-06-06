@@ -1026,13 +1026,14 @@ body:has(#k-page-scroll.k-pager-active) {
   }
   .k-cart-avatar { width: 36px; height: 36px; }
 
-  /* Badge panier */
-  .k-cart-badge {
-    top: -2px;
-    right: -6px;
-    min-width: 20px;
-    height: 20px;
-    font-size: 10px;
+  /* Badge panier desktop — épaule basse droite */
+  .k-header .k-cart-btn.k-header-action .k-cart-badge {
+    top: unset;
+    bottom: 0px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
     z-index: 20;
   }
 
