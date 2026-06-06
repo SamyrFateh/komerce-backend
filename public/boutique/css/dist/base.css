@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-05)
+   KOMERCE — base.css (2026-06-06)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -1497,14 +1497,18 @@ body:has(#k-page-scroll.k-pager-active) {
     /* skeleton: gap: 8px merged — keeping boutique-desktop gap:4px as tighter default */
   }
 
-  /* k-cart-btn.k-header-action desktop bubble (ex skeleton) */
+  /* k-cart-btn.k-header-action desktop — BUG-AVATAR-2 :
+     Le bouton était 42×42px avec background:white → "cercle blanc" visible,
+     avatar_panier.png (dame+panier) débordait par le haut et le badge cachait le panier.
+     Fix : fond transparent, hauteur étendue vers le haut pour absorber le débordement,
+     overflow:visible confirmé, badge repositionné sur l'épaule (déjà dans les règles .k-header). */
   .k-cart-btn.k-header-action {
-    width: 42px;
-    height: 42px;
-    border-radius: 999px;
-    background: var(--white);
-    border: 1px solid rgba(198, 168, 93, .32);
-    box-shadow: 0 8px 18px rgba(100,175,90, .08);
+    width: 46px;
+    height: 52px;           /* absorbe le débordement panier vers le haut */
+    border-radius: 0;       /* plus de clipping cercle */
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
   /* Header glass effect (ex desktop-commerce-skeleton.css) */

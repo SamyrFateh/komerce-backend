@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop.css (2026-06-05)
+   KOMERCE — desktop.css (2026-06-06)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── boutique-desktop.css ────────────────────────────────── */
@@ -1100,6 +1100,7 @@
   body.modal-open,
   body.cart-open {
     padding-right: 0;
+    overflow: hidden; /* BUG-SCROLL-3 — lock scroll fond pendant overlay checkout/modal */
   }
   /* 0-3-1 pour battre .k-side-cart.has-items (0-2-0) */
   body.modal-open .k-side-cart,

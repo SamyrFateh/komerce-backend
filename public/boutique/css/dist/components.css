@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-06-05)
+   KOMERCE — components.css (2026-06-06)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -6689,6 +6689,12 @@ body.cart-open  #k-section-index { display:none; }
  * Migré depuis b-group-view.js → injectStyles() (PR-1)
  * refactor(group): move group cockpit styles to CSS owner
  * ══════════════════════════════════════════════════════════════════ */
+
+/* ── BUG-VIEW-1 — Masquage par défaut (symétrique à .k-fav-view/.k-track-view dans cart.css)
+   Sans ce display:none, la vue groupe reste visible même quand elle ne devrait pas l'être,
+   provoquant un mélange de contenus entre onglets Suivi / Groupe / Commandes. ──────────── */
+#k-group-view.k-group-view { display: none; }
+#k-group-view.k-group-view.show { display: block; }
 
 /* ── Bloc A — Structure de base ─────────────────────────────────── */
 
