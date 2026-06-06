@@ -5893,6 +5893,13 @@ body.cart-open .k-wa-fab {
   padding-top: 4px;
 }
 
+/* Quand les champs bénéficiaire sont visibles (mode "Quelqu'un d'autre"),
+   on resserre le padding-top du bloc QUI RÉCUPÈRE pour éviter le débordement.
+   Owner : cart.css — conforme R3/R5 (pas de media query, pas de hex). */
+.ck-section-block:has(.ck-recip-fields:not([hidden])) {
+  padding-top: 10px;
+}
+
 /* Label section pour le titre VOUS COMMANDEZ AVEC */
 .k-ck-id-label--section {
   font-size: .62rem;
