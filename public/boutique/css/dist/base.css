@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-06-b)
+   KOMERCE — base.css (2026-06-06)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -1387,7 +1387,7 @@ body:has(#k-page-scroll.k-pager-active) {
   left: 0;
   right: 0;
   top: 50%;
-  transform: translate(-4px, -50%);  /* -4px gauche : badge reste dans l'écran sur mobile */
+  transform: translate(-4px, -50%);  /* -4px gauche : badge reste dans l'écran mobile */
   margin: 0 auto;
   width: 30px;          /* BUG-AVATAR-2c : taille réduite, tient dans 44px sans déborder */
   height: auto;
@@ -1400,14 +1400,14 @@ body:has(#k-page-scroll.k-pager-active) {
   mix-blend-mode: normal;
 }
 
-/* Badge desktop : coin bas-droit de l'avatar.
-   Avatar 30px centré puis décalé -4px → centre avatar à 50%-4px.
-   Badge 16px → left: calc(50% - 4px + 11px) = calc(50% + 7px) → recalc: calc(50% + 3px). */
+/* Badge mobile header : coin bas-droit de l'avatar.
+   Avatar 30px centré dans bouton 42px puis décalé -4px → centre avatar à 50%-4px.
+   Badge 16px → left: calc(50% + 3px) [7-4=3] pour suivre le décalage. */
 .k-header .k-cart-btn.k-header-action .k-cart-badge {
   position: absolute;
   top: auto;
   bottom: calc(50% - 23px);
-  left: calc(50% + 3px);  /* avatar décalé -4px → badge suit : 7-4=3px */
+  left: calc(50% + 3px);  /* avatar décalé -4px → badge suit : 7-4=3 */
   right: auto;
   min-width: 16px;
   height: 16px;
