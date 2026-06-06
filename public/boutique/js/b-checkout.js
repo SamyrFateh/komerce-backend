@@ -494,39 +494,48 @@ export function renderCheckout() {
     benfTitle.textContent = 'QUI RÉCUPÈRE ?';
     benfSection.appendChild(benfTitle);
 
-    // Case à cocher (visible) — #cb-benf-is-me lu par submitOrder + préremplissage
-    const benfMeWrap = document.createElement('label');
-    benfMeWrap.className = 'ck-benf-me-label';
-    benfMeWrap.innerHTML =
-      '<input type="checkbox" id="cb-benf-is-me" class="ck-benf-me-cb" checked> '
-      + '<span class="ck-benf-me-text">'
-      +   '<span class="ck-benf-me-title">Je récupère moi-même</span>'
-      +   '<span class="ck-benf-me-sub">Les infos ci-dessus sont utilisées</span>'
-      + '</span>';
-    benfSection.appendChild(benfMeWrap);
+    // #cb-benf-is-me CONSERVÉ (caché) — lu par submitOrder + le préremplissage.
+    // Le segment visible « Moi / Quelqu'un d'autre » le pilote en dispatchant un
+    // 'change' natif : aucun changement de logique, juste l'habillage.
+    const benfCb = document.createElement('input');
+    benfCb.type = 'checkbox';
+    benfCb.id = 'cb-benf-is-me';
+    benfCb.className = 'ck-benf-me-cb';
+    benfCb.checked = true;
+    benfCb.hidden = true;
+    benfSection.appendChild(benfCb);
 
-    // Champs retraitant — MASQUÉS si « je récupère » (infos déjà dans la carte),
-    // révélés seulement si « quelqu'un d'autre ».
+    const benfSeg = document.createElement('div');
+    benfSeg.className = 'ck-recip-seg';
+    benfSeg.setAttribute('role', 'tablist');
+    benfSeg.innerHTML =
+      '<button type="button" class="on" data-me="1">Moi</button>'
+      + '<button type="button" data-me="0">Quelqu\u2019un d\u2019autre</button>';
+    benfSection.appendChild(benfSeg);
+
+    // Champs retraitant — MASQUÉS si « Moi » (infos déjà dans la carte),
+    // révélés seulement si « Quelqu'un d'autre ». Le suivi-aux-deux vit ici.
     const benfFields = document.createElement('div');
     benfFields.className = 'ck-recip-fields';
     benfFields.hidden = true;
     benfFields.appendChild(makeInput('of-beneficiary-name', 'Nom de la personne qui retire *', 'text', 'Prénom Nom', od, 'beneficiary_name'));
     benfFields.appendChild(makeIntlPhoneInput('of-beneficiary-phone', 'Téléphone de la personne qui retire *', od, 'beneficiary_phone'));
+    const benfNote = document.createElement('div');
+    benfNote.className = 'ck-recip-note';
+    benfNote.textContent = '📲 Le suivi WhatsApp sera envoyé à vous deux';
+    benfFields.appendChild(benfNote);
     benfSection.appendChild(benfFields);
     body.appendChild(benfSection);
 
-    // La case pilote le sous-texte + l'affichage des champs.
-    const _benfCb = benfMeWrap.querySelector('#cb-benf-is-me');
-    const _benfTitle = benfMeWrap.querySelector('.ck-benf-me-title');
-    const _benfSub = benfMeWrap.querySelector('.ck-benf-me-sub');
+    // Le segment pilote la case + l'affichage des champs.
+    const _benfCb = benfCb;
+    const _segBtns = benfSeg.querySelectorAll('button');
     const _syncRecipFields = () => {
-      if (_benfCb.checked) {
-        _benfTitle.textContent = 'Je récupère moi-même';
-        _benfSub.textContent = 'Les infos ci-dessus sont utilisées';
+      const isMe = _benfCb.checked;
+      _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
+      if (isMe) {
         benfFields.hidden = true;
       } else {
-        _benfTitle.textContent = "Quelqu'un d'autre récupère";
-        _benfSub.textContent = 'Le suivi WhatsApp sera envoyé à vous deux';
         benfFields.hidden = false;
         // SÉCURITÉ : vider systématiquement les champs bénéficiaire quand
         // on bascule sur "quelqu'un d'autre". Sans ça, les champs restent
@@ -545,6 +554,13 @@ export function renderCheckout() {
       }
     };
     _benfCb.addEventListener('change', _syncRecipFields);
+    benfSeg.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const me = b.dataset.me === '1';
+      if (_benfCb.checked === me) return;          // pas de changement → no-op
+      _benfCb.checked = me;
+      _benfCb.dispatchEvent(new Event('change', { bubbles: true })); // → sync + préremplissage
+    });
     _syncRecipFields();
 
     // ── Logique préremplissage (inchangée : lit #cb-benf-is-me) ───────────────

@@ -5898,12 +5898,47 @@ body.cart-open .k-wa-fab {
 .ck-benf-me-title { font-size: .82rem; font-weight: 700; color: var(--text); }
 .ck-benf-me-sub { font-size: .68rem; color: var(--text-muted); }
 .ck-recip-fields {
-  margin-top: 8px;
+  margin-top: 11px;
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 .ck-recip-fields[hidden] { display: none; }
+
+/* « Qui récupère ? » — segment Moi / Quelqu'un d'autre (remplace la case à cocher) */
+.ck-recip-seg {
+  display: flex;
+  gap: 3px;
+  background: var(--border-text-06);
+  border-radius: 12px;
+  padding: 3px;
+}
+.ck-recip-seg button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 9px 6px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.ck-recip-seg button.on {
+  background: var(--white);
+  color: var(--ocean-dark);
+  box-shadow: 0 1px 3px var(--border-text-08);
+}
+.ck-recip-note {
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--ocean-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
 
 /* ── Checkout body ultra-compact sur mobile ── */
 .k-order-body--checkout {
