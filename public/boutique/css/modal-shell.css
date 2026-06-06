@@ -359,12 +359,18 @@
     width: 100vw;
     max-width: 100vw;
     overflow: hidden;
+    /* Annule justify-content:center hérité — sur mobile la modal prend toute
+       la largeur, pas besoin de centrage qui peut créer un décalage. */
+    justify-content: flex-start;
+    align-items: stretch;
   }
   #k-modal {
     width: 100vw;
     max-width: 100vw;
+    min-width: 0;
     margin: 0;
     border-radius: 0;
+    flex-shrink: 0;
   }
   #k-modal .k-modal-actions {
     left: 0;
