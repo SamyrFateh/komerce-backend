@@ -535,8 +535,10 @@ export function renderCheckout() {
       _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
       if (isMe) {
         benfFields.hidden = true;
+        selfPickupInfo.hidden = false;
       } else {
         benfFields.hidden = false;
+        selfPickupInfo.hidden = true;
         // SÉCURITÉ : vider systématiquement les champs bénéficiaire quand
         // on bascule sur "quelqu'un d'autre". Sans ça, les champs restent
         // pré-remplis avec les propres infos du payeur → il pourrait valider
@@ -721,9 +723,20 @@ export function renderCheckout() {
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
+    /* ── Bloc métier "Je retire moi-même" ──
+       Visible en mode Moi, masqué en mode Quelqu'un d'autre.
+       Piloté par _syncRecipFields(). Remplace ck-fill-above. */
+    const selfPickupInfo = document.createElement('div');
+    selfPickupInfo.className = 'ck-self-pickup-info';
+    selfPickupInfo.innerHTML =
+      '<div class="ck-self-pickup-title">✅ Vous récupérez cette commande</div>'
+      + '<div class="ck-self-pickup-line">📲 Suivi WhatsApp envoyé sur votre numéro</div>'
+      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>';
+    body.appendChild(selfPickupInfo);
+
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
-    s2.className = 'ck-section-block ck-fill-above';
+    s2.className = 'ck-section-block ck-payment-section';
     s2.innerHTML = '<div class="ck-section-title">PAIEMENT</div>';
     body.appendChild(s2);
 

@@ -1283,10 +1283,28 @@ body.cart-open .k-wa-fab {
   flex-direction: column;
   min-height: 0;
 }
-/* Comble le vide quand le form est court : le bloc paiement gravite vers le bas
-   (près du bouton Confirmer). La marge auto se rétracte d'elle-même dès que le
-   contenu grandit (bénéficiaire, carte Stripe, wallet) → plus de scroll, plus de trou. */
-.k-order-body--checkout .ck-fill-above { margin-top: auto; }
+/* Le vide entre Relais et Paiement est désormais comblé par .ck-self-pickup-info
+   en mode Moi (bloc métier), et par les champs bénéficiaire en mode Quelqu'un d'autre. */
+.ck-self-pickup-info {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--green-bg-leaf);
+  border: 1px solid var(--leaf-border, var(--border));
+  color: var(--text);
+}
+.ck-self-pickup-info[hidden] { display: none; }
+.ck-self-pickup-title {
+  font-weight: 800;
+  font-size: .86rem;
+  margin-bottom: 6px;
+  color: var(--ocean-dark);
+}
+.ck-self-pickup-line {
+  font-size: .76rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
 
 /* Guest hint plus compact */
 .k-ck-guest-hint {
