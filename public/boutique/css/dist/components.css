@@ -4808,7 +4808,7 @@ body.cart-open .k-hero { pointer-events: none; }
 #k-cart-whatsapp svg { width: 14px; height: 14px; }
 
 /* -- MODAL COMMANDE ------------------------------------------- */
-.k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: center; align-items: stretch; }
+.k-order-overlay { display: none; position: fixed; inset: 0; z-index: 1200; background: var(--overlay-dark-md); justify-content: flex-start; align-items: stretch; /* center uniquement sur desktop via @media 900px */ }
 /* .k-order-overlay.open � source de v�rit� : voir L606 (structure flex compl�te + z-index) */
 /* BUG 4 FIX : overflow:clip au lieu de overflow:hidden � clippe visuellement
    sans bloquer les enfants flex hors scroll (= .ck-confirm-btn toujours visible) */
@@ -4824,7 +4824,7 @@ body.cart-open .k-hero { pointer-events: none; }
    ind�pendant du breakpoint layout. Ne pas aligner sur 900px. */
 @media (min-width: 900px) {
   .k-order-modal { max-width: 480px; height: auto; max-height: 92vh; border-radius: var(--radius-lg); }
-  .k-order-overlay { align-items: center; }
+  .k-order-overlay { align-items: center; justify-content: center; }
 }
 
 /* -- OTP + SUIVI ---------------------------------------------- */
@@ -5266,7 +5266,7 @@ body.cart-open .k-wa-fab {
 
 /* Garantir la structure du modal paiement */
 .k-order-overlay.open { display:flex; z-index:1200; }
-.k-order-overlay.open .k-order-modal { display:flex; flex-direction:column; height:100vh; height:100dvh; max-height:100dvh; overflow:visible; }
+.k-order-overlay.open .k-order-modal { display:flex; flex-direction:column; height:100vh; height:100dvh; max-height:100dvh; overflow:clip; /* .ck-confirm-btn est flex child dans les bounds — overflow:visible plus nécessaire */ }
 .k-order-overlay.open .k-order-body  { flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
 /* BUG 4 FIX : le bouton est un enfant flex du modal (hors zone de scroll).
    overflow:hidden sur le modal le clippait quand le contenu �tait trop tall.
