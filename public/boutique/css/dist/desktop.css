@@ -32,6 +32,18 @@
    ══════════════════════════════════════════════════════════════════ */
 .k-footer { display: none; }
 
+/* BUG-FOOTER-JUMP — Réserver la hauteur du catalogue avant que renderGrid()
+   peuple la grille. Sans min-height, #k-catalog-section fait 0px au boot →
+   le footer remonte, devient visible, puis est repoussé vers le bas au fur
+   et à mesure que les cartes arrivent (effet "saut de footer").
+   100vh - header (~68px) laisse la grille remplir l'écran dès le 1er paint. */
+@media (min-width: 900px) {
+  #k-catalog-section {
+    min-height: calc(100vh - 68px);
+  }
+}
+
+
 
 /* .k-mega-dropdown et classes associées supprimées (lot NAV-DESKTOP-01, 2026-05-17)
    Remplacé par sous-catégories permanentes dans #k-subcats-wrap.
