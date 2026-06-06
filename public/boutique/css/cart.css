@@ -1192,22 +1192,25 @@ body.cart-open .k-wa-fab {
   margin-bottom: 10px;
 }
 
-/* Bloc de section — mobile-first aéré */
+/* Bloc de section — mobile-first */
 .ck-section-block {
-  padding-top: 16px;
-  margin-top: 4px;
+  padding-top: 12px;
+  margin-top: 0;
   border-top: 1px solid var(--border, rgba(0,0,0,.08));
 }
 .ck-section-block:first-child {
   border-top: none;
-  padding-top: 4px;
+  padding-top: 0;
 }
 
 /* Quand les champs bénéficiaire sont visibles (mode "Quelqu'un d'autre"),
-   on resserre le padding-top du bloc QUI RÉCUPÈRE pour éviter le débordement.
-   Owner : cart.css — conforme R3/R5 (pas de media query, pas de hex). */
-.ck-section-block:has(.ck-recip-fields:not([hidden])) {
-  padding-top: 10px;
+   toutes les sections passent en padding minimal pour tenir dans l'écran.
+   Owner : cart.css — conforme R3/R5. */
+.k-order-body--checkout:has(.ck-recip-fields:not([hidden])) .ck-section-block {
+  padding-top: 8px;
+}
+.k-order-body--checkout:has(.ck-recip-fields:not([hidden])) .ck-section-block:first-child {
+  padding-top: 0;
 }
 
 /* Label section pour le titre VOUS COMMANDEZ AVEC */
@@ -1289,12 +1292,11 @@ body.cart-open .k-wa-fab {
   margin-top: 2px;
 }
 
-/* ── Checkout body ultra-compact sur mobile ── */
+/* ── Checkout body mobile ── */
 .k-order-body--checkout {
-  padding: 12px 14px calc(74px + env(safe-area-inset-bottom)) !important;
+  padding: 10px 14px calc(74px + env(safe-area-inset-bottom)) !important;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-height: 0;
 }
 /* Le vide entre Relais et Paiement est désormais comblé par .ck-self-pickup-info
@@ -1340,6 +1342,63 @@ body.cart-open .k-wa-fab {
 .k-ck-identity-recap {
   margin-bottom: 4px;
 }
+
+/* ── Pill compact checkout : « 👋 Sam · +336… · Changer »  ──────────────
+   CSS-only : le DOM reste identique, bindChangeIdentity() fonctionne.
+   « Ce n'est pas vous ? » reste dans le DOM (câblé JS) mais masqué visuellement.
+   Owner : cart.css — conforme R3/R4/R5. */
+.k-order-body--checkout .k-ck-id-card {
+  padding: 7px 12px;
+  border-radius: 10px;
+  gap: 8px;
+  box-shadow: none;
+  background: var(--sand);
+  border-color: var(--border);
+}
+.k-order-body--checkout .k-ck-id-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: .72rem;
+  flex-shrink: 0;
+}
+.k-order-body--checkout .k-ck-id-check {
+  width: 12px;
+  height: 12px;
+  font-size: .46rem;
+  right: -2px;
+  bottom: -2px;
+}
+.k-order-body--checkout .k-ck-id-ident {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.k-order-body--checkout .k-ck-id-card .k-ck-id-value {
+  font-size: .82rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.k-order-body--checkout .k-ck-id-num {
+  font-size: .76rem;
+  color: var(--text-muted);
+  flex-shrink: 1;
+  min-width: 0;
+}
+.k-order-body--checkout .k-ck-id-actions-col {
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+}
+.k-order-body--checkout .k-ck-id-change {
+  font-size: .78rem;
+}
+/* « Ce n'est pas vous ? » masqué visuellement — reste câblé en JS */
+.k-order-body--checkout .k-ck-id-notyou {
+  display: none;
+}
+
 
 /* Relais plus aéré mais compact */
 .ck-relais-ile-grid {
