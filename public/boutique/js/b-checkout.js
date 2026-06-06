@@ -527,6 +527,19 @@ export function renderCheckout() {
     benfSection.appendChild(benfFields);
     body.appendChild(benfSection);
 
+    /* ── Bloc métier "Je retire moi-même" ──
+       Visible en mode Moi, masqué en mode Quelqu'un d'autre.
+       Piloté par _syncRecipFields(). Remplace ck-fill-above.
+       FIX 2026-06-06 : déclaré ICI (avant _syncRecipFields) pour éviter la
+       ReferenceError qui avortait renderCheckout() et empêchait le bouton
+       "Commander" de fonctionner (modal fermée sans action). */
+    const selfPickupInfo = document.createElement('div');
+    selfPickupInfo.className = 'ck-self-pickup-info';
+    selfPickupInfo.innerHTML =
+      '<div class="ck-self-pickup-title">✅ Vous récupérez cette commande</div>'
+      + '<div class="ck-self-pickup-line">📲 Suivi WhatsApp envoyé sur votre numéro</div>'
+      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>';
+
     // Le segment pilote la case + l'affichage des champs.
     const _benfCb = benfCb;
     const _segBtns = benfSeg.querySelectorAll('button');
@@ -723,15 +736,7 @@ export function renderCheckout() {
     body.appendChild(relaisSection);
     _loadRelaisSection(relaisSection, od);
 
-    /* ── Bloc métier "Je retire moi-même" ──
-       Visible en mode Moi, masqué en mode Quelqu'un d'autre.
-       Piloté par _syncRecipFields(). Remplace ck-fill-above. */
-    const selfPickupInfo = document.createElement('div');
-    selfPickupInfo.className = 'ck-self-pickup-info';
-    selfPickupInfo.innerHTML =
-      '<div class="ck-self-pickup-title">✅ Vous récupérez cette commande</div>'
-      + '<div class="ck-self-pickup-line">📲 Suivi WhatsApp envoyé sur votre numéro</div>'
-      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>';
+    // selfPickupInfo déclaré et initialisé plus haut (avant _syncRecipFields).
     body.appendChild(selfPickupInfo);
 
     /* ── 3. Paiement ── */
