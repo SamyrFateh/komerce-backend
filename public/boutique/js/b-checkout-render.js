@@ -292,28 +292,56 @@ export function buildOrderSuccessDOM(body, order) {
  * @param {Object} identity - { full_name?, name?, phone? }
  * @returns {HTMLElement} div#ck-identity-recap
  */
+function _idInitials(name) {
+  return (String(name || '').trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2) || '·').toUpperCase();
+}
+
 export function buildIdentityRecapDOM(identity) {
   const el = document.createElement('div');
   el.id = 'ck-identity-recap';
   el.className = 'k-ck-identity-recap';
   const dName  = identity.full_name || identity.name  || '';
   const dPhone = identity.phone || '';
-  const initials = (dName.trim().split(/\s+/).map(w => w[0] || '').join('').slice(0, 2) || '·').toUpperCase();
+  // Ligne calme : avatar + check + nom / téléphone + un seul lien « Changer ».
+  // Plus de badge « Déjà connu », plus de « Auto-rempli », plus du double
+  // « Modifier · Pas vous ? » (qui ne déclenchait rien — cf. bindChangeIdentity).
   el.innerHTML =
-    '<span class="k-ck-id-label k-ck-id-label--section">VOUS COMMANDEZ AVEC</span>'
-    + '<div class="k-ck-id-card">'
-    +   '<span class="k-ck-id-avatar" aria-hidden="true">' + sanitize(initials) + '</span>'
-    +   '<span class="k-ck-id-ident">'
-    +     '<span class="k-ck-id-value">' + sanitize(dName) + (dName && dPhone ? ' · ' : '') + sanitize(dPhone) + '</span>'
+    '<div class="k-ck-id-card">'
+    +   '<span class="k-ck-id-avatar" aria-hidden="true">'
+    +     '<span class="k-ck-id-initials">' + sanitize(_idInitials(dName || dPhone)) + '</span>'
+    +     '<span class="k-ck-id-check" title="Identité vérifiée">✓</span>'
     +   '</span>'
-    +   '<span class="k-ck-id-badge">Déjà connu</span>'
-    + '</div>'
-    + '<div class="k-ck-id-autofill">✓ Auto-rempli depuis votre compte</div>'
-    + '<div class="k-ck-id-actions">'
-    +   'Numéro changé\u00a0? <button type="button" class="k-ck-id-link k-ck-id-modify">Modifier</button>'
-    +   '<span class="k-ck-id-sep">·</span>'
-    +   '<button type="button" class="k-ck-id-link k-ck-id-change">Pas vous\u00a0?</button>'
+    +   '<span class="k-ck-id-ident">'
+    +     '<span class="k-ck-id-value">' + sanitize(dName || dPhone) + '</span>'
+    +     (dName && dPhone ? '<span class="k-ck-id-num">' + sanitize(dPhone) + '</span>' : '')
+    +   '</span>'
+    +   '<button type="button" class="k-ck-id-change">Changer</button>'
     + '</div>';
   return el;
+}
+
+/**
+ * Met à jour une carte identité existante (après changement de numéro).
+ * Pure DOM : ne lit pas le state, ne déclenche aucun réseau.
+ * @param {HTMLElement} card  - le #ck-identity-recap déjà inséré
+ * @param {Object} identity   - { full_name?, name?, phone? }
+ */
+export function applyIdentityToCard(card, identity) {
+  if (!card || !identity) return;
+  const n = identity.full_name || identity.name || '';
+  const p = identity.phone || '';
+  const iv = card.querySelector('.k-ck-id-initials'); if (iv) iv.textContent = _idInitials(n || p);
+  const nv = card.querySelector('.k-ck-id-value');    if (nv) nv.textContent = n || p;
+  let pv = card.querySelector('.k-ck-id-num');
+  if (n && p) {
+    if (!pv) {
+      pv = document.createElement('span');
+      pv.className = 'k-ck-id-num';
+      card.querySelector('.k-ck-id-ident')?.appendChild(pv);
+    }
+    pv.textContent = p;
+  } else if (pv) {
+    pv.remove();
+  }
 }
 

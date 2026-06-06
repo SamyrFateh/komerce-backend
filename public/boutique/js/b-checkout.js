@@ -11,12 +11,13 @@ import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js'
 import { showToast, cartTotal }   from './b-cart-core.js';
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
-import { requireIdentity, getCurrentIdentity, restoreIdentity }  from './b-identity.js';
+import { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity }  from './b-identity.js';
 import {
   renderFulfillmentSelector as _renderFulfillmentSelector,
   setCheckoutConfirmButton  as _setCheckoutConfirmButton,
   buildOrderSuccessDOM,
   buildIdentityRecapDOM,
+  applyIdentityToCard,
   makeInput                 as _makeInputRender,
   makePhoneInput            as _makePhoneInputRender,
 } from './b-checkout-render.js';
@@ -360,23 +361,13 @@ export function renderCheckout() {
     const _knownUser = getCurrentIdentity();
     if (_knownUser) {
       const idRecap = buildIdentityRecapDOM(_knownUser);
-      const _onIdChange = async () => {
-        const newUser = await requireIdentity({
-          reason: "changer d'identité",
-          title: 'Utiliser un autre numéro',
-          allowOtherPhone: true,
-        });
-        if (newUser) {
-          const nameEl = idRecap.querySelector('.k-ck-id-value');
-          if (nameEl) {
-            const n = newUser.full_name || newUser.name || '';
-            const p = newUser.phone || '';
-            nameEl.textContent = n + (n && p ? ' · ' : '') + p;
-          }
-        }
-      };
-      idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange);
-      idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange);
+      // FIX : « Changer » câblé sur bindChangeIdentity → ouvre vraiment la modale
+      // (openIdentityModal). L'ancien requireIdentity() court-circuitait via
+      // restoreIdentity() et renvoyait l'identité existante sans rien afficher.
+      bindChangeIdentity(idRecap, '.k-ck-id-change', (newUser) => {
+        state.user = newUser;
+        applyIdentityToCard(idRecap, newUser);
+      });
       body.insertBefore(idRecap, body.firstChild); // carte en tête du checkout
     }
     // ── Fin récap identité ───────────────────────────────────────────────────
@@ -409,35 +400,17 @@ export function renderCheckout() {
         // Anti-doublon : si la carte existe déjà (rendu concurrent), on rafraîchit juste.
         let idRecap = body.querySelector('#ck-identity-recap');
         if (idRecap) {
-          const nameEl = idRecap.querySelector('.k-ck-id-value');
-          if (nameEl) {
-            const n = restoredUser.full_name || restoredUser.name || '';
-            const p = restoredUser.phone || '';
-            nameEl.textContent = n + (n && p ? ' · ' : '') + p;
-          }
+          applyIdentityToCard(idRecap, restoredUser);
           return;
         }
 
         // Construction + insertion EN TÊTE du body (fiable, indépendant de la
         // structure interne — on ne cherche plus un .k-ck-group qui peut manquer).
         idRecap = buildIdentityRecapDOM(restoredUser);
-        const _onIdChange2 = async () => {
-          const newUser = await requireIdentity({
-            reason: "changer d'identité",
-            title: 'Utiliser un autre numéro',
-            allowOtherPhone: true,
-          });
-          if (newUser) {
-            const nameEl = idRecap.querySelector('.k-ck-id-value');
-            if (nameEl) {
-              const n = newUser.full_name || newUser.name || '';
-              const p = newUser.phone || '';
-              nameEl.textContent = n + (n && p ? ' · ' : '') + p;
-            }
-          }
-        };
-        idRecap.querySelector('.k-ck-id-change')?.addEventListener('click', _onIdChange2);
-        idRecap.querySelector('.k-ck-id-modify')?.addEventListener('click', _onIdChange2);
+        bindChangeIdentity(idRecap, '.k-ck-id-change', (newUser) => {
+          state.user = newUser;
+          applyIdentityToCard(idRecap, newUser);
+        });
         body.insertBefore(idRecap, body.firstChild); // toujours en haut
       }).catch(err => {
         // On n'avale plus silencieusement : une erreur réseau est normale (non

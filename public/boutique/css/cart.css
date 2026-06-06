@@ -904,14 +904,8 @@ body.cart-open .k-wa-fab {
    -------------------------------------------------------------------------- */
 
 .k-ck-identity-recap {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  background: rgba(31, 122, 84, .07);
-  border: 1.5px solid rgba(31, 122, 84, .18);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+  display: block;
+  margin-bottom: 14px;
 }
 
 .k-ck-id-label {
@@ -931,47 +925,87 @@ body.cart-open .k-wa-fab {
 }
 
 .k-ck-id-change {
+  margin-left: auto;
+  align-self: center;
+  flex: 0 0 auto;
   border: 0;
   background: transparent;
-  padding: 0;
-  font-size: .74rem;
+  padding: 4px 2px;
+  font-size: .8rem;
   font-weight: 700;
-  color: var(--coral);
+  color: var(--ocean-dark);
   cursor: pointer;
-  text-align: left;
+  text-align: right;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .k-ck-id-change:hover {
   text-decoration: underline;
 }
 
-/* ── Carte commandeur « VOUS COMMANDEZ AVEC » ── */
+/* ── Carte commandeur — ligne calme « avatar · nom/tél · Changer » ── */
 .k-ck-id-card {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 11px;
-  padding: 9px 11px;
-  margin-top: 3px;
+  border-radius: 13px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px var(--border-text-04);
 }
 .k-ck-id-avatar {
-  width: 34px;
-  height: 34px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--ocean-light);
+  background: var(--ocean);
   color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .8rem;
+  font-size: .82rem;
   font-weight: 800;
 }
-.k-ck-id-ident { flex: 1; min-width: 0; }
+.k-ck-id-check {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ocean-dark);
+  border: 1.5px solid var(--green-bg-leaf);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .58rem;
+  font-weight: 900;
+}
+.k-ck-id-ident {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 .k-ck-id-card .k-ck-id-value {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-ck-id-num {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1110,9 +1144,7 @@ body.cart-open .k-wa-fab {
 
 /* Recap identité compact */
 .k-ck-identity-recap {
-  gap: 2px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 /* Relais plus aéré mais compact */
