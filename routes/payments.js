@@ -283,8 +283,11 @@ async function _handleStripeSucceeded(event, intent, res) {
     let stripeCardLast4   = null;
     let stripeEmail       = intent.receipt_email || null;
     try {
-      if (intent.charges && intent.charges.data && intent.charges.data[0]) {
-        const charge = intent.charges.data[0];
+      // FRESH-100 : intent.charges déprécié par Stripe (2023) → latest_charge
+      const charge = intent.latest_charge && typeof intent.latest_charge === 'object'
+        ? intent.latest_charge
+        : null;
+      if (charge) {
         stripeBillingName = charge.billing_details?.name || null;
         stripeCardLast4   = charge.payment_method_details?.card?.last4 || null;
         stripeEmail       = charge.billing_details?.email || stripeEmail;

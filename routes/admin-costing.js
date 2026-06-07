@@ -621,7 +621,7 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
       return res.status(400).json({ error: 'Aucun champ valide a appliquer' });
     }
 
-    await db.query(`UPDATE finance_config SET ${updates.join(', ')}`, params);
+    await db.query(`UPDATE finance_config SET ${updates.join(', ')} WHERE id = (SELECT id FROM finance_config ORDER BY id LIMIT 1)`, params);
 
     const r = await db.query(`SELECT
       avg_articles_per_order, avg_articles_per_parcel,

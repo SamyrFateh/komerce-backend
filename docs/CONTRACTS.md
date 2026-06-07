@@ -362,6 +362,9 @@ Toute modif du format de code externe ou sceau = lot sécurité, jamais en commi
 
 ## 11. `services/collective-payment-orchestrator.js`
 
+> 🪦 **TOMBSTONE** — Ce service est désactivé (STATUS.md A-BE-03, server.js L70). Ne pas réutiliser ce contrat. Voir §2b pour le flow de paiement actif.
+
+
 > Orchestration Stripe pour le panier collectif. Capture différée + idempotence Stripe.
 
 ### Exports principaux

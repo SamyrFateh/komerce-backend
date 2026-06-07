@@ -201,11 +201,11 @@ async function sendOrderEmail(order, status) {
       log.info(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${data.messageId}`);
       return { sent: true, messageId: data.messageId };
     } else {
-      log.error(`[EMAIL] ❌ Erreur Brevo:`, JSON.stringify(data));
+      log.error({ data }, '[EMAIL] ❌ Erreur Brevo');
       return { sent: false, error: data.message || JSON.stringify(data) };
     }
   } catch (err) {
-    log.error(`[EMAIL] ❌ Erreur envoi ${status} → ${order.customer_email}:`, err.message);
+    log.error({ err, status, email: order.customer_email }, '[EMAIL] ❌ Erreur envoi');
     return { sent: false, error: err.message };
   }
 }

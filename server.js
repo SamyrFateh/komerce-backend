@@ -1,5 +1,5 @@
 /**
- * KOMERCE — Serveur API v12.4 (Cash reconciliation + Inventory proposals + Transitaire)
+ * KOMERCE — Serveur API v10.6.1 (Cash reconciliation + Inventory proposals + Transitaire)
  *
  * Point d'entrée Node.js + Express
  * Déployé sur Railway — PORT fourni par la variable d'environnement
@@ -42,7 +42,7 @@ app.set('trust proxy', 1);
 
 app.get('/webhook/authkey-whatsapp', async (req, res) => {
   try {
-    log.info('[AUTHKEY-WA][WEBHOOK]', req.query);
+    log.info({ query: req.query }, '[AUTHKEY-WA][WEBHOOK]');
 
     const mobile = req.query.Mobile || null;
     const email = req.query.Email || null;
@@ -52,7 +52,7 @@ app.get('/webhook/authkey-whatsapp', async (req, res) => {
 
     return res.status(200).send('OK');
   } catch (e) {
-    log.error('[AUTHKEY-WA][WEBHOOK][ERROR]', e.message);
+    log.error({ err: e }, '[AUTHKEY-WA][WEBHOOK][ERROR]');
     return res.status(500).send('ERROR');
   }
 });
@@ -92,10 +92,24 @@ app.use('/api/admin/', adminLimiter);
 
 
 // ── Auth guard injection — auto-injects session checker into admin pages ────
+// FRESH-081 : allowlist explicite pour éviter tout path traversal.
+// Express normalise req.path (decode + normalize) mais on ajoute une seconde
+// couche : seuls les chemins connus reçoivent l'injection auth-guard.
 const _fs = require('fs');
+const HTML_AUTH_GUARD_ALLOWLIST = new Set([
+  '/dashboards/admin/index.html',
+  '/dashboards/admin-legacy/control-tower.html',
+  '/relais/index.html',
+  '/hub/index.html',
+]);
 app.get('/*.html', (req, res, next) => {
   if (req.path.includes('Boutique') || req.path === '/boutique.html' || req.path === '/portal.html' || req.path === '/suivi.html' || req.path === '/mon-compte.html') return next();
-  const filePath = path.join(__dirname, 'public', req.path);
+  // Sécurité : uniquement les pages admin connues
+  if (!HTML_AUTH_GUARD_ALLOWLIST.has(req.path)) return next();
+  const publicDir = path.join(__dirname, 'public');
+  const filePath = path.join(publicDir, req.path);
+  // Défense en profondeur : le chemin résolu doit rester sous public/
+  if (!filePath.startsWith(publicDir + path.sep)) return next();
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) return next();
     html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\
@@ -160,7 +174,7 @@ app.get('/api/health', async (req, res) => {
     await db.query('SELECT 1');
     res.json({
       status:        'ok',
-      version:       '12.3',
+      version: require('./package.json').version,
       db_latency_ms: Date.now() - start,
       timestamp:     new Date().toISOString(),
       env:           process.env.NODE_ENV || 'development',
