@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Invoice Routes — Komerce
  * 
  * GET  /api/invoices/:orderId          → Generate/get invoice HTML (add ?mode=thermal for receipt)

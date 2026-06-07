@@ -1,5 +1,5 @@
 /**
- * KOMERCE â€" Services / Routing v1.0
+ * KOMERCE â€” Services / Routing v1.0
  *
  * Module central de routage logistique.
  * La destination d'une commande est dÃ©terminÃ©e UNIQUEMENT par le point relais.
@@ -8,30 +8,30 @@
  * Hub principal : ANJOUAN (tout transite par Anjouan)
  *
  * RÃ¨gles :
- *   ANJOUAN  â†' DIRECT
- *   MORONI   â†' INTER_ISLAND via ANJOUAN
- *   MOHELI   â†' INTER_ISLAND via ANJOUAN
- *   MAYOTTE  â†' SPECIAL_ROUTE via ANJOUAN
+ *   ANJOUAN  â†’ DIRECT
+ *   MORONI   â†’ INTER_ISLAND via ANJOUAN
+ *   MOHELI   â†’ INTER_ISLAND via ANJOUAN
+ *   MAYOTTE  â†’ SPECIAL_ROUTE via ANJOUAN
  *
  * Usage :
  *   const { resolveRoutingFromRelais } = require('../services/routing');
  *   const routing = resolveRoutingFromRelais(relais);
- *   // â†' { destination_island, routing_mode, transit_hub }
+ *   // â†’ { destination_island, routing_mode, transit_hub }
  */
 
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'routing' });
 
-// â"€â"€ Destinations supportÃ©es â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Destinations supportÃ©es â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const DESTINATIONS = ['ANJOUAN', 'MORONI', 'MOHELI', 'MAYOTTE'];
 
-// â"€â"€ Hub principal de transit â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Hub principal de transit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TRANSIT_HUB = 'ANJOUAN';
 
-// â"€â"€ Modes de routage â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Modes de routage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ROUTING_MODES = {
   DIRECT:        'DIRECT',
@@ -39,7 +39,7 @@ const ROUTING_MODES = {
   SPECIAL_ROUTE: 'SPECIAL_ROUTE',
 };
 
-// â"€â"€ Normalisation noms d'Ã®le â†' code standardisÃ© â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Normalisation noms d'Ã®le â†’ code standardisÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // GÃ¨re les variantes franÃ§aises, comoriennes et les accents
 
 const ISLAND_NORMALIZE = {
@@ -57,7 +57,7 @@ const ISLAND_NORMALIZE = {
   'mamoudzou':     'MAYOTTE',
 };
 
-// â"€â"€ RÃ¨gles de routage par destination â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ RÃ¨gles de routage par destination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ROUTING_RULES = {
   ANJOUAN: { mode: ROUTING_MODES.DIRECT,        hub: null },
@@ -66,7 +66,7 @@ const ROUTING_RULES = {
   MAYOTTE: { mode: ROUTING_MODES.SPECIAL_ROUTE,  hub: TRANSIT_HUB },
 };
 
-// â"€â"€ Erreur de routage typÃ©e â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Erreur de routage typÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class RoutingError extends Error {
   constructor(message, code) {
@@ -77,14 +77,14 @@ class RoutingError extends Error {
   }
 }
 
-// â"€â"€ Normalisation island â†' code â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Normalisation island â†’ code â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function normalizeIsland(raw) {
   if (!raw) return null;
   const key = raw.toLowerCase().trim();
   // Direct match
   if (ISLAND_NORMALIZE[key]) return ISLAND_NORMALIZE[key];
-  // Prefix match â€" robuste contre les problÃ¨mes d'encodage UTF-8
+  // Prefix match â€” robuste contre les problÃ¨mes d'encodage UTF-8
   // (ex: MohÃ©li peut apparaÃ®tre comme MohÃƒÂ©li en DB)
   if (key.startsWith('moh') || key.startsWith('mwa'))  return 'MOHELI';
   if (key.startsWith('anj') || key.startsWith('ndz'))  return 'ANJOUAN';
@@ -93,8 +93,8 @@ function normalizeIsland(raw) {
   return null;
 }
 
-// â"€â"€ RÃ©solution routing depuis un relais â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-// Source de vÃ©ritÃ© unique â€" ne jamais dupliquer cette logique
+// â”€â”€ RÃ©solution routing depuis un relais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Source de vÃ©ritÃ© unique â€” ne jamais dupliquer cette logique
 
 function resolveRoutingFromRelais(relais) {
   // RÃ¨gle 1 : relais obligatoire
@@ -111,7 +111,7 @@ function resolveRoutingFromRelais(relais) {
   // RÃ¨gle 2 : island_code obligatoire
   if (!code) {
     throw new RoutingError(
-      `Relais "${relais.name}" (${relais.id}) n'a pas d'Ã®le configurÃ©e â€" island_code manquant`,
+      `Relais "${relais.name}" (${relais.id}) n'a pas d'Ã®le configurÃ©e â€” island_code manquant`,
       'ISLAND_CODE_MISSING'
     );
   }
@@ -119,7 +119,7 @@ function resolveRoutingFromRelais(relais) {
   // RÃ¨gle 3 : destination reconnue
   if (!DESTINATIONS.includes(code)) {
     throw new RoutingError(
-      `Destination "${code}" non supportÃ©e pour relais "${relais.name}" â€" valeurs : ${DESTINATIONS.join(', ')}`,
+      `Destination "${code}" non supportÃ©e pour relais "${relais.name}" â€” valeurs : ${DESTINATIONS.join(', ')}`,
       'DESTINATION_UNKNOWN'
     );
   }
@@ -133,7 +133,7 @@ function resolveRoutingFromRelais(relais) {
   };
 }
 
-// â"€â"€ Migration DB safe (additive, idempotente) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Migration DB safe (additive, idempotente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Ajoute les colonnes routing si elles n'existent pas + backfill les donnÃ©es
 
 async function ensureRoutingColumns(db) {
@@ -157,7 +157,7 @@ async function ensureRoutingColumns(db) {
     }
   }
 
-  // â"€â"€ Backfill island_code dans relais (depuis island human-readable) â"€â"€â"€â"€â"€â"€â"€â"€
+  // â”€â”€ Backfill island_code dans relais (depuis island human-readable) â”€â”€â”€â”€â”€â”€â”€â”€
   const BACKFILL_MAP = {
     'Anjouan':       'ANJOUAN',
     'Grande Comore': 'MORONI',
@@ -173,14 +173,14 @@ async function ensureRoutingColumns(db) {
         [code, humanName]
       );
       if (rowCount > 0) {
-        log.info(`[Routing] Backfill: ${rowCount} relais "${humanName}" â†' ${code}`);
+        log.info(`[Routing] Backfill: ${rowCount} relais "${humanName}" â†’ ${code}`);
       }
     } catch (e) {
       log.warn(`[Routing] Backfill error: ${e.message}`);
     }
   }
 
-  // â"€â"€ Backfill orders existantes (si relais a un code mais la commande non) â"€â"€
+  // â”€â”€ Backfill orders existantes (si relais a un code mais la commande non) â”€â”€
   try {
     const { rowCount } = await db.query(`
       UPDATE orders o SET
@@ -209,7 +209,7 @@ async function ensureRoutingColumns(db) {
   log.info('âœ… Routing columns ready');
 }
 
-// â"€â"€ Exports â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// â”€â”€ Exports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 module.exports = {
   resolveRoutingFromRelais,

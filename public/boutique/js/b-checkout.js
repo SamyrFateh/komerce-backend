@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-checkout
  * @brief §11 CHECKOUT — Commande, paiement, wallet, order success
  *

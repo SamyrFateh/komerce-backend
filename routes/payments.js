@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes paiement v8.2 (REFACTO-PAYMENTS)
  *
  * POST /api/payments/stripe/intent    → créer un PaymentIntent Stripe (EUR)

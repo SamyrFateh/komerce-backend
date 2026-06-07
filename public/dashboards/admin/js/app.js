@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE Dashboard — App
  * ════════════════════════════════════════════════════════════════════════
  * Routing SPA (pushState) + render shell + dispatch sur la vue.

@@ -1,4 +1,4 @@
-/* Komerce Auth Guard v3 — canonical cookie session check */
+﻿/* Komerce Auth Guard v3 — canonical cookie session check */
 (function () {
   'use strict';
 

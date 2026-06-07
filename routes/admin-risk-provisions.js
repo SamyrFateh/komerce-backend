@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes risk_provisions (Étape 2 — ADR-011)
  *
  * Provisions risques en % à appliquer sur chaque commande (Niveau 3).

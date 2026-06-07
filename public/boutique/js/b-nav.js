@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @module b-nav
  * @brief Navigation — switchView, setupBnav, setupDrawer, setupInfiniteScroll, loadRelais
  *

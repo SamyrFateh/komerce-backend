@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * KOMERCE — Middleware requireVerifiedIdentityForCheckout

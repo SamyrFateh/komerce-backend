@@ -1,4 +1,4 @@
-/*  utils/email.js — Brevo REST API v3
+﻿/*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
     Variable requise : BREVO_API_KEY (commence par xkeysib-)
     Optionnel : BREVO_SENDER_EMAIL, APP_URL

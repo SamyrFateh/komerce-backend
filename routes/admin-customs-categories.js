@@ -1,4 +1,4 @@
-/**
+﻿/**
  * KOMERCE — Routes admin pour customs_categories (Étape 0 audit)
  *
  * Permet à l'admin de gérer les catégories douanières dans la BDD au lieu
