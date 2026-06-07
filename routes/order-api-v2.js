@@ -1,19 +1,19 @@
-﻿/**
+/**
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
- * ORDER API v2.3 â€” Komerce (COLIS-FIRST) â€” AUTO-PARCEL
+ * ORDER API v2.3 â€" Komerce (COLIS-FIRST) â€" AUTO-PARCEL
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  * 
  * FLUX CORRECT:
- *   pending â†’ confirmed â†’ ordered â†’ preparation â†’ shipped â†’ in_transit â†’ available â†’ collected
+ *   pending â†' confirmed â†' ordered â†' preparation â†' shipped â†' in_transit â†' available â†' collected
  *
  * âœ… v2.3: Auto-create parcel on payment confirmation (cash + stripe)
  *
  * Endpoints opÃ©rationnels pour la Control Tower:
- *   GET  /api/v2/orders                     â†’ Liste complÃ¨te + KPIs
- *   GET  /api/v2/orders/pending-cash        â†’ Commandes cash en attente
- *   GET  /api/v2/orders/ready-for-parcel    â†’ Commandes CONFIRMÃ‰ES sans colis
- *   POST /api/v2/orders/:ref/confirm-cash   â†’ Confirmer paiement cash + FACTURE + AUTO-PARCEL
- *   POST /api/v2/orders/:ref/create-parcel  â†’ CrÃ©er colis manuellement (fallback)
+ *   GET  /api/v2/orders                     â†' Liste complÃ¨te + KPIs
+ *   GET  /api/v2/orders/pending-cash        â†' Commandes cash en attente
+ *   GET  /api/v2/orders/ready-for-parcel    â†' Commandes CONFIRMÃ‰ES sans colis
+ *   POST /api/v2/orders/:ref/confirm-cash   â†' Confirmer paiement cash + FACTURE + AUTO-PARCEL
+ *   POST /api/v2/orders/:ref/create-parcel  â†' CrÃ©er colis manuellement (fallback)
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  */
 
@@ -150,12 +150,12 @@ async function autoCreateParcel(client, orderId, actor) {
     await client.query('RELEASE SAVEPOINT sp_scan');
   } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
 
-  // 11. Transition order: confirmed â†’ ordered â†’ preparation
+  // 11. Transition order: confirmed â†' ordered â†' preparation
   if (order.status === 'confirmed') {
     await transitionOrderStatus({
       orderId, newStatus: 'ordered',
       actor: { id: actor.id, role: actor.role || 'system' },
-      source: 'auto_parcel', note: 'Auto: colis crÃ©Ã© â†’ ordered',
+      source: 'auto_parcel', note: 'Auto: colis crÃ©Ã© â†' ordered',
       dbClient: client,
     }).catch(() => {});
   }
@@ -163,11 +163,11 @@ async function autoCreateParcel(client, orderId, actor) {
   await transitionOrderStatus({
     orderId, newStatus: 'preparation',
     actor: { id: actor.id, role: actor.role || 'system' },
-    source: 'auto_parcel', note: `Auto: colis ${parcelRef} â†’ prÃ©paration`,
+    source: 'auto_parcel', note: `Auto: colis ${parcelRef} â†' prÃ©paration`,
     dbClient: client,
   }).catch(() => {});
 
-  log.info(`ðŸ“¦ AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
+  log.info(`ðŸ"¦ AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
 
   return {
     success: true,
@@ -181,7 +181,7 @@ async function autoCreateParcel(client, orderId, actor) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 0. GET / â€” Liste complÃ¨te de toutes les commandes + KPIs
+// 0. GET / â€" Liste complÃ¨te de toutes les commandes + KPIs
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.get('/', ...guard, async (req, res, next) => {
@@ -262,7 +262,7 @@ router.get('/', ...guard, async (req, res, next) => {
 });
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 1. GET /pending-cash â€” Commandes cash_relais en attente
+// 1. GET /pending-cash â€" Commandes cash_relais en attente
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.get('/pending-cash', ...guard, async (req, res, next) => {
@@ -288,7 +288,7 @@ router.get('/pending-cash', ...guard, async (req, res, next) => {
 });
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 2. GET /ready-for-parcel â€” Commandes CONFIRMÃ‰ES sans colis
+// 2. GET /ready-for-parcel â€" Commandes CONFIRMÃ‰ES sans colis
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
@@ -314,7 +314,7 @@ router.get('/ready-for-parcel', ...guard, async (req, res, next) => {
 });
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 1b. GET /:ref â€” DÃ©tail complet d'une commande
+// 1b. GET /:ref â€" DÃ©tail complet d'une commande
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.get('/:ref', ...guard, async (req, res, next) => {
@@ -358,8 +358,8 @@ router.get('/:ref', ...guard, async (req, res, next) => {
 });
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 3. POST /:ref/confirm-cash â€” Confirmer paiement cash relais
-//    â†’ AUTO-PARCEL: crÃ©e automatiquement le colis aprÃ¨s confirmation
+// 3. POST /:ref/confirm-cash â€" Confirmer paiement cash relais
+//    â†' AUTO-PARCEL: crÃ©e automatiquement le colis aprÃ¨s confirmation
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
@@ -396,7 +396,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
       [order.id]
     );
 
-    // Transition status â†’ confirmed
+    // Transition status â†' confirmed
     const _confirmResult = await transitionOrderStatus({
       orderId: order.id,
       newStatus: 'confirmed',
@@ -419,7 +419,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    log.info(`ðŸ’° Cash confirmed + auto-parcel: ${order.reference} by ${req.user?.email || 'system'}`);
+    log.info(`ðŸ'° Cash confirmed + auto-parcel: ${order.reference} by ${req.user?.email || 'system'}`);
 
     // NOTIFICATIONS (fire-and-forget)
     const notif = require('../services/notification-service');
@@ -440,8 +440,8 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
     res.json({
       success: true,
       message: parcelResult.success
-        ? `âœ… Paiement confirmÃ© + ðŸ“¦ Colis ${parcelResult.parcel.reference} crÃ©Ã© automatiquement`
-        : `âœ… Paiement confirmÃ© pour ${order.reference} â€” Facture envoyÃ©e par WhatsApp`,
+        ? `âœ… Paiement confirmÃ© + ðŸ"¦ Colis ${parcelResult.parcel.reference} crÃ©Ã© automatiquement`
+        : `âœ… Paiement confirmÃ© pour ${order.reference} â€" Facture envoyÃ©e par WhatsApp`,
       order: {
         reference: order.reference,
         old_status: order.status,
@@ -462,7 +462,7 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 });
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 4. POST /:ref/create-parcel â€” CrÃ©er colis manuellement (fallback)
+// 4. POST /:ref/create-parcel â€" CrÃ©er colis manuellement (fallback)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
@@ -484,7 +484,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
     if (order.payment_status !== 'paid') {
       await client.query('ROLLBACK');
       return res.status(400).json({ 
-        error: 'Paiement non confirmÃ© â€” impossible de crÃ©er un colis',
+        error: 'Paiement non confirmÃ© â€" impossible de crÃ©er un colis',
         rule: 'PAS DE PAIEMENT = PAS DE COLIS'
       });
     }
@@ -510,7 +510,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
 
     await client.query('COMMIT');
 
-    log.info(`ðŸ“¦ Manual parcel created: ${result.parcel.reference} for ${order.reference}`);
+    log.info(`ðŸ"¦ Manual parcel created: ${result.parcel.reference} for ${order.reference}`);
 
     // NOTIFICATIONS (fire-and-forget)
     const notifSvc = require('../services/notification-service');
@@ -519,7 +519,7 @@ router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `ðŸ“¦ Colis ${result.parcel.reference} crÃ©Ã© â€” Commande ${order.reference} en prÃ©paration`,
+      message: `ðŸ"¦ Colis ${result.parcel.reference} crÃ©Ã© â€" Commande ${order.reference} en prÃ©paration`,
       parcel: result.parcel,
     });
   } catch (err) {

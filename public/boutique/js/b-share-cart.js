@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module b-share-cart
  * @brief Flow "Payer en groupe" — côté créateur.
  *

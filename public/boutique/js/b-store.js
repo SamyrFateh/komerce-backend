@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module b-store
  * @brief Source de vérité unique pour l'état applicatif et les constantes.
  *

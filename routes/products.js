@@ -1,11 +1,11 @@
 /**
  * KOMERCE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Catalogue produits
  *
- * GET /api/products            ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ liste paginÃƒÆ’Ã‚Â©e + filtres
- * GET /api/products/:id        ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dÃƒÆ’Ã‚Â©tail produit
- * POST /api/products           ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ crÃƒÆ’Ã‚Â©er un produit (admin)
+ * GET /api/products            ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ liste paginÃƒÆ'Ã‚Â©e + filtres
+ * GET /api/products/:id        ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dÃƒÆ'Ã‚Â©tail produit
+ * POST /api/products           ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ crÃƒÆ'Ã‚Â©er un produit (admin)
  * PUT  /api/products/:id       ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ modifier un produit (admin)
- * DELETE /api/products/:id     ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dÃƒÆ’Ã‚Â©sactiver (admin)
+ * DELETE /api/products/:id     ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ dÃƒÆ'Ã‚Â©sactiver (admin)
  */
 
 const express = require('express');
@@ -52,7 +52,7 @@ async function validateProductTaxonomyPayload(res, payload) {
         ORDER BY display_order`
     );
     return res.status(422).json({
-      error: `CatÃƒÆ’Ã‚Â©gorie invalide : "${category}"`,
+      error: `CatÃƒÆ'Ã‚Â©gorie invalide : "${category}"`,
       validCategories: rows,
     });
   }
@@ -78,7 +78,7 @@ async function validateProductTaxonomyPayload(res, payload) {
         [cat.key]
       );
       return res.status(422).json({
-        error: `Sous-catÃƒÆ’Ã‚Â©gorie invalide : "${subcategory}" pour "${category}"`,
+        error: `Sous-catÃƒÆ'Ã‚Â©gorie invalide : "${subcategory}" pour "${category}"`,
         validSubcategories: rows,
       });
     }
@@ -315,7 +315,7 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       if (val !== undefined && val !== null) {
         const num = Number(val);
         if (isNaN(num) || num < 0) {
-          return res.status(400).json({ error: `${fname} doit ÃƒÆ’Ã‚Âªtre un nombre positif` });
+          return res.status(400).json({ error: `${fname} doit ÃƒÆ'Ã‚Âªtre un nombre positif` });
         }
       }
     }
@@ -351,7 +351,7 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       newPriceKmf: product.price_kmf,
       source: 'product_create',
       appliedBy: req.user?.id || null,
-      note: 'CrÃƒÆ’Ã‚Â©ation produit catalogue',
+      note: 'CrÃƒÆ'Ã‚Â©ation produit catalogue',
     });
 
     if (product.stock !== undefined) {
@@ -361,7 +361,7 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
         newStock: product.stock,
         actor: req.user?.id || null,
         source: 'product_create',
-        note: 'CrÃƒÆ’Ã‚Â©ation produit catalogue',
+        note: 'CrÃƒÆ'Ã‚Â©ation produit catalogue',
       });
     }
 
@@ -389,7 +389,7 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
       if (val !== undefined && val !== null) {
         const num = Number(val);
         if (isNaN(num) || num < 0) {
-          return res.status(400).json({ error: `${fname} doit ÃƒÆ’Ã‚Âªtre un nombre positif` });
+          return res.status(400).json({ error: `${fname} doit ÃƒÆ'Ã‚Âªtre un nombre positif` });
         }
       }
     }
@@ -406,7 +406,7 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
     }
 
     if (!updates.length) {
-      return res.status(400).json({ error: 'Aucun champ ÃƒÆ’Ã‚Â  mettre ÃƒÆ’Ã‚Â  jour' });
+      return res.status(400).json({ error: 'Aucun champ ÃƒÆ'Ã‚Â  mettre ÃƒÆ'Ã‚Â  jour' });
     }
 
     const { rows: [before] } = await db.query(
@@ -484,7 +484,7 @@ router.delete('/:id', authenticate, requireRole(['admin']), requireUUID, validat
 router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ’Ã‚Â©e. Champ attendu : "image" (multipart/form-data)' });
+      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ'Ã‚Â©e. Champ attendu : "image" (multipart/form-data)' });
     }
 
     const imageUrl = `/uploads/products/${req.file.filename}`;
@@ -501,7 +501,7 @@ router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upl
       return res.status(404).json({ error: 'Produit introuvable' });
     }
 
-    log.info(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â· Image uploadÃƒÆ’Ã‚Â©e pour "${product.name}" ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${imageUrl}`);
+    log.info(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å"Ã‚Â· Image uploadÃƒÆ'Ã‚Â©e pour "${product.name}" ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${imageUrl}`);
     res.json({ success: true, image_url: imageUrl, product });
   } catch (err) {
     next(err);
@@ -513,7 +513,7 @@ router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upl
 router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ’Ã‚Â©e. Champ attendu : "images" (max 5)' });
+      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ'Ã‚Â©e. Champ attendu : "images" (max 5)' });
     }
 
     const imageUrls = req.files.map(f => `/uploads/products/${f.filename}`);
@@ -544,7 +544,7 @@ router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, up
       );
     }
 
-    log.info(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â· ${imageUrls.length} images uploadÃƒÆ’Ã‚Â©es pour "${product.name}"`);
+    log.info(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å"Ã‚Â· ${imageUrls.length} images uploadÃƒÆ'Ã‚Â©es pour "${product.name}"`);
     res.json({ success: true, images: merged, new_images: imageUrls });
   } catch (err) {
     next(err);
@@ -586,7 +586,7 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
     const { variants } = req.body;
 
     if (!Array.isArray(variants)) {
-      return res.status(400).json({ error: 'variants doit ÃƒÆ’Ã‚Âªtre un tableau' });
+      return res.status(400).json({ error: 'variants doit ÃƒÆ'Ã‚Âªtre un tableau' });
     }
     if (variants.length > 200) {
       return res.status(400).json({ error: 'Maximum 200 variantes par produit' });
@@ -631,8 +631,8 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
       if (pending.cnt > 0) {
         await client.query('ROLLBACK');
         return res.status(409).json({
-          error: `Impossible de supprimer les variantes : ${pending.cnt} commande(s) en cours y font rÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence`,
-          hint: 'Attendez que les commandes en cours soient finalisÃƒÆ’Ã‚Â©es ou annulÃƒÆ’Ã‚Â©es',
+          error: `Impossible de supprimer les variantes : ${pending.cnt} commande(s) en cours y font rÃƒÆ'Ã‚Â©fÃƒÆ'Ã‚Â©rence`,
+          hint: 'Attendez que les commandes en cours soient finalisÃƒÆ'Ã‚Â©es ou annulÃƒÆ'Ã‚Â©es',
         });
       }
     }
@@ -669,7 +669,7 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
     );
 
     res.json({
-      message:      `${inserted.length} variante(s) enregistrÃƒÆ’Ã‚Â©e(s) pour "${product.name}"`,
+      message:      `${inserted.length} variante(s) enregistrÃƒÆ'Ã‚Â©e(s) pour "${product.name}"`,
       product_id:   req.params.id,
       has_variants: updated.has_variants,
       count:        inserted.length,
@@ -679,7 +679,7 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
     await client.query('ROLLBACK').catch(() => {});
     if (err.code === '23505') {
       return res.status(409).json({
-        error: 'Doublon dÃƒÆ’Ã‚Â©tectÃƒÆ’Ã‚Â© ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â deux variantes ont le mÃƒÆ’Ã‚Âªme type et la mÃƒÆ’Ã‚Âªme valeur',
+        error: 'Doublon dÃƒÆ'Ã‚Â©tectÃƒÆ'Ã‚Â© ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â deux variantes ont le mÃƒÆ'Ã‚Âªme type et la mÃƒÆ'Ã‚Âªme valeur',
         detail: err.detail,
       });
     }
@@ -707,8 +707,8 @@ router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), 
 
     if (pending.cnt > 0) {
       return res.status(409).json({
-        error: `Impossible de supprimer : ${pending.cnt} commande(s) en cours rÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence cette variante`,
-        hint: 'Attendez que les commandes soient finalisÃƒÆ’Ã‚Â©es ou annulÃƒÆ’Ã‚Â©es',
+        error: `Impossible de supprimer : ${pending.cnt} commande(s) en cours rÃƒÆ'Ã‚Â©fÃƒÆ'Ã‚Â©rence cette variante`,
+        hint: 'Attendez que les commandes soient finalisÃƒÆ'Ã‚Â©es ou annulÃƒÆ'Ã‚Â©es',
       });
     }
 
@@ -720,7 +720,7 @@ router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), 
     if (!rows.length) return res.status(404).json({ error: 'Variante introuvable' });
 
     res.json({
-      message: `Variante "${rows[0].variant_type}: ${rows[0].variant_value}" supprimÃƒÆ’Ã‚Â©e`,
+      message: `Variante "${rows[0].variant_type}: ${rows[0].variant_value}" supprimÃƒÆ'Ã‚Â©e`,
       deleted: rows[0],
     });
   } catch (err) { next(err); }

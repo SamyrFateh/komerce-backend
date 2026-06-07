@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    KOMERCE — API Unifiée v1.1
    Couche unique pour tous les écrans (Hub, Pipeline, Relais, Dashboard, Admin)
 

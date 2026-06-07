@@ -1,4 +1,4 @@
-﻿/**
+/**
  * KOMERCE â€” SchÃ©mas de validation Joi v2.0 (Vague 1)
  * 
  * Organisation : un objet exportÃ© par route-file.

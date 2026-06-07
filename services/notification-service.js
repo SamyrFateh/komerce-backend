@@ -1,7 +1,7 @@
-﻿'use strict';
+'use strict';
 
 /**
- * KOMERCE â€” services/notification-service.js
+ * KOMERCE â€" services/notification-service.js
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  * Orchestre toutes les notifications clients (WhatsApp via AuthKey, SMS fallback, email).
  *
@@ -28,16 +28,16 @@ const {
   WID,
 } = require('./authkey-client');
 
-// WID dÃ©diÃ© OTP â€” Ã  configurer dans Railway env : WID_OTP=xxxxx
+// WID dÃ©diÃ© OTP â€" Ã  configurer dans Railway env : WID_OTP=xxxxx
 
-// D4 FIX â€” Helper alerte sur Ã©chec notification critique
+// D4 FIX â€" Helper alerte sur Ã©chec notification critique
 // Fire-and-forget : ne crashe jamais l'appelant.
 function _alertNotificationFailure({ event, orderRef, orderId, error }) {
   db.query(
     `INSERT INTO alerts (level, source, message, payload)
      VALUES ('elevated', 'notification_service', $1, $2)`,
     [
-      `Notification '${event}' Ã©chouÃ©e â€” commande ${orderRef || orderId || '?'}`,
+      `Notification '${event}' Ã©chouÃ©e â€" commande ${orderRef || orderId || '?'}`,
       JSON.stringify({ event, orderRef, orderId, error: String(error) }),
     ]
   ).catch(e => log.error({ err: e }, 'Failed to insert notification alert'));
@@ -46,12 +46,12 @@ function _alertNotificationFailure({ event, orderRef, orderId, error }) {
 // Si non configurÃ©, l'OTP passera par un canal de fallback (SMS, etc. selon config)
 const WID_OTP = process.env.WID_OTP || null;
 
-// WID dÃ©diÃ© magic link â€” template texte qui contient un lien cliquable
+// WID dÃ©diÃ© magic link â€" template texte qui contient un lien cliquable
 // Ã€ configurer dans Railway : WID_MAGIC_LINK=xxxxx
 // Fallback : si non configurÃ©, rÃ©utilise WID_OTP (moins idÃ©al mais fonctionne)
 const WID_MAGIC_LINK = process.env.WID_MAGIC_LINK || null;
 
-// â”€â”€â”€ Logger interne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Logger interne â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 async function logNotification({ orderRef, parcelRef, channel, event, recipient, status, detail }) {
   try {
     await db.query(
@@ -63,7 +63,7 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
     );
   } catch (err) {
     if (err.code === '42P01') {
-      // Table pas encore crÃ©Ã©e â€” on ignore
+      // Table pas encore crÃ©Ã©e â€" on ignore
       log.warn({ table: 'notification_log' }, 'Notification log table missing, log skipped');
     } else {
       log.error({ err }, 'Notification log write failed');
@@ -71,7 +71,7 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
   }
 }
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 function firstName(fullName) {
   if (!fullName) return 'Client';
@@ -98,12 +98,12 @@ function pickPhone(order, fallback) {
  * Retourne la liste des tÃ©lÃ©phones qui doivent recevoir la notif selon l'Ã©vÃ©nement.
  * 
  * StratÃ©gie Komerce (payeur diaspora â‰  bÃ©nÃ©ficiaire Comores) :
- *   - order_created    â†’ payeur + bÃ©nÃ©ficiaire (si diffÃ©rents) : les deux doivent savoir
- *   - payment_confirmed â†’ payeur uniquement : seul lui a besoin de rassurance dÃ©bit
- *   - order_shipped    â†’ payeur + bÃ©nÃ©ficiaire : les deux suivent la progression
- *   - order_delivered  â†’ bÃ©nÃ©ficiaire uniquement : c'est lui qui vient chercher
- *   - order_cancelled  â†’ payeur uniquement : remboursement le concerne
- *   - abandoned_cart   â†’ payeur uniquement : remarketing
+ *   - order_created    â†' payeur + bÃ©nÃ©ficiaire (si diffÃ©rents) : les deux doivent savoir
+ *   - payment_confirmed â†' payeur uniquement : seul lui a besoin de rassurance dÃ©bit
+ *   - order_shipped    â†' payeur + bÃ©nÃ©ficiaire : les deux suivent la progression
+ *   - order_delivered  â†' bÃ©nÃ©ficiaire uniquement : c'est lui qui vient chercher
+ *   - order_cancelled  â†' payeur uniquement : remboursement le concerne
+ *   - abandoned_cart   â†' payeur uniquement : remarketing
  * 
  * DÃ©doublonne automatiquement : si payeur === bÃ©nÃ©ficiaire (achat local), on envoie 1 seule fois.
  */
@@ -288,7 +288,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
     }
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
-    // D4 FIX â€” remonter dans alerts pour visibilitÃ© radar
+    // D4 FIX â€" remonter dans alerts pour visibilitÃ© radar
     _alertNotificationFailure({ event: 'payment_confirmed', orderRef: orderReference, orderId, error: err.message });
   }
 }
@@ -297,7 +297,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
 //  3. Changement de statut (shipped, delivered, collected...)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyStatusChange(order, newStatus) {
-  // Map des statuts Komerce â†’ fonction AuthKey
+  // Map des statuts Komerce â†' fonction AuthKey
   const mapping = {
     shipped:   { fn: waOrderShipped,   event: 'order_shipped' },
     delivered: { fn: waOrderDelivered, event: 'order_delivered' },
@@ -392,17 +392,17 @@ async function notifyCancellation(order, smsRefundInfo) {
       orderRef: order.reference, channel: 'whatsapp', event: 'order_cancelled',
       recipient: phone, status: 'failed', detail: err.message,
     });
-    // D4 FIX â€” remonter dans alerts pour visibilitÃ© radar
+    // D4 FIX â€" remonter dans alerts pour visibilitÃ© radar
     _alertNotificationFailure({ event: 'order_cancelled', orderRef: order.reference, error: err.message });
   }
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  5. Helper : charge l'order complet Ã  partir d'un parcelId
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 //  Permet de rÃ©utiliser notifyStatusChange (qui attend un order complet)
 //  depuis les appelants qui n'ont qu'un parcelId (scan-engine, parcel-api,
-//  transitaire-api) â€” sans dupliquer la logique payeur/bÃ©nÃ©ficiaire.
+//  transitaire-api) â€" sans dupliquer la logique payeur/bÃ©nÃ©ficiaire.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function _loadOrderFromParcel(parcelId) {
   try {
@@ -438,19 +438,19 @@ async function _loadOrderFromParcel(parcelId) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  6. Notification de scan colis â€” faÃ§ade vers notifyStatusChange
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  6. Notification de scan colis â€" faÃ§ade vers notifyStatusChange
+//  â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 //  AppelÃ©e par scan-engine.js, parcel-api-v2.js, transitaire-api.js
 //  quand un colis change de statut.
 //
 //  Signature : notifyParcelScan(parcelId, parcelReference, parcelStatus)
-//    parcelId        â€” ID UUID du colis
-//    parcelReference â€” RÃ©fÃ©rence humaine (ex: "CLK-2026-0123")
-//    parcelStatus    â€” 'in_transit' | 'shipped' | 'available'
+//    parcelId        â€" ID UUID du colis
+//    parcelReference â€" RÃ©fÃ©rence humaine (ex: "CLK-2026-0123")
+//    parcelStatus    â€" 'in_transit' | 'shipped' | 'available'
 //
-//  Mapping parcel status â†’ order status (pour rÃ©utiliser notifyStatusChange) :
-//    in_transit / shipped â†’ 'shipped'    (colis en route vers relais)
-//    available            â†’ 'delivered'  (colis prÃªt au relais Ã  rÃ©cupÃ©rer)
+//  Mapping parcel status â†' order status (pour rÃ©utiliser notifyStatusChange) :
+//    in_transit / shipped â†' 'shipped'    (colis en route vers relais)
+//    available            â†' 'delivered'  (colis prÃªt au relais Ã  rÃ©cupÃ©rer)
 //
 //  DÃ©lÃ¨gue Ã  notifyStatusChange qui gÃ¨re payeur + bÃ©nÃ©ficiaire via pickRecipients.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -460,7 +460,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
     return;
   }
 
-  // Map parcel â†’ order status
+  // Map parcel â†' order status
   const statusMap = {
     in_transit: 'shipped',
     shipped:    'shipped',
@@ -495,14 +495,14 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  7. Envoi OTP via WhatsApp (fallback SMS si Ã©chec)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 //  UtilisÃ©e par routes/otp.js pour envoyer un code Ã  6 chiffres.
 //
 //  Signature : sendOtpMessage({ phone, code, name, expiryMin })
-//    â†’ Promise<{ success, channel, messageId?, reason?, error? }>
+//    â†' Promise<{ success, channel, messageId?, reason?, error? }>
 //
 //  channel = 'whatsapp' | 'sms' | 'none'
-//  Cette fonction ne lance JAMAIS d'exception â€” elle retourne toujours
+//  Cette fonction ne lance JAMAIS d'exception â€" elle retourne toujours
 //  un objet avec success:false en cas de problÃ¨me pour ne pas casser le flow.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function sendOtpMessage({ phone, code, name, expiryMin }) {
@@ -604,20 +604,20 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
     success: false,
     channel: 'none',
     reason: 'otp_delivery_failed',
-    error: 'Impossible d’envoyer l’OTP : texte libre refusé et aucun WID_OTP configuré',
+    error: 'Impossible d'envoyer l'OTP : texte libre refusé et aucun WID_OTP configuré',
   };
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  8. Notification colis crÃ©Ã© (commande passÃ©e en prÃ©paration)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 //  AppelÃ©e par order-api-v2.js quand un colis est crÃ©Ã© pour une commande.
-//  Envoie une notification "ðŸ“¦ Votre commande a Ã©tÃ© prÃ©parÃ©e".
+//  Envoie une notification "ðŸ"¦ Votre commande a Ã©tÃ© prÃ©parÃ©e".
 //
 //  Signature : notifyParcelCreated(parcelRef, orderId, orderReference)
 //
 //  ImplÃ©mentation : rÃ©utilise notifyStatusChange avec statut 'preparation'
-//  â†’ si aucun template n'est mappÃ© Ã  'preparation' dans notifyStatusChange,
+//  â†' si aucun template n'est mappÃ© Ã  'preparation' dans notifyStatusChange,
 //    l'appel est un no-op silencieux (comportement dÃ©jÃ  gÃ©rÃ©).
 //  Log quand mÃªme l'Ã©vÃ©nement pour audit.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -695,17 +695,17 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  9. Envoi magic link via WhatsApp (reconnexion 1-clic)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 //  UtilisÃ©e par routes/client-auth.js quand un user veut revenir sur
 //  son espace "Mes commandes" aprÃ¨s expiration du JWT.
 //
 //  Signature : sendMagicLink({ phone, name, magicLink, expiryMin })
-//    phone      â€” numÃ©ro E.164 du user
-//    name       â€” nom d'affichage (pour personnalisation)
-//    magicLink  â€” URL complÃ¨te "https://komerce.xyz/mon-compte?token=xxx"
-//    expiryMin  â€” durÃ©e de validitÃ© (dÃ©faut 15 minutes)
+//    phone      â€" numÃ©ro E.164 du user
+//    name       â€" nom d'affichage (pour personnalisation)
+//    magicLink  â€" URL complÃ¨te "https://komerce.xyz/mon-compte?token=xxx"
+//    expiryMin  â€" durÃ©e de validitÃ© (dÃ©faut 15 minutes)
 //
-//  â†’ Promise<{ success, channel, messageId?, reason?, error? }>
+//  â†' Promise<{ success, channel, messageId?, reason?, error? }>
 //
 //  StratÃ©gie de fallback :
 //    1. Template WID_MAGIC_LINK si configurÃ© (recommandÃ© Meta)
@@ -797,7 +797,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   }
 }
 
-// â”€â”€â”€ Notification fidÃ©litÃ© â€” cadeau Ã©ligible â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Notification fidÃ©litÃ© â€" cadeau Ã©ligible â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 /**
  * Notifie un client qu'il est Ã©ligible au cadeau de fidÃ©litÃ©.
  * AppelÃ© par loyalty-service.js quand le seuil de gros paniers est atteint.

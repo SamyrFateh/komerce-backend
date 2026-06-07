@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module b-bus
  * @brief Event bus léger pour découpler les modules sans imports circulaires.
  *

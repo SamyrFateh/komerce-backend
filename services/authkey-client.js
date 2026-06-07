@@ -1,7 +1,7 @@
-﻿'use strict';
+'use strict';
 
 /**
- * KOMERCE â€” services/authkey-client.js
+ * KOMERCE â€" services/authkey-client.js
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  * Client bas niveau pour l'API WhatsApp Business de authkey.io
  * AppelÃ© uniquement par services/notification-service.js
@@ -45,7 +45,7 @@ function _isStagingAllowed(rawPhone) {
   return false;
 }
 
-// WID des templates â€” surchargeable via env au cas oÃ¹ Meta regÃ©nÃ¨re les IDs
+// WID des templates â€" surchargeable via env au cas oÃ¹ Meta regÃ©nÃ¨re les IDs
 const WID = {
   ordercreated:     process.env.WID_ORDER_CREATED     || '32183',
   paymentconfirmed: process.env.WID_PAYMENT_CONFIRMED || '32182',
@@ -55,7 +55,7 @@ const WID = {
   abandonedcart:    process.env.WID_ABANDONED_CART    || '32187',
 };
 
-// â”€â”€â”€ DÃ©tection automatique de l'indicatif pays â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ DÃ©tection automatique de l'indicatif pays â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 // Komerce sert les Comores (269) ET la diaspora (France 33, etc.)
 // On dÃ©tecte l'indicatif depuis le numÃ©ro lui-mÃªme plutÃ´t qu'une valeur fixe.
 // Le COUNTRY_CODE env est utilisÃ© uniquement comme FALLBACK pour les numÃ©ros
@@ -63,11 +63,11 @@ const WID = {
 
 const DEFAULT_COUNTRY_CODE = process.env.AUTHKEY_COUNTRY_CODE || '269';
 
-// Indicatifs reconnus â€” ordre important : les plus longs d'abord
+// Indicatifs reconnus â€" ordre important : les plus longs d'abord
 // (ex: 269 avant 26 avant 2 pour Ã©viter les faux positifs)
 const KNOWN_PREFIXES = [
-  { code: '269', length: 7  },  // Comores â€” 7 chiffres
-  { code: '33',  length: 9  },  // France â€” 9 chiffres (sans le 0)
+  { code: '269', length: 7  },  // Comores â€" 7 chiffres
+  { code: '33',  length: 9  },  // France â€" 9 chiffres (sans le 0)
   { code: '262', length: 9  },  // RÃ©union/Mayotte
   { code: '1',   length: 10 },  // US/Canada
   { code: '44',  length: 10 },  // UK
@@ -86,18 +86,18 @@ const KNOWN_PREFIXES = [
  * Extrait { country_code, mobile } d'un numÃ©ro quel que soit son format.
  *
  * Exemples :
- *   "+269 3324567"       â†’ { country_code: "269", mobile: "3324567" }
- *   "06 12 34 56 78"     â†’ { country_code: "33",  mobile: "612345678" }  (0 retirÃ©)
- *   "0033612345678"      â†’ { country_code: "33",  mobile: "612345678" }
- *   "+33 6 12 34 56 78"  â†’ { country_code: "33",  mobile: "612345678" }
- *   "3324567"            â†’ { country_code: "269", mobile: "3324567" }  (fallback)
+ *   "+269 3324567"       â†' { country_code: "269", mobile: "3324567" }
+ *   "06 12 34 56 78"     â†' { country_code: "33",  mobile: "612345678" }  (0 retirÃ©)
+ *   "0033612345678"      â†' { country_code: "33",  mobile: "612345678" }
+ *   "+33 6 12 34 56 78"  â†' { country_code: "33",  mobile: "612345678" }
+ *   "3324567"            â†' { country_code: "269", mobile: "3324567" }  (fallback)
  */
 function parseMobile(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
 
   if (!digits) return { country_code: null, mobile: null };
 
-  // Format "00XX..." â†’ retire le 00 (notation internationale europÃ©enne)
+  // Format "00XX..." â†' retire le 00 (notation internationale europÃ©enne)
   if (digits.startsWith('00')) {
     digits = digits.slice(2);
   }
@@ -112,7 +112,7 @@ function parseMobile(raw) {
     }
   }
 
-  // NumÃ©ro franÃ§ais sans indicatif : "06..." ou "07..." â†’ 0 retirÃ© + indicatif 33
+  // NumÃ©ro franÃ§ais sans indicatif : "06..." ou "07..." â†' 0 retirÃ© + indicatif 33
   if (/^0[67]\d{8}$/.test(digits)) {
     return {
       country_code: '33',
@@ -127,7 +127,7 @@ function parseMobile(raw) {
   };
 }
 
-// â”€â”€â”€ Mapping variables templates AuthKey â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Mapping variables templates AuthKey â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 // AuthKey requestjson.php attend les variables template dans bodyValues.var1,
 // bodyValues.var2, etc. Les helpers mÃ©tier gardent des noms lisibles,
 // puis ce helper transforme dans l'ordre attendu par les templates.
@@ -172,7 +172,7 @@ function toBodyValues(variables = {}) {
   return bodyValues;
 }
 
-// â”€â”€â”€ Appel gÃ©nÃ©rique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€â"€ Appel gÃ©nÃ©rique â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 async function callAuthKeyText({ mobile, message }) {
   if (!API_KEY) {
@@ -356,7 +356,7 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  Helpers mÃ©tier â€” un par template
+//  Helpers mÃ©tier â€" un par template
 //  Les clÃ©s des variables doivent correspondre aux noms utilisÃ©s dans
 //  les templates AuthKey (ex: {{#name#}}, {{#order_ref#}}).
 //  Si les templates utilisent {{1}}, {{2}} (syntaxe Meta standard),
