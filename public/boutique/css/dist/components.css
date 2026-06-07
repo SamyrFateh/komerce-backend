@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-06-06)
+   KOMERCE — components.css (2026-06-07)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -1131,8 +1131,8 @@ html.k-mobile-premium-v1 .k-chip-label {
   height: 100%;
   position: absolute;
   inset: 0;
-  object-fit: contain;
-  padding: 8px;
+  object-fit: cover;
+
   transition: transform .4s var(--ease);
 }
 
@@ -1223,7 +1223,7 @@ html.k-mobile-premium-v1 .k-chip-label {
 .k-card-add-basket {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   mix-blend-mode: multiply;
 }
@@ -1477,7 +1477,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 0;
+  min-height: 1.28em;
   font-variation-settings: 'opsz' 14;
 }
 
@@ -1491,7 +1491,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 0;
+  min-height: 1.28em;
 }
 
 .k-card-bottom {
