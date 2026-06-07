@@ -5,7 +5,7 @@ const helmet = require('helmet');
 
 function isAllowedOrigin(origin, frontendUrl = process.env.FRONTEND_URL || '', allowedOrigins = process.env.ALLOWED_ORIGINS || '') {
   if (!origin) return true;
-  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+  if (process.env.NODE_ENV !== 'production' && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
   if (frontendUrl && origin === frontendUrl) return true;
   if (allowedOrigins) {
     const allowed = allowedOrigins.split(',').map(s => s.trim()).filter(Boolean);

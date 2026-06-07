@@ -1,17 +1,17 @@
-﻿'use strict';
+'use strict';
 
 /**
- * KOMERCE â€” services/notification-service.js
+ * KOMERCE — services/notification-service.js
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  * Orchestre toutes les notifications clients (WhatsApp via AuthKey, SMS fallback, email).
  *
- * Fonctions publiques (signatures prÃ©servÃ©es pour compatibilitÃ©) :
+ * Fonctions publiques (signatures préservées pour compatibilité) :
  *   - notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
  *   - notifyPaymentConfirmed(orderId, orderReference)
  *   - notifyStatusChange(order, newStatus)
  *   - notifyCancellation(order, smsRefundInfo)
  *
- * Toutes les notifications sont non-bloquantes et loggÃ©es en DB (notification_log).
+ * Toutes les notifications sont non-bloquantes et loggées en DB (notification_log).
  * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  */
 
@@ -28,30 +28,30 @@ const {
   WID,
 } = require('./authkey-client');
 
-// WID dÃ©diÃ© OTP â€” Ã  configurer dans Railway env : WID_OTP=xxxxx
+// WID dédié OTP — à configurer dans Railway env : WID_OTP=xxxxx
 
-// D4 FIX â€” Helper alerte sur Ã©chec notification critique
+// D4 FIX — Helper alerte sur échec notification critique
 // Fire-and-forget : ne crashe jamais l'appelant.
 function _alertNotificationFailure({ event, orderRef, orderId, error }) {
   db.query(
     `INSERT INTO alerts (level, source, message, payload)
      VALUES ('elevated', 'notification_service', $1, $2)`,
     [
-      `Notification '${event}' Ã©chouÃ©e â€” commande ${orderRef || orderId || '?'}`,
+      `Notification '${event}' échouée — commande ${orderRef || orderId || '?'}`,
       JSON.stringify({ event, orderRef, orderId, error: String(error) }),
     ]
   ).catch(e => log.error({ err: e }, 'Failed to insert notification alert'));
 }
 
-// Si non configurÃ©, l'OTP passera par un canal de fallback (SMS, etc. selon config)
+// Si non configuré, l'OTP passera par un canal de fallback (SMS, etc. selon config)
 const WID_OTP = process.env.WID_OTP || null;
 
-// WID dÃ©diÃ© magic link â€” template texte qui contient un lien cliquable
-// Ã€ configurer dans Railway : WID_MAGIC_LINK=xxxxx
-// Fallback : si non configurÃ©, rÃ©utilise WID_OTP (moins idÃ©al mais fonctionne)
+// WID dédié magic link — template texte qui contient un lien cliquable
+// À configurer dans Railway : WID_MAGIC_LINK=xxxxx
+// Fallback : si non configuré, réutilise WID_OTP (moins idéal mais fonctionne)
 const WID_MAGIC_LINK = process.env.WID_MAGIC_LINK || null;
 
-// â”€â”€â”€ Logger interne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Logger interne ────────────────────────────────────────────────────
 async function logNotification({ orderRef, parcelRef, channel, event, recipient, status, detail }) {
   try {
     await db.query(
@@ -63,7 +63,7 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
     );
   } catch (err) {
     if (err.code === '42P01') {
-      // Table pas encore crÃ©Ã©e â€” on ignore
+      // Table pas encore créée — on ignore
       log.warn({ table: 'notification_log' }, 'Notification log table missing, log skipped');
     } else {
       log.error({ err }, 'Notification log write failed');
@@ -71,7 +71,7 @@ async function logNotification({ orderRef, parcelRef, channel, event, recipient,
   }
 }
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ───────────────────────────────────────────────────────────
 
 function firstName(fullName) {
   if (!fullName) return 'Client';
@@ -84,8 +84,8 @@ function formatAmount(kmf) {
 }
 
 function pickPhone(order, fallback) {
-  // [LEGACY] PrioritÃ© : tracking_phone > recipient_phone > phone_payer > user_phone > fallback
-  // ConservÃ©e pour rÃ©tro-compat. Les nouvelles fonctions utilisent pickRecipients().
+  // [LEGACY] Priorité : tracking_phone > recipient_phone > phone_payer > user_phone > fallback
+  // Conservée pour rétro-compat. Les nouvelles fonctions utilisent pickRecipients().
   return order.tracking_phone
       || order.recipient_phone        // via JOIN users r ON r.id = o.recipient_id
       || order.phone_payer            // via JOIN users u ON u.id = o.user_id
@@ -95,21 +95,21 @@ function pickPhone(order, fallback) {
 }
 
 /**
- * Retourne la liste des tÃ©lÃ©phones qui doivent recevoir la notif selon l'Ã©vÃ©nement.
+ * Retourne la liste des téléphones qui doivent recevoir la notif selon l'événement.
  * 
- * StratÃ©gie Komerce (payeur diaspora â‰  bÃ©nÃ©ficiaire Comores) :
- *   - order_created    â†’ payeur + bÃ©nÃ©ficiaire (si diffÃ©rents) : les deux doivent savoir
- *   - payment_confirmed â†’ payeur uniquement : seul lui a besoin de rassurance dÃ©bit
- *   - order_shipped    â†’ payeur + bÃ©nÃ©ficiaire : les deux suivent la progression
- *   - order_delivered  â†’ bÃ©nÃ©ficiaire uniquement : c'est lui qui vient chercher
- *   - order_cancelled  â†’ payeur uniquement : remboursement le concerne
- *   - abandoned_cart   â†’ payeur uniquement : remarketing
+ * Stratégie Komerce (payeur diaspora â‰  bénéficiaire Comores) :
+ *   - order_created    → payeur + bénéficiaire (si différents) : les deux doivent savoir
+ *   - payment_confirmed → payeur uniquement : seul lui a besoin de rassurance débit
+ *   - order_shipped    → payeur + bénéficiaire : les deux suivent la progression
+ *   - order_delivered  → bénéficiaire uniquement : c'est lui qui vient chercher
+ *   - order_cancelled  → payeur uniquement : remboursement le concerne
+ *   - abandoned_cart   → payeur uniquement : remarketing
  * 
- * DÃ©doublonne automatiquement : si payeur === bÃ©nÃ©ficiaire (achat local), on envoie 1 seule fois.
+ * Dédoublonne automatiquement : si payeur === bénéficiaire (achat local), on envoie 1 seule fois.
  */
 function pickRecipients(order, event) {
   // payeur : tracking_phone (prioritaire) > phone_payer (migration 040) > user_phone
-  // bÃ©nÃ©ficiaire : recipient_phone (via JOIN users r) > phone_beneficiary > user_phone si pas de recipient distinct
+  // bénéficiaire : recipient_phone (via JOIN users r) > phone_beneficiary > user_phone si pas de recipient distinct
   const payer = order.tracking_phone
              || order.phone_payer
              || order.user_phone
@@ -138,19 +138,19 @@ function pickRecipients(order, event) {
     case 'order_cancelled':
     case 'abandoned_cart':
       add(payer, 'payer');
-      // Si pas de payeur distinct (achat local), on utilise le bÃ©nÃ©ficiaire
+      // Si pas de payeur distinct (achat local), on utilise le bénéficiaire
       if (result.length === 0) add(benef, 'beneficiary');
       break;
 
     case 'order_delivered':
     case 'order_collected':
       add(benef, 'beneficiary');
-      // Fallback : si pas de bÃ©nÃ©ficiaire, on notifie le payeur
+      // Fallback : si pas de bénéficiaire, on notifie le payeur
       if (result.length === 0) add(payer, 'payer');
       break;
 
     default:
-      // Fallback gÃ©nÃ©rique : l'un ou l'autre
+      // Fallback générique : l'un ou l'autre
       add(payer, 'payer');
       if (result.length === 0) add(benef, 'beneficiary');
   }
@@ -159,7 +159,7 @@ function pickRecipients(order, event) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  1. Commande crÃ©Ã©e
+//  1. Commande créée
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText) {
   const recipients = pickRecipients(order, 'order_created');
@@ -180,7 +180,7 @@ async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relai
     return;
   }
 
-  // Envoi Ã  chaque destinataire (payeur + bÃ©nÃ©ficiaire si diffÃ©rents)
+  // Envoi à chaque destinataire (payeur + bénéficiaire si différents)
   for (const { phone, role } of recipients) {
     try {
       const result = await waOrderCreated({
@@ -211,11 +211,11 @@ async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relai
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  2. Paiement confirmÃ©
+//  2. Paiement confirmé
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyPaymentConfirmed(orderId, orderReference) {
   try {
-    // RÃ©cupÃ¨re le contact depuis la DB car la signature n'a pas l'objet complet
+    // Récupère le contact depuis la DB car la signature n'a pas l'objet complet
     const { rows: [order] } = await db.query(
       `SELECT
          o.id, o.reference,
@@ -288,7 +288,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
     }
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
-    // D4 FIX â€” remonter dans alerts pour visibilitÃ© radar
+    // D4 FIX — remonter dans alerts pour visibilité radar
     _alertNotificationFailure({ event: 'payment_confirmed', orderRef: orderReference, orderId, error: err.message });
   }
 }
@@ -297,11 +297,11 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
 //  3. Changement de statut (shipped, delivered, collected...)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyStatusChange(order, newStatus) {
-  // Map des statuts Komerce â†’ fonction AuthKey
+  // Map des statuts Komerce → fonction AuthKey
   const mapping = {
     shipped:   { fn: waOrderShipped,   event: 'order_shipped' },
     delivered: { fn: waOrderDelivered, event: 'order_delivered' },
-    collected: { fn: waOrderDelivered, event: 'order_collected' }, // mÃªme template
+    collected: { fn: waOrderDelivered, event: 'order_collected' }, // même template
   };
 
   const entry = mapping[newStatus];
@@ -392,17 +392,17 @@ async function notifyCancellation(order, smsRefundInfo) {
       orderRef: order.reference, channel: 'whatsapp', event: 'order_cancelled',
       recipient: phone, status: 'failed', detail: err.message,
     });
-    // D4 FIX â€” remonter dans alerts pour visibilitÃ© radar
+    // D4 FIX — remonter dans alerts pour visibilité radar
     _alertNotificationFailure({ event: 'order_cancelled', orderRef: order.reference, error: err.message });
   }
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  5. Helper : charge l'order complet Ã  partir d'un parcelId
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  Permet de rÃ©utiliser notifyStatusChange (qui attend un order complet)
+//  5. Helper : charge l'order complet à partir d'un parcelId
+//  ─────────────────────────────────────────────────────────────────────
+//  Permet de réutiliser notifyStatusChange (qui attend un order complet)
 //  depuis les appelants qui n'ont qu'un parcelId (scan-engine, parcel-api,
-//  transitaire-api) â€” sans dupliquer la logique payeur/bÃ©nÃ©ficiaire.
+//  transitaire-api) — sans dupliquer la logique payeur/bénéficiaire.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function _loadOrderFromParcel(parcelId) {
   try {
@@ -438,21 +438,21 @@ async function _loadOrderFromParcel(parcelId) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  6. Notification de scan colis â€” faÃ§ade vers notifyStatusChange
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  AppelÃ©e par scan-engine.js, parcel-api-v2.js, transitaire-api.js
+//  6. Notification de scan colis — façade vers notifyStatusChange
+//  ─────────────────────────────────────────────────────────────────────
+//  Appelée par scan-engine.js, parcel-api-v2.js, transitaire-api.js
 //  quand un colis change de statut.
 //
 //  Signature : notifyParcelScan(parcelId, parcelReference, parcelStatus)
-//    parcelId        â€” ID UUID du colis
-//    parcelReference â€” RÃ©fÃ©rence humaine (ex: "CLK-2026-0123")
-//    parcelStatus    â€” 'in_transit' | 'shipped' | 'available'
+//    parcelId        — ID UUID du colis
+//    parcelReference — Référence humaine (ex: "CLK-2026-0123")
+//    parcelStatus    — 'in_transit' | 'shipped' | 'available'
 //
-//  Mapping parcel status â†’ order status (pour rÃ©utiliser notifyStatusChange) :
-//    in_transit / shipped â†’ 'shipped'    (colis en route vers relais)
-//    available            â†’ 'delivered'  (colis prÃªt au relais Ã  rÃ©cupÃ©rer)
+//  Mapping parcel status → order status (pour réutiliser notifyStatusChange) :
+//    in_transit / shipped → 'shipped'    (colis en route vers relais)
+//    available            → 'delivered'  (colis prêt au relais à récupérer)
 //
-//  DÃ©lÃ¨gue Ã  notifyStatusChange qui gÃ¨re payeur + bÃ©nÃ©ficiaire via pickRecipients.
+//  Délègue à notifyStatusChange qui gère payeur + bénéficiaire via pickRecipients.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
   if (!parcelId || !parcelStatus) {
@@ -460,7 +460,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
     return;
   }
 
-  // Map parcel â†’ order status
+  // Map parcel → order status
   const statusMap = {
     in_transit: 'shipped',
     shipped:    'shipped',
@@ -473,7 +473,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
     return;
   }
 
-  // Charger l'order complet pour avoir les tÃ©lÃ©phones payeur + bÃ©nÃ©ficiaire
+  // Charger l'order complet pour avoir les téléphones payeur + bénéficiaire
   const order = await _loadOrderFromParcel(parcelId);
   if (!order) {
     log.warn({ parcel_id: parcelId, parcel_ref: parcelReference }, 'Parcel scan notification skipped: order not found');
@@ -489,21 +489,21 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
 
   log.info({ parcel_ref: parcelReference, order_ref: order.reference, parcel_status: parcelStatus, order_status: orderStatus }, 'Parcel scan notification dispatched');
 
-  // DÃ©lÃ¨gue : notifyStatusChange gÃ¨re dÃ©jÃ  payeur/bÃ©nÃ©ficiaire + log DB
+  // Délègue : notifyStatusChange gère déjà payeur/bénéficiaire + log DB
   return notifyStatusChange(order, orderStatus);
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  7. Envoi OTP via WhatsApp (fallback SMS si Ã©chec)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  UtilisÃ©e par routes/otp.js pour envoyer un code Ã  6 chiffres.
+//  7. Envoi OTP via WhatsApp (fallback SMS si échec)
+//  ─────────────────────────────────────────────────────────────────────
+//  Utilisée par routes/otp.js pour envoyer un code à 6 chiffres.
 //
 //  Signature : sendOtpMessage({ phone, code, name, expiryMin })
-//    â†’ Promise<{ success, channel, messageId?, reason?, error? }>
+//    → Promise<{ success, channel, messageId?, reason?, error? }>
 //
 //  channel = 'whatsapp' | 'sms' | 'none'
-//  Cette fonction ne lance JAMAIS d'exception â€” elle retourne toujours
-//  un objet avec success:false en cas de problÃ¨me pour ne pas casser le flow.
+//  Cette fonction ne lance JAMAIS d'exception — elle retourne toujours
+//  un objet avec success:false en cas de problème pour ne pas casser le flow.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function sendOtpMessage({ phone, code, name, expiryMin }) {
   if (!phone || !code) {
@@ -609,17 +609,17 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
 }
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  8. Notification colis crÃ©Ã© (commande passÃ©e en prÃ©paration)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  AppelÃ©e par order-api-v2.js quand un colis est crÃ©Ã© pour une commande.
-//  Envoie une notification "ðŸ“¦ Votre commande a Ã©tÃ© prÃ©parÃ©e".
+//  8. Notification colis créé (commande passée en préparation)
+//  ─────────────────────────────────────────────────────────────────────
+//  Appelée par order-api-v2.js quand un colis est créé pour une commande.
+//  Envoie une notification "ðŸ“¦ Votre commande a été préparée".
 //
 //  Signature : notifyParcelCreated(parcelRef, orderId, orderReference)
 //
-//  ImplÃ©mentation : rÃ©utilise notifyStatusChange avec statut 'preparation'
-//  â†’ si aucun template n'est mappÃ© Ã  'preparation' dans notifyStatusChange,
-//    l'appel est un no-op silencieux (comportement dÃ©jÃ  gÃ©rÃ©).
-//  Log quand mÃªme l'Ã©vÃ©nement pour audit.
+//  Implémentation : réutilise notifyStatusChange avec statut 'preparation'
+//  → si aucun template n'est mappé à 'preparation' dans notifyStatusChange,
+//    l'appel est un no-op silencieux (comportement déjà géré).
+//  Log quand même l'événement pour audit.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   if (!orderId) {
@@ -628,7 +628,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   }
 
   try {
-    // Charge l'order complet pour bÃ©nÃ©ficier de pickRecipients
+    // Charge l'order complet pour bénéficier de pickRecipients
     const { rows: [order] } = await db.query(
       `SELECT
          o.id, o.reference, o.tracking_phone,
@@ -664,7 +664,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
 
     log.info({ parcel_ref: parcelRef, order_ref: order.reference }, 'Parcel created notification logged');
 
-    // DÃ©lÃ¨gue Ã  notifyStatusChange avec 'preparation'.
+    // Délègue à notifyStatusChange avec 'preparation'.
     // Si aucun template ne correspond dans notifyStatusChange.mapping,
     // on log juste un 'skipped' mais on ne crash pas.
     const _phone = pickPhone(order) || 'system';
@@ -679,7 +679,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
     });
 
     // Optionnel : si tu veux vraiment envoyer une notif WhatsApp ici,
-    // il faut crÃ©er un template dÃ©diÃ© 'parcel_created' et l'ajouter au mapping
+    // il faut créer un template dédié 'parcel_created' et l'ajouter au mapping
     // dans notifyStatusChange. Pour l'instant on se contente de logger.
 
     return { success: true, logged_only: true };
@@ -695,21 +695,21 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  9. Envoi magic link via WhatsApp (reconnexion 1-clic)
-//  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  UtilisÃ©e par routes/client-auth.js quand un user veut revenir sur
-//  son espace "Mes commandes" aprÃ¨s expiration du JWT.
+//  ─────────────────────────────────────────────────────────────────────
+//  Utilisée par routes/client-auth.js quand un user veut revenir sur
+//  son espace "Mes commandes" après expiration du JWT.
 //
 //  Signature : sendMagicLink({ phone, name, magicLink, expiryMin })
-//    phone      â€” numÃ©ro E.164 du user
-//    name       â€” nom d'affichage (pour personnalisation)
-//    magicLink  â€” URL complÃ¨te "https://komerce.xyz/mon-compte?token=xxx"
-//    expiryMin  â€” durÃ©e de validitÃ© (dÃ©faut 15 minutes)
+//    phone      — numéro E.164 du user
+//    name       — nom d'affichage (pour personnalisation)
+//    magicLink  — URL complète "https://komerce.xyz/mon-compte?token=xxx"
+//    expiryMin  — durée de validité (défaut 15 minutes)
 //
-//  â†’ Promise<{ success, channel, messageId?, reason?, error? }>
+//  → Promise<{ success, channel, messageId?, reason?, error? }>
 //
-//  StratÃ©gie de fallback :
-//    1. Template WID_MAGIC_LINK si configurÃ© (recommandÃ© Meta)
-//    2. Sinon, tente WID_OTP en rÃ©utilisant la variable (moins propre)
+//  Stratégie de fallback :
+//    1. Template WID_MAGIC_LINK si configuré (recommandé Meta)
+//    2. Sinon, tente WID_OTP en réutilisant la variable (moins propre)
 //    3. Sinon, retourne success:false avec reason explicite (pas de crash)
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
@@ -720,7 +720,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   const customerName = firstName(name);
   const expiry = String(expiryMin || 15);
 
-  // Choisir le WID : magic link dÃ©diÃ© > OTP (fallback) > rien
+  // Choisir le WID : magic link dédié > OTP (fallback) > rien
   const wid = WID_MAGIC_LINK || WID_OTP;
 
   if (!wid) {
@@ -736,7 +736,7 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
       success: false,
       channel: 'none',
       reason: 'no_template_configured',
-      error: 'Aucun template WhatsApp configurÃ© pour le magic link',
+      error: 'Aucun template WhatsApp configuré pour le magic link',
     };
   }
 
@@ -797,10 +797,10 @@ async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   }
 }
 
-// â”€â”€â”€ Notification fidÃ©litÃ© â€” cadeau Ã©ligible â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Notification fidélité — cadeau éligible ───────────────────────────────────
 /**
- * Notifie un client qu'il est Ã©ligible au cadeau de fidÃ©litÃ©.
- * AppelÃ© par loyalty-service.js quand le seuil de gros paniers est atteint.
+ * Notifie un client qu'il est éligible au cadeau de fidélité.
+ * Appelé par loyalty-service.js quand le seuil de gros paniers est atteint.
  *
  * @param {object} opts - { userId, userName, phone, orderRef, basketCount }
  */
@@ -811,10 +811,10 @@ async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCo
   }
 
   const name = firstName(userName);
-  const message = `ðŸŽ‰ Bravo ${name} ! Vous avez atteint ${basketCount} gros paniers chez Komerce ! Un cadeau de fidÃ©litÃ© vous attend. Notre Ã©quipe vous contactera bientÃ´t. Merci de votre confiance ! ðŸ‡°ðŸ‡²`;
+  const message = `ðŸŽ‰ Bravo ${name} ! Vous avez atteint ${basketCount} gros paniers chez Komerce ! Un cadeau de fidélité vous attend. Notre équipe vous contactera bientôt. Merci de votre confiance ! ðŸ‡°ðŸ‡²`;
 
   try {
-    // Utiliser le WID gÃ©nÃ©rique (pas de template dÃ©diÃ© pour l'instant)
+    // Utiliser le WID générique (pas de template dédié pour l'instant)
     const result = await callAuthKey({
       wid: WID,
       phone,

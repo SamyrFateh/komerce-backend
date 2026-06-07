@@ -1,37 +1,37 @@
 /**
- * KOMERCE â€” Services / Routing v1.0
+ * KOMERCE — Services / Routing v1.0
  *
  * Module central de routage logistique.
- * La destination d'une commande est dÃ©terminÃ©e UNIQUEMENT par le point relais.
- * Le frontend ne dÃ©cide jamais la destination.
+ * La destination d'une commande est déterminée UNIQUEMENT par le point relais.
+ * Le frontend ne décide jamais la destination.
  *
  * Hub principal : ANJOUAN (tout transite par Anjouan)
  *
- * RÃ¨gles :
- *   ANJOUAN  â†’ DIRECT
- *   MORONI   â†’ INTER_ISLAND via ANJOUAN
- *   MOHELI   â†’ INTER_ISLAND via ANJOUAN
- *   MAYOTTE  â†’ SPECIAL_ROUTE via ANJOUAN
+ * Règles :
+ *   ANJOUAN  → DIRECT
+ *   MORONI   → INTER_ISLAND via ANJOUAN
+ *   MOHELI   → INTER_ISLAND via ANJOUAN
+ *   MAYOTTE  → SPECIAL_ROUTE via ANJOUAN
  *
  * Usage :
  *   const { resolveRoutingFromRelais } = require('../services/routing');
  *   const routing = resolveRoutingFromRelais(relais);
- *   // â†’ { destination_island, routing_mode, transit_hub }
+ *   // → { destination_island, routing_mode, transit_hub }
  */
 
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'routing' });
 
-// â”€â”€ Destinations supportÃ©es â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Destinations supportées ──────────────────────────────────────────────────
 
 const DESTINATIONS = ['ANJOUAN', 'MORONI', 'MOHELI', 'MAYOTTE'];
 
-// â”€â”€ Hub principal de transit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Hub principal de transit ─────────────────────────────────────────────────
 
 const TRANSIT_HUB = 'ANJOUAN';
 
-// â”€â”€ Modes de routage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Modes de routage ─────────────────────────────────────────────────────────
 
 const ROUTING_MODES = {
   DIRECT:        'DIRECT',
@@ -39,8 +39,8 @@ const ROUTING_MODES = {
   SPECIAL_ROUTE: 'SPECIAL_ROUTE',
 };
 
-// â”€â”€ Normalisation noms d'Ã®le â†’ code standardisÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// GÃ¨re les variantes franÃ§aises, comoriennes et les accents
+// ── Normalisation noms d'île → code standardisé ──────────────────────────────
+// Gère les variantes françaises, comoriennes et les accents
 
 const ISLAND_NORMALIZE = {
   'anjouan':       'ANJOUAN',
@@ -48,7 +48,7 @@ const ISLAND_NORMALIZE = {
   'grande comore': 'MORONI',
   'moroni':        'MORONI',
   'ngazidja':      'MORONI',
-  'mohÃ©li':        'MOHELI',
+  'mohéli':        'MOHELI',
   'moheli':        'MOHELI',
   'mwali':         'MOHELI',
   'fomboni':       'MOHELI',
@@ -57,7 +57,7 @@ const ISLAND_NORMALIZE = {
   'mamoudzou':     'MAYOTTE',
 };
 
-// â”€â”€ RÃ¨gles de routage par destination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Règles de routage par destination ────────────────────────────────────────
 
 const ROUTING_RULES = {
   ANJOUAN: { mode: ROUTING_MODES.DIRECT,        hub: null },
@@ -66,7 +66,7 @@ const ROUTING_RULES = {
   MAYOTTE: { mode: ROUTING_MODES.SPECIAL_ROUTE,  hub: TRANSIT_HUB },
 };
 
-// â”€â”€ Erreur de routage typÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Erreur de routage typée ──────────────────────────────────────────────────
 
 class RoutingError extends Error {
   constructor(message, code) {
@@ -77,15 +77,15 @@ class RoutingError extends Error {
   }
 }
 
-// â”€â”€ Normalisation island â†’ code â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Normalisation island → code ──────────────────────────────────────────────
 
 function normalizeIsland(raw) {
   if (!raw) return null;
   const key = raw.toLowerCase().trim();
   // Direct match
   if (ISLAND_NORMALIZE[key]) return ISLAND_NORMALIZE[key];
-  // Prefix match â€” robuste contre les problÃ¨mes d'encodage UTF-8
-  // (ex: MohÃ©li peut apparaÃ®tre comme MohÃƒÂ©li en DB)
+  // Prefix match — robuste contre les problèmes d'encodage UTF-8
+  // (ex: Mohéli peut apparaître comme MohÃƒÂ©li en DB)
   if (key.startsWith('moh') || key.startsWith('mwa'))  return 'MOHELI';
   if (key.startsWith('anj') || key.startsWith('ndz'))  return 'ANJOUAN';
   if (key.startsWith('gran') || key.startsWith('mor') || key.startsWith('nga')) return 'MORONI';
@@ -93,33 +93,33 @@ function normalizeIsland(raw) {
   return null;
 }
 
-// â”€â”€ RÃ©solution routing depuis un relais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Source de vÃ©ritÃ© unique â€” ne jamais dupliquer cette logique
+// ── Résolution routing depuis un relais ──────────────────────────────────────
+// Source de vérité unique — ne jamais dupliquer cette logique
 
 function resolveRoutingFromRelais(relais) {
-  // RÃ¨gle 1 : relais obligatoire
+  // Règle 1 : relais obligatoire
   if (!relais) {
     throw new RoutingError(
-      'Relais obligatoire pour dÃ©terminer la destination',
+      'Relais obligatoire pour déterminer la destination',
       'RELAIS_MISSING'
     );
   }
 
-  // RÃ©soudre le code : prioritÃ© Ã  island_code (standardisÃ©), fallback sur island (human)
+  // Résoudre le code : priorité à island_code (standardisé), fallback sur island (human)
   const code = relais.island_code || normalizeIsland(relais.island);
 
-  // RÃ¨gle 2 : island_code obligatoire
+  // Règle 2 : island_code obligatoire
   if (!code) {
     throw new RoutingError(
-      `Relais "${relais.name}" (${relais.id}) n'a pas d'Ã®le configurÃ©e â€” island_code manquant`,
+      `Relais "${relais.name}" (${relais.id}) n'a pas d'île configurée — island_code manquant`,
       'ISLAND_CODE_MISSING'
     );
   }
 
-  // RÃ¨gle 3 : destination reconnue
+  // Règle 3 : destination reconnue
   if (!DESTINATIONS.includes(code)) {
     throw new RoutingError(
-      `Destination "${code}" non supportÃ©e pour relais "${relais.name}" â€” valeurs : ${DESTINATIONS.join(', ')}`,
+      `Destination "${code}" non supportée pour relais "${relais.name}" — valeurs : ${DESTINATIONS.join(', ')}`,
       'DESTINATION_UNKNOWN'
     );
   }
@@ -133,14 +133,14 @@ function resolveRoutingFromRelais(relais) {
   };
 }
 
-// â”€â”€ Migration DB safe (additive, idempotente) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Ajoute les colonnes routing si elles n'existent pas + backfill les donnÃ©es
+// ── Migration DB safe (additive, idempotente) ────────────────────────────────
+// Ajoute les colonnes routing si elles n'existent pas + backfill les données
 
 async function ensureRoutingColumns(db) {
   const migrations = [
-    // Relais : ajouter island_code standardisÃ©
+    // Relais : ajouter island_code standardisé
     `ALTER TABLE relais ADD COLUMN IF NOT EXISTS island_code VARCHAR(20)`,
-    // Orders : ajouter les 3 champs routing (nullable = rÃ©trocompatible)
+    // Orders : ajouter les 3 champs routing (nullable = rétrocompatible)
     `ALTER TABLE orders ADD COLUMN IF NOT EXISTS destination_island VARCHAR(20)`,
     `ALTER TABLE orders ADD COLUMN IF NOT EXISTS routing_mode VARCHAR(20)`,
     `ALTER TABLE orders ADD COLUMN IF NOT EXISTS transit_hub VARCHAR(20)`,
@@ -150,18 +150,18 @@ async function ensureRoutingColumns(db) {
     try {
       await db.query(sql);
     } catch (e) {
-      // Colonne existe dÃ©jÃ  ou autre erreur non critique
+      // Colonne existe déjà ou autre erreur non critique
       if (!e.message.includes('already exists')) {
         log.warn(`[Routing] Migration warning: ${e.message}`);
       }
     }
   }
 
-  // â”€â”€ Backfill island_code dans relais (depuis island human-readable) â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Backfill island_code dans relais (depuis island human-readable) ────────
   const BACKFILL_MAP = {
     'Anjouan':       'ANJOUAN',
     'Grande Comore': 'MORONI',
-    'MohÃ©li':        'MOHELI',
+    'Mohéli':        'MOHELI',
     'Mayotte':       'MAYOTTE',
   };
 
@@ -173,14 +173,14 @@ async function ensureRoutingColumns(db) {
         [code, humanName]
       );
       if (rowCount > 0) {
-        log.info(`[Routing] Backfill: ${rowCount} relais "${humanName}" â†’ ${code}`);
+        log.info(`[Routing] Backfill: ${rowCount} relais "${humanName}" → ${code}`);
       }
     } catch (e) {
       log.warn(`[Routing] Backfill error: ${e.message}`);
     }
   }
 
-  // â”€â”€ Backfill orders existantes (si relais a un code mais la commande non) â”€â”€
+  // ── Backfill orders existantes (si relais a un code mais la commande non) ──
   try {
     const { rowCount } = await db.query(`
       UPDATE orders o SET
@@ -209,7 +209,7 @@ async function ensureRoutingColumns(db) {
   log.info('âœ… Routing columns ready');
 }
 
-// â”€â”€ Exports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
   resolveRoutingFromRelais,

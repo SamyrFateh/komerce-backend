@@ -1,9 +1,9 @@
-﻿'use strict';
+'use strict';
 
 const log = require('../utils/logger').child({ module: 'startup-migrations' });
 
 /**
- * H1F â€” Startup migrations bootstrap.
+ * H1F — Startup migrations bootstrap.
  *
  * Extracted from server.js without changing execution order or SQL content.
  * All historical startup migrations remain non-fatal at the individual block
@@ -21,7 +21,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
         IF EXISTS (SELECT 1 FROM information_schema.columns
           WHERE table_name = 'orders' AND column_name = 'transit_comores_at')
         THEN ALTER TABLE orders RENAME COLUMN transit_comores_at TO in_transit_at;
-             RAISE NOTICE 'Phase1: renamed transit_comores_at â†’ in_transit_at';
+             RAISE NOTICE 'Phase1: renamed transit_comores_at → in_transit_at';
         END IF;
       END$$
     `);
@@ -514,7 +514,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     log.info('âœ… Migration 051: signals table created');
   } catch(e) { log.warn({ err: e }, 'Migration 051 (non-fatal):'); }
 
-  // â”€â”€ Migration 050b : order_item_cost_imputations (snapshot Ã©conomique figÃ©) â”€â”€
+  // ── Migration 050b : order_item_cost_imputations (snapshot économique figé) ──
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS order_item_cost_imputations (
@@ -553,7 +553,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     log.info('âœ… Migration 050b: order_item_cost_imputations table ready');
   } catch(e) { log.warn({ err: e }, 'Migration 050b (non-fatal):'); }
 
-  // â”€â”€ Migration 051b : order_item_real_cost_allocations (rÃ©ventilation terrain) â”€â”€
+  // ── Migration 051b : order_item_real_cost_allocations (réventilation terrain) ──
   try {
     await db.query(`
       CREATE TABLE IF NOT EXISTS order_item_real_cost_allocations (
@@ -585,11 +585,11 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     if (parseInt(existingCharges[0].c) === 0) {
       await db.query(`
         INSERT INTO charges (family, name, amount_kmf, is_recurring, recurrence_period, is_active, notes) VALUES
-        ('logistique', 'Hub Dubai', 40000, true, 'monthly', true, 'RÃ©ception & stockage Dubai â€” dÃ©faut 400 KMF/cmd Ã— 100 cmd/mois'),
-        ('logistique', 'Relais Comores', 30000, true, 'monthly', true, 'Points relais Comores â€” dÃ©faut 300 KMF/cmd Ã— 100 cmd/mois'),
-        ('approvisionnement', 'Sourcing Dubai', 100000, true, 'monthly', true, 'Achat & approvisionnement â€” dÃ©faut 1000 KMF/cmd Ã— 100 cmd/mois'),
-        ('support', 'Support client', 20000, true, 'monthly', true, 'SAV & support client â€” dÃ©faut 200 KMF/cmd Ã— 100 cmd/mois'),
-        ('logistique', 'Transit Comores', 500, false, null, true, 'Transport Dubaiâ†’Comores â€” variable par commande')
+        ('logistique', 'Hub Dubai', 40000, true, 'monthly', true, 'Réception & stockage Dubai — défaut 400 KMF/cmd Ã— 100 cmd/mois'),
+        ('logistique', 'Relais Comores', 30000, true, 'monthly', true, 'Points relais Comores — défaut 300 KMF/cmd Ã— 100 cmd/mois'),
+        ('approvisionnement', 'Sourcing Dubai', 100000, true, 'monthly', true, 'Achat & approvisionnement — défaut 1000 KMF/cmd Ã— 100 cmd/mois'),
+        ('support', 'Support client', 20000, true, 'monthly', true, 'SAV & support client — défaut 200 KMF/cmd Ã— 100 cmd/mois'),
+        ('logistique', 'Transit Comores', 500, false, null, true, 'Transport Dubai→Comores — variable par commande')
       `);
       log.info('âœ… Migration 052: 5 charges seeded with defaults');
     } else {
@@ -609,7 +609,7 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     }
   } catch (e) { log.warn({ err: e }, 'Runner migrations fichier (non-fatal):'); }
 
-  log.info('âœ… Migrations et seeds terminÃ©es');
+  log.info('âœ… Migrations et seeds terminées');
 }
 
 module.exports = {
