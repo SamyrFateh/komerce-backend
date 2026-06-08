@@ -744,10 +744,16 @@
     grid-template-columns: minmax(0, 43%) minmax(0, 57%);
   }
 
-  /* ── Image sticky : pleine hauteur ──────────────────────── */
+  /* ── Image sticky : pleine hauteur — PR-D2 fix tronquage ── */
+  /* overflow:hidden répété ici car §1 mobile peut être surchargé
+     par des règles intermédiaires ; max-width:100% + width:100%
+     empêchent le carousel de déborder de la col 43%. */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
     height: calc(100dvh - 58px);
     max-height: calc(100dvh - 58px);
+    overflow: hidden;
+    max-width: 100%;
+    width: 100%;
   }
 
   /* ── Détails : padding qui respire, adapté au viewport ──── */
