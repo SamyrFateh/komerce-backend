@@ -57,16 +57,16 @@
 #k-modal-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .k-modal-back:active { opacity: .7; }
 #k-modal-nav { display: flex; align-items: center; gap: 6px; }
-/* PR-D3 — nav-btn : bouton texte sobre avec flèche (mockup "← produit précédent") */
+/* PR-D3 — nav-btn pill texte sobre (← produit précédent / → produit suivant) */
 .k-modal-nav-btn {
   display: flex; align-items: center; gap: 4px;
   height: 30px; padding: 0 10px; border-radius: 20px;
   background: var(--sand); border: 1px solid var(--border);
   font-size: 12px; font-weight: 600; color: var(--text-muted);
   cursor: pointer; white-space: nowrap;
-  transition: background .15s, color .15s, border-color .15s;
+  transition: background .15s, color .15s;
 }
-.k-modal-nav-btn:hover { background: var(--sand-dark); color: var(--text); border-color: var(--border); }
+.k-modal-nav-btn:hover { background: var(--sand-dark); color: var(--text); }
 .k-modal-nav-btn.is-disabled { opacity: .3; pointer-events: none; }
 .k-modal-nav-counter { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 36px; text-align: center; }
 .k-modal-topbar-right { box-sizing: border-box; max-width: 100%; display: flex; align-items: center; gap: 8px; flex-shrink: 0; } /* S2.1+S2.3 — box-sizing garanti ; padding-right:10px (VIS-5) supprimé : inutile avec box-sizing correct ; gap revient à 8px nominal */
@@ -629,12 +629,11 @@
     grid-template-rows: auto;
     align-items: center; gap: 10px;
   }
-  /* PR-D3 — CTA redesign mockup desktop */
+  /* PR-D3 — CTA redesign desktop : Acheter vert solid, Ajouter outlined, sous-total coral */
   #k-modal .k-modal-product-zone .k-modal-actions .k-qty { grid-column: 1; grid-row: 1; height: 44px; }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn {
     grid-column: 2; grid-row: 1; height: 44px; border-radius: 999px;
-    background: var(--white); color: var(--text);
-    border: 1.5px solid var(--sand-dark);
+    background: var(--white); color: var(--text); border: 1.5px solid var(--sand-dark);
   }
   #k-modal .k-modal-product-zone .k-modal-actions .k-add-cart-btn:hover {
     border-color: var(--ocean); background: var(--ocean-bg-08);
