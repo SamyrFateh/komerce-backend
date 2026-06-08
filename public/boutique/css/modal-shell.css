@@ -351,7 +351,8 @@
 
 /* ══════════════════════════════════════════════════════════════
    2b. MOBILE EXPLICIT WIDTH FIX — ancrage fixed pleine largeur
-   FIX-SLIVER-2026-06-08 — corrige le sliver à droite sur Samsung
+   VIS-6 — voir docs/BOUTIQUE_VISUAL_FIXES.md
+   Corrige le sliver à droite sur Samsung
    Internet / Chrome Android Edge Panels.
 
    Cause racine (3 ingrédients simultanés) :
@@ -368,7 +369,7 @@
      se réfère au viewport visuel (et non layout) sur navigateurs récents
    - Ancrage par les 4 côtés via top/right/bottom/left explicites
    - Le scrollLeft du grid est aussi figé pendant la modal côté JS
-     (b-modal-core.js — FIX-SLIVER-2026-06-08)
+     (b-modal-core.js — VIS-6)
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
   #k-modal-overlay {

@@ -15,8 +15,10 @@
 | VIS-1 | Cartes accueil poussées à gauche + rognées quand side-cart docké | Desktop ≥900px | 🟠 Haute | `css/layout.css` | ☐ |
 | VIS-2 | Compteur panier de l'avatar (« petite dame ») désynchronisé | Mobile | 🟡 Moyenne | `js/b-cart-core.js` | ☐ |
 | VIS-3 | Modal mobile : description + boutons qui débordent, titre chevauché | Mobile <900px | 🔴 Bloquant UX | `css/modal.css` + `js/b-modal-product.js` | ☐ |
+| VIS-6 | Modal produit décalée à droite, accueil visible derrière (Samsung Internet + pager swipé) | Mobile <900px Samsung/Chrome Edge Panels | 🟠 Haute | `css/modal-shell.css` + `js/b-modal-core.js` | ✅ |
 | DOC-U1 | Doc boutique dupliquée (`docs/boutique/` ↔ `public/boutique/docs/`) | Gouvernance | 🟠 Haute | ce dossier | ☐ |
 | DOC-U2 | `.docx` + `.md` jumeaux des MODAL_*_ARCHITECTURE | Gouvernance | 🟢 Faible | ce dossier | ☐ |
+| DOC-U3 | VIS-4 et VIS-5 référencés dans le code (`modal-shell.css:285, 438` et `:68, 76`) mais ABSENTS du tableau §0 — historique perdu | Gouvernance | 🟠 Haute | ce dossier | ☐ |
 
 > Légende : ☐ à faire · ⏳ en cours · ✅ fait (dater + n° PR). Quand une ligne passe ✅, ajouter une entrée datée en §5 Journal.
 
@@ -187,6 +189,114 @@ document.documentElement.style.setProperty('--k-modal-cta-h', actBar.offsetHeigh
 
 ---
 
+## VIS-6 — Modal produit décalée à droite, accueil visible derrière (Samsung Internet)
+
+**Symptôme** (capture mobile Samsung Internet) : la modal produit (« Article Tech raffiné », bouton Acheter visible) couvre ~92% du viewport en largeur. À droite, une bande de 15-30px laisse apparaître l'écran d'accueil derrière (chips de catégories orange). L'utilisateur perçoit la modal comme « décalée à gauche ». Reproductible UNIQUEMENT si **3 conditions sont simultanément réunies** :
+1. Samsung Internet OU Chrome Android avec Edge Panels actifs (le navigateur réserve une zone de geste sur le bord droit)
+2. L'utilisateur a préalablement swipé entre catégories sur le home (`#k-grid.k-grid-flat-subcat` est à `scrollLeft > 0`)
+3. Ouverture d'une modal produit (n'importe laquelle)
+
+Invisible en DevTools desktop (les Edge Panels n'existent pas en émulation) → c'est « le bug que personne ne reproduit ».
+
+**Architecture en place** (à connaître avant de toucher) :
+- `#k-modal-overlay` est `position:fixed; inset:0; z-index:300` (`modal-shell.css:12-17`).
+- En mobile (`@media (max-width: 899px)`), historiquement `width:100vw; max-width:100vw` (`modal-shell.css:355-382` AVANT VIS-6).
+- `#k-grid.k-grid-flat-subcat` est un container `overflow-x:auto` + `scroll-snap-type: x mandatory` (`cart.css:730-746`) — c'est le pager horizontal Temu.
+- `b-modal-core.js:288-313` **neutralise** les styles inline du pager (`position:fixed` + `overflow:hidden`) à l'ouverture de la modal, parce que ces styles bloquent le scroll interne `.k-modal-scroll` sur Chrome Android.
+
+**Causes racines (3 compounding) :**
+
+**(A) — `width:100vw` < viewport visuel sur Samsung Internet Edge Panels.**
+Sur Samsung One UI avec Edge Panels activés (paramètre par défaut sur de nombreux modèles), `100vw` correspond au layout viewport et **n'inclut pas la zone réservée aux gestes de bord**. Le viewport visuel réel est plus large de 15-30 CSS pixels. Donc `#k-modal-overlay` avec `width:100vw` ne couvre pas la zone droite. Combiné avec `inset:0`, l'effet est l'un OU l'autre — le navigateur résout `right:0 + width:100vw + left:0` par overflow visible ou troncature côté droit.
+
+**(B) — `#k-grid.scrollLeft` non remis à zéro pendant la modal.**
+Après neutralisation des styles inline du pager (`b-modal-core.js:303-312`), le `scrollLeft` du `#k-grid.k-grid-flat-subcat` reste à sa valeur courante. Si l'utilisateur était sur la page 2 du pager, `scrollLeft ≈ clientWidth`. Tout pixel d'arrière-plan visible affiche donc une catégorie potentiellement décalée — visuellement perçu comme « écran d'accueil mal cadré » derrière la modal.
+
+**(C) — Pas de stacking context strict sur l'overlay mobile.**
+Sans `contain: layout paint` ou équivalent, l'overlay reste sensible aux transforms ancestraux résiduels (animations CSS en cours, will-change posé ailleurs). Sur Chrome Android avec mode économie batterie, les optimisations de composition peuvent introduire des artefacts de subpixel rendering qui amplifient (A).
+
+**Correctifs (les 3 ensemble — défense en profondeur) :**
+
+*1. `css/modal-shell.css:355-415`* — remplacer le bloc `@media (max-width: 899px)` :
+```css
+@media (max-width: 899px) {
+  #k-modal-overlay {
+    position: fixed;
+    /* Ancrage 4 côtés sans width:100vw : on évite le mismatch
+       entre layout viewport (100vw) et visual viewport (réel). */
+    top: 0; right: 0; bottom: 0; left: 0;
+    width: auto;
+    max-width: none;
+    overflow: hidden;
+    justify-content: flex-start;
+    align-items: stretch;
+    /* Force un stacking context strict, indépendant des transforms
+       ancestraux résiduels (Chrome Android Edge Panels). */
+    contain: layout paint;
+  }
+  #k-modal {
+    width: 100%;       /* 100% du parent (overlay) plutôt que 100vw */
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    border-radius: 0;
+    flex-shrink: 0;
+  }
+  #k-modal .k-modal-actions {
+    left: 0; right: 0;
+    width: 100%; max-width: 100%;
+    margin: 0;
+  }
+}
+```
+
+*2. `js/b-modal-core.js` — dans `openModal()`, après la neutralisation du pager (~ligne 313)* — figer `scrollLeft` du grid :
+```js
+// VIS-6 — figer scrollLeft du grid pendant la modal.
+if (window.innerWidth < 900) {
+  var _grid = document.getElementById('k-grid');
+  if (_grid && _grid.classList.contains('k-grid-flat-subcat')) {
+    state._savedGridScrollLeft = _grid.scrollLeft;
+    _grid.style.scrollSnapType = 'none'; // évite l'animation de snap visible
+    _grid.scrollLeft = 0;
+  }
+}
+```
+
+*3. `js/b-modal-core.js` — dans `closeModal()`, après la restauration des styles inline du pager* — restaurer `scrollLeft` :
+```js
+// VIS-6 — restaurer le scrollLeft du grid.
+if (window.innerWidth < 900 && typeof state._savedGridScrollLeft === 'number') {
+  var _gridRestore = document.getElementById('k-grid');
+  if (_gridRestore && _gridRestore.classList.contains('k-grid-flat-subcat')) {
+    var _restoreLeft = state._savedGridScrollLeft;
+    requestAnimationFrame(function() {
+      _gridRestore.scrollLeft = _restoreLeft;
+      _gridRestore.style.scrollSnapType = '';
+    });
+  }
+  state._savedGridScrollLeft = null;
+}
+```
+
+**⚠️ Tentations de simplification à NE PAS suivre** (voir `M-MOB-14` ajouté à `BOUTIQUE_CARTOGRAPHY.md`) :
+- *« Remettre `width: 100vw`, c'est plus simple »* → réintroduit le bug Samsung Internet
+- *« Le `contain: layout paint` est inutile »* → c'est lui qui isole l'overlay des stacking contexts parents
+- *« Le `scrollLeft = 0` du grid est cosmétique »* → c'est la ceinture si le CSS rate son coup sur un device non-testé
+- *« Un `overflow-x: hidden` sur body suffirait »* → tuerait le scroll horizontal du pager Temu (rupture M-MOB-01 par effet de bord)
+
+**Validation** (Samsung Internet réel, Edge Panels ON, viewport 360×780) :
+1. Aller sur le home, swiper vers la 2e catégorie (vérifier `#k-grid.scrollLeft > 0`)
+2. Tapper une carte produit → modal s'ouvre
+3. Dans la console : `document.getElementById('k-modal-overlay').getBoundingClientRect()` doit retourner `{ left: 0, right: window.innerWidth, width: window.innerWidth }`
+4. Aucune bande d'accueil visible à droite. Fermer la modal → retour à la 2e catégorie avec `scrollLeft` restauré.
+5. Tester aussi sur Chrome Android sans Edge Panels (cas standard) → pas de régression.
+
+**Invariant émis** : `M-MOB-14` ajouté à `BOUTIQUE_CARTOGRAPHY.md §1` :
+> `#k-modal-overlay` mobile interdit `width:100vw` — utiliser `top/right/bottom/left:0` + `contain: layout paint`. Le `scrollLeft` du `#k-grid.k-grid-flat-subcat` doit être figé à 0 pendant la durée de vie de la modal.
+
+---
+
 ## DOC-U — Unicité des docs (demandé : « voir l'unicité des docs »)
 
 Constats vérifiés à intégrer dans la gouvernance :
@@ -205,11 +315,32 @@ Constats vérifiés à intégrer dans la gouvernance :
 
 ---
 
+## DOC-U3 — VIS-4 et VIS-5 fantômes (référencés dans le code, absents du tableau §0)
+
+**Constat** (audit du 8 juin 2026, pendant l'ajout de VIS-6) :
+Le code contient des références à des IDs VIS-* qui ne figurent PAS dans le tableau de bord §0 :
+
+| ID | Référencé dans | Sujet déduit du commentaire |
+|----|----------------|------------------------------|
+| `VIS-4` | `css/modal-shell.css:285, 438` | `#k-modal-nav { display:none; visibility:hidden }` — éliminer le flash d'une frame avant résolution de la media query |
+| `VIS-5` | `css/modal-shell.css:68, 76` | Décalage du badge `.k-modal-cart-badge` de `top:-2px` à `top:-4px` pour sortir du gap `.k-modal-topbar-right` |
+| `VIS-3A`, `VIS-3B`, `VIS-3C`, `VIS-3D` | `js/b-modal-product.js:275, 326` + `css/dist/components.css:2209-2211` | Sous-causes de VIS-3 (présentes dans VIS-3 du tableau ✓ mais non listées explicitement) |
+
+**Risque** : un dev futur qui voit `/* VIS-4: ... */` dans le code va chercher dans ce register et ne trouvera rien. Conclusion possible : « commentaire obsolète, je supprime ». **Régression réintroduite silencieusement**.
+
+→ **Action** : rétro-documenter VIS-4 et VIS-5 (entrées rapides : Symptôme + Correctif appliqué + date estimée), même si elles sont passées en ✅. Marquer les sous-causes VIS-3A/B/C/D explicitement dans la section VIS-3.
+
+→ **Garde-fou** à ajouter à `npm run audit:arch` : signaler tout tag `VIS-N` dans le code dont l'ID N'EXISTE PAS dans `BOUTIQUE_VISUAL_FIXES.md`. Évite que la dette ne se ré-accumule.
+
+---
+
 ## 5. Journal (ajouter une ligne datée à chaque ✅)
 
 | Date | ID | PR | Note |
 |------|----|----|------|
 | 2026-05-30 | — | — | Création du register (audit visuel prod). VIS-1/2/3 + DOC-U1/U2 ouverts. |
+| 2026-06-08 | VIS-6 | — | Ouvert + résolu (sliver droit Samsung Internet). Fix CSS + JS livré, invariant M-MOB-14 ajouté au carto. |
+| 2026-06-08 | DOC-U3 | — | Ouvert : VIS-4/5 trouvés dans le code mais absents du tableau §0. Dette de rétro-documentation à clôturer. |
 
 ---
 

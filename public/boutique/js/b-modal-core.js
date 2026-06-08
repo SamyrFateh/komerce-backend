@@ -313,7 +313,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }
     }
 
-    // FIX-SLIVER-2026-06-08 — figer scrollLeft du grid pendant la modal.
+    // VIS-6 — voir docs/BOUTIQUE_VISUAL_FIXES.md. Figer scrollLeft du grid pendant la modal.
     // Le grid #k-grid.k-grid-flat-subcat est un container overflow-x:auto +
     // scroll-snap dont le scrollLeft persiste. Si la modal laisse passer
     // un pixel à droite (Samsung Edge Panels / 100vw < viewport visuel),
@@ -390,7 +390,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       state._savedPagerInlineStyles = null;
     }
 
-    // FIX-SLIVER-2026-06-08 — restaurer le scrollLeft du grid.
+    // VIS-6 — restaurer le scrollLeft du grid (voir docs/BOUTIQUE_VISUAL_FIXES.md).
     // rAF : on laisse le browser repeindre l'overlay disparu AVANT de scroller,
     // sinon flash visuel du décalage.
     if (window.innerWidth < 900 && typeof state._savedGridScrollLeft === 'number') {

@@ -1,6 +1,7 @@
 # Boutique Komerce — Cartographie Maître
 
 > **Généré / vérifié le 30 mai 2026** depuis le code réel (`boutique.zip` du 30/05).
+> **Mise à jour 8 juin 2026** : ajout de l'invariant M-MOB-14 (émis par VIS-6).
 > **Ce document fait autorité** sur tout ce qui concerne "qui possède quoi".
 > Il réconcilie `BOUTIQUE_SOURCE_OF_TRUTH.md` (v1.7, 28/05) avec l'état réel du code.
 > Mis à jour à chaque PR qui change une propriété. En cas de conflit avec un autre doc → **ce fichier gagne**.
@@ -34,6 +35,7 @@
 | **M-MOB-05** | `.k-modal-product-zone` = `display:contents` mobile (jamais flex/grid) |
 | **M-MOB-11** | Aucun `@media (min-width:600px)` sans borne supérieure dans §1 et §2 |
 | **M-MOB-13** | `.k-modal-delivery-mobile` et `.k-modal-trust-mobile` masqués via `@media(min-width:900px){display:none}` |
+| **M-MOB-14** | `#k-modal-overlay` mobile interdit `width:100vw` — utiliser `top/right/bottom/left:0` + `contain: layout paint`. Le `scrollLeft` du `#k-grid.k-grid-flat-subcat` doit être figé à 0 pendant la durée de vie de la modal. *Émis par VIS-6 (08/06/2026) — voir `BOUTIQUE_VISUAL_FIXES.md`.* |
 
 > Invariants M-MOB-06→10, M-MOB-12 : voir `MODAL_MOBILE_ARCHITECTURE.md`.
 
