@@ -539,7 +539,19 @@ export function renderCheckout() {
     selfPickupInfo.innerHTML =
       '<div class="ck-self-pickup-title">✅ Vous récupérez cette commande</div>'
       + '<div class="ck-self-pickup-line">📲 Suivi WhatsApp envoyé sur votre numéro</div>'
-      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>';
+      + '<div class="ck-self-pickup-line">🏪 Paiement cash au relais sélectionné</div>'
+      + '<div class="ck-self-pickup-actions">'
+      + '<button type="button" class="ck-spi-changed">Votre num\u00e9ro a chang\u00e9\u00a0?</button>'
+      + '<button type="button" class="ck-spi-notyou">Ce n\u2019est pas vous\u00a0?</button>'
+      + '</div>';
+    // Même flux que « Changer » / « Ce n'est pas vous ? » de la carte identité en tête.
+    const _spiOnChanged = (newUser) => {
+      state.user = newUser;
+      const _idCard = body.querySelector('#ck-identity-recap');
+      if (_idCard) applyIdentityToCard(_idCard, newUser);
+    };
+    bindChangeIdentity(selfPickupInfo, '.ck-spi-changed', _spiOnChanged);
+    bindChangeIdentity(selfPickupInfo, '.ck-spi-notyou', _spiOnChanged);
 
     // Le segment pilote la case + l'affichage des champs.
     const _benfCb = benfCb;
