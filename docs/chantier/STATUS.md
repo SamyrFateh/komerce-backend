@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-05-27** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ⏳)
+> Mis à jour : **2026-06-08** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ✅)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -479,7 +479,7 @@ Complété en session 2026-05-27 :
 | N1 | GET /relay/dashboard filtre relais_id | ✅ Corrigé | relay-dashboard.js — guard sur GET /orders/:id (ligne 432) |
 | N2 | Dual userCache Maps auth.js / auth-guest.js | ✅ Corrigé | utils/user-cache.js créé (44 lignes), partagé |
 | N3 | invalidateChargesCache() manquant après update orders_per_month | ✅ Corrigé | economic-engine.js lignes 569–574 |
-| N4 | JWT stateless 90j, pas de révocation | ⏳ Câblage en attente | migration 072 ✅ (`revoked_tokens` créée). Câblage applicatif non fait : `jti` dans `auth-guest.js::generateToken`, check `revoked_tokens` dans `auth.js::authenticate`, révocation au logout, cron cleanup. |
+| N4 | JWT stateless 90j, révocation complète | ✅ Fait — 2026-06-08 | migration 072 ✅, `jti` uuid ✅, `isTokenRevoked()` dans `authenticate` ✅, INSERT `revoked_tokens` au logout ✅, cron cleanup ✅. |
 | M1 | Migration 068 double — 068_check_balance_non_negative.sql cassé | ✅ Confirmé | Fichier cassé absent. 068_wallets_check_balance.sql appliquée et confirmée en prod. |
 | M2 | Migration 069 — CREATE INDEX CONCURRENTLY hors transaction | ✅ Confirmé | Appliquée manuellement sur Railway. Index analytiques actifs. |
 | I-01 | Violation pickup-secret.js | ✅ Résolu | I-SWEEP-FINAL — 0 UPDATE direct confirmé par analyse code |
@@ -734,3 +734,34 @@ Règle associée dans `AGENTS.md` : tout nouveau fichier `.md` créé dans `docs
 ## Règle de fin de session
 
 Avant de terminer une session avec commit ou PR : mettre à jour ce fichier, vérifier le prochain lot, et vérifier `AGENTS.md` si un document socle bouge.
+
+---
+
+## Sprint FRESH — 2026-06-08
+
+Audit sécurité/qualité frontend + backend. 33 findings, 33 traités.
+
+### Findings traités
+
+| Finding | Axe | Action | Statut |
+|---|---|---|---|
+| FRESH-001 | qualité | Mojibake UTF-8→cp1252→UTF-8 corrigé dans tout le backend | ✅ |
+| FRESH-002 | qualité | BOM UTF-8 strippé — 22 fichiers | ✅ |
+| FRESH-003 | technique | 3 fichiers orphelins `routes_orders_*.js` supprimés (~1156 lignes) | ✅ |
+| FRESH-020 | technique | `parcel-security.js` DDL inline rendu idempotent (`IF NOT EXISTS`) | ✅ |
+| FRESH-022 | infra | Migrations 072/073 en collision renommées 072a/073a, doublons supprimés | ✅ |
+| FRESH-030 | sécurité | CSP `bootstrap/security.js` : `unsafe-inline` → `strict-dynamic` dans `scriptSrc` | ✅ |
+| FRESH-032 | sécurité | OTP cooldown 45 s → 300 s (5 min) | ✅ |
+| FRESH-040 | technique | `utils/email.js` : 4 appels `log.info(template)` → pino-safe | ✅ |
+| FRESH-041 | technique | `server.js` : `req.query` brut → log structuré (PII) | ✅ |
+| FRESH-050 | documentation | STATUS.md mis à jour (ce fichier) | ✅ |
+| FRESH-060 | sécurité | `participant_token` localStorage — TTL 24h + format structuré, legacy-compatible | ✅ |
+| FRESH-061 | sécurité | `escHtml()` ajouté dans `b-utils.js` — utilitaire XSS centralisé | ✅ |
+| FRESH-080 | documentation | Webhook WhatsApp documenté dans `CARTOGRAPHY_360.md` | ✅ |
+| FRESH-103 | fiabilité | `notification-service.js` — 6 tests unitaires (`tests/unit/notification-service.test.js`) | ✅ |
+| FRESH-104 | sécurité | `ProductsView.js` — 2 `err.message` dans `innerHTML` → `textContent` | ✅ |
+| FRESH-105 | doctrine | `/control-tower.html` → redirect 301 vers `/admin/pilotage` (`ADMIN_LEGACY_ENABLED=1` pour rollback) | ✅ |
+| FRESH-106 | fiabilité | `b-checkout.js` — 18 tests unitaires fonctions pures (`tests/unit/b-checkout-pure.test.js`) | ✅ |
+| FRESH-108 | fiabilité | Migration 076 — bloc déduplication préventive ajouté avant `CREATE UNIQUE INDEX` | ✅ |
+| FRESH-109 | documentation | STATUS.md synchronisé (N4-câblage ✅, date 2026-06-08) | ✅ |
+

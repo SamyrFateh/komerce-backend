@@ -118,7 +118,13 @@ export function stopPolling() {
  */
 
 /* ── Persistance participant — source unique : onglet Groupe ─────────────── */
-const PARTICIPANT_TOKEN_KEY = 'kmrc_group_participant_token';
+// FRESH-060 : participant_token en localStorage — risque XSS si CSP affaiblie.
+// Mitigation : TTL 24h + suppression automatique à l'expiration.
+// Note : sessionStorage serait plus sûr mais casse le multi-onglets (UX critique).
+// Surveillance : renforcer CSP (FRESH-030 fait) pour réduire la surface.
+const PARTICIPANT_TOKEN_KEY  = 'kmrc_group_participant_token';
+const PARTICIPANT_TOKEN_TTL  = 24 * 60 * 60 * 1000; // 24h en ms
+
 function participantCommitmentKey(token) { return `kmrc_group_commitment_${token}`; }
 
 function readJsonStorage(key) {
@@ -136,11 +142,30 @@ function writeJsonStorage(key, value) {
 
 function rememberParticipantToken(token) {
   if (!token) return;
-  try { localStorage.setItem(PARTICIPANT_TOKEN_KEY, token); } catch (_) {}
+  try {
+    localStorage.setItem(PARTICIPANT_TOKEN_KEY, JSON.stringify({
+      v: token,
+      exp: Date.now() + PARTICIPANT_TOKEN_TTL,
+    }));
+  } catch (_) {}
 }
 
 function recallParticipantToken() {
-  try { return localStorage.getItem(PARTICIPANT_TOKEN_KEY) || null; } catch (_) { return null; }
+  try {
+    const raw = localStorage.getItem(PARTICIPANT_TOKEN_KEY);
+    if (!raw) return null;
+    // Support ancien format (string brut) et nouveau format (objet avec exp)
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { return raw; } // legacy string
+    if (parsed && typeof parsed === 'object' && parsed.v) {
+      if (parsed.exp && Date.now() > parsed.exp) {
+        localStorage.removeItem(PARTICIPANT_TOKEN_KEY);
+        return null;
+      }
+      return parsed.v;
+    }
+    return raw; // fallback
+  } catch (_) { return null; }
 }
 
 function clearParticipantToken() {

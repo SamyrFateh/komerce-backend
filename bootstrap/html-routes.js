@@ -80,8 +80,15 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // FRESH-105 : admin-legacy control-tower.html — redirigé vers admin moderne.
+  // L'accès direct à /control-tower.html retourne maintenant une redirection 301.
+  // Pour maintenir l'accès legacy en urgence : déployer ADMIN_LEGACY_ENABLED=1.
   app.get('/control-tower.html', (req, res) => {
-    sendHtml(res, path.join(publicDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
+    if (process.env.ADMIN_LEGACY_ENABLED === '1') {
+      res.setHeader('X-Deprecated', 'control-tower.html — migrer vers /admin/pilotage');
+      return sendHtml(res, path.join(publicDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
+    }
+    res.redirect(301, '/admin/pilotage');
   });
 
   app.get('/Komerce_Relais.html', (req, res) => {

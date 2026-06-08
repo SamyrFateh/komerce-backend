@@ -234,3 +234,19 @@ if (typeof window !== 'undefined') {
     _rates,
   };
 }
+
+// ── Utilitaire XSS — FRESH-061 ───────────────────────────────────────────────
+// Échapper les données utilisateur avant injection dans innerHTML.
+// Usage : el.innerHTML = `<p>${escHtml(userInput)}</p>`;
+// Préférer textContent pour les nœuds texte simples.
+if (typeof window !== 'undefined' && !window.escHtml) {
+  window.escHtml = function escHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+}

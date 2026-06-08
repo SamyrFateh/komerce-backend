@@ -533,7 +533,12 @@
       cats = await loadCategories();
       _activeCats = cats;
     } catch (err) {
-      container.innerHTML = `<div style="padding:20px;color:var(--danger,#ef4444);">Erreur : ${err.message}</div>`;
+      (() => {
+          const d = document.createElement('div');
+          d.style.cssText = 'padding:20px;color:var(--danger,#ef4444)';
+          d.textContent = `Erreur : ${err.message}`; // FRESH-104: textContent évite XSS
+          container.replaceChildren(d);
+        })();
       return;
     }
 
@@ -593,7 +598,12 @@
       container.querySelector('#tab-list').style.fontWeight = '';
       container.querySelector('#tab-list').style.color = 'var(--text-secondary,#6b7280)';
       await renderDiagnostic(diagContent, cats).catch(err => {
-        diagContent.innerHTML = `<div style="color:var(--danger,#ef4444);">Erreur diagnostic : ${err.message}</div>`;
+        (() => {
+              const d = document.createElement('div');
+              d.style.color = 'var(--danger,#ef4444)';
+              d.textContent = `Erreur diagnostic : ${err.message}`; // FRESH-104: textContent
+              diagContent.replaceChildren(d);
+            })();
       });
     });
 
