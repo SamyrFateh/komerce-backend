@@ -475,7 +475,9 @@
   }
   #k-modal .k-modal-carousel { flex: 1; min-width: 0; width: 100%; height: 100%; cursor: zoom-in; }
   #k-modal .k-modal-carousel-track { height: 100%; }
-  #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 16px 82px; object-fit: contain; object-position: center; width: 100%; }
+  /* PR-D2 fix : padding-bottom 32px évite que le sujet soit coupé au bord bas ;
+     object-position 50% 40% remonte légèrement le centre optique. */
+  #k-modal .k-modal-slide { height: 100%; padding: 16px 20px 32px 82px; object-fit: contain; object-position: 50% 40%; width: 100%; }
   #k-modal .k-modal-dots { display: none; }
   #k-modal .k-modal-counter { display: none; }
   #k-modal .k-modal-thumbs { display: flex; flex-direction: column; gap: 9px; position: absolute; left: 16px; top: 16px; bottom: 16px; z-index: 8; width: 58px; overflow-y: auto; scrollbar-width: none; }
@@ -739,9 +741,11 @@
   }
 
   /* ── Grid : 43 % image · 57 % détails ───────────────────── */
+  /* min 380px sur col image : empêche la col droite de réduire
+     l'image en dessous d'une largeur viable (fix tronquage sujet). */
   #k-modal .k-modal-product-zone {
     min-height: calc(100dvh - 58px);
-    grid-template-columns: minmax(0, 43%) minmax(0, 57%);
+    grid-template-columns: minmax(380px, 43%) minmax(0, 57%);
   }
 
   /* ── Image sticky : pleine hauteur — PR-D2 fix tronquage ── */
@@ -797,7 +801,7 @@
 @media (min-width: 900px) and (max-width: 1120px) {
   #k-modal.k-modal                          { width: 100vw; }
   body.modal-has-cart #k-modal.k-modal      { width: 100vw; margin-right: 0; }
-  #k-modal .k-modal-product-zone            { grid-template-columns: minmax(0, 44%) minmax(0, 56%); }
+  #k-modal .k-modal-product-zone            { grid-template-columns: minmax(340px, 44%) minmax(0, 56%); }
   #k-modal .k-modal-product-zone .k-modal-details  { padding: 0 clamp(18px, 3vw, 32px); }
   #k-modal .k-modal-product-zone .k-modal-actions  {
     padding-left:  clamp(18px, 3vw, 32px);
