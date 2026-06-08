@@ -313,6 +313,21 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }
     }
 
+    // FIX-SLIVER-2026-06-08 — figer scrollLeft du grid pendant la modal.
+    // Le grid #k-grid.k-grid-flat-subcat est un container overflow-x:auto +
+    // scroll-snap dont le scrollLeft persiste. Si la modal laisse passer
+    // un pixel à droite (Samsung Edge Panels / 100vw < viewport visuel),
+    // on voit la page 2 du pager horizontal en arrière-plan. On le ramène
+    // à 0 pour la durée de la modal, on restaure dans closeModal.
+    if (window.innerWidth < 900) {
+      var _grid = document.getElementById('k-grid');
+      if (_grid && _grid.classList.contains('k-grid-flat-subcat')) {
+        state._savedGridScrollLeft = _grid.scrollLeft;
+        _grid.style.scrollSnapType = 'none'; // évite l'animation de snap visible
+        _grid.scrollLeft = 0;
+      }
+    }
+
     // Les actions restent hors du scroll : bouton Acheter toujours visible.
     // La topbar enrichie rappelle le produit ouvert pendant le scroll.
     _syncScrollPadding();
@@ -373,6 +388,21 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         _ps.style.overflowY = s.overflowY || '';
       }
       state._savedPagerInlineStyles = null;
+    }
+
+    // FIX-SLIVER-2026-06-08 — restaurer le scrollLeft du grid.
+    // rAF : on laisse le browser repeindre l'overlay disparu AVANT de scroller,
+    // sinon flash visuel du décalage.
+    if (window.innerWidth < 900 && typeof state._savedGridScrollLeft === 'number') {
+      var _gridRestore = document.getElementById('k-grid');
+      if (_gridRestore && _gridRestore.classList.contains('k-grid-flat-subcat')) {
+        var _restoreLeft = state._savedGridScrollLeft;
+        requestAnimationFrame(function() {
+          _gridRestore.scrollLeft = _restoreLeft;
+          _gridRestore.style.scrollSnapType = '';
+        });
+      }
+      state._savedGridScrollLeft = null;
     }
 
     // FIX scroll auto post-modal : on ferme le flag AVANT le window.scrollTo

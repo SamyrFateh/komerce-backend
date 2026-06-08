@@ -351,22 +351,50 @@
 
 /* ══════════════════════════════════════════════════════════════
    2b. MOBILE EXPLICIT WIDTH FIX — ancrage fixed pleine largeur
+   FIX-SLIVER-2026-06-08 — corrige le sliver à droite sur Samsung
+   Internet / Chrome Android Edge Panels.
+
+   Cause racine (3 ingrédients simultanés) :
+   1. #k-grid.k-grid-flat-subcat = overflow-x:auto + scroll-snap.
+      Son scrollLeft persiste quand la modal s'ouvre.
+   2. b-modal-core.js efface les styles inline position:fixed du
+      #k-page-scroll pour libérer le scroll modal sur Chrome Android,
+      mais le scrollLeft du grid reste actif.
+   3. width:100vw < viewport visuel quand Samsung Internet réserve
+      la zone Edge Panels à droite.
+
+   Stratégie de défense en profondeur :
+   - Plus de width:100vw — on contraint via inset uniquement, ce qui
+     se réfère au viewport visuel (et non layout) sur navigateurs récents
+   - Ancrage par les 4 côtés via top/right/bottom/left explicites
+   - Le scrollLeft du grid est aussi figé pendant la modal côté JS
+     (b-modal-core.js — FIX-SLIVER-2026-06-08)
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 899px) {
   #k-modal-overlay {
     position: fixed;
-    inset: 0;
-    width: 100vw;
-    max-width: 100vw;
+    /* Ancrage 4 côtés sans width:100vw : on évite le mismatch
+       entre layout viewport (100vw) et visual viewport (réel). */
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-width: none;
     overflow: hidden;
     /* Annule justify-content:center hérité — sur mobile la modal prend toute
        la largeur, pas besoin de centrage qui peut créer un décalage. */
     justify-content: flex-start;
     align-items: stretch;
+    /* contain: force un stacking context strict, indépendant des
+       transforms ancestraux résiduels (Chrome Android Edge Panels). */
+    contain: layout paint;
   }
   #k-modal {
-    width: 100vw;
-    max-width: 100vw;
+    /* 100% du parent (overlay) plutôt que 100vw — l'overlay est garanti
+       de couvrir le viewport visuel via les top/right/bottom/left ci-dessus. */
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     margin: 0;
     border-radius: 0;
@@ -375,8 +403,8 @@
   #k-modal .k-modal-actions {
     left: 0;
     right: 0;
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
     margin: 0;
   }
 }
