@@ -46,7 +46,7 @@ const BUNDLES = [
   {
     out: 'components.css',
     files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
-            'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
+            'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity', 'paypal'],
   },
   {
     out: 'desktop.css',
