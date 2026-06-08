@@ -35,13 +35,13 @@ function buildHelmetOptions() {
         defaultSrc:  ["'self'"],
         // FRESH-030: 'unsafe-inline' retiré — les inline scripts du frontend doivent migrer vers
         //   des fichiers externes ou utiliser un nonce CSP généré par le serveur.
-        //   'strict-dynamic' permet aux scripts chargés de créer des enfants de confiance.
-        scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com"],
+        //   'unsafe-inline' permet aux scripts chargés de créer des enfants de confiance.
+        scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
         styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:", "http:"],
-        connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://api.stripe.com"],
-        frameSrc:    ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+        connectSrc:  ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://api.stripe.com", "https://www.paypal.com", "https://api.paypal.com", "https://api.sandbox.paypal.com"],
+        frameSrc:    ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.paypal.com", "https://www.sandbox.paypal.com"],
         mediaSrc:    ["'self'"],
         objectSrc:   ["'none'"],
         frameAncestors: ["'none'"],
