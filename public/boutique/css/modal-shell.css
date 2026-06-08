@@ -563,14 +563,15 @@
      formatPriceMarkup() (b-modal.js) split la valeur et l'unité en deux spans
      avec un espace HTML entre. Sur mobile : pas de règle dédiée, rendu naturel
      "15 700 KMF". Sur desktop (ci-dessous) : styling fin distinct. */
-  #k-modal .k-modal-price-row { margin-top: 10px; gap: 8px; align-items: baseline; }
-  #k-modal .k-modal-price { font-size: clamp(24px, 2vw, 32px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
+  /* PR-D1 — Prix massif mockup : clamp élevé, old-price barré plus lisible */
+  #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  #k-modal .k-modal-price { font-size: clamp(28px, 2.2vw, 36px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
-  #k-modal .k-modal-price-unit { font-size: .48em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
-  #k-modal .k-modal-old-price { font-size: 14px; color: var(--text-light); }
+  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
+  #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
-  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; }
-  #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .85em; letter-spacing: .04em; }
+  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
+  #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .82em; letter-spacing: .04em; }
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }

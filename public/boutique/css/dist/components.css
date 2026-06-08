@@ -2568,14 +2568,15 @@ html.k-mobile-premium-v1 .k-chip-label {
      formatPriceMarkup() (b-modal.js) split la valeur et l'unité en deux spans
      avec un espace HTML entre. Sur mobile : pas de règle dédiée, rendu naturel
      "15 700 KMF". Sur desktop (ci-dessous) : styling fin distinct. */
-  #k-modal .k-modal-price-row { margin-top: 10px; gap: 8px; align-items: baseline; }
-  #k-modal .k-modal-price { font-size: clamp(24px, 2vw, 32px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
+  /* PR-D1 — Prix massif mockup : clamp élevé, old-price barré plus lisible */
+  #k-modal .k-modal-price-row { margin-top: 12px; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  #k-modal .k-modal-price { font-size: clamp(28px, 2.2vw, 36px); font-weight: 850; color: var(--coral); line-height: 1; display: inline-flex; align-items: baseline; gap: 6px; }
   #k-modal .k-modal-price-val { font-size: inherit; font-weight: inherit; color: inherit; }
-  #k-modal .k-modal-price-unit { font-size: .48em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
-  #k-modal .k-modal-old-price { font-size: 14px; color: var(--text-light); }
+  #k-modal .k-modal-price-unit { font-size: .44em; font-weight: 600; color: var(--coral); letter-spacing: .04em; text-transform: uppercase; }
+  #k-modal .k-modal-old-price { font-size: 16px; color: var(--text-light); text-decoration: line-through; }
   #k-modal .k-modal-old-price .k-modal-price-val,
-  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; }
-  #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .85em; letter-spacing: .04em; }
+  #k-modal .k-modal-old-price .k-modal-price-unit { color: inherit; font-weight: 400; text-decoration: inherit; }
+  #k-modal .k-modal-old-price .k-modal-price-unit { font-size: .82em; letter-spacing: .04em; }
 
   /* ── Trust, Partage, Specs ───────────────────────────────── */
   .k-modal-trust { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid var(--sand-dark); margin-top: 6px; }
@@ -3192,11 +3193,20 @@ html.k-mobile-premium-v1 .k-chip-label {
   box-shadow: 0 -4px 20px var(--border-text-06);
 }
 .k-modal-promo-badge {
-  display: none; position: absolute; top: 6px; left: 6px;
+  display: none; position: absolute; top: 8px; left: 8px;
   background: var(--coral); color: var(--white);
-  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  letter-spacing: .2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
 }
 .k-modal-promo-badge.show { display: inline-block; }
+/* PR-D1 — Desktop : badge plus généreux dans la col image */
+@media (min-width: 900px) {
+  #k-modal .k-modal-promo-badge {
+    top: 12px; left: 12px;
+    font-size: 13px; padding: 5px 12px; border-radius: 7px;
+  }
+}
 .k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
@@ -3867,13 +3877,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     text-decoration: line-through;
     margin-left: 4px;
   }
+  /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
   .k-modal-aed-pct {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: var(--coral-dark);
-    background: var(--border-coral-09);
-    border: 1px solid var(--border-coral-13);
-    padding: 2px 7px;
+    color: var(--white);
+    background: var(--coral);
+    border: none;
+    padding: 3px 9px;
     border-radius: 5px;
     letter-spacing: .3px;
   }

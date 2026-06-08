@@ -19,11 +19,20 @@
   box-shadow: 0 -4px 20px var(--border-text-06);
 }
 .k-modal-promo-badge {
-  display: none; position: absolute; top: 6px; left: 6px;
+  display: none; position: absolute; top: 8px; left: 8px;
   background: var(--coral); color: var(--white);
-  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  letter-spacing: .2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
 }
 .k-modal-promo-badge.show { display: inline-block; }
+/* PR-D1 — Desktop : badge plus généreux dans la col image */
+@media (min-width: 900px) {
+  #k-modal .k-modal-promo-badge {
+    top: 12px; left: 12px;
+    font-size: 13px; padding: 5px 12px; border-radius: 7px;
+  }
+}
 .k-modal-info { box-sizing: border-box; padding: 16px 12px 12px; display: flex; flex-direction: column; } /* S2.3 — padding-top revient à 16px ; le clamp(20px) compensait margin-top:-20px supprimé en S2.2 */
 .k-modal-info h2 {
   font-family: var(--font-display); font-size: 18px; font-weight: 500;
@@ -694,13 +703,14 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     text-decoration: line-through;
     margin-left: 4px;
   }
+  /* PR-D1 — badge % coral plein, blanc, plus visible (mockup) */
   .k-modal-aed-pct {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: var(--coral-dark);
-    background: var(--border-coral-09);
-    border: 1px solid var(--border-coral-13);
-    padding: 2px 7px;
+    color: var(--white);
+    background: var(--coral);
+    border: none;
+    padding: 3px 9px;
     border-radius: 5px;
     letter-spacing: .3px;
   }
