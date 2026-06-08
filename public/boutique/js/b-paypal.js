@@ -104,6 +104,8 @@ export async function renderPayPalButton(containerId, opts = {}) {
   container.classList.remove('k-paypal-loading');
 
   const buttons = paypal.Buttons({
+    fundingSource: paypal.FUNDING.PAYPAL, // FIX: force le bouton PayPal — évite isEligible() false sur compte sandbox restreint
+
     style: {
       layout: 'vertical',
       color:  'gold',
