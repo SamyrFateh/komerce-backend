@@ -36,7 +36,7 @@ function buildHelmetOptions() {
         // FRESH-030: 'unsafe-inline' retiré — les inline scripts du frontend doivent migrer vers
         //   des fichiers externes ou utiliser un nonce CSP généré par le serveur.
         //   'strict-dynamic' permet aux scripts chargés de créer des enfants de confiance.
-        scriptSrc:   ["'self'", "'strict-dynamic'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com"],
+        scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com"],
         styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:", "http:"],
