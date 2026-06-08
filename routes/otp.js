@@ -17,7 +17,7 @@ const { isOtpTestMode, getMasterCode, isMasterCode } = require('../services/otp-
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MIN = 10;
 const MAX_ATTEMPTS = 5;
-const OTP_RESEND_COOLDOWN_SEC = 45;
+const OTP_RESEND_COOLDOWN_SEC = 300; // FRESH-032: 5 min (ex 45s) — cohérent avec fenêtre 15 min / 3 max
 const OTP_WINDOW_MIN = 15;
 const MAX_REQUESTS_PER_WINDOW = 3;
 const OTP_BCRYPT_ROUNDS = 8;
@@ -182,7 +182,7 @@ router.post('/request', async (req, res) => {
          FROM otp_codes
         WHERE phone = $1
           AND purpose = $2
-          AND created_at > NOW() - INTERVAL '45 seconds'
+          AND created_at > NOW() - INTERVAL '300 seconds' -- FRESH-032: cooldown 5 min
         ORDER BY created_at DESC
         LIMIT 1`,
       [phone, purpose]

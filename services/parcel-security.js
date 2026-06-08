@@ -210,16 +210,10 @@ async function ensureSecurityTables(db) {
       { name: 'last_weight_location', type: 'TEXT' },
     ];
 
+    // DDL de bootstrap uniquement — idempotent via IF NOT EXISTS (FRESH-020)
     for (const col of cols) {
-      const check = await db.query(`
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'parcels' AND column_name = $1
-      `, [col.name]);
-
-      if (!check.rows.length) {
-        await db.query(`ALTER TABLE parcels ADD COLUMN ${col.name} ${col.type}`);
-        log.info({ column: col.name }, 'Added parcels security column');
-      }
+      await db.query(`ALTER TABLE parcels ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+      log.debug({ column: col.name }, 'parcels security column ensured');
     }
 
     // Unique index on external_code (ignore nulls)

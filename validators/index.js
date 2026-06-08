@@ -1,35 +1,35 @@
-﻿/**
- * KOMERCE â€” SchÃ©mas de validation Joi v2.0 (Vague 1)
+/**
+ * KOMERCE – Schémas de validation Joi v2.0 (Vague 1)
  * 
- * Organisation : un objet exportÃ© par route-file.
- * Chaque schÃ©ma dÃ©finit { body?, params?, query? } avec des rÃ¨gles Joi.
+ * Organisation : un objet exporté par route-file.
+ * Chaque schéma définit { body?, params?, query? } avec des règles Joi.
  * 
  * Convention : 
- *   Â· Strings : trimmed, min 1, max raisonnable
- *   Â· Nombres : positifs, bornÃ©s
- *   Â· UUIDs : format strict (toute version)
- *   Â· Enums : .valid() avec les valeurs de l'app
- *   Â· Dates : format ISO ou timestamp
+ *   · Strings : trimmed, min 1, max raisonnable
+ *   · Nombres : positifs, bornés
+ *   · UUIDs : format strict (toute version)
+ *   · Enums : .valid() avec les valeurs de l'app
+ *   · Dates : format ISO ou timestamp
  *
- * v2.0 â€” Added validators for: loyalty, pricing, purchasing, unsold, finance
+ * v2.0 – Added validators for: loyalty, pricing, purchasing, unsold, finance
  */
 
 'use strict';
 
 const Joi = require('joi');
 
-// â”€â”€ Helpers rÃ©utilisables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Helpers réutilisables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const uuid     = Joi.string().uuid();
 const safeStr  = (max = 255) => Joi.string().trim().max(max);
 const email    = Joi.string().trim().lowercase().email();
-const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('NumÃ©ro de tÃ©lÃ©phone invalide');
+const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('Numéro de téléphone invalide');
 const posInt   = Joi.number().integer().positive();
 const posNum   = Joi.number().positive();
 const isoDate  = Joi.string().isoDate();
 const url      = Joi.string().trim().uri({ scheme: ['http', 'https'] });
 
-// â”€â”€ SchÃ©mas : auth.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : auth.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const auth = {
   register: {
@@ -91,7 +91,7 @@ const auth = {
   },
 };
 
-// â”€â”€ SchÃ©mas : products.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : products.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const products = {
   create: {
@@ -144,7 +144,7 @@ const products = {
   },
 };
 
-// â”€â”€ SchÃ©mas : orders.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : orders.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MODULE_TYPES = [
   'mariage', 'couture', 'lunettes', 'parfum', 'bijoux',
@@ -169,8 +169,8 @@ const orders = {
         module_qty_meters: posNum.max(1000),
         module_accessories: Joi.array().items(safeStr(100)).max(10),
         // VAGUE 3 : combo de variantes choisies (taille, couleur, ...)
-        // Format libre {String: String}, validÃ© plus finement cÃ´tÃ© checkout
-        // contre les variantes rÃ©elles du produit (cf. routes/orders/create.js).
+        // Format libre {String: String}, validé plus finement côté checkout
+        // contre les variantes réelles du produit (cf. routes/orders/create.js).
         variant_combo: Joi.object().pattern(
           Joi.string().min(1).max(50),
           Joi.string().min(1).max(50)
@@ -226,7 +226,7 @@ const orders = {
     }),
   },
 
-  // Phase 4 â€” ExpÃ©dition Partielle
+  // Phase 4 – Expédition Partielle
   markAvailability: {
     params: Joi.object({ id: uuid.required() }),
     body: Joi.object({
@@ -270,7 +270,7 @@ const orders = {
   },
 };
 
-// â”€â”€ SchÃ©mas : payments.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : payments.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const payments = {
   stripeIntent: {
@@ -286,11 +286,11 @@ const payments = {
   },
 };
 
-// â”€â”€ SchÃ©mas : admin.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : admin.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const VALID_PARTNER_TYPES = ['relais', 'agent_hub', 'sourcing', 'personnalise', 'logistique'];
 const VALID_CURRENCIES    = ['KMF', 'EUR', 'USD', 'AED', 'CNY'];
-const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'MohÃ©li', 'Mayotte'];
+const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'Mohéli', 'Mayotte'];
 
 const admin = {
   createPartner: {
@@ -377,7 +377,7 @@ const admin = {
   },
 };
 
-// â”€â”€ SchÃ©mas : baskets.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : baskets.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const baskets = {
   share: {
@@ -424,7 +424,7 @@ const baskets = {
   },
 };
 
-// â”€â”€ SchÃ©mas : scans.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : scans.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const scans = {
   create: {
@@ -462,7 +462,7 @@ const scans = {
   },
 };
 
-// â”€â”€ SchÃ©mas : modules.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : modules.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const modules = {
   calculatePrice: {
@@ -505,7 +505,7 @@ const modules = {
   },
 };
 
-// â”€â”€ SchÃ©mas : logistics.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : logistics.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const logistics = {
   createShipment: {
@@ -532,7 +532,7 @@ const logistics = {
   },
 };
 
-// â”€â”€ SchÃ©mas : config.js (rÃ¨gles mÃ©tier admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : config.js (règles métier admin) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const config = {
   updateRule: {
@@ -564,7 +564,7 @@ const parcels = {
     notes: Joi.string().max(500).optional(),
   }),
   updateStatus: Joi.object({
-    // FIX: 'preparation' (enum DB rÃ©el) â€” 'preparing' n'existe pas dans la DB
+    // FIX: 'preparation' (enum DB réel) – 'preparing' n'existe pas dans la DB
     status: Joi.string().valid('preparation', 'shipped', 'in_transit', 'available', 'collected').required(),
     notes: Joi.string().max(500).optional(),
   }),
@@ -591,11 +591,11 @@ const hub = {
   }),
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// V1.9 â€” NEW VALIDATORS (Vague 1)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════════════════
+// V1.9 – NEW VALIDATORS (Vague 1)
+// ════════════════════════════════════════════════════════════════════════════════
 
-// â”€â”€ SchÃ©mas : loyalty.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : loyalty.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const loyalty = {
   updateTier: {
@@ -613,7 +613,7 @@ const loyalty = {
   },
 };
 
-// â”€â”€ SchÃ©mas : pricing.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : pricing.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const pricing = {
   calculate: {
@@ -642,7 +642,7 @@ const pricing = {
   },
 };
 
-// â”€â”€ SchÃ©mas : purchasing.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : purchasing.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const PLATFORMS = ['noon', 'amazon_uae', 'aliexpress', 'whatsapp', 'manual', 'local'];
 
@@ -696,7 +696,7 @@ const purchasing = {
   },
 };
 
-// â”€â”€ SchÃ©mas : unsold.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : unsold.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const UNSOLD_STATUSES   = ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed'];
 const UNSOLD_CHANNELS   = ['whatsapp', 'reseller', 'both'];
@@ -722,7 +722,7 @@ const unsold = {
   },
 };
 
-// â”€â”€ SchÃ©mas : finance.js (query params) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Schémas : finance.js (query params) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const finance = {
   periodQuery: {
@@ -748,7 +748,7 @@ module.exports = {
   config,
   parcels,
   hub,
-  // V1.9 â€” Nouveaux validators (Vague 1)
+  // V1.9 – Nouveaux validators (Vague 1)
   loyalty,
   pricing,
   purchasing,

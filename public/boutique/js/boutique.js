@@ -1,24 +1,24 @@
 /**
  * @module boutique
- * @brief Komerce boutique — Â§13 INIT (orchestrateur)
+ * @brief Komerce boutique — §13 INIT (orchestrateur)
  *
- * Â§1  UTILS        → b-utils.js      âœ…
- * Â§2  STATE & DOM  → b-store.js      âœ…
- * Â§3  CART CORE    → b-cart-core.js  âœ…
- * Â§4  CATALOG      → b-catalog.js    âœ…
- * Â§5  FLAT SUBCAT  → b-subcat.js     âœ…
- * Â§6  GRID SECTIONS→ b-catalog.js    âœ…
- * Â§7  CART INTER.  → b-cart.js       âœ…
- * Â§8  CATS & SEARCH→ b-catalog.js    âœ…
- * Â§9  MODAL        → b-modal.js      âœ…
- * Â§10 CART PANEL   → b-cart.js       âœ…
- * Â§11 CHECKOUT     → b-checkout.js   âœ…
- * Â§12 VIEWS        → b-nav.js        âœ… (navigation)
- *                  → b-favs.js       âœ… (favoris)
- *                  → b-tracking.js   âœ… (suivi commandes)
- * Â§13 INIT         → ici (orchestrateur) âœ…
- * Â§14 STEPPER      → b-cart.js       âœ…
- * Â§15 PAGER TEMU   → b-pager.js      âœ…
+ * §1  UTILS        → b-utils.js      ✅
+ * §2  STATE & DOM  → b-store.js      ✅
+ * §3  CART CORE    → b-cart-core.js  ✅
+ * §4  CATALOG      → b-catalog.js    ✅
+ * §5  FLAT SUBCAT  → b-subcat.js     ✅
+ * §6  GRID SECTIONS→ b-catalog.js    ✅
+ * §7  CART INTER.  → b-cart.js       ✅
+ * §8  CATS & SEARCH→ b-catalog.js    ✅
+ * §9  MODAL        → b-modal.js      ✅
+ * §10 CART PANEL   → b-cart.js       ✅
+ * §11 CHECKOUT     → b-checkout.js   ✅
+ * §12 VIEWS        → b-nav.js        ✅ (navigation)
+ *                  → b-favs.js       ✅ (favoris)
+ *                  → b-tracking.js   ✅ (suivi commandes)
+ * §13 INIT         → ici (orchestrateur) ✅
+ * §14 STEPPER      → b-cart.js       ✅
+ * §15 PAGER TEMU   → b-pager.js      ✅
  */
 
 import { bus }                from './b-bus.js';
@@ -108,7 +108,7 @@ const PAVILION_CATEGORY_ALIASES = {
 };
 
 // â•”══════════════════════════════════════════════════════════════════â•—
-// â•‘  Â§13 Â· INIT — Boot sequence, bnav, seeAll, global listeners      â•‘
+// â•‘  §13 · INIT — Boot sequence, bnav, seeAll, global listeners      â•‘
 // â•š══════════════════════════════════════════════════════════════════â•
 
 /**

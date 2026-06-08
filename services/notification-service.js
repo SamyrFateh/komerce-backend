@@ -2,7 +2,7 @@
 
 /**
  * KOMERCE — services/notification-service.js
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ * ═══════════════════════════════════════════════════════════════════════
  * Orchestre toutes les notifications clients (WhatsApp via AuthKey, SMS fallback, email).
  *
  * Fonctions publiques (signatures préservées pour compatibilité) :
@@ -12,7 +12,7 @@
  *   - notifyCancellation(order, smsRefundInfo)
  *
  * Toutes les notifications sont non-bloquantes et loggées en DB (notification_log).
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ * ═══════════════════════════════════════════════════════════════════════
  */
 
 const db = require('../db');
@@ -158,9 +158,9 @@ function pickRecipients(order, event) {
   return result;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  1. Commande créée
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText) {
   const recipients = pickRecipients(order, 'order_created');
   const name = firstName(order.recipient_name || order.user_full_name);
@@ -210,9 +210,9 @@ async function notifyOrderCreated(order, smsPhones, userEmail, emailItems, relai
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  2. Paiement confirmé
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyPaymentConfirmed(orderId, orderReference) {
   try {
     // Récupère le contact depuis la DB car la signature n'a pas l'objet complet
@@ -293,9 +293,9 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  3. Changement de statut (shipped, delivered, collected...)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyStatusChange(order, newStatus) {
   // Map des statuts Komerce → fonction AuthKey
   const mapping = {
@@ -354,9 +354,9 @@ async function notifyStatusChange(order, newStatus) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  4. Annulation
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyCancellation(order, smsRefundInfo) {
   // P3 FIX — utilise pickRecipients (stratégie 'order_cancelled' = payeur uniquement)
   const recipients = pickRecipients(order, 'order_cancelled');
@@ -397,13 +397,13 @@ async function notifyCancellation(order, smsRefundInfo) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  5. Helper : charge l'order complet à partir d'un parcelId
 //  ─────────────────────────────────────────────────────────────────────
 //  Permet de réutiliser notifyStatusChange (qui attend un order complet)
 //  depuis les appelants qui n'ont qu'un parcelId (scan-engine, parcel-api,
 //  transitaire-api) — sans dupliquer la logique payeur/bénéficiaire.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function _loadOrderFromParcel(parcelId) {
   try {
     const { rows } = await db.query(
@@ -437,7 +437,7 @@ async function _loadOrderFromParcel(parcelId) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  6. Notification de scan colis — façade vers notifyStatusChange
 //  ─────────────────────────────────────────────────────────────────────
 //  Appelée par scan-engine.js, parcel-api-v2.js, transitaire-api.js
@@ -453,7 +453,7 @@ async function _loadOrderFromParcel(parcelId) {
 //    available            → 'delivered'  (colis prêt au relais à récupérer)
 //
 //  Délègue à notifyStatusChange qui gère payeur + bénéficiaire via pickRecipients.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
   if (!parcelId || !parcelStatus) {
     log.warn({ parcel_id: parcelId, parcel_status: parcelStatus }, 'Parcel scan notification skipped: missing params');
@@ -493,7 +493,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
   return notifyStatusChange(order, orderStatus);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  7. Envoi OTP via WhatsApp (fallback SMS si échec)
 //  ─────────────────────────────────────────────────────────────────────
 //  Utilisée par routes/otp.js pour envoyer un code à 6 chiffres.
@@ -504,7 +504,7 @@ async function notifyParcelScan(parcelId, parcelReference, parcelStatus) {
 //  channel = 'whatsapp' | 'sms' | 'none'
 //  Cette fonction ne lance JAMAIS d'exception — elle retourne toujours
 //  un objet avec success:false en cas de problème pour ne pas casser le flow.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function sendOtpMessage({ phone, code, name, expiryMin }) {
   if (!phone || !code) {
     return { success: false, channel: 'none', reason: 'missing_params' };
@@ -608,11 +608,11 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
   };
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  8. Notification colis créé (commande passée en préparation)
 //  ─────────────────────────────────────────────────────────────────────
 //  Appelée par order-api-v2.js quand un colis est créé pour une commande.
-//  Envoie une notification "ðŸ“¦ Votre commande a été préparée".
+//  Envoie une notification "📦 Votre commande a été préparée".
 //
 //  Signature : notifyParcelCreated(parcelRef, orderId, orderReference)
 //
@@ -620,7 +620,7 @@ async function sendOtpMessage({ phone, code, name, expiryMin }) {
 //  → si aucun template n'est mappé à 'preparation' dans notifyStatusChange,
 //    l'appel est un no-op silencieux (comportement déjà géré).
 //  Log quand même l'événement pour audit.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   if (!orderId) {
     log.warn({ parcel_ref: parcelRef, order_ref: orderReference }, 'Parcel created notification skipped: missing orderId');
@@ -693,7 +693,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 //  9. Envoi magic link via WhatsApp (reconnexion 1-clic)
 //  ─────────────────────────────────────────────────────────────────────
 //  Utilisée par routes/client-auth.js quand un user veut revenir sur
@@ -711,7 +711,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
 //    1. Template WID_MAGIC_LINK si configuré (recommandé Meta)
 //    2. Sinon, tente WID_OTP en réutilisant la variable (moins propre)
 //    3. Sinon, retourne success:false avec reason explicite (pas de crash)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════
 async function sendMagicLink({ phone, name, magicLink, expiryMin }) {
   if (!phone || !magicLink) {
     return { success: false, channel: 'none', reason: 'missing_params' };
@@ -811,7 +811,7 @@ async function notifyLoyaltyEarned({ userId, userName, phone, orderRef, basketCo
   }
 
   const name = firstName(userName);
-  const message = `ðŸŽ‰ Bravo ${name} ! Vous avez atteint ${basketCount} gros paniers chez Komerce ! Un cadeau de fidélité vous attend. Notre équipe vous contactera bientôt. Merci de votre confiance ! ðŸ‡°ðŸ‡²`;
+  const message = `🎉 Bravo ${name} ! Vous avez atteint ${basketCount} gros paniers chez Komerce ! Un cadeau de fidélité vous attend. Notre équipe vous contactera bientôt. Merci de votre confiance ! 🇰🇲`;
 
   try {
     // Utiliser le WID générique (pas de template dédié pour l'instant)

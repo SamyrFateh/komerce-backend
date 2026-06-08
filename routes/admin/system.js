@@ -292,7 +292,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       }
     }
 
-    // ── Fix relais encoding (MohÃ©li → Mohéli) ────────────────────
+    // ── Fix relais encoding (Mohéli → Mohéli) ────────────────────
     await client.query("UPDATE relais SET island = 'Mohéli' WHERE island != 'Mohéli' AND island LIKE '%oh%li%'");
 
     // ── Create data ────────────────────────────────────────────────

@@ -82,6 +82,7 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/collective-workspaces` | Workspace collectif / événement. |
 | `/api/collective-payments` | Contributions et paiements collectifs. |
 | `/api/collective-payments/stripe/webhook` | Webhook Stripe collectif, body brut. |
+| `/webhook/authkey-whatsapp` | **Webhook WhatsApp entrant (Authkey)** — GET, paramètres query : `Mobile`, `Email`, `Status`, `Log ID`, `Time`. Enregistre les statuts de livraison SMS/WhatsApp. Non authentifié (IP whitelist recommandée). |
 
 ### Logistique colis-first
 

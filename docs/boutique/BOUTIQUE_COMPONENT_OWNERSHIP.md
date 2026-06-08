@@ -1,4 +1,4 @@
-﻿# Boutique Komerce — Component Ownership Doctrine
+# Boutique Komerce — Component Ownership Doctrine
 
 ## Objectif
 

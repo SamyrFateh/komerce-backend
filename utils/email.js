@@ -1,4 +1,4 @@
-﻿/*  utils/email.js — Brevo REST API v3
+/*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
     Variable requise : BREVO_API_KEY (commence par xkeysib-)
     Optionnel : BREVO_SENDER_EMAIL, APP_URL
@@ -162,18 +162,18 @@ const templates = {
 /* ─── Envoi via API REST v3 ─────────────────────────────── */
 async function sendOrderEmail(order, status) {
   if (!order.customer_email) {
-    log.info(`[EMAIL] Pas d'email client pour ${order.reference} — skip`);
+    log.info({ reference: order.reference }, '[EMAIL] Pas d\'email client — skip');
     return { skipped: true, reason: 'no_email' };
   }
 
   const templateFn = templates[status];
   if (!templateFn) {
-    log.info(`[EMAIL] Pas de template pour statut "${status}" — skip`);
+    log.info({ status }, '[EMAIL] Pas de template pour ce statut — skip');
     return { skipped: true, reason: 'no_template' };
   }
 
   if (!BREVO_KEY) {
-    log.info(`[EMAIL] ⚠️ BREVO_API_KEY non configurée — email non envoyé`);
+    log.warn({}, '[EMAIL] BREVO_API_KEY non configurée — email non envoyé');
     return { skipped: true, reason: 'no_api_key' };
   }
 
@@ -198,7 +198,7 @@ async function sendOrderEmail(order, status) {
     const data = await res.json();
 
     if (data.messageId) {
-      log.info(`[EMAIL] ✅ ${status} → ${order.customer_email} (${order.reference}) msgId=${data.messageId}`);
+      log.info({ status, email: order.customer_email, reference: order.reference, msgId: data.messageId }, '[EMAIL] Email envoyé');
       return { sent: true, messageId: data.messageId };
     } else {
       log.error({ data }, '[EMAIL] ❌ Erreur Brevo');

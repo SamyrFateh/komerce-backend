@@ -85,7 +85,7 @@ function normalizeIsland(raw) {
   // Direct match
   if (ISLAND_NORMALIZE[key]) return ISLAND_NORMALIZE[key];
   // Prefix match — robuste contre les problèmes d'encodage UTF-8
-  // (ex: Mohéli peut apparaître comme MohÃƒÂ©li en DB)
+  // (ex: Mohéli peut apparaître comme MohÃƒ©li en DB)
   if (key.startsWith('moh') || key.startsWith('mwa'))  return 'MOHELI';
   if (key.startsWith('anj') || key.startsWith('ndz'))  return 'ANJOUAN';
   if (key.startsWith('gran') || key.startsWith('mor') || key.startsWith('nga')) return 'MORONI';
@@ -206,7 +206,7 @@ async function ensureRoutingColumns(db) {
     log.warn(`[Routing] Order backfill error: ${e.message}`);
   }
 
-  log.info('âœ… Routing columns ready');
+  log.info('✅ Routing columns ready');
 }
 
 // ── Exports ──────────────────────────────────────────────────────────────────

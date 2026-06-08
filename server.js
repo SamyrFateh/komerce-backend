@@ -42,13 +42,13 @@ app.set('trust proxy', 1);
 
 app.get('/webhook/authkey-whatsapp', async (req, res) => {
   try {
-    log.info({ query: req.query }, '[AUTHKEY-WA][WEBHOOK]');
-
     const mobile = req.query.Mobile || null;
-    const email = req.query.Email || null;
+    const email  = req.query.Email  || null;
     const status = req.query.Status || null;
-    const logId = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
-    const time = req.query.Time || null;
+    const logId  = req.query['Log ID'] || req.query.LogID || req.query.log_id || null;
+    const time   = req.query.Time   || null;
+    // FRESH-041: log structuré sur champs extraits uniquement (pas req.query brut — PII)
+    log.info({ mobile, status, logId, time, hasEmail: !!email }, '[AUTHKEY-WA][WEBHOOK]');
 
     return res.status(200).send('OK');
   } catch (e) {

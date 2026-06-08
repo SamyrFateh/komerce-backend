@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module b-checkout-render
  * @brief S3.1 — Fonctions de rendu DOM pures extraites de b-checkout.js
  *
