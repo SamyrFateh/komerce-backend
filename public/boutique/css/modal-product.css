@@ -795,7 +795,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     flex-shrink: 0;
   }
 
-  /* ── Delivery section ───────────────────────────────────── */
+  /* ── Delivery section — PR-D2 ───────────────────────────── */
   .k-modal-delivery {
     display: block;
     border-top: 1px solid var(--sand-dark);
@@ -814,25 +814,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex;
     align-items: flex-start;
     gap: 11px;
-    padding: 11px 13px;
-    border: 1.5px solid var(--border);
+    padding: 12px 14px;
+    border: 1.5px solid var(--ocean);
     border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
-    background: var(--white);
+    background: var(--ocean-bg-08);
     margin-bottom: 7px;
     user-select: none;
   }
   .k-modal-delivery-opt:last-child { margin-bottom: 0; }
-  .k-modal-delivery-opt:hover {
-    border-color: var(--ocean-light);
-    background: var(--ocean-bg-08);
-  }
-  .k-modal-delivery-opt.is-active {
-    border-color: var(--ocean);
-    background: var(--ocean-bg-08);
-  }
-  /* Radio visuel */
+  /* Radio visuel — masqué dans l'encart delivery simplifié */
   .k-modal-opt-radio {
     width: 18px;
     height: 18px;
@@ -843,19 +833,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     position: relative;
     transition: border-color .15s;
   }
-  .k-modal-delivery-opt.is-active .k-modal-opt-radio,
-  .k-modal-payment-opt.is-active .k-modal-opt-radio {
-    border-color: var(--ocean);
-  }
-  .k-modal-delivery-opt.is-active .k-modal-opt-radio::after,
-  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
-    content: '';
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--ocean);
-  }
+  .k-modal-delivery-opt .k-modal-opt-radio { display: none; }
   .k-modal-opt-body { flex: 1; min-width: 0; }
   .k-modal-opt-row1 {
     display: flex;
@@ -866,14 +844,15 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     color: var(--text);
   }
   .k-modal-opt-icon { font-size: 15px; flex-shrink: 0; }
+  /* PR-D2 : badge Gratuit vert plein */
   .k-modal-opt-free {
     margin-left: auto;
     font-size: 11px;
     font-weight: 700;
-    color: var(--ocean-dark);
-    background: var(--ocean-bg-08);
-    border: 1px solid var(--border-ocean-14);
-    padding: 2px 8px;
+    color: var(--white);
+    background: var(--ocean);
+    border: none;
+    padding: 3px 10px;
     border-radius: 4px;
     white-space: nowrap;
   }
@@ -887,7 +866,7 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     display: flex;
     gap: 5px;
     flex-wrap: wrap;
-    margin-top: 7px;
+    margin-top: 8px;
   }
   .k-modal-island-chip {
     font-size: 11px;
@@ -899,76 +878,76 @@ body.k-sg-open { /* handled by overlay pointer-events */ }
     border: 1px solid var(--border);
   }
 
-  /* ── Payment section ────────────────────────────────────── */
+  /* ── Payment section — PR-D2 : tabs horizontaux (mockup) ── */
+  /* Le JS injecte .k-modal-payment-opt[data-pay] — on remodèle
+     en tabs sans toucher au JS. Les radio (.k-modal-opt-radio)
+     et labels longs (.k-modal-pay-sub, .k-modal-pay-badge) sont
+     masqués en mode tabs ; seul icône + label court reste visible.
+     La sous-section active (carte bancaire Stripe) est injectée
+     en dessous de la rangée de tabs par la même logique JS.     */
   .k-modal-payment {
     display: block;
     border-top: 1px solid var(--sand-dark);
     margin-top: 14px;
     padding-top: 14px;
   }
+  /* Rangée de tabs */
   .k-modal-payment-opts {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
   }
   .k-modal-payment-opt {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 11px;
-    padding: 10px 13px;
+    justify-content: center;
+    gap: 4px;
+    padding: 9px 6px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: border-color .15s, background .15s;
     background: var(--white);
     user-select: none;
+    text-align: center;
+    min-width: 0;
   }
   .k-modal-payment-opt:hover {
-    border-color: var(--violet);
-    background: var(--violet-light);
+    border-color: var(--ocean-light);
+    background: var(--ocean-bg-08);
   }
   .k-modal-payment-opt.is-active {
-    border-color: var(--violet);
-    background: var(--violet-light);
+    border-color: var(--ocean);
+    background: var(--ocean);
   }
-  .k-modal-payment-opt.is-active .k-modal-opt-radio {
-    border-color: var(--violet);
-  }
-  .k-modal-payment-opt.is-active .k-modal-opt-radio::after {
-    background: var(--violet);
-  }
-  .k-modal-pay-icon { font-size: 18px; flex-shrink: 0; }
-  .k-modal-pay-label {
-    flex: 1;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .k-modal-pay-sub {
-    display: block;
-    font-size: 11px;
-    color: var(--text-muted);
-    font-weight: 400;
-    margin-top: 1px;
-  }
-  .k-modal-pay-badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
+  /* Icône — plus grosse en tabs */
+  .k-modal-pay-icon {
+    font-size: 20px;
     flex-shrink: 0;
   }
-  .k-modal-pay-badge--stripe {
-    background: var(--blue-stripe-bg);
-    color: var(--blue-stripe-text);
-    border: 1px solid var(--blue-border);
+  /* Label court : texte de l'opt (avant le <span>.k-modal-pay-sub) */
+  .k-modal-pay-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+    /* tronquer si trop long */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
   }
-  .k-modal-pay-badge--group {
-    background: var(--violet-light);
-    color: var(--violet-dark);
-    border: 1px solid var(--violet-mid);
+  .k-modal-payment-opt.is-active .k-modal-pay-label {
+    color: var(--white);
   }
+  /* Masquer les éléments radio, sous-label, badge en mode tabs */
+  .k-modal-payment-opt .k-modal-opt-radio,
+  .k-modal-payment-opt .k-modal-pay-sub,
+  .k-modal-payment-opt .k-modal-pay-badge { display: none; }
+  /* Sous-section active (carte bancaire) — bloc injecté sous les tabs */
+  /* Le bloc .k-modal-payment-detail est absent du JS actuel ;
+     le rendu de l'opt actif est suffisant pour le mockup.       */
 }
 
 
