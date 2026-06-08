@@ -19,6 +19,7 @@
  *   'cash_confirm'   — Agent relais confirme cash (pending → confirmed)
  *   'wallet_full_payment' — Wallet couvre 100% de la commande (pending → confirmed)
  *   'shared_cart_full_payment' — Panier partagé financé à 100% (pending → confirmed)
+ *   'paypal_capture' — Capture PayPal confirmée (pending → confirmed) — migration 079
  *
  * Guarantees (D6):
  *   - Every transition inserts into order_status_history
@@ -213,7 +214,7 @@ async function transitionOrderStatus({
       return { success: false, error: "Agent relais: uniquement commandes cash relais" };
     }
 
-  } else if (['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment'].includes(source)) {
+  } else if (['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture'].includes(source)) {
     // Payment confirmation sources: STRICTLY pending → confirmed only
     if (!(previousStatus === 'pending' && newStatus === 'confirmed')) {
       // Already paid, or wrong transition → graceful no-op
@@ -263,7 +264,7 @@ async function transitionOrderStatus({
 
   // ── 5. Special: confirmed (paiement reçu) → set payment_status = 'paid' ──
   // Ceci remplace la logique qui était dans payments.js
-  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'system'].includes(source)) {
+  if (newStatus === 'confirmed' && previousStatus === 'pending' && ['stripe_webhook', 'cash_confirm', 'wallet_full_payment', 'shared_cart_full_payment', 'paypal_capture', 'system'].includes(source)) {
     await q.query(
       `UPDATE orders SET payment_status = 'paid' WHERE id = $1`,
       [orderId]

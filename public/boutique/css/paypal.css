@@ -1,0 +1,101 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   KOMERCE — CSS PayPal (Migration 079)
+
+   À importer dans css/dist ou ajouter à la fin de css/interactions.css selon
+   la pipeline boutique.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Wrap PayPal — caché par défaut, révélé quand mode=paypal_eur */
+.k-paypal-wrap {
+  display: none;
+  margin-top: 12px;
+  padding: 12px;
+  background: #fafbfc;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+}
+
+.k-paypal-wrap.is-visible {
+  display: block;
+  animation: kPaypalFadeIn 220ms ease-out;
+}
+
+@keyframes kPaypalFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.k-paypal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.k-paypal-paylater-tag {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+  color: #0070ba; /* PayPal blue */
+  background: #f0f7ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+}
+
+.k-paypal-buttons {
+  /* Le SDK PayPal injecte ses propres boutons stylés — on contraint juste la largeur */
+  min-height: 45px;
+  width: 100%;
+}
+
+.k-paypal-buttons:empty {
+  /* État de chargement avant injection SDK */
+  background: linear-gradient(90deg, #f0f3f7 0%, #e3e8ee 50%, #f0f3f7 100%);
+  background-size: 200% 100%;
+  animation: kPaypalShimmer 1.2s linear infinite;
+  border-radius: 6px;
+}
+
+@keyframes kPaypalShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.k-paypal-loading::before {
+  content: "Chargement de PayPal…";
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7785;
+  padding: 14px 0;
+}
+
+.k-paypal-error {
+  color: #c33;
+  font-size: 13px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fdecea;
+  border-radius: 6px;
+  display: none;
+}
+
+.k-paypal-error:not(:empty) {
+  display: block;
+}
+
+/* Chip PayPal — alignée sur les autres chips du checkout */
+#ck-chip-paypal .ck-chip-icon {
+  /* Le logo PayPal officiel utilise leurs couleurs — l'emoji 🅿️ reste un fallback */
+  color: #0070ba;
+}
+
+#ck-chip-paypal.ck-pay-chip--active {
+  border-color: #0070ba;
+  background: #f0f7ff;
+}

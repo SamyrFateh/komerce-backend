@@ -9,6 +9,7 @@ import { bus }           from './b-bus.js';
 import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost } from './b-utils.js';
 import { showToast, cartTotal }   from './b-cart-core.js';
+import { renderPayPalButton, isPayPalEnabled } from './b-paypal.js'; // Migration 079
 import { openCart, closeCart, renderCart, clearCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity, bindChangeIdentity }  from './b-identity.js';
@@ -760,6 +761,10 @@ export function renderCheckout() {
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
       + '<input type="radio" name="payment_mode" value="stripe_eur">'
       + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte<br><em class="ck-stripe-tag">Stripe</em></span>'
+      + '</label>'
+      + '<label class="ck-pay-chip" id="ck-chip-paypal" style="display:none;">' /* affiché si PayPal enabled */
+      + '<input type="radio" name="payment_mode" value="paypal_eur">'
+      + '<span class="ck-chip-icon">🅿️</span><span class="ck-chip-lbl">PayPal<br><em class="ck-stripe-tag">4× possible</em></span>'
       + '</label>';
     body.appendChild(payGrid);
 
@@ -778,6 +783,23 @@ export function renderCheckout() {
       + '<div id="stripe-card-error" class="k-stripe-error"></div>'
       + '<div id="stripe-eur-display" class="k-stripe-eur"></div>';
     body.appendChild(stripeCardWrap);
+
+    /* PayPal container — affiché quand payment_mode=paypal_eur */
+    document.querySelectorAll('#paypal-button-container').forEach(el => el.remove());
+    const paypalWrap = document.createElement('div');
+    paypalWrap.id = 'paypal-wrap';
+    paypalWrap.className = 'k-paypal-wrap';
+    paypalWrap.innerHTML = '<div class="k-paypal-title">🅿️ Paiement PayPal'
+      + ' <em class="k-paypal-paylater-tag">Payez en 4× sans frais (éligibilité affichée par PayPal)</em></div>'
+      + '<div id="paypal-button-container" class="k-paypal-buttons"></div>'
+      + '<div id="paypal-error" class="k-paypal-error"></div>';
+    body.appendChild(paypalWrap);
+
+    /* Détection serveur PayPal activé → affiche la chip */
+    isPayPalEnabled().then(enabled => {
+      const chip = document.getElementById('ck-chip-paypal');
+      if (chip && enabled) chip.style.display = '';
+    });
 
 
     // Le pays/zone est désormais piloté par le picker de relais (_openRelaisPicker),
@@ -819,12 +841,36 @@ export function renderCheckout() {
   function updatePaymentUI() {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
       const isStripe = mode && mode.value === 'stripe_eur';
+      const isPaypal = mode && mode.value === 'paypal_eur';
       od.payment_mode = mode ? mode.value : 'cash_relais';
 
       document.querySelectorAll('.ck-pay-chip').forEach(chip => {
         const r = chip.querySelector('input[type=radio]');
         if (r && !r.disabled) chip.classList.toggle('ck-pay-chip--active', r.checked);
       });
+
+      /* Toggle PayPal wrap + lazy render du bouton officiel */
+      const ppWrap = document.getElementById('paypal-wrap');
+      if (ppWrap) {
+        ppWrap.classList.toggle('is-visible', isPaypal);
+        if (isPaypal && !ppWrap.dataset.rendered) {
+          ppWrap.dataset.rendered = '1';
+          renderPayPalButton('paypal-button-container', {
+            validateBeforeClick: () => _validateCheckoutForm(),
+            prepareKomerceOrder: () => _createKomerceOrderForPayPal(),
+            onSuccess: (captureRes) => _onPayPalSuccess(captureRes),
+            onError: (err) => {
+              const errEl = document.getElementById('paypal-error');
+              if (errEl) errEl.textContent = err?.message || 'Erreur PayPal';
+            },
+          }).catch(err => console.error('[PAYPAL] render failed', err));
+        }
+      }
+
+      /* Le bouton "Confirmer" classique est caché quand PayPal est sélectionné
+         (le bouton PayPal officiel prend le relais). */
+      const confirmBtn = document.getElementById('btn-confirm-order');
+      if (confirmBtn) confirmBtn.style.display = isPaypal ? 'none' : '';
 
       const wrap = document.getElementById('stripe-card-wrap');
       if (wrap) {
@@ -1117,3 +1163,98 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
   }, 0);
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PayPal — helpers déclenchés par renderPayPalButton (Migration 079)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Validation pré-clic PayPal — vérifie que le formulaire de checkout est
+ * complet AVANT d'ouvrir la popup PayPal. Renvoie true/false.
+ *
+ * Réutilise les contrôles existants : identité, relais, bénéficiaire.
+ */
+async function _validateCheckoutForm() {
+  const od = state.orderData || {};
+
+  // 1. Identité du payeur
+  const identity = getCurrentIdentity();
+  if (!identity?.phone) {
+    showToast('Renseignez votre numéro de téléphone', 'error');
+    return false;
+  }
+
+  // 2. Relais sélectionné
+  if (!od.selectedRelaisId) {
+    showToast('Sélectionnez un relais', 'error');
+    return false;
+  }
+
+  // 3. Bénéficiaire (nom + téléphone)
+  const benefNameEl  = document.getElementById('of-beneficiary-name');
+  const benefPhoneEl = document.getElementById('of-beneficiary-phone');
+  const benefName  = benefNameEl?.value?.trim();
+  const benefPhone = benefPhoneEl?.value?.trim();
+  if (!benefName || !benefPhone) {
+    showToast('Renseignez le nom et le téléphone du bénéficiaire', 'error');
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Crée l'ordre Komerce côté serveur (status=pending, payment_mode=paypal_eur)
+ * avant de demander à PayPal de créer son own order.
+ *
+ * Idempotent : si une référence existe déjà dans state, on la réutilise.
+ */
+async function _createKomerceOrderForPayPal() {
+  const od = state.orderData || {};
+
+  // Idempotence : si on a déjà une ref PayPal pending, on la réutilise
+  if (state.pendingPaypalOrderRef) {
+    return { order_reference: state.pendingPaypalOrderRef };
+  }
+
+  const identity   = getCurrentIdentity();
+  const recipName  = document.getElementById('of-beneficiary-name')?.value?.trim();
+  const recipPhone = document.getElementById('of-beneficiary-phone')?.value?.trim();
+  const trackingPhone = identity?.phone || undefined;
+
+  const items = state.cart.map(i => ({
+    product_id: String(i.product.id),
+    quantity:   i.qty,
+    confection_type: 'aucun',
+  }));
+
+  const apiResult = await apiPost('/api/orders', {
+    items,
+    relais_id:        od.selectedRelaisId,
+    recipient_name:   recipName,
+    recipient_phone:  recipPhone,
+    payment_mode:     'paypal_eur',
+    use_wallet:       od.use_wallet || false,
+    tracking_phone:   trackingPhone,
+    share_token:      state.shareToken || undefined,
+  }, { idempotencyKey: genIdempotencyKey() });
+
+  const order = apiResult.order || apiResult;
+  state.pendingPaypalOrderRef = order.reference;
+  state.lastApiResult         = apiResult;
+
+  return { order_reference: order.reference, order_id: order.id };
+}
+
+/**
+ * Callback de succès après capture PayPal — affiche l'écran de confirmation.
+ */
+function _onPayPalSuccess(captureRes) {
+  const recipName = document.getElementById('of-beneficiary-name')?.value?.trim() || '';
+  const orderRef  = state.pendingPaypalOrderRef;
+  // Reconstruire un orderData minimal pour renderOrderSuccess
+  const orderData = state.lastApiResult?.order || { reference: orderRef };
+  clearCart();
+  state.pendingPaypalOrderRef = null;
+  renderOrderSuccess(orderData, recipName, undefined, state.lastApiResult || orderData);
+}

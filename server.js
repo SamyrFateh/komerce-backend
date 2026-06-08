@@ -67,6 +67,8 @@ applySecurity(app);
 // ── Stripe webhook MUST receive raw body for signature verification ──────────
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use('/api/shared-carts/stripe/webhook', express.raw({ type: 'application/json' }));
+// PayPal webhook — raw body avant express.json (I-07). Migration 079.
+app.use('/api/payments/paypal/webhook', express.raw({ type: 'application/json' }));
 // /api/collective-payments/stripe/webhook supprimé — collective_workspaces démonté 2026-05-30
 
 app.use(express.json({ limit: '1mb' }));
@@ -189,6 +191,8 @@ app.get('/api/public/config', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=300');
   res.json({
     stripe_public_key: process.env.STRIPE_PUBLIC_KEY || process.env.STRIPE_PK || '',
+    paypal_client_id:  process.env.PAYPAL_CLIENT_ID  || '',
+    paypal_env:        process.env.PAYPAL_ENV        || 'sandbox',
     eur_kmf_rate:      Number(process.env.EUR_KMF_RATE)  || 492,
     aed_kmf_rate:      Number(process.env.AED_KMF_RATE)  || 138,
     whatsapp_number:   process.env.SUPPORT_WHATSAPP    || '',

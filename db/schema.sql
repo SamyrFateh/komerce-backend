@@ -330,12 +330,12 @@ CREATE FUNCTION public.check_parcel_ship_guard() RETURNS trigger
 BEGIN
   IF NEW.status = 'shipped' AND (OLD.status IS NULL OR OLD.status != 'shipped') THEN
     IF NEW.relais_id IS NULL AND NEW.destination_relais IS NULL THEN
-      RAISE EXCEPTION 'ANTI-ERREUR: Impossible d''expÃ©dier colis % sans destination', NEW.reference;
+      RAISE EXCEPTION 'ANTI-ERREUR: Impossible d''expédier colis % sans destination', NEW.reference;
     END IF;
   END IF;
-  -- EmpÃªcher collected sans available/arrived
+  -- Empêcher collected sans available/arrived
   IF NEW.status = 'collected' AND OLD.status NOT IN ('available', 'arrived') THEN
-    RAISE EXCEPTION 'ANTI-ERREUR: Colis % ne peut pas passer Ã  collected depuis %', NEW.reference, OLD.status;
+    RAISE EXCEPTION 'ANTI-ERREUR: Colis % ne peut pas passer à  collected depuis %', NEW.reference, OLD.status;
   END IF;
   RETURN NEW;
 END;
@@ -364,7 +364,7 @@ CREATE FUNCTION public.compute_real_margin() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  -- Calcul uniquement si cost_real_kmf est renseignÃ© et total_kmf > 0
+  -- Calcul uniquement si cost_real_kmf est renseigné et total_kmf > 0
   IF NEW.cost_real_kmf IS NOT NULL AND NEW.total_kmf > 0 THEN
 
     NEW.margin_real_pct := ROUND(
@@ -381,13 +381,13 @@ BEGIN
       ELSE NULL
     END;
 
-    -- Alerte si marge rÃ©elle < 10%
+    -- Alerte si marge réelle < 10%
     NEW.margin_alert := NEW.margin_real_pct < 10;
 
-    -- Blocage sourcing si marge rÃ©elle nÃ©gative
+    -- Blocage sourcing si marge réelle négative
     NEW.sourcing_blocked := NEW.margin_real_pct < 0;
 
-    -- ClÃ´ture comptable
+    -- Clôture comptable
     IF NEW.cost_closed_at IS NULL THEN
       NEW.cost_closed_at := NOW();
     END IF;
@@ -438,7 +438,7 @@ $$;
 -- Name: FUNCTION is_order_complete(p_order_id uuid); Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE si tous les POs non annulÃ©s ont received_qty >= qty.';
+COMMENT ON FUNCTION public.is_order_complete(p_order_id uuid) IS 'Retourne TRUE si tous les POs non annulés ont received_qty >= qty.';
 
 
 --
@@ -552,7 +552,7 @@ DECLARE
   _product_id uuid;
   _count      integer;
 BEGIN
-  -- RÃ©cupÃ©rer le product_id concernÃ© (INSERT/UPDATE = NEW, DELETE = OLD)
+  -- Récupérer le product_id concerné (INSERT/UPDATE = NEW, DELETE = OLD)
   _product_id := COALESCE(NEW.product_id, OLD.product_id);
 
   SELECT COUNT(*) INTO _count
@@ -645,7 +645,7 @@ CREATE TABLE public.boutique_categories (
     key text NOT NULL,
     label text NOT NULL,
     short_label text,
-    section_emoji text DEFAULT 'ðŸ“¦'::text NOT NULL,
+    section_emoji text DEFAULT '📦'::text NOT NULL,
     icon_svg text,
     db_keys text[] DEFAULT '{}'::text[] NOT NULL,
     filter_type text,
@@ -668,7 +668,7 @@ CREATE TABLE public.boutique_subcategories (
     key text NOT NULL,
     label text NOT NULL,
     short_label text,
-    icon text DEFAULT 'âœ¨'::text NOT NULL,
+    icon text DEFAULT '✨'::text NOT NULL,
     display_order integer DEFAULT 99 NOT NULL,
     is_active boolean DEFAULT true NOT NULL
 );
@@ -1250,35 +1250,35 @@ END) STORED,
 -- Name: TABLE customs_history; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.customs_history IS 'Historique de chaque passage douanier â€” source de vÃ©ritÃ© pour le coefficient de risque';
+COMMENT ON TABLE public.customs_history IS 'Historique de chaque passage douanier — source de vérité pour le coefficient de risque';
 
 
 --
 -- Name: COLUMN customs_history.customs_delta_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.customs_history.customs_delta_kmf IS 'Colonne calculÃ©e : customs_real_kmf - customs_estimated_kmf';
+COMMENT ON COLUMN public.customs_history.customs_delta_kmf IS 'Colonne calculée : customs_real_kmf - customs_estimated_kmf';
 
 
 --
 -- Name: COLUMN customs_history.customs_delta_pct; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.customs_history.customs_delta_pct IS 'Colonne calculÃ©e : Ã©cart en % â€” alimentation coefficient de risque mensuel';
+COMMENT ON COLUMN public.customs_history.customs_delta_pct IS 'Colonne calculée : écart en % — alimentation coefficient de risque mensuel';
 
 
 --
 -- Name: COLUMN customs_history.customs_agent_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.customs_history.customs_agent_id IS 'Identifiant ou nom agent douanier â€” dÃ©tection de patterns de sur-Ã©valuation';
+COMMENT ON COLUMN public.customs_history.customs_agent_id IS 'Identifiant ou nom agent douanier — détection de patterns de sur-évaluation';
 
 
 --
 -- Name: COLUMN customs_history.is_anomaly; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.customs_history.is_anomaly IS 'true si customs_real > 2Ã— customs_estimated â€” alerte back-office automatique';
+COMMENT ON COLUMN public.customs_history.is_anomaly IS 'true si customs_real > 2× customs_estimated — alerte back-office automatique';
 
 
 --
@@ -1358,7 +1358,7 @@ CREATE TABLE public.disputes (
 -- Name: COLUMN disputes.confection_type; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige liÃ© Ã  un service couture : type du service concernÃ©';
+COMMENT ON COLUMN public.disputes.confection_type IS 'Si litige lié à  un service couture : type du service concerné';
 
 
 --
@@ -1446,7 +1446,7 @@ COMMENT ON COLUMN public.fabrics.fabric_type IS 'Wax | Dentelle | Mousseline | S
 -- Name: COLUMN fabrics.price_per_meter_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.fabrics.price_per_meter_kmf IS 'Prix au mÃ¨tre KMF â€” calculÃ© depuis price_per_meter_aed Ã— taux 138';
+COMMENT ON COLUMN public.fabrics.price_per_meter_kmf IS 'Prix au mètre KMF — calculé depuis price_per_meter_aed × taux 138';
 
 
 --
@@ -1460,28 +1460,28 @@ COMMENT ON COLUMN public.fabrics.price_per_yard_kmf IS 'Prix au yard KMF (option
 -- Name: COLUMN fabrics.min_order_meters; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.fabrics.min_order_meters IS 'Minimum commandable en mÃ¨tres';
+COMMENT ON COLUMN public.fabrics.min_order_meters IS 'Minimum commandable en mètres';
 
 
 --
 -- Name: COLUMN fabrics.stock_meters; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.fabrics.stock_meters IS 'Stock Hub Deira en mÃ¨tres â€” null = sur commande';
+COMMENT ON COLUMN public.fabrics.stock_meters IS 'Stock Hub Deira en mètres — null = sur commande';
 
 
 --
 -- Name: COLUMN fabrics.is_available; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.fabrics.is_available IS 'Disponible Ã  la commande';
+COMMENT ON COLUMN public.fabrics.is_available IS 'Disponible à  la commande';
 
 
 --
 -- Name: COLUMN fabrics.sort_order; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.fabrics.sort_order IS 'Ordre affichage sÃ©lecteur cÃ©rÃ©monie';
+COMMENT ON COLUMN public.fabrics.sort_order IS 'Ordre affichage sélecteur cérémonie';
 
 
 --
@@ -1573,7 +1573,7 @@ COMMENT ON COLUMN public.finance_config.avg_orders_per_month IS 'Volume mensuel 
 -- Name: COLUMN finance_config.provision_risque_pct; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.finance_config.provision_risque_pct IS 'Taux de provision risque mensuel appliquÃ© au CA (ex: 0.01 = 1%). Configurable via Control Tower > ParamÃ¨tres Ã©conomiques.';
+COMMENT ON COLUMN public.finance_config.provision_risque_pct IS 'Taux de provision risque mensuel appliqué au CA (ex: 0.01 = 1%). Configurable via Control Tower > Paramètres économiques.';
 
 
 --
@@ -1885,21 +1885,21 @@ CREATE TABLE public.order_items (
 -- Name: COLUMN order_items.module_type; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.order_items.module_type IS 'Type cÃ©rÃ©monie pour cet article â€” null si article standard';
+COMMENT ON COLUMN public.order_items.module_type IS 'Type cérémonie pour cet article — null si article standard';
 
 
 --
 -- Name: COLUMN order_items.module_fabric_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.order_items.module_fabric_id IS 'FK vers fabrics â€” tissu pour cet article';
+COMMENT ON COLUMN public.order_items.module_fabric_id IS 'FK vers fabrics — tissu pour cet article';
 
 
 --
 -- Name: COLUMN order_items.module_size; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.order_items.module_size IS 'Taille pour cet article cÃ©rÃ©monie';
+COMMENT ON COLUMN public.order_items.module_size IS 'Taille pour cet article cérémonie';
 
 
 --
@@ -1913,7 +1913,7 @@ COMMENT ON COLUMN public.order_items.module_retouche IS 'Retouche locale pour ce
 -- Name: COLUMN order_items.module_qty_meters; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.order_items.module_qty_meters IS 'QuantitÃ© tissu en mÃ¨tres (fabric_only)';
+COMMENT ON COLUMN public.order_items.module_qty_meters IS 'Quantité tissu en mètres (fabric_only)';
 
 
 --
@@ -2073,56 +2073,56 @@ CREATE TABLE public.orders (
 -- Name: COLUMN orders.cost_estimated_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.cost_estimated_kmf IS 'CoÃ»t total estimÃ© par le moteur pricing au moment de la commande';
+COMMENT ON COLUMN public.orders.cost_estimated_kmf IS 'Coût total estimé par le moteur pricing au moment de la commande';
 
 
 --
 -- Name: COLUMN orders.cost_real_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.cost_real_kmf IS 'CoÃ»t total rÃ©el renseignÃ© aprÃ¨s livraison (douane rÃ©elle incluse)';
+COMMENT ON COLUMN public.orders.cost_real_kmf IS 'Coût total réel renseigné après livraison (douane réelle incluse)';
 
 
 --
 -- Name: COLUMN orders.cost_delta_pct; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.cost_delta_pct IS 'Ã‰cart coÃ»t rÃ©el vs estimÃ© en % â€” alimentation mensuelle du coefficient risque';
+COMMENT ON COLUMN public.orders.cost_delta_pct IS 'Écart coût réel vs estimé en % — alimentation mensuelle du coefficient risque';
 
 
 --
 -- Name: COLUMN orders.margin_estimated_pct; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.margin_estimated_pct IS 'Marge estimÃ©e Ã  la commande â€” objectif 12%';
+COMMENT ON COLUMN public.orders.margin_estimated_pct IS 'Marge estimée à  la commande — objectif 12%';
 
 
 --
 -- Name: COLUMN orders.margin_real_pct; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.margin_real_pct IS 'Marge rÃ©elle post-livraison = (total_kmf - cost_real_kmf) / total_kmf';
+COMMENT ON COLUMN public.orders.margin_real_pct IS 'Marge réelle post-livraison = (total_kmf - cost_real_kmf) / total_kmf';
 
 
 --
 -- Name: COLUMN orders.margin_alert; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.margin_alert IS 'true si margin_real_pct < 10% â€” alerte back-office';
+COMMENT ON COLUMN public.orders.margin_alert IS 'true si margin_real_pct < 10% — alerte back-office';
 
 
 --
 -- Name: COLUMN orders.sourcing_blocked; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.sourcing_blocked IS 'true si margin_real_pct < 0 â€” blocage sourcing produit/catÃ©gorie';
+COMMENT ON COLUMN public.orders.sourcing_blocked IS 'true si margin_real_pct < 0 — blocage sourcing produit/catégorie';
 
 
 --
 -- Name: COLUMN orders.cost_closed_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.cost_closed_at IS 'Horodatage de la clÃ´ture comptable commande';
+COMMENT ON COLUMN public.orders.cost_closed_at IS 'Horodatage de la clôture comptable commande';
 
 
 --
@@ -2143,14 +2143,14 @@ COMMENT ON COLUMN public.orders.confection_instructions IS 'Mensurations ou note
 -- Name: COLUMN orders.confection_delay_days; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.confection_delay_days IS 'DÃ©lai supplÃ©mentaire jours calculÃ© selon le service choisi';
+COMMENT ON COLUMN public.orders.confection_delay_days IS 'Délai supplémentaire jours calculé selon le service choisi';
 
 
 --
 -- Name: COLUMN orders.confection_artisan_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.confection_artisan_id IS 'RÃ©fÃ©rence atelier Deira ou artisan relais Anjouan (table partners)';
+COMMENT ON COLUMN public.orders.confection_artisan_id IS 'Référence atelier Deira ou artisan relais Anjouan (table partners)';
 
 
 --
@@ -2164,21 +2164,21 @@ COMMENT ON COLUMN public.orders.purchasing_at IS 'Horodatage passage au statut p
 -- Name: COLUMN orders.in_transit_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.in_transit_at IS 'Horodatage passage au statut transit_comores (dÃ©douanement Mutsamudu)';
+COMMENT ON COLUMN public.orders.in_transit_at IS 'Horodatage passage au statut transit_comores (dédouanement Mutsamudu)';
 
 
 --
 -- Name: COLUMN orders.module_type; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.module_type IS 'ready_made | fabric_only | custom_from_fabric â€” null si commande standard';
+COMMENT ON COLUMN public.orders.module_type IS 'ready_made | fabric_only | custom_from_fabric — null si commande standard';
 
 
 --
 -- Name: COLUMN orders.module_fabric_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.module_fabric_id IS 'FK vers fabrics.id â€” tissu choisi (fabric_only et custom_from_fabric)';
+COMMENT ON COLUMN public.orders.module_fabric_id IS 'FK vers fabrics.id — tissu choisi (fabric_only et custom_from_fabric)';
 
 
 --
@@ -2199,14 +2199,14 @@ COMMENT ON COLUMN public.orders.module_size IS 'Taille standard client : XS S M 
 -- Name: COLUMN orders.module_retouche; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.module_retouche IS 'Retouche locale demandÃ©e aux Comores â€” incluse sans surcoÃ»t MVP';
+COMMENT ON COLUMN public.orders.module_retouche IS 'Retouche locale demandée aux Comores — incluse sans surcoût MVP';
 
 
 --
 -- Name: COLUMN orders.module_qty_meters; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.module_qty_meters IS 'QuantitÃ© tissu en mÃ¨tres ou yards (fabric_only uniquement)';
+COMMENT ON COLUMN public.orders.module_qty_meters IS 'Quantité tissu en mètres ou yards (fabric_only uniquement)';
 
 
 --
@@ -2220,28 +2220,28 @@ COMMENT ON COLUMN public.orders.module_accessories IS 'Accessoires choisis ex: [
 -- Name: COLUMN orders.ordered_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.ordered_at IS 'Horodatage passage au statut ordered â€” paiement confirmÃ©, commande lancÃ©e (spec Â§9.1 statut #1)';
+COMMENT ON COLUMN public.orders.ordered_at IS 'Horodatage passage au statut ordered — paiement confirmé, commande lancée (spec §9.1 statut #1)';
 
 
 --
 -- Name: COLUMN orders.preparation_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.preparation_at IS 'Horodatage SCAN 3 Hub â€” rÃ©ception marchandise au hub Dubai (spec Â§9.1 statut #3)';
+COMMENT ON COLUMN public.orders.preparation_at IS 'Horodatage SCAN 3 Hub — réception marchandise au hub Dubai (spec §9.1 statut #3)';
 
 
 --
 -- Name: COLUMN orders.hub_preparation_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.hub_preparation_at IS 'Horodatage SCAN 4 Hub â€” colis emballÃ©, prÃªt pour remise groupeur (spec Â§9.1 statut #4)';
+COMMENT ON COLUMN public.orders.hub_preparation_at IS 'Horodatage SCAN 4 Hub — colis emballé, prêt pour remise groupeur (spec §9.1 statut #4)';
 
 
 --
 -- Name: COLUMN orders.order_occasion; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.order_occasion IS 'Occasion de commande â€” mariage Â· cadeau Â· personnel Â· construction Â· rentree Â· ramadan Â· aid Â· autre â€” Phase 2 fidÃ©lisation';
+COMMENT ON COLUMN public.orders.order_occasion IS 'Occasion de commande — mariage · cadeau · personnel · construction · rentree · ramadan · aid · autre — Phase 2 fidélisation';
 
 
 --
@@ -2262,14 +2262,14 @@ COMMENT ON COLUMN public.orders.supplier_invoice_url IS 'URL ou chemin vers la f
 -- Name: COLUMN orders.batch_id; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.batch_id IS 'Lot d expÃ©dition groupÃ© (Phase 2). NULL en Phase 1.';
+COMMENT ON COLUMN public.orders.batch_id IS 'Lot d expédition groupé (Phase 2). NULL en Phase 1.';
 
 
 --
 -- Name: COLUMN orders.pending_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.orders.pending_at IS 'Timestamp de crÃ©ation de la commande (status=pending).';
+COMMENT ON COLUMN public.orders.pending_at IS 'Timestamp de création de la commande (status=pending).';
 
 
 --
@@ -2481,7 +2481,7 @@ CREATE TABLE public.partners (
 -- Name: TABLE partners; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.partners IS 'RÃ©seau partenaires Komerce â€” 3 niveaux MVP + artisans couture + franchise Phase 4';
+COMMENT ON TABLE public.partners IS 'Réseau partenaires Komerce — 3 niveaux MVP + artisans couture + franchise Phase 4';
 
 
 --
@@ -2495,7 +2495,7 @@ COMMENT ON COLUMN public.partners.partner_type IS 'relais_simple | relais_showro
 -- Name: COLUMN partners.activation_phase; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.partners.activation_phase IS 'Phase d activation : phase_1 (MVP) Ã  phase_4 (franchise)';
+COMMENT ON COLUMN public.partners.activation_phase IS 'Phase d activation : phase_1 (MVP) à  phase_4 (franchise)';
 
 
 --
@@ -2516,7 +2516,7 @@ CREATE TABLE public.pickup_print_tokens (
 -- Name: TABLE pickup_print_tokens; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.pickup_print_tokens IS 'Tokens Ã©phÃ©mÃ¨res (TTL 2 min) pour accÃ¨s one-shot au HTML imprimable du reÃ§u cash. Remplace la Map printTokens in-memory de routes/pickup-secret.js (SEC-1).';
+COMMENT ON TABLE public.pickup_print_tokens IS 'Tokens éphémères (TTL 2 min) pour accès one-shot au HTML imprimable du reçu cash. Remplace la Map printTokens in-memory de routes/pickup-secret.js (SEC-1).';
 
 
 --
@@ -2535,7 +2535,7 @@ CREATE TABLE public.pickup_reveal_codes (
 -- Name: TABLE pickup_reveal_codes; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.pickup_reveal_codes IS 'Codes pickup en clair, stockÃ©s temporairement (TTL 30 min) pour la rÃ©vÃ©lation one-shot aprÃ¨s paiement Stripe/Wallet/MM. Le code est supprimÃ© immÃ©diatement aprÃ¨s la premiÃ¨re lecture par GET /reveal-once. Remplace la Map REVEAL_CACHE in-memory de routes/pickup-secret.js (SEC-1).';
+COMMENT ON TABLE public.pickup_reveal_codes IS 'Codes pickup en clair, stockés temporairement (TTL 30 min) pour la révélation one-shot après paiement Stripe/Wallet/MM. Le code est supprimé immédiatement après la première lecture par GET /reveal-once. Remplace la Map REVEAL_CACHE in-memory de routes/pickup-secret.js (SEC-1).';
 
 
 --
@@ -2766,21 +2766,21 @@ CREATE TABLE public.product_suppliers (
 -- Name: TABLE product_suppliers; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.product_suppliers IS 'Mapping produit â†’ fournisseur avec SKU, prix AED et prioritÃ©';
+COMMENT ON TABLE public.product_suppliers IS 'Mapping produit → fournisseur avec SKU, prix AED et priorité';
 
 
 --
 -- Name: COLUMN product_suppliers.supplier_price_aed; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.product_suppliers.supplier_price_aed IS 'Prix achat AED â€” utilisÃ© pour calculer cost_real_kmf';
+COMMENT ON COLUMN public.product_suppliers.supplier_price_aed IS 'Prix achat AED — utilisé pour calculer cost_real_kmf';
 
 
 --
 -- Name: COLUMN product_suppliers.priority; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.product_suppliers.priority IS '1 = fournisseur prÃ©fÃ©rÃ© Â· 2+ = fallback si indisponible';
+COMMENT ON COLUMN public.product_suppliers.priority IS '1 = fournisseur préféré · 2+ = fallback si indisponible';
 
 
 --
@@ -2828,7 +2828,7 @@ CREATE VIEW public.product_variants_ordered AS
 -- Name: VIEW product_variants_ordered; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.product_variants_ordered IS 'Variantes triÃ©es display_order ASC â€” utiliser cette vue dans /api/products/:id';
+COMMENT ON VIEW public.product_variants_ordered IS 'Variantes triées display_order ASC — utiliser cette vue dans /api/products/:id';
 
 
 --
@@ -2902,14 +2902,14 @@ CREATE TABLE public.products (
 -- Name: COLUMN products.customs_risk_coeff; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.products.customs_risk_coeff IS 'Coefficient risque douane (ex: 1.200 = +20%). MVP=1.2 fixe. Phase 2=calculÃ© depuis customs_history';
+COMMENT ON COLUMN public.products.customs_risk_coeff IS 'Coefficient risque douane (ex: 1.200 = +20%). MVP=1.2 fixe. Phase 2=calculé depuis customs_history';
 
 
 --
 -- Name: COLUMN products.customs_risk_updated; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.products.customs_risk_updated IS 'Date de derniÃ¨re mise Ã  jour du coefficient (rÃ©vision mensuelle)';
+COMMENT ON COLUMN public.products.customs_risk_updated IS 'Date de dernière mise à  jour du coefficient (révision mensuelle)';
 
 
 --
@@ -2950,28 +2950,28 @@ CREATE TABLE public.purchase_orders (
 -- Name: TABLE purchase_orders; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.purchase_orders IS 'Commandes passÃ©es chez les fournisseurs Dubai â€” liÃ©es aux commandes client';
+COMMENT ON TABLE public.purchase_orders IS 'Commandes passées chez les fournisseurs Dubai — liées aux commandes client';
 
 
 --
 -- Name: COLUMN purchase_orders.trigger_mode; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.purchase_orders.trigger_mode IS 'auto = API Â· manual = admin dashboard Â· whatsapp = notif WA';
+COMMENT ON COLUMN public.purchase_orders.trigger_mode IS 'auto = API · manual = admin dashboard · whatsapp = notif WA';
 
 
 --
 -- Name: COLUMN purchase_orders.hub_received_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.purchase_orders.hub_received_at IS 'Date de rÃ©ception Hub Dubai â€” dÃ©clenche SCAN 3 (preparation)';
+COMMENT ON COLUMN public.purchase_orders.hub_received_at IS 'Date de réception Hub Dubai — déclenche SCAN 3 (preparation)';
 
 
 --
 -- Name: COLUMN purchase_orders.received_qty; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.purchase_orders.received_qty IS 'QuantitÃ© physiquement reÃ§ue au hub. ComplÃ¨te quand received_qty >= qty.';
+COMMENT ON COLUMN public.purchase_orders.received_qty IS 'Quantité physiquement reçue au hub. Complète quand received_qty >= qty.';
 
 
 --
@@ -3047,7 +3047,7 @@ CREATE TABLE public.revoked_tokens (
 -- Name: TABLE revoked_tokens; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.revoked_tokens IS 'JWT rÃ©voquÃ©s avant expiration naturelle. Le cron startJwtRevocationCleanupCron purge les lignes dont expires_at < NOW().';
+COMMENT ON TABLE public.revoked_tokens IS 'JWT révoqués avant expiration naturelle. Le cron startJwtRevocationCleanupCron purge les lignes dont expires_at < NOW().';
 
 
 --
@@ -3292,7 +3292,7 @@ CREATE TABLE public.shipment_batches (
 -- Name: TABLE shipment_batches; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.shipment_batches IS 'Lots expÃ©dition groupÃ©s hubâ†’bateau. PeuplÃ© en Phase 2.';
+COMMENT ON TABLE public.shipment_batches IS 'Lots expédition groupés hub→bateau. Peuplé en Phase 2.';
 
 
 --
@@ -3335,14 +3335,14 @@ CREATE TABLE public.shipments (
 -- Name: COLUMN shipments.customs_total_estimated_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.shipments.customs_total_estimated_kmf IS 'Total douane estimÃ© pour ce lot d expÃ©dition';
+COMMENT ON COLUMN public.shipments.customs_total_estimated_kmf IS 'Total douane estimé pour ce lot d expédition';
 
 
 --
 -- Name: COLUMN shipments.customs_total_real_kmf; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.shipments.customs_total_real_kmf IS 'Total douane rÃ©el â€” saisi aprÃ¨s dÃ©douanement complet';
+COMMENT ON COLUMN public.shipments.customs_total_real_kmf IS 'Total douane réel — saisi après dédouanement complet';
 
 
 --
@@ -3553,28 +3553,28 @@ CREATE TABLE public.suppliers (
 -- Name: TABLE suppliers; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.suppliers IS 'Fournisseurs Dubai â€” Noon, Amazon UAE, locaux, WhatsApp';
+COMMENT ON TABLE public.suppliers IS 'Fournisseurs Dubai — Noon, Amazon UAE, locaux, WhatsApp';
 
 
 --
 -- Name: COLUMN suppliers.api_key_enc; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.suppliers.api_key_enc IS 'ClÃ© API chiffrÃ©e AES-256 cÃ´tÃ© applicatif â€” jamais en clair en base';
+COMMENT ON COLUMN public.suppliers.api_key_enc IS 'Clé API chiffrée AES-256 côté applicatif — jamais en clair en base';
 
 
 --
 -- Name: COLUMN suppliers.auto_order; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.suppliers.auto_order IS 'true = API dispo â†’ commande auto Â· false = notification WhatsApp/email admin';
+COMMENT ON COLUMN public.suppliers.auto_order IS 'true = API dispo → commande auto · false = notification WhatsApp/email admin';
 
 
 --
 -- Name: COLUMN suppliers.lead_time_days; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.suppliers.lead_time_days IS 'DÃ©lai estimÃ© entre commande fournisseur et rÃ©ception Hub Dubai';
+COMMENT ON COLUMN public.suppliers.lead_time_days IS 'Délai estimé entre commande fournisseur et réception Hub Dubai';
 
 
 --
@@ -3748,7 +3748,7 @@ CREATE VIEW public.v_customs_analysis AS
 -- Name: VIEW v_customs_analysis; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON VIEW public.v_customs_analysis IS 'Analyse douane par catÃ©gorie SH â€” calcul du coefficient de risque recommandÃ©';
+COMMENT ON VIEW public.v_customs_analysis IS 'Analyse douane par catégorie SH — calcul du coefficient de risque recommandé';
 
 
 --
@@ -4038,7 +4038,7 @@ CREATE TABLE public.wallet_consumptions (
 -- Name: COLUMN wallet_consumptions.reversed_at; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON COLUMN public.wallet_consumptions.reversed_at IS 'NULL = consommation active. Non-NULL = reversÃ©e lors d''une annulation de commande.';
+COMMENT ON COLUMN public.wallet_consumptions.reversed_at IS 'NULL = consommation active. Non-NULL = reversée lors d''une annulation de commande.';
 
 
 --

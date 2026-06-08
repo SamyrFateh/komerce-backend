@@ -43,9 +43,17 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
 
     // ── 1. Récupérer la commande ──────────────────────────────────────────────
     const { rows: [order] } = await client.query(
-      `SELECT o.*, u.phone AS user_phone, u.email AS user_email
+      `SELECT o.*,
+              u.phone       AS user_phone,
+              u.full_name   AS user_full_name,
+              u.phone_payer,
+              u.phone_beneficiary,
+              u.email       AS user_email,
+              rc.phone      AS recipient_phone,
+              rc.full_name  AS recipient_name
        FROM orders o
-       LEFT JOIN users u ON u.id = o.user_id
+       LEFT JOIN users      u  ON u.id  = o.user_id
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
        WHERE o.id = $1`,
       [id]
     );

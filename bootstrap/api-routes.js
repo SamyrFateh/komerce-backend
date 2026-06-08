@@ -51,6 +51,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const basketsRouter    = require('../routes/baskets');
   const logisticsRouter  = require('../routes/logistics');
   const paymentsRouter   = require('../routes/payments');
+  const paymentsPaypalRouter = require('../routes/payments-paypal'); // Migration 079
   const scansRouter      = require('../routes/scans');
   const financeRouter    = require('../routes/finance');
   const purchasingRouter = require('../routes/purchasing');
@@ -142,6 +143,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/hub', autoDistributeRouter);
   app.use('/api/carriers',   carriersRouter);
   app.use('/api/wallet',     walletRouter);
+  app.use('/api/payments/paypal', paymentsPaypalRouter); // Migration 079 — DOIT être avant /api/payments générique
   app.use('/api/payments',   paymentsRouter);
   app.use('/api/shared-carts', sharedCartCashRouter);
   app.use('/api/scans',      scansRouter);

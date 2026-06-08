@@ -281,7 +281,7 @@
 
     } catch (err) {
       console.error('[InventoryView] load error', err);
-      itemsEl.innerHTML = `<div class="error-state">❌ ${err.message || err}</div>`;
+      itemsEl.innerHTML = `<div class="error-state">❌ ${esc(err.message || err)}</div>`; // FRESH-104
     }
   }
 

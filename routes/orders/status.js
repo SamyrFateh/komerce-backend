@@ -37,10 +37,18 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     // stock restore (cancel).
 
     const { rows: [order] } = await client.query(
-      `SELECT o.*, r.name AS relais_name, u.phone AS user_phone
+      `SELECT o.*,
+              r.name        AS relais_name,
+              u.phone       AS user_phone,
+              u.full_name   AS user_full_name,
+              u.phone_payer,
+              u.phone_beneficiary,
+              rc.phone      AS recipient_phone,
+              rc.full_name  AS recipient_name
        FROM orders o
-       LEFT JOIN relais r ON r.id = o.relais_id
-       LEFT JOIN users  u ON u.id = o.user_id
+       LEFT JOIN relais     r  ON r.id  = o.relais_id
+       LEFT JOIN users      u  ON u.id  = o.user_id
+       LEFT JOIN recipients rc ON rc.id = o.recipient_id
        WHERE o.id = $1`,
       [req.params.id]
     );

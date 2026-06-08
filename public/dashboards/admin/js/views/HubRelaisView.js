@@ -573,7 +573,7 @@
       });
 
     } catch (e) {
-      panelEl.innerHTML = `<div style="color:#ef4444;font-size:12px">❌ ${e.message}</div>`;
+      panelEl.innerHTML = `<div style="color:#ef4444;font-size:12px">❌ ${esc(e.message)}</div>`; // FRESH-104
     }
   }
 
@@ -845,7 +845,7 @@
         if (mode === 'hub')    await populateHub(wrapper, refreshView);
         if (mode === 'relais') await populateRelais(wrapper, refreshView);
       } catch (err) {
-        wrapper.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur ${mode}: ${err.message}</div>`;
+        wrapper.innerHTML = `<div style="color:#ef4444;padding:20px;text-align:center">❌ Erreur ${esc(mode)}: ${esc(err.message)}</div>`; // FRESH-104
       }
     }
 

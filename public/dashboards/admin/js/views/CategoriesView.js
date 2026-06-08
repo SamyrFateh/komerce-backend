@@ -305,7 +305,7 @@
         }
         cats.forEach(cat => container.appendChild(renderCatRow(cat, refresh)));
       } catch (err) {
-        container.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
+        container.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`; // FRESH-104
       }
     }
 

@@ -227,7 +227,7 @@
         rows: orders,
       });
     } catch (err) {
-      tableEl.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
+      tableEl.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`; // FRESH-104
     }
   }
 
@@ -270,7 +270,7 @@
         rows: data.products || [],
       });
     } catch (err) {
-      tableEl.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
+      tableEl.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`; // FRESH-104
     }
   }
 
@@ -317,7 +317,7 @@
         rows: data.relais || [],
       });
     } catch (err) {
-      tableEl.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
+      tableEl.innerHTML = `<div class="error-state">Erreur: ${esc(err.message)}</div>`; // FRESH-104
     }
   }
 

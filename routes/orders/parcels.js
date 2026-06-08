@@ -19,7 +19,7 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { validate }                  = require('../../middleware/validate');
 const { orders }                    = require('../../validators');
-const { notifyText } = require('../../services/notification-service'); // ZG-1: remplace sendSMS
+const { notifyText, notifyParcelScan } = require('../../services/notification-service'); // ZG-1: remplace sendSMS
 const { getRule, getRuleNumber }    = require('../../utils/rules');
 const { generateParcelRef }         = require('../../utils/reference');
 const { processRefundWithFallback } = require('../../services/refund-service');
@@ -555,7 +555,12 @@ router.patch('/parcels/:parcelId/status', authenticate, requireRole(['admin', 'a
     await client.query('COMMIT');
 
     // SMS client (non bloquant) — sur shipped / available / collected
-    if (parcel.user_phone && PARCEL_SMS[status]) {
+    if (['shipped', 'available'].includes(status)) {
+      // Utiliser le vrai WID AuthKey (ordershipped / orderdelivered) via _loadOrderFromParcel
+      notifyParcelScan(parcelId, parcel.reference, status)
+        .catch(err => log.error({ err }, `[PARCEL-${status.toUpperCase()}] Notification WID failed`));
+    } else if (parcel.user_phone && PARCEL_SMS[status]) {
+      // Autres statuts (collected...) : texte libre
       const smsText = PARCEL_SMS[status](parcel.reference, parcel.relais_name);
       notifyText(parcel.user_phone, smsText, `parcel_${status}`, parcel.parent_id).catch(err => log.error({ err }, 'Notification parcel status failed'));
     }

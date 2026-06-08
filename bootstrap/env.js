@@ -12,9 +12,11 @@ const log = require('../utils/logger').child({ module: 'env' });
  * REQUIRED — bloque le démarrage si absent :
  *   DATABASE_URL, JWT_SECRET, ADMIN_PASSWORD
  *   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, QR_SECRET
+ *   PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID  (migration 079)
  *
  * RECOMMENDED — warn seulement (features dégradées mais app fonctionnelle) :
  *   STRIPE_SHARED_CART_WEBHOOK_SECRET (panier collectif)
+ *   PAYPAL_ENV (défaut: 'sandbox' — explicite pour prod)
  */
 
 function loadAndValidateEnv({ exitOnMissing = true } = {}) {
@@ -27,10 +29,15 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'QR_SECRET',
+    // PayPal — migration 079, diaspora France
+    'PAYPAL_CLIENT_ID',
+    'PAYPAL_CLIENT_SECRET',
+    'PAYPAL_WEBHOOK_ID',
   ];
 
   const recommendedEnv = [
     'STRIPE_SHARED_CART_WEBHOOK_SECRET',
+    'PAYPAL_ENV', // sandbox | production — défaut sandbox côté code
   ];
 
   // Garde-fou supplémentaire : refuser explicitement un bypass OTP en prod
@@ -38,6 +45,13 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
     const otpBypass = process.env.OTP_TEST_MODE === 'true' || process.env.BOUTIQUE_TEST_OTP_BYPASS === 'true';
     if (otpBypass) {
       log.error('❌ FATAL: OTP_TEST_MODE/BOUTIQUE_TEST_OTP_BYPASS interdit en production — arrêt immédiat');
+      if (exitOnMissing) process.exit(1);
+    }
+
+    // Garde-fou PayPal : refuser le démarrage prod sur sandbox (config humaine douteuse).
+    // Si PAYPAL_ENV est absent ou 'sandbox' en prod, on bloque pour forcer la décision explicite.
+    if (process.env.PAYPAL_ENV !== 'production') {
+      log.error(`❌ FATAL: PAYPAL_ENV=${process.env.PAYPAL_ENV || '(absent)'} en production — devrait être 'production'`);
       if (exitOnMissing) process.exit(1);
     }
   }
@@ -54,7 +68,7 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
   }
 
   for (const key of missingRecommended) {
-    log.warn(`⚠️  ${key} non défini — fonctionnalité panier collectif dégradée`);
+    log.warn(`⚠️  ${key} non défini — fonctionnalité dégradée`);
   }
 
   return {
