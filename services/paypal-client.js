@@ -124,10 +124,14 @@ async function _api(method, path, { body, headers = {}, parseJson = true } = {})
  * @param {string} [opts.cancelUrl]  — URL de retour après cancel
  * @returns {Promise<{ id: string, status: string, links: Array }>}
  */
-async function createOrder({ amountEur, reference, description, returnUrl, cancelUrl }) {
+async function createOrder({ amountEur, reference, description, returnUrl, cancelUrl, applicationContext }) {
   if (!amountEur || amountEur <= 0) throw new Error('amountEur requis et > 0');
   if (!reference)                   throw new Error('reference requis');
 
+  // FIX: applicationContext (objet passé par payments-paypal.js) a priorité sur les
+  // anciens paramètres returnUrl/cancelUrl. landing_page forcé à BILLING pour éviter
+  // la page blanche / about:blank dans la popup du SDK Buttons.
+  const appCtx = applicationContext || {};
   const payload = {
     intent: 'CAPTURE',
     purchase_units: [{
@@ -139,13 +143,13 @@ async function createOrder({ amountEur, reference, description, returnUrl, cance
       },
     }],
     application_context: {
-      brand_name:  'Komerce',
-      locale:      'fr-FR',
-      landing_page: 'NO_PREFERENCE',  // PayPal décide selon le device
-      user_action:  'PAY_NOW',         // CTA "Payer maintenant" au lieu de "Continuer"
-      shipping_preference: 'NO_SHIPPING', // Komerce gère la livraison hors PayPal
-      ...(returnUrl ? { return_url: returnUrl } : {}),
-      ...(cancelUrl ? { cancel_url: cancelUrl } : {}),
+      brand_name:          appCtx.brand_name          || 'Komerce',
+      locale:              appCtx.locale               || 'fr-FR',
+      landing_page:        appCtx.landing_page         || 'BILLING', // BILLING évite la page blanche dans la popup
+      user_action:         appCtx.user_action          || 'PAY_NOW',
+      shipping_preference: appCtx.shipping_preference  || 'NO_SHIPPING',
+      ...(appCtx.return_url ? { return_url: appCtx.return_url } : returnUrl ? { return_url: returnUrl } : {}),
+      ...(appCtx.cancel_url ? { cancel_url: appCtx.cancel_url } : cancelUrl ? { cancel_url: cancelUrl } : {}),
     },
   };
 

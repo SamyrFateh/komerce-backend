@@ -91,10 +91,25 @@ router.post('/create-order', authGuest, async (req, res) => {
     }
 
     // 5. Créer la PayPal Order
+    // FIX: application_context requis pour que la popup PayPal s'affiche correctement
+    // (sans return_url/cancel_url le SDK ouvre une page vide en sandbox et prod).
+    // shipping_preference=NO_SHIPPING : retrait relais, pas d'adresse de livraison.
+    // landing_page=BILLING : évite la page de login PayPal vide avant le formulaire de carte.
+    // user_action=PAY_NOW : libellé "Payer maintenant" au lieu de "Continuer".
+    const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `https://${process.env.HOST || 'komerce.fr'}`;
     const ppOrder = await paypal.createOrder({
       amountEur,
       reference:   order.reference,
       description: `Komerce — Commande ${order.reference}`,
+      applicationContext: {
+        brand_name:          'Komerce',
+        locale:              'fr-FR',
+        landing_page:        'BILLING',
+        shipping_preference: 'NO_SHIPPING',
+        user_action:         'PAY_NOW',
+        return_url:          `${PUBLIC_BASE_URL}/boutique/?paypal=return`,
+        cancel_url:          `${PUBLIC_BASE_URL}/boutique/?paypal=cancel`,
+      },
     });
 
     // 6. Persister le paypal_order_id côté Komerce
