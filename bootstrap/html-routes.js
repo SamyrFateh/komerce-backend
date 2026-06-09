@@ -90,6 +90,10 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin',
     '/admin/invoices',
     '/admin/sante',
+    '/admin/settings',
+    '/admin/simulator',
+    '/admin/shared-carts',
+    '/admin/accounting',
   ];
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {

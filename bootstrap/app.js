@@ -40,6 +40,7 @@
     { path: '/admin/settings',          view: 'SettingsView',          label: 'Paramètres',            icon: '⚙️', section: 'ADMIN' },
     { path: '/admin/simulator',         view: 'SimulatorView',         label: 'Simulateur',            icon: '🤖', section: 'ADMIN' },
     { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🤝', section: 'ADMIN' },
+    { path: '/admin/accounting',        view: 'AccountingView',         label: 'Comptabilité',           icon: '📊', section: 'ADMIN' },
   ];
 
   let currentUser = null;

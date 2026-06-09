@@ -369,6 +369,15 @@
     return n.toLocaleString('fr-FR') + ' KMF';
   }
 
+  function kpiBadge(icon, label, val, color) {
+    return `<div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;
+      min-width:100px;border-top:3px solid ${color}">
+      <div style="font-size:20px;line-height:1">${icon}</div>
+      <div style="font-size:20px;font-weight:700;color:${color}">${val}</div>
+      <div style="font-size:11px;color:#64748b">${label}</div>
+    </div>`;
+  }
+
   // ── Render helpers ────────────────────────────────────────────────────────
 
   function renderSummary(results) {
@@ -541,32 +550,71 @@
       <h1 class="page-title">Détection d'Anomalies</h1>
       <p class="page-subtitle">Scan automatique sur 500 dernières commandes — 10 règles actives</p>
 
-      <div class="prob-controls">
-        <div style="display:flex;align-items:center;gap:10px">
-          <button id="prob-refresh-btn" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
-          <span id="prob-scan-time" class="prob-scan-time"></span>
-        </div>
-        <label class="prob-auto-lbl">
-          <input type="checkbox" id="prob-auto-check" checked>
-          Auto-refresh (5 min)
-        </label>
+      <div style="display:flex;gap:0;border-bottom:2px solid #e2e8f0;margin-bottom:16px">
+        <button class="prob-tab-btn active" data-tab="anomalies"
+          style="padding:8px 18px;background:none;border:none;border-bottom:2px solid #3b82f6;margin-bottom:-2px;font-weight:600;cursor:pointer;color:#3b82f6">
+          ⚠️ Anomalies commandes
+        </button>
+        <button class="prob-tab-btn" data-tab="parcel-reco"
+          style="padding:8px 18px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-weight:600;cursor:pointer;color:#64748b">
+          ⚖️ Réconciliation colis
+        </button>
       </div>
 
-      <div id="prob-summary"></div>
+      <div id="prob-tab-anomalies">
+        <div class="prob-controls">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button id="prob-refresh-btn" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
+            <span id="prob-scan-time" class="prob-scan-time"></span>
+          </div>
+          <label class="prob-auto-lbl">
+            <input type="checkbox" id="prob-auto-check" checked>
+            Auto-refresh (5 min)
+          </label>
+        </div>
 
-      <div class="prob-body">
-        <div>
-          <div id="prob-cards">
-            <div class="loading-state" style="padding:32px 0;text-align:center">
-              <span class="loader"></span> Analyse des commandes…
+        <div id="prob-summary"></div>
+
+        <div class="prob-body">
+          <div>
+            <div id="prob-cards">
+              <div class="loading-state" style="padding:32px 0;text-align:center">
+                <span class="loader"></span> Analyse des commandes…
+              </div>
             </div>
           </div>
+          <div id="prob-sidebar">
+            <div class="loading-state"><span class="loader"></span></div>
+          </div>
         </div>
-        <div id="prob-sidebar">
-          <div class="loading-state"><span class="loader"></span></div>
+      </div>
+
+      <div id="prob-tab-parcel-reco" style="display:none">
+        <div id="prob-reco-content">
+          <div class="loading-state" style="padding:32px 0;text-align:center">
+            <span class="loader"></span> Chargement réconciliation colis…
+          </div>
         </div>
       </div>
     `;
+
+    // Tab switching
+    rootEl.querySelectorAll('.prob-tab-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        rootEl.querySelectorAll('.prob-tab-btn').forEach(b => {
+          b.style.borderBottomColor = 'transparent';
+          b.style.color = '#64748b';
+          b.classList.remove('active');
+        });
+        btn.style.borderBottomColor = '#3b82f6';
+        btn.style.color = '#3b82f6';
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        rootEl.querySelector('#prob-tab-anomalies').style.display   = tab === 'anomalies'   ? '' : 'none';
+        rootEl.querySelector('#prob-tab-parcel-reco').style.display = tab === 'parcel-reco' ? '' : 'none';
+        if (tab === 'parcel-reco') await loadParcelReco(rootEl);
+      });
+    });
 
     // Refresh button
     rootEl.querySelector('#prob-refresh-btn').addEventListener('click', () => loadData(rootEl));
@@ -601,6 +649,76 @@
 
   // Cleanup hook (appelé par app.js lors du démontage de la vue)
   function destroy() { stopAutoRefresh(); }
+
+  // ── Parcel Reconciliation tab ─────────────────────────────────────────────
+  async function loadParcelReco(rootEl) {
+    const el = rootEl.querySelector('#prob-reco-content');
+    if (!el) return;
+    el.innerHTML = '<div class="loading-state" style="padding:32px 0;text-align:center"><span class="loader"></span> Chargement…</div>';
+    try {
+      const data    = await KmcApi.getParcelReconciliation();
+      const parcels = data.parcels || [];
+      const summary = data.summary || {};
+
+      let html = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <h3 style="margin:0">⚖️ Colis à réconcilier</h3>
+            <p style="margin:4px 0 0;font-size:12px;color:#64748b">
+              Statuts bloqués ou en attention — pour la réconciliation cash, voir
+              <a href="/admin/accounting" data-path="/admin/accounting">Comptabilité</a>
+            </p>
+          </div>
+          <button id="prob-reco-refresh" class="btn btn-secondary btn-sm">🔄 Actualiser</button>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          ${kpiBadge('📦', 'Total',     summary.total   || 0, '#3b82f6')}
+          ${kpiBadge('🔴', 'Bloqués',   summary.blocked || 0, '#ef4444')}
+          ${kpiBadge('🟡', 'Attention', summary.warning || 0, '#f59e0b')}
+          ${kpiBadge('🟢', 'OK',        summary.ok      || 0, '#22c55e')}
+        </div>`;
+
+      if (!parcels.length) {
+        html += '<div class="empty-state" style="padding:32px;text-align:center">✅ Aucun colis à réconcilier</div>';
+      } else {
+        html += '<div style="display:flex;flex-direction:column;gap:8px">';
+        parcels.forEach(p => {
+          const reco   = p.reconciliation || {};
+          const status = reco.status || 'ok';
+          const color  = status === 'blocked' ? '#ef4444' : (status === 'warning' ? '#f59e0b' : '#22c55e');
+          html += `<div style="background:white;border:1px solid #e2e8f0;border-left:4px solid ${color};
+            border-radius:8px;padding:12px 16px;font-size:13px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <strong>${p.reference || '—'}</strong>
+              <span style="background:${color}22;color:${color};padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">
+                ${status.toUpperCase()}
+              </span>
+            </div>
+            <div style="color:#64748b;margin-top:4px">
+              ${p.status || '—'} · ${p.destination_label || p.destination_id || '—'}
+            </div>
+            ${reco.issues && reco.issues.length
+              ? `<ul style="margin:6px 0 0;padding-left:18px;color:#dc2626;font-size:12px">
+                  ${reco.issues.map(i => `<li>${i}</li>`).join('')}
+                </ul>`
+              : ''}
+          </div>`;
+        });
+        html += '</div>';
+      }
+
+      el.innerHTML = html;
+      el.querySelector('#prob-reco-refresh').addEventListener('click', () => loadParcelReco(rootEl));
+      el.querySelectorAll('a[data-path]').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          if (typeof KmcApp !== 'undefined') KmcApp.navigate(a.dataset.path);
+        });
+      });
+    } catch (err) {
+      el.innerHTML = `<div class="error-state">❌ Erreur réconciliation colis : ${err.message || err}</div>`;
+    }
+  }
 
   // ── Export ────────────────────────────────────────────────────────────────
   global.ProblemsView = { render, destroy };
