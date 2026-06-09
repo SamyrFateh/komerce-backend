@@ -872,7 +872,7 @@ body:has(#k-page-scroll.k-pager-active) {
   top: 50%;
   transform: translate(-4px, -50%);  /* -4px gauche : badge reste dans l'écran mobile */
   margin: 0 auto;
-  width: 30px;          /* BUG-AVATAR-2c : taille réduite, tient dans 44px sans déborder */
+  width: 26px;          /* PR-AVATAR : réduit 30→26px — panier ne remonte plus sur la tête */
   height: auto;
   object-fit: contain;
   object-position: center center;
@@ -884,8 +884,8 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 
 /* Badge mobile header : coin bas-droit de l'avatar.
-   Avatar 30px centré dans bouton 42px puis décalé -4px → centre avatar à 50%-4px.
-   Badge 16px → left: calc(50% + 3px) [7-4=3] pour suivre le décalage. */
+   Avatar 26px centré dans bouton 42px puis décalé -4px → centre avatar à 50%-4px.
+   Badge 16px → left: calc(50% + 3px) conservé (tuned, décalage marginal à -4px). */
 .k-header .k-cart-btn.k-header-action .k-cart-badge {
   position: absolute;
   top: auto;
