@@ -5,7 +5,12 @@ const path = require('path');
 function sendHtml(res, filePath, cache = 'no-cache') {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', cache);
-  res.sendFile(filePath);
+  res.sendFile(filePath, (err) => {
+    if (err && err.code === 'ENOENT') {
+      console.error('[html-routes] fichier introuvable:', filePath);
+      if (!res.headersSent) res.status(404).send('Page introuvable');
+    }
+  });
 }
 
 function redirectToBoutique(res) {
@@ -76,7 +81,7 @@ function mountHtmlRoutes(app, rootDir) {
   ];
   ADMIN_DASHBOARD_PATHS.forEach(p => {
     app.get(p, (req, res) => {
-      sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'index.html'));
+      sendHtml(res, path.join(rootDir, 'dashboards', 'admin', 'index.html'));
     });
   });
 
@@ -86,7 +91,7 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/control-tower.html', (req, res) => {
     if (process.env.ADMIN_LEGACY_ENABLED === '1') {
       res.setHeader('X-Deprecated', 'control-tower.html — migrer vers /admin/pilotage');
-      return sendHtml(res, path.join(publicDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
+      return sendHtml(res, path.join(rootDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
     }
     res.redirect(301, '/admin/pilotage');
   });
@@ -116,6 +121,11 @@ function mountHtmlRoutes(app, rootDir) {
   });
   app.get('/boutique', (req, res) => {
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
+  });
+
+  // Page de login admin — requise par app.js (requireAdminSession → redirectToLogin → /login.html)
+  app.get('/login.html', (req, res) => {
+    sendHtml(res, path.join(publicDir, 'login.html'));
   });
 
   app.get('*', (req, res) => {

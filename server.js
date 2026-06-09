@@ -113,7 +113,10 @@ app.get('/*.html', (req, res, next) => {
   // Défense en profondeur : le chemin résolu doit rester sous public/
   if (!filePath.startsWith(publicDir + path.sep)) return next();
   _fs.readFile(filePath, 'utf8', (err, html) => {
-    if (err) return next();
+    if (err) {
+      if (err.code === 'ENOENT') console.error('[auth-guard] fichier introuvable:', filePath);
+      return next();
+    }
     html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\
 </body>');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -132,6 +135,9 @@ app.use(express.static(path.join(__dirname, 'public'), {
     }
   }
 }));
+
+// dashboards/ est à la racine du projet (pas dans public/) — servi sous /dashboards/
+app.use('/dashboards', express.static(path.join(__dirname, 'dashboards')));
 
 // ── Routes API ────────────────────────────────────────────────────────────
 
