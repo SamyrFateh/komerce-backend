@@ -559,12 +559,10 @@ export function renderCheckout() {
     const _syncRecipFields = () => {
       const isMe = _benfCb.checked;
       _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
+      const btnsRow = body.querySelector('.k-ck-id-btns-row');
+      if (btnsRow) btnsRow.hidden = !isMe;
       if (isMe) {
         benfFields.hidden = true;
-        // Bloc vert « Vous récupérez cette commande » SUPPRIMÉ en mode Moi
-        // (2026-06-09) : redondant avec le badge « ✅ identifié » de la carte
-        // d'identité au-dessus et le récap du bouton « Confirmer » en bas.
-        // Le DOM est conservé (utilisé par bindChangeIdentity) mais masqué.
         selfPickupInfo.hidden = true;
       } else {
         benfFields.hidden = false;
