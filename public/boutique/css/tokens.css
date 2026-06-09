@@ -17,6 +17,29 @@
   --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
   --cta-green:        #2a7a3e;
 
+  /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
+     Sauge : vert désaturé, posé, lisible sur fond sable.
+     Terracotta : chaleur douce, remplace coral sans l'orange criard.
+     Les tokens --ocean/* restent actifs pour le catalogue et la modal produit. */
+  --sage:              #7A9E7E;  /* CTA principal checkout, boutons confirm */
+  --sage-dark:         #5C7D62;  /* hover, texte sur fond clair */
+  --sage-deeper:       #3E5E45;  /* focus ring, état actif profond */
+  --sage-light:        #A8C4AA;  /* border douce, icônes secondaires */
+  --sage-bg:           #EDF3EE;  /* fond carte identité, sections checkout */
+  --sage-bg-pale:      #F5F9F5;  /* fond très pâle, hover row */
+  --border-sage-14:    rgba(122,158,126,.14);
+  --border-sage-22:    rgba(122,158,126,.22);
+  --border-sage-35:    rgba(122,158,126,.35);
+  --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
+  --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
+
+  --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
+  --terracotta-dark:   #9E5C3E;  /* texte sur fond clair, hover */
+  --terracotta-bg:     #F5EDE8;  /* fond warm, sections récap */
+  --terracotta-bg-pale:#FBF5F2;  /* fond très pâle */
+  --border-terra-14:   rgba(196,122,90,.14);
+  --border-terra-22:   rgba(196,122,90,.22);
+
   --sand:         #FDFAF5;
   --sand-warm:    #f6f0e3;
   --sand-dark:    #F0EBE0;
