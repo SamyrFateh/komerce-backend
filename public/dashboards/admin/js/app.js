@@ -1,14 +1,10 @@
 /**
  * KOMERCE Dashboard — App
- * ════════════════════════════════════════════════════════════════════════
- * Routing SPA (pushState) + render shell + dispatch sur la vue.
- * Les routes secondaires (view: null) affichent "Vue à venir" sans quitter le SPA.
+ * Routing SPA (pushState) + shell + dispatch.
  */
-
 (function (global) {
   'use strict';
 
-  // Toutes les routes connues — view: null = "Vue à venir"
   const ROUTES = [
     { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',               icon: '🎯', section: 'PILOTAGE' },
     { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', section: 'PILOTAGE' },
@@ -19,15 +15,25 @@
     { path: '/admin/economic',         view: 'EconomicView',         label: 'Santé économique',       icon: '📊', section: 'PILOTAGE' },
     { path: '/admin/pilotage-fin',     view: 'PilotageFinView',      label: 'Projection & Mix',       icon: '💹', section: 'PILOTAGE' },
     { path: '/admin/invoices',         view: 'InvoicesView',         label: 'Factures',               icon: '📄', section: 'PILOTAGE' },
-    { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️',  section: 'OPERATIONS' },
+
+    { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️', section: 'OPERATIONS' },
     { path: '/admin/alerts',           view: 'ActionCenterView',     label: 'Alertes & Incidents',    icon: '🚨', section: 'OPERATIONS' },
     { path: '/admin/clients',          view: 'ClientsView',          label: 'Clients',                icon: '👥', section: 'OPERATIONS' },
     { path: '/admin/hub-relais',       view: 'HubRelaisView',        label: 'Hub & Relais',           icon: '🏭', section: 'OPERATIONS' },
-    { path: '/admin/transitaire',      view: 'TransitaireView',      label: 'Transitaire',            icon: '✈️',  section: 'OPERATIONS' },
+    { path: '/admin/transitaire',      view: 'TransitaireView',      label: 'Transitaire',            icon: '✈️', section: 'OPERATIONS' },
     { path: '/admin/inventory',        view: 'InventoryView',        label: 'Inventaire Hub',         icon: '📋', section: 'OPERATIONS' },
-    { path: '/admin/categories', view: 'CategoriesView',  label: 'Catégories boutique', icon: '🏷️', section: 'CATALOGUE' },
-    { path: '/admin/products',   view: 'ProductsView',    label: 'Produits boutique',   icon: '🛍️', section: 'CATALOGUE' },
-    { path: '/admin/sourcing',         view: null,                   label: 'Sourcing',               icon: '🔎', section: 'AUTRES' },
+
+    { path: '/admin/categories',       view: 'CategoriesView',       label: 'Catégories boutique',    icon: '🏷️', section: 'CATALOGUE' },
+    { path: '/admin/products',         view: 'ProductsView',         label: 'Produits boutique',      icon: '🛍️', section: 'CATALOGUE' },
+
+    // Lot 4
+    { path: '/admin/sourcing',          view: 'SourcingView',          label: 'Sourcing',              icon: '🔎', section: 'SOURCING' },
+    { path: '/admin/sourcing-scanner',  view: 'SourcingScannerView',   label: 'Scanner catalogue',     icon: '📡', section: 'SOURCING' },
+    { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', section: 'PRICING' },
+    { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', section: 'PRICING' },
+    { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', section: 'PRICING' },
+    { path: '/admin/customs',           view: 'CustomsView',           label: 'Douane & shipments',    icon: '🛃', section: 'LOGISTIQUE' },
+    { path: '/admin/suppliers',         view: 'SuppliersView',         label: 'Fournisseurs',          icon: '🏭', section: 'LOGISTIQUE' },
   ];
 
   let currentUser = null;
@@ -45,21 +51,17 @@
     const res = await fetch('/api/auth/me', {
       method: 'GET',
       credentials: 'include',
-      headers: { 'Accept': 'application/json' },
+      headers: { Accept: 'application/json' },
     });
-
     if (!res.ok) {
       redirectToLogin();
       throw new Error('unauthorized');
     }
-
     const user = await res.json();
-
     if (user.role !== 'admin') {
       window.location.replace('/');
       throw new Error('forbidden');
     }
-
     currentUser = user;
     global.KOMERCE_AUTH_USER = user;
     return user;
@@ -67,12 +69,10 @@
 
   function hydrateHeaderUser() {
     if (!currentUser) return;
-
     const name = currentUser.full_name || currentUser.email || 'Admin';
     const avatar = document.getElementById('user-avatar');
     const nameEl = document.getElementById('user-name');
     const roleEl = document.querySelector('.header-user-role');
-
     if (avatar) avatar.textContent = String(name).trim().charAt(0).toUpperCase() || 'A';
     if (nameEl) nameEl.textContent = name;
     if (roleEl) roleEl.textContent = currentUser.role || 'admin';
@@ -98,7 +98,6 @@
             </div>
           </div>
         </aside>
-
         <header class="header">
           <div class="header-search">
             <span class="header-search-icon">🔍</span>
@@ -115,13 +114,11 @@
             </div>
           </div>
         </header>
-
         <main class="main" id="main-content">
           <div class="loading-state"><span class="loader"></span> Chargement...</div>
         </main>
       </div>
     `;
-
     renderSidebar();
     renderHeaderPeriod();
   }
@@ -129,62 +126,58 @@
   function renderSidebar() {
     const nav = document.getElementById('sidebar-nav');
     const currentPath = window.location.pathname;
-
-    // Regrouper par section
     const sections = {};
-    ROUTES.forEach(r => {
-      if (!sections[r.section]) sections[r.section] = [];
-      sections[r.section].push(r);
+    ROUTES.forEach(route => {
+      if (!sections[route.section]) sections[route.section] = [];
+      sections[route.section].push(route);
     });
 
     Object.entries(sections).forEach(([sectionLabel, routes]) => {
-      const sec = document.createElement('div');
-      sec.className = 'sidebar-section';
-      sec.innerHTML = `<div class="sidebar-section-label">${sectionLabel}</div>`;
-
-      routes.forEach(r => {
+      const section = document.createElement('div');
+      section.className = 'sidebar-section';
+      section.innerHTML = `<div class="sidebar-section-label">${sectionLabel}</div>`;
+      routes.forEach(route => {
         const link = document.createElement('a');
-        // Pour les routes sans vue : href="#" + SPA navigation via click
-        link.href = r.view ? r.path : '#';
-        link.className = 'sidebar-link' + (currentPath === r.path ? ' is-active' : '');
-        link.innerHTML = `<span class="sidebar-link-icon">${r.icon}</span><span>${r.label}</span>`;
-
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          navigateTo(r.path);
+        link.href = route.path;
+        link.dataset.path = route.path;
+        link.className = 'sidebar-link' + (currentPath === route.path ? ' is-active' : '');
+        link.innerHTML = `<span class="sidebar-link-icon">${route.icon}</span><span>${route.label}</span>`;
+        link.addEventListener('click', event => {
+          event.preventDefault();
+          navigateTo(route.path);
         });
-
-        sec.appendChild(link);
+        section.appendChild(link);
       });
-
-      nav.appendChild(sec);
+      nav.appendChild(section);
     });
   }
 
   function navigateTo(path) {
-    if (window.location.pathname === path) return;
-    window.history.pushState({}, '', path);
+    if (!ROUTES.some(route => route.path === path)) return false;
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, '', path);
+    }
     refreshActiveLink();
     dispatchView();
+    return true;
+  }
+
+  // Compatibilité avec les vues Lot 4 qui appellent KmcApp.navigate('pricing')
+  // ou KmcApp.navigate('PricingView').
+  function navigate(viewOrPath) {
+    const value = String(viewOrPath || '');
+    const route = ROUTES.find(item =>
+      item.view === value ||
+      item.path === value ||
+      item.path === '/admin/' + value.replace(/^\/+/, '')
+    );
+    return route ? navigateTo(route.path) : false;
   }
 
   function refreshActiveLink() {
     const currentPath = window.location.pathname;
     document.querySelectorAll('.sidebar-link').forEach(link => {
-      const route = ROUTES.find(r => r.path === currentPath);
-      link.classList.toggle('is-active', link.textContent.trim().includes(
-        route ? route.label : ''
-      ));
-    });
-    // Méthode plus précise : comparer le href ou data-path
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-      const matchingRoute = ROUTES.find(r => r.path === currentPath);
-      if (matchingRoute) {
-        link.classList.toggle('is-active',
-          link.querySelector('span:last-child') &&
-          link.querySelector('span:last-child').textContent === matchingRoute.label
-        );
-      }
+      link.classList.toggle('is-active', link.dataset.path === currentPath);
     });
   }
 
@@ -192,37 +185,48 @@
     const filters = KmcFilters.get();
     const el = document.getElementById('header-period');
     if (filters.from && filters.to) {
-      const f = new Date(filters.from).toLocaleDateString('fr-FR');
-      const t = new Date(filters.to).toLocaleDateString('fr-FR');
-      el.textContent = `📅 ${f} – ${t}`;
+      const from = new Date(filters.from).toLocaleDateString('fr-FR');
+      const to = new Date(filters.to).toLocaleDateString('fr-FR');
+      el.textContent = `📅 ${from} – ${to}`;
     }
+  }
+
+  async function invokeView(View, main) {
+    // Anciennes vues : { render(rootEl) }
+    if (View && typeof View.render === 'function') {
+      return View.render(main);
+    }
+    // Certaines vues Lot 4 : async function(rootEl)
+    if (typeof View === 'function') {
+      return View(main);
+    }
+    throw new Error('format de vue incompatible');
   }
 
   function dispatchView() {
     const path = window.location.pathname;
-    const route = ROUTES.find(r => r.path === path);
+    const route = ROUTES.find(item => item.path === path);
     const main = document.getElementById('main-content');
 
     if (!route || !route.view) {
       const label = route ? route.label : path;
       main.innerHTML = `
         <div class="empty-state">
-          <div style="font-size: 48px; margin-bottom: 16px;">🚧</div>
+          <div style="font-size:48px;margin-bottom:16px;">🚧</div>
           <h2>${label}</h2>
-          <p style="margin-top: 12px; color: var(--text-secondary);">Vue en cours de développement — disponible Sprint 3+</p>
-        </div>
-      `;
+          <p style="margin-top:12px;color:var(--text-secondary);">Vue indisponible</p>
+        </div>`;
       return;
     }
 
     const View = global[route.view];
-    if (!View || !View.render) {
+    if (!View) {
       main.innerHTML = `<div class="error-state">Vue ${route.view} non chargée</div>`;
       return;
     }
 
     main.innerHTML = '<div class="loading-state"><span class="loader"></span> Chargement...</div>';
-    View.render(main).catch(err => {
+    Promise.resolve(invokeView(View, main)).catch(err => {
       console.error('[app] render error:', err);
       main.innerHTML = `<div class="error-state">Erreur: ${err.message}</div>`;
     });
@@ -248,14 +252,12 @@
     } catch (_) {
       return;
     }
-
     KmcFilters.init();
     renderShell();
     hydrateHeaderUser();
     loadFxRate();
     dispatchView();
 
-    // Gestion du bouton retour navigateur
     window.addEventListener('popstate', () => {
       refreshActiveLink();
       dispatchView();
@@ -267,9 +269,7 @@
     });
   }
 
-  global.KmcApp = { init, navigateTo };
+  global.KmcApp = { init, navigateTo, navigate };
 })(window);
 
-// Auto-init
 document.addEventListener('DOMContentLoaded', () => window.KmcApp.init());
-

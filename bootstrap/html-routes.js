@@ -48,9 +48,6 @@ function mountHtmlRoutes(app, rootDir) {
     sendHtml(res, path.join(publicDir, 'mon-compte.html'));
   });
 
-  // Doctrine panier partagé : aucune page autonome fonctionnelle.
-  // Les anciennes URLs publiques restent compatibles mais ramènent toutes
-  // vers la boutique, onglet Groupe, qui est l'unique interface métier.
   app.get('/cart/shared/success', (req, res) => {
     redirectToGroup(res, req.query.p || req.query.token, 'success');
   });
@@ -63,7 +60,6 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/cart/shared', (req, res) => {
     redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
-
   app.get('/account/shared-carts', (req, res) => {
     redirectToGroup(res, req.query.p || req.query.token || req.query.share);
   });
@@ -75,6 +71,12 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/orders-logistics',
     '/admin/event-workspaces',
     '/admin/sourcing',
+    '/admin/sourcing-scanner',
+    '/admin/pricing',
+    '/admin/pricing-workshop',
+    '/admin/pricing-strategy',
+    '/admin/customs',
+    '/admin/suppliers',
     '/admin/alerts',
     '/admin/categories',
     '/admin/products',
@@ -88,15 +90,13 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin',
     '/admin/invoices',
   ];
-  ADMIN_DASHBOARD_PATHS.forEach(p => {
-    app.get(p, (req, res) => {
+
+  ADMIN_DASHBOARD_PATHS.forEach(routePath => {
+    app.get(routePath, (req, res) => {
       sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'index.html'));
     });
   });
 
-  // FRESH-105 : admin-legacy control-tower.html — redirigé vers admin moderne.
-  // L'accès direct à /control-tower.html retourne maintenant une redirection 301.
-  // Pour maintenir l'accès legacy en urgence : déployer ADMIN_LEGACY_ENABLED=1.
   app.get('/control-tower.html', (req, res) => {
     if (process.env.ADMIN_LEGACY_ENABLED === '1') {
       res.setHeader('X-Deprecated', 'control-tower.html — migrer vers /admin/pilotage');
@@ -111,13 +111,10 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/relais', (req, res) => {
     sendHtml(res, path.join(publicDir, 'relais', 'index.html'));
   });
-
   app.get('/hub', (req, res) => {
     sendHtml(res, path.join(publicDir, 'hub', 'index.html'));
   });
 
-  // Ancien parcours "Panier Ã‰vénement Collectif / Workspace" désactivé.
-  // Doctrine actuelle : tout commence et finit dans la boutique.
   app.get('/event/create', (req, res) => redirectToBoutique(res));
   app.get('/event/manage/:creatorToken', (req, res) => redirectToBoutique(res));
   app.get('/event/w/:publicToken', (req, res) => redirectToBoutique(res));
@@ -131,8 +128,6 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/boutique', (req, res) => {
     sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
   });
-
-  // Page de login admin — requise par app.js (requireAdminSession → redirectToLogin → /login.html)
   app.get('/login.html', (req, res) => {
     sendHtml(res, path.join(publicDir, 'login.html'));
   });
