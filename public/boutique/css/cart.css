@@ -1937,3 +1937,19 @@ body.cart-open .k-wa-fab {
 .k-confirm-btn:active     { opacity: .85; }
 .k-confirm-btn-primary    { background: var(--ocean); color: var(--white); }
 .k-confirm-btn-secondary  { background: var(--green-bg-leaf); color: var(--ocean-dark); border: 1px solid var(--border); }
+
+/* « Numéro changé ? · Ce n'est pas vous ? » — une seule ligne */
+.k-ck-id-btns-row {
+  display: none; /* masqué par défaut — visible via body.ck-is-me */
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+}
+.k-ck-id-sep {
+  color: var(--text-muted);
+  font-size: .7rem;
+  pointer-events: none;
+}
+
+/* §3 doctrine : body.ck-is-me posé par JS — CSS gère la visibilité */
+body.ck-is-me .k-ck-id-btns-row { display: flex; }
