@@ -35,6 +35,11 @@
     { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', section: 'PRICING' },
     { path: '/admin/customs',           view: 'CustomsView',           label: 'Douane & shipments',    icon: '🛃', section: 'LOGISTIQUE' },
     { path: '/admin/suppliers',         view: 'SuppliersView',         label: 'Fournisseurs',          icon: '🏭', section: 'LOGISTIQUE' },
+
+    // Lot 6
+    { path: '/admin/settings',          view: 'SettingsView',          label: 'Paramètres',            icon: '⚙️', section: 'ADMIN' },
+    { path: '/admin/simulator',         view: 'SimulatorView',         label: 'Simulateur',            icon: '🤖', section: 'ADMIN' },
+    { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🤝', section: 'ADMIN' },
   ];
 
   let currentUser = null;
