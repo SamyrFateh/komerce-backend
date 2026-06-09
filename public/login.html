@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komerce — Connexion admin</title>
+  <style>
+    /* tokens inline — pas de dépendance externe */
+    :root {
+      --kmc-navy:    #0F1A2E;
+      --kmc-navy-2:  #1A2540;
+      --kmc-amber:   #F4B860;
+      --kmc-green:   #16A34A;
+      --kmc-red:     #DC2626;
+      --kmc-red-bg:  #FEE2E2;
+      --bg-page:     #F8FAFC;
+      --bg-card:     #FFFFFF;
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-tertiary:  #94A3B8;
+      --text-on-dark:   #F1F5F9;
+      --border-color:   #E2E8F0;
+      --border-radius:  8px;
+      --shadow:     0 1px 3px 0 rgba(0,0,0,.10), 0 1px 2px 0 rgba(0,0,0,.06);
+      --shadow-lg:  0 10px 15px -3px rgba(0,0,0,.10);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--kmc-navy);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 400px;
+      padding: 40px 36px 36px;
+    }
+
+    /* Brand */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .brand-logo {
+      width: 44px; height: 44px;
+      background: var(--kmc-navy);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700;
+      color: var(--kmc-amber);
+      letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    .brand-text { line-height: 1.2; }
+    .brand-name {
+      font-size: 1.125rem; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: 1px;
+    }
+
+    /* Form */
+    h1 {
+      font-size: 1.25rem; font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+    }
+
+    .field { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 0.8125rem; font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--border-radius);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: #fff;
+      transition: border-color .15s;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input:focus {
+      border-color: var(--kmc-navy-2, #1A2540);
+      box-shadow: 0 0 0 3px rgba(15,26,46,.10);
+    }
+    input.is-error { border-color: var(--kmc-red); }
+
+    .error-banner {
+      display: none;
+      background: var(--kmc-red-bg);
+      color: var(--kmc-red);
+      font-size: 0.8125rem;
+      border-radius: var(--border-radius);
+      padding: 10px 14px;
+      margin-bottom: 18px;
+    }
+    .error-banner.is-visible { display: block; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 11px 0;
+      background: var(--kmc-navy);
+      color: var(--kmc-amber);
+      border: none;
+      border-radius: var(--border-radius);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+      margin-top: 4px;
+    }
+    .btn-submit:hover  { background: #1A2540; }
+    .btn-submit:active { opacity: .85; }
+    .btn-submit:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    /* Spinner inline dans le bouton */
+    .btn-submit .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(244,184,96,.35);
+      border-top-color: var(--kmc-amber);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    .btn-submit.is-loading .spinner { display: inline-block; }
+    .btn-submit.is-loading .btn-label { opacity: .7; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-logo">K</div>
+      <div class="brand-text">
+        <div class="brand-name">Komerce</div>
+        <div class="brand-sub">Espace administration</div>
+      </div>
+    </div>
+
+    <h1>Connexion</h1>
+    <p class="subtitle">Accès réservé aux administrateurs.</p>
+
+    <div class="error-banner" id="error-banner" role="alert"></div>
+
+    <div class="field">
+      <label for="email">Adresse e-mail</label>
+      <input type="email" id="email" name="email"
+             placeholder="admin@komerce.km"
+             autocomplete="email" autocapitalize="none"
+             autofocus />
+    </div>
+    <div class="field">
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" name="password"
+             placeholder="••••••••"
+             autocomplete="current-password" />
+    </div>
+
+    <button class="btn-submit" id="btn-submit" type="button">
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="btn-label">Se connecter</span>
+    </button>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var emailEl  = document.getElementById('email');
+      var passEl   = document.getElementById('password');
+      var btn      = document.getElementById('btn-submit');
+      var banner   = document.getElementById('error-banner');
+
+      function nextUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var next   = params.get('next');
+        if (!next) return '/admin/control-tower';
+        // Sécurité : accepter uniquement les chemins internes
+        if (next.startsWith('/') && !next.startsWith('//')) return next;
+        return '/admin/control-tower';
+      }
+
+      function showError(msg) {
+        banner.textContent = msg;
+        banner.classList.add('is-visible');
+        emailEl.classList.remove('is-error');
+        passEl.classList.remove('is-error');
+      }
+
+      function clearError() {
+        banner.classList.remove('is-visible');
+        emailEl.classList.remove('is-error');
+        passEl.classList.remove('is-error');
+      }
+
+      function setLoading(on) {
+        btn.disabled = on;
+        btn.classList.toggle('is-loading', on);
+      }
+
+      async function doLogin() {
+        clearError();
+        var email    = emailEl.value.trim();
+        var password = passEl.value;
+
+        if (!email) {
+          emailEl.classList.add('is-error');
+          emailEl.focus();
+          showError('Adresse e-mail requise.');
+          return;
+        }
+        if (!password) {
+          passEl.classList.add('is-error');
+          passEl.focus();
+          showError('Mot de passe requis.');
+          return;
+        }
+
+        setLoading(true);
+        try {
+          var res = await fetch('/api/auth/login', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ email: email, password: password }),
+          });
+
+          var data = await res.json().catch(function () { return {}; });
+
+          if (!res.ok) {
+            setLoading(false);
+            var msg = (data && data.error) ? data.error : 'Identifiants incorrects.';
+            showError(msg);
+            passEl.value = '';
+            passEl.classList.add('is-error');
+            passEl.focus();
+            return;
+          }
+
+          // Vérifier le rôle admin avant de rediriger
+          var user = data.user || data;
+          if (user.role !== 'admin') {
+            setLoading(false);
+            showError('Accès refusé — compte sans droits administrateur.');
+            return;
+          }
+
+          window.location.replace(nextUrl());
+
+        } catch (err) {
+          setLoading(false);
+          showError('Erreur réseau — vérifiez votre connexion.');
+        }
+      }
+
+      btn.addEventListener('click', doLogin);
+
+      [emailEl, passEl].forEach(function (el) {
+        el.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') doLogin();
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
