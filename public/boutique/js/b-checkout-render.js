@@ -342,7 +342,10 @@ export function applyIdentityToCard(card, identity) {
     if (!pv) {
       pv = document.createElement('span');
       pv.className = 'k-ck-id-num';
-      card.querySelector('.k-ck-id-ident')?.appendChild(pv);
+      // Insérer avant .k-ck-id-verified si elle est dans .k-ck-id-ident, sinon en fin.
+      const ident    = card.querySelector('.k-ck-id-ident');
+      const verified = ident?.querySelector('.k-ck-id-verified');
+      if (verified) { ident.insertBefore(pv, verified); } else { ident?.appendChild(pv); }
     }
     pv.textContent = p;
   } else if (pv) {
