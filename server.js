@@ -205,6 +205,9 @@ app.get('/api/public/config', (req, res) => {
 });
 
 // ── HTML routes / SPA fallback ─────────────────────────────────────────────
+const fs = require('fs');
+console.log('[boot] dashboards/admin/index.html exists:', fs.existsSync(path.join(__dirname, 'public/dashboards/admin/index.html')));
+console.log('[boot] public dir:', path.join(__dirname, 'public'));
 mountHtmlRoutes(app, __dirname);
 
 app.use(errorHandler);
