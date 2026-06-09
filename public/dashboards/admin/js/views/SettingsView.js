@@ -1,13 +1,13 @@
-/**
- * KOMERCE Dashboard — SettingsView /admin/settings
- * ════════════════════════════════════════════════════════════════════════
- * Migration de CT.views.settings (ct-views-settings.js — v1.0)
+﻿/**
+ * KOMERCE Dashboard â€” SettingsView /admin/settings
+ * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ * Migration de CT.views.settings (ct-views-settings.js â€” v1.0)
  *
  * 4 onglets :
- *   1. Règles       — liste groupée par catégorie, recherche, panneau slide-in
- *   2. Taxes        — grille éditable par catégorie
- *   3. Dimensions   — grille L×l×H par catégorie
- *   4. Historique   — audit trail global
+ *   1. RÃ¨gles       â€” liste groupÃ©e par catÃ©gorie, recherche, panneau slide-in
+ *   2. Taxes        â€” grille Ã©ditable par catÃ©gorie
+ *   3. Dimensions   â€” grille LÃ—lÃ—H par catÃ©gorie
+ *   4. Historique   â€” audit trail global
  *
  * API : KmcApi.getSettings() / getSettingRule() / patchSettingRule() /
  *       resetSettingRule() / getSettingsTaxes() / putSettingsTaxes() /
@@ -17,7 +17,7 @@
 (function (global) {
   'use strict';
 
-  /* ── Styles ─────────────────────────────────────────────────────────── */
+  /* â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _injectStyles() {
     if (document.getElementById('sv-styles')) return;
     const s = document.createElement('style');
@@ -38,8 +38,8 @@
       .sv-cat-count{background:var(--bg-secondary);color:var(--text-secondary);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
       .sv-cat-rules{margin-top:10px;display:none}
       .sv-category.expanded .sv-cat-rules{display:block}
-      .sv-caret::before{content:'▸';display:inline-block;margin-right:6px;transition:transform .15s}
-      .sv-category.expanded .sv-caret::before{content:'▾'}
+      .sv-caret::before{content:'â–¸';display:inline-block;margin-right:6px;transition:transform .15s}
+      .sv-category.expanded .sv-caret::before{content:'â–¾'}
       .sv-rule{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--border);cursor:pointer;transition:background .1s}
       .sv-rule:hover{background:var(--bg-secondary);border-radius:6px}
       .sv-rule-info{flex:1;min-width:0}
@@ -119,27 +119,27 @@
     document.head.appendChild(s);
   }
 
-  /* ── Constantes ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const CATEGORY_ORDER = ['sla','compensation','orders','pricing','shipping','parcel','wallet','loyalty','alerting','system'];
-  const CATEGORY_ICONS = { sla:'⏱️', compensation:'🎁', orders:'🛒', pricing:'💰', shipping:'🚚', parcel:'📦', wallet:'💼', loyalty:'⭐', alerting:'🚨', system:'⚙️' };
+  const CATEGORY_ICONS = { sla:'â±ï¸', compensation:'ðŸŽ', orders:'ðŸ›’', pricing:'ðŸ’°', shipping:'ðŸšš', parcel:'ðŸ“¦', wallet:'ðŸ’¼', loyalty:'â­', alerting:'ðŸš¨', system:'âš™ï¸' };
   const CRITICAL_KEYS  = new Set(['MARGE_PCT','FRAIS_STRIPE_PCT','COMMISSION_AGENT_PCT','CANCEL_PARTIAL_REFUND_PCT','EUR_KMF_FALLBACK','AED_KMF_FALLBACK','WALLET_MAX_BALANCE_KMF']);
 
-  /* ── État local ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Ã‰tat local â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let _data        = null;   // { rules, taxes, dims }
   let _tab         = 'rules';
   let _search      = '';
   let _editingRule = null;
 
-  /* ── Utilitaires ────────────────────────────────────────────────────── */
+  /* â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _esc(s) {
-    return String(s == null ? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function _fmtDate(iso) {
-    if (!iso) return '—';
+    if (!iso) return 'â€”';
     return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   }
   function _fmtVal(v, type) {
-    if (type === 'boolean') return v ? '✓ activé' : '✗ désactivé';
+    if (type === 'boolean') return v ? 'âœ“ activÃ©' : 'âœ— dÃ©sactivÃ©';
     if (typeof v === 'number') return v.toLocaleString('fr-FR');
     return _esc(String(v == null ? '' : v));
   }
@@ -162,20 +162,20 @@
     t._to = setTimeout(() => { t.style.display = 'none'; }, 3000);
   }
 
-  /* ── Rendu principal ────────────────────────────────────────────────── */
+  /* â”€â”€ Rendu principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _render(root) {
     root.innerHTML = `
       <div class="sv-header">
         <div>
-          <h2>⚙️ Paramètres business</h2>
-          <div class="sv-subtitle">Gouvernez les règles métier sans redéploiement</div>
+          <h2>âš™ï¸ ParamÃ¨tres business</h2>
+          <div class="sv-subtitle">Gouvernez les rÃ¨gles mÃ©tier sans redÃ©ploiement</div>
         </div>
       </div>
       <div class="sv-tabs">
-        <button class="sv-tab ${_tab==='rules' ?'active':''}" data-tab="rules">📋 Règles</button>
-        <button class="sv-tab ${_tab==='taxes' ?'active':''}" data-tab="taxes">💰 Taxes</button>
-        <button class="sv-tab ${_tab==='dims'  ?'active':''}" data-tab="dims">📐 Dimensions</button>
-        <button class="sv-tab ${_tab==='audit' ?'active':''}" data-tab="audit">📜 Historique</button>
+        <button class="sv-tab ${_tab==='rules' ?'active':''}" data-tab="rules">ðŸ“‹ RÃ¨gles</button>
+        <button class="sv-tab ${_tab==='taxes' ?'active':''}" data-tab="taxes">ðŸ’° Taxes</button>
+        <button class="sv-tab ${_tab==='dims'  ?'active':''}" data-tab="dims">ðŸ“ Dimensions</button>
+        <button class="sv-tab ${_tab==='audit' ?'active':''}" data-tab="audit">ðŸ“œ Historique</button>
       </div>
       <div id="sv-tab-body"></div>
       <div class="sv-overlay" id="sv-overlay"></div>
@@ -194,10 +194,10 @@
     if (_tab === 'audit')  _renderAuditTab(body);
   }
 
-  /* ── Tab Règles ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Tab RÃ¨gles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _renderRulesTab(container) {
     container.innerHTML = `
-      <input type="search" class="sv-search" id="sv-search" placeholder="🔍 Rechercher (clé, libellé, description)…" value="${_esc(_search)}">
+      <input type="search" class="sv-search" id="sv-search" placeholder="ðŸ” Rechercher (clÃ©, libellÃ©, description)â€¦" value="${_esc(_search)}">
       <div id="sv-cats"></div>
     `;
     container.querySelector('#sv-search').addEventListener('input', e => {
@@ -215,7 +215,7 @@
 
     for (const k of keys) {
       const cat = cats[k];
-      const icon = CATEGORY_ICONS[k] || '📁';
+      const icon = CATEGORY_ICONS[k] || 'ðŸ“';
       const rules = cat.rules.filter(r => {
         if (!_search) return true;
         return `${r.key} ${r.label_fr||''} ${r.description||''}`.toLowerCase().includes(_search);
@@ -231,8 +231,8 @@
           </div>
           <div class="sv-cat-rules">
             ${rules.map(r => {
-              const crit = CRITICAL_KEYS.has(r.key) ? '<span class="sv-badge-critical">⚠️ critique</span>' : '';
-              const val  = r.value != null ? r.value : '—';
+              const crit = CRITICAL_KEYS.has(r.key) ? '<span class="sv-badge-critical">âš ï¸ critique</span>' : '';
+              const val  = r.value != null ? r.value : 'â€”';
               const unit = _unit(r.key, r.value_type);
               return `
                 <div class="sv-rule" data-key="${r.key}">
@@ -248,7 +248,7 @@
     }
 
     if (_search && total === 0) {
-      html = `<div class="sv-empty-msg">Aucune règle ne correspond à "${_esc(_search)}"</div>`;
+      html = `<div class="sv-empty-msg">Aucune rÃ¨gle ne correspond Ã  "${_esc(_search)}"</div>`;
     }
 
     root.innerHTML = html;
@@ -256,11 +256,11 @@
     root.querySelectorAll('.sv-rule').forEach(el => el.addEventListener('click', () => _openRulePanel(el.dataset.key)));
   }
 
-  /* ── Panneau de modification ────────────────────────────────────────── */
+  /* â”€â”€ Panneau de modification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function _openRulePanel(key) {
     const panel   = document.getElementById('sv-panel');
     const overlay = document.getElementById('sv-overlay');
-    panel.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Chargement…</div>';
+    panel.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Chargementâ€¦</div>';
     panel.classList.add('open');
     overlay.classList.add('open');
     try {
@@ -268,7 +268,7 @@
       _editingRule = data.rule;
       _renderRulePanel(data.rule, data.history || []);
     } catch (err) {
-      panel.innerHTML = `<div style="padding:20px;color:#dc2626">❌ ${_esc(err.message)}</div>`;
+      panel.innerHTML = `<div style="padding:20px;color:#dc2626">âŒ ${_esc(err.message)}</div>`;
     }
   }
 
@@ -284,13 +284,13 @@
     const isCrit  = CRITICAL_KEYS.has(rule.key);
     const unit    = _unit(rule.key, rule.value_type);
     const boundsHint = rule.value_type === 'number' && (rule.min_value != null || rule.max_value != null)
-      ? `Min : ${rule.min_value ?? '—'} · Max : ${rule.max_value ?? '—'}` : '';
+      ? `Min : ${rule.min_value ?? 'â€”'} Â· Max : ${rule.max_value ?? 'â€”'}` : '';
 
     let inputHtml;
     if (rule.value_type === 'boolean') {
       inputHtml = `<select id="sv-new-val">
-        <option value="true"  ${curVal===true ?'selected':''}>Activé</option>
-        <option value="false" ${curVal===false?'selected':''}>Désactivé</option>
+        <option value="true"  ${curVal===true ?'selected':''}>ActivÃ©</option>
+        <option value="false" ${curVal===false?'selected':''}>DÃ©sactivÃ©</option>
       </select>`;
     } else if (rule.value_type === 'number') {
       inputHtml = `<input type="number" id="sv-new-val" step="any" value="${curVal}">`;
@@ -300,7 +300,7 @@
 
     panel.innerHTML = `
       <div class="sv-panel-head">
-        <div class="sv-panel-key">${rule.key}${isCrit?'<span class="sv-badge-critical">⚠️ critique</span>':''}</div>
+        <div class="sv-panel-key">${rule.key}${isCrit?'<span class="sv-badge-critical">âš ï¸ critique</span>':''}</div>
         <button class="sv-panel-close" id="sv-close">&times;</button>
       </div>
       <div class="sv-panel-body">
@@ -314,26 +314,26 @@
         <div class="sv-field"><label for="sv-new-val">Nouvelle valeur</label>${inputHtml}${boundsHint?`<div class="sv-field-hint">${boundsHint}</div>`:''}</div>
         <div class="sv-field">
           <label for="sv-reason">Justification <span style="color:#dc2626">*</span></label>
-          <textarea id="sv-reason" placeholder="Minimum 10 caractères. Expliquez pourquoi vous modifiez cette règle."></textarea>
+          <textarea id="sv-reason" placeholder="Minimum 10 caractÃ¨res. Expliquez pourquoi vous modifiez cette rÃ¨gle."></textarea>
           <div class="sv-field-hint">Sera visible dans l'historique.</div>
         </div>
         <div class="sv-field-error" id="sv-error" style="display:none"></div>
         <div class="sv-hist">
-          <h4>📜 Historique (${history.length})</h4>
+          <h4>ðŸ“œ Historique (${history.length})</h4>
           ${history.length===0 ? '<div class="sv-empty-msg" style="padding:12px">Aucune modification.</div>' : ''}
           ${history.map(h => `
             <div class="sv-hist-item">
-              <div class="sv-hist-who">${_esc(h.changed_by_name||'Système')}</div>
+              <div class="sv-hist-who">${_esc(h.changed_by_name||'SystÃ¨me')}</div>
               <div class="sv-hist-when">${_fmtDate(h.created_at)}</div>
-              <div class="sv-hist-change"><span style="color:var(--text-secondary)">${_fmtVal(h.old_value?.value, rule.value_type)}</span> → <strong>${_fmtVal(h.new_value?.value, rule.value_type)}</strong></div>
+              <div class="sv-hist-change"><span style="color:var(--text-secondary)">${_fmtVal(h.old_value?.value, rule.value_type)}</span> â†’ <strong>${_fmtVal(h.new_value?.value, rule.value_type)}</strong></div>
               ${h.change_reason?`<div class="sv-hist-reason">"${_esc(h.change_reason)}"</div>`:''}
             </div>`).join('')}
         </div>
       </div>
       <div class="sv-panel-foot">
-        <button class="sv-btn sv-btn-danger" id="sv-reset" ${history.length===0?'disabled':''}>🔄 Réinitialiser</button>
+        <button class="sv-btn sv-btn-danger" id="sv-reset" ${history.length===0?'disabled':''}>ðŸ”„ RÃ©initialiser</button>
         <button class="sv-btn sv-btn-secondary" id="sv-cancel">Annuler</button>
-        <button class="sv-btn sv-btn-primary" id="sv-save">Valider ▶</button>
+        <button class="sv-btn sv-btn-primary" id="sv-save">Valider â–¶</button>
       </div>
     `;
 
@@ -351,7 +351,7 @@
     const reason = document.getElementById('sv-reason').value.trim();
 
     if (reason.length < 10) {
-      errEl.textContent = 'Justification trop courte (minimum 10 caractères).';
+      errEl.textContent = 'Justification trop courte (minimum 10 caractÃ¨res).';
       errEl.style.display = 'block';
       return;
     }
@@ -362,7 +362,7 @@
     } else if (_editingRule.value_type === 'number') {
       value = Number(rawVal);
       if (!Number.isFinite(value)) {
-        errEl.textContent = 'Valeur numérique invalide.';
+        errEl.textContent = 'Valeur numÃ©rique invalide.';
         errEl.style.display = 'block';
         return;
       }
@@ -371,7 +371,7 @@
     }
 
     const btn = document.getElementById('sv-save');
-    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    btn.disabled = true; btn.textContent = 'Enregistrementâ€¦';
 
     try {
       await global.KmcApi.patchSettingRule(_editingRule.key, { value, reason });
@@ -380,17 +380,17 @@
       const fresh = await global.KmcApi.getSettings();
       _data.rules = fresh.categories;
       _render(root);
-      _toast(`✓ Règle ${_editingRule.key} mise à jour.`);
+      _toast(`âœ“ RÃ¨gle ${_editingRule.key} mise Ã  jour.`);
     } catch (err) {
       errEl.textContent = err.message;
       errEl.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Valider ▶';
+      btn.disabled = false; btn.textContent = 'Valider â–¶';
     }
   }
 
   async function _resetRule() {
     if (!_editingRule) return;
-    if (!confirm(`Remettre ${_editingRule.key} à sa valeur d'origine ?`)) return;
+    if (!confirm(`Remettre ${_editingRule.key} Ã  sa valeur d'origine ?`)) return;
     try {
       await global.KmcApi.resetSettingRule(_editingRule.key);
       _closePanel();
@@ -398,18 +398,18 @@
       const fresh = await global.KmcApi.getSettings();
       _data.rules = fresh.categories;
       _render(root);
-      _toast(`✓ Règle ${_editingRule.key} remise à zéro.`);
+      _toast(`âœ“ RÃ¨gle ${_editingRule.key} remise Ã  zÃ©ro.`);
     } catch (err) { alert('Erreur : ' + err.message); }
   }
 
-  /* ── Tab Taxes ──────────────────────────────────────────────────────── */
+  /* â”€â”€ Tab Taxes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _renderTaxesTab(container) {
     container.innerHTML = `
       <div class="sv-matrix">
-        <p>⚠️ <strong>Zone critique</strong> — Ces taux impactent directement le calcul de prix de vente. Toute modification s'applique immédiatement. Justification obligatoire.</p>
+        <p>âš ï¸ <strong>Zone critique</strong> â€” Ces taux impactent directement le calcul de prix de vente. Toute modification s'applique immÃ©diatement. Justification obligatoire.</p>
         <table>
           <thead><tr>
-            <th>Catégorie</th><th>Douane</th><th>TVA</th><th>Taxe add.</th><th>Dernière modif</th><th style="text-align:right">Action</th>
+            <th>CatÃ©gorie</th><th>Douane</th><th>TVA</th><th>Taxe add.</th><th>DerniÃ¨re modif</th><th style="text-align:right">Action</th>
           </tr></thead>
           <tbody>
             ${_data.taxes.map(t => `
@@ -418,8 +418,8 @@
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.douane_pct}" data-field="douane_pct"></td>
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.tva_pct}" data-field="tva_pct"></td>
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.taxe_add_pct}" data-field="taxe_add_pct"></td>
-                <td style="font-size:11px;color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : '—'}<br>${t.updated_by_name||''}</td>
-                <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
+                <td style="font-size:11px;color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : 'â€”'}<br>${t.updated_by_name||''}</td>
+                <td style="text-align:right"><button class="sv-matrix-save" disabled>ðŸ’¾ Enregistrer</button></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -427,14 +427,14 @@
     _attachMatrixListeners(container);
   }
 
-  /* ── Tab Dims ───────────────────────────────────────────────────────── */
+  /* â”€â”€ Tab Dims â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _renderDimsTab(container) {
     container.innerHTML = `
       <div class="sv-matrix">
-        <p>📐 Dimensions standard par catégorie (L × l × H en cm). Utilisées pour calculer le volume et le fret.</p>
+        <p>ðŸ“ Dimensions standard par catÃ©gorie (L Ã— l Ã— H en cm). UtilisÃ©es pour calculer le volume et le fret.</p>
         <table>
           <thead><tr>
-            <th>Catégorie</th><th>Longueur (cm)</th><th>Largeur (cm)</th><th>Hauteur (cm)</th><th>Volume (cm³)</th><th>Dernière modif</th><th style="text-align:right">Action</th>
+            <th>CatÃ©gorie</th><th>Longueur (cm)</th><th>Largeur (cm)</th><th>Hauteur (cm)</th><th>Volume (cmÂ³)</th><th>DerniÃ¨re modif</th><th style="text-align:right">Action</th>
           </tr></thead>
           <tbody>
             ${_data.dims.map(d => `
@@ -444,8 +444,8 @@
                 <td><input type="number" step="1" min="1" max="200" value="${d.width_cm}" data-field="width_cm"></td>
                 <td><input type="number" step="1" min="1" max="200" value="${d.height_cm}" data-field="height_cm"></td>
                 <td style="color:var(--text-secondary)">${(d.length_cm*d.width_cm*d.height_cm).toLocaleString('fr-FR')}</td>
-                <td style="font-size:11px;color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : '—'}<br>${d.updated_by_name||''}</td>
-                <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
+                <td style="font-size:11px;color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : 'â€”'}<br>${d.updated_by_name||''}</td>
+                <td style="text-align:right"><button class="sv-matrix-save" disabled>ðŸ’¾ Enregistrer</button></td>
               </tr>`).join('')}
           </tbody>
         </table>
@@ -485,7 +485,7 @@
       } else {
         await global.KmcApi.putSettingsDims(cat, body);
       }
-      _toast(`✓ ${type} de "${cat}" mis à jour.`);
+      _toast(`âœ“ ${type} de "${cat}" mis Ã  jour.`);
       const fresh = await (type === 'taxes' ? global.KmcApi.getSettingsTaxes() : global.KmcApi.getSettingsDims());
       if (type === 'taxes') _data.taxes = fresh.taxes;
       else                  _data.dims  = fresh.dims;
@@ -493,44 +493,44 @@
     } catch (err) { alert('Erreur : ' + err.message); }
   }
 
-  /* ── Tab Audit ──────────────────────────────────────────────────────── */
+  /* â”€â”€ Tab Audit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function _renderAuditTab(container) {
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Chargement de l\'historique…</div>';
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">Chargement de l\'historiqueâ€¦</div>';
     try {
       const data  = await global.KmcApi.getSettingsAudit();
       const items = data.history || [];
       if (!items.length) {
-        container.innerHTML = '<div class="sv-empty-msg">Aucune modification enregistrée.</div>';
+        container.innerHTML = '<div class="sv-empty-msg">Aucune modification enregistrÃ©e.</div>';
         return;
       }
       container.innerHTML = `
         <div style="overflow-x:auto">
           <table class="sv-audit-table">
             <thead><tr>
-              <th>Date</th><th>Règle</th><th>Modifié par</th><th>Ancienne</th><th>Nouvelle</th><th>Justification</th>
+              <th>Date</th><th>RÃ¨gle</th><th>ModifiÃ© par</th><th>Ancienne</th><th>Nouvelle</th><th>Justification</th>
             </tr></thead>
             <tbody>
               ${items.map(h => `
                 <tr>
                   <td style="white-space:nowrap;font-size:11px;color:var(--text-secondary)">${_fmtDate(h.created_at)}</td>
                   <td><strong>${_esc(h.rule_label||h.rule_key)}</strong><br><small style="color:var(--text-secondary)">${_esc(h.rule_key||'')}</small></td>
-                  <td>${_esc(h.changed_by_name||'Système')}</td>
+                  <td>${_esc(h.changed_by_name||'SystÃ¨me')}</td>
                   <td style="color:var(--text-secondary)">${_fmtVal(h.old_value?.value, 'auto')}</td>
                   <td><strong>${_fmtVal(h.new_value?.value, 'auto')}</strong></td>
-                  <td style="font-style:italic;color:var(--text-secondary);max-width:240px">${_esc(h.change_reason||'—')}</td>
+                  <td style="font-style:italic;color:var(--text-secondary);max-width:240px">${_esc(h.change_reason||'â€”')}</td>
                 </tr>`).join('')}
             </tbody>
           </table>
         </div>`;
     } catch (err) {
-      container.innerHTML = `<div style="padding:20px;color:#dc2626">❌ ${_esc(err.message)}</div>`;
+      container.innerHTML = `<div style="padding:20px;color:#dc2626">âŒ ${_esc(err.message)}</div>`;
     }
   }
 
-  /* ── Point d'entrée ─────────────────────────────────────────────────── */
+  /* â”€â”€ Point d'entrÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   global.SettingsView = async function render(root) {
     _injectStyles();
-    root.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">⚙️ Chargement des paramètres…</div>';
+    root.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">âš™ï¸ Chargement des paramÃ¨tresâ€¦</div>';
     try {
       const [rulesData, taxesData, dimsData] = await Promise.all([
         global.KmcApi.getSettings(),
@@ -544,8 +544,9 @@
       };
       _render(root);
     } catch (err) {
-      root.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626">❌ ${_esc(err.message)}</div>`;
+      root.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626">âŒ ${_esc(err.message)}</div>`;
     }
   };
 
 })(window);
+

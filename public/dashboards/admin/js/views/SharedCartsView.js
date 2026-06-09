@@ -1,11 +1,11 @@
-/**
- * KOMERCE Dashboard — SharedCartsView /admin/shared-carts
- * ════════════════════════════════════════════════════════════════════════
+﻿/**
+ * KOMERCE Dashboard â€” SharedCartsView /admin/shared-carts
+ * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
  * Migration de CT.views.shared_carts (ct-views-shared-carts.js)
  *
- * Vue support / arbitrage des paniers partagés :
- *   - Liste filtrée par statut
- *   - Détail drawer (items, contributions, audit events)
+ * Vue support / arbitrage des paniers partagÃ©s :
+ *   - Liste filtrÃ©e par statut
+ *   - DÃ©tail drawer (items, contributions, audit events)
  *   - Actions admin : +7 jours / forcer expiration / note d'arbitrage
  *
  * API : KmcApi.getSharedCarts(filters) / getSharedCart(id) /
@@ -16,7 +16,7 @@
 (function (global) {
   'use strict';
 
-  /* ── Styles ─────────────────────────────────────────────────────────── */
+  /* â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _injectStyles() {
     if (document.getElementById('scv-styles')) return;
     const s = document.createElement('style');
@@ -72,42 +72,42 @@
     document.head.appendChild(s);
   }
 
-  /* ── Constantes ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const STATUS_META = {
     draft:              { color: '#94a3b8', label: 'Brouillon' },
     active:             { color: '#3b82f6', label: 'Actif' },
-    partially_funded:   { color: '#f59e0b', label: 'Partiellement financé' },
-    fully_funded:       { color: '#16a34a', label: 'Entièrement financé' },
+    partially_funded:   { color: '#f59e0b', label: 'Partiellement financÃ©' },
+    fully_funded:       { color: '#16a34a', label: 'EntiÃ¨rement financÃ©' },
     converted_to_order: { color: '#64748b', label: 'Converti en commande' },
-    expired:            { color: '#dc2626', label: 'Expiré' },
-    cancelled:          { color: '#94a3b8', label: 'Annulé' },
-    refunded:           { color: '#94a3b8', label: 'Remboursé' },
+    expired:            { color: '#dc2626', label: 'ExpirÃ©' },
+    cancelled:          { color: '#94a3b8', label: 'AnnulÃ©' },
+    refunded:           { color: '#94a3b8', label: 'RemboursÃ©' },
   };
 
-  /* ── État local ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Ã‰tat local â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const _state = { carts: [], filterStatus: 'all', detailId: null, detail: null };
 
-  /* ── Utilitaires ────────────────────────────────────────────────────── */
+  /* â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const NF = new Intl.NumberFormat('fr-FR');
   function _fmt(n)   { return NF.format(Math.round(n || 0)) + ' KMF'; }
-  function _esc(s)   { return String(s == null ? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function _dt(iso)  { return iso ? new Date(iso).toLocaleString('fr-FR') : '—'; }
-  function _date(iso){ return iso ? new Date(iso).toLocaleDateString('fr-FR') : '—'; }
+  function _esc(s)   { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function _dt(iso)  { return iso ? new Date(iso).toLocaleString('fr-FR') : 'â€”'; }
+  function _date(iso){ return iso ? new Date(iso).toLocaleDateString('fr-FR') : 'â€”'; }
 
-  /* ── Chargement ─────────────────────────────────────────────────────── */
+  /* â”€â”€ Chargement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function _loadCarts() {
     const extra = _state.filterStatus !== 'all' ? { status: _state.filterStatus } : {};
     const data  = await global.KmcApi.getSharedCarts(extra);
     _state.carts = data.carts || [];
   }
 
-  /* ── Rendu liste ────────────────────────────────────────────────────── */
+  /* â”€â”€ Rendu liste â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _renderList(root) {
     const carts = _state.carts;
     let html = `
       <div class="scv-header">
-        <h2>🤝 Paniers Partagés</h2>
-        <p>Vue support / arbitrage — ${carts.length} panier(s) affiché(s).</p>
+        <h2>ðŸ¤ Paniers PartagÃ©s</h2>
+        <p>Vue support / arbitrage â€” ${carts.length} panier(s) affichÃ©(s).</p>
       </div>
       <div class="scv-toolbar">
         <label>Statut :</label>
@@ -119,14 +119,14 @@
       </div>`;
 
     if (!carts.length) {
-      html += '<div class="scv-empty">Aucun panier partagé trouvé.</div>';
+      html += '<div class="scv-empty">Aucun panier partagÃ© trouvÃ©.</div>';
     } else {
       html += `
         <div class="scv-table-wrap">
           <table class="scv-table">
             <thead><tr>
-              <th>Bénéficiaire</th><th>Titre</th><th>Statut</th>
-              <th>Total</th><th>Contribué</th><th>Reste</th>
+              <th>BÃ©nÃ©ficiaire</th><th>Titre</th><th>Statut</th>
+              <th>Total</th><th>ContribuÃ©</th><th>Reste</th>
               <th>Progression</th><th>Contrib.</th><th>Expire</th>
             </tr></thead>
             <tbody>
@@ -136,7 +136,7 @@
                 return `
                   <tr data-id="${c.id}">
                     <td><strong>${_esc(c.beneficiary_full_name||'?')}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${_esc(c.beneficiary_email||'')}</span></td>
-                    <td>${_esc(c.title||'—')}</td>
+                    <td>${_esc(c.title||'â€”')}</td>
                     <td><span class="scv-status" style="background:${sm.color}">${sm.label}</span></td>
                     <td class="scv-mono">${_fmt(c.total_kmf_snapshot)}</td>
                     <td class="scv-mono" style="color:#16a34a">${_fmt(c.contributed_kmf)}</td>
@@ -161,48 +161,48 @@
     _bindEvents(root);
   }
 
-  /* ── Rendu drawer ───────────────────────────────────────────────────── */
+  /* â”€â”€ Rendu drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _renderDrawer() {
     const open = !!_state.detailId;
     const d    = _state.detail;
 
     let inner = '';
     if (open && !d) {
-      inner = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">⏳ Chargement…</div>';
+      inner = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">â³ Chargementâ€¦</div>';
     } else if (open && d) {
       const c  = d.cart;
       const sm = STATUS_META[c.status] || { color:'#94a3b8', label: c.status };
       inner = `
         <div class="scv-section">
-          <div class="scv-section-title">📋 Informations</div>
+          <div class="scv-section-title">ðŸ“‹ Informations</div>
           <dl class="scv-kv">
             <dt>ID :</dt><dd class="scv-mono">${_esc(c.id)}</dd>
             <dt>Token :</dt><dd class="scv-mono">${_esc(c.token)}</dd>
             <dt>Statut :</dt><dd><span class="scv-status" style="background:${sm.color}">${sm.label}</span></dd>
-            <dt>Bénéficiaire :</dt><dd>${_esc(c.beneficiary_name_snapshot||'—')}</dd>
-            <dt>Téléphone :</dt><dd>${_esc(c.beneficiary_phone_snapshot||'—')}</dd>
+            <dt>BÃ©nÃ©ficiaire :</dt><dd>${_esc(c.beneficiary_name_snapshot||'â€”')}</dd>
+            <dt>TÃ©lÃ©phone :</dt><dd>${_esc(c.beneficiary_phone_snapshot||'â€”')}</dd>
             <dt>Total :</dt><dd class="scv-mono">${_fmt(c.total_kmf_snapshot)}</dd>
-            <dt>Contribué :</dt><dd class="scv-mono" style="color:#16a34a">${_fmt(c.contributed_kmf)}</dd>
+            <dt>ContribuÃ© :</dt><dd class="scv-mono" style="color:#16a34a">${_fmt(c.contributed_kmf)}</dd>
             <dt>Reste :</dt><dd class="scv-mono" style="color:#d97706">${_fmt(c.remaining_kmf)}</dd>
             <dt>Vues :</dt><dd>${c.view_count||0}</dd>
-            <dt>Créé :</dt><dd>${_dt(c.created_at)}</dd>
+            <dt>CrÃ©Ã© :</dt><dd>${_dt(c.created_at)}</dd>
             <dt>Expire :</dt><dd>${_dt(c.expires_at)}</dd>
             ${c.finalized_order_id?`<dt>Commande :</dt><dd class="scv-mono">${_esc(c.finalized_order_id)}</dd>`:''}
           </dl>
         </div>
 
         <div class="scv-section">
-          <div class="scv-section-title">🛒 Items snapshot (${d.items.length})</div>
+          <div class="scv-section-title">ðŸ›’ Items snapshot (${d.items.length})</div>
           ${d.items.map(it => `
             <div class="scv-list-row">
               <div><strong>${_esc(it.product_name_snapshot)}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${_esc(it.product_category_snapshot||'')}</span></div>
-              <div>×${it.quantity} @ ${_fmt(it.unit_price_kmf_snapshot)}</div>
+              <div>Ã—${it.quantity} @ ${_fmt(it.unit_price_kmf_snapshot)}</div>
               <div class="scv-mono"><strong>${_fmt(it.line_total_kmf_snapshot)}</strong></div>
             </div>`).join('')}
         </div>
 
         <div class="scv-section">
-          <div class="scv-section-title">💚 Contributions (${d.contributions.length})</div>
+          <div class="scv-section-title">ðŸ’š Contributions (${d.contributions.length})</div>
           ${!d.contributions.length
             ? '<div style="font-style:italic;color:var(--text-secondary);font-size:13px">Aucune contribution.</div>'
             : d.contributions.map(co => `
@@ -210,18 +210,18 @@
                 <div>
                   <strong>${_esc(co.contributor_name)}</strong><br>
                   <span style="font-size:11px;color:var(--text-secondary)">${_esc(co.contributor_email)}</span>
-                  ${co.message?`<br><span style="font-size:11px;font-style:italic">« ${_esc(co.message)} »</span>`:''}
+                  ${co.message?`<br><span style="font-size:11px;font-style:italic">Â« ${_esc(co.message)} Â»</span>`:''}
                 </div>
                 <div>
                   <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--bg-secondary)">${_esc(co.status)}</span><br>
-                  <span style="font-size:11px;color:var(--text-secondary)">${co.paid_at?_dt(co.paid_at):'—'}</span>
+                  <span style="font-size:11px;color:var(--text-secondary)">${co.paid_at?_dt(co.paid_at):'â€”'}</span>
                 </div>
                 <div class="scv-mono">${_fmt(co.amount_kmf)}<br><span style="font-size:10px;color:var(--text-secondary)">${co.amount_paid} ${co.currency_paid}</span></div>
               </div>`).join('')}
         </div>
 
         <div class="scv-section">
-          <div class="scv-section-title">🕓 Audit (${d.events.length})</div>
+          <div class="scv-section-title">ðŸ•“ Audit (${d.events.length})</div>
           ${d.events.map(ev => `
             <div class="scv-event-row">
               <span style="color:var(--text-secondary)">${new Date(ev.created_at).toLocaleTimeString('fr-FR')}</span>
@@ -237,8 +237,8 @@
       <div class="scv-drawer-bg${open?' open':''}" data-act="close"></div>
       <div class="scv-drawer${open?' open':''}">
         <div class="scv-drawer-head">
-          <button class="scv-btn" data-act="close">←</button>
-          <h2 class="scv-drawer-title">${d ? _esc(d.cart.title||'Panier partagé') : '⏳ Chargement…'}</h2>
+          <button class="scv-btn" data-act="close">â†</button>
+          <h2 class="scv-drawer-title">${d ? _esc(d.cart.title||'Panier partagÃ©') : 'â³ Chargementâ€¦'}</h2>
         </div>
         <div class="scv-drawer-body">${inner}</div>
         ${open && d ? `
@@ -246,12 +246,12 @@
             ${canAct ? `
               <button class="scv-btn scv-btn-primary" data-act="extend" data-id="${d.cart.id}">+7 jours</button>
               <button class="scv-btn scv-btn-danger"  data-act="expire"  data-id="${d.cart.id}">Forcer expiration</button>` : ''}
-            <button class="scv-btn" data-act="add-note" data-id="${d.cart.id}">📝 Note</button>
+            <button class="scv-btn" data-act="add-note" data-id="${d.cart.id}">ðŸ“ Note</button>
           </div>` : ''}
       </div>`;
   }
 
-  /* ── Bind events ────────────────────────────────────────────────────── */
+  /* â”€â”€ Bind events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function _bindEvents(root) {
     // Filtre statut
     const filterEl = document.getElementById('scv-filter');
@@ -263,7 +263,7 @@
       });
     }
 
-    // Click sur ligne → ouvrir drawer
+    // Click sur ligne â†’ ouvrir drawer
     root.addEventListener('click', async e => {
       // Ignorer si c'est un bouton d'action
       if (e.target.closest('[data-act]')) return;
@@ -333,16 +333,17 @@
     });
   }
 
-  /* ── Point d'entrée ─────────────────────────────────────────────────── */
+  /* â”€â”€ Point d'entrÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   global.SharedCartsView = async function render(root) {
     _injectStyles();
-    root.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">🤝 Chargement des paniers partagés…</div>';
+    root.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)">ðŸ¤ Chargement des paniers partagÃ©sâ€¦</div>';
     try {
       await _loadCarts();
       _renderList(root);
     } catch (err) {
-      root.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626">❌ ${_esc(err.message)}</div>`;
+      root.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626">âŒ ${_esc(err.message)}</div>`;
     }
   };
 
 })(window);
+
