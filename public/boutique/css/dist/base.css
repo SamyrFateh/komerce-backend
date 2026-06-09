@@ -817,6 +817,7 @@ body {
   display: flex;
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom);
+  padding-right: 12px; /* décale le panier du bord droit */
 }
 .k-bnav-btn, .k-bnav-item {
   flex: 1;
