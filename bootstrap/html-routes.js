@@ -78,6 +78,12 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/alerts',
     '/admin/categories',
     '/admin/products',
+    '/admin/sales',
+    '/admin/clients',
+    '/admin/problems',
+    '/admin/hub-relais',
+    '/admin/transitaire',
+    '/admin/inventory',
   ];
   ADMIN_DASHBOARD_PATHS.forEach(p => {
     app.get(p, (req, res) => {

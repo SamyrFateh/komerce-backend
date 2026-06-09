@@ -15,10 +15,16 @@
     { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', section: 'PILOTAGE' },
     { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'PILOTAGE' },
     { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', section: 'PILOTAGE' },
+    { path: '/admin/sales',            view: 'SalesView',            label: 'Ventes',                 icon: '📈', section: 'PILOTAGE' },
+    { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️',  section: 'OPERATIONS' },
+    { path: '/admin/alerts',           view: 'ActionCenterView',     label: 'Alertes & Incidents',    icon: '🚨', section: 'OPERATIONS' },
+    { path: '/admin/clients',          view: 'ClientsView',          label: 'Clients',                icon: '👥', section: 'OPERATIONS' },
+    { path: '/admin/hub-relais',       view: 'HubRelaisView',        label: 'Hub & Relais',           icon: '🏭', section: 'OPERATIONS' },
+    { path: '/admin/transitaire',      view: 'TransitaireView',      label: 'Transitaire',            icon: '✈️',  section: 'OPERATIONS' },
+    { path: '/admin/inventory',        view: 'InventoryView',        label: 'Inventaire Hub',         icon: '📋', section: 'OPERATIONS' },
     { path: '/admin/categories', view: 'CategoriesView',  label: 'Catégories boutique', icon: '🏷️', section: 'CATALOGUE' },
     { path: '/admin/products',   view: 'ProductsView',    label: 'Produits boutique',   icon: '🛍️', section: 'CATALOGUE' },
     { path: '/admin/sourcing',         view: null,                   label: 'Sourcing',               icon: '🔎', section: 'AUTRES' },
-    { path: '/admin/alerts',           view: null,                   label: 'Alertes',                icon: '🚨', section: 'AUTRES' },
   ];
 
   let currentUser = null;
@@ -84,8 +90,8 @@
           <div class="sidebar-footer">
             <div class="sidebar-rate">
               <div>Taux AED → KMF</div>
-              <div class="sidebar-rate-value">1 AED = 138.00 KMF</div>
-              <div class="sidebar-rate-delta">↑ 0.35%</div>
+              <div class="sidebar-rate-value" id="sidebar-fx-rate">—</div>
+              <div class="sidebar-rate-delta" id="sidebar-fx-delta">Chargement…</div>
             </div>
           </div>
         </aside>
@@ -219,6 +225,20 @@
     });
   }
 
+  async function loadFxRate() {
+    try {
+      const config = await KmcApi.getFinanceConfig();
+      const rate = config && (config.aed_to_kmf_rate || config.fx_rate_aed_kmf);
+      const rateEl = document.getElementById('sidebar-fx-rate');
+      const deltaEl = document.getElementById('sidebar-fx-delta');
+      if (rateEl) rateEl.textContent = rate ? `1 AED = ${Number(rate).toFixed(2)} KMF` : '—';
+      if (deltaEl) deltaEl.textContent = '';
+    } catch (_) {
+      const deltaEl = document.getElementById('sidebar-fx-delta');
+      if (deltaEl) deltaEl.textContent = 'Indisponible';
+    }
+  }
+
   async function init() {
     try {
       await requireAdminSession();
@@ -229,6 +249,7 @@
     KmcFilters.init();
     renderShell();
     hydrateHeaderUser();
+    loadFxRate();
     dispatchView();
 
     // Gestion du bouton retour navigateur

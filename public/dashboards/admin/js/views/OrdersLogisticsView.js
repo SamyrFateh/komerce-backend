@@ -136,29 +136,19 @@
     tableEl.innerHTML = '<div class="loading-state"><span class="loader"></span> Chargement...</div>';
 
     try {
-      // Endpoint de Vue principale Logistics : on utilise /api/admin/dashboard/logistics
-      // mais comme la Sprint 1 ne renvoie pas de tables détaillées dans cet endpoint,
-      // on appelle /api/admin/orders ou on derive des donnees autrement.
-      // En attendant, on appelle un endpoint legacy si dispo, sinon on affiche un message.
-      const qs = new URLSearchParams();
-      if (filters.from) qs.set('from', filters.from);
-      if (filters.to)   qs.set('to', filters.to);
-      if (filters.island)        qs.set('island', filters.island);
-      if (filters.status)        qs.set('status', filters.status);
-      if (filters.payment_status) qs.set('payment_status', filters.payment_status);
-      qs.set('limit', '50');
-      if (force) qs.set('refresh', '1');
-
-      // Tentative endpoint
       let orders = [];
       try {
-        const res = await fetch(`/api/admin/orders?${qs.toString()}`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          orders = data.orders || data.items || data || [];
-          if (!Array.isArray(orders)) orders = [];
-        }
-      } catch (e) { /* endpoint optionnel */ }
+        const data = await KmcApi.getOrders({
+          ...filters,
+          limit: 50,
+          ...(force ? { refresh: '1' } : {}),
+        });
+        orders = data.orders || data.items || data || [];
+        if (!Array.isArray(orders)) orders = [];
+      } catch (e) {
+        tableEl.innerHTML = `<div class="error-state">Erreur chargement commandes : ${e.message || 'API indisponible'}</div>`;
+        return;
+      }
 
       DataTable.render(tableEl, {
         emptyText: 'Aucune commande sur cette période',
@@ -213,9 +203,7 @@
           },
         ],
         rows: orders,
-        onRowClick: (row) => {
-          window.location.href = `/admin/order-detail.html?id=${row.id || row.reference}`;
-        },
+        onRowClick: null, // TODO Sprint 5 : brancher page détail commande
       });
     } catch (err) {
       tableEl.innerHTML = `<div class="error-state">Endpoint /api/admin/orders non disponible — sera branché en Sprint 5+</div>`;
@@ -236,29 +224,8 @@
    * Tableau routage inter-îles simplifié (V1).
    */
   function renderRoutingTable(container) {
-    const ROUTES_DATA = [
-      { from: 'Dubai', to: 'Anjouan Hub', volume: '128 colis', delay: 'normal' },
-      { from: 'Anjouan Hub', to: 'Moroni', volume: '96 en transit', delay: 'normal' },
-      { from: 'Anjouan Hub', to: 'Mohéli', volume: '57 en transit', delay: 'normal' },
-      { from: 'Anjouan Hub', to: 'Mayotte', volume: '76 en transit', delay: 'normal' },
-    ];
-
-    DataTable.render(container, {
-      columns: [
-        { key: 'from', label: 'Origine' },
-        { key: 'to', label: 'Destination' },
-        { key: 'volume', label: 'Volume' },
-        {
-          key: 'delay',
-          label: 'Statut',
-          render: (row) => {
-            const cls = row.delay === 'normal' ? 'is-green' : 'is-orange';
-            return `<span class="badge ${cls}">${row.delay}</span>`;
-          },
-        },
-      ],
-      rows: ROUTES_DATA,
-    });
+    // TODO Sprint 3+ : brancher sur /api/admin/dashboard/logistics (section routing)
+    container.innerHTML = '<div class="empty-state">Données de routage non disponibles — endpoint à brancher (Sprint 3+)</div>';
   }
 
   global.OrdersLogisticsView = { render };

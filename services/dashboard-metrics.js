@@ -870,7 +870,7 @@ async function getMontantTotalEvenements(filters = {}) {
         COALESCE(SUM(COALESCE(cwi.price_snapshot_kmf, 0) * COALESCE(cwi.quantity, 1)), 0) AS workspace_total_kmf
       FROM collective_workspaces cw
       LEFT JOIN collective_workspace_items cwi ON cwi.workspace_id = cw.id
-      WHERE cw.status NOT IN ('cancelled')
+      WHERE cw.status IN ('conception', 'payment_pending', 'order_created', 'session_ended')
         ${filters.from ? 'AND cw.created_at >= $1' : ''}
         ${filters.to ? `AND cw.created_at <= $${filters.from ? 2 : 1}` : ''}
       GROUP BY cw.id
@@ -888,11 +888,12 @@ async function getMontantTotalEvenements(filters = {}) {
 async function getSessionsSansCommande(filters = {}) {
   const sql = `
     SELECT COUNT(*)::int AS value
-    FROM collective_payment_sessions
-    WHERE status = 'ended'
-      AND order_id IS NULL
-      ${filters.from ? 'AND ended_at >= $1' : ''}
-      ${filters.to ? `AND ended_at <= $${filters.from ? 2 : 1}` : ''}
+    FROM collective_payment_sessions cps
+    JOIN collective_workspaces cw ON cw.id = cps.workspace_id
+    WHERE cps.status = 'ended'
+      AND cw.order_id IS NULL
+      ${filters.from ? 'AND cps.ended_at >= $1' : ''}
+      ${filters.to   ? `AND cps.ended_at <= $${filters.from ? 2 : 1}` : ''}
   `;
   const params = [];
   if (filters.from) params.push(filters.from);
@@ -908,10 +909,10 @@ async function getSessionsSansCommande(filters = {}) {
 async function getCmdsCreeesWorkspace(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
-    SELECT COUNT(*)::int AS value
+    SELECT COUNT(DISTINCT o.id)::int AS value
     FROM orders o
+    JOIN collective_workspaces cw ON cw.order_id = o.id
     WHERE ${where}
-      AND o.collective_workspace_id IS NOT NULL
   `;
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
@@ -931,7 +932,7 @@ async function getPanierMoyEvenement(filters = {}) {
         COALESCE(SUM(COALESCE(cwi.price_snapshot_kmf, 0) * COALESCE(cwi.quantity, 1)), 0) AS workspace_total_kmf
       FROM collective_workspaces cw
       LEFT JOIN collective_workspace_items cwi ON cwi.workspace_id = cw.id
-      WHERE cw.status NOT IN ('cancelled')
+      WHERE cw.status IN ('conception', 'payment_pending', 'order_created', 'session_ended')
         ${filters.from ? 'AND cw.created_at >= $1' : ''}
         ${filters.to ? `AND cw.created_at <= $${filters.from ? 2 : 1}` : ''}
       GROUP BY cw.id
@@ -952,20 +953,28 @@ async function getPanierMoyEvenement(filters = {}) {
 }
 
 async function getParticipantsMoy(filters = {}) {
-  // Moyenne du nombre de participants par workspace
+  // Moyenne du nombre de participants uniques par workspace
+  // Déduplication : email normalisé > téléphone normalisé > nom normalisé > id contribution
   const sql = `
     SELECT COALESCE(AVG(participant_count), 0)::numeric AS value,
            COUNT(*)::int AS items_total
     FROM (
       SELECT
         cw.id,
-        (SELECT COUNT(DISTINCT participant_label)
-         FROM collective_workspace_intentions
-         WHERE workspace_id = cw.id) AS participant_count
+        COUNT(DISTINCT
+          COALESCE(
+            NULLIF(LOWER(TRIM(cwc.contributor_email)), ''),
+            NULLIF(REGEXP_REPLACE(cwc.contributor_phone, '\\D', '', 'g'), ''),
+            NULLIF(LOWER(TRIM(cwc.contributor_name)), ''),
+            cwc.id::text
+          )
+        ) AS participant_count
       FROM collective_workspaces cw
-      WHERE cw.status NOT IN ('cancelled', 'archived')
+      LEFT JOIN collective_workspace_contributions cwc ON cwc.workspace_id = cw.id
+      WHERE cw.status IN ('conception', 'payment_pending', 'order_created', 'session_ended')
         ${filters.from ? 'AND cw.created_at >= $1' : ''}
         ${filters.to ? `AND cw.created_at <= $${filters.from ? 2 : 1}` : ''}
+      GROUP BY cw.id
     ) sub
   `;
   const params = [];
@@ -976,7 +985,7 @@ async function getParticipantsMoy(filters = {}) {
   try {
     r = await db.query(sql, params);
   } catch (err) {
-    // collective_workspace_intentions n'existe peut-etre pas selon schema
+    // collective_workspace_contributions ou colonnes introuvables
     return makeKpi('participants_moy', 'Participants moyens', null, 'count', {
       completeness: 'provisional',
       warning: 'Donnees indisponibles : ' + err.message,

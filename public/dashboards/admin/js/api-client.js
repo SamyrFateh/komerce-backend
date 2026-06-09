@@ -462,6 +462,33 @@
     getLoyaltyHistory,
     createLoyaltyAction,
 
+    // Signals / ActionCenterView (6)
+    getSignalsStats,
+    getSignalsList,
+    generateSignals,
+    acknowledgeSignal,
+    snoozeSignal,
+    resolveSignal,
+
+    // Orders / ProblemsView (1)
+    getOrders,
+
+    // Hub / Relais / HubRelaisView (7)
+    hubMarkOrdered,
+    hubShip,
+    autoDistribute,
+    getDistribution,
+    relaisConfirmCash,
+    relaisReceive,
+    relaisCollect,
+
+    // Inventory / InventoryView (5)
+    getHubInventoryStats,
+    getHubInventoryProposals,
+    getHubInventoryOpenParcels,
+    hubInventoryScanAssign,
+    hubInventoryProposeAll,
+
     ApiError,
   };
 })(window);

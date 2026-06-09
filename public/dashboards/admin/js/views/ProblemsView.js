@@ -511,40 +511,12 @@
       }
 
     } catch (err) {
-      console.warn('[ProblemsView] API error, using demo data:', err.message);
-      loadDemoData(rootEl);
+      console.error('[ProblemsView] API error:', err.message);
+      const cardsEl = rootEl.querySelector('#prob-cards');
+      if (cardsEl) cardsEl.innerHTML = `<div class="error-state">Erreur chargement : ${err.message || 'API indisponible'}</div>`;
     } finally {
       _isLoading = false;
       if (refreshBtn) refreshBtn.disabled = false;
-    }
-  }
-
-  function loadDemoData(rootEl) {
-    const now = Date.now();
-    const d   = (days) => new Date(now - 86400000 * days).toISOString();
-
-    const orders = [
-      { id: 'CMD-0039', order_ref: 'CMD-0039', status: 'confirmed', client_name: 'Mohamed Ali',  total: 12500, payment_status: 'paid', payment_method: 'stripe', created_at: d(2), updated_at: d(2) },
-      { id: 'CMD-0040', order_ref: 'CMD-0040', status: 'confirmed', client_name: 'Ahmed Hassan', total: 8900,  payment_status: 'paid', payment_method: 'stripe', created_at: d(1), updated_at: d(1) },
-      { id: 'CMD-0030', order_ref: 'CMD-0030', status: 'collected', client_name: 'Ibrahim Madi', total: 22000, payment_status: 'pending', payment_method: 'cash', created_at: d(3), updated_at: d(3) },
-      { id: 'CMD-0031', order_ref: 'CMD-0031', status: 'collected', client_name: 'Zainab Combo', total: 9500,  payment_status: 'pending', payment_method: 'cash', created_at: d(5), updated_at: d(5) },
-      { id: 'CMD-0028', order_ref: 'CMD-0028', status: 'preparation', client_name: 'Farid Hassan', total: 18000, payment_status: 'paid', payment_method: 'stripe', hub_id: 'hub-1', created_at: d(6), updated_at: d(6) },
-      { id: 'CMD-0022', order_ref: 'CMD-0022', status: 'shipped',     client_name: 'Saïd Abdou',   total: 35000, payment_status: 'paid', payment_method: 'stripe', created_at: d(15), updated_at: d(15) },
-      { id: 'CMD-0033', order_ref: 'CMD-0033', status: 'available',   client_name: 'Zakia Omar',   total: 11000, payment_status: 'paid', payment_method: 'stripe', sms_sent: true, created_at: d(9), updated_at: d(9) },
-      { id: 'CMD-0036', order_ref: 'CMD-0036', status: 'available',   client_name: 'Amina Salim',  total: 14000, payment_status: 'paid', payment_method: 'stripe', sms_sent: false, created_at: d(1), updated_at: d(1) },
-      { id: 'CMD-0042', order_ref: 'CMD-0042', status: 'purchasing',  client_name: 'Nadia Ali',    total: 6000,  payment_status: 'paid', payment_method: 'stripe', created_at: d(2), updated_at: d(2) },
-      { id: 'CMD-0043', order_ref: 'CMD-0043', status: 'purchasing',  client_name: 'Ali Combo',    total: 19000, payment_status: 'paid', payment_method: 'stripe', hub_id: 'hub-1', purchase_order: { status: 'received', quantity: 1, received_qty: 1 }, created_at: d(3), updated_at: d(3) },
-    ];
-
-    const results = runDetections(orders);
-    rootEl.querySelector('#prob-summary').innerHTML = renderSummary(results);
-    rootEl.querySelector('#prob-cards').innerHTML   = renderCards(results);
-    rootEl.querySelector('#prob-sidebar').innerHTML = renderSidebar(results);
-
-    const scanTimeEl = rootEl.querySelector('#prob-scan-time');
-    if (scanTimeEl) {
-      const t = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      scanTimeEl.textContent = `Dernier scan : ${t} (démo)`;
     }
   }
 
