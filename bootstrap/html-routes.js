@@ -89,6 +89,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/economic',
     '/admin/pilotage-fin',
     '/admin/invoices',
+    '/admin/sante',
   ];
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {

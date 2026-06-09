@@ -7,6 +7,7 @@
 
   const ROUTES = [
     { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',               icon: '🎯', section: 'PILOTAGE' },
+    { path: '/admin/sante',            view: 'SanteView',            label: 'Santé Business',         icon: '🏥', section: 'PILOTAGE' },
     { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', section: 'PILOTAGE' },
     { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', section: 'PILOTAGE' },
     { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'PILOTAGE' },
