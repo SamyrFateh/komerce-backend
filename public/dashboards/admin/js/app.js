@@ -193,14 +193,31 @@
   }
 
   async function invokeView(View, main) {
-    // Anciennes vues : { render(rootEl) }
+    // Format objet : global.MaVue = { render }
     if (View && typeof View.render === 'function') {
       return View.render(main);
     }
-    // Certaines vues Lot 4 : async function(rootEl)
+
     if (typeof View === 'function') {
+      const source = Function.prototype.toString.call(View);
+
+      // Format constructeur Lot 4 :
+      // function MaVue() { this.render = function (...) {} }
+      if (/\bthis\.render\s*=/.test(source)) {
+        const instance = new View();
+
+        if (!instance || typeof instance.render !== 'function') {
+          throw new Error('constructeur de vue sans méthode render');
+        }
+
+        return instance.render(main);
+      }
+
+      // Format fonction directe :
+      // global.MaVue = async function (rootEl) {}
       return View(main);
     }
+
     throw new Error('format de vue incompatible');
   }
 
