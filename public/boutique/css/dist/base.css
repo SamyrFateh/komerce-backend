@@ -38,6 +38,33 @@
   --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
   --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
 
+  /* ── Checkout — palette ivoire & brun doré
+     Fond blanc dominant, ambre en touche fonctionnelle.
+     Remplace --sage-* pour le flow commande. ── */
+  --checkout-bg:            #fffdf7;   /* fond général modal          ← --cream-pearl      */
+  --checkout-surface:       #ffffff;   /* cards internes (user, relay) ← --white            */
+  --checkout-surface-warm:  #f7f3ec;   /* toggle bg, sections          ← --sand-warm        */
+
+  --checkout-border:        #f0e8d0;   /* bordure cards, topbar                             */
+  --checkout-border-mid:    #e8c78a;   /* bordure hover, focus         ← --amber-border-md  */
+
+  --checkout-text:          #1F3024;   /* texte principal              ← --text             */
+  --checkout-text-muted:    #a06a1f;   /* labels section, sous-titres  ← --amber-text-light */
+  --checkout-text-strong:   #412402;   /* titres, relay name           ← amber ramp 900     */
+  --checkout-text-soft:     #999999;   /* sous-textes neutres          ← --text-form-soft   */
+
+  --checkout-accent:        #633806;   /* CTA confirmer, état actif    ← amber ramp 800     */
+  --checkout-accent-light:  #fef3c7;   /* texte sur CTA foncé          ← --amber-bg-pale    */
+  --checkout-accent-hover:  #412402;   /* hover CTA                    ← amber ramp 900     */
+  --checkout-link:          #a06a1f;   /* "Changer", liens inline      ← --amber-text-light */
+
+  --checkout-disabled-bg:   #fafafa;   /* MVola "bientôt"              ← --gray-bg-lighter  */
+  --checkout-disabled-text: #cccccc;   /* texte désactivé              ← --border-soft      */
+
+  --checkout-avatar-bg:     #fef3c7;   /* fond initiales               ← --amber-bg-pale    */
+  --checkout-avatar-text:   #6b3e0e;   /* texte initiales              ← --amber-text       */
+
+
   --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
   --terracotta-dark:   #9E5C3E;  /* texte sur fond clair, hover */
   --terracotta-bg:     #F5EDE8;  /* fond warm, sections récap */
