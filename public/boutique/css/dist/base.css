@@ -590,7 +590,7 @@ body {
   .k-header .k-cart-btn,
   .k-cart-btn.k-header-action {
     margin-left: 0;
-    margin-right: -2px;
+    margin-right: 6px;
   }
 }
 
