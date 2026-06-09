@@ -1428,19 +1428,31 @@ body.cart-open .k-wa-fab {
   flex-shrink: 1;
   min-width: 0;
 }
+.k-order-body--checkout .k-ck-id-card {
+  flex-wrap: wrap;
+  gap: 8px 13px;
+}
 .k-order-body--checkout .k-ck-id-actions-col {
-  /* Re-empilé verticalement (2026-06-09) pour loger la pastille
-     « ✅ identifié » au-dessus du bouton « Changer » sans surcharger la ligne. */
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
+  flex-basis: 100%;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
 }
 .k-order-body--checkout .k-ck-id-verified {
-  font-size: .64rem;
-  padding: 1px 6px;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+  font-size: .62rem;
+  padding: 1px 5px;
 }
 .k-order-body--checkout .k-ck-id-change {
-  font-size: .78rem;
+  font-size: .82rem;
+}
+.k-order-body--checkout .k-ck-id-notyou {
+  font-size: .82rem;
 }
 /* « Ce n'est pas vous ? » visible en mode Moi, masqué en mode Quelqu'un d'autre (via JS hidden) */
 
