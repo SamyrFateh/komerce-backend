@@ -160,8 +160,12 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
       if (phoneValue.length < 8) { fail("Numéro WhatsApp invalide."); return; }
       sending = true;
       next.disabled = true;
-      next.textContent = "Envoi du codeu2026";
       err.textContent = "";
+
+      // Animation envoi coral
+      next.classList.add('k-id-sending');
+      next.innerHTML = '<span class="k-id-sending-dot"></span><span class="k-id-sending-dot"></span><span class="k-id-sending-dot"></span>';
+
       try {
         const res = await fetch("/api/auth/otp/request", {
           method: "POST",
@@ -170,18 +174,20 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
           body: JSON.stringify({ phone: phoneValue }),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.success === false) throw new Error(data.error || "Impossible du2019envoyer le code.");
+        if (!res.ok || data.success === false) throw new Error(data.error || "Impossible d\u2019envoyer le code.");
         step = "code";
         codeRow.hidden = false;
         if (sent) {
           sent.hidden = false;
-          sent.textContent = "Code envoyu00e9 au " + maskPhone(phoneValue);
+          sent.textContent = "Code envoy\u00e9 au " + maskPhone(phoneValue);
         }
+        next.classList.remove('k-id-sending');
         next.textContent = "Confirmer";
         setTimeout(() => codeInput?.focus(), 50);
       } catch (e) {
         fail(e.message);
         step = "phone";
+        next.classList.remove('k-id-sending');
         next.textContent = "Recevoir le code";
       } finally {
         sending = false;
