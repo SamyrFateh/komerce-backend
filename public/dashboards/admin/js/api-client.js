@@ -15,6 +15,7 @@
   'use strict';
 
   const BASE_DASHBOARD = '/api/admin/dashboard';
+  const BASE_LEGACY_DASHBOARD = '/api/dashboard';
   const BASE_API       = '/api';
 
   // ── Helpers internes ──────────────────────────────────────────────────────
@@ -60,6 +61,11 @@
     return `${BASE_DASHBOARD}/${endpoint}${qs ? '?' + qs : ''}`;
   }
 
+  function legacyDashboardUrl(endpoint, filters, extra) {
+    const qs = buildQS({ ...filters, ...extra });
+    return `${BASE_LEGACY_DASHBOARD}/${endpoint}${qs ? '?' + qs : ''}`;
+  }
+
   function apiUrl(path, params) {
     const qs = buildQS(params);
     return `${BASE_API}${path}${qs ? '?' + qs : ''}`;
@@ -89,7 +95,7 @@
    * @param {object} extra    { vip_threshold?: number }
    */
   function getClients(filters, extra) {
-    return fetchJSON(dashboardUrl('clients', filters, extra));
+    return fetchJSON(legacyDashboardUrl('clients', filters, extra));
   }
 
   /**
@@ -98,7 +104,7 @@
    * @param {object} extra    { page, page_size, segment, search, island, vip_threshold }
    */
   function getClientsList(filters, extra) {
-    return fetchJSON(dashboardUrl('clients/list', filters, extra));
+    return fetchJSON(legacyDashboardUrl('clients/list', filters, extra));
   }
 
   /**
@@ -115,7 +121,7 @@
    * @param {object} extra    { period?: number }  (nb jours, ex: 7, 30, 90)
    */
   function getSales(filters, extra) {
-    return fetchJSON(dashboardUrl('sales', filters, extra));
+    return fetchJSON(legacyDashboardUrl('sales', filters, extra));
   }
 
   /**
@@ -123,7 +129,7 @@
    * @param {object} filters
    */
   function getOps(filters) {
-    return fetchJSON(dashboardUrl('ops', filters));
+    return fetchJSON(legacyDashboardUrl('ops', filters));
   }
 
   /**
@@ -147,7 +153,7 @@
    * @param {object} extra    { period?: number }
    */
   function getFinance(filters, extra) {
-    return fetchJSON(dashboardUrl('finance', filters, extra));
+    return fetchJSON(legacyDashboardUrl('finance', filters, extra));
   }
 
   // Economic
