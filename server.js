@@ -136,9 +136,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// dashboards/ est à la racine du projet (pas dans public/) — servi sous /dashboards/
-app.use('/dashboards', express.static(path.join(__dirname, 'dashboards')));
-
 // ── Routes API ────────────────────────────────────────────────────────────
 
 const {

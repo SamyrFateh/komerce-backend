@@ -81,7 +81,7 @@ function mountHtmlRoutes(app, rootDir) {
   ];
   ADMIN_DASHBOARD_PATHS.forEach(p => {
     app.get(p, (req, res) => {
-      sendHtml(res, path.join(rootDir, 'dashboards', 'admin', 'index.html'));
+      sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'index.html'));
     });
   });
 
@@ -91,7 +91,7 @@ function mountHtmlRoutes(app, rootDir) {
   app.get('/control-tower.html', (req, res) => {
     if (process.env.ADMIN_LEGACY_ENABLED === '1') {
       res.setHeader('X-Deprecated', 'control-tower.html — migrer vers /admin/pilotage');
-      return sendHtml(res, path.join(rootDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
+      return sendHtml(res, path.join(publicDir, 'dashboards', 'admin-legacy', 'control-tower.html'));
     }
     res.redirect(301, '/admin/pilotage');
   });
