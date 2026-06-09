@@ -154,7 +154,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-of-group { margin-bottom: 5px; }
 .k-of-group label { display: block; font-size: .78rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
 .k-of-group input { width: 100%; padding: 6px 10px; border: 2px solid var(--border); border-radius: var(--radius); font-size: .9rem; transition: border-color .2s; outline: none; background: var(--white); }
-.k-of-group input:focus { border-color: var(--coral); }
+.k-of-group input:focus { border-color: var(--sage); }
 
 /* 600px intentionnel : .k-order-modal uniquement � popup centr� d�s 480px de large,
    ind�pendant du breakpoint layout. Ne pas aligner sur 900px. */
@@ -167,7 +167,7 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-otp-hint { font-size: .82rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px; }
 .k-otp-sent-banner { background: var(--whatsapp-bg-hover); border-left: 3px solid var(--text-disabled); border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: .82rem; line-height: 1.5; color: var(--text); margin-bottom: 16px; }
 .k-otp-code-input { display: block; width: 100%; max-width: 200px; margin: 0 auto 16px; padding: 14px 8px; font-size: 1.6rem; font-weight: 700; letter-spacing: .25em; text-align: center; border: 2px solid var(--overlay-black-md); border-radius: 10px; background: var(--white); outline: none; }
-.k-otp-code-input:focus { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(200,92,45,.12); }
+.k-otp-code-input:focus { border-color: var(--sage); box-shadow: 0 0 0 3px var(--border-sage-14); }
 .k-otp-divider { display: flex; align-items: center; gap: 12px; margin: 12px 0; color: var(--text-muted); font-size: .78rem; }
 .k-otp-divider::before, .k-otp-divider::after { content: ''; flex: 1; height: 1px; background: var(--overlay-black-sm); }
 .k-otp-resend-btn { display: block; width: 100%; background: none; border: none; color: var(--text-muted); font-size: .8rem; text-align: center; padding: 8px; cursor: pointer; text-decoration: underline; margin-top: 6px; }
