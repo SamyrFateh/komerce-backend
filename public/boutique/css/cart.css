@@ -1442,10 +1442,7 @@ body.cart-open .k-wa-fab {
 .k-order-body--checkout .k-ck-id-change {
   font-size: .78rem;
 }
-/* « Ce n'est pas vous ? » masqué visuellement — reste câblé en JS */
-.k-order-body--checkout .k-ck-id-notyou {
-  display: none;
-}
+/* « Ce n'est pas vous ? » visible en mode Moi, masqué en mode Quelqu'un d'autre (via JS hidden) */
 
 
 /* Relais plus aéré mais compact */

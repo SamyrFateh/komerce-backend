@@ -317,7 +317,7 @@ export function buildIdentityRecapDOM(identity) {
     +   '</span>'
     +   '<span class="k-ck-id-actions-col">'
     +     '<span class="k-ck-id-verified" aria-label="Identit\u00e9 v\u00e9rifi\u00e9e"><span class="k-ck-id-verified-ic" aria-hidden="true">\u2705</span> identifi\u00e9</span>'
-    +     '<button type="button" class="k-ck-id-change">Changer</button>'
+    +     '<button type="button" class="k-ck-id-change">Votre num\u00e9ro a chang\u00e9\u00a0?</button>'
     +     '<button type="button" class="k-ck-id-notyou">Ce n\u2019est pas vous\u00a0?</button>'
     +   '</span>'
     + '</div>';
