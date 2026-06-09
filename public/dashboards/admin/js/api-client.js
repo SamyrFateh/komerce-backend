@@ -395,6 +395,92 @@
     return fetchMutation(apiUrl('/hub/inventory/propose-all'), 'POST');
   }
 
+  // ── Lot 4 — Sourcing Intelligence ─────────────────────────────────────────
+
+  function getSourcingSynthesis() {
+    return fetchJSON(apiUrl('/admin/sourcing/synthesis'));
+  }
+
+  function getSourcingAnalysis(params) {
+    return fetchJSON(apiUrl('/admin/sourcing/analysis', params));
+  }
+
+  function updateSourcingProduct(id, body) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/products/' + encodeURIComponent(id)),
+      'PUT',
+      body
+    );
+  }
+
+  function sourcingBulkRail(body) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/bulk-rail'),
+      'POST',
+      body
+    );
+  }
+
+  // ── Lot 4 — Scanner catalogue fournisseur ─────────────────────────────────
+
+  function getSourcingCatalogs(params) {
+    return fetchJSON(apiUrl('/admin/sourcing/catalogs', params));
+  }
+
+  function getSourcingCandidates(params) {
+    return fetchJSON(apiUrl('/admin/sourcing/candidates', params));
+  }
+
+  function getSourcingCandidate(id) {
+    return fetchJSON(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id))
+    );
+  }
+
+  function updateSourcingCandidate(id, body) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id)),
+      'PUT',
+      body
+    );
+  }
+
+  function importSourcingCatalog(body) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/catalogs/import'),
+      'POST',
+      body
+    );
+  }
+
+  function scanSourcingCandidate(id) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/scan'),
+      'POST'
+    );
+  }
+
+  function importSourcingProduct(id) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/import-product'),
+      'POST'
+    );
+  }
+
+  function watchlistSourcingCandidate(id) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/watchlist'),
+      'POST'
+    );
+  }
+
+  function rejectSourcingCandidate(id, body) {
+    return fetchMutation(
+      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/reject'),
+      'POST',
+      body
+    );
+  }
   // ── Lot 6 — Settings ──────────────────────────────────────────────────────
 
   /** Toutes les règles groupées par catégorie. Retourne { categories } */
@@ -597,6 +683,22 @@
     hubInventoryScanAssign,
     hubInventoryProposeAll,
 
+    // Lot 4 — Sourcing Intelligence (4)
+    getSourcingSynthesis,
+    getSourcingAnalysis,
+    updateSourcingProduct,
+    sourcingBulkRail,
+
+    // Lot 4 — Scanner catalogue (9)
+    getSourcingCatalogs,
+    getSourcingCandidates,
+    getSourcingCandidate,
+    updateSourcingCandidate,
+    importSourcingCatalog,
+    scanSourcingCandidate,
+    importSourcingProduct,
+    watchlistSourcingCandidate,
+    rejectSourcingCandidate,
     // Lot 6 — Settings (9)
     getSettings,
     getSettingRule,

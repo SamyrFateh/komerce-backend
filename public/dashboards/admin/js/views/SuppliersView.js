@@ -24,9 +24,9 @@
 
   /* ── Styles ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
-    if (document.getElementById('sv-styles')) return;
+    if (document.getElementById('suppliers-view-styles')) return;
     const s = document.createElement('style');
-    s.id = 'sv-styles';
+    s.id = 'suppliers-view-styles';
     s.textContent = `
       .sv-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;border-bottom:2px solid var(--border);padding-bottom:0}
       .sv-tab{padding:8px 14px;border:none;background:none;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;display:flex;align-items:center;gap:6px}
