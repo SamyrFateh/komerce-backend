@@ -768,25 +768,33 @@
   /* ── Grid : 43 % image · 57 % détails ───────────────────── */
   /* min 380px sur col image : empêche la col droite de réduire
      l'image en dessous d'une largeur viable (fix tronquage sujet). */
+  /* FIX : height fixe sur product-zone ET details pour que la col droite
+     ne puisse pas grandir au-delà du viewport et empiéter sur l'image.
+     min-height seul laissait le grid grandir si le contenu droit est long
+     (ex: thermos avec économie + description + tabs paiement).
+     La col details gère son propre scroll via overflow-y:auto. */
   #k-modal .k-modal-product-zone {
-    min-height: calc(100dvh - 58px);
+    height: calc(100dvh - 58px);
+    max-height: calc(100dvh - 58px);
+    overflow: hidden;
     grid-template-columns: minmax(380px, 43%) minmax(0, 57%);
   }
 
-  /* ── Image sticky : pleine hauteur — PR-D2 fix tronquage ── */
-  /* overflow:hidden répété ici car §1 mobile peut être surchargé
-     par des règles intermédiaires ; max-width:100% + width:100%
-     empêchent le carousel de déborder de la col 43%. */
+  /* ── Image : pleine hauteur, jamais réduite par la col droite ── */
   #k-modal .k-modal-product-zone .k-modal-img-wrap {
-    height: calc(100dvh - 58px);
-    max-height: calc(100dvh - 58px);
+    height: 100%;
+    max-height: 100%;
     overflow: hidden;
     max-width: 100%;
     width: 100%;
   }
 
-  /* ── Détails : padding qui respire, adapté au viewport ──── */
+  /* ── Détails : col droite confinée, scroll interne ── */
   #k-modal .k-modal-product-zone .k-modal-details {
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 0 clamp(24px, 4vw, 64px);
   }
 
