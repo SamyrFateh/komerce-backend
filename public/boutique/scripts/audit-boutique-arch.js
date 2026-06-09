@@ -109,16 +109,32 @@ const OWNERSHIP = [
 
 // I-3 : Allowlist hex hors tokens.css. Justifier chaque exception.
 const HEX_ALLOWLIST = [
-  // Format : { file, hex, reason }
+  // Format : { file, hex, reason }\
   // Fallbacks CSS dans var(--token, #hex) – l'auditeur ne distingue pas le contexte
   { file: 'interactions.css', hex: '#fff',    reason: 'Fallback CSS dans var(--white, #fff) pour les navigateurs sans token – greeting chip §BUG-L3' },
   { file: 'interactions.css', hex: '#1a1a1a', reason: 'Fallback CSS dans var(--text, #1a1a1a) pour les navigateurs sans token – greeting chip §BUG-L3' },
+  // Fallbacks var(--green-bg-leaf, #e8f3ec) / var(--ocean-dark, #4A9040) / var(--ocean, #64AF5A)
+  // Les tokens existent dans tokens.css ; ces hex sont des filets de sécurité navigateurs anciens.
+  { file: 'cart.css',         hex: '#e8f3ec', reason: 'Fallback var(--green-bg-leaf) – filet navigateurs anciens' },
+  { file: 'interactions.css', hex: '#e8f3ec', reason: 'Fallback var(--green-bg-leaf) – filet navigateurs anciens' },
+  { file: 'interactions.css', hex: '#4A9040', reason: 'Fallback var(--ocean-dark) – filet navigateurs anciens' },
+  { file: 'interactions.css', hex: '#64AF5A', reason: 'Fallback var(--ocean) – filet navigateurs anciens' },
+  // paypal.css — couleurs imposées par la charte de marque PayPal, non tokenisables.
+  { file: 'paypal.css', hex: '#fafbfc',  reason: 'Brand PayPal – non tokenisable' },
+  { file: 'paypal.css', hex: '#e3e8ee',  reason: 'Brand PayPal – non tokenisable' },
+  { file: 'paypal.css', hex: '#111',     reason: 'Brand PayPal – non tokenisable' },
+  { file: 'paypal.css', hex: '#0070ba',  reason: 'Brand PayPal blue – non tokenisable' },
+  { file: 'paypal.css', hex: '#f0f7ff',  reason: 'Brand PayPal – non tokenisable' },
+  { file: 'paypal.css', hex: '#f0f3f7',  reason: 'Brand PayPal – non tokenisable' },
+  { file: 'paypal.css', hex: '#6b7785',  reason: 'Brand PayPal grey – non tokenisable' },
+  { file: 'paypal.css', hex: '#c33',     reason: 'Brand PayPal error – non tokenisable' },
+  { file: 'paypal.css', hex: '#fdecea',  reason: 'Brand PayPal error bg – non tokenisable' },
 ];
 
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
+  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity', 'paypal'],
   'desktop.css':    ['boutique-desktop'],
   'event.css':      ['event'],
 };

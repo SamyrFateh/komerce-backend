@@ -560,6 +560,16 @@ export function renderCheckout() {
       const isMe = _benfCb.checked;
       _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
       body.classList.toggle('ck-is-me', isMe);
+      // Masquer/restaurer les actions de la carte identité selon le mode.
+      // En mode "Quelqu'un d'autre", "Changer" et "Ce n'est pas vous ?" n'ont
+      // pas de sens (le payeur ne change pas) → on les masque.
+      const _idCard = body.querySelector('#ck-identity-recap');
+      if (_idCard) {
+        const _chBtn = _idCard.querySelector('.k-ck-id-change');
+        const _nyBtn = _idCard.querySelector('.k-ck-id-notyou');
+        if (_chBtn) _chBtn.hidden = !isMe;
+        if (_nyBtn) _nyBtn.hidden = !isMe;
+      }
       if (isMe) {
         benfFields.hidden = true;
         selfPickupInfo.hidden = true;
