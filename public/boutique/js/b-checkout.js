@@ -560,7 +560,16 @@ export function renderCheckout() {
       const isMe = _benfCb.checked;
       _segBtns.forEach(b => b.classList.toggle('on', (b.dataset.me === '1') === isMe));
       const btnsRow = body.querySelector('.k-ck-id-btns-row');
-      if (btnsRow) btnsRow.hidden = !isMe;
+      if (btnsRow) {
+        btnsRow.hidden = !isMe;
+      } else {
+        // La carte identité est insérée en async (restoreIdentity) — observer son arrivée
+        const _obs = new MutationObserver(() => {
+          const br = body.querySelector('.k-ck-id-btns-row');
+          if (br) { br.hidden = !_benfCb.checked; _obs.disconnect(); }
+        });
+        _obs.observe(body, { childList: true, subtree: true });
+      }
       if (isMe) {
         benfFields.hidden = true;
         selfPickupInfo.hidden = true;
