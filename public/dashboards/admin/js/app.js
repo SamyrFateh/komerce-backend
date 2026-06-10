@@ -212,14 +212,34 @@
             <span class="header-search-icon">🔍</span>
             <input type="text" placeholder="Rechercher une commande, un client, un relais…" />
           </div>
-          <div class="header-period" id="header-period">📅 7 derniers jours</div>
-          <div class="header-actions">
-            <div class="header-user">
+          <div class="header-period" id="header-period" style="cursor:pointer" title="Changer la période">📅 7 derniers jours</div>
+          <div id="date-picker-popup" style="display:none;position:fixed;top:56px;right:220px;z-index:200;background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.5);flex-direction:column;gap:10px;min-width:260px">
+            <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px">Période</div>
+            <div style="display:flex;gap:8px">
+              <div style="flex:1"><div style="font-size:11px;color:#64748b;margin-bottom:3px">Du</div><input type="date" id="dp-from" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#f1f5f9;font-size:13px;outline:none"></div>
+              <div style="flex:1"><div style="font-size:11px;color:#64748b;margin-bottom:3px">Au</div><input type="date" id="dp-to" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#f1f5f9;font-size:13px;outline:none"></div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button onclick="KmcApp._quickPeriod(7)"  style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">7j</button>
+              <button onclick="KmcApp._quickPeriod(30)" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">30j</button>
+              <button onclick="KmcApp._quickPeriod(90)" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">90j</button>
+            </div>
+            <button onclick="KmcApp._applyPeriod()" style="padding:8px;border-radius:6px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✓ Appliquer</button>
+          </div>
+          <div class="header-actions" style="position:relative">
+            <div class="header-user" id="header-user-btn" style="cursor:pointer" title="Compte">
               <div class="header-user-avatar" id="user-avatar">A</div>
               <div>
                 <div class="header-user-name" id="user-name">Admin</div>
                 <div class="header-user-role" id="user-role-label">—</div>
               </div>
+            </div>
+            <div id="user-menu-popup" style="display:none;position:fixed;top:56px;right:16px;z-index:200;background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:180px">
+              <div style="padding:8px 10px 10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:6px">
+                <div style="font-size:13px;font-weight:600;color:#f1f5f9" id="user-menu-name">—</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px" id="user-menu-role">—</div>
+              </div>
+              <button onclick="KmcApp._logout()" style="width:100%;padding:9px 10px;border-radius:6px;border:none;background:transparent;color:#f87171;font-size:13px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px">🚪 Se déconnecter</button>
             </div>
           </div>
         </header>
@@ -245,6 +265,41 @@
     buildSidebarNav();
     hydrateHeaderUser();
     renderHeaderPeriod();
+
+    // ── Wiring date picker ────────────────────────────────────────────────────
+    const periodBtn   = document.getElementById('header-period');
+    const datePopup   = document.getElementById('date-picker-popup');
+    if (periodBtn && datePopup) {
+      periodBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const isOpen = datePopup.style.display === 'flex';
+        closeAllPopups();
+        if (!isOpen) {
+          // Pré-remplir les inputs avec les filtres courants
+          const f = KmcFilters.get();
+          const fromEl = document.getElementById('dp-from');
+          const toEl   = document.getElementById('dp-to');
+          if (fromEl && f.from) fromEl.value = f.from;
+          if (toEl   && f.to)   toEl.value   = f.to;
+          datePopup.style.display = 'flex';
+        }
+      });
+    }
+
+    // ── Wiring user menu ──────────────────────────────────────────────────────
+    const userBtn    = document.getElementById('header-user-btn');
+    const userPopup  = document.getElementById('user-menu-popup');
+    if (userBtn && userPopup) {
+      userBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const isOpen = userPopup.style.display === 'block';
+        closeAllPopups();
+        if (!isOpen) userPopup.style.display = 'block';
+      });
+    }
+
+    // Fermer les popups en cliquant ailleurs
+    document.addEventListener('click', () => closeAllPopups());
   }
 
   function renderSwitcherHTML(userShells) {
@@ -383,11 +438,15 @@
     const roleEl = document.getElementById('user-role-label');
     const footerName = document.getElementById('user-footer-name');
     const footerRole = document.getElementById('user-footer-role');
+    const menuName = document.getElementById('user-menu-name');
+    const menuRole = document.getElementById('user-menu-role');
     if (avatar)     avatar.textContent     = String(name).trim().charAt(0).toUpperCase() || 'A';
     if (nameEl)     nameEl.textContent     = name;
     if (roleEl)     roleEl.textContent     = role;
     if (footerName) footerName.textContent = name;
     if (footerRole) footerRole.textContent = role;
+    if (menuName)   menuName.textContent   = name;
+    if (menuRole)   menuRole.textContent   = role;
   }
 
   function renderHeaderPeriod() {
@@ -512,7 +571,48 @@
     });
   }
 
-  global.KmcApp = { init, navigateTo, navigate };
+  // ── Popups helpers ─────────────────────────────────────────────────────────
+
+  function closeAllPopups() {
+    const dp = document.getElementById('date-picker-popup');
+    const um = document.getElementById('user-menu-popup');
+    if (dp) dp.style.display = 'none';
+    if (um) um.style.display = 'none';
+  }
+
+  // ── Actions header ─────────────────────────────────────────────────────────
+
+  async function _logout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (_) { /* ignorer les erreurs réseau */ }
+    redirectToLogin();
+  }
+
+  function _quickPeriod(days) {
+    const to   = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - (days - 1));
+    const fmt = d => d.toISOString().slice(0, 10);
+    const fromEl = document.getElementById('dp-from');
+    const toEl   = document.getElementById('dp-to');
+    if (fromEl) fromEl.value = fmt(from);
+    if (toEl)   toEl.value   = fmt(to);
+  }
+
+  function _applyPeriod() {
+    const from = document.getElementById('dp-from')?.value;
+    const to   = document.getElementById('dp-to')?.value;
+    if (!from || !to) return;
+    if (from > to) {
+      alert('La date de début doit être antérieure à la date de fin.');
+      return;
+    }
+    KmcFilters.set({ from, to });
+    closeAllPopups();
+  }
+
+  global.KmcApp = { init, navigateTo, navigate, _logout, _quickPeriod, _applyPeriod };
 
 })(window);
 
