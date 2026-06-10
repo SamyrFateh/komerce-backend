@@ -125,6 +125,8 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/auth/otp', otpRouter);
   app.use('/api/client/tracking', clientTrackingRouter);
   app.use('/api/simulator', simulatorRouter);
+  // FIX: alias /api/admin/simulator → frontend appelait le mauvais préfixe → 404 sur /status
+  app.use('/api/admin/simulator', simulatorRouter);
   app.use('/api/pickup',   pickupRouter);
   app.use('/api/cash', cashRouter);
   app.use('/api/auth', clientAuthRouter);

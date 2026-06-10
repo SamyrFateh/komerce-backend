@@ -90,10 +90,10 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin',
     '/admin/invoices',
     '/admin/sante',
-    '/admin/settings',
-    '/admin/simulator',
-    '/admin/shared-carts',
-    '/admin/accounting',
+    // ── Vues manquantes (absentes du legacy → fallback boutique) ──
+    '/admin/accounting',   // FIX: AccountingView non chargée — servait boutique/index.html
+    '/admin/settings',     // FIX: Paramètres business non chargés — servait boutique/index.html
+    '/admin/simulator',    // FIX: Simulateur non chargé — servait boutique/index.html
   ];
 
   ADMIN_DASHBOARD_PATHS.forEach(routePath => {
