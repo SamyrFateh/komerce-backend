@@ -111,6 +111,7 @@
   /* ── Typographie ─────────────────────────────────────────── */
   --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
   --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
+  --font-checkout: 'DM Sans','Plus Jakarta Sans',system-ui,sans-serif;
 
   /* ── Formes ──────────────────────────────────────────────── */
   --radius:    12px;
