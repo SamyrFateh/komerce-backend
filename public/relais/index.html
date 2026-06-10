@@ -2,348 +2,676 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Komerce Relais — Gestion Colis</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Relais · Komerce</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      background: #f3f4f6;
-      color: #111827;
-      min-height: 100vh;
+    :root {
+      --bg:#0d0d0d; --bg2:#161616; --bg3:#1f1f1f;
+      --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.15);
+      --text:#f0f0f0; --text2:#999; --text3:#555;
+      --green:#00e676; --green-dim:rgba(0,230,118,0.12);
+      --amber:#ffab40; --amber-dim:rgba(255,171,64,0.12);
+      --red:#ff5252; --red-dim:rgba(255,82,82,0.12);
+      --blue:#40c4ff; --blue-dim:rgba(64,196,255,0.10);
+      --purple:#ce93d8; --purple-dim:rgba(206,147,216,0.12);
+      --mono:'IBM Plex Mono',monospace; --sans:'DM Sans',sans-serif;
+      --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
     }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overscroll-behavior:none}
+    #app{display:flex;flex-direction:column;height:100dvh}
 
-    .relais-header {
-      background: #059669;
-      color: #fff;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .relais-header h1 { font-size: 18px; font-weight: 800; }
-    .relais-header .relais-info { font-size: 13px; color: #a7f3d0; }
+    /* Header */
+    #header{padding:calc(var(--safe-top) + 12px) 16px 12px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    #header-left{display:flex;flex-direction:column;gap:1px}
+    #header-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.12em;text-transform:uppercase}
+    #header-user{font-size:12px;color:var(--text3)}
+    #alert-chip{padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:11px;display:none}
+    #alert-chip.on{display:flex;align-items:center;gap:4px;border:1px solid rgba(255,82,82,.4);color:var(--red);background:var(--red-dim)}
+    #alert-chip.cash{border-color:rgba(255,171,64,.4);color:var(--amber);background:var(--amber-dim)}
 
-    .relais-content {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 16px;
-    }
+    /* Tabs */
+    #tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+    .tab{flex:1;padding:10px 4px;font-size:11px;font-weight:500;color:var(--text3);text-align:center;cursor:pointer;border:none;background:none;position:relative;transition:color .2s;letter-spacing:.03em;user-select:none}
+    .tab.active{color:var(--text)}
+    .tab.active::after{content:'';position:absolute;bottom:0;left:15%;right:15%;height:2px;background:var(--green);border-radius:1px 1px 0 0}
+    .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;font-family:var(--mono);font-size:10px;font-weight:600;margin-left:4px}
+    .tab-badge.on{background:var(--red);color:#fff}
+    .tab-badge.off{background:var(--bg3);color:var(--text2)}
 
-    /* ── Actions ────────────────────────────── */
-    .relais-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .relais-action-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 20px 8px;
-      border: 2px solid #e5e7eb;
-      border-radius: 14px;
-      background: #fff;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-size: 14px;
-      font-weight: 600;
-      color: #374151;
-    }
-    .relais-action-btn:hover {
-      border-color: #059669;
-      background: #ecfdf5;
-    }
-    .relais-action-btn .emoji { font-size: 32px; }
+    /* Panels */
+    #panels{flex:1;overflow:hidden;position:relative}
+    .panel{position:absolute;inset:0;overflow-y:auto;display:none}
+    .panel.active{display:block}
 
-    /* ── KPI strip ─────────────────────────── */
-    .relais-kpis {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .relais-kpi {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .relais-kpi .number {
-      font-size: 28px;
-      font-weight: 800;
-    }
-    .relais-kpi .label {
-      font-size: 11px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
+    /* KPI bar */
+    .kpi-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 10px 0}
+    .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 10px;text-align:center}
+    .kpi-val{font-family:var(--mono);font-size:24px;font-weight:600;line-height:1;margin-bottom:3px}
+    .kpi-lbl{font-size:10px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+    .kpi.hl-green{border-color:rgba(0,230,118,.25)} .kpi.hl-green .kpi-val{color:var(--green)}
+    .kpi.hl-blue{border-color:rgba(64,196,255,.25)} .kpi.hl-blue .kpi-val{color:var(--blue)}
+    .kpi.hl-red{border-color:rgba(255,82,82,.25)} .kpi.hl-red .kpi-val{color:var(--red)}
+    .kpi.hl-amber{border-color:rgba(255,171,64,.25)} .kpi.hl-amber .kpi-val{color:var(--amber)}
 
-    /* ── Tabs ──────────────────────────────── */
-    .relais-tabs {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 14px;
-      overflow-x: auto;
-    }
-    .relais-tab {
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 1px solid #d1d5db;
-      background: #fff;
-      font-size: 13px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s;
-    }
-    .relais-tab.active {
-      background: #059669;
-      color: #fff;
-      border-color: #059669;
-    }
+    /* Action buttons */
+    .action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+    .action-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);transition:border-color .15s,color .15s,background .15s;-webkit-user-select:none;user-select:none}
+    .action-btn:active{background:var(--bg3);border-color:var(--border-strong)}
+    .action-btn.receive{border-color:rgba(64,196,255,.3);color:var(--blue)}
+    .action-btn.remise{border-color:rgba(0,230,118,.3);color:var(--green)}
+    .action-icon{font-size:28px}
 
-    /* ── Scanner ───────────────────────────── */
-    .scan-section {
-      background: #fff;
-      border: 2px solid #059669;
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .scan-input {
-      width: 100%;
-      padding: 14px;
-      border: 2px solid #d1d5db;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: 600;
-      text-align: center;
-      text-transform: uppercase;
-    }
-    .scan-input:focus {
-      outline: none;
-      border-color: #059669;
-    }
-    .scan-btn {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      background: #059669;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .scan-btn:hover { background: #047857; }
-    .scan-btn:disabled { background: #9ca3af; }
+    /* Sub-tabs (filter) */
+    .filter-bar{display:flex;gap:6px;padding:10px 10px 8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+    .filter-bar::-webkit-scrollbar{display:none}
+    .filter-btn{padding:7px 14px;border-radius:16px;border:1px solid var(--border);background:var(--bg2);font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+    .filter-btn.active{background:var(--bg3);border-color:var(--border-strong);color:var(--text)}
 
-    .relais-empty {
-      text-align: center;
-      padding: 40px;
-      color: #9ca3af;
-      font-size: 14px;
-    }
+    /* Order cards */
+    .order-list{padding:0 8px 8px;display:flex;flex-direction:column;gap:6px}
+    .order-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;cursor:pointer;transition:border-color .15s,background .15s;-webkit-user-select:none;user-select:none}
+    .order-card:active{background:var(--bg3);border-color:var(--border-strong)}
+    .order-card.urgent{border-color:rgba(255,82,82,.35)}
+    .order-card.cash-pending{border-color:rgba(255,171,64,.35)}
+    .card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+    .card-ref{font-family:var(--mono);font-size:13px;font-weight:600}
+    .card-age{font-family:var(--mono);font-size:10px;color:var(--text3)}
+    .card-client{font-size:13px;color:var(--text2);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-meta{display:flex;gap:5px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.02em;border:1px solid transparent}
+    .badge.green{background:var(--green-dim);color:var(--green);border-color:rgba(0,230,118,.2)}
+    .badge.amber{background:var(--amber-dim);color:var(--amber);border-color:rgba(255,171,64,.2)}
+    .badge.red{background:var(--red-dim);color:var(--red);border-color:rgba(255,82,82,.2)}
+    .badge.blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(64,196,255,.2)}
+    .badge.purple{background:var(--purple-dim);color:var(--purple);border-color:rgba(206,147,216,.2)}
+    .badge.gray{background:var(--bg3);color:var(--text2)}
+
+    /* Alerts strip */
+    .alert-strip{margin:8px 10px 0;border-radius:8px;padding:10px 12px;font-size:12px;display:flex;align-items:center;gap:8px}
+    .alert-strip.warning{background:var(--amber-dim);border:1px solid rgba(255,171,64,.25);color:var(--amber)}
+    .alert-strip.danger{background:var(--red-dim);border:1px solid rgba(255,82,82,.25);color:var(--red)}
+    .alert-strip.info{background:var(--blue-dim);border:1px solid rgba(64,196,255,.2);color:var(--blue)}
+
+    /* Scan panel */
+    .scan-wrap{padding:10px}
+    .scan-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px}
+    .scan-title{font-family:var(--mono);font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .field-label{font-size:11px;color:var(--text3);margin-bottom:4px;letter-spacing:.05em;text-transform:uppercase}
+    .field-input{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;outline:none;transition:border-color .2s;text-align:center}
+    .field-input:focus{border-color:var(--border-strong)}
+    .field-input::placeholder{text-transform:none;letter-spacing:.01em;font-weight:400;color:var(--text3)}
+    .field-input.pin{font-size:22px;letter-spacing:.18em}
+    .field-group{margin-bottom:12px}
+    .scan-result{margin-top:10px;border-radius:8px;padding:12px;font-size:13px;display:none}
+    .scan-result.ok{display:block;background:var(--green-dim);border:1px solid rgba(0,230,118,.2);color:var(--green)}
+    .scan-result.err{display:block;background:var(--red-dim);border:1px solid rgba(255,82,82,.2);color:var(--red)}
+
+    /* Detail panel */
+    #detail-panel{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+    #detail-panel.open{display:flex;transform:translateY(0)}
+    #detail-header{padding:calc(var(--safe-top) + 10px) 16px 10px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+    #btn-back{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    #detail-title{font-family:var(--mono);font-size:14px;font-weight:600;flex:1}
+    #detail-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+    #detail-actions{padding:12px 12px calc(12px + var(--safe-bot));background:var(--bg2);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+    .section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .section-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+    .section-body{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+    .info-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+    .info-label{color:var(--text3);flex-shrink:0}
+    .info-val{color:var(--text);text-align:right;font-family:var(--mono);font-size:12px;word-break:break-all}
+    .item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+    .item-row:last-child{border-bottom:none}
+    .item-qty{font-family:var(--mono);font-size:12px;color:var(--amber);min-width:28px}
+    .item-name{font-size:13px;flex:1}
+    .timeline-row{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+    .timeline-row:last-child{border-bottom:none}
+    .timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong);flex-shrink:0;margin-top:3px}
+    .timeline-dot.active{background:var(--green)}
+    .timeline-content{flex:1}
+    .timeline-status{font-weight:600;color:var(--text2);text-transform:uppercase;font-size:10px;letter-spacing:.06em}
+    .timeline-date{color:var(--text3);font-size:10px;font-family:var(--mono)}
+
+    /* Buttons */
+    .btn{width:100%;padding:16px;border-radius:10px;border:none;cursor:pointer;font-family:var(--sans);font-size:16px;font-weight:700;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .1s;-webkit-user-select:none;user-select:none}
+    .btn:active{opacity:.85;transform:scale(.98)}
+    .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+    .btn-primary{background:var(--green);color:#000}
+    .btn-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(64,196,255,.25)}
+    .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+    .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,82,82,.25)}
+    .btn-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,171,64,.25)}
+    .btn-row{display:flex;gap:8px}
+    .btn-row .btn{flex:1;padding:13px 8px;font-size:13px}
+
+    /* Modals */
+    .modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.8);display:none;align-items:flex-end;justify-content:center}
+    .modal-backdrop.open{display:flex}
+    .modal-sheet{background:var(--bg2);border-radius:18px 18px 0 0;border:1px solid var(--border);border-bottom:none;width:100%;max-width:480px;padding:20px 16px calc(16px + var(--safe-bot));display:flex;flex-direction:column;gap:14px}
+    .sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border-strong);margin:0 auto 4px}
+    .sheet-title{font-family:var(--mono);font-size:14px;font-weight:600}
+    textarea.field-input{min-height:70px;resize:none;font-size:14px;text-transform:none;letter-spacing:.01em;font-weight:400;text-align:left}
+    .inc-types{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .inc-type-btn{padding:10px 8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s}
+    .inc-type-btn.selected{border-color:rgba(255,82,82,.5);background:var(--red-dim);color:var(--red)}
+
+    /* Toast */
+    #toast{position:fixed;bottom:calc(20px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:14px;font-weight:500;color:var(--text);z-index:100;white-space:nowrap;transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+    #toast.success{border-color:rgba(0,230,118,.4);color:var(--green)}
+    #toast.error{border-color:rgba(255,82,82,.4);color:var(--red)}
+
+    /* Misc */
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-wrap{display:flex;align-items:center;justify-content:center;padding:40px}
+    .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:10px;color:var(--text3);font-size:13px;text-align:center}
+    .empty-icon{font-size:36px;opacity:.4}
+    .pin-display{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--green);letter-spacing:.12em;text-align:center;padding:12px;background:var(--green-dim);border:1px solid rgba(0,230,118,.2);border-radius:8px}
   </style>
 </head>
 <body>
-
-  <header class="relais-header">
-    <h1>🏪 Point Relais</h1>
-    <div class="relais-info" id="relais-info">Chargement...</div>
+<div id="app">
+  <header id="header">
+    <div id="header-left">
+      <div id="header-title">RELAIS · Komerce</div>
+      <div id="header-user">—</div>
+    </div>
+    <div id="alert-chip"></div>
   </header>
-
-  <div class="relais-content">
-    <!-- Action buttons -->
-    <div class="relais-actions">
-      <button class="relais-action-btn" onclick="Relais.showScan('arrived')">
-        <span class="emoji">📥</span>
-        Réception colis
-      </button>
-      <button class="relais-action-btn" onclick="Relais.showScan('collected')">
-        <span class="emoji">🤝</span>
-        Remise client
-      </button>
-    </div>
-
-    <!-- KPIs -->
-    <div class="relais-kpis" id="relais-kpis">
-      <div class="relais-kpi"><div class="number">—</div><div class="label">🚚 En approche</div></div>
-      <div class="relais-kpi"><div class="number">—</div><div class="label">📥 Disponibles</div></div>
-      <div class="relais-kpi"><div class="number">—</div><div class="label">⏰ En retard</div></div>
-    </div>
-
-    <!-- Scanner (hidden by default) -->
-    <div class="scan-section" id="scan-section" style="display:none">
-      <h3 id="scan-title" style="margin-bottom:12px;font-size:16px">📷 Scanner un colis</h3>
-      <input type="text" class="scan-input" id="scan-input" placeholder="PCL-2026-XXXXX" autofocus>
-      
-      <!-- PIN code section (for collection only) -->
-      <div id="pin-section" style="display:none;margin-top:10px">
-        <input type="text" id="pin-input" placeholder="Code PIN client (4 chiffres)" maxlength="4"
-          style="width:100%;padding:12px;border:2px solid #d1d5db;border-radius:10px;font-size:18px;text-align:center;letter-spacing:8px">
+  <nav id="tabs">
+    <button class="tab active" data-tab="accueil" onclick="R.switchTab('accueil')">Accueil</button>
+    <button class="tab" data-tab="disponibles" onclick="R.switchTab('disponibles')">Disponibles <span class="tab-badge off" id="bdispo"></span></button>
+    <button class="tab" data-tab="approche" onclick="R.switchTab('approche')">En approche <span class="tab-badge off" id="bapproche"></span></button>
+    <button class="tab" data-tab="collectes" onclick="R.switchTab('collectes')">Collectés</button>
+  </nav>
+  <div id="panels">
+    <!-- ACCUEIL -->
+    <div class="panel active" id="panel-accueil">
+      <div id="kpis-wrap" class="kpi-bar">
+        <div class="kpi hl-blue"><div class="kpi-val" id="kpi-transit">—</div><div class="kpi-lbl">En approche</div></div>
+        <div class="kpi hl-green"><div class="kpi-val" id="kpi-dispo">—</div><div class="kpi-lbl">Disponibles</div></div>
+        <div class="kpi hl-amber"><div class="kpi-val" id="kpi-cash">—</div><div class="kpi-lbl">Cash à encaisser</div></div>
       </div>
-      
-      <button class="scan-btn" id="scan-btn" onclick="Relais.doScan()">✅ Confirmer</button>
-      <div id="scan-result" style="margin-top:12px"></div>
+      <div id="alertes-wrap"></div>
+      <div class="action-row">
+        <button class="action-btn receive" onclick="R.openScan('arrived')">
+          <span class="action-icon">📥</span>Réception colis
+        </button>
+        <button class="action-btn remise" onclick="R.openScan('collected')">
+          <span class="action-icon">🤝</span>Remise client
+        </button>
+      </div>
+    </div>
+    <!-- SCAN (panel overlay in accueil, shown dynamically) -->
+
+    <!-- DISPONIBLES -->
+    <div class="panel" id="panel-disponibles">
+      <div class="order-list" id="list-disponibles"><div class="loading-wrap"><div class="spinner"></div></div></div>
     </div>
 
-    <!-- Parcels tabs -->
-    <div class="relais-tabs" id="relais-tabs">
-      <button class="relais-tab active" data-filter="in_transit" onclick="Relais.filterTab('in_transit')">🚚 En approche</button>
-      <button class="relais-tab" data-filter="available" onclick="Relais.filterTab('available')">📥 Disponibles</button>
-      <button class="relais-tab" data-filter="collected" onclick="Relais.filterTab('collected')">✅ Collectés</button>
-      <button class="relais-tab" data-filter="overdue" onclick="Relais.filterTab('overdue')">⏰ En retard</button>
+    <!-- EN APPROCHE -->
+    <div class="panel" id="panel-approche">
+      <div class="order-list" id="list-approche"><div class="loading-wrap"><div class="spinner"></div></div></div>
     </div>
 
-    <!-- Parcels list -->
-    <div id="relais-parcels">
-      <div class="relais-empty">⏳ Chargement des colis...</div>
+    <!-- COLLECTÉS -->
+    <div class="panel" id="panel-collectes">
+      <div class="order-list" id="list-collectes"><div class="loading-wrap"><div class="spinner"></div></div></div>
     </div>
   </div>
+</div>
 
-  <!-- Scripts -->
-  <script src="/dashboards/admin-legacy/js/ct-api.js"></script>
-  <script src="/js/parcel-components.js"></script>
-  <script>
-    window.Relais = {};
-    Relais.parcels = [];
-    Relais.scanType = null;
+<!-- SCAN PANEL (slide-up) -->
+<div id="scan-panel" style="position:fixed;inset:0;z-index:45;background:var(--bg);display:none;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)">
+  <div id="scan-panel-header" style="padding:calc(var(--safe-top) + 10px) 16px 10px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <button id="btn-scan-back" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" onclick="R.closeScan()">←</button>
+    <div id="scan-title" style="font-family:var(--mono);font-size:14px;font-weight:600">Scanner</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:12px">
+    <div class="scan-card">
+      <div id="scan-desc" style="font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+      <div class="field-group">
+        <div class="field-label" id="scan-ref-label">Référence commande</div>
+        <input class="field-input" type="text" id="scan-ref" placeholder="KOM-2026-XXXXX" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="field-group" id="pin-group" style="display:none">
+        <div class="field-label">Code PIN client (6 chiffres)</div>
+        <input class="field-input pin" type="tel" id="scan-pin" placeholder="• • • • • •" maxlength="6" inputmode="numeric" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" id="btn-scan-confirm" onclick="R.doScan()">✅ Confirmer</button>
+      <div class="scan-result" id="scan-result"></div>
+    </div>
+  </div>
+</div>
 
-    Relais.init = async function() {
-      try {
-        const { parcels } = await CT.api.get('/api/v2/parcels');
-        Relais.parcels = parcels;
+<!-- DETAIL PANEL -->
+<div id="detail-panel">
+  <div id="detail-header">
+    <button id="btn-back" onclick="R.closeDetail()">←</button>
+    <div id="detail-title">—</div>
+    <div style="flex:1"></div>
+    <div id="detail-status-badge"></div>
+  </div>
+  <div id="detail-body"></div>
+  <div id="detail-actions"></div>
+</div>
 
-        // KPIs
-        const inTransit = parcels.filter(p => ['shipped', 'in_transit'].includes(p.status)).length;
-        const available = parcels.filter(p => p.status === 'available').length;
-        const overdue = parcels.filter(p => p.alerts && p.alerts.some(a => a.type === 'uncollected_warning' || a.type === 'uncollected_critical')).length;
+<!-- INCIDENT MODAL -->
+<div class="modal-backdrop" id="inc-modal" onclick="if(event.target===this)R.closeInc()">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🚨 Signaler un incident</div>
+    <div>
+      <div class="field-label">Type</div>
+      <div class="inc-types">
+        <div class="inc-type-btn" data-type="retard" onclick="R.selInc(this)">Retard livraison</div>
+        <div class="inc-type-btn" data-type="colis_endommage" onclick="R.selInc(this)">Colis endommagé</div>
+        <div class="inc-type-btn" data-type="colis_perdu" onclick="R.selInc(this)">Colis perdu</div>
+        <div class="inc-type-btn" data-type="paiement" onclick="R.selInc(this)">Problème paiement</div>
+        <div class="inc-type-btn" data-type="client_absent" onclick="R.selInc(this)">Client absent</div>
+        <div class="inc-type-btn" data-type="autre" onclick="R.selInc(this)">Autre</div>
+      </div>
+    </div>
+    <div>
+      <div class="field-label">Description</div>
+      <textarea class="field-input" id="inc-desc" placeholder="Décrivez la situation…"></textarea>
+    </div>
+    <button class="btn btn-danger" id="btn-inc-confirm" onclick="R.confirmInc()">🚨 Envoyer</button>
+    <button class="btn btn-secondary" onclick="R.closeInc()">Annuler</button>
+  </div>
+</div>
 
-        document.getElementById('relais-kpis').innerHTML = `
-          <div class="relais-kpi"><div class="number" style="color:#8b5cf6">${inTransit}</div><div class="label">🚚 En approche</div></div>
-          <div class="relais-kpi"><div class="number" style="color:#10b981">${available}</div><div class="label">📥 Disponibles</div></div>
-          <div class="relais-kpi"><div class="number" style="color:${overdue > 0 ? '#dc2626' : '#6b7280'}">${overdue}</div><div class="label">⏰ En retard</div></div>
-        `;
+<!-- CASH MODAL -->
+<div class="modal-backdrop" id="cash-modal" onclick="if(event.target===this)R.closeCash()">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">💰 Encaissement cash</div>
+    <div id="cash-detail" style="font-size:14px;color:var(--text2);padding:8px 0"></div>
+    <button class="btn btn-primary" id="btn-cash-confirm" onclick="R.confirmCash()">✅ Confirmer encaissement</button>
+    <button class="btn btn-secondary" onclick="R.closeCash()">Annuler</button>
+  </div>
+</div>
 
-        Relais.filterTab('in_transit');
-      } catch (err) {
-        document.getElementById('relais-parcels').innerHTML = 
-          `<div class="relais-empty" style="color:#dc2626">❌ Erreur: ${err.message}</div>`;
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+const api = {
+  get: u => fetch(u, {credentials:'include'}).then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e))),
+  post: (u, b) => fetch(u, {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}).then(r => r.json().then(d => r.ok ? d : Promise.reject(d))),
+  patch: (u, b) => fetch(u, {method:'PATCH', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}).then(r => r.json().then(d => r.ok ? d : Promise.reject(d))),
+};
+
+const R = (() => {
+  let _tab = 'accueil';
+  let _scanType = null;
+  let _order = null;
+  let _incType = null;
+  let _cashOrderId = null;
+  let _cashAmount = 0;
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function toast(msg, type='', dur=3200) {
+    const e = document.getElementById('toast');
+    e.textContent = msg; e.className = 'show ' + (type || '');
+    clearTimeout(e._t); e._t = setTimeout(() => { e.className = ''; }, dur);
+  }
+  function kmf(n) { return Number(n||0).toLocaleString('fr-FR') + ' KMF'; }
+  function ago(dt) { const h=(Date.now()-new Date(dt))/3600000; if(h<1)return Math.round(h*60)+'min'; if(h<24)return Math.round(h)+'h'; return Math.round(h/24)+'j'; }
+  function slbl(s) { return {confirmed:'confirmé',ordered:'commandé',preparation:'prépa',shipped:'expédié',in_transit:'transit',available:'disponible',collected:'retiré',cancelled:'annulé'}[s]||s; }
+  function urgClass(o) { return o.urgence==='critique'?'urgent':o.cash_pending?'cash-pending':''; }
+  function scol(s) { return {available:'green',in_transit:'blue',shipped:'blue',collected:'gray',cancelled:'red'}[s]||'gray'; }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  async function init() {
+    try {
+      const me = await api.get('/api/auth/me');
+      document.getElementById('header-user').textContent = me.full_name || me.email || 'Relais';
+      await loadDashboard();
+      loadOrders('available', 'list-disponibles', 'bdispo');
+      loadOrders('in_transit,shipped', 'list-approche', 'bapproche');
+    } catch(e) {
+      if (e && (e.status===401 || String(e.error||'').includes('onnect'))) location.href = '/';
+    }
+  }
+
+  async function loadDashboard() {
+    try {
+      const d = await api.get('/api/relay/dashboard');
+      const k = d.kpi || {};
+      document.getElementById('kpi-transit').textContent = k.en_transit ?? '—';
+      document.getElementById('kpi-dispo').textContent = k.disponibles ?? '—';
+      document.getElementById('kpi-cash').textContent = k.cash_a_encaisser ?? '—';
+
+      // Badge tab
+      if (k.disponibles > 0) setBadge('bdispo', k.disponibles);
+      if (k.en_transit > 0) setBadge('bapproche', k.en_transit);
+
+      // Alert chip header
+      const ac = document.getElementById('alert-chip');
+      if (k.incidents_ouverts > 0) {
+        ac.textContent = '⚠ '+k.incidents_ouverts+' incident'+(k.incidents_ouverts>1?'s':'');
+        ac.className = 'on';
+      } else if (k.cash_a_encaisser > 0) {
+        ac.textContent = '💰 '+kmf(k.montant_cash_pending);
+        ac.className = 'cash';
+      } else {
+        ac.className = '';
       }
-    };
 
-    Relais.filterTab = function(filter) {
-      document.querySelectorAll('.relais-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.filter === filter);
-      });
+      // Alertes strip
+      const aw = document.getElementById('alertes-wrap');
+      aw.innerHTML = (d.alertes||[]).map(a =>
+        `<div class="alert-strip ${a.type}">${a.type==='warning'?'⚠️':a.type==='danger'?'🚨':'ℹ️'} ${a.message}</div>`
+      ).join('');
+    } catch(e) { console.warn('Dashboard KPI error', e); }
+  }
 
-      let filtered;
-      switch(filter) {
-        case 'in_transit':
-          filtered = Relais.parcels.filter(p => ['shipped', 'in_transit'].includes(p.status));
-          break;
-        case 'available':
-          filtered = Relais.parcels.filter(p => p.status === 'available');
-          break;
-        case 'collected':
-          filtered = Relais.parcels.filter(p => p.status === 'collected');
-          break;
-        case 'overdue':
-          filtered = Relais.parcels.filter(p => p.alerts && p.alerts.some(a => 
-            a.type === 'uncollected_warning' || a.type === 'uncollected_critical' || a.type === 'sla_breach_transit'
-          ));
-          break;
-        default:
-          filtered = Relais.parcels;
+  function setBadge(id, n) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.textContent = n > 0 ? n : '';
+    b.className = n > 0 ? 'tab-badge on' : 'tab-badge off';
+  }
+
+  async function loadOrders(statuses, listId, badgeId) {
+    const el = document.getElementById(listId);
+    el.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    try {
+      const d = await api.get('/api/relay/orders?status=' + statuses + '&limit=50');
+      const rows = d.orders || [];
+      if (badgeId) setBadge(badgeId, rows.length);
+      if (!rows.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Aucune commande</div>'; return; }
+      el.innerHTML = rows.map(o => orderCard(o)).join('');
+      el.querySelectorAll('.order-card').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.id)));
+    } catch(e) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>' + (e.error||'Erreur réseau') + '</div>';
+    }
+  }
+
+  function orderCard(o) {
+    const uc = urgClass(o);
+    const cashBadge = o.cash_pending ? '<span class="badge amber">💰 Cash</span>' : '';
+    const incBadge = o.incidents_ouverts > 0 ? '<span class="badge red">⚠ incident</span>' : '';
+    const urgBadge = o.urgence === 'critique' ? '<span class="badge red">+120h</span>' : o.urgence === 'haute' ? '<span class="badge amber">+72h</span>' : '';
+    return `<div class="order-card ${uc}" data-id="${o.id}">
+      <div class="card-top"><div class="card-ref">${o.reference}</div><div class="card-age">${ago(o.created_at)}</div></div>
+      <div class="card-client">${o.client_nom||'—'}</div>
+      <div class="card-meta">
+        <span class="badge ${scol(o.status)}">${slbl(o.status)}</span>
+        <span class="badge gray">${o.nb_items||0} art.</span>
+        ${cashBadge}${incBadge}${urgBadge}
+      </div>
+    </div>`;
+  }
+
+  // ── Tabs ────────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    _tab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
+    if (tab === 'disponibles') loadOrders('available', 'list-disponibles', 'bdispo');
+    if (tab === 'approche') loadOrders('in_transit,shipped', 'list-approche', 'bapproche');
+    if (tab === 'collectes') loadOrders('collected', 'list-collectes', null);
+    if (tab === 'accueil') loadDashboard();
+  }
+
+  // ── Scan ────────────────────────────────────────────────────────────────────
+  function openScan(type) {
+    _scanType = type;
+    const isCollect = type === 'collected';
+    document.getElementById('scan-title').textContent = isCollect ? '🤝 Remise client' : '📥 Réception colis';
+    document.getElementById('scan-desc').textContent = isCollect
+      ? 'Entrez le code PIN à 6 chiffres du client. La commande sera retrouvée automatiquement par ce code.'
+      : 'Scannez ou saisissez la référence de la commande à réceptionner.';
+    document.getElementById('scan-ref-label').textContent = isCollect ? 'Référence (optionnel)' : 'Référence commande';
+    document.getElementById('pin-group').style.display = isCollect ? '' : 'none';
+    document.getElementById('scan-ref').value = '';
+    document.getElementById('scan-pin').value = '';
+    const res = document.getElementById('scan-result');
+    res.className = 'scan-result'; res.textContent = '';
+    const sp = document.getElementById('scan-panel');
+    sp.style.display = 'flex';
+    requestAnimationFrame(() => sp.style.transform = 'translateY(0)');
+    setTimeout(() => { (isCollect ? document.getElementById('scan-pin') : document.getElementById('scan-ref')).focus(); }, 320);
+  }
+
+  function closeScan() {
+    const sp = document.getElementById('scan-panel');
+    sp.style.transform = 'translateY(100%)';
+    setTimeout(() => { sp.style.display = 'none'; }, 300);
+  }
+
+  async function doScan() {
+    const btn = document.getElementById('btn-scan-confirm');
+    const res = document.getElementById('scan-result');
+    res.className = 'scan-result'; res.textContent = '';
+    btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> En cours…';
+    try {
+      if (_scanType === 'collected') {
+        // POST /api/scans/collect — pickup_code only
+        const pin = document.getElementById('scan-pin').value.trim();
+        if (!pin || pin.length < 4) { toast('Code PIN requis', 'error'); btn.disabled=false; btn.innerHTML='✅ Confirmer'; return; }
+        const r = await api.post('/api/scans/collect', { pickup_code: pin });
+        res.className = 'scan-result ok';
+        res.innerHTML = `🤝 <strong>${r.order?.reference||''}</strong> remis au client · statut : ${slbl(r.order?.status||'collected')}`;
+        toast('✅ Remise confirmée', 'success');
+        refreshAll();
+      } else {
+        // POST /api/scans — step: relais_received
+        const ref = document.getElementById('scan-ref').value.trim().toUpperCase();
+        if (!ref) { toast('Référence requise', 'error'); btn.disabled=false; btn.innerHTML='✅ Confirmer'; return; }
+        const r = await api.post('/api/scans', { scan_code: ref, step: 'relais_received', location: 'Point Relais' });
+        res.className = 'scan-result ok';
+        res.innerHTML = `📥 <strong>${ref}</strong> réceptionné · statut → ${slbl(r.order?.status||r.new_status||'available')}`;
+        toast('📥 Réception enregistrée', 'success');
+        refreshAll();
       }
+    } catch(e) {
+      res.className = 'scan-result err';
+      res.textContent = '❌ ' + (e.error || e.message || 'Erreur');
+      toast(e.error || 'Erreur scan', 'error');
+    } finally {
+      btn.disabled = false; btn.innerHTML = '✅ Confirmer';
+    }
+  }
 
-      const emptyMessages = {
-        in_transit: '🚚 Aucun colis en approche',
-        available: '📥 Aucun colis disponible',
-        collected: '✅ Aucun colis collecté',
-        overdue: '✅ Aucun colis en retard — tout est nominal !',
-      };
+  function refreshAll() {
+    loadDashboard();
+    loadOrders('available', 'list-disponibles', 'bdispo');
+    loadOrders('in_transit,shipped', 'list-approche', 'bapproche');
+  }
 
-      ParcelUI.renderParcelList('relais-parcels', filtered, {
-        onClick: 'ParcelUI.openDetail',
-        showActions: true,
-        emptyMessage: emptyMessages[filter] || '📦 Aucun colis',
-      });
-    };
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const scanPanel = document.getElementById('scan-panel');
+      if (scanPanel.style.display !== 'none' && scanPanel.style.transform === 'translateY(0px)') doScan();
+      else if (document.getElementById('detail-panel').classList.contains('open')) {/* handled inline */}
+    }
+  });
 
-    Relais.showScan = function(type) {
-      Relais.scanType = type;
-      const labels = {
-        arrived: '📥 Réception d\'un colis',
-        collected: '🤝 Remise au client',
-      };
-      document.getElementById('scan-section').style.display = '';
-      document.getElementById('scan-title').textContent = labels[type] || '📷 Scanner';
-      document.getElementById('scan-input').value = '';
-      document.getElementById('scan-result').innerHTML = '';
-      document.getElementById('pin-section').style.display = type === 'collected' ? '' : 'none';
-      document.getElementById('scan-input').focus();
-    };
+  // ── Detail ──────────────────────────────────────────────────────────────────
+  async function openDetail(id) {
+    _order = null;
+    const dp = document.getElementById('detail-panel');
+    document.getElementById('detail-body').innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
+    document.getElementById('detail-actions').innerHTML = '';
+    document.getElementById('detail-title').textContent = 'Chargement…';
+    dp.classList.add('open');
+    try {
+      const d = await api.get('/api/relay/orders/' + id);
+      _order = d;
+      renderDetail(d);
+    } catch(e) {
+      document.getElementById('detail-body').innerHTML = '<div class="empty">' + (e.error||'Erreur') + '</div>';
+    }
+  }
 
-    Relais.doScan = async function() {
-      const ref = document.getElementById('scan-input').value.trim();
-      if (!ref) return;
+  function renderDetail(d) {
+    const o = d.order, c = d.client||{}, p = d.paiement||{}, items = d.items||[], tl = d.timeline||[];
+    document.getElementById('detail-title').textContent = o.reference;
+    document.getElementById('detail-status-badge').innerHTML = `<span class="badge ${scol(o.status)}">${slbl(o.status)}</span>`;
 
-      const btn = document.getElementById('scan-btn');
-      const result = document.getElementById('scan-result');
-      btn.disabled = true;
-      result.innerHTML = '⏳ Scan en cours...';
+    const cashSection = p.cash_pending ? `
+      <div class="section" style="border-color:rgba(255,171,64,.35)">
+        <div class="section-head" style="color:var(--amber)">💰 Cash à encaisser</div>
+        <div class="section-body">
+          <div class="info-row"><span class="info-label">Montant</span><span class="info-val" style="color:var(--amber);font-size:18px">${kmf(p.total_kmf)}</span></div>
+          <div class="info-row"><span class="info-label">Code PIN</span><span class="info-val"><div class="pin-display">${o.pickup_code||'—'}</div></span></div>
+        </div>
+      </div>` : '';
 
-      try {
-        const body = {
-          event_type: Relais.scanType,
-          location: 'Point Relais',
-          actor_name: 'Agent Relais',
-          actor_role: 'relay_agent',
-        };
+    const tlHtml = tl.length ? `
+      <div class="section">
+        <div class="section-head">Timeline</div>
+        <div class="section-body" style="gap:0">
+          ${tl.map((t,i) => `<div class="timeline-row"><div class="timeline-dot ${i===tl.length-1?'active':''}"></div><div class="timeline-content"><div class="timeline-status">${slbl(t.status)}</div><div class="timeline-date">${new Date(t.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div></div>`).join('')}
+        </div>
+      </div>` : '';
 
-        // Add PIN for collection
-        if (Relais.scanType === 'collected') {
-          const pin = document.getElementById('pin-input').value.trim();
-          if (pin) body.pickup_code = pin;
-        }
+    const pickupSection = o.status === 'available' ? `
+      <div class="section" style="border-color:rgba(0,230,118,.2)">
+        <div class="section-head" style="color:var(--green)">Code PIN remise</div>
+        <div class="section-body"><div class="pin-display">${o.pickup_code||'—'}</div></div>
+      </div>` : '';
 
-        const res = await CT.api.post(`/api/v2/parcels/${ref}/scan`, body);
+    document.getElementById('detail-body').innerHTML = `
+      <div class="section">
+        <div class="section-head">Client</div>
+        <div class="section-body">
+          <div class="info-row"><span class="info-label">Nom</span><span class="info-val">${c.nom||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">${c.phone||'—'}</span></div>
+          ${c.history?.is_recurring ? `<div class="info-row"><span class="info-label">Historique</span><span class="info-val">${c.history.total_orders} commandes</span></div>` : ''}
+        </div>
+      </div>
+      ${cashSection}
+      ${pickupSection}
+      <div class="section">
+        <div class="section-head">Articles (${items.length})</div>
+        <div class="section-body" style="gap:0">
+          ${items.map(it => `<div class="item-row"><div class="item-qty">×${it.quantity}</div><div class="item-name">${it.produit||'—'}</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-head">Paiement</div>
+        <div class="section-body">
+          <div class="info-row"><span class="info-label">Mode</span><span class="info-val">${p.mode||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Statut</span><span class="info-val">${p.is_paid?'<span class="badge green">payé</span>':'<span class="badge amber">en attente</span>'}</span></div>
+          <div class="info-row"><span class="info-label">Total</span><span class="info-val">${kmf(p.total_kmf)}</span></div>
+        </div>
+      </div>
+      ${tlHtml}
+    `;
+    renderActions(o, p);
+  }
 
-        const emoji = Relais.scanType === 'collected' ? '🤝' : '📥';
-        result.innerHTML = `
-          <div style="background:#d1fae5;padding:12px;border-radius:8px;margin-top:8px">
-            ${emoji} <strong>${res.parcel.reference}</strong> — ${res.parcel.old_status} → <strong>${res.parcel.new_status}</strong>
-            ${res.synced_orders > 0 ? `<br>📋 ${res.synced_orders} commande(s) synchronisée(s)` : ''}
-          </div>
-        `;
-
-        // Refresh list
-        Relais.init();
-      } catch (err) {
-        result.innerHTML = `<div style="background:#fee2e2;padding:12px;border-radius:8px;color:#dc2626">❌ ${err.message}</div>`;
-      } finally {
-        btn.disabled = false;
+  function renderActions(o, p) {
+    const el = document.getElementById('detail-actions');
+    let html = '';
+    if (o.status === 'available') {
+      if (p.cash_pending) {
+        html += `<button class="btn btn-amber" onclick="R.openCash()">💰 Encaisser ${kmf(p.total_kmf)}</button>`;
       }
-    };
+      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
+      html += `<button class="btn btn-secondary" onclick="R.clientAbsent()">👤 Client absent</button>`;
+    } else if (o.status === 'in_transit' || o.status === 'shipped') {
+      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
+    } else {
+      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
+    }
+    el.innerHTML = html;
+  }
 
-    // Enter key to scan
-    document.getElementById('scan-input').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') Relais.doScan();
-    });
+  function closeDetail() {
+    document.getElementById('detail-panel').classList.remove('open');
+    _order = null;
+    refreshAll();
+  }
 
-    // Init on load
-    Relais.init();
-  </script>
+  // ── Cash ────────────────────────────────────────────────────────────────────
+  function openCash() {
+    if (!_order) return;
+    _cashOrderId = _order.order.id;
+    _cashAmount = _order.paiement?.total_kmf || 0;
+    document.getElementById('cash-detail').innerHTML = `
+      Commande <strong>${_order.order.reference}</strong><br>
+      Montant à encaisser : <strong style="color:var(--amber)">${kmf(_cashAmount)}</strong><br>
+      Client : ${_order.client?.nom||'—'}
+    `;
+    document.getElementById('cash-modal').classList.add('open');
+  }
+  function closeCash() { document.getElementById('cash-modal').classList.remove('open'); }
 
+  async function confirmCash() {
+    const b = document.getElementById('btn-cash-confirm');
+    b.disabled = true; b.innerHTML = '<div class="spinner"></div>';
+    try {
+      await api.post('/api/cash/collect/' + _cashOrderId, {});
+      closeCash();
+      toast('💰 Encaissement confirmé', 'success');
+      const d = await api.get('/api/relay/orders/' + _cashOrderId);
+      _order = d; renderDetail(d);
+      loadDashboard();
+    } catch(e) { toast(e.error||'Erreur', 'error'); }
+    finally { b.disabled=false; b.innerHTML='✅ Confirmer encaissement'; }
+  }
+
+  // ── Incident ─────────────────────────────────────────────────────────────────
+  function openInc() {
+    _incType = null;
+    document.querySelectorAll('.inc-type-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('inc-desc').value = '';
+    document.getElementById('inc-modal').classList.add('open');
+  }
+  function closeInc() { document.getElementById('inc-modal').classList.remove('open'); }
+  function selInc(el) {
+    document.querySelectorAll('.inc-type-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected'); _incType = el.dataset.type;
+  }
+
+  async function confirmInc() {
+    if (!_incType) { toast('Sélectionnez un type', 'error'); return; }
+    const desc = document.getElementById('inc-desc').value.trim();
+    if (!desc) { toast('Description requise', 'error'); return; }
+    const b = document.getElementById('btn-inc-confirm');
+    b.disabled = true; b.innerHTML = '<div class="spinner"></div>';
+    try {
+      await api.post('/api/relay/orders/' + _order.order.id + '/incident', { type: _incType, description: desc });
+      closeInc();
+      toast('🚨 Incident signalé', 'success');
+      const d = await api.get('/api/relay/orders/' + _order.order.id);
+      _order = d; renderDetail(d);
+    } catch(e) { toast(e.error||'Erreur', 'error'); }
+    finally { b.disabled=false; b.innerHTML='🚨 Envoyer'; }
+  }
+
+  // ── Client absent ────────────────────────────────────────────────────────────
+  async function clientAbsent() {
+    try {
+      await api.patch('/api/relay/orders/' + _order.order.id + '/client-absent', {});
+      toast('👤 Client absent enregistré', 'success');
+      const d = await api.get('/api/relay/orders/' + _order.order.id);
+      _order = d; renderDetail(d);
+    } catch(e) { toast(e.error||'Erreur', 'error'); }
+  }
+
+  return { init, switchTab, openScan, closeScan, doScan, openDetail, closeDetail, openCash, closeCash, confirmCash, openInc, closeInc, selInc, confirmInc, clientAbsent };
+})();
+
+fetch('/api/auth/me', {credentials:'include'}).then(r => {
+  if (!r.ok) location.href = '/';
+  else R.init();
+}).catch(() => location.href = '/');
+</script>
 </body>
 </html>
