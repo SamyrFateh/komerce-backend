@@ -231,12 +231,15 @@
       el.innerHTML = `
         <div class="rd-section-head">
           <h3>🚨 Alertes du jour — <span style="color:#dc2626">${data.critical}</span> critique(s) · <span style="color:#f59e0b">${data.signal}</span> signal(aux)</h3>
-          <button class="rd-refresh" onclick="CT.radar.refresh()">↻ Rafraîchir</button>
+          <button class="rd-refresh" id="btn-radar-refresh">↻ Rafraîchir</button>
         </div>
         <div class="rd-alerts-grid">
           ${data.alerts.map(renderAlert).join('')}
         </div>
       `;
+
+      var refreshBtn = document.getElementById('btn-radar-refresh');
+      if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.radar.refresh(); });
 
       el.querySelectorAll('.rd-alert').forEach(card => {
         card.addEventListener('click', () => {

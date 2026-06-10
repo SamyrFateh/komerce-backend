@@ -580,13 +580,13 @@ function _ccRenderRow(c) {
   // Confiance
   html += '<td class="col-conf center"><span class="cc-badge ' + cb.cls + '">' + cb.label + '</span></td>';
 
-  // Actif (toggle) — stopPropagation pour ne pas déclencher row-edit
-  html += '<td class="center" onclick="event.stopPropagation();">';
+  // Actif (toggle) — cc-td-norow pour ne pas déclencher row-edit
+  html += '<td class="center cc-td-norow">';
   html += '<span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '" title="' + (c.is_active ? 'Cliquer pour désactiver' : 'Cliquer pour activer') + '"></span>';
   html += '</td>';
 
   // Actions — idem stopPropagation
-  html += '<td class="right" onclick="event.stopPropagation();"><div class="cc-cell-actions">';
+  html += '<td class="right cc-td-norow"><div class="cc-cell-actions">';
   html += '<button data-act="edit-comp" data-id="' + c.id + '" title="Modifier">✏️</button>';
   if (c.is_deletable) {
     html += '<button class="danger" data-act="delete-comp" data-id="' + c.id + '" title="Supprimer">🗑</button>';
@@ -788,6 +788,7 @@ function _ccBindEvents(container) {
     // Refresh 28/04/26 — clic sur une ligne du tableau ouvre le drawer en édition
     // (équivalent au bouton ✏️ existant, plus naturel que de viser le mini-bouton)
     if (act === 'row-edit') {
+      if (e.target.closest('.cc-td-norow')) return;
       const id = t.dataset.id;
       try {
         const r = await _ccApi('GET', '/api/admin/cost-components/' + id);

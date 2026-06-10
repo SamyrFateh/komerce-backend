@@ -220,11 +220,11 @@
               <div style="flex:1"><div style="font-size:11px;color:#64748b;margin-bottom:3px">Au</div><input type="date" id="dp-to" style="width:100%;padding:7px 10px;background:#0f172a;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#f1f5f9;font-size:13px;outline:none"></div>
             </div>
             <div style="display:flex;gap:6px">
-              <button onclick="KmcApp._quickPeriod(7)"  style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">7j</button>
-              <button onclick="KmcApp._quickPeriod(30)" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">30j</button>
-              <button onclick="KmcApp._quickPeriod(90)" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">90j</button>
+              <button data-quick="7"  style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">7j</button>
+              <button data-quick="30" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">30j</button>
+              <button data-quick="90" style="flex:1;padding:5px 8px;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:#1e293b;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit">90j</button>
             </div>
-            <button onclick="KmcApp._applyPeriod()" style="padding:8px;border-radius:6px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✓ Appliquer</button>
+            <button id="dp-apply" style="padding:8px;border-radius:6px;border:none;background:#3b82f6;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✓ Appliquer</button>
           </div>
           <div class="header-actions" style="position:relative">
             <div class="header-user" id="header-user-btn" style="cursor:pointer" title="Compte">
@@ -239,7 +239,7 @@
                 <div style="font-size:13px;font-weight:600;color:#f1f5f9" id="user-menu-name">—</div>
                 <div style="font-size:11px;color:#64748b;margin-top:2px" id="user-menu-role">—</div>
               </div>
-              <button onclick="KmcApp._logout()" style="width:100%;padding:9px 10px;border-radius:6px;border:none;background:transparent;color:#f87171;font-size:13px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px">🚪 Se déconnecter</button>
+              <button id="logout-btn" style="width:100%;padding:9px 10px;border-radius:6px;border:none;background:transparent;color:#f87171;font-size:13px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px">🚪 Se déconnecter</button>
             </div>
           </div>
         </header>
@@ -297,6 +297,20 @@
         if (!isOpen) userPopup.style.display = 'block';
       });
     }
+
+    // ── Wiring boutons date picker ────────────────────────────────────────────
+    datePopup && datePopup.querySelectorAll('[data-quick]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        _quickPeriod(Number(btn.dataset.quick));
+      });
+    });
+    const applyBtn = document.getElementById('dp-apply');
+    if (applyBtn) applyBtn.addEventListener('click', e => { e.stopPropagation(); _applyPeriod(); });
+
+    // ── Wiring bouton logout ──────────────────────────────────────────────────
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', e => { e.stopPropagation(); _logout(); });
 
     // Fermer les popups en cliquant ailleurs
     document.addEventListener('click', () => closeAllPopups());

@@ -187,10 +187,10 @@
     <div id="alert-chip"></div>
   </header>
   <nav id="tabs">
-    <button class="tab active" data-tab="accueil" onclick="R.switchTab('accueil')">Accueil</button>
-    <button class="tab" data-tab="disponibles" onclick="R.switchTab('disponibles')">Disponibles <span class="tab-badge off" id="bdispo"></span></button>
-    <button class="tab" data-tab="approche" onclick="R.switchTab('approche')">En approche <span class="tab-badge off" id="bapproche"></span></button>
-    <button class="tab" data-tab="collectes" onclick="R.switchTab('collectes')">Collectés</button>
+    <button class="tab active" data-tab="accueil" >Accueil</button>
+    <button class="tab" data-tab="disponibles" >Disponibles <span class="tab-badge off" id="bdispo"></span></button>
+    <button class="tab" data-tab="approche" >En approche <span class="tab-badge off" id="bapproche"></span></button>
+    <button class="tab" data-tab="collectes" >Collectés</button>
   </nav>
   <div id="panels">
     <!-- ACCUEIL -->
@@ -202,10 +202,10 @@
       </div>
       <div id="alertes-wrap"></div>
       <div class="action-row">
-        <button class="action-btn receive" onclick="R.openScan('arrived')">
+        <button class="action-btn receive" id="btn-receive">
           <span class="action-icon">📥</span>Réception colis
         </button>
-        <button class="action-btn remise" onclick="R.openScan('collected')">
+        <button class="action-btn remise" id="btn-remise">
           <span class="action-icon">🤝</span>Remise client
         </button>
       </div>
@@ -232,7 +232,7 @@
 <!-- SCAN PANEL (slide-up) -->
 <div id="scan-panel" style="position:fixed;inset:0;z-index:45;background:var(--bg);display:none;flex-direction:column;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)">
   <div id="scan-panel-header" style="padding:calc(var(--safe-top) + 10px) 16px 10px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
-    <button id="btn-scan-back" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" onclick="R.closeScan()">←</button>
+    <button id="btn-scan-back" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:18px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" >←</button>
     <div id="scan-title" style="font-family:var(--mono);font-size:14px;font-weight:600">Scanner</div>
   </div>
   <div style="flex:1;overflow-y:auto;padding:12px">
@@ -246,7 +246,7 @@
         <div class="field-label">Code PIN client (6 chiffres)</div>
         <input class="field-input pin" type="tel" id="scan-pin" placeholder="• • • • • •" maxlength="6" inputmode="numeric" autocomplete="off">
       </div>
-      <button class="btn btn-primary" id="btn-scan-confirm" onclick="R.doScan()">✅ Confirmer</button>
+      <button class="btn btn-primary" id="btn-scan-confirm" >✅ Confirmer</button>
       <div class="scan-result" id="scan-result"></div>
     </div>
   </div>
@@ -255,7 +255,7 @@
 <!-- DETAIL PANEL -->
 <div id="detail-panel">
   <div id="detail-header">
-    <button id="btn-back" onclick="R.closeDetail()">←</button>
+    <button id="btn-back" >←</button>
     <div id="detail-title">—</div>
     <div style="flex:1"></div>
     <div id="detail-status-badge"></div>
@@ -265,38 +265,38 @@
 </div>
 
 <!-- INCIDENT MODAL -->
-<div class="modal-backdrop" id="inc-modal" onclick="if(event.target===this)R.closeInc()">
+<div class="modal-backdrop" id="inc-modal" >
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">🚨 Signaler un incident</div>
     <div>
       <div class="field-label">Type</div>
       <div class="inc-types">
-        <div class="inc-type-btn" data-type="retard" onclick="R.selInc(this)">Retard livraison</div>
-        <div class="inc-type-btn" data-type="colis_endommage" onclick="R.selInc(this)">Colis endommagé</div>
-        <div class="inc-type-btn" data-type="colis_perdu" onclick="R.selInc(this)">Colis perdu</div>
-        <div class="inc-type-btn" data-type="paiement" onclick="R.selInc(this)">Problème paiement</div>
-        <div class="inc-type-btn" data-type="client_absent" onclick="R.selInc(this)">Client absent</div>
-        <div class="inc-type-btn" data-type="autre" onclick="R.selInc(this)">Autre</div>
+        <div class="inc-type-btn" data-type="retard" >Retard livraison</div>
+        <div class="inc-type-btn" data-type="colis_endommage" >Colis endommagé</div>
+        <div class="inc-type-btn" data-type="colis_perdu" >Colis perdu</div>
+        <div class="inc-type-btn" data-type="paiement" >Problème paiement</div>
+        <div class="inc-type-btn" data-type="client_absent" >Client absent</div>
+        <div class="inc-type-btn" data-type="autre" >Autre</div>
       </div>
     </div>
     <div>
       <div class="field-label">Description</div>
       <textarea class="field-input" id="inc-desc" placeholder="Décrivez la situation…"></textarea>
     </div>
-    <button class="btn btn-danger" id="btn-inc-confirm" onclick="R.confirmInc()">🚨 Envoyer</button>
-    <button class="btn btn-secondary" onclick="R.closeInc()">Annuler</button>
+    <button class="btn btn-danger" id="btn-inc-confirm">🚨 Envoyer</button>
+    <button class="btn btn-secondary" id="btn-inc-cancel">Annuler</button>
   </div>
 </div>
 
 <!-- CASH MODAL -->
-<div class="modal-backdrop" id="cash-modal" onclick="if(event.target===this)R.closeCash()">
+<div class="modal-backdrop" id="cash-modal" >
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">💰 Encaissement cash</div>
     <div id="cash-detail" style="font-size:14px;color:var(--text2);padding:8px 0"></div>
-    <button class="btn btn-primary" id="btn-cash-confirm" onclick="R.confirmCash()">✅ Confirmer encaissement</button>
-    <button class="btn btn-secondary" onclick="R.closeCash()">Annuler</button>
+    <button class="btn btn-primary" id="btn-cash-confirm">✅ Confirmer encaissement</button>
+    <button class="btn btn-secondary" id="btn-cash-cancel">Annuler</button>
   </div>
 </div>
 
@@ -580,14 +580,14 @@ const R = (() => {
     let html = '';
     if (o.status === 'available') {
       if (p.cash_pending) {
-        html += `<button class="btn btn-amber" onclick="R.openCash()">💰 Encaisser ${kmf(p.total_kmf)}</button>`;
+        html += `<button class="btn btn-amber" data-act="open-cash">💰 Encaisser ${kmf(p.total_kmf)}</button>`;
       }
-      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
-      html += `<button class="btn btn-secondary" onclick="R.clientAbsent()">👤 Client absent</button>`;
+      html += `<button class="btn btn-secondary" data-act="open-inc">🚨 Signaler incident</button>`;
+      html += `<button class="btn btn-secondary" data-act="client-absent">👤 Client absent</button>`;
     } else if (o.status === 'in_transit' || o.status === 'shipped') {
-      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
+      html += `<button class="btn btn-secondary" data-act="open-inc">🚨 Signaler incident</button>`;
     } else {
-      html += `<button class="btn btn-secondary" onclick="R.openInc()">🚨 Signaler incident</button>`;
+      html += `<button class="btn btn-secondary" data-act="open-inc">🚨 Signaler incident</button>`;
     }
     el.innerHTML = html;
   }
@@ -667,6 +667,34 @@ const R = (() => {
 
   return { init, switchTab, openScan, closeScan, doScan, openDetail, closeDetail, openCash, closeCash, confirmCash, openInc, closeInc, selInc, confirmInc, clientAbsent };
 })();
+
+// ── Static wiring ──────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(function(btn) {
+  btn.addEventListener('click', function() { R.switchTab(btn.dataset.tab); });
+});
+document.getElementById('btn-receive').addEventListener('click', function() { R.openScan('arrived'); });
+document.getElementById('btn-remise').addEventListener('click', function() { R.openScan('collected'); });
+document.getElementById('btn-scan-back').addEventListener('click', function() { R.closeScan(); });
+document.getElementById('btn-scan-confirm').addEventListener('click', function() { R.doScan(); });
+document.getElementById('btn-back').addEventListener('click', function() { R.closeDetail(); });
+document.getElementById('inc-modal').addEventListener('click', function(e) { if (e.target === this) R.closeInc(); });
+document.getElementById('btn-inc-confirm').addEventListener('click', function() { R.confirmInc(); });
+document.getElementById('btn-inc-cancel').addEventListener('click', function() { R.closeInc(); });
+document.querySelectorAll('.inc-type-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { R.selInc(btn); });
+});
+document.getElementById('cash-modal').addEventListener('click', function(e) { if (e.target === this) R.closeCash(); });
+document.getElementById('btn-cash-confirm').addEventListener('click', function() { R.confirmCash(); });
+document.getElementById('btn-cash-cancel').addEventListener('click', function() { R.closeCash(); });
+// ── Dynamic action delegation ───────────────────────────────────
+document.getElementById('detail-actions').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  var act = btn.dataset.act;
+  if (act === 'open-cash') R.openCash();
+  else if (act === 'open-inc') R.openInc();
+  else if (act === 'client-absent') R.clientAbsent();
+});
 
 fetch('/api/auth/me', {credentials:'include'}).then(r => {
   if (!r.ok) location.href = '/';

@@ -128,7 +128,7 @@ CT.views.hub = async function(container) {
     // ── Header + KPI badges ──
     html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
     html += '<div><h2 style="margin:0;font-size:20px">🏭 Hub</h2><span style="color:#64748b;font-size:12px">Commander · Emballer · Expédier</span></div>';
-    html += '<button style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px" onclick="CT.views.hub(document.getElementById(\'ct-main\'))">🔄</button>';
+    html += '<button class="hub-refresh-btn" data-act="hub-refresh" style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px">🔄</button>';
     html += '</div>';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
@@ -143,9 +143,9 @@ CT.views.hub = async function(container) {
     // ── Tab bar ──
     var firstActive = confirmed.length > 0 ? 'h1' : (readyParcel.length > 0 ? 'h2' : 'h3');
     html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
-    html += '<button class="ct-tab" data-tab="h1" data-color="#e91e63" onclick="_switchTab(\'hub-container\',\'h1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
-    html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" onclick="_switchTab(\'hub-container\',\'h2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Répartition' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
-    html += '<button class="ct-tab" data-tab="h3" data-color="#8b5cf6" onclick="_switchTab(\'hub-container\',\'h3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h3' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'h3' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'h3' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">✈️ Expédier' + (prepP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + prepP.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h1" data-color="#e91e63" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'h1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'h1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🛒 Commander' + (confirmed.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + confirmed.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h2" data-color="#3b82f6" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h2' ? '#3b82f6' : 'transparent') + ';background:' + (firstActive === 'h2' ? '#3b82f608' : 'transparent') + ';color:' + (firstActive === 'h2' ? '#3b82f6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📦 Répartition' + (readyParcel.length ? ' <span style="background:#3b82f6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + readyParcel.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="h3" data-color="#8b5cf6" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'h3' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'h3' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'h3' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">✈️ Expédier' + (prepP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + prepP.length + '</span>' : '') + '</button>';
     html += '</div>';
 
     // ── Tab panels ──
@@ -275,7 +275,7 @@ CT.views.relais = async function(container) {
     // ── Header + KPI badges ──
     html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
     html += '<div><h2 style="margin:0;font-size:20px">📦 Relais</h2><span style="color:#64748b;font-size:12px">Encaisser · Réceptionner · Distribuer</span></div>';
-    html += '<button style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px" onclick="CT.views.relais(document.getElementById(\'ct-main\'))">🔄</button>';
+    html += '<button class="relais-refresh-btn" data-act="relais-refresh" style="padding:5px 12px;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;background:#fff;font-size:12px">🔄</button>';
     html += '</div>';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">';
@@ -289,9 +289,9 @@ CT.views.relais = async function(container) {
     // ── Tab bar ──
     var firstActive = cashPending.length > 0 ? 'r1' : (transitP.length > 0 ? 'r2' : 'r3');
     html += '<div style="display:flex;border-bottom:1px solid #e2e8f0;margin-bottom:0">';
-    html += '<button class="ct-tab" data-tab="r1" data-color="#e91e63" onclick="_switchTab(\'relais-container\',\'r1\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'r1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'r1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">💰 Encaisser' + (cashPending.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + cashPending.length + '</span>' : '') + '</button>';
-    html += '<button class="ct-tab" data-tab="r2" data-color="#8b5cf6" onclick="_switchTab(\'relais-container\',\'r2\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r2' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'r2' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'r2' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🚢 Réceptionner' + (transitP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + transitP.length + '</span>' : '') + '</button>';
-    html += '<button class="ct-tab" data-tab="r3" data-color="#22c55e" onclick="_switchTab(\'relais-container\',\'r3\')" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r3' ? '#22c55e' : 'transparent') + ';background:' + (firstActive === 'r3' ? '#22c55e08' : 'transparent') + ';color:' + (firstActive === 'r3' ? '#22c55e' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📍 Distribuer' + (availableP.length ? ' <span style="background:#22c55e;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + availableP.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r1" data-color="#e91e63" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r1' ? '#e91e63' : 'transparent') + ';background:' + (firstActive === 'r1' ? '#e91e6308' : 'transparent') + ';color:' + (firstActive === 'r1' ? '#e91e63' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">💰 Encaisser' + (cashPending.length ? ' <span style="background:#e91e63;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + cashPending.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r2" data-color="#8b5cf6" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r2' ? '#8b5cf6' : 'transparent') + ';background:' + (firstActive === 'r2' ? '#8b5cf608' : 'transparent') + ';color:' + (firstActive === 'r2' ? '#8b5cf6' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">🚢 Réceptionner' + (transitP.length ? ' <span style="background:#8b5cf6;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + transitP.length + '</span>' : '') + '</button>';
+    html += '<button class="ct-tab" data-tab="r3" data-color="#22c55e" style="padding:8px 16px;border:none;border-bottom:3px solid ' + (firstActive === 'r3' ? '#22c55e' : 'transparent') + ';background:' + (firstActive === 'r3' ? '#22c55e08' : 'transparent') + ';color:' + (firstActive === 'r3' ? '#22c55e' : '#64748b') + ';font-size:13px;font-weight:600;cursor:pointer">📍 Distribuer' + (availableP.length ? ' <span style="background:#22c55e;color:#fff;border-radius:8px;padding:1px 6px;font-size:11px">' + availableP.length + '</span>' : '') + '</button>';
     html += '</div>';
 
     // ── Tab panels ──
@@ -374,6 +374,14 @@ CT.views.relais = async function(container) {
 
 // ── Hub Action Handlers ──────────────────────────────────────
 function _wireHubActions(container) {
+  // Tab delegation
+  container.querySelectorAll('.ct-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() { _switchTab('hub-container', btn.dataset.tab); });
+  });
+  // Refresh button
+  var refreshBtn = container.querySelector('[data-act="hub-refresh"]');
+  if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.views.hub(document.getElementById('ct-main')); });
+
   container.querySelectorAll('[data-action="hub-mark-ordered"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
@@ -419,6 +427,14 @@ function _wireHubActions(container) {
 
 // ── Relais Action Handlers ───────────────────────────────────
 function _wireRelaisActions(container) {
+  // Tab delegation
+  container.querySelectorAll('.ct-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() { _switchTab('relais-container', btn.dataset.tab); });
+  });
+  // Refresh button
+  var refreshBtn = container.querySelector('[data-act="relais-refresh"]');
+  if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.views.relais(document.getElementById('ct-main')); });
+
   container.querySelectorAll('[data-action="relais-confirm-cash"]').forEach(function(btn) {
     btn.addEventListener('click', async function() {
       var ref = btn.dataset.ref;
@@ -603,7 +619,7 @@ CT.views.transitaire = async function(container) {
             <td>${p.destination_island || '-'}</td>
             <td>${p.weight_kg || '-'} kg</td>
             <td style="text-align:right">
-              <button onclick="CT.views._goTransit('${p.reference}')"
+              <button data-act="go-transit" data-ref="${p.reference}"
                 style="background:#3b82f6;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">
                 🚢 Envoyer
               </button>
@@ -616,6 +632,12 @@ CT.views.transitaire = async function(container) {
     }
 
     container.innerHTML = html;
+
+    // Wire go-transit buttons via delegation
+    container.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-act="go-transit"]');
+      if (btn) CT.views._goTransit(btn.dataset.ref);
+    });
 
   } catch (err) {
     container.innerHTML = `<div style="color:red">❌ ${err.message}</div>`;

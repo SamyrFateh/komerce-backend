@@ -65,11 +65,11 @@ CT.views.seed = async function() {
       </div>
       
       <div style="display:flex;gap:12px;margin-bottom:20px">
-        <button id="btn-reset" onclick="CT.views._doReset()"
+        <button id="btn-reset"
           style="flex:1;padding:14px;border:2px solid #dc2626;border-radius:12px;background:#fee2e2;color:#dc2626;font-size:15px;font-weight:700;cursor:pointer">
           🗑️ Reset (tout supprimer)
         </button>
-        <button id="btn-seed" onclick="CT.views._doSeed()"
+        <button id="btn-seed"
           style="flex:1;padding:14px;border:2px solid #10b981;border-radius:12px;background:#d1fae5;color:#059669;font-size:15px;font-weight:700;cursor:pointer">
           🌱 Seed (injecter test)
         </button>
@@ -78,6 +78,8 @@ CT.views.seed = async function() {
       <div id="seed-status" style="margin-top:12px;font-size:14px"></div>
     </div>
   `;
+  document.getElementById('btn-reset').addEventListener('click', function() { CT.views._doReset(); });
+  document.getElementById('btn-seed').addEventListener('click', function() { CT.views._doSeed(); });
 };
 
 CT.views._doReset = async function() {
@@ -116,12 +118,18 @@ CT.init = function() {
       return '<div class="ct-sidebar-divider"></div>';
     }
     return `
-      <div class="ct-sidebar-item" data-view="${item.id}" onclick="CT.navigate('${item.id}')">
+      <div class="ct-sidebar-item" data-view="${item.id}">
         <span class="ct-sidebar-emoji">${item.emoji}</span>
         <span class="ct-sidebar-label">${item.label}</span>
       </div>
     `;
   }).join('');
+
+  // Sidebar delegation
+  sidebar.addEventListener('click', function(e) {
+    var item = e.target.closest('.ct-sidebar-item[data-view]');
+    if (item) CT.navigate(item.dataset.view);
+  });
 
   // Navigate to hash or default
   const hash = location.hash.replace('#', '') || 'global';

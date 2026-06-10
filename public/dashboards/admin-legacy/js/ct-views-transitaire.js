@@ -60,14 +60,14 @@ CT.views.transitaire = async function(main) {
 
     // ── Parcels Table ──
     html += '<div class="ct-card">';
-    html += '<div class="ct-card-title">📦 Colis prêts à expédier <button class="ct-btn ct-btn-sm ct-btn-outline" onclick="CT.views.transitaire(document.getElementById(\'ct-main\'))">🔄</button></div>';
+    html += '<div class="ct-card-title">📦 Colis prêts à expédier <button id="btn-transitaire-refresh" class="ct-btn ct-btn-sm ct-btn-outline">🔄</button></div>';
 
     if (parcels.length === 0) {
       html += '<div class="ct-empty"><div class="ct-empty-icon">✈️</div>Aucun colis en attente de transit</div>';
     } else {
       // Select all / ship all
       html += '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">';
-      html += '<button class="ct-btn ct-btn-sm ct-btn-primary" onclick="CT.views._transitaireShipAll()">✈️ Expédier tous (' + parcels.length + ')</button>';
+      html += '<button id="btn-ship-all" class="ct-btn ct-btn-sm ct-btn-primary">✈️ Expédier tous (' + parcels.length + ')</button>';
       html += '</div>';
 
       html += '<div class="ct-table-wrap"><table class="ct-table">';
@@ -85,7 +85,7 @@ CT.views.transitaire = async function(main) {
         html += '<td>' + (p.nb_items || 0) + '</td>';
         html += '<td>' + (p.weight_kg || '-') + ' kg</td>';
         html += '<td>' + age + '</td>';
-        html += '<td><button class="ct-btn ct-btn-sm ct-btn-success" onclick="CT.views._transitaireShipOne(\'' + p.id + '\',\'' + (p.reference || '') + '\')">✈️</button></td>';
+        html += '<td><button class="ct-btn ct-btn-sm ct-btn-success" data-act="ship-one" data-id="' + p.id + '" data-ref="' + (p.reference || '') + '">✈️</button></td>';
         html += '</tr>';
       }
 
@@ -100,6 +100,16 @@ CT.views.transitaire = async function(main) {
     html += '</div>';
 
     main.innerHTML = html;
+
+    // ── Wire event handlers ────────────────────────────────────
+    var refreshBtn = document.getElementById('btn-transitaire-refresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', function() { CT.views.transitaire(document.getElementById('ct-main')); });
+    var shipAllBtn = document.getElementById('btn-ship-all');
+    if (shipAllBtn) shipAllBtn.addEventListener('click', function() { CT.views._transitaireShipAll(); });
+    main.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-act="ship-one"]');
+      if (btn) CT.views._transitaireShipOne(btn.dataset.id, btn.dataset.ref);
+    });
 
     // Load history async
     CT.api.transitaireHistory().then(function(hdata) {

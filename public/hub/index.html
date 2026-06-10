@@ -137,36 +137,25 @@
     </div>
   </header>
   <nav id="tabs">
-    <button class="tab active" data-tab="queue" onclick="Hub.switchTab('queue')">À préparer <span class="tab-badge" id="bq"></span></button>
-    <button class="tab" data-tab="prep" onclick="Hub.switchTab('prep')">En cours <span class="tab-badge" id="bp"></span></button>
-    <button class="tab" data-tab="ship" onclick="Hub.switchTab('ship')">Expédier <span class="tab-badge" id="bs"></span></button>
-    <button class="tab" data-tab="order" onclick="Hub.switchTab('order')">Commander <span class="tab-badge" id="bord"></span></button>
-    <button class="tab" data-tab="distrib" onclick="Hub.switchTab('distrib')">Répartir</button>
-    <button class="tab" data-tab="stats" onclick="Hub.switchTab('stats')">Stats</button>
+    <button class="tab active" data-tab="queue">À préparer <span class="tab-badge" id="bq"></span></button>
+    <button class="tab" data-tab="prep">En cours <span class="tab-badge" id="bp"></span></button>
+    <button class="tab" data-tab="ship">Expédier <span class="tab-badge" id="bs"></span></button>
+    <button class="tab" data-tab="stats">Stats</button>
   </nav>
   <div id="panels">
     <div class="panel active" id="panel-queue">
-      <div class="search-wrap"><input class="search-input" type="search" placeholder="Référence, client…" id="sq" oninput="Hub.onSearch(this.value)"></div>
+      <div class="search-wrap"><input class="search-input" type="search" placeholder="Référence, client…" id="sq"></div>
       <div class="queue-list" id="lq"><div class="loading-wrap"><div class="spinner"></div></div></div>
     </div>
     <div class="panel" id="panel-prep"><div class="queue-list" id="lp"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
     <div class="panel" id="panel-ship"><div class="queue-list" id="ls"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
-    <div class="panel" id="panel-order">
-      <div class="search-wrap"><input class="search-input" type="search" placeholder="Référence…" id="soq" oninput="Hub.onOrderSearch(this.value)"></div>
-      <div class="queue-list" id="loq"><div class="loading-wrap"><div class="spinner"></div></div></div>
-    </div>
-    <div class="panel" id="panel-distrib">
-      <div style="padding:12px;display:flex;flex-direction:column;gap:10px" id="distrib-wrap">
-        <div class="loading-wrap"><div class="spinner"></div></div>
-      </div>
-    </div>
     <div class="panel" id="panel-stats"><div class="stats-grid" id="sg"><div class="loading-wrap"><div class="spinner"></div></div></div></div>
   </div>
 </div>
 
 <div id="detail-panel">
   <div id="detail-header">
-    <button id="btn-back" onclick="Hub.closeDetail()">←</button>
+    <button id="btn-back">←</button>
     <div id="detail-title">—</div>
     <div style="flex:1"></div>
     <div id="detail-badges"></div>
@@ -175,35 +164,35 @@
   <div id="detail-actions"></div>
 </div>
 
-<div id="ship-modal" onclick="if(event.target===this)Hub.closeShipModal()">
+<div id="ship-modal">
   <div id="ship-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Expédier le colis</div>
     <div><div class="field-label">Transporteur</div><select class="field-select" id="ship-carrier"><option>Chargement…</option></select></div>
     <div><div class="field-label">N° de suivi (optionnel)</div><input class="field-input" type="text" id="ship-tracking" placeholder="ex: DHL123456789"></div>
     <div><div class="field-label">Notes</div><input class="field-input" type="text" id="ship-notes" placeholder="Informations supplémentaires…"></div>
-    <button class="btn btn-primary" id="btn-confirm-ship" onclick="Hub.confirmShip()">✈️ Confirmer l'expédition</button>
-    <button class="btn btn-secondary" onclick="Hub.closeShipModal()">Annuler</button>
+    <button class="btn btn-primary" id="btn-confirm-ship">✈️ Confirmer l'expédition</button>
+    <button class="btn btn-secondary" id="btn-cancel-ship">Annuler</button>
   </div>
 </div>
 
-<div id="incident-modal" onclick="if(event.target===this)Hub.closeIncidentModal()">
+<div id="incident-modal">
   <div id="incident-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Signaler un incident</div>
     <div><div class="field-label">Type d'incident</div>
       <div class="incident-types">
-        <div class="incident-type-btn" data-type="stock" onclick="Hub.selInc(this)">Rupture stock</div>
-        <div class="incident-type-btn" data-type="colis_endommage" onclick="Hub.selInc(this)">Colis endommagé</div>
-        <div class="incident-type-btn" data-type="retard" onclick="Hub.selInc(this)">Retard fournisseur</div>
-        <div class="incident-type-btn" data-type="paiement" onclick="Hub.selInc(this)">Problème paiement</div>
-        <div class="incident-type-btn" data-type="blocage" onclick="Hub.selInc(this)">Blocage douane</div>
-        <div class="incident-type-btn" data-type="autre" onclick="Hub.selInc(this)">Autre</div>
+        <div class="incident-type-btn" data-type="stock">Rupture stock</div>
+        <div class="incident-type-btn" data-type="colis_endommage">Colis endommagé</div>
+        <div class="incident-type-btn" data-type="retard">Retard fournisseur</div>
+        <div class="incident-type-btn" data-type="paiement">Problème paiement</div>
+        <div class="incident-type-btn" data-type="blocage">Blocage douane</div>
+        <div class="incident-type-btn" data-type="autre">Autre</div>
       </div>
     </div>
     <div><div class="field-label">Description</div><textarea class="field-input" id="inc-desc" placeholder="Décrivez la situation…"></textarea></div>
-    <button class="btn btn-danger" id="btn-confirm-inc" onclick="Hub.confirmIncident()">🚨 Envoyer le signalement</button>
-    <button class="btn btn-secondary" onclick="Hub.closeIncidentModal()">Annuler</button>
+    <button class="btn btn-danger" id="btn-confirm-inc">🚨 Envoyer le signalement</button>
+    <button class="btn btn-secondary" id="btn-cancel-inc">Annuler</button>
   </div>
 </div>
 
@@ -247,8 +236,6 @@ const Hub=(()=>{
     if(tab==='queue')await loadQ('to_prepare','lq','bq');
     if(tab==='prep')await loadQ('preparation','lp','bp');
     if(tab==='ship')await loadQ('ready','ls','bs');
-    if(tab==='order')await loadOrderTab();
-    if(tab==='distrib')await loadDistrib();
     if(tab==='stats')await loadStats();
   }
 
@@ -352,20 +339,20 @@ const Hub=(()=>{
     const isPaid=o.payment_status==='paid';
     let html='';
     if(['confirmed','ordered'].includes(o.status)||(!allOk&&o.status==='preparation')){
-      html+=`<button class="btn btn-primary" id="bap" onclick="Hub.autoPrepare('${o.id}')">📦 Préparer automatiquement</button>`;
+      html+=`<button class="btn btn-primary" id="bap" data-act="auto-prepare" data-id="${o.id}">📦 Préparer automatiquement</button>`;
     }
     if(hasDraft&&allOk&&!hasReady){
       const dp=parcels.find(p=>p.status==='draft');
-      html+=`<button class="btn btn-amber" onclick="Hub.markReady('${dp.id}')">✓ Marquer colis prêt</button>`;
+      html+=`<button class="btn btn-amber" data-act="mark-ready" data-id="${dp.id}">✓ Marquer colis prêt</button>`;
     }
     if(hasReady){
       const rp=parcels.find(p=>p.status==='preparation');
       _parcelId=rp.id;
       html+=isPaid
-        ?`<button class="btn btn-primary" onclick="Hub.openShipModal('${rp.id}')">✈️ Expédier ${rp.reference}</button>`
+        ?`<button class="btn btn-primary" data-act="open-ship" data-id="${rp.id}">✈️ Expédier ${rp.reference}</button>`
         :`<button class="btn btn-secondary" disabled>✈️ Expédier (paiement manquant)</button>`;
     }
-    html+=`<div class="btn-row"><button class="btn btn-secondary" onclick="Hub.openIncidentModal()">🚨 Incident</button><button class="btn btn-secondary" onclick="Hub.backorder('${o.id}')">📋 Backorder</button></div>`;
+    html+=`<div class="btn-row"><button class="btn btn-secondary" data-act="open-incident">🚨 Incident</button><button class="btn btn-secondary" data-act="backorder" data-id="${o.id}">📋 Backorder</button></div>`;
     el.innerHTML=html;
   }
 
@@ -432,76 +419,35 @@ const Hub=(()=>{
     catch(e){toast(e.error||'Erreur','error');}
   }
 
-  // ── ONGLET COMMANDER ──────────────────────────────────────────────────────
-  let _oqSearch='',_oqTimer=null;
-
-  async function loadOrderTab(){
-    const el=document.getElementById('loq');
-    el.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
-    try{
-      const p=new URLSearchParams({tab:'confirmed',limit:60});
-      if(_oqSearch)p.set('search',_oqSearch);
-      const d=await api.get('/api/hub-dash/queue?'+p);
-      const rows=(d.data||[]).filter(o=>o.status==='confirmed');
-      setBadge('bord',rows.length);
-      if(!rows.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div>Toutes les commandes sont commandées</div>';return;}
-      el.innerHTML=rows.map(o=>`
-        <div class="order-card" style="display:flex;align-items:center;gap:10px">
-          <div style="flex:1;min-width:0">
-            <div class="card-top"><div class="card-ref">${o.reference}</div><div class="card-age">${ago(o.created_at)}</div></div>
-            <div class="card-client">${o.client_name||'—'} · ${o.destination_island||'?'}</div>
-            <div class="card-meta"><span class="badge gray">${o.items_qty||0} art.</span>${o.payment_status==='paid'?'<span class="badge green">payé</span>':'<span class="badge amber">paiement att.</span>'}</div>
-          </div>
-          <button class="btn btn-primary" style="width:auto;padding:10px 14px;font-size:13px;flex-shrink:0" onclick="Hub.markOrdered('${o.reference}',this)">🛒 Commander</button>
-        </div>`).join('');
-    }catch(e){el.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>'+(e.error||'Erreur')+'</div>';}
-  }
-
-  function onOrderSearch(v){_oqSearch=v.trim();clearTimeout(_oqTimer);_oqTimer=setTimeout(()=>loadOrderTab(),350);}
-
-  async function markOrdered(reference,btn){
-    btn.disabled=true;btn.innerHTML='<div class="spinner"></div>';
-    try{
-      const r=await api.post('/api/hub/orders/mark-ordered',{reference});
-      toast('🛒 '+r.message,'success');
-      await loadOrderTab();
-    }catch(e){toast(e.error||'Erreur','error');btn.disabled=false;btn.innerHTML='🛒 Commander';}
-  }
-
-  // ── ONGLET RÉPARTIR ───────────────────────────────────────────────────────
-  async function loadDistrib(){
-    const w=document.getElementById('distrib-wrap');
-    w.innerHTML='<div class="loading-wrap"><div class="spinner"></div></div>';
-    try{
-      const d=await api.get('/api/hub/auto-distribute');
-      const unassigned=d.unassigned||0,total=d.total||0,queued=d.queued||0;
-      w.innerHTML=`
-        <div class="stats-grid" style="padding:0">
-          <div class="stat-card ${unassigned>0?'':'hl'}"><div class="stat-val">${unassigned}</div><div class="stat-lbl">Non répartis</div></div>
-          <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total actif</div></div>
-          <div class="stat-card"><div class="stat-val">${queued}</div><div class="stat-lbl">En file</div></div>
-          <div class="stat-card"><div class="stat-val">${d.distributed||0}</div><div class="stat-lbl">Répartis</div></div>
-        </div>
-        ${unassigned>0?`<div style="background:var(--amber-dim);border:1px solid rgba(255,171,64,.25);border-radius:8px;padding:12px;font-size:13px;color:var(--amber)">⚠ ${unassigned} commande(s) sans colis assigné</div>`:'<div style="background:var(--green-dim);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:12px;font-size:13px;color:var(--green)">✓ Toutes les commandes sont réparties</div>'}
-        <button class="btn btn-primary" id="btn-distrib" onclick="Hub.runDistrib()">📦 Lancer la répartition automatique</button>
-        <button class="btn btn-secondary" onclick="Hub.loadDistrib()">↻ Actualiser</button>
-      `;
-    }catch(e){w.innerHTML='<div class="empty"><div class="empty-icon">⚠️</div>'+(e.error||'Erreur')+'</div>';}
-  }
-
-  async function runDistrib(){
-    const b=document.getElementById('btn-distrib');
-    if(!b)return;
-    b.disabled=true;b.innerHTML='<div class="spinner"></div> Répartition en cours…';
-    try{
-      const r=await api.post('/api/hub/auto-distribute',{});
-      toast('✅ '+r.message,'success',4000);
-      await loadDistrib();
-    }catch(e){toast(e.error||'Erreur répartition','error');if(b){b.disabled=false;b.innerHTML='📦 Lancer la répartition automatique';}}
-  }
-
-  return{init,switchTab,onSearch,onOrderSearch,openDetail,closeDetail,autoPrepare,markReady,openShipModal,closeShipModal,confirmShip,openIncidentModal,closeIncidentModal,selInc,confirmIncident,backorder,markOrdered,loadDistrib,runDistrib};
+  return{init,switchTab,onSearch,openDetail,closeDetail,autoPrepare,markReady,openShipModal,closeShipModal,confirmShip,openIncidentModal,closeIncidentModal,selInc,confirmIncident,backorder};
 })();
+
+// ── Static wiring ──────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(function(btn){
+  btn.addEventListener('click', function(){ Hub.switchTab(btn.dataset.tab); });
+});
+document.getElementById('sq').addEventListener('input', function(e){ Hub.onSearch(e.target.value); });
+document.getElementById('btn-back').addEventListener('click', function(){ Hub.closeDetail(); });
+document.getElementById('btn-confirm-ship').addEventListener('click', function(){ Hub.confirmShip(); });
+document.getElementById('btn-cancel-ship').addEventListener('click', function(){ Hub.closeShipModal(); });
+document.getElementById('ship-modal').addEventListener('click', function(e){ if(e.target===this) Hub.closeShipModal(); });
+document.getElementById('btn-confirm-inc').addEventListener('click', function(){ Hub.confirmIncident(); });
+document.getElementById('btn-cancel-inc').addEventListener('click', function(){ Hub.closeIncidentModal(); });
+document.getElementById('incident-modal').addEventListener('click', function(e){ if(e.target===this) Hub.closeIncidentModal(); });
+document.querySelectorAll('.incident-type-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ Hub.selInc(btn); });
+});
+// ── Dynamic action delegation ───────────────────────────────────
+document.getElementById('detail-actions').addEventListener('click', function(e){
+  var btn = e.target.closest('[data-act]');
+  if(!btn) return;
+  var act = btn.dataset.act, id = btn.dataset.id;
+  if(act==='auto-prepare') Hub.autoPrepare(id);
+  else if(act==='mark-ready') Hub.markReady(id);
+  else if(act==='open-ship') Hub.openShipModal(id);
+  else if(act==='open-incident') Hub.openIncidentModal();
+  else if(act==='backorder') Hub.backorder(id);
+});
 
 fetch('/api/auth/me',{credentials:'include'}).then(r=>{if(!r.ok)location.href='/';else Hub.init();}).catch(()=>location.href='/');
 </script>

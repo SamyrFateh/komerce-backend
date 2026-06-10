@@ -318,8 +318,8 @@ function _renderRow(c) {
   html += '<td class="col-scope"><span class="cc-cell-scope">' + _esc(scopeText) + '</span></td>';
   html += '<td class="col-source center"><span class="cc-badge ' + sb.cls + '">' + sb.label + '</span></td>';
   html += '<td class="col-conf center"><span class="cc-badge ' + cb.cls + '">' + cb.label + '</span></td>';
-  html += '<td class="center" onclick="event.stopPropagation();"><span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '"></span></td>';
-  html += '<td class="right" onclick="event.stopPropagation();"><div class="cc-cell-actions"><button data-act="edit-comp" data-id="' + c.id + '" title="Modifier">✏️</button>' + (c.is_deletable ? '<button class="danger" data-act="delete-comp" data-id="' + c.id + '" title="Supprimer">🗑</button>' : '') + '</div></td>';
+  html += '<td class="center cc-td-norow"><span class="cc-toggle' + (c.is_active ? ' active' : '') + '" data-act="toggle-comp" data-id="' + c.id + '"></span></td>';
+  html += '<td class="right cc-td-norow"><div class="cc-cell-actions"><button data-act="edit-comp" data-id="' + c.id + '" title="Modifier">✏️</button>' + (c.is_deletable ? '<button class="danger" data-act="delete-comp" data-id="' + c.id + '" title="Supprimer">🗑</button>' : '') + '</div></td>';
   html += '</tr>';
   return html;
 }
@@ -525,6 +525,7 @@ function _bindEvents(container) {
     }
 
     if (act === 'row-edit' || act === 'edit-comp') {
+      if (e.target.closest('.cc-td-norow')) return;
       const id = t.dataset.id;
       try {
         const r = await _api('GET', '/api/admin/cost-components/' + id);

@@ -15,14 +15,19 @@ window.CTInventory = {
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
           <h3 style="margin:0; font-size:15px;">📦 Inventaire Hub — Réception & Assignation</h3>
           <div style="display:flex; gap:6px;">
-            <button onclick="CTInventory.recalculate()" class="ct-btn-sm" title="Recalculer les propositions">🤖 Recalculer</button>
-            <button onclick="CTInventory.refresh()" class="ct-btn-sm">🔄</button>
+            <button id="btn-inv-recalc" class="ct-btn-sm" title="Recalculer les propositions">🤖 Recalculer</button>
+            <button id="btn-inv-refresh" class="ct-btn-sm">🔄</button>
           </div>
         </div>
         <div id="inv-kpis" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
         <div id="inv-items"></div>
       </div>`;
     this.refresh();
+    // Wire buttons
+    var recalcBtn = document.getElementById('btn-inv-recalc');
+    var refreshBtn = document.getElementById('btn-inv-refresh');
+    if (recalcBtn) recalcBtn.addEventListener('click', function() { CTInventory.recalculate(); });
+    if (refreshBtn) refreshBtn.addEventListener('click', function() { CTInventory.refresh(); });
   },
 
   async refresh() {
@@ -93,6 +98,11 @@ window.CTInventory = {
     }
 
     el.innerHTML = html;
+    // Wire select onchange via delegation
+    el.addEventListener('change', function(e) {
+      var sel = e.target.closest('select[data-inv-item-id]');
+      if (sel && sel.value) CTInventory.scanAssign(sel.dataset.invItemId, sel.value);
+    });
   },
 
   renderSection(title, items, type) {
@@ -130,7 +140,7 @@ window.CTInventory = {
                 <td style="padding:4px 6px;">${item.destination_island || '—'}</td>
                 <td style="padding:4px 6px;">${infoCol}</td>
                 <td style="padding:4px 6px; text-align:center;">
-                  <select onchange="CTInventory.scanAssign('${item.id}', this.value)" 
+                  <select data-inv-item-id="${item.id}"
                     style="font-size:11px; padding:2px 4px; border-radius:4px; border:1px solid #ccc; max-width:130px;"
                     title="Scanner dans un colis">
                     <option value="">📦 Assigner →</option>

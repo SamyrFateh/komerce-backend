@@ -90,14 +90,13 @@ CT.views.parcels = async function() {
         <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap" id="status-tabs">
           ${statuses.map(s => {
             const cfg = s === 'all' ? { emoji: '📦', label: 'Tous' } : ParcelUI.getStatus(s);
-            return `<button class="status-tab ${s === 'all' ? 'active' : ''}" data-status="${s}" onclick="CT.views._filterParcels('${s}')">${cfg.emoji} ${cfg.label} (${statusCounts[s]})</button>`;
+            return `<button class="status-tab ${s === 'all' ? 'active' : ''}" data-status="${s}">${cfg.emoji} ${cfg.label} (${statusCounts[s]})</button>`;
           }).join('')}
         </div>
         
         <div style="margin-bottom:12px">
           <input type="text" id="parcel-search-input" placeholder="🔍 Chercher par référence, client, île..."
-            style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:14px"
-            oninput="CT.views._searchParcels(this.value)">
+            style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:10px;font-size:14px">
         </div>
         
         <div id="parcels-list-container"></div>
@@ -107,6 +106,14 @@ CT.views.parcels = async function() {
     // Store parcels for filtering
     CT.views._allParcels = parcels;
     CT.views._filterParcels('all');
+
+    // ── Wire status tabs and search ──────────────────────────────
+    document.getElementById('status-tabs').addEventListener('click', function(e) {
+      var btn = e.target.closest('.status-tab');
+      if (btn) CT.views._filterParcels(btn.dataset.status);
+    });
+    var searchInput = document.getElementById('parcel-search-input');
+    if (searchInput) searchInput.addEventListener('input', function(e) { CT.views._searchParcels(e.target.value); });
 
   } catch (err) {
     main.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626">❌ Erreur: ${err.message}</div>`;
@@ -271,7 +278,7 @@ CT.views.alerts = async function() {
       const sev = ParcelUI.SEVERITY[worstSeverity] || {};
 
       return `
-        <div class="parcel-card" onclick="ParcelUI.openDetail('${group.parcel_ref}')" style="cursor:pointer;border-left:3px solid ${sev.color || '#6b7280'}">
+        <div class="parcel-card" data-parcel-ref="${group.parcel_ref}" style="cursor:pointer;border-left:3px solid ${sev.color || '#6b7280'}">
           <div style="display:flex;justify-content:space-between;align-items:center">
             <strong>📦 ${group.parcel_ref}</strong>
             <span style="font-size:12px;color:#6b7280">${group.destination_island || ''} · ${group.recipient_name || ''}</span>
@@ -287,6 +294,10 @@ CT.views.alerts = async function() {
     }).join('');
 
     document.getElementById('alerts-list').innerHTML = alertsHtml;
+    document.getElementById('alerts-list').addEventListener('click', function(e) {
+      var card = e.target.closest('[data-parcel-ref]');
+      if (card) ParcelUI.openDetail(card.dataset.parcelRef);
+    });
 
   } catch (err) {
     main.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626">❌ Erreur: ${err.message}</div>`;
@@ -375,7 +386,7 @@ CT.views.orders = async function() {
             </thead>
             <tbody>
               ${orders.map(o => `
-                <tr style="cursor:pointer;border-bottom:1px solid #f3f4f6" onclick="ParcelUI.openDetail('${o.parcel_ref}')" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                <tr data-parcel-ref="${o.parcel_ref}" style="cursor:pointer;border-bottom:1px solid #f3f4f6">
                   <td style="padding:10px 12px;font-weight:600">${o.parcel_ref}</td>
                   <td style="padding:10px 12px">${o.order_ref}</td>
                   <td style="padding:10px 12px">${o.customer}</td>
@@ -389,6 +400,20 @@ CT.views.orders = async function() {
         </div>
       </div>
     `;
+
+    // Wire row clicks and hover via delegation
+    main.addEventListener('click', function(e) {
+      var tr = e.target.closest('[data-parcel-ref]');
+      if (tr) ParcelUI.openDetail(tr.dataset.parcelRef);
+    });
+    main.addEventListener('mouseover', function(e) {
+      var tr = e.target.closest('tr[data-parcel-ref]');
+      if (tr) tr.style.background = '#f9fafb';
+    });
+    main.addEventListener('mouseout', function(e) {
+      var tr = e.target.closest('tr[data-parcel-ref]');
+      if (tr) tr.style.background = '';
+    });
 
   } catch (err) {
     main.innerHTML = `<div style="text-align:center;padding:60px;color:#dc2626">❌ Erreur: ${err.message}</div>`;

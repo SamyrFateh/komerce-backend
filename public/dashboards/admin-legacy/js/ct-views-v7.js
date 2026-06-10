@@ -372,7 +372,7 @@ CT.views.orders = async function(container) {
             dhtml += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">';
             dhtml += '<h4 style="margin:0 0 8px;font-size:14px;color:#166534">📦 Colis</h4>';
             dhtml += '<div style="font-size:13px;line-height:1.8">';
-            dhtml += '<div>Référence: <strong style="font-family:monospace;color:#1e40af;cursor:pointer" onclick="CT.views._ordersTab=\'parcels\';CT.views.orders(document.getElementById(\'ct-main\'));setTimeout(function(){var c=document.querySelector(\'[data-ref=\\x27' + (o.parcel_ref || '') + '\\x27]\');if(c)c.click();},300)">' + (o.parcel_ref || '—') + ' →</strong></div>';
+            dhtml += '<div>Référence: <strong style="font-family:monospace;color:#1e40af;cursor:pointer" data-act="nav-parcel" data-parcel-ref="' + (o.parcel_ref || '') + '">' + (o.parcel_ref || '—') + ' →</strong></div>';
             dhtml += '<div>Statut colis: ' + statusBadge(o.parcel_status || o.status) + '</div>';
             if (o.pickup_code) dhtml += '<div>🔑 Code retrait: <strong>' + o.pickup_code + '</strong></div>';
             dhtml += '</div></div>';
@@ -394,6 +394,15 @@ CT.views.orders = async function(container) {
           dhtml += '</div>';
 
           expandDiv.innerHTML = dhtml;
+          // Wire parcel ref navigation
+          expandDiv.addEventListener('click', function(e) {
+            var el = e.target.closest('[data-act="nav-parcel"]');
+            if (!el) return;
+            var ref = el.dataset.parcelRef;
+            CT.views._ordersTab = 'parcels';
+            CT.views.orders(document.getElementById('ct-main'));
+            setTimeout(function() { var c = document.querySelector('[data-ref="' + ref + '"]'); if (c) c.click(); }, 300);
+          });
         } catch(err) {
           expandDiv.innerHTML = '<div style="color:#dc2626;padding:12px">❌ Erreur: ' + err.message + '</div>';
         }
@@ -476,10 +485,8 @@ CT.views._showParcel = async function(ref, container) {
     // Clients → Commandes → Articles
     html += '<div class="ct-action-bar" style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">';
     // Print label buttons
-    html += '<button class="ct-btn ct-btn-secondary" onclick="window.open(\'/api/v2/parcels/' + p.reference + '/label\', \'_blank\')">' +
-      '🏷️ Etiquette A5</button>';
-    html += '<button class="ct-btn ct-btn-secondary" onclick="window.open(\'/api/v2/parcels/' + p.reference + '/label?format=thermal\', \'_blank\')">' +
-      '🖨️ Etiquette thermique</button>';
+    html += '<button class="ct-btn ct-btn-secondary" data-act="open-label" data-url="/api/v2/parcels/' + p.reference + '/label">🏷️ Etiquette A5</button>';
+    html += '<button class="ct-btn ct-btn-secondary" data-act="open-label" data-url="/api/v2/parcels/' + p.reference + '/label?format=thermal">🖨️ Etiquette thermique</button>';
     html += '</div>';
     html += '<div class="ct-section-block"><h3>👥 Clients & Commandes</h3>' + CT.pc.hierarchy(p.clients) + '</div>';
     
@@ -527,6 +534,12 @@ CT.views._showParcel = async function(ref, container) {
     }
 
     detail.innerHTML = html;
+
+    // Wire label open buttons
+    detail.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-act="open-label"]');
+      if (btn) window.open(btn.dataset.url, '_blank');
+    });
 
     // Back button
     detail.querySelector('#ct-back').addEventListener('click', function() {
@@ -686,7 +699,7 @@ CT.views.dashboard = async function(container) {
       if (awaitingParcel > 0) {
         html += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px">' +
           '⚠️ <strong>' + awaitingParcel + ' commande(s) payée(s) en attente de colis</strong> — ' +
-          '<a href="#" onclick="CT.app.navigate(\'createParcel\');return false" style="color:#1d4ed8;text-decoration:underline">Créer les colis → (BO)</a></div>';
+          '<a href="#" data-act="navigate" data-view="createParcel" style="color:#1d4ed8;text-decoration:underline">Créer les colis → (BO)</a></div>';
       }
       // Alert if payment incidents
       if ((ok.payment_failed || 0) > 0) {
@@ -718,12 +731,12 @@ CT.views.dashboard = async function(container) {
     html += '</div></div>';
 
     container.innerHTML = html;
+    // Wire createParcel navigation link
+    container.addEventListener('click', function(e) {
+      var el = e.target.closest('[data-act="navigate"]');
+      if (el) { e.preventDefault(); CT.app.navigate(el.dataset.view); }
+    });
   } catch (err) {
-    container.innerHTML = '<div class="ct-error">❌ ' + err.message + '</div>';
-  }
-};
-
-// ── 2b. FINANCES ──────────────────────────────────────────────
 CT.views.finances = async function(container) {
   container.innerHTML = '<div class="ct-loading">💰 Chargement finances...</div>';
   try {
