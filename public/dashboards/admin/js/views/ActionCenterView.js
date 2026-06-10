@@ -55,10 +55,10 @@
   }
 
   function kpiCard(emoji, value, label, bg) {
-    return `<div class="kpi-card" style="background:${bg};display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;min-width:140px">
-      <span style="font-size:1.5rem">${emoji}</span>
-      <div><div style="font-size:1.4rem;font-weight:700;line-height:1">${value}</div>
-           <div style="font-size:0.78rem;color:var(--text-secondary,#64748b);margin-top:2px">${label}</div></div>
+    return `<div class="ac-kpi-card" style="background:${bg}">
+      <span class="ac-kpi-icon">${emoji}</span>
+      <div><div class="ac-kpi-value">${value}</div>
+           <div class="ac-kpi-label">${label}</div></div>
     </div>`;
   }
 
@@ -75,30 +75,24 @@
         filters: signal.target_filters || {},
         highlightId: signal.entity_id,
       };
-      drillBtn = `<button class="btn-ghost" style="font-size:12px;padding:4px 10px"
-        data-signal-drill='${JSON.stringify(drillParams).replace(/'/g, '&#39;')}'>🔗 Voir</button>`;
+      drillBtn = `<button class="btn btn-ghost btn-sm" data-signal-drill='${JSON.stringify(drillParams).replace(/'/g, '&#39;')}'>🔗 Voir</button>`;
     }
 
     return `
-      <div class="signal-card" style="border-left:3px solid ${sevColor};margin-bottom:8px;
-           background:var(--surface,#fff);border-radius:8px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)"
-           ${hidden || ''}>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;
-                background:${sevColor}18;color:${sevColor}">${sevLabel}</span>
+      <div class="signal-card" style="border-left:3px solid ${sevColor}" ${hidden || ''}>
+        <div class="ac-signal-head">
+          <span class="ac-sev-badge" style="background:${sevColor}18;color:${sevColor}">${sevLabel}</span>
           <strong style="font-size:14px">${esc(signal.title)}</strong>
         </div>
-        ${signal.summary ? `<div style="font-size:13px;color:var(--text-secondary,#475569);margin-bottom:6px">${esc(signal.summary)}</div>` : ''}
-        ${signal.recommendation ? `<div style="padding:6px 10px;background:#f0fdf4;border-radius:6px;font-size:13px;color:#16a34a;margin-bottom:8px">
-          💡 ${esc(signal.recommendation)}</div>` : ''}
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${signal.summary ? `<div class="ac-signal-summary">${esc(signal.summary)}</div>` : ''}
+        ${signal.recommendation ? `<div class="ac-signal-reco">💡 ${esc(signal.recommendation)}</div>` : ''}
+        <div class="ac-signal-actions">
           ${drillBtn}
-          <button class="btn-ghost" style="font-size:12px;padding:4px 10px" data-signal-ack="${signal.id}">👁 Vu</button>
-          <button class="btn-ghost" style="font-size:12px;padding:4px 10px" data-signal-snooze="${signal.id}">💤 24h</button>
-          <button style="font-size:12px;padding:4px 10px;border:none;border-radius:6px;background:#d1fae5;color:#065f46;cursor:pointer;font-weight:600"
-            data-signal-resolve="${signal.id}">✅ Résolu</button>
+          <button class="btn btn-ghost btn-sm" data-signal-ack="${signal.id}">👁 Vu</button>
+          <button class="btn btn-ghost btn-sm" data-signal-snooze="${signal.id}">💤 24h</button>
+          <button class="btn btn-primary btn-sm" data-signal-resolve="${signal.id}">✅ Résolu</button>
         </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text-tertiary,#94a3b8)">
+        <div class="ac-signal-footer">
           <span>🏷 ${signal.signal_type}</span>
           <span>${timeAgo(signal.created_at)}</span>
         </div>
@@ -121,17 +115,15 @@
     }).join('');
 
     const moreBtn = overflow > 0
-      ? `<button class="btn-ghost" style="margin-top:6px;font-size:13px" data-show-more="${extraId}">
-           + ${overflow} de plus</button>`
+      ? `<button class="btn btn-ghost btn-sm ac-show-more" data-show-more="${extraId}">+ ${overflow} de plus</button>`
       : '';
 
     return `
-      <div style="border-left:4px solid ${fam.color};padding-left:12px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span style="font-size:1rem">${fam.emoji}</span>
-          <h3 style="margin:0;font-size:15px;font-weight:700">${fam.label}</h3>
-          <span style="padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;
-                background:${fam.color}18;color:${fam.color}">${items.length}</span>
+      <div class="ac-fam-block" style="border-left-color:${fam.color}">
+        <div class="ac-fam-head">
+          <span class="ac-fam-emoji">${fam.emoji}</span>
+          <h3 class="ac-fam-title">${fam.label}</h3>
+          <span class="ac-fam-count" style="background:${fam.color}18;color:${fam.color}">${items.length}</span>
         </div>
         ${cards}
         ${moreBtn}
@@ -146,13 +138,13 @@
       <p class="page-subtitle">Tout ce qui mérite une décision, regroupé et priorisé</p>
 
       <section class="page-section">
-        <div id="ac-kpis" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+        <div id="ac-kpis" class="ac-kpis-bar">
           <div class="loading-state"><span class="loader"></span> Chargement…</div>
         </div>
 
-        <div style="margin-bottom:20px;display:flex;gap:8px;align-items:center">
-          <button id="ac-refresh" class="btn-primary">🔄 Rafraîchir les signaux</button>
-          <span id="ac-refresh-status" style="font-size:13px;color:var(--text-secondary,#64748b)"></span>
+        <div class="ac-refresh-bar">
+          <button id="ac-refresh" class="btn btn-secondary">🔄 Rafraîchir les signaux</button>
+          <span id="ac-refresh-status" class="ac-refresh-status"></span>
         </div>
 
         <div id="ac-families">
@@ -205,10 +197,10 @@
 
       if (totalOpen === 0) {
         famEl.innerHTML = `
-          <div style="text-align:center;padding:60px 20px">
-            <div style="font-size:64px;margin-bottom:16px">✅</div>
+          <div class="ac-empty-state">
+            <div class="ac-empty-icon">✅</div>
             <h3>Tout est en ordre</h3>
-            <p style="color:var(--text-secondary,#64748b);margin-top:8px">Aucun signal actif — bonne nouvelle !</p>
+            <p class="ac-empty-sub">Aucun signal actif — bonne nouvelle !</p>
           </div>`;
         return;
       }

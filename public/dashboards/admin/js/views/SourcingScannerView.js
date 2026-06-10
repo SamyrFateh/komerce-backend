@@ -40,15 +40,15 @@
       .scs-tab.active{color:#16a34a;border-bottom-color:#16a34a;font-weight:600}
       .scs-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
       .scs-kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
-      .scs-kpi-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:4px}
+      .scs-kpi-label{font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:4px}
       .scs-kpi-value{font-size:22px;font-weight:800;color:var(--text-primary);font-family:ui-monospace,monospace;line-height:1}
       .scs-filters{display:flex;gap:8px;align-items:center;padding:12px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
-      .scs-filters label{font-size:12px;color:var(--text-secondary);font-weight:600}
+      .scs-filters label{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:600}
       .scs-select,.scs-input-f{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)}
       .scs-table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
       .scs-table{width:100%;border-collapse:collapse;font-size:13px}
       .scs-table thead{background:var(--bg-secondary);border-bottom:1px solid var(--border)}
-      .scs-table th{padding:10px 8px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
+      .scs-table th{padding:10px 8px;text-align:left;font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.3px;font-weight:600}
       .scs-table th.num{text-align:right}
       .scs-table td{padding:10px 8px;border-bottom:1px solid var(--border)}
       .scs-table td.num{text-align:right;font-family:ui-monospace,monospace}
@@ -63,27 +63,27 @@
       .scs-drawer-title{font-size:16px;font-weight:700;flex:1;margin:0;color:var(--text-primary)}
       .scs-drawer-body{flex:1;overflow-y:auto;padding:16px 18px}
       .scs-drawer-row{margin-bottom:14px}
-      .scs-drawer-row label{display:block;font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:4px}
+      .scs-drawer-row label{display:block;font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:4px}
       .scs-drawer-row input,.scs-drawer-row select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)}
       .scs-drawer-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
       .scs-prices-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
       .scs-price-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;padding:10px}
       .scs-price-card.primary{background:#fef3c7;border-color:#f59e0b}
-      .scs-price-label{font-size:11px;color:var(--text-secondary);font-weight:600;margin-bottom:2px}
+      .scs-price-label{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:600;margin-bottom:2px}
       .scs-price-value{font-size:16px;font-weight:800;font-family:ui-monospace,monospace;color:var(--text-primary)}
       .scs-decision-bloc{border:2px solid;border-radius:8px;padding:12px;margin-bottom:14px}
       /* Form import */
       .scs-form{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px}
       .scs-form-row{margin-bottom:14px}
-      .scs-form-row label{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:4px}
+      .scs-form-row label{display:block;font-size:var(--fs-sm);font-weight:600;color:var(--text-secondary);margin-bottom:4px}
       .scs-form-row input,.scs-form-row select,.scs-form-row textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)}
-      .scs-form-row textarea{min-height:120px;resize:vertical;font-family:ui-monospace,monospace;font-size:12px}
+      .scs-form-row textarea{min-height:120px;resize:vertical;font-family:ui-monospace,monospace;font-size:var(--fs-sm)}
       .scs-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
       .scs-source-toggle{display:flex;gap:6px;margin-bottom:14px}
       .scs-source-btn{padding:8px 16px;border:1px solid var(--border);background:var(--bg-card);border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;color:var(--text-secondary)}
       .scs-source-btn.active{background:#16a34a;color:#fff;border-color:#15803d}
-      .scs-csv-help{font-size:12px;color:var(--text-secondary);margin-bottom:6px;line-height:1.4}
-      .scs-csv-help code{background:var(--bg-secondary);padding:1px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-size:12px}
+      .scs-csv-help{font-size:var(--fs-sm);color:var(--text-secondary);margin-bottom:6px;line-height:1.4}
+      .scs-csv-help code{background:var(--bg-secondary);padding:1px 6px;border-radius:3px;font-family:ui-monospace,monospace;font-size:var(--fs-sm)}
     `;
     document.head.appendChild(s);
   }
@@ -108,13 +108,13 @@
       watchlist:{label:'Watchlist',bg:'#fef9c3',text:'#854d0e'}, imported_to_catalog:{label:'Importé',bg:'#dcfce7',text:'#14532d'},
       rejected:{label:'Rejeté',bg:'#fee2e2',text:'#b91c1c'}, archived:{label:'Archivé',bg:'#f1f5f9',text:'#475569'} };
     const s = map[st] || {label:st,bg:'#f1f5f9',text:'#475569'};
-    return `<span style="background:${s.bg};color:${s.text};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">${s.label}</span>`;
+    return `<span style="background:${s.bg};color:${s.text};padding:2px 8px;border-radius:4px;font-size:var(--fs-sm);font-weight:600">${s.label}</span>`;
   }
   function confidenceBadge(c) {
     const map = { high:{bg:'#dcfce7',text:'#14532d',label:'✓ Fiable'}, medium:{bg:'#fffbeb',text:'#92400e',label:'~ Moyen'},
       low:{bg:'#fef2f2',text:'#b91c1c',label:'⚠ Faible'} };
     const s = map[c] || map.low;
-    return `<span style="background:${s.bg};color:${s.text};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${s.label}</span>`;
+    return `<span style="background:${s.bg};color:${s.text};padding:2px 6px;border-radius:4px;font-size:var(--fs-sm);font-weight:600">${s.label}</span>`;
   }
 
   /* ── State ───────────────────────────────────────────────────────────── */
@@ -214,8 +214,8 @@
         ${['PRIORITY','TEST','WATCH','AVOID','LOSS'].map(d => `<option value="${d}"${_state.filter.decision===d?' selected':''}>${d}</option>`).join('')}
       </select>
       <input class="scs-input-f" data-filter="supplier" placeholder="Fournisseur…" value="${esc(_state.filter.supplier)}" style="flex:1;min-width:140px">
-      <button class="kmc-btn kmc-btn-secondary" data-act="apply-filters" style="font-size:12px;padding:6px 12px">Filtrer</button>
-      <button class="kmc-btn kmc-btn-secondary" data-act="clear-filters" style="font-size:12px;padding:6px 10px">×</button>
+      <button class="kmc-btn kmc-btn-secondary" data-act="apply-filters" style="font-size:var(--fs-sm);padding:6px 12px">Filtrer</button>
+      <button class="kmc-btn kmc-btn-secondary" data-act="clear-filters" style="font-size:var(--fs-sm);padding:6px 10px">×</button>
     </div>`;
 
     if (!cands.length) return html + '<div class="kmc-empty">Aucun candidat. Importez un catalogue depuis l\'onglet "Nouveau import".</div>';
@@ -236,8 +236,8 @@
         <td class="num">${sr.minimum_safe_price_kmf ? fmt(sr.minimum_safe_price_kmf) : '—'}</td>
         <td class="num"><strong>${sr.recommended_price_kmf ? fmt(sr.recommended_price_kmf) : '—'}</strong></td>
         <td class="num">${sr.estimated_margin_pct != null ? sr.estimated_margin_pct + '%' : '—'}</td>
-        <td><span style="background:${hc.bg};color:${hc.text};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">${sr.health_status||'—'}</span></td>
-        <td><span style="background:${dc.bg};color:${dc.text};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">${sr.sourcing_decision||'—'}</span></td>
+        <td><span style="background:${hc.bg};color:${hc.text};padding:2px 6px;border-radius:4px;font-size:var(--fs-sm);font-weight:600">${sr.health_status||'—'}</span></td>
+        <td><span style="background:${dc.bg};color:${dc.text};padding:2px 6px;border-radius:4px;font-size:var(--fs-sm);font-weight:700">${sr.sourcing_decision||'—'}</span></td>
         <td>${stateBadge(c.state)}</td>
         <td>${confidenceBadge(c.confidence)}</td>
       </tr>`;
@@ -322,7 +322,7 @@
     const hc = healthColor(sr.health_status);
 
     html += `<div class="scs-drawer-head">
-      <button class="kmc-btn kmc-btn-secondary" data-act="close-drawer" style="font-size:12px;padding:6px 10px">←</button>
+      <button class="kmc-btn kmc-btn-secondary" data-act="close-drawer" style="font-size:var(--fs-sm);padding:6px 10px">←</button>
       <h2 class="scs-drawer-title">${esc(c.product_name)}</h2>
       ${stateBadge(c.state)}
     </div>

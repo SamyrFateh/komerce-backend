@@ -58,7 +58,7 @@
       .prob-sev-badge {
         padding: 3px 12px;
         border-radius: 20px;
-        font-size: 12px;
+        font-size: var(--fs-sm);
         font-weight: 600;
       }
       .prob-sev-critical { background: #fef2f2; color: #991b1b; }
@@ -100,7 +100,7 @@
       .prob-card-sev-tag {
         padding: 2px 8px;
         border-radius: 10px;
-        font-size: 11px;
+        font-size: var(--fs-xs);
         font-weight: 700;
         text-transform: uppercase;
       }
@@ -109,7 +109,7 @@
       .prob-tag-info     { background: #eff6ff; color: #1e40af; }
 
       .prob-card-hint {
-        font-size: 11px;
+        font-size: var(--fs-xs);
         color: var(--text-tertiary, #94a3b8);
         padding: 0 14px 4px;
       }
@@ -124,19 +124,19 @@
         gap: 6px;
         padding: 5px 0;
         border-bottom: 1px solid var(--border-subtle, #f1f5f9);
-        font-size: 12px;
+        font-size: var(--fs-sm);
         color: var(--text-secondary, #334155);
       }
       .prob-item:last-child { border-bottom: none; }
       .prob-item-ref  { font-weight: 700; white-space: nowrap; }
       .prob-item-name { color: var(--text-tertiary, #94a3b8); }
-      .prob-item-meta { margin-left: auto; font-size: 11px; color: var(--text-tertiary, #94a3b8); }
-      .prob-item-more { font-size: 11px; color: var(--text-tertiary, #94a3b8); font-style: italic; padding: 4px 0; }
+      .prob-item-meta { margin-left: auto; font-size: var(--fs-xs); color: var(--text-tertiary, #94a3b8); }
+      .prob-item-more { font-size: var(--fs-xs); color: var(--text-tertiary, #94a3b8); font-style: italic; padding: 4px 0; }
 
-      .prob-card-desc   { font-size: 12px; color: var(--text-secondary, #475569); line-height: 1.5; padding-bottom: 6px; }
+      .prob-card-desc   { font-size: var(--fs-sm); color: var(--text-secondary, #475569); line-height: 1.5; padding-bottom: 6px; }
       .prob-card-action {
         display: inline-block;
-        font-size: 12px;
+        font-size: var(--fs-sm);
         color: var(--color-blue-600, #2563eb);
         font-weight: 600;
         cursor: pointer;
@@ -161,7 +161,7 @@
       .prob-score-green  { color: var(--color-green-500, #22c55e); }
       .prob-score-yellow { color: var(--color-amber-400, #fbbf24); }
       .prob-score-red    { color: var(--color-red-400, #f87171); }
-      .prob-score-lbl    { font-size: 12px; color: var(--text-tertiary, #94a3b8); margin-top: 6px; }
+      .prob-score-lbl    { font-size: var(--fs-sm); color: var(--text-tertiary, #94a3b8); margin-top: 6px; }
 
       .prob-cat-grid {
         display: grid;
@@ -193,7 +193,7 @@
       .prob-cat[data-cat="client"]   .prob-cat-num { color: #4ade80; }
       .prob-cat[data-cat="data"]     .prob-cat-num { color: #f87171; }
       .prob-cat-lbl {
-        font-size: 11px;
+        font-size: var(--fs-xs);
         color: var(--text-tertiary, #94a3b8);
         margin-top: 3px;
       }
@@ -202,7 +202,7 @@
         background: var(--surface-secondary, #f8fafc);
         border-radius: 8px;
         padding: 12px;
-        font-size: 12px;
+        font-size: var(--fs-sm);
         color: var(--text-tertiary, #94a3b8);
         line-height: 1.8;
       }
@@ -220,12 +220,12 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 12px;
+        font-size: var(--fs-sm);
         color: var(--text-secondary, #475569);
         cursor: pointer;
         user-select: none;
       }
-      .prob-scan-time { font-size: 11px; color: var(--text-tertiary, #94a3b8); }
+      .prob-scan-time { font-size: var(--fs-xs); color: var(--text-tertiary, #94a3b8); }
     `;
     const el = document.createElement('style');
     el.id = STYLE_ID;
@@ -374,7 +374,7 @@
       min-width:100px;border-top:3px solid ${color}">
       <div style="font-size:20px;line-height:1">${icon}</div>
       <div style="font-size:20px;font-weight:700;color:${color}">${val}</div>
-      <div style="font-size:11px;color:#64748b">${label}</div>
+      <div style="font-size:var(--fs-xs);color:#64748b">${label}</div>
     </div>`;
   }
 
@@ -460,12 +460,12 @@
 
     return `
       <div class="prob-score-wrap">
-        <div style="font-size:11px;font-weight:700;color:var(--text-tertiary,#94a3b8);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🏥 Score Santé</div>
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-tertiary,#94a3b8);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🏥 Score Santé</div>
         <div class="prob-score-val ${scoreCls}">${score}/100</div>
         <div class="prob-score-lbl">${scoreLbl}</div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;color:var(--text-tertiary,#94a3b8);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Par catégorie</div>
+      <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-tertiary,#94a3b8);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Par catégorie</div>
       <div class="prob-cat-grid">
         ${['finance','appro','logistic','client','data'].map(cat => {
           const labels = { finance: '💳 Finance', appro: '📦 Appro', logistic: '🚚 Logistique', client: '👤 Client', data: '⚙️ Données' };
@@ -664,7 +664,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div>
             <h3 style="margin:0">⚖️ Colis à réconcilier</h3>
-            <p style="margin:4px 0 0;font-size:12px;color:#64748b">
+            <p style="margin:4px 0 0;font-size:var(--fs-sm);color:#64748b">
               Statuts bloqués ou en attention — pour la réconciliation cash, voir
               <a href="/admin/accounting" data-path="/admin/accounting">Comptabilité</a>
             </p>
@@ -690,7 +690,7 @@
             border-radius:8px;padding:12px 16px;font-size:13px">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <strong>${p.reference || '—'}</strong>
-              <span style="background:${color}22;color:${color};padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">
+              <span style="background:${color}22;color:${color};padding:2px 10px;border-radius:10px;font-size:var(--fs-xs);font-weight:700">
                 ${status.toUpperCase()}
               </span>
             </div>
@@ -698,7 +698,7 @@
               ${p.status || '—'} · ${p.destination_label || p.destination_id || '—'}
             </div>
             ${reco.issues && reco.issues.length
-              ? `<ul style="margin:6px 0 0;padding-left:18px;color:#dc2626;font-size:12px">
+              ? `<ul style="margin:6px 0 0;padding-left:18px;color:#dc2626;font-size:var(--fs-sm)">
                   ${reco.issues.map(i => `<li>${i}</li>`).join('')}
                 </ul>`
               : ''}

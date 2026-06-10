@@ -26,15 +26,15 @@
       .scv-header h2{font-size:22px;font-weight:800;color:var(--text-primary)}
       .scv-header p{font-size:13px;color:var(--text-secondary);margin-top:2px}
       .scv-toolbar{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;margin-bottom:14px}
-      .scv-toolbar label{font-size:12px;color:var(--text-secondary);font-weight:600}
+      .scv-toolbar label{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:600}
       .scv-select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)}
       .scv-table-wrap{overflow-x:auto}
       .scv-table{width:100%;border-collapse:collapse;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
-      .scv-table th{text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;font-weight:700;padding:10px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border)}
+      .scv-table th{text-align:left;font-size:var(--fs-xs);color:var(--text-secondary);text-transform:uppercase;font-weight:700;padding:10px 14px;background:var(--bg-secondary);border-bottom:1px solid var(--border)}
       .scv-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
       .scv-table tr:last-child td{border-bottom:none}
       .scv-table tbody tr:hover{background:var(--bg-secondary);cursor:pointer}
-      .scv-status{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff}
+      .scv-status{display:inline-block;padding:2px 8px;border-radius:10px;font-size:var(--fs-xs);font-weight:700;color:#fff}
       .scv-progress-bg{height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;min-width:80px}
       .scv-progress-fill{height:100%;background:#16a34a}
       .scv-mono{font-family:ui-monospace,SFMono-Regular,monospace}
@@ -52,13 +52,13 @@
 
       /* Sections drawer */
       .scv-section{margin-bottom:18px}
-      .scv-section-title{font-size:11px;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+      .scv-section-title{font-size:var(--fs-xs);font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
       .scv-kv{display:grid;grid-template-columns:130px 1fr;gap:5px 10px;font-size:13px}
       .scv-kv dt{color:var(--text-secondary)}
       .scv-kv dd{margin:0;font-weight:500;word-break:break-all}
       .scv-list-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
       .scv-list-row:last-child{border-bottom:none}
-      .scv-event-row{display:grid;grid-template-columns:80px 140px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;font-family:ui-monospace,monospace}
+      .scv-event-row{display:grid;grid-template-columns:80px 140px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--fs-xs);font-family:ui-monospace,monospace}
       .scv-event-row:last-child{border-bottom:none}
 
       /* Boutons */
@@ -135,7 +135,7 @@
                 const pct = c.total_kmf_snapshot > 0 ? Math.round(c.contributed_kmf / c.total_kmf_snapshot * 100) : 0;
                 return `
                   <tr data-id="${c.id}">
-                    <td><strong>${_esc(c.beneficiary_full_name||'?')}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${_esc(c.beneficiary_email||'')}</span></td>
+                    <td><strong>${_esc(c.beneficiary_full_name||'?')}</strong><br><span style="font-size:var(--fs-xs);color:var(--text-secondary)">${_esc(c.beneficiary_email||'')}</span></td>
                     <td>${_esc(c.title||'—')}</td>
                     <td><span class="scv-status" style="background:${sm.color}">${sm.label}</span></td>
                     <td class="scv-mono">${_fmt(c.total_kmf_snapshot)}</td>
@@ -143,10 +143,10 @@
                     <td class="scv-mono" style="color:#d97706">${_fmt(c.remaining_kmf)}</td>
                     <td>
                       <div class="scv-progress-bg"><div class="scv-progress-fill" style="width:${pct}%"></div></div>
-                      <div style="font-size:10px;color:var(--text-secondary);margin-top:2px">${pct}%</div>
+                      <div style="font-size:var(--fs-xs);color:var(--text-secondary);margin-top:2px">${pct}%</div>
                     </td>
                     <td>${c.contributors_count||0} / ${c.contributions_total_count||0}</td>
-                    <td style="font-size:12px">${_date(c.expires_at)}</td>
+                    <td style="font-size:var(--fs-sm)">${_date(c.expires_at)}</td>
                   </tr>`;
               }).join('')}
             </tbody>
@@ -195,7 +195,7 @@
           <div class="scv-section-title">🛒 Items snapshot (${d.items.length})</div>
           ${d.items.map(it => `
             <div class="scv-list-row">
-              <div><strong>${_esc(it.product_name_snapshot)}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${_esc(it.product_category_snapshot||'')}</span></div>
+              <div><strong>${_esc(it.product_name_snapshot)}</strong><br><span style="font-size:var(--fs-xs);color:var(--text-secondary)">${_esc(it.product_category_snapshot||'')}</span></div>
               <div>×${it.quantity} @ ${_fmt(it.unit_price_kmf_snapshot)}</div>
               <div class="scv-mono"><strong>${_fmt(it.line_total_kmf_snapshot)}</strong></div>
             </div>`).join('')}
@@ -209,14 +209,14 @@
               <div class="scv-list-row">
                 <div>
                   <strong>${_esc(co.contributor_name)}</strong><br>
-                  <span style="font-size:11px;color:var(--text-secondary)">${_esc(co.contributor_email)}</span>
-                  ${co.message?`<br><span style="font-size:11px;font-style:italic">« ${_esc(co.message)} »</span>`:''}
+                  <span style="font-size:var(--fs-xs);color:var(--text-secondary)">${_esc(co.contributor_email)}</span>
+                  ${co.message?`<br><span style="font-size:var(--fs-xs);font-style:italic">« ${_esc(co.message)} »</span>`:''}
                 </div>
                 <div>
-                  <span style="font-size:10px;padding:2px 6px;border-radius:4px;background:var(--bg-secondary)">${_esc(co.status)}</span><br>
-                  <span style="font-size:11px;color:var(--text-secondary)">${co.paid_at?_dt(co.paid_at):'—'}</span>
+                  <span style="font-size:var(--fs-xs);padding:2px 6px;border-radius:4px;background:var(--bg-secondary)">${_esc(co.status)}</span><br>
+                  <span style="font-size:var(--fs-xs);color:var(--text-secondary)">${co.paid_at?_dt(co.paid_at):'—'}</span>
                 </div>
-                <div class="scv-mono">${_fmt(co.amount_kmf)}<br><span style="font-size:10px;color:var(--text-secondary)">${co.amount_paid} ${co.currency_paid}</span></div>
+                <div class="scv-mono">${_fmt(co.amount_kmf)}<br><span style="font-size:var(--fs-xs);color:var(--text-secondary)">${co.amount_paid} ${co.currency_paid}</span></div>
               </div>`).join('')}
         </div>
 

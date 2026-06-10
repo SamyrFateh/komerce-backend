@@ -28,34 +28,34 @@
       .simv-banner-status{font-size:15px;font-weight:700}
       .simv-banner-status.running{color:#16a34a}
       .simv-banner-status.stopped{color:var(--text-secondary)}
-      .simv-banner-meta{font-size:12px;color:var(--text-secondary);margin-top:2px}
+      .simv-banner-meta{font-size:var(--fs-sm);color:var(--text-secondary);margin-top:2px}
       .simv-banner-actions{display:flex;gap:8px}
       .simv-section{background:var(--bg-card);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
       .simv-section h3{font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:12px}
       .simv-config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-      .simv-config-grid label{font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;font-weight:600}
+      .simv-config-grid label{font-size:var(--fs-xs);color:var(--text-secondary);display:block;margin-bottom:4px;font-weight:600}
       .simv-config-grid input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-card);color:var(--text-primary);font-family:inherit;box-sizing:border-box}
       .simv-config-grid input:focus{border-color:#3b82f6;outline:none}
-      .simv-hint{font-size:10px;color:var(--text-secondary);margin-top:2px}
+      .simv-hint{font-size:var(--fs-xs);color:var(--text-secondary);margin-top:2px}
       .simv-scen-group{border-radius:8px;padding:10px 12px;margin-bottom:8px}
-      .simv-scen-group-title{font-size:12px;font-weight:700;margin-bottom:6px}
+      .simv-scen-group-title{font-size:var(--fs-sm);font-weight:700;margin-bottom:6px}
       .simv-scen-list{display:flex;flex-wrap:wrap;gap:4px}
-      .simv-scen-list label{display:flex;align-items:center;gap:4px;background:var(--bg-card);padding:4px 9px;border-radius:6px;font-size:12px;cursor:pointer;min-width:140px;border:1px solid var(--border)}
+      .simv-scen-list label{display:flex;align-items:center;gap:4px;background:var(--bg-card);padding:var(--sp-1) var(--sp-3);border-radius:6px;font-size:var(--fs-sm);cursor:pointer;min-width:140px;border:1px solid var(--border)}
       .simv-scen-list label:hover{background:var(--bg-secondary)}
       .simv-presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
       .simv-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
       .simv-kpi{background:var(--bg-card);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
       .simv-kpi .num{font-size:26px;font-weight:700;color:var(--text-primary)}
-      .simv-kpi .lbl{font-size:11px;color:var(--text-secondary);margin-top:4px}
+      .simv-kpi .lbl{font-size:var(--fs-xs);color:var(--text-secondary);margin-top:4px}
       .simv-kpi.green .num{color:#16a34a}
       .simv-kpi.red .num{color:#dc2626}
       .simv-kpi.purple .num{color:#7c3aed}
       .simv-kpi.amber .num{color:#d97706}
       .simv-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
-      .simv-table th{text-align:left;padding:8px;border-bottom:2px solid var(--border);font-size:11px;color:var(--text-secondary);text-transform:uppercase}
+      .simv-table th{text-align:left;padding:8px;border-bottom:2px solid var(--border);font-size:var(--fs-xs);color:var(--text-secondary);text-transform:uppercase}
       .simv-table td{padding:8px;border-bottom:1px solid var(--border)}
       .simv-table tr:last-child td{border-bottom:none}
-      .simv-journal{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11px;max-height:400px;overflow-y:auto;background:#0f172a;color:#e2e8f0;border-radius:8px;padding:12px;margin-top:8px}
+      .simv-journal{font-family:ui-monospace,SFMono-Regular,monospace;font-size:var(--fs-xs);max-height:400px;overflow-y:auto;background:#0f172a;color:#e2e8f0;border-radius:8px;padding:12px;margin-top:8px}
       .simv-journal .jline{margin-bottom:3px}
       .simv-journal .jline.ok{color:#4ade80}
       .simv-journal .jline.err{color:#f87171}
@@ -183,7 +183,7 @@
           </div>
 
           <div style="margin-top:16px">
-            <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-bottom:8px">Scénarios actifs</div>
+            <div style="font-size:var(--fs-sm);color:var(--text-secondary);font-weight:600;margin-bottom:8px">Scénarios actifs</div>
             ${SCENARIOS.map(g => `
               <div class="simv-scen-group" style="background:${g.bg};border:1px solid ${g.color}33;margin-bottom:8px">
                 <div class="simv-scen-group-title" style="color:${g.color}">${g.group}</div>
@@ -198,9 +198,9 @@
           </div>
 
           <div class="simv-presets">
-            <button class="simv-btn simv-btn-ghost" id="simv-preset-minimal" style="font-size:12px">🟢 Minimal</button>
-            <button class="simv-btn simv-btn-ghost" id="simv-preset-realistic" style="font-size:12px">🟡 Réaliste</button>
-            <button class="simv-btn simv-btn-ghost" id="simv-preset-chaos" style="font-size:12px">🔴 Chaos total</button>
+            <button class="simv-btn simv-btn-ghost" id="simv-preset-minimal" style="font-size:var(--fs-sm)">🟢 Minimal</button>
+            <button class="simv-btn simv-btn-ghost" id="simv-preset-realistic" style="font-size:var(--fs-sm)">🟡 Réaliste</button>
+            <button class="simv-btn simv-btn-ghost" id="simv-preset-chaos" style="font-size:var(--fs-sm)">🔴 Chaos total</button>
           </div>
         </div>`;
     }
@@ -245,7 +245,7 @@
       <div class="simv-section">
         <h3 style="display:flex;align-items:center;justify-content:space-between">
           📋 Journal
-          <button class="simv-btn simv-btn-ghost" style="font-size:12px" id="simv-journal-load">Charger tout</button>
+          <button class="simv-btn simv-btn-ghost" style="font-size:var(--fs-sm)" id="simv-journal-load">Charger tout</button>
         </h3>
         <div class="simv-journal" id="simv-journal">
           ${status.recent_journal && status.recent_journal.length ? _renderJournal(status.recent_journal) : '<span style="color:#94a3b8">Aucune entrée.</span>'}

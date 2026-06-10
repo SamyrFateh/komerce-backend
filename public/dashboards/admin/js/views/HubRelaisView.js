@@ -84,30 +84,31 @@
     return `${Math.floor(h / 24)}j`;
   }
 
+  // ── Escape helper (XSS guard for error messages) ─────────────────────────
+
+  function esc(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   // ── Shared UI primitives ──────────────────────────────────────────────────
 
   function kpiChip(count, color, label) {
     const active = count > 0;
-    return `<span style="
-      display:inline-flex;align-items:center;gap:4px;padding:3px 10px;
-      border-radius:12px;font-size:12px;font-weight:600;
-      background:${active ? color + '18' : 'var(--surface-2,#f1f5f9)'};
-      color:${active ? color : 'var(--text-tertiary,#94a3b8)'}">
+    return `<span class="hr-kpi-chip" style="background:${active ? color + '18' : 'var(--surface-2,#f1f5f9)'};color:${active ? color : 'var(--text-tertiary,#94a3b8)'}">
       ${label} <b>${count}</b>
     </span>`;
   }
 
   function emptyState(text = '✅ Rien à traiter') {
-    return `<div style="padding:20px;text-align:center;color:var(--text-tertiary,#94a3b8);font-size:13px">${text}</div>`;
+    return `<div class="hr-empty-state">${text}</div>`;
   }
 
   function alertChip(icon, label, count, color) {
     if (!count) return '';
-    return `<div style="
-      display:flex;align-items:center;gap:8px;padding:8px 12px;
-      background:${color}0a;border:1px solid ${color}30;border-radius:8px;
-      margin-bottom:6px;font-size:13px">
-      <span>${icon}</span><span style="flex:1">${label}</span>
+    return `<div class="hr-alert-chip" style="background:${color}0a;border-color:${color}30">
+      <span>${icon}</span><span class="hr-alert-chip-label">${label}</span>
       <strong style="color:${color}">${count}</strong>
     </div>`;
   }
@@ -134,7 +135,7 @@
       btn.style.background        = active ? `${t.color}0a` : 'transparent';
       btn.style.color             = active ? t.color : 'var(--text-secondary,#64748b)';
       const badge = cnt > 0
-        ? `<span style="background:${t.color};color:#fff;border-radius:8px;padding:1px 7px;font-size:11px;margin-left:5px">${cnt}</span>`
+        ? `<span style="background:${t.color};color:#fff;border-radius:8px;padding:1px 7px;font-size:var(--fs-sm);margin-left:5px">${cnt}</span>`
         : '';
       btn.innerHTML = `${t.icon} ${t.label}${badge}`;
     });
@@ -186,12 +187,10 @@
   function denseTable(headers, rowsHtml) {
     if (!rowsHtml) return emptyState();
     return `
-      <div style="overflow-x:auto">
-        <table class="kmc-table" style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:var(--surface-2,#f8fafc)">
-            ${headers.map(h => `<th style="padding:6px 10px;text-align:left;font-size:11px;
-              color:var(--text-tertiary,#94a3b8);font-weight:600;text-transform:uppercase;
-              border-bottom:1px solid var(--border,#e2e8f0)">${h}</th>`).join('')}
+      <div class="hr-table-wrap">
+        <table class="data-table hr-dense-table">
+          <thead><tr>
+            ${headers.map(h => `<th>${h}</th>`).join('')}
           </tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
@@ -202,32 +201,28 @@
     let items = [];
     try { items = typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []); } catch (_) {}
     const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${o.relais_island || '—'}`;
-    return `<tr style="border-bottom:1px solid var(--border,#f1f5f9)">
-      <td style="padding:8px 10px;font-weight:700;color:#1e40af;font-size:13px;white-space:nowrap">${o.reference}</td>
-      <td style="padding:8px 10px;font-size:13px">${o.customer_name || 'Client'}</td>
-      <td style="padding:8px 10px;font-size:12px;color:var(--text-secondary,#64748b)">${desc}</td>
-      <td style="padding:8px 10px;font-size:11px;color:var(--text-tertiary,#94a3b8);white-space:nowrap">${fmtAgo(o.created_at)}</td>
-      <td style="padding:8px 6px;text-align:right">
+    return `<tr>
+      <td class="hr-td-ref">${o.reference}</td>
+      <td>${o.customer_name || 'Client'}</td>
+      <td class="hr-td-secondary">${desc}</td>
+      <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
+      <td class="hr-td-action">
         <button data-action="${btnDataAction}" data-ref="${o.reference}"
-          class="btn-action" style="padding:5px 12px;border:none;border-radius:6px;
-          font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
-          background:#b4530918;color:#b45309">${btnLabel}</button>
+          class="btn btn-sm hr-btn-action">${btnLabel}</button>
       </td>
     </tr>`;
   }
 
   function parcelRow(p, btnLabel, btnDataAction, btnColor) {
     const desc = `${p.main_order_ref || '—'} · ${p.nb_items || 0} art. · ${p.destination_island || p.relais_island || '—'}`;
-    return `<tr style="border-bottom:1px solid var(--border,#f1f5f9)">
-      <td style="padding:8px 10px;font-weight:700;color:#1e40af;font-size:13px;white-space:nowrap">${p.reference}</td>
-      <td style="padding:8px 10px;font-size:13px">${p.recipient_name || 'Client'}</td>
-      <td style="padding:8px 10px;font-size:12px;color:var(--text-secondary,#64748b)">${desc}</td>
-      <td style="padding:8px 10px;font-size:11px;color:var(--text-tertiary,#94a3b8)"></td>
-      <td style="padding:8px 6px;text-align:right">
+    return `<tr>
+      <td class="hr-td-ref">${p.reference}</td>
+      <td>${p.recipient_name || 'Client'}</td>
+      <td class="hr-td-secondary">${desc}</td>
+      <td class="hr-td-muted"></td>
+      <td class="hr-td-action">
         <button data-action="${btnDataAction}" data-ref="${p.reference}"
-          class="btn-action" style="padding:5px 12px;border:none;border-radius:6px;
-          font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
-          background:${btnColor}18;color:${btnColor}">${btnLabel}</button>
+          class="btn btn-sm hr-btn-action" style="background:${btnColor}18;color:${btnColor}">${btnLabel}</button>
       </td>
     </tr>`;
   }
@@ -235,15 +230,15 @@
   // ── Mini preview table (bottom forecast panels) ───────────────────────────
 
   function miniTable(items, cols, limit = 8) {
-    if (!items || !items.length) return `<div style="color:var(--text-tertiary,#94a3b8);font-size:12px;padding:6px">—</div>`;
-    let h = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    if (!items || !items.length) return `<div class="hr-muted-sm" style="padding:6px">—</div>`;
+    let h = '<table class="hr-mini-table">';
     items.slice(0, limit).forEach((item, i) => {
-      h += `<tr style="border-bottom:1px solid var(--surface-2,#f8fafc);${i % 2 ? 'background:#fafbfd' : ''}">`;
-      cols.forEach(col => { h += `<td style="padding:4px 8px">${col(item)}</td>`; });
+      h += `<tr class="${i % 2 ? 'hr-row-alt' : ''}">`;
+      cols.forEach(col => { h += `<td>${col(item)}</td>`; });
       h += '</tr>';
     });
     if (items.length > limit) {
-      h += `<tr><td colspan="99" style="padding:4px 8px;color:var(--text-tertiary,#94a3b8);font-size:11px">+ ${items.length - limit} autres…</td></tr>`;
+      h += `<tr><td colspan="99" class="hr-muted-sm hr-td-more">+ ${items.length - limit} autres…</td></tr>`;
     }
     return h + '</table>';
   }
@@ -254,45 +249,35 @@
 
   function buildHubSkeleton() {
     const tabsHtml = TABS_HUB.map(t =>
-      `<button class="ct-tab" data-tab="${t.id}" style="
-        padding:8px 16px;border:none;border-bottom:3px solid transparent;
-        background:transparent;color:var(--text-secondary,#64748b);
-        font-size:13px;font-weight:600;cursor:pointer;transition:all .15s">
-        ${t.icon} ${t.label}
-      </button>`
+      `<button class="ct-tab hr-tab-btn" data-tab="${t.id}">${t.icon} ${t.label}</button>`
     ).join('');
 
     const panelsHtml = TABS_HUB.map(t =>
-      `<div class="hr-panel" data-panel="${t.id}" style="display:none;
-        background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);
-        border-top:none;border-radius:0 0 8px 8px;padding:8px">
-        <div style="color:var(--text-tertiary,#94a3b8);padding:20px;text-align:center">Chargement…</div>
-      </div>`
+      `<div class="hr-panel" data-panel="${t.id}"><div class="hr-loading-msg">Chargement…</div></div>`
     ).join('');
 
     return `
-      <div class="hr-hub-wrapper" style="padding:12px 0">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div class="hr-hub-wrapper">
+        <div class="hr-section-topbar">
           <div>
-            <h2 style="margin:0;font-size:20px">🏭 Hub</h2>
-            <span style="color:var(--text-secondary,#64748b);font-size:12px">Commander · Emballer · Expédier</span>
+            <h2 class="hr-section-title">🏭 Hub</h2>
+            <span class="hr-section-sub">Commander · Emballer · Expédier</span>
           </div>
-          <button class="btn-refresh-hub" style="padding:5px 12px;border:1px solid var(--border,#e2e8f0);
-            border-radius:6px;cursor:pointer;background:var(--surface,#fff);font-size:12px">🔄</button>
+          <button class="btn btn-secondary btn-sm btn-refresh-hub">🔄</button>
         </div>
-        <div class="hub-kpi-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
-        <div class="hr-tabbar" style="display:flex;border-bottom:1px solid var(--border,#e2e8f0)">
+        <div class="hub-kpi-chips hr-kpi-row"></div>
+        <div class="hr-tabbar">
           ${tabsHtml}
         </div>
         ${panelsHtml}
-        <div class="hub-bottom-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div class="hub-bottom-grid hr-bottom-grid">
           <div class="card hub-forecast" style="padding:12px">
-            <h4 style="margin:0 0 10px;font-size:14px;color:#6366f1">📋 Prévisionnel</h4>
-            <div class="forecast-content" style="color:var(--text-tertiary);font-size:12px">Chargement…</div>
+            <h4 class="hr-card-title" style="color:#6366f1">📋 Prévisionnel</h4>
+            <div class="forecast-content hr-muted-sm">Chargement…</div>
           </div>
           <div class="card hub-alerts" style="padding:12px">
-            <h4 style="margin:0 0 10px;font-size:14px;color:#ef4444">🚨 Alertes</h4>
-            <div class="alerts-content" style="color:var(--text-tertiary);font-size:12px">Chargement…</div>
+            <h4 class="hr-card-title" style="color:#ef4444">🚨 Alertes</h4>
+            <div class="alerts-content hr-muted-sm">Chargement…</div>
           </div>
         </div>
       </div>`;
@@ -348,16 +333,11 @@
     );
 
     const panelRepartir = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:12px;color:var(--text-secondary,#64748b)">
-          Répartition automatique par destination
-        </span>
-        <button class="btn-auto-distribute" style="padding:5px 12px;border:none;border-radius:6px;
-          background:#3b82f6;color:#fff;font-size:12px;font-weight:600;cursor:pointer">
-          🤖 Répartir maintenant
-        </button>
+      <div class="hr-repartir-bar">
+        <span class="hr-td-secondary">Répartition automatique par destination</span>
+        <button class="btn btn-primary btn-auto-distribute">🤖 Répartir maintenant</button>
       </div>
-      <div class="distribution-panel" style="color:var(--text-tertiary);font-size:13px;text-align:center;padding:12px">
+      <div class="distribution-panel hr-dist-loading">
         ⏳ Chargement répartition…
       </div>`;
 
@@ -382,21 +362,21 @@
     // ── Forecast ──
     const enRoute = [...shippedP, ...transitP];
     wrapperEl.querySelector('.forecast-content').innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--text-tertiary,#94a3b8);margin-bottom:4px">🛍️ Attente paiement (${pending.length})</div>
+      <div class="hr-forecast-label">🛍️ Attente paiement (${pending.length})</div>
       ${miniTable(pending, [
         o => `<strong>${o.reference}</strong>`,
         o => o.customer_name || '—',
         o => o.payment_mode === 'stripe_eur' ? '💳' : '💰',
         o => fmtAgo(o.created_at),
       ])}
-      <div style="font-size:12px;font-weight:600;color:var(--text-tertiary,#94a3b8);margin:8px 0 4px">📋 À répartir (${ordered.length})</div>
+      <div class="hr-forecast-label">📋 À répartir (${ordered.length})</div>
       ${miniTable(ordered, [
         o => `<strong>${o.reference}</strong>`,
         o => o.customer_name || '—',
         o => `${o.nb_items || '—'} art.`,
         o => fmtAgo(o.created_at),
       ])}
-      <div style="font-size:12px;font-weight:600;color:var(--text-tertiary,#94a3b8);margin:8px 0 4px">🚀 En route (${enRoute.length})</div>
+      <div class="hr-forecast-label">🚀 En route (${enRoute.length})</div>
       ${miniTable(enRoute, [
         p => `<strong>${p.reference}</strong>`,
         p => `🏝️ ${p.destination_island || '—'}`,
@@ -405,7 +385,7 @@
 
     // ── Alertes ──
     wrapperEl.querySelector('.alerts-content').innerHTML = alertCount === 0
-      ? '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>'
+      ? '<div class="hr-no-alert">✅ Aucune alerte</div>'
       : [
           alertChip('💸', 'Paiements expirés >36h', expired36h.length, '#e91e63'),
           alertChip('🛒', 'Confirmés bloqués >48h', stuck48h.length,   '#ef4444'),
@@ -470,7 +450,7 @@
       const totalOrders = parcels.reduce((s, p) => s + (p.orders_count || 0), 0);
       const totalItems  = parcels.reduce((s, p) => s + (p.items_count  || 0), 0);
 
-      let html = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      let html = `<div class="hr-kpi-row">
         ${kpiChip(parcels.length,    '#3b82f6', '📦 Colis')}
         ${kpiChip(totalOrders,       '#8b5cf6', '🛍️ Cmds')}
         ${kpiChip(totalItems,        '#22c55e', '📋 Articles')}
@@ -488,35 +468,31 @@
         const stColor = st === 'draft' ? '#880e4f' : st === 'preparation' ? '#1e40af' : '#065f46';
         const stBg    = st === 'draft' ? '#fce4ec' : st === 'preparation' ? '#dbeafe'  : '#d1fae5';
         const shipBtn = st === 'preparation'
-          ? `<button data-action="dist-ship" data-ref="${p.reference}" style="padding:3px 10px;
-              border:none;border-radius:6px;background:#7c3aed;color:#fff;
-              font-size:11px;font-weight:600;cursor:pointer">✈️ Expédier</button>`
+          ? `<button data-action="dist-ship" data-ref="${p.reference}" class="btn btn-primary btn-sm">✈️ Expédier</button>`
           : '';
 
         const ordRows = orders.map(o => `
-          <tr style="border-bottom:1px solid var(--surface-2,#f1f5f9)">
-            <td style="padding:4px 8px;font-weight:600;color:#1e40af;font-size:12px">${o.ref || '—'}</td>
-            <td style="padding:4px 8px;font-size:12px">${o.customer || '—'}</td>
-            <td style="padding:4px 8px;font-size:12px;color:var(--text-secondary)">${o.items_count || o.items || '?'} art.</td>
-            <td style="padding:4px 8px;font-size:12px;text-align:right">${fmtKmf(o.total_kmf || o.total || 0)}</td>
+          <tr>
+            <td class="hr-td-ref-sm">${o.ref || '—'}</td>
+            <td>${o.customer || '—'}</td>
+            <td class="hr-td-secondary">${o.items_count || o.items || '?'} art.</td>
+            <td class="hr-td-right">${fmtKmf(o.total_kmf || o.total || 0)}</td>
           </tr>`).join('');
 
         html += `
-          <div style="background:var(--surface-2,#f8fafc);border:1px solid var(--border,#e2e8f0);
-            border-radius:8px;padding:10px;margin-bottom:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <strong style="color:#1e40af;font-size:14px">📦 ${p.reference}</strong>
-                <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">
+          <div class="hr-dist-card">
+            <div class="hr-dist-card-head">
+              <div class="hr-dist-card-info">
+                <strong class="hr-dist-ref">📦 ${p.reference}</strong>
+                <span class="hr-dist-status-badge" style="background:${stBg};color:${stColor}">
                   ${p.relais_name || p.relais_island || p.destination || '—'}
                 </span>
-                <span style="color:var(--text-secondary);font-size:11px">
+                <span class="hr-td-secondary">
                   ${p.orders_count || 0} cmd · ${p.items_count || 0} art. · ${fmtKmf(p.total_kmf || 0)}
                 </span>
               </div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <span style="font-size:11px;padding:2px 8px;border-radius:10px;
-                  background:${stBg};color:${stColor}">${st}</span>
+              <div class="hr-dist-card-actions">
+                <span class="hr-dist-status-badge" style="background:${stBg};color:${stColor}">${st}</span>
                 ${shipBtn}
               </div>
             </div>
@@ -527,34 +503,29 @@
       // Saturation alerts
       saturated.forEach(s => {
         html += `
-          <div style="background:#fce4ec;border:2px solid #e91e63;border-radius:8px;
-            padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
-            <span style="font-size:20px">🚨</span>
+          <div class="hr-alert-saturation">
+            <span class="hr-alert-saturation-icon">🚨</span>
             <div>
               <strong style="color:#880e4f">${s.destination} — Capacité max atteinte</strong>
-              <div style="font-size:12px;color:#880e4f">
+              <div style="font-size:var(--fs-sm);color:#880e4f">
                 ${s.open_parcels} colis ouverts (max ${data.limits?.MAX_OPEN_PARCELS_PER_DEST || 3}),
                 ${s.queued_orders} commande(s) en file
               </div>
-              <div style="font-size:12px;color:#c62828;font-weight:600;margin-top:2px">
-                ✈️ Expédiez les colis en cours pour débloquer
-              </div>
+              <div class="hr-alert-saturation-cta">✈️ Expédiez les colis en cours pour débloquer</div>
             </div>
           </div>`;
       });
 
       if (unassigned.length) {
         html += `
-          <div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:8px;padding:10px;margin-top:8px">
-            <div style="font-size:12px;font-weight:600;color:#880e4f;margin-bottom:6px">
-              ⏳ ${unassigned.length} commande(s) non assignée(s)
-            </div>
+          <div class="hr-alert-unassigned">
+            <div class="hr-alert-unassigned-title">⏳ ${unassigned.length} commande(s) non assignée(s)</div>
             ${unassigned.map(o => `
-              <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px">
+              <div class="hr-unassigned-row">
                 <span><strong>${o.reference}</strong> — ${o.customer_name || '?'}</span>
-                <span style="color:var(--text-secondary)">${o.items_count || '?'} art. · ${o.relais_name || o.relais_island || '?'}</span>
+                <span class="hr-td-secondary">${o.items_count || '?'} art. · ${o.relais_name || o.relais_island || '?'}</span>
               </div>`).join('')}
-            <div style="margin-top:6px;font-size:11px;color:#880e4f">
+            <div class="hr-alert-unassigned-hint">
               Cliquez « 🤖 Répartir maintenant » pour les assigner automatiquement.
             </div>
           </div>`;
@@ -573,7 +544,7 @@
       });
 
     } catch (e) {
-      panelEl.innerHTML = `<div style="color:#ef4444;font-size:12px">❌ ${esc(e.message)}</div>`; // FRESH-104
+      panelEl.innerHTML = `<div style="color:#ef4444;font-size:var(--fs-sm)">❌ ${esc(e.message)}</div>`; // FRESH-104
     }
   }
 
@@ -583,45 +554,35 @@
 
   function buildRelaisSkeleton() {
     const tabsHtml = TABS_RELAIS.map(t =>
-      `<button class="ct-tab" data-tab="${t.id}" style="
-        padding:8px 16px;border:none;border-bottom:3px solid transparent;
-        background:transparent;color:var(--text-secondary,#64748b);
-        font-size:13px;font-weight:600;cursor:pointer;transition:all .15s">
-        ${t.icon} ${t.label}
-      </button>`
+      `<button class="ct-tab hr-tab-btn" data-tab="${t.id}">${t.icon} ${t.label}</button>`
     ).join('');
 
     const panelsHtml = TABS_RELAIS.map(t =>
-      `<div class="hr-panel" data-panel="${t.id}" style="display:none;
-        background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);
-        border-top:none;border-radius:0 0 8px 8px;padding:8px">
-        <div style="color:var(--text-tertiary,#94a3b8);padding:20px;text-align:center">Chargement…</div>
-      </div>`
+      `<div class="hr-panel" data-panel="${t.id}"><div class="hr-loading-msg">Chargement…</div></div>`
     ).join('');
 
     return `
-      <div class="hr-relais-wrapper" style="padding:12px 0">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div class="hr-relais-wrapper">
+        <div class="hr-section-topbar">
           <div>
-            <h2 style="margin:0;font-size:20px">📦 Relais</h2>
-            <span style="color:var(--text-secondary,#64748b);font-size:12px">Encaisser · Réceptionner · Distribuer</span>
+            <h2 class="hr-section-title">📦 Relais</h2>
+            <span class="hr-section-sub">Encaisser · Réceptionner · Distribuer</span>
           </div>
-          <button class="btn-refresh-relais" style="padding:5px 12px;border:1px solid var(--border,#e2e8f0);
-            border-radius:6px;cursor:pointer;background:var(--surface,#fff);font-size:12px">🔄</button>
+          <button class="btn btn-secondary btn-sm btn-refresh-relais">🔄</button>
         </div>
-        <div class="relais-kpi-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
-        <div class="hr-tabbar" style="display:flex;border-bottom:1px solid var(--border,#e2e8f0)">
+        <div class="relais-kpi-chips hr-kpi-row"></div>
+        <div class="hr-tabbar">
           ${tabsHtml}
         </div>
         ${panelsHtml}
-        <div class="relais-bottom-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div class="relais-bottom-grid hr-bottom-grid">
           <div class="card relais-forecast" style="padding:12px">
-            <h4 style="margin:0 0 10px;font-size:14px;color:#6366f1">📋 Prévisionnel</h4>
-            <div class="forecast-content" style="color:var(--text-tertiary);font-size:12px">Chargement…</div>
+            <h4 class="hr-card-title" style="color:#6366f1">📋 Prévisionnel</h4>
+            <div class="forecast-content hr-muted-sm">Chargement…</div>
           </div>
           <div class="card relais-alerts" style="padding:12px">
-            <h4 style="margin:0 0 10px;font-size:14px;color:#ef4444">🚨 Alertes</h4>
-            <div class="alerts-content" style="color:var(--text-tertiary);font-size:12px">Chargement…</div>
+            <h4 class="hr-card-title" style="color:#ef4444">🚨 Alertes</h4>
+            <div class="alerts-content hr-muted-sm">Chargement…</div>
           </div>
         </div>
       </div>`;
@@ -672,16 +633,14 @@
       ['Réf', 'Client', 'Détails', 'Âge', ''],
       cashPending.length ? cashPending.map(o => {
         const desc = `${o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)}${o.cash_code ? ` · 🔑 ${o.cash_code}` : ''}`;
-        return `<tr style="border-bottom:1px solid var(--border,#f1f5f9)">
-          <td style="padding:8px 10px;font-weight:700;color:#1e40af;font-size:13px;white-space:nowrap">${o.reference}</td>
-          <td style="padding:8px 10px;font-size:13px">${o.customer_name || 'Client'}</td>
-          <td style="padding:8px 10px;font-size:12px;color:var(--text-secondary)">${desc}</td>
-          <td style="padding:8px 10px;font-size:11px;color:var(--text-tertiary);white-space:nowrap">${fmtAgo(o.created_at)}</td>
-          <td style="padding:8px 6px;text-align:right">
+        return `<tr>
+          <td class="hr-td-ref">${o.reference}</td>
+          <td>${o.customer_name || 'Client'}</td>
+          <td class="hr-td-secondary">${desc}</td>
+          <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
+          <td class="hr-td-action">
             <button data-action="relais-confirm-cash" data-ref="${o.reference}"
-              class="btn-action" style="padding:5px 12px;border:none;border-radius:6px;
-              font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
-              background:#b4530918;color:#b45309">💰 Encaisser</button>
+              class="btn btn-sm hr-btn-action">💰 Encaisser</button>
           </td>
         </tr>`;
       }).join('') : null
@@ -698,16 +657,14 @@
       ['Colis', 'Client', 'Détails', 'Dispo', ''],
       availableP.length ? availableP.map(p => {
         const desc = `${p.nb_items || 0} art. · ${fmtKmf(p.total_kmf)}${p.pickup_code ? ` · 🔑 ${p.pickup_code}` : ''}`;
-        return `<tr style="border-bottom:1px solid var(--border,#f1f5f9)">
-          <td style="padding:8px 10px;font-weight:700;color:#1e40af;font-size:13px;white-space:nowrap">${p.reference}</td>
-          <td style="padding:8px 10px;font-size:13px">${p.recipient_name || 'Client'}</td>
-          <td style="padding:8px 10px;font-size:12px;color:var(--text-secondary)">${desc}</td>
-          <td style="padding:8px 10px;font-size:11px;color:var(--text-tertiary);white-space:nowrap">${fmtAgo(p.updated_at || p.created_at)}</td>
-          <td style="padding:8px 6px;text-align:right">
+        return `<tr>
+          <td class="hr-td-ref">${p.reference}</td>
+          <td>${p.recipient_name || 'Client'}</td>
+          <td class="hr-td-secondary">${desc}</td>
+          <td class="hr-td-muted hr-td-nowrap">${fmtAgo(p.updated_at || p.created_at)}</td>
+          <td class="hr-td-action">
             <button data-action="relais-collected" data-ref="${p.reference}"
-              class="btn-action" style="padding:5px 12px;border:none;border-radius:6px;
-              font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
-              background:#06504618;color:#065f46">✅ Remis</button>
+              class="btn btn-sm hr-btn-action" style="background:var(--kmc-green-bg,#06504618);color:var(--kmc-green,#065f46)">✅ Remis</button>
           </td>
         </tr>`;
       }).join('') : null
@@ -727,14 +684,14 @@
 
     // ── Forecast ──
     wrapperEl.querySelector('.forecast-content').innerHTML = `
-      <div style="font-size:12px;font-weight:600;color:var(--text-tertiary,#94a3b8);margin-bottom:4px">✈️ En route (${shippedP.length})</div>
+      <div class="hr-forecast-label">✈️ En route (${shippedP.length})</div>
       ${miniTable(shippedP, [
         p => `<strong>${p.reference}</strong>`,
         p => p.recipient_name || '—',
         p => `🏝️ ${p.destination_island || '—'}`,
         p => fmtAgo(p.shipped_at || p.created_at),
       ])}
-      <div style="font-size:12px;font-weight:600;color:var(--text-tertiary,#94a3b8);margin:8px 0 4px">✅ Récentes (${collectedP.length})</div>
+      <div class="hr-forecast-label">✅ Récentes (${collectedP.length})</div>
       ${miniTable(collectedP, [
         p => `<strong>${p.reference}</strong>`,
         p => p.recipient_name || '—',
@@ -744,7 +701,7 @@
 
     // ── Alertes ──
     wrapperEl.querySelector('.alerts-content').innerHTML = alertCount === 0
-      ? '<div style="color:#22c55e;text-align:center;padding:20px;font-size:13px">✅ Aucune alerte</div>'
+      ? '<div class="hr-no-alert">✅ Aucune alerte</div>'
       : [
           alertChip('💸', 'Cash expiré >36h',      cashExpired.length,   '#e91e63'),
           alertChip('⏰', 'Non collectés >72h',     uncollected72.length, '#ef4444'),
@@ -801,11 +758,113 @@
     rootEl.innerHTML = `
       <style>
         @keyframes kmc-toast-in { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
-        .hr-mode-btn { transition: all .15s; }
+
+        /* ── Mode bar ── */
+        .hr-mode-bar { display:flex; border-bottom:1px solid var(--border,#e2e8f0); }
+        .hr-mode-btn { padding:14px 24px; border:none; border-bottom:3px solid transparent;
+          background:transparent; font-size:14px; font-weight:600; cursor:pointer;
+          color:var(--text-secondary,#64748b); transition:all .15s; }
         .hr-mode-btn.active {
-          border-bottom: 3px solid var(--hr-active-color, #3b82f6) !important;
-          color: var(--hr-active-color, #3b82f6) !important;
+          border-bottom-color: var(--hr-active-color, #3b82f6);
+          color: var(--hr-active-color, #3b82f6);
         }
+        .hr-mode-subtitle { font-size:var(--fs-sm); font-weight:400; opacity:.75; }
+
+        /* ── Content area ── */
+        .hr-content { padding:12px; }
+        .hr-hub-wrapper, .hr-relais-wrapper { padding:12px 0; }
+        .hr-section-topbar { display:flex; align-items:center; justify-content:space-between;
+          flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+        .hr-section-title { margin:0; font-size:20px; }
+        .hr-section-sub { color:var(--text-secondary,#64748b); font-size:var(--fs-sm); }
+
+        /* ── KPI chips ── */
+        .hr-kpi-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+        .hr-kpi-chip { display:inline-flex; align-items:center; gap:4px;
+          padding:var(--sp-1) var(--sp-3); border-radius:12px;
+          font-size:var(--fs-sm); font-weight:600; }
+
+        /* ── Tab bar ── */
+        .hr-tabbar { display:flex; border-bottom:1px solid var(--border,#e2e8f0); }
+        .hr-tab-btn { padding:8px 16px; border:none; border-bottom:3px solid transparent;
+          background:transparent; color:var(--text-secondary,#64748b);
+          font-size:var(--fs-sm); font-weight:600; cursor:pointer; transition:all .15s; }
+
+        /* ── Panels ── */
+        .hr-panel { display:none; background:var(--surface,#fff);
+          border:1px solid var(--border,#e2e8f0); border-top:none;
+          border-radius:0 0 8px 8px; padding:8px; }
+        .hr-loading-msg { color:var(--text-tertiary,#94a3b8); padding:20px; text-align:center; }
+        .hr-loading-full { text-align:center; padding:48px; color:var(--text-tertiary,#94a3b8); }
+
+        /* ── Tables ── */
+        .hr-table-wrap { overflow-x:auto; }
+        .hr-dense-table { width:100%; }
+        .hr-dense-table th { padding:6px 10px; text-align:left;
+          font-size:var(--fs-sm); color:var(--text-tertiary,#94a3b8);
+          font-weight:600; text-transform:uppercase;
+          border-bottom:1px solid var(--border,#e2e8f0);
+          background:var(--surface-2,#f8fafc); }
+        .hr-dense-table td { padding:8px 10px; border-bottom:1px solid var(--border,#f1f5f9); }
+        .hr-dense-table tr:last-child td { border-bottom:none; }
+        .hr-td-ref { font-weight:700; color:var(--kmc-blue,#1e40af); font-size:var(--fs-sm); white-space:nowrap; }
+        .hr-td-ref-sm { font-weight:600; color:var(--kmc-blue,#1e40af); font-size:var(--fs-sm); }
+        .hr-td-secondary { font-size:var(--fs-sm); color:var(--text-secondary,#64748b); }
+        .hr-td-muted { font-size:var(--fs-sm); color:var(--text-tertiary,#94a3b8); }
+        .hr-td-nowrap { white-space:nowrap; }
+        .hr-td-action { padding:8px 6px !important; text-align:right; } /* guard: data-table td override */
+        .hr-td-right { text-align:right; }
+        .hr-btn-action { background:var(--kmc-amber-bg,#b4530918); color:var(--kmc-amber,#b45309);
+          white-space:nowrap; }
+
+        /* ── Mini table ── */
+        .hr-mini-table { width:100%; border-collapse:collapse; font-size:var(--fs-sm); }
+        .hr-mini-table td { padding:var(--sp-1) var(--sp-3); }
+        .hr-row-alt { background:#fafbfd; }
+        .hr-row-alt td { border-bottom:1px solid var(--surface-2,#f8fafc); }
+        .hr-td-more { color:var(--text-tertiary,#94a3b8); }
+
+        /* ── Bottom grid (forecast / alertes) ── */
+        .hr-bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+        .hr-card-title { margin:0 0 10px; font-size:14px; }
+        .hr-muted-sm { color:var(--text-tertiary,#94a3b8); font-size:var(--fs-sm); }
+        .hr-forecast-label { font-size:var(--fs-sm); font-weight:600;
+          color:var(--text-tertiary,#94a3b8); margin-bottom:4px; display:block; margin-top:8px; }
+        .hr-no-alert { color:#22c55e; text-align:center; padding:20px; font-size:var(--fs-sm); }
+
+        /* ── Alert chips ── */
+        .hr-alert-chip { display:flex; align-items:center; gap:8px; padding:8px 12px;
+          border:1px solid; border-radius:8px; margin-bottom:6px; font-size:var(--fs-sm); }
+        .hr-alert-chip-label { flex:1; }
+        .hr-empty-state { padding:20px; text-align:center;
+          color:var(--text-tertiary,#94a3b8); font-size:var(--fs-sm); }
+
+        /* ── Répartition panel ── */
+        .hr-repartir-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .hr-dist-loading { color:var(--text-tertiary,#94a3b8); font-size:var(--fs-sm);
+          text-align:center; padding:12px; }
+        .hr-dist-card { background:var(--surface-2,#f8fafc); border:1px solid var(--border,#e2e8f0);
+          border-radius:8px; padding:10px; margin-bottom:8px; }
+        .hr-dist-card-head { display:flex; align-items:center; justify-content:space-between;
+          margin-bottom:6px; }
+        .hr-dist-card-info { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .hr-dist-card-actions { display:flex; align-items:center; gap:6px; }
+        .hr-dist-ref { color:var(--kmc-blue,#1e40af); font-size:14px; }
+        .hr-dist-status-badge { font-size:var(--fs-sm); padding:2px 8px; border-radius:10px; }
+
+        /* ── Saturation & unassigned alerts ── */
+        .hr-alert-saturation { background:#fce4ec; border:2px solid #e91e63;
+          border-radius:8px; padding:10px 14px; margin-bottom:10px;
+          display:flex; align-items:center; gap:8px; }
+        .hr-alert-saturation-icon { font-size:20px; }
+        .hr-alert-saturation-cta { font-size:var(--fs-sm); color:#c62828; font-weight:600; margin-top:2px; }
+        .hr-alert-unassigned { background:#fce4ec; border:1px solid #f48fb1;
+          border-radius:8px; padding:10px; margin-top:8px; }
+        .hr-alert-unassigned-title { font-size:var(--fs-sm); font-weight:600;
+          color:#880e4f; margin-bottom:6px; }
+        .hr-alert-unassigned-hint { margin-top:6px; font-size:var(--fs-sm); color:#880e4f; }
+        .hr-unassigned-row { display:flex; justify-content:space-between;
+          padding:3px 0; font-size:var(--fs-sm); }
       </style>
 
       <h1 class="page-title">Hub &amp; Relais</h1>
@@ -814,20 +873,16 @@
       <section class="page-section">
         <div class="card" style="padding:0">
           <!-- Mode switcher -->
-          <div class="hr-mode-bar" style="display:flex;border-bottom:1px solid var(--border,#e2e8f0)">
+          <div class="hr-mode-bar">
             ${MODES.map(m => `
-              <button class="hr-mode-btn" data-mode="${m.id}"
-                style="--hr-active-color:${m.color};
-                  padding:14px 24px;border:none;border-bottom:3px solid transparent;
-                  background:transparent;font-size:14px;font-weight:600;cursor:pointer;
-                  color:var(--text-secondary,#64748b)">
+              <button class="hr-mode-btn" data-mode="${m.id}" style="--hr-active-color:${m.color}">
                 ${m.icon} ${m.label}
-                <div style="font-size:11px;font-weight:400;opacity:.75">${m.subtitle}</div>
+                <div class="hr-mode-subtitle">${m.subtitle}</div>
               </button>`).join('')}
           </div>
           <!-- Dynamic content -->
-          <div class="hr-content" style="padding:12px">
-            <div style="text-align:center;padding:48px;color:var(--text-tertiary,#94a3b8)">Chargement…</div>
+          <div class="hr-content">
+            <div class="hr-loading-full">Chargement…</div>
           </div>
         </div>
       </section>`;

@@ -1,0 +1,158 @@
+/* ============================================================
+   ActionCenterView — classes locales ac-*
+   À insérer dans le <style> en tête de render() ou dans
+   admin/css/views/action-center.css
+   ============================================================ */
+
+/* ── KPI bar ─────────────────────────────────────────────── */
+.ac-kpis-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.ac-kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  min-width: 140px;
+}
+
+.ac-kpi-icon  { font-size: 1.5rem; }
+
+.ac-kpi-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ac-kpi-label {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+/* ── Refresh bar ─────────────────────────────────────────── */
+.ac-refresh-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ac-refresh-status {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary, #64748b);
+}
+
+/* ── Signal card ─────────────────────────────────────────── */
+/* border-left-color est injecté dynamiquement via style= */
+.signal-card {
+  margin-bottom: 8px;
+  background: var(--surface, #fff);
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.ac-sev-badge {
+  font-size: var(--fs-xs);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.ac-signal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ac-signal-head strong { font-size: var(--fs-sm); }
+
+.ac-signal-summary {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary, #475569);
+  margin-bottom: 6px;
+}
+
+.ac-signal-reco {
+  padding: 6px 10px;
+  background: #f0fdf4;
+  border-radius: 6px;
+  font-size: var(--fs-sm);
+  color: #16a34a;
+  margin-bottom: 8px;
+}
+
+.ac-signal-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ac-signal-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary, #94a3b8);
+}
+
+/* ── Show more ───────────────────────────────────────────── */
+.ac-show-more { margin-top: 6px; }
+
+/* ── Family block ────────────────────────────────────────── */
+/* border-left-color est injecté dynamiquement via style= */
+.ac-fam-block {
+  border-left-width: 4px;
+  border-left-style: solid;
+  padding-left: 12px;
+  margin-bottom: 20px;
+}
+
+.ac-fam-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ac-fam-emoji { font-size: 1rem; }
+
+.ac-fam-title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 700;
+}
+
+.ac-fam-count {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  /* background + color injectés dynamiquement */
+}
+
+/* ── Empty state ─────────────────────────────────────────── */
+.ac-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.ac-empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.ac-empty-sub {
+  color: var(--text-secondary, #64748b);
+  margin-top: 8px;
+}

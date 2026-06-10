@@ -115,7 +115,7 @@
 
     // ── Sous-titre ────────────────────────────────────────────────────────────
     var subtitleHTML = model.subtitle
-      ? '<div style="font-size:11px;color:var(--text-secondary,#6b7280);margin-top:4px;">' + model.subtitle + '</div>'
+      ? '<div style="font-size:var(--fs-xs);color:var(--text-secondary,#6b7280);margin-top:4px;">' + model.subtitle + '</div>'
       : '';
 
     return (
@@ -171,7 +171,7 @@
             </div>
           </form>
           <div id="product-preview" style="flex:0 0 auto;padding-top:4px;">
-            <div style="font-size:12px;color:var(--text-secondary,#6b7280);margin-bottom:8px;font-weight:600;">APERÇU</div>
+            <div style="font-size:var(--fs-sm);color:var(--text-secondary,#6b7280);margin-bottom:8px;font-weight:600;">APERÇU</div>
             <div id="preview-card">${buildPreviewHTML({}, null)}</div>
           </div>
         </div>
@@ -404,14 +404,14 @@
                style="width:40px;height:40px;object-fit:contain;border-radius:6px;background:#f3f4f6;">
           <div>
             <div style="font-weight:600;font-size:13px;">${p.name}</div>
-            <div style="font-size:11px;color:var(--text-secondary,#6b7280);">${p.category || '—'}${p.subcategory ? ' › ' + p.subcategory : ''}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text-secondary,#6b7280);">${p.category || '—'}${p.subcategory ? ' › ' + p.subcategory : ''}</div>
           </div>
         </div>
       </td>
       <td style="padding:10px 12px;text-align:right;font-weight:600;">${fmt(p.price_kmf)}</td>
       <td style="padding:10px 12px;text-align:center;">${p.stock != null ? p.stock : '—'}</td>
       <td style="padding:10px 12px;text-align:center;">
-        <span style="padding:2px 8px;border-radius:12px;font-size:12px;background:${p.is_active ? 'var(--success-bg,#dcfce7)' : 'var(--danger-bg,#fee2e2)'};color:${p.is_active ? 'var(--success,#16a34a)' : 'var(--danger,#dc2626)'};">
+        <span style="padding:2px 8px;border-radius:12px;font-size:var(--fs-sm);background:${p.is_active ? 'var(--success-bg,#dcfce7)' : 'var(--danger-bg,#fee2e2)'};color:${p.is_active ? 'var(--success,#16a34a)' : 'var(--danger,#dc2626)'};">
           ${p.is_active ? 'Actif' : 'Inactif'}
         </span>
       </td>
@@ -463,14 +463,14 @@
         ].map(([label, count, bg, color]) => `
           <div style="background:${bg};border-radius:10px;padding:16px;text-align:center;">
             <div style="font-size:28px;font-weight:700;color:${color};">${count}</div>
-            <div style="font-size:12px;color:${color};margin-top:4px;">${label}</div>
+            <div style="font-size:var(--fs-sm);color:${color};margin-top:4px;">${label}</div>
           </div>`).join('')}
       </div>
 
       ${withoutValidCat.length ? `
         <h3 style="margin-bottom:12px;">⚠️ Catégorie invalide (${withoutValidCat.length})</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
+          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:var(--fs-sm);text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
             <th style="padding:8px 12px;">Catégorie actuelle</th>
           </tr></thead>
@@ -486,7 +486,7 @@
       ${withoutImage.length ? `
         <h3 style="margin-bottom:12px;">🖼️ Actifs sans image (${withoutImage.length})</h3>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
+          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:var(--fs-sm);text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
             <th style="padding:8px 12px;">Catégorie</th>
           </tr></thead>
@@ -502,7 +502,7 @@
       ${withBadSub.length ? `
         <h3 style="margin-bottom:12px;">🔍 Sous-catégorie invalide (${withBadSub.length})</h3>
         <table style="width:100%;border-collapse:collapse;">
-          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:12px;text-align:left;">
+          <thead><tr style="background:var(--bg-secondary,#f9fafb);font-size:var(--fs-sm);text-align:left;">
             <th style="padding:8px 12px;">Produit</th>
             <th style="padding:8px 12px;">Catégorie</th>
             <th style="padding:8px 12px;">Sous-catégorie</th>

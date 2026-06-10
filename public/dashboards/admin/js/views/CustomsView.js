@@ -34,10 +34,10 @@
     s.textContent = `
       /* Form */
       .cv-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding:16px;background:var(--bg-secondary);border-radius:10px;margin-bottom:16px;border:1px solid var(--border)}
-      .cv-form label{display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+      .cv-form label{display:block;font-size:var(--fs-xs);font-weight:700;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
       .cv-form input,.cv-form select,.cv-form textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box}
       .cv-form textarea{min-height:60px;resize:vertical}
-      .cv-help{font-size:11px;color:var(--text-secondary);margin-top:2px;font-style:italic;line-height:1.3}
+      .cv-help{font-size:var(--fs-xs);color:var(--text-secondary);margin-top:2px;font-style:italic;line-height:1.3}
       .cv-form-footer{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;padding-top:8px;border-top:1px dashed var(--border)}
       /* Method explainer */
       .cv-method-box{grid-column:1/-1;padding:10px 14px;background:#fef9c3;border-left:4px solid #eab308;border-radius:6px;font-size:13px;color:#713f12;line-height:1.5}
@@ -45,24 +45,24 @@
       /* Table */
       .cv-table-wrap{overflow-x:auto}
       .cv-table{width:100%;border-collapse:collapse;font-size:13px}
-      .cv-table th{background:#1e293b;color:white;padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+      .cv-table th{background:#1e293b;color:white;padding:10px 12px;text-align:left;font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
       .cv-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
       .cv-table tbody tr:hover td{background:var(--bg-secondary);cursor:pointer}
       .cv-table tr.inactive td{opacity:.5;background:var(--bg-secondary)}
       .cv-table tr.selected td{background:#dbeafe!important}
       /* Rate badges */
-      .cv-rate{display:inline-block;padding:2px 8px;border-radius:12px;font-weight:700;font-size:12px}
+      .cv-rate{display:inline-block;padding:2px 8px;border-radius:12px;font-weight:700;font-size:var(--fs-sm)}
       .cv-rate-low{background:#dcfce7;color:#166534}
       .cv-rate-mid{background:#fef3c7;color:#92400e}
       .cv-rate-high{background:#fee2e2;color:#991b1b}
       /* Toggle */
-      .cv-toggle{padding:4px 10px;border-radius:14px;border:none;font-size:11px;font-weight:700;cursor:pointer}
+      .cv-toggle{padding:var(--sp-1) var(--sp-3);border-radius:14px;border:none;font-size:var(--fs-xs);font-weight:700;cursor:pointer}
       .cv-toggle-on{background:#10b981;color:white}
       .cv-toggle-off{background:var(--border);color:var(--text-secondary)}
       /* Allocation panel */
       .cv-alloc{margin-top:16px;padding:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px}
       .cv-alloc h4{margin:0 0 12px;font-size:14px;color:#0c4a6e}
-      .cv-alloc table{width:100%;border-collapse:collapse;font-size:12px}
+      .cv-alloc table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
       .cv-alloc th{background:#0c4a6e;color:white;padding:6px 10px;text-align:left}
       .cv-alloc td{padding:6px 10px;border-bottom:1px solid #e0f2fe}
     `;
@@ -239,13 +239,13 @@
         <td>${fmt(s.cif_value_kmf)}</td>
         <td>${fmt(s.customs_paid_kmf)}</td>
         <td><span class="cv-rate ${rateClass(s.effective_rate_pct)}">${fmtPct(s.effective_rate_pct)}</span></td>
-        <td style="font-size:11px;color:var(--text-secondary)">${method}</td>
+        <td style="font-size:var(--fs-xs);color:var(--text-secondary)">${method}</td>
         <td>${s.nb_parcels_linked || 0}/${s.nb_parcels || '?'}</td>
         <td>${s.is_active
           ? `<button class="cv-toggle cv-toggle-on" data-action="deactivate" data-sid="${s.id}">● Actif</button>`
           : `<button class="cv-toggle cv-toggle-off" data-action="activate" data-sid="${s.id}">○ Inactif</button>`
         }</td>
-        <td><button class="kmc-btn kmc-btn-secondary" data-action="view" data-sid="${s.id}" style="font-size:11px;padding:4px 8px">👁 Détails</button></td>
+        <td><button class="kmc-btn kmc-btn-secondary" data-action="view" data-sid="${s.id}" style="font-size:var(--fs-xs);padding:var(--sp-1) var(--sp-3)">👁 Détails</button></td>
       </tr>`;
     });
 
@@ -277,7 +277,7 @@
           <td>${fmt(p.parcel_cif_kmf)}</td>
           <td>${p.parcel_weight_kg ? Number(p.parcel_weight_kg).toFixed(2) + ' kg' : '—'}</td>
           <td><strong>${fmt(p.customs_share_kmf)}</strong></td>
-          <td style="font-size:11px;color:var(--text-secondary)">${p.allocation_basis || '—'}</td>
+          <td style="font-size:var(--fs-xs);color:var(--text-secondary)">${p.allocation_basis || '—'}</td>
         </tr>`;
       });
       html += '</tbody></table>';

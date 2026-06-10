@@ -19,66 +19,103 @@ const AccountingView = (function () {
     const style = document.createElement('style');
     style.id = 'acct-view-styles';
     style.textContent = `
-      .acct-period-bar { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-      .acct-period-bar button { padding:6px 14px; border:1px solid #cbd5e1; background:white; border-radius:20px;
-        font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s; }
-      .acct-period-bar button:hover { border-color:#3b82f6; }
-      .acct-period-bar button.active { background:#3b82f6; color:white; border-color:#3b82f6; }
-      .acct-daterange { display:flex; align-items:center; gap:8px; margin-left:auto; font-size:13px; flex-wrap:wrap; }
-      .acct-daterange input { padding:5px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; }
-      .acct-section-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+      /* ── Barre de période ── */
+      .acct-period-bar { display:flex; gap:var(--sp-2); margin-bottom:var(--sp-4); flex-wrap:wrap; align-items:center; }
+      .acct-period-bar button { padding:var(--sp-2) var(--sp-4); border:1px solid var(--border-color);
+        background:var(--bg-card); border-radius:20px; font-size:var(--fs-sm); font-weight:var(--fw-semibold);
+        cursor:pointer; transition:all 0.15s; min-height:32px; }
+      .acct-period-bar button:hover { border-color:var(--kmc-blue,#3b82f6); }
+      .acct-period-bar button.active { background:var(--kmc-blue,#3b82f6); color:#fff; border-color:var(--kmc-blue,#3b82f6); }
+      .acct-daterange { display:flex; align-items:center; gap:var(--sp-2); margin-left:auto;
+        font-size:var(--fs-sm); flex-wrap:wrap; }
+      .acct-daterange input { padding:var(--sp-1) var(--sp-3); border:1px solid var(--border-color);
+        border-radius:var(--border-radius); font-size:var(--fs-sm); }
+
+      /* ── En-tête de section ── */
+      .acct-section-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--sp-2); }
       .acct-section-head h3 { margin:0; }
-      .acct-export-btn { padding:4px 12px; background:white; border:1px solid #cbd5e1; border-radius:6px;
-        font-size:12px; font-weight:600; cursor:pointer; color:#475569; }
-      .acct-export-btn:hover { background:#f1f5f9; border-color:#94a3b8; }
-      .acct-hint { font-size:11px; color:#64748b; font-style:italic; margin-bottom:10px; }
-      .acct-balance-sub { font-size:11px; color:#64748b; margin-top:2px; }
-      /* Ledger */
-      .acct-ledger-family { background:white; border:1px solid #e2e8f0; border-radius:10px;
-        margin-bottom:10px; overflow:hidden; }
-      .acct-ledger-family-head { padding:10px 14px; background:#f8fafc; border-bottom:1px solid #e2e8f0;
-        display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
-      .acct-ledger-family-head:hover { background:#f1f5f9; }
-      .acct-ledger-family-head h4 { margin:0; font-size:14px; }
-      .acct-ledger-family-total { font-weight:700; font-size:15px; color:#0f172a; }
+
+      /* ── Boutons export (conservés pour sélecteur d'événements) ── */
+      /* Les classes .btn .btn-ghost .btn-sm sont portées dans le HTML */
+
+      /* ── Textes contextuels ── */
+      .acct-hint        { font-size:var(--fs-xs); color:var(--text-secondary); font-style:italic; margin-bottom:var(--sp-3); }
+      .acct-balance-sub { font-size:var(--fs-xs); color:var(--text-secondary); margin-top:2px; }
+      .acct-unit-label  { font-size:var(--fs-sm); font-weight:500; color:var(--text-secondary); }
+      .acct-fam-count   { font-size:var(--fs-xs); color:var(--text-secondary); font-weight:500; }
+      .acct-notes       { font-size:var(--fs-xs); color:var(--text-tertiary,#94a3b8); font-weight:400; margin-top:2px; }
+      .acct-phone       { font-size:var(--fs-xs); color:var(--text-secondary); display:block; }
+      .acct-cat         { text-transform:capitalize; color:var(--text-secondary); }
+
+      /* ── Barres récap totaux ── */
+      .acct-totals-bar { display:flex; gap:var(--sp-4); margin-bottom:var(--sp-3);
+        padding:var(--sp-2) var(--sp-4); background:var(--bg-secondary,#f1f5f9);
+        border-radius:var(--border-radius); font-size:var(--fs-sm); flex-wrap:wrap; }
+      .acct-unc-alert { margin-bottom:var(--sp-3); padding:var(--sp-2) var(--sp-3);
+        background:var(--kmc-amber-bg,#fef3c7); border-left:3px solid var(--kmc-amber,#f59e0b);
+        border-radius:var(--border-radius); font-size:var(--fs-sm); }
+      .acct-table-wrap { overflow-x:auto; }
+      .acct-unc-filter { display:flex; gap:var(--sp-2); align-items:center; }
+      .acct-unc-select { padding:var(--sp-1) var(--sp-3); border:1px solid var(--border-color);
+        border-radius:var(--border-radius); font-size:var(--fs-sm); }
+
+      /* ── Grand livre ── */
+      .acct-ledger-family { background:var(--bg-card); border:1px solid var(--border-color);
+        border-radius:var(--border-radius-lg,10px); margin-bottom:var(--sp-2); overflow:hidden; }
+      .acct-ledger-family-head { padding:var(--sp-2) var(--sp-4); background:var(--bg-secondary,#f8fafc);
+        border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between;
+        align-items:center; cursor:pointer; }
+      .acct-ledger-family-head:hover { background:var(--bg-hover,#f1f5f9); }
+      .acct-ledger-family-head h4 { margin:0; font-size:var(--fs-base,14px); }
+      .acct-ledger-family-total { font-weight:700; font-size:var(--fs-md,15px); color:var(--text-primary); }
       .acct-ledger-family-body { display:none; padding:4px 0; }
       .acct-ledger-family.open .acct-ledger-family-body { display:block; }
       .acct-ledger-family.open .acct-ledger-arrow { transform:rotate(90deg); }
-      .acct-ledger-arrow { display:inline-block; transition:transform 0.15s; margin-right:6px;
-        font-size:10px; color:#64748b; }
-      .acct-ledger-line { padding:6px 18px; display:grid; grid-template-columns:1fr auto 90px 80px;
-        gap:12px; align-items:center; font-size:13px; border-bottom:1px solid #f1f5f9; }
+      .acct-ledger-arrow { display:inline-block; transition:transform 0.15s; margin-right:var(--sp-1);
+        font-size:var(--fs-xs); color:var(--text-secondary); }
+      .acct-ledger-line { padding:var(--sp-1) 18px; display:grid;
+        grid-template-columns:1fr auto 90px 80px; gap:var(--sp-3); align-items:center;
+        font-size:var(--fs-sm); border-bottom:1px solid var(--border-color-2,#f1f5f9); }
       .acct-ledger-line:last-child { border-bottom:none; }
-      .acct-ledger-line-name { font-weight:500; color:#334155; }
-      .acct-ledger-line-recurrence { font-size:11px; color:#64748b; text-transform:uppercase; }
+      .acct-ledger-line-name { font-weight:500; color:var(--text-primary);
+        overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .acct-ledger-line-recurrence { font-size:var(--fs-xs); color:var(--text-secondary); text-transform:uppercase; }
       .acct-ledger-line-amount { text-align:right; font-weight:700; }
-      .acct-ledger-line-status { text-align:center; font-size:10px; }
+      .acct-ledger-line-status { text-align:center; font-size:var(--fs-xs); }
       .acct-ledger-line.inactive { opacity:0.5; }
-      /* Reconciliation */
-      .acct-reco-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
-      .acct-reco-card { background:white; border:1px solid #e2e8f0; border-radius:10px;
-        padding:14px; border-left:4px solid #94a3b8; }
-      .acct-reco-card.status-clean   { border-left-color:#10b981; }
-      .acct-reco-card.status-warning { border-left-color:#f59e0b; }
-      .acct-reco-card.status-alert   { border-left-color:#ef4444; background:#fef2f2; }
-      .acct-reco-card h5 { margin:0 0 10px; font-size:14px; color:#0f172a; }
+
+      /* ── Réconciliation ── */
+      .acct-reco-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:var(--sp-3); }
+      .acct-reco-card { background:var(--bg-card); border:1px solid var(--border-color);
+        border-radius:var(--border-radius-lg,10px); padding:var(--sp-4); border-left:4px solid var(--border-color-2,#94a3b8); }
+      .acct-reco-card.status-clean   { border-left-color:var(--kmc-green,#10b981); }
+      .acct-reco-card.status-warning { border-left-color:var(--kmc-amber,#f59e0b); }
+      .acct-reco-card.status-alert   { border-left-color:var(--kmc-red,#ef4444); background:var(--kmc-red-bg,#fef2f2); }
+      .acct-reco-card h5 { margin:0 0 var(--sp-3); font-size:var(--fs-base,14px); color:var(--text-primary); }
       .acct-reco-row { display:flex; justify-content:space-between; padding:4px 0;
-        font-size:13px; border-bottom:1px dashed #f1f5f9; }
+        font-size:var(--fs-sm); border-bottom:1px dashed var(--border-color-2,#f1f5f9); }
       .acct-reco-row:last-child { border-bottom:none; }
-      .acct-reco-gap-warn  { color:#d97706; }
-      .acct-reco-gap-alert { color:#dc2626; }
-      /* Uncollected */
-      .acct-uncollected-table { width:100%; border-collapse:collapse; font-size:13px;
-        background:white; border-radius:10px; overflow:hidden; border:1px solid #e2e8f0; }
-      .acct-uncollected-table th { background:#1e293b; color:white; padding:10px 12px;
-        text-align:left; font-size:11px; text-transform:uppercase; }
-      .acct-uncollected-table td { padding:10px 12px; border-bottom:1px solid #f1f5f9; }
+      .acct-reco-gap-warn  { color:var(--kmc-amber-text,#d97706); }
+      .acct-reco-gap-alert { color:var(--kmc-red-text,#dc2626); }
+
+      /* ── Classes d'état marge ── */
+      .acct-marge-good  { color:var(--kmc-green,#16a34a); }
+      .acct-marge-warn  { color:var(--kmc-amber-text,#d97706); }
+      .acct-marge-alert { color:var(--kmc-red-text,#dc2626); }
+
+      /* ── Non-encaissées ── */
+      .acct-uncollected-table { width:100%; border-collapse:collapse; font-size:var(--fs-sm);
+        background:var(--bg-card); border-radius:var(--border-radius-lg,10px);
+        overflow:hidden; border:1px solid var(--border-color); }
+      .acct-uncollected-table th { background:var(--kmc-navy,#1e293b); color:#fff; padding:var(--sp-2) var(--sp-3);
+        text-align:left; font-size:var(--fs-xs); text-transform:uppercase; }
+      .acct-uncollected-table td { padding:var(--sp-2) var(--sp-3); border-bottom:1px solid var(--border-color-2,#f1f5f9); }
       .acct-uncollected-table tr:last-child td { border-bottom:none; }
-      .acct-age-badge { display:inline-block; padding:2px 8px; border-radius:10px;
-        font-size:11px; font-weight:700; }
-      .acct-age-low  { background:#fef3c7; color:#92400e; }
-      .acct-age-mid  { background:#fed7aa; color:#9a3412; }
-      .acct-age-high { background:#fee2e2; color:#991b1b; }
+      .acct-age-badge { display:inline-block; padding:2px var(--sp-2); border-radius:10px;
+        font-size:var(--fs-xs); font-weight:700; }
+      .acct-age-low  { background:var(--kmc-amber-bg,#fef3c7); color:var(--kmc-amber-dark,#92400e); }
+      .acct-age-mid  { background:var(--kmc-orange-bg,#fed7aa); color:var(--kmc-orange-dark,#9a3412); }
+      .acct-age-high { background:var(--kmc-red-bg,#fee2e2); color:var(--kmc-red-dark,#991b1b); }
     `;
     document.head.appendChild(style);
   }
@@ -175,7 +212,7 @@ const AccountingView = (function () {
       <input type="date" id="acct-from" value="${state.from}">
       <span>→</span>
       <input type="date" id="acct-to" value="${state.to}">
-      <button class="ct-btn ct-btn-secondary" id="acct-daterange-apply" style="padding:4px 10px;font-size:12px">Appliquer</button>
+      <button class="btn btn-secondary" id="acct-daterange-apply">Appliquer</button>
     </div>`;
     html += '</div>';
 
@@ -199,16 +236,16 @@ const AccountingView = (function () {
     const cashKmf  = (paie.cash   && paie.cash.total_kmf)    || 0;
     const stripeEur= (paie.stripe && paie.stripe.total_eur)   || 0;
     const tauxMarge = marges.taux_marge_pct;
-    const margeColor = tauxMarge >= 25 ? '#16a34a' : (tauxMarge >= 15 ? '#d97706' : '#dc2626');
+    const margeCls = tauxMarge >= 25 ? 'acct-marge-good' : (tauxMarge >= 15 ? 'acct-marge-warn' : 'acct-marge-alert');
 
     let html = '<div class="ct-kpi-grid">';
     html += `<div class="ct-kpi"><div class="ct-kpi-icon">🇰🇲</div><div>
-      <div class="ct-kpi-value">${fmtShort(kpi.ca_kmf || 0)} <span style="font-size:13px;font-weight:500;color:#64748b">KMF</span></div>
+      <div class="ct-kpi-value">${fmtShort(kpi.ca_kmf || 0)} <span class="acct-unit-label">KMF</span></div>
       <div class="ct-kpi-label">CA période (${state.period}j)</div>
       <div class="acct-balance-sub">Cash : ${fmtShort(cashKmf)} KMF</div>
     </div></div>`;
     html += `<div class="ct-kpi"><div class="ct-kpi-icon">🇪🇺</div><div>
-      <div class="ct-kpi-value">${fmt(Math.round(kpi.ca_eur || 0))} <span style="font-size:13px;font-weight:500;color:#64748b">€</span></div>
+      <div class="ct-kpi-value">${fmt(Math.round(kpi.ca_eur || 0))} <span class="acct-unit-label">€</span></div>
       <div class="ct-kpi-label">Contre-valeur EUR</div>
       <div class="acct-balance-sub">Stripe : ${fmtEur(stripeEur)}</div>
     </div></div>`;
@@ -217,8 +254,8 @@ const AccountingView = (function () {
       <div class="ct-kpi-label">Taux EUR/KMF</div>
     </div></div>`;
     html += `<div class="ct-kpi"><div class="ct-kpi-icon">📈</div><div>
-      <div class="ct-kpi-value" style="color:${margeColor}">${fmtShort(marges.marge_reelle_kmf || 0)}
-        <span style="font-size:13px;font-weight:500;color:#64748b">KMF</span></div>
+      <div class="ct-kpi-value ${margeCls}">${fmtShort(marges.marge_reelle_kmf || 0)}
+        <span class="acct-unit-label">KMF</span></div>
       <div class="ct-kpi-label">Marge réelle${tauxMarge != null ? ` · <strong>${tauxMarge}%</strong>` : ''}</div>
       ${marges.nb_sans_cost > 0 ? `<div class="acct-balance-sub">${marges.nb_avec_cost}/${marges.nb_avec_cost + marges.nb_sans_cost} avec coûts</div>` : ''}
     </div></div>`;
@@ -232,7 +269,7 @@ const AccountingView = (function () {
     let html = `<div class="ct-section-block">
       <div class="acct-section-head">
         <h3>📒 Grand livre — charges par section</h3>
-        <button class="acct-export-btn" data-export="ledger">⬇ CSV</button>
+        <button class="btn btn-ghost btn-sm acct-export-btn" data-export="ledger">⬇ CSV</button>
       </div>
       <div class="acct-hint">Charges récurrentes ou à la commande, regroupées par famille métier.
         Gérées depuis la vue <strong>Moteur économique</strong>.</div>`;
@@ -247,7 +284,7 @@ const AccountingView = (function () {
       return html + '<div class="empty-state">Aucune charge enregistrée.</div></div>';
     }
 
-    html += `<div style="display:flex;gap:16px;margin-bottom:12px;padding:10px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;flex-wrap:wrap">
+    html += `<div class="acct-totals-bar">
       <span><strong>Mensuel récurrent :</strong> ${fmt(Math.round(totals.monthly || 0))} KMF</span>
       <span><strong>Par commande :</strong> ${fmt(Math.round(totals.per_order || 0))} KMF</span>
       ${totals.weekly  ? `<span><strong>Hebdo :</strong> ${fmt(Math.round(totals.weekly))} KMF</span>` : ''}
@@ -260,14 +297,14 @@ const AccountingView = (function () {
       html += `<div class="acct-ledger-family${isOpen ? ' open' : ''}" data-fam="${fk}">
         <div class="acct-ledger-family-head" data-toggle="${fk}">
           <h4><span class="acct-ledger-arrow">▶</span>${fam.emoji || '📦'} ${fam.label || fk}
-            <span style="font-size:11px;color:#64748b;font-weight:500">(${fam.charges.length} ligne${fam.charges.length > 1 ? 's' : ''})</span></h4>
+            <span class="acct-fam-count">(${fam.charges.length} ligne${fam.charges.length > 1 ? 's' : ''})</span></h4>
           <div class="acct-ledger-family-total">${fmt(Math.round(fam.total_kmf))} KMF</div>
         </div>
         <div class="acct-ledger-family-body">`;
       (fam.charges || []).forEach(c => {
         html += `<div class="acct-ledger-line${c.is_active ? '' : ' inactive'}">
           <div class="acct-ledger-line-name">${c.name || '—'}
-            ${c.notes ? `<div style="font-size:11px;color:#94a3b8;font-weight:400">${c.notes}</div>` : ''}</div>
+            ${c.notes ? `<div class="acct-notes">${c.notes}</div>` : ''}</div>
           <div class="acct-ledger-line-recurrence">${c.recurrence_period || '—'}</div>
           <div class="acct-ledger-line-amount">${fmt(Math.round(c.amount_kmf || 0))} KMF</div>
           <div class="acct-ledger-line-status">${c.is_active ? '✅' : '⊘'}</div>
@@ -286,7 +323,7 @@ const AccountingView = (function () {
     let html = `<div class="ct-section-block">
       <div class="acct-section-head">
         <h3>🔁 Réconciliation cash relais</h3>
-        <button class="acct-export-btn" data-export="reco">⬇ CSV</button>
+        <button class="btn btn-ghost btn-sm acct-export-btn" data-export="reco">⬇ CSV</button>
       </div>
       <div class="acct-hint">Pour chaque agent : <strong>Attendu</strong> (livrées cash) vs
         <strong>Collecté</strong> (déclaré) vs <strong>Déposé</strong> (remis au siège).</div>`;
@@ -297,12 +334,12 @@ const AccountingView = (function () {
     const totals = reco.totals || {};
     const gColl  = totals.gap_collection || 0;
     const gDep   = totals.gap_deposit || 0;
-    html += `<div style="display:flex;gap:16px;margin-bottom:12px;padding:10px 14px;background:#f1f5f9;border-radius:8px;font-size:13px;flex-wrap:wrap">
+    html += `<div class="acct-totals-bar">
       <span><strong>Attendu :</strong> ${fmt(Math.round(totals.expected_kmf || 0))} KMF</span>
       <span><strong>Collecté :</strong> ${fmt(Math.round(totals.declared_kmf || 0))} KMF</span>
       <span><strong>Déposé :</strong> ${fmt(Math.round(totals.deposited_kmf || 0))} KMF</span>
-      <span><strong>Gap collecte :</strong> <span style="color:${Math.abs(gColl) > 0 ? '#dc2626' : '#16a34a'}">${fmt(Math.round(gColl))}</span></span>
-      <span><strong>En transit :</strong> <span style="color:${Math.abs(gDep) > 0 ? '#d97706' : '#16a34a'}">${fmt(Math.round(gDep))}</span></span>
+      <span><strong>Gap collecte :</strong> <span class="${Math.abs(gColl) > 0 ? 'acct-reco-gap-alert' : ''}">${fmt(Math.round(gColl))}</span></span>
+      <span><strong>En transit :</strong> <span class="${Math.abs(gDep) > 0 ? 'acct-reco-gap-warn' : ''}">${fmt(Math.round(gDep))}</span></span>
     </div>`;
 
     if (!reco.agents.length) {
@@ -320,8 +357,8 @@ const AccountingView = (function () {
         <div class="acct-reco-row"><span>Attendu</span><strong>${fmt(Math.round(a.expected_kmf))} KMF</strong></div>
         <div class="acct-reco-row"><span>Collecté</span><strong>${fmt(Math.round(a.declared_kmf))} KMF</strong></div>
         <div class="acct-reco-row"><span>Déposé vérifié</span><strong>${fmt(Math.round(a.verified_kmf || 0))} KMF</strong></div>
-        ${a.pending_kmf  > 0 ? `<div class="acct-reco-row"><span style="color:#d97706">En attente</span><strong>${fmt(Math.round(a.pending_kmf))}</strong></div>` : ''}
-        ${a.disputed_kmf > 0 ? `<div class="acct-reco-row"><span style="color:#dc2626">Litigieux</span><strong>${fmt(Math.round(a.disputed_kmf))}</strong></div>` : ''}
+        ${a.pending_kmf  > 0 ? `<div class="acct-reco-row"><span class="acct-reco-gap-warn">En attente</span><strong>${fmt(Math.round(a.pending_kmf))}</strong></div>` : ''}
+        ${a.disputed_kmf > 0 ? `<div class="acct-reco-row"><span class="acct-reco-gap-alert">Litigieux</span><strong>${fmt(Math.round(a.disputed_kmf))}</strong></div>` : ''}
         <div class="acct-reco-row"><span>Écart collecte</span><strong class="${gCls}">${gColl > 0 ? '+' : ''}${fmt(Math.round(gColl))}</strong></div>
       </div>`;
     });
@@ -335,15 +372,15 @@ const AccountingView = (function () {
     let html = `<div class="ct-section-block">
       <div class="acct-section-head">
         <h3>⏰ Commandes non encaissées
-          <span style="font-size:12px;font-weight:500;color:#64748b">(livrées il y a +${state.uncollectedHours}h)</span>
+          <span class="acct-unit-label">(livrées il y a +${state.uncollectedHours}h)</span>
         </h3>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="acct-unc-hours" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">
+        <div class="acct-unc-filter">
+          <select id="acct-unc-hours" class="acct-unc-select">
             ${[24, 48, 72, 168].map(h =>
               `<option value="${h}"${state.uncollectedHours === h ? ' selected' : ''}>${h === 168 ? '7 jours' : h + 'h'}</option>`
             ).join('')}
           </select>
-          <button class="acct-export-btn" data-export="uncollected">⬇ CSV</button>
+          <button class="btn btn-ghost btn-sm acct-export-btn" data-export="uncollected">⬇ CSV</button>
         </div>
       </div>
       <div class="acct-hint">Commandes cash livrées sans confirmation de paiement — signal opérationnel à relancer.</div>`;
@@ -352,12 +389,12 @@ const AccountingView = (function () {
       return html + `<div class="empty-state">✅ Aucune commande non encaissée au-delà de ${state.uncollectedHours}h.</div></div>`;
     }
 
-    html += `<div style="margin-bottom:10px;padding:8px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;font-size:13px">
+    html += `<div class="acct-unc-alert">
       <strong>${unc.count} commande${unc.count > 1 ? 's' : ''}</strong> · Total manquant :
       <strong>${fmt(Math.round(unc.total_missing_kmf || 0))} KMF</strong>
     </div>`;
 
-    html += '<div style="overflow-x:auto"><table class="acct-uncollected-table"><thead><tr>';
+    html += '<div class="acct-table-wrap"><table class="acct-uncollected-table"><thead><tr>';
     html += '<th>Âge</th><th>Référence</th><th>Client</th><th>Montant</th><th>Statut</th><th>Créée le</th>';
     html += '</tr></thead><tbody>';
     unc.orders.forEach(o => {
@@ -368,7 +405,7 @@ const AccountingView = (function () {
       html += `<tr>
         <td><span class="acct-age-badge ${ageCls}">${ageLabel}</span></td>
         <td><strong>${o.reference || '—'}</strong></td>
-        <td>${o.client_name || '—'}${o.client_phone ? `<br><span style="font-size:11px;color:#64748b">${o.client_phone}</span>` : ''}</td>
+        <td>${o.client_name || '—'}${o.client_phone ? `<br><span class="acct-phone">${o.client_phone}</span>` : ''}</td>
         <td><strong>${fmt(Math.round(o.total_kmf || 0))} KMF</strong></td>
         <td>${o.status || '—'}</td>
         <td>${dateStr}</td>
@@ -385,7 +422,7 @@ const AccountingView = (function () {
     let html = `<div class="ct-section-block">
       <div class="acct-section-head">
         <h3>📋 Top produits période (${state.period}j)</h3>
-        <button class="acct-export-btn" data-export="topprods">⬇ CSV</button>
+        <button class="btn btn-ghost btn-sm acct-export-btn" data-export="topprods">⬇ CSV</button>
       </div>
       <div class="acct-hint">Vue synthétique des produits contributeurs au CA.
         Pour les transactions individuelles, voir la vue <strong>Ventes</strong>.</div>`;
@@ -399,7 +436,7 @@ const AccountingView = (function () {
       html += `<tr>
         <td><strong>${i + 1}</strong></td>
         <td>${p.nom || '—'}</td>
-        <td style="text-transform:capitalize;color:#64748b">${p.categorie || '—'}</td>
+        <td class="acct-cat">${p.categorie || '—'}</td>
         <td>${p.qty || 0}</td>
         <td><strong>${fmt(p.ca_kmf)}</strong></td>
       </tr>`;

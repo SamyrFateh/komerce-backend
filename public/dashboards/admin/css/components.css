@@ -481,3 +481,80 @@
   font-weight: var(--fw-bold);
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * BUTTONS — système unifié (Lot 1)
+ * ═══════════════════════════════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--border-radius);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  line-height: 1.4;
+  min-height: 36px;
+  text-decoration: none;
+}
+
+.btn-primary  { background: var(--kmc-amber); color: var(--kmc-navy); border-color: var(--kmc-amber-2); }
+.btn-primary:hover { background: var(--kmc-amber-dark, #C8882E); border-color: var(--kmc-amber-dark, #C8882E); }
+
+.btn-secondary { background: var(--bg-card); color: var(--text-primary); border-color: var(--border-color-2); }
+.btn-secondary:hover { background: var(--bg-hover); }
+
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+.btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.btn-danger { background: var(--kmc-red-bg); color: var(--kmc-red-text); border-color: var(--kmc-red); }
+.btn-danger:hover { background: var(--kmc-red); color: #fff; }
+
+.btn-info { background: var(--kmc-blue-bg); color: var(--kmc-blue-text); border-color: var(--kmc-blue); }
+.btn-info:hover { background: var(--kmc-blue); color: #fff; }
+
+.btn-sm  { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); min-height: 28px; }
+.btn-lg  { padding: var(--sp-3) var(--sp-6); font-size: var(--fs-base); min-height: 44px; }
+.btn-icon { padding: var(--sp-2); min-width: 36px; justify-content: center; }
+
+.btn:disabled, button:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+/* Alias rétrocompatibilité */
+.kmc-btn           { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4); border-radius: var(--border-radius); font-size: var(--fs-sm); font-weight: var(--fw-semibold); font-family: inherit; cursor: pointer; border: 1px solid transparent; white-space: nowrap; transition: background 0.15s; line-height: 1.4; min-height: 36px; }
+.kmc-btn-primary   { background: var(--kmc-amber); color: var(--kmc-navy); border-color: var(--kmc-amber-2); }
+.kmc-btn-primary:hover { background: var(--kmc-amber-dark, #C8882E); }
+.kmc-btn-secondary { background: var(--bg-card); color: var(--text-primary); border-color: var(--border-color-2); }
+.kmc-btn-secondary:hover { background: var(--bg-hover); }
+.kmc-btn-ghost     { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+.kmc-btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * UTILITIES (Lot 1)
+ * ═══════════════════════════════════════════════════════════════════════ */
+.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Floor font-size helpers */
+.fs-floor-sm { font-size: var(--fs-sm) !important; }   /* force 14px minimum */
+.fs-floor-xs { font-size: var(--fs-xs) !important; }   /* force 12px minimum */
+
+/* Semantic text colors */
+.text-primary-c  { color: var(--text-primary); }
+.text-secondary-c { color: var(--text-secondary); }
+.text-muted-c    { color: var(--text-tertiary); }
+.text-success    { color: var(--kmc-green); }
+.text-warning    { color: var(--kmc-orange); }
+.text-danger-c   { color: var(--kmc-red); }
+.text-info-c     { color: var(--kmc-blue); }
+
+/* KMC background utilities */
+.kmc-bg-green  { background: var(--kmc-green-bg);  color: var(--kmc-green-text); }
+.kmc-bg-orange { background: var(--kmc-orange-bg); color: var(--kmc-orange-text); }
+.kmc-bg-red    { background: var(--kmc-red-bg);    color: var(--kmc-red-text); }
+.kmc-bg-blue   { background: var(--kmc-blue-bg);   color: var(--kmc-blue-text); }
+.kmc-bg-amber  { background: rgba(244,184,96,0.18); color: #92400E; }
+.kmc-bg-gray   { background: var(--kmc-gray-bg);   color: var(--kmc-gray-text); }

@@ -100,6 +100,17 @@
   /* === LAYOUT === */
   --sidebar-width: 240px;
   --header-height: 64px;
+
+  /* === ALIAS SURFACE (rétrocompat + nouvelles vues) === */
+  --surface-primary:   var(--bg-card);
+  --surface-secondary: var(--bg-page);
+  --bg-secondary:      var(--bg-page);
+  --bg-tertiary:       var(--bg-hover);
+  --kmc-amber-dark:    #C8882E;   /* hover btn-primary */
+  --text-muted:        var(--text-tertiary);
+  --border:            var(--border-color);
+  --radius:            var(--border-radius);
+  --radius-lg:         var(--border-radius-lg);
 }
 
 /* === RESET === */

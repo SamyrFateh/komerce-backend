@@ -28,7 +28,7 @@
       .sr-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
       .sr-kpi{background:var(--bg-card);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center}
       .sr-kpi .num{font-size:28px;font-weight:700}
-      .sr-kpi .lbl{font-size:12px;color:var(--text-secondary);margin-top:4px}
+      .sr-kpi .lbl{font-size:var(--fs-sm);color:var(--text-secondary);margin-top:4px}
       .sr-kpi.green .num{color:#16a34a}
       .sr-kpi.orange .num{color:#ea580c}
       .sr-kpi.red .num{color:#dc2626}
@@ -39,7 +39,7 @@
       .sr-progress-fill{height:100%;background:#3b82f6;border-radius:4px;transition:width .3s}
       /* Rail bar */
       .sr-rail-bar{display:flex;height:20px;border-radius:6px;overflow:hidden;margin-bottom:20px}
-      .sr-rail-bar div{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white}
+      .sr-rail-bar div{display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;color:white}
       .sr-rail-bar .A{background:#16a34a}
       .sr-rail-bar .B{background:#2563eb}
       .sr-rail-bar .C{background:#ea580c}
@@ -52,7 +52,7 @@
       .sr-top-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card);border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.06);font-size:13px}
       .sr-top-item .rank{font-weight:700;color:#94a3b8;width:20px}
       .sr-top-item .name{flex:1;font-weight:500}
-      .sr-rail-badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:white}
+      .sr-rail-badge{padding:2px 8px;border-radius:10px;font-size:var(--fs-xs);font-weight:700;color:white}
       .sr-rail-badge.A{background:#16a34a}
       .sr-rail-badge.B{background:#2563eb}
       .sr-rail-badge.C{background:#ea580c}
@@ -68,7 +68,7 @@
       .sr-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
       .sr-filters input,.sr-filters select{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--bg-card)}
       .sr-filters input{flex:1;min-width:200px}
-      .sr-count{font-size:12px;color:#94a3b8;margin-bottom:8px}
+      .sr-count{font-size:var(--fs-sm);color:#94a3b8;margin-bottom:8px}
       /* Product row */
       .sr-product-list{display:flex;flex-direction:column;gap:0}
       .sr-product-card{display:grid;grid-template-columns:12px 44px 1fr 90px 40px 100px 90px 60px;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-card);border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:13px}
@@ -82,9 +82,9 @@
       .sr-dot.grey{background:#94a3b8}
       .sr-product-img{width:36px;height:36px;object-fit:cover;border-radius:6px;background:var(--bg-secondary)}
       .sr-product-name{font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .sr-product-cat{font-size:11px;color:var(--text-secondary)}
-      .sr-price{font-weight:700;font-size:12px;text-align:right;color:var(--text-primary)}
-      .sr-status{font-size:11px;color:var(--text-secondary)}
+      .sr-product-cat{font-size:var(--fs-xs);color:var(--text-secondary)}
+      .sr-price{font-weight:700;font-size:var(--fs-sm);text-align:right;color:var(--text-primary)}
+      .sr-status{font-size:var(--fs-xs);color:var(--text-secondary)}
       /* Detail panel */
       .sr-detail-panel{background:#f8fafc;border-left:3px solid #3b82f6;padding:16px;font-size:13px;margin-bottom:1px}
       .sr-detail-reason{padding:10px 12px;border-radius:6px;background:#eff6ff;color:#1e40af;margin-bottom:12px}
@@ -92,15 +92,15 @@
       .sr-detail-reason.red{background:#fef2f2;color:#991b1b}
       .sr-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px}
       .sr-field{display:flex;flex-direction:column;gap:2px}
-      .sr-field .fl{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.3px}
+      .sr-field .fl{font-size:var(--fs-xs);color:#94a3b8;text-transform:uppercase;letter-spacing:.3px}
       .sr-field .fv{font-size:13px;color:var(--text-primary);font-weight:500}
       .sr-gaps,.sr-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-      .sr-gap-item{background:#fef3c7;color:#92400e;font-size:11px;padding:3px 8px;border-radius:6px}
-      .sr-chip{background:var(--bg-secondary);font-size:11px;padding:3px 8px;border-radius:6px;color:var(--text-secondary)}
+      .sr-gap-item{background:#fef3c7;color:#92400e;font-size:var(--fs-xs);padding:var(--sp-1) var(--sp-3);border-radius:6px}
+      .sr-chip{background:var(--bg-secondary);font-size:var(--fs-xs);padding:var(--sp-1) var(--sp-3);border-radius:6px;color:var(--text-secondary)}
       /* Edit form */
       .sr-edit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px;padding:12px;background:white;border-radius:8px;border:1px solid var(--border)}
       .sr-edit-field{display:flex;flex-direction:column;gap:4px}
-      .sr-edit-field label{font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase}
+      .sr-edit-field label{font-size:var(--fs-xs);font-weight:700;color:var(--text-secondary);text-transform:uppercase}
       .sr-edit-field input,.sr-edit-field select{padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:13px}
       .sr-edit-actions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
     `;
@@ -233,7 +233,7 @@
         <span class="rank">${i+1}</span>
         <span class="name">${_esc(p.name)}</span>
         <span class="sr-rail-badge ${rail}">${rail}</span>
-        <span style="color:var(--text-secondary);font-size:12px">${_esc(descFn(p))}</span>
+        <span style="color:var(--text-secondary);font-size:var(--fs-sm)">${_esc(descFn(p))}</span>
       </div>`;
     }).join('');
     return `<div class="card"><div class="card-header"><h3 class="card-title">${title}</h3></div>
@@ -339,8 +339,8 @@
       <div class="sr-price">${_fmt(p.price_kmf)} KMF</div>
       <span class="sr-rail-badge ${railCls}">${rail}${p.sourcing?.rail_source==='inferred'?' ?':''}</span>
       <div class="sr-status">${status}</div>
-      <div style="font-size:11px;color:var(--text-secondary)">${action}</div>
-      <div style="font-size:11px;color:#94a3b8">${p.confidence||'—'}</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-secondary)">${action}</div>
+      <div style="font-size:var(--fs-xs);color:#94a3b8">${p.confidence||'—'}</div>
     </div>`;
   }
 

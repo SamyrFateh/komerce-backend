@@ -35,7 +35,7 @@
       .sv-category{background:var(--bg-card);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
       .sv-cat-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;font-weight:700}
       .sv-cat-header h3{font-size:15px;color:var(--text-primary)}
-      .sv-cat-count{background:var(--bg-secondary);color:var(--text-secondary);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
+      .sv-cat-count{background:var(--bg-secondary);color:var(--text-secondary);padding:2px 10px;border-radius:20px;font-size:var(--fs-sm);font-weight:600}
       .sv-cat-rules{margin-top:10px;display:none}
       .sv-category.expanded .sv-cat-rules{display:block}
       .sv-caret::before{content:'â–¸';display:inline-block;margin-right:6px;transition:transform .15s}
@@ -43,11 +43,11 @@
       .sv-rule{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--border);cursor:pointer;transition:background .1s}
       .sv-rule:hover{background:var(--bg-secondary);border-radius:6px}
       .sv-rule-info{flex:1;min-width:0}
-      .sv-rule-key{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11px;color:var(--text-secondary)}
+      .sv-rule-key{font-family:ui-monospace,SFMono-Regular,monospace;font-size:var(--fs-sm);color:var(--text-secondary)}
       .sv-rule-label{font-size:14px;color:var(--text-primary);margin-top:2px;font-weight:500}
       .sv-rule-val{font-size:15px;font-weight:700;color:#3b82f6;margin-left:16px;white-space:nowrap}
-      .sv-rule-unit{font-size:12px;color:var(--text-secondary);font-weight:400;margin-left:3px}
-      .sv-badge-critical{display:inline-block;background:#fef3c7;color:#b45309;padding:1px 7px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px}
+      .sv-rule-unit{font-size:var(--fs-sm);color:var(--text-secondary);font-weight:400;margin-left:3px}
+      .sv-badge-critical{display:inline-block;background:#fef3c7;color:#b45309;padding:1px 7px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;margin-left:6px}
       .sv-empty-msg{text-align:center;padding:36px;color:var(--text-secondary);font-style:italic}
 
       /* Overlay + panel */
@@ -57,21 +57,21 @@
       .sv-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;background:var(--bg-card);box-shadow:-4px 0 20px rgba(0,0,0,.15);z-index:600;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s}
       .sv-panel.open{transform:translateX(0)}
       .sv-panel-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-      .sv-panel-key{font-family:ui-monospace,monospace;font-size:12px;color:var(--text-secondary)}
+      .sv-panel-key{font-family:ui-monospace,monospace;font-size:var(--fs-sm);color:var(--text-secondary)}
       .sv-panel-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-secondary);padding:0 4px}
       .sv-panel-body{flex:1;overflow-y:auto;padding:20px}
       .sv-panel-lbl{font-weight:700;color:var(--text-primary);font-size:16px;margin-bottom:4px}
       .sv-panel-desc{color:var(--text-secondary);font-size:13px;margin-bottom:14px;line-height:1.5}
       .sv-current-box{background:var(--bg-secondary);border-radius:8px;padding:12px 16px;margin-bottom:16px}
-      .sv-current-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px}
+      .sv-current-label{font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px}
       .sv-current-val{font-size:24px;font-weight:700;color:var(--text-primary);margin:4px 0}
-      .sv-current-bounds{font-size:11px;color:var(--text-secondary)}
+      .sv-current-bounds{font-size:var(--fs-sm);color:var(--text-secondary)}
       .sv-field{margin-bottom:16px}
       .sv-field label{display:block;font-weight:600;font-size:13px;margin-bottom:6px;color:var(--text-primary)}
       .sv-field input,.sv-field select,.sv-field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;font-family:inherit;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box}
       .sv-field input:focus,.sv-field select:focus,.sv-field textarea:focus{border-color:#3b82f6}
       .sv-field textarea{resize:vertical;min-height:80px}
-      .sv-field-hint{font-size:11px;color:var(--text-secondary);margin-top:3px}
+      .sv-field-hint{font-size:var(--fs-sm);color:var(--text-secondary);margin-top:3px}
       .sv-field-error{color:#dc2626;font-size:13px;margin-top:4px}
       .sv-panel-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
 
@@ -81,7 +81,7 @@
       .sv-hist-item{padding:10px 0;border-top:1px solid var(--border);font-size:13px}
       .sv-hist-item:first-child{border-top:none}
       .sv-hist-who{font-weight:600;color:var(--text-primary)}
-      .sv-hist-when{color:var(--text-secondary);font-size:11px}
+      .sv-hist-when{color:var(--text-secondary);font-size:var(--fs-sm)}
       .sv-hist-change{color:var(--text-secondary);margin-top:2px}
       .sv-hist-reason{color:var(--text-secondary);font-style:italic;margin-top:2px}
 
@@ -99,17 +99,17 @@
       .sv-matrix{overflow-x:auto;background:var(--bg-card);border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
       .sv-matrix p{font-size:13px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5}
       .sv-matrix table{width:100%;border-collapse:collapse}
-      .sv-matrix th{background:var(--bg-secondary);padding:10px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border)}
+      .sv-matrix th{background:var(--bg-secondary);padding:10px;text-align:left;font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border)}
       .sv-matrix td{padding:10px;border-bottom:1px solid var(--border)}
       .sv-matrix tr:last-child td{border-bottom:none}
       .sv-matrix input[type=number]{width:88px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right;background:var(--bg-card);color:var(--text-primary);font-family:inherit}
-      .sv-matrix-save{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--bg-secondary);color:var(--text-secondary);font-family:inherit;transition:all .15s}
+      .sv-matrix-save{padding:6px 14px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;border:none;cursor:pointer;background:var(--bg-secondary);color:var(--text-secondary);font-family:inherit;transition:all .15s}
       .sv-matrix tr.dirty .sv-matrix-save{background:#3b82f6;color:#fff}
       .sv-matrix tr.dirty .sv-matrix-save:hover{background:#2563eb}
 
       /* Audit table */
       .sv-audit-table{width:100%;border-collapse:collapse;background:var(--bg-card);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-      .sv-audit-table th{background:var(--bg-secondary);padding:10px 14px;text-align:left;font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border)}
+      .sv-audit-table th{background:var(--bg-secondary);padding:10px 14px;text-align:left;font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border)}
       .sv-audit-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border)}
       .sv-audit-table tr:last-child td{border-bottom:none}
 
@@ -418,7 +418,7 @@
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.douane_pct}" data-field="douane_pct"></td>
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.tva_pct}" data-field="tva_pct"></td>
                 <td><input type="number" step="0.0001" min="0" max="1" value="${t.taxe_add_pct}" data-field="taxe_add_pct"></td>
-                <td style="font-size:11px;color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : '—'}<br>${t.updated_by_name||''}</td>
+                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : '—'}<br>${t.updated_by_name||''}</td>
                 <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
               </tr>`).join('')}
           </tbody>
@@ -444,7 +444,7 @@
                 <td><input type="number" step="1" min="1" max="200" value="${d.width_cm}" data-field="width_cm"></td>
                 <td><input type="number" step="1" min="1" max="200" value="${d.height_cm}" data-field="height_cm"></td>
                 <td style="color:var(--text-secondary)">${(d.length_cm*d.width_cm*d.height_cm).toLocaleString('fr-FR')}</td>
-                <td style="font-size:11px;color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : '—'}<br>${d.updated_by_name||''}</td>
+                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : '—'}<br>${d.updated_by_name||''}</td>
                 <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
               </tr>`).join('')}
           </tbody>
@@ -512,7 +512,7 @@
             <tbody>
               ${items.map(h => `
                 <tr>
-                  <td style="white-space:nowrap;font-size:11px;color:var(--text-secondary)">${_fmtDate(h.created_at)}</td>
+                  <td style="white-space:nowrap;font-size:var(--fs-sm);color:var(--text-secondary)">${_fmtDate(h.created_at)}</td>
                   <td><strong>${_esc(h.rule_label||h.rule_key)}</strong><br><small style="color:var(--text-secondary)">${_esc(h.rule_key||'')}</small></td>
                   <td>${_esc(h.changed_by_name||'Système')}</td>
                   <td style="color:var(--text-secondary)">${_fmtVal(h.old_value?.value, 'auto')}</td>
