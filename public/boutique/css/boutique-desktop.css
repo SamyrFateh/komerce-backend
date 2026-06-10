@@ -178,12 +178,13 @@
   }
 
   .k-footer-brand-logo {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--coral);
-    letter-spacing: -.5px;
     margin-bottom: 10px;
+  }
+  .k-footer-logo-img {
+    display: block;
+    height: 30px;
+    width: auto;
+    object-fit: contain;
   }
 
   .k-footer-tagline {

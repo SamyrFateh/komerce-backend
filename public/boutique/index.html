@@ -65,9 +65,9 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=49">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=50">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=86">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=38">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=11">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
@@ -81,20 +81,7 @@ if('serviceWorker' in navigator){
 <header class="k-header" id="k-header">
   <div class="k-header-inner">
     <a href="/" class="k-logo" aria-label="Komerce — accueil">
-      <span class="k-logo-icon" aria-hidden="true">
-        <!-- Logo V3 — Médaille drapeau comorien : disque sage + croissant + 4 étoiles blanches.
-             Inspiration directe du drapeau des Comores : croissant représente l'islam/union,
-             4 étoiles = les 4 îles (Grande Comore, Anjouan, Mohéli, Mayotte). -->
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Croissant + 4 étoiles — flottant, sans fond -->
-          <path d="M 26 20 A 8 8 0 1 1 20 12 A 6 6 0 1 0 26 20 Z" fill="#2A3E2C"/>
-          <circle cx="21.5" cy="14.5" r="1.1" fill="#C8B87A"/>
-          <circle cx="24.5" cy="17" r="1.1" fill="#C8B87A"/>
-          <circle cx="24.5" cy="23" r="1.1" fill="#C8B87A"/>
-          <circle cx="21.5" cy="25.5" r="1.1" fill="#C8B87A"/>
-        </svg>
-      </span>
-      <span class="k-logo-text">Komerce</span>
+      <img src="/boutique/Logo_Komerce.png" alt="Komerce" class="k-logo-img" width="120" height="40">
     </a>
     <div class="k-search" id="k-search">
       <svg class="k-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
@@ -444,7 +431,7 @@ if('serviceWorker' in navigator){
 <footer class="k-footer" id="k-footer" aria-label="Pied de page Komerce">
   <div class="k-footer-grid">
     <div>
-      <div class="k-footer-brand-logo">Komerce</div>
+      <div class="k-footer-brand-logo"><img src="/boutique/Logo_Komerce.png" alt="Komerce" class="k-footer-logo-img" width="100" height="33"></div>
       <p class="k-footer-tagline">La boutique en ligne qui livre aux Comores. Commandez depuis l'Europe, retirez en cash chez votre relais local.</p>
       <div class="k-footer-socials">
         <a class="k-footer-social-btn" href="https://wa.me/33699272526?text=Bonjour%20Komerce%20!" target="_blank" rel="noopener" aria-label="WhatsApp">
