@@ -33,31 +33,32 @@
   --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
   --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
 
-  /* ── Checkout — palette ivoire & brun doré
-     Fond blanc dominant, ambre en touche fonctionnelle.
-     Remplace --sage-* pour le flow commande. ── */
-  --checkout-bg:            #fffdf7;   /* fond général modal          ← --cream-pearl      */
-  --checkout-surface:       #ffffff;   /* cards internes (user, relay) ← --white            */
-  --checkout-surface-warm:  #f7f3ec;   /* toggle bg, sections          ← --sand-warm        */
+  /* ── Checkout — crème + vert clair + coral
+     Remappings vers tokens existants uniquement, aucune valeur nouvelle. ── */
+  --checkout-bg:            var(--cream-pearl);        /* fond général modal                */
+  --checkout-surface:       var(--white);              /* cards internes                    */
+  --checkout-surface-warm:  var(--sage-bg-pale);       /* toggle bg, sections               */
 
-  --checkout-border:        #f0e8d0;   /* bordure cards, topbar                             */
-  --checkout-border-mid:    #e8c78a;   /* bordure hover, focus         ← --amber-border-md  */
+  --checkout-border:        var(--border-sage-22);     /* bordure cards douce               */
+  --checkout-border-mid:    var(--coral);              /* bordure hover / focus — coral     */
 
-  --checkout-text:          #1F3024;   /* texte principal              ← --text             */
-  --checkout-text-muted:    #a06a1f;   /* labels section, sous-titres  ← --amber-text-light */
-  --checkout-text-strong:   #412402;   /* titres, relay name           ← amber ramp 900     */
-  --checkout-text-soft:     #999999;   /* sous-textes neutres          ← --text-form-soft   */
+  --checkout-text:          var(--text);               /* texte principal                   */
+  --checkout-text-muted:    var(--sage-dark);          /* labels section, sous-titres       */
+  --checkout-text-strong:   var(--ocean-dark-deep);    /* titres, relay name                */
+  --checkout-text-soft:     var(--text-form-soft);     /* sous-textes neutres               */
 
-  --checkout-accent:        #633806;   /* CTA confirmer, état actif    ← amber ramp 800     */
-  --checkout-accent-light:  #fef3c7;   /* texte sur CTA foncé          ← --amber-bg-pale    */
-  --checkout-accent-hover:  #412402;   /* hover CTA                    ← amber ramp 900     */
-  --checkout-link:          #a06a1f;   /* "Changer", liens inline      ← --amber-text-light */
+  --checkout-accent:        var(--sage-dark);          /* CTA confirmer, état actif         */
+  --checkout-accent-light:  var(--white);              /* texte sur CTA                     */
+  --checkout-accent-hover:  var(--sage-deeper);        /* hover CTA                         */
+  --checkout-link:          var(--coral);              /* "Changer", liens inline           */
 
-  --checkout-disabled-bg:   #fafafa;   /* MVola "bientôt"              ← --gray-bg-lighter  */
-  --checkout-disabled-text: #cccccc;   /* texte désactivé              ← --border-soft      */
+  --checkout-disabled-bg:   var(--gray-bg-lighter);   /* MVola "bientôt"                   */
+  --checkout-disabled-text: var(--border-soft);        /* texte désactivé                   */
 
-  --checkout-avatar-bg:     #fef3c7;   /* fond initiales               ← --amber-bg-pale    */
-  --checkout-avatar-text:   #6b3e0e;   /* texte initiales              ← --amber-text       */
+  --checkout-avatar-bg:     var(--sage-bg);            /* fond initiales                    */
+  --checkout-avatar-text:   var(--sage-dark);          /* texte initiales                   */
+
+
 
 
   --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
