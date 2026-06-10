@@ -164,11 +164,11 @@
   <div class="relais-content">
     <!-- Action buttons -->
     <div class="relais-actions">
-      <button class="relais-action-btn" onclick="Relais.showScan('arrived')">
+      <button class="relais-action-btn" data-scan-type="arrived">
         <span class="emoji">📥</span>
         Réception colis
       </button>
-      <button class="relais-action-btn" onclick="Relais.showScan('collected')">
+      <button class="relais-action-btn" data-scan-type="collected">
         <span class="emoji">🤝</span>
         Remise client
       </button>
@@ -192,16 +192,16 @@
           style="width:100%;padding:12px;border:2px solid #d1d5db;border-radius:10px;font-size:18px;text-align:center;letter-spacing:8px">
       </div>
       
-      <button class="scan-btn" id="scan-btn" onclick="Relais.doScan()">✅ Confirmer</button>
+      <button class="scan-btn" id="scan-btn">✅ Confirmer</button>
       <div id="scan-result" style="margin-top:12px"></div>
     </div>
 
     <!-- Parcels tabs -->
     <div class="relais-tabs" id="relais-tabs">
-      <button class="relais-tab active" data-filter="in_transit" onclick="Relais.filterTab('in_transit')">🚚 En approche</button>
-      <button class="relais-tab" data-filter="available" onclick="Relais.filterTab('available')">📥 Disponibles</button>
-      <button class="relais-tab" data-filter="collected" onclick="Relais.filterTab('collected')">✅ Collectés</button>
-      <button class="relais-tab" data-filter="overdue" onclick="Relais.filterTab('overdue')">⏰ En retard</button>
+      <button class="relais-tab active" data-filter="in_transit">🚚 En approche</button>
+      <button class="relais-tab" data-filter="available">📥 Disponibles</button>
+      <button class="relais-tab" data-filter="collected">✅ Collectés</button>
+      <button class="relais-tab" data-filter="overdue">⏰ En retard</button>
     </div>
 
     <!-- Parcels list -->
@@ -273,11 +273,16 @@
         overdue: '✅ Aucun colis en retard — tout est nominal !',
       };
 
-      ParcelUI.renderParcelList('relais-parcels', filtered, {
-        onClick: 'ParcelUI.openDetail',
-        showActions: true,
-        emptyMessage: emptyMessages[filter] || '📦 Aucun colis',
-      });
+      const listEl = document.getElementById('relais-parcels');
+
+      if (!filtered.length) {
+        listEl.innerHTML = `<div class="relais-empty">${emptyMessages[filter] || '📦 Aucun colis'}</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered
+        .map(parcel => CT.pc.parcelCard(parcel))
+        .join('');
     };
 
     Relais.showScan = function(type) {
@@ -339,6 +344,22 @@
     // Enter key to scan
     document.getElementById('scan-input').addEventListener('keypress', function(e) {
       if (e.key === 'Enter') Relais.doScan();
+    });
+
+    document.querySelectorAll('[data-scan-type]').forEach(button => {
+      button.addEventListener('click', () => {
+        Relais.showScan(button.dataset.scanType);
+      });
+    });
+
+    document.querySelectorAll('.relais-tab[data-filter]').forEach(button => {
+      button.addEventListener('click', () => {
+        Relais.filterTab(button.dataset.filter);
+      });
+    });
+
+    document.getElementById('scan-btn').addEventListener('click', () => {
+      Relais.doScan();
     });
 
     // Init on load
