@@ -43,6 +43,11 @@
     { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🛒', section: 'BACK-OFFICE' },
   ];
 
+  const EXTERNAL_APPS = [
+    { path: '/hub',    label: 'Application Hub',    icon: '🏭' },
+    { path: '/relais', label: 'Application Relais', icon: '📍' },
+  ];
+
   let currentUser = null;
 
   function loginUrl() {
@@ -157,6 +162,24 @@
       });
       nav.appendChild(section);
     });
+
+    const appsSection = document.createElement('div');
+    appsSection.className = 'sidebar-section';
+    appsSection.innerHTML = '<div class="sidebar-section-label">APPLICATIONS TERRAIN</div>';
+
+    EXTERNAL_APPS.forEach(app => {
+      const link = document.createElement('a');
+      link.href = app.path;
+      link.className = 'sidebar-link';
+      link.innerHTML = `
+        <span class="sidebar-link-icon">${app.icon}</span>
+        <span>${app.label}</span>
+        <span style="margin-left:auto;font-size:11px;opacity:.65">↗</span>
+      `;
+      appsSection.appendChild(link);
+    });
+
+    nav.appendChild(appsSection);
   }
 
   function navigateTo(path) {
