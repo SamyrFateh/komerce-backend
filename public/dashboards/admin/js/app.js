@@ -1,46 +1,95 @@
 /**
  * KOMERCE Dashboard — App
- * Routing SPA (pushState) + shell + dispatch.
+ * Routing SPA (pushState) + shell CT/BO + dispatch.
+ *
+ * Architecture shells :
+ *   CT (Tour de Contrôle) — accent bleu #3b82f6  — rôles : admin, finance, sourcing
+ *   BO (Back Office)      — accent teal #0d9488  — rôles : admin, hub, relais, support, finance
+ *
+ * Chaque ROUTE déclare un `shell` ('ct' | 'bo').
+ * La sidebar ne montre que les routes du shell actif.
+ * Le shell-switcher n'apparaît que si l'utilisateur a accès aux deux shells.
  */
 (function (global) {
   'use strict';
 
+  // ── Définition des shells ──────────────────────────────────────────────────
+
+  const SHELLS = {
+    ct: {
+      id:          'ct',
+      label:       'Tour de Contrôle',
+      shortLabel:  'CT',
+      emoji:       '🗼',
+      accent:      '#3b82f6',
+      accentBg:    '#1e3a5f',
+      description: 'Signal · Synthèse · Arbitrage · Décision',
+    },
+    bo: {
+      id:          'bo',
+      label:       'Back Office',
+      shortLabel:  'BO',
+      emoji:       '🗄️',
+      accent:      '#0d9488',
+      accentBg:    '#134e4a',
+      description: 'Traitement · Mise à jour · Exécution',
+    },
+  };
+
+  // ── Rôles et accès aux shells ──────────────────────────────────────────────
+
+  const ROLE_SHELLS = {
+    admin:    ['ct', 'bo'],
+    finance:  ['ct', 'bo'],
+    sourcing: ['ct', 'bo'],
+    hub:      ['bo'],
+    relais:   ['bo'],
+    support:  ['bo'],
+  };
+
+  // ── Registre des routes ────────────────────────────────────────────────────
+  // shell : 'ct' | 'bo'
+  // roles : null = tous les rôles du shell ; sinon restreint
+
   const ROUTES = [
-    { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',               icon: '🎯', section: 'PILOTAGE' },
-    { path: '/admin/sante',            view: 'SanteView',            label: 'Santé Business',         icon: '🏥', section: 'PILOTAGE' },
-    { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', section: 'PILOTAGE' },
-    { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', section: 'PILOTAGE' },
-    { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', section: 'PILOTAGE' },
-    { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', section: 'PILOTAGE' },
-    { path: '/admin/sales',            view: 'SalesView',            label: 'Ventes',                 icon: '📈', section: 'PILOTAGE' },
-    { path: '/admin/economic',         view: 'EconomicView',         label: 'Santé économique',       icon: '📊', section: 'PILOTAGE' },
-    { path: '/admin/pilotage-fin',     view: 'PilotageFinView',      label: 'Projection & Mix',       icon: '💹', section: 'PILOTAGE' },
-    { path: '/admin/invoices',         view: 'InvoicesView',         label: 'Factures',               icon: '📄', section: 'PILOTAGE' },
+    // ══ CT — Pilotage ══
+    { path: '/admin/pilotage',         view: 'PilotageView',         label: 'Pilotage',               icon: '🎯', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/sante',            view: 'SanteView',            label: 'Santé Business',         icon: '🏥', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/control-tower',    view: 'ControlTowerView',     label: 'Tour de contrôle',       icon: '🗼', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/costing',          view: 'CostingView',          label: 'Coût rendu relais',      icon: '💰', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/orders-logistics', view: 'OrdersLogisticsView',  label: 'Commandes & logistique', icon: '📦', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/event-workspaces', view: 'EventWorkspacesView',  label: 'Panier événement',       icon: '🎉', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/sales',            view: 'SalesView',            label: 'Ventes',                 icon: '📈', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/economic',         view: 'EconomicView',         label: 'Santé économique',       icon: '📊', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/pilotage-fin',     view: 'PilotageFinView',      label: 'Projection & Mix',       icon: '💹', shell: 'ct', section: 'PILOTAGE' },
+    { path: '/admin/invoices',         view: 'InvoicesView',         label: 'Factures',               icon: '📄', shell: 'ct', section: 'PILOTAGE' },
 
-    { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️', section: 'OPERATIONS' },
-    { path: '/admin/alerts',           view: 'ActionCenterView',     label: 'Alertes & Incidents',    icon: '🚨', section: 'OPERATIONS' },
-    { path: '/admin/clients',          view: 'ClientsView',          label: 'Clients',                icon: '👥', section: 'OPERATIONS' },
-    { path: '/admin/hub-relais',       view: 'HubRelaisView',        label: 'Hub & Relais',           icon: '🏭', section: 'OPERATIONS' },
-    { path: '/admin/transitaire',      view: 'TransitaireView',      label: 'Transitaire',            icon: '✈️', section: 'OPERATIONS' },
-    { path: '/admin/inventory',        view: 'InventoryView',        label: 'Inventaire Hub',         icon: '📋', section: 'OPERATIONS' },
+    // ══ CT — Sourcing / Pricing ══
+    { path: '/admin/sourcing',          view: 'SourcingView',          label: 'Sourcing',              icon: '🔎', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
+    { path: '/admin/sourcing-scanner',  view: 'SourcingScannerView',   label: 'Scanner catalogue',     icon: '📡', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
+    { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
+    { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', shell: 'ct', section: 'PRICING',   roles: ['admin'] },
+    { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
+    { path: '/admin/categories',        view: 'CategoriesView',        label: 'Catégories boutique',   icon: '🏷️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
+    { path: '/admin/products',          view: 'ProductsView',          label: 'Produits boutique',     icon: '🛍️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
 
-    { path: '/admin/categories',       view: 'CategoriesView',       label: 'Catégories boutique',    icon: '🏷️', section: 'CATALOGUE' },
-    { path: '/admin/products',         view: 'ProductsView',         label: 'Produits boutique',      icon: '🛍️', section: 'CATALOGUE' },
+    // ══ BO — Opérations ══
+    { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️', shell: 'bo', section: 'OPÉRATIONS' },
+    { path: '/admin/alerts',           view: 'ActionCenterView',     label: 'Alertes & Incidents',    icon: '🚨', shell: 'bo', section: 'OPÉRATIONS' },
+    { path: '/admin/clients',          view: 'ClientsView',          label: 'Clients',                icon: '👥', shell: 'bo', section: 'OPÉRATIONS', roles: ['admin','support','finance'] },
+    { path: '/admin/hub-relais',       view: 'HubRelaisView',        label: 'Hub & Relais',           icon: '🏭', shell: 'bo', section: 'OPÉRATIONS', roles: ['admin','hub','relais'] },
+    { path: '/admin/transitaire',      view: 'TransitaireView',      label: 'Transitaire',            icon: '✈️', shell: 'bo', section: 'OPÉRATIONS', roles: ['admin','hub'] },
+    { path: '/admin/inventory',        view: 'InventoryView',        label: 'Inventaire Hub',         icon: '📋', shell: 'bo', section: 'OPÉRATIONS', roles: ['admin','hub'] },
 
-    // Lot 4
-    { path: '/admin/sourcing',          view: 'SourcingView',          label: 'Sourcing',              icon: '🔎', section: 'SOURCING' },
-    { path: '/admin/sourcing-scanner',  view: 'SourcingScannerView',   label: 'Scanner catalogue',     icon: '📡', section: 'SOURCING' },
-    { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', section: 'PRICING' },
-    { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', section: 'PRICING' },
-    { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', section: 'PRICING' },
-    { path: '/admin/customs',           view: 'CustomsView',           label: 'Douane & shipments',    icon: '🛃', section: 'LOGISTIQUE' },
-    { path: '/admin/suppliers',         view: 'SuppliersView',         label: 'Fournisseurs',          icon: '🏭', section: 'LOGISTIQUE' },
+    // ══ BO — Finance ══
+    { path: '/admin/accounting',        view: 'AccountingView',        label: 'Comptabilité',          icon: '🧾', shell: 'bo', section: 'FINANCE', roles: ['admin','finance'] },
+    { path: '/admin/customs',           view: 'CustomsView',           label: 'Douane & shipments',    icon: '🛃', shell: 'bo', section: 'FINANCE', roles: ['admin','finance'] },
+    { path: '/admin/suppliers',         view: 'SuppliersView',         label: 'Fournisseurs',          icon: '🏭', shell: 'bo', section: 'FINANCE', roles: ['admin','sourcing'] },
 
-    { path: '/admin/accounting',        view: 'AccountingView',        label: 'Comptabilité',          icon: '🧾', section: 'FINANCE' },
-
-    { path: '/admin/settings',          view: 'SettingsView',          label: 'Paramètres',            icon: '⚙️', section: 'BACK-OFFICE' },
-    { path: '/admin/simulator',         view: 'SimulatorView',         label: 'Simulateur',            icon: '🧪', section: 'BACK-OFFICE' },
-    { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🛒', section: 'BACK-OFFICE' },
+    // ══ BO — Config ══
+    { path: '/admin/settings',          view: 'SettingsView',          label: 'Paramètres',            icon: '⚙️', shell: 'bo', section: 'CONFIG', roles: ['admin'] },
+    { path: '/admin/simulator',         view: 'SimulatorView',         label: 'Simulateur',            icon: '🧪', shell: 'bo', section: 'CONFIG', roles: ['admin'] },
+    { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🛒', shell: 'bo', section: 'CONFIG', roles: ['admin','support'] },
   ];
 
   const EXTERNAL_APPS = [
@@ -48,7 +97,12 @@
     { path: '/relais', label: 'Application Relais', icon: '📍' },
   ];
 
+  // ── État ──────────────────────────────────────────────────────────────────
+
   let currentUser = null;
+  let activeShell = 'ct';    // shell courant
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
   function loginUrl() {
     const next = window.location.pathname + window.location.search + window.location.hash;
@@ -59,18 +113,16 @@
     window.location.replace(loginUrl());
   }
 
-  async function requireAdminSession() {
+  async function requireSession() {
     const res = await fetch('/api/auth/me', {
       method: 'GET',
       credentials: 'include',
       headers: { Accept: 'application/json' },
     });
-    if (!res.ok) {
-      redirectToLogin();
-      throw new Error('unauthorized');
-    }
+    if (!res.ok) { redirectToLogin(); throw new Error('unauthorized'); }
     const user = await res.json();
-    if (user.role !== 'admin') {
+    const allowedRoles = Object.keys(ROLE_SHELLS);
+    if (!allowedRoles.includes(user.role)) {
       window.location.replace('/');
       throw new Error('forbidden');
     }
@@ -79,30 +131,74 @@
     return user;
   }
 
-  function hydrateHeaderUser() {
-    if (!currentUser) return;
-    const name = currentUser.full_name || currentUser.email || 'Admin';
-    const avatar = document.getElementById('user-avatar');
-    const nameEl = document.getElementById('user-name');
-    const roleEl = document.querySelector('.header-user-role');
-    if (avatar) avatar.textContent = String(name).trim().charAt(0).toUpperCase() || 'A';
-    if (nameEl) nameEl.textContent = name;
-    if (roleEl) roleEl.textContent = currentUser.role || 'admin';
+  // ── Helpers rôle / shell ──────────────────────────────────────────────────
+
+  function userRole() {
+    return (currentUser && currentUser.role) || 'admin';
   }
 
+  function shellsForUser() {
+    return ROLE_SHELLS[userRole()] || ['bo'];
+  }
+
+  function routeVisibleInShell(route) {
+    if (route.shell !== activeShell) return false;
+    if (!route.roles) return true;               // pas de restriction de rôle
+    return route.roles.includes(userRole());
+  }
+
+  function defaultPathForShell(shell) {
+    const first = ROUTES.find(r => r.shell === shell && (!r.roles || r.roles.includes(userRole())));
+    return first ? first.path : null;
+  }
+
+  // ── CSS dynamique shell ───────────────────────────────────────────────────
+
+  function applyShellTheme(shellId) {
+    const s = SHELLS[shellId];
+    const root = document.documentElement;
+    root.style.setProperty('--shell-accent',    s.accent);
+    root.style.setProperty('--shell-accent-bg', s.accentBg);
+    // Mise à jour de la sidebar border
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+      sidebar.style.borderRight = `3px solid ${s.accent}`;
+    }
+    // Mise à jour du label shell
+    const titleEl = document.getElementById('sidebar-shell-title');
+    if (titleEl) titleEl.textContent = `${s.emoji} ${s.label}`;
+    const descEl = document.getElementById('sidebar-shell-desc');
+    if (descEl) descEl.textContent = s.description;
+  }
+
+  // ── Render shell ──────────────────────────────────────────────────────────
+
   function renderShell() {
+    const shell = SHELLS[activeShell];
+    const userShells = shellsForUser();
+    const showSwitcher = userShells.length > 1;
+
     document.body.innerHTML = `
       <div class="app-shell">
-        <aside class="sidebar">
+        <aside class="sidebar" style="border-right: 3px solid ${shell.accent}">
+
           <div class="sidebar-brand">
             <div class="sidebar-brand-logo">K</div>
             <div>
-              <div class="sidebar-brand-text">Komerce</div>
-              <div class="sidebar-brand-sub">Dubai → Comores</div>
+              <div class="sidebar-brand-text" id="sidebar-shell-title">${shell.emoji} ${shell.label}</div>
+              <div class="sidebar-brand-sub" id="sidebar-shell-desc">${shell.description}</div>
             </div>
           </div>
+
+          ${showSwitcher ? renderSwitcherHTML(userShells) : ''}
+
           <nav class="sidebar-nav" id="sidebar-nav"></nav>
+
           <div class="sidebar-footer">
+            <div class="sidebar-footer-user">
+              <div class="sidebar-footer-name" id="user-footer-name">—</div>
+              <div class="sidebar-footer-role" id="user-footer-role"></div>
+            </div>
             <div class="sidebar-rate">
               <div>Taux AED → KMF</div>
               <div class="sidebar-rate-value" id="sidebar-fx-rate">—</div>
@@ -110,6 +206,7 @@
             </div>
           </div>
         </aside>
+
         <header class="header">
           <div class="header-search">
             <span class="header-search-icon">🔍</span>
@@ -121,25 +218,82 @@
               <div class="header-user-avatar" id="user-avatar">A</div>
               <div>
                 <div class="header-user-name" id="user-name">Admin</div>
-                <div class="header-user-role">Super Admin</div>
+                <div class="header-user-role" id="user-role-label">—</div>
               </div>
             </div>
           </div>
         </header>
+
         <main class="main" id="main-content">
           <div class="loading-state"><span class="loader"></span> Chargement...</div>
         </main>
       </div>
     `;
-    renderSidebar();
+
+    // Appliquer tokens CSS shell
+    applyShellTheme(activeShell);
+
+    // Wiring switcher
+    if (showSwitcher) {
+      document.getElementById('shell-switcher').addEventListener('click', e => {
+        const btn = e.target.closest('[data-shell]');
+        if (!btn) return;
+        switchShell(btn.dataset.shell);
+      });
+    }
+
+    buildSidebarNav();
+    hydrateHeaderUser();
     renderHeaderPeriod();
   }
 
-  function renderSidebar() {
+  function renderSwitcherHTML(userShells) {
+    const tabs = userShells.map(id => {
+      const s = SHELLS[id];
+      const isActive = id === activeShell;
+      return `
+        <button class="shell-tab${isActive ? ' shell-tab--active' : ''}"
+                data-shell="${id}"
+                style="${isActive ? `background:${s.accentBg};color:#fff;border-bottom:2px solid ${s.accent}` : ''}">
+          ${s.emoji} ${s.shortLabel}
+        </button>`;
+    }).join('');
+    return `<div class="shell-switcher" id="shell-switcher">${tabs}</div>`;
+  }
+
+  function switchShell(shellId) {
+    if (!SHELLS[shellId]) return;
+    activeShell = shellId;
+    applyShellTheme(shellId);
+    // Mettre à jour les tabs du switcher
+    document.querySelectorAll('.shell-tab').forEach(btn => {
+      const isActive = btn.dataset.shell === shellId;
+      const s = SHELLS[btn.dataset.shell];
+      btn.classList.toggle('shell-tab--active', isActive);
+      btn.style.background   = isActive ? s.accentBg : '';
+      btn.style.color        = isActive ? '#fff' : '';
+      btn.style.borderBottom = isActive ? `2px solid ${s.accent}` : '';
+    });
+    // Reconstruire la sidebar
+    buildSidebarNav();
+    // Naviguer vers la première route du nouveau shell
+    const defaultPath = defaultPathForShell(shellId);
+    if (defaultPath) navigateTo(defaultPath);
+  }
+
+  // ── Sidebar nav ────────────────────────────────────────────────────────────
+
+  function buildSidebarNav() {
     const nav = document.getElementById('sidebar-nav');
+    if (!nav) return;
+    nav.innerHTML = '';
+
     const currentPath = window.location.pathname;
+    const visibleRoutes = ROUTES.filter(routeVisibleInShell);
+
+    // Grouper par section
     const sections = {};
-    ROUTES.forEach(route => {
+    visibleRoutes.forEach(route => {
       if (!sections[route.section]) sections[route.section] = [];
       sections[route.section].push(route);
     });
@@ -150,10 +304,10 @@
       section.innerHTML = `<div class="sidebar-section-label">${sectionLabel}</div>`;
       routes.forEach(route => {
         const link = document.createElement('a');
-        link.href = route.path;
-        link.dataset.path = route.path;
-        link.className = 'sidebar-link' + (currentPath === route.path ? ' is-active' : '');
-        link.innerHTML = `<span class="sidebar-link-icon">${route.icon}</span><span>${route.label}</span>`;
+        link.href           = route.path;
+        link.dataset.path   = route.path;
+        link.className      = 'sidebar-link' + (currentPath === route.path ? ' is-active' : '');
+        link.innerHTML      = `<span class="sidebar-link-icon">${route.icon}</span><span>${route.label}</span>`;
         link.addEventListener('click', event => {
           event.preventDefault();
           navigateTo(route.path);
@@ -163,27 +317,35 @@
       nav.appendChild(section);
     });
 
+    // Applications terrain (toujours visibles)
     const appsSection = document.createElement('div');
     appsSection.className = 'sidebar-section';
-    appsSection.innerHTML = '<div class="sidebar-section-label">APPLICATIONS TERRAIN</div>';
-
+    appsSection.innerHTML = '<div class="sidebar-section-label">APPLIS TERRAIN</div>';
     EXTERNAL_APPS.forEach(app => {
       const link = document.createElement('a');
-      link.href = app.path;
-      link.className = 'sidebar-link';
-      link.innerHTML = `
+      link.href       = app.path;
+      link.className  = 'sidebar-link';
+      link.innerHTML  = `
         <span class="sidebar-link-icon">${app.icon}</span>
         <span>${app.label}</span>
-        <span style="margin-left:auto;font-size:11px;opacity:.65">↗</span>
+        <span style="margin-left:auto;font-size:11px;opacity:.55">↗</span>
       `;
       appsSection.appendChild(link);
     });
-
     nav.appendChild(appsSection);
   }
 
+  // ── Navigation ─────────────────────────────────────────────────────────────
+
   function navigateTo(path) {
-    if (!ROUTES.some(route => route.path === path)) return false;
+    const route = ROUTES.find(r => r.path === path);
+    if (!route) return false;
+    // Si la route est dans un autre shell → changer de shell silencieusement
+    if (route.shell !== activeShell) {
+      activeShell = route.shell;
+      applyShellTheme(activeShell);
+      buildSidebarNav();
+    }
     if (window.location.pathname !== path) {
       window.history.pushState({}, '', path);
     }
@@ -192,14 +354,13 @@
     return true;
   }
 
-  // Compatibilité avec les vues Lot 4 qui appellent KmcApp.navigate('pricing')
-  // ou KmcApp.navigate('PricingView').
+  // Compatibilité vues Lot 4 qui appellent KmcApp.navigate('PricingView') ou 'pricing'
   function navigate(viewOrPath) {
     const value = String(viewOrPath || '');
-    const route = ROUTES.find(item =>
-      item.view === value ||
-      item.path === value ||
-      item.path === '/admin/' + value.replace(/^\/+/, '')
+    const route = ROUTES.find(r =>
+      r.view === value ||
+      r.path === value ||
+      r.path === '/admin/' + value.replace(/^\/+/, '')
     );
     return route ? navigateTo(route.path) : false;
   }
@@ -211,49 +372,56 @@
     });
   }
 
+  // ── Header / UI helpers ────────────────────────────────────────────────────
+
+  function hydrateHeaderUser() {
+    if (!currentUser) return;
+    const name   = currentUser.full_name || currentUser.email || 'Admin';
+    const role   = currentUser.role || 'admin';
+    const avatar = document.getElementById('user-avatar');
+    const nameEl = document.getElementById('user-name');
+    const roleEl = document.getElementById('user-role-label');
+    const footerName = document.getElementById('user-footer-name');
+    const footerRole = document.getElementById('user-footer-role');
+    if (avatar)     avatar.textContent     = String(name).trim().charAt(0).toUpperCase() || 'A';
+    if (nameEl)     nameEl.textContent     = name;
+    if (roleEl)     roleEl.textContent     = role;
+    if (footerName) footerName.textContent = name;
+    if (footerRole) footerRole.textContent = role;
+  }
+
   function renderHeaderPeriod() {
     const filters = KmcFilters.get();
     const el = document.getElementById('header-period');
+    if (!el) return;
     if (filters.from && filters.to) {
       const from = new Date(filters.from).toLocaleDateString('fr-FR');
-      const to = new Date(filters.to).toLocaleDateString('fr-FR');
+      const to   = new Date(filters.to).toLocaleDateString('fr-FR');
       el.textContent = `📅 ${from} – ${to}`;
     }
   }
 
-  async function invokeView(View, main) {
-    // Format objet : global.MaVue = { render }
-    if (View && typeof View.render === 'function') {
-      return View.render(main);
-    }
+  // ── Dispatch vue ───────────────────────────────────────────────────────────
 
+  async function invokeView(View, main) {
+    if (View && typeof View.render === 'function') return View.render(main);
     if (typeof View === 'function') {
       const source = Function.prototype.toString.call(View);
-
-      // Format constructeur Lot 4 :
-      // function MaVue() { this.render = function (...) {} }
       if (/\bthis\.render\s*=/.test(source)) {
         const instance = new View();
-
-        if (!instance || typeof instance.render !== 'function') {
+        if (!instance || typeof instance.render !== 'function')
           throw new Error('constructeur de vue sans méthode render');
-        }
-
         return instance.render(main);
       }
-
-      // Format fonction directe :
-      // global.MaVue = async function (rootEl) {}
       return View(main);
     }
-
     throw new Error('format de vue incompatible');
   }
 
   function dispatchView() {
-    const path = window.location.pathname;
-    const route = ROUTES.find(item => item.path === path);
-    const main = document.getElementById('main-content');
+    const path  = window.location.pathname;
+    const route = ROUTES.find(r => r.path === path);
+    const main  = document.getElementById('main-content');
 
     if (!route || !route.view) {
       const label = route ? route.label : path;
@@ -279,13 +447,15 @@
     });
   }
 
+  // ── Taux de change ─────────────────────────────────────────────────────────
+
   async function loadFxRate() {
     try {
-      const config = await KmcApi.getFinanceConfig();
-      const rate = config && (config.aed_to_kmf_rate || config.fx_rate_aed_kmf);
-      const rateEl = document.getElementById('sidebar-fx-rate');
+      const config  = await KmcApi.getFinanceConfig();
+      const rate    = config && (config.aed_to_kmf_rate || config.fx_rate_aed_kmf);
+      const rateEl  = document.getElementById('sidebar-fx-rate');
       const deltaEl = document.getElementById('sidebar-fx-delta');
-      if (rateEl) rateEl.textContent = rate ? `1 AED = ${Number(rate).toFixed(2)} KMF` : '—';
+      if (rateEl)  rateEl.textContent  = rate ? `1 AED = ${Number(rate).toFixed(2)} KMF` : '—';
       if (deltaEl) deltaEl.textContent = '';
     } catch (_) {
       const deltaEl = document.getElementById('sidebar-fx-delta');
@@ -293,19 +463,45 @@
     }
   }
 
+  // ── Déterminer shell initial ────────────────────────────────────────────────
+
+  function resolveInitialShell() {
+    const userShells = shellsForUser();
+    const path       = window.location.pathname;
+    const route      = ROUTES.find(r => r.path === path);
+
+    if (route && userShells.includes(route.shell)) {
+      return route.shell;
+    }
+    // Défaut : CT si l'utilisateur y a accès, sinon BO
+    return userShells.includes('ct') ? 'ct' : 'bo';
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
   async function init() {
     try {
-      await requireAdminSession();
+      await requireSession();
     } catch (_) {
       return;
     }
+
+    activeShell = resolveInitialShell();
+
     KmcFilters.init();
     renderShell();
-    hydrateHeaderUser();
     loadFxRate();
     dispatchView();
 
     window.addEventListener('popstate', () => {
+      // Déduire le shell depuis la route si possible
+      const path  = window.location.pathname;
+      const route = ROUTES.find(r => r.path === path);
+      if (route && route.shell !== activeShell) {
+        activeShell = route.shell;
+        applyShellTheme(activeShell);
+        buildSidebarNav();
+      }
       refreshActiveLink();
       dispatchView();
     });
@@ -317,6 +513,7 @@
   }
 
   global.KmcApp = { init, navigateTo, navigate };
+
 })(window);
 
 document.addEventListener('DOMContentLoaded', () => window.KmcApp.init());
