@@ -117,9 +117,11 @@ async function openSettlement(sharedCartId, userId, opts = {}) {
       product_label: 'panier_en_reglement',
     };
 
+    // LOT 1.3 — changer le statut en closed_for_settlement (pas seulement metadata)
     const update = await client.query(
       `UPDATE shared_carts
-          SET metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb,
+          SET status = 'closed_for_settlement',
+              metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb,
               updated_at = NOW()
         WHERE id = $1 AND beneficiary_user_id = $2
         RETURNING *`,

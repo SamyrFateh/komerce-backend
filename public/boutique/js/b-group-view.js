@@ -55,7 +55,6 @@ import {
 } from './group/group-helpers.js';
 import {
   renderCreatorCartSwitcher,
-  renderCreatorMiniGuide,
   renderCreatorArticlesPanel,
   renderProgress,
   renderCreatorActions,
@@ -265,7 +264,7 @@ function renderEngagementForm(token, cart, isCreator = false) {
   return `
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
-      <div class="k-group-section-title">${isCreator ? '💸 Enregistrer ma participation' : '💸 Participer'}</div>
+      <div class="k-group-section-title">💸 Participer</div>
       <p class="k-group-desc-text">
         Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
       </p>
@@ -702,8 +701,6 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
 
 
-/* renderCreatorMiniGuide → group/group-render-creator.js (lot JS-2) */
-
 /* renderCreatorArticlesPanel → group/group-render-creator.js (lot JS-2) */
 
 function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
@@ -917,8 +914,6 @@ export async function renderGroupView(opts = {}) {
     } catch (_) {}
   }
 
-  const showSelfForm = isCartOpen && cart.status !== 'fully_funded' && remainingKmf(cart) > 0;
-
   const refreshView = () => renderGroupView(opts);
 
   el.innerHTML = `
@@ -931,18 +926,8 @@ export async function renderGroupView(opts = {}) {
             : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
         </div>
         ${renderCreatorCartSwitcher(ownerCarts, cartId)}
-        ${renderCreatorMiniGuide(settlementOpen)}
-        ${renderProgress(cart, contributions, commitmentsList)}
-        ${showSelfForm && !settlementOpen ? `
-          <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi m'engager</button>
-          <div class="k-group-self-panel" id="k-group-self-panel" hidden>
-            ${renderEngagementForm(state.shareToken, cart, true)}
-          </div>` : ''}
-        ${showSelfForm && settlementOpen ? `
-          <button class="k-group-self-toggle" id="k-group-self-toggle" type="button">Je veux aussi payer</button>
-          <div class="k-group-self-panel" id="k-group-self-panel" hidden>
-            ${renderPaymentForm(state.shareToken, cart)}
-          </div>` : ''}
+${renderProgress(cart, contributions, commitmentsList)}
+
         ${renderCreatorActions(cart)}
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}
@@ -955,18 +940,6 @@ export async function renderGroupView(opts = {}) {
       renderGroupView({ ...opts, cartId: nextId });
     });
   });
-
-  if (showSelfForm) {
-    el.querySelector('#k-group-self-toggle')?.addEventListener('click', () => {
-      const panel = el.querySelector('#k-group-self-panel');
-      if (panel) panel.hidden = !panel.hidden;
-    });
-    if (!settlementOpen) {
-      bindEngagementForm(el, state.shareToken, cart, refreshView);
-    } else {
-      bindPaymentForm(el, state.shareToken, cart);
-    }
-  }
 
   bindCreatorActions(el, cart, shareUrl, cartId, refreshView);
   hideBanner();

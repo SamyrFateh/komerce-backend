@@ -138,7 +138,8 @@ async function confirmContributionFromStripeSafely(session) {
     const contributed = r(cart.contributed_kmf);
     const remaining = Math.max(0, r(cart.remaining_kmf));
 
-    if (!['active', 'partially_funded'].includes(cart.status)) {
+    if (!['active', 'partially_funded',
+          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
       return markPaidButNotCounted(client, contribution, cart, session, 'cart_not_open_for_contribution');
     }
 
@@ -159,7 +160,16 @@ async function confirmContributionFromStripeSafely(session) {
 
     const newContributed = Math.min(total, contributed + amount);
     const newRemaining = Math.max(0, total - newContributed);
-    const newStatus = newRemaining === 0 ? 'fully_funded' : 'partially_funded';
+
+    // LOT 1.4 — statuts v4 pour les paniers en règlement
+    let newStatus;
+    if (['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
+      // Flux v4 : utiliser les statuts settlement
+      newStatus = newRemaining === 0 ? 'ready_to_finalize' : 'settlement_in_progress';
+    } else {
+      // Flux legacy (active / partially_funded)
+      newStatus = newRemaining === 0 ? 'fully_funded' : 'partially_funded';
+    }
 
     const { rows: [updatedContribution] } = await client.query(
       `UPDATE shared_cart_contributions

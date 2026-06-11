@@ -8,6 +8,12 @@
  *   - elles ne lisent pas state, ne font pas de fetch, ne touchent pas le DOM
  *
  * Le binding des événements reste dans group-actions.js ou b-group-view.js.
+ *
+ * LOT 3.3 — Carte compacte 3 étapes (SHARE_AND_LOCK / CONFIRM / ORDER_CREATED)
+ * LOT 4   — Contribution créateur supprimée en phase ouverte
+ * LOT 5   — Accordéons détails (participations, articles, options)
+ * LOT 7   — Wording normalisé
+ * LOT 8   — Garde-fous front
  */
 
 import { sanitize, fmt } from '../b-utils.js';
@@ -22,6 +28,7 @@ import {
   remainingKmf,
   settlementExpiresAt,
   timeRemaining,
+  getGroupStep,
 } from './group-helpers.js';
 
 /* ── Switcher multi-paniers ─────────────────────────────────────── */
@@ -61,36 +68,10 @@ export function renderCreatorCartSwitcher(carts = [], selectedId) {
     </div>`;
 }
 
-/* ── Mini-guide créateur ────────────────────────────────────────── */
-
-/**
- * Rendu du mini-guide 3 étapes affiché sous le header créateur.
- * @param {boolean} [settlementOpen=false]
- * @returns {string}
- */
-export function renderCreatorMiniGuide(settlementOpen = false) {
-  if (settlementOpen) {
-    return `
-      <div class="k-group-mini-guide">
-        <span><b>1</b> Paiements ouverts</span>
-        <span><b>2</b> Suivez les règlements</span>
-        <span><b>3</b> Finalisez la commande</span>
-      </div>`;
-  }
-
-  return `
-    <div class="k-group-mini-guide">
-      <span><b>1</b> Partagez le lien</span>
-      <span><b>2</b> Les proches s'engagent</span>
-      <span><b>3</b> Lancez le règlement</span>
-    </div>`;
-}
-
 /* ── Colonne articles (aside droit desktop) ─────────────────────── */
 
 /**
  * Rendu du panneau latéral d'articles du panier (colonne droite cockpit).
- * Affiche jusqu'à 8 articles avec image, nom, quantité, prix.
  * @param {Array}  [items=[]]  articles du panier (format snapshot ou state.cart)
  * @param {object} [cart={}]   panier partagé (pour total_kmf_snapshot)
  * @returns {string}
@@ -138,11 +119,10 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
 
 /**
  * Rendu de la carte de progression du panier partagé.
- * Affiche barre de progression, liste des engagements/contributions,
- * et récapitulatif règlement si ouvert.
- * @param {object} cart            panier partagé
- * @param {Array}  contributions   contributions payées (Stripe)
- * @param {Array}  commitmentsList engagements (indicatifs ou verrouillés)
+ * Affiche barre double lecture, liste engagements/contributions, récap règlement.
+ * @param {object} cart
+ * @param {Array}  contributions
+ * @param {Array}  commitmentsList
  * @returns {string}
  */
 export function renderProgress(cart, contributions, commitmentsList) {
@@ -150,44 +130,23 @@ export function renderProgress(cart, contributions, commitmentsList) {
   const total     = r(cart.total_kmf_snapshot);
   const confirmed = r(cart.contributed_kmf);
   const remaining = remainingKmf(cart);
-  const isOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
   const meta      = metaOf(cart);
 
-  let commitmentRows = '';
-  if (sOpen && commitmentsList?.length) {
-    commitmentRows = `
-      <div class="k-group-contribs-label">Engagements verrouillés (${commitmentsList.length})</div>
-      <div class="k-group-commitment-list">
-        ${commitmentsList.map(c => {
-          const paid = contributions?.some(co =>
-            co.commitment_id === c.id && co.status === 'paid'
-          );
-          return `
-            <div class="k-group-commitment-row">
-              <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-              <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-              <span class="k-group-commitment-status">${paid ? '✅ Payé' : '⏳ En attente'}</span>
-            </div>`;
-        }).join('')}
-      </div>`;
-  } else if (!sOpen && commitmentsList?.length) {
-    commitmentRows = `
-      <div class="k-group-contribs-label">Engagements indicatifs (${commitmentsList.length})</div>
-      <div class="k-group-commitment-list">
-        ${commitmentsList.map(c => `
-          <div class="k-group-commitment-row">
-            <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-            <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-            <span class="k-group-commitment-status" style="color:var(--text-muted)">indicatif</span>
-          </div>`).join('')}
-      </div>`;
-  } else {
-    commitmentRows = `<p class="k-group-contrib-empty">${
-      sOpen
-        ? 'Aucun engagement verrouillé.'
-        : 'Aucun engagement encore — partagez le lien !'
-    }</p>`;
-  }
+  // Barre double lecture
+  const pPaid = pct(confirmed, total);
+  const eng   = engagementCoverage(commitmentsList, total);
+  const isOverCovered = eng.pctRaw > 100;
+
+  const overBadge = isOverCovered
+    ? `<span class="k-group-progress-badge k-group-progress-badge--over"
+          aria-label="${eng.pctRaw}% engagé — sur-couvert">${eng.pctRaw}\u00a0% engagé</span>`
+    : '';
+
+  const legendPaid    = `<span class="k-group-progress-legend-paid">● payé&nbsp;: ${fmt(confirmed, 'KMF')}</span>`;
+  const legendEngaged = eng.engagementsTotal > 0
+    ? `<span class="k-group-progress-legend-engaged">● engagé&nbsp;: ${fmt(eng.engagementsTotal, 'KMF')}</span>`
+    : '';
+  const legendTotal   = `<span class="k-group-progress-legend-total">total&nbsp;: ${fmt(total, 'KMF')}</span>`;
 
   const settlementSummary = sOpen ? `
     <div class="k-group-settlement-summary">
@@ -197,26 +156,37 @@ export function renderProgress(cart, contributions, commitmentsList) {
         : ''}
     </div>` : '';
 
-  // ── Barre double lecture ───────────────────────────────────────────
-  // pPaid    : % réellement payé (0–100, barre verte de premier plan)
-  // eng      : couverture d'intention calculée depuis les engagements
-  // pctBadge : valeur brute pour le badge sur-couvert (peut dépasser 100)
-  const pPaid = pct(confirmed, total);
-  const eng   = engagementCoverage(commitmentsList, total);
-  const isOverCovered = eng.pctRaw > 100;
-
-  // Badge sur-couvert : affiché si engagements > total
-  const overBadge = isOverCovered
-    ? `<span class="k-group-progress-badge k-group-progress-badge--over"
-          aria-label="${eng.pctRaw}% engagé — sur-couvert">${eng.pctRaw}\u00a0% engagé</span>`
-    : '';
-
-  // Ligne de légende sous la barre
-  const legendPaid    = `<span class="k-group-progress-legend-paid">● payé&nbsp;: ${fmt(confirmed, 'KMF')}</span>`;
-  const legendEngaged = eng.engagementsTotal > 0
-    ? `<span class="k-group-progress-legend-engaged">● engagé&nbsp;: ${fmt(eng.engagementsTotal, 'KMF')}</span>`
-    : '';
-  const legendTotal   = `<span class="k-group-progress-legend-total">total&nbsp;: ${fmt(total, 'KMF')}</span>`;
+  // Participations compactes (LOT 5)
+  let commitmentRows = '';
+  if (commitmentsList?.length) {
+    const label = sOpen ? 'Participations verrouillées' : 'Participations indicatives';
+    commitmentRows = `
+      <details class="k-group-accordion">
+        <summary>Voir les participations (${commitmentsList.length})</summary>
+        <div class="k-group-commitment-list">
+          ${commitmentsList.map(c => {
+            const paid = contributions?.some(co =>
+              co.commitment_id === c.id && co.status === 'paid'
+            );
+            const statusTag = paid
+              ? '<span class="k-group-commitment-status">✅ Payé</span>'
+              : sOpen
+                ? '<span class="k-group-commitment-status">⏳ En attente</span>'
+                : '<span class="k-group-commitment-status" style="color:var(--text-muted)">indicatif</span>';
+            return `
+              <div class="k-group-commitment-row">
+                <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
+                <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+                ${statusTag}
+              </div>`;
+          }).join('')}
+        </div>
+      </details>`;
+  } else {
+    commitmentRows = `<p class="k-group-contrib-empty">${
+      sOpen ? 'Aucun engagement verrouillé.' : 'Aucun engagement encore — partagez le lien !'
+    }</p>`;
+  }
 
   return `
     <div class="k-group-progress-card" id="k-group-progress-card">
@@ -232,13 +202,11 @@ export function renderProgress(cart, contributions, commitmentsList) {
         <div class="k-group-progress"
              aria-label="Payé ${pPaid}% · Engagé ${eng.pctCapped}%"
              role="group">
-          <!-- Couche intention (fond, toujours sous le payé) -->
           ${eng.pctCapped > 0
             ? `<span class="k-group-progress-bar k-group-progress-bar--engaged"
                      style="width:${eng.pctCapped}%"
                      aria-label="Engagé ${eng.pctCapped}%"></span>`
             : ''}
-          <!-- Couche réelle (premier plan) -->
           <span class="k-group-progress-bar k-group-progress-bar--paid"
                 style="width:${pPaid}%"
                 aria-label="Payé ${pPaid}%"></span>
@@ -249,7 +217,7 @@ export function renderProgress(cart, contributions, commitmentsList) {
           ${legendTotal}
         </div>
       </div>
-      ${remaining > 0 && isOpen && sOpen
+      ${remaining > 0 && sOpen
         ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
         : ''}
       <div class="k-group-contribs">
@@ -258,123 +226,208 @@ export function renderProgress(cart, contributions, commitmentsList) {
     </div>`;
 }
 
-/* ── Carte d'actions créateur ───────────────────────────────────── */
+/* ── Carte d'actions créateur (LOT 3.3 / LOT 4 / LOT 7 / LOT 8) ── */
 
 /**
- * Rendu de la carte d'actions du créateur.
- * Gère trois états : commande créée / panier clôturé / phase ouverte / phase règlement.
- * Le binding des boutons est délégué à group-actions.js → bindCreatorActions().
- * @param {object} cart  panier partagé
+ * Rendu de la carte d'actions du créateur — 3 étapes compactes.
+ *
+ * Étapes :
+ *   SHARE_AND_LOCK  → Étape 1 (Partager) + Étape 2 (Bloquer)
+ *   CONFIRM         → Étape 3 (Confirmer la commande)
+ *   ORDER_CREATED   → Commande créée
+ *
+ * LOT 4 — le créateur ne voit JAMAIS le formulaire d'engagement en phase ouverte.
+ * LOT 7 — wording normalisé (pas de "Passer au règlement", "Valider", "Clôturer"…).
+ * LOT 8 — garde-fous : pas de bouton Confirmer en phase SHARE_AND_LOCK,
+ *          mention relais si absent, état terminal sans action si annulé/expiré.
+ *
+ * @param {object} cart            panier partagé
+ * @param {object} [opts={}]
+ * @param {string} [opts.relayId]  delivery_relay_id courant (pour garde-fou LOT 8)
  * @returns {string}
  */
-export function renderCreatorActions(cart) {
-  const sOpen    = isSettlementOpen(cart);
-  const isOpen   = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+export function renderCreatorActions(cart, opts = {}) {
+  const step      = getGroupStep(cart);
+  const remaining = remainingKmf(cart);
+  const fullyPaid = remaining <= 0;
 
-  if (cart.status === 'converted_to_order' || cart.finalized_order_id) {
+  /* ── LOT 8 : état terminal annulé / expiré ─────────────────────── */
+  if (['cancelled', 'expired'].includes(cart.status)) {
+    const label = cart.status === 'cancelled' ? '❌ Panier annulé' : '⏱️ Panier expiré';
     return `
       <div class="k-group-card k-group-actions-card">
-        <div class="k-group-section-title">Commande créée</div>
-        <p class="k-group-finalized-hint">Ce panier est clôturé et lié à une commande Komerce.</p>
-        ${cart.finalized_order_id ? `<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>` : ''}
+        <p class="k-group-finalized-hint">${label}</p>
       </div>`;
   }
-  if (!isOpen) return `<p class="k-group-finalized-hint">Ce panier est clôturé.</p>`;
 
-  const fullyFunded = cart.status === 'fully_funded' || remainingKmf(cart) <= 0;
-  const gap = remainingKmf(cart);
-
-  // S2-04 — Expiration règlement
-  const expAt   = settlementExpiresAt(cart);
-  const expLeft = expAt ? timeRemaining(expAt) : null;
-  const expSoon = expAt && (expAt - Date.now() < 6 * 3_600_000);
-  const expirationHtml = sOpen && expLeft ? `
-    <p class="k-group-share-hint${expSoon ? ' is-exp-soon' : ''}" style="margin-top:6px">
-      ⏱️ Règlement ouvert jusqu'au
-      ${expAt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-      — ${expLeft}
-    </p>` : '';
-
-  // S2-01 — Bouton annuler (présent dans les deux phases)
-  const cancelBtn = `
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
-        🗑 Annuler le panier
-      </button>
-    </div>`;
-
-  if (!sOpen) {
-    // S2-03 — Sélecteur durée règlement intégré
+  /* ── Phase ORDER_CREATED ────────────────────────────────────────── */
+  if (step === 'ORDER_CREATED') {
     return `
       <div class="k-group-card k-group-actions-card">
-        <div class="k-group-section-title">Gérer le panier</div>
-        <div class="k-group-creator-actions">
+        <div class="k-group-step-label">Commande créée</div>
+        <p class="k-group-finalized-hint">Le panier est terminé.</p>
+        ${cart.finalized_order_id
+          ? `<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>`
+          : ''}
+      </div>`;
+  }
+
+  /* ── Phase CONFIRM (règlement ouvert) ───────────────────────────── */
+  if (step === 'CONFIRM') {
+    // LOT 8 — garde-fou relais
+    const relayId = opts.relayId || cart.delivery_relay_id;
+    const noRelayWarning = !relayId
+      ? `<p class="k-group-warn">⚠️ Choisissez un relais de livraison avant de confirmer la commande.</p>`
+      : '';
+
+    // Expiration règlement
+    const expAt   = settlementExpiresAt(cart);
+    const expLeft = expAt ? timeRemaining(expAt) : null;
+    const expSoon = expAt && (expAt - Date.now() < 6 * 3_600_000);
+    const expirationHtml = expLeft ? `
+      <p class="k-group-share-hint${expSoon ? ' is-exp-soon' : ''}" style="margin-top:6px">
+        ⏱️ ${expLeft}
+      </p>` : '';
+
+    // Bouton confirmer / payer le reste
+    let confirmBlock;
+    if (fullyPaid) {
+      confirmBlock = `
+        <div class="k-group-funded-callout">
+          <strong>✅ Tout est payé.</strong>
+          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize"
+            ${!relayId ? 'disabled' : ''}>
+            Confirmer la commande
+          </button>
+          <p class="k-group-step-hint">La commande partira en préparation.</p>
+        </div>`;
+    } else {
+      const gapFmt = fmt(remaining, 'KMF');
+      confirmBlock = `
+        <div class="k-group-funded-callout k-group-funded-callout--gap">
+          <strong>Il reste ${gapFmt}.</strong>
+          <div class="k-group-actions-row" style="margin-top:12px">
+            <button class="k-group-btn k-group-btn--ghost" id="k-group-wait">
+              Attendre
+            </button>
+            <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize-gap"
+              ${!relayId ? 'disabled' : ''}>
+              Je paie le reste
+            </button>
+          </div>
+          <p class="k-group-step-hint">Je paie le reste, puis la commande sera créée.</p>
+        </div>`;
+    }
+
+    return `
+      <div class="k-group-card k-group-actions-card">
+        <div class="k-group-step-label">Étape 3/3 — Confirmer</div>
+        ${expirationHtml}
+        <div class="k-group-creator-actions" style="margin-top:10px">
           <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
           <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
         </div>
-        <p class="k-group-share-hint">Une fois que tout le monde a confirmé son engagement, passez au règlement.</p>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">
-            Délai de paiement
-          </label>
-          <select id="k-group-settlement-window"
-            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:10px">
-            <option value="24">24 heures</option>
-            <option value="48" selected>48 heures (défaut)</option>
-            <option value="168">7 jours</option>
-          </select>
-          <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement" style="background:var(--accent,#1f7a54)">
-            🔐 Passer au règlement
-          </button>
-          <p class="k-group-share-hint" style="margin-top:6px">
-            Fige les engagements et ouvre les paiements. Action irréversible.
-          </p>
-        </div>
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items"
-            style="width:100%">
-            ✏️ Modifier les articles
-          </button>
-          <p class="k-group-share-hint" style="margin-top:4px">
-            Les participants seront notifiés du nouveau total.
-          </p>
-        </div>
-        <p class="k-group-input-error" id="k-group-settlement-err"></p>
-        ${cancelBtn}
+        ${noRelayWarning}
+        ${confirmBlock}
+        <p class="k-group-input-error" id="k-group-finalize-err"></p>
+        ${_cancelBtn()}
       </div>`;
   }
 
-  // S2-02 — Finalisation avec gap
-  const finalizeBlock = fullyFunded
-    ? `<div class="k-group-funded-callout">
-        <strong>✅ Tout est réglé</strong>
-        <p>Validez maintenant pour que la commande parte en préparation.</p>
-        <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize">✓ Valider et commander</button>
-      </div>`
-    : gap > 0
-      ? `<div class="k-group-funded-callout k-group-funded-callout--gap">
-          <strong>Il manque ${r(gap).toLocaleString('fr-FR')} KMF</strong>
-          <p>Vous pouvez couvrir le reste et valider maintenant.</p>
-          <button class="k-group-btn k-group-btn--finalize" id="k-group-finalize-gap">
-            Je couvre le reste et je valide
-          </button>
-        </div>
-        <button class="k-group-btn k-group-disabled-finalize" type="button" disabled style="margin-top:8px;width:100%">
-          Valider disponible à 100%
-        </button>`
-      : `<button class="k-group-btn k-group-disabled-finalize" type="button" disabled>Valider disponible à 100%</button>`;
+  /* ── Phase SHARE_AND_LOCK (panier ouvert) ───────────────────────── */
+  // LOT 4 — PAS de formulaire d'engagement ici, PAS de "Je contribue"
+  // LOT 8 — PAS de bouton Confirmer la commande dans cette phase
 
   return `
     <div class="k-group-card k-group-actions-card">
-      <div class="k-group-section-title">Panier en règlement</div>
-      ${expirationHtml}
-      <div class="k-group-creator-actions" style="margin-top:10px">
-        <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 Relancer WhatsApp</button>
+
+      <!-- Étape 1 : Partager -->
+      <div class="k-group-step-label">Étape 1/3 — Partager</div>
+      <p class="k-group-share-hint">
+        Envoyez le lien aux proches. Ils indiquent combien ils veulent participer.
+      </p>
+      <div class="k-group-creator-actions">
+        <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
       </div>
-      <p class="k-group-share-hint">Partagez le lien pour que les participants puissent payer leur engagement verrouillé.</p>
-      ${finalizeBlock}
-      <p class="k-group-input-error" id="k-group-finalize-err"></p>
-      ${cancelBtn}
+
+      <!-- Étape 2 : Bloquer -->
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+        <div class="k-group-step-label">Étape 2/3 — Bloquer</div>
+        <p class="k-group-share-hint">
+          Les montants seront figés. Les participants pourront ensuite payer.
+        </p>
+        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">
+          Délai de paiement
+        </label>
+        <select id="k-group-settlement-window"
+          style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:10px">
+          <option value="24">24 heures</option>
+          <option value="48" selected>48 heures (défaut)</option>
+          <option value="168">7 jours</option>
+        </select>
+        <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement">
+          🔐 Bloquer et ouvrir le paiement
+        </button>
+        <p class="k-group-share-hint" style="margin-top:6px">
+          Fige les engagements et ouvre les paiements. Action irréversible.
+        </p>
+      </div>
+
+      <p class="k-group-input-error" id="k-group-settlement-err"></p>
+
+      <!-- LOT 5 — Accordéon options -->
+      ${_optionsAccordion()}
+
+      ${_cancelBtn()}
     </div>`;
+}
+
+/* ── LOT 5 — Accordéon articles ─────────────────────────────────── */
+
+/**
+ * Accordéon "Voir les articles" — inséré dans le rendu principal si nécessaire.
+ * @param {Array} items
+ * @returns {string}
+ */
+export function renderArticlesAccordion(items = []) {
+  if (!items?.length) return '';
+  const rows = items.map(it => {
+    const name = it.product_name_snapshot || it.name || 'Produit';
+    const qty  = r(it.quantity || 1);
+    const price = r(it.unit_price_kmf_snapshot || it.unit_price_kmf || 0);
+    return `<div class="k-group-commitment-row">
+      <span class="k-group-commitment-name">${sanitize(name)}</span>
+      <span class="k-group-commitment-amount">×${qty} · ${fmt(price, 'KMF')}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <details class="k-group-accordion">
+      <summary>Voir les articles (${items.length})</summary>
+      <div class="k-group-commitment-list">${rows}</div>
+    </details>`;
+}
+
+/* ── Helpers internes ────────────────────────────────────────────── */
+
+function _cancelBtn() {
+  return `
+    <div class="k-group-options-danger" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
+        🗑 Annuler ce panier
+      </button>
+    </div>`;
+}
+
+function _optionsAccordion() {
+  return `
+    <details class="k-group-accordion" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <summary>Options</summary>
+      <div style="padding:10px 0 4px">
+        <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items" style="width:100%;margin-bottom:8px">
+          ✏️ Modifier les articles
+        </button>
+      </div>
+    </details>`;
 }

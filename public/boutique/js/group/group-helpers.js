@@ -129,3 +129,22 @@ export function timeRemaining(expiresAt) {
   if (h >= 1)  return `${h}h${m > 0 ? m + 'min' : ''} restantes`;
   return `${Math.max(1, m)}min restantes`;
 }
+
+/**
+ * Retourne l'étape courante du parcours créateur (3 étapes max).
+ *
+ * @param {object} cart  panier partagé
+ * @returns {'ORDER_CREATED'|'CONFIRM'|'SHARE_AND_LOCK'}
+ */
+export function getGroupStep(cart) {
+  if (cart.status === 'converted_to_order' || cart.finalized_order_id) {
+    return 'ORDER_CREATED';
+  }
+
+  if (isSettlementOpen(cart) ||
+      ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
+    return 'CONFIRM';
+  }
+
+  return 'SHARE_AND_LOCK';
+}

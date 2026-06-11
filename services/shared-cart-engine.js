@@ -403,22 +403,9 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       }
     );
 
-    // 11. Vider le panier boutique DB du créateur — Doctrine v4.2 N4-CLEAR
-    // Atomique avec la création : si le snapshot (étapes 8-9) a échoué,
-    // la transaction est déjà en ROLLBACK — on n'arrive jamais ici.
+    // LOT 2 — Ne pas vider les paniers DB dans ce flux (le panier vient du localStorage).
     // Le flag clearLocalCart: true signale à la route de demander au client
-    // de vider son localStorage boutique.
-    const itemsCleared = await clearCreatorBasketInTx(client, userId);
-    if (itemsCleared > 0) {
-      await addEvent(client, sharedCart.id, 'creator_basket_cleared',
-        { type: 'user', id: userId },
-        {
-          basket_items_cleared: itemsCleared,
-          doctrine: 'v4.2_N4-CLEAR',
-          note: 'localStorage vidé via clearLocalCart flag dans la réponse HTTP',
-        }
-      );
-    }
+    // de vider son localStorage boutique. Aucun basket DB n'est touché.
 
     return { sharedCart, items: insertedItems, token, clearLocalCart: true };
   });
@@ -789,6 +776,20 @@ async function markContributionFailed(stripeSessionId, reason) {
 // 4. FINALISATION → COMMANDE
 // ═══════════════════════════════════════════════════════════════════════
 
+// ─── Helpers finalisation ─────────────────────────────────────────────
+function metadataOf(cart) {
+  if (!cart?.metadata) return {};
+  if (typeof cart.metadata === 'object') return cart.metadata;
+  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
+}
+
+function isSettlementOpenForFinalize(cart) {
+  const meta = metadataOf(cart);
+  return meta.settlement_open === true ||
+    ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize', 'fully_funded'].includes(cart.status);
+}
+// ─── fin helpers finalisation ─────────────────────────────────────────
+
 /**
  * Le bénéficiaire finalise son panier partagé.
  * Crée une commande Komerce. Le reste à payer (si pas 100%) sera collecté
@@ -814,6 +815,11 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     if (!['active', 'partially_funded', 'fully_funded',
           'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
       throw new Error(`Impossible de finaliser un panier au statut ${cart.status}`);
+    }
+
+    // LOT 1.1 — Interdire la finalisation directe depuis phase ouverte
+    if (!isSettlementOpenForFinalize(cart)) {
+      throw new Error('Le panier doit d\'abord passer au paiement avant de confirmer la commande');
     }
     if (new Date(cart.expires_at) < new Date()) {
       throw new Error('Ce panier partagé a expiré');
@@ -1029,15 +1035,16 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     }
 
     // 8. Marquer le panier comme converti
+    // LOT 1.2 — Option A : conserver le vrai solde restant (ne pas mentir)
     await client.query(
       `UPDATE shared_carts
           SET status = 'converted_to_order',
               finalized_order_id = $1,
               finalized_at = NOW(),
-              remaining_kmf = 0,
+              remaining_kmf = $3,
               updated_at = NOW()
         WHERE id = $2`,
-      [order.id, sharedCartId]
+      [order.id, sharedCartId, remainingCashKmf]
     );
 
     await addEvent(client, sharedCartId, 'cart_converted_to_order',
@@ -1046,7 +1053,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         order_id: order.id,
         order_reference: order.reference,
         prepaid_kmf: prepaidKmf,
-        remaining_cash_kmf: 0,
+        remaining_cash_kmf: remainingCashKmf,
       }
     );
 
@@ -1059,7 +1066,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       sharedCart: { ...cart, status: 'converted_to_order', finalized_order_id: order.id },
       order: finalOrder || order,
       prepaidKmf,
-      remainingCashKmf: 0,
+      remainingCashKmf,
     };
   });
 }
