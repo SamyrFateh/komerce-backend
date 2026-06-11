@@ -201,7 +201,7 @@ function _renderRelaisSummary(container, od, byIle, allIles) {
   const zone  = od.fulfillment_zone === 'france' ? 'France' : 'Comores';
   container.innerHTML =
     '<button type="button" class="ck-relais-summary" id="ck-relais-summary">'
-    + '<span class="ck-relais-summary-pin" aria-hidden="true">📍</span>'
+    + '<span class="ck-relais-summary-pin" aria-hidden="true"><span class="ck-relais-pin-dot">KM</span></span>'
     + '<span class="ck-relais-summary-body">'
     +   '<span class="ck-relais-summary-main">' + flag + ' ' + sanitize(od.selectedRelaisName || '') + '</span>'
     +   '<span class="ck-relais-summary-sub">' + sanitize(od.selectedIsland || '') + ' · ' + zone + '</span>'
