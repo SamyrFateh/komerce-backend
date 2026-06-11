@@ -90,15 +90,16 @@ function _accOpenAttr() {
  */
 export function renderOwnerIdentityCard(cart, itemsCount = 0) {
   const title = sanitize(cart.title || 'Panier groupe');
-  const benef = sanitize(cart.beneficiary_name_snapshot || '');
   const total = r(cart.total_kmf_snapshot);
   const sOpen = isSettlementOpen(cart);
 
+  // Vue CRÉATEUR : on affiche uniquement le NOM du panier (le motif saisi
+  // à la création, ex. « Mariage pour Aicha »). Le bénéficiaire reste stocké
+  // côté backend (beneficiary_name_snapshot) et reste affiché côté participant.
   return `
     <div class="k-group-card k-group-owner-id">
       <div class="k-group-owner-eyebrow">👥 Panier groupe</div>
       <h2 class="k-group-owner-title">${title}</h2>
-      ${benef ? `<p class="k-group-owner-sub">Organisé pour ${benef}</p>` : ''}
       <div class="k-group-owner-meta">
         <strong>${fmt(total, 'KMF')}</strong>
         <span class="k-group-owner-sep">·</span>

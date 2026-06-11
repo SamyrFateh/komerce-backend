@@ -74,15 +74,31 @@ export function ensureDesktopScrollOwner() {
 }
 
 /**
- * getScrollY() — valeur unifiée du scroll vertical
- * Mobile : lit #k-page-scroll.scrollTop (container fixe)
- * Desktop : lit window.scrollY natif
+ * getMobileScrollContainer() — qui scrolle en MOBILE ?
+ * FIX AUDIT 2026-06-11 : hors pager, #k-page-scroll n'est PAS le scroller.
+ * - Pager Temu actif (#k-page-scroll.k-pager-active, vue Boutique) :
+ *   le conteneur fixe est le scroller → on le retourne.
+ * - Onglets Groupe / Suivi / Favoris (pager détruit par switchView) :
+ *   #k-page-scroll est static sans hauteur contrainte → c'est WINDOW qui
+ *   scrolle. Scroller ps était un no-op : le scroll window hérité n'était
+ *   jamais remis à zéro (atterrissage "dans le vide" en bas de la nouvelle
+ *   vue) et getScrollY() mentait (0 permanent) à tous les modules.
+ * @returns {HTMLElement|null} le conteneur, ou null si window est le scroller
+ */
+export function getMobileScrollContainer() {
+  var ps = document.getElementById('k-page-scroll');
+  return (ps && ps.classList.contains('k-pager-active')) ? ps : null;
+}
+
+/**
+ * getScrollY() — valeur unifiée du scroll vertical Mobile : pager actif → #k-page-scroll.scrollTop ; sinon → window.scrollY
+ * Desktop : window.scrollY natif
  * À utiliser à la place de window.scrollY dans tous les modules.
  */
 export function getScrollY() {
   if (isDesktop()) return window.scrollY;
-  var ps = document.getElementById('k-page-scroll');
-  return ps ? ps.scrollTop : 0;
+  var c = getMobileScrollContainer();
+  return c ? c.scrollTop : window.scrollY;
 }
 
 /**
@@ -96,8 +112,8 @@ export function scrollToPosition(top, behavior = 'auto') {
     window.scrollTo({ top, behavior });
     return;
   }
-  var ps = document.getElementById('k-page-scroll');
-  if (ps) ps.scrollTo({ top, behavior });
+  var c = getMobileScrollContainer();
+  if (c) c.scrollTo({ top, behavior });
   else window.scrollTo({ top, behavior });
 }
 
@@ -107,9 +123,11 @@ export function scrollPageToTop(behavior = 'smooth') {
     return;
   }
 
-  var ps = document.getElementById('k-page-scroll');
-  if (ps) ps.scrollTo({ top: 0, behavior });
-  else window.scrollTo({ top: 0, behavior });
+  var c = getMobileScrollContainer();
+  if (c) c.scrollTo({ top: 0, behavior });
+  // Toujours remettre window à zéro aussi : en sortie de pager, un scroll
+  // window résiduel peut exister (clavier, focus, restauration navigateur).
+  window.scrollTo({ top: 0, behavior });
 }
 
 export function scrollPageToElement(el, offset = 0, behavior = 'smooth') {
@@ -121,14 +139,16 @@ export function scrollPageToElement(el, offset = 0, behavior = 'smooth') {
     return;
   }
 
-  var ps = document.getElementById('k-page-scroll');
-  if (ps && ps.contains(el)) {
-    var psRect = ps.getBoundingClientRect();
+  var c = getMobileScrollContainer();
+  if (c && c.contains(el)) {
+    var cRect = c.getBoundingClientRect();
     var elRect = el.getBoundingClientRect();
-    var localTop = elRect.top - psRect.top + ps.scrollTop + offset;
-    ps.scrollTo({ top: Math.max(0, localTop), behavior });
+    var localTop = elRect.top - cRect.top + c.scrollTop + offset;
+    c.scrollTo({ top: Math.max(0, localTop), behavior });
   } else {
-    el.scrollIntoView({ behavior, block: 'start' });
+    // Hors pager : window est le scroller (mêmes maths que desktop)
+    var top2 = el.getBoundingClientRect().top + window.scrollY + offset;
+    window.scrollTo({ top: Math.max(0, top2), behavior });
   }
 }
 

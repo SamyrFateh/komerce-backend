@@ -53,3 +53,13 @@ Validé au harnais sur fixtures du mockup (Marie, 33 800 KMF, 3 articles, 3 part
 ## 6. Fichiers modifiés (cette passe)
 
 `css/tokens.css` (fix :root), `css/categories.css` (fix chips), `css/layout.css` (input 16px), `css/group-cart-flow.css` (fix grille cockpit + accordéons/badges/avatars/identité), `js/group/group-render-creator.js` (identité, articles accordéon, participants mockup, badges, options), `js/b-group-view.js` (assemblage mockup + polling double), `package.json` (scripts d'audit), `scripts/audit-responsive.js` + `scripts/harness-creator-cockpit.js` (nouveaux), `css/dist/*` + `index.html` (bundles + bumps via deploy-css).
+
+## 7. Addendum — scroll erratique onglets Groupe / Suivi (mobile)
+
+Symptôme rapporté : scroll « n'importe comment, y compris dans le vide », rien de fixe, sur les onglets Suivi et Groupe.
+
+Cause : `js/b-scroll-owner.js` considérait `#k-page-scroll` comme LE scroller mobile en toutes circonstances. C'est vrai uniquement quand le pager Temu est actif (vue Boutique, `.k-pager-active`). Sur Groupe/Suivi/Favoris le pager est détruit et c'est window qui scrolle : `scrollPageToTop()` scrollait donc un conteneur inerte (le scroll window hérité n'était jamais remis à zéro → atterrissage « dans le vide » en bascule d'onglet) et `getScrollY()` renvoyait 0 en permanence aux 10 modules consommateurs (sauvegarde/restauration de scroll des modales, header, etc.).
+
+Fix : `getMobileScrollContainer()` retourne `#k-page-scroll` seulement si `.k-pager-active`, sinon window ; `getScrollY` / `scrollToPosition` / `scrollPageToTop` / `scrollPageToElement` adaptés, avec remise à zéro window systématique en bascule. Validé au harnais (`npm run audit:tabs-scroll`) : header/bnav fixes pendant le scroll des onglets, `window.scrollY=0` après re-bascule avec scroll résiduel de 400px.
+
+Note : le ressenti prod était amplifié par le bug §1.1 (reset CSS avalé) encore en ligne au moment du test — les deux fixes se cumulent.
