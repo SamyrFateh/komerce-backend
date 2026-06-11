@@ -58,6 +58,8 @@ import {
   renderCreatorArticlesPanel,
   renderProgress,
   renderCreatorActions,
+  renderCreatorIdentityCard,
+  renderCreatorFinancialSummary,
 } from './group/group-render-creator.js';
 
 /* ── Token participant URL ─────────────────────────────────────── */
@@ -241,98 +243,93 @@ function identityLabel(user) {
 
 function renderEngagementForm(token, cart, isCreator = false) {
   const meta = metaOf(cart);
+  const lockedTotal = r(meta.locked_commitments_total_kmf || 0);
+  const suggestion = lockedTotal > 0
+    ? Math.round(r(cart.total_kmf_snapshot) / Math.max(1, r(meta.locked_commitments_count || 1) + 1) / 100) * 100
+    : 0;
+  // TX-02 — montant moyen suggéré (hint visible dans la vue groupe)
   const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
   const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
-  const suggestion = avgSuggestion >= 500 ? avgSuggestion : 0;
+  const splitHint = avgSuggestion >= 2500
+    ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
+    : '';
+
   const saved = !isCreator ? readParticipantCommitment(token) : null;
+  const savedState = saved ? `
+      <div class="k-group-saved-commitment" id="k-ge-saved-state">
+        <strong>✅ Engagement enregistré</strong>
+        <span>${sanitize(saved.name || 'Participant')} · ${fmt(r(saved.amount), 'KMF')}</span>
+        ${saved.phone ? `<span>Téléphone : ${sanitize(saved.phone)}</span>` : ''}
+        <button type="button" id="k-ge-edit-btn">✏️ Modifier mon engagement</button>
+      </div>` : '';
 
-  // État confirmé — engagement déjà enregistré
-  if (saved) {
-    return `
-    <div class="k-group-card k-group-contribute-card">
-      <div class="k-ge-step k-ge-step--done" id="k-ge-done-state">
-        <div class="k-ge-done-icon">✅</div>
-        <div class="k-ge-done-body">
-          <strong>${sanitize(saved.name || 'Participant')}</strong>
-          <span>${fmt(r(saved.amount), 'KMF')}</span>
-        </div>
-        <button type="button" class="k-group-btn k-ge-edit-btn" id="k-ge-edit-btn">Modifier</button>
-      </div>
-    </div>`;
-  }
-
-  // Étape 1 : montant → Étape 2 : message + confirmer (OTP)
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-ge-step" id="k-ge-step-amount">
-        <div class="k-ge-step-label">Étape 1 — Votre part</div>
-        <div class="k-ge-amount-row">
-          <input id="k-ge-amount" class="k-group-input k-ge-amount-input" type="number" min="500" step="100"
-            placeholder="${suggestion > 0 ? suggestion : '5000'}"
-            inputmode="numeric" autocomplete="off">
-          <span class="k-ge-currency">KMF</span>
+      <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
+      <div class="k-group-section-title">💸 Participer</div>
+      <p class="k-group-desc-text">
+        Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
+      </p>
+      ${splitHint}
+      ${savedState}
+      <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
+        <div class="k-group-identity-note">
+          <strong>Identité sécurisée par OTP</strong>
+          <span>Votre numéro vérifié sera utilisé pour retrouver cet engagement. Vous pourrez utiliser un autre numéro si besoin.</span>
         </div>
-        ${suggestion > 0 ? `<div class="k-group-split-hint">💡 Part égale ≈ ${fmt(suggestion, 'KMF')}</div>` : ''}
-        <p class="k-group-input-error" id="k-ge-err-amount"></p>
-        <button class="k-group-btn k-group-btn--primary" id="k-ge-next-btn">Continuer →</button>
-      </div>
-      <div class="k-ge-step" id="k-ge-step-confirm" hidden>
-        <div class="k-ge-step-label">Étape 2 — Confirmer</div>
-        <input id="k-ge-msg" class="k-group-input k-ge-msg-input" type="text"
-          placeholder="Message (optionnel)" maxlength="200" autocomplete="off">
-        <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">✋ Confirmer mon engagement</button>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
+          <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
+            placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
+            inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+        </div>
+        <div class="k-group-field">
+          <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
+          <input id="k-ge-msg" class="k-group-input" type="text" placeholder="Ex : Je participe avec plaisir !" maxlength="200" value="${sanitize(saved?.message || '')}">
+        </div>
         <p class="k-group-input-error" id="k-ge-err"></p>
+        <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
+          ${saved ? '✏️ Mettre à jour mon engagement' : '✋ Enregistrer mon engagement'}
+        </button>
       </div>
     </div>`;
 }
 
 function bindEngagementForm(el, token, cart, onSuccess) {
-  // Bouton "Modifier" depuis l'état confirmé
   el.querySelector('#k-ge-edit-btn')?.addEventListener('click', () => {
-    onSuccess?.(); // re-render repart from scratch (saved cleared)
-    // Note: l'effacement du commitment mémorisé se fait après confirmation
-    // Pour permettre la modification, on efface le local storage
-    try { localStorage.removeItem(`k_part_commit_${token}`); } catch (_) {}
-    onSuccess?.();
+    const fields = el.querySelector('#k-ge-fields');
+    const saved = el.querySelector('#k-ge-saved-state');
+    if (fields) fields.hidden = false;
+    if (saved) saved.hidden = true;
+    el.querySelector('#k-ge-amount')?.focus();
   });
 
-  // Étape 1 → Étape 2 : validation du montant
-  el.querySelector('#k-ge-next-btn')?.addEventListener('click', () => {
-    const amount = Number(el.querySelector('#k-ge-amount')?.value);
-    const errEl  = el.querySelector('#k-ge-err-amount');
-    if (!amount || amount < 500) {
-      errEl.textContent = 'Minimum 500 KMF.';
-      el.querySelector('#k-ge-amount')?.focus();
-      return;
-    }
-    errEl.textContent = '';
-    el.querySelector('#k-ge-step-amount').hidden = true;
-    const step2 = el.querySelector('#k-ge-step-confirm');
-    step2.hidden = false;
-    step2.querySelector('#k-ge-msg')?.focus();
-  });
-
-  // Étape 2 : confirmer (OTP) + enregistrement
   el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
+    // Sécurité : si les champs sont cachés (état saved affiché), ignorer le clic.
+    const fieldsDiv = el.querySelector('#k-ge-fields');
+    if (fieldsDiv?.hidden) return;
+
     const amount = Number(el.querySelector('#k-ge-amount')?.value);
     const msg    = (el.querySelector('#k-ge-msg')?.value || '').trim();
     const errEl  = el.querySelector('#k-ge-err');
     const btn    = el.querySelector('#k-ge-submit-btn');
 
     errEl.textContent = '';
+    if (!amount || amount < 500) { errEl.textContent = 'Minimum 500 KMF.'; return; }
+
     btn.disabled = true;
     btn.textContent = '🔐 Vérification…';
 
     try {
       const identity = await requireIdentity({
         reason: 'participer au panier',
-        title: 'Étape 3 — Identité',
+        title: 'Sécuriser votre participation',
         allowOtherPhone: true,
       });
 
       if (!identity) {
         btn.disabled = false;
-        btn.textContent = '✋ Confirmer mon engagement';
+        btn.textContent = '✋ Enregistrer mon engagement';
         return;
       }
 
@@ -341,9 +338,9 @@ function bindEngagementForm(el, token, cart, onSuccess) {
       const phone = id.phone;
 
       if (!phone) {
-        errEl.textContent = 'Numéro vérifié introuvable. Réessayez.';
+        errEl.textContent = 'Numéro vérifié introuvable. Réessayez avec un autre numéro.';
         btn.disabled = false;
-        btn.textContent = '✋ Confirmer mon engagement';
+        btn.textContent = '✋ Enregistrer mon engagement';
         return;
       }
 
@@ -360,11 +357,13 @@ function bindEngagementForm(el, token, cart, onSuccess) {
       rememberParticipantCommitment(token, { name, phone, amount, message: msg });
 
       showToast(res?.updated ? 'Engagement mis à jour !' : 'Engagement enregistré !', 'success');
+      btn.disabled = false;
+      btn.textContent = '✅ Engagement enregistré';
       onSuccess?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
       btn.disabled = false;
-      btn.textContent = '✋ Confirmer mon engagement';
+      btn.textContent = '✋ Enregistrer mon engagement';
     }
   });
 }
@@ -718,7 +717,7 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
     const qty      = it.quantity || 1;
     const unit     = r(it.unit_price_kmf || 0);
     const lineTotal = unit * qty;
-    const img      = it.product_image || it.image_url || it.image || '';
+    const img      = it.product_image || it.image_url || '';
     const thumb    = img
       ? `<img class="k-group-item-thumb" src="${sanitize(img)}" alt="" loading="lazy">`
       : `<div class="k-group-item-thumb--fallback">🛒</div>`;
@@ -846,21 +845,12 @@ export async function renderGroupView(opts = {}) {
     } catch (_) {}
 
     /* ── Header premium participant ───────────────────────────────── */
-    const benefName   = sanitize(cart.beneficiary_name_snapshot || '');
-    // Infos créateur — exposées par le backend dans l'objet cart public
-    const creatorName  = sanitize(cart.creator_name  || cart.owner_name  || '');
-    const creatorPhone = sanitize(cart.creator_phone || cart.owner_phone || '');
-    const creatorContact = (creatorName || creatorPhone) ? `
-      <div class="k-group-creator-contact">
-        ${creatorName ? `<span class="k-group-creator-name">👤 ${creatorName}</span>` : ''}
-        ${creatorPhone ? `<a class="k-group-creator-phone" href="tel:${creatorPhone}">${creatorPhone}</a>` : ''}
-      </div>` : '';
+    const benefName = sanitize(cart.beneficiary_name_snapshot || '');
     const headerHtml = `
       <div class="k-group-header">
         <div class="k-group-header-eyebrow">👥 Panier groupe</div>
         <h2 class="k-group-header-title">${sanitize(cart.title || 'Panier groupe')}</h2>
         ${benefName ? `<p class="k-group-subhead">Organisé pour ${benefName}</p>` : ''}
-        ${creatorContact}
         <div class="k-group-header-meta">
           <span class="k-group-header-total">${fmt(total, 'KMF')}</span>
           <span class="k-group-header-sep">·</span>
@@ -884,6 +874,7 @@ export async function renderGroupView(opts = {}) {
       </div>` : '';
 
     /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
+    const creatorIdHtml = renderCreatorIdentityCard(cart);
     const asideHtml = isOpenPhase
       ? renderEngagementForm(participantToken, cart, false)
       : isPaymentPhase
@@ -901,6 +892,7 @@ export async function renderGroupView(opts = {}) {
           ${commitmentsHtml}
         </div>
         <div class="k-group-participant-col-aside">
+          ${creatorIdHtml}
           ${asideHtml}
         </div>
       </div>`;
@@ -997,12 +989,12 @@ export async function renderGroupView(opts = {}) {
         <div class="k-group-header">
           <h2>👥 Mon panier groupe</h2>
           <p class="k-group-subhead">${settlementOpen
-            ? '🔐 Panier en règlement — les participants peuvent maintenant payer.'
-            : 'Phase de concertation — partagez le lien et collectez les engagements.'}</p>
+            ? '🔐 En règlement — les participants peuvent payer.'
+            : 'Partagez le lien · collectez les participations.'}</p>
         </div>
         ${renderCreatorCartSwitcher(ownerCarts, cartId)}
+        ${renderCreatorFinancialSummary(cart, commitmentsList)}
 ${renderProgress(cart, contributions, commitmentsList)}
-
         ${renderCreatorActions(cart)}
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}

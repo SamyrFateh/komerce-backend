@@ -115,6 +115,81 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
     </aside>`;
 }
 
+/* ── Carte identité créateur (panneau droit vue participant) ────── */
+
+/**
+ * Carte identité du créateur — avatar initiales + nom + numéro WhatsApp.
+ * Affichée en haut du panneau "Votre participation" côté participant.
+ * @param {object} cart  panier partagé (champs owner_name, owner_phone)
+ * @returns {string}
+ */
+export function renderCreatorIdentityCard(cart) {
+  const name  = sanitize(cart.owner_name || cart.creator_name || 'Créateur');
+  const phone = sanitize(cart.owner_phone || cart.creator_phone || '');
+  const initials = name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?';
+
+  return `
+    <div class="k-group-creator-id">
+      <div class="k-group-creator-id-avatar">${initials}</div>
+      <div class="k-group-creator-id-info">
+        <strong>${name}</strong>
+        ${phone ? `<span class="k-group-creator-id-phone">📱 ${phone}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+/* ── Récap financier créateur (remplace le header verbeux) ───────── */
+
+/**
+ * Récap financier compact : total · engagements · payé · reste.
+ * Barre de progression double lecture intégrée.
+ * @param {object} cart
+ * @param {Array}  commitmentsList
+ * @returns {string}
+ */
+export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
+  const total     = r(cart.total_kmf_snapshot);
+  const confirmed = r(cart.contributed_kmf);
+  const remaining = remainingKmf(cart);
+  const eng       = engagementCoverage(commitmentsList, total);
+  const pPaid     = pct(confirmed, total);
+  const sOpen     = isSettlementOpen(cart);
+
+  const stats = [
+    { label: 'Total panier', value: fmt(total, 'KMF') },
+    { label: 'Engagé',       value: fmt(eng.engagementsTotal, 'KMF') },
+    { label: 'Payé',         value: fmt(confirmed, 'KMF') },
+    ...(remaining > 0 ? [{ label: 'Reste', value: fmt(remaining, 'KMF'), highlight: sOpen }] : []),
+  ];
+
+  return `
+    <div class="k-group-financial-summary">
+      <div class="k-group-financial-stats">
+        ${stats.map(s => `
+          <div class="k-group-financial-stat${s.highlight ? ' is-highlight' : ''}">
+            <strong>${s.value}</strong>
+            <span>${s.label}</span>
+          </div>`).join('')}
+      </div>
+      <div class="k-group-progress" role="group"
+           aria-label="Payé ${pPaid}% · Engagé ${eng.pctCapped}%">
+        ${eng.pctCapped > 0
+          ? `<span class="k-group-progress-bar k-group-progress-bar--engaged"
+                   style="width:${eng.pctCapped}%"></span>`
+          : ''}
+        <span class="k-group-progress-bar k-group-progress-bar--paid"
+              style="width:${pPaid}%"></span>
+      </div>
+      <div class="k-group-progress-legend" aria-hidden="true">
+        <span class="k-group-progress-legend-paid">● payé : ${fmt(confirmed, 'KMF')}</span>
+        ${eng.engagementsTotal > 0
+          ? `<span class="k-group-progress-legend-engaged">● engagé : ${fmt(eng.engagementsTotal, 'KMF')}</span>`
+          : ''}
+        <span class="k-group-progress-legend-total">total : ${fmt(total, 'KMF')}</span>
+      </div>
+    </div>`;
+}
+
 /* ── Carte de progression (engagements / paiements) ─────────────── */
 
 /**
@@ -159,26 +234,33 @@ export function renderProgress(cart, contributions, commitmentsList) {
   // Participations compactes (LOT 5)
   let commitmentRows = '';
   if (commitmentsList?.length) {
-    const label = sOpen ? 'Participations verrouillées' : 'Participations indicatives';
     commitmentRows = `
       <details class="k-group-accordion">
-        <summary>Voir les participations (${commitmentsList.length})</summary>
+        <summary>Participants (${commitmentsList.length})</summary>
         <div class="k-group-commitment-list">
           ${commitmentsList.map(c => {
             const paid = contributions?.some(co =>
               co.commitment_id === c.id && co.status === 'paid'
             );
+            const phone = c.participant_phone || '';
+            const maskedPhone = phone.length > 4
+              ? phone.slice(0, -4).replace(/\d/g, '•') + phone.slice(-4)
+              : phone;
             const statusTag = paid
-              ? '<span class="k-group-commitment-status">✅ Payé</span>'
+              ? '<span class="k-group-commitment-status k-group-commitment-status--paid">✅ Payé</span>'
               : sOpen
-                ? '<span class="k-group-commitment-status">⏳ En attente</span>'
-                : '<span class="k-group-commitment-status" style="color:var(--text-muted)">indicatif</span>';
+                ? '<span class="k-group-commitment-status k-group-commitment-status--waiting">⏳ En attente</span>'
+                : '<span class="k-group-commitment-status">indicatif</span>';
             return `
               <div class="k-group-commitment-row">
-                <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-                <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-                ${c.message ? `<span class="k-group-commitment-msg" title="${sanitize(c.message)}">💬 ${sanitize(c.message)}</span>` : ''}
-                ${statusTag}
+                <div class="k-group-commitment-left">
+                  <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
+                  ${maskedPhone ? `<span class="k-group-commitment-phone">${sanitize(maskedPhone)}</span>` : ''}
+                </div>
+                <div class="k-group-commitment-right">
+                  <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+                  ${statusTag}
+                </div>
               </div>`;
           }).join('')}
         </div>
@@ -322,9 +404,8 @@ export function renderCreatorActions(cart, opts = {}) {
 
     return `
       <div class="k-group-card k-group-actions-card">
-        <div class="k-group-step-label">Étape 3/3 — Confirmer</div>
         ${expirationHtml}
-        <div class="k-group-creator-actions" style="margin-top:10px">
+        <div class="k-group-creator-actions" style="margin-bottom:14px">
           <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
           <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
         </div>
@@ -342,37 +423,27 @@ export function renderCreatorActions(cart, opts = {}) {
   return `
     <div class="k-group-card k-group-actions-card">
 
-      <!-- Étape 1 : Partager -->
-      <div class="k-group-step-label">Étape 1/3 — Partager</div>
+      <!-- Partager le lien -->
       <p class="k-group-share-hint">
-        Envoyez le lien aux proches. Ils indiquent combien ils veulent participer.
+        Partagez le lien — vos proches indiquent leur participation, sans payer maintenant.
       </p>
       <div class="k-group-creator-actions">
         <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
-        <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
+        <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier le lien</button>
       </div>
 
-      <!-- Étape 2 : Bloquer -->
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-        <div class="k-group-step-label">Étape 2/3 — Bloquer</div>
-        <p class="k-group-share-hint">
-          Les montants seront figés. Les participants pourront ensuite payer.
-        </p>
-        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">
-          Délai de paiement
-        </label>
-        <select id="k-group-settlement-window"
-          style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font);margin-bottom:10px">
+      <!-- Bloquer les engagements -->
+      <div class="k-group-lock-section">
+        <label class="k-group-lock-label">Délai de paiement</label>
+        <select id="k-group-settlement-window" class="k-group-select">
           <option value="24">24 heures</option>
-          <option value="48" selected>48 heures (défaut)</option>
+          <option value="48" selected>48 heures</option>
           <option value="168">7 jours</option>
         </select>
         <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement">
           🔐 Bloquer et ouvrir le paiement
         </button>
-        <p class="k-group-share-hint" style="margin-top:6px">
-          Fige les engagements et ouvre les paiements. Action irréversible.
-        </p>
+        <p class="k-group-step-hint">Fige les engagements · les participants pourront payer · irréversible</p>
       </div>
 
       <p class="k-group-input-error" id="k-group-settlement-err"></p>

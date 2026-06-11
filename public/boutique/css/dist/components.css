@@ -9499,151 +9499,149 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════
- * UX-PART-01 — Flow participant 3 étapes (refonte)
+ * SIMPLIFICATION UI — carte identité créateur + récap financier
+ * Aligné sur mockup "direction à prendre" (PR simplification)
  * ══════════════════════════════════════════════════════════════════ */
 
-.k-ge-step {
+/* ── Carte identité créateur ──────────────────────────────────────── */
+.k-group-creator-id {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.k-ge-step-label {
-  font-size: 13px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  color: var(--text-muted);
-}
-
-.k-ge-amount-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.k-ge-amount-input {
-  flex: 1;
-  font-size: 28px !important;
-  font-weight: 900 !important;
-  height: 58px !important;
-  min-height: 58px !important;
-  padding: 8px 16px !important;
-  border-radius: 16px !important;
-  text-align: right;
-  letter-spacing: -.02em;
-}
-
-.k-ge-currency {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  padding-bottom: 2px;
-}
-
-.k-ge-msg-input {
-  font-size: 14px !important;
-  color: var(--text-muted);
-}
-
-/* État confirmé */
-.k-ge-step--done {
-  flex-direction: row;
   align-items: center;
   gap: 12px;
-  padding: 4px 0;
+  background: var(--sand, #f5f4f0);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
 }
-
-.k-ge-done-icon {
-  font-size: 24px;
+.k-group-creator-id-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--cta-green);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  letter-spacing: .02em;
 }
-
-.k-ge-done-body {
+.k-group-creator-id-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
   min-width: 0;
 }
-
-.k-ge-done-body strong {
-  font-size: 15px;
+.k-group-creator-id-info strong {
+  font-size: 14px;
   font-weight: 800;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.k-group-creator-id-phone {
+  font-size: 12px;
+  color: var(--whatsapp, #25d366);
+  font-weight: 700;
 }
 
-.k-ge-done-body span {
-  font-size: 18px;
+/* ── Récap financier créateur ─────────────────────────────────────── */
+.k-group-financial-summary {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 16px 20px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 8px 28px var(--border-text-06, rgba(30,40,25,.06));
+}
+.k-group-financial-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.k-group-financial-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.k-group-financial-stat strong {
+  font-size: 15px;
   font-weight: 900;
-  color: var(--purple, #6c3fc5);
+  color: var(--text);
+  line-height: 1.2;
+}
+.k-group-financial-stat span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.k-group-financial-stat.is-highlight strong {
+  color: var(--cta-green);
 }
 
-.k-ge-edit-btn {
-  flex-shrink: 0;
-  font-size: 13px !important;
-  min-height: 36px !important;
-  height: 36px !important;
-  padding: 0 14px !important;
-  border-radius: 999px !important;
+/* ── Section verrouillage simplifiée ──────────────────────────────── */
+.k-group-lock-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.k-group-lock-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.k-group-select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: var(--font);
+  background: var(--white);
+  color: var(--text);
+  appearance: none;
+  cursor: pointer;
 }
 
-/* ══════════════════════════════════════════════════════════════════
- * UX-PART-02 — Contact créateur dans le header participant
- * ══════════════════════════════════════════════════════════════════ */
-
-.k-group-creator-contact {
+/* ── Participants : colonnes prénom+phone / montant+statut ─────────── */
+.k-group-commitment-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
-  margin: 6px 0 4px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--sand, #f5f3ee);
-  border: 1px solid var(--border, #e8e4dd);
+  padding: 7px 0;
 }
-
-.k-group-creator-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
+.k-group-commitment-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-
-.k-group-creator-phone {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--purple, #6c3fc5);
-  text-decoration: none;
-  display: inline-flex;
+.k-group-commitment-right {
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  flex-shrink: 0;
 }
-
-.k-group-creator-phone::before {
-  content: '📞';
-  font-size: 12px;
+.k-group-commitment-phone {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
 }
-
-.k-group-creator-phone:hover {
-  text-decoration: underline;
+.k-group-commitment-status--paid {
+  color: var(--cta-green);
 }
-
-/* Desktop overrides */
-@media (min-width: 720px) {
-  .k-ge-amount-input {
-    font-size: 32px !important;
-    height: 64px !important;
-    min-height: 64px !important;
-  }
-  .k-ge-done-body span { font-size: 20px; }
-  .k-group-creator-contact { padding: 10px 14px; border-radius: 14px; }
-  .k-group-creator-name,
-  .k-group-creator-phone { font-size: 14px; }
+.k-group-commitment-status--waiting {
+  color: var(--text-muted);
 }
 
 
