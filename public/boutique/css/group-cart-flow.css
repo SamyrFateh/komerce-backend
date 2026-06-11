@@ -2131,3 +2131,151 @@
   .k-group-participant-layout { grid-template-columns: 1fr 440px; gap: 32px; }
   .k-group-header-title { font-size: 28px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+ * UX-PART-01 — Flow participant 3 étapes (refonte)
+ * ══════════════════════════════════════════════════════════════════ */
+
+.k-ge-step {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.k-ge-step-label {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
+
+.k-ge-amount-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k-ge-amount-input {
+  flex: 1;
+  font-size: 28px !important;
+  font-weight: 900 !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  padding: 8px 16px !important;
+  border-radius: 16px !important;
+  text-align: right;
+  letter-spacing: -.02em;
+}
+
+.k-ge-currency {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+
+.k-ge-msg-input {
+  font-size: 14px !important;
+  color: var(--text-muted);
+}
+
+/* État confirmé */
+.k-ge-step--done {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.k-ge-done-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.k-ge-done-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.k-ge-done-body strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.k-ge-done-body span {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--purple, #6c3fc5);
+}
+
+.k-ge-edit-btn {
+  flex-shrink: 0;
+  font-size: 13px !important;
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+ * UX-PART-02 — Contact créateur dans le header participant
+ * ══════════════════════════════════════════════════════════════════ */
+
+.k-group-creator-contact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 6px 0 4px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--sand, #f5f3ee);
+  border: 1px solid var(--border, #e8e4dd);
+}
+
+.k-group-creator-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.k-group-creator-phone {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--purple, #6c3fc5);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.k-group-creator-phone::before {
+  content: '📞';
+  font-size: 12px;
+}
+
+.k-group-creator-phone:hover {
+  text-decoration: underline;
+}
+
+/* Desktop overrides */
+@media (min-width: 720px) {
+  .k-ge-amount-input {
+    font-size: 32px !important;
+    height: 64px !important;
+    min-height: 64px !important;
+  }
+  .k-ge-done-body span { font-size: 20px; }
+  .k-group-creator-contact { padding: 10px 14px; border-radius: 14px; }
+  .k-group-creator-name,
+  .k-group-creator-phone { font-size: 14px; }
+}
