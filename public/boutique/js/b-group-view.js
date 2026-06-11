@@ -24,7 +24,6 @@ import { sanitize, fmt } from './b-utils.js';
 import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
 import { showBanner, hideBanner } from './b-group-banner.js';
 import { requireIdentity } from './b-identity.js';
-import { digitsOnly } from './b-phone.js';
 import {
   getOwnerSharedCarts,
   getSharedCartOwner,
@@ -231,133 +230,149 @@ function injectStyles() {
  * Aucun Stripe, aucun paiement.
  * ══════════════════════════════════════════════════════════════════ */
 
-/**
- * Normalise un numéro brut vers E.164.
- * - Déjà E.164 (+269…)  → retourné tel quel
- * - Chiffres seuls (269…) → préfixe '+' ajouté
- * - Vide / null          → ''
- *
- * Nécessaire car la session restaurée (window.K.auth.getUser) peut stocker
- * le numéro sans le '+' initial, causant un 500 côté backend.
- */
-function toE164(phone) {
-  const p = String(phone || '').trim();
-  if (!p) return '';
-  if (p.startsWith('+')) return p;
-  // Supprimer d'éventuels espaces ou tirets résiduels avant de préfixer
-  const digits = digitsOnly(p);
-  return digits ? '+' + digits : '';
-}
-
 function identityLabel(user) {
   const name = user?.full_name || user?.name || user?.display_name || 'Client Komerce';
-  const rawPhone = user?.phone || user?.whatsapp_phone || user?.whatsapp || '';
+  const phone = user?.phone || user?.whatsapp_phone || user?.whatsapp || '';
   return {
     name: String(name || '').trim(),
-    phone: toE164(rawPhone),
+    phone: String(phone || '').trim(),
   };
 }
 
+/* ══════════════════════════════════════════════════════════════════
+ * FLOW PARTICIPANT — 3 ÉTAPES
+ *
+ * Étape 1 : Montant (+ message optionnel)
+ * Étape 2 : Vérification OTP (via requireIdentity)
+ * Étape 3 : Confirmation (récap + bouton modifier)
+ *
+ * UX-PART-01 : pas de bla-bla, pas de badge "phase", pas de note OTP
+ * en plein milieu du form. L'OTP est déclenché au submit étape 1,
+ * silencieusement — l'UI rebascule sur étape 2 le temps de la vérif,
+ * puis étape 3 une fois confirmé.
+ * ══════════════════════════════════════════════════════════════════ */
+
 function renderEngagementForm(token, cart, isCreator = false) {
   const meta = metaOf(cart);
-  const lockedTotal = r(meta.locked_commitments_total_kmf || 0);
-  const suggestion = lockedTotal > 0
-    ? Math.round(r(cart.total_kmf_snapshot) / Math.max(1, r(meta.locked_commitments_count || 1) + 1) / 100) * 100
-    : 0;
-  // TX-02 — montant moyen suggéré (hint visible dans la vue groupe)
   const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
   const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
-  const splitHint = avgSuggestion >= 2500
-    ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
-    : '';
+  const placeholder = avgSuggestion >= 2500
+    ? `${fmt(avgSuggestion, 'KMF')} suggéré`
+    : 'Ex : 5 000';
 
   const saved = !isCreator ? readParticipantCommitment(token) : null;
-  const savedState = saved ? `
-      <div class="k-group-saved-commitment" id="k-ge-saved-state">
-        <strong>✅ Engagement enregistré</strong>
-        <span>${sanitize(saved.name || 'Participant')} · ${fmt(r(saved.amount), 'KMF')}</span>
-        ${saved.phone ? `<span>Téléphone : ${sanitize(saved.phone)}</span>` : ''}
-        <button type="button" id="k-ge-edit-btn">✏️ Modifier mon engagement</button>
-      </div>` : '';
 
+  // Étape 3 : engagement déjà enregistré
+  if (saved) {
+    return `
+      <div class="k-group-card k-group-contribute-card" id="k-ge-card">
+        <div class="k-ge-step k-ge-step--done" id="k-ge-step-done">
+          <div class="k-ge-done-icon">✅</div>
+          <div class="k-ge-done-body">
+            <strong>${sanitize(saved.name || 'Participant')}</strong>
+            <span>${fmt(r(saved.amount), 'KMF')}</span>
+          </div>
+          <button type="button" class="k-group-btn k-group-btn--ghost k-ge-edit-btn" id="k-ge-edit-btn">
+            Modifier
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // Étape 1 : saisie montant
   return `
-    <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
-      <div class="k-group-section-title">💸 Participer</div>
-      <p class="k-group-desc-text">
-        Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
-      </p>
-      ${splitHint}
-      ${savedState}
-      <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
-        <div class="k-group-identity-note">
-          <strong>Identité sécurisée par OTP</strong>
-          <span>Votre numéro vérifié sera utilisé pour retrouver cet engagement. Vous pourrez utiliser un autre numéro si besoin.</span>
+    <div class="k-group-card k-group-contribute-card" id="k-ge-card">
+      <div class="k-ge-step" id="k-ge-step-amount">
+        <div class="k-ge-step-label">Mon engagement</div>
+        <div class="k-ge-amount-row">
+          <input id="k-ge-amount" class="k-group-input k-ge-amount-input" type="number"
+            min="500" step="100" placeholder="${placeholder}" inputmode="numeric" autocomplete="off">
+          <span class="k-ge-currency">KMF</span>
         </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
-          <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
-            placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
-            inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
-        </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
-          <input id="k-ge-msg" class="k-group-input" type="text" placeholder="Ex : Je participe avec plaisir !" maxlength="200" value="${sanitize(saved?.message || '')}">
-        </div>
+        <input id="k-ge-msg" class="k-group-input k-ge-msg-input" type="text"
+          placeholder="Message (optionnel)" maxlength="200" autocomplete="off">
         <p class="k-group-input-error" id="k-ge-err"></p>
         <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
-          ${saved ? '✏️ Mettre à jour mon engagement' : '✋ Enregistrer mon engagement'}
+          ✋ Participer
         </button>
       </div>
     </div>`;
 }
 
 function bindEngagementForm(el, token, cart, onSuccess) {
+  // Binding pour l'état "déjà enregistré" (étape 3 → retour étape 1)
   el.querySelector('#k-ge-edit-btn')?.addEventListener('click', () => {
-    const fields = el.querySelector('#k-ge-fields');
-    const saved = el.querySelector('#k-ge-saved-state');
-    if (fields) fields.hidden = false;
-    if (saved) saved.hidden = true;
-    el.querySelector('#k-ge-amount')?.focus();
+    const card = el.querySelector('#k-ge-card');
+    if (!card) return;
+    const meta = metaOf(cart);
+    const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
+    const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
+    const placeholder = avgSuggestion >= 2500 ? `${fmt(avgSuggestion, 'KMF')} suggéré` : 'Ex : 5 000';
+    const saved = readParticipantCommitment(token);
+    card.innerHTML = `
+      <div class="k-ge-step" id="k-ge-step-amount">
+        <div class="k-ge-step-label">Mon engagement</div>
+        <div class="k-ge-amount-row">
+          <input id="k-ge-amount" class="k-group-input k-ge-amount-input" type="number"
+            min="500" step="100" placeholder="${placeholder}" inputmode="numeric"
+            value="${saved?.amount ? r(saved.amount) : ''}" autocomplete="off">
+          <span class="k-ge-currency">KMF</span>
+        </div>
+        <input id="k-ge-msg" class="k-group-input k-ge-msg-input" type="text"
+          placeholder="Message (optionnel)" maxlength="200"
+          value="${sanitize(saved?.message || '')}" autocomplete="off">
+        <p class="k-group-input-error" id="k-ge-err"></p>
+        <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
+          ✏️ Mettre à jour
+        </button>
+      </div>`;
+    card.querySelector('#k-ge-amount')?.focus();
+    bindSubmit(card, token, cart, onSuccess);
   });
 
-  el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
-    // Sécurité : si les champs sont cachés (état saved affiché), ignorer le clic.
-    const fieldsDiv = el.querySelector('#k-ge-fields');
-    if (fieldsDiv?.hidden) return;
+  // Binding pour étape 1
+  const card = el.querySelector('#k-ge-card');
+  if (card) bindSubmit(card, token, cart, onSuccess);
+}
 
-    const amount = Number(el.querySelector('#k-ge-amount')?.value);
-    const msg    = (el.querySelector('#k-ge-msg')?.value || '').trim();
-    const errEl  = el.querySelector('#k-ge-err');
-    const btn    = el.querySelector('#k-ge-submit-btn');
+function bindSubmit(card, token, cart, onSuccess) {
+  card.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
+    const amount = Number(card.querySelector('#k-ge-amount')?.value);
+    const msg    = (card.querySelector('#k-ge-msg')?.value || '').trim();
+    const errEl  = card.querySelector('#k-ge-err');
+    const btn    = card.querySelector('#k-ge-submit-btn');
 
-    errEl.textContent = '';
-    if (!amount || amount < 500) { errEl.textContent = 'Minimum 500 KMF.'; return; }
+    if (errEl) errEl.textContent = '';
+    if (!amount || amount < 500) {
+      if (errEl) errEl.textContent = 'Minimum 500 KMF.';
+      return;
+    }
 
     btn.disabled = true;
     btn.textContent = '🔐 Vérification…';
 
+    // Étape 2 : OTP silencieux
     try {
       const identity = await requireIdentity({
         reason: 'participer au panier',
-        title: 'Sécuriser votre participation',
+        title: 'Confirmer votre participation',
         allowOtherPhone: true,
       });
 
       if (!identity) {
         btn.disabled = false;
-        btn.textContent = '✋ Enregistrer mon engagement';
+        btn.textContent = '✋ Participer';
         return;
       }
 
-      const id = identityLabel(identity);
-      const name = id.name || 'Client Komerce';
+      const id    = identityLabel(identity);
+      const name  = id.name || 'Client Komerce';
       const phone = id.phone;
 
       if (!phone) {
-        errEl.textContent = 'Numéro vérifié introuvable. Réessayez avec un autre numéro.';
+        if (errEl) errEl.textContent = 'Numéro introuvable. Réessayez.';
         btn.disabled = false;
-        btn.textContent = '✋ Enregistrer mon engagement';
+        btn.textContent = '✋ Participer';
         return;
       }
 
@@ -373,14 +388,26 @@ function bindEngagementForm(el, token, cart, onSuccess) {
       rememberParticipantToken(token);
       rememberParticipantCommitment(token, { name, phone, amount, message: msg });
 
+      // Étape 3 : état confirmé inline
+      card.innerHTML = `
+        <div class="k-ge-step k-ge-step--done" id="k-ge-step-done">
+          <div class="k-ge-done-icon">✅</div>
+          <div class="k-ge-done-body">
+            <strong>${sanitize(name)}</strong>
+            <span>${fmt(r(amount), 'KMF')}</span>
+          </div>
+          <button type="button" class="k-group-btn k-group-btn--ghost k-ge-edit-btn" id="k-ge-edit-btn">
+            Modifier
+          </button>
+        </div>`;
+
       showToast(res?.updated ? 'Engagement mis à jour !' : 'Engagement enregistré !', 'success');
-      btn.disabled = false;
-      btn.textContent = '✅ Engagement enregistré';
       onSuccess?.();
+
     } catch (err) {
-      errEl.textContent = err?.message || 'Erreur.';
+      if (errEl) errEl.textContent = err?.message || 'Erreur.';
       btn.disabled = false;
-      btn.textContent = '✋ Enregistrer mon engagement';
+      btn.textContent = '✋ Participer';
     }
   });
 }
@@ -734,7 +761,7 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
     const qty      = it.quantity || 1;
     const unit     = r(it.unit_price_kmf || 0);
     const lineTotal = unit * qty;
-    const img      = it.product_image || it.image_url || '';
+    const img      = it.product_image || it.image_url || it.image || '';
     const thumb    = img
       ? `<img class="k-group-item-thumb" src="${sanitize(img)}" alt="" loading="lazy">`
       : `<div class="k-group-item-thumb--fallback">🛒</div>`;
