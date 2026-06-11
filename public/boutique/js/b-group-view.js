@@ -7,7 +7,7 @@
  *   PHASE OUVERTE (metadata.settlement_open = false)
  *     → Participant : formulaire d'engagement indicatif (nom + téléphone + montant)
  *       Aucun Stripe. Bouton : "Enregistrer mon engagement"
- *     → Créateur : voir les engagements, modifier le panier, bouton "Passer au règlement"
+ *     → Créateur : carte de pilotage 3 étapes, bouton "Bloquer et ouvrir le paiement"
  *
  *   PHASE RÈGLEMENT (metadata.settlement_open = true)
  *     → Participant : saisit son téléphone, retrouve son engagement verrouillé,
@@ -539,6 +539,7 @@ async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
         <strong>Panier clôturé !</strong>
         <p>Commande <strong>${sanitize(res.order_reference || '')}</strong> créée.</p>
         ${res.prepaid_kmf > 0 ? `<p class="k-group-success-detail">${fmt(res.prepaid_kmf, 'KMF')} prépayés.</p>` : ''}
+        ${r(res.remaining_cash_kmf) > 0 ? `<p class="k-group-success-detail"><strong>Reste à payer : ${fmt(r(res.remaining_cash_kmf), 'KMF')}</strong> (à régler au relais).</p>` : ''}
         <button class="k-group-btn k-group-btn--ghost k-group-btn--mt" id="k-group-to-track">📦 Voir ma commande</button>
       </div>`;
     bindCreatorActions(el, { ...cart, finalized_order_id: res.order_id }, shareUrl, cartId);
@@ -548,7 +549,7 @@ async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
     } else {
       showToast(err?.message || 'Erreur validation.', 'error');
     }
-    if (btn) { btn.disabled = false; btn.textContent = acceptPartial ? 'Je couvre le reste et je valide' : '✓ Valider et commander'; }
+    if (btn) { btn.disabled = false; btn.textContent = acceptPartial ? 'Je paie le reste' : 'Confirmer la commande'; }
   }
 }
 
@@ -582,18 +583,18 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     const errEl = el.querySelector('#k-group-settlement-err');
     const windowH = Number(el.querySelector('#k-group-settlement-window')?.value) || 48;
 
-    if (!confirm('Passer au règlement ? Les engagements seront verrouillés et les modifications du panier seront bloquées. Action irréversible.')) return;
+    if (!confirm('Bloquer les participations et ouvrir le paiement ? Les montants seront figés et les modifications du panier bloquées. Action irréversible.')) return;
 
     btn.disabled = true; btn.textContent = '⏳ Passage en cours…';
     errEl.textContent = '';
 
     try {
       await openSettlement(cartId, { settlement_window_hours: windowH });
-      showToast('Panier passé au règlement. Les participants peuvent maintenant payer.', 'success');
+      showToast('Participations bloquées. Les participants peuvent maintenant payer.', 'success');
       onSettlement?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      btn.disabled = false; btn.textContent = '🔐 Passer au règlement';
+      btn.disabled = false; btn.textContent = '🔐 Bloquer et ouvrir le paiement';
     }
   });
 
@@ -604,7 +605,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
   // S2-02 — Finaliser en couvrant le gap
   el.querySelector('#k-group-finalize-gap')?.addEventListener('click', () => {
-    if (!confirm('Vous allez couvrir le montant manquant et valider la commande. Confirmer ?')) return;
+    if (!confirm('Vous allez payer le reste, puis la commande sera créée. Confirmer ?')) return;
     doFinalize(el, cartId, shareUrl, cart, true);
   });
 
@@ -801,7 +802,14 @@ export async function renderGroupView(opts = {}) {
     const items = data.items || [];
     const total = r(cart.total_kmf_snapshot);
     const settlementOpen = isSettlementOpen(cart);
-    const isCartOpen = ['active', 'partially_funded'].includes(cart.status);
+    // Statuts v4 (LOT 0) : phase ouverte = engagement indicatif ;
+    // closed_for_settlement / settlement_in_progress = paiement ;
+    // ready_to_finalize / fully_funded = tout payé, plus rien à faire.
+    const isOpenPhase    = ['active', 'commitment_open', 'partially_funded'].includes(cart.status) && !settlementOpen;
+    const isPaymentPhase = settlementOpen &&
+      ['active', 'partially_funded', 'closed_for_settlement', 'settlement_in_progress'].includes(cart.status) &&
+      remainingKmf(cart) > 0;
+    const isFullyPaid    = ['ready_to_finalize', 'fully_funded'].includes(cart.status) || remainingKmf(cart) <= 0;
 
     let commitmentsList = [];
     try {
@@ -825,19 +833,19 @@ export async function renderGroupView(opts = {}) {
               </div>`).join('')}
           </div>
         </div>` : ''}
-      ${isCartOpen && !settlementOpen
+      ${isOpenPhase
         ? renderEngagementForm(participantToken, cart, false)
-        : isCartOpen && settlementOpen
+        : isPaymentPhase
           ? renderPaymentForm(participantToken, cart)
           : `<div class="k-group-card"><strong>${
-              cart.status === 'fully_funded' ? '✅ Panier financé, merci !' : "Ce panier n'accepte plus de contribution."
+              isFullyPaid ? '✅ Tout est payé, merci !' : "Ce panier n'accepte plus de contribution."
             }</strong></div>`}`;
 
     bindParticipantItemsAccordion(el);
 
-    if (isCartOpen && !settlementOpen) {
+    if (isOpenPhase) {
       bindEngagementForm(el, participantToken, cart, () => renderGroupView({ participantToken }));
-    } else if (isCartOpen && settlementOpen) {
+    } else if (isPaymentPhase) {
       bindPaymentForm(el, participantToken, cart);
     }
     return;
@@ -903,7 +911,8 @@ export async function renderGroupView(opts = {}) {
     creatorItems = data.items || data.cart_items || [];
   }
   const settlementOpen = isSettlementOpen(cart);
-  const isCartOpen    = ['active', 'partially_funded', 'fully_funded'].includes(cart.status);
+  const isCartOpen    = ['active', 'partially_funded', 'fully_funded',
+                         'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status);
 
   let commitmentsList = data.commitments || [];
   // Fallback : si l'endpoint owner ne les inclut pas encore (compatibilité transitoire),

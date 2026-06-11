@@ -53,11 +53,15 @@ export function engagementCoverage(commitments = [], total = 0) {
  * @returns {string}
  */
 export function statusLabel(status, isSettlementOpen) {
+  if (status === 'ready_to_finalize') return '✅ Tout est payé';
   if (isSettlementOpen) return '🔐 En règlement';
   return {
-    active:             '🟢 Ouvert',
-    partially_funded:   '🟡 Partiellement financé',
-    fully_funded:       '✅ Financé',
+    active:                 '🟢 Ouvert',
+    commitment_open:        '🟢 Ouvert',
+    partially_funded:       '🟡 Partiellement financé',
+    fully_funded:           '✅ Financé',
+    closed_for_settlement:  '🔐 En règlement',
+    settlement_in_progress: '🔐 En règlement',
     converted_to_order: '📦 Clôturé',
     finalized:          '📦 Clôturé',
     cancelled:          '❌ Annulé',
@@ -79,11 +83,15 @@ export function metaOf(cart) {
 
 /**
  * Indique si la phase règlement est ouverte pour ce panier.
+ * LOT 1.3 / 1.4 — le backend porte désormais l'état dans status
+ * (closed_for_settlement → settlement_in_progress → ready_to_finalize),
+ * metadata.settlement_open restant le signal transitionnel.
  * @param {object} cart
  * @returns {boolean}
  */
 export function isSettlementOpen(cart) {
-  return metaOf(cart).settlement_open === true;
+  return metaOf(cart).settlement_open === true ||
+    ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart?.status);
 }
 
 /**

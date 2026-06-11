@@ -1594,8 +1594,54 @@
 .k-group-funded-callout--gap strong {
   color: var(--amber-text-sett);
 }
+
+/* ── LOT 6 — bouton de confirmation : base lisible obligatoire ──────────
+   Avant : .k-group-btn--finalize n'avait AUCUNE règle de base → bouton
+   transparent sur fond clair ("Confirmer la commande" quasi invisible).
+   Exigences : contraste fort, pleine largeur mobile, libellé sur 2 lignes
+   accepté, jamais de blanc sur fond clair. */
+.k-group-btn--finalize {
+  width: 100%;
+  background: var(--cta-green);
+  color: var(--white);
+  border: 0;
+  padding: 13px 16px;
+  white-space: normal;       /* libellés longs → deux lignes acceptées */
+  line-height: 1.25;
+}
+.k-group-btn--finalize:hover { filter: brightness(.94); }
+.k-group-btn--finalize:disabled {
+  background: var(--sand-dark);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+/* Variante gap : "Je paie le reste" — amber foncé + texte blanc (contraste AA) */
 .k-group-funded-callout--gap .k-group-btn--finalize {
   background: var(--amber-text-sett);
+  color: var(--white);
+}
+
+/* ── LOT 6 — ligne Attendre / Je paie le reste ──────────────────────────
+   Desktop & mobile large : deux colonnes, l'action principale domine.
+   Mobile < 380px : boutons côte à côte interdits (sauf WhatsApp/Copier)
+   → empilés, action principale pleine largeur EN PREMIER visuellement. */
+.k-group-actions-row {
+  display: grid;
+  grid-template-columns: minmax(96px, .6fr) 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+.k-group-actions-row .k-group-btn { width: 100%; }
+@media (max-width: 380px) {
+  .k-group-actions-row {
+    grid-template-columns: 1fr;
+  }
+  /* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
+  .k-group-actions-row .k-group-btn--finalize { order: -1; }
+  /* seule exception côte à côte autorisée : WhatsApp / Copier */
+  .k-group-view .k-group-creator-actions {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Spécificité 0-2-0 : bat les rules single-class (.k-group-btn--primary etc.) sans !important */

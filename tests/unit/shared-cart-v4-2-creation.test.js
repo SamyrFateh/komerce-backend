@@ -217,27 +217,31 @@ describe('createSharedCartFromCartItems — Doctrine v4.2', () => {
     expect(deleteCall).toBeUndefined();
   });
 
-  // [N4-CLEAR-T1] Baskets trouvés → suppression + event creator_basket_cleared
-  test('[N4-CLEAR-T1] Baskets trouvés → basket_items supprimés, event creator_basket_cleared inséré', async () => {
+  // [N4-CLEAR-T1 → LOT 2] Le flux from-cart-items ne vide AUCUN basket DB.
+  // Le panier vient du localStorage mobile : seul le signal clearLocalCart: true
+  // est renvoyé au front. (Test 9.6 du brief BUSINESS+UX V4.)
+  test('[LOT2-T1] from-cart-items ne vide pas les baskets DB, clearLocalCart=true', async () => {
     const { client } = mockWithTransaction(standardSuccessResponses());
 
-    await createSharedCartFromCartItems(USER_ID, VALID_CART_ITEMS, {});
+    const result = await createSharedCartFromCartItems(USER_ID, VALID_CART_ITEMS, {});
+
+    expect(result.clearLocalCart).toBe(true);
 
     const queries = client.query.mock.calls.map(([sql]) =>
       typeof sql === 'string' ? sql.trim() : ''
     );
 
-    // DELETE basket_items doit apparaître
-    expect(queries.some(q => q.toUpperCase().includes('DELETE FROM BASKET_ITEMS'))).toBe(true);
+    // Aucun DELETE basket_items ne doit apparaître dans ce flux
+    expect(queries.some(q => q.toUpperCase().includes('DELETE FROM BASKET_ITEMS'))).toBe(false);
 
-    // Event creator_basket_cleared doit être inséré
+    // Aucun event creator_basket_cleared ne doit être inséré
     const eventInserts = client.query.mock.calls.filter(([sql, params]) =>
       typeof sql === 'string' &&
       sql.includes('shared_cart_events') &&
       Array.isArray(params) &&
       params.includes('creator_basket_cleared')
     );
-    expect(eventInserts.length).toBeGreaterThanOrEqual(1);
+    expect(eventInserts.length).toBe(0);
   });
 
   // [N4-CLEAR-T2] Aucun basket actif → pas de DELETE, pas d'event basket_cleared

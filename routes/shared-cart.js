@@ -751,6 +751,11 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
       }
     } catch (_) {}
 
+    // LOT 1.1 — finalisation directe depuis phase ouverte : conflit d'état, pas 500
+    if (err.message.includes('passer au paiement')) {
+      return res.status(409).json({ error: err.message, code: 'settlement_not_open' });
+    }
+
     if (err.message.includes('expiré') ||
         err.message.includes('introuvable') ||
         err.message.includes('Impossible') ||

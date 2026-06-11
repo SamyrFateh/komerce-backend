@@ -237,7 +237,7 @@ export function renderProgress(cart, contributions, commitmentsList) {
  *   ORDER_CREATED   → Commande créée
  *
  * LOT 4 — le créateur ne voit JAMAIS le formulaire d'engagement en phase ouverte.
- * LOT 7 — wording normalisé (pas de "Passer au règlement", "Valider", "Clôturer"…).
+ * LOT 7 — wording normalisé (libellés autorisés uniquement, cf. brief V4).
  * LOT 8 — garde-fous : pas de bouton Confirmer en phase SHARE_AND_LOCK,
  *          mention relais si absent, état terminal sans action si annulé/expiré.
  *
@@ -335,7 +335,7 @@ export function renderCreatorActions(cart, opts = {}) {
   }
 
   /* ── Phase SHARE_AND_LOCK (panier ouvert) ───────────────────────── */
-  // LOT 4 — PAS de formulaire d'engagement ici, PAS de "Je contribue"
+  // LOT 4 — PAS de formulaire d'engagement ni d'action de contribution créateur ici
   // LOT 8 — PAS de bouton Confirmer la commande dans cette phase
 
   return `
