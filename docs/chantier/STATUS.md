@@ -1,5 +1,5 @@
 # Komerce Backend — État du chantier
-> Mis à jour : **2026-06-08** (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ✅)
+> Mis à jour : **2026-06-11** (L0-A ✅ · contrat API OpenAPI 192 routes · contract:check CI ✅) (SUIVI_IMPLEMENTATION_PANIER_PARTAGE v4.1 intégré · Sprint 1 ✅ · Sprint 2 partiel ⏳ · Sprint 3 ✅ · **BUG-S2-05 ✅ · TX-02 ✅ · BUG-C5/C6/C7 faux positifs ✅ · S2-06 ✅** · BE-A/B/C/D annulés 🚫 · DOC-INT-1/2/3/4 ☐ · REFACTO-SCAN-ENGINE ✅ · DOC-SYNC-BOUTIQUE-FIRST ✅ · GOD-FILES-2/3/4 ✅ · deleteOrderCascade dédupliquée ✅ · COLLECTIVE-CLEANUP ✅ · B-CSS-1 ✅ · B-HTML-1 ✅ · B-MODAL-MOCK ✅ · AUDIT-BE-2026-05-26 intégré · A-BE-04 ✅ · A-BE-18 ✅ · A-BE-16 ✅ · A-BE-05 ✅ · **A-BE-03 ✅ · A-BE-09 ✅ · BASKETS-1 ✅ · A-BE-15 ✅ · A-BE-10 ✅ · SEC-1b ✅** · N4-072-migration ✅ · N4-câblage ✅ · **AUDIT-3D-2026-06-11 intégré · L0-B ☐ · L0-C ☐ · L0-D ☐ · OBS ☐ · LOT-387 ☐**)
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`
 > **Ce fichier est la PREMIÈRE chose à ouvrir au début de chaque session.**
 
@@ -470,6 +470,37 @@ Complété en session 2026-05-27 :
 
 ---
 
+## Lot L0-A — Contrat d'API (✅ Terminé — 2026-06-11)
+
+> Objectif : rendre la dérive de contrat entre backend et frontends détectable en CI.
+
+| Livrable | Statut | Notes |
+|---|---|---|
+| `scripts/contract-generate.js` | ✅ | Génère `docs/contract/openapi.json` depuis les schémas Joi + routes réelles |
+| `scripts/contract-check.js` | ✅ | Scanne boutique + dashboards, compare avec le contrat, exit(1) si dérive |
+| `docs/contract/openapi.json` | ✅ | 192 routes · 8 réponses couvertes (Joi) · 184 UNKNOWN (dette) |
+| `docs/contract/DEBT.md` | ✅ | Liste des 184 réponses UNKNOWN à couvrir via tests |
+| `.github/workflows/contract.yml` | ✅ | CI GitHub Actions — bloque les PRs en cas de dérive |
+| `package.json` scripts | ✅ | `contract:generate`, `contract:check`, `contract:all` |
+
+**Où déposer les fichiers :**
+- `scripts/contract-generate.js` + `scripts/contract-check.js` → racine `scripts/`
+- `docs/contract/openapi.json` + `docs/contract/DEBT.md` → créer `docs/contract/`
+- `.github/workflows/contract.yml` → créer `.github/workflows/`
+
+**Dette connue (non bloquante) :**
+- 184 réponses UNKNOWN → à couvrir progressivement via les tests L1-A (golden path E2E)
+- 4 routes mortes `collective-*` encore appelées en boutique → lot L1-C (purge code déprécié)
+- `shared_cart_id` / `fully_funded` : champs consommés sans réponse couverte → L1-A
+
+**Divergence doc/code détectée :**
+- `CARTOGRAPHY_360.md` décrit les routes mais pas les champs de réponse → `docs/contract/openapi.json` devient la référence machine des contrats HTTP. À mentionner dans `CARTOGRAPHY_360.md` §3.
+
+**Prochaine action pour réduire la dette UNKNOWN :**
+Chaque test d'intégration qui asserte sur `.body` → ajouter l'entrée dans `KNOWN_RESPONSES` de `contract-generate.js` → relancer `npm run contract:generate`.
+
+---
+
 ## Traçage dette technique résiduelle
 
 ### Findings de l'analyse ANALYSE_BACKEND_KOMERCE
@@ -765,3 +796,265 @@ Audit sécurité/qualité frontend + backend. 33 findings, 33 traités.
 | FRESH-108 | fiabilité | Migration 076 — bloc déduplication préventive ajouté avant `CREATE UNIQUE INDEX` | ✅ |
 | FRESH-109 | documentation | STATUS.md synchronisé (N4-câblage ✅, date 2026-06-08) | ✅ |
 
+
+---
+
+## Audit 3 dimensions — 2026-06-11
+
+> Source : `AUDIT_KOMERCE_3D.md` — audit fonctionnel et d'architecture Backend · Dashboards · Boutique.
+> Périmètre : `Backend.zip` v10.6.1 (583 fichiers), `Dashboards.zip` (141 fichiers, PWA), `Boutique.zip` (194 fichiers).
+> Verdict global : socle **GO conditionnel**. La qualité unitaire est solide ; le risque est dans les **coutures** entre les trois dimensions.
+
+### Tableau de maturité par dimension
+
+| Dimension | Maturité fonctionnelle | Maturité technique | Risque principal |
+|---|---|---|---|
+| Backend | Élevée | Élevée (sauf `server.js`) | `server.js` god-file + DDL runtime |
+| Dashboards | Moyenne-élevée | Moyenne | 0 test · cache PWA manuel |
+| Boutique | Élevée | Moyenne | Code zombie déprécié · 1 seul test E2E |
+| **Coutures** | — | **Faible-moyenne** | **Pas de contrat d'API · couplage build · same-origin implicite** |
+
+### Matrice des risques (R1–R15)
+
+| # | Finding | Dimension | Sévérité | Effort | Lot | Statut |
+|---|---|---|---|---|---|---|
+| R1 | Pas de contrat d'API vérifiable (dérive silencieuse) | Coutures | 🔴 Critique | Moyen | L0-A | ✅ Terminé 2026-06-11 |
+| R2 | Couplage build backend↔boutique + `public/` non assemblé | Coutures | 🔴 Critique | Moyen | L0-B | ☐ |
+| R3 | Same-origin implicite non documenté comme contrainte | Coutures | 🟠 Élevé | Faible | L0-B | ☐ |
+| R4 | `server.js` god-file + 92 DDL runtime au boot | Backend | 🟠 Élevé | Élevé | H1 (lot futur) | ✅ Partiel — `server.js` → 209 l, DDL dans startup-migrations |
+| R5 | Provider notifications ambigu + webhook Authkey non authentifié | Backend | 🟠 Élevé | Moyen | L0-C + L0-D | ☐ |
+| R6 | Mot de passe admin par défaut (rotation manuelle) | Backend | 🟠 Élevé | Faible | L0-C | ☐ |
+| R7 | Code front zombie du flux collectif déprécié | Boutique | 🟡 Moyen | Faible | L1-C (futur) | ☐ |
+| R8 | Tests : backend 26 / boutique 1 / dashboards 0 — aucun E2E inter-couches | Coutures | 🟠 Élevé | Élevé | L1-A (futur) | ☐ |
+| R9 | Cache PWA manuel (clients périmés) | Dashboards | 🟡 Moyen | Faible | L1-B (futur) | ☐ |
+| R10 | Dérive de version (pas de source unique) | Coutures | 🟡 Moyen | Faible | L1-B (futur) | ☐ |
+| R11 | Cohabitation admin moderne / legacy | Dashboards | 🟡 Moyen | Moyen | Post go-live | ☐ |
+| R12 | FX EUR↔KMF : source unique + réconciliation à formaliser | Backend | 🟡 Moyen | Moyen | Post go-live | ☐ |
+| R13 | **Uploads images produits sur disque éphémère Railway** (perdus à chaque redéploiement) | Backend | 🔴 Critique | Faible-moyen | LOT-387 (F1) | ☐ |
+| R14 | Écritures multi-étapes sans transaction (`auto-parcel`, `inventory-service`) | Backend | 🟠 Élevé | Faible | LOT-387 (F2) | ☐ |
+| R15 | Dette ticket #387 non planifiée : stockage objet, soft-auth `orders/detail`, alerte sync parcel | Backend | 🟠 Élevé | Moyen | LOT-387 | ☐ |
+
+### Coutures identifiées
+
+| # | Couture | Risque | Lot |
+|---|---|---|---|
+| C1 | Same-origin implicite (cookies + CORS) — frontends en `/api` relatif | Élevé — migration hébergement casse l'auth silencieusement | L0-B |
+| C2 | Couplage build dur backend↔boutique — `public/` vide = `npm start` échoue | Élevé — déploiements non reproductibles | L0-B |
+| C3 | Aucun contrat d'API machine-vérifiable — champs codés en dur dans les frontends | Élevé et systémique | L0-A ✅ |
+| C4 | Deux modèles d'auth sur une même colonne vertébrale (dashboards session / boutique OTP) | Moyen — coordination 3 repos | L0-B |
+| C5 | Trois systèmes de partage coexistants (`/api/shares`, `/api/shared-carts`, `collective-*` 410) | Moyen — code front encore présent | L1-C |
+| C6 | Doc backend décrit une boutique qui vit dans un repo séparé | Moyen — divergence doc/code sans détection | DOC-INT (backlog) |
+| C7 | Cohérence déploiements (PWA cache manuel + bundle + version dérivante) | Moyen — diagnostics d'incidents difficiles | L1-B |
+
+---
+
+## Lots go-live — Plan d'action issu de l'audit 3D
+
+> Légende : ✅ Terminé · ⏳ En cours · ☐ À faire · 🚫 Annulé
+> Prompts opérationnels : `docs/audit/PROMPT_SONNET_*_KOMERCE.md` (copier-coller vers Claude Code / agent repo).
+
+### Priorités P0 — avant/juste après go-live
+
+| Lot | Titre | Findings | Prompt | Statut |
+|---|---|---|---|---|
+| **L0-A** | Contrat d'API partagé et CI | R1 / C3 | — | ✅ Terminé 2026-06-11 |
+| **L0-B** | Orchestration de déploiement | R2, R3 / C1, C2 | `docs/audit/PROMPT_SONNET_DEPLOY_ORCHESTRATION_KOMERCE.md` | ☐ |
+| **L0-C** | Sécurité go-live | R5 (webhook), R6 (admin pwd) | `docs/audit/PROMPT_SONNET_SECURITY_GOLIVE_KOMERCE.md` | ☐ |
+| **L0-D** | Provider notifications unique | R5 (ambiguïté provider) | `docs/audit/PROMPT_SONNET_NOTIFICATIONS_PROVIDER_KOMERCE.md` | ☐ |
+| **LOT-387** | Dette avouée + intégrité colis | R13, R14, R15 | `docs/audit/PROMPT_SONNET_LOT387_KOMERCE.md` | ☐ |
+
+### Priorités P1 — fondations de fiabilité (premiers 90 jours)
+
+| Lot | Titre | Findings | Prompt | Statut |
+|---|---|---|---|---|
+| **OBS** | Logs vers dashboard + masquage PII | §8 #11 / transversal | `docs/audit/PROMPT_SONNET_OBSERVABILITY_LOGS_KOMERCE.md` | ☐ |
+| **L1-A** | Tests E2E golden path 3 couches | R8 | À créer | ☐ |
+| **L1-B** | Version unique + invalidation cache PWA | R9, R10 | À créer | ☐ |
+| **L1-C** | Purge code front déprécié | R7 / C5 | À créer | ☐ |
+
+### Priorités P2 — dette structurelle (trimestre suivant)
+
+| Lot | Titre | Findings | Statut |
+|---|---|---|---|
+| **H1 (suite)** | Refactor `server.js` complet — DDL hors boot | R4 | ☐ (partiel ✅) |
+| **ADMIN-LEGACY** | Décommissionner admin-legacy | R11 | ☐ |
+| **FX-RECON** | Taux EUR↔KMF source unique + réconciliation | R12 | ☐ |
+
+---
+
+## Lot L0-B — Orchestration de déploiement ☐
+
+> Prompt : `docs/audit/PROMPT_SONNET_DEPLOY_ORCHESTRATION_KOMERCE.md`
+> Objectif : rendre le déploiement reproductible et trancher la couture same-origin (décision monorepo vs split).
+
+### Constats de départ (vérifiés par l'audit)
+
+1. **Couplage build dur** : `npm start` = `npm run build && node server.js` ; `build` = `node public/boutique/scripts/deploy-css.js`. `public/` vide dans le repo livré → `npm start` échoue sans la boutique assemblée.
+2. **Railway** : `railway.json` NIXPACKS, `startCommand: npm start`, `restartPolicyType: ON_FAILURE` (max 10). Boucle de redémarrage si `public/boutique` absent.
+3. **Same-origin implicite** : les deux frontends appellent `/api` en relatif avec cookies ; `komerce-api.js` défaut sur `window.location.origin` ; `auth-guard.js` utilise `credentials: 'include'`.
+4. **3 repos séparés** : `SamyrFateh/komerce-backend` + boutique + dashboards.
+
+### Sous-lots
+
+| ID | Description | Statut |
+|---|---|---|
+| B1 | Cartographie des dépendances de build (lecture seule) | ☐ |
+| B2 | Décision monorepo vs split (présentation + arbitrage) | ☐ |
+| B3 | Outillage de la décision retenue | ☐ |
+
+### Garde-fous
+
+- Préserver l'auth tant que la couture same-origin n'est pas migrée (cookies ou token — jamais à moitié).
+- I-07 intact : webhooks Stripe body brut avant `express.json`.
+- `REQUIRED_ENV` reste fail-fast.
+- Reproductibilité : `git clone` → 1 commande → app qui démarre.
+
+---
+
+## Lot L0-C — Sécurité go-live ☐
+
+> Prompt : `docs/audit/PROMPT_SONNET_SECURITY_GOLIVE_KOMERCE.md`
+> Objectif : fermer les points de sécurité qui ne doivent pas survivre à une exposition publique.
+
+### Constats de départ (vérifiés par l'audit)
+
+1. **Mot de passe admin par défaut** : `fixAdminHash` (dans `scripts/fix-schema.js`) applique `Komerce2026!` si `ADMIN_PASSWORD` absent. CLI propre `scripts/reset-admin.js` existe. Rotation manuelle non garantie.
+2. **Webhook Authkey non authentifié** : `server.js:43` — GET, paramètres en query, aucun middleware d'auth. Contraste avec webhook Meta (`routes/meta-whatsapp.js`) qui vérifie `verifyMetaSignature` + verify-token.
+3. **Socle sain par ailleurs** : bcrypt 10 rounds, JWT 2h, auth middleware sur routes sensibles, webhooks Stripe signés.
+
+### Sous-lots
+
+| ID | Description | Statut |
+|---|---|---|
+| C1 | Éliminer la dépendance au mot de passe admin par défaut | ☐ |
+| C2 | Authentifier / whitelister le webhook entrant Authkey | ☐ |
+| C3 | Hygiène des secrets (revue ciblée) | ☐ |
+
+### Garde-fous
+
+- `REQUIRED_ENV` reste fail-fast — pas de fallback silencieux.
+- Ne pas désactiver la signature Stripe (I-07) ni affaiblir helmet/CSP/CORS.
+- Durcissement webhook Authkey ne doit pas rejeter les accusés de livraison légitimes.
+
+---
+
+## Lot L0-D — Provider notifications unique ☐
+
+> Prompt : `docs/audit/PROMPT_SONNET_NOTIFICATIONS_PROVIDER_KOMERCE.md`
+> Objectif : lever l'ambiguïté sur le provider actif, retirer le legacy mort, ajouter une sonde de santé.
+> **Critique** : l'OTP et le panier partagé dépendent de ce canal — panne silencieuse = paniers jamais payés.
+
+### Constats de départ (vérifiés par l'audit)
+
+1. **Provider réellement câblé = Authkey** : `notification-service.js` require `./authkey-client`, log `authkey_rejected`. `authkey-client.js` appelle `https://authkey.io/restapi/requestjson.php` avec `AUTHKEY_API_KEY`, allowlist `AUTHKEY_ALLOWED_PHONES`, gating `NODE_ENV==='production'`.
+2. **Meta WhatsApp coexiste** : `whatsapp-meta.js` + `routes/meta-whatsapp.js` — webhook signé. Deux chemins WhatsApp en parallèle. Statut à trancher : migration, fallback, ou mort ?
+3. **Twilio et Africa's Talking = legacy probablement mort** : présents dans `.env.example` mais non câblés dans `notification-service.js`.
+4. **Divergence doc/code** : `CARTOGRAPHY_360.md` §8bis affirme que `sms_log` est consommée par `utils/sms.js` qui **n'existe pas**.
+
+### Sous-lots
+
+| ID | Description | Statut |
+|---|---|---|
+| D1 | Cartographie des canaux — matrice canal → provider actif / mort (lecture seule) | ☐ |
+| D2 | Nettoyage du legacy mort (après validation D1) | ☐ |
+| D3 | Sonde de santé de livraison (`/api/health/notifications`) | ☐ |
+
+### Garde-fous
+
+- Ne jamais bloquer la route principale sur une erreur de notification (invariant panier partagé : best-effort post-commit).
+- Conserver la traçabilité `notification_log`/`sms_log`.
+- Ne pas supprimer de tables.
+- OTP intouchable en surface : ne pas casser `routes/otp.js` ni `otp-test-mode.js`.
+
+---
+
+## Lot OBS — Logs vers dashboard + masquage PII ☐
+
+> Prompt : `docs/audit/PROMPT_SONNET_OBSERVABILITY_LOGS_KOMERCE.md`
+> Objectif : rendre les logs Pino exploitables dans un dashboard (rétention, requêtes, alertes) sans fuiter de PII.
+
+### Constats de départ (vérifiés par l'audit)
+
+1. **`pino-pretty` déjà gated dev-only** (prod = JSON minifié, compatible Railway 500 lignes/s/réplica). ✅
+2. **`redact` déjà en place** pour `authorization`, `cookie`, `password`, `token`, `secret`, `creditCard`. ✅
+3. **TROU 1** : aucun transport externe — seuls `pino-pretty` (dev) ou stdout (prod).
+4. **TROU 2** : `phone`/`mobile`/`email` **non masqués** dans les logs → fuite PII active dès qu'un transport externe est ajouté.
+
+### Sous-lots
+
+| ID | Description | Statut |
+|---|---|---|
+| O1 | Masquage PII `phone`/`mobile`/`whatsapp_phone`/`email` via `formatters.log` (faire EN PREMIER) | ☐ |
+| O2 | Transport prod vers agrégateur (pino-loki / Axiom / Better Stack) — gated, env-driven, fail-open | ☐ |
+| O3 | Dashboard & alertes (widgets Railway Observability + monitor `authkey_rejected`) | ☐ |
+| O4 | (optionnel) Corrélation bout-en-bout — propagation `request_id` depuis les frontends | ☐ |
+
+### Garde-fous
+
+- `phone`/`mobile`/`email` : masquage **partiel** (ex. `+269•••67`), pas `[REDACTED]` total — sinon perte de corrélation ops.
+- Transport asynchrone, file bornée, drop si agrégateur lent — jamais de backpressure sur l'app.
+- URL/clé agrégateur via variables d'env uniquement — boot sans ces variables = log local seulement, pas de crash.
+- `pino-pretty` reste dev-only ; fallback console, `httpLogger`, `request_id` non régressés.
+
+---
+
+## Lot LOT-387 — Dette avouée + intégrité colis ☐
+
+> Prompt : `docs/audit/PROMPT_SONNET_LOT387_KOMERCE.md`
+> Objectif : clore la dette que le code avoue lui-même (ticket #387) + corriger les écritures multi-étapes sans transaction.
+> **R13 (uploads éphémères) = bloqueur go-live.**
+
+### Constats de départ (vérifiés par l'audit)
+
+1. **R13 — Uploads éphémères (bloqueur)** : `middleware/upload.js` — multer `diskStorage` → `public/uploads/products/`. Commentaire du code : *Railway : filesystem éphémère, images perdues aux redéploiements, TODO #387*. Sécurité existante solide (magic bytes, extensions whitelist, 5 Mo max, noms crypto-aléatoires) — à préserver.
+2. **R14 — Écritures sans transaction** : `auto-parcel.js` — `INSERT INTO parcels` puis `INSERT INTO parcel_items` sans `BEGIN/COMMIT` → crash entre les deux = colis vide orphelin (viole I-09). `inventory-service.js` — séquence UPDATE/INSERT/UPDATE sans transaction.
+3. **R15a — Soft-auth manquant** : `routes/orders/detail.js` l.63 — TODO #387 : middleware soft-auth pour peupler `req.user` sans bloquer les accès publics.
+4. **R15b — Alerte sync absente** : `utils/parcelSync.js` l.224 — TODO #387 : alerte `elevated` si la sync parcel échoue (table `incidents`/`alert-engine` existent déjà).
+5. *(Mineur)* `services/monitoring.js` lance `setInterval(checkAlerts, 60000)` au require — effet de bord au chargement, actif en test. À gater comme les crons de `bootstrap/crons.js`.
+
+### Sous-lots
+
+| ID | Description | Statut |
+|---|---|---|
+| F1 | Stockage objet pour les uploads — Cloudflare R2 / S3 / volume Railway (bloqueur go-live) | ☐ |
+| F2 | Transactions sur les écritures multi-étapes (`auto-parcel` + `inventory-service`) | ☐ |
+| F3 | Middleware soft-auth (`middleware/soft-auth.js`) branché sur `orders/detail` uniquement | ☐ |
+| F4 | Alerte sync parcel — incident `elevated` best-effort via `alert-engine`/`incidents` | ☐ |
+| F5 | (optionnel) Gating `monitoring.js` — démarrage via `bootstrap/crons.js` | ☐ |
+
+### Critères d'acceptation
+
+- Redéploiement = aucune image produit perdue (testé) ; sécurité d'upload intacte ; URLs existantes valides.
+- Crash simulé au milieu de la création d'un colis → zéro parcel orphelin (rollback prouvé).
+- `orders/detail` : public inchangé, authentifié enrichi, jamais de 401 introduit.
+- Échec sync parcel → incident `elevated` créé, appelant jamais cassé.
+- Plus aucun `TODO #387` dans le code.
+
+### Garde-fous
+
+- Préserver la sécurité d'upload existante (magic bytes, whitelist, taille max, noms aléatoires).
+- URLs d'images en DB stables : prévoir compatibilité ou redirection avant migration.
+- Pattern transactionnel existant du repo (21 services) — copier ce pattern, ne pas en inventer un.
+- `REQUIRED_ENV` fail-fast : si stockage objet exige des variables, elles entrent dans `REQUIRED_ENV`.
+
+---
+
+## Lacunes fonctionnelles métier (hors P0 go-live)
+
+> Source : `AUDIT_KOMERCE_3D.md` §11.2 — le cœur « colis-first » est complet ; ce qui manque relève de la croissance et de la rétention.
+
+| Manque | Dimension | Enjeu business | Priorité |
+|---|---|---|---|
+| **Flux retour / réclamation client** | Backend + Boutique | Confiance diaspora : signaler colis abîmé/manquant au retrait (photo au relais) = SAV n°1 du transfrontalier | Post go-live #1 |
+| **Codes promo / parrainage** | Backend + Boutique | Le parrainage est le levier d'acquisition naturel d'une diaspora qui partage déjà ses paniers sur WhatsApp | Post go-live #2 |
+| **Avis clients** | Boutique | Preuve sociale réelle = conversion pour acheteurs à distance | Post go-live #3 |
+| **Alertes stock / réassort** | Pilotage | `alert-engine.js` ne couvre pas la rupture de stock — ventes perdues invisibles en pleine saison cérémonie | Post go-live #4 |
+| **Analytique client (LTV, cohortes, réachat)** | Pilotage | Piloter la rétention, pas seulement les flux opérationnels | Trimestre 2 |
+| Recherche produit typo-tolérante | Boutique | Suffisante au lancement (`ILIKE`) ; à prévoir quand le catalogue grossit | Backlog |
+| i18n (shikomori / anglais) | Boutique | Acceptable pour la diaspora francophone ; à arbitrer selon l'expansion | Backlog |
+
+---
+
+## Règle de fin de session
+
+Avant de terminer une session avec commit ou PR : mettre à jour ce fichier, vérifier le prochain lot, et vérifier `AGENTS.md` si un document socle bouge.
