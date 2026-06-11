@@ -303,6 +303,10 @@ function bindEngagementForm(el, token, cart, onSuccess) {
   });
 
   el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
+    // Sécurité : si les champs sont cachés (état saved affiché), ignorer le clic.
+    const fieldsDiv = el.querySelector('#k-ge-fields');
+    if (fieldsDiv?.hidden) return;
+
     const amount = Number(el.querySelector('#k-ge-amount')?.value);
     const msg    = (el.querySelector('#k-ge-msg')?.value || '').trim();
     const errEl  = el.querySelector('#k-ge-err');
@@ -705,26 +709,48 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 /* renderCreatorArticlesPanel → group/group-render-creator.js (lot JS-2) */
 
 function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
-  const itemRows = items.map(it => `
-    <div class="k-group-item-row">
-      <span class="k-group-item-name">${sanitize(it.name || 'Produit')}</span>
-      <span class="k-group-item-qty">×${it.quantity || 1}</span>
-      <span class="k-group-item-price">${fmt(r(it.unit_price_kmf), 'KMF')}</span>
-    </div>`).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
-
   const count = items.length;
-  const openByDefault = count <= 3;
+
+  const itemRows = items.map(it => {
+    const qty      = it.quantity || 1;
+    const unit     = r(it.unit_price_kmf || 0);
+    const lineTotal = unit * qty;
+    const img      = it.product_image || it.image_url || '';
+    const thumb    = img
+      ? `<img class="k-group-item-thumb" src="${sanitize(img)}" alt="" loading="lazy">`
+      : `<div class="k-group-item-thumb--fallback">🛒</div>`;
+    return `
+      <div class="k-group-item-row--rich">
+        ${thumb}
+        <div class="k-group-item-body">
+          <span class="k-group-item-name">${sanitize(it.product_name || it.name || 'Produit')}</span>
+          <span class="k-group-item-detail">${fmt(unit, 'KMF')} × ${qty}</span>
+        </div>
+        <div class="k-group-item-right">
+          <span class="k-group-item-total">${fmt(lineTotal, 'KMF')}</span>
+        </div>
+      </div>`;
+  }).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
+
+  const totalRow = count > 0 ? `
+    <div class="k-group-items-total-row">
+      <span>${count} article${count > 1 ? 's' : ''}</span>
+      <strong>${fmt(total, 'KMF')}</strong>
+    </div>` : '';
+
+  const openByDefault = count <= 4;
   return `
     <div class="k-group-card k-group-items-card ${openByDefault ? 'is-open' : ''}">
       <button class="k-group-items-toggle" type="button" id="k-group-items-toggle" aria-expanded="${openByDefault ? 'true' : 'false'}">
         <span>
           <strong>${sanitize(cart.title || 'Panier groupe')}</strong><br>
-          <span>Total : ${fmt(total, 'KMF')} · ${statusLabel(cart.status, settlementOpen)} · ${count} article${count > 1 ? 's' : ''}</span>
+          <span><span>${count} article${count > 1 ? 's' : ''}</span> · <span>${fmt(total, 'KMF')}</span> · <span>${statusLabel(cart.status, settlementOpen)}</span></span>
         </span>
         <span class="k-group-items-chevron">⌄</span>
       </button>
       <div class="k-group-items-list" id="k-group-items-list" ${openByDefault ? '' : 'hidden'}>
         ${itemRows}
+        ${totalRow}
       </div>
     </div>`;
 }
@@ -816,37 +842,65 @@ export async function renderGroupView(opts = {}) {
       commitmentsList = await getCommitments(participantToken);
     } catch (_) {}
 
-    el.innerHTML = `
+    /* ── Header premium participant ───────────────────────────────── */
+    const benefName = sanitize(cart.beneficiary_name_snapshot || '');
+    const headerHtml = `
       <div class="k-group-header">
-        <h2>👥 Panier groupe</h2>
-        <p class="k-group-subhead">Panier de ${sanitize(cart.beneficiary_name_snapshot || '')}.</p>
-      </div>
-      ${renderParticipantItemsAccordion(items, total, cart, settlementOpen)}
-      ${commitmentsList.length > 0 ? `
-        <div class="k-group-card" style="padding:14px 16px">
-          <div class="k-group-contribs-label">Engagements ${settlementOpen ? 'verrouillés' : 'indicatifs'} (${commitmentsList.length})</div>
-          <div class="k-group-commitment-list">
-            ${commitmentsList.map(c => `
-              <div class="k-group-commitment-row">
-                <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-                <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-              </div>`).join('')}
-          </div>
-        </div>` : ''}
-      ${isOpenPhase
-        ? renderEngagementForm(participantToken, cart, false)
-        : isPaymentPhase
-          ? renderPaymentForm(participantToken, cart)
-          : `<div class="k-group-card"><strong>${
-              isFullyPaid ? '✅ Tout est payé, merci !' : "Ce panier n'accepte plus de contribution."
-            }</strong></div>`}`;
+        <div class="k-group-header-eyebrow">👥 Panier groupe</div>
+        <h2 class="k-group-header-title">${sanitize(cart.title || 'Panier groupe')}</h2>
+        ${benefName ? `<p class="k-group-subhead">Organisé pour ${benefName}</p>` : ''}
+        <div class="k-group-header-meta">
+          <span class="k-group-header-total">${fmt(total, 'KMF')}</span>
+          <span class="k-group-header-sep">·</span>
+          <span class="k-group-header-status">${statusLabel(cart.status, settlementOpen)}</span>
+          <span class="k-group-header-sep">·</span>
+          <span class="k-group-header-count">${items.length} article${items.length > 1 ? 's' : ''}</span>
+        </div>
+      </div>`;
 
+    /* ── Engagements compacts (colonne gauche si phase ouverte) ───── */
+    const commitmentsHtml = commitmentsList.length > 0 ? `
+      <div class="k-group-card k-group-commitments-card">
+        <div class="k-group-contribs-label">Engagements ${settlementOpen ? 'verrouillés' : 'indicatifs'} (${commitmentsList.length})</div>
+        <div class="k-group-commitment-list">
+          ${commitmentsList.map(c => `
+            <div class="k-group-commitment-row">
+              <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
+              <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
+    const asideHtml = isOpenPhase
+      ? renderEngagementForm(participantToken, cart, false)
+      : isPaymentPhase
+        ? renderPaymentForm(participantToken, cart)
+        : `<div class="k-group-card k-group-fully-paid-card">
+             <div class="k-group-fully-paid-icon">✅</div>
+             <strong>${isFullyPaid ? 'Tout est réglé, merci !' : "Ce panier n'accepte plus de contribution."}</strong>
+           </div>`;
+
+    el.innerHTML = `
+      <div class="k-group-participant-layout">
+        <div class="k-group-participant-col-main">
+          ${headerHtml}
+          ${renderParticipantItemsAccordion(items, total, cart, settlementOpen)}
+          ${commitmentsHtml}
+        </div>
+        <div class="k-group-participant-col-aside">
+          ${asideHtml}
+        </div>
+      </div>`;
+
+    /* ── Bindings (sur col-aside pour isolation des IDs) ─────────── */
+    const asideEl = el.querySelector('.k-group-participant-col-aside') || el;
     bindParticipantItemsAccordion(el);
 
     if (isOpenPhase) {
-      bindEngagementForm(el, participantToken, cart, () => renderGroupView({ participantToken }));
+      bindEngagementForm(asideEl, participantToken, cart, () => renderGroupView({ participantToken }));
     } else if (isPaymentPhase) {
-      bindPaymentForm(el, participantToken, cart);
+      bindPaymentForm(asideEl, participantToken, cart);
     }
     return;
   }

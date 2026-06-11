@@ -177,6 +177,7 @@ export function renderProgress(cart, contributions, commitmentsList) {
               <div class="k-group-commitment-row">
                 <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
                 <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+                ${c.message ? `<span class="k-group-commitment-msg" title="${sanitize(c.message)}">💬 ${sanitize(c.message)}</span>` : ''}
                 ${statusTag}
               </div>`;
           }).join('')}

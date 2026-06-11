@@ -1,20 +1,18 @@
 {
   "versions": {
     "base.css": 51,
-    "components.css": 88,
+    "components.css": 89,
     "desktop.css": 38,
     "event.css": 13
   },
   "hashes": {
     "base.css": "d89283d67b48",
-    "components.css": "06e625c71b0a",
+    "components.css": "8f2424384db5",
     "desktop.css": "09b30d649a8a",
     "event.css": "2ae25233c94b"
   },
-  "updatedAt": "2026-06-10T21:20:18.227Z",
+  "updatedAt": "2026-06-11T15:43:11.781Z",
   "changedBundles": [
-    "base.css",
-    "components.css",
-    "event.css"
+    "components.css"
   ]
 }

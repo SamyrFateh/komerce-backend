@@ -103,19 +103,44 @@ export async function getCommitments(token) {
  * @param {string} token
  * @param {{participant_name, participant_phone, amount_kmf, message?}} payload
  * @returns {Promise<{updated?: boolean}>}
+ *
+ * FIX-COMMIT-01 : endpoint public — utilise fetch direct (pas apiPost/window.K.request
+ * qui exige une session authentifiée). Le participant peut ne pas être connecté.
  */
-export function createCommitment(token, payload) {
-  return apiPost(`/api/shared-carts/public/${token}/commitments`, payload);
+export async function createCommitment(token, payload) {
+  const rsp = await fetch(`/api/shared-carts/public/${token}/commitments`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!rsp.ok) {
+    let msg = 'Erreur lors de l\'enregistrement.';
+    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return rsp.json();
 }
 
 /**
  * Retrouve un engagement verrouillé par numéro de téléphone (phase règlement).
  * @param {string} token
- * @param {string} phone  numéro encodé via encodeURIComponent par l'appelant
+ * @param {string} phone  numéro brut (encodé ici)
  * @returns {Promise<{commitment}>}
+ *
+ * FIX-COMMIT-02 : endpoint public — fetch direct.
  */
-export function lookupCommitmentByPhone(token, phone) {
-  return apiGet(`/api/shared-carts/public/${token}/commitments/by-phone?phone=${encodeURIComponent(phone)}`);
+export async function lookupCommitmentByPhone(token, phone) {
+  const rsp = await fetch(
+    `/api/shared-carts/public/${token}/commitments/by-phone?phone=${encodeURIComponent(phone)}`,
+    { credentials: 'include' }
+  );
+  if (!rsp.ok) {
+    let msg = 'Aucun engagement trouvé pour ce numéro.';
+    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return rsp.json();
 }
 
 /**
@@ -123,7 +148,20 @@ export function lookupCommitmentByPhone(token, phone) {
  * @param {string} token
  * @param {{amount_kmf, contributor_name, contributor_email, contributor_phone, message?}} payload
  * @returns {Promise<{checkout_url?: string}>}
+ *
+ * FIX-COMMIT-03 : endpoint public — fetch direct.
  */
-export function createContribution(token, payload) {
-  return apiPost(`/api/shared-carts/public/${token}/contributions`, payload);
+export async function createContribution(token, payload) {
+  const rsp = await fetch(`/api/shared-carts/public/${token}/contributions`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!rsp.ok) {
+    let msg = 'Erreur lors de la contribution.';
+    try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  return rsp.json();
 }
