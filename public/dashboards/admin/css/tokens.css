@@ -120,3 +120,10 @@ button { cursor: pointer; font-family: inherit; }
 a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; }
 table { border-collapse: collapse; width: 100%; }
+
+/* === ALIAS LOGO (komerce-logo tokenisé) === */
+:root {
+  --cta-green: #2a7a3e;   /* signe K-réseau (traits, nœuds, O) */
+  --coral:     #C85C2D;   /* cœurs logo */
+  --ocean:     #64AF5A;   /* mot "merce" */
+}

@@ -36,14 +36,14 @@
 .sidebar-brand-logo {
   width: 36px;
   height: 36px;
-  background: var(--kmc-amber);
-  color: var(--kmc-navy);
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--fw-bold);
-  font-size: var(--fs-xl);
+  flex-shrink: 0;
+}
+.sidebar-brand-logo svg {
+  width: 36px;
+  height: 36px;
 }
 
 .sidebar-brand-text {
