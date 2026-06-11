@@ -24,6 +24,7 @@ import { sanitize, fmt } from './b-utils.js';
 import { saveCart } from './b-cart-core.js';  // FIX CHARGER — repeupler state.cart depuis snapshot
 import { showBanner, hideBanner } from './b-group-banner.js';
 import { requireIdentity } from './b-identity.js';
+import { digitsOnly } from './b-phone.js';
 import {
   getOwnerSharedCarts,
   getSharedCartOwner,
@@ -230,12 +231,30 @@ function injectStyles() {
  * Aucun Stripe, aucun paiement.
  * ══════════════════════════════════════════════════════════════════ */
 
+/**
+ * Normalise un numéro brut vers E.164.
+ * - Déjà E.164 (+269…)  → retourné tel quel
+ * - Chiffres seuls (269…) → préfixe '+' ajouté
+ * - Vide / null          → ''
+ *
+ * Nécessaire car la session restaurée (window.K.auth.getUser) peut stocker
+ * le numéro sans le '+' initial, causant un 500 côté backend.
+ */
+function toE164(phone) {
+  const p = String(phone || '').trim();
+  if (!p) return '';
+  if (p.startsWith('+')) return p;
+  // Supprimer d'éventuels espaces ou tirets résiduels avant de préfixer
+  const digits = digitsOnly(p);
+  return digits ? '+' + digits : '';
+}
+
 function identityLabel(user) {
   const name = user?.full_name || user?.name || user?.display_name || 'Client Komerce';
-  const phone = user?.phone || user?.whatsapp_phone || user?.whatsapp || '';
+  const rawPhone = user?.phone || user?.whatsapp_phone || user?.whatsapp || '';
   return {
     name: String(name || '').trim(),
-    phone: String(phone || '').trim(),
+    phone: toE164(rawPhone),
   };
 }
 

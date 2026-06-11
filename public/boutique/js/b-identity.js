@@ -26,11 +26,23 @@ const STYLE_ID = 'k-identity-gate-styles';
 // La fonction ensureStyles() est supprimée — plus d'injection CSS depuis le JS.
 function ensureStyles() { /* no-op — styles dans identity.css */ }
 
+/**
+ * Normalise un numéro brut vers E.164 minimal (préfixe '+' garanti).
+ * Les numéros stockés côté backend peuvent manquer le '+' initial.
+ */
+function toE164Safe(phone) {
+  const p = String(phone || '').trim();
+  if (!p) return '';
+  if (p.startsWith('+')) return p;
+  const d = digitsOnly(p);
+  return d ? '+' + d : '';
+}
+
 function normalizeUser(raw) {
   if (!raw) return null;
   const user = raw.user || raw;
   const name = user.full_name || user.fullName || user.name || user.display_name || user.displayName || user.customer_name || '';
-  const phone = user.phone || user.whatsapp_phone || user.whatsapp || user.mobile || '';
+  const phone = toE164Safe(user.phone || user.whatsapp_phone || user.whatsapp || user.mobile || '');
   if (!name && !phone && !user.id) return null;
   return { ...user, name, full_name: name, phone };
 }
