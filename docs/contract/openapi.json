@@ -1,0 +1,4555 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Komerce API — Contrat généré",
+    "version": "1.0.0",
+    "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"      → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"     → réponse couverte par un test intégration\n  - x-contract-status: \"scan-*\"   → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"  → non couvert, à compléter"
+  },
+  "x-generated-at": "2026-06-11T07:19:43.549Z",
+  "x-contract-debt": {
+    "unknown_responses": 184,
+    "total_routes": 192,
+    "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
+  },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "summary": "POST /api/auth/login",
+        "x-route-file": "routes/auth.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "user": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "POST /api/auth/register",
+        "x-route-file": "routes/auth.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "full_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "client"
+                    ],
+                    "default": "client"
+                  },
+                  "currency_pref": {
+                    "type": "string",
+                    "enum": [
+                      "KMF",
+                      "EUR"
+                    ],
+                    "default": "KMF"
+                  }
+                },
+                "required": [
+                  "email",
+                  "password",
+                  "full_name",
+                  "phone"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp/request": {
+      "post": {
+        "summary": "POST /api/auth/otp/request",
+        "x-route-file": "routes/auth.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/otp/verify": {
+      "post": {
+        "summary": "POST /api/auth/otp/verify",
+        "x-route-file": "routes/auth.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "GET /api/products",
+        "x-route-file": "routes/products.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/products",
+        "x-route-file": "routes/products.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "subcategory": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "price_aed": {
+                    "type": "number"
+                  },
+                  "promo_pct": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "price_kmf": {
+                    "type": "number"
+                  },
+                  "cost_kmf": {
+                    "type": "number"
+                  },
+                  "weight_g": {
+                    "type": "number"
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "is_active": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50
+                    }
+                  },
+                  "module_type": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "origin_country": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "hs_code": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "min_order_qty": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "name",
+                  "category",
+                  "price_kmf"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "summary": "GET /api/products/{id}",
+        "x-route-file": "routes/products.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "PUT /api/products/{id}",
+        "x-route-file": "routes/products.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "category": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "subcategory": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "price_aed": {
+                    "type": "number"
+                  },
+                  "promo_pct": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "price_kmf": {
+                    "type": "number"
+                  },
+                  "cost_kmf": {
+                    "type": "number"
+                  },
+                  "weight_g": {
+                    "type": "number"
+                  },
+                  "stock": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  },
+                  "image_url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 50
+                    }
+                  },
+                  "module_type": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "origin_country": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "hs_code": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "min_order_qty": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "summary": "POST /api/orders",
+        "x-route-file": "routes/orders.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "default": 1
+                        },
+                        "module_type": {
+                          "type": "string",
+                          "enum": [
+                            "mariage",
+                            "couture",
+                            "lunettes",
+                            "parfum",
+                            "bijoux",
+                            "electronique",
+                            "cosmetique",
+                            "alimentaire",
+                            "autre"
+                          ]
+                        },
+                        "module_fabric_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "module_fabric_type": {
+                          "type": "string",
+                          "maxLength": 100
+                        },
+                        "module_size": {
+                          "type": "string",
+                          "maxLength": 20
+                        },
+                        "module_retouche": {
+                          "type": "boolean"
+                        },
+                        "module_qty_meters": {
+                          "type": "number"
+                        },
+                        "module_accessories": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 100
+                          }
+                        },
+                        "variant_combo": {
+                          "type": "object"
+                        }
+                      },
+                      "required": [
+                        "product_id"
+                      ]
+                    },
+                    "minItems": 1
+                  },
+                  "relais_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "payment_mode": {
+                    "type": "string",
+                    "enum": [
+                      "stripe_eur",
+                      "cash_relais"
+                    ]
+                  },
+                  "stripe_payment_intent": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "recipient_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "recipient_phone": {
+                    "type": "string"
+                  },
+                  "tracking_phone": {
+                    "type": "string"
+                  },
+                  "confection_type": {
+                    "type": "string",
+                    "enum": [
+                      "aucun",
+                      "couture_standard",
+                      "sur_mesure",
+                      "lunettes_vue",
+                      "lunettes_soleil",
+                      "broderie",
+                      "retouche",
+                      "autre"
+                    ],
+                    "default": "aucun"
+                  },
+                  "confection_instructions": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "confection_delay_days": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "confection_artisan_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_type": {
+                    "type": "string",
+                    "enum": [
+                      "mariage",
+                      "couture",
+                      "lunettes",
+                      "parfum",
+                      "bijoux",
+                      "electronique",
+                      "cosmetique",
+                      "alimentaire",
+                      "autre"
+                    ]
+                  },
+                  "module_fabric_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "module_fabric_type": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "module_size": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "module_retouche": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "module_qty_meters": {
+                    "type": "number"
+                  },
+                  "module_accessories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 100
+                    }
+                  },
+                  "order_occasion": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "use_wallet": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "items",
+                  "payment_mode"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test+scan",
+                  "description": "Champs observés (source: test+scan)",
+                  "type": "object",
+                  "properties": {
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "GET /api/orders",
+        "x-route-file": "routes/orders.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "phone": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/status": {
+      "put": {
+        "summary": "PUT /api/orders/{id}/status",
+        "x-route-file": "routes/orders.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "delete": {
+        "summary": "DELETE /api/orders/{id}",
+        "x-route-file": "routes/orders.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/stripe/intent": {
+      "post": {
+        "summary": "POST /api/payments/stripe/intent",
+        "x-route-file": "routes/payments.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "order_reference": {
+                    "type": "string",
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "order_reference"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/cash/confirm": {
+      "post": {
+        "summary": "POST /api/payments/cash/confirm",
+        "x-route-file": "routes/payments.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "cash_ref_code": {
+                    "type": "string",
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "cash_ref_code"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/from-cart-items": {
+      "post": {
+        "summary": "POST /api/shared-carts/from-cart-items",
+        "x-route-file": "routes/shared-carts.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/mine": {
+      "get": {
+        "summary": "GET /api/shared-carts/mine",
+        "x-route-file": "routes/shared-carts.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/public/{token}": {
+      "get": {
+        "summary": "GET /api/shared-carts/public/{token}",
+        "x-route-file": "routes/shared-carts.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "scan-boutique",
+                  "description": "Champs observés (source: scan-boutique)",
+                  "type": "object",
+                  "properties": {
+                    "contributed_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remaining_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total_kmf_snapshot": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "settlement_open": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "token": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/{id}/finalize": {
+      "post": {
+        "summary": "POST /api/shared-carts/{id}/finalize",
+        "x-route-file": "routes/shared-carts.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "scan-boutique",
+                  "description": "Champs observés (source: scan-boutique)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parcels": {
+      "get": {
+        "summary": "GET /api/parcels",
+        "x-route-file": "routes/parcels.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels": {
+      "get": {
+        "summary": "GET /api/v2/parcels",
+        "x-route-file": "routes/v2.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans": {
+      "post": {
+        "summary": "POST /api/scans",
+        "x-route-file": "routes/scans.js",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scan_code": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "step": {
+                    "type": "string",
+                    "enum": [
+                      "preparation",
+                      "shipped",
+                      "in_transit",
+                      "relais_received"
+                    ]
+                  },
+                  "location": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "is_anomaly": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180
+                  }
+                },
+                "required": [
+                  "scan_code",
+                  "step"
+                ]
+              }
+            }
+          },
+          "x-contract-status": "joi"
+        },
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/pending": {
+      "get": {
+        "summary": "GET /api/hub/pending",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/buffer": {
+      "get": {
+        "summary": "GET /api/hub/inventory/buffer",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/proposals": {
+      "get": {
+        "summary": "GET /api/hub/inventory/proposals",
+        "x-route-file": "routes/hub.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tracking": {
+      "get": {
+        "summary": "GET /api/tracking",
+        "x-route-file": "routes/tracking.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/client/tracking": {
+      "get": {
+        "summary": "GET /api/client/tracking",
+        "x-route-file": "routes/client.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "scan-boutique",
+                  "description": "Champs observés (source: scan-boutique)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pickup_code": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wallet": {
+      "get": {
+        "summary": "GET /api/wallet",
+        "x-route-file": "routes/wallet.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logistics/shipments": {
+      "get": {
+        "summary": "GET /api/logistics/shipments",
+        "x-route-file": "routes/logistics.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/apply-price/{id}": {
+      "post": {
+        "summary": "POST /api/pricing/apply-price/{id}",
+        "x-route-file": "routes/pricing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "scan-dashboards",
+                  "description": "Champs observés (source: scan-dashboards)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recommended_price": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "health_status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "summary": "GET /api/categories",
+        "x-route-file": "routes/categories.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/relais/public": {
+      "get": {
+        "summary": "GET /api/relais/public",
+        "x-route-file": "routes/relais.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loyalty": {
+      "get": {
+        "summary": "GET /api/loyalty",
+        "x-route-file": "routes/loyalty.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/verify": {
+      "post": {
+        "summary": "POST /api/pickup/verify",
+        "x-route-file": "routes/pickup.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/collect": {
+      "post": {
+        "summary": "POST /api/pickup/collect",
+        "x-route-file": "routes/pickup.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/costing/orders": {
+      "get": {
+        "summary": "GET /api/admin/costing/orders",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/costing/products": {
+      "get": {
+        "summary": "GET /api/admin/costing/products",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/costing/relais": {
+      "get": {
+        "summary": "GET /api/admin/costing/relais",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar": {
+      "get": {
+        "summary": "GET /api/admin/radar",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/unsold/stats/summary": {
+      "get": {
+        "summary": "GET /api/unsold/stats/summary",
+        "x-route-file": "routes/unsold.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard": {
+      "get": {
+        "summary": "GET /api/dashboard",
+        "x-route-file": "routes/dashboard.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub-dash/start-prep/{id}": {
+      "post": {
+        "summary": "POST /api/hub-dash/start-prep/{id}",
+        "x-route-file": "routes/hub-dash.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transitaire/parcels": {
+      "get": {
+        "summary": "GET /api/transitaire/parcels",
+        "x-route-file": "routes/transitaire.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/start": {
+      "post": {
+        "summary": "POST /api/simulator/start",
+        "x-route-file": "routes/simulator.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/status": {
+      "get": {
+        "summary": "GET /api/simulator/status",
+        "x-route-file": "routes/simulator.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "GET /api/health",
+        "x-route-file": "routes/health.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "GET /api/auth/me",
+        "x-route-file": "routes/auth.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "get": {
+        "summary": "GET /api/auth/logout",
+        "x-route-file": "routes/auth.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/guest-checkout": {
+      "get": {
+        "summary": "GET /api/auth/guest-checkout",
+        "x-route-file": "routes/auth.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/{id}": {
+      "get": {
+        "summary": "GET /api/shared-carts/{id}",
+        "x-route-file": "routes/shared-carts.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shared-carts/{id}/items": {
+      "get": {
+        "summary": "GET /api/shared-carts/{id}/items",
+        "x-route-file": "routes/shared-carts.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/relais": {
+      "get": {
+        "summary": "GET /api/relais",
+        "x-route-file": "routes/relais.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shares": {
+      "get": {
+        "summary": "GET /api/shares",
+        "x-route-file": "routes/shares.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/shares/{id}": {
+      "get": {
+        "summary": "GET /api/shares/{id}",
+        "x-route-file": "routes/shares.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parcels/{id}": {
+      "get": {
+        "summary": "GET /api/parcels/{id}",
+        "x-route-file": "routes/parcels.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parcels/bootstrap/{id}": {
+      "get": {
+        "summary": "GET /api/parcels/bootstrap/{id}",
+        "x-route-file": "routes/parcels.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parcels/stats": {
+      "get": {
+        "summary": "GET /api/parcels/stats",
+        "x-route-file": "routes/parcels.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parcels/optimize": {
+      "get": {
+        "summary": "GET /api/parcels/optimize",
+        "x-route-file": "routes/parcels.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/scan": {
+      "get": {
+        "summary": "GET /api/hub/scan",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/hub/pack": {
+      "get": {
+        "summary": "GET /api/scans/hub/pack",
+        "x-route-file": "routes/scans.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scans/hub/seal": {
+      "get": {
+        "summary": "GET /api/scans/hub/seal",
+        "x-route-file": "routes/scans.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/stats": {
+      "get": {
+        "summary": "GET /api/orders/stats",
+        "x-route-file": "routes/orders.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/paypal/create-order": {
+      "get": {
+        "summary": "GET /api/payments/paypal/create-order",
+        "x-route-file": "routes/payments.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/paypal/capture/{id}": {
+      "get": {
+        "summary": "GET /api/payments/paypal/capture/{id}",
+        "x-route-file": "routes/payments.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logistics/containers": {
+      "get": {
+        "summary": "GET /api/logistics/containers",
+        "x-route-file": "routes/logistics.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logistics/shipments/{id}": {
+      "get": {
+        "summary": "GET /api/logistics/shipments/{id}",
+        "x-route-file": "routes/logistics.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchasing/suppliers": {
+      "get": {
+        "summary": "GET /api/purchasing/suppliers",
+        "x-route-file": "routes/purchasing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchasing/suppliers/{id}": {
+      "get": {
+        "summary": "GET /api/purchasing/suppliers/{id}",
+        "x-route-file": "routes/purchasing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchasing/orders": {
+      "get": {
+        "summary": "GET /api/purchasing/orders",
+        "x-route-file": "routes/purchasing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invoices": {
+      "get": {
+        "summary": "GET /api/invoices",
+        "x-route-file": "routes/invoices.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invoices/{id}": {
+      "get": {
+        "summary": "GET /api/invoices/{id}",
+        "x-route-file": "routes/invoices.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/collect/{id}": {
+      "get": {
+        "summary": "GET /api/pickup/collect/{id}",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/status/{id}": {
+      "get": {
+        "summary": "GET /api/pickup/status/{id}",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/receipt/{id}": {
+      "get": {
+        "summary": "GET /api/pickup/receipt/{id}",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/regenerate/{id}": {
+      "get": {
+        "summary": "GET /api/pickup/regenerate/{id}",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/pay-cash": {
+      "get": {
+        "summary": "GET /api/pickup/pay-cash",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/pay-cash/{id}": {
+      "get": {
+        "summary": "GET /api/pickup/pay-cash/{id}",
+        "x-route-file": "routes/pickup.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cash/uncollected": {
+      "get": {
+        "summary": "GET /api/cash/uncollected",
+        "x-route-file": "routes/cash.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cash/reconciliation": {
+      "get": {
+        "summary": "GET /api/cash/reconciliation",
+        "x-route-file": "routes/cash.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/open-parcels": {
+      "get": {
+        "summary": "GET /api/hub/inventory/open-parcels",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/scan-assign": {
+      "get": {
+        "summary": "GET /api/hub/inventory/scan-assign",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/propose-all": {
+      "get": {
+        "summary": "GET /api/hub/inventory/propose-all",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/inventory/stats": {
+      "get": {
+        "summary": "GET /api/hub/inventory/stats",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/auto-distribute": {
+      "get": {
+        "summary": "GET /api/hub/auto-distribute",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/reassign-order": {
+      "get": {
+        "summary": "GET /api/hub/reassign-order",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub/orders/mark-ordered": {
+      "get": {
+        "summary": "GET /api/hub/orders/mark-ordered",
+        "x-route-file": "routes/hub.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub-dash/ship/{id}": {
+      "get": {
+        "summary": "GET /api/hub-dash/ship/{id}",
+        "x-route-file": "routes/hub-dash.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transit-dashboard": {
+      "get": {
+        "summary": "GET /api/transit-dashboard",
+        "x-route-file": "routes/transit-dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transit-dashboard/{id}": {
+      "get": {
+        "summary": "GET /api/transit-dashboard/{id}",
+        "x-route-file": "routes/transit-dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transitaire/ship": {
+      "get": {
+        "summary": "GET /api/transitaire/ship",
+        "x-route-file": "routes/transitaire.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transitaire/stats": {
+      "get": {
+        "summary": "GET /api/transitaire/stats",
+        "x-route-file": "routes/transitaire.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transitaire/history": {
+      "get": {
+        "summary": "GET /api/transitaire/history",
+        "x-route-file": "routes/transitaire.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/stop": {
+      "get": {
+        "summary": "GET /api/simulator/stop",
+        "x-route-file": "routes/simulator.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/journal": {
+      "get": {
+        "summary": "GET /api/simulator/journal",
+        "x-route-file": "routes/simulator.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulator/cleanup": {
+      "get": {
+        "summary": "GET /api/simulator/cleanup",
+        "x-route-file": "routes/simulator.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels/{id}": {
+      "get": {
+        "summary": "GET /api/v2/parcels/{id}",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels/kpis": {
+      "get": {
+        "summary": "GET /api/v2/parcels/kpis",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels/alerts": {
+      "get": {
+        "summary": "GET /api/v2/parcels/alerts",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels/critical": {
+      "get": {
+        "summary": "GET /api/v2/parcels/critical",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/parcels/reconciliation": {
+      "get": {
+        "summary": "GET /api/v2/parcels/reconciliation",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders": {
+      "get": {
+        "summary": "GET /api/v2/orders",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/{id}": {
+      "get": {
+        "summary": "GET /api/v2/orders/{id}",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/pending-cash": {
+      "get": {
+        "summary": "GET /api/v2/orders/pending-cash",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/orders/ready-for-parcel": {
+      "get": {
+        "summary": "GET /api/v2/orders/ready-for-parcel",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/incidents": {
+      "get": {
+        "summary": "GET /api/v2/incidents",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/incidents/{id}": {
+      "get": {
+        "summary": "GET /api/v2/incidents/{id}",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/notifications": {
+      "get": {
+        "summary": "GET /api/v2/notifications",
+        "x-route-file": "routes/v2.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/finance": {
+      "get": {
+        "summary": "GET /api/dashboard/finance",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/sales": {
+      "get": {
+        "summary": "GET /api/dashboard/sales",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/ops": {
+      "get": {
+        "summary": "GET /api/dashboard/ops",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/clients": {
+      "get": {
+        "summary": "GET /api/dashboard/clients",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/clients/detail": {
+      "get": {
+        "summary": "GET /api/dashboard/clients/detail",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/clients/list": {
+      "get": {
+        "summary": "GET /api/dashboard/clients/list",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "summary": "GET /api/dashboard/stats",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/pilotage": {
+      "get": {
+        "summary": "GET /api/dashboard/pilotage",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/forecast": {
+      "get": {
+        "summary": "GET /api/dashboard/forecast",
+        "x-route-file": "routes/dashboard.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard": {
+      "get": {
+        "summary": "GET /api/admin/dashboard",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/control-tower": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/control-tower",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/finance": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/finance",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/logistics": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/logistics",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard/sales": {
+      "get": {
+        "summary": "GET /api/admin/dashboard/sales",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/orders": {
+      "get": {
+        "summary": "GET /api/admin/orders",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/counts": {
+      "get": {
+        "summary": "GET /api/admin/counts",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reset": {
+      "get": {
+        "summary": "GET /api/admin/reset",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/seed-test": {
+      "get": {
+        "summary": "GET /api/admin/seed-test",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/boutique-categories": {
+      "get": {
+        "summary": "GET /api/admin/boutique-categories",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/finance-config": {
+      "get": {
+        "summary": "GET /api/admin/finance-config",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/finance-config/{id}": {
+      "get": {
+        "summary": "GET /api/admin/finance-config/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/customs-categories": {
+      "get": {
+        "summary": "GET /api/admin/customs-categories",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/customs-shipments": {
+      "get": {
+        "summary": "GET /api/admin/customs-shipments",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/customs-shipments/{id}": {
+      "get": {
+        "summary": "GET /api/admin/customs-shipments/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/customs-shipments/rates/effective": {
+      "get": {
+        "summary": "GET /api/admin/customs-shipments/rates/effective",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/cost-components": {
+      "get": {
+        "summary": "GET /api/admin/cost-components",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/cost-components/{id}": {
+      "get": {
+        "summary": "GET /api/admin/cost-components/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/cost-components/_meta": {
+      "get": {
+        "summary": "GET /api/admin/cost-components/_meta",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/pricing-components": {
+      "get": {
+        "summary": "GET /api/admin/pricing-components",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/pricing-components/{id}": {
+      "get": {
+        "summary": "GET /api/admin/pricing-components/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/pricing-matrices/{id}": {
+      "get": {
+        "summary": "GET /api/admin/pricing-matrices/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/pricing-matrices/dims": {
+      "get": {
+        "summary": "GET /api/admin/pricing-matrices/dims",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/pricing-matrices/taxes": {
+      "get": {
+        "summary": "GET /api/admin/pricing-matrices/taxes",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/risk-provisions": {
+      "get": {
+        "summary": "GET /api/admin/risk-provisions",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/rules": {
+      "get": {
+        "summary": "GET /api/admin/rules",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/rules/{id}": {
+      "get": {
+        "summary": "GET /api/admin/rules/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/rules/audit": {
+      "get": {
+        "summary": "GET /api/admin/rules/audit",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar/alerts": {
+      "get": {
+        "summary": "GET /api/admin/radar/alerts",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar/money": {
+      "get": {
+        "summary": "GET /api/admin/radar/money",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar/status-details": {
+      "get": {
+        "summary": "GET /api/admin/radar/status-details",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar/cache/invalidate": {
+      "get": {
+        "summary": "GET /api/admin/radar/cache/invalidate",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/radar/orders-by-detail/{id}": {
+      "get": {
+        "summary": "GET /api/admin/radar/orders-by-detail/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/loyalty": {
+      "get": {
+        "summary": "GET /api/admin/loyalty",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/loyalty/{id}": {
+      "get": {
+        "summary": "GET /api/admin/loyalty/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/loyalty/pending": {
+      "get": {
+        "summary": "GET /api/admin/loyalty/pending",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/loyalty/history": {
+      "get": {
+        "summary": "GET /api/admin/loyalty/history",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/signals": {
+      "get": {
+        "summary": "GET /api/admin/signals",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/signals/{id}": {
+      "get": {
+        "summary": "GET /api/admin/signals/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/signals/stats": {
+      "get": {
+        "summary": "GET /api/admin/signals/stats",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/signals/generate": {
+      "get": {
+        "summary": "GET /api/admin/signals/generate",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/shared-carts": {
+      "get": {
+        "summary": "GET /api/admin/shared-carts",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/shared-carts/{id}": {
+      "get": {
+        "summary": "GET /api/admin/shared-carts/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/partners": {
+      "get": {
+        "summary": "GET /api/admin/partners",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/partners/{id}": {
+      "get": {
+        "summary": "GET /api/admin/partners/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/partners/stats": {
+      "get": {
+        "summary": "GET /api/admin/partners/stats",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/analysis": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/analysis",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/synthesis": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/synthesis",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/config": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/config",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/products/{id}": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/products/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/bulk-rail": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/bulk-rail",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/candidates": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/candidates",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/candidates/{id}": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/candidates/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/catalogs": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/catalogs",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/catalogs/import": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/catalogs/import",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/executive": {
+      "get": {
+        "summary": "GET /api/admin/economic/executive",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/variables": {
+      "get": {
+        "summary": "GET /api/admin/economic/variables",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/variables/{id}": {
+      "get": {
+        "summary": "GET /api/admin/economic/variables/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/charges": {
+      "get": {
+        "summary": "GET /api/admin/economic/charges",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/charges/{id}": {
+      "get": {
+        "summary": "GET /api/admin/economic/charges/{id}",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/coherence": {
+      "get": {
+        "summary": "GET /api/admin/economic/coherence",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/history": {
+      "get": {
+        "summary": "GET /api/admin/economic/history",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/economic/redistribute": {
+      "get": {
+        "summary": "GET /api/admin/economic/redistribute",
+        "x-route-file": "routes/admin.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/recommend": {
+      "get": {
+        "summary": "GET /api/pricing/recommend",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/recommend-batch": {
+      "get": {
+        "summary": "GET /api/pricing/recommend-batch",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/dashboard": {
+      "get": {
+        "summary": "GET /api/pricing/dashboard",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/strategy": {
+      "get": {
+        "summary": "GET /api/pricing/strategy",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/strategy/apply": {
+      "get": {
+        "summary": "GET /api/pricing/strategy/apply",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/strategy/competitors": {
+      "get": {
+        "summary": "GET /api/pricing/strategy/competitors",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/strategy/competitors/{id}": {
+      "get": {
+        "summary": "GET /api/pricing/strategy/competitors/{id}",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/strategy/history": {
+      "get": {
+        "summary": "GET /api/pricing/strategy/history",
+        "x-route-file": "routes/pricing.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/public/config": {
+      "get": {
+        "summary": "GET /api/public/config",
+        "x-route-file": "routes/public.js",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte — à renseigner via un test intégration"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/carriers": {
+      "get": {
+        "summary": "GET /api/carriers",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pricing/apply-price": {
+      "get": {
+        "summary": "GET /api/pricing/apply-price",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub-dash/ship": {
+      "get": {
+        "summary": "GET /api/hub-dash/ship",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hub-dash/start-prep": {
+      "get": {
+        "summary": "GET /api/hub-dash/start-prep",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sourcing/products": {
+      "get": {
+        "summary": "GET /api/admin/sourcing/products",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/status": {
+      "get": {
+        "summary": "GET /api/pickup/status",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/receipt": {
+      "get": {
+        "summary": "GET /api/pickup/receipt",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pickup/regenerate": {
+      "get": {
+        "summary": "GET /api/pickup/regenerate",
+        "x-contract-status": "UNKNOWN",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
