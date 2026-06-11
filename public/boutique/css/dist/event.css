@@ -3,490 +3,134 @@
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
-/* ═══════════════════════════════════════════════════════════════
-   KOMERCE — tokens.css
-   Source unique de vérité pour toutes les variables CSS.
-   Règle : jamais de couleur/valeur en dur ailleurs dans le CSS.
-   ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+ * KOMERCE Dashboard — Design tokens
+ * ═══════════════════════════════════════════════════════════════════════
+ * Doctrine couleurs:
+ *   - bleu nuit Komerce (sidebar, accents structurels)
+ *   - or/ambre (logo, actions premium)
+ *   - vert (OK, payé, marge positive)
+ *   - orange (warning, estimé, partiel)
+ *   - rouge (critique, bloqué, perte)
+ *   - bleu (info, in_transit, partial_real)
+ */
 
 :root {
+  /* === COULEURS PRIMAIRES === */
+  --kmc-navy:        #0F1A2E;
+  --kmc-navy-2:      #1A2540;
+  --kmc-navy-3:      #2A3552;
+  --kmc-amber:       #F4B860;
+  --kmc-amber-2:     #E8A04E;
 
-  /* ── Couleurs principales ──────────────────────────────────── */
-  --ocean:        #64AF5A;
-  --ocean-light:  #82C478;
-  --violet:      #6c3fc5;   /* paiement groupé, workspace, événements */
-  --violet-dark:  #4a2d9e;
-  --violet-light: rgba(108,63,197,.08);
-  --violet-mid:   rgba(108,63,197,.18);   /* utilisé par les pages /event/* */
-  --ocean-dark:       #4A9040;
-  --ocean-dark-deep:  #2e6b28;  /* gradient stop profond — kpill background, group-cart-flow funded */
-  --cta-green:        #2a7a3e;
+  /* === STATUS COULEURS === */
+  --kmc-green:       #16A34A;
+  --kmc-green-bg:    #DCFCE7;
+  --kmc-green-text:  #14532D;
+  --kmc-orange:      #F59E0B;
+  --kmc-orange-bg:   #FEF3C7;
+  --kmc-orange-text: #78350F;
+  --kmc-red:         #DC2626;
+  --kmc-red-bg:      #FEE2E2;
+  --kmc-red-text:    #7F1D1D;
+  --kmc-blue:        #2563EB;
+  --kmc-blue-bg:     #DBEAFE;
+  --kmc-blue-text:   #1E3A8A;
+  --kmc-gray:        #6B7280;
+  --kmc-gray-bg:     #F3F4F6;
+  --kmc-gray-text:   #1F2937;
 
-  /* ── Sauge — palette checkout (remplace ocean/coral trop saturés dans le flow commande) ──
-     Sauge : vert désaturé, posé, lisible sur fond sable.
-     Terracotta : chaleur douce, remplace coral sans l'orange criard.
-     Les tokens --ocean/* restent actifs pour le catalogue et la modal produit. */
-  --sage:              #7A9E7E;  /* CTA principal checkout, boutons confirm */
-  --sage-dark:         #5C7D62;  /* hover, texte sur fond clair */
-  --sage-deeper:       #3E5E45;  /* focus ring, état actif profond */
-  --sage-light:        #A8C4AA;  /* border douce, icônes secondaires */
-  --sage-bg:           #EDF3EE;  /* fond carte identité, sections checkout */
-  --sage-bg-pale:      #F5F9F5;  /* fond très pâle, hover row */
-  --border-sage-14:    rgba(122,158,126,.14);
-  --border-sage-22:    rgba(122,158,126,.22);
-  --border-sage-35:    rgba(122,158,126,.35);
-  --shadow-sage-10:    0 4px 16px rgba(122,158,126,.10);
-  --shadow-sage-18:    0 6px 20px rgba(122,158,126,.18);
+  /* === COST_STATUS COULEURS DOCTRINE === */
+  --kmc-cost-actual:        var(--kmc-green);
+  --kmc-cost-actual-bg:     var(--kmc-green-bg);
+  --kmc-cost-partial:       var(--kmc-blue);
+  --kmc-cost-partial-bg:    var(--kmc-blue-bg);
+  --kmc-cost-estimated:     var(--kmc-orange);
+  --kmc-cost-estimated-bg:  var(--kmc-orange-bg);
+  --kmc-cost-incomplete:    var(--kmc-red);
+  --kmc-cost-incomplete-bg: var(--kmc-red-bg);
 
-  /* ── Checkout — crème + vert clair + coral
-     Remappings vers tokens existants uniquement, aucune valeur nouvelle. ── */
-  --checkout-bg:            var(--cream-pearl);        /* fond général modal                */
-  --checkout-surface:       var(--white);              /* cards internes                    */
-  --checkout-surface-warm:  var(--sage-bg-pale);       /* toggle bg, sections               */
+  /* === BACKGROUND === */
+  --bg-page:          #F8FAFC;
+  --bg-card:          #FFFFFF;
+  --bg-hover:         #F1F5F9;
+  --bg-sidebar:       var(--kmc-navy);
+  --bg-sidebar-hover: var(--kmc-navy-2);
 
-  --checkout-border:        var(--border-sage-22);     /* bordure cards douce               */
-  --checkout-border-mid:    var(--coral);              /* bordure hover / focus — coral     */
+  /* === TEXTE === */
+  --text-primary:    #0F172A;
+  --text-secondary:  #475569;
+  --text-tertiary:   #94A3B8;
+  --text-on-dark:    #F1F5F9;
+  --text-on-dark-2:  #94A3B8;
 
-  --checkout-text:          var(--text);               /* texte principal                   */
-  --checkout-text-muted:    var(--sage-dark);          /* labels section, sous-titres       */
-  --checkout-text-strong:   var(--ocean-dark-deep);    /* titres, relay name                */
-  --checkout-text-soft:     var(--text-form-soft);     /* sous-textes neutres               */
+  /* === BORDURES === */
+  --border-color:    #E2E8F0;
+  --border-color-2:  #CBD5E1;
+  --border-radius:   8px;
+  --border-radius-lg: 12px;
 
-  --checkout-accent:        var(--sage-dark);          /* CTA confirmer, état actif         */
-  --checkout-accent-light:  var(--white);              /* texte sur CTA                     */
-  --checkout-accent-hover:  var(--sage-deeper);        /* hover CTA                         */
-  --checkout-link:          var(--coral);              /* "Changer", liens inline           */
+  /* === SHADOWS === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow:    0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 
-  --checkout-disabled-bg:   var(--gray-bg-lighter);   /* MVola "bientôt"                   */
-  --checkout-disabled-text: var(--border-soft);        /* texte désactivé                   */
+  /* === TYPOGRAPHIE === */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Monaco", "Cascadia Code", "Consolas", monospace;
+  --fs-xs:   0.75rem;   /* 12px */
+  --fs-sm:   0.875rem;  /* 14px */
+  --fs-base: 1rem;      /* 16px */
+  --fs-lg:   1.125rem;  /* 18px */
+  --fs-xl:   1.25rem;   /* 20px */
+  --fs-2xl:  1.5rem;    /* 24px */
+  --fs-3xl:  1.875rem;  /* 30px */
 
-  --checkout-avatar-bg:     var(--sage-bg);            /* fond initiales                    */
-  --checkout-avatar-text:   var(--sage-dark);          /* texte initiales                   */
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
 
+  /* === SPACING === */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.25rem;
+  --sp-6: 1.5rem;
+  --sp-8: 2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
 
+  /* === LAYOUT === */
+  --sidebar-width: 240px;
+  --header-height: 64px;
 
-
-  --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
-  --terracotta-dark:   #9E5C3E;  /* texte sur fond clair, hover */
-  --terracotta-bg:     #F5EDE8;  /* fond warm, sections récap */
-  --terracotta-bg-pale:#FBF5F2;  /* fond très pâle */
-  --border-terra-14:   rgba(196,122,90,.14);
-  --border-terra-22:   rgba(196,122,90,.22);
-
-  --sand:         #FDFAF5;
-  --sand-warm:    #f6f0e3;
-  --sand-dark:    #F0EBE0;
-  --sand-hover:   #f7f4ee;  /* hover row — kpill popover liste */
-  --sand-footer:  #faf6ed;  /* fond footer — kpill popover total */
-  /* POLISH — sable quasi-blanc pour hero + shell chips (sans casser --sand-warm) */
-  --sand-bright:  #FDFAF3;
-
-  /* ── Surfaces sémantiques ─────────────────────────────────── */
-  --page-bg:      var(--sand);
-  /* POLISH — hero lumineux (plus clair que --page-bg #FDFAF5) */
-  --hero-bg:      var(--sand-bright);
-  --hero-border:  transparent;
-  --hero-shadow:  none;
-
-  --coral:        #C85C2D;
-  --coral-dark:   #A84820;
-  --hero-red:     #e53935;
-
-  --white:        #ffffff;
-  --whatsapp:     #25d366;
-  --whatsapp-dk:  #1db954;   /* WhatsApp variant foncé, gradient + pages /event/* */
-  --red:          #e53e3e;
-
-  /* ── Texte ────────────────────────────────────────────────── */
-  --text:         #1F3024;
-  --text-muted:   #6B7B63;
-  --text-light:   #9EAC95;
-  --border:       #E3D9C9;
-
-  /* ── Ombres (basées sur --text pour cohérence) ─────────────── */
-  --shadow-sm: 0 1px 3px rgba(31,48,36,.07);
-  --shadow-md: 0 4px 12px rgba(31,48,36,.09);
-  --shadow-lg: 0 8px 30px rgba(31,48,36,.12);
-
-  /* ── Typographie ─────────────────────────────────────────── */
-  --font:         'Plus Jakarta Sans','IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;
-  --font-display: 'Fraunces','Plus Jakarta Sans',Georgia,serif;
-  --font-checkout: 'DM Sans','Plus Jakarta Sans',system-ui,sans-serif;
-
-  /* ── Formes ──────────────────────────────────────────────── */
-  --radius:    12px;
-  --radius-sm: 8px;
-  --radius-lg: 20px;
-
-  /* ── Layout ──────────────────────────────────────────────── */
-  --container: 1400px;
-  --pad-x:     16px;
-  --header-h:  44px;
-  --bnav-h:    50px;
-
-  /* ── Animation ───────────────────────────────────────────── */
-  --ease:         cubic-bezier(.22,1,.36,1);
-  --ease-spring:  cubic-bezier(.34,1.56,.64,1);
-  --ease-in:      cubic-bezier(.4,0,1,1);
-
-  /* ── Élévations (remplacent les box-shadow inline) ──────── */
-  --elev-1: 0 1px 3px rgba(31,48,36,.06), 0 1px 2px rgba(31,48,36,.04);
-  --elev-2: 0 4px 12px rgba(31,48,36,.08), 0 2px 4px rgba(31,48,36,.04);
-  --elev-3: 0 8px 24px rgba(31,48,36,.10), 0 4px 8px rgba(31,48,36,.06);
-  --elev-4: 0 16px 40px rgba(31,48,36,.12), 0 8px 16px rgba(31,48,36,.08);
-
-  /* ── Overlays & surfaces semi-transparentes ────────────── */
-  --overlay-dark:      rgba(0,0,0,.5);
-  --overlay-dark-md:   rgba(0,0,0,.55);
-  --overlay-dark-sm:   rgba(0,0,0,.4);
-  --overlay-black-xs:  rgba(0,0,0,.06);
-  --overlay-black-sm:  rgba(0,0,0,.08);
-  --overlay-black-md:  rgba(0,0,0,.12);
-  --overlay-black-lg:  rgba(0,0,0,.3);
-
-  --surface-white-96:  rgba(255,255,255,.96);
-  --surface-white-92:  rgba(255,255,255,.92);
-  --surface-white-88:  rgba(255,255,255,.88);
-  --surface-white-64:  rgba(255,255,255,.64);
-
-  --surface-sand-97:   rgba(253,250,245,.97);
-  --surface-sand-96:   rgba(253,250,245,.96);
-  --surface-sand-94:   rgba(253,250,245,.94);
-  --surface-sand-91:   rgba(253,250,245,.91);  /* carte verre hero desktop */
-  /* ── Ocean alpha (side cart, cards) ─────────────────────── */
-  --border-ocean-14:   rgba(100,175,90,.14);
-  --border-ocean-10:   rgba(100,175,90,.10);
-  --border-ocean-08:   rgba(100,175,90,.08);
-  --ocean-label:       rgba(100,175,90,.80);  /* label sous-total side cart */
-  --ocean-bg-08:       rgba(100,175,90,.08);  /* fond livraison gratuite */
-  --shadow-ocean-10:   0 12px 30px rgba(100,175,90,.10);
-  --shadow-coral-22:   rgba(200,92,45,.22);   /* ombre bouton checkout */
-
-  /* ── Bordures coral alpha ───────────────────────────────── */
-  --border-coral-09:   rgba(200,92,45,.09);
-  --border-coral-13:   rgba(200,92,45,.13);
-  --border-coral-22:   rgba(200,92,45,.22);
-
-  /* ── Bordures & ombres text-alpha ───────────────────────── */
-  --border-text-04:  rgba(31,48,36,.04);
-  --border-text-06:  rgba(31,48,36,.06);
-  --border-text-07:  rgba(31,48,36,.07);
-  --border-text-08:  rgba(31,48,36,.08);
-  --border-text-10:  rgba(31,48,36,.10);
-  --border-text-12:  rgba(31,48,36,.12);
-  --border-text-15:  rgba(31,48,36,.15);
-
-  /* ── Couleurs sémantiques manquantes ────────────────────── */
-  --orange:           #ff6900;
-  --orange-dark:      #e55f00;
-  --orange-shadow:    rgba(255,105,0,.30);
-
-  --pink:             #e91e63;
-  --pink-light:       rgba(233,30,99,.10);
-  --pink-shadow:      rgba(233,30,99,.35);
-
-  --blue-dark:        #0c447c;
-  --blue-mid:         #1e3a5f;
-  --blue-light-bg:    #e6f1fb;
-  --blue-lighter-bg:  #cfe5f7;
-  --blue-border:      #b5d4f4;
-
-  --amber-text:       #6b3e0e;
-  --amber-text-light: #a06a1f;
-  --amber-bg:         #fff8ed;
-  --amber-bg-warm:    #fdf4e8;
-  --amber-border:     #f4c77a;
-  --amber-border-md:  #e8c78a;
-
-  /* ── Crèmes (restaurés depuis Lot 1 — migration var(--white)nnn cassée) ──
-     Ces hex étaient encodés en dur avant qu'une migration find-replace
-     ne les transforme en `var(--white)8e7` etc., invalide côté navigateur.
-     Tokens sémantiques par usage, pas par teinte. */
-  --cream-warm:       #fff8e7;  /* gradient haut — état actif rail desktop */
-  --cream-pearl:      #fffdf7;  /* gradient bas — état actif rail desktop */
-  --cream-amber-bg:   #fffbeb;  /* fond bannière cash, badge référence */
-  --cream-peach:      #fff4ed;  /* fond pay helper coral */
-  --cream-blush:      #fff8f8;  /* fond hover partage WhatsApp */
-
-  --green-dark-text:  #1d5b2a;
-  --green-text:       #1a7a3e;
-  --green-bg:         #e8f7ee;
-
-  --red-text:         #cc2200;
-  --red-text-md:      #cc4400;
-  --red-bg:           #fff0f0;
-  --red-border:       #ffbbbb;
-  --red-bg-hover:     #ffe0e0;
-
-  /* ── Couleurs catégories (chips & suggestions) ──────────── */
-  --cat-mode-bg:      #FDE8CD;
-  --cat-maison-bg:    #F3E7D3;
-  --cat-tech-bg:      #E0F0E8;
-  --cat-brico-bg:     #E8EDF0;
-  --cat-perso-bg:     #FCE8D4;
-  --cat-auto-bg:      #E8E4F5;
-  --cat-solaire-bg:   #FFF9D6;
-  --cat-beaute-bg:    #FDE5F0;
-  --cat-creatio-bg:   #EDE8FD;
-  /* POLISH — soldes : rouge-corail doux */
-  --cat-soldes-bg:    #FFE4D6;
-
-  /* ── Statuts commandes ──────────────────────────────────── */
-  --status-pending-bg:     #fff8ed;
-  --status-pending-text:   #a06a1f;
-  --status-confirmed-bg:   #e8f5ee;
-  --status-confirmed-text: #1d5b2a;
-  --status-processing-bg:  #eaf2fd;
-  --status-processing-text:#1d4f9e;
-  --status-shipped-bg:     #f0eafd;
-  --status-shipped-text:   #4f2b9e;
-  --status-available-bg:   #fef0e8;
-  --status-available-text: #8b3a0f;
-  --status-cancelled-bg:   #fce8e8;
-  --status-cancelled-text: #9e1d1d;
+  /* === ALIAS SURFACE (rétrocompat + nouvelles vues) === */
+  --surface-primary:   var(--bg-card);
+  --surface-secondary: var(--bg-page);
+  --bg-secondary:      var(--bg-page);
+  --bg-tertiary:       var(--bg-hover);
+  --kmc-amber-dark:    #C8882E;   /* hover btn-primary */
+  --text-muted:        var(--text-tertiary);
+  --border:            var(--border-color);
+  --radius:            var(--border-radius);
+  --radius-lg:         var(--border-radius-lg);
 }
 
-/* padding latéral tablette — intermédiaire entre mobile (16px) et desktop (28px) */
-@media (min-width: 900px) {
-  :root {
-    --header-h: 68px;   /* hauteur réelle du .k-header desktop (layout.css) */
-    --pad-x: 28px;
-  }
-}
-@media (min-width: 1200px) {
-  :root {
-    --header-h: 72px;   /* layout.css bloc 1200px */
-    --pad-x: 32px;
-  }
-}
+/* === RESET === */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); color: var(--text-primary); background: var(--bg-page); font-size: var(--fs-base); line-height: 1.5; }
+button { cursor: pointer; font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+table { border-collapse: collapse; width: 100%; }
 
-/* ── Tokens de précision (alpha non standards) ──────────────
-   Ajoutés lors du Sprint 2 pour les derniers cas non couverts */
+/* === ALIAS LOGO (komerce-logo tokenisé) === */
 :root {
-  --surface-sand-90:   rgba(255,252,244,.90);
-  --surface-sand-92:   rgba(253,250,245,.92);
-  --overlay-white-50:  rgba(255,255,255,.50);
-  --overlay-white-78:  rgba(255,255,255,.78);
-  --overlay-white-80:  rgba(255,255,255,.80);
-  --overlay-white-72:  rgba(255,255,255,.72);
-  --text-alpha-82:     rgba(32,51,37,.82);
-
-  --red-danger:        #dc2626;
-  --red-danger-bg:     #fef5f5;
-  --red-danger-border: #e8a0a0;
-  --red-danger-text:   #c73a3a;
-  --whatsapp-bg-hover: #f0fdf4;
-
-  --text-form-muted:   #7a8078;
-  --text-form-light:   #888;
-  --text-form-mid:     #666;
-  /* ── Lot 5 : tokens supplémentaires (greys, ambers, greens, blues, etc.) ──
-     Voir PR_GUIDE_LOT5.md pour la justification sémantique. */
-  --black:                  #000      ;  /* Noir pur — pour ombres, rares texte premium */
-  --text-form-soft:         #999      ;  /* Texte gris moyen formulaires */
-  --text-strong-mid:        #555      ;  /* Texte gris-foncé secondaire */
-  --text-strong:            #222      ;  /* Texte presque noir (non-#000) */
-  --text-form-soft-md:      #777      ;  /* Texte gris formulaires (variation) */
-  --text-disabled:          #aaa      ;  /* Texte désactivé */
-  --border-soft:            #ccc      ;  /* Bordure douce neutre */
-  --border-light:           #ddd      ;  /* Bordure claire neutre */
-  --border-lighter:         #eee      ;  /* Bordure très claire neutre */
-  --border-soft-md:         #e0e0e0   ;  /* Bordure douce (variant) */
-  --text-form-mid-md:       #757575   ;  /* Texte formulaires (variation) */
-  --surface-warm-cool:      #f3f3f1   ;  /* Surface neutre quasi-blanche */
-  --gray-bg:                #f5f5f5   ;  /* Fond gris très clair neutre */
-  --gray-bg-lighter:        #f7f7f7   ;  /* Fond gris ultra clair */
-  --amber-mid:              #fcd34d   ;  /* Jaune amber moyen */
-  --amber-warm:             #f0bf67   ;  /* Or chaud (mention promo) */
-  --gold-soft:              #d4b87a   ;  /* Or doux (premium accent) */
-  --star-gold:              #F0A500   ;  /* Or punchy étoile notation produit (Temu-like) */
-  --amber-cta:              #e8a13a   ;  /* Amber CTA dynamique */
-  --amber-text-deep:        #8b5a1a   ;  /* Amber texte foncé */
-  --amber-light-bg:         #fde68a   ;  /* Fond amber clair badge */
-  --amber-bg-pale:          #fef3c7   ;  /* Fond amber pâle */
-  --amber-bg-light:         #fef3df   ;  /* Fond amber très clair */
-  --amber-text-mid:         #92400e   ;  /* Texte amber moyen-foncé */
-  --cream-amber-light:      #ffe8c2   ;  /* Crème ambré clair (banner fav) */
-  --green-bg-soft:          #f2faef   ;  /* Fond vert très pâle (success soft) */
-  --green-bg-mid:           #f0f5e6   ;  /* Fond vert pâle */
-  --green-bg-warm:          #e8eddb   ;  /* Fond vert chaud (sage) */
-  --green-bg-pale:          #dcfce7   ;  /* Fond vert ultra pâle */
-  --green-bg-mid-soft:      #a7f3d0   ;  /* Vert mid soft */
-  --green-soft:             #86efac   ;  /* Vert soft (success badge) */
-  --green-success:          #3d9e55   ;  /* Vert success solid */
-  --green-positive:         #20b858   ;  /* Vert positif (CTA payé) */
-  --green-bg-lightest:      #ecfdf5   ;  /* Vert bg ultra clair */
-  --green-deep-text:        #065f46   ;  /* Vert deep text */
-  --green-deep-mid:         #166534   ;  /* Vert deep mid */
-  --text-muted-dark:        #3a4a3d   ;  /* Texte muted variation foncée */
-  --text-muted-md:          #617064   ;  /* Texte muted variation */
-  --green-text-strong:      #3b6d11   ;  /* Texte vert solid foncé */
-  --green-bg-leaf:          #eaf3de   ;  /* Vert clair feuille */
-  --green-bg-mist:          #f4fbf2   ;  /* Vert mist */
-  --green-bg-warm-md:       #e0eddc   ;  /* Vert chaud variation */
-  --green-bg-warm-lt:       #eef2e4   ;  /* Vert chaud clair */
-  --blue-link-deep:         #185fa5   ;  /* Bleu lien externe foncé */
-  --blue-ocean-dark:        #0d4f74   ;  /* Bleu océan foncé (modal) */
-  --blue-stripe-text:       #315caa   ;  /* Bleu texte stripe badge */
-  --blue-stripe-bg:         #eef4ff   ;  /* Bleu fond stripe badge */
-  --coral-text:             #9a4e2d   ;  /* Coral texte foncé sur fond clair */
-  --coral-text-deep:        #a0461e   ;  /* Coral texte très foncé */
-  --violet-mid-bright:      #8b5cf6   ;  /* Violet mid bright */
-  --red-bg-soft:            #fef2f2   ;  /* Fond rouge très pâle (bannière erreur) */
-  --red-deep-text:          #991b1b   ;  /* Rouge deep text */
-  --red-soft:               #ff5e5e   ;  /* Rouge soft (alert léger) */
-  --whatsapp-deep:          #128c7e   ;  /* WhatsApp deep (gradient) */
-
-  /* ── Groupe / panier partagé — tokens alpha (refactor group-cart-flow) ── */
-  --collective-navy:       #1a4a6e;              /* S3.2 — bandeau mode édition panier collectif (bleu Komerce) */
-  --collective-err:        #e53935;              /* S3.2 — message d'erreur mode édition panier collectif */
-  --collective-err-light:  #ffe0e0;              /* S3.2 — message d'erreur side-cart mode édition (fond clair) */
-  --green-alpha-06:   rgba(31,122,84,.06);  /* mini-guide fond */
-  --green-alpha-09:   rgba(31,122,84,.09);  /* locked-amount, funded-callout fond */
-  --green-alpha-12:   rgba(31,122,84,.12);  /* badge phase ouverte fond */
-  --green-alpha-14:   rgba(31,122,84,.14);  /* mini-guide border */
-  --green-alpha-20:   rgba(31,122,84,.20);  /* locked-amount border */
-  --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
-  --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
-  --green-text-sett:  #1f7a54;              /* badge phase ouverte text */
-  --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
-  --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
-  --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */
-  --coral-bg-38:      rgba(239,125,95,.38); /* cart-tab is-active border */
-  --amber-bg-08:      rgba(230,130,0,.08);  /* funded-callout gap fond */
-  --amber-bg-12:      rgba(230,130,0,.12);  /* badge settlement fond */
-  --amber-border-28:  rgba(230,130,0,.28);  /* funded-callout gap border */
-  --amber-text-sett:  #b45309;              /* badge settlement text / finalize gap btn */
-  --violet-bg-light:  #ede7f6;              /* split-hint fond lavande */
-  --danger:           #e53935;              /* bouton / texte annulation danger */
-}
-
-/* ── PR-G6 : tokens rgba manquants (audit 2026-05-28) ────────────────────
-   FIX AUDIT 2026-06-11 : ces déclarations flottaient HORS de tout bloc
-   :root (accolade fermée l.357) → variables jamais définies + la règle
-   universelle du reset (box-sizing/margin/padding) était avalée par le
-   parseur dans le bundle base.css. Ré-englobées dans :root ci-dessous. */
-:root {
-
-  /* Overlays noirs complémentaires */
-  --overlay-black-10:      rgba(0,0,0,.10);
-  --overlay-black-22:      rgba(0,0,0,.22);
-  --overlay-black-45:      rgba(0,0,0,.45);
-
-  /* Surface blanche semi-transparente */
-  --surface-white-10:      rgba(255,255,255,.10);
-
-  /* Overlay groupe (fond sheet flow panier partagé) */
-  --overlay-group-dark:    rgba(31,48,36,.52);
-
-  /* CTA green (42,122,62) — ombres boutons */
-  --shadow-cta-22:         rgba(42,122,62,.22);
-  --shadow-cta-30:         rgba(42,122,62,.3);
-  --shadow-cta-40:         rgba(42,122,62,.4);
-
-  /* WhatsApp (37,211,102) — ombres boutons */
-  --shadow-wa-24:          rgba(37,211,102,.24);
-  --shadow-wa-25:          rgba(37,211,102,.25);
-  --shadow-wa-28:          rgba(37,211,102,.28);
-  --shadow-wa-38:          rgba(37,211,102,.38);
-
-  /* Coral (200,92,45) — focus rings et ombres */
-  --coral-focus-08:        rgba(200,92,45,.08);
-  --coral-focus-10:        rgba(200,92,45,.1);
-  --coral-focus-12:        rgba(200,92,45,.12);
-  --coral-shadow-25:       rgba(200,92,45,.25);
-
-  /* Coral orange (255,107,53) — pay chips */
-  --coral-chip-07:         rgba(255,107,53,.07);
-  --coral-chip-10:         rgba(255,107,53,.10);
-  --coral-chip-16:         rgba(255,107,53,.16);
-  --coral-chip-18:         rgba(255,107,53,.18);
-
-  /* Salmon btn back (255,163,122) */
-  --coral-light-28:        rgba(255,163,122,.28);
-
-  /* Ocean (100,175,90) — bordures complémentaires */
-  --border-ocean-16:       rgba(100,175,90,.16);
-  --border-ocean-18:       rgba(100,175,90,.18);
-
-  /* Sand border (103,77,45) — dashed empty state */
-  --sand-border-25:        rgba(103,77,45,.25);
-
-  /* Forest shadows (49,81,30) */
-  --shadow-forest-07:      rgba(49,81,30,.07);
-
-  /* Green pay option (67,160,71) */
-  --green-pay-06:          rgba(67,160,71,.06);
-
-  /* Ring pulse alert (255,90,70) */
-  --ring-pulse-50:         rgba(255,90,70,.5);
-  --ring-pulse-0:          rgba(255,90,70,0);
-
-  /* Dark card shadows (30,40,25) */
-  --shadow-card-04:        rgba(30,40,25,.04);
-  --shadow-card-05:        rgba(30,40,25,.05);
-
-  /* Violet shadow */
-  --violet-shadow-30:      rgba(108,63,197,.3);
-
-  /* Coral settlement (239,125,95) */
-  --coral-sett-22:         rgba(239,125,95,.22);
-
-  /* Green alpha 08 (groupe mini-guide fond) */
-  --green-alpha-08:        rgba(31,122,84,.08);
-
-  /* ── PR-G6 suite : tokens rgba boutique-desktop + modal + layout ─────── */
-
-  /* Ocean alpha complémentaires */
-  --border-ocean-04:       rgba(100,175,90,.04);
-  --border-ocean-06:       rgba(100,175,90,.06);
-  --border-ocean-12:       rgba(100,175,90,.12);
-  --border-ocean-20:       rgba(100,175,90,.20);
-  --border-ocean-50:       rgba(100,175,90,.50);
-
-  /* Gold/sable doré (198,168,93) — desktop cards premium */
-  --gold-border-12:        rgba(198,168,93,.12);
-  --gold-border-16:        rgba(198,168,93,.16);
-  --gold-border-28:        rgba(198,168,93,.28);
-  --gold-border-36:        rgba(198,168,93,.36);
-  --gold-border-50:        rgba(198,168,93,.5);
-  --gold-border-62:        rgba(198,168,93,.62);
-  --gold-border-74:        rgba(198,168,93,.74);
-
-  /* Coral focus/shadow complémentaires */
-  --coral-focus-40:        rgba(200,92,45,.4);
-  --coral-focus-45:        rgba(200,92,45,.45);
-  --coral-shadow-18:       rgba(200,92,45,.18);
-
-  /* Surface sable desktop (248,246,241) */
-  --surface-sand-desktop:  rgba(248,246,241,0.82);
-
-  /* Surface blanche complémentaires */
-  --surface-white-18:      rgba(255,255,255,.18);
-  --surface-white-55:      rgba(255,255,255,.55);
-  --surface-white-62:      rgba(255,255,255,.62);
-  --surface-white-80:      rgba(255,255,255,.8);
-  --surface-white-85:      rgba(255,255,255,.85);
-  --surface-white-98:      rgba(255,255,255,.98);
-
-  /* WhatsApp shadow complémentaire */
-  --shadow-wa-30:          rgba(37,211,102,.30);
-
-  /* CTA green focus outline */
-  --focus-cta-45:          rgba(42,122,62,.45);
-
-  /* Pink complémentaire */
-  --pink-shadow-30:        rgba(233,30,99,.30);
-
-  /* Rouge mic pulse (220,38,38) */
-  --red-pulse-35:          rgba(220,38,38,.35);
-  --red-pulse-0:           rgba(220,38,38,0);
-
-  /* Overlay noir complémentaire */
-  --overlay-black-18:      rgba(0,0,0,.18);
-
-  /* Gradient transparent sable (244,241,236) */
-  --sand-gradient-0:       rgba(244,241,236,0);
+  --cta-green: #2a7a3e;   /* signe K-réseau (traits, nœuds, O) */
+  --coral:     #C85C2D;   /* cœurs logo */
+  --ocean:     #64AF5A;   /* mot "merce" */
 }
 
 

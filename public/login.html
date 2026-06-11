@@ -2,6 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Komerce — Connexion admin</title>
   <style>
@@ -54,14 +57,12 @@
     }
     .brand-logo {
       width: 44px; height: 44px;
-      background: var(--kmc-navy);
-      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 700;
-      color: var(--kmc-amber);
-      letter-spacing: -1px;
       flex-shrink: 0;
     }
+    .brand-logo svg { width: 44px; height: 44px; }
+    /* tokens logo (repris depuis boutique) */
+    .brand-logo { --cta-green: #82C478; --coral: #E8835A; --ocean: #82C478; }
     .brand-text { line-height: 1.2; }
     .brand-name {
       font-size: 1.125rem; font-weight: 700;
@@ -163,7 +164,19 @@
 <body>
   <div class="login-card">
     <div class="brand">
-      <div class="brand-logo">K</div>
+      <div class="brand-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 200" role="img" aria-label="Komerce">
+  <g stroke="var(--cta-green, #2a7a3e)" stroke-width="16" stroke-linecap="round" fill="none">
+    <path d="M42 54.5V87M42 113v32.5"/>
+    <path d="M51.5 91.1 97.1 48.1M51.5 108.9l45.6 43M55 100h68"/>
+  </g>
+  <g fill="none" stroke="var(--cta-green, #2a7a3e)" stroke-width="13">
+    <circle cx="42" cy="34" r="14"/><circle cx="42" cy="166" r="14"/>
+    <circle cx="112" cy="34" r="14"/><circle cx="112" cy="166" r="14"/>
+  </g>
+  <circle cx="42" cy="100" r="9" fill="var(--coral, #C85C2D)"/>
+  <circle cx="160" cy="100" r="30" fill="none" stroke="var(--cta-green, #2a7a3e)" stroke-width="14"/>
+  <circle cx="160" cy="100" r="11" fill="var(--coral, #C85C2D)"/>
+</svg></div>
       <div class="brand-text">
         <div class="brand-name">Komerce</div>
         <div class="brand-sub">Espace administration</div>

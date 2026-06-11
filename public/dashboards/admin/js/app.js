@@ -183,7 +183,19 @@
         <aside class="sidebar" style="border-right: 3px solid ${shell.accent}">
 
           <div class="sidebar-brand">
-            <div class="sidebar-brand-logo">K</div>
+            <div class="sidebar-brand-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 200" role="img" aria-label="Komerce">
+  <g stroke="var(--cta-green, #2a7a3e)" stroke-width="16" stroke-linecap="round" fill="none">
+    <path d="M42 54.5V87M42 113v32.5"/>
+    <path d="M51.5 91.1 97.1 48.1M51.5 108.9l45.6 43M55 100h68"/>
+  </g>
+  <g fill="none" stroke="var(--cta-green, #2a7a3e)" stroke-width="13">
+    <circle cx="42" cy="34" r="14"/><circle cx="42" cy="166" r="14"/>
+    <circle cx="112" cy="34" r="14"/><circle cx="112" cy="166" r="14"/>
+  </g>
+  <circle cx="42" cy="100" r="9" fill="var(--coral, #C85C2D)"/>
+  <circle cx="160" cy="100" r="30" fill="none" stroke="var(--cta-green, #2a7a3e)" stroke-width="14"/>
+  <circle cx="160" cy="100" r="11" fill="var(--coral, #C85C2D)"/>
+</svg></div>
             <div>
               <div class="sidebar-brand-text" id="sidebar-shell-title">${shell.emoji} ${shell.label}</div>
               <div class="sidebar-brand-sub" id="sidebar-shell-desc">${shell.description}</div>
