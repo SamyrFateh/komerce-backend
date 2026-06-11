@@ -21,6 +21,54 @@
 const isTest = process.env.NODE_ENV === 'test';
 const isDev = process.env.NODE_ENV !== 'production';
 
+// ─── Masquage PII partiel ─────────────────────────────────────────────────────
+// Masquage partiel (pas [REDACTED] total) pour conserver la corrélation ops.
+// Ex : "+2690612345"  → "+269•••45"
+//      "sam@gmail.com" → "s***@gmail.com"
+
+const PII_PHONE_FIELDS = new Set(['phone', 'mobile', 'whatsapp_phone', 'tracking_phone']);
+const PII_EMAIL_FIELDS = new Set(['email', 'user_email', 'contact_email']);
+
+function maskPhone(v) {
+  if (typeof v !== 'string' || v.length < 4) return '•••';
+  return v.slice(0, 4) + '•••' + v.slice(-2);
+}
+
+function maskEmail(v) {
+  if (typeof v !== 'string') return '•••';
+  const at = v.indexOf('@');
+  if (at < 1) return '•••';
+  return v[0] + '***' + v.slice(at);
+}
+
+/**
+ * Applique le masquage PII sur un objet de log (profondeur 1 + champs imbriqués).
+ * Ne mute pas l'objet original.
+ */
+function maskPiiFields(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  let masked = null; // lazy copy — on n'alloue que si nécessaire
+
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (PII_PHONE_FIELDS.has(key) && typeof val === 'string') {
+      if (!masked) masked = Object.assign({}, obj);
+      masked[key] = maskPhone(val);
+    } else if (PII_EMAIL_FIELDS.has(key) && typeof val === 'string') {
+      if (!masked) masked = Object.assign({}, obj);
+      masked[key] = maskEmail(val);
+    } else if (val && typeof val === 'object' && !Array.isArray(val)) {
+      const sub = maskPiiFields(val);
+      if (sub !== val) {
+        if (!masked) masked = Object.assign({}, obj);
+        masked[key] = sub;
+      }
+    }
+  }
+  return masked || obj;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 let logger;
 
 try {
@@ -50,6 +98,9 @@ try {
       env: process.env.NODE_ENV || 'development',
     },
     transport,
+    formatters: {
+      log: (obj) => maskPiiFields(obj),
+    },
     serializers: {
       err: pino.stdSerializers.err,
       req: (req) => ({

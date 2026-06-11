@@ -40,7 +40,9 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-app.get('/webhook/authkey-whatsapp', async (req, res) => {
+const { verifyAuthkeyWebhook } = require('./middleware/verify-authkey-webhook');
+
+app.get('/webhook/authkey-whatsapp', verifyAuthkeyWebhook, async (req, res) => {
   try {
     const mobile = req.query.Mobile || null;
     const email  = req.query.Email  || null;

@@ -38,6 +38,8 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
   const recommendedEnv = [
     'STRIPE_SHARED_CART_WEBHOOK_SECRET',
     'PAYPAL_ENV', // sandbox | production — défaut sandbox côté code
+    'TRANSITAIRE_PASSWORD', // compte opérationnel agent_transitaire — skip seeding si absent
+    'AUTHKEY_WEBHOOK_SECRET', // token webhook Authkey — requis en prod, fail-closed si absent
   ];
 
   // Garde-fou supplémentaire : refuser explicitement un bypass OTP en prod

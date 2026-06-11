@@ -173,16 +173,23 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
     log.info('✅ Migration 027: orders enrichment columns ready');
   } catch(e) { log.warn({ err: e }, 'Migration 027 (non-fatal):'); }
 
+  // Migration 028 : transitaire user
+  // Nécessite TRANSITAIRE_PASSWORD — pas de fallback hardcodé (règle SEC-2).
+  // Si la variable est absente, on logue un avertissement et on skip.
   try {
-    const bcrypt = require('bcryptjs');
-    const transitPwd = process.env.TRANSITAIRE_PASSWORD || 'KomTransit2025!';
-    const transitHash = await bcrypt.hash(transitPwd, 10);
-    await db.query(`
-      INSERT INTO users (id, full_name, email, phone, role, password_hash)
-      VALUES (gen_random_uuid(), 'Transitaire Komerce', 'transitaire@komerce.km', '+2690000003', 'agent_transitaire', $1)
-      ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
-    `, [transitHash]);
-    log.info('✅ Migration 028: transitaire user seeded');
+    const transitPwd = process.env.TRANSITAIRE_PASSWORD;
+    if (!transitPwd) {
+      log.warn('⚠️  TRANSITAIRE_PASSWORD non défini — seeding transitaire ignoré (définir la variable pour activer ce compte)');
+    } else {
+      const bcrypt = require('bcryptjs');
+      const transitHash = await bcrypt.hash(transitPwd, 10);
+      await db.query(`
+        INSERT INTO users (id, full_name, email, phone, role, password_hash)
+        VALUES (gen_random_uuid(), 'Transitaire Komerce', 'transitaire@komerce.km', '+2690000003', 'agent_transitaire', $1)
+        ON CONFLICT (email) DO UPDATE SET password_hash = $1, role = 'agent_transitaire'
+      `, [transitHash]);
+      log.info('✅ Migration 028: transitaire user seeded');
+    }
   } catch(e) { log.warn({ err: e }, 'Migration 028 (non-fatal):'); }
 
   try {

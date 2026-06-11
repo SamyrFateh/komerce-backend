@@ -34,13 +34,19 @@ async function fixAdminHash() {
       );
       console.log('✅ Migration: admin user créé/upserted');
     }
-    const newClientHash = await bcryptMigrate.hash('client123', 10);
-    const clientResult = await db.query(
-      "UPDATE users SET password_hash = $1 WHERE role = 'client' AND password_hash NOT LIKE '$2b$%'",
-      [newClientHash]
-    );
-    if (clientResult.rowCount > 0) {
-      console.log(`✅ Migration: ${clientResult.rowCount} demo client hashes corrigés`);
+    // Migration des hashes demo clients (non-bcrypt → bcrypt).
+    // Uniquement hors production : en prod, tous les hashes sont déjà bcrypt
+    // et ce bloc ne devrait affecter 0 lignes. On le skipe explicitement
+    // pour éviter tout risque d'écrasement inattendu avec un mot de passe demo.
+    if (process.env.NODE_ENV !== 'production') {
+      const newClientHash = await bcryptMigrate.hash('client123', 10);
+      const clientResult = await db.query(
+        "UPDATE users SET password_hash = $1 WHERE role = 'client' AND password_hash NOT LIKE '$2b$%'",
+        [newClientHash]
+      );
+      if (clientResult.rowCount > 0) {
+        console.log(`✅ Migration: ${clientResult.rowCount} demo client hashes corrigés`);
+      }
     }
 
     // ── Force Hub & Relais passwords at startup ──────────────────────────
