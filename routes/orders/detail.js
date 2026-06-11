@@ -11,10 +11,11 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../db');
 const { authenticate } = require('../../middleware/auth');
+const { softAuthenticate } = require('../../middleware/soft-auth'); // F3 LOT-387
 
 // ─── GET /api/orders/:ref — détail + suivi (public par référence) ─────────────
 
-router.get('/:ref', async (req, res, next) => {
+router.get('/:ref', softAuthenticate, async (req, res, next) => {
   try {
     const isUuid = /^[0-9a-f-]{36}$/.test(req.params.ref);
 
@@ -59,10 +60,8 @@ router.get('/:ref', async (req, res, next) => {
       [order.id]
     );
 
-    // Route publique — req.user est undefined sauf si le middleware authenticate est présent.
-    // TODO #387 : Ajouter un middleware soft-auth pour peupler req.user sans bloquer les accès publics.
-    // cash_ref_code est masqué pour tous les accès publics (toujours false ici).
-    // Les agents accèdent aux détails complets via GET /api/admin/orders.
+    // softAuthenticate (branché sur la route) peuple req.user si token valide,
+    // sans jamais bloquer les accès publics. cash_ref_code masqué pour le public.
     const isAdmin       = req.user && ['admin', 'agent_relais', 'agent_hub'].includes(req.user.role);
     const isRelaisAdmin = req.user && ['admin', 'agent_relais'].includes(req.user.role);
 

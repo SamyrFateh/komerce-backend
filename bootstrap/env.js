@@ -29,6 +29,7 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'QR_SECRET',
+    'AUTHKEY_API_KEY',          // provider notifications actif — toutes les notifs WhatsApp passent par Authkey
     // PayPal — migration 079, diaspora France
     'PAYPAL_CLIENT_ID',
     'PAYPAL_CLIENT_SECRET',
