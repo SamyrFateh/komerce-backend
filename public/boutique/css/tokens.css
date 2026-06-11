@@ -356,7 +356,12 @@
   --danger:           #e53935;              /* bouton / texte annulation danger */
 }
 
-  /* ── PR-G6 : tokens rgba manquants (audit 2026-05-28) ──────────────────── */
+/* ── PR-G6 : tokens rgba manquants (audit 2026-05-28) ────────────────────
+   FIX AUDIT 2026-06-11 : ces déclarations flottaient HORS de tout bloc
+   :root (accolade fermée l.357) → variables jamais définies + la règle
+   universelle du reset (box-sizing/margin/padding) était avalée par le
+   parseur dans le bundle base.css. Ré-englobées dans :root ci-dessous. */
+:root {
 
   /* Overlays noirs complémentaires */
   --overlay-black-10:      rgba(0,0,0,.10);
@@ -477,3 +482,4 @@
 
   /* Gradient transparent sable (244,241,236) */
   --sand-gradient-0:       rgba(244,241,236,0);
+}

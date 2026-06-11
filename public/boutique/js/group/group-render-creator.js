@@ -71,7 +71,47 @@ export function renderCreatorCartSwitcher(carts = [], selectedId) {
 /* ── Colonne articles (aside droit desktop) ─────────────────────── */
 
 /**
+ * Attribut `open` des accordéons : ouverts par défaut sur desktop (≥900px),
+ * repliés sur mobile pour condenser (direction mockup UX V4).
+ * @returns {string} ' open' ou ''
+ */
+function _accOpenAttr() {
+  return (typeof window !== 'undefined' &&
+          window.matchMedia &&
+          window.matchMedia('(min-width: 900px)').matches) ? ' open' : '';
+}
+
+/**
+ * Carte identité du panier côté CRÉATEUR — eyebrow, titre, "Organisé pour",
+ * ligne méta (total · statut · n articles). Direction mockup UX V4.
+ * @param {object} cart
+ * @param {number} [itemsCount=0]
+ * @returns {string}
+ */
+export function renderOwnerIdentityCard(cart, itemsCount = 0) {
+  const title = sanitize(cart.title || 'Panier groupe');
+  const benef = sanitize(cart.beneficiary_name_snapshot || '');
+  const total = r(cart.total_kmf_snapshot);
+  const sOpen = isSettlementOpen(cart);
+
+  return `
+    <div class="k-group-card k-group-owner-id">
+      <div class="k-group-owner-eyebrow">👥 Panier groupe</div>
+      <h2 class="k-group-owner-title">${title}</h2>
+      ${benef ? `<p class="k-group-owner-sub">Organisé pour ${benef}</p>` : ''}
+      <div class="k-group-owner-meta">
+        <strong>${fmt(total, 'KMF')}</strong>
+        <span class="k-group-owner-sep">·</span>
+        <span class="k-group-owner-status">${statusLabel(cart.status, sOpen)}</span>
+        <span class="k-group-owner-sep">·</span>
+        <span>${itemsCount} article${itemsCount > 1 ? 's' : ''}</span>
+      </div>
+    </div>`;
+}
+
+/**
  * Rendu du panneau latéral d'articles du panier (colonne droite cockpit).
+ * Condensé en accordéon style checkout : replié sur mobile, ouvert sur desktop.
  * @param {Array}  [items=[]]  articles du panier (format snapshot ou state.cart)
  * @param {object} [cart={}]   panier partagé (pour total_kmf_snapshot)
  * @returns {string}
@@ -100,17 +140,19 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
   return `
     <aside class="k-group-side-panel">
       <div class="k-group-side-card">
-        <div class="k-group-side-head">
-          <strong>Articles du panier</strong>
-          <span>${count} article${count > 1 ? 's' : ''}</span>
-        </div>
-        <div class="k-group-side-list">
-          ${rows || '<p class="k-group-side-empty">Aucun article à afficher.</p>'}
-        </div>
-        <div class="k-group-side-total">
-          <span>Total panier</span>
-          <strong>${fmt(total, 'KMF')}</strong>
-        </div>
+        <details class="k-group-accordion k-group-accordion--flush"${_accOpenAttr()}>
+          <summary>
+            <span>🛒 ${count} article${count > 1 ? 's' : ''}</span>
+            <span class="k-group-acc-meta">${fmt(total, 'KMF')}</span>
+          </summary>
+          <div class="k-group-side-list">
+            ${rows || '<p class="k-group-side-empty">Aucun article à afficher.</p>'}
+          </div>
+          <div class="k-group-side-total">
+            <span>Total panier</span>
+            <strong>${fmt(total, 'KMF')}</strong>
+          </div>
+        </details>
       </div>
     </aside>`;
 }
@@ -163,7 +205,7 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
   ];
 
   return `
-    <div class="k-group-financial-summary">
+    <div class="k-group-financial-summary" id="k-group-financial-summary">
       <div class="k-group-financial-stats">
         ${stats.map(s => `
           <div class="k-group-financial-stat${s.highlight ? ' is-highlight' : ''}">
@@ -193,8 +235,9 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
 /* ── Carte de progression (engagements / paiements) ─────────────── */
 
 /**
- * Rendu de la carte de progression du panier partagé.
- * Affiche barre double lecture, liste engagements/contributions, récap règlement.
+ * Carte Participants (direction mockup UX V4) — avatars initiales, montants,
+ * statuts, accordéon condensé style checkout. La barre de progression vit
+ * désormais UNIQUEMENT dans renderCreatorFinancialSummary (zéro duplication).
  * @param {object} cart
  * @param {Array}  contributions
  * @param {Array}  commitmentsList
@@ -203,25 +246,10 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
 export function renderProgress(cart, contributions, commitmentsList) {
   const sOpen     = isSettlementOpen(cart);
   const total     = r(cart.total_kmf_snapshot);
-  const confirmed = r(cart.contributed_kmf);
   const remaining = remainingKmf(cart);
   const meta      = metaOf(cart);
-
-  // Barre double lecture
-  const pPaid = pct(confirmed, total);
-  const eng   = engagementCoverage(commitmentsList, total);
+  const eng       = engagementCoverage(commitmentsList, total);
   const isOverCovered = eng.pctRaw > 100;
-
-  const overBadge = isOverCovered
-    ? `<span class="k-group-progress-badge k-group-progress-badge--over"
-          aria-label="${eng.pctRaw}% engagé — sur-couvert">${eng.pctRaw}\u00a0% engagé</span>`
-    : '';
-
-  const legendPaid    = `<span class="k-group-progress-legend-paid">● payé&nbsp;: ${fmt(confirmed, 'KMF')}</span>`;
-  const legendEngaged = eng.engagementsTotal > 0
-    ? `<span class="k-group-progress-legend-engaged">● engagé&nbsp;: ${fmt(eng.engagementsTotal, 'KMF')}</span>`
-    : '';
-  const legendTotal   = `<span class="k-group-progress-legend-total">total&nbsp;: ${fmt(total, 'KMF')}</span>`;
 
   const settlementSummary = sOpen ? `
     <div class="k-group-settlement-summary">
@@ -231,81 +259,65 @@ export function renderProgress(cart, contributions, commitmentsList) {
         : ''}
     </div>` : '';
 
-  // Participations compactes (LOT 5)
-  let commitmentRows = '';
+  /* ── Lignes participants (avatars initiales — direction mockup) ── */
+  let body;
   if (commitmentsList?.length) {
-    commitmentRows = `
-      <details class="k-group-accordion">
-        <summary>Participants (${commitmentsList.length})</summary>
-        <div class="k-group-commitment-list">
-          ${commitmentsList.map(c => {
-            const paid = contributions?.some(co =>
-              co.commitment_id === c.id && co.status === 'paid'
-            );
-            const phone = c.participant_phone || '';
-            const maskedPhone = phone.length > 4
-              ? phone.slice(0, -4).replace(/\d/g, '•') + phone.slice(-4)
-              : phone;
-            const statusTag = paid
-              ? '<span class="k-group-commitment-status k-group-commitment-status--paid">✅ Payé</span>'
-              : sOpen
-                ? '<span class="k-group-commitment-status k-group-commitment-status--waiting">⏳ En attente</span>'
-                : '<span class="k-group-commitment-status">indicatif</span>';
-            return `
-              <div class="k-group-commitment-row">
-                <div class="k-group-commitment-left">
-                  <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-                  ${maskedPhone ? `<span class="k-group-commitment-phone">${sanitize(maskedPhone)}</span>` : ''}
-                </div>
-                <div class="k-group-commitment-right">
-                  <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-                  ${statusTag}
-                </div>
-              </div>`;
-          }).join('')}
-        </div>
+    const rows = commitmentsList.map(c => {
+      const paid = contributions?.some(co =>
+        co.commitment_id === c.id && co.status === 'paid'
+      );
+      const fullName = c.participant_name || 'Participant';
+      const firstName = fullName.split(' ')[0];
+      const initials = fullName.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?';
+      const hue = ((fullName.charCodeAt(0) || 65) % 5) + 1;
+      const phone = c.participant_phone || '';
+      const maskedPhone = phone.length > 4
+        ? phone.slice(0, -4).replace(/\d/g, '•') + phone.slice(-4)
+        : phone;
+      const statusTag = paid
+        ? '<span class="k-group-commitment-status k-group-commitment-status--paid">✅ Payé</span>'
+        : sOpen
+          ? '<span class="k-group-commitment-status k-group-commitment-status--waiting">⏳ En attente</span>'
+          : '<span class="k-group-commitment-status">indicatif</span>';
+      return `
+        <div class="k-group-commitment-row">
+          <span class="k-group-commitment-avatar k-group-commitment-avatar--h${hue}" aria-hidden="true">${sanitize(initials)}</span>
+          <div class="k-group-commitment-left">
+            <span class="k-group-commitment-name">${sanitize(firstName)}</span>
+            ${maskedPhone ? `<span class="k-group-commitment-phone">${sanitize(maskedPhone)}</span>` : ''}
+          </div>
+          <div class="k-group-commitment-right">
+            <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
+            ${statusTag}
+          </div>
+        </div>`;
+    }).join('');
+
+    const overBadge = isOverCovered
+      ? ` <span class="k-group-progress-badge k-group-progress-badge--over">${eng.pctRaw}\u00a0%</span>`
+      : '';
+
+    body = `
+      <details class="k-group-accordion k-group-accordion--flush"${_accOpenAttr()}>
+        <summary>
+          <span>Participants (${commitmentsList.length})</span>
+          <span class="k-group-acc-meta">${fmt(eng.engagementsTotal, 'KMF')} engagés${overBadge}</span>
+        </summary>
+        <div class="k-group-commitment-list">${rows}</div>
       </details>`;
   } else {
-    commitmentRows = `<p class="k-group-contrib-empty">${
+    body = `<p class="k-group-contrib-empty">${
       sOpen ? 'Aucun engagement verrouillé.' : 'Aucun engagement encore — partagez le lien !'
     }</p>`;
   }
 
   return `
     <div class="k-group-progress-card" id="k-group-progress-card">
-      <div class="k-group-card-head">
-        <div>
-          <div class="k-group-card-title">${sanitize(cart.title || 'Panier groupe')}</div>
-          <div class="k-group-card-meta">${statusLabel(cart.status, sOpen)}</div>
-        </div>
-      </div>
       ${settlementSummary}
-      <div class="k-group-progress-wrap">
-        ${overBadge}
-        <div class="k-group-progress"
-             aria-label="Payé ${pPaid}% · Engagé ${eng.pctCapped}%"
-             role="group">
-          ${eng.pctCapped > 0
-            ? `<span class="k-group-progress-bar k-group-progress-bar--engaged"
-                     style="width:${eng.pctCapped}%"
-                     aria-label="Engagé ${eng.pctCapped}%"></span>`
-            : ''}
-          <span class="k-group-progress-bar k-group-progress-bar--paid"
-                style="width:${pPaid}%"
-                aria-label="Payé ${pPaid}%"></span>
-        </div>
-        <div class="k-group-progress-legend" aria-hidden="true">
-          ${legendPaid}
-          ${legendEngaged}
-          ${legendTotal}
-        </div>
-      </div>
+      ${body}
       ${remaining > 0 && sOpen
         ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
         : ''}
-      <div class="k-group-contribs">
-        ${commitmentRows}
-      </div>
     </div>`;
 }
 
@@ -347,7 +359,7 @@ export function renderCreatorActions(cart, opts = {}) {
   if (step === 'ORDER_CREATED') {
     return `
       <div class="k-group-card k-group-actions-card">
-        <div class="k-group-step-label">Commande créée</div>
+        ${_phaseBadge('ORDER_CREATED')}
         <p class="k-group-finalized-hint">Le panier est terminé.</p>
         ${cart.finalized_order_id
           ? `<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>`
@@ -404,6 +416,7 @@ export function renderCreatorActions(cart, opts = {}) {
 
     return `
       <div class="k-group-card k-group-actions-card">
+        ${_phaseBadge('CONFIRM', fullyPaid)}
         ${expirationHtml}
         <div class="k-group-creator-actions" style="margin-bottom:14px">
           <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
@@ -412,7 +425,7 @@ export function renderCreatorActions(cart, opts = {}) {
         ${noRelayWarning}
         ${confirmBlock}
         <p class="k-group-input-error" id="k-group-finalize-err"></p>
-        ${_cancelBtn()}
+        ${_optionsAccordion('CONFIRM')}
       </div>`;
   }
 
@@ -422,6 +435,7 @@ export function renderCreatorActions(cart, opts = {}) {
 
   return `
     <div class="k-group-card k-group-actions-card">
+      ${_phaseBadge('SHARE_AND_LOCK')}
 
       <!-- Partager le lien -->
       <p class="k-group-share-hint">
@@ -449,9 +463,7 @@ export function renderCreatorActions(cart, opts = {}) {
       <p class="k-group-input-error" id="k-group-settlement-err"></p>
 
       <!-- LOT 5 — Accordéon options -->
-      ${_optionsAccordion()}
-
-      ${_cancelBtn()}
+      ${_optionsAccordion('SHARE_AND_LOCK')}
     </div>`;
 }
 
@@ -483,23 +495,45 @@ export function renderArticlesAccordion(items = []) {
 
 /* ── Helpers internes ────────────────────────────────────────────── */
 
-function _cancelBtn() {
-  return `
-    <div class="k-group-options-danger" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
-        🗑 Annuler ce panier
-      </button>
-    </div>`;
+/**
+ * Badge de phase en tête de la carte d'actions (direction mockup UX V4).
+ * @param {string}  step      SHARE_AND_LOCK | CONFIRM | ORDER_CREATED
+ * @param {boolean} fullyPaid
+ * @returns {string}
+ */
+function _phaseBadge(step, fullyPaid = false) {
+  if (step === 'ORDER_CREATED') {
+    return '<span class="k-group-phase-badge k-group-phase-badge--done">📦 Commande créée</span>';
+  }
+  if (step === 'CONFIRM') {
+    return fullyPaid
+      ? '<span class="k-group-phase-badge k-group-phase-badge--paid">✅ Tout est payé</span>'
+      : '<span class="k-group-phase-badge k-group-phase-badge--settle">🔐 Paiement ouvert</span>';
+  }
+  return '<span class="k-group-phase-badge k-group-phase-badge--open">🟢 Phase ouverte — concertation</span>';
 }
 
-function _optionsAccordion() {
-  return `
-    <details class="k-group-accordion" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <summary>Options</summary>
-      <div style="padding:10px 0 4px">
-        <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items" style="width:100%;margin-bottom:8px">
+
+
+function _optionsAccordion(step = 'SHARE_AND_LOCK') {
+  // LOT 5 — Options contient uniquement : Modifier les articles / Annuler ce panier.
+  // En phase CONFIRM les articles sont figés → seul Annuler reste.
+  // Annuler = danger, visuellement séparé, jamais à côté de l'action principale.
+  const editBtn = step === 'SHARE_AND_LOCK' ? `
+        <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items">
           ✏️ Modifier les articles
-        </button>
+        </button>` : '';
+
+  return `
+    <details class="k-group-accordion k-group-options-acc">
+      <summary><span>Options</span></summary>
+      <div class="k-group-options-body">
+        ${editBtn}
+        <div class="k-group-options-danger">
+          <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
+            🗑 Annuler ce panier
+          </button>
+        </div>
       </div>
     </details>`;
 }

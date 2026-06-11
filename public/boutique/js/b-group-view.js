@@ -59,6 +59,7 @@ import {
   renderProgress,
   renderCreatorActions,
   renderCreatorIdentityCard,
+  renderOwnerIdentityCard,
   renderCreatorFinancialSummary,
 } from './group/group-render-creator.js';
 
@@ -986,16 +987,11 @@ export async function renderGroupView(opts = {}) {
   el.innerHTML = `
     <div class="k-group-cockpit">
       <div class="k-group-main-col">
-        <div class="k-group-header">
-          <h2>👥 Mon panier groupe</h2>
-          <p class="k-group-subhead">${settlementOpen
-            ? '🔐 En règlement — les participants peuvent payer.'
-            : 'Partagez le lien · collectez les participations.'}</p>
-        </div>
         ${renderCreatorCartSwitcher(ownerCarts, cartId)}
+        ${renderOwnerIdentityCard(cart, creatorItems.length)}
         ${renderCreatorFinancialSummary(cart, commitmentsList)}
-${renderProgress(cart, contributions, commitmentsList)}
         ${renderCreatorActions(cart)}
+        ${renderProgress(cart, contributions, commitmentsList)}
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
@@ -1016,6 +1012,8 @@ ${renderProgress(cart, contributions, commitmentsList)}
     startPolling(cartId, (fresh, freshCommitments = commitmentsList) => {
       const card = el.querySelector('#k-group-progress-card');
       if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshCommitments);
+      const fin = el.querySelector('#k-group-financial-summary');
+      if (fin) fin.outerHTML = renderCreatorFinancialSummary(fresh.cart, freshCommitments);
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
     });
   }

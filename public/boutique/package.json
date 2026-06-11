@@ -19,6 +19,8 @@
     "check:cache:fix": "node scripts/deploy-css.js",
     "check:cache:init": "node scripts/deploy-css.js",
     "check:group-wording": "node scripts/check-group-wording.js",
+    "audit:responsive": "node scripts/audit-responsive.js",
+    "audit:cockpit": "node scripts/harness-creator-cockpit.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",

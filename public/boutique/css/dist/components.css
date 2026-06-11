@@ -1023,11 +1023,17 @@ html.k-mobile-premium-v1 .k-chip-label {
   html.k-home-premium-v1 .k-cats {
     position: relative;
     gap: 14px;
+    /* FIX AUDIT 2026-06-11 : la min-width premium vit sur les TRACKS, pas sur
+       les chips. Avec min-width:164px sur .k-chip, les tracks minmax(120px,1fr)
+       ne faisaient que ~131px à 900px → chips débordant du conteneur (+12px de
+       scroll horizontal entre 900 et ~1240px). auto-fit réduit désormais le
+       nombre de colonnes nativement. */
+    grid-template-columns: repeat(auto-fit, minmax(164px, 1fr));
   }
 
   html.k-home-premium-v1 .k-chip {
     border-radius: 24px;
-    min-width: 164px;
+    min-width: 0;
     background: color-mix(in srgb, var(--white) 78%, transparent);
     box-shadow: 0 14px 34px var(--border-text-06);
     transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
@@ -7922,9 +7928,9 @@ body.cart-open  #k-section-index { display:none; }
   }
 }
 
-.k-group-cockpit {
-  display: block;
-}
+/* (doublon .k-group-cockpit{display:block} supprimé — il écrasait le
+   display:grid du bloc ≥900px ci-dessus : cockpit empilé en une colonne
+   même sur desktop. La base mobile-first vit en tête de fichier.) */
 
 /* ── SAFE V2-C — condensation cockpit groupe ───────────────────── */
 
@@ -9642,6 +9648,172 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-group-commitment-status--waiting {
   color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UX V4 — DIRECTION MOCKUP (condensation toggles style checkout)
+   Accordéons, badge de phase, carte identité créateur, avatars.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Accordéon style checkout (cf. .ck-track-details) ──────────── */
+.k-group-accordion {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--sand);
+}
+.k-group-accordion summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;             /* LOT 6 — cible tactile */
+  box-sizing: border-box;
+}
+.k-group-accordion summary::-webkit-details-marker { display: none; }
+.k-group-accordion summary::after {
+  content: "+";
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.k-group-accordion[open] summary::after { content: "−"; }
+.k-group-accordion > *:not(summary) { padding: 0 13px 12px; }
+
+.k-group-acc-meta {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Variante flush : dans une carte déjà bordée (side-card, progress-card) */
+.k-group-accordion--flush {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.k-group-accordion--flush summary { padding: 2px 0; }
+.k-group-accordion--flush > *:not(summary) { padding: 8px 0 0; }
+
+/* ── Badge de phase (tête de carte d'actions) ──────────────────── */
+.k-group-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  margin-bottom: 12px;
+}
+.k-group-phase-badge--open {
+  background: var(--green-bg-10, rgba(42,122,62,.1));
+  color: var(--cta-green);
+  border: 1px solid var(--green-border-22, rgba(42,122,62,.22));
+}
+.k-group-phase-badge--settle {
+  background: var(--amber-bg-08);
+  color: var(--amber-text-sett);
+  border: 1px solid var(--amber-border-28);
+}
+.k-group-phase-badge--paid {
+  background: var(--green-bg-10, rgba(42,122,62,.1));
+  color: var(--cta-green);
+  border: 1px solid var(--green-border-22, rgba(42,122,62,.22));
+}
+.k-group-phase-badge--done {
+  background: var(--sand);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* ── Carte identité créateur (direction mockup) ────────────────── */
+.k-group-owner-id { padding: 16px 20px 14px; }
+.k-group-owner-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--violet, #6b5ca5);
+  margin-bottom: 4px;
+}
+.k-group-owner-title {
+  margin: 0 0 2px;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--text);
+}
+.k-group-owner-sub {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.k-group-owner-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.k-group-owner-meta strong { font-weight: 900; }
+.k-group-owner-sep { color: var(--text-muted); }
+
+/* ── Avatars initiales participants (direction mockup) ─────────── */
+.k-group-commitment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.k-group-commitment-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  flex-shrink: 0;
+  color: var(--white);
+}
+.k-group-commitment-avatar--h1 { background: var(--cta-green); }
+.k-group-commitment-avatar--h2 { background: var(--violet, #6b5ca5); }
+.k-group-commitment-avatar--h3 { background: var(--amber-text-sett, #b45309); }
+.k-group-commitment-avatar--h4 { background: var(--ocean, #64AF5A); }
+.k-group-commitment-avatar--h5 { background: var(--coral, #e0795c); }
+.k-group-commitment-left { min-width: 0; flex: 1; }
+
+/* ── Accordéon Options (LOT 5 — danger séparé dedans) ──────────── */
+.k-group-options-acc { margin-top: 14px; }
+.k-group-options-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.k-group-options-body .k-group-btn { width: 100%; }
+.k-group-options-body .k-group-options-danger {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Condensation mobile ───────────────────────────────────────── */
+@media (max-width: 380px) {
+  .k-group-financial-stats {
+    grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
+  }
+  .k-group-acc-meta { font-size: 11.5px; }
 }
 
 

@@ -115,7 +115,9 @@ body {
   height: 32px;
   padding: 0 10px 0 32px;
   background: transparent;
-  font-size: 14px;
+  /* FIX AUDIT 2026-06-11 : 16px minimum — sous 16px, iOS Safari zoome
+     automatiquement la page au focus de l'input (dézoom manuel ensuite). */
+  font-size: 16px;
   color: var(--text);
   border-radius: 21px;
 }
