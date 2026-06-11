@@ -52,9 +52,11 @@
   --checkout-text-strong:   var(--ocean-dark-deep);    /* titres, relay name                */
   --checkout-text-soft:     var(--text-form-soft);     /* sous-textes neutres               */
 
-  --checkout-accent:        var(--sage-dark);          /* CTA confirmer, état actif         */
+  --checkout-accent:        #2A6B3C;                   /* CTA confirmer, header — vert marché mock */
+  --checkout-accent-mid:    #3A8A52;                   /* gradient stop milieu              */
+  --checkout-accent-bright: #4DA668;                   /* gradient stop clair               */
   --checkout-accent-light:  var(--white);              /* texte sur CTA                     */
-  --checkout-accent-hover:  var(--sage-deeper);        /* hover CTA                         */
+  --checkout-accent-hover:  #1F5230;                   /* hover CTA                         */
   --checkout-link:          var(--coral);              /* "Changer", liens inline           */
 
   --checkout-disabled-bg:   var(--gray-bg-lighter);   /* MVola "bientôt"                   */
@@ -62,6 +64,16 @@
 
   --checkout-avatar-bg:     var(--sage-bg);            /* fond initiales                    */
   --checkout-avatar-text:   var(--sage-dark);          /* texte initiales                   */
+
+  /* Palette interne checkout — hex sablés/dorés (jamais réutilisés hors checkout) */
+  --checkout-cream:         #FFFBF5;                   /* fond modal + body                 */
+  --checkout-id-bg:         #FFF8EE;                   /* fond carte identité               */
+  --checkout-id-border:     #E8D5B0;                   /* bordure carte identité            */
+  --checkout-seg-border:    #DDD0B8;                   /* bordure segments + chips          */
+  --checkout-seg-text:      #A07040;                   /* texte inactif segments            */
+  --checkout-sel-bg:        #FFF0E8;                   /* fond état sélectionné (coral pâle)*/
+  --checkout-chip-active-bg:#FFF4EE;                   /* fond chip paiement actif          */
+  --checkout-chip-active-text: #5A3010;                /* texte chip paiement actif         */
 
 
 

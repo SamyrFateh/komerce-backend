@@ -5163,16 +5163,16 @@ body.cart-open .k-wa-fab {
 
 /* Fond crème chaud sur le modal */
 .k-order-modal {
-  background: #FFFBF5;
+  background: var(--checkout-cream);
 }
 .k-order-body,
 .k-order-body--checkout {
-  background: #FFFBF5;
+  background: var(--checkout-cream);
 }
 
 /* Header gradient vert marché */
 .k-order-header {
-  background: linear-gradient(135deg, #2A6B3C 0%, #3A8A52 60%, #4DA668 100%);
+  background: linear-gradient(135deg, var(--checkout-accent) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent-bright) 100%);
   color: var(--white);
 }
 
@@ -5186,8 +5186,8 @@ body.cart-open .k-wa-fab {
 
 /* Carte identité : bord neutre doré (pas de coral) */
 .k-ck-id-card {
-  background: #FFF8EE;
-  border: 1.5px solid #E8D5B0;
+  background: var(--checkout-id-bg);
+  border: 1.5px solid var(--checkout-id-border);
   border-radius: 14px;
 }
 
@@ -5202,31 +5202,31 @@ body.cart-open .k-wa-fab {
   background: rgba(0,0,0,.05);
   border-radius: 12px;
   padding: 3px;
-  border: 1.5px solid #DDD0B8;
+  border: 1.5px solid var(--checkout-seg-border);
 }
 .ck-recip-seg button {
   background: transparent;
-  color: #A07040;
+  color: var(--checkout-seg-text);
   font-family: var(--font-checkout);
   border-radius: 9px;
 }
 .ck-recip-seg button.on {
-  background: #FFF0E8;
+  background: var(--checkout-sel-bg);
   color: var(--coral);
   box-shadow: inset 0 0 0 2px var(--coral);
 }
 
 /* Toggle fulfillment : coral uniquement sur actif */
 .ck-fulfillment-btn {
-  background: #FFFBF5;
-  border: 1.5px solid #DDD0B8;
-  color: #A07040;
+  background: var(--checkout-cream);
+  border: 1.5px solid var(--checkout-seg-border);
+  color: var(--checkout-seg-text);
   font-family: var(--font-checkout);
 }
 .ck-fulfillment-btn.active {
-  background: #FFF0E8;
+  background: var(--checkout-sel-bg);
   border-color: var(--coral);
-  color: #C85C2D;
+  color: var(--coral-dark);
   box-shadow: 0 0 0 1px var(--coral-focus-08);
 }
 
@@ -5248,15 +5248,15 @@ body.cart-open .k-wa-fab {
 
 /* Chips paiement : coral uniquement sur actif */
 .ck-pay-chip {
-  background: #FFFBF5;
-  border: 1.5px solid #DDD0B8;
+  background: var(--checkout-cream);
+  border: 1.5px solid var(--checkout-seg-border);
   font-family: var(--font-checkout);
 }
 .ck-pay-chip--active {
-  background: #FFF4EE;
+  background: var(--checkout-chip-active-bg);
   border: 2px solid var(--coral);
-  box-shadow: 0 0 0 2px rgba(200,92,45,.15);
-  color: #5A3010;
+  box-shadow: 0 0 0 2px var(--coral-focus-12);
+  color: var(--checkout-chip-active-text);
 }
 
 /* Bouton confirmer fond vert marché */
@@ -6078,6 +6078,9 @@ body.cart-open .k-wa-fab {
 
 /* Titre de section court en capslock */
 .ck-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: .62rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -6085,6 +6088,24 @@ body.cart-open .k-wa-fab {
   color: var(--text-muted);
   line-height: 1;
   margin-bottom: 8px;
+}
+
+/* Badge numéroté ① ② ③ — cercle vert marché */
+.ck-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  background: var(--checkout-accent);
+  color: var(--white);
+  font-size: .6rem;
+  font-weight: 900;
+  border-radius: 50%;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1;
 }
 
 /* Aide pédagogique discrète sous le titre */
@@ -6181,7 +6202,7 @@ body.cart-open .k-wa-fab {
   cursor: pointer;
 }
 .ck-recip-seg button.on {
-  background: #FFF0E8;
+  background: var(--checkout-sel-bg);
   color: var(--coral);
   box-shadow: inset 0 0 0 1.5px var(--coral);
 }

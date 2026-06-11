@@ -492,7 +492,7 @@ export function renderCheckout() {
     benfSection.className = 'ck-section-block';
     const benfTitle = document.createElement('div');
     benfTitle.className = 'ck-section-title';
-    benfTitle.textContent = 'QUI RÉCUPÈRE ?';
+    benfTitle.innerHTML = '<span class="ck-step-num" aria-hidden="true">1</span>QUI RÉCUPÈRE ?';
     benfSection.appendChild(benfTitle);
 
     // #cb-benf-is-me CONSERVÉ (caché) — lu par submitOrder + le préremplissage.
@@ -751,7 +751,7 @@ export function renderCheckout() {
     /* ── 2b. Point relais ── */
     const sRelais = document.createElement('div');
     sRelais.className = 'ck-section-block';
-    sRelais.innerHTML = '<div class="ck-section-title">POINT DE RETRAIT</div>';
+    sRelais.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">2</span>POINT DE RETRAIT</div>';
     body.appendChild(sRelais);
     const relaisSection = document.createElement('div');
     relaisSection.id = 'ck-relais-section';
@@ -766,7 +766,7 @@ export function renderCheckout() {
     /* ── 3. Paiement ── */
     const s2 = document.createElement('div');
     s2.className = 'ck-section-block ck-payment-section';
-    s2.innerHTML = '<div class="ck-section-title">PAIEMENT</div>';
+    s2.innerHTML = '<div class="ck-section-title"><span class="ck-step-num" aria-hidden="true">3</span>PAIEMENT</div>';
     body.appendChild(s2);
 
     const payGrid = document.createElement('div');
