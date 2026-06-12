@@ -52,31 +52,37 @@ function metadataOf(cart) {
   try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
 }
 
-/** Statuts hérités qui signifient « fenêtre de paiement en cours ». */
-const LEGACY_CLOSED = new Set(['closed_for_settlement', 'settlement_in_progress']);
+/** Hérités → CLOSED (mapping migration 080 §3). */
+const LEGACY_CLOSED = new Set([
+  'closed_for_settlement', 'settlement_in_progress',
+  'partially_funded', 'fully_funded', 'ready_to_finalize',
+]);
 
-/** Statuts hérités absorbés par ORDERED (transitoires de l'ancien runtime). */
-const LEGACY_ORDERED = new Set(['converted_to_order', 'fully_funded', 'ready_to_finalize', 'finalized']);
+/** Hérités → ORDERED (mapping migration 080 §3). */
+const LEGACY_ORDERED = new Set(['converted_to_order', 'finalized']);
 
-/** Statuts hérités qui signifient OPEN tant que le règlement n'est pas ouvert. */
-const LEGACY_OPEN = new Set(['draft', 'active', 'commitment_open', 'partially_funded']);
+/** Hérités → OPEN (mapping migration 080 §3). */
+const LEGACY_OPEN = new Set(['draft', 'active', 'commitment_open']);
 
 function businessStatusOf(cart) {
   if (!cart || !cart.status) return null;
   const s = String(cart.status);
 
-  // Terminaux d'abord — un panier annulé reste annulé quoi que dise metadata.
-  if (s === 'cancelled' || s === 'refunded') return BUSINESS.CANCELLED;
-  if (LEGACY_ORDERED.has(s))                 return BUSINESS.ORDERED;
-  if (s === 'archived')                      return BUSINESS.ARCHIVED;
-  if (s === 'expired')                       return BUSINESS.EXPIRED;
-  if (s === 'awaiting_choice')               return BUSINESS.AWAITING_CHOICE;
+  // ── Statuts canoniques V4.1 (migration 080) ──────────────────────
+  if (s === 'open')            return BUSINESS.OPEN;
+  if (s === 'closed')          return BUSINESS.CLOSED;
+  if (s === 'awaiting_choice') return BUSINESS.AWAITING_CHOICE;
+  if (s === 'ordered')         return BUSINESS.ORDERED;
+  if (s === 'cancelled')       return BUSINESS.CANCELLED;
+  if (s === 'expired')         return BUSINESS.EXPIRED;
+  if (s === 'archived')        return BUSINESS.ARCHIVED;
 
-  // Fenêtre de paiement : statut dédié OU flag transitionnel hérité
-  // (shared-cart-v4-settlement.js posait metadata.settlement_open=true).
-  if (LEGACY_CLOSED.has(s))                      return BUSINESS.CLOSED;
+  // ── Défense : valeurs héritées V4 (alignées sur le mapping de la
+  //    migration 080 — toute ligne échappée à l'UPDATE projette pareil) ──
+  if (s === 'refunded')      return BUSINESS.CANCELLED;
+  if (LEGACY_ORDERED.has(s)) return BUSINESS.ORDERED;
+  if (LEGACY_CLOSED.has(s))  return BUSINESS.CLOSED;
   if (metadataOf(cart).settlement_open === true) return BUSINESS.CLOSED;
-
   if (LEGACY_OPEN.has(s)) return BUSINESS.OPEN;
 
   // Statut inconnu : on échoue bruyamment plutôt que d'afficher n'importe quoi.

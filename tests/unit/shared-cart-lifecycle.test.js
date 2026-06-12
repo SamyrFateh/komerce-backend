@@ -38,7 +38,7 @@ function makeCart(overrides = {}) {
   return {
     id: 'cart-001',
     beneficiary_user_id: 'user-001',
-    status: 'active',
+    status: 'open',
     contributed_kmf: 15000,
     ...overrides,
   };
@@ -99,7 +99,7 @@ describe('cancelSharedCart', () => {
   });
 
   test('panier active → cancelled + event cart_cancelled', async () => {
-    const cart = makeCart({ status: 'active' });
+    const cart = makeCart({ status: 'open' });
     const client = mockWithTransaction([
       OK,          // BEGIN
       { rows: [cart] },  // SELECT FOR UPDATE
@@ -110,7 +110,7 @@ describe('cancelSharedCart', () => {
 
     const result = await cancelSharedCart('cart-001', 'user-001', null);
 
-    expect(result).toMatchObject({ id: 'cart-001', status: 'active' });
+    expect(result).toMatchObject({ id: 'cart-001', status: 'open' });
 
     // call[2] = UPDATE
     const updateCall = client._calls[2];
@@ -124,7 +124,7 @@ describe('cancelSharedCart', () => {
   });
 
   test('panier partially_funded → cancelled, contributed_kmf dans payload', async () => {
-    const cart = makeCart({ status: 'partially_funded', contributed_kmf: 5000 });
+    const cart = makeCart({ status: 'closed', contributed_kmf: 5000 });
     const client = mockWithTransaction([OK, { rows: [cart] }, OK, OK, OK]);
 
     await cancelSharedCart('cart-001', 'user-001', null);
@@ -134,7 +134,7 @@ describe('cancelSharedCart', () => {
   });
 
   test('panier fully_funded → cancelled', async () => {
-    const cart = makeCart({ status: 'fully_funded', contributed_kmf: 30000 });
+    const cart = makeCart({ status: 'closed', contributed_kmf: 30000 });
     const client = mockWithTransaction([OK, { rows: [cart] }, OK, OK, OK]);
 
     await cancelSharedCart('cart-001', 'user-001', "acheteur a changé d'avis");
@@ -145,7 +145,7 @@ describe('cancelSharedCart', () => {
   });
 
   test('raison null → payload.reason null', async () => {
-    const cart = makeCart({ status: 'active' });
+    const cart = makeCart({ status: 'open' });
     const client = mockWithTransaction([OK, { rows: [cart] }, OK, OK, OK]);
 
     await cancelSharedCart('cart-001', 'user-001', null);
@@ -157,50 +157,47 @@ describe('cancelSharedCart', () => {
 
 // ── expireOldCarts ───────────────────────────────────────────────────────────
 
-describe('expireOldCarts', () => {
+describe('expireOldCarts — alias V4.1 vers runSharedCartStateMachineTick', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('aucun panier expiré → retourne 0, zéro INSERT event', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
+  test('aucune transition → retourne 0, aucun INSERT event', async () => {
+    db.query.mockResolvedValue({ rows: [] });
 
     const count = await expireOldCarts();
 
     expect(count).toBe(0);
-    expect(db.query).toHaveBeenCalledTimes(1);
-    const [sql] = db.query.mock.calls[0];
-    expect(sql).toMatch(/UPDATE shared_carts/);
-    expect(sql).toMatch(/status = 'expired'/);
+    const sqls = db.query.mock.calls.map(([sql]) => String(sql));
+    expect(sqls.some(sql => /INSERT INTO shared_cart_events/.test(sql))).toBe(false);
+    // Le tick couvre bien T1 (auto-close), T2 (awaiting), T4 (expired)
+    expect(sqls.some(sql => /status = 'closed'/.test(sql))).toBe(true);
+    expect(sqls.some(sql => /status = 'awaiting_choice'/.test(sql))).toBe(true);
+    expect(sqls.some(sql => /status = 'expired'/.test(sql))).toBe(true);
   });
 
-  test('2 paniers expirés → retourne 2, INSERT event pour chacun', async () => {
+  test('2 paniers AWAITING_CHOICE dépassés → expired + INSERT event chacun', async () => {
     const expiredCarts = [
-      { id: 'cart-exp-1', beneficiary_user_id: 'u1', contributed_kmf: 10000 },
-      { id: 'cart-exp-2', beneficiary_user_id: 'u2', contributed_kmf: 0 },
+      { id: 'cart-exp-1', contributed_kmf: 10000 },
+      { id: 'cart-exp-2', contributed_kmf: 0 },
     ];
 
-    db.query
-      .mockResolvedValueOnce({ rows: expiredCarts }) // UPDATE RETURNING
-      .mockResolvedValue({ rows: [] });              // INSERT events ×2
-
-    const count = await expireOldCarts();
-
-    expect(count).toBe(2);
-    // 1 UPDATE + 2 INSERT = 3 appels total
-    expect(db.query).toHaveBeenCalledTimes(3);
-
-    // Vérifier les deux INSERT events
-    const insertCalls = db.query.mock.calls.slice(1);
-    insertCalls.forEach(([sql, params]) => {
-      expect(sql).toMatch(/INSERT INTO shared_cart_events/);
-      expect(sql).toMatch(/cart_expired/);
+    db.query.mockImplementation(async (sql) => {
+      const text = String(sql);
+      if (/SET status = 'expired'/.test(text)) {
+        return { rows: expiredCarts };
+      }
+      return { rows: [] };
     });
 
-    // cart-exp-1 : contributed_kmf = 10000
-    expect(db.query.mock.calls[1][1][0]).toBe('cart-exp-1');
-    expect(db.query.mock.calls[1][1][1]).toMatchObject({ contributed_kmf: 10000 });
+    const count = await expireOldCarts();
+    expect(count).toBe(2);
 
-    // cart-exp-2 : contributed_kmf = 0
-    expect(db.query.mock.calls[2][1][0]).toBe('cart-exp-2');
-    expect(db.query.mock.calls[2][1][1]).toMatchObject({ contributed_kmf: 0 });
+    const eventCalls = db.query.mock.calls.filter(
+      ([sql]) => /INSERT INTO shared_cart_events/.test(String(sql))
+    );
+    expect(eventCalls).toHaveLength(2);
+    eventCalls.forEach(([sql, params]) => {
+      expect(sql).toMatch(/cart_expired/);
+      expect(['cart-exp-1', 'cart-exp-2']).toContain(params[0]);
+    });
   });
 });

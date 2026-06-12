@@ -1,27 +1,36 @@
 /**
- * KOMERCE — Routes Panier Partagé (MVP Niveau 1)
+ * KOMERCE — Routes Panier Partagé V4.1
  * ═══════════════════════════════════════════════════════════════════
  *
- * Doctrine v4 : panier ouvert = engagements indicatifs uniquement.
- * Un participant ne peut payer qu'après l'action créateur "Passer au règlement".
+ * Doctrine V4.1 : machine d'état à 5 statuts visibles (OPEN / CLOSED /
+ * AWAITING_CHOICE / ORDERED / CANCELLED) + 2 techniques (expired / archived).
+ *
+ * Le seul acte engageant est le paiement. Les estimations sont indicatives.
  *
  * Endpoints :
  *
  *   ── Public (lien partagé, pas d'auth) ──
  *   GET    /api/shared-carts/public/:token
- *   GET    /api/shared-carts/public/:token/commitments
- *   POST   /api/shared-carts/public/:token/commitments
- *   POST   /api/shared-carts/public/:token/commitments/:commitmentId/withdraw
- *   POST   /api/shared-carts/public/:token/contributions
- *   POST   /api/shared-carts/stripe/webhook   (Stripe Checkout webhook)
+ *   GET    /api/shared-carts/public/:token/estimations            ← agrégat public
+ *   POST   /api/shared-carts/public/:token/estimations            ← upsert estimation
+ *   DELETE /api/shared-carts/public/:token/estimations/:id        ← retrait estimation
+ *   GET    /api/shared-carts/public/:token/estimations/by-phone   ← pré-remplir formulaire
+ *   POST   /api/shared-carts/public/:token/contributions          ← paiement (statut CLOSED)
+ *   POST   /api/shared-carts/public/:token/contributions/cash     ← paiement cash (via router cash)
+ *   POST   /api/shared-carts/stripe/webhook                       ← Stripe Checkout webhook
  *
  *   ── Bénéficiaire authentifié ──
+ *   POST   /api/shared-carts/from-cart-items
  *   POST   /api/shared-carts/from-basket
+ *   POST   /api/shared-carts/from-order
  *   GET    /api/shared-carts/mine
  *   GET    /api/shared-carts/:id
- *   PUT    /api/shared-carts/:id/items          ← S2-06 : modifier les articles (phase ouverte)
- *   POST   /api/shared-carts/:id/open-settlement
- *   POST   /api/shared-carts/:id/finalize
+ *   GET    /api/shared-carts/:id/as-cart-items
+ *   PUT    /api/shared-carts/:id/items              (statut OPEN, aucun paiement reçu)
+ *   POST   /api/shared-carts/:id/close              ← remplace open-settlement
+ *   POST   /api/shared-carts/:id/finalize           (Cas A : 100% financé ou délai grâce)
+ *   POST   /api/shared-carts/:id/awaiting-choice/complete   ← créateur paie le gap
+ *   POST   /api/shared-carts/:id/awaiting-choice/cancel     ← créateur annule
  *   POST   /api/shared-carts/:id/cancel
  *
  *   ── Admin ──
@@ -29,7 +38,6 @@
  *   GET    /api/admin/shared-carts/refund-queue
  *   GET    /api/admin/shared-carts/:id
  *   POST   /api/admin/shared-carts/:id/expire
- *   POST   /api/admin/shared-carts/:id/extend
  *   POST   /api/admin/shared-carts/:id/note
  */
 
@@ -39,19 +47,16 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
-const settlement = require('../services/shared-cart-v4-settlement');
-const commitments = require('../services/shared-cart-commitment-service');
+const estimations = require('../services/shared-cart-estimation-service');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
-const { fromOrderHandler }           = require('./shared-cart-from-order'); // LOT 4: route from-order
-const { updateOpenSharedCartItems }  = require('../services/shared-cart-items-service');
+const { fromOrderHandler }           = require('./shared-cart-from-order');
+const { updateOpenSharedCartItems, adjustAwaitingCartItems } = require('../services/shared-cart-items-service');
+const windowRules = require('../services/shared-cart-v41-transitions');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
-const { sendTemplateWhatsApp } = require('../services/whatsapp-meta'); // FIX B1 — était './meta-whatsapp' (exporte router, pas le sender)
-// Templates Meta requis (à enregistrer dans Meta Business Suite) :
-//   shared_cart_settlement_open  — params : {{1}} prénom, {{2}} titre panier, {{3}} montant KMF, {{4}} URL
-//   shared_cart_created          — params : {{1}} URL du lien partagé
+const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -61,18 +66,14 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
 const STRIPE_RETURN_SUCCESS = '/cart/shared/success';
 const STRIPE_RETURN_CANCEL  = '/cart/shared/cancel';
 
-// Conversion KMF → EUR pour Stripe (Stripe ne supporte pas KMF nativement)
-// On stocke une estimation conservatrice. À calibrer avec finance_config.
-const DEFAULT_FX_KMF_TO_EUR = 1 / 491.97; // ~0.00203 EUR/KMF
+const DEFAULT_FX_KMF_TO_EUR = 1 / 491.97;
 
 async function getFxKmfToEur() {
   try {
     const { rows } = await db.query(
       `SELECT eur_to_kmf FROM finance_config WHERE id = 1 LIMIT 1`
     );
-    if (rows.length && rows[0].eur_to_kmf) {
-      return 1 / Number(rows[0].eur_to_kmf);
-    }
+    if (rows.length && rows[0].eur_to_kmf) return 1 / Number(rows[0].eur_to_kmf);
   } catch (e) { /* fallback */ }
   return DEFAULT_FX_KMF_TO_EUR;
 }
@@ -85,7 +86,6 @@ router.get('/public/:token', async (req, res, next) => {
     const data = await engine.getSharedCartForPublic(req.params.token);
     if (!data) return res.status(404).json({ error: 'Panier introuvable' });
 
-    // Tracker la vue (best-effort, n'échoue pas silencieusement)
     engine.incrementViewCount(req.params.token).catch(err =>
       log.error({ err }, '[shared-cart] view_count fail')
     );
@@ -95,11 +95,13 @@ router.get('/public/:token', async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// ── PUBLIC : engagements indicatifs, avant passage au règlement ────────
+// ── PUBLIC : estimations indicatives (statut OPEN uniquement) ──────────
 // ═══════════════════════════════════════════════════════════════════════
-router.get('/public/:token/commitments', async (req, res, next) => {
+
+// Agrégat public : ~38 000 KMF estimés · 4 participants
+router.get('/public/:token/estimations', async (req, res, next) => {
   try {
-    const data = await commitments.listCommitmentsByToken(req.params.token);
+    const data = await estimations.getEstimationsByToken(req.params.token);
     res.json(data);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
@@ -107,16 +109,17 @@ router.get('/public/:token/commitments', async (req, res, next) => {
   }
 });
 
-router.post('/public/:token/commitments', async (req, res, next) => {
+// Upsert estimation (create ou update by phone)
+router.post('/public/:token/estimations', async (req, res, next) => {
   try {
-    const result = await commitments.createOrUpdateCommitment(req.params.token, req.body || {});
+    const result = await estimations.upsertEstimation(req.params.token, req.body || {});
     res.status(result.updated ? 200 : 201).json({
       ok: true,
       updated: !!result.updated,
-      commitment: result.commitment,
+      estimation: result.estimation,
       message: result.updated
-        ? 'Engagement mis à jour.'
-        : 'Engagement indicatif enregistré.',
+        ? 'Estimation mise à jour.'
+        : 'Estimation enregistrée.',
     });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
@@ -124,77 +127,44 @@ router.post('/public/:token/commitments', async (req, res, next) => {
   }
 });
 
-router.post('/public/:token/commitments/:commitmentId/withdraw', async (req, res, next) => {
+// Retrait d'une estimation (soft-delete par téléphone pour vérification propriété)
+router.delete('/public/:token/estimations/:estimationId', async (req, res, next) => {
   try {
-    const result = await commitments.withdrawCommitment(
+    await estimations.deleteEstimation(
       req.params.token,
-      req.params.commitmentId,
+      req.params.estimationId,
       req.body || {}
     );
-    res.json({ ok: true, commitment: result.commitment, message: 'Engagement retiré.' });
+    res.json({ ok: true, message: 'Estimation retirée.' });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     next(err);
   }
 });
 
-// ── PUBLIC : retrouver l'engagement verrouillé d'un participant ──────────────
-// Utilisée par l'UI règlement avant d'afficher le bouton payer.
-router.get('/public/:token/commitments/by-phone', async (req, res, next) => {
+// Pré-remplissage formulaire si le participant revient
+router.get('/public/:token/estimations/by-phone', async (req, res, next) => {
   try {
     const { token } = req.params;
     const phone = req.query.phone;
     if (!phone) return res.status(400).json({ error: 'phone requis', code: 'phone_required' });
 
-    const { rows: cartRows } = await db.query(
-      `SELECT id, status, metadata, expires_at, remaining_kmf FROM shared_carts WHERE token = $1`,
-      [token]
-    );
-    if (!cartRows.length) return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
-    const cart = cartRows[0];
-
-    if (!settlement.isSettlementOpen(cart)) {
-      return res.status(409).json({ error: "Le panier n'est pas encore en règlement.", code: 'settlement_not_open' });
-    }
-
-    const { rows } = await db.query(
-      `SELECT id, participant_name, amount_kmf, status, locked_at
-         FROM shared_cart_commitments
-        WHERE shared_cart_id = $1
-          AND participant_phone = $2
-          AND status = 'locked_for_settlement'
-        ORDER BY locked_at DESC
-        LIMIT 1`,
-      [cart.id, phone]
-    );
-
-    if (!rows.length) {
+    const result = await estimations.getEstimationByPhone(token, phone);
+    if (!result) {
       return res.status(404).json({
-        error: 'Aucun engagement verrouillé trouvé pour ce numéro.',
-        code: 'commitment_not_found',
+        error: 'Aucune estimation trouvée pour ce numéro.',
+        code: 'estimation_not_found',
       });
     }
-
-    const commitment = rows[0];
-    const remainingKmf = Math.max(0, Math.round(Number(cart.remaining_kmf) || 0));
-    const commitmentAmount = Math.round(Number(commitment.amount_kmf) || 0);
-    // payable_amount = montant réellement encaissable = min(engagement, remaining)
-    // Le front l'affiche directement ; le backend revalide au POST.
-    const payableAmount = Math.min(commitmentAmount, remainingKmf);
-
-    res.json({
-      commitment: {
-        ...commitment,
-        payable_amount: payableAmount,          // ← clé consommée par bindPaymentForm
-        capped: payableAmount < commitmentAmount,
-        remaining_kmf: remainingKmf,
-      },
-    });
-  } catch (err) { next(err); }
+    res.json({ estimation: result });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════
-// ── PUBLIC : payer une contribution après passage au règlement ─────────
+// ── PUBLIC : payer une contribution (statut CLOSED uniquement) ─────────
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/public/:token/contributions', async (req, res, next) => {
   try {
@@ -213,15 +183,10 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       });
     }
 
-    // Doctrine v4 : un panier ouvert accepte des engagements, pas des paiements.
-    // Le créateur doit d'abord "Passer au règlement".
-    await settlement.assertCanAcceptParticipantPaymentByToken(token);
-
-    // ── Charger le panier pour lire remaining_kmf réel ───────────────────────
-    // On recharge ici (hors transaction) pour une réponse rapide avant la
-    // création Stripe. startContribution() revalidera avec FOR UPDATE.
+    // V4.1 : paiement accepté uniquement si statut 'closed'
+    // (guard complet effectué dans engine.startContribution via assertCartIsClosed)
     const { rows: cartCheckRows } = await db.query(
-      `SELECT id, total_kmf_snapshot, contributed_kmf, remaining_kmf
+      `SELECT id, status, total_kmf_snapshot, contributed_kmf, remaining_kmf
          FROM shared_carts WHERE token = $1`,
       [token]
     );
@@ -229,86 +194,57 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
     }
     const cartCheck = cartCheckRows[0];
-    const remainingNow = Math.max(0, Math.round(Number(cartCheck.remaining_kmf) || 0));
 
-    // ── Refus immédiat si panier déjà entièrement financé ────────────────────
+    if (cartCheck.status !== 'closed') {
+      const msgMap = {
+        open:            "Le panier n'est pas encore en phase de paiement.",
+        awaiting_choice: "La fenêtre de paiement est terminée. En attente de décision du créateur.",
+        ordered:         'Ce panier a déjà été converti en commande.',
+        cancelled:       'Ce panier est annulé.',
+        expired:         'Ce panier a expiré.',
+        archived:        'Ce panier est archivé.',
+      };
+      return res.status(409).json({
+        error: msgMap[cartCheck.status] || 'Le panier ne peut pas accepter de paiement en ce moment.',
+        code: 'cart_not_closed',
+        status: cartCheck.status,
+      });
+    }
+
+    const remainingNow = Math.max(0, Math.round(Number(cartCheck.remaining_kmf) || 0));
     if (remainingNow <= 0) {
       return res.status(409).json({
-        error: 'Ce panier est déjà entièrement financé. Aucun paiement supplémentaire ne peut être accepté.',
+        error: 'Ce panier est déjà entièrement financé.',
         code: 'already_fully_funded',
         remaining_kmf: 0,
       });
     }
 
-    // ── GAP 1 : liaison commitment → contribution ─────────────────────────────
-    // En phase règlement, on retrouve l'engagement verrouillé par téléphone.
-    // Le montant effectif est min(engagement verrouillé, remaining réel).
-    // On ne rejette plus si engagement > remaining : on plafonne.
-    let lockedCommitment = null;
-    if (contributor_phone) {
-      const { rows: commitRows } = await db.query(
-        `SELECT * FROM shared_cart_commitments
-           WHERE shared_cart_id = $1
-             AND participant_phone = $2
-             AND status = 'locked_for_settlement'
-           ORDER BY locked_at DESC LIMIT 1`,
-        [cartCheck.id, contributor_phone]
-      );
-      lockedCommitment = commitRows[0] || null;
-    }
-
-    // ── Calcul du montant payable réel ───────────────────────────────────────
-    // Règle doctrine : payable = min(engagement verrouillé, remaining)
-    // On ne fait jamais confiance au amount_kmf du front pour Stripe.
-    // Si pas d'engagement verrouillé trouvé, on accepte le montant front
-    // mais on le plafonne au remaining.
+    // Montant payable = min(montant demandé, remaining réel)
     const requestedAmount = Math.round(Number(amount_kmf) || 0);
-    const commitmentAmount = lockedCommitment
-      ? Math.round(Number(lockedCommitment.amount_kmf) || 0)
-      : requestedAmount;
-    const payableAmount = Math.min(commitmentAmount, remainingNow);
+    const payableAmount   = Math.min(requestedAmount, remainingNow);
 
     if (payableAmount <= 0) {
       return res.status(409).json({
-        error: 'Ce panier est déjà entièrement financé. Aucun paiement supplémentaire ne peut être accepté.',
+        error: 'Ce panier est déjà entièrement financé.',
         code: 'already_fully_funded',
         remaining_kmf: 0,
       });
     }
 
-    // Log si plafonnement effectif (traçabilité)
-    if (payableAmount < commitmentAmount) {
-      log.info({
-        token,
-        commitment_amount_kmf: commitmentAmount,
-        payable_amount_kmf: payableAmount,
-        remaining_kmf: remainingNow,
-        commitment_id: lockedCommitment?.id || null,
-      }, '[contribution] montant plafonné au remaining réel');
+    if (payableAmount < requestedAmount) {
+      log.info({ token, requested: requestedAmount, payable: payableAmount, remaining: remainingNow },
+        '[contribution] montant plafonné au remaining réel');
     }
 
-    // Conversion KMF → EUR pour Stripe (sur payableAmount, pas amount_kmf front)
-    const fxRate = await getFxKmfToEur();
-    const amountEur = Math.max(0.5, Math.round(payableAmount * fxRate * 100) / 100);
-
-    // ── GAP 4 : superseded — invalider les tentatives pending existantes ────────
-    if (lockedCommitment) {
+    // Invalider les tentatives pending existantes du même participant (idempotence)
+    if (contributor_phone) {
       await db.query(
         `UPDATE shared_cart_contributions
             SET status = 'failed',
                 failed_at = NOW(),
-                metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
-                updated_at = NOW()
-          WHERE commitment_id = $1
-            AND status = 'pending'`,
-        [lockedCommitment.id]
-      );
-    } else if (contributor_phone) {
-      await db.query(
-        `UPDATE shared_cart_contributions
-            SET status = 'failed',
-                failed_at = NOW(),
-                metadata = COALESCE(metadata, '{}'::jsonb) || '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
+                metadata = COALESCE(metadata, '{}'::jsonb) ||
+                           '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
                 updated_at = NOW()
           WHERE shared_cart_id = $1
             AND contributor_phone = $2
@@ -317,20 +253,20 @@ router.post('/public/:token/contributions', async (req, res, next) => {
       );
     }
 
-    // 1. Créer la contribution en pending pour payableAmount (≤ remaining réel)
+    const fxRate    = await getFxKmfToEur();
+    const amountEur = Math.max(0.5, Math.round(payableAmount * fxRate * 100) / 100);
+
     const { contribution, cart } = await engine.startContribution(token, {
       name: contributor_name,
       email: contributor_email,
       phone: contributor_phone,
-      amountKmf: payableAmount,        // ← montant plafonné, pas amount_kmf front
+      amountKmf: payableAmount,
       amountPaid: amountEur,
       currency: 'EUR',
       fxRate,
       message,
-      commitmentId: lockedCommitment?.id || null,
     });
 
-    // 2. Créer la Stripe Checkout Session pour payableAmount
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
@@ -351,34 +287,32 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         shared_cart_id: cart.id,
         contribution_id: contribution.id,
         token: cart.token,
-        amount_kmf: String(payableAmount),   // ← montant réel encaissé
+        amount_kmf: String(payableAmount),
       },
       success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_SUCCESS}?token=${cart.token}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
+      expires_at:  Math.floor(Date.now() / 1000) + 30 * 60,
     });
 
-    // 3. Lier la session au contribution row
     await engine.attachStripeSession(contribution.id, session.id);
 
     res.json({
-      checkout_url: session.url,
-      session_id: session.id,
-      contribution_id: contribution.id,
-      payable_amount_kmf: payableAmount,            // montant réellement envoyé à Stripe
-      capped: payableAmount < commitmentAmount,      // true si plafonné au remaining
+      checkout_url:        session.url,
+      session_id:          session.id,
+      contribution_id:     contribution.id,
+      payable_amount_kmf:  payableAmount,
+      capped:              payableAmount < requestedAmount,
     });
   } catch (err) {
     if (err.status) {
       return res.status(err.status).json({ error: err.message, code: err.code || undefined });
     }
     if (err.message && err.message.startsWith('Le panier ne nécessite plus')) {
-      // startContribution a rattrapé une race condition entre le check initial et le FOR UPDATE
       return res.status(409).json({ error: err.message, code: 'already_fully_funded', remaining_kmf: 0 });
     }
     if (err.message && (
       err.message.includes('expiré') ||
-      err.message.includes('n\'accepte plus') ||
+      err.message.includes("n'accepte plus") ||
       err.message.includes('introuvable') ||
       err.message.includes('minimum') ||
       err.message.includes('maximum') ||
@@ -390,8 +324,7 @@ router.post('/public/:token/contributions', async (req, res, next) => {
   }
 });
 
-
-// ─── Stripe webhook idempotency helpers ─────────────────────────────────
+// ─── Stripe webhook helpers ───────────────────────────────────────────
 async function isStripeEventProcessed(event) {
   try {
     const { rows } = await db.query(
@@ -400,7 +333,7 @@ async function isStripeEventProcessed(event) {
     );
     return rows.length > 0;
   } catch (e) {
-    log.warn({ err: e }, '[shared-cart webhook] stripe_events_processed unavailable:');
+    log.warn({ err: e }, '[shared-cart webhook] stripe_events_processed unavailable');
     return false;
   }
 }
@@ -414,17 +347,15 @@ async function markStripeEventProcessed(event, payloadSummary = {}) {
       [event.id, event.type, JSON.stringify(payloadSummary || {})]
     );
   } catch (e) {
-    log.warn({ err: e }, '[shared-cart webhook] mark event processed failed:');
+    log.warn({ err: e }, '[shared-cart webhook] mark event processed failed');
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // ── WEBHOOK Stripe (montage spécial dans server.js avec express.raw)
 // ═══════════════════════════════════════════════════════════════════════
-// ATTENTION : cette route est mountée à part dans server.js avec
-// `express.raw({ type: 'application/json' })` AVANT le express.json()
 async function stripeWebhookHandler(req, res) {
-  const sig = req.headers['stripe-signature'];
+  const sig    = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_SHARED_CART_WEBHOOK_SECRET
               || process.env.STRIPE_WEBHOOK_SECRET;
   let event;
@@ -432,7 +363,7 @@ async function stripeWebhookHandler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
-    log.error({ err }, '[shared-cart webhook] signature invalide :');
+    log.error({ err }, '[shared-cart webhook] signature invalide');
     return res.status(400).send(`Webhook signature invalid: ${err.message}`);
   }
 
@@ -446,25 +377,24 @@ async function stripeWebhookHandler(req, res) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        // Filtrer : ne traiter QUE nos sessions (metadata.komerce='shared_cart_contribution')
         if (session.metadata?.komerce !== 'shared_cart_contribution') {
           await markStripeEventProcessed(event, { ignored: 'not_a_shared_cart_session' });
           return res.json({ received: true, ignored: 'not_a_shared_cart_session' });
         }
         const result = await confirmContributionFromStripeSafely(session);
         if (!result) {
-          log.info(`[shared-cart webhook] session ${session.id} déjà traitée, non confirmée ou payée tardivement`);
+          log.info(`[shared-cart webhook] session ${session.id} déjà traitée ou non confirmée`);
           await markStripeEventProcessed(event, {
             session_id: session.id,
-            contribution: 'already_processed_not_confirmed_or_not_counted',
+            contribution: 'already_processed_or_not_confirmed',
           });
         } else {
           log.info(`[shared-cart webhook] contribution ${result.contribution.id} confirmée`);
           await markStripeEventProcessed(event, {
-            session_id: session.id,
-            shared_cart_id: result.cart?.id,
+            session_id:      session.id,
+            shared_cart_id:  result.cart?.id,
             contribution_id: result.contribution?.id,
-            status: 'confirmed',
+            status:          'confirmed',
           });
         }
         break;
@@ -475,21 +405,16 @@ async function stripeWebhookHandler(req, res) {
           return res.json({ received: true, ignored: 'not_a_shared_cart_session' });
         }
         await engine.markContributionFailed(session.id, 'session_expired');
-        await markStripeEventProcessed(event, {
-          session_id: session.id,
-          status: 'expired',
-        });
+        await markStripeEventProcessed(event, { session_id: session.id, status: 'expired' });
         break;
       }
       default:
-        // Ignorer les autres events
         await markStripeEventProcessed(event, { ignored: 'unsupported_event_type' });
         break;
     }
     res.json({ received: true });
   } catch (err) {
     log.error('[shared-cart webhook] traitement échoué', err);
-    // 500 pour que Stripe retry
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 }
@@ -498,53 +423,47 @@ async function stripeWebhookHandler(req, res) {
 // ── BÉNÉFICIAIRE AUTHENTIFIÉ ─────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
 
-// Refresh 28/04/26 — Création depuis les items du localStorage boutique.
-// Le panier mobile boutique n'est PAS sync avec une table baskets DB —
-// il vit en localStorage. Cette route accepte les items en clair et
-// utilise authenticateOrCreateGuest pour créer un user à la volée si
-// l'utilisateur n'est pas connecté (sur la base de tracking_phone).
-//
-// Différence avec /from-basket : pas besoin de basket_id, juste les items.
-// La route ré-vérifie les prix côté DB (jamais confiance au client).
+// Création depuis les items du localStorage boutique (mobile, guest possible)
 router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next) => {
   try {
     const {
-      cart_items, title, message, expiration_days, delivery_relay_id,
+      cart_items, title, message, expiration_days, target_date, delivery_relay_id,
     } = req.body || {};
 
     if (!Array.isArray(cart_items) || cart_items.length === 0) {
       return res.status(400).json({ error: 'cart_items requis (panier vide)' });
     }
-    if (!req.user || !req.user.id) {
+    if (!req.user?.id) {
       return res.status(401).json({
-        error: 'Authentification requise. Indiquez votre numéro de téléphone (tracking_phone) pour créer un panier famille.',
+        error: 'Authentification requise. Indiquez votre numéro de téléphone (tracking_phone).',
       });
     }
 
+    // Résolution target_date : priorité au champ explicite, fallback expiration_days
+    const resolvedTargetDate = target_date || (
+      expiration_days
+        ? new Date(Date.now() + Number(expiration_days) * 86400 * 1000).toISOString().slice(0, 10)
+        : null
+    );
+
     const result = await engine.createSharedCartFromCartItems(req.user.id, cart_items, {
       title, message,
-      expirationDays: expiration_days,
+      targetDate: resolvedTargetDate,
       deliveryRelayId: delivery_relay_id,
     });
 
-    // Doctrine v4.2 — N4-CLEAR
-    // clear_local_cart: true signale au client (b-share-cart.js) de vider
-    // son localStorage boutique. Le vidage DB est déjà fait dans la transaction
-    // du engine (clearCreatorBasketInTx). Le flag ici couvre le localStorage
-    // mobile qui ne passe pas par la table baskets.
     res.json({
       shared_cart_id: result.sharedCart.id,
-      token: result.token,
-      share_url: `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
-      total_kmf: result.sharedCart.total_kmf_snapshot,
-      expires_at: result.sharedCart.expires_at,
-      items_count: result.items.length,
-      clear_local_cart: result.clearLocalCart === true,  // N4-CLEAR
+      token:          result.token,
+      share_url:      `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
+      total_kmf:      result.sharedCart.total_kmf_snapshot,
+      target_date:    result.sharedCart.target_date || null,
+      items_count:    result.items.length,
+      clear_local_cart: result.clearLocalCart === true,
     });
 
-    // S3-02 — Notification WhatsApp au créateur (post-commit, best-effort)
-    // Template Meta requis : shared_cart_created
-    //   {{1}} URL du lien partagé
+    // S3-02 — Notification WhatsApp créateur (post-commit, best-effort)
+    // Template : shared_cart_created — {{1}} URL du lien partagé
     setImmediate(async () => {
       try {
         const trackingPhone = req.user?.tracking_phone || req.user?.phone;
@@ -553,15 +472,10 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
         const notif = await sendTemplateWhatsApp({
           to: trackingPhone,
           templateName: 'shared_cart_created',
-          components: [{
-            type: 'body',
-            parameters: [{ type: 'text', text: shareUrl }],
-          }],
+          components: [{ type: 'body', parameters: [{ type: 'text', text: shareUrl }] }],
         });
         if (!notif.success && !notif.skipped) {
           log.warn({ phone: trackingPhone, error: notif.error }, '[S3-02] creator creation notification failed');
-        } else {
-          log.info({ cart_id: result.sharedCart.id }, '[S3-02] creator WhatsApp notification sent');
         }
       } catch (err) {
         log.error({ err }, '[S3-02] creator notification failed');
@@ -578,27 +492,31 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
   }
 });
 
-// LOT 4: Créer un panier partagé depuis une commande existante (pending)
-router.post('/from-order', authenticate, fromOrderHandler);
-
+// Création depuis un basket DB existant
 router.post('/from-basket', authenticate, async (req, res, next) => {
   try {
-    const { basket_id, title, message, expiration_days, delivery_relay_id } = req.body || {};
+    const { basket_id, title, message, expiration_days, target_date, delivery_relay_id } = req.body || {};
     if (!basket_id) return res.status(400).json({ error: 'basket_id requis' });
+
+    const resolvedTargetDate = target_date || (
+      expiration_days
+        ? new Date(Date.now() + Number(expiration_days) * 86400 * 1000).toISOString().slice(0, 10)
+        : null
+    );
 
     const result = await engine.createSharedCartFromBasket(req.user.id, basket_id, {
       title, message,
-      expirationDays: expiration_days,
+      targetDate: resolvedTargetDate,
       deliveryRelayId: delivery_relay_id,
     });
 
     res.json({
       shared_cart_id: result.sharedCart.id,
-      token: result.token,
-      share_url: `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
-      total_kmf: result.sharedCart.total_kmf_snapshot,
-      expires_at: result.sharedCart.expires_at,
-      items_count: result.items.length,
+      token:          result.token,
+      share_url:      `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
+      total_kmf:      result.sharedCart.total_kmf_snapshot,
+      target_date:    result.sharedCart.target_date || null,
+      items_count:    result.items.length,
     });
   } catch (err) {
     if (err.message.includes('Limite atteinte') ||
@@ -609,6 +527,9 @@ router.post('/from-basket', authenticate, async (req, res, next) => {
     next(err);
   }
 });
+
+// LOT 4 : création depuis commande existante
+router.post('/from-order', authenticate, fromOrderHandler);
 
 router.get('/mine', authenticate, async (req, res, next) => {
   try {
@@ -633,143 +554,32 @@ router.get('/:id', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GAP 8 — Recharge panier créateur depuis le snapshot
-// Retourne les items du snapshot sous la forme attendue par le localStorage boutique.
-// Permet au créateur de retrouver son panier depuis n'importe quel appareil.
+// Recharge panier créateur depuis le snapshot (pour localStorage boutique)
 router.get('/:id/as-cart-items', authenticate, async (req, res, next) => {
   try {
     const data = await engine.getSharedCartForOwner(req.params.id, req.user.id);
     if (!data) return res.status(404).json({ error: 'Panier introuvable' });
 
     const cartItems = data.items.map(it => ({
-      product_id: it.product_id,
-      quantity: Number(it.quantity),
-      unit_price_kmf: Number(it.unit_price_kmf_snapshot),
-      product_name: it.product_name_snapshot,
-      product_image: it.product_image_snapshot,
+      product_id:       it.product_id,
+      quantity:         Number(it.quantity),
+      unit_price_kmf:   Number(it.unit_price_kmf_snapshot),
+      product_name:     it.product_name_snapshot,
+      product_image:    it.product_image_snapshot,
       product_category: it.product_category_snapshot,
-      line_total_kmf: Number(it.line_total_kmf_snapshot),
+      line_total_kmf:   Number(it.line_total_kmf_snapshot),
     }));
 
     res.json({
       shared_cart_id: data.cart.id,
-      title: data.cart.title,
-      total_kmf: Number(data.cart.total_kmf_snapshot),
-      cart_items: cartItems,
+      title:          data.cart.title,
+      total_kmf:      Number(data.cart.total_kmf_snapshot),
+      cart_items:     cartItems,
     });
   } catch (err) { next(err); }
 });
 
-router.post('/:id/open-settlement', authenticate, async (req, res, next) => {
-  try {
-    const cart = await settlement.openSettlement(req.params.id, req.user.id, {
-      settlement_window_hours: req.body?.settlement_window_hours,
-    });
-    res.json({
-      ok: true,
-      label: 'panier_en_reglement',
-      message: 'Le panier est passé au règlement. Les participants peuvent maintenant payer.',
-      cart,
-    });
-
-    // S3-01 — Notifications WhatsApp aux participants (post-commit, best-effort)
-    // Template Meta requis : shared_cart_settlement_open
-    //   {{1}} prénom  {{2}} titre panier  {{3}} montant KMF  {{4}} URL lien partagé
-    setImmediate(async () => {
-      try {
-        const { rows: locked } = await db.query(
-          `SELECT participant_phone AS phone,
-                  SPLIT_PART(participant_name, ' ', 1) AS first_name,
-                  amount_kmf
-             FROM shared_cart_commitments
-            WHERE shared_cart_id = $1
-              AND status = 'locked_for_settlement'
-              AND participant_phone IS NOT NULL`,
-          [req.params.id]
-        );
-
-        const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
-        const title    = cart.title || 'Panier groupe';
-
-        for (const c of locked) {
-          const result = await sendTemplateWhatsApp({
-            to: c.phone,
-            templateName: 'shared_cart_settlement_open',
-            components: [{
-              type: 'body',
-              parameters: [
-                { type: 'text', text: c.first_name || 'Participant' },
-                { type: 'text', text: title },
-                { type: 'text', text: String(c.amount_kmf) },
-                { type: 'text', text: shareUrl },
-              ],
-            }],
-          });
-          if (!result.success && !result.skipped) {
-            log.warn({ phone: c.phone, error: result.error }, '[S3-01] settlement_notification_failed');
-            await db.query(
-              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
-                 VALUES ($1, 'settlement_notification_failed', 'system', $2)`,
-              [req.params.id, { phone: c.phone, error: result.error }]
-            ).catch(() => {});
-          }
-        }
-        log.info({ cart_id: req.params.id, count: locked.length }, '[S3-01] settlement WhatsApp notifications attempted');
-      } catch (err) {
-        log.error({ err, cart_id: req.params.id }, '[S3-01] settlement notification batch failed');
-      }
-    });
-  } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
-    next(err);
-  }
-});
-
-router.post('/:id/finalize', authenticate, async (req, res, next) => {
-  try {
-    const result = await engine.convertSharedCartToOrder(
-      req.params.id, req.user.id,
-      {
-        deliveryRelayId: req.body?.delivery_relay_id,
-        acceptStockIssues: !!req.body?.accept_stock_issues,
-        // GAP 5 — Cas B doctrine v4.1 §5.7 : créateur compense le gap
-        creatorCoversGap: !!req.body?.accept_partial,
-      }
-    );
-    res.json({
-      order_id: result.order.id,
-      order_reference: result.order.reference,
-      prepaid_kmf: result.prepaidKmf,
-      remaining_cash_kmf: result.remainingCashKmf,
-    });
-  } catch (err) {
-    // Détection erreur stock structurée
-    try {
-      const parsed = JSON.parse(err.message);
-      if (parsed.code === 'stock_issues') {
-        return res.status(409).json({ ...parsed });
-      }
-    } catch (_) {}
-
-    // LOT 1.1 — finalisation directe depuis phase ouverte : conflit d'état, pas 500
-    if (err.message.includes('passer au paiement')) {
-      return res.status(409).json({ error: err.message, code: 'settlement_not_open' });
-    }
-
-    if (err.message.includes('expiré') ||
-        err.message.includes('introuvable') ||
-        err.message.includes('Impossible') ||
-        err.message.includes('déjà') ||
-        err.message.includes('requis')) {
-      return res.status(400).json({ error: err.message });
-    }
-    next(err);
-  }
-});
-
-// S2-06 — Modifier les articles du panier (phase ouverte uniquement)
-// Le service vérifie : statut actif, pas en règlement, zéro paiement confirmé.
-// Notifications WhatsApp aux participants post-commit, best-effort.
+// S2-06 — Modifier les articles du panier (statut OPEN, aucun paiement reçu)
 router.put('/:id/items', authenticate, async (req, res, next) => {
   try {
     const { cart_items } = req.body;
@@ -780,17 +590,15 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
     const { cart, items } = await updateOpenSharedCartItems(req.params.id, req.user.id, cart_items);
     res.json({ ok: true, cart, items, items_count: items.length });
 
-    // Notifications WhatsApp aux participants (post-commit, best-effort)
-    // Template Meta requis : shared_cart_items_updated
-    //   {{1}} prénom  {{2}} titre panier  {{3}} nouveau total KMF  {{4}} URL lien partagé
+    // Notifications WhatsApp aux participants ayant laissé une estimation
+    // Template : shared_cart_items_updated — {{1}} prénom {{2}} titre {{3}} total KMF {{4}} URL
     setImmediate(async () => {
       try {
         const { rows: participants } = await db.query(
           `SELECT participant_phone AS phone,
                   SPLIT_PART(participant_name, ' ', 1) AS first_name
-             FROM shared_cart_commitments
+             FROM shared_cart_estimations
             WHERE shared_cart_id = $1
-              AND status IN ('pledged', 'locked_for_settlement')
               AND participant_phone IS NOT NULL`,
           [req.params.id]
         );
@@ -822,7 +630,8 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
             ).catch(() => {});
           }
         }
-        log.info({ cart_id: req.params.id, count: participants.length }, '[S2-06] items update WhatsApp notifications attempted');
+        log.info({ cart_id: req.params.id, count: participants.length },
+          '[S2-06] items update WhatsApp notifications attempted');
       } catch (err) {
         log.error({ err, cart_id: req.params.id }, '[S2-06] items update notification batch failed');
       }
@@ -833,6 +642,295 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// ── FERMETURE DU PANIER (remplace open-settlement) ─────────────────────
+// ── OPEN → CLOSED, ouvre la fenêtre de paiement 48h ───────────────────
+// ═══════════════════════════════════════════════════════════════════════
+router.post('/:id/close', authenticate, async (req, res, next) => {
+  try {
+    const cart = await engine.closeCart(req.params.id, req.user.id);
+    res.json({
+      ok:      true,
+      label:   'panier_ferme',
+      message: 'Le panier est fermé. Les participants peuvent maintenant payer pendant 48 heures.',
+      cart,
+    });
+
+    // Notifications WhatsApp aux participants ayant une estimation
+    // Template : shared_cart_payment_open — {{1}} prénom {{2}} titre {{3}} total KMF {{4}} URL
+    setImmediate(async () => {
+      try {
+        const { rows: estimants } = await db.query(
+          `SELECT participant_phone AS phone,
+                  SPLIT_PART(participant_name, ' ', 1) AS first_name,
+                  amount_kmf
+             FROM shared_cart_estimations
+            WHERE shared_cart_id = $1
+              AND participant_phone IS NOT NULL`,
+          [req.params.id]
+        );
+
+        const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
+        const title    = cart.title || 'Panier groupe';
+        const total    = String(Math.round(Number(cart.total_kmf_snapshot) || 0));
+
+        for (const e of estimants) {
+          const result = await sendTemplateWhatsApp({
+            to: e.phone,
+            templateName: 'shared_cart_payment_open',
+            components: [{
+              type: 'body',
+              parameters: [
+                { type: 'text', text: e.first_name || 'Participant' },
+                { type: 'text', text: title },
+                { type: 'text', text: total },
+                { type: 'text', text: shareUrl },
+              ],
+            }],
+          });
+          if (!result.success && !result.skipped) {
+            log.warn({ phone: e.phone, error: result.error }, '[close] payment_open_notification_failed');
+            await db.query(
+              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+                 VALUES ($1, 'payment_open_notification_failed', 'system', $2)`,
+              [req.params.id, { phone: e.phone, error: result.error }]
+            ).catch(() => {});
+          }
+        }
+        log.info({ cart_id: req.params.id, count: estimants.length },
+          '[close] payment_open WhatsApp notifications attempted');
+      } catch (err) {
+        log.error({ err, cart_id: req.params.id }, '[close] payment_open notification batch failed');
+      }
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ── FINALISATION Cas A ─────────────────────────────────────────────────
+// ── Panier 100% financé, après délai de grâce (ou appel manuel) ────────
+// ═══════════════════════════════════════════════════════════════════════
+router.post('/:id/finalize', authenticate, async (req, res, next) => {
+  try {
+    const result = await engine.convertSharedCartToOrder(
+      req.params.id, req.user.id,
+      {
+        deliveryRelayId:  req.body?.delivery_relay_id,
+        acceptStockIssues: !!req.body?.accept_stock_issues,
+      }
+    );
+    res.json({
+      order_id:           result.order.id,
+      order_reference:    result.order.reference,
+      prepaid_kmf:        result.prepaidKmf,
+      remaining_cash_kmf: result.remainingCashKmf,
+    });
+  } catch (err) {
+    try {
+      const parsed = JSON.parse(err.message);
+      if (parsed.code === 'stock_issues') return res.status(409).json({ ...parsed });
+    } catch (_) {}
+
+    if (err.message.includes('paiement') || err.message.includes('closed')) {
+      return res.status(409).json({ error: err.message, code: 'cart_not_finalizable' });
+    }
+    if (err.message.includes('expiré') ||
+        err.message.includes('introuvable') ||
+        err.message.includes('Impossible') ||
+        err.message.includes('déjà') ||
+        err.message.includes('requis')) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// ── AWAITING_CHOICE : actions créateur (Cas B) ─────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /:id/awaiting-choice/complete
+ *
+ * Le créateur complète le gap lui-même : crée une Stripe session
+ * pour le montant remaining_kmf. Il paie comme n'importe quel participant.
+ * Si la contribution amène le total à 100%, le cron passe à ORDERED.
+ */
+router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next) => {
+  try {
+    const { rows: [cart] } = await db.query(
+      `SELECT id, status, token, title, beneficiary_name_snapshot,
+              total_kmf_snapshot, remaining_kmf, beneficiary_user_id
+         FROM shared_carts WHERE id = $1`,
+      [req.params.id]
+    );
+
+    if (!cart) return res.status(404).json({ error: 'Panier introuvable' });
+    if (cart.beneficiary_user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
+    if (cart.status !== 'awaiting_choice') {
+      return res.status(409).json({
+        error: `Action non disponible en statut "${cart.status}". Le panier doit être en AWAITING_CHOICE.`,
+        code: 'invalid_status',
+        status: cart.status,
+      });
+    }
+
+    const remainingNow = Math.max(0, Math.round(Number(cart.remaining_kmf) || 0));
+    if (remainingNow <= 0) {
+      return res.status(409).json({ error: 'Le panier est déjà entièrement financé.', code: 'already_fully_funded' });
+    }
+
+    const fxRate    = await getFxKmfToEur();
+    const amountEur = Math.max(0.5, Math.round(remainingNow * fxRate * 100) / 100);
+
+    // Le créateur contribue via le flux standard (utilise son email et identité)
+    const { contribution } = await engine.startContribution(cart.token, {
+      name:      req.user.full_name || req.user.name || 'Créateur',
+      email:     req.user.email,
+      phone:     req.user.phone || req.user.tracking_phone || null,
+      amountKmf: remainingNow,
+      amountPaid: amountEur,
+      currency:   'EUR',
+      fxRate,
+      message:    'Complément créateur',
+    }, { allowAwaitingChoice: true });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: req.user.email,
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Complément panier — ${cart.title || 'Panier de ' + cart.beneficiary_name_snapshot}`,
+            description: `Gap restant : ${remainingNow} KMF`,
+          },
+          unit_amount: Math.round(amountEur * 100),
+        },
+        quantity: 1,
+      }],
+      metadata: {
+        komerce:         'shared_cart_contribution',
+        shared_cart_id:  cart.id,
+        contribution_id: contribution.id,
+        token:           cart.token,
+        amount_kmf:      String(remainingNow),
+      },
+      success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_SUCCESS}?token=${cart.token}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
+      expires_at:  Math.floor(Date.now() / 1000) + 30 * 60,
+    });
+
+    await engine.attachStripeSession(contribution.id, session.id);
+
+    res.json({
+      checkout_url:     session.url,
+      session_id:       session.id,
+      contribution_id:  contribution.id,
+      gap_kmf:          remainingNow,
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+/**
+ * POST /:id/awaiting-choice/cancel
+ *
+ * Le créateur annule le panier depuis l'état AWAITING_CHOICE.
+ * Même mécanique que /cancel — guard inclusif dans cancelSharedCart.
+ */
+// Cas B — Ajuster : le créateur édite la liste (réduction), nouvelle fenêtre 48h.
+// Doctrine : la plateforme ne choisit jamais les articles à retirer.
+router.post('/:id/awaiting-choice/adjust', authenticate, async (req, res, next) => {
+  try {
+    const result = await adjustAwaitingCartItems(req.params.id, req.user.id, req.body?.cart_items || []);
+    res.json({
+      ok: true,
+      label: 'panier_ajuste_paiement_rouvert',
+      message: result.cart.remaining_kmf > 0
+        ? 'Panier ajusté. Une nouvelle fenêtre de paiement de 48 heures est ouverte.'
+        : 'Panier ajusté et entièrement couvert par les paiements reçus. Vous pouvez finaliser la commande.',
+      cart: result.cart,
+      items: result.items,
+    });
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
+});
+
+// Prolongation créateur — décision produit juin 2026 (amendement V4.2 doctrine) :
+// une SEULE prolongation de 48h, uniquement pendant la fenêtre (statut CLOSED).
+// Pas de réglage à la création : action contextuelle quand la réalité l'exige.
+router.post('/:id/extend-window', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Panier introuvable ou non autorisé' });
+    const cart = rows[0];
+
+    if (!windowRules.canExtendWindow(cart)) {
+      return res.status(409).json({
+        error: cart.status !== 'closed'
+          ? `Prolongation impossible (statut : ${cart.status}). La fenêtre doit être en cours.`
+          : 'La fenêtre a déjà été prolongée une fois.',
+        code: 'extension_not_allowed',
+      });
+    }
+
+    const { rows: [updated] } = await db.query(
+      `UPDATE shared_carts
+          SET payment_window_ends_at = payment_window_ends_at + ($2 || ' hours')::INTERVAL,
+              metadata = COALESCE(metadata, '{}'::jsonb) ||
+                jsonb_build_object('payment_window_extensions',
+                  COALESCE((metadata->>'payment_window_extensions')::int, 0) + 1),
+              updated_at = NOW()
+        WHERE id = $1 AND status = 'closed'
+        RETURNING *`,
+      [req.params.id, String(windowRules.WINDOW_EXTENSION_HOURS)]
+    );
+    if (!updated) return res.status(409).json({ error: 'Prolongation impossible (statut modifié entre-temps)', code: 'extension_not_allowed' });
+
+    await db.query(
+      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
+         VALUES ($1, 'payment_window_extended', 'user', $2, $3)`,
+      [req.params.id, req.user.id, {
+        added_hours: windowRules.WINDOW_EXTENSION_HOURS,
+        new_payment_window_ends_at: updated.payment_window_ends_at,
+      }]
+    );
+
+    res.json({
+      ok: true,
+      message: 'Fenêtre de paiement prolongée de 48 heures.',
+      cart: updated,
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/:id/awaiting-choice/cancel', authenticate, async (req, res, next) => {
+  try {
+    const cart = await engine.cancelSharedCart(req.params.id, req.user.id, req.body?.reason);
+    res.json({ ok: true, cart });
+  } catch (err) {
+    if (err.message.includes('Impossible') || err.message.includes('introuvable')) {
+      return res.status(400).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+// Annulation depuis n'importe quel statut autorisé (OPEN / CLOSED / AWAITING_CHOICE)
 router.post('/:id/cancel', authenticate, async (req, res, next) => {
   try {
     const cart = await engine.cancelSharedCart(req.params.id, req.user.id, req.body?.reason);
@@ -901,35 +999,36 @@ adminRouter.get('/:id', authenticate, requireAdmin, async (req, res, next) => {
     );
     if (!cartRows.length) return res.status(404).json({ error: 'Panier introuvable' });
 
-    const [items, contribs, events] = await Promise.all([
+    const [items, contribs, ests, events] = await Promise.all([
       db.query(`SELECT * FROM shared_cart_items WHERE shared_cart_id = $1 ORDER BY created_at`, [req.params.id]),
       db.query(`SELECT * FROM shared_cart_contributions WHERE shared_cart_id = $1 ORDER BY created_at DESC`, [req.params.id]),
+      db.query(`SELECT * FROM shared_cart_estimations WHERE shared_cart_id = $1 ORDER BY created_at`, [req.params.id]),
       db.query(`SELECT * FROM shared_cart_events WHERE shared_cart_id = $1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]),
     ]);
 
     res.json({
-      cart: cartRows[0],
-      items: items.rows,
+      cart:          cartRows[0],
+      items:         items.rows,
       contributions: contribs.rows,
-      events: events.rows,
+      estimations:   ests.rows,
+      events:        events.rows,
     });
   } catch (err) { next(err); }
 });
 
+// Force-expiration admin (statuts V4.1)
 adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await db.query(
       `UPDATE shared_carts SET status = 'expired', updated_at = NOW()
         WHERE id = $1
-          AND status IN (
-            'active', 'partially_funded', 'fully_funded',
-            'draft', 'commitment_open',
-            'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'
-          )
+          AND status IN ('open', 'closed', 'awaiting_choice')
        RETURNING *`,
       [req.params.id]
     );
-    if (!rows.length) return res.status(400).json({ error: 'Statut incompatible' });
+    if (!rows.length) return res.status(400).json({
+      error: 'Statut incompatible. Seuls les paniers open, closed ou awaiting_choice peuvent être expirés.',
+    });
 
     await db.query(
       `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
@@ -940,18 +1039,19 @@ adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, nex
   } catch (err) { next(err); }
 });
 
+// Admin — étendre la date cible d'un panier OPEN (support/SAV)
 adminRouter.post('/:id/extend', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const days = Math.max(1, Math.min(90, Number(req.body?.days) || 7));
     const { rows } = await db.query(
       `UPDATE shared_carts
-          SET expires_at = expires_at + ($1 || ' days')::INTERVAL,
+          SET target_date = COALESCE(target_date, CURRENT_DATE) + ($1 || ' days')::INTERVAL,
               updated_at = NOW()
-        WHERE id = $2
+        WHERE id = $2 AND status = 'open'
        RETURNING *`,
       [String(days), req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Panier introuvable' });
+    if (!rows.length) return res.status(404).json({ error: 'Panier introuvable ou non ouvert' });
 
     await db.query(
       `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)

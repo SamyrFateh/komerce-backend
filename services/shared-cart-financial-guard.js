@@ -13,7 +13,7 @@
  * - seul un paiement Stripe paid peut confirmer une contribution ;
  * - une contribution déjà paid est idempotente ;
  * - le panier est verrouillé au moment du webhook ;
- * - si le panier est déjà fully_funded / converti / expiré / annulé, le paiement
+ * - si le panier n'est pas en statut 'closed' (fenêtre de paiement), le paiement
  *   tardif n'est pas comptabilisé dans contributed_kmf ;
  * - si la contribution dépasse le remaining_kmf réel au moment du webhook, elle
  *   n'est pas comptabilisée et elle est marquée failed avec metadata
@@ -138,13 +138,19 @@ async function confirmContributionFromStripeSafely(session) {
     const contributed = r(cart.contributed_kmf);
     const remaining = Math.max(0, r(cart.remaining_kmf));
 
-    if (!['active', 'partially_funded',
-          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
+    // V4.1 : statuts acceptant un paiement = 'closed' (fenêtre 48h, participants)
+    // et 'awaiting_choice' (le créateur complète le gap — startContribution
+    // l'autorise déjà pour ce statut). Tout autre statut → non comptabilisé.
+    if (cart.status !== 'closed' && cart.status !== 'awaiting_choice') {
       return markPaidButNotCounted(client, contribution, cart, session, 'cart_not_open_for_contribution');
     }
 
-    if (new Date(cart.expires_at) < new Date()) {
-      return markPaidButNotCounted(client, contribution, cart, session, 'cart_expired_at_webhook');
+    // Vérification fenêtre de paiement : uniquement pertinente en 'closed'.
+    // Un panier 'awaiting_choice' est par définition hors fenêtre — ce n'est
+    // pas un rejet, c'est le cas « créateur complète ».
+    if (cart.status === 'closed' && cart.payment_window_ends_at &&
+        new Date(cart.payment_window_ends_at) < new Date()) {
+      return markPaidButNotCounted(client, contribution, cart, session, 'cart_payment_window_expired');
     }
 
     if (total <= 0) {
@@ -161,15 +167,12 @@ async function confirmContributionFromStripeSafely(session) {
     const newContributed = Math.min(total, contributed + amount);
     const newRemaining = Math.max(0, total - newContributed);
 
-    // LOT 1.4 — statuts v4 pour les paniers en règlement
-    let newStatus;
-    if (['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
-      // Flux v4 : utiliser les statuts settlement
-      newStatus = newRemaining === 0 ? 'ready_to_finalize' : 'settlement_in_progress';
-    } else {
-      // Flux legacy (active / partially_funded)
-      newStatus = newRemaining === 0 ? 'fully_funded' : 'partially_funded';
-    }
+    // V4.1 : le statut du panier n'est jamais forcé par le webhook.
+    // - 'closed'          → reste 'closed' pendant toute la fenêtre de paiement,
+    //   même quand remaining_kmf tombe à 0 ; T3 (cron) gère le délai de grâce.
+    // - 'awaiting_choice' → reste 'awaiting_choice' (le créateur a complété le
+    //   gap) ; remaining_kmf = 0 permet alors POST /:id/finalize.
+    const newStatus = cart.status;
 
     const { rows: [updatedContribution] } = await client.query(
       `UPDATE shared_cart_contributions
@@ -197,19 +200,7 @@ async function confirmContributionFromStripeSafely(session) {
       throw new Error('Confirmation contribution incohérente : update non appliqué');
     }
 
-    // GAP 4 — Marquer l'engagement lié comme paid
-    // Un commitment reste locked_for_settlement indéfiniment si on ne le met pas à jour ici.
-    if (updatedContribution.commitment_id) {
-      await client.query(
-        `UPDATE shared_cart_commitments
-            SET status = 'paid',
-                paid_at = NOW(),
-                updated_at = NOW()
-          WHERE id = $1
-            AND status = 'locked_for_settlement'`,
-        [updatedContribution.commitment_id]
-      );
-    }
+    // NOTE V4.1 : shared_cart_commitments supprimée — pas de mise à jour commitment ici.
 
     await addEvent(client, cart.id, 'contribution_paid',
       { type: 'stripe' },
@@ -223,15 +214,11 @@ async function confirmContributionFromStripeSafely(session) {
       }
     );
 
-    if (newStatus === 'fully_funded') {
+    // V4.1 : émettre cart_fully_funded si remaining tombe à 0 (signal pour le délai de grâce → T3)
+    if (newRemaining === 0) {
       await addEvent(client, cart.id, 'cart_fully_funded',
         { type: 'system' },
         { contributed_kmf: newContributed }
-      );
-    } else if (cart.status !== 'partially_funded') {
-      await addEvent(client, cart.id, 'cart_partially_funded',
-        { type: 'system' },
-        { contributed_kmf: newContributed, remaining_kmf: newRemaining }
       );
     }
 

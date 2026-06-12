@@ -1,12 +1,19 @@
 /**
- * KOMERCE — Shared Cart Engine
- * ═══════════════════════════════════════════════════════════════════
+ * KOMERCE — Shared Cart Engine  V4.1
+ * ═══════════════════════════════════════════════════════════════════════
  *
  * Moteur du Panier Partagé Responsable.
  *
- * DOCTRINE :
- *   "Komerce transforme l'aide familiale en achat visible,
- *    traçable et livré."
+ * DOCTRINE V4.1 (gelée) :
+ *   Machine d'état à 5 statuts visibles + 2 techniques :
+ *
+ *   OPEN           → construction libre, estimations facultatives
+ *   CLOSED         → fenêtre paiement fixe 48h, liste figée
+ *   AWAITING_CHOICE→ fin fenêtre, <100% financé, créateur décide (72h)
+ *   ORDERED        → commande créée
+ *   CANCELLED      → annulé
+ *   expired (tech) → 72h sans décision en AWAITING_CHOICE
+ *   archived (tech)→ nettoyage final
  *
  * RÈGLES MÉTIER FORTES :
  *   1. Le panier est un SNAPSHOT FIGÉ au moment du partage
@@ -37,6 +44,9 @@ const CONFIG = {
   MIN_CONTRIBUTION_KMF: 2500,           // ~5 EUR
   MAX_CONTRIBUTION_KMF: 500000,         // ~1000 EUR — au-delà, KYC requis
   MAX_ACTIVE_CARTS_PER_USER: 5,
+  PAYMENT_WINDOW_HOURS: 48,             // Fenêtre paiement CLOSED → AWAITING_CHOICE
+  AWAITING_CHOICE_HOURS: 72,            // Délai créateur AWAITING_CHOICE → expired
+  ARCHIVE_AFTER_DAYS: 7,               // expired → archived
 };
 
 // Base58 (sans 0/O/I/l) pour token URL-safe lisible
@@ -84,20 +94,22 @@ async function addEvent(client, sharedCartId, eventType, actor, payload) {
 
 /**
  * Crée un panier partagé depuis le panier (basket) du bénéficiaire.
- * Snapshot figé immédiatement.
+ * Snapshot figé immédiatement. Statut initial : OPEN.
  *
  * @param {string} userId — bénéficiaire authentifié
  * @param {string} basketId — basket source
- * @param {Object} options — { title, message, expirationDays, deliveryRelayId }
+ * @param {Object} options — { title, message, targetDate, deliveryRelayId }
+ *   targetDate : ISO date string optionnel (ex: "2026-07-15"). Le cron
+ *   fermera automatiquement le panier à cette date.
  * @returns {Object} { sharedCart, items, token }
  */
 async function createSharedCartFromBasket(userId, basketId, options = {}) {
   return withTransaction(async (client) => {
-    // 1. Vérifier limite paniers actifs
+    // 1. Vérifier limite paniers actifs (statuts actifs V4.1)
     const { rows: activeCount } = await client.query(
       `SELECT COUNT(*)::int AS n FROM shared_carts
         WHERE beneficiary_user_id = $1
-          AND status IN ('active', 'partially_funded', 'fully_funded')`,
+          AND status IN ('open', 'closed', 'awaiting_choice')`,
       [userId]
     );
     if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
@@ -142,20 +154,19 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
       if (attempt === 4) throw new Error('Impossible de générer un token unique');
     }
 
-    // 5. Créer le shared_cart
-    const expirationDays = Math.max(1, Math.min(90, options.expirationDays || CONFIG.DEFAULT_EXPIRATION_DAYS));
+    // 5. Créer le shared_cart — statut OPEN, target_date optionnel
+    const targetDate = options.targetDate || null;
     const { rows: cartRows } = await client.query(
       `INSERT INTO shared_carts (
          token, beneficiary_user_id,
          beneficiary_phone_snapshot, beneficiary_name_snapshot,
          source_basket_id, title, message,
          currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-         delivery_relay_id, status, expires_at
+         delivery_relay_id, status, target_date
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7,
          'KMF', $8, 0, $8,
-         $9, 'active',
-         NOW() + ($10 || ' days')::INTERVAL
+         $9, 'open', $10
        ) RETURNING *`,
       [
         token, userId,
@@ -163,7 +174,7 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
         basketId, options.title || null, options.message || null,
         totalKmf,
         options.deliveryRelayId || null,
-        String(expirationDays),
+        targetDate,
       ]
     );
     const sharedCart = cartRows[0];
@@ -191,7 +202,7 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
     // 7. Audit
     await addEvent(client, sharedCart.id, 'shared_cart_created',
       { type: 'user', id: userId },
-      { total_kmf: totalKmf, items_count: items.length, expires_at: sharedCart.expires_at }
+      { total_kmf: totalKmf, items_count: items.length, target_date: targetDate }
     );
 
     return { sharedCart, items: insertedItems, token };
@@ -199,16 +210,14 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
 }
 
 // ───────────────────────────────────────────────────────────────────────
-// Refresh 28/04/26 — Variante "from cart items"
-// ─── Doctrine v4.2 — N4-CLEAR ──────────────────────────────────────────────
+// Doctrine v4.2 — N4-CLEAR
+// ───────────────────────────────────────────────────────────────────────
 /**
  * Vide le panier boutique DB du créateur dans la transaction en cours.
  * Cible uniquement les paniers non verrouillés et non-gift.
  *
  * Appelé APRÈS l'insertion du shared_cart et de ses items (snapshot sauvegardé),
  * DANS la même transaction — atomicité garantie.
- * Si le snapshot a échoué, la transaction est déjà en ROLLBACK : on n'arrive
- * jamais ici, le panier boutique reste intact.
  *
  * @param {object} client — client pg dans la transaction active
  * @param {string} userId — id du créateur
@@ -240,23 +249,16 @@ async function clearCreatorBasketInTx(client, userId) {
 }
 // ─── fin N4-CLEAR helper ────────────────────────────────────────────────────
 
-// Le panier mobile boutique vit en localStorage côté client (pas de basket
-// DB sync). Cette fonction crée un shared_cart à partir des items envoyés
-// directement.
-// L'authentification est gérée en amont via authenticateOrCreateGuest :
-// le user_id est toujours présent (créé à la volée à partir du phone du
-// bénéficiaire si besoin). Donc pas besoin de creator_token séparé —
-// l'auth Komerce existante (cookie httpOnly) suffit.
-// ───────────────────────────────────────────────────────────────────────
-
 /**
  * Crée un panier partagé directement depuis une liste d'items
- * (sans passer par baskets DB).
+ * (sans passer par baskets DB). Statut initial : OPEN.
  *
  * @param {string} userId — bénéficiaire (peut être un guest fraichement créé)
  * @param {Array} cartItems — [{ product_id, quantity }]
- * @param {Object} options — { title, message, expirationDays, deliveryRelayId }
- * @returns {Object} { sharedCart, items, token }
+ * @param {Object} options — { title, message, targetDate, deliveryRelayId }
+ *   targetDate : ISO date string optionnel. Le cron fermera automatiquement
+ *   le panier à cette date.
+ * @returns {Object} { sharedCart, items, token, clearLocalCart }
  */
 async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
   return withTransaction(async (client) => {
@@ -266,7 +268,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
     const { rows: activeCount } = await client.query(
       `SELECT COUNT(*)::int AS n FROM shared_carts
         WHERE beneficiary_user_id = $1
-          AND status IN ('active', 'partially_funded', 'fully_funded')`,
+          AND status IN ('open', 'closed', 'awaiting_choice')`,
       [userId]
     );
     if (activeCount[0].n >= CONFIG.MAX_ACTIVE_CARTS_PER_USER) {
@@ -278,8 +280,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       throw new Error('Le panier est vide, impossible de partager');
     }
 
-    // 3. Charger les produits depuis la DB (source de vérité prix —
-    //    on ne fait JAMAIS confiance aux prix envoyés par le client)
+    // 3. Charger les produits depuis la DB (source de vérité prix)
     const productIds = [...new Set(cartItems.map(i => i.product_id).filter(Boolean))];
     if (productIds.length === 0) throw new Error('Aucun produit valide dans le panier');
 
@@ -300,7 +301,6 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       if (!p || !p.is_active) continue;
       const qty = r(item.quantity || 1);
       if (qty <= 0) continue;
-      // Prix effectif : appliquer promo_pct si is_promo=true et promo_until >= aujourd'hui
       const now = new Date();
       const promoActive = p.is_promo &&
         p.promo_pct > 0 &&
@@ -346,21 +346,19 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       if (attempt === 4) throw new Error('Impossible de générer un token unique');
     }
 
-    // 8. Insérer le shared_cart (source_basket_id = NULL : le panier vient
-    //    du localStorage, pas d'une table basket)
-    const expirationDays = Math.max(1, Math.min(90, options.expirationDays || CONFIG.DEFAULT_EXPIRATION_DAYS));
+    // 8. Insérer le shared_cart — statut OPEN, target_date optionnel
+    const targetDate = options.targetDate || null;
     const { rows: cartRows } = await client.query(
       `INSERT INTO shared_carts (
          token, beneficiary_user_id,
          beneficiary_phone_snapshot, beneficiary_name_snapshot,
          source_basket_id, title, message,
          currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-         delivery_relay_id, status, expires_at
+         delivery_relay_id, status, target_date
        ) VALUES (
          $1, $2, $3, $4, NULL, $5, $6,
          'KMF', $7, 0, $7,
-         $8, 'active',
-         NOW() + ($9 || ' days')::INTERVAL
+         $8, 'open', $9
        ) RETURNING *`,
       [
         token, userId,
@@ -368,7 +366,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
         options.title || null, options.message || null,
         totalKmf,
         options.deliveryRelayId || null,
-        String(expirationDays),
+        targetDate,
       ]
     );
     const sharedCart = cartRows[0];
@@ -398,14 +396,10 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       {
         total_kmf: totalKmf,
         items_count: enrichedItems.length,
-        expires_at: sharedCart.expires_at,
-        source: 'cart_items',  // distingue from-basket vs from-cart-items
+        target_date: targetDate,
+        source: 'cart_items',
       }
     );
-
-    // LOT 2 — Ne pas vider les paniers DB dans ce flux (le panier vient du localStorage).
-    // Le flag clearLocalCart: true signale à la route de demander au client
-    // de vider son localStorage boutique. Aucun basket DB n'est touché.
 
     return { sharedCart, items: insertedItems, token, clearLocalCart: true };
   });
@@ -418,13 +412,15 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
 /**
  * Lecture publique d'un panier partagé via son token.
  * EXPOSE UNIQUEMENT les données safe (pas de téléphone/email complets).
+ * Inclut l'agrégat des estimations + countdown basé sur les timestamps V4.1.
  */
 async function getSharedCartForPublic(token) {
   const { rows: cartRows } = await db.query(
     `SELECT id, token, beneficiary_name_snapshot, title, message,
             currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-            status, expires_at, finalized_at, view_count,
-            created_at, metadata
+            status, target_date, closed_at, payment_window_ends_at,
+            awaiting_choice_deadline, finalized_at, view_count,
+            created_at
        FROM shared_carts
       WHERE token = $1`,
     [token]
@@ -456,20 +452,30 @@ async function getSharedCartForPublic(token) {
     [cart.id]
   );
 
-  // Compteur de vues (incrémenté côté route, pas ici)
+  // Agrégat estimations (indicatif, vue publique uniquement)
+  const { rows: estimRows } = await db.query(
+    `SELECT COUNT(*)::int AS count,
+            COALESCE(SUM(amount_kmf), 0)::int AS total_estimated_kmf
+       FROM shared_cart_estimations
+      WHERE shared_cart_id = $1`,
+    [cart.id]
+  );
+  const estimations_summary = estimRows[0];
+
   return {
     cart: {
       ...cart,
-      // Pas d'expose interne
-      id: undefined,
+      id: undefined,   // Ne pas exposer l'UUID interne
     },
     items,
     contributions: contribs,
+    estimations_summary,
   };
 }
 
 /**
- * Lecture privée par le bénéficiaire (toutes infos sauf Stripe IDs).
+ * Lecture privée par le bénéficiaire (cockpit créateur — toutes infos).
+ * Inclut la liste détaillée des estimations.
  */
 async function getSharedCartForOwner(sharedCartId, userId) {
   const { rows } = await db.query(
@@ -494,16 +500,16 @@ async function getSharedCartForOwner(sharedCartId, userId) {
     [cart.id]
   );
 
-  // Doctrine v4.2 — inclure les engagements pour éviter le double fetch fragile côté client
-  const { rows: commitments } = await db.query(
-    `SELECT id, participant_name, participant_phone, amount_kmf, status, locked_at, created_at
-       FROM shared_cart_commitments
+  // V4.1 — estimations remplacent les commitments
+  const { rows: estimations } = await db.query(
+    `SELECT id, participant_name, participant_phone, amount_kmf, created_at, updated_at
+       FROM shared_cart_estimations
       WHERE shared_cart_id = $1
       ORDER BY created_at DESC`,
     [cart.id]
   );
 
-  return { cart, items, contributions, commitments };
+  return { cart, items, contributions, estimations };
 }
 
 /**
@@ -513,7 +519,8 @@ async function listMySharedCarts(userId) {
   const { rows } = await db.query(
     `SELECT id, token, title, status,
             total_kmf_snapshot, contributed_kmf, remaining_kmf,
-            expires_at, finalized_at, finalized_order_id, created_at,
+            target_date, closed_at, payment_window_ends_at, awaiting_choice_deadline,
+            finalized_at, finalized_order_id, created_at,
             (SELECT COUNT(*) FROM shared_cart_contributions
               WHERE shared_cart_id = sc.id AND status = 'paid')::int AS contributors_count
        FROM shared_carts sc
@@ -532,22 +539,68 @@ async function incrementViewCount(token) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 3. CONTRIBUTION
+// 3. FERMETURE MANUELLE (OPEN → CLOSED)
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Le créateur ferme manuellement son panier.
+ * Ouvre la fenêtre de paiement fixe de 48h.
+ * Remplace openSettlement() de V4.
+ *
+ * @param {string} sharedCartId
+ * @param {string} userId
+ * @returns {Object} shared_cart mis à jour
+ */
+async function closeCart(sharedCartId, userId) {
+  return withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2 FOR UPDATE`,
+      [sharedCartId, userId]
+    );
+    if (!rows.length) throw new Error('Panier introuvable ou non autorisé');
+    const cart = rows[0];
+
+    if (cart.status !== 'open') {
+      throw new Error(`Impossible de fermer un panier au statut ${cart.status}`);
+    }
+
+    const { rows: [updated] } = await client.query(
+      `UPDATE shared_carts
+          SET status = 'closed',
+              closed_at = NOW(),
+              payment_window_ends_at = NOW() + INTERVAL '48 hours',
+              updated_at = NOW()
+        WHERE id = $1
+        RETURNING *`,
+      [sharedCartId]
+    );
+
+    await addEvent(client, sharedCartId, 'cart_closed',
+      { type: 'user', id: userId },
+      {
+        closed_at: updated.closed_at,
+        payment_window_ends_at: updated.payment_window_ends_at,
+      }
+    );
+
+    return updated;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 4. CONTRIBUTION
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
  * Démarre une contribution (status='pending'). Ne déclenche PAS Stripe
  * — c'est la responsabilité de la route qui appellera l'API Stripe.
  *
- * Vérifications :
- *   - Le panier est ouvert (active / partially_funded)
- *   - Le panier n'est pas expiré
- *   - Le montant respecte min/max
- *   - Le montant ne dépasse pas remaining_kmf
+ * Autorisé UNIQUEMENT si le panier est en statut CLOSED et dans sa
+ * fenêtre de paiement (payment_window_ends_at > NOW()).
  *
  * @returns {Object} contribution (avec id) — à utiliser pour créer la session Stripe
  */
-async function startContribution(token, contributorInfo) {
+async function startContribution(token, contributorInfo, options = {}) {
   return withTransaction(async (client) => {
     // 1. Charger le panier avec verrou
     const { rows: cartRows } = await client.query(
@@ -557,28 +610,23 @@ async function startContribution(token, contributorInfo) {
     if (!cartRows.length) throw new Error('Panier partagé introuvable');
     const cart = cartRows[0];
 
-    // 2. Vérifier statut
-    const PAYMENT_ELIGIBLE_STATUSES = [
-      'active', 'partially_funded',
-      // Statuts v4 (migration 074) — settlement ouvert
-      'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize',
-    ];
-    if (!PAYMENT_ELIGIBLE_STATUSES.includes(cart.status)) {
-      throw new Error(`Ce panier n'accepte plus de contributions (statut : ${cart.status})`);
+    // 2. Guard V4.1 : status CLOSED dans la fenêtre de paiement.
+    //    Exception explicite : AWAITING_CHOICE si options.allowAwaitingChoice
+    //    (cas « le créateur complète le gap » — la route a déjà vérifié que
+    //    l'appelant est le créateur ; un participant ne passe jamais par là).
+    const isAwaitingCreatorTopUp =
+      cart.status === 'awaiting_choice' && options.allowAwaitingChoice === true;
+
+    if (cart.status !== 'closed' && !isAwaitingCreatorTopUp) {
+      throw new Error(`Ce panier n'accepte pas de contributions (statut : ${cart.status})`);
     }
-    // Doctrine v4.2 §5.2 — aucun paiement participant en phase ouverte
-    if (['active', 'partially_funded'].includes(cart.status)) {
-      const meta = cart.metadata && typeof cart.metadata === 'object' ? cart.metadata : {};
-      if (!meta.settlement_open) {
-        throw new Error("Le panier est encore en phase ouverte. Le créateur doit d'abord passer au règlement.");
-      }
-    }
-    if (new Date(cart.expires_at) < new Date()) {
-      throw new Error('Ce panier partagé a expiré');
+    if (cart.status === 'closed' &&
+        cart.payment_window_ends_at && new Date(cart.payment_window_ends_at) < new Date()) {
+      throw new Error('La fenêtre de paiement de ce panier est expirée');
     }
 
     // 3. Validation contributeur
-    const { name, email, phone, amountKmf, amountPaid, currency, message, fxRate, commitmentId } = contributorInfo;
+    const { name, email, phone, amountKmf, amountPaid, currency, message, fxRate } = contributorInfo;
     if (!name || !email) throw new Error('Nom et email du contributeur requis');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Email invalide');
 
@@ -593,18 +641,18 @@ async function startContribution(token, contributorInfo) {
       throw new Error(`Le panier ne nécessite plus que ${cart.remaining_kmf} KMF (votre contribution : ${amount} KMF)`);
     }
 
-    // 4. Créer la contribution — commitment_id lié si engagement verrouillé présent
+    // 4. Créer la contribution (sans commitment_id — table supprimée en V4.1)
     const { rows: contribRows } = await client.query(
       `INSERT INTO shared_cart_contributions (
          shared_cart_id, contributor_name, contributor_email, contributor_phone,
          amount_kmf, amount_paid, currency_paid, fx_rate_used,
-         status, message, commitment_id
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10)
+         status, message
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)
        RETURNING *`,
       [
         cart.id, name.trim(), email.trim().toLowerCase(), phone || null,
         amount, amountPaid, currency || 'EUR', fxRate || null,
-        message || null, commitmentId || null,
+        message || null,
       ]
     );
     const contribution = contribRows[0];
@@ -629,122 +677,6 @@ async function attachStripeSession(contributionId, stripeSessionId) {
       WHERE id = $2 AND status = 'pending'`,
     [stripeSessionId, contributionId]
   );
-}
-
-/**
- * Confirme une contribution suite au webhook Stripe checkout.session.completed.
- * IDEMPOTENT : si déjà traitée, retourne null sans rien faire.
- *
- * @param {Object} session — l'objet Stripe Checkout Session
- * @returns {Object|null} { cart, contribution } ou null si déjà traité
- */
-async function confirmContributionFromStripe(session) {
-  return withTransaction(async (client) => {
-    const sessionId = session.id;
-    const paymentIntentId = session.payment_intent || null;
-
-    // 1. Trouver la contribution
-    const { rows: contribRows } = await client.query(
-      `SELECT * FROM shared_cart_contributions
-        WHERE stripe_session_id = $1
-        FOR UPDATE`,
-      [sessionId]
-    );
-    if (!contribRows.length) {
-      // Possible : event reçu avant qu'on ait stocké session_id (race)
-      // OU event qui ne nous concerne pas. On retourne null.
-      return null;
-    }
-    const contribution = contribRows[0];
-
-    // 2. IDEMPOTENCE : si déjà paid, ne rien faire
-    if (contribution.status === 'paid') return null;
-
-    // FIX: 'failed' ou 'expired' = état terminal légitime (retry Stripe après expiration).
-    // Throw ici → 500 sur les retries. On retourne null pour que le webhook réponde 200.
-    if (contribution.status !== 'pending') {
-      return null;
-    }
-
-    // 3. Vérifier que Stripe confirme bien le paiement
-    if (session.payment_status !== 'paid') {
-      // Peut arriver pour 'unpaid' ou 'no_payment_required'
-      // On ne marque pas paid mais on log
-      await addEvent(client, contribution.shared_cart_id, 'contribution_stripe_pending',
-        { type: 'stripe' },
-        { session_id: sessionId, payment_status: session.payment_status }
-      );
-      return null;
-    }
-
-    // 4. Lock le panier
-    const { rows: cartRows } = await client.query(
-      `SELECT * FROM shared_carts WHERE id = $1 FOR UPDATE`,
-      [contribution.shared_cart_id]
-    );
-    if (!cartRows.length) throw new Error('Panier introuvable lors de la confirmation');
-    const cart = cartRows[0];
-
-    // 5. Marquer la contribution paid
-    await client.query(
-      `UPDATE shared_cart_contributions
-          SET status = 'paid',
-              paid_at = NOW(),
-              stripe_payment_intent_id = $1,
-              updated_at = NOW()
-        WHERE id = $2`,
-      [paymentIntentId, contribution.id]
-    );
-
-    // 6. Recalculer le panier
-    const newContributed = r(cart.contributed_kmf) + r(contribution.amount_kmf);
-    const newRemaining = Math.max(0, r(cart.total_kmf_snapshot) - newContributed);
-    let newStatus = cart.status;
-    if (newRemaining === 0) newStatus = 'fully_funded';
-    else if (newContributed > 0) newStatus = 'partially_funded';
-
-    await client.query(
-      `UPDATE shared_carts
-          SET contributed_kmf = $1, remaining_kmf = $2, status = $3, updated_at = NOW()
-        WHERE id = $4`,
-      [newContributed, newRemaining, newStatus, cart.id]
-    );
-
-    // 7. Audit
-    await addEvent(client, cart.id, 'contribution_paid',
-      { type: 'stripe' },
-      {
-        contribution_id: contribution.id,
-        amount_kmf: contribution.amount_kmf,
-        amount_paid: contribution.amount_paid,
-        currency: contribution.currency_paid,
-        stripe_session_id: sessionId,
-        new_status: newStatus,
-      }
-    );
-
-    if (newStatus === 'fully_funded') {
-      await addEvent(client, cart.id, 'cart_fully_funded',
-        { type: 'system' },
-        { contributed_kmf: newContributed }
-      );
-    } else if (cart.status !== 'partially_funded' && newStatus === 'partially_funded') {
-      await addEvent(client, cart.id, 'cart_partially_funded',
-        { type: 'system' },
-        { contributed_kmf: newContributed, remaining_kmf: newRemaining }
-      );
-    }
-
-    const updatedCart = (await client.query(
-      `SELECT * FROM shared_carts WHERE id = $1`, [cart.id]
-    )).rows[0];
-
-    const updatedContrib = (await client.query(
-      `SELECT * FROM shared_cart_contributions WHERE id = $1`, [contribution.id]
-    )).rows[0];
-
-    return { cart: updatedCart, contribution: updatedContrib };
-  });
 }
 
 /**
@@ -773,34 +705,17 @@ async function markContributionFailed(stripeSessionId, reason) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 4. FINALISATION → COMMANDE
+// 5. FINALISATION → COMMANDE (CLOSED/AWAITING_CHOICE → ORDERED)
 // ═══════════════════════════════════════════════════════════════════════
 
-// ─── Helpers finalisation ─────────────────────────────────────────────
-function metadataOf(cart) {
-  if (!cart?.metadata) return {};
-  if (typeof cart.metadata === 'object') return cart.metadata;
-  try { return JSON.parse(cart.metadata); } catch (_) { return {}; }
-}
-
-function isSettlementOpenForFinalize(cart) {
-  const meta = metadataOf(cart);
-  return meta.settlement_open === true ||
-    ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize', 'fully_funded'].includes(cart.status);
-}
-// ─── fin helpers finalisation ─────────────────────────────────────────
-
 /**
- * Le bénéficiaire finalise son panier partagé.
- * Crée une commande Komerce. Le reste à payer (si pas 100%) sera collecté
- * en cash relais selon le flux Komerce existant.
+ * Le créateur finalise son panier partagé et crée une commande Komerce.
  *
- * NOTE : la création complète d'order avec ses items dépend de la logique
- * orders existante. Ici on fait l'essentiel : vérification + créa order
- * minimale + lien shared_cart_id <-> order. La logique métier orders
- * (items, shipment, etc.) doit être déclenchée par la route.
+ * V4.1 — Cas A (100% financé) uniquement : remaining_kmf doit être 0.
+ * Cas B (AWAITING_CHOICE + gap) : le créateur complète via le flux
+ * startContribution normal, puis appelle finalize quand remaining === 0.
  *
- * @returns { sharedCart, order, prepaidKmf, remainingCashKmf }
+ * @returns { sharedCart, order, prepaidKmf }
  */
 async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
   return withTransaction(async (client) => {
@@ -812,37 +727,22 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     if (!cartRows.length) throw new Error('Panier partagé introuvable ou non autorisé');
     const cart = cartRows[0];
 
-    if (!['active', 'partially_funded', 'fully_funded',
-          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
+    if (!['closed', 'awaiting_choice'].includes(cart.status)) {
       throw new Error(`Impossible de finaliser un panier au statut ${cart.status}`);
-    }
-
-    // LOT 1.1 — Interdire la finalisation directe depuis phase ouverte
-    if (!isSettlementOpenForFinalize(cart)) {
-      throw new Error('Le panier doit d\'abord passer au paiement avant de confirmer la commande');
-    }
-    if (new Date(cart.expires_at) < new Date()) {
-      throw new Error('Ce panier partagé a expiré');
     }
     if (cart.finalized_order_id) {
       throw new Error('Ce panier est déjà finalisé');
     }
+    if (r(cart.remaining_kmf) > 0) {
+      throw new Error(
+        `Il reste ${cart.remaining_kmf} KMF à financer. ` +
+        'En statut AWAITING_CHOICE, contribuez d\'abord pour couvrir le solde.'
+      );
+    }
 
     const prepaidKmf = r(cart.contributed_kmf);
     const totalKmf = r(cart.total_kmf_snapshot);
-    const remainingCashKmf = Math.max(0, totalKmf - prepaidKmf);
-
     if (totalKmf <= 0) throw new Error('Total panier invalide');
-
-    // Doctrine v4.1 §5.7 :
-    //   Cas A — tout payé → finalisation normale (confirmPaymentCycle)
-    //   Cas B — créateur compense le gap → options.creatorCoversGap = true requis
-    //   Cas C — créateur réduit le panier → géré côté items avant d'appeler finalize
-    if (remainingCashKmf > 0 && !options.creatorCoversGap) {
-      throw new Error(
-        `Il reste ${remainingCashKmf} KMF à financer. Passez creatorCoversGap=true si vous compensez la différence.`
-      );
-    }
 
     // 2. Charger les items snapshot
     const { rows: items } = await client.query(
@@ -852,9 +752,6 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     if (!items.length) throw new Error('Impossible de finaliser : panier sans articles');
 
     const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
-    if (productIds.length !== items.length) {
-      throw new Error('Impossible de finaliser : un article snapshot n\'a plus de product_id');
-    }
 
     const { rows: products } = await client.query(
       `SELECT id, name, stock, is_active FROM products WHERE id = ANY($1) FOR UPDATE`,
@@ -892,7 +789,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       }));
     }
 
-    // 3. Relais obligatoire pour produire une vraie commande routable
+    // 3. Relais obligatoire
     const relayId = options.deliveryRelayId || cart.delivery_relay_id;
     if (!relayId) {
       throw new Error('delivery_relay_id requis pour finaliser le panier partagé');
@@ -948,8 +845,6 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     const orderId = crypto.randomUUID();
     const reference = await getUniqueRef(db);
     const pickupCode = generatePickupCode();
-    // PATCH P2-8 : taux lu depuis finance_config via getRates() (I-08).
-    // Avant : 491.97 hardcodé — divergeait dès que l'admin changeait le taux.
     const liveRates = await getRates();
     const eurKmf = liveRates?.eur_kmf || 492;
     const totalEur = parseFloat((totalKmf / eurKmf).toFixed(2));
@@ -971,8 +866,8 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
          'mixed_shared_cart_cash', 'pending',
          NULL, $9,
          'pending',
-         $10, $11, $12,
-         $13, $14, $15
+         $10, $11, 0,
+         $12, $13, $14
        )
        RETURNING *`,
       [
@@ -981,7 +876,6 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         totalKmf, totalEur,
         pickupCode,
         sharedCartId, prepaidKmf,
-        remainingCashKmf,
         routing.destination_island,
         routing.routing_mode,
         routing.transit_hub,
@@ -990,7 +884,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
 
     await client.query(
       `INSERT INTO order_status_history (order_id, status, note, changed_by)
-       VALUES ($1, 'pending', 'Commande créée depuis panier partagé', $2)`,
+       VALUES ($1, 'pending', 'Commande créée depuis panier partagé V4.1', $2)`,
       [order.id, userId]
     );
 
@@ -1008,43 +902,35 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       );
     }
 
-    // 7. Cycle paiement + stock uniquement si 100 % financé (cas A)
-    //    Cas B (creatorCoversGap=true) : la commande reste en pending jusqu'à
-    //    ce que le créateur règle le solde — confirmPaymentCycle sera appelé
-    //    séparément lors de ce règlement.
-    if (remainingCashKmf === 0) {
-      const cycleResult = await confirmPaymentCycle({
-        orderId: order.id,
-        actor: { id: userId, role: 'system' },
-        source: 'shared_cart_full_payment',
-        dbClient: client,
-        note: 'Paiement intégral via panier partagé',
-      });
+    // 7. Cycle paiement + stock (100% financé, remaining_kmf = 0 garanti)
+    const cycleResult = await confirmPaymentCycle({
+      orderId: order.id,
+      actor: { id: userId, role: 'system' },
+      source: 'shared_cart_full_payment',
+      dbClient: client,
+      note: 'Paiement intégral via panier partagé V4.1',
+    });
 
-      if (!cycleResult.success && !cycleResult.noop) {
-        throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
-      }
-
-      if (cycleResult.stockBlocked) {
-        throw new Error(JSON.stringify({
-          code: 'stock_issues',
-          message: 'Stock insuffisant pour finaliser le panier partagé',
-          items: cycleResult.insufficientItems,
-        }));
-      }
+    if (!cycleResult.success && !cycleResult.noop) {
+      throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
+    }
+    if (cycleResult.stockBlocked) {
+      throw new Error(JSON.stringify({
+        code: 'stock_issues',
+        message: 'Stock insuffisant pour finaliser le panier partagé',
+        items: cycleResult.insufficientItems,
+      }));
     }
 
-    // 8. Marquer le panier comme converti
-    // LOT 1.2 — Option A : conserver le vrai solde restant (ne pas mentir)
+    // 8. Marquer le panier comme ORDERED
     await client.query(
       `UPDATE shared_carts
-          SET status = 'converted_to_order',
+          SET status = 'ordered',
               finalized_order_id = $1,
               finalized_at = NOW(),
-              remaining_kmf = $3,
               updated_at = NOW()
         WHERE id = $2`,
-      [order.id, sharedCartId, remainingCashKmf]
+      [order.id, sharedCartId]
     );
 
     await addEvent(client, sharedCartId, 'cart_converted_to_order',
@@ -1053,7 +939,6 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         order_id: order.id,
         order_reference: order.reference,
         prepaid_kmf: prepaidKmf,
-        remaining_cash_kmf: remainingCashKmf,
       }
     );
 
@@ -1063,13 +948,16 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     );
 
     return {
-      sharedCart: { ...cart, status: 'converted_to_order', finalized_order_id: order.id },
+      sharedCart: { ...cart, status: 'ordered', finalized_order_id: order.id },
       order: finalOrder || order,
       prepaidKmf,
-      remainingCashKmf,
     };
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// 6. ANNULATION
+// ═══════════════════════════════════════════════════════════════════════
 
 async function cancelSharedCart(sharedCartId, userId, reason) {
   return withTransaction(async (client) => {
@@ -1080,9 +968,7 @@ async function cancelSharedCart(sharedCartId, userId, reason) {
     if (!rows.length) throw new Error('Panier introuvable ou non autorisé');
     const cart = rows[0];
 
-    if (!['active', 'partially_funded', 'fully_funded',
-          'draft', 'commitment_open',
-          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
+    if (!['open', 'closed', 'awaiting_choice'].includes(cart.status)) {
       throw new Error(`Impossible d'annuler un panier au statut ${cart.status}`);
     }
 
@@ -1099,30 +985,131 @@ async function cancelSharedCart(sharedCartId, userId, reason) {
     );
 
     // NOTE : refunds des contributions = action manuelle admin pour le MVP
-    // (cf. brief §6 règle "expire only, pas d'opération financière auto")
-
     return cart;
   });
 }
 
-async function expireOldCarts() {
-  const { rows } = await db.query(
-    `UPDATE shared_carts
-        SET status = 'expired', updated_at = NOW()
-      WHERE status IN ('active', 'partially_funded', 'draft', 'commitment_open')
-        AND expires_at < NOW()
-      RETURNING id, beneficiary_user_id, contributed_kmf`
-  );
+// ═══════════════════════════════════════════════════════════════════════
+// 7. MACHINE D'ÉTAT — CRON TICK
+// ═══════════════════════════════════════════════════════════════════════
 
-  for (const cart of rows) {
+/**
+ * Exécute toutes les transitions automatiques de la machine d'état V4.1.
+ * Idempotent. Appelé par le cron (remplace startExpireCartsCron/expireOldCarts).
+ *
+ * Transitions gérées :
+ *   T1 : OPEN + target_date atteinte        → CLOSED (ouvre fenêtre 48h)
+ *   T2 : CLOSED + fenêtre expirée + reste>0 → AWAITING_CHOICE (+deadline 72h)
+ *   T3 : CLOSED + fenêtre expirée + reste=0 → émet cart_ready_to_order (finalize manuelle ou auto)
+ *   T4 : AWAITING_CHOICE + deadline expirée → expired
+ *   T5 : expired depuis > ARCHIVE_AFTER_DAYS → archived
+ *
+ * @returns {number} nombre total de transitions effectuées
+ */
+async function runSharedCartStateMachineTick() {
+  let transitions = 0;
+
+  // T1 — OPEN + target_date atteinte → CLOSED
+  const { rows: autoClosedCarts } = await db.query(
+    `UPDATE shared_carts
+        SET status = 'closed',
+            closed_at = NOW(),
+            payment_window_ends_at = NOW() + INTERVAL '48 hours',
+            updated_at = NOW()
+      WHERE status = 'open'
+        AND target_date IS NOT NULL
+        AND target_date <= CURRENT_DATE
+      RETURNING id, contributed_kmf`
+  );
+  for (const cart of autoClosedCarts) {
+    await db.query(
+      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+         VALUES ($1, 'cart_auto_closed', 'system', $2)`,
+      [cart.id, { reason: 'target_date_reached' }]
+    );
+  }
+  transitions += autoClosedCarts.length;
+
+  // T2 — CLOSED + fenêtre expirée + remaining > 0 → AWAITING_CHOICE
+  const { rows: awaitingCarts } = await db.query(
+    `UPDATE shared_carts
+        SET status = 'awaiting_choice',
+            awaiting_choice_started_at = NOW(),
+            awaiting_choice_deadline = NOW() + INTERVAL '72 hours',
+            updated_at = NOW()
+      WHERE status = 'closed'
+        AND payment_window_ends_at < NOW()
+        AND remaining_kmf > 0
+      RETURNING id, remaining_kmf, contributed_kmf`
+  );
+  for (const cart of awaitingCarts) {
+    await db.query(
+      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+         VALUES ($1, 'cart_awaiting_choice', 'system', $2)`,
+      [cart.id, { remaining_kmf: cart.remaining_kmf, contributed_kmf: cart.contributed_kmf }]
+    );
+  }
+  transitions += awaitingCarts.length;
+
+  // T3 — CLOSED + fenêtre expirée + remaining = 0 → signal auto-finalisation
+  // (la création d'order nécessite convertSharedCartToOrder — ce tick émet
+  //  un événement, la route de finalization ou un job dédié s'en charge)
+  const { rows: readyCarts } = await db.query(
+    `SELECT id, contributed_kmf FROM shared_carts
+      WHERE status = 'closed'
+        AND payment_window_ends_at < NOW()
+        AND remaining_kmf = 0
+        AND finalized_order_id IS NULL`
+  );
+  for (const cart of readyCarts) {
+    // Idempotent via ON CONFLICT — évite les doublons si le tick tourne avant finalize
+    await db.query(
+      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+         VALUES ($1, 'cart_ready_to_order', 'system', $2)
+         ON CONFLICT DO NOTHING`,
+      [cart.id, { contributed_kmf: cart.contributed_kmf }]
+    );
+  }
+
+  // T4 — AWAITING_CHOICE + deadline expirée → expired
+  const { rows: expiredCarts } = await db.query(
+    `UPDATE shared_carts
+        SET status = 'expired',
+            updated_at = NOW()
+      WHERE status = 'awaiting_choice'
+        AND awaiting_choice_deadline < NOW()
+      RETURNING id, contributed_kmf`
+  );
+  for (const cart of expiredCarts) {
     await db.query(
       `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
          VALUES ($1, 'cart_expired', 'system', $2)`,
       [cart.id, { contributed_kmf: cart.contributed_kmf }]
     );
   }
+  transitions += expiredCarts.length;
 
-  return rows.length;
+  // T5 — expired depuis > ARCHIVE_AFTER_DAYS → archived
+  const { rows: archivedCarts } = await db.query(
+    `UPDATE shared_carts
+        SET status = 'archived',
+            updated_at = NOW()
+      WHERE status = 'expired'
+        AND updated_at < NOW() - ($1 || ' days')::INTERVAL
+      RETURNING id`,
+    [String(CONFIG.ARCHIVE_AFTER_DAYS)]
+  );
+  transitions += archivedCarts.length;
+
+  return transitions;
+}
+
+/**
+ * Alias legacy pour compatibilité cron existant (bootstrap/crons.js).
+ * Le cron appelle engine.expireOldCarts() — on délègue à la machine d'état V4.1.
+ */
+async function expireOldCarts() {
+  return runSharedCartStateMachineTick();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1131,22 +1118,22 @@ async function expireOldCarts() {
 module.exports = {
   // API principale
   createSharedCartFromBasket,
-  createSharedCartFromCartItems,         // Refresh 28/04/26
-  clearCreatorBasketInTx,                // Doctrine v4.2 N4-CLEAR — exposé pour tests
+  createSharedCartFromCartItems,
+  clearCreatorBasketInTx,             // Doctrine v4.2 N4-CLEAR — exposé pour tests
   getSharedCartForPublic,
   getSharedCartForOwner,
   listMySharedCarts,
   incrementViewCount,
+  // Cycle de vie
+  closeCart,                          // V4.1 — remplace openSettlement
   startContribution,
   attachStripeSession,
-  // confirmContributionFromStripe — SUPPRIMÉ (A-BE-01/08, 2026-05-26)
-  // Le webhook Stripe utilise confirmContributionFromStripeSafely depuis shared-cart-financial-guard.js.
-  // L'ancien export est conservé en interne mais ne doit plus être appelé directement.
-  // grep anti-régression : grep -rn "confirmContributionFromStripe[^S]" routes/ services/ bootstrap/
   markContributionFailed,
   convertSharedCartToOrder,
   cancelSharedCart,
-  expireOldCarts,
+  // Cron / machine d'état
+  runSharedCartStateMachineTick,      // V4.1 — appelé par le cron
+  expireOldCarts,                     // Alias legacy — délègue à runSharedCartStateMachineTick
   // Helpers exposés pour tests
   generateToken,
   // Config

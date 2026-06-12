@@ -2,7 +2,7 @@
 
 const crypto = require('crypto');
 const db = require('../db');
-const settlement = require('./shared-cart-v4-settlement');
+const log = require('../utils/logger').child({ module: 'shared-cart-cash-service' });
 
 const MIN_KMF = 2500;
 const MAX_KMF = 500000;
@@ -40,14 +40,14 @@ function httpError(message, status = 400, code = null) {
   return e;
 }
 
+// V4.1 : paiement cash uniquement pendant la fenêtre de paiement (status = 'closed').
 function assertOpen(cart) {
-  if (!['active', 'partially_funded'].includes(cart.status)) {
-    throw httpError(`Ce panier n'accepte plus de paiements (statut : ${cart.status})`, 400);
+  if (cart.status !== 'closed') {
+    throw httpError(`Ce panier n'accepte plus de paiements (statut : ${cart.status})`, 400, 'cart_not_closed');
   }
-  if (new Date(cart.expires_at) < new Date()) {
-    throw httpError('Ce panier partagé a expiré', 400);
+  if (cart.payment_window_ends_at && new Date(cart.payment_window_ends_at) < new Date()) {
+    throw httpError('La fenêtre de paiement de ce panier est expirée', 400, 'payment_window_expired');
   }
-  settlement.assertCartCanAcceptParticipantPayment(cart);
 }
 
 function validateAmount(amountKmf) {
@@ -96,7 +96,7 @@ async function createPendingCashContribution(token, body = {}) {
         amount,
         cashRef,
         body.relais_id || null,
-        JSON.stringify({ source: 'cash_settlement', counted: false }),
+        JSON.stringify({ source: 'cash_payment_window', counted: false }),
       ]
     );
 
@@ -106,7 +106,6 @@ async function createPendingCashContribution(token, body = {}) {
       amount_kmf: amount,
       cash_reference: cashRef,
       relais_id: body.relais_id || null,
-      settlement_open: true,
     });
 
     return { cart, contribution };
@@ -160,7 +159,9 @@ async function confirmCashContribution(contributionId, actor = {}, body = {}) {
 
     const newContributed = r(cart.contributed_kmf) + amount;
     const newRemaining = Math.max(0, r(cart.total_kmf_snapshot) - newContributed);
-    const newStatus = newRemaining === 0 ? 'fully_funded' : 'partially_funded';
+    // V4.1 : le statut reste 'closed' pendant toute la fenêtre de paiement.
+    // La transition CLOSED→ORDERED est gérée par runSharedCartStateMachineTick() (Lot 6).
+    const newStatus = 'closed';
 
     const updatedContrib = await client.query(
       `UPDATE shared_cart_contributions
@@ -189,9 +190,17 @@ async function confirmCashContribution(contributionId, actor = {}, body = {}) {
       new_status: newStatus,
     });
 
-    if (newStatus === 'fully_funded') {
+    // V4.1 : signal pour le délai de grâce → T3 (runSharedCartStateMachineTick)
+    if (newRemaining === 0) {
       await event(client, cart.id, 'cart_fully_funded', { type: 'system' }, { contributed_kmf: newContributed, source: 'cash' });
     }
+
+    log.info('[shared-cart] paiement cash confirmé', {
+      cart_id: cart.id,
+      contribution_id: contribution.id,
+      amount_kmf: amount,
+      new_remaining: newRemaining,
+    });
 
     const updatedCart = await client.query(`SELECT * FROM shared_carts WHERE id = $1`, [cart.id]);
     return { cart: updatedCart.rows[0], contribution: updatedContrib.rows[0] };

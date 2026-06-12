@@ -13,20 +13,23 @@ const cart = (status, metadata) => ({ status, metadata });
 
 describe('businessStatusOf — projection enum SQL → état métier', () => {
   test.each([
+    ['open', BUSINESS.OPEN],
+    ['closed', BUSINESS.CLOSED],
+    ['awaiting_choice', BUSINESS.AWAITING_CHOICE],
+    ['ordered', BUSINESS.ORDERED],
+    ['cancelled', BUSINESS.CANCELLED],
+    ['expired', BUSINESS.EXPIRED],
+    ['archived', BUSINESS.ARCHIVED],
     ['draft', BUSINESS.OPEN],
     ['active', BUSINESS.OPEN],
     ['commitment_open', BUSINESS.OPEN],
-    ['partially_funded', BUSINESS.OPEN],
+    ['partially_funded', BUSINESS.CLOSED],
+    ['fully_funded', BUSINESS.CLOSED],
     ['closed_for_settlement', BUSINESS.CLOSED],
     ['settlement_in_progress', BUSINESS.CLOSED],
-    ['awaiting_choice', BUSINESS.AWAITING_CHOICE],
+    ['ready_to_finalize', BUSINESS.CLOSED],
     ['converted_to_order', BUSINESS.ORDERED],
-    ['fully_funded', BUSINESS.ORDERED],
-    ['ready_to_finalize', BUSINESS.ORDERED],
-    ['cancelled', BUSINESS.CANCELLED],
     ['refunded', BUSINESS.CANCELLED],
-    ['expired', BUSINESS.EXPIRED],
-    ['archived', BUSINESS.ARCHIVED],
   ])('%s → %s', (sql, business) => {
     expect(T.businessStatusOf(cart(sql))).toBe(business);
   });
@@ -126,15 +129,15 @@ describe('Fenêtre de paiement — défaut 48 h, presets fermés, prolongation u
   });
 
   test('prolongation : une seule, +48 h, uniquement pendant CLOSED', () => {
-    const closed = cart('closed_for_settlement');
+    const closed = cart('closed');
     expect(T.canExtendWindow(closed)).toBe(true);
 
-    const extended = cart('closed_for_settlement', { payment_window_extensions: 1 });
+    const extended = cart('closed', { payment_window_extensions: 1 });
     expect(T.canExtendWindow(extended)).toBe(false);
     expect(T.computePaymentWindowEnd(closedAt, extended).toISOString())
       .toBe('2026-06-24T12:00:00.000Z');
 
-    expect(T.canExtendWindow(cart('active'))).toBe(false);
+    expect(T.canExtendWindow(cart('open'))).toBe(false);
     expect(T.canExtendWindow(cart('awaiting_choice'))).toBe(false);
   });
 

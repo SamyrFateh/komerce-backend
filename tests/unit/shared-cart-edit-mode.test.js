@@ -59,7 +59,7 @@ const db = require('../../db');
 function makeCart(overrides = {}) {
   return {
     id: '42',
-    status: 'active',
+    status: 'open',
     creator_user_id: 'user-1',
     metadata: JSON.stringify({ settlement_open: false }),
     contributed_kmf: 0,
@@ -130,25 +130,25 @@ describe('SC-EDIT-09 — guard PUT /api/shared-carts/:id/items', () => {
   });
 
   test('[SC-EDIT-09-T1] Phase ouverte, bon propriétaire → mise à jour acceptée (200)', async () => {
-    const cart = makeCart({ status: 'active', metadata: JSON.stringify({ settlement_open: false }) });
+    const cart = makeCart({ status: 'open', metadata: JSON.stringify({ settlement_open: false }) });
     setupDbMocks({ cart });
     const result = await updateOpenSharedCartItems('42', 'user-1', VALID_ITEMS);
     expect(result).toHaveProperty('cart');
     expect(result).toHaveProperty('items');
   });
 
-  test('[SC-EDIT-09-T2] settlement_open = true → 409 settlement_already_open', async () => {
-    const cart = makeCart({ metadata: JSON.stringify({ settlement_open: true }) });
+  test('[SC-EDIT-09-T2] panier fermé (V4.1) → 409 cart_not_editable', async () => {
+    const cart = makeCart({ status: 'closed' });
     // Le service lit le cart et détecte settlement_open avant UPDATE
     db.query.mockResolvedValueOnce({ rows: [cart] });
 
     await expect(
       updateOpenSharedCartItems('42', 'user-1', VALID_ITEMS)
-    ).rejects.toMatchObject({ status: 409, code: 'settlement_already_open' });
+    ).rejects.toMatchObject({ status: 409, code: 'cart_not_editable' });
   });
 
   test('[SC-EDIT-09-T3] Statut converted_to_order → 409 cart_not_editable', async () => {
-    const cart = makeCart({ status: 'converted_to_order', metadata: JSON.stringify({ settlement_open: false }) });
+    const cart = makeCart({ status: 'ordered' });
     db.query.mockResolvedValueOnce({ rows: [cart] });
 
     await expect(
@@ -157,7 +157,7 @@ describe('SC-EDIT-09 — guard PUT /api/shared-carts/:id/items', () => {
   });
 
   test('[SC-EDIT-09-T4] Paiements confirmés existants → 409 paid_contributions_exist', async () => {
-    const cart = makeCart({ status: 'active', metadata: JSON.stringify({ settlement_open: false }) });
+    const cart = makeCart({ status: 'open', metadata: JSON.stringify({ settlement_open: false }) });
     db.query
       .mockResolvedValueOnce({ rows: [cart] })            // SELECT cart FOR UPDATE
       .mockResolvedValueOnce({ rows: [{ n: 1 }] });       // COUNT contributions status='paid' > 0

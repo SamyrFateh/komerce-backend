@@ -9,7 +9,7 @@
  *   ✅ Contribution status inattendu (ex: refunded) → null + event
  *   ✅ payment_status !== 'paid' → null + event
  *   ✅ Panier non ouvert         → paid_not_counted (cart_not_open_for_contribution)
- *   ✅ Panier expiré             → paid_not_counted (cart_expired_at_webhook)
+ *   ✅ Fenêtre expirée           → paid_not_counted (cart_payment_window_expired)
  *   ✅ Total panier invalide     → paid_not_counted (invalid_cart_total)
  *   ✅ Montant > remaining       → paid_not_counted (amount_exceeds_remaining_at_webhook)
  *   ✅ Contribution normale      → paid + panier partially_funded
@@ -47,11 +47,11 @@ function makeContribution(overrides = {}) {
 function makeCart(overrides = {}) {
   return {
     id: 'cart-001',
-    status: 'active',
+    status: 'closed',
     total_kmf_snapshot: 30000,
     contributed_kmf: 10000,
     remaining_kmf: 20000,
-    expires_at: new Date(Date.now() + 86400000).toISOString(), // +1 jour
+    payment_window_ends_at: new Date(Date.now() + 86400000).toISOString(), // +1 jour
     ...overrides,
   };
 }
@@ -147,7 +147,7 @@ describe('paid_not_counted — panier non ouvert', () => {
   test('fully_funded → paid_not_counted + flag requires_manual_refund', async () => {
     const client = makeClient([
       { rows: [makeContribution()] },               // SELECT contributions
-      { rows: [makeCart({ status: 'fully_funded', remaining_kmf: 0 })] }, // SELECT panier
+      { rows: [makeCart({ status: 'ordered', remaining_kmf: 0 })] }, // SELECT panier
       { rows: [] },                                  // UPDATE contribution → failed
       { rows: [] },                                  // INSERT event paid_not_counted
     ]);
@@ -174,7 +174,7 @@ describe('paid_not_counted — panier expiré', () => {
     const pastDate = new Date(Date.now() - 1000).toISOString();
     const client = makeClient([
       { rows: [makeContribution()] },
-      { rows: [makeCart({ expires_at: pastDate })] },
+      { rows: [makeCart({ payment_window_ends_at: pastDate })] },
       { rows: [] }, // UPDATE failed
       { rows: [] }, // INSERT event
     ]);
@@ -187,7 +187,7 @@ describe('paid_not_counted — panier expiré', () => {
       /UPDATE shared_cart_contributions/.test(c.sql) && c.sql.includes("status = 'failed'")
     );
     const payload = JSON.parse(updateFailed.params[1]);
-    expect(payload.reason).toBe('cart_expired_at_webhook');
+    expect(payload.reason).toBe('cart_payment_window_expired');
     expect(payload.requires_manual_refund).toBe(true);
   });
 });
@@ -218,7 +218,7 @@ describe('paid_not_counted — montant dépasse remaining au moment du webhook',
     // remaining = 5000, contribution = 10000
     const client = makeClient([
       { rows: [makeContribution({ amount_kmf: 10000 })] },
-      { rows: [makeCart({ remaining_kmf: 5000, contributed_kmf: 25000, status: 'partially_funded' })] },
+      { rows: [makeCart({ remaining_kmf: 5000, contributed_kmf: 25000 })] },
       { rows: [] },
       { rows: [] },
     ]);
@@ -242,10 +242,10 @@ describe('paid_not_counted — montant dépasse remaining au moment du webhook',
 // Happy paths
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('contribution normale → partially_funded', () => {
+describe('contribution normale → reste closed (V4.1)', () => {
   test('updates contribution + panier + insère event contribution_paid', async () => {
     const updatedContrib = makeContribution({ status: 'paid' });
-    const updatedCart = makeCart({ contributed_kmf: 20000, remaining_kmf: 10000, status: 'partially_funded' });
+    const updatedCart = makeCart({ contributed_kmf: 20000, remaining_kmf: 10000, status: 'closed' });
 
     const client = makeClient([
       { rows: [makeContribution()] },     // SELECT contributions FOR UPDATE
@@ -260,7 +260,7 @@ describe('contribution normale → partially_funded', () => {
     const result = await confirmContributionFromStripeSafely(SESSION_PAID);
     expect(result).not.toBeNull();
     expect(result.contribution.status).toBe('paid');
-    expect(result.cart.status).toBe('partially_funded');
+    expect(result.cart.status).toBe('closed'); // V4.1 : le webhook ne change jamais le statut
     expectTransactionCommitted(client);
 
     const updateContrib = client.calls.find(c =>
@@ -278,14 +278,14 @@ describe('contribution normale → partially_funded', () => {
   });
 });
 
-describe('dernière contribution → fully_funded', () => {
+describe('dernière contribution → cart_fully_funded (statut reste closed)', () => {
   test('panier passe fully_funded + event cart_fully_funded inséré', async () => {
     // Contribution = 20 000 KMF, remaining = 20 000 → fully funded
     const contribution = makeContribution({ amount_kmf: 20000 });
-    const cart = makeCart({ contributed_kmf: 10000, remaining_kmf: 20000, status: 'partially_funded' });
+    const cart = makeCart({ contributed_kmf: 10000, remaining_kmf: 20000 });
 
     const updatedContrib = { ...contribution, status: 'paid' };
-    const updatedCart = { ...cart, contributed_kmf: 30000, remaining_kmf: 0, status: 'fully_funded' };
+    const updatedCart = { ...cart, contributed_kmf: 30000, remaining_kmf: 0, status: 'closed' };
 
     const client = makeClient([
       { rows: [contribution] },
@@ -298,7 +298,7 @@ describe('dernière contribution → fully_funded', () => {
     db.getClient.mockResolvedValueOnce(client);
 
     const result = await confirmContributionFromStripeSafely(SESSION_PAID);
-    expect(result.cart.status).toBe('fully_funded');
+    expect(result.cart.status).toBe('closed'); // V4.1 : reste closed, cart_fully_funded émis pour le délai de grâce
     expect(result.cart.remaining_kmf).toBe(0);
     expectTransactionCommitted(client);
 
