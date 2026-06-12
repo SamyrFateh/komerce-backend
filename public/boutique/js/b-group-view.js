@@ -2,17 +2,12 @@
  * @module b-group-view
  * @owner sélecteurs .k-group-* — onglet dédié panier partagé
  *
- * Doctrine v4 — deux phases distinctes :
+ * Doctrine V4.1 — deux phases :
  *
- *   PHASE OUVERTE (metadata.settlement_open = false)
- *     → Participant : formulaire d'engagement indicatif (nom + téléphone + montant)
- *       Aucun Stripe. Bouton : "Enregistrer mon engagement"
- *     → Créateur : carte de pilotage 3 étapes, bouton "Bloquer et ouvrir le paiement"
- *
- *   PHASE RÈGLEMENT (metadata.settlement_open = true)
- *     → Participant : saisit son téléphone, retrouve son engagement verrouillé,
- *       voit le montant fixé, bouton "Payer X KMF" → Stripe Checkout
- *     → Créateur : suivi des paiements, finalisation possible
+ *   PHASE OUVERTE   → Estimation facultative (prénom + montant approx, sans OTP).
+ *                      Bouton : « Indiquer ma part »
+ *   PHASE FERMÉE    → Paiement à montant libre, OTP au clic « Payer ».
+ *                      Compte à rebours 48 h depuis payment_window_ends_at.
  *
  * Règle absolue : tout vit dans la boutique. Pas de page annexe.
  */
@@ -29,11 +24,13 @@ import {
   getSharedCartOwner,
   getSharedCartPublic,
   getSharedCartItems,
-  getCommitments,
-  createCommitment,
-  lookupCommitmentByPhone,
+  getEstimationAggregate,
+  upsertEstimation,
+  getEstimationByPhone,
   createContribution,
+  closeCart,
   openSettlement,
+  extendPaymentWindow,
   finalizeSharedCart,
   cancelSharedCart,
 } from './group/group-api.js';
@@ -52,6 +49,9 @@ import {
   remainingKmf,
   settlementExpiresAt,
   timeRemaining,
+  businessStatusOf,
+  isPaymentWindowOpen,
+  BUSINESS,
 } from './group/group-helpers.js';
 import {
   renderCreatorCartSwitcher,
@@ -99,13 +99,9 @@ function startPolling(cartId, onRefresh) {
       if (!fresh) return;
       // Priorité : commitments inclus dans la réponse owner (§2.4 — Option B)
       // Fallback : fetch séparé si l'endpoint ne les inclut pas encore
-      let freshCommitments = fresh.commitments || [];
-      if (!freshCommitments.length) {
-        try {
-          const token = fresh.cart?.token;
-          if (token) freshCommitments = await getCommitments(token);
-        } catch (_) {}
-      }
+      // V4.1 : le payload owner inclut estimations (renommées commitments pour
+      // compatibilité Lot 3 — le cockpit créateur sera refactoré en Lot 4).
+      const freshCommitments = fresh.estimations || fresh.commitments || [];
       onRefresh(fresh, freshCommitments);
     } catch (_) {}
   }, 30_000);
@@ -228,9 +224,9 @@ function injectStyles() {
 }
 
 /* ══════════════════════════════════════════════════════════════════
- * FORMULAIRE D'ENGAGEMENT (phase ouverte)
- * Collecte : nom + téléphone + montant indicatif
- * Aucun Stripe, aucun paiement.
+ * FORMULAIRE D'ESTIMATION (phase ouverte) — Doctrine V4.1
+ * Facultatif, modifiable, non contractuel.
+ * Prénom + téléphone facultatif + montant approximatif. Aucun OTP ici.
  * ══════════════════════════════════════════════════════════════════ */
 
 function identityLabel(user) {
@@ -242,282 +238,274 @@ function identityLabel(user) {
   };
 }
 
-function renderEngagementForm(token, cart, isCreator = false) {
-  const meta = metaOf(cart);
-  const lockedTotal = r(meta.locked_commitments_total_kmf || 0);
-  const suggestion = lockedTotal > 0
-    ? Math.round(r(cart.total_kmf_snapshot) / Math.max(1, r(meta.locked_commitments_count || 1) + 1) / 100) * 100
-    : 0;
-  // TX-02 — montant moyen suggéré (hint visible dans la vue groupe)
-  const totalParticipants = r(meta.locked_commitments_count || 0) + 1;
+function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimated_kmf: 0 }) {
+  const totalParticipants = Math.max(1, r(estimAgg.count)) + 1;
   const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
   const splitHint = avgSuggestion >= 2500
     ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
     : '';
 
-  const saved = !isCreator ? readParticipantCommitment(token) : null;
+  const saved = readParticipantCommitment(token);
   const savedState = saved ? `
       <div class="k-group-saved-commitment" id="k-ge-saved-state">
-        <strong>✅ Engagement enregistré</strong>
+        <strong>✅ Part indiquée</strong>
         <span>${sanitize(saved.name || 'Participant')} · ${fmt(r(saved.amount), 'KMF')}</span>
-        ${saved.phone ? `<span>Téléphone : ${sanitize(saved.phone)}</span>` : ''}
-        <button type="button" id="k-ge-edit-btn">✏️ Modifier mon engagement</button>
+        <span class="k-group-saved-note">Indicatif et modifiable — vous choisirez librement votre montant au moment de payer.</span>
+        <button type="button" id="k-ge-edit-btn">✏️ Modifier ma part</button>
       </div>` : '';
 
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-phase-badge k-group-phase-badge--open">Phase ouverte — concertation</div>
-      <div class="k-group-section-title">💸 Participer</div>
+      <div class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</div>
+      <div class="k-group-section-title">💸 Indiquer ma part</div>
       <p class="k-group-desc-text">
-        Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
+        Donnez une idée de votre participation — c'est facultatif, sans engagement,
+        et ça aide le groupe à voir où en est le financement. Aucun paiement maintenant.
       </p>
       ${savedState}
       <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
-        <div class="k-group-identity-note">
-          <strong>Identité sécurisée par OTP</strong>
-          <span>Votre numéro vérifié sera utilisé pour retrouver cet engagement. Vous pourrez utiliser un autre numéro si besoin.</span>
-        </div>
         <div class="k-group-mypart" id="k-ge-mypart">
           <div class="k-group-mypart-head">💰 Ma part</div>
           ${splitHint}
           <div class="k-group-field">
-            <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
-            <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
-              placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
-              inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+            <label class="k-group-label" for="k-ge-name">Votre prénom</label>
+            <input id="k-ge-name" class="k-group-input" type="text" maxlength="60"
+              placeholder="Ex : Fatima" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
           </div>
-        </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
-          <input id="k-ge-msg" class="k-group-input" type="text" placeholder="Ex : Je participe avec plaisir !" maxlength="200" value="${sanitize(saved?.message || '')}">
+          <div class="k-group-field">
+            <label class="k-group-label" for="k-ge-phone">Téléphone (facultatif)</label>
+            <input id="k-ge-phone" class="k-group-input" type="tel" maxlength="20"
+              placeholder="Pour retrouver votre part plus tard" autocomplete="tel" inputmode="tel"
+              value="${sanitize(saved?.phone || '')}">
+          </div>
+          <div class="k-group-field">
+            <label class="k-group-label" for="k-ge-amount">Montant approximatif (KMF)</label>
+            <input id="k-ge-amount" class="k-group-input" type="number" min="2500" step="100"
+              placeholder="Ex : 5000" inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+          </div>
         </div>
         <p class="k-group-input-error" id="k-ge-err"></p>
         <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
-          ${saved ? '✏️ Mettre à jour mon engagement' : '✋ Enregistrer mon engagement'}
+          ${saved ? '✏️ Mettre à jour ma part' : '✋ Indiquer ma part'}
         </button>
+        <p class="k-group-footnote">Sans identification · modifiable · non contractuel</p>
       </div>
     </div>`;
 }
 
-function bindEngagementForm(el, token, cart, onSuccess) {
+function bindEstimationForm(el, token, cart, onSuccess) {
   el.querySelector('#k-ge-edit-btn')?.addEventListener('click', () => {
-    const fields = el.querySelector('#k-ge-fields');
-    const saved = el.querySelector('#k-ge-saved-state');
-    if (fields) fields.hidden = false;
-    if (saved) saved.hidden = true;
+    el.querySelector('#k-ge-fields').hidden = false;
+    el.querySelector('#k-ge-saved-state').hidden = true;
     el.querySelector('#k-ge-amount')?.focus();
   });
 
   el.querySelector('#k-ge-submit-btn')?.addEventListener('click', async () => {
-    // Sécurité : si les champs sont cachés (état saved affiché), ignorer le clic.
     const fieldsDiv = el.querySelector('#k-ge-fields');
     if (fieldsDiv?.hidden) return;
 
+    const name   = (el.querySelector('#k-ge-name')?.value || '').trim();
+    const phone  = (el.querySelector('#k-ge-phone')?.value || '').trim();
     const amount = Number(el.querySelector('#k-ge-amount')?.value);
-    const msg    = (el.querySelector('#k-ge-msg')?.value || '').trim();
     const errEl  = el.querySelector('#k-ge-err');
     const btn    = el.querySelector('#k-ge-submit-btn');
+    const idleLabel = btn.textContent.trim();
 
     errEl.textContent = '';
-    if (!amount || amount < 500) { errEl.textContent = 'Minimum 500 KMF.'; return; }
+    if (!name) { errEl.textContent = 'Indiquez votre prénom.'; return; }
+    if (!amount || amount < 2500) { errEl.textContent = 'Minimum 2 500 KMF.'; return; }
 
     btn.disabled = true;
-    btn.textContent = '🔐 Vérification…';
+    btn.textContent = '⏳ Enregistrement…';
 
     try {
-      const identity = await requireIdentity({
-        reason: 'participer au panier',
-        title: 'Sécuriser votre participation',
-        allowOtherPhone: true,
-      });
-
-      if (!identity) {
-        btn.disabled = false;
-        btn.textContent = '✋ Enregistrer mon engagement';
-        return;
-      }
-
-      const id = identityLabel(identity);
-      const name = id.name || 'Client Komerce';
-      const phone = id.phone;
-
-      if (!phone) {
-        errEl.textContent = 'Numéro vérifié introuvable. Réessayez avec un autre numéro.';
-        btn.disabled = false;
-        btn.textContent = '✋ Enregistrer mon engagement';
-        return;
-      }
-
-      btn.textContent = '⏳ Enregistrement…';
-
-      const res = await createCommitment(token, {
+      const res = await upsertEstimation(token, {
         participant_name: name,
-        participant_phone: phone,
+        ...(phone ? { participant_phone: phone } : {}),
         amount_kmf: amount,
-        ...(msg ? { message: msg } : {}),
       });
 
       rememberParticipantToken(token);
-      rememberParticipantCommitment(token, { name, phone, amount, message: msg });
+      rememberParticipantCommitment(token, { name, phone, amount, estimationId: res?.estimation?.id });
 
-      showToast(res?.updated ? 'Engagement mis à jour !' : 'Engagement enregistré !', 'success');
-      // État succès visible AVANT le re-render : le participant voit le
-      // changement d'état du bouton, puis la carte « Engagement enregistré ».
+      showToast(res?.updated ? 'Part mise à jour !' : 'Part indiquée !', 'success');
       btn.classList.add('is-done');
-      btn.textContent = '✅ Engagement enregistré';
+      btn.textContent = '✅ Part indiquée';
       setTimeout(() => onSuccess?.(), 900);
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
       btn.disabled = false;
-      btn.textContent = '✋ Enregistrer mon engagement';
+      btn.textContent = idleLabel;
     }
   });
 }
 
 /* ══════════════════════════════════════════════════════════════════
- * FORMULAIRE DE PAIEMENT (phase règlement)
- * Le participant saisit son téléphone → lookup commitment verrouillé
- * → affichage du montant fixe → bouton "Payer X KMF" → Stripe Checkout
+ * FORMULAIRE DE PAIEMENT (phase fermée) — Doctrine V4.1
+ * Montant LIBRE, pré-rempli depuis l'estimation locale.
+ * OTP requis au clic « Payer » — jamais avant.
  * ══════════════════════════════════════════════════════════════════ */
+
+function renderPaymentCountdown(cart) {
+  const ends = cart.payment_window_ends_at ? new Date(cart.payment_window_ends_at) : null;
+  if (!ends) return '';
+  const now = Date.now();
+  const diff = ends.getTime() - now;
+  if (diff <= 0) return '<div class="k-group-countdown k-group-countdown--expired">Fenêtre de paiement expirée</div>';
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  const label = h > 0 ? `${h} h ${m.toString().padStart(2,'0')} min` : `${m} min`;
+  const pct = Math.max(0, Math.min(100, (diff / (48 * 3_600_000)) * 100));
+  return `
+    <div class="k-group-countdown" id="k-countdown-root" data-ends="${ends.toISOString()}">
+      <div class="k-group-countdown-label">⏳ Fenêtre de paiement — <strong id="k-countdown-text">${label}</strong></div>
+      <div class="k-group-countdown-bar"><div class="k-group-countdown-fill" style="width:${pct.toFixed(1)}%"></div></div>
+    </div>`;
+}
+
+function startCountdownTick() {
+  const root = document.getElementById('k-countdown-root');
+  if (!root) return;
+  const ends = new Date(root.dataset.ends);
+  const tick = () => {
+    const diff = ends.getTime() - Date.now();
+    const textEl = document.getElementById('k-countdown-text');
+    const fillEl = root.querySelector('.k-group-countdown-fill');
+    if (!textEl) return;
+    if (diff <= 0) {
+      textEl.textContent = 'Expirée';
+      if (fillEl) fillEl.style.width = '0%';
+      return;
+    }
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    const s = Math.floor((diff % 60_000) / 1_000);
+    textEl.textContent = h > 0
+      ? `${h} h ${m.toString().padStart(2,'0')} min`
+      : `${m}:${s.toString().padStart(2,'0')}`;
+    if (fillEl) fillEl.style.width = `${Math.max(0, (diff / (48 * 3_600_000)) * 100).toFixed(1)}%`;
+  };
+  tick();
+  const id = setInterval(tick, 10_000);
+  // Nettoyage si la vue est re-renderée
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById('k-countdown-root')) { clearInterval(id); observer.disconnect(); }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 function renderPaymentForm(token, cart) {
+  const saved = readParticipantCommitment(token);
+  const prefillAmount = saved?.amount ? r(saved.amount) : '';
+  const prefillName   = saved?.name   || '';
+  const countdown = renderPaymentCountdown(cart);
+  const remaining = r(cart.remaining_kmf ?? cart.total_kmf_snapshot ?? 0);
+  const remainingHint = remaining > 0
+    ? `<div class="k-group-split-hint">💳 Reste à financer : ${fmt(remaining, 'KMF')}</div>`
+    : '';
+
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-phase-badge k-group-phase-badge--settlement">Phase règlement — paiement</div>
-      <div class="k-group-section-title">💳 Payer ma contribution</div>
+      <div class="k-group-phase-badge k-group-phase-badge--settlement">Paiement ouvert</div>
+      <div class="k-group-section-title">💳 Payer ma part</div>
       <p class="k-group-desc-text">
-        Le panier est passé au règlement. Komerce utilise votre numéro vérifié pour retrouver votre engagement verrouillé.
+        Le panier est fermé — la liste est définitive. Choisissez librement votre montant
+        et payez en toute sécurité. Votre identité sera vérifiée au moment du paiement.
       </p>
-      <div class="k-group-identity-note">
-        <strong>Identité sécurisée par OTP</strong>
-        <span>Vous pouvez continuer avec le numéro reconnu ou utiliser un autre numéro si l'engagement est rattaché ailleurs.</span>
+      ${countdown}
+      ${remainingHint}
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gp-name">Votre prénom</label>
+        <input id="k-gp-name" class="k-group-input" type="text" maxlength="60"
+          placeholder="Ex : Fatima" autocomplete="given-name" value="${sanitize(prefillName)}">
       </div>
-      <p class="k-group-input-error" id="k-gp-lookup-err"></p>
-      <button class="k-group-btn k-group-btn--ghost" id="k-gp-lookup-btn">🔐 Retrouver mon engagement</button>
-
-      <!-- Zone affichée après lookup -->
-      <div id="k-gp-locked-zone" style="display:none;margin-top:14px">
-        <div class="k-group-locked-amount">
-          <div>
-            <span>Votre engagement verrouillé</span><br>
-            <strong id="k-gp-locked-amount-text">—</strong>
-          </div>
-          <span style="font-size:22px">🔐</span>
-        </div>
-        <div class="k-group-field" style="margin-top:10px">
-          <label class="k-group-label" for="k-gp-name">Votre prénom (pour la confirmation)</label>
-          <input id="k-gp-name" class="k-group-input" type="text" placeholder="Ex : Fatima" maxlength="60" autocomplete="given-name">
-        </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-gp-email">Email (reçu de paiement Stripe)</label>
-          <input id="k-gp-email" class="k-group-input" type="email" placeholder="Ex : fatima@email.com" maxlength="120" autocomplete="email">
-        </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-gp-msg">Message (optionnel)</label>
-          <input id="k-gp-msg" class="k-group-input" type="text" placeholder="Ex : Bon courage !" maxlength="200">
-        </div>
-        <p class="k-group-input-error" id="k-gp-pay-err"></p>
-        <button class="k-group-btn k-group-btn--primary" id="k-gp-pay-btn" data-amount="0" data-phone="">
-          💳 Payer —
-        </button>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gp-amount">Montant (KMF)</label>
+        <input id="k-gp-amount" class="k-group-input" type="number" min="2500" step="100"
+          placeholder="Ex : 5000" inputmode="numeric" value="${prefillAmount}">
       </div>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gp-email">Email (reçu Stripe, facultatif)</label>
+        <input id="k-gp-email" class="k-group-input" type="email" maxlength="120"
+          placeholder="Ex : fatima@email.com" autocomplete="email">
+      </div>
+      <div class="k-group-field">
+        <label class="k-group-label" for="k-gp-msg">Message (optionnel)</label>
+        <input id="k-gp-msg" class="k-group-input" type="text" maxlength="200"
+          placeholder="Ex : Bon courage !">
+      </div>
+      <p class="k-group-input-error" id="k-gp-err"></p>
+      <button class="k-group-btn k-group-btn--primary" id="k-gp-pay-btn">🔐 Vérifier et payer</button>
+      <p class="k-group-footnote">Votre numéro sera vérifié par OTP avant le paiement</p>
     </div>`;
 }
 
 function bindPaymentForm(el, token, cart) {
-  const lookupBtn = el.querySelector('#k-gp-lookup-btn');
-  lookupBtn?.addEventListener('click', async () => {
-    const errEl = el.querySelector('#k-gp-lookup-err');
-    errEl.textContent = '';
+  startCountdownTick();
 
-    lookupBtn.disabled = true;
-    lookupBtn.textContent = '🔐 Vérification…';
+  el.querySelector('#k-gp-pay-btn')?.addEventListener('click', async () => {
+    const btn    = el.querySelector('#k-gp-pay-btn');
+    const errEl  = el.querySelector('#k-gp-err');
+    const name   = (el.querySelector('#k-gp-name')?.value || '').trim();
+    const amount = Number(el.querySelector('#k-gp-amount')?.value);
+    const email  = (el.querySelector('#k-gp-email')?.value || '').trim();
+    const msg    = (el.querySelector('#k-gp-msg')?.value || '').trim();
+
+    errEl.textContent = '';
+    if (!name)                        { errEl.textContent = 'Indiquez votre prénom.'; return; }
+    if (!amount || amount < 2500)     { errEl.textContent = 'Minimum 2 500 KMF.'; return; }
+    if (email && !email.includes('@')) { errEl.textContent = 'Email invalide.'; return; }
+
+    btn.disabled = true;
+    btn.textContent = '🔐 Vérification OTP…';
 
     try {
       const identity = await requireIdentity({
-        reason: 'payer ma contribution',
+        reason: 'payer ma part du panier groupe',
         title: 'Sécuriser votre paiement',
         allowOtherPhone: true,
       });
 
       if (!identity) {
-        lookupBtn.disabled = false;
-        lookupBtn.textContent = '🔐 Retrouver mon engagement';
+        btn.disabled = false;
+        btn.textContent = '🔐 Vérifier et payer';
         return;
       }
 
       const id = identityLabel(identity);
       const phone = id.phone;
-
       if (!phone) {
-        throw new Error('Numéro vérifié introuvable. Réessayez avec un autre numéro.');
+        errEl.textContent = 'Numéro introuvable après vérification. Réessayez.';
+        btn.disabled = false;
+        btn.textContent = '🔐 Vérifier et payer';
+        return;
       }
 
-      lookupBtn.textContent = '⏳ Recherche…';
+      btn.textContent = '⏳ Création du paiement…';
 
-      const res = await lookupCommitmentByPhone(token, phone);
-      const c = res?.commitment;
-      if (!c) throw new Error('Aucun engagement verrouillé trouvé pour ce numéro.');
-
-      const zone        = el.querySelector('#k-gp-locked-zone');
-      const amountEl    = el.querySelector('#k-gp-locked-amount-text');
-      const payBtn      = el.querySelector('#k-gp-pay-btn');
-      const nameInput   = el.querySelector('#k-gp-name');
-
-      amountEl.textContent = fmt(r(c.amount_kmf), 'KMF');
-      payBtn.textContent   = `💳 Payer ${fmt(r(c.amount_kmf), 'KMF')}`;
-      payBtn.dataset.amount = String(c.amount_kmf);
-      payBtn.dataset.phone  = phone;
-
-      if (nameInput) {
-        nameInput.value = c.participant_name || id.name || 'Client Komerce';
-      }
-
-      zone.style.display = '';
-      lookupBtn.textContent = '✅ Engagement trouvé';
-    } catch (err) {
-      errEl.textContent = err?.message || 'Aucun engagement verrouillé pour ce numéro.';
-      lookupBtn.disabled = false;
-      lookupBtn.textContent = '🔐 Retrouver mon engagement';
-    }
-  });
-
-  el.querySelector('#k-gp-pay-btn')?.addEventListener('click', async () => {
-    const payBtn = el.querySelector('#k-gp-pay-btn');
-    const errEl  = el.querySelector('#k-gp-pay-err');
-    const name   = (el.querySelector('#k-gp-name')?.value || '').trim();
-    const email  = (el.querySelector('#k-gp-email')?.value || '').trim();
-    const msg    = (el.querySelector('#k-gp-msg')?.value || '').trim();
-    const amount = Number(payBtn.dataset.amount);
-    const phone  = payBtn.dataset.phone;
-
-    errEl.textContent = '';
-    if (!name)                       { errEl.textContent = 'Prénom requis.'; return; }
-    if (!email || !email.includes('@')) { errEl.textContent = 'Email valide requis.'; return; }
-    if (!amount)                     { errEl.textContent = 'Montant invalide.'; return; }
-
-    payBtn.disabled = true; payBtn.textContent = '⏳ Redirection…';
-
-    try {
       const res = await createContribution(token, {
         amount_kmf: amount,
         contributor_name: name,
-        contributor_email: email,
         contributor_phone: phone,
+        ...(email ? { contributor_email: email } : {}),
         ...(msg ? { message: msg } : {}),
       });
+
       if (res?.checkout_url) {
         window.location.href = res.checkout_url;
       } else {
         showToast('Contribution enregistrée !', 'success');
-        payBtn.textContent = '✅ Enregistré';
+        btn.textContent = '✅ Enregistré';
       }
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      payBtn.disabled = false; payBtn.textContent = `💳 Payer ${fmt(amount, 'KMF')}`;
+      btn.disabled = false;
+      btn.textContent = '🔐 Vérifier et payer';
     }
   });
 }
 
+/* ── Rendu progression ─────────────────────────────────────────── */
 /* ── Rendu progression ─────────────────────────────────────────── */
 /* renderProgress → group/group-render-creator.js (lot JS-2) */
 
@@ -840,20 +828,25 @@ export async function renderGroupView(opts = {}) {
     const cart  = data.cart;
     const items = data.items || [];
     const total = r(cart.total_kmf_snapshot);
-    const settlementOpen = isSettlementOpen(cart);
-    // Statuts v4 (LOT 0) : phase ouverte = engagement indicatif ;
-    // closed_for_settlement / settlement_in_progress = paiement ;
-    // ready_to_finalize / fully_funded = tout payé, plus rien à faire.
-    const isOpenPhase    = ['active', 'commitment_open', 'partially_funded'].includes(cart.status) && !settlementOpen;
-    const isPaymentPhase = settlementOpen &&
-      ['active', 'partially_funded', 'closed_for_settlement', 'settlement_in_progress'].includes(cart.status) &&
-      remainingKmf(cart) > 0;
-    const isFullyPaid    = ['ready_to_finalize', 'fully_funded'].includes(cart.status) || remainingKmf(cart) <= 0;
+    // ── Projection V4.1 ─────────────────────────────────────────────
+    const biz            = businessStatusOf(cart);
+    const isOpenPhase    = biz === BUSINESS.OPEN;
+    const isPaymentPhase = biz === BUSINESS.CLOSED && isPaymentWindowOpen(cart);
+    const isAwaitingChoice = biz === BUSINESS.AWAITING_CHOICE;
+    const isOrdered      = biz === BUSINESS.ORDERED;
+    const isCancelled    = biz === BUSINESS.CANCELLED;
 
-    let commitmentsList = [];
-    try {
-      commitmentsList = await getCommitments(participantToken);
-    } catch (_) {}
+    // Agrégat estimations (colonne principale, phase ouverte)
+    let estimAgg = { count: 0, total_estimated_kmf: 0 };
+    // Le payload public contient déjà estimations_summary — réutiliser si disponible
+    if (publicData?.estimations_summary) {
+      estimAgg = {
+        count: r(publicData.estimations_summary.count),
+        total_estimated_kmf: r(publicData.estimations_summary.total_estimated_kmf),
+      };
+    } else {
+      try { estimAgg = await getEstimationAggregate(participantToken); } catch (_) {}
+    }
 
     /* ── Header premium participant ───────────────────────────────── */
     const benefName = sanitize(cart.beneficiary_name_snapshot || '');
@@ -865,42 +858,59 @@ export async function renderGroupView(opts = {}) {
         <div class="k-group-header-meta">
           <span class="k-group-header-total">${fmt(total, 'KMF')}</span>
           <span class="k-group-header-sep">·</span>
-          <span class="k-group-header-status">${statusLabel(cart.status, settlementOpen)}</span>
+          <span class="k-group-header-status">${statusLabel(cart.status, isPaymentPhase)}</span>
           <span class="k-group-header-sep">·</span>
           <span class="k-group-header-count">${items.length} article${items.length > 1 ? 's' : ''}</span>
         </div>
       </div>`;
 
-    /* ── Engagements compacts (colonne gauche si phase ouverte) ───── */
-    const commitmentsHtml = commitmentsList.length > 0 ? `
+    /* ── Agrégat estimations (colonne gauche, phase ouverte) ───────── */
+    const estimHtml = isOpenPhase && estimAgg.count > 0 ? `
       <div class="k-group-card k-group-commitments-card">
-        <div class="k-group-contribs-label">Engagements ${settlementOpen ? 'verrouillés' : 'indicatifs'} (${commitmentsList.length})</div>
-        <div class="k-group-commitment-list">
-          ${commitmentsList.map(c => `
-            <div class="k-group-commitment-row">
-              <span class="k-group-commitment-name">${sanitize(c.participant_name?.split(' ')[0] || 'Participant')}</span>
-              <span class="k-group-commitment-amount">${fmt(r(c.amount_kmf), 'KMF')}</span>
-            </div>`).join('')}
+        <div class="k-group-contribs-label">Parts indiquées</div>
+        <div class="k-group-estimation-aggregate">
+          <span class="k-group-estimation-count">👥 ${estimAgg.count} participant${estimAgg.count > 1 ? 's' : ''}</span>
+          <span class="k-group-estimation-total">~${fmt(r(estimAgg.total_estimated_kmf), 'KMF')} estimés</span>
         </div>
+        <p class="k-group-estimation-note">Indicatif · chacun choisit librement son montant au moment de payer</p>
       </div>` : '';
 
     /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
     const creatorIdHtml = renderCreatorIdentityCard(cart);
-    const asideHtml = isOpenPhase
-      ? renderEngagementForm(participantToken, cart, false)
-      : isPaymentPhase
-        ? renderPaymentForm(participantToken, cart)
-        : `<div class="k-group-card k-group-fully-paid-card">
-             <div class="k-group-fully-paid-icon">✅</div>
-             <strong>${isFullyPaid ? 'Tout est réglé, merci !' : "Ce panier n'accepte plus de contribution."}</strong>
-           </div>`;
+    let asideHtml;
+    if (isOpenPhase) {
+      asideHtml = renderEstimationForm(participantToken, cart, estimAgg);
+    } else if (isPaymentPhase) {
+      asideHtml = renderPaymentForm(participantToken, cart);
+    } else if (isAwaitingChoice) {
+      asideHtml = `<div class="k-group-card k-group-terminal-card">
+        <div class="k-group-terminal-icon">🤔</div>
+        <strong>En attente de décision du créateur</strong>
+        <p>La fenêtre de paiement est terminée. Le créateur va décider de la suite.</p>
+      </div>`;
+    } else if (isOrdered) {
+      asideHtml = `<div class="k-group-card k-group-fully-paid-card">
+        <div class="k-group-fully-paid-icon">✅</div>
+        <strong>Commande créée — merci à tous !</strong>
+      </div>`;
+    } else if (isCancelled) {
+      asideHtml = `<div class="k-group-card k-group-terminal-card">
+        <div class="k-group-terminal-icon">❌</div>
+        <strong>Panier annulé</strong>
+      </div>`;
+    } else {
+      asideHtml = `<div class="k-group-card k-group-terminal-card">
+        <div class="k-group-terminal-icon">⛔</div>
+        <strong>Ce panier n'accepte plus de contribution.</strong>
+      </div>`;
+    }
 
     el.innerHTML = `
       <div class="k-group-participant-layout">
         <div class="k-group-participant-col-main">
           ${headerHtml}
-          ${renderParticipantItemsAccordion(items, total, cart, settlementOpen)}
-          ${commitmentsHtml}
+          ${renderParticipantItemsAccordion(items, total, cart, isPaymentPhase)}
+          ${estimHtml}
         </div>
         <div class="k-group-participant-col-aside">
           ${creatorIdHtml}
@@ -913,9 +923,7 @@ export async function renderGroupView(opts = {}) {
     bindParticipantItemsAccordion(el);
 
     if (isOpenPhase) {
-      bindEngagementForm(asideEl, participantToken, cart, async () => {
-        // Préserver la position : le re-render complet remontait en haut de
-        // page et masquait l'état « Engagement enregistré ».
+      bindEstimationForm(asideEl, participantToken, cart, async () => {
         const y = window.scrollY;
         await renderGroupView({ participantToken });
         window.scrollTo(0, y);
@@ -991,14 +999,8 @@ export async function renderGroupView(opts = {}) {
   const isCartOpen    = ['active', 'partially_funded', 'fully_funded',
                          'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status);
 
-  let commitmentsList = data.commitments || [];
-  // Fallback : si l'endpoint owner ne les inclut pas encore (compatibilité transitoire),
-  // on tente le fetch séparé
-  if (!commitmentsList.length && state.shareToken) {
-    try {
-      commitmentsList = await getCommitments(state.shareToken);
-    } catch (_) {}
-  }
+  // V4.1 : le payload owner inclut estimations (Lot 4 refactorera le cockpit créateur).
+  const commitmentsList = data.estimations || data.commitments || [];
 
   const refreshView = () => renderGroupView(opts);
 

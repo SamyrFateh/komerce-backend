@@ -1790,7 +1790,7 @@
 }
 .k-group-eng-fields[hidden] { display: none; }
 /* État succès du bouton d'engagement (point 3) : feedback immédiat avant
-   l'apparition de la carte « Engagement enregistré ». */
+   l'apparition de la carte « Part indiquée ». */
 .k-group-btn.is-done,
 .k-group-btn.is-done:disabled {
   background: var(--checkout-accent);

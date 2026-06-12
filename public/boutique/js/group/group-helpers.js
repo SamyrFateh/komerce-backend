@@ -52,21 +52,60 @@ export function engagementCoverage(commitments = [], total = 0) {
  * @param {boolean} isSettlementOpen résultat de isSettlementOpen(cart)
  * @returns {string}
  */
-export function statusLabel(status, isSettlementOpen) {
-  if (status === 'ready_to_finalize') return '✅ Tout est payé';
-  if (isSettlementOpen) return '🔐 En règlement';
+export function statusLabel(status, paymentOpen) {
+  if (paymentOpen) return '💳 Paiement ouvert';
   return {
-    active:                 '🟢 Ouvert',
-    commitment_open:        '🟢 Ouvert',
-    partially_funded:       '🟡 Partiellement financé',
-    fully_funded:           '✅ Financé',
-    closed_for_settlement:  '🔐 En règlement',
-    settlement_in_progress: '🔐 En règlement',
-    converted_to_order: '📦 Clôturé',
-    finalized:          '📦 Clôturé',
-    cancelled:          '❌ Annulé',
+    open:            '🟢 Panier ouvert',
+    closed:          '💳 Paiement ouvert',
+    awaiting_choice: '🤔 En attente de décision',
+    ordered:         '📦 Commande créée',
+    cancelled:       '❌ Annulé',
+    active:                 '🟢 Panier ouvert',
+    commitment_open:        '🟢 Panier ouvert',
+    partially_funded:       '💳 Paiement ouvert',
+    fully_funded:           '💳 Paiement ouvert',
+    closed_for_settlement:  '💳 Paiement ouvert',
+    settlement_in_progress: '💳 Paiement ouvert',
+    ready_to_finalize:      '💳 Paiement ouvert',
+    converted_to_order: '📦 Commande créée',
+    finalized:          '📦 Commande créée',
     expired:            '⏱️ Expiré',
   }[status] || status;
+}
+
+export const BUSINESS = Object.freeze({
+  OPEN: 'OPEN', CLOSED: 'CLOSED', AWAITING_CHOICE: 'AWAITING_CHOICE',
+  ORDERED: 'ORDERED', CANCELLED: 'CANCELLED', EXPIRED: 'EXPIRED', ARCHIVED: 'ARCHIVED',
+});
+
+const _LEGACY_CLOSED  = ['closed_for_settlement', 'settlement_in_progress',
+                         'partially_funded', 'fully_funded', 'ready_to_finalize'];
+const _LEGACY_ORDERED = ['converted_to_order', 'finalized'];
+const _LEGACY_OPEN    = ['draft', 'active', 'commitment_open'];
+
+export function businessStatusOf(cart) {
+  const s = String(cart?.status || '');
+  if (s === 'open')            return BUSINESS.OPEN;
+  if (s === 'closed')          return BUSINESS.CLOSED;
+  if (s === 'awaiting_choice') return BUSINESS.AWAITING_CHOICE;
+  if (s === 'ordered')         return BUSINESS.ORDERED;
+  if (s === 'cancelled' || s === 'refunded') return BUSINESS.CANCELLED;
+  if (s === 'expired')         return BUSINESS.EXPIRED;
+  if (s === 'archived')        return BUSINESS.ARCHIVED;
+  if (_LEGACY_ORDERED.includes(s)) return BUSINESS.ORDERED;
+  if (_LEGACY_CLOSED.includes(s) || metaOf(cart).settlement_open === true) return BUSINESS.CLOSED;
+  if (_LEGACY_OPEN.includes(s))    return BUSINESS.OPEN;
+  return null;
+}
+
+export function paymentWindowEndsAt(cart) {
+  return cart?.payment_window_ends_at ? new Date(cart.payment_window_ends_at) : null;
+}
+
+export function isPaymentWindowOpen(cart) {
+  if (businessStatusOf(cart) !== BUSINESS.CLOSED) return false;
+  const ends = paymentWindowEndsAt(cart);
+  return !ends || ends > new Date();
 }
 
 /**
@@ -90,8 +129,7 @@ export function metaOf(cart) {
  * @returns {boolean}
  */
 export function isSettlementOpen(cart) {
-  return metaOf(cart).settlement_open === true ||
-    ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart?.status);
+  return businessStatusOf(cart) === BUSINESS.CLOSED;
 }
 
 /**
@@ -115,10 +153,8 @@ export function remainingKmf(cart) {
  * @returns {Date|null}
  */
 export function settlementExpiresAt(cart) {
-  const meta = metaOf(cart);
-  if (!meta.settlement_open || !meta.settlement_opened_at) return null;
-  const windowH = Number(meta.settlement_window_hours) || 48;
-  return new Date(new Date(meta.settlement_opened_at).getTime() + windowH * 3_600_000);
+  if (businessStatusOf(cart) !== BUSINESS.CLOSED) return null;
+  return paymentWindowEndsAt(cart);
 }
 
 /**
@@ -145,14 +181,8 @@ export function timeRemaining(expiresAt) {
  * @returns {'ORDER_CREATED'|'CONFIRM'|'SHARE_AND_LOCK'}
  */
 export function getGroupStep(cart) {
-  if (cart.status === 'converted_to_order' || cart.finalized_order_id) {
-    return 'ORDER_CREATED';
-  }
-
-  if (isSettlementOpen(cart) ||
-      ['closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status)) {
-    return 'CONFIRM';
-  }
-
+  const biz = businessStatusOf(cart);
+  if (biz === BUSINESS.ORDERED || cart.finalized_order_id) return 'ORDER_CREATED';
+  if (biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE) return 'CONFIRM';
   return 'SHARE_AND_LOCK';
 }

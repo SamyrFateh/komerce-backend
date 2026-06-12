@@ -45,13 +45,22 @@ export function getSharedCartItems(cartId) {
 }
 
 /**
- * Ouvre la phase règlement pour un panier partagé.
- * @param {string|number} cartId
- * @param {{settlement_window_hours: number}} payload
- * @returns {Promise<any>}
+ * V4.1 — Ferme le panier et ouvre la fenêtre de paiement 48 h.
  */
-export function openSettlement(cartId, payload) {
-  return apiPost(`/api/shared-carts/${cartId}/open-settlement`, payload);
+export function closeCart(cartId) {
+  return apiPost(`/api/shared-carts/${cartId}/close`, {});
+}
+
+/** Alias transitionnel. */
+export function openSettlement(cartId) {
+  return closeCart(cartId);
+}
+
+/**
+ * V4.1 — Prolonge la fenêtre de paiement de 48 h (une seule fois).
+ */
+export function extendPaymentWindow(cartId) {
+  return apiPost(`/api/shared-carts/${cartId}/extend-window`, {});
 }
 
 /**
@@ -87,28 +96,23 @@ export async function getSharedCartPublic(token) {
 }
 
 /**
- * Récupère la liste des engagements d'un panier partagé public.
- * @param {string} token
- * @returns {Promise<Array>}  tableau vide si l'endpoint échoue
+ * V4.1 — Agrégat public des estimations.
  */
-export async function getCommitments(token) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/commitments`, { credentials: 'include' });
-  if (!rsp.ok) return [];
+export async function getEstimationAggregate(token) {
+  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations`, { credentials: 'include' });
+  if (!rsp.ok) return { total_estimated_kmf: 0, count: 0 };
   const data = await rsp.json();
-  return data.commitments || [];
+  return {
+    total_estimated_kmf: Number(data?.total_estimated_kmf) || 0,
+    count: Number(data?.count) || 0,
+  };
 }
 
 /**
- * Enregistre ou met à jour un engagement participant.
- * @param {string} token
- * @param {{participant_name, participant_phone, amount_kmf, message?}} payload
- * @returns {Promise<{updated?: boolean}>}
- *
- * FIX-COMMIT-01 : endpoint public — utilise fetch direct (pas apiPost/window.K.request
- * qui exige une session authentifiée). Le participant peut ne pas être connecté.
+ * V4.1 — Crée ou met à jour une estimation (sans OTP).
  */
-export async function createCommitment(token, payload) {
-  const rsp = await fetch(`/api/shared-carts/public/${token}/commitments`, {
+export async function upsertEstimation(token, payload) {
+  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -123,20 +127,17 @@ export async function createCommitment(token, payload) {
 }
 
 /**
- * Retrouve un engagement verrouillé par numéro de téléphone (phase règlement).
- * @param {string} token
- * @param {string} phone  numéro brut (encodé ici)
- * @returns {Promise<{commitment}>}
- *
- * FIX-COMMIT-02 : endpoint public — fetch direct.
+ * V4.1 — Retire une estimation.
  */
-export async function lookupCommitmentByPhone(token, phone) {
-  const rsp = await fetch(
-    `/api/shared-carts/public/${token}/commitments/by-phone?phone=${encodeURIComponent(phone)}`,
-    { credentials: 'include' }
-  );
+export async function deleteEstimation(token, estimationId, phone = null) {
+  const rsp = await fetch(`/api/shared-carts/public/${token}/estimations/${estimationId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(phone ? { participant_phone: phone } : {}),
+  });
   if (!rsp.ok) {
-    let msg = 'Aucun engagement trouvé pour ce numéro.';
+    let msg = 'Retrait impossible.';
     try { const d = await rsp.json(); msg = d?.message || d?.error || msg; } catch (_) {}
     throw new Error(msg);
   }
@@ -144,7 +145,22 @@ export async function lookupCommitmentByPhone(token, phone) {
 }
 
 /**
- * Crée une contribution payante (Stripe Checkout) pour un engagement verrouillé.
+ * V4.1 — Estimation existante par téléphone (pré-remplissage). Jamais bloquant.
+ */
+export async function getEstimationByPhone(token, phone) {
+  try {
+    const rsp = await fetch(
+      `/api/shared-carts/public/${token}/estimations/by-phone?phone=${encodeURIComponent(phone)}`,
+      { credentials: 'include' }
+    );
+    if (!rsp.ok) return null;
+    const data = await rsp.json();
+    return data?.estimation || null;
+  } catch (_) { return null; }
+}
+
+/**
+ * Crée une contribution payante (Stripe Checkout) pour un contribution payante.
  * @param {string} token
  * @param {{amount_kmf, contributor_name, contributor_email, contributor_phone, message?}} payload
  * @returns {Promise<{checkout_url?: string}>}
