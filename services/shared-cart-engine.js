@@ -156,17 +156,21 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
 
     // 5. Créer le shared_cart — statut OPEN, target_date optionnel
     const targetDate = options.targetDate || null;
+    const expiresAt = targetDate
+      ? new Date(new Date(targetDate).getTime() + 7 * 86_400_000).toISOString()
+      : new Date(Date.now() + 90 * 86_400_000).toISOString();
+
     const { rows: cartRows } = await client.query(
       `INSERT INTO shared_carts (
          token, beneficiary_user_id,
          beneficiary_phone_snapshot, beneficiary_name_snapshot,
          source_basket_id, title, message,
          currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-         delivery_relay_id, status, target_date
+         delivery_relay_id, status, target_date, expires_at
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7,
          'KMF', $8, 0, $8,
-         $9, 'open', $10
+         $9, 'open', $10, $11
        ) RETURNING *`,
       [
         token, userId,
@@ -175,6 +179,7 @@ async function createSharedCartFromBasket(userId, basketId, options = {}) {
         totalKmf,
         options.deliveryRelayId || null,
         targetDate,
+        expiresAt,
       ]
     );
     const sharedCart = cartRows[0];
@@ -348,17 +353,22 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
 
     // 8. Insérer le shared_cart — statut OPEN, target_date optionnel
     const targetDate = options.targetDate || null;
+    // expires_at : NOT NULL legacy — 90 j par défaut (la V4.1 pilote via payment_window_ends_at)
+    const expiresAt = targetDate
+      ? new Date(new Date(targetDate).getTime() + 7 * 86_400_000).toISOString()
+      : new Date(Date.now() + 90 * 86_400_000).toISOString();
+
     const { rows: cartRows } = await client.query(
       `INSERT INTO shared_carts (
          token, beneficiary_user_id,
          beneficiary_phone_snapshot, beneficiary_name_snapshot,
          source_basket_id, title, message,
          currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-         delivery_relay_id, status, target_date
+         delivery_relay_id, status, target_date, expires_at
        ) VALUES (
          $1, $2, $3, $4, NULL, $5, $6,
          'KMF', $7, 0, $7,
-         $8, 'open', $9
+         $8, 'open', $9, $10
        ) RETURNING *`,
       [
         token, userId,
@@ -367,6 +377,7 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
         totalKmf,
         options.deliveryRelayId || null,
         targetDate,
+        expiresAt,
       ]
     );
     const sharedCart = cartRows[0];
