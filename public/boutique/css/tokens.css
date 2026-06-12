@@ -47,11 +47,12 @@
   --checkout-text-strong:   var(--ocean-dark-deep);    /* titres, relay name                */
   --checkout-text-soft:     var(--text-form-soft);     /* sous-textes neutres               */
 
-  --checkout-accent:        #2A6B3C;                   /* CTA confirmer, header — vert marché mock */
+  --checkout-accent:        #4DA668;                   /* CTA confirmer, header — vert éclatant mockup */
+  --checkout-accent-deep:   #2A6B3C;                   /* stop sombre du gradient header    */
   --checkout-accent-mid:    #3A8A52;                   /* gradient stop milieu              */
-  --checkout-accent-bright: #4DA668;                   /* gradient stop clair               */
+  --checkout-accent-bright: #4DA668;                   /* alias compat — gradient stop clair */
   --checkout-accent-light:  var(--white);              /* texte sur CTA                     */
-  --checkout-accent-hover:  #1F5230;                   /* hover CTA                         */
+  --checkout-accent-hover:  #3A8A52;                   /* hover CTA                         */
   --checkout-link:          var(--coral);              /* "Changer", liens inline           */
 
   --checkout-disabled-bg:   var(--gray-bg-lighter);   /* MVola "bientôt"                   */

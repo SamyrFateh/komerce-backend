@@ -271,18 +271,21 @@ function renderEngagementForm(token, cart, isCreator = false) {
       <p class="k-group-desc-text">
         Indiquez votre engagement indicatif. Aucun paiement maintenant — vous paierez quand le créateur lancera le règlement.
       </p>
-      ${splitHint}
       ${savedState}
       <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
         <div class="k-group-identity-note">
           <strong>Identité sécurisée par OTP</strong>
           <span>Votre numéro vérifié sera utilisé pour retrouver cet engagement. Vous pourrez utiliser un autre numéro si besoin.</span>
         </div>
-        <div class="k-group-field">
-          <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
-          <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
-            placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
-            inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+        <div class="k-group-mypart" id="k-ge-mypart">
+          <div class="k-group-mypart-head">💰 Ma part</div>
+          ${splitHint}
+          <div class="k-group-field">
+            <label class="k-group-label" for="k-ge-amount">Montant d'engagement (KMF)</label>
+            <input id="k-ge-amount" class="k-group-input" type="number" min="500" step="100"
+              placeholder="${suggestion > 0 ? `Suggestion : ${fmt(suggestion, 'KMF')}` : 'Ex : 5000'}"
+              inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+          </div>
         </div>
         <div class="k-group-field">
           <label class="k-group-label" for="k-ge-msg">Message (optionnel)</label>
@@ -358,9 +361,11 @@ function bindEngagementForm(el, token, cart, onSuccess) {
       rememberParticipantCommitment(token, { name, phone, amount, message: msg });
 
       showToast(res?.updated ? 'Engagement mis à jour !' : 'Engagement enregistré !', 'success');
-      btn.disabled = false;
+      // État succès visible AVANT le re-render : le participant voit le
+      // changement d'état du bouton, puis la carte « Engagement enregistré ».
+      btn.classList.add('is-done');
       btn.textContent = '✅ Engagement enregistré';
-      onSuccess?.();
+      setTimeout(() => onSuccess?.(), 900);
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
       btn.disabled = false;
@@ -741,7 +746,12 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
       <strong>${fmt(total, 'KMF')}</strong>
     </div>` : '';
 
-  const openByDefault = count <= 4;
+  // Replié par défaut sur mobile (garde les options d'engagement visibles
+  // sans scroll) ; ouvert sur desktop si la liste est courte.
+  const isDesktopVp = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(min-width: 900px)').matches;
+  const openByDefault = isDesktopVp && count <= 4;
   return `
     <div class="k-group-card k-group-items-card ${openByDefault ? 'is-open' : ''}">
       <button class="k-group-items-toggle" type="button" id="k-group-items-toggle" aria-expanded="${openByDefault ? 'true' : 'false'}">
@@ -903,7 +913,15 @@ export async function renderGroupView(opts = {}) {
     bindParticipantItemsAccordion(el);
 
     if (isOpenPhase) {
-      bindEngagementForm(asideEl, participantToken, cart, () => renderGroupView({ participantToken }));
+      bindEngagementForm(asideEl, participantToken, cart, async () => {
+        // Préserver la position : le re-render complet remontait en haut de
+        // page et masquait l'état « Engagement enregistré ».
+        const y = window.scrollY;
+        await renderGroupView({ participantToken });
+        window.scrollTo(0, y);
+        document.getElementById('k-ge-saved-state')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
     } else if (isPaymentPhase) {
       bindPaymentForm(asideEl, participantToken, cart);
     }
@@ -991,11 +1009,9 @@ export async function renderGroupView(opts = {}) {
         ${renderOwnerIdentityCard(cart, creatorItems.length)}
         ${renderCreatorFinancialSummary(cart, commitmentsList)}
         ${renderCreatorActions(cart)}
-      </div>
-      <div class="k-group-side-col">
-        ${renderCreatorArticlesPanel(creatorItems, cart)}
         ${renderProgress(cart, contributions, commitmentsList)}
       </div>
+      ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
 
   el.querySelectorAll('[data-k-group-cart-id]').forEach(btn => {

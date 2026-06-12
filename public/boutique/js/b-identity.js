@@ -124,7 +124,7 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
     const recapPhone     = knownUser?.phone || initialPhone || '';
     const startWithRecap = hasKnownPhone && (recapName || recapPhone);
 
-    const phoneData = { phone: initialPhone, name: '' };
+    const phoneData = { phone: initialPhone, name: '', lastName: '' };
     let sending      = false;
     let timerInterval = null;
 
@@ -310,8 +310,10 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
     async function requestCode(fromRecap = false) {
       const phoneValue = String(phoneData.phone || '').trim();
       const nameValue  = String(phoneData.name  || '').trim();
+      const lastValue  = String(phoneData.lastName || '').trim();
 
       if (!fromRecap && !nameValue) { errPhone.textContent = 'Indiquez votre prénom.'; return; }
+      if (!fromRecap && !lastValue) { errPhone.textContent = 'Indiquez votre nom.'; return; }
       if (phoneValue.length < 8)   {
         const errEl = fromRecap ? errRecap : errPhone;
         errEl.textContent = 'Numéro WhatsApp invalide.'; return;
@@ -367,20 +369,28 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
       errOtp.textContent  = '';
 
       try {
+        const fullName = [phoneData.name, phoneData.lastName]
+          .map(s => String(s || '').trim()).filter(Boolean).join(' ');
         const res = await fetch('/api/auth/otp/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ phone: phoneValue, code, name: phoneData.name || undefined }),
+          body: JSON.stringify({ phone: phoneValue, code, name: fullName || undefined }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.success === false) throw new Error(data.error || 'Code invalide.');
         const user = normalizeUser(data.user);
         state.user = user;
-        if (window.K?.auth?.restore) { try { await window.K.auth.restore(); } catch (_) {} }
         showToast('WhatsApp confirmé.', 'success');
+        // BUGFIX point 6 : fermer + résoudre AVANT le restore. L'ancien
+        // `await window.K.auth.restore()` pouvait ne jamais résoudre et
+        // laissait la modal ouverte malgré un code correct. Le restore part
+        // désormais en arrière-plan, sans bloquer la fermeture.
         closeOverlay(ov);
         resolve(user || data.user || { phone: phoneValue });
+        if (window.K?.auth?.restore) {
+          Promise.resolve().then(() => window.K.auth.restore()).catch(() => {});
+        }
       } catch (e) {
         errOtp.textContent  = e.message;
         otpCta.disabled     = false;
@@ -417,6 +427,12 @@ function openIdentityModal({ reason = 'continuer', title = 'Confirmer votre What
         + '<input id="k-id-name" class="k-id-input" type="text" autocomplete="given-name" placeholder="Pr\u00e9nom">';
       host.appendChild(nameField);
       nameField.querySelector('#k-id-name').addEventListener('input', e => { phoneData.name = e.target.value.trim(); });
+      const lastNameField = document.createElement('div');
+      lastNameField.className = 'k-id-field';
+      lastNameField.innerHTML = '<label for="k-id-lastname">Votre nom</label>'
+        + '<input id="k-id-lastname" class="k-id-input" type="text" autocomplete="family-name" placeholder="Nom">';
+      host.appendChild(lastNameField);
+      lastNameField.querySelector('#k-id-lastname').addEventListener('input', e => { phoneData.lastName = e.target.value.trim(); });
       host.appendChild(makeIntlPhoneInput('k-id-phone', 'Votre WhatsApp', phoneData, 'phone'));
     }
     phoneCta.addEventListener('click', () => { if (!sending) requestCode(false); });

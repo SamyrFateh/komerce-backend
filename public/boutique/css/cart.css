@@ -429,7 +429,7 @@ body.cart-open .k-wa-fab {
 
 /* Header gradient vert marché */
 .k-order-header {
-  background: linear-gradient(135deg, var(--checkout-accent) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent-bright) 100%);
+  background: linear-gradient(135deg, var(--checkout-accent-deep) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent) 100%);
   color: var(--white);
 }
 
@@ -489,7 +489,7 @@ body.cart-open .k-wa-fab {
 
 /* Point de retrait sélectionné : contour coral */
 .ck-relais-summary {
-  background: var(--sage-bg, #eaf4ec);
+  background: var(--sage-bg);
   border: 1px solid var(--border-sage-14, rgba(31,110,44,.14));
   border-radius: 14px;
 }
@@ -518,7 +518,7 @@ body.cart-open .k-wa-fab {
 
 /* Bouton confirmer fond vert marché */
 .ck-confirm-btn {
-  background: var(--cta-green, #2a7a3e);
+  background: var(--cta-green);
   color: var(--white);
   border-top: none;
   box-shadow: 0 -2px 12px rgba(30,92,48,.20);
@@ -1246,8 +1246,8 @@ body.cart-open .k-wa-fab {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--cta-green, #2a7a3e);
-  color: #fff;
+  background: var(--cta-green);
+  color: var(--white);
   font-size: .6rem;
   font-weight: 900;
   letter-spacing: .02em;
@@ -1669,8 +1669,8 @@ body.cart-open .k-wa-fab {
 .k-wallet-title { font-size: .8rem; }
 .k-wallet-balance { font-size: .68rem; }
 
-/* Sur desktop, restaurer les tailles normales */
-@media (min-width: 600px) {
+/* Sur desktop, restaurer les tailles normales (breakpoint canonique 900) */
+@media (min-width: 900px) {
   .k-order-body--checkout {
     padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) !important;
   }
@@ -2110,6 +2110,23 @@ body.cart-open .k-wa-fab {
 .k-confirm-btn:active     { opacity: .85; }
 .k-confirm-btn-primary    { background: var(--checkout-accent); color: var(--white); }
 .k-confirm-btn-secondary  { background: var(--sage-bg); color: var(--sage-dark); border: 1px solid var(--border-sage-14); }
+
+/* Mobile (point 7) : version compacte — la confirmation tient dans l'écran
+   sans scroller, même avec le bloc code cash. */
+@media (max-width: 899px) {
+  .k-confirm-simple   { gap: 7px; padding: 8px 12px 12px; }
+  .k-confirm-emoji    { font-size: 1.6rem; }
+  .k-confirm-title    { font-size: 1.12rem; }
+  .k-confirm-ref-block { padding: 9px 12px; gap: 4px; border-radius: 12px; }
+  .k-confirm-ref      { font-size: 1.32rem; }
+  .k-confirm-copy     { padding: 4px 12px; font-size: .76rem; }
+  .k-confirm-cash-block { padding: 8px 12px; gap: 3px; border-radius: 12px; }
+  .k-confirm-cash-code  { font-size: 1.32rem; }
+  .k-confirm-notices    { gap: 3px; }
+  .k-confirm-notice-row { font-size: .74rem; line-height: 1.25; }
+  .k-confirm-actions    { gap: 6px; margin-top: 2px; }
+  .k-confirm-btn        { padding: 11px 18px; font-size: .88rem; }
+}
 
 /* « Numéro changé ? · Ce n'est pas vous ? » — une seule ligne */
 .k-ck-id-btns-row {

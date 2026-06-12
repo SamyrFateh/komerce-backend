@@ -549,19 +549,10 @@
     gap: 20px;
     align-items: start;
   }
-  .k-group-side-col {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: sticky;
-    top: 96px;
-  }
   .k-group-side-panel {
     margin-top: 0;
-  }
-  .k-group-side-panel + .k-group-side-panel,
-  .k-group-side-panel--participants {
-    margin-top: 12px;
+    position: sticky;
+    top: 96px;
   }
 }
 
@@ -655,7 +646,7 @@
     padding-bottom: 7px;
     font-size: 13px;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 84px;
   }
   .k-group-side-card {
@@ -871,7 +862,7 @@
     font-size: 12.5px;
     border-radius: 10px;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 76px;
   }
   .k-group-side-card {
@@ -1175,7 +1166,7 @@
     font-size: 10.5px;
     line-height: 1.18;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 68px;
   }
   .k-group-side-card {
@@ -1397,13 +1388,41 @@
 }
 
 /* — .k-group-input : champs texte/nombre — */
+/* reset.css pose `input { border:none }` : on restaure ici un cadre visible. */
 .k-group-input {
+  width: 100%;
   min-height: 42px;
   height: 42px;
   padding: 7px 10px;
   font-size: 15px; /* 15px : évite le zoom auto iOS */
   border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
 }
+.k-group-input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-light);
+}
+
+/* — .k-group-mypart : bloc encadré « Ma part » (hint + montant) — */
+.k-group-mypart {
+  border: 1.5px solid var(--violet-mid);
+  background: var(--sand);
+  border-radius: 14px;
+  padding: 12px 14px 10px;
+  margin: 0 0 10px;
+}
+.k-group-mypart-head {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--violet-dark);
+  margin-bottom: 8px;
+}
+.k-group-mypart .k-group-split-hint { margin-bottom: 10px; }
+.k-group-mypart .k-group-field      { margin-bottom: 2px; }
 /* Champ message : hauteur réduite car 1 ligne suffit */
 #k-ge-msg,
 #k-gp-msg {
@@ -1770,6 +1789,15 @@
   cursor: pointer;
 }
 .k-group-eng-fields[hidden] { display: none; }
+/* État succès du bouton d'engagement (point 3) : feedback immédiat avant
+   l'apparition de la carte « Engagement enregistré ». */
+.k-group-btn.is-done,
+.k-group-btn.is-done:disabled {
+  background: var(--checkout-accent);
+  color: var(--white);
+  opacity: 1;
+  cursor: default;
+}
 .k-group-items-toggle {
   width: 100%;
   border: 0;
@@ -2075,8 +2103,8 @@
 .k-group-participant-col-main,
 .k-group-participant-col-aside { width: 100%; }
 
-/* ── Layout participant — desktop 2 colonnes (≥ 720px) ──────────── */
-@media (min-width: 720px) {
+/* ── Layout participant — desktop 2 colonnes (canon ≥ 900px) ─────── */
+@media (min-width: 900px) {
   #k-group-view.k-group-view { padding: 0 16px 40px; }
 
   .k-group-participant-layout {
@@ -2136,7 +2164,7 @@
   .k-group-commitments-card { padding: 14px 18px; border-radius: 18px; }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   .k-group-participant-layout { grid-template-columns: 1fr 440px; gap: 32px; }
   .k-group-header-title { font-size: 28px; }
 }
@@ -2151,7 +2179,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--sand, #f5f4f0);
+  background: var(--sand);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 12px 16px;
@@ -2185,7 +2213,7 @@
 }
 .k-group-creator-id-phone {
   font-size: 12px;
-  color: var(--whatsapp, #25d366);
+  color: var(--whatsapp);
   font-weight: 700;
 }
 
@@ -2380,7 +2408,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--violet, #6b5ca5);
+  color: var(--violet);
   margin-bottom: 4px;
 }
 .k-group-owner-title {
@@ -2425,10 +2453,10 @@
   color: var(--white);
 }
 .k-group-commitment-avatar--h1 { background: var(--cta-green); }
-.k-group-commitment-avatar--h2 { background: var(--violet, #6b5ca5); }
-.k-group-commitment-avatar--h3 { background: var(--amber-text-sett, #b45309); }
-.k-group-commitment-avatar--h4 { background: var(--ocean, #64AF5A); }
-.k-group-commitment-avatar--h5 { background: var(--coral, #e0795c); }
+.k-group-commitment-avatar--h2 { background: var(--violet); }
+.k-group-commitment-avatar--h3 { background: var(--amber-text-sett); }
+.k-group-commitment-avatar--h4 { background: var(--ocean); }
+.k-group-commitment-avatar--h5 { background: var(--coral); }
 .k-group-commitment-left { min-width: 0; flex: 1; }
 
 /* ── Accordéon Options (LOT 5 — danger séparé dedans) ──────────── */

@@ -5172,7 +5172,7 @@ body.cart-open .k-wa-fab {
 
 /* Header gradient vert marché */
 .k-order-header {
-  background: linear-gradient(135deg, var(--checkout-accent) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent-bright) 100%);
+  background: linear-gradient(135deg, var(--checkout-accent-deep) 0%, var(--checkout-accent-mid) 60%, var(--checkout-accent) 100%);
   color: var(--white);
 }
 
@@ -5232,7 +5232,7 @@ body.cart-open .k-wa-fab {
 
 /* Point de retrait sélectionné : contour coral */
 .ck-relais-summary {
-  background: var(--sage-bg, #eaf4ec);
+  background: var(--sage-bg);
   border: 1px solid var(--border-sage-14, rgba(31,110,44,.14));
   border-radius: 14px;
 }
@@ -5261,7 +5261,7 @@ body.cart-open .k-wa-fab {
 
 /* Bouton confirmer fond vert marché */
 .ck-confirm-btn {
-  background: var(--cta-green, #2a7a3e);
+  background: var(--cta-green);
   color: var(--white);
   border-top: none;
   box-shadow: 0 -2px 12px rgba(30,92,48,.20);
@@ -5989,8 +5989,8 @@ body.cart-open .k-wa-fab {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--cta-green, #2a7a3e);
-  color: #fff;
+  background: var(--cta-green);
+  color: var(--white);
   font-size: .6rem;
   font-weight: 900;
   letter-spacing: .02em;
@@ -6412,8 +6412,8 @@ body.cart-open .k-wa-fab {
 .k-wallet-title { font-size: .8rem; }
 .k-wallet-balance { font-size: .68rem; }
 
-/* Sur desktop, restaurer les tailles normales */
-@media (min-width: 600px) {
+/* Sur desktop, restaurer les tailles normales (breakpoint canonique 900) */
+@media (min-width: 900px) {
   .k-order-body--checkout {
     padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) !important;
   }
@@ -6854,6 +6854,23 @@ body.cart-open .k-wa-fab {
 .k-confirm-btn-primary    { background: var(--checkout-accent); color: var(--white); }
 .k-confirm-btn-secondary  { background: var(--sage-bg); color: var(--sage-dark); border: 1px solid var(--border-sage-14); }
 
+/* Mobile (point 7) : version compacte — la confirmation tient dans l'écran
+   sans scroller, même avec le bloc code cash. */
+@media (max-width: 899px) {
+  .k-confirm-simple   { gap: 7px; padding: 8px 12px 12px; }
+  .k-confirm-emoji    { font-size: 1.6rem; }
+  .k-confirm-title    { font-size: 1.12rem; }
+  .k-confirm-ref-block { padding: 9px 12px; gap: 4px; border-radius: 12px; }
+  .k-confirm-ref      { font-size: 1.32rem; }
+  .k-confirm-copy     { padding: 4px 12px; font-size: .76rem; }
+  .k-confirm-cash-block { padding: 8px 12px; gap: 3px; border-radius: 12px; }
+  .k-confirm-cash-code  { font-size: 1.32rem; }
+  .k-confirm-notices    { gap: 3px; }
+  .k-confirm-notice-row { font-size: .74rem; line-height: 1.25; }
+  .k-confirm-actions    { gap: 6px; margin-top: 2px; }
+  .k-confirm-btn        { padding: 11px 18px; font-size: .88rem; }
+}
+
 /* « Numéro changé ? · Ce n'est pas vous ? » — une seule ligne */
 .k-ck-id-btns-row {
   display: none; /* masqué par défaut — visible via body.ck-is-me */
@@ -7006,51 +7023,11 @@ body.modal-open .k-bnav { opacity: .7; }
 .k-success-item-price { color: var(--coral); font-weight: 700; white-space: nowrap; }
 
 /* ═══════════════════════════════════════════════════════════════
-   CONFIRMATION COMMANDE — .k-confirm-simple / .k-confirm-*
+   CONFIRMATION COMMANDE — supprimé (doublon).
+   Owner unique : cart.css (.k-confirm-simple / .k-confirm-*).
+   Ce bloc écrasait les styles compacts mobile-first du owner
+   (bundle : cart → interactions) et forçait le scroll sur mobile.
    ═══════════════════════════════════════════════════════════════ */
-
-.k-confirm-simple          { padding:20px 16px 40px; text-align:center; max-width:480px; margin:0 auto; }
-.k-confirm-simple .k-confirm-emoji { font-size:64px; line-height:1; margin:20px 0 14px; animation:confirm-pop .45s ease-out; }
-.k-confirm-simple .k-confirm-emoji.k-confirm-check {
-  width:72px; height:72px; margin:20px auto 16px; border-radius:50%;
-  background:var(--green-bg-leaf,#e8f3ec); color:var(--ocean-dark,#4A9040);
-  display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:900;
-}
-@keyframes confirm-pop { 0% { transform:scale(.5) rotate(-15deg); opacity:0; } 60% { transform:scale(1.2) rotate(10deg); opacity:1; } 100% { transform:scale(1) rotate(0); } }
-.k-confirm-simple .k-confirm-title { font-size:22px; font-weight:700; margin:0 0 28px; color:var(--text); }
-
-.k-confirm-ref-block  { background:var(--green-bg-leaf,#e8f3ec); border:1.5px solid var(--border-ocean-14); border-radius:16px; padding:18px 14px 16px; margin:0 4px 18px; }
-.k-confirm-ref-label  { font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--ocean-dark,#4A9040); font-weight:700; margin-bottom:6px; }
-.k-confirm-ref-block .k-confirm-ref { font-size:26px; font-weight:700; letter-spacing:1px; font-family:'SF Mono',Menlo,monospace; color:var(--text); margin:4px 0 12px; word-break:break-all; }
-.k-confirm-copy       { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; background:white; border:1.5px solid var(--border-ocean-14); border-radius:50px; color:var(--ocean-dark,#4A9040); font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }
-.k-confirm-copy:hover { background:var(--green-bg-leaf,#e8f3ec); }
-@media (hover:hover) and (pointer:fine) {
-  .k-confirm-copy:hover { transform:translateY(-1px); }
-}
-.k-confirm-copy:active { transform:scale(.97); }
-
-.k-confirm-cash-block { background:var(--green-bg-leaf,#e8f3ec); border:2px dashed var(--ocean,#64AF5A); border-radius:14px; padding:14px; margin:0 4px 18px; }
-.k-confirm-cash-label { font-size:12px; color:var(--ocean-dark,#4A9040); font-weight:700; margin-bottom:6px; }
-.k-confirm-cash-code  { font-size:22px; font-weight:800; letter-spacing:2px; color:var(--ocean-dark,#4A9040); font-family:'SF Mono',Menlo,monospace; }
-
-.k-confirm-recap        { display:flex; align-items:center; justify-content:center; gap:10px; margin:0 4px 16px; padding:10px 16px; background:var(--sand); border-radius:50px; font-size:13px; color:var(--text-muted); animation:confirm-recap-fade .5s ease-out .15s both; }
-@keyframes confirm-recap-fade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-.k-confirm-recap-qty    { font-weight:600; color:var(--text); }
-.k-confirm-recap-sep    { color:var(--border-soft); font-size:10px; }
-.k-confirm-recap-amount { font-weight:700; color:var(--cta-green); font-size:14px; }
-
-.k-confirm-notices     { margin:24px 4px 28px; display:flex; flex-direction:column; gap:8px; }
-.k-confirm-notice-row  { font-size:14px; color:var(--text-muted); line-height:1.5; padding:4px 0; }
-
-.k-confirm-actions           { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
-.k-confirm-btn               { display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 20px; border-radius:50px; border:none; font-size:15px; font-weight:600; cursor:pointer; transition:all .15s; width:100%; }
-.k-confirm-btn-primary       { background:linear-gradient(135deg,var(--cta-green),var(--status-confirmed-text)); color:white; box-shadow:0 4px 14px rgba(42,122,62,.3); }
-.k-confirm-btn-primary:hover { box-shadow:0 6px 18px rgba(42,122,62,.4); }
-@media (hover:hover) and (pointer:fine) {
-  .k-confirm-btn-primary:hover { transform:translateY(-1px); }
-}
-.k-confirm-btn-secondary     { background:white; color:var(--text); border:1.5px solid var(--border); }
-.k-confirm-btn-secondary:hover { background:var(--sand); border-color:var(--gold-soft); }
 
 /* ═══════════════════════════════════════════════════════════════
    MES COMMANDES — .k-myorder-*
@@ -7962,19 +7939,10 @@ body.cart-open  #k-section-index { display:none; }
     gap: 20px;
     align-items: start;
   }
-  .k-group-side-col {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: sticky;
-    top: 96px;
-  }
   .k-group-side-panel {
     margin-top: 0;
-  }
-  .k-group-side-panel + .k-group-side-panel,
-  .k-group-side-panel--participants {
-    margin-top: 12px;
+    position: sticky;
+    top: 96px;
   }
 }
 
@@ -8068,7 +8036,7 @@ body.cart-open  #k-section-index { display:none; }
     padding-bottom: 7px;
     font-size: 13px;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 84px;
   }
   .k-group-side-card {
@@ -8284,7 +8252,7 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 12.5px;
     border-radius: 10px;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 76px;
   }
   .k-group-side-card {
@@ -8588,7 +8556,7 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 10.5px;
     line-height: 1.18;
   }
-  .k-group-side-col {
+  .k-group-side-panel {
     top: 68px;
   }
   .k-group-side-card {
@@ -8810,13 +8778,41 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* — .k-group-input : champs texte/nombre — */
+/* reset.css pose `input { border:none }` : on restaure ici un cadre visible. */
 .k-group-input {
+  width: 100%;
   min-height: 42px;
   height: 42px;
   padding: 7px 10px;
   font-size: 15px; /* 15px : évite le zoom auto iOS */
   border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text);
 }
+.k-group-input:focus {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-light);
+}
+
+/* — .k-group-mypart : bloc encadré « Ma part » (hint + montant) — */
+.k-group-mypart {
+  border: 1.5px solid var(--violet-mid);
+  background: var(--sand);
+  border-radius: 14px;
+  padding: 12px 14px 10px;
+  margin: 0 0 10px;
+}
+.k-group-mypart-head {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--violet-dark);
+  margin-bottom: 8px;
+}
+.k-group-mypart .k-group-split-hint { margin-bottom: 10px; }
+.k-group-mypart .k-group-field      { margin-bottom: 2px; }
 /* Champ message : hauteur réduite car 1 ligne suffit */
 #k-ge-msg,
 #k-gp-msg {
@@ -9183,6 +9179,15 @@ body.cart-open  #k-section-index { display:none; }
   cursor: pointer;
 }
 .k-group-eng-fields[hidden] { display: none; }
+/* État succès du bouton d'engagement (point 3) : feedback immédiat avant
+   l'apparition de la carte « Engagement enregistré ». */
+.k-group-btn.is-done,
+.k-group-btn.is-done:disabled {
+  background: var(--checkout-accent);
+  color: var(--white);
+  opacity: 1;
+  cursor: default;
+}
 .k-group-items-toggle {
   width: 100%;
   border: 0;
@@ -9488,8 +9493,8 @@ body.cart-open  #k-section-index { display:none; }
 .k-group-participant-col-main,
 .k-group-participant-col-aside { width: 100%; }
 
-/* ── Layout participant — desktop 2 colonnes (≥ 720px) ──────────── */
-@media (min-width: 720px) {
+/* ── Layout participant — desktop 2 colonnes (canon ≥ 900px) ─────── */
+@media (min-width: 900px) {
   #k-group-view.k-group-view { padding: 0 16px 40px; }
 
   .k-group-participant-layout {
@@ -9549,7 +9554,7 @@ body.cart-open  #k-section-index { display:none; }
   .k-group-commitments-card { padding: 14px 18px; border-radius: 18px; }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   .k-group-participant-layout { grid-template-columns: 1fr 440px; gap: 32px; }
   .k-group-header-title { font-size: 28px; }
 }
@@ -9564,7 +9569,7 @@ body.cart-open  #k-section-index { display:none; }
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--sand, #f5f4f0);
+  background: var(--sand);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 12px 16px;
@@ -9598,7 +9603,7 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-group-creator-id-phone {
   font-size: 12px;
-  color: var(--whatsapp, #25d366);
+  color: var(--whatsapp);
   font-weight: 700;
 }
 
@@ -9793,7 +9798,7 @@ body.cart-open  #k-section-index { display:none; }
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--violet, #6b5ca5);
+  color: var(--violet);
   margin-bottom: 4px;
 }
 .k-group-owner-title {
@@ -9838,10 +9843,10 @@ body.cart-open  #k-section-index { display:none; }
   color: var(--white);
 }
 .k-group-commitment-avatar--h1 { background: var(--cta-green); }
-.k-group-commitment-avatar--h2 { background: var(--violet, #6b5ca5); }
-.k-group-commitment-avatar--h3 { background: var(--amber-text-sett, #b45309); }
-.k-group-commitment-avatar--h4 { background: var(--ocean, #64AF5A); }
-.k-group-commitment-avatar--h5 { background: var(--coral, #e0795c); }
+.k-group-commitment-avatar--h2 { background: var(--violet); }
+.k-group-commitment-avatar--h3 { background: var(--amber-text-sett); }
+.k-group-commitment-avatar--h4 { background: var(--ocean); }
+.k-group-commitment-avatar--h5 { background: var(--coral); }
 .k-group-commitment-left { min-width: 0; flex: 1; }
 
 /* ── Accordéon Options (LOT 5 — danger séparé dedans) ──────────── */
