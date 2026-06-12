@@ -139,7 +139,7 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
   const total = r(cart.total_kmf_snapshot || 0);
 
   return `
-    <aside class="k-group-side-panel">
+    <div class="k-group-side-panel">
       <div class="k-group-side-card">
         <details class="k-group-accordion k-group-accordion--flush"${_accOpenAttr()}>
           <summary>
@@ -155,7 +155,7 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
           </div>
         </details>
       </div>
-    </aside>`;
+    </div>`;
 }
 
 /* ── Carte identité créateur (panneau droit vue participant) ────── */
@@ -313,12 +313,14 @@ export function renderProgress(cart, contributions, commitmentsList) {
   }
 
   return `
-    <div class="k-group-progress-card" id="k-group-progress-card">
-      ${settlementSummary}
-      ${body}
-      ${remaining > 0 && sOpen
-        ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
-        : ''}
+    <div class="k-group-side-panel k-group-side-panel--participants" id="k-group-progress-card">
+      <div class="k-group-side-card k-group-progress-card">
+        ${settlementSummary}
+        ${body}
+        ${remaining > 0 && sOpen
+          ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
+          : ''}
+      </div>
     </div>`;
 }
 

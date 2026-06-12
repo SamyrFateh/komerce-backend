@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-06-11)
+   KOMERCE — components.css (2026-06-12)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -7962,10 +7962,19 @@ body.cart-open  #k-section-index { display:none; }
     gap: 20px;
     align-items: start;
   }
-  .k-group-side-panel {
-    margin-top: 0;
+  .k-group-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
     position: sticky;
     top: 96px;
+  }
+  .k-group-side-panel {
+    margin-top: 0;
+  }
+  .k-group-side-panel + .k-group-side-panel,
+  .k-group-side-panel--participants {
+    margin-top: 12px;
   }
 }
 
@@ -8059,7 +8068,7 @@ body.cart-open  #k-section-index { display:none; }
     padding-bottom: 7px;
     font-size: 13px;
   }
-  .k-group-side-panel {
+  .k-group-side-col {
     top: 84px;
   }
   .k-group-side-card {
@@ -8275,7 +8284,7 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 12.5px;
     border-radius: 10px;
   }
-  .k-group-side-panel {
+  .k-group-side-col {
     top: 76px;
   }
   .k-group-side-card {
@@ -8579,7 +8588,7 @@ body.cart-open  #k-section-index { display:none; }
     font-size: 10.5px;
     line-height: 1.18;
   }
-  .k-group-side-panel {
+  .k-group-side-col {
     top: 68px;
   }
   .k-group-side-card {

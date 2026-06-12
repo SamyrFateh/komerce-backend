@@ -991,9 +991,11 @@ export async function renderGroupView(opts = {}) {
         ${renderOwnerIdentityCard(cart, creatorItems.length)}
         ${renderCreatorFinancialSummary(cart, commitmentsList)}
         ${renderCreatorActions(cart)}
+      </div>
+      <div class="k-group-side-col">
+        ${renderCreatorArticlesPanel(creatorItems, cart)}
         ${renderProgress(cart, contributions, commitmentsList)}
       </div>
-      ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
 
   el.querySelectorAll('[data-k-group-cart-id]').forEach(btn => {
