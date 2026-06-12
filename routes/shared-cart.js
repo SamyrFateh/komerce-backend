@@ -101,7 +101,7 @@ router.get('/public/:token', async (req, res, next) => {
 // Agrégat public : ~38 000 KMF estimés · 4 participants
 router.get('/public/:token/estimations', async (req, res, next) => {
   try {
-    const data = await estimations.getEstimationsByToken(req.params.token);
+    const data = await estimations.getPublicAggregate(req.params.token);
     res.json(data);
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
