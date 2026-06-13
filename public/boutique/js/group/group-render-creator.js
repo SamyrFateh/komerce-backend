@@ -33,6 +33,33 @@ import {
   BUSINESS,
 } from './group-helpers.js';
 
+/* ── GAP-B / Phase D — bloc "Lien personnalisé" ──────────────────
+ * Formulaire optionnel (prénom + montant) inséré sous la rangée de
+ * partage. Purement présentationnel — le binding vit dans
+ * b-group-view.js (bindPersonalizeForm).
+ */
+function renderPersonalizeBlock() {
+  return `
+    <details class="k-group-accordion k-gc-personalize-acc">
+      <summary><span>🔗 Lien personnalisé pour un participant</span></summary>
+      <div class="k-gc-personalize-body">
+        <div class="k-group-field">
+          <input id="k-gc-pz-name" class="k-group-input" type="text" maxlength="40"
+            placeholder="Prénom (ex : Ali)" autocomplete="off">
+        </div>
+        <div class="k-group-field">
+          <input id="k-gc-pz-amount" class="k-group-input" type="number" min="0" step="100"
+            placeholder="Montant suggéré (KMF, facultatif)" inputmode="numeric">
+        </div>
+        <div class="k-gc-share-row">
+          <button class="k-group-btn k-group-btn--ghost" id="k-gc-pz-whatsapp">📲 Envoyer à Ali</button>
+          <button class="k-group-btn k-group-btn--copy" id="k-gc-pz-copy">🔗 Copier le lien</button>
+        </div>
+        <p class="k-gc-note">Le participant verra son prénom et le montant suggéré — modifiable.</p>
+      </div>
+    </details>`;
+}
+
 /* ── Switcher multi-paniers ─────────────────────────────────────── */
 
 /**
@@ -449,7 +476,8 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
           <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
           <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
         </div>
-        <p class="k-gc-note">Partagez le lien — les participants peuvent payer maintenant</p>`;
+        <p class="k-gc-note">Partagez le lien — les participants peuvent payer maintenant</p>
+        ${renderPersonalizeBlock()}`;
     }
   } else if (biz === BUSINESS.AWAITING_CHOICE) {
     actionsBlock = `
@@ -486,7 +514,8 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
     <div class="k-gc-share-row">
       <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
       <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier le lien</button>
-    </div>` : '';
+    </div>
+    ${renderPersonalizeBlock()}` : '';
 
   /* ── Options accordion (OPEN / CLOSED) ───────────────────────── */
   const optionsBlock = (biz === BUSINESS.OPEN || biz === BUSINESS.CLOSED) ? `

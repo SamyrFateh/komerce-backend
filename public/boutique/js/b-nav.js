@@ -15,6 +15,7 @@ import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
 import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
+import { readPersonalizedParams } from './group/group-helpers.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 
@@ -224,6 +225,8 @@ export function setupBnav() {
 export function handleParticipantUrl() {
   const token = detectParticipantToken();
   if (!token) return;
+  // D-03 — lire who/amt AVANT de nettoyer l'URL (lien personnalisé GAP-B)
+  const { who, amt } = readPersonalizedParams(window.location.href);
   // Nettoyer l'URL sans recharger la page
   try {
     const clean = window.location.origin + window.location.pathname;
@@ -233,7 +236,7 @@ export function handleParticipantUrl() {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.toggle('active', i.dataset.tab === 'group');
   });
-  renderGroupView({ participantToken: token });
+  renderGroupView({ participantToken: token, personalized: { who, amt } });
   switchView('group');
 }
 

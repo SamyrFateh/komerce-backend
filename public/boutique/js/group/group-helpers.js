@@ -186,3 +186,49 @@ export function getGroupStep(cart) {
   if (biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE) return 'CONFIRM';
   return 'SHARE_AND_LOCK';
 }
+
+/* ── GAP-B / Phase D — liens personnalisés ───────────────────────
+ * komerce.km/share/{token}?who=Ali&amt=15000
+ * `who`  : prénom du participant visé (affiché, modifiable)
+ * `amt`  : montant suggéré en KMF (pré-rempli, modifiable)
+ */
+
+/**
+ * Construit une URL de partage enrichie avec un prénom et/ou un montant suggéré.
+ * @param {string} baseUrl  URL de base (ex: `${origin}/boutique/?p={token}`)
+ * @param {{who?: string, amt?: number|string}} [opts]
+ * @returns {string}
+ */
+export function buildPersonalizedShareUrl(baseUrl, opts = {}) {
+  if (!baseUrl) return baseUrl;
+  try {
+    const url = new URL(baseUrl);
+    const who = String(opts.who || '').trim();
+    const amt = r(opts.amt);
+    if (who) url.searchParams.set('who', who.slice(0, 40));
+    if (amt > 0) url.searchParams.set('amt', String(amt));
+    return url.toString();
+  } catch (_) {
+    return baseUrl;
+  }
+}
+
+/**
+ * Lit les paramètres `who` / `amt` depuis une URL (par défaut l'URL courante).
+ * @param {string} [href]
+ * @returns {{who: string|null, amt: number|null}}
+ */
+export function readPersonalizedParams(href) {
+  try {
+    const url = new URL(href || window.location.href);
+    const who = url.searchParams.get('who');
+    const amtRaw = url.searchParams.get('amt');
+    const amt = amtRaw ? r(amtRaw) : null;
+    return {
+      who: who ? who.trim().slice(0, 40) : null,
+      amt: amt && amt > 0 ? amt : null,
+    };
+  } catch (_) {
+    return { who: null, amt: null };
+  }
+}

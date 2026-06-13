@@ -53,6 +53,8 @@ import {
   isPaymentWindowOpen,
   paymentWindowEndsAt,
   BUSINESS,
+  buildPersonalizedShareUrl,
+  readPersonalizedParams,
 } from './group/group-helpers.js';
 import {
   renderCreatorCartSwitcher,
@@ -240,7 +242,7 @@ function identityLabel(user) {
   };
 }
 
-function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimated_kmf: 0 }) {
+function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimated_kmf: 0 }, personalized = {}) {
   const saved = readParticipantCommitment(token);
   const savedState = saved ? `
       <div class="k-group-saved-commitment" id="k-ge-saved-state">
@@ -250,15 +252,29 @@ function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimate
         <button type="button" id="k-ge-edit-btn">✏️ Modifier ma part</button>
       </div>` : '';
 
+  // D-04 — lien personnalisé : suggestion de l'organisateur, affichée tant
+  // qu'aucune part n'a déjà été indiquée.
+  const { who, amt } = personalized;
+  const suggestionNote = (!saved && (who || amt)) ? `
+      <p class="k-group-suggestion-note" id="k-ge-suggestion">
+        ${who ? sanitize(who) + ', ' : ''}${who ? "l'organisateur suggère" : 'Montant suggéré :'}
+        ${amt ? `<strong>${fmt(r(amt), 'KMF')}</strong>` : ''}
+        · modifiable
+      </p>` : '';
+
+  const prefillName   = !saved && who ? sanitize(who) : sanitize(saved?.name || '');
+  const prefillAmount = !saved && amt ? r(amt) : (saved?.amount ? r(saved.amount) : '');
+
   return `
     <div class="k-group-card k-group-contribute-card">
       ${savedState}
       <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
         <div class="k-group-mypart" id="k-ge-mypart">
           <div class="k-group-mypart-head">🪙 Mon estimation</div>
+          ${suggestionNote}
           <div class="k-group-field">
             <input id="k-ge-name" class="k-group-input" type="text" maxlength="60"
-              placeholder="Prénom" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
+              placeholder="Prénom" autocomplete="given-name" value="${prefillName}">
           </div>
           <div class="k-group-field">
             <input id="k-ge-phone" class="k-group-input" type="tel" maxlength="20"
@@ -268,7 +284,7 @@ function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimate
           <div class="k-group-field">
             <input id="k-ge-amount" class="k-group-input" type="number" min="2500" step="100"
               placeholder="Montant approximatif (KMF)" inputmode="numeric"
-              value="${saved?.amount ? r(saved.amount) : ''}">
+              value="${prefillAmount}">
           </div>
           <p class="k-group-input-error" id="k-ge-err"></p>
           <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
@@ -381,9 +397,14 @@ function startCountdownTick() {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-function renderPaymentForm(token, cart) {
+function renderPaymentForm(token, cart, personalized = {}) {
   const saved = readParticipantCommitment(token);
-  const prefillAmount = saved?.amount ? r(saved.amount) : '';
+  const prefillAmount = saved?.amount ? r(saved.amount) : (r(personalized.amt) || '');
+  const hint = saved?.amount
+    ? 'Pré-rempli avec votre estimation — vous pouvez payer plus, moins, ou sans estimation'
+    : (prefillAmount
+        ? "Montant suggéré par l'organisateur — vous pouvez payer plus, moins, ou sans suggestion"
+        : 'Vous pouvez payer plus, moins, ou sans estimation');
   const btnLabel = prefillAmount
     ? `🔒 Payer ma part · ${fmt(prefillAmount, 'KMF')}`
     : '🔒 Payer ma part';
@@ -397,7 +418,7 @@ function renderPaymentForm(token, cart) {
             min="2500" step="100" placeholder="Montant (KMF)" inputmode="numeric"
             value="${prefillAmount}">
         </div>
-        <p class="k-group-payment-hint">Pré-rempli avec votre estimation — vous pouvez payer plus, moins, ou sans estimation</p>
+        <p class="k-group-payment-hint">${hint}</p>
         <p class="k-group-input-error" id="k-gp-err"></p>
         <button class="k-group-btn k-group-btn--pay" id="k-gp-pay-btn">${btnLabel}</button>
         <p class="k-group-footnote">Identification OTP à cette étape uniquement</p>
@@ -517,8 +538,50 @@ async function doFinalize(el, cartId, shareUrl, cart, acceptPartial = false) {
   }
 }
 
+/* ── GAP-B / Phase D — bloc "Lien personnalisé" ──────────────────
+ * D-02 : construit l'URL ?p={token}&who=...&amt=...
+ * D-06 : message WhatsApp avec lien personnalisé
+ */
+function bindPersonalizeBlock(el, cart, shareUrl) {
+  const nameInput   = el.querySelector('#k-gc-pz-name');
+  const amountInput = el.querySelector('#k-gc-pz-amount');
+  const waBtn       = el.querySelector('#k-gc-pz-whatsapp');
+  const copyBtn     = el.querySelector('#k-gc-pz-copy');
+  if (!nameInput && !amountInput) return;
+
+  const updateWaLabel = () => {
+    const who = nameInput?.value.trim();
+    if (waBtn) waBtn.textContent = who ? `📲 Envoyer à ${who}` : '📲 WhatsApp';
+  };
+  nameInput?.addEventListener('input', updateWaLabel);
+  updateWaLabel();
+
+  const personalizedUrl = () => buildPersonalizedShareUrl(shareUrl, {
+    who: nameInput?.value,
+    amt: amountInput?.value,
+  });
+
+  waBtn?.addEventListener('click', () => {
+    const who = nameInput?.value.trim();
+    const url = personalizedUrl();
+    const msg = who
+      ? `Salut ${who} ! Contribue au panier "${sanitize(cart.title || 'Panier groupe')}" → ${url}`
+      : `Rejoins mon panier Komerce : "${sanitize(cart.title || 'Panier groupe')}" → ${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  });
+
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(personalizedUrl());
+      showToast('Lien personnalisé copié !', 'success');
+    } catch (_) { showToast('Impossible de copier.', 'error'); }
+  });
+}
+
 /* ── Bind actions créateur ─────────────────────────────────────── */
 function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
+  bindPersonalizeBlock(el, cart, shareUrl);
+
   el.querySelector('#k-group-reshare')?.addEventListener('click', () => {
     const msg = `Rejoins mon panier Komerce : "${sanitize(cart.title || 'Panier groupe')}" → ${shareUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
@@ -863,11 +926,12 @@ export async function renderGroupView(opts = {}) {
 
     /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
     const creatorIdHtml = renderCreatorIdentityCard(cart);
+    const personalized = opts.personalized || {};
     let asideHtml;
     if (isOpenPhase) {
-      asideHtml = renderEstimationForm(participantToken, cart, estimAgg);
+      asideHtml = renderEstimationForm(participantToken, cart, estimAgg, personalized);
     } else if (isPaymentPhase) {
-      asideHtml = renderPaymentForm(participantToken, cart);
+      asideHtml = renderPaymentForm(participantToken, cart, personalized);
     } else if (isAwaitingChoice) {
       asideHtml = `<div class="k-group-card k-group-terminal-card">
         <div class="k-group-terminal-icon">🤔</div>
