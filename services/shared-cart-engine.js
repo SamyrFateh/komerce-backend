@@ -32,6 +32,7 @@
 
 const crypto = require('crypto');
 const db = require('../db');
+const { sendTemplateWhatsApp } = require('./whatsapp-meta');
 const { getUniqueRef, generatePickupCode } = require('./order-service');
 const { resolveRoutingFromRelais, RoutingError } = require('./routing');
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
@@ -970,6 +971,14 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
 // 6. ANNULATION
 // ═══════════════════════════════════════════════════════════════════════
 
+/**
+ * @deprecated Phase A (GAP-A) — superseded par
+ * `services/cancel-shared-cart-with-refunds.js#cancelSharedCartWithRefunds`,
+ * utilisé par les routes `/cancel` et `/awaiting-choice/cancel` depuis
+ * juin 2026 (remboursement automatique des contributions `paid`).
+ * Conservée pour compatibilité (tests, scripts internes) — ne pas appeler
+ * depuis de nouveaux endpoints : elle n'effectue AUCUN remboursement.
+ */
 async function cancelSharedCart(sharedCartId, userId, reason) {
   return withTransaction(async (client) => {
     const { rows } = await client.query(
@@ -1043,15 +1052,18 @@ async function runSharedCartStateMachineTick() {
 
   // T2 — CLOSED + fenêtre expirée + remaining > 0 → AWAITING_CHOICE
   const { rows: awaitingCarts } = await db.query(
-    `UPDATE shared_carts
+    `UPDATE shared_carts sc
         SET status = 'awaiting_choice',
             awaiting_choice_started_at = NOW(),
             awaiting_choice_deadline = NOW() + INTERVAL '72 hours',
             updated_at = NOW()
-      WHERE status = 'closed'
-        AND payment_window_ends_at < NOW()
-        AND remaining_kmf > 0
-      RETURNING id, remaining_kmf, contributed_kmf`
+       FROM users u
+      WHERE u.id = sc.beneficiary_user_id
+        AND sc.status = 'closed'
+        AND sc.payment_window_ends_at < NOW()
+        AND sc.remaining_kmf > 0
+      RETURNING sc.id, sc.remaining_kmf, sc.contributed_kmf,
+                sc.title, u.phone AS creator_phone, u.full_name AS creator_name`
   );
   for (const cart of awaitingCarts) {
     await db.query(
@@ -1059,6 +1071,20 @@ async function runSharedCartStateMachineTick() {
          VALUES ($1, 'cart_awaiting_choice', 'system', $2)`,
       [cart.id, { remaining_kmf: cart.remaining_kmf, contributed_kmf: cart.contributed_kmf }]
     );
+    // B-01 — Notifier le créateur : financement incomplet, 3 options disponibles (72h)
+    if (cart.creator_phone) {
+      sendTemplateWhatsApp({
+        to:           cart.creator_phone,
+        templateName: 'shared_cart_awaiting_choice',
+        components: [
+          { type: 'body', parameters: [
+            { type: 'text', text: cart.creator_name || 'Créateur' },
+            { type: 'text', text: cart.title || 'Votre panier' },
+            { type: 'text', text: String(cart.remaining_kmf) },
+          ]},
+        ],
+      }).catch(err => log.warn({ err, cart_id: cart.id }, '[cron-T2] notif WhatsApp failed'));
+    }
   }
   transitions += awaitingCarts.length;
 
@@ -1066,11 +1092,14 @@ async function runSharedCartStateMachineTick() {
   // (la création d'order nécessite convertSharedCartToOrder — ce tick émet
   //  un événement, la route de finalization ou un job dédié s'en charge)
   const { rows: readyCarts } = await db.query(
-    `SELECT id, contributed_kmf FROM shared_carts
-      WHERE status = 'closed'
-        AND payment_window_ends_at < NOW()
-        AND remaining_kmf = 0
-        AND finalized_order_id IS NULL`
+    `SELECT sc.id, sc.contributed_kmf, sc.title,
+            u.phone AS creator_phone, u.full_name AS creator_name
+       FROM shared_carts sc
+       JOIN users u ON u.id = sc.beneficiary_user_id
+      WHERE sc.status = 'closed'
+        AND sc.payment_window_ends_at < NOW()
+        AND sc.remaining_kmf = 0
+        AND sc.finalized_order_id IS NULL`
   );
   for (const cart of readyCarts) {
     // Idempotent via ON CONFLICT — évite les doublons si le tick tourne avant finalize
@@ -1080,6 +1109,20 @@ async function runSharedCartStateMachineTick() {
          ON CONFLICT DO NOTHING`,
       [cart.id, { contributed_kmf: cart.contributed_kmf }]
     );
+    // B-02 — Notifier le créateur : financement complet, confirmer la commande
+    if (cart.creator_phone) {
+      sendTemplateWhatsApp({
+        to:           cart.creator_phone,
+        templateName: 'shared_cart_ready_to_order',
+        components: [
+          { type: 'body', parameters: [
+            { type: 'text', text: cart.creator_name || 'Créateur' },
+            { type: 'text', text: cart.title || 'Votre panier' },
+            { type: 'text', text: String(cart.contributed_kmf) },
+          ]},
+        ],
+      }).catch(err => log.warn({ err, cart_id: cart.id }, '[cron-T3] notif WhatsApp failed'));
+    }
   }
 
   // T4 — AWAITING_CHOICE + deadline expirée → expired

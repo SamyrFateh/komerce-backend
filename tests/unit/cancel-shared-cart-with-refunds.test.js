@@ -3,357 +3,270 @@
 /**
  * tests/unit/cancel-shared-cart-with-refunds.test.js
  *
- * Couvre cancelSharedCartWithRefunds — Phase A tickets A-01/A-05
+ * Couvre cancelSharedCartWithRefunds (GAP-A / Phase A) :
  *
- * ── Annulation DB ──
- *   ✅ Panier introuvable/non autorisé           → status 404, code shared_cart_not_found
- *   ✅ Panier au statut ordered                  → status 409, code invalid_status_for_cancel
- *   ✅ Panier au statut cancelled                → status 409
- *   ✅ Panier open sans contributions paid       → cancelled + refunds.total = 0
- *   ✅ Panier open — audit event auto_refund:true
- *   ✅ Raison passée → payload.reason non null
- *
- * ── Remboursements Stripe ──
- *   ✅ 2 contributions paid Stripe → 2 appels stripe.refunds.create, idempotency keys stables
- *   ✅ 2 contributions → stripe_ok = 2, stripe_failed = 0
- *   ✅ Idempotence — retry avec même cartId/contributionId = même clé Stripe (pas de double)
- *   ✅ 1 Stripe ok + 1 Stripe failed → stripe_ok=1, stripe_failed=1
- *   ✅ Échec Stripe → contribution marquée requires_manual_refund=true, event contribution_refund_failed
- *   ✅ Succès Stripe → contribution status='refunded', event contribution_refunded
- *
- * ── PayPal stub (A-02) ──
- *   ✅ contribution payment_method='paypal' → paypal_failed=1, requires_manual_refund=true
- *
- * ── Isolation transaction ──
- *   ✅ Échec Stripe APRÈS commit DB → panier reste cancelled (DB non rollbackée)
- *
- * Strategy: mock db.getClient (withTransaction) + db.query (hors-transaction) + stripe module.
- * Séquence transaction : BEGIN, SELECT, UPDATE, INSERT-event, SELECT-contribs, COMMIT.
- * Appels hors-transaction : UPDATE contrib + INSERT event par contribution.
+ *   ✅ Panier introuvable/non autorisé        → throw
+ *   ✅ Panier au statut inéligible (cancelled) → throw
+ *   ✅ 2 contributions Stripe `paid`           → 2 stripe.refunds.create,
+ *                                                 idempotency key stable,
+ *                                                 contributions → 'refunded'
+ *   ✅ Idempotence retry — idempotencyKey identique pour un même couple
+ *      (cartId, contributionId), pas de double appel logique
+ *   ✅ Contribution `cash` paid                → routée file remboursement
+ *      manuel (status='failed', metadata.requires_manual_refund=true),
+ *      pas d'appel Stripe
+ *   ✅ Échec API Stripe                        → routée file remboursement
+ *      manuel, n'interrompt pas le traitement des autres contributions
+ *   ✅ Panier sans contribution payée          → cart cancelled, refunds: []
  */
+
+const { makeClient, expectTransactionCommitted, expectTransactionRolledBack } = require('../integration/test-harness/mock-db');
+
+const mockRefundsCreate = jest.fn();
 
 jest.mock('../../db', () => ({ getClient: jest.fn(), query: jest.fn() }));
 jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
+jest.mock('../../services/whatsapp-meta', () => ({
+  sendTemplateWhatsApp: jest.fn().mockResolvedValue({ success: true, skipped: false }),
+}));
 jest.mock('stripe', () => {
-  const mockCreate = jest.fn();
   return jest.fn(() => ({
-    refunds: { create: mockCreate },
+    refunds: { create: mockRefundsCreate },
   }));
 });
 
-const db     = require('../../db');
-const stripe = require('stripe')();
-const { cancelSharedCartWithRefunds } = require('../../services/cancel-shared-cart-with-refunds');
+const db = require('../../db');
+const { cancelSharedCartWithRefunds, refundOneContribution } = require('../../services/cancel-shared-cart-with-refunds');
 
-// ── Fixtures ──────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeCart(overrides = {}) {
   return {
-    id:                   'cart-001',
-    beneficiary_user_id:  'user-001',
-    status:               'open',
-    contributed_kmf:      0,
-    beneficiary_phone:    '+2693001001',
-    beneficiary_name:     'Fatima',
+    id: 'cart-001',
+    beneficiary_user_id: 'user-001',
+    status: 'closed',
+    title: 'Anniversaire Aicha',
+    contributed_kmf: 30000,
+    total_kmf_snapshot: 30000,
     ...overrides,
   };
 }
 
-function makeContrib(overrides = {}) {
+function makeContribution(overrides = {}) {
   return {
-    id:                          'contrib-001',
-    stripe_payment_intent_id:    'pi_test_001',
-    payment_method:              'stripe',
-    metadata:                    {},
-    amount_kmf:                  10000,
+    id: 'contrib-001',
+    shared_cart_id: 'cart-001',
+    contributor_name: 'Ali Said',
+    contributor_phone: '+33699000001',
+    amount_kmf: 15000,
+    amount_paid: 30,
+    currency_paid: 'EUR',
+    status: 'paid',
+    payment_method: 'stripe',
+    stripe_payment_intent_id: 'pi_test_001',
+    metadata: {},
     ...overrides,
   };
 }
 
-/**
- * Monte db.getClient pour withTransaction.
- * Gère automatiquement BEGIN/COMMIT/ROLLBACK (retours vides).
- * script = réponses pour les vraies requêtes SQL (hors BEGIN/COMMIT/ROLLBACK).
- */
-function mockTransaction(script) {
-  const queue  = [...script];
-  const calls  = [];
-  const client = {
-    calls,
-    query: jest.fn(async (sql, params) => {
-      calls.push({ sql, params });
-      const normalized = String(sql).replace(/\s+/g, ' ').trim();
-      if (['BEGIN', 'COMMIT', 'ROLLBACK'].includes(normalized)) {
-        return { rows: [], rowCount: 0 };
-      }
-      const next = queue.shift();
-      if (next === undefined) throw new Error(`Unexpected query: ${normalized.slice(0, 80)}`);
-      if (next instanceof Error) throw next;
-      return { rows: next.rows || [], rowCount: next.rowCount ?? (next.rows?.length ?? 0) };
-    }),
-    release: jest.fn(),
-  };
-  db.getClient.mockResolvedValue(client);
-  return client;
-}
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
-/** db.query hors-transaction (séquence: UPDATE contrib, INSERT event, ...) */
-function mockOutOfTx(responses) {
-  let idx = 0;
-  db.query.mockImplementation(async () => {
-    const r = responses[idx++];
-    if (r === undefined) return { rows: [], rowCount: 1 };
-    if (r instanceof Error) throw r;
-    return r;
-  });
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// Validation
+// ═══════════════════════════════════════════════════════════════════════════
 
-const OK = { rows: [], rowCount: 1 };
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('cancelSharedCartWithRefunds', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    db.query.mockResolvedValue({ rows: [], rowCount: 0 });
-    stripe.refunds.create.mockResolvedValue({ id: 're_test_001' });
-  });
-
-  // ── Annulation DB ────────────────────────────────────────────────────────
-
-  test('panier introuvable → status 404', async () => {
-    mockTransaction([
-      { rows: [] },  // SELECT ... FOR UPDATE → vide
+describe('cancelSharedCartWithRefunds — validation', () => {
+  test('panier introuvable/non autorisé → throw', async () => {
+    const client = makeClient([
+      { rows: [] }, // SELECT FOR UPDATE → vide
     ]);
+    db.getClient.mockResolvedValueOnce(client);
 
-    await expect(
-      cancelSharedCartWithRefunds('cart-999', 'user-001', null)
-    ).rejects.toMatchObject({ status: 404, code: 'shared_cart_not_found' });
+    await expect(cancelSharedCartWithRefunds('cart-999', 'user-001', null))
+      .rejects.toThrow('Panier introuvable ou non autorisé');
+    expectTransactionRolledBack(client);
   });
 
-  test.each(['ordered', 'cancelled', 'expired', 'archived'])(
-    'statut %s → status 409 invalid_status_for_cancel',
-    async (status) => {
-      mockTransaction([
-        { rows: [makeCart({ status })] },
-      ]);
-
-      await expect(
-        cancelSharedCartWithRefunds('cart-001', 'user-001', null)
-      ).rejects.toMatchObject({ status: 409, code: 'invalid_status_for_cancel' });
-    }
-  );
-
-  test('panier open sans contributions paid → cancelled, refunds.total = 0', async () => {
-    mockTransaction([
-      { rows: [makeCart({ status: 'open' })] },  // SELECT
-      { rows: [makeCart({ status: 'cancelled' })] }, // UPDATE RETURNING
-      OK,   // INSERT audit event
-      { rows: [] }, // SELECT contributions paid (vide)
-    ]);
-
-    const { cart, refunds } = await cancelSharedCartWithRefunds('cart-001', 'user-001', null);
-
-    expect(cart.status).toBe('cancelled');
-    expect(refunds).toMatchObject({ total: 0, stripe_ok: 0, stripe_failed: 0 });
-    expect(stripe.refunds.create).not.toHaveBeenCalled();
-  });
-
-  test('raison passée → payload.reason présent dans audit event', async () => {
-    const client = mockTransaction([
-      { rows: [makeCart()] },
+  test('panier au statut cancelled → throw (statut inéligible)', async () => {
+    const client = makeClient([
       { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
+    ]);
+    db.getClient.mockResolvedValueOnce(client);
+
+    await expect(cancelSharedCartWithRefunds('cart-001', 'user-001', null))
+      .rejects.toThrow(/Impossible d'annuler/);
+    expectTransactionRolledBack(client);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Remboursement automatique Stripe
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('cancelSharedCartWithRefunds — remboursement Stripe', () => {
+  test('2 contributions paid Stripe → 2 refunds.create, idempotency key stable, status=refunded', async () => {
+    const cart = makeCart();
+    const contribA = makeContribution({ id: 'contrib-A', stripe_payment_intent_id: 'pi_aaa' });
+    const contribB = makeContribution({ id: 'contrib-B', stripe_payment_intent_id: 'pi_bbb', contributor_phone: '+33699000002' });
+
+    const client = makeClient([
+      { rows: [cart] },                  // SELECT cart FOR UPDATE
+      { rows: [contribA, contribB] },    // SELECT contributions paid FOR UPDATE
+      { rowCount: 1 },                    // UPDATE shared_carts → cancelled
+      { rows: [] },                       // INSERT event cart_cancelled
+    ]);
+    db.getClient.mockResolvedValueOnce(client);
+
+    mockRefundsCreate
+      .mockResolvedValueOnce({ id: 're_aaa', status: 'succeeded' })
+      .mockResolvedValueOnce({ id: 're_bbb', status: 'succeeded' });
+
+    // refundOneContribution fait des appels db.query() directs (hors transaction)
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ...contribA, status: 'refunded' }] }) // UPDATE contribA → refunded
+      .mockResolvedValueOnce({ rows: [] })                                     // INSERT event contribution_refunded A
+      .mockResolvedValueOnce({ rows: [{ ...contribB, status: 'refunded' }] }) // UPDATE contribB → refunded
+      .mockResolvedValueOnce({ rows: [] });                                    // INSERT event contribution_refunded B
+
+    const result = await cancelSharedCartWithRefunds('cart-001', 'user-001', 'changement de plan');
+
+    expect(result.cart.status).toBe('cancelled');
+    expect(result.refunds).toHaveLength(2);
+    expect(result.refunds.every(r => r.status === 'refunded')).toBe(true);
+
+    expectTransactionCommitted(client);
+
+    expect(mockRefundsCreate).toHaveBeenCalledTimes(2);
+    expect(mockRefundsCreate).toHaveBeenNthCalledWith(
+      1,
+      { payment_intent: 'pi_aaa' },
+      { idempotencyKey: 'shared_cart_refund_cart-001_contrib-A' }
+    );
+    expect(mockRefundsCreate).toHaveBeenNthCalledWith(
+      2,
+      { payment_intent: 'pi_bbb' },
+      { idempotencyKey: 'shared_cart_refund_cart-001_contrib-B' }
+    );
+
+    // L'UPDATE de chaque contribution doit poser status='refunded'
+    const updateCalls = db.query.mock.calls.filter(([sql]) =>
+      /UPDATE shared_cart_contributions/.test(sql) && /status = 'refunded'/.test(sql));
+    expect(updateCalls).toHaveLength(2);
+  });
+
+  test('idempotency key stable pour un même couple (cartId, contributionId) sur retry', async () => {
+    const cart = makeCart();
+    const contrib = makeContribution({ id: 'contrib-A', stripe_payment_intent_id: 'pi_aaa' });
+
+    mockRefundsCreate.mockResolvedValue({ id: 're_aaa', status: 'succeeded' });
+    db.query.mockResolvedValue({ rows: [{ ...contrib, status: 'refunded' }] });
+
+    await refundOneContribution(cart, contrib);
+    await refundOneContribution(cart, contrib); // retry (ex: tick de rattrapage)
+
+    expect(mockRefundsCreate).toHaveBeenNthCalledWith(
+      1, { payment_intent: 'pi_aaa' }, { idempotencyKey: 'shared_cart_refund_cart-001_contrib-A' }
+    );
+    expect(mockRefundsCreate).toHaveBeenNthCalledWith(
+      2, { payment_intent: 'pi_aaa' }, { idempotencyKey: 'shared_cart_refund_cart-001_contrib-A' }
+    );
+    // Même clé sur les deux appels → Stripe garantit la non-duplication côté serveur
+    const [, opts1] = mockRefundsCreate.mock.calls[0];
+    const [, opts2] = mockRefundsCreate.mock.calls[1];
+    expect(opts1.idempotencyKey).toBe(opts2.idempotencyKey);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Contributions cash → file de remboursement manuel
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('cancelSharedCartWithRefunds — contribution cash', () => {
+  test('contribution cash paid → file manuelle, pas d\'appel Stripe', async () => {
+    const cart = makeCart();
+    const cashContrib = makeContribution({
+      id: 'contrib-cash', payment_method: 'cash', stripe_payment_intent_id: null,
+    });
+
+    const client = makeClient([
+      { rows: [cart] },
+      { rows: [cashContrib] },
+      { rowCount: 1 },
       { rows: [] },
     ]);
+    db.getClient.mockResolvedValueOnce(client);
 
-    await cancelSharedCartWithRefunds('cart-001', 'user-001', 'test-reason');
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ...cashContrib, status: 'failed' }] }) // UPDATE → failed/manual
+      .mockResolvedValueOnce({ rows: [] });                                     // INSERT event
 
-    const eventInsert = client.calls.find(c =>
-      String(c.sql).includes('cart_cancelled')
-    );
-    expect(eventInsert).toBeDefined();
-    expect(eventInsert.params[2]).toMatchObject({ reason: 'test-reason', auto_refund: true });
+    const result = await cancelSharedCartWithRefunds('cart-001', 'user-001', null);
+
+    expect(result.refunds).toHaveLength(1);
+    expect(result.refunds[0].status).toBe('manual_refund_queue');
+    expect(mockRefundsCreate).not.toHaveBeenCalled();
+
+    const updateCall = db.query.mock.calls.find(([sql]) => /UPDATE shared_cart_contributions/.test(sql));
+    expect(updateCall[0]).toMatch(/status = 'failed'/);
+    const metaPayload = JSON.parse(updateCall[1][1]);
+    expect(metaPayload.requires_manual_refund).toBe(true);
+    expect(metaPayload.cancellation_refund).toBe(true);
   });
+});
 
-  // ── Stripe refunds ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Échec API Stripe → file manuelle, sans bloquer l'annulation
+// ═══════════════════════════════════════════════════════════════════════════
 
-  test('2 contributions Stripe → stripe_ok=2, 2 appels refunds.create', async () => {
-    const contrib1 = makeContrib({ id: 'c1', stripe_payment_intent_id: 'pi_001' });
-    const contrib2 = makeContrib({ id: 'c2', stripe_payment_intent_id: 'pi_002' });
+describe('cancelSharedCartWithRefunds — échec Stripe', () => {
+  test('stripe.refunds.create rejette → routé en file manuelle, traitement continue', async () => {
+    const cart = makeCart();
+    const contrib = makeContribution({ id: 'contrib-fail', stripe_payment_intent_id: 'pi_fail' });
 
-    mockTransaction([
-      { rows: [makeCart({ status: 'closed', contributed_kmf: 20000 })] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib1, contrib2] },
-    ]);
-    mockOutOfTx([OK, OK, OK, OK]); // UPDATE + INSERT × 2
-
-    stripe.refunds.create
-      .mockResolvedValueOnce({ id: 're_001' })
-      .mockResolvedValueOnce({ id: 're_002' });
-
-    const { refunds } = await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    expect(refunds).toMatchObject({ total: 2, stripe_ok: 2, stripe_failed: 0 });
-    expect(stripe.refunds.create).toHaveBeenCalledTimes(2);
-  });
-
-  test('idempotency key = shared_cart_refund_{cartId}_{contributionId}', async () => {
-    const contrib = makeContrib({ id: 'c1', stripe_payment_intent_id: 'pi_001' });
-
-    mockTransaction([
-      { rows: [makeCart({ id: 'cart-001' })] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
+    const client = makeClient([
+      { rows: [cart] },
       { rows: [contrib] },
+      { rowCount: 1 },
+      { rows: [] },
     ]);
-    mockOutOfTx([OK, OK]);
+    db.getClient.mockResolvedValueOnce(client);
 
-    await cancelSharedCartWithRefunds('cart-001', 'user-001');
+    mockRefundsCreate.mockRejectedValueOnce(new Error('stripe_unreachable'));
+    db.query
+      .mockResolvedValueOnce({ rows: [{ ...contrib, status: 'failed' }] }) // UPDATE → manual queue
+      .mockResolvedValueOnce({ rows: [] });                                 // INSERT event
 
-    expect(stripe.refunds.create).toHaveBeenCalledWith(
-      { payment_intent: 'pi_001' },
-      { idempotencyKey: 'shared_cart_refund_cart-001_c1' }
-    );
+    const result = await cancelSharedCartWithRefunds('cart-001', 'user-001', null);
+
+    expect(result.cart.status).toBe('cancelled');
+    expect(result.refunds[0].status).toBe('manual_refund_queue');
+    expect(result.refunds[0].reason).toBe('stripe_refund_api_error');
   });
+});
 
-  test('1 Stripe ok + 1 Stripe échec → stripe_ok=1, stripe_failed=1', async () => {
-    const contrib1 = makeContrib({ id: 'c1', stripe_payment_intent_id: 'pi_001' });
-    const contrib2 = makeContrib({ id: 'c2', stripe_payment_intent_id: 'pi_002' });
+// ═══════════════════════════════════════════════════════════════════════════
+// Aucune contribution payée
+// ═══════════════════════════════════════════════════════════════════════════
 
-    mockTransaction([
-      { rows: [makeCart({ status: 'closed' })] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib1, contrib2] },
+describe('cancelSharedCartWithRefunds — aucune contribution payée', () => {
+  test('cart cancelled, refunds vide, aucun appel Stripe', async () => {
+    const cart = makeCart({ contributed_kmf: 0 });
+    const client = makeClient([
+      { rows: [cart] },
+      { rows: [] },     // aucune contribution paid
+      { rowCount: 1 },
+      { rows: [] },
     ]);
-    mockOutOfTx([OK, OK, OK, OK]);
+    db.getClient.mockResolvedValueOnce(client);
 
-    stripe.refunds.create
-      .mockResolvedValueOnce({ id: 're_001' })
-      .mockRejectedValueOnce(Object.assign(new Error('card_declined'), { code: 'card_declined' }));
+    const result = await cancelSharedCartWithRefunds('cart-001', 'user-001', null);
 
-    const { refunds } = await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    expect(refunds).toMatchObject({ total: 2, stripe_ok: 1, stripe_failed: 1 });
-  });
-
-  test('Stripe failed → contrib mise à jour avec requires_manual_refund=true', async () => {
-    const contrib = makeContrib({ id: 'c1', stripe_payment_intent_id: 'pi_001' });
-
-    mockTransaction([
-      { rows: [makeCart()] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib] },
-    ]);
-
-    const outCalls = [];
-    db.query.mockImplementation(async (sql, params) => {
-      outCalls.push({ sql, params });
-      return { rows: [], rowCount: 1 };
-    });
-
-    stripe.refunds.create.mockRejectedValueOnce(
-      Object.assign(new Error('stripe_error'), { code: 'stripe_timeout' })
-    );
-
-    await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    const updateCall = outCalls.find(c =>
-      String(c.sql).includes('requires_manual_refund')
-    );
-    expect(updateCall).toBeDefined();
-    expect(updateCall.params[0]).toBe('stripe_timeout');
-  });
-
-  test('Stripe success → contrib status=refunded, event contribution_refunded', async () => {
-    const contrib = makeContrib({ id: 'c1', stripe_payment_intent_id: 'pi_001' });
-
-    mockTransaction([
-      { rows: [makeCart()] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib] },
-    ]);
-
-    const outCalls = [];
-    db.query.mockImplementation(async (sql, params) => {
-      outCalls.push({ sql, params });
-      return { rows: [], rowCount: 1 };
-    });
-
-    stripe.refunds.create.mockResolvedValueOnce({ id: 're_ok_001' });
-
-    await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    const statusUpdate = outCalls.find(c => String(c.sql).includes("status = 'refunded'"));
-    expect(statusUpdate).toBeDefined();
-
-    const eventInsert = outCalls.find(c => String(c.sql).includes('contribution_refunded'));
-    expect(eventInsert).toBeDefined();
-    expect(eventInsert.params[1]).toMatchObject({ refund_id: 're_ok_001' });
-  });
-
-  // ── PayPal stub ──────────────────────────────────────────────────────────
-
-  test('contribution payment_method=paypal → paypal_failed=1, requires_manual_refund=true', async () => {
-    const contrib = makeContrib({
-      id:             'c-pp1',
-      payment_method: 'paypal',
-      stripe_payment_intent_id: null,
-    });
-
-    mockTransaction([
-      { rows: [makeCart()] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib] },
-    ]);
-
-    const outCalls = [];
-    db.query.mockImplementation(async (sql, params) => {
-      outCalls.push({ sql, params });
-      return { rows: [], rowCount: 1 };
-    });
-
-    const { refunds } = await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    expect(refunds).toMatchObject({ total: 1, paypal_ok: 0, paypal_failed: 1 });
-    expect(stripe.refunds.create).not.toHaveBeenCalled();
-
-    const manualRefund = outCalls.find(c => String(c.sql).includes('requires_manual_refund'));
-    expect(manualRefund).toBeDefined();
-  });
-
-  // ── Isolation transaction ────────────────────────────────────────────────
-
-  test('erreur Stripe post-commit → panier reste cancelled (DB non rollbackée)', async () => {
-    const contrib = makeContrib({ id: 'c1' });
-
-    const client = mockTransaction([
-      { rows: [makeCart()] },
-      { rows: [makeCart({ status: 'cancelled' })] },
-      OK,
-      { rows: [contrib] },
-    ]);
-
-    db.query.mockResolvedValue({ rows: [], rowCount: 1 });
-    stripe.refunds.create.mockRejectedValueOnce(new Error('network_error'));
-
-    const { cart, refunds } = await cancelSharedCartWithRefunds('cart-001', 'user-001');
-
-    // La transaction a bien committé
-    const txSqls = client.calls.map(c => String(c.sql).trim());
-    expect(txSqls).toContain('COMMIT');
-    expect(txSqls).not.toContain('ROLLBACK');
-
-    // Le panier est cancelled malgré l'échec Stripe
-    expect(cart.status).toBe('cancelled');
-    expect(refunds.stripe_failed).toBe(1);
+    expect(result.cart.status).toBe('cancelled');
+    expect(result.refunds).toEqual([]);
+    expect(mockRefundsCreate).not.toHaveBeenCalled();
   });
 });

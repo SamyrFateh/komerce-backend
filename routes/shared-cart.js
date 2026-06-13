@@ -47,10 +47,10 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
-const { cancelSharedCartWithRefunds } = require('../services/cancel-shared-cart-with-refunds');
 const estimations = require('../services/shared-cart-estimation-service');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
+const { cancelSharedCartWithRefunds } = require('../services/cancel-shared-cart-with-refunds');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { fromOrderHandler }           = require('./shared-cart-from-order');
@@ -729,6 +729,53 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
       prepaid_kmf:        result.prepaidKmf,
       remaining_cash_kmf: result.remainingCashKmf,
     });
+
+    // B-03 — Notification WhatsApp "commande confirmée" → tous les participants
+    // ayant contribué (status = 'paid').
+    // Template : shared_cart_order_confirmed — {{1}} prénom {{2}} titre {{3}} référence commande
+    setImmediate(async () => {
+      try {
+        const { rows: contributors } = await db.query(
+          `SELECT DISTINCT contributor_phone AS phone,
+                  SPLIT_PART(contributor_name, ' ', 1) AS first_name
+             FROM shared_cart_contributions
+            WHERE shared_cart_id = $1
+              AND status = 'paid'
+              AND contributor_phone IS NOT NULL`,
+          [req.params.id]
+        );
+
+        const title = result.sharedCart?.title || 'Panier groupe';
+        const orderRef = result.order.reference;
+
+        for (const c of contributors) {
+          const notif = await sendTemplateWhatsApp({
+            to: c.phone,
+            templateName: 'shared_cart_order_confirmed',
+            components: [{
+              type: 'body',
+              parameters: [
+                { type: 'text', text: c.first_name || 'Participant' },
+                { type: 'text', text: title },
+                { type: 'text', text: orderRef },
+              ],
+            }],
+          });
+          if (!notif.success && !notif.skipped) {
+            log.warn({ phone: c.phone, error: notif.error }, '[finalize] order_confirmed_notification_failed');
+            await db.query(
+              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+                 VALUES ($1, 'order_confirmed_notification_failed', 'system', $2)`,
+              [req.params.id, { phone: c.phone, error: notif.error }]
+            ).catch(() => {});
+          }
+        }
+        log.info({ cart_id: req.params.id, count: contributors.length },
+          '[finalize] order_confirmed WhatsApp notifications attempted');
+      } catch (err) {
+        log.error({ err, cart_id: req.params.id }, '[finalize] order_confirmed notification batch failed');
+      }
+    });
   } catch (err) {
     try {
       const parsed = JSON.parse(err.message);
@@ -843,70 +890,10 @@ router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next
 });
 
 /**
- * Notification WhatsApp d'annulation → créateur + contributeurs remboursés.
- * Fire-and-forget (setImmediate) — non bloquant pour la réponse HTTP.
- */
-function _notifyCancellation(cart, refunds) {
-  setImmediate(async () => {
-    try {
-      const title    = cart.title || 'Panier groupe';
-      const refunded = r(cart.contributed_kmf);
-
-      // Notifier le créateur
-      if (cart.beneficiary_phone) {
-        const msg = refunds.total > 0
-          ? `Votre panier « ${title} » a été annulé. ${refunds.stripe_ok} participant(s) remboursé(s) automatiquement.`
-          : `Votre panier « ${title} » a été annulé.`;
-        await sendTemplateWhatsApp({
-          to: cart.beneficiary_phone,
-          templateName: 'shared_cart_cancelled_creator',
-          components: [{
-            type: 'body',
-            parameters: [
-              { type: 'text', text: cart.beneficiary_name || 'Organisateur' },
-              { type: 'text', text: title },
-              { type: 'text', text: String(refunds.stripe_ok) },
-            ],
-          }],
-        }).catch((err) => log.warn({ err, cart_id: cart.id }, '[cancel] creator notification failed'));
-      }
-
-      // Notifier les contributeurs remboursés (via estimations — source des phones)
-      if (refunds.total > 0) {
-        const { rows: contributors } = await db.query(
-          `SELECT DISTINCT contributor_phone AS phone, contributor_name AS name
-             FROM shared_cart_contributions
-            WHERE shared_cart_id = $1
-              AND status IN ('refunded', 'paid')
-              AND contributor_phone IS NOT NULL`,
-          [cart.id]
-        );
-
-        for (const c of contributors) {
-          await sendTemplateWhatsApp({
-            to: c.phone,
-            templateName: 'shared_cart_cancelled_participant',
-            components: [{
-              type: 'body',
-              parameters: [
-                { type: 'text', text: (c.name || 'Participant').split(' ')[0] },
-                { type: 'text', text: title },
-              ],
-            }],
-          }).catch((err) => log.warn({ err, phone: c.phone, cart_id: cart.id }, '[cancel] participant notification failed'));
-        }
-      }
-    } catch (err) {
-      log.error({ err, cart_id: cart.id }, '[cancel] notification batch failed');
-    }
-  });
-}
-
-/**
  * POST /:id/awaiting-choice/cancel
  *
  * Le créateur annule le panier depuis l'état AWAITING_CHOICE.
- * Même mécanique que /cancel — guard inclusif dans cancelSharedCartWithRefunds.
+ * Même mécanique que /cancel — guard inclusif dans cancelSharedCart.
  */
 // Cas B — Ajuster : le créateur édite la liste (réduction), nouvelle fenêtre 48h.
 // Doctrine : la plateforme ne choisit jamais les articles à retirer.
@@ -981,13 +968,12 @@ router.post('/:id/extend-window', authenticate, async (req, res, next) => {
 
 router.post('/:id/awaiting-choice/cancel', authenticate, async (req, res, next) => {
   try {
-    const { cart, refunds } = await cancelSharedCartWithRefunds(
-      req.params.id, req.user.id, req.body?.reason
-    );
-    _notifyCancellation(cart, refunds);
+    const { cart, refunds } = await cancelSharedCartWithRefunds(req.params.id, req.user.id, req.body?.reason);
     res.json({ ok: true, cart, refunds });
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    if (err.message.includes('Impossible') || err.message.includes('introuvable')) {
+      return res.status(400).json({ error: err.message });
+    }
     next(err);
   }
 });
@@ -995,13 +981,12 @@ router.post('/:id/awaiting-choice/cancel', authenticate, async (req, res, next) 
 // Annulation depuis n'importe quel statut autorisé (OPEN / CLOSED / AWAITING_CHOICE)
 router.post('/:id/cancel', authenticate, async (req, res, next) => {
   try {
-    const { cart, refunds } = await cancelSharedCartWithRefunds(
-      req.params.id, req.user.id, req.body?.reason
-    );
-    _notifyCancellation(cart, refunds);
+    const { cart, refunds } = await cancelSharedCartWithRefunds(req.params.id, req.user.id, req.body?.reason);
     res.json({ ok: true, cart, refunds });
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
+    if (err.message.includes('Impossible') || err.message.includes('introuvable')) {
+      return res.status(400).json({ error: err.message });
+    }
     next(err);
   }
 });

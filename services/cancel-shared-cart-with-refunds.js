@@ -1,37 +1,46 @@
 'use strict';
 
 /**
- * KOMERCE — cancelSharedCartWithRefunds
- * ═══════════════════════════════════════════════════════════════════════
+ * KOMERCE — Annulation panier partagé V4.1 avec remboursement automatique
  *
- * Annule un panier partagé ET rembourse automatiquement toutes les
- * contributions `paid` via Stripe (ou PayPal — stub préparatoire).
+ * GAP-A (Doctrine V4.1 Intégrée) :
+ *   annulation = remboursement 100% automatique de tous les participants
+ *   ayant une contribution `paid`, sans action manuelle admin.
  *
- * DOCTRINE V4.1 :
- *   - Annulation = remboursement 100% automatique, sans action manuelle.
- *   - La transaction DB (cancelled + audit) et les appels Stripe sont
- *     découplés : si un remboursement Stripe échoue, le panier est quand
- *     même annulé et la contribution est marquée `refund_failed` dans
- *     son metadata — traçabilité pour la file admin.
- *   - Idempotence : chaque appel Stripe utilise une idempotency key
- *     stable `shared_cart_refund_{cartId}_{contributionId}`. Un retry
- *     ne crée jamais de double remboursement.
+ * Comportement :
+ *   1. Verrouille le panier, valide le statut (open / closed / awaiting_choice).
+ *   2. Récupère toutes les contributions `paid` (verrouillées).
+ *   3. Passe le panier en `cancelled` + audit event `cart_cancelled`.
+ *   4. Hors de la transaction principale (appel API externe Stripe) :
+ *      pour chaque contribution `paid` avec `payment_method = 'stripe'`,
+ *      appelle `stripe.refunds.create` avec une idempotency key stable
+ *      `shared_cart_refund_{cartId}_{contributionId}`, puis marque la
+ *      contribution `refunded`.
+ *   5. Les contributions `cash` (`payment_method = 'cash'`) ne peuvent pas
+ *      être remboursées automatiquement par API — elles sont basculées
+ *      vers la file de remboursement manuel existante
+ *      (`shared-cart-refund-queue.js`) via `metadata.requires_manual_refund`.
+ *   6. Idem si l'appel Stripe échoue (ex : refund déjà existant côté Stripe
+ *      avec un statut inattendu, payment_intent manquant, etc.) — on ne
+ *      bloque jamais l'annulation pour un incident de remboursement, on
+ *      bascule la contribution en file manuelle.
  *
- * Statuts annulables : OPEN / CLOSED / AWAITING_CHOICE.
- * Statuts bloquants : ORDERED, CANCELLED, EXPIRED, ARCHIVED.
- *
- * @param {string} sharedCartId
- * @param {string} userId — doit être le créateur (beneficiary_user_id)
- * @param {string} [reason] — raison libre (audit)
- * @returns {{ cart, refunds }} cart = ligne DB après annulation ;
- *   refunds = { total, stripe_ok, stripe_failed, paypal_ok, paypal_failed }
+ * PayPal (A-02) : aucune contribution panier partagé n'est aujourd'hui créée
+ * avec `payment_method = 'paypal'` (seuls 'stripe' et 'cash' existent,
+ * cf. migration 073b). Si ce mode est ajouté plus tard, il suffira d'ajouter
+ * une branche dédiée dans `refundOneContribution` appelant l'API PayPal
+ * Refunds — la structure (idempotence, fallback file manuelle, notification)
+ * reste identique.
  */
 
+const db = require('../db');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const db     = require('../db');
-const log    = require('../utils/logger').child({ module: 'cancel-shared-cart-with-refunds' });
+const log = require('../utils/logger').child({ module: 'cancel-shared-cart-with-refunds' });
+const { sendTemplateWhatsApp } = require('./whatsapp-meta');
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+function r(n) {
+  return Math.round(Number(n) || 0);
+}
 
 async function withTransaction(callback) {
   const client = await db.getClient();
@@ -48,229 +57,230 @@ async function withTransaction(callback) {
   }
 }
 
-// ─── Stripe refund (A-01) ────────────────────────────────────────────────────
+async function addEvent(client, sharedCartId, eventType, actor, payload) {
+  await client.query(
+    `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
+       VALUES ($1, $2, $3, $4, $5)`,
+    [sharedCartId, eventType, actor?.type || null, actor?.id || null, payload || {}]
+  );
+}
 
 /**
- * Rembourse une contribution Stripe.
- * Idempotency key stable → retry = no-op côté Stripe.
+ * Marque une contribution comme nécessitant un remboursement manuel
+ * (réutilise le même contrat que `shared-cart-financial-guard.js` /
+ * `shared-cart-refund-queue.js` : status='failed' + requires_manual_refund).
  *
- * @param {Object} contribution — ligne shared_cart_contributions
- * @param {string} cartId — pour la clé d'idempotence
- * @returns {{ ok: boolean, refundId?: string, error?: string }}
+ * NOTE : une contribution `paid` annulée n'est pas "failed" au sens paiement —
+ * mais c'est le contrat existant de la file manuelle admin, qu'on réutilise
+ * pour ne pas dupliquer l'écran d'admin. `metadata.cancellation_refund = true`
+ * permet de distinguer cette origine dans la file.
  */
-async function _refundStripeContribution(contribution, cartId) {
-  const paymentIntentId = contribution.stripe_payment_intent_id;
-  if (!paymentIntentId) {
-    return { ok: false, error: 'no_payment_intent_id' };
+async function markRequiresManualRefund(contribution, cart, reason, extra = {}) {
+  const payload = {
+    requires_manual_refund: true,
+    cancellation_refund: true,
+    reason,
+    cart_id: cart.id,
+    amount_kmf: r(contribution.amount_kmf),
+    payment_method: contribution.payment_method,
+    ...extra,
+  };
+
+  await db.query(
+    `UPDATE shared_cart_contributions
+        SET status = 'failed',
+            failed_at = NOW(),
+            metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+            updated_at = NOW()
+      WHERE id = $1`,
+    [contribution.id, JSON.stringify(payload)]
+  );
+
+  await db.query(
+    `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+       VALUES ($1, 'contribution_requires_manual_refund', 'system', $2)`,
+    [cart.id, { contribution_id: contribution.id, ...payload }]
+  );
+
+  log.warn({ contribution_id: contribution.id, cart_id: cart.id, reason },
+    '[cancel-with-refunds] contribution routed to manual refund queue');
+
+  return { contribution_id: contribution.id, status: 'manual_refund_queue', reason };
+}
+
+/**
+ * Rembourse une contribution `paid` après annulation du panier.
+ * Effectue son propre appel Stripe + sa propre mise à jour DB (hors de la
+ * transaction principale d'annulation) afin de ne pas tenir de verrous DB
+ * pendant un appel réseau externe. L'idempotency key garantit qu'un retry
+ * (ex : tick cron de rattrapage) ne déclenche jamais un double remboursement.
+ */
+async function refundOneContribution(cart, contribution) {
+  if (contribution.payment_method === 'cash') {
+    return markRequiresManualRefund(contribution, cart, 'cash_contribution_requires_manual_refund');
   }
 
-  const idempotencyKey = `shared_cart_refund_${cartId}_${contribution.id}`;
+  // Mode par défaut / 'stripe'
+  if (!contribution.stripe_payment_intent_id) {
+    return markRequiresManualRefund(contribution, cart, 'missing_stripe_payment_intent');
+  }
 
+  const idempotencyKey = `shared_cart_refund_${cart.id}_${contribution.id}`;
+
+  let refund;
   try {
-    const refund = await stripe.refunds.create(
-      { payment_intent: paymentIntentId },
+    refund = await stripe.refunds.create(
+      { payment_intent: contribution.stripe_payment_intent_id },
       { idempotencyKey }
     );
-    return { ok: true, refundId: refund.id };
   } catch (err) {
-    const code = err?.code || err?.type || 'stripe_error';
-    log.warn({ err, contribution_id: contribution.id, code }, '[cancel-refund] Stripe refund failed');
-    return { ok: false, error: code, message: err.message };
+    log.error({ err, contribution_id: contribution.id, cart_id: cart.id },
+      '[cancel-with-refunds] stripe.refunds.create failed');
+    return markRequiresManualRefund(contribution, cart, 'stripe_refund_api_error', {
+      stripe_error: err?.message || String(err),
+    });
+  }
+
+  const { rows: [updated] } = await db.query(
+    `UPDATE shared_cart_contributions
+        SET status = 'refunded',
+            refunded_at = NOW(),
+            metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+            updated_at = NOW()
+      WHERE id = $1 AND status = 'paid'
+      RETURNING *`,
+    [contribution.id, JSON.stringify({
+      cancellation_refund: true,
+      stripe_refund_id: refund.id,
+      stripe_refund_status: refund.status,
+      idempotency_key: idempotencyKey,
+    })]
+  );
+
+  await db.query(
+    `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+       VALUES ($1, 'contribution_refunded', 'system', $2)`,
+    [cart.id, {
+      contribution_id: contribution.id,
+      amount_kmf: r(contribution.amount_kmf),
+      stripe_refund_id: refund.id,
+      stripe_refund_status: refund.status,
+    }]
+  );
+
+  return {
+    contribution_id: contribution.id,
+    status: 'refunded',
+    stripe_refund_id: refund.id,
+    stripe_refund_status: refund.status,
+    refunded: updated || null,
+  };
+}
+
+/**
+ * A-04 — Notification WhatsApp annulation → tous les participants ayant payé.
+ * Template : shared_cart_cancelled_refunded —
+ *   {{1}} prénom  {{2}} titre panier  {{3}} montant remboursé (KMF)
+ */
+async function notifyRefundedParticipants(cart, contributions) {
+  for (const contribution of contributions) {
+    if (!contribution.contributor_phone) continue;
+    try {
+      const result = await sendTemplateWhatsApp({
+        to: contribution.contributor_phone,
+        templateName: 'shared_cart_cancelled_refunded',
+        components: [{
+          type: 'body',
+          parameters: [
+            { type: 'text', text: (contribution.contributor_name || 'Participant').split(' ')[0] },
+            { type: 'text', text: cart.title || 'Panier groupe' },
+            { type: 'text', text: String(r(contribution.amount_kmf)) },
+          ],
+        }],
+      });
+      if (!result.success && !result.skipped) {
+        log.warn({ phone: contribution.contributor_phone, error: result.error, cart_id: cart.id },
+          '[cancel-with-refunds] cancellation_notification_failed');
+        await db.query(
+          `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
+             VALUES ($1, 'cancellation_notification_failed', 'system', $2)`,
+          [cart.id, { phone: contribution.contributor_phone, error: result.error }]
+        ).catch(() => {});
+      }
+    } catch (err) {
+      log.error({ err, contribution_id: contribution.id, cart_id: cart.id },
+        '[cancel-with-refunds] cancellation notification failed');
+    }
   }
 }
 
-// ─── PayPal refund stub (A-02) ───────────────────────────────────────────────
-//
-// PayPal n'est pas encore câblé aux contributions de panier partagé (juin 2026).
-// Les contributions `payment_method = 'paypal'` sont actuellement impossibles
-// dans le flux V4.1, donc ce stub ne sera jamais appelé en prod.
-//
-// Quand le câblage PayPal sera ajouté, implémenter :
-//   - récupérer le capture_id depuis contribution.metadata.paypal_capture_id
-//   - appeler services/paypal-client.js → refundCapture(captureId)
-//   - retourner { ok, refundId, error }
-
-async function _refundPaypalContribution(contribution, cartId) {
-  log.warn(
-    { contribution_id: contribution.id, cart_id: cartId },
-    '[cancel-refund] PayPal refund not yet implemented — queued for manual refund'
-  );
-  return { ok: false, error: 'paypal_refund_not_implemented' };
-}
-
-// ─── Core ────────────────────────────────────────────────────────────────────
-
+/**
+ * Annule un panier partagé et rembourse automatiquement tous les
+ * participants ayant une contribution `paid`.
+ *
+ * @returns { cart, refunds: [...] }
+ */
 async function cancelSharedCartWithRefunds(sharedCartId, userId, reason) {
-  // ── Étape 1 : annuler dans la DB (transaction) ───────────────────────────
-  let cancelledCart;
-  let paidContributions;
-
-  await withTransaction(async (client) => {
-    // Verrou exclusif sur le panier
+  const { cart, contributions } = await withTransaction(async (client) => {
     const { rows } = await client.query(
-      `SELECT sc.*,
-              u.phone AS beneficiary_phone,
-              u.full_name AS beneficiary_name
-         FROM shared_carts sc
-         LEFT JOIN users u ON u.id = sc.beneficiary_user_id
-        WHERE sc.id = $1
-          AND sc.beneficiary_user_id = $2
-        FOR UPDATE`,
+      `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2 FOR UPDATE`,
       [sharedCartId, userId]
     );
-
-    if (!rows.length) {
-      const err = new Error('Panier introuvable ou non autorisé');
-      err.status = 404;
-      err.code   = 'shared_cart_not_found';
-      throw err;
-    }
-
+    if (!rows.length) throw new Error('Panier introuvable ou non autorisé');
     const cart = rows[0];
 
     if (!['open', 'closed', 'awaiting_choice'].includes(cart.status)) {
-      const msgMap = {
-        ordered:   'Ce panier a déjà été converti en commande.',
-        cancelled: 'Ce panier est déjà annulé.',
-        expired:   'Ce panier a expiré.',
-        archived:  'Ce panier est archivé.',
-      };
-      const err = new Error(msgMap[cart.status] || `Impossible d'annuler un panier au statut ${cart.status}`);
-      err.status = 409;
-      err.code   = 'invalid_status_for_cancel';
-      throw err;
+      throw new Error(`Impossible d'annuler un panier au statut ${cart.status}`);
     }
 
-    // Passer en cancelled
-    const { rows: [updated] } = await client.query(
-      `UPDATE shared_carts
-          SET status = 'cancelled',
-              cancelled_at = NOW(),
-              updated_at = NOW()
-        WHERE id = $1
-       RETURNING *`,
+    const { rows: contributions } = await client.query(
+      `SELECT * FROM shared_cart_contributions
+        WHERE shared_cart_id = $1 AND status = 'paid'
+        FOR UPDATE`,
       [sharedCartId]
     );
 
-    cancelledCart = { ...updated, beneficiary_phone: cart.beneficiary_phone, beneficiary_name: cart.beneficiary_name };
-
-    // Audit event
     await client.query(
-      `INSERT INTO shared_cart_events
-         (shared_cart_id, event_type, actor_type, actor_id, payload)
-       VALUES ($1, 'cart_cancelled', 'user', $2, $3)`,
-      [sharedCartId, userId, {
-        reason:          reason || null,
-        contributed_kmf: cart.contributed_kmf,
-        auto_refund:     true,
-      }]
-    );
-
-    // Charger toutes les contributions `paid` (Stripe ou PayPal) dans la transaction
-    const { rows: contribs } = await client.query(
-      `SELECT id, stripe_payment_intent_id, payment_method, metadata, amount_kmf
-         FROM shared_cart_contributions
-        WHERE shared_cart_id = $1
-          AND status = 'paid'`,
+      `UPDATE shared_carts
+          SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW()
+        WHERE id = $1`,
       [sharedCartId]
     );
-    paidContributions = contribs;
+
+    await addEvent(client, sharedCartId, 'cart_cancelled',
+      { type: 'user', id: userId },
+      {
+        reason: reason || null,
+        contributed_kmf: cart.contributed_kmf,
+        paid_contributions_count: contributions.length,
+        auto_refund: true,
+      }
+    );
+
+    return { cart, contributions };
   });
 
-  // ── Étape 2 : rembourser hors transaction (appels Stripe/PayPal) ──────────
-  //
-  // Intentionnellement hors transaction DB : un échec Stripe ne doit pas
-  // annuler l'annulation du panier. Chaque résultat est tracé dans metadata.
-
-  const refundStats = {
-    total:         paidContributions.length,
-    stripe_ok:     0,
-    stripe_failed: 0,
-    paypal_ok:     0,
-    paypal_failed: 0,
-  };
-
-  for (const contrib of paidContributions) {
-    const method = contrib.payment_method || 'stripe';
-    let result;
-
-    if (method === 'paypal') {
-      result = await _refundPaypalContribution(contrib, sharedCartId);
-      if (result.ok) refundStats.paypal_ok++;
-      else           refundStats.paypal_failed++;
-    } else {
-      // Stripe (méthode par défaut)
-      result = await _refundStripeContribution(contrib, sharedCartId);
-      if (result.ok) refundStats.stripe_ok++;
-      else           refundStats.stripe_failed++;
-    }
-
-    // Mettre à jour la contribution selon le résultat
-    if (result.ok) {
-      await db.query(
-        `UPDATE shared_cart_contributions
-            SET status = 'refunded',
-                refunded_at = NOW(),
-                metadata = COALESCE(metadata, '{}'::jsonb) ||
-                           jsonb_build_object(
-                             'auto_refund', true,
-                             'refund_id', $1,
-                             'refunded_at', NOW()::text
-                           ),
-                updated_at = NOW()
-          WHERE id = $2`,
-        [result.refundId || null, contrib.id]
-      );
-
-      await db.query(
-        `INSERT INTO shared_cart_events
-           (shared_cart_id, event_type, actor_type, payload)
-         VALUES ($1, 'contribution_refunded', 'system', $2)`,
-        [sharedCartId, {
-          contribution_id: contrib.id,
-          amount_kmf:      contrib.amount_kmf,
-          refund_id:       result.refundId,
-          method,
-        }]
-      );
-
-      log.info({ contribution_id: contrib.id, refund_id: result.refundId, method },
-        '[cancel-refund] contribution refunded');
-    } else {
-      // Marquer pour la file admin manuelle
-      await db.query(
-        `UPDATE shared_cart_contributions
-            SET metadata = COALESCE(metadata, '{}'::jsonb) ||
-                           jsonb_build_object(
-                             'refund_failed', true,
-                             'refund_error', $1,
-                             'requires_manual_refund', true
-                           ),
-                updated_at = NOW()
-          WHERE id = $2`,
-        [result.error || 'unknown', contrib.id]
-      );
-
-      await db.query(
-        `INSERT INTO shared_cart_events
-           (shared_cart_id, event_type, actor_type, payload)
-         VALUES ($1, 'contribution_refund_failed', 'system', $2)`,
-        [sharedCartId, {
-          contribution_id: contrib.id,
-          amount_kmf:      contrib.amount_kmf,
-          error:           result.error,
-          method,
-        }]
-      );
-
-      log.error({ contribution_id: contrib.id, error: result.error, method },
-        '[cancel-refund] contribution refund failed — queued for manual refund');
-    }
+  // Remboursements + notifications hors transaction principale (appels
+  // réseau externes Stripe + WhatsApp). Idempotency key Stripe garantit
+  // qu'un retry ne rembourse jamais deux fois.
+  const refunds = [];
+  for (const contribution of contributions) {
+    refunds.push(await refundOneContribution(cart, contribution));
   }
 
-  log.info({ cart_id: sharedCartId, ...refundStats }, '[cancel-refund] cancellation complete');
+  if (contributions.length) {
+    notifyRefundedParticipants(cart, contributions).catch(err =>
+      log.error({ err, cart_id: cart.id }, '[cancel-with-refunds] notification batch failed'));
+  }
 
-  return { cart: cancelledCart, refunds: refundStats };
+  return {
+    cart: { ...cart, status: 'cancelled' },
+    refunds,
+  };
 }
 
-module.exports = { cancelSharedCartWithRefunds };
+module.exports = {
+  cancelSharedCartWithRefunds,
+  // exporté pour tests unitaires ciblés
+  refundOneContribution,
+};
