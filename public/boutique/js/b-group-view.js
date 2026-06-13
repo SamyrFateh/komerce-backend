@@ -733,7 +733,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
   const count = items.length;
 
-  const itemRows = items.map(it => {
+  const itemRows = items.map((it, i) => {
     const qty      = it.quantity || 1;
     const unit     = r(it.unit_price_kmf || 0);
     const lineTotal = unit * qty;
@@ -741,15 +741,18 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
     const thumb    = img
       ? `<img class="k-group-item-thumb" src="${sanitize(img)}" alt="" loading="lazy">`
       : `<div class="k-group-item-thumb--fallback">🛒</div>`;
+    const name     = sanitize(it.product_name || it.name || 'Produit');
     return `
-      <div class="k-group-item-row--rich">
+      <div class="k-group-item-row--rich k-group-item-row--tap" data-item-idx="${i}"
+           role="button" tabindex="0" aria-label="Voir le détail de ${name}">
         ${thumb}
         <div class="k-group-item-body">
-          <span class="k-group-item-name">${sanitize(it.product_name || it.name || 'Produit')}</span>
+          <span class="k-group-item-name">${name}</span>
           <span class="k-group-item-detail">${fmt(unit, 'KMF')} × ${qty}</span>
         </div>
         <div class="k-group-item-right">
           <span class="k-group-item-total">${fmt(lineTotal, 'KMF')}</span>
+          <span class="k-group-item-chev" aria-hidden="true">›</span>
         </div>
       </div>`;
   }).join('') || '<p class="k-group-contrib-empty">Aucun article.</p>';
@@ -782,7 +785,79 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
     </div>`;
 }
 
-function bindParticipantItemsAccordion(el) {
+/* ── Fiche produit LECTURE SEULE (snapshot) — doctrine §4/§7 ──────
+ * Construite UNIQUEMENT à partir des données déjà reçues (nom, image, prix,
+ * catégorie). Aucun appel catalogue : le snapshot EST la vérité du panier.
+ * Aucun bouton ajouter / modifier / supprimer / commander seul.
+ */
+function ensureSnapshotStyles() {
+  if (document.getElementById('k-group-snapshot-styles')) return;
+  const st = document.createElement('style');
+  st.id = 'k-group-snapshot-styles';
+  st.textContent = `
+.k-group-item-row--tap{cursor:pointer;transition:background .12s}
+.k-group-item-row--tap:hover{background:var(--sand,rgba(0,0,0,.03))}
+.k-group-item-row--tap:focus-visible{outline:2px solid var(--violet,#6b4eff);outline-offset:-2px}
+.k-group-item-chev{margin-left:8px;color:var(--text-muted,#999);font-size:18px;line-height:1}
+.k-gsnap-overlay{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.45);
+  display:flex;align-items:flex-end;justify-content:center;animation:kGsnapFade .2s ease}
+@keyframes kGsnapFade{from{opacity:0}to{opacity:1}}
+@media(min-width:600px){.k-gsnap-overlay{align-items:center}}
+.k-gsnap-sheet{background:var(--white,#fff);border-radius:20px 20px 0 0;width:100%;max-width:420px;
+  padding:0 0 calc(20px + env(safe-area-inset-bottom));overflow:hidden;animation:kGsnapUp .28s ease}
+@media(min-width:600px){.k-gsnap-sheet{border-radius:16px;padding-bottom:20px}}
+@keyframes kGsnapUp{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
+.k-gsnap-img{width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--sand,#f2f2f2);display:block}
+.k-gsnap-img--ph{display:flex;align-items:center;justify-content:center;font-size:48px}
+.k-gsnap-body{padding:18px 20px 4px}
+.k-gsnap-cat{font-size:12px;font-weight:600;color:var(--text-muted,#999);text-transform:uppercase;letter-spacing:.04em}
+.k-gsnap-name{font-size:18px;font-weight:800;color:var(--text,#111);margin:4px 0 8px;line-height:1.25}
+.k-gsnap-price{font-size:20px;font-weight:800;color:var(--violet,#6b4eff)}
+.k-gsnap-note{font-size:12px;color:var(--text-muted,#999);margin:12px 0 0;line-height:1.5}
+.k-gsnap-back{display:block;width:calc(100% - 40px);margin:16px 20px 0;padding:13px;
+  background:var(--violet,#6b4eff);color:#fff;border:none;border-radius:50px;
+  font-size:15px;font-weight:700;cursor:pointer}
+.k-gsnap-back:hover{filter:brightness(.95)}`;
+  document.head.appendChild(st);
+}
+
+function openProductSnapshotSheet(item) {
+  ensureSnapshotStyles();
+  const name = sanitize(item.product_name || item.name || 'Produit');
+  const cat  = item.product_category || item.category || '';
+  const img  = item.product_image || item.image_url || '';
+  const unit = r(item.unit_price_kmf || 0);
+
+  const ov = document.createElement('div');
+  ov.className = 'k-gsnap-overlay';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+  ov.setAttribute('aria-label', `Détail produit : ${name}`);
+  const media = img
+    ? `<img class="k-gsnap-img" src="${sanitize(img)}" alt="${name}">`
+    : `<div class="k-gsnap-img k-gsnap-img--ph">🛒</div>`;
+  ov.innerHTML = `
+    <div class="k-gsnap-sheet">
+      ${media}
+      <div class="k-gsnap-body">
+        ${cat ? `<div class="k-gsnap-cat">${sanitize(cat)}</div>` : ''}
+        <div class="k-gsnap-name">${name}</div>
+        <div class="k-gsnap-price">${fmt(unit, 'KMF')}</div>
+        <p class="k-gsnap-note">Produit consultable dans le panier partagé, disponibilité à confirmer.</p>
+      </div>
+      <button type="button" class="k-gsnap-back">Retour au panier partagé</button>
+    </div>`;
+
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+  ov.querySelector('.k-gsnap-back').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+  setTimeout(() => ov.querySelector('.k-gsnap-back')?.focus(), 60);
+}
+
+function bindParticipantItemsAccordion(el, items = []) {
   const btn = el.querySelector('#k-group-items-toggle');
   const list = el.querySelector('#k-group-items-list');
   const card = btn?.closest('.k-group-items-card');
@@ -792,6 +867,19 @@ function bindParticipantItemsAccordion(el) {
     btn.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
     list.hidden = !nextOpen;
     card?.classList.toggle('is-open', nextOpen);
+  });
+
+  // Doctrine §4 : chaque article ouvre une fiche LECTURE SEULE (snapshot).
+  // Le participant consulte, jamais ne modifie le panier partagé.
+  const openFromRow = (row) => {
+    const idx = Number(row?.dataset?.itemIdx);
+    if (Number.isInteger(idx) && items[idx]) openProductSnapshotSheet(items[idx]);
+  };
+  list.querySelectorAll('.k-group-item-row--tap').forEach(row => {
+    row.addEventListener('click', () => openFromRow(row));
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFromRow(row); }
+    });
   });
 }
 
@@ -973,7 +1061,7 @@ export async function renderGroupView(opts = {}) {
 
     /* ── Bindings (sur col-aside pour isolation des IDs) ─────────── */
     const asideEl = el.querySelector('.k-group-participant-col-aside') || el;
-    bindParticipantItemsAccordion(el);
+    bindParticipantItemsAccordion(el, items);
 
     if (isOpenPhase) {
       bindEstimationForm(asideEl, participantToken, cart, async () => {
