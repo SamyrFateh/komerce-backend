@@ -302,13 +302,13 @@ export function renderProgress(cart, contributions, commitmentsList) {
       <details class="k-group-accordion k-group-accordion--flush"${_accOpenAttr()}>
         <summary>
           <span>Participants (${commitmentsList.length})</span>
-          <span class="k-group-acc-meta">${fmt(eng.engagementsTotal, 'KMF')} engagés${overBadge}</span>
+          <span class="k-group-acc-meta">${fmt(eng.engagementsTotal, 'KMF')} estimés${overBadge}</span>
         </summary>
         <div class="k-group-commitment-list">${rows}</div>
       </details>`;
   } else {
     body = `<p class="k-group-contrib-empty">${
-      sOpen ? 'Aucun engagement verrouillé.' : 'Aucun engagement encore — partagez le lien !'
+      sOpen ? 'Aucun estimation bloquée.' : 'Aucune estimation encore — partagez le lien !'
     }</p>`;
   }
 

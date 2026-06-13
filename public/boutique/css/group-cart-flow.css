@@ -2077,9 +2077,20 @@
   font-size: 11px; font-weight: 800; color: var(--violet);
   text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px;
 }
+/* ── Header V4.1 (mockup) ──────────────────────────────────────── */
+.k-group-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.k-group-header-right {
+  font-size: 12px; color: var(--text-muted); white-space: nowrap;
+}
+.k-group-header-right--urgent {
+  color: var(--coral); font-weight: 600;
+}
 .k-group-header-title {
   font-size: 22px; font-weight: 950; color: var(--text);
-  margin: 0 0 4px; line-height: 1.1;
+  margin: 0 0 2px; line-height: 1.1;
 }
 .k-group-header-meta {
   display: flex; align-items: center; flex-wrap: wrap;
@@ -2090,6 +2101,63 @@
 .k-group-header-status { font-weight: 600; }
 .k-group-header-count  { font-weight: 500; }
 
+/* ── Phase badge awaiting (rouge doux, mockup) ─────────────────── */
+.k-group-phase-badge--awaiting {
+  background: var(--red-awaiting-bg); color: var(--red-awaiting-text);
+}
+
+/* ── Badge estimation violet (inline, mockup) ──────────────────── */
+.k-group-estimation-badge {
+  background: var(--violet-light);
+  color: var(--violet-dark);
+  font-size: 13px; font-weight: 600;
+  padding: 8px 14px; border-radius: 12px;
+  margin: 10px 0; text-align: center;
+}
+
+/* ── Barre de financement (phase paiement, mockup) ─────────────── */
+.k-group-funding-bar { margin: 10px 0 4px; }
+.k-group-funding-bar-labels {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text-muted); margin-bottom: 4px;
+}
+.k-group-funding-bar-amounts { font-weight: 600; color: var(--text); }
+.k-group-funding-bar-track {
+  height: 8px; border-radius: 999px; background: var(--sand);
+}
+.k-group-funding-bar-fill {
+  height: 8px; border-radius: 999px;
+  background: var(--checkout-accent);
+  transition: width .4s ease;
+}
+
+/* ── Bouton payer vert (mockup) ────────────────────────────────── */
+.k-group-btn--pay {
+  width: 100%; padding: 13px 20px; border-radius: 50px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  background: var(--checkout-accent); color: var(--white);
+  transition: opacity .15s;
+}
+.k-group-btn--pay:hover { opacity: .92; }
+.k-group-btn--pay:disabled { opacity: .6; cursor: default; }
+
+/* ── Formulaire paiement mypart (bordure verte, mockup) ────────── */
+.k-group-mypart--payment {
+  border-color: var(--checkout-accent) !important;
+}
+.k-group-mypart--payment .k-group-mypart-head {
+  color: var(--checkout-accent-deep, var(--checkout-accent));
+}
+.k-group-payment-hint {
+  font-size: 11px; color: var(--text-muted); margin: 0 0 8px; line-height: 1.4;
+}
+
+/* ── Footnote (sous les formulaires) ───────────────────────────── */
+.k-group-footnote {
+  font-size: 11px; color: var(--text-muted); text-align: center;
+  margin: 8px 0 0; line-height: 1.3;
+}
+
 /* ── Carte engagements compacte ──────────────────────────────────── */
 .k-group-commitments-card { margin-top: 10px; padding: 12px 14px; border-radius: 16px; }
 
@@ -2097,6 +2165,10 @@
 .k-group-fully-paid-card { padding: 32px 20px; text-align: center; border-radius: 20px; }
 .k-group-fully-paid-icon { font-size: 40px; margin-bottom: 10px; }
 .k-group-fully-paid-card strong { font-size: 17px; font-weight: 950; color: var(--text); display: block; }
+.k-group-terminal-card { padding: 32px 20px; text-align: center; border-radius: 20px; }
+.k-group-terminal-icon { font-size: 40px; margin-bottom: 10px; }
+.k-group-terminal-card strong { font-size: 17px; font-weight: 950; color: var(--text); display: block; }
+.k-group-terminal-card p { font-size: 13px; color: var(--text-muted); margin: 8px 0 0; }
 
 /* ── Layout participant — mobile (défaut) ────────────────────────── */
 .k-group-participant-layout { display: flex; flex-direction: column; gap: 0; }

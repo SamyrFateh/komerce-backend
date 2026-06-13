@@ -51,6 +51,7 @@ import {
   timeRemaining,
   businessStatusOf,
   isPaymentWindowOpen,
+  paymentWindowEndsAt,
   BUSINESS,
 } from './group/group-helpers.js';
 import {
@@ -239,12 +240,6 @@ function identityLabel(user) {
 }
 
 function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimated_kmf: 0 }) {
-  const totalParticipants = Math.max(1, r(estimAgg.count)) + 1;
-  const avgSuggestion = Math.ceil(r(cart.total_kmf_snapshot) / totalParticipants / 100) * 100;
-  const splitHint = avgSuggestion >= 2500
-    ? `<div class="k-group-split-hint">💡 À participation égale : environ ${fmt(avgSuggestion, 'KMF')} par personne</div>`
-    : '';
-
   const saved = readParticipantCommitment(token);
   const savedState = saved ? `
       <div class="k-group-saved-commitment" id="k-ge-saved-state">
@@ -256,39 +251,30 @@ function renderEstimationForm(token, cart, estimAgg = { count: 0, total_estimate
 
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</div>
-      <div class="k-group-section-title">💸 Indiquer ma part</div>
-      <p class="k-group-desc-text">
-        Donnez une idée de votre participation — c'est facultatif, sans engagement,
-        et ça aide le groupe à voir où en est le financement. Aucun paiement maintenant.
-      </p>
       ${savedState}
       <div class="k-group-eng-fields" id="k-ge-fields" ${saved ? 'hidden' : ''}>
         <div class="k-group-mypart" id="k-ge-mypart">
-          <div class="k-group-mypart-head">💰 Ma part</div>
-          ${splitHint}
+          <div class="k-group-mypart-head">🪙 Mon estimation</div>
           <div class="k-group-field">
-            <label class="k-group-label" for="k-ge-name">Votre prénom</label>
             <input id="k-ge-name" class="k-group-input" type="text" maxlength="60"
-              placeholder="Ex : Fatima" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
+              placeholder="Prénom" autocomplete="given-name" value="${sanitize(saved?.name || '')}">
           </div>
           <div class="k-group-field">
-            <label class="k-group-label" for="k-ge-phone">Téléphone (facultatif)</label>
             <input id="k-ge-phone" class="k-group-input" type="tel" maxlength="20"
-              placeholder="Pour retrouver votre part plus tard" autocomplete="tel" inputmode="tel"
+              placeholder="Téléphone (facultatif)" autocomplete="tel" inputmode="tel"
               value="${sanitize(saved?.phone || '')}">
           </div>
           <div class="k-group-field">
-            <label class="k-group-label" for="k-ge-amount">Montant approximatif (KMF)</label>
             <input id="k-ge-amount" class="k-group-input" type="number" min="2500" step="100"
-              placeholder="Ex : 5000" inputmode="numeric" value="${saved?.amount ? r(saved.amount) : ''}">
+              placeholder="Montant approximatif (KMF)" inputmode="numeric"
+              value="${saved?.amount ? r(saved.amount) : ''}">
           </div>
+          <p class="k-group-input-error" id="k-ge-err"></p>
+          <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
+            ${saved ? '✏️ Mettre à jour ma part' : 'Indiquer ma part'}
+          </button>
+          <p class="k-group-footnote">Sans identification · modifiable · non contractuel</p>
         </div>
-        <p class="k-group-input-error" id="k-ge-err"></p>
-        <button class="k-group-btn k-group-btn--primary" id="k-ge-submit-btn">
-          ${saved ? '✏️ Mettre à jour ma part' : '✋ Indiquer ma part'}
-        </button>
-        <p class="k-group-footnote">Sans identification · modifiable · non contractuel</p>
       </div>
     </div>`;
 }
@@ -397,67 +383,45 @@ function startCountdownTick() {
 function renderPaymentForm(token, cart) {
   const saved = readParticipantCommitment(token);
   const prefillAmount = saved?.amount ? r(saved.amount) : '';
-  const prefillName   = saved?.name   || '';
-  const countdown = renderPaymentCountdown(cart);
-  const remaining = r(cart.remaining_kmf ?? cart.total_kmf_snapshot ?? 0);
-  const remainingHint = remaining > 0
-    ? `<div class="k-group-split-hint">💳 Reste à financer : ${fmt(remaining, 'KMF')}</div>`
-    : '';
+  const btnLabel = prefillAmount
+    ? `🔒 Payer ma part · ${fmt(prefillAmount, 'KMF')}`
+    : '🔒 Payer ma part';
 
   return `
     <div class="k-group-card k-group-contribute-card">
-      <div class="k-group-phase-badge k-group-phase-badge--settlement">Paiement ouvert</div>
-      <div class="k-group-section-title">💳 Payer ma part</div>
-      <p class="k-group-desc-text">
-        Le panier est fermé — la liste est définitive. Choisissez librement votre montant
-        et payez en toute sécurité. Votre identité sera vérifiée au moment du paiement.
-      </p>
-      ${countdown}
-      ${remainingHint}
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gp-name">Votre prénom</label>
-        <input id="k-gp-name" class="k-group-input" type="text" maxlength="60"
-          placeholder="Ex : Fatima" autocomplete="given-name" value="${sanitize(prefillName)}">
+      <div class="k-group-mypart k-group-mypart--payment" id="k-gp-mypart">
+        <div class="k-group-mypart-head">🪙 Ma part — montant libre</div>
+        <div class="k-group-field">
+          <input id="k-gp-amount" class="k-group-input k-group-input--amount" type="number"
+            min="2500" step="100" placeholder="Montant (KMF)" inputmode="numeric"
+            value="${prefillAmount}">
+        </div>
+        <p class="k-group-payment-hint">Pré-rempli avec votre estimation — vous pouvez payer plus, moins, ou sans estimation</p>
+        <p class="k-group-input-error" id="k-gp-err"></p>
+        <button class="k-group-btn k-group-btn--pay" id="k-gp-pay-btn">${btnLabel}</button>
+        <p class="k-group-footnote">Identification OTP à cette étape uniquement</p>
       </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gp-amount">Montant (KMF)</label>
-        <input id="k-gp-amount" class="k-group-input" type="number" min="2500" step="100"
-          placeholder="Ex : 5000" inputmode="numeric" value="${prefillAmount}">
-      </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gp-email">Email (reçu Stripe, facultatif)</label>
-        <input id="k-gp-email" class="k-group-input" type="email" maxlength="120"
-          placeholder="Ex : fatima@email.com" autocomplete="email">
-      </div>
-      <div class="k-group-field">
-        <label class="k-group-label" for="k-gp-msg">Message (optionnel)</label>
-        <input id="k-gp-msg" class="k-group-input" type="text" maxlength="200"
-          placeholder="Ex : Bon courage !">
-      </div>
-      <p class="k-group-input-error" id="k-gp-err"></p>
-      <button class="k-group-btn k-group-btn--primary" id="k-gp-pay-btn">🔐 Vérifier et payer</button>
-      <p class="k-group-footnote">Votre numéro sera vérifié par OTP avant le paiement</p>
     </div>`;
 }
 
 function bindPaymentForm(el, token, cart) {
-  startCountdownTick();
+  // Mise à jour dynamique du bouton quand le montant change
+  const amountInput = el.querySelector('#k-gp-amount');
+  const payBtn = el.querySelector('#k-gp-pay-btn');
+  amountInput?.addEventListener('input', () => {
+    const v = Number(amountInput.value);
+    payBtn.textContent = v > 0 ? `🔒 Payer ma part · ${fmt(v, 'KMF')}` : '🔒 Payer ma part';
+  });
 
-  el.querySelector('#k-gp-pay-btn')?.addEventListener('click', async () => {
-    const btn    = el.querySelector('#k-gp-pay-btn');
+  payBtn?.addEventListener('click', async () => {
     const errEl  = el.querySelector('#k-gp-err');
-    const name   = (el.querySelector('#k-gp-name')?.value || '').trim();
-    const amount = Number(el.querySelector('#k-gp-amount')?.value);
-    const email  = (el.querySelector('#k-gp-email')?.value || '').trim();
-    const msg    = (el.querySelector('#k-gp-msg')?.value || '').trim();
+    const amount = Number(amountInput?.value);
 
     errEl.textContent = '';
-    if (!name)                        { errEl.textContent = 'Indiquez votre prénom.'; return; }
-    if (!amount || amount < 2500)     { errEl.textContent = 'Minimum 2 500 KMF.'; return; }
-    if (email && !email.includes('@')) { errEl.textContent = 'Email invalide.'; return; }
+    if (!amount || amount < 2500) { errEl.textContent = 'Minimum 2 500 KMF.'; return; }
 
-    btn.disabled = true;
-    btn.textContent = '🔐 Vérification OTP…';
+    payBtn.disabled = true;
+    payBtn.textContent = '🔐 Vérification OTP…';
 
     try {
       const identity = await requireIdentity({
@@ -467,8 +431,8 @@ function bindPaymentForm(el, token, cart) {
       });
 
       if (!identity) {
-        btn.disabled = false;
-        btn.textContent = '🔐 Vérifier et payer';
+        payBtn.disabled = false;
+        payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
         return;
       }
 
@@ -476,31 +440,30 @@ function bindPaymentForm(el, token, cart) {
       const phone = id.phone;
       if (!phone) {
         errEl.textContent = 'Numéro introuvable après vérification. Réessayez.';
-        btn.disabled = false;
-        btn.textContent = '🔐 Vérifier et payer';
+        payBtn.disabled = false;
+        payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
         return;
       }
 
-      btn.textContent = '⏳ Création du paiement…';
+      payBtn.textContent = '⏳ Création du paiement…';
 
       const res = await createContribution(token, {
         amount_kmf: amount,
-        contributor_name: name,
+        contributor_name: id.name || 'Participant',
         contributor_phone: phone,
-        ...(email ? { contributor_email: email } : {}),
-        ...(msg ? { message: msg } : {}),
+        contributor_email: identity.email || `${phone.replace(/\D/g,'')}@komerce.local`,
       });
 
       if (res?.checkout_url) {
         window.location.href = res.checkout_url;
       } else {
         showToast('Contribution enregistrée !', 'success');
-        btn.textContent = '✅ Enregistré';
+        payBtn.textContent = '✅ Enregistré';
       }
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      btn.disabled = false;
-      btn.textContent = '🔐 Vérifier et payer';
+      payBtn.disabled = false;
+      payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
     }
   });
 }
@@ -839,40 +802,63 @@ export async function renderGroupView(opts = {}) {
     // Agrégat estimations (colonne principale, phase ouverte)
     let estimAgg = { count: 0, total_estimated_kmf: 0 };
     // Le payload public contient déjà estimations_summary — réutiliser si disponible
-    if (publicData?.estimations_summary) {
+    if (data?.estimations_summary) {
       estimAgg = {
-        count: r(publicData.estimations_summary.count),
-        total_estimated_kmf: r(publicData.estimations_summary.total_estimated_kmf),
+        count: r(data.estimations_summary.count),
+        total_estimated_kmf: r(data.estimations_summary.total_estimated_kmf),
       };
     } else {
       try { estimAgg = await getEstimationAggregate(participantToken); } catch (_) {}
     }
 
-    /* ── Header premium participant ───────────────────────────────── */
+    /* ── Header participant (conforme mockup) ────────────────────── */
     const benefName = sanitize(cart.beneficiary_name_snapshot || '');
+    const targetDate = cart.target_date
+      ? new Date(cart.target_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+      : null;
+    const daysUntilClose = cart.target_date
+      ? Math.max(0, Math.ceil((new Date(cart.target_date) - Date.now()) / 86400000))
+      : null;
+    const countdownRemaining = isPaymentPhase ? timeRemaining(paymentWindowEndsAt(cart)) : null;
+
+    let headerRight = '';
+    if (isOpenPhase && targetDate)       headerRight = `<span class="k-group-header-right">📅 cible : ${targetDate}</span>`;
+    else if (isPaymentPhase && countdownRemaining) headerRight = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${countdownRemaining}</span>`;
+    else if (isAwaitingChoice)           headerRight = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${timeRemaining(cart.awaiting_choice_deadline ? new Date(cart.awaiting_choice_deadline) : null) || '72 h'}</span>`;
+
+    let subtext = '';
+    if (isOpenPhase && daysUntilClose !== null) subtext = `par ${benefName || 'le créateur'} · ferme dans ${daysUntilClose} jour${daysUntilClose > 1 ? 's' : ''}`;
+    else if (isPaymentPhase)            subtext = 'la liste est figée · chacun paie sa part';
+    else if (isAwaitingChoice)          subtext = 'la fenêtre de paiement est terminée';
+
     const headerHtml = `
       <div class="k-group-header">
-        <div class="k-group-header-eyebrow">👥 Panier groupe</div>
-        <h2 class="k-group-header-title">${sanitize(cart.title || 'Panier groupe')}</h2>
-        ${benefName ? `<p class="k-group-subhead">Organisé pour ${benefName}</p>` : ''}
-        <div class="k-group-header-meta">
-          <span class="k-group-header-total">${fmt(total, 'KMF')}</span>
-          <span class="k-group-header-sep">·</span>
-          <span class="k-group-header-status">${statusLabel(cart.status, isPaymentPhase)}</span>
-          <span class="k-group-header-sep">·</span>
-          <span class="k-group-header-count">${items.length} article${items.length > 1 ? 's' : ''}</span>
+        <div class="k-group-header-row">
+          <span class="k-group-phase-badge ${isOpenPhase ? 'k-group-phase-badge--open' : isPaymentPhase ? 'k-group-phase-badge--settlement' : isAwaitingChoice ? 'k-group-phase-badge--awaiting' : ''}">${statusLabel(cart.status, isPaymentPhase)}</span>
+          ${headerRight}
         </div>
+        <h2 class="k-group-header-title">${sanitize(cart.title || 'Panier groupe')}</h2>
+        ${subtext ? `<p class="k-group-subhead">${subtext}</p>` : ''}
       </div>`;
 
-    /* ── Agrégat estimations (colonne gauche, phase ouverte) ───────── */
-    const estimHtml = isOpenPhase && estimAgg.count > 0 ? `
-      <div class="k-group-card k-group-commitments-card">
-        <div class="k-group-contribs-label">Parts indiquées</div>
-        <div class="k-group-estimation-aggregate">
-          <span class="k-group-estimation-count">👥 ${estimAgg.count} participant${estimAgg.count > 1 ? 's' : ''}</span>
-          <span class="k-group-estimation-total">~${fmt(r(estimAgg.total_estimated_kmf), 'KMF')} estimés</span>
+    /* ── Agrégat estimations (badge violet inline, mockup) ──────── */
+    const estimHtml = estimAgg.count > 0 ? `
+      <div class="k-group-estimation-badge">
+        ~${fmt(r(estimAgg.total_estimated_kmf), 'KMF')} estimés · ${estimAgg.count} participant${estimAgg.count > 1 ? 's' : ''}
+      </div>` : '';
+
+    /* ── Barre de financement (phase paiement, mockup) ───────────── */
+    const contributed = r(cart.contributed_kmf);
+    const pctFunded   = total > 0 ? Math.min(100, Math.round(contributed / total * 100)) : 0;
+    const progressHtml = isPaymentPhase ? `
+      <div class="k-group-funding-bar">
+        <div class="k-group-funding-bar-labels">
+          <span>Financé</span>
+          <span class="k-group-funding-bar-amounts">${fmt(contributed, 'KMF')} / ${fmt(total, 'KMF')}</span>
         </div>
-        <p class="k-group-estimation-note">Indicatif · chacun choisit librement son montant au moment de payer</p>
+        <div class="k-group-funding-bar-track">
+          <div class="k-group-funding-bar-fill" style="width:${pctFunded}%"></div>
+        </div>
       </div>` : '';
 
     /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
@@ -911,6 +897,7 @@ export async function renderGroupView(opts = {}) {
           ${headerHtml}
           ${renderParticipantItemsAccordion(items, total, cart, isPaymentPhase)}
           ${estimHtml}
+          ${progressHtml}
         </div>
         <div class="k-group-participant-col-aside">
           ${creatorIdHtml}
@@ -976,7 +963,7 @@ export async function renderGroupView(opts = {}) {
 
   // Filet de sécurité : panier clôturé/disparu côté backend entre-temps.
   // Pour le CRÉATEUR c'est "plus de panier actif", pas un lien cassé.
-  const TERMINAL = ['cancelled', 'expired', 'finalized', 'converted_to_order'];
+  const TERMINAL = ['cancelled', 'expired', 'archived', 'finalized', 'converted_to_order', 'ordered'];
   if (!data?.cart || TERMINAL.includes(data.cart.status)) {
     import('./b-share-cart.js').then(m => m.clearShareState?.()).catch(() => {});
     renderEmpty(el);
@@ -995,12 +982,11 @@ export async function renderGroupView(opts = {}) {
   } catch (_) {
     creatorItems = data.items || data.cart_items || [];
   }
-  const settlementOpen = isSettlementOpen(cart);
-  const isCartOpen    = ['active', 'partially_funded', 'fully_funded',
-                         'closed_for_settlement', 'settlement_in_progress', 'ready_to_finalize'].includes(cart.status);
+  const bizCreator = businessStatusOf(cart);
+  const isCartLive = [BUSINESS.OPEN, BUSINESS.CLOSED, BUSINESS.AWAITING_CHOICE].includes(bizCreator);
 
-  // V4.1 : le payload owner inclut estimations (Lot 4 refactorera le cockpit créateur).
-  const commitmentsList = data.estimations || data.commitments || [];
+  // V4.1 : le payload owner inclut estimations.
+  const estimationsList = data.estimations || [];
 
   const refreshView = () => renderGroupView(opts);
 
@@ -1009,9 +995,9 @@ export async function renderGroupView(opts = {}) {
       <div class="k-group-main-col">
         ${renderCreatorCartSwitcher(ownerCarts, cartId)}
         ${renderOwnerIdentityCard(cart, creatorItems.length)}
-        ${renderCreatorFinancialSummary(cart, commitmentsList)}
+        ${renderCreatorFinancialSummary(cart, estimationsList)}
         ${renderCreatorActions(cart)}
-        ${renderProgress(cart, contributions, commitmentsList)}
+        ${renderProgress(cart, contributions, estimationsList)}
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
@@ -1027,13 +1013,12 @@ export async function renderGroupView(opts = {}) {
   bindCreatorActions(el, cart, shareUrl, cartId, refreshView);
   hideBanner();
 
-  if (isCartOpen) {
-    // FIX — le callback reçoit freshCommitments (rafraîchi à chaque tick)
-    startPolling(cartId, (fresh, freshCommitments = commitmentsList) => {
+  if (isCartLive) {
+    startPolling(cartId, (fresh, freshEstimations = estimationsList) => {
       const card = el.querySelector('#k-group-progress-card');
-      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshCommitments);
+      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshEstimations);
       const fin = el.querySelector('#k-group-financial-summary');
-      if (fin) fin.outerHTML = renderCreatorFinancialSummary(fresh.cart, freshCommitments);
+      if (fin) fin.outerHTML = renderCreatorFinancialSummary(fresh.cart, freshEstimations);
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
     });
   }

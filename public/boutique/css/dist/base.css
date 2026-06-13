@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-12)
+   KOMERCE — base.css (2026-06-13)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -285,6 +285,8 @@
   --text-alpha-82:     rgba(32,51,37,.82);
 
   --red-danger:        #dc2626;
+  --red-awaiting-bg:   #FCEBEB;   /* fond badge AWAITING_CHOICE (rouge doux) */
+  --red-awaiting-text: #791F1F;   /* texte badge AWAITING_CHOICE */
   --red-danger-bg:     #fef5f5;
   --red-danger-border: #e8a0a0;
   --red-danger-text:   #c73a3a;
