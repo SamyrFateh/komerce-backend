@@ -64,8 +64,10 @@ const adminRouter = express.Router();
 
 // ─── Configuration Stripe ─────────────────────────────────────────────
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
-const STRIPE_RETURN_SUCCESS = '/cart/shared/success';
-const STRIPE_RETURN_CANCEL  = '/cart/shared/cancel';
+// Retour Stripe — doctrine §4/§6 : on revient TOUJOURS dans la boutique, jamais
+// sur une page morte. Le front (b-group-view: consumeSharedPaymentReturn) lit
+// ?shared_payment=success|cancel et recharge la vue panier partagé.
+const STRIPE_RETURN_BASE = '/boutique/';
 
 const DEFAULT_FX_KMF_TO_EUR = 1 / 491.97;
 
@@ -290,8 +292,8 @@ router.post('/public/:token/contributions', async (req, res, next) => {
         token: cart.token,
         amount_kmf: String(payableAmount),
       },
-      success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_SUCCESS}?token=${cart.token}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
+      success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_BASE}?p=${cart.token}&shared_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_BASE}?p=${cart.token}&shared_payment=cancel`,
       expires_at:  Math.floor(Date.now() / 1000) + 30 * 60,
     });
 
@@ -870,8 +872,8 @@ router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next
         token:           cart.token,
         amount_kmf:      String(remainingNow),
       },
-      success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_SUCCESS}?token=${cart.token}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_CANCEL}?token=${cart.token}`,
+      success_url: `${PUBLIC_BASE_URL}${STRIPE_RETURN_BASE}?p=${cart.token}&shared_payment=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${PUBLIC_BASE_URL}${STRIPE_RETURN_BASE}?p=${cart.token}&shared_payment=cancel`,
       expires_at:  Math.floor(Date.now() / 1000) + 30 * 60,
     });
 

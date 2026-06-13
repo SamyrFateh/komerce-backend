@@ -52,25 +52,38 @@ export function engagementCoverage(commitments = [], total = 0) {
  * @param {boolean} isSettlementOpen résultat de isSettlementOpen(cart)
  * @returns {string}
  */
+// Doctrine §8 — V4.1 ne parle JAMAIS aux humains : on ne projette que les
+// 5 libellés visibles. Tout statut technique ou legacy se replie dessus.
+// Mapping : open→En préparation · closed+fenêtre valide→Ouvert au paiement ·
+// closed expiré / awaiting_choice→Fermé · ordered→Finalisé · cancelled→Annulé.
 export function statusLabel(status, paymentOpen) {
-  if (paymentOpen) return '💳 Paiement ouvert';
-  return {
-    open:            '🟢 Panier ouvert',
-    closed:          '💳 Paiement ouvert',
-    awaiting_choice: '🤔 En attente de décision',
-    ordered:         '📦 Commande créée',
-    cancelled:       '❌ Annulé',
-    active:                 '🟢 Panier ouvert',
-    commitment_open:        '🟢 Panier ouvert',
-    partially_funded:       '💳 Paiement ouvert',
-    fully_funded:           '💳 Paiement ouvert',
-    closed_for_settlement:  '💳 Paiement ouvert',
-    settlement_in_progress: '💳 Paiement ouvert',
-    ready_to_finalize:      '💳 Paiement ouvert',
-    converted_to_order: '📦 Commande créée',
-    finalized:          '📦 Commande créée',
-    expired:            '⏱️ Expiré',
-  }[status] || status;
+  if (paymentOpen) return 'Ouvert au paiement';        // closed + fenêtre valide
+  switch (status) {
+    case 'open':
+    case 'active':
+    case 'commitment_open':
+      return 'En préparation';
+    case 'closed':                                       // fenêtre expirée
+    case 'awaiting_choice':
+    case 'partially_funded':
+    case 'fully_funded':
+    case 'closed_for_settlement':
+    case 'settlement_in_progress':
+    case 'ready_to_finalize':
+      return 'Fermé';
+    case 'ordered':
+    case 'converted_to_order':
+    case 'finalized':
+      return 'Finalisé';
+    case 'cancelled':
+    case 'refunded':
+      return 'Annulé';
+    case 'expired':
+    case 'archived':
+      return 'Indisponible';
+    default:
+      return 'Fermé';                                 // jamais « actif », jamais brut
+  }
 }
 
 export const BUSINESS = Object.freeze({

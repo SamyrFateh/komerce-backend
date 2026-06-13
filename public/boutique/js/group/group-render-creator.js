@@ -90,7 +90,7 @@ export function renderCreatorCartSwitcher(carts = [], selectedId) {
               class="k-group-cart-tab ${active ? 'is-active' : ''}"
               data-k-group-cart-id="${sanitize(String(c.id))}">
               <strong>${sanitize(label)}</strong>
-              <span>${fmt(total, 'KMF')} · ${sanitize(statusLabel(c.status, sOpen).replace(/^../, '').trim())}</span>
+              <span>${fmt(total, 'KMF')} · ${sanitize(statusLabel(c.status, sOpen).trim())}</span>
             </button>`;
         }).join('')}
       </div>
