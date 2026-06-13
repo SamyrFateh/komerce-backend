@@ -39,7 +39,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-sheet {
   width: 100%;
   max-width: 420px;
-  background: var(--white, #fff);
+  background: var(--white);
   border-radius: 22px 22px 0 0;
   padding: 16px 18px calc(24px + env(safe-area-inset-bottom));
   animation: kIdSheetUp .22s ease forwards;
@@ -57,7 +57,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-handle {
   width: 36px;
   height: 4px;
-  background: var(--border, #e2e8e4);
+  background: var(--border);
   border-radius: 99px;
   margin: 0 auto 14px;
 }
@@ -74,7 +74,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: block;
   font-size: 15px;
   font-weight: 900;
-  color: var(--text, #0f1e14);
+  color: var(--text);
   line-height: 1.1;
 }
 .k-id-sub {
@@ -82,15 +82,15 @@ body.k-id-scroll-lock { overflow: hidden; }
   margin-top: 3px;
   font-size: 12px;
   line-height: 1.3;
-  color: var(--text-muted, #6b7c70);
+  color: var(--text-muted);
 }
 .k-id-close {
   width: 28px;
   height: 28px;
   border: 0;
   border-radius: 999px;
-  background: var(--sand, #f5f3ef);
-  color: var(--text-muted, #6b7c70);
+  background: var(--sand);
+  color: var(--text-muted);
   cursor: pointer;
   font-weight: 900;
   font-size: 13px;
@@ -108,8 +108,8 @@ body.k-id-scroll-lock { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 11px;
-  background: var(--sand, #f5f3ef);
-  border: 1px solid var(--border, #e2e8e4);
+  background: var(--sand);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -118,8 +118,8 @@ body.k-id-scroll-lock { overflow: hidden; }
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--sage, #2a7a3e);
-  color: #fff;
+  background: var(--sage);
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,14 +136,14 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-recap-name {
   font-size: 12.5px;
   font-weight: 700;
-  color: var(--text, #0f1e14);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .k-id-recap-phone {
   font-size: 11.5px;
-  color: var(--text-muted, #6b7c70);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -160,12 +160,12 @@ body.k-id-scroll-lock { overflow: hidden; }
   padding: 0;
   font-size: 11px;
   font-weight: 700;
-  color: var(--sage-dark, #1f5c28);
+  color: var(--sage-dark);
   cursor: pointer;
   line-height: 1.3;
 }
 .k-id-num-link:hover { text-decoration: underline; }
-.k-id-num-link--muted { color: var(--text-muted, #6b7c70); font-weight: 600; }
+.k-id-num-link--muted { color: var(--text-muted); font-weight: 600; }
 
 /* ── Step phone : champs saisie ──────────────────────────────────────── */
 .k-id-field { margin: 0 0 10px; }
@@ -176,7 +176,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: var(--text-muted, #6b7c70);
+  color: var(--text-muted);
   margin-bottom: 4px;
 }
 .k-id-sheet .k-ck-group    { margin: 0 0 10px; }
@@ -184,10 +184,10 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-sheet .k-ck-phone-select {
   flex: 0 0 auto;
   min-height: 36px;
-  border: 2px solid var(--border, #e2e8e4);
+  border: 2px solid var(--border);
   border-radius: 10px;
-  background: var(--white, #fff);
-  color: var(--text, #0f1e14);
+  background: var(--white);
+  color: var(--text);
   font-weight: 700;
   padding: 0 8px;
   font-size: 12px;
@@ -196,18 +196,18 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-input {
   width: 100%;
   min-height: 36px;
-  border: 2px solid var(--border, #e2e8e4);
+  border: 2px solid var(--border);
   border-radius: 10px;
   padding: 7px 10px;
   font-size: 13px;
   box-sizing: border-box;
   outline: none;
-  background: var(--white, #fff);
-  color: var(--text, #0f1e14);
+  background: var(--white);
+  color: var(--text);
 }
 .k-id-sheet .k-ck-phone-input:focus,
 .k-id-input:focus {
-  border-color: var(--coral, #c85c2d);
+  border-color: var(--coral);
   box-shadow: 0 0 0 3px rgba(200,92,45,.1);
 }
 
@@ -215,7 +215,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-sent {
   font-size: 12px;
   font-weight: 700;
-  color: var(--coral, #c85c2d);
+  color: var(--coral);
   margin: 0 0 10px;
   line-height: 1.3;
 }
@@ -230,26 +230,26 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-otp-box {
   width: 42px;
   height: 50px;
-  border: 2px solid var(--border, #e2e8e4);
+  border: 2px solid var(--border);
   border-radius: 11px;
-  background: var(--white, #fff);
+  background: var(--white);
   font-size: 22px;
   font-weight: 700;
   text-align: center;
-  color: var(--text, #0f1e14);
+  color: var(--text);
   outline: none;
-  caret-color: var(--coral, #c85c2d);
+  caret-color: var(--coral);
   transition: border-color .12s, box-shadow .12s;
   -webkit-appearance: none;
   appearance: none;
 }
 .k-id-otp-box:focus {
-  border-color: var(--coral, #c85c2d);
+  border-color: var(--coral);
   box-shadow: 0 0 0 3px rgba(200,92,45,.1);
 }
 .k-id-otp-box.filled {
-  border-color: var(--sage, #2a7a3e);
-  background: var(--sage-bg, #eaf4ec);
+  border-color: var(--sage);
+  background: var(--sage-bg);
 }
 .k-id-otp-box.k-id-otp-shake {
   animation: kIdOtpShake .3s ease;
@@ -264,7 +264,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-resend-row {
   text-align: center;
   font-size: 11.5px;
-  color: var(--text-muted, #6b7c70);
+  color: var(--text-muted);
   margin: 0 0 10px;
   line-height: 1.4;
 }
@@ -274,7 +274,7 @@ body.k-id-scroll-lock { overflow: hidden; }
   padding: 0;
   font-size: 11.5px;
   font-weight: 800;
-  color: var(--sage-dark, #1f5c28);
+  color: var(--sage-dark);
   cursor: pointer;
 }
 .k-id-resend-now:hover { text-decoration: underline; }
@@ -283,7 +283,7 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-error {
   min-height: 14px;
   margin: 0 0 6px;
-  color: var(--red-danger-text, #b91c1c);
+  color: var(--red-danger-text);
   font-size: 11.5px;
   line-height: 1.35;
 }
@@ -294,8 +294,8 @@ body.k-id-scroll-lock { overflow: hidden; }
   min-height: 40px;
   border: 0;
   border-radius: 999px;
-  background: var(--sage, #2a7a3e);
-  color: #fff;
+  background: var(--sage);
+  color: var(--white);
   font-size: 13px;
   font-weight: 900;
   cursor: pointer;
@@ -307,13 +307,13 @@ body.k-id-scroll-lock { overflow: hidden; }
 .k-id-btn:disabled { opacity: .45; cursor: not-allowed; }
 .k-id-secondary {
   margin-top: 8px;
-  background: var(--sand, #f5f3ef);
-  color: var(--text-muted, #6b7c70);
+  background: var(--sand);
+  color: var(--text-muted);
 }
 
 /* ── Sending state ───────────────────────────────────────────────────── */
 .k-id-btn--sending {
-  background: var(--coral, #c85c2d) !important;
+  background: var(--coral) !important;
   cursor: default;
 }
 .k-id-sending-dot {
