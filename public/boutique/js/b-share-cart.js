@@ -28,7 +28,7 @@ import { requireIdentity } from './b-identity.js';
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
-const ACTIVE_STATUSES = new Set(['active', 'partially_funded', 'fully_funded']);
+const ACTIVE_STATUSES = new Set(['open', 'closed', 'awaiting_choice']);
 
 /* ── Helpers ───────────────────────────────────────────────────── */
 function r(n) { return Math.round(Number(n) || 0); }
@@ -37,6 +37,12 @@ function pct(contributed, total) {
   const t = r(total);
   if (!t) return 0;
   return Math.max(0, Math.min(100, Math.round((r(contributed) / t) * 100)));
+}
+
+// Date qui pilote l'affichage : fenêtre de paiement si ouverte, sinon date
+// limite choisie, sinon le champ legacy expires_at (doctrine — harmonisation).
+function effectiveDeadline(cart) {
+  return cart?.payment_window_ends_at || cart?.target_date || cart?.expires_at || null;
 }
 
 function timeRemaining(expiresAt) {
@@ -51,7 +57,7 @@ function timeRemaining(expiresAt) {
 }
 
 function isActiveCart(cart) {
-  return cart && ACTIVE_STATUSES.has(cart.status) && (!cart.expires_at || new Date(cart.expires_at) > new Date());
+  return cart != null && ACTIVE_STATUSES.has(cart.status);
 }
 
 function pickActiveCart(carts = []) {
@@ -64,7 +70,7 @@ function applyCartToState(cart) {
   if (!cart) return null;
   state.shareToken = cart.token || null;
   state.shareId = cart.id || null;
-  state.shareExpiry = cart.expires_at || null;
+  state.shareExpiry = effectiveDeadline(cart);
   state.cartName = cart.title || 'Panier groupe';
   state.shareStatus = cart.status || null;
   state.shareTotalKmf = r(cart.total_kmf_snapshot);
@@ -160,7 +166,7 @@ export async function restoreSharedCartFromBackend({ silent = true } = {}) {
     refreshGroupBadge();
     showBanner({
       title: cart.title,
-      expires_at: cart.expires_at,
+      expires_at: effectiveDeadline(cart),
       status: cart.status,
       contributed_kmf: cart.contributed_kmf,
       total_kmf_snapshot: cart.total_kmf_snapshot,
@@ -270,7 +276,15 @@ function ensureStyles() {
 .k-sm-phone-input:focus{border-color:var(--violet)}
 .k-sm-phone-input.k-valid{border-color:#22c55e}
 .k-sm-phone-input.k-invalid{border-color:var(--red-danger-text)}
-.k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}`;
+.k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}
+.k-sm-nature{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.k-sm-nature-opt{display:flex;flex-direction:column;gap:2px;text-align:left;width:100%;
+  padding:12px 14px;border:2px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--white);font-family:var(--font);cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.k-sm-nature-opt:hover{border-color:var(--violet)}
+.k-sm-nature-opt.is-active{border-color:var(--violet);box-shadow:0 0 0 1px var(--violet) inset}
+.k-sm-nature-opt strong{font-size:14px;font-weight:700;color:var(--text)}
+.k-sm-nature-opt span{font-size:12px;color:var(--text-muted);line-height:1.4}`;
   document.head.appendChild(s);
 }
 
@@ -315,7 +329,7 @@ function promptInit(needsAuth) {
 
     const hint = document.createElement('p');
     hint.className = 'k-sm-hint';
-    hint.textContent = 'Créez un panier collectif et partagez le lien par WhatsApp. Chacun contribue librement.';
+    hint.textContent = 'Partagez votre panier par WhatsApp. Vos proches voient les articles et règlent leur part.';
     sheet.appendChild(hint);
 
     // ── Champ titre (même style que k-ck-group du checkout) ────────
@@ -324,6 +338,39 @@ function promptInit(needsAuth) {
     titleGroup.querySelector('input')?.setAttribute('maxlength', '80');
     titleGroup.querySelector('input')?.setAttribute('autocomplete', 'off');
     sheet.appendChild(titleGroup);
+
+    // ── Nature du panier (doctrine §5) : une question humaine, pas un workflow ──
+    let shareMode = 'ready_to_pay';
+    const natureWrap = document.createElement('div');
+    natureWrap.className = 'k-sm-field';
+    natureWrap.innerHTML =
+      '<label class="k-sm-label">Ce panier est-il prêt à être payé ?</label>' +
+      '<div class="k-sm-nature" role="radiogroup">' +
+        '<button type="button" class="k-sm-nature-opt is-active" data-mode="ready_to_pay" role="radio" aria-checked="true">' +
+          '<strong>Oui, ouvrir les paiements</strong>' +
+          '<span>Vos proches consultent et règlent leur part tout de suite.</span>' +
+        '</button>' +
+        '<button type="button" class="k-sm-nature-opt" data-mode="needs_validation" role="radio" aria-checked="false">' +
+          '<strong>Non, partager d\'abord</strong>' +
+          '<span>Ils consultent maintenant. Vous ouvrez le paiement quand le panier est confirmé.</span>' +
+        '</button>' +
+      '</div>';
+    sheet.appendChild(natureWrap);
+    natureWrap.querySelectorAll('.k-sm-nature-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        shareMode = opt.dataset.mode;
+        natureWrap.querySelectorAll('.k-sm-nature-opt').forEach(o => {
+          const on = o === opt;
+          o.classList.toggle('is-active', on);
+          o.setAttribute('aria-checked', on ? 'true' : 'false');
+        });
+      });
+    });
+
+    // ── Date limite optionnelle (pilote la fenêtre de paiement, doctrine §5/§9) ──
+    const dateData = { date: '' };
+    const dateGroup = makeInput('k-sm-date-f', 'Date limite (optionnel)', 'date', '', dateData, 'date');
+    sheet.appendChild(dateGroup);
 
     // ── Champs auth (prénom + téléphone avec indicatif) ───────────
     const nameData = { name: '' };
@@ -430,7 +477,7 @@ function promptInit(needsAuth) {
         }
 
         closeModal(ov);
-        resolve({ title, name, phone: phone || null });
+        resolve({ title, name, phone: phone || null, share_mode: shareMode, target_date: dateData.date || null });
       } catch (err) {
         errEl.textContent = err?.message || 'Erreur de vérification.';
         btn.disabled = false;
@@ -458,6 +505,8 @@ async function createSharedCart(opts) {
   if (opts.title) body.title = opts.title;
   if (opts.phone) body.tracking_phone = opts.phone;
   if (opts.name) body.recipient_name = opts.name;
+  if (opts.share_mode) body.share_mode = opts.share_mode;
+  if (opts.target_date) body.target_date = opts.target_date;
 
   const res = await fetch(API_CREATE, {
     method: 'POST',
@@ -474,8 +523,24 @@ async function createSharedCart(opts) {
 }
 
 /* ── Étape C : WhatsApp + switch groupe ─────────────────────────── */
-function openWhatsApp(title, shareUrl) {
-  const msg = `Salut ! J'ai créé un panier commun sur Komerce : "${title || 'Panier groupe'}". Contribue ici : ${shareUrl}`;
+function fmtDeadline(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt)) return '';
+  return dt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
+
+function openWhatsApp(title, shareUrl, { shareMode, deadline } = {}) {
+  const label = title ? ` « ${title} »` : '';
+  const when  = fmtDeadline(deadline);
+  let msg;
+  if (shareMode === 'ready_to_pay') {
+    msg = `Je t'ai partagé mon panier Komerce${label}. Tu peux voir les articles et régler ta part${when ? ` jusqu'au ${when}` : ''} : ${shareUrl}`;
+  } else if (shareMode === 'needs_validation') {
+    msg = `Je t'ai partagé mon panier Komerce${label} en préparation. Tu peux voir les articles ; le paiement sera ouvert quand le panier sera confirmé : ${shareUrl}`;
+  } else {
+    msg = `Je t'ai partagé mon panier Komerce${label}. Tu peux voir les articles : ${shareUrl}`;
+  }
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
   navigator.clipboard?.writeText(shareUrl).catch(() => {});
 }
@@ -543,7 +608,10 @@ export async function startShareFlow(opts = {}) {
 
   if (reshare && state.shareToken) {
     const shareUrl = state.shareUrl || `${window.location.origin}/boutique/?p=${state.shareToken}`;
-    openWhatsApp(state.cartName, shareUrl);
+    openWhatsApp(state.cartName, shareUrl, {
+      shareMode: state.shareStatus === 'closed' ? 'ready_to_pay' : 'needs_validation',
+      deadline: state.shareExpiry,
+    });
     return;
   }
 
@@ -576,11 +644,13 @@ export async function startShareFlow(opts = {}) {
       token: data.token,
       share_url: data.share_url || `${window.location.origin}/boutique/?p=${data.token}`,
       title,
-      status: 'active',
+      status: data.status || 'open',
       total_kmf_snapshot: data.total_kmf,
       contributed_kmf: 0,
       remaining_kmf: data.total_kmf,
-      expires_at: data.expires_at,
+      target_date: data.target_date || null,
+      payment_window_ends_at: data.payment_window_ends_at || null,
+      expires_at: data.payment_window_ends_at || data.target_date || null,
       created_at: new Date().toISOString(),
     };
 
@@ -592,8 +662,8 @@ export async function startShareFlow(opts = {}) {
     refreshSharedBadges(true, cart);
     showBanner({
       title,
-      expires_at: data.expires_at,
-      status: 'active',
+      expires_at: data.payment_window_ends_at || data.target_date || null,
+      status: data.status || 'open',
       contributed_kmf: 0,
       total_kmf_snapshot: data.total_kmf,
     });
