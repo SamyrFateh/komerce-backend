@@ -678,7 +678,8 @@ body {
   gap: 8px;
   flex-shrink: 0;
 }
-.k-logo-img {
+.k-logo-img,
+.k-logo-svg {
   display: block;
   height: 44px;
   width: auto;
@@ -1103,7 +1104,7 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   .k-logo { min-width: 148px; }
-  .k-logo-img { height: 44px; }
+  .k-logo-img, .k-logo-svg { height: 44px; }
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
 

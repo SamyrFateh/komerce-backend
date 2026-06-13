@@ -180,7 +180,8 @@
   .k-footer-brand-logo {
     margin-bottom: 10px;
   }
-  .k-footer-logo-img {
+  .k-footer-logo-img,
+  .k-footer-logo-svg {
     display: block;
     height: 30px;
     width: auto;
