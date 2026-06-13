@@ -48,6 +48,15 @@ Deux compteurs sont gelés dans une baseline et ne peuvent **jamais augmenter** 
 1. **Breakpoints hors charte** — tout `@media` doit cibler `900px` (desktop) ou `1200px` (large).
    Tout autre breakpoint (`480`, `600`, `768`…) est une violation. Baseline :
    `scripts/.breakpoints-baseline.json`. Vérifié par `npm run check:breakpoints`.
+
+   Le cliquet compare **par fichier et par valeur** (pas uniquement le total) : un swap
+   silencieux (suppression d'une violation + ajout d'une autre dans un fichier différent)
+   est détecté comme régression. Corrigé le 13/06/2026 suite au cas `categories.css:max:360`
+   → `group-cart-flow.css:min:381` qui passait inaperçu sous l'ancien check total-only.
+
+   **Baseline actuelle (13/06/2026) — 2 violations légitimées :**
+   - `modal-shell.css` `max:1120` — range desktop étroit (900–1120px) pour la grille modale pleine page ; non reproductible avec 900/1200 seuls.
+   - `group-cart-flow.css` `min:381` — rewrite mobile-first des anciens `max:380` (LOT6 actions-row + condensation stats) ; 381 est le complément naturel de 380, pas un breakpoint arbitraire.
 2. **Exceptions multi-owner** — la liste `allowedAlso` / scopes multiples de
    `scripts/audit-boutique-arch.js` (I-2) est une **dette à rembourser**, pas un débarras.
    On ne peut pas y ajouter une entrée pour faire taire `audit:arch` : il faut résoudre
@@ -60,6 +69,7 @@ exceptions. Le build reste vert pendant que le contrôle réel se dégrade (cas 
 
 **Quand on résout une violation** : régénérer la baseline avec `npm run check:breakpoints:save`
 pour verrouiller le gain — on ne pourra plus jamais remonter au-dessus du nouveau compte.
+Le `--save` écrit `total` + `perFile` ; les deux sont vérifiés au `--strict`.
 
 ### I-8. Le CSS vit dans les fichiers `.css`, jamais dans le JS
 
