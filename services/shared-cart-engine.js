@@ -46,6 +46,7 @@ const CONFIG = {
   MAX_CONTRIBUTION_KMF: 500000,         // ~1000 EUR — au-delà, KYC requis
   MAX_ACTIVE_CARTS_PER_USER: 5,
   PAYMENT_WINDOW_HOURS: 48,             // Fenêtre paiement CLOSED → AWAITING_CHOICE
+  PAYMENT_WINDOW_MAX_DAYS: 14,          // Plafond fenêtre « prêt à payer » (doctrine §5/§9)
   AWAITING_CHOICE_HOURS: 72,            // Délai créateur AWAITING_CHOICE → expired
   ARCHIVE_AFTER_DAYS: 7,               // expired → archived
 };
@@ -352,8 +353,28 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
       if (attempt === 4) throw new Error('Impossible de générer un token unique');
     }
 
-    // 8. Insérer le shared_cart — statut OPEN, target_date optionnel
+    // 8. Insérer le shared_cart
     const targetDate = options.targetDate || null;
+
+    // Nature du panier (doctrine §5) — par défaut « à valider » (= open).
+    // Rétrocompatible : tout appel sans shareMode garde le comportement actuel.
+    const readyToPay = options.shareMode === 'ready_to_pay';
+    const status   = readyToPay ? 'closed' : 'open';
+    const closedAt = readyToPay ? new Date().toISOString() : null;
+
+    // Fenêtre de paiement « prêt à payer » : la date choisie par le créateur
+    // (fin de journée), sinon 48 h ; plancher 48 h, plafond 14 j (doctrine §9).
+    let paymentWindowEndsAt = null;
+    if (readyToPay) {
+      const now = Date.now();
+      const floorMs = now + CONFIG.PAYMENT_WINDOW_HOURS * 3_600_000;
+      const capMs   = now + CONFIG.PAYMENT_WINDOW_MAX_DAYS * 86_400_000;
+      const chosenMs = targetDate
+        ? new Date(targetDate).getTime() + 86_400_000 - 1000   // fin de journée
+        : floorMs;
+      paymentWindowEndsAt = new Date(Math.min(capMs, Math.max(floorMs, chosenMs))).toISOString();
+    }
+
     // expires_at : NOT NULL legacy — 90 j par défaut (la V4.1 pilote via payment_window_ends_at)
     const expiresAt = targetDate
       ? new Date(new Date(targetDate).getTime() + 7 * 86_400_000).toISOString()
@@ -365,11 +386,13 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
          beneficiary_phone_snapshot, beneficiary_name_snapshot,
          source_basket_id, title, message,
          currency_snapshot, total_kmf_snapshot, contributed_kmf, remaining_kmf,
-         delivery_relay_id, status, target_date, expires_at
+         delivery_relay_id, status, target_date, expires_at,
+       closed_at, payment_window_ends_at
        ) VALUES (
          $1, $2, $3, $4, NULL, $5, $6,
          'KMF', $7, 0, $7,
-         $8, 'open', $9, $10
+         $8, $9, $10, $11,
+         $12, $13
        ) RETURNING *`,
       [
         token, userId,
@@ -377,8 +400,11 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
         options.title || null, options.message || null,
         totalKmf,
         options.deliveryRelayId || null,
+        status,
         targetDate,
         expiresAt,
+        closedAt,
+        paymentWindowEndsAt,
       ]
     );
     const sharedCart = cartRows[0];
@@ -410,8 +436,22 @@ async function createSharedCartFromCartItems(userId, cartItems, options = {}) {
         items_count: enrichedItems.length,
         target_date: targetDate,
         source: 'cart_items',
+        share_mode: readyToPay ? 'ready_to_pay' : 'needs_validation',
       }
     );
+
+    // Panier « prêt à payer » : on ouvre le paiement dès la création, dans la
+    // MÊME transaction (pas d'appel à closeCart → pas de transaction imbriquée).
+    if (readyToPay) {
+      await addEvent(client, sharedCart.id, 'cart_closed',
+        { type: 'user', id: userId },
+        {
+          closed_at: sharedCart.closed_at,
+          payment_window_ends_at: sharedCart.payment_window_ends_at,
+          via: 'ready_to_pay_on_create',
+        }
+      );
+    }
 
     return { sharedCart, items: insertedItems, token, clearLocalCart: true };
   });

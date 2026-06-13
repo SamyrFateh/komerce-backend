@@ -431,6 +431,7 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
   try {
     const {
       cart_items, title, message, expiration_days, target_date, delivery_relay_id,
+      share_mode,
     } = req.body || {};
 
     if (!Array.isArray(cart_items) || cart_items.length === 0) {
@@ -453,6 +454,7 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       title, message,
       targetDate: resolvedTargetDate,
       deliveryRelayId: delivery_relay_id,
+      shareMode: share_mode,
     });
 
     res.json({
@@ -461,6 +463,9 @@ router.post('/from-cart-items', authenticateOrCreateGuest, async (req, res, next
       share_url:      `${PUBLIC_BASE_URL}/boutique/?p=${result.token}`,
       total_kmf:      result.sharedCart.total_kmf_snapshot,
       target_date:    result.sharedCart.target_date || null,
+      status:         result.sharedCart.status,
+      payment_window_ends_at: result.sharedCart.payment_window_ends_at || null,
+      share_mode:     result.sharedCart.status === 'closed' ? 'ready_to_pay' : 'needs_validation',
       items_count:    result.items.length,
       clear_local_cart: result.clearLocalCart === true,
     });
