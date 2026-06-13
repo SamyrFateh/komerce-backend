@@ -359,6 +359,7 @@
   --green-alpha-24:   rgba(31,122,84,.24);  /* saved-commitment border */
   --green-alpha-28:   rgba(31,122,84,.28);  /* funded-callout border */
   --green-text-sett:  #1f7a54;              /* badge phase ouverte text */
+  --coral-light:      #FAECE7;             /* fond badge coral, phase settlement   */
   --coral-bg-09:      rgba(239,125,95,.09); /* identity-note fond */
   --coral-bg-12:      rgba(239,125,95,.12); /* cart-tab is-active fond */
   --coral-bg-18:      rgba(239,125,95,.18); /* cart-tab is-active shadow */

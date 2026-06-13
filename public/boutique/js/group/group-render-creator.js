@@ -401,13 +401,32 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
   let fundingBlock = '';
   if (biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE) {
     const pctFunded = total > 0 ? Math.min(100, Math.round(contributed / total * 100)) : 0;
-    const barColor = biz === BUSINESS.AWAITING_CHOICE ? 'var(--amber-border)' : 'var(--checkout-accent)';
-    const label = biz === BUSINESS.AWAITING_CHOICE ? 'Reçu' : 'Financé';
+    const isAwaiting = biz === BUSINESS.AWAITING_CHOICE;
+    const label = isAwaiting ? 'Reçu' : 'Financé';
+    const restant = remaining > 0
+      ? `<strong>${fmt(remaining, 'KMF')} restants</strong>`
+      : `<strong style="color:var(--checkout-accent)">Entièrement financé ✓</strong>`;
     fundingBlock = `
-      <p class="k-gc-sub">${biz === BUSINESS.AWAITING_CHOICE ? 'la fenêtre de paiement est terminée' : 'la liste est figée · chacun paie sa part'}</p>
       <div class="k-gc-fund">
-        <div class="k-gc-fund-labels"><span>${label}</span><span class="k-gc-fund-val">${fmt(contributed, 'KMF')} / ${fmt(total, 'KMF')}</span></div>
-        <div class="k-gc-fund-track"><div class="k-gc-fund-fill" style="width:${pctFunded}%;background:${barColor}"></div></div>
+        <div class="k-gc-fund-labels">
+          <span>${label}</span>
+          <span class="k-gc-fund-val"><span class="k-gc-fund-val-accent">${fmt(contributed, 'KMF')}</span> / ${fmt(total, 'KMF')}</span>
+        </div>
+        <div class="k-gc-fund-track"><div class="k-gc-fund-fill" style="width:${pctFunded}%${isAwaiting ? ';background:var(--amber-border)' : ''}"></div></div>
+        <div class="k-gc-fund-foot">
+          <span>${pctFunded} % collecté</span>
+          ${restant}
+        </div>
+      </div>
+      <div class="k-gc-stats">
+        <div class="k-gc-stat k-gc-stat--coral">
+          <strong>${fmt(remaining, 'KMF')}</strong>
+          <span>Reste à collecter</span>
+        </div>
+        <div class="k-gc-stat">
+          <strong>${fmt(total, 'KMF')}</strong>
+          <span>Total panier</span>
+        </div>
       </div>`;
   }
 
@@ -483,14 +502,20 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
 
   return `
     <div class="k-group-card k-gc-unified" id="k-group-unified-card">
-      <div class="k-group-header-row">${badge}${rightInfo}</div>
-      <h2 class="k-group-header-title">${title}</h2>
+      <div class="k-gc-header">
+        <div class="k-gc-badge-row">${badge}${rightInfo}</div>
+        <h2 class="k-group-header-title">${title}</h2>
+        ${biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE
+          ? `<p class="k-group-subhead">${biz === BUSINESS.AWAITING_CHOICE ? 'la fenêtre de paiement est terminée' : 'la liste est figée · chacun paie sa part'}</p>`
+          : ''}\n      </div>
       ${itemsRow}
-      ${shareBlock}
       ${estimationsBlock}
       ${fundingBlock}
-      ${actionsBlock}
-      ${optionsBlock}
+      <div class="k-gc-body">
+        ${shareBlock}
+        ${actionsBlock}
+        ${optionsBlock}
+      </div>
     </div>`;
 }
 

@@ -9040,28 +9040,26 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* ── LOT 6 — ligne Attendre / Je paie le reste ──────────────────────────
-   Mobile-first : empilé par défaut, action principale en premier (order:-1).
-   ≥381px : deux colonnes, l'action principale domine (minmax(.6fr/1fr)).
-   WhatsApp/Copier : côte à côte dès la base (1fr 1fr), inchangé. */
+   Desktop & mobile large : deux colonnes, l'action principale domine.
+   Mobile < 380px : boutons côte à côte interdits (sauf WhatsApp/Copier)
+   → empilés, action principale pleine largeur EN PREMIER visuellement. */
 .k-group-actions-row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(96px, .6fr) 1fr;
   gap: 10px;
   align-items: stretch;
 }
 .k-group-actions-row .k-group-btn { width: 100%; }
-/* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
-.k-group-actions-row .k-group-btn--finalize { order: -1; }
-@media (min-width: 381px) {
+@media (max-width: 380px) {
   .k-group-actions-row {
-    grid-template-columns: minmax(96px, .6fr) 1fr;
+    grid-template-columns: 1fr;
   }
-  /* sur largeur suffisante, réinitialise l'ordre visuel */
-  .k-group-actions-row .k-group-btn--finalize { order: 0; }
-}
-/* seule exception côte à côte autorisée : WhatsApp / Copier */
-.k-group-view .k-group-creator-actions {
-  grid-template-columns: 1fr 1fr;
+  /* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
+  .k-group-actions-row .k-group-btn--finalize { order: -1; }
+  /* seule exception côte à côte autorisée : WhatsApp / Copier */
+  .k-group-view .k-group-creator-actions {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Spécificité 0-2-0 : bat les rules single-class (.k-group-btn--primary etc.) sans !important */
@@ -9692,7 +9690,7 @@ body.cart-open  #k-section-index { display:none; }
 }
 .k-group-financial-stats {
   display: grid;
-  /* grid-template-columns : géré mobile-first dans le bloc "Condensation mobile" ci-dessous */
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -10009,6 +10007,72 @@ body.cart-open  #k-section-index { display:none; }
 .k-gc-btn-choice--danger { border-color: var(--red-awaiting-bg); }
 .k-gc-btn-choice--danger strong { color: var(--red-danger); }
 .k-gc-btn-choice--danger small { color: var(--text-muted); }
+
+/* ── Cockpit closed phase — header / body structure ───────────── */
+.k-gc-header {
+  padding: 14px 16px 12px;
+  background: var(--coral-light);
+  border-radius: 16px 16px 0 0;
+  border-bottom: 1px solid var(--border-coral-13);
+}
+.k-gc-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.k-gc-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Fund section footer ──────────────────────────────────────── */
+.k-gc-fund-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.k-gc-fund-val-accent {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+/* ── Stats row (remaining / total) ───────────────────────────── */
+.k-gc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.k-gc-stat {
+  background: var(--sand);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.k-gc-stat strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+}
+.k-gc-stat span {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.k-gc-stat--coral {
+  background: var(--coral-light);
+  border-color: var(--border-coral-13);
+}
+.k-gc-stat--coral strong { color: var(--coral); }
 .k-group-options-body {
   display: flex;
   flex-direction: column;
@@ -10022,17 +10086,11 @@ body.cart-open  #k-section-index { display:none; }
 }
 
 /* ── Condensation mobile ───────────────────────────────────────── */
-/* Mobile-first : 2 colonnes par défaut (lisible sur petits écrans).
-   ≥381px : auto-fit pour profiter de la largeur disponible. */
-.k-group-financial-stats {
-  grid-template-columns: 1fr 1fr;
-}
-.k-group-acc-meta { font-size: 11.5px; }
-@media (min-width: 381px) {
+@media (max-width: 380px) {
   .k-group-financial-stats {
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
   }
-  .k-group-acc-meta { font-size: 12.5px; }
+  .k-group-acc-meta { font-size: 11.5px; }
 }
 
 
