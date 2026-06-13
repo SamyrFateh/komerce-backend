@@ -925,6 +925,11 @@ export async function renderGroupView(opts = {}) {
       </div>` : '';
 
     /* ── Formulaire / état terminal (colonne droite aside) ──────────── */
+    // GAP-C — Doctrine : 3 états seulement (OPEN / paiement ouvert / terminé).
+    // AWAITING_CHOICE, ORDERED, CANCELLED et tout autre statut technique sont
+    // fusionnés dans un même gabarit "terminé" — seul le texte change.
+    // L'identité du créateur (creatorIdHtml) reste TOUJOURS visible, y compris
+    // en état terminé : transparence maximale pour le créateur.
     const creatorIdHtml = renderCreatorIdentityCard(cart);
     const personalized = opts.personalized || {};
     let asideHtml;
@@ -932,26 +937,23 @@ export async function renderGroupView(opts = {}) {
       asideHtml = renderEstimationForm(participantToken, cart, estimAgg, personalized);
     } else if (isPaymentPhase) {
       asideHtml = renderPaymentForm(participantToken, cart, personalized);
-    } else if (isAwaitingChoice) {
-      asideHtml = `<div class="k-group-card k-group-terminal-card">
-        <div class="k-group-terminal-icon">🤔</div>
-        <strong>En attente de décision du créateur</strong>
-        <p>La fenêtre de paiement est terminée. Le créateur va décider de la suite.</p>
-      </div>`;
-    } else if (isOrdered) {
-      asideHtml = `<div class="k-group-card k-group-fully-paid-card">
-        <div class="k-group-fully-paid-icon">✅</div>
-        <strong>Commande créée — merci à tous !</strong>
-      </div>`;
-    } else if (isCancelled) {
-      asideHtml = `<div class="k-group-card k-group-terminal-card">
-        <div class="k-group-terminal-icon">❌</div>
-        <strong>Panier annulé</strong>
-      </div>`;
     } else {
+      let icon = '⛔', title = "Ce panier n'accepte plus de contribution.", body = '';
+      if (isAwaitingChoice) {
+        icon  = '🤔';
+        title = 'En attente de décision du créateur';
+        body  = '<p>La fenêtre de paiement est terminée. Le créateur va décider de la suite.</p>';
+      } else if (isOrdered) {
+        icon  = '✅';
+        title = 'Commande créée — merci à tous !';
+      } else if (isCancelled) {
+        icon  = '❌';
+        title = 'Panier annulé';
+      }
       asideHtml = `<div class="k-group-card k-group-terminal-card">
-        <div class="k-group-terminal-icon">⛔</div>
-        <strong>Ce panier n'accepte plus de contribution.</strong>
+        <div class="k-group-terminal-icon">${icon}</div>
+        <strong>${title}</strong>
+        ${body}
       </div>`;
     }
 
