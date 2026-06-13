@@ -57,6 +57,7 @@ import {
 import {
   renderCreatorCartSwitcher,
   renderCreatorArticlesPanel,
+  renderCreatorUnifiedCard,
   renderProgress,
   renderCreatorActions,
   renderCreatorIdentityCard,
@@ -993,10 +994,7 @@ export async function renderGroupView(opts = {}) {
     <div class="k-group-cockpit">
       <div class="k-group-main-col">
         ${renderCreatorCartSwitcher(ownerCarts, cartId)}
-        ${renderOwnerIdentityCard(cart, creatorItems.length)}
-        ${renderCreatorFinancialSummary(cart, estimationsList)}
-        ${renderCreatorActions(cart)}
-        ${renderProgress(cart, contributions, estimationsList)}
+        ${renderCreatorUnifiedCard(cart, estimationsList, contributions, creatorItems, shareUrl)}
       </div>
       ${renderCreatorArticlesPanel(creatorItems, cart)}
     </div>`;
@@ -1014,10 +1012,13 @@ export async function renderGroupView(opts = {}) {
 
   if (isCartLive) {
     startPolling(cartId, (fresh, freshEstimations = estimationsList) => {
-      const card = el.querySelector('#k-group-progress-card');
-      if (card) card.outerHTML = renderProgress(fresh.cart, fresh.contributions || [], freshEstimations);
-      const fin = el.querySelector('#k-group-financial-summary');
-      if (fin) fin.outerHTML = renderCreatorFinancialSummary(fresh.cart, freshEstimations);
+      const unified = el.querySelector('#k-group-unified-card');
+      if (unified) {
+        unified.outerHTML = renderCreatorUnifiedCard(
+          fresh.cart, freshEstimations, fresh.contributions || [], creatorItems, shareUrl
+        );
+        bindCreatorActions(el, fresh.cart, shareUrl, cartId, refreshView);
+      }
       import('./b-share-cart.js').then(m => m.refreshSharedBadges?.(true, fresh.cart));
     });
   }

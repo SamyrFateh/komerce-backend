@@ -337,6 +337,163 @@ export function renderProgress(cart, contributions, estimationsList) {
  * @param {string} [opts.relayId]  delivery_relay_id courant (pour garde-fou LOT 8)
  * @returns {string}
  */
+/**
+ * V4.1 — Carte unifiée du cockpit créateur (remplace 4 cards séparées).
+ * Conforme au mockup validé : une seule carte compacte avec badge, titre,
+ * items, estimations, agrégat, bouton d'action, note.
+ */
+export function renderCreatorUnifiedCard(cart, estimationsList = [], contributions = [], items = [], shareUrl = '') {
+  const biz   = businessStatusOf(cart);
+  const total = r(cart.total_kmf_snapshot);
+  const contributed = r(cart.contributed_kmf);
+  const remaining   = remainingKmf(cart);
+  const eng   = engagementCoverage(estimationsList, total);
+  const title = sanitize(cart.title || 'Panier groupe');
+  const itemsCount = items.length;
+
+  const targetDate = cart.target_date
+    ? new Date(cart.target_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    : null;
+  const countdownRemaining = cart.payment_window_ends_at
+    ? timeRemaining(new Date(cart.payment_window_ends_at)) : null;
+  const awaitingDeadline = cart.awaiting_choice_deadline
+    ? timeRemaining(new Date(cart.awaiting_choice_deadline)) : null;
+
+  /* ── Badge + info droite ─────────────────────────────────────── */
+  let badge, rightInfo = '';
+  if (biz === BUSINESS.OPEN) {
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</span>';
+    if (targetDate) rightInfo = `<span class="k-group-header-right">fermeture auto : ${targetDate}</span>`;
+  } else if (biz === BUSINESS.CLOSED) {
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--settlement">💳 Paiement ouvert</span>';
+    if (countdownRemaining) rightInfo = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${countdownRemaining}</span>`;
+  } else if (biz === BUSINESS.AWAITING_CHOICE) {
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--awaiting">À vous de choisir</span>';
+    rightInfo = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${awaitingDeadline || '72 h pour décider'}</span>`;
+  } else if (biz === BUSINESS.ORDERED) {
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--done">📦 Commande créée</span>';
+  } else {
+    badge = `<span class="k-group-phase-badge">${statusLabel(cart.status, false)}</span>`;
+  }
+
+  /* ── Estimations liste (OPEN, visibles créateur seul) ────────── */
+  let estimationsBlock = '';
+  if (biz === BUSINESS.OPEN) {
+    if (estimationsList.length > 0) {
+      const rows = estimationsList.map(e => {
+        const name = sanitize((e.participant_name || 'Anonyme').split(' ')[0]);
+        const isAnon = !e.participant_phone;
+        return `<div class="k-gc-est-row${isAnon ? ' k-gc-est-row--anon' : ''}">
+          <span>${name}</span><span>${fmt(r(e.amount_kmf), 'KMF')}</span>
+        </div>`;
+      }).join('');
+      const pctEst = total > 0 ? Math.round(eng.engagementsTotal / total * 100) : 0;
+      estimationsBlock = `
+        <p class="k-gc-sec-label">Estimations reçues — visibles par vous seul</p>
+        <div class="k-gc-est-list">${rows}</div>
+        <div class="k-gc-est-agg">~${fmt(eng.engagementsTotal, 'KMF')} estimés sur ${fmt(total, 'KMF')} · ${pctEst} %</div>`;
+    } else {
+      estimationsBlock = `<p class="k-gc-empty">Aucune estimation encore — partagez le lien !</p>`;
+    }
+  }
+
+  /* ── Barre de financement (CLOSED / AWAITING_CHOICE) ─────────── */
+  let fundingBlock = '';
+  if (biz === BUSINESS.CLOSED || biz === BUSINESS.AWAITING_CHOICE) {
+    const pctFunded = total > 0 ? Math.min(100, Math.round(contributed / total * 100)) : 0;
+    const barColor = biz === BUSINESS.AWAITING_CHOICE ? 'var(--amber-border)' : 'var(--checkout-accent)';
+    const label = biz === BUSINESS.AWAITING_CHOICE ? 'Reçu' : 'Financé';
+    fundingBlock = `
+      <p class="k-gc-sub">${biz === BUSINESS.AWAITING_CHOICE ? 'la fenêtre de paiement est terminée' : 'la liste est figée · chacun paie sa part'}</p>
+      <div class="k-gc-fund">
+        <div class="k-gc-fund-labels"><span>${label}</span><span class="k-gc-fund-val">${fmt(contributed, 'KMF')} / ${fmt(total, 'KMF')}</span></div>
+        <div class="k-gc-fund-track"><div class="k-gc-fund-fill" style="width:${pctFunded}%;background:${barColor}"></div></div>
+      </div>`;
+  }
+
+  /* ── Actions (OPEN / CLOSED / AWAITING_CHOICE) ───────────────── */
+  let actionsBlock = '';
+  if (biz === BUSINESS.OPEN) {
+    actionsBlock = `
+      <button class="k-gc-btn-main" id="k-group-close-cart">Fermer le panier — ouvrir le paiement (48 h)</button>
+      <p class="k-gc-note">La liste devient définitive · WhatsApp prévient le groupe</p>
+      <p class="k-group-input-error" id="k-group-settlement-err"></p>`;
+  } else if (biz === BUSINESS.CLOSED) {
+    if (remaining <= 0) {
+      actionsBlock = `
+        <button class="k-gc-btn-finalize" id="k-group-finalize">Confirmer la commande</button>
+        <p class="k-gc-note">La commande partira en préparation.</p>
+        <p class="k-group-input-error" id="k-group-finalize-err"></p>`;
+    } else {
+      actionsBlock = `
+        <div class="k-gc-share-row">
+          <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
+          <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier</button>
+        </div>
+        <p class="k-gc-note">Partagez le lien — les participants peuvent payer maintenant</p>`;
+    }
+  } else if (biz === BUSINESS.AWAITING_CHOICE) {
+    actionsBlock = `
+      <button class="k-gc-btn-choice k-gc-btn-choice--complete" id="k-group-finalize-gap">
+        <strong>Compléter les ${fmt(remaining, 'KMF')}</strong>
+        <small>Je paie le reste, la commande part</small>
+      </button>
+      <button class="k-gc-btn-choice" id="k-group-edit-items">
+        <strong>Ajuster le panier</strong>
+        <small>Retirer des articles, nouvelle fenêtre 48 h</small>
+      </button>
+      <button class="k-gc-btn-choice k-gc-btn-choice--danger" id="k-group-cancel">
+        <strong>Annuler le panier</strong>
+        <small>Les participants sont remboursés</small>
+      </button>
+      <p class="k-group-input-error" id="k-group-finalize-err"></p>`;
+  } else if (biz === BUSINESS.ORDERED) {
+    actionsBlock = `<p class="k-gc-note">Le panier est terminé.</p>
+      ${cart.finalized_order_id ? '<button class="k-group-btn k-group-btn--ghost" id="k-group-to-track">📦 Voir la commande</button>' : ''}`;
+  } else {
+    actionsBlock = `<p class="k-gc-note">${cart.status === 'cancelled' ? '❌ Panier annulé' : '⏱️ Panier expiré'}</p>`;
+  }
+
+  /* ── Items compacts (ligne cliquable) ────────────────────────── */
+  const itemsRow = biz === BUSINESS.OPEN
+    ? `<div class="k-gc-items-row">
+        <span>${itemsCount} article${itemsCount > 1 ? 's' : ''} · <strong>${fmt(total, 'KMF')}</strong></span>
+        <span class="k-gc-items-edit" id="k-group-edit-items-link">✏️ Modifier</span>
+       </div>`
+    : '';
+
+  /* ── Sharing (OPEN) ──────────────────────────────────────────── */
+  const shareBlock = biz === BUSINESS.OPEN ? `
+    <div class="k-gc-share-row">
+      <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
+      <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier le lien</button>
+    </div>` : '';
+
+  /* ── Options accordion (OPEN / CLOSED) ───────────────────────── */
+  const optionsBlock = (biz === BUSINESS.OPEN || biz === BUSINESS.CLOSED) ? `
+    <details class="k-group-accordion k-group-options-acc">
+      <summary><span>Options</span></summary>
+      <div class="k-group-options-body">
+        ${biz === BUSINESS.OPEN ? '<button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items">✏️ Modifier les articles</button>' : ''}
+        <div class="k-group-options-danger">
+          <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">🗑 Annuler ce panier</button>
+        </div>
+      </div>
+    </details>` : '';
+
+  return `
+    <div class="k-group-card k-gc-unified" id="k-group-unified-card">
+      <div class="k-group-header-row">${badge}${rightInfo}</div>
+      <h2 class="k-group-header-title">${title}</h2>
+      ${itemsRow}
+      ${shareBlock}
+      ${estimationsBlock}
+      ${fundingBlock}
+      ${actionsBlock}
+      ${optionsBlock}
+    </div>`;
+}
+
 export function renderCreatorActions(cart, opts = {}) {
   const step      = getGroupStep(cart);
   const remaining = remainingKmf(cart);

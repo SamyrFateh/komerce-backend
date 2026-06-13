@@ -2533,6 +2533,90 @@
 
 /* ── Accordéon Options (LOT 5 — danger séparé dedans) ──────────── */
 .k-group-options-acc { margin-top: 14px; }
+
+/* ── Cockpit créateur V4.1 — carte unifiée (mockup) ──────────── */
+.k-gc-unified { padding: 16px; }
+.k-gc-items-row {
+  display: flex; justify-content: space-between; align-items: center;
+  border: 0.5px solid var(--border); border-radius: var(--radius, 12px);
+  padding: 10px 12px; margin: 10px 0; font-size: 13px;
+}
+.k-gc-items-edit { font-size: 12px; color: var(--violet); cursor: pointer; }
+.k-gc-sec-label {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  margin: 12px 0 6px;
+}
+.k-gc-est-list {
+  border: 0.5px solid var(--border); border-radius: 12px;
+  padding: 2px 12px; margin-bottom: 10px;
+}
+.k-gc-est-row {
+  display: flex; justify-content: space-between; padding: 7px 0;
+  font-size: 13px; color: var(--text);
+}
+.k-gc-est-row + .k-gc-est-row { border-top: 0.5px solid var(--border); }
+.k-gc-est-row span:last-child { font-weight: 600; }
+.k-gc-est-row--anon { color: var(--text-muted); }
+.k-gc-est-row--anon span:last-child { font-weight: 400; }
+.k-gc-est-agg {
+  background: var(--violet-light); color: var(--violet-dark);
+  font-size: 13px; font-weight: 600; padding: 8px 14px;
+  border-radius: 12px; margin-bottom: 14px;
+}
+.k-gc-est-agg span { color: var(--violet); font-weight: 400; }
+.k-gc-empty {
+  font-size: 13px; font-style: italic; color: var(--text-muted);
+  margin: 10px 0; padding: 10px 0; border-left: 3px solid var(--violet-light);
+  padding-left: 12px;
+}
+.k-gc-sub { font-size: 12px; color: var(--text-muted); margin: 2px 0 12px; }
+.k-gc-fund { margin-bottom: 14px; }
+.k-gc-fund-labels {
+  display: flex; justify-content: space-between; font-size: 12px;
+  color: var(--text-muted); margin-bottom: 4px;
+}
+.k-gc-fund-val { font-weight: 600; color: var(--text); }
+.k-gc-fund-track { height: 8px; border-radius: 999px; background: var(--sand); }
+.k-gc-fund-fill { height: 8px; border-radius: 999px; transition: width .4s ease; }
+.k-gc-btn-main {
+  width: 100%; padding: 13px 20px; border-radius: 999px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  background: var(--violet); color: var(--white);
+}
+.k-gc-btn-main:hover { opacity: .92; }
+.k-gc-btn-main:disabled { opacity: .6; cursor: default; }
+.k-gc-btn-finalize {
+  width: 100%; padding: 13px 20px; border-radius: 999px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  background: var(--checkout-accent); color: var(--white);
+}
+.k-gc-note {
+  font-size: 12px; color: var(--text-muted); text-align: center;
+  margin: 8px 0 0; line-height: 1.3;
+}
+.k-gc-share-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0;
+}
+/* ── Boutons Cas B (AWAITING_CHOICE, mockup) ──────────────────── */
+.k-gc-btn-choice {
+  width: 100%; text-align: left; padding: 12px 14px;
+  border-radius: 14px; border: 0.5px solid var(--border);
+  margin-bottom: 8px; cursor: pointer;
+  background: var(--white);
+}
+.k-gc-btn-choice strong {
+  display: block; font-size: 14px; font-weight: 600;
+  color: var(--text); margin-bottom: 2px;
+}
+.k-gc-btn-choice small { font-size: 12px; color: var(--text-muted); }
+.k-gc-btn-choice--complete {
+  background: var(--checkout-accent); border-color: var(--checkout-accent);
+}
+.k-gc-btn-choice--complete strong { color: var(--white); }
+.k-gc-btn-choice--complete small { color: rgba(255,255,255,.75); }
+.k-gc-btn-choice--danger { border-color: var(--red-awaiting-bg); }
+.k-gc-btn-choice--danger strong { color: var(--red-danger); }
+.k-gc-btn-choice--danger small { color: var(--text-muted); }
 .k-group-options-body {
   display: flex;
   flex-direction: column;
