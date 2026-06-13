@@ -47,6 +47,7 @@ const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
+const { cancelSharedCartWithRefunds } = require('../services/cancel-shared-cart-with-refunds');
 const estimations = require('../services/shared-cart-estimation-service');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
 const { listManualRefundQueue } = require('../services/shared-cart-refund-queue');
@@ -842,10 +843,70 @@ router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next
 });
 
 /**
+ * Notification WhatsApp d'annulation → créateur + contributeurs remboursés.
+ * Fire-and-forget (setImmediate) — non bloquant pour la réponse HTTP.
+ */
+function _notifyCancellation(cart, refunds) {
+  setImmediate(async () => {
+    try {
+      const title    = cart.title || 'Panier groupe';
+      const refunded = r(cart.contributed_kmf);
+
+      // Notifier le créateur
+      if (cart.beneficiary_phone) {
+        const msg = refunds.total > 0
+          ? `Votre panier « ${title} » a été annulé. ${refunds.stripe_ok} participant(s) remboursé(s) automatiquement.`
+          : `Votre panier « ${title} » a été annulé.`;
+        await sendTemplateWhatsApp({
+          to: cart.beneficiary_phone,
+          templateName: 'shared_cart_cancelled_creator',
+          components: [{
+            type: 'body',
+            parameters: [
+              { type: 'text', text: cart.beneficiary_name || 'Organisateur' },
+              { type: 'text', text: title },
+              { type: 'text', text: String(refunds.stripe_ok) },
+            ],
+          }],
+        }).catch((err) => log.warn({ err, cart_id: cart.id }, '[cancel] creator notification failed'));
+      }
+
+      // Notifier les contributeurs remboursés (via estimations — source des phones)
+      if (refunds.total > 0) {
+        const { rows: contributors } = await db.query(
+          `SELECT DISTINCT contributor_phone AS phone, contributor_name AS name
+             FROM shared_cart_contributions
+            WHERE shared_cart_id = $1
+              AND status IN ('refunded', 'paid')
+              AND contributor_phone IS NOT NULL`,
+          [cart.id]
+        );
+
+        for (const c of contributors) {
+          await sendTemplateWhatsApp({
+            to: c.phone,
+            templateName: 'shared_cart_cancelled_participant',
+            components: [{
+              type: 'body',
+              parameters: [
+                { type: 'text', text: (c.name || 'Participant').split(' ')[0] },
+                { type: 'text', text: title },
+              ],
+            }],
+          }).catch((err) => log.warn({ err, phone: c.phone, cart_id: cart.id }, '[cancel] participant notification failed'));
+        }
+      }
+    } catch (err) {
+      log.error({ err, cart_id: cart.id }, '[cancel] notification batch failed');
+    }
+  });
+}
+
+/**
  * POST /:id/awaiting-choice/cancel
  *
  * Le créateur annule le panier depuis l'état AWAITING_CHOICE.
- * Même mécanique que /cancel — guard inclusif dans cancelSharedCart.
+ * Même mécanique que /cancel — guard inclusif dans cancelSharedCartWithRefunds.
  */
 // Cas B — Ajuster : le créateur édite la liste (réduction), nouvelle fenêtre 48h.
 // Doctrine : la plateforme ne choisit jamais les articles à retirer.
@@ -920,12 +981,13 @@ router.post('/:id/extend-window', authenticate, async (req, res, next) => {
 
 router.post('/:id/awaiting-choice/cancel', authenticate, async (req, res, next) => {
   try {
-    const cart = await engine.cancelSharedCart(req.params.id, req.user.id, req.body?.reason);
-    res.json({ ok: true, cart });
+    const { cart, refunds } = await cancelSharedCartWithRefunds(
+      req.params.id, req.user.id, req.body?.reason
+    );
+    _notifyCancellation(cart, refunds);
+    res.json({ ok: true, cart, refunds });
   } catch (err) {
-    if (err.message.includes('Impossible') || err.message.includes('introuvable')) {
-      return res.status(400).json({ error: err.message });
-    }
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
     next(err);
   }
 });
@@ -933,12 +995,13 @@ router.post('/:id/awaiting-choice/cancel', authenticate, async (req, res, next) 
 // Annulation depuis n'importe quel statut autorisé (OPEN / CLOSED / AWAITING_CHOICE)
 router.post('/:id/cancel', authenticate, async (req, res, next) => {
   try {
-    const cart = await engine.cancelSharedCart(req.params.id, req.user.id, req.body?.reason);
-    res.json({ ok: true, cart });
+    const { cart, refunds } = await cancelSharedCartWithRefunds(
+      req.params.id, req.user.id, req.body?.reason
+    );
+    _notifyCancellation(cart, refunds);
+    res.json({ ok: true, cart, refunds });
   } catch (err) {
-    if (err.message.includes('Impossible') || err.message.includes('introuvable')) {
-      return res.status(400).json({ error: err.message });
-    }
+    if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
     next(err);
   }
 });
