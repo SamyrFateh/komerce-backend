@@ -134,7 +134,7 @@
   /* ── Layout ──────────────────────────────────────────────── */
   --container: 1400px;
   --pad-x:     16px;
-  --header-h:  44px;
+  --header-h:  56px;
   --bnav-h:    50px;
 
   /* ── Animation ───────────────────────────────────────────── */
@@ -680,7 +680,7 @@ body {
 }
 .k-logo-img {
   display: block;
-  height: 36px;
+  height: 44px;
   width: auto;
   flex-shrink: 0;
   object-fit: contain;
@@ -694,8 +694,8 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
-  height: 32px;
-  border-radius: 16px;
+  height: 44px;
+  border-radius: 22px;
   background: var(--surface-white-96);
   border: 1px solid var(--border-text-08);
   box-shadow: var(--elev-1);
@@ -707,20 +707,20 @@ body {
 }
 .k-search input {
   width: 100%;
-  height: 32px;
-  padding: 0 10px 0 32px;
+  height: 44px;
+  padding: 0 14px 0 40px;
   background: transparent;
   /* FIX AUDIT 2026-06-11 : 16px minimum — sous 16px, iOS Safari zoome
      automatiquement la page au focus de l'input (dézoom manuel ensuite). */
   font-size: 16px;
   color: var(--text);
-  border-radius: 21px;
+  border-radius: 22px;
 }
 .k-search input::placeholder { color: var(--overlay-black-lg); }
 .k-search input:focus { background: var(--white); }
 .k-search-icon {
   position: absolute;
-  left: 12px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   width: 18px;
@@ -1102,8 +1102,8 @@ body:has(#k-page-scroll.k-pager-active) {
     padding-inline: clamp(24px, 3vw, 32px);
   }
 
-  .k-logo { min-width: 140px; }
-  .k-logo-img { height: 40px; }
+  .k-logo { min-width: 148px; }
+  .k-logo-img { height: 44px; }
   .k-logo-text { display: none; }
   .k-logo-icon { display: none; }
 

@@ -70,10 +70,10 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=60">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=107">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=38">
-<link rel="stylesheet" href="/boutique/css/dist/event.css?v=20">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=61">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=108">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
+<link rel="stylesheet" href="/boutique/css/dist/event.css?v=21">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -86,7 +86,7 @@ if('serviceWorker' in navigator){
 <header class="k-header" id="k-header">
   <div class="k-header-inner">
     <a href="/" class="k-logo" aria-label="Komerce — accueil">
-      <img src="/images/Logo_Komerce.png" srcset="/images/Logo_Komerce.png 1x, /images/Logo_Komerce@2x.png 2x" alt="Komerce" class="k-logo-img" width="120" height="40">
+      <img src="/images/Logo_Komerce.png" srcset="/images/Logo_Komerce.png 1x, /images/Logo_Komerce@2x.png 2x" alt="Komerce" class="k-logo-img" width="142" height="44">
     </a>
     <div class="k-search" id="k-search">
       <svg class="k-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
@@ -115,7 +115,7 @@ if('serviceWorker' in navigator){
   </div>
 </header>
 <!-- PATCH header-fixed — compense le header sorti du flow (position:fixed mobile) -->
-<div id="k-header-spacer" style="height: var(--header-h, 44px); flex-shrink: 0;"></div>
+<div id="k-header-spacer" style="height: var(--header-h, 56px); flex-shrink: 0;"></div>
 
 <!-- ═══ HERO FIXED WRAP (mobile: fixed; desktop: normal flow) ═══ -->
 <div id="k-hero-fixed-wrap">
