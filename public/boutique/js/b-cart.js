@@ -603,7 +603,7 @@ function quickRemove(productId, btnEl) {
     // Footer
     dom.cartFooter.classList.remove('u-hidden');
 
-    // PR-1 : le bouton "Payer à plusieurs" est statique dans index.html (#k-cart-share)
+    // PR-1 : le bouton "📤 Partager" est statique dans index.html (#k-cart-share)
     // géré par b-share-cart.js — plus d'injection dynamique ici.
 
     // SC-EDIT-04 — En mode édition panier collectif, masquer checkout + share
@@ -764,7 +764,7 @@ function quickRemove(productId, btnEl) {
   }
 
   /* ======= SHARE CHOICE MODAL — DEPRECATED PR-1 =======
-     Remplacé par b-share-cart.js (owner exclusif du flow "Payer à plusieurs").
+     Remplacé par b-share-cart.js (owner exclusif du flow "📤 Partager").
      Stubs conservés pour compatibilité exports. À supprimer en nettoyage PR-event. */
 
   function _closeShareModal() {
@@ -774,7 +774,7 @@ function quickRemove(productId, btnEl) {
 
   /** @deprecated PR-1 — stub, flow géré par b-share-cart.js */
   function showShareChoiceModal() {
-    // no-op — b-share-cart.js prend en charge le flow "Payer à plusieurs"
+    // no-op — b-share-cart.js prend en charge le flow "📤 Partager"
   }
 
   /** @deprecated PR-1 — stub */
@@ -783,7 +783,7 @@ function quickRemove(productId, btnEl) {
   async function _doEventShare() { /* no-op */ }
   /** @deprecated PR-1 — stub */
   async function shareCartWhatsApp() {
-    // no-op — b-share-cart.js prend en charge le flow "Payer à plusieurs"
+    // no-op — b-share-cart.js prend en charge le flow "📤 Partager"
   }
 
     /* ── AUTO-POPULATE CART FROM SHARED URL ──────────────────── */

@@ -329,7 +329,7 @@ test('F5 — Panier partagé : créer → partager → page publique lisible', a
     await page.waitForTimeout(400);
   }
 
-  // 3. Le bouton "Payer à plusieurs" / partager le panier doit être présent
+  // 3. Le bouton "📤 Partager" doit être présent
   const shareBtn = page.locator('#k-cart-share, [data-action="share-cart"], .k-cart-share-btn').first();
   const shareBtnExists = await shareBtn.count() > 0;
 

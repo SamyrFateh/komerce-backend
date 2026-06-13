@@ -3,7 +3,7 @@
  * @brief Tombstone — ancien guard guest désactivé.
  *
  * Doctrine boutique-first / flux unique :
- *   Tous les clics "Payer en groupe" doivent passer par b-share-cart.js,
+ *   Tous les clics "📤 Partager" doivent passer par b-share-cart.js,
  *   qui porte l'unique modal de création, le champ Nom et prénom, le téléphone
  *   au format checkout, la création backend, WhatsApp et le basculement Groupe.
  *
@@ -15,5 +15,5 @@
 export function setupSharePhoneGuard() {
   // No-op volontaire.
   // Ne pas réintroduire de listener capturant ici : b-share-cart.js est la
-  // source unique du flow "Payer en groupe".
+  // source unique du flow "📤 Partager".
 }

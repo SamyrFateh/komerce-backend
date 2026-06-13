@@ -609,7 +609,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     const btn   = el.querySelector('#k-group-close-cart');
     const errEl = el.querySelector('#k-group-settlement-err');
 
-    if (!confirm('Fermer le panier et ouvrir le paiement (48 h) ?\nLa liste devient définitive. Les participants pourront payer.')) return;
+    if (!confirm('Partager le panier et ouvrir le paiement (48 h) ?\nLa liste devient définitive. Les participants pourront payer.')) return;
 
     btn.disabled = true; btn.textContent = '⏳ Fermeture…';
     errEl.textContent = '';
@@ -620,7 +620,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       onSettlement?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      btn.disabled = false; btn.textContent = 'Fermer le panier — ouvrir le paiement (48 h)';
+      btn.disabled = false; btn.textContent = '📤 Partager le panier';
     }
   });
 
@@ -805,7 +805,7 @@ function renderEmpty(el) {
     <div class="k-group-empty">
       <div class="k-group-empty-icon">👥</div>
       <strong>Aucun panier groupe actif</strong>
-      <span>Créez-en un depuis votre panier avec "Payer en groupe".</span>
+      <span>Créez-en un depuis votre panier avec "Partager".</span>
     </div>`;
 }
 function renderError(el, msg = 'Ce lien est peut-être expiré ou invalide.') {

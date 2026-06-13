@@ -1,6 +1,6 @@
 /**
  * @module b-share-cart
- * @brief Flow "Payer en groupe" — côté créateur.
+ * @brief Flow "📤 Partager" — côté créateur.
  *
  * Doctrine boutique-first — Mai 2026 :
  *   - un panier partagé actif n'empêche pas d'en créer un autre.
@@ -200,7 +200,7 @@ export function refreshSharedBadges(isShared, cart = null) {
   const mobileBadge = document.getElementById('k-share-badge-row');
   const mobileShare = document.getElementById('k-cart-share');
   if (mobileBadge) mobileBadge.hidden = !isShared;
-  if (mobileShare) mobileShare.textContent = 'Payer en groupe';
+  if (mobileShare) mobileShare.textContent = '📤 Partager';
 
   const desktopBadge = document.getElementById('k-sc-shared-badge');
   const desktopShare = document.getElementById('k-sc-share');
@@ -210,7 +210,7 @@ export function refreshSharedBadges(isShared, cart = null) {
   }
   if (desktopShare) {
     desktopShare.hidden = false;
-    desktopShare.textContent = 'Payer en groupe';
+    desktopShare.textContent = '📤 Partager';
   }
 
   refreshGroupBadge();
@@ -309,7 +309,7 @@ function promptInit(needsAuth) {
     const head = document.createElement('div');
     head.className = 'k-sm-head';
     head.innerHTML =
-      '<span class="k-sm-title">🛒 Payer en groupe</span>' +
+      '<span class="k-sm-title">📤 Partager</span>' +
       '<button class="k-sm-close" aria-label="Fermer">✕</button>';
     sheet.appendChild(head);
 
@@ -608,7 +608,7 @@ export async function startShareFlow(opts = {}) {
   } catch (err) {
     showToast(`Erreur : ${err.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Payer en groupe'; }
+    if (btn) { btn.disabled = false; btn.textContent = '📤 Partager'; }
   }
 }
 
