@@ -196,7 +196,7 @@ export function renderCreatorArticlesPanel(items = [], cart = {}) {
  * @returns {string}
  */
 export function renderCreatorIdentityCard(cart) {
-  const name  = sanitize(cart.owner_name || cart.creator_name || 'Créateur');
+  const name  = sanitize(cart.owner_name || cart.creator_name || cart.beneficiary_name_snapshot || 'Créateur');
   const phone = sanitize(cart.owner_phone || cart.creator_phone || '');
   const initials = name.split(' ').map(w => w[0] || '').slice(0, 2).join('').toUpperCase() || '?';
 
@@ -389,13 +389,13 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
   /* ── Badge + info droite ─────────────────────────────────────── */
   let badge, rightInfo = '';
   if (biz === BUSINESS.OPEN) {
-    badge = '<span class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</span>';
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--open">En préparation</span>';
     if (targetDate) rightInfo = `<span class="k-group-header-right">fermeture auto : ${targetDate}</span>`;
   } else if (biz === BUSINESS.CLOSED) {
     badge = '<span class="k-group-phase-badge k-group-phase-badge--settlement">💳 Paiement ouvert</span>';
     if (countdownRemaining) rightInfo = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${countdownRemaining}</span>`;
   } else if (biz === BUSINESS.AWAITING_CHOICE) {
-    badge = '<span class="k-group-phase-badge k-group-phase-badge--awaiting">À vous de choisir</span>';
+    badge = '<span class="k-group-phase-badge k-group-phase-badge--awaiting">Fermé</span>';
     rightInfo = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${awaitingDeadline || '72 h pour décider'}</span>`;
   } else if (biz === BUSINESS.ORDERED) {
     badge = '<span class="k-group-phase-badge k-group-phase-badge--done">📦 Commande créée</span>';
@@ -441,14 +441,13 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
         </div>
         <div class="k-gc-fund-track"><div class="k-gc-fund-fill" style="width:${pctFunded}%${isAwaiting ? ';background:var(--amber-border)' : ''}"></div></div>
         <div class="k-gc-fund-foot">
-          <span>${pctFunded} % collecté</span>
           ${restant}
         </div>
       </div>
       <div class="k-gc-stats">
         <div class="k-gc-stat k-gc-stat--coral">
           <strong>${fmt(remaining, 'KMF')}</strong>
-          <span>Reste à collecter</span>
+          <span>Restant</span>
         </div>
         <div class="k-gc-stat">
           <strong>${fmt(total, 'KMF')}</strong>
@@ -708,7 +707,7 @@ function _phaseBadge(step, fullyPaid = false) {
       ? '<span class="k-group-phase-badge k-group-phase-badge--paid">✅ Tout est payé</span>'
       : '<span class="k-group-phase-badge k-group-phase-badge--settlement">💳 Paiement ouvert</span>';
   }
-  return '<span class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</span>';
+  return '<span class="k-group-phase-badge k-group-phase-badge--open">En préparation</span>';
 }
 
 

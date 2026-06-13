@@ -400,24 +400,26 @@ function startCountdownTick() {
 function renderPaymentForm(token, cart, personalized = {}) {
   const saved = readParticipantCommitment(token);
   const prefillAmount = saved?.amount ? r(saved.amount) : (r(personalized.amt) || '');
+  const maxKmf = remainingKmf(cart); // plafond visible : ce qu'il reste à couvrir
   const hint = saved?.amount
-    ? 'Pré-rempli avec votre estimation — vous pouvez payer plus, moins, ou sans estimation'
+    ? 'Pré-rempli avec votre estimation — vous pouvez régler un montant différent'
     : (prefillAmount
-        ? "Montant suggéré par l'organisateur — vous pouvez payer plus, moins, ou sans suggestion"
-        : 'Vous pouvez payer plus, moins, ou sans estimation');
+        ? "Montant suggéré par l'organisateur — modifiable"
+        : 'Choisissez le montant que vous souhaitez régler');
   const btnLabel = prefillAmount
-    ? `🔒 Payer ma part · ${fmt(prefillAmount, 'KMF')}`
-    : '🔒 Payer ma part';
+    ? `🔒 Régler ma part · ${fmt(prefillAmount, 'KMF')}`
+    : '🔒 Régler ma part';
 
   return `
     <div class="k-group-card k-group-contribute-card">
       <div class="k-group-mypart k-group-mypart--payment" id="k-gp-mypart">
-        <div class="k-group-mypart-head">🪙 Ma part — montant libre</div>
+        <div class="k-group-mypart-head">🪙 Ma part</div>
         <div class="k-group-field">
           <input id="k-gp-amount" class="k-group-input k-group-input--amount" type="number"
-            min="2500" step="100" placeholder="Montant (KMF)" inputmode="numeric"
+            min="2500" step="100"${maxKmf > 0 ? ` max="${maxKmf}"` : ''} placeholder="Montant (KMF)" inputmode="numeric"
             value="${prefillAmount}">
         </div>
+        ${maxKmf > 0 ? `<p class="k-group-payment-max">Maximum : ${fmt(maxKmf, 'KMF')}</p>` : ''}
         <p class="k-group-payment-hint">${hint}</p>
         <p class="k-group-input-error" id="k-gp-err"></p>
         <button class="k-group-btn k-group-btn--pay" id="k-gp-pay-btn">${btnLabel}</button>
@@ -430,9 +432,16 @@ function bindPaymentForm(el, token, cart) {
   // Mise à jour dynamique du bouton quand le montant change
   const amountInput = el.querySelector('#k-gp-amount');
   const payBtn = el.querySelector('#k-gp-pay-btn');
+  const maxKmf = remainingKmf(cart);
+
   amountInput?.addEventListener('input', () => {
     const v = Number(amountInput.value);
-    payBtn.textContent = v > 0 ? `🔒 Payer ma part · ${fmt(v, 'KMF')}` : '🔒 Payer ma part';
+    const errEl = el.querySelector('#k-gp-err');
+    if (errEl) errEl.textContent = '';
+    if (maxKmf > 0 && v > maxKmf) {
+      if (errEl) errEl.textContent = `Maximum : ${fmt(maxKmf, 'KMF')} (reste à régler).`;
+    }
+    payBtn.textContent = v > 0 ? `🔒 Régler ma part · ${fmt(v, 'KMF')}` : '🔒 Régler ma part';
   });
 
   payBtn?.addEventListener('click', async () => {
@@ -441,20 +450,24 @@ function bindPaymentForm(el, token, cart) {
 
     errEl.textContent = '';
     if (!amount || amount < 2500) { errEl.textContent = 'Minimum 2 500 KMF.'; return; }
+    if (maxKmf > 0 && amount > maxKmf) {
+      errEl.textContent = `Maximum : ${fmt(maxKmf, 'KMF')} (reste à régler).`;
+      return;
+    }
 
     payBtn.disabled = true;
     payBtn.textContent = '🔐 Vérification OTP…';
 
     try {
       const identity = await requireIdentity({
-        reason: 'payer ma part du panier groupe',
+        reason: 'régler ma part du panier groupe',
         title: 'Sécuriser votre paiement',
         allowOtherPhone: true,
       });
 
       if (!identity) {
         payBtn.disabled = false;
-        payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
+        payBtn.textContent = `🔒 Régler ma part · ${fmt(amount, 'KMF')}`;
         return;
       }
 
@@ -463,7 +476,7 @@ function bindPaymentForm(el, token, cart) {
       if (!phone) {
         errEl.textContent = 'Numéro introuvable après vérification. Réessayez.';
         payBtn.disabled = false;
-        payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
+        payBtn.textContent = `🔒 Régler ma part · ${fmt(amount, 'KMF')}`;
         return;
       }
 
@@ -485,7 +498,7 @@ function bindPaymentForm(el, token, cart) {
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
       payBtn.disabled = false;
-      payBtn.textContent = `🔒 Payer ma part · ${fmt(amount, 'KMF')}`;
+      payBtn.textContent = `🔒 Régler ma part · ${fmt(amount, 'KMF')}`;
     }
   });
 }
@@ -609,14 +622,14 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     const btn   = el.querySelector('#k-group-close-cart');
     const errEl = el.querySelector('#k-group-settlement-err');
 
-    if (!confirm('Partager le panier et ouvrir le paiement (48 h) ?\nLa liste devient définitive. Les participants pourront payer.')) return;
+    if (!confirm('Partager le panier et ouvrir le paiement ?\nLa liste devient définitive. Les participants pourront régler leur part jusqu\'à la date limite.')) return;
 
     btn.disabled = true; btn.textContent = '⏳ Fermeture…';
     errEl.textContent = '';
 
     try {
       await closeCart(cartId);
-      showToast('Panier fermé — le paiement est ouvert (48 h).', 'success');
+      showToast('Panier partagé — les participants peuvent maintenant régler leur part jusqu\'à la date limite.', 'success');
       onSettlement?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
@@ -975,7 +988,7 @@ export async function renderGroupView(opts = {}) {
     let headerRight = '';
     if (isOpenPhase && targetDate)       headerRight = `<span class="k-group-header-right">📅 cible : ${targetDate}</span>`;
     else if (isPaymentPhase && countdownRemaining) headerRight = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${countdownRemaining}</span>`;
-    else if (isAwaitingChoice)           headerRight = `<span class="k-group-header-right k-group-header-right--urgent">⏱ ${timeRemaining(cart.awaiting_choice_deadline ? new Date(cart.awaiting_choice_deadline) : null) || '72 h'}</span>`;
+    // awaiting_choice → le participant voit "Fermé", pas de timer exposé
 
     let subtext = '';
     if (isOpenPhase && daysUntilClose !== null) subtext = `par ${benefName || 'le créateur'} · ferme dans ${daysUntilClose} jour${daysUntilClose > 1 ? 's' : ''}`;
@@ -1022,15 +1035,23 @@ export async function renderGroupView(opts = {}) {
     const personalized = opts.personalized || {};
     let asideHtml;
     if (isOpenPhase) {
-      asideHtml = renderEstimationForm(participantToken, cart, estimAgg, personalized);
+      // Afficher en priorité que le paiement n'est pas encore ouvert.
+      // L'estimation reste disponible mais en position secondaire.
+      const noticeHtml = `
+        <div class="k-group-card k-group-status-card">
+          <div class="k-group-status-notice">⏳ Paiement pas encore ouvert</div>
+          <p class="k-group-status-hint">Le créateur n'a pas encore ouvert la phase de paiement. Vous pouvez indiquer votre part à titre indicatif.</p>
+        </div>`;
+      asideHtml = noticeHtml + renderEstimationForm(participantToken, cart, estimAgg, personalized);
     } else if (isPaymentPhase) {
       asideHtml = renderPaymentForm(participantToken, cart, personalized);
     } else {
       let icon = '⛔', title = "Ce panier n'accepte plus de contribution.", body = '';
       if (isAwaitingChoice) {
-        icon  = '🤔';
-        title = 'En attente de décision du créateur';
-        body  = '<p>La fenêtre de paiement est terminée. Le créateur va décider de la suite.</p>';
+        // Ne jamais exposer "En attente de décision" au participant.
+        icon  = '⛔';
+        title = 'Fermé';
+        body  = '';
       } else if (isOrdered) {
         icon  = '✅';
         title = 'Commande créée — merci à tous !';
