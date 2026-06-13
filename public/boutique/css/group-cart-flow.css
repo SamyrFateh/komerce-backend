@@ -1650,26 +1650,28 @@
 }
 
 /* ── LOT 6 — ligne Attendre / Je paie le reste ──────────────────────────
-   Desktop & mobile large : deux colonnes, l'action principale domine.
-   Mobile < 380px : boutons côte à côte interdits (sauf WhatsApp/Copier)
-   → empilés, action principale pleine largeur EN PREMIER visuellement. */
+   Mobile-first : empilé par défaut, action principale en premier (order:-1).
+   ≥381px : deux colonnes, l'action principale domine (minmax(.6fr/1fr)).
+   WhatsApp/Copier : côte à côte dès la base (1fr 1fr), inchangé. */
 .k-group-actions-row {
   display: grid;
-  grid-template-columns: minmax(96px, .6fr) 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
   align-items: stretch;
 }
 .k-group-actions-row .k-group-btn { width: 100%; }
-@media (max-width: 380px) {
+/* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
+.k-group-actions-row .k-group-btn--finalize { order: -1; }
+@media (min-width: 381px) {
   .k-group-actions-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(96px, .6fr) 1fr;
   }
-  /* l'action principale (Je paie le reste) passe au-dessus de "Attendre" */
-  .k-group-actions-row .k-group-btn--finalize { order: -1; }
-  /* seule exception côte à côte autorisée : WhatsApp / Copier */
-  .k-group-view .k-group-creator-actions {
-    grid-template-columns: 1fr 1fr;
-  }
+  /* sur largeur suffisante, réinitialise l'ordre visuel */
+  .k-group-actions-row .k-group-btn--finalize { order: 0; }
+}
+/* seule exception côte à côte autorisée : WhatsApp / Copier */
+.k-group-view .k-group-creator-actions {
+  grid-template-columns: 1fr 1fr;
 }
 
 /* Spécificité 0-2-0 : bat les rules single-class (.k-group-btn--primary etc.) sans !important */
@@ -2300,7 +2302,7 @@
 }
 .k-group-financial-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  /* grid-template-columns : géré mobile-first dans le bloc "Condensation mobile" ci-dessous */
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -2630,9 +2632,15 @@
 }
 
 /* ── Condensation mobile ───────────────────────────────────────── */
-@media (max-width: 380px) {
+/* Mobile-first : 2 colonnes par défaut (lisible sur petits écrans).
+   ≥381px : auto-fit pour profiter de la largeur disponible. */
+.k-group-financial-stats {
+  grid-template-columns: 1fr 1fr;
+}
+.k-group-acc-meta { font-size: 11.5px; }
+@media (min-width: 381px) {
   .k-group-financial-stats {
-    grid-template-columns: 1fr 1fr;   /* 2×2 — lisible sur petits écrans */
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   }
-  .k-group-acc-meta { font-size: 11.5px; }
+  .k-group-acc-meta { font-size: 12.5px; }
 }

@@ -1,13 +1,13 @@
 {
   "total": 2,
   "perFile": {
+    "group-cart-flow.css": [
+      "min:381"
+    ],
     "modal-shell.css": [
       "max:1120"
-    ],
-    "categories.css": [
-      "max:360"
     ]
   },
-  "savedAt": "2026-06-03T08:00:00.000Z",
-  "note": "categories.css max:360 = responsive chips petits écrans, déplacé de b-mobile-premium-v1.js (Lot 2/L2-S2). Breakpoint pré-existant rendu visible, pas une nouvelle dette."
+  "savedAt": "2026-06-13T07:02:39.621Z",
+  "note": "group-cart-flow.css min:381 = mobile-first rewrite de max:380 (LOT6 actions-row + condensation stats). modal-shell.css max:1120 = range desktop étroit grille modale, légitimé depuis 2026-06-03."
 }

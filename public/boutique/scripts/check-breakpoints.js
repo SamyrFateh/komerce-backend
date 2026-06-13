@@ -83,18 +83,40 @@ for (var j = 0; j < fileNames.length; j++) {
 console.log('\n   Total : ' + total + ' violations dans ' + fileNames.length + ' fichiers.');
 
 if (strict) {
-  var baseTotal = Infinity;
+  var baseData = { total: Infinity, perFile: {} };
   if (fs.existsSync(BASELINE)) {
-    baseTotal = JSON.parse(fs.readFileSync(BASELINE, 'utf8')).total;
+    baseData = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
   }
-  if (total > baseTotal) {
-    console.error('\nREGRESSION : ' + total + ' violations > baseline ' + baseTotal + '. Commit bloque.\n');
+  var baseTotal = baseData.total !== undefined ? baseData.total : Infinity;
+  var basePerFile = baseData.perFile || {};
+
+  // Détecte les nouvelles violations par fichier (cliquet par fichier+valeur)
+  var newViolations = [];
+  var fileNamesNow = Object.keys(perFile);
+  for (var fi = 0; fi < fileNamesNow.length; fi++) {
+    var fname = fileNamesNow[fi];
+    var current = perFile[fname];
+    var baseline = basePerFile[fname] || [];
+    for (var vi = 0; vi < current.length; vi++) {
+      if (baseline.indexOf(current[vi]) === -1) {
+        newViolations.push(fname + ' ' + current[vi] + 'px (absent de la baseline)');
+      }
+    }
+  }
+
+  if (newViolations.length > 0) {
+    console.error('\nREGRESSION breakpoints — nouvelles violations hors baseline :');
+    for (var ni = 0; ni < newViolations.length; ni++) {
+      console.error('  >> ' + newViolations[ni]);
+    }
+    console.error('Commit bloqué. Corrigez ou figez avec npm run check:breakpoints:save\n');
     process.exit(1);
   }
+
   if (total < baseTotal) {
-    console.log('\nProgres : ' + total + ' < baseline ' + baseTotal + '. Figez avec npm run check:breakpoints:save\n');
+    console.log('\nProgrès : ' + total + ' < baseline ' + baseTotal + '. Figez avec npm run check:breakpoints:save\n');
   } else {
-    console.log('\nStable vs baseline (' + baseTotal + '). Pas de regression.\n');
+    console.log('\nStable vs baseline (' + baseTotal + '). Pas de régression.\n');
   }
 }
 process.exit(0);
