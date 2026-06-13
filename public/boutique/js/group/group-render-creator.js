@@ -29,6 +29,8 @@ import {
   settlementExpiresAt,
   timeRemaining,
   getGroupStep,
+  businessStatusOf,
+  BUSINESS,
 } from './group-helpers.js';
 
 /* ── Switcher multi-paniers ─────────────────────────────────────── */
@@ -190,19 +192,18 @@ export function renderCreatorIdentityCard(cart) {
  * @param {Array}  commitmentsList
  * @returns {string}
  */
-export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
+export function renderCreatorFinancialSummary(cart, estimationsList = []) {
   const total     = r(cart.total_kmf_snapshot);
   const confirmed = r(cart.contributed_kmf);
   const remaining = remainingKmf(cart);
-  const eng       = engagementCoverage(commitmentsList, total);
+  const eng       = engagementCoverage(estimationsList, total);
   const pPaid     = pct(confirmed, total);
-  const sOpen     = isSettlementOpen(cart);
 
   const stats = [
     { label: 'Total panier', value: fmt(total, 'KMF') },
-    { label: 'Engagé',       value: fmt(eng.engagementsTotal, 'KMF') },
+    { label: 'Estimé',       value: fmt(eng.engagementsTotal, 'KMF') },
     { label: 'Payé',         value: fmt(confirmed, 'KMF') },
-    ...(remaining > 0 ? [{ label: 'Reste', value: fmt(remaining, 'KMF'), highlight: sOpen }] : []),
+    ...(remaining > 0 ? [{ label: 'Reste', value: fmt(remaining, 'KMF'), highlight: true }] : []),
   ];
 
   return `
@@ -215,7 +216,7 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
           </div>`).join('')}
       </div>
       <div class="k-group-progress" role="group"
-           aria-label="Payé ${pPaid}% · Engagé ${eng.pctCapped}%">
+           aria-label="Payé ${pPaid}% · Estimé ${eng.pctCapped}%">
         ${eng.pctCapped > 0
           ? `<span class="k-group-progress-bar k-group-progress-bar--engaged"
                    style="width:${eng.pctCapped}%"></span>`
@@ -226,7 +227,7 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
       <div class="k-group-progress-legend" aria-hidden="true">
         <span class="k-group-progress-legend-paid">● payé : ${fmt(confirmed, 'KMF')}</span>
         ${eng.engagementsTotal > 0
-          ? `<span class="k-group-progress-legend-engaged">● engagé : ${fmt(eng.engagementsTotal, 'KMF')}</span>`
+          ? `<span class="k-group-progress-legend-engaged">● estimé : ${fmt(eng.engagementsTotal, 'KMF')}</span>`
           : ''}
         <span class="k-group-progress-legend-total">total : ${fmt(total, 'KMF')}</span>
       </div>
@@ -244,28 +245,28 @@ export function renderCreatorFinancialSummary(cart, commitmentsList = []) {
  * @param {Array}  commitmentsList
  * @returns {string}
  */
-export function renderProgress(cart, contributions, commitmentsList) {
-  const sOpen     = isSettlementOpen(cart);
+export function renderProgress(cart, contributions, estimationsList) {
   const total     = r(cart.total_kmf_snapshot);
   const remaining = remainingKmf(cart);
   const meta      = metaOf(cart);
-  const eng       = engagementCoverage(commitmentsList, total);
-  const isOverCovered = eng.pctRaw > 100;
+  const biz       = businessStatusOf(cart);
+  const isPayment = biz === BUSINESS.CLOSED;
+  const eng       = engagementCoverage(estimationsList, total);
 
-  const settlementSummary = sOpen ? `
+  const paymentSummary = isPayment ? `
     <div class="k-group-settlement-summary">
-      <strong>Panier en règlement 🔐</strong>
-      ${meta.locked_commitments_count > 0
-        ? `<span>${meta.locked_commitments_count} engagement(s) verrouillé(s) · total indicatif : ${fmt(r(meta.locked_commitments_total_kmf), 'KMF')}</span>`
+      <strong>💳 Paiement ouvert</strong>
+      ${cart.payment_window_ends_at
+        ? `<span>Fenêtre : ${timeRemaining(new Date(cart.payment_window_ends_at)) || 'en cours'}</span>`
         : ''}
     </div>` : '';
 
-  /* ── Lignes participants (avatars initiales — direction mockup) ── */
+  /* ── Lignes participants (estimations nominatives, cockpit créateur) ── */
   let body;
-  if (commitmentsList?.length) {
-    const rows = commitmentsList.map(c => {
+  if (estimationsList?.length) {
+    const rows = estimationsList.map(c => {
       const paid = contributions?.some(co =>
-        co.commitment_id === c.id && co.status === 'paid'
+        co.contributor_phone === c.participant_phone && co.status === 'paid'
       );
       const fullName = c.participant_name || 'Participant';
       const firstName = fullName.split(' ')[0];
@@ -277,9 +278,7 @@ export function renderProgress(cart, contributions, commitmentsList) {
         : phone;
       const statusTag = paid
         ? '<span class="k-group-commitment-status k-group-commitment-status--paid">✅ Payé</span>'
-        : sOpen
-          ? '<span class="k-group-commitment-status k-group-commitment-status--waiting">⏳ En attente</span>'
-          : '<span class="k-group-commitment-status">indicatif</span>';
+        : '<span class="k-group-commitment-status">indicatif</span>';
       return `
         <div class="k-group-commitment-row">
           <span class="k-group-commitment-avatar k-group-commitment-avatar--h${hue}" aria-hidden="true">${sanitize(initials)}</span>
@@ -294,30 +293,24 @@ export function renderProgress(cart, contributions, commitmentsList) {
         </div>`;
     }).join('');
 
-    const overBadge = isOverCovered
-      ? ` <span class="k-group-progress-badge k-group-progress-badge--over">${eng.pctRaw}\u00a0%</span>`
-      : '';
-
     body = `
       <details class="k-group-accordion k-group-accordion--flush"${_accOpenAttr()}>
         <summary>
-          <span>Participants (${commitmentsList.length})</span>
-          <span class="k-group-acc-meta">${fmt(eng.engagementsTotal, 'KMF')} estimés${overBadge}</span>
+          <span>Estimations reçues (${estimationsList.length})</span>
+          <span class="k-group-acc-meta">${fmt(eng.engagementsTotal, 'KMF')} estimés</span>
         </summary>
         <div class="k-group-commitment-list">${rows}</div>
       </details>`;
   } else {
-    body = `<p class="k-group-contrib-empty">${
-      sOpen ? 'Aucun estimation bloquée.' : 'Aucune estimation encore — partagez le lien !'
-    }</p>`;
+    body = `<p class="k-group-contrib-empty">Aucune estimation encore — partagez le lien !</p>`;
   }
 
   return `
     <div class="k-group-side-panel k-group-side-panel--participants" id="k-group-progress-card">
       <div class="k-group-side-card k-group-progress-card">
-        ${settlementSummary}
+        ${paymentSummary}
         ${body}
-        ${remaining > 0 && sOpen
+        ${remaining > 0 && isPayment
           ? `<p class="k-group-remaining">Reste à payer : <strong>${fmt(remaining, 'KMF')}</strong></p>`
           : ''}
       </div>
@@ -433,8 +426,6 @@ export function renderCreatorActions(cart, opts = {}) {
   }
 
   /* ── Phase SHARE_AND_LOCK (panier ouvert) ───────────────────────── */
-  // LOT 4 — PAS de formulaire d'engagement ni d'action de contribution créateur ici
-  // LOT 8 — PAS de bouton Confirmer la commande dans cette phase
 
   return `
     <div class="k-group-card k-group-actions-card">
@@ -449,23 +440,16 @@ export function renderCreatorActions(cart, opts = {}) {
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier le lien</button>
       </div>
 
-      <!-- Bloquer les engagements -->
+      <!-- Fermer le panier — V4.1 : plus de select, 48h fixe -->
       <div class="k-group-lock-section">
-        <label class="k-group-lock-label">Délai de paiement</label>
-        <select id="k-group-settlement-window" class="k-group-select">
-          <option value="24">24 heures</option>
-          <option value="48" selected>48 heures</option>
-          <option value="168">7 jours</option>
-        </select>
-        <button class="k-group-btn k-group-btn--primary" id="k-group-open-settlement">
-          🔐 Bloquer et ouvrir le paiement
+        <button class="k-group-btn k-group-btn--primary" id="k-group-close-cart">
+          Fermer le panier — ouvrir le paiement (48 h)
         </button>
-        <p class="k-group-step-hint">Fige les engagements · les participants pourront payer · irréversible</p>
+        <p class="k-group-step-hint">La liste devient définitive · WhatsApp prévient le groupe</p>
       </div>
 
       <p class="k-group-input-error" id="k-group-settlement-err"></p>
 
-      <!-- LOT 5 — Accordéon options -->
       ${_optionsAccordion('SHARE_AND_LOCK')}
     </div>`;
 }
@@ -511,9 +495,9 @@ function _phaseBadge(step, fullyPaid = false) {
   if (step === 'CONFIRM') {
     return fullyPaid
       ? '<span class="k-group-phase-badge k-group-phase-badge--paid">✅ Tout est payé</span>'
-      : '<span class="k-group-phase-badge k-group-phase-badge--settle">🔐 Paiement ouvert</span>';
+      : '<span class="k-group-phase-badge k-group-phase-badge--settlement">💳 Paiement ouvert</span>';
   }
-  return '<span class="k-group-phase-badge k-group-phase-badge--open">🟢 Phase ouverte — concertation</span>';
+  return '<span class="k-group-phase-badge k-group-phase-badge--open">Panier ouvert</span>';
 }
 
 

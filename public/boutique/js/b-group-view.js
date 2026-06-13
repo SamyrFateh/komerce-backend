@@ -540,24 +540,23 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
     });
   });
 
-  // S2-03 — open-settlement avec durée choisie
-  el.querySelector('#k-group-open-settlement')?.addEventListener('click', async () => {
-    const btn   = el.querySelector('#k-group-open-settlement');
+  // V4.1 — Fermer le panier → ouvrir la fenêtre de paiement 48h
+  el.querySelector('#k-group-close-cart')?.addEventListener('click', async () => {
+    const btn   = el.querySelector('#k-group-close-cart');
     const errEl = el.querySelector('#k-group-settlement-err');
-    const windowH = Number(el.querySelector('#k-group-settlement-window')?.value) || 48;
 
-    if (!confirm('Bloquer les participations et ouvrir le paiement ? Les montants seront figés et les modifications du panier bloquées. Action irréversible.')) return;
+    if (!confirm('Fermer le panier et ouvrir le paiement (48 h) ?\nLa liste devient définitive. Les participants pourront payer.')) return;
 
-    btn.disabled = true; btn.textContent = '⏳ Passage en cours…';
+    btn.disabled = true; btn.textContent = '⏳ Fermeture…';
     errEl.textContent = '';
 
     try {
-      await openSettlement(cartId, { settlement_window_hours: windowH });
-      showToast('Participations bloquées. Les participants peuvent maintenant payer.', 'success');
+      await closeCart(cartId);
+      showToast('Panier fermé — le paiement est ouvert (48 h).', 'success');
       onSettlement?.();
     } catch (err) {
       errEl.textContent = err?.message || 'Erreur.';
-      btn.disabled = false; btn.textContent = '🔐 Bloquer et ouvrir le paiement';
+      btn.disabled = false; btn.textContent = 'Fermer le panier — ouvrir le paiement (48 h)';
     }
   });
 
