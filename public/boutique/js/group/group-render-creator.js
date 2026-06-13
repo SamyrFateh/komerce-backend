@@ -461,8 +461,8 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
   let actionsBlock = '';
   if (biz === BUSINESS.OPEN) {
     actionsBlock = `
-      <button class="k-gc-btn-main" id="k-group-close-cart">Fermer le panier — ouvrir le paiement (48 h)</button>
-      <p class="k-gc-note">La liste devient définitive · WhatsApp prévient le groupe</p>
+      <button class="k-gc-btn-main" id="k-group-close-cart">📤 Partager le panier</button>
+      <p class="k-gc-note">Chacun reçoit son lien · 48 h pour payer</p>
       <p class="k-group-input-error" id="k-group-settlement-err"></p>`;
   } else if (biz === BUSINESS.CLOSED) {
     if (remaining <= 0) {
@@ -642,21 +642,21 @@ export function renderCreatorActions(cart, opts = {}) {
     <div class="k-group-card k-group-actions-card">
       ${_phaseBadge('SHARE_AND_LOCK')}
 
-      <!-- Partager le lien -->
+      <!-- V4.1 "Partager" — geste principal : ferme + ouvre fenêtre 48h + génère les liens -->
+      <div class="k-gc-share-primary">
+        <button class="k-group-btn k-group-btn--primary" id="k-group-close-cart">
+          📤 Partager le panier
+        </button>
+        <p class="k-group-step-hint">Chacun reçoit son lien · 48 h pour payer</p>
+      </div>
+
+      <!-- Partage anticipé (optionnel) -->
       <p class="k-group-share-hint">
-        Partagez le lien — vos proches indiquent leur participation, sans payer maintenant.
+        Vous pouvez déjà partager le lien de consultation — vos proches indiquent leur participation, sans payer maintenant.
       </p>
       <div class="k-group-creator-actions">
         <button class="k-group-btn k-group-btn--ghost" id="k-group-reshare">📲 WhatsApp</button>
         <button class="k-group-btn k-group-btn--copy" id="k-group-copy">🔗 Copier le lien</button>
-      </div>
-
-      <!-- Fermer le panier — V4.1 : plus de select, 48h fixe -->
-      <div class="k-group-lock-section">
-        <button class="k-group-btn k-group-btn--primary" id="k-group-close-cart">
-          Fermer le panier — ouvrir le paiement (48 h)
-        </button>
-        <p class="k-group-step-hint">La liste devient définitive · WhatsApp prévient le groupe</p>
       </div>
 
       <p class="k-group-input-error" id="k-group-settlement-err"></p>
