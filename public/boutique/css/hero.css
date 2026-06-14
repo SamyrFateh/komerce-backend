@@ -236,14 +236,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;        /* centré horizontalement */
-    justify-content: center;    /* centré verticalement dans le hero */
+    justify-content: flex-start; /* ancré en haut du bandeau */
     padding: 0 8px;
     text-align: center;
     pointer-events: none;
     z-index: 5;
-    /* légèrement dans la moitié haute */
-    padding-top: 0;
-    padding-bottom: 8px; /* réduit : 40px cachait le slogan sur petits écrans (image ~79px) */
+    /* ancré en haut, léger décalage pour ne pas coller au bord arrondi */
+    padding-top: 8px;
+    padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
   .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
