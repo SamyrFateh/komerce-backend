@@ -226,9 +226,42 @@
   height: 0;
 }
 
-/* Suppression du mini-slogan dans l'image (trop petit à 220px) */
-.k-hero-mini-slogan { display: none; }
+/* Slogan mobile : affiché directement (sans dépendance à html.k-mobile-premium-v1) */
+.k-hero-mini-slogan { display: none; } /* masqué par défaut — réactivé ci-dessous */
 .k-hero-bubble       { display: none; }
+
+/* ── Slogan "Qui cherche… trouve !" — mobile (max-width:899px) ── */
+@media (max-width: 899px) {
+  .k-hero-mini-slogan.k-hero-mini-slogan--premium {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px 14px 0;
+    text-align: left;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
+  .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
+  .k-hero-mini-slogan--premium .k-hero-cta-row { display: none; }
+  .k-hero-mini-slogan--premium .k-hero-trust   { display: none; }
+  .k-hero-mini-slogan--premium .k-line-1 {
+    font-family: var(--font-display);
+    font-size: clamp(15px, 4vw, 18px);
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.1;
+    text-shadow: 0 0 10px var(--white), 0 0 20px var(--surface-white-92);
+  }
+  .k-hero-mini-slogan--premium .k-line-2 {
+    font-family: var(--font-display);
+    font-size: clamp(17px, 4.5vw, 21px);
+    font-weight: 900;
+    color: var(--ocean-dark);
+    line-height: 1.05;
+    text-shadow: 0 0 10px var(--white), 0 0 20px var(--surface-white-92);
+  }
+}
 
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {
@@ -396,14 +429,15 @@
 @media (max-width: 899px) {
   .k-hero-media .k-hero-logo-glow {
     --klg-bpm: 2.8s;       /* lent ≈ braise ; baisser pour accélérer */
-    --klg-glow: 6px;       /* intensité du halo */
-    --klg-opacity: 1;      /* présence du filigrane */
+    --klg-glow: 8px;       /* intensité du halo — augmenté pour meilleure visibilité */
+    --klg-opacity: 0.82;   /* légèrement transparent pour effet filigrane */
     position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 48%;
-    max-width: 162px;
+    right: 12px;           /* ancré à droite — slogan à gauche, logo à droite */
+    left: auto;
+    transform: translateY(-50%);
+    width: 42%;
+    max-width: 148px;
     z-index: 6;
     pointer-events: none;
     opacity: var(--klg-opacity);

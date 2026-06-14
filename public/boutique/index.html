@@ -70,7 +70,7 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=65">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=66">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=107">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=20">
@@ -154,14 +154,12 @@ if('serviceWorker' in navigator){
   <div class="k-hero-inner">
     <div class="k-hero-media">
       <picture>
-        <!-- Desktop ≥900px : bannière validée 2804×561 (ratio 5:1), cadrée à 320px via CSS -->
+        <!-- Desktop ≥900px : bannière 2804×561, cadrée à 200px via CSS -->
         <source media="(min-width: 900px)" type="image/webp" srcset="/images/komerce_hero_desktop_1600x320.webp" width="2804" height="561">
-        <!-- WebP mobile tamisé (prioritaire — ~50% plus léger) -->
+        <!-- Mobile <900px : illustration 1080×220 sans texte imprimé -->
         <source media="(max-width: 899px)" type="image/webp" srcset="/images/komerce_hero_mobile_1080x220.webp" width="1080" height="220">
-        <!-- PNG mobile fallback (navigateurs sans WebP) -->
-        <source media="(max-width: 899px)" srcset="/images/Hero_1080x420.png" width="1456" height="720">
-        <!-- Fallback universel WebP desktop -->
-        <img class="k-hero-img" src="/images/komerce_hero_desktop_1600x320.webp" width="2804" height="561" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
+        <!-- Fallback universel : mobile (évite de charger le desktop sur mobile) -->
+        <img class="k-hero-img" src="/images/komerce_hero_mobile_1080x220.webp" width="1080" height="220" alt="Komerce — La boutique en ligne des Comores" loading="eager" fetchpriority="high">
       </picture>
       <div class="k-hero-mini-slogan k-hero-mini-slogan--premium">
         <span class="k-hero-badge">La boutique comorienne</span>
