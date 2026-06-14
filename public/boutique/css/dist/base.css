@@ -694,15 +694,15 @@ body {
 /* Mobile : on n'affiche que le petit K (le logo complet vit dans le hero) */
 @media (max-width: 899px) {
   .k-logo-svg  { display: none; }
-  .k-logo-mini { display: block; height: 34px; width: auto; flex-shrink: 0; }
+  .k-logo-mini { display: block; height: 30px; width: auto; flex-shrink: 0; }
   .k-logo      { min-width: 0; }
 }
 
-/* ── Signature mobile : K + "Komerce" empilés ────────────────────
+/* ── Signature mobile : K + "Komerce" empilés (affinage premium) ──
    .k-logo-brand = conteneur flex colonne, masqué sur desktop.
    .k-logo-wordmark = libellé textuel sous le pictogramme K.
-   La hauteur totale (K 34px + gap 1px + texte ~12px) tient dans
-   le header 56px avec 4-5px de marge haut/bas. ──────────────────── */
+   La hauteur totale (K 30px + gap 2px + texte ~13px) tient dans
+   le header 56px avec ~5-6px de marge haut/bas. ──────────────────── */
 .k-logo-brand {
   display: none; /* masqué par défaut (desktop : le SVG complet suffit) */
 }
@@ -711,17 +711,17 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 2px;
     line-height: 1;
   }
   .k-logo-wordmark {
     display: block;
     font-family: inherit;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--green-dark, #2a7a3e);
+    color: var(--green-dark-text, #1d5b2a);
     white-space: nowrap;
   }
 }
