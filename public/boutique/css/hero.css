@@ -242,7 +242,7 @@
     pointer-events: none;
     z-index: 5;
     /* légèrement dans la moitié haute */
-    padding-top: 16px;   /* compense le header fixe sans trop pousser vers le bas */
+    padding-top: 8px;
     padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }

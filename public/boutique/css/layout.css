@@ -120,7 +120,7 @@ body {
     gap: 2px;
     line-height: 1;
     align-self: center;
-    margin-top: 4px; /* compense le poids optique du wordmark sous le K */
+    margin-top: 8px; /* compense le poids optique du wordmark sous le K */
   }
   .k-logo-wordmark {
     display: block;
