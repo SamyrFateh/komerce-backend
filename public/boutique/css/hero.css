@@ -389,9 +389,10 @@
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    padding: 10px 12px 0;
-    align-items: flex-start;
-    text-align: left;
+    padding: 6px 8px 0;
+    align-items: center;   /* centré horizontalement */
+    justify-content: flex-start; /* ancré en haut */
+    text-align: center;
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-hero-badge {
@@ -410,8 +411,8 @@
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-1,
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
-    text-align: left;
-    font-size: 18px;
+    text-align: center;
+    font-size: clamp(18px, 5vw, 22px);
     line-height: 1.05;
   }
 
