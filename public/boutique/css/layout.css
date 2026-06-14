@@ -139,8 +139,8 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
-  height: 38px;
-  border-radius: 19px;
+  height: 34px;
+  border-radius: 17px;
   background: var(--surface-white-96);
   border: 1px solid var(--border-text-08);
   box-shadow: var(--elev-1);
@@ -152,7 +152,7 @@ body {
 }
 .k-search input {
   width: 100%;
-  height: 38px;
+  height: 34px;
   padding: 0 12px 0 36px;
   background: transparent;
   /* FIX AUDIT 2026-06-11 : 16px minimum — sous 16px, iOS Safari zoome
@@ -1094,19 +1094,6 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 
 /* ═══ PREMIUM MOBILE V1 — header/recherche (rapatrié de b-mobile-premium-v1.js,
-   Lot 2/L2-S2). Scopé html.k-mobile-premium-v1, @media max 899px. ═══ */
-@media (max-width: 899px) {
-  html.k-mobile-premium-v1 .k-header-inner {
-    gap: 8px;
-    padding-inline: 10px;
-  }
-  html.k-mobile-premium-v1 .k-search {
-    min-height: 38px;
-    border-radius: 999px;
-    box-shadow: 0 10px 22px var(--border-text-06);
-  }
-  html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
-}
 
 /* ── Premium desktop home — header / search / catalog (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {

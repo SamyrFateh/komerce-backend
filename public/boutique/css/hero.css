@@ -242,7 +242,7 @@
     pointer-events: none;
     z-index: 5;
     /* ancré en haut, léger décalage pour ne pas coller au bord arrondi */
-    padding-top: 8px;
+    padding-top: 3px;
     padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
@@ -362,69 +362,16 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — hero (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2).
-   Scopé html.k-mobile-premium-v1, dans @media max 899px (mobile). Owner du hero.
-   !important retirés (Lot 5) — spécificité 0-2-0 bat la règle base 0-1-0 (.k-hero-overlay etc. { display:none }).
    Aucune règle CSS ou JS ne remet ces éléments visible. ════════ */
 @media (max-width: 899px) {
-  html.k-mobile-premium-v1 #k-hero-fixed-wrap {
-    background:
-      radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--ocean-bg-08) 68%, transparent), transparent 26%),
-      var(--sand-warm);
-  }
 
-  html.k-mobile-premium-v1 .k-hero-inner { padding: 0 10px; }
 
-  html.k-mobile-premium-v1 .k-hero-media {
-    border-radius: 22px;
-    height: 118px;
-    max-height: 118px;
-    overflow: hidden;
-    box-shadow: 0 10px 24px var(--border-text-06);
-  }
 
-  html.k-mobile-premium-v1 .k-hero-img {
-    height: 118px;
-    object-fit: cover;
-    object-position: center;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    padding: 6px 8px 0;
-    align-items: center;   /* centré horizontalement */
-    justify-content: flex-start; /* ancré en haut */
-    text-align: center;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-hero-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 88%, transparent);
-    color: var(--text);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    box-shadow: 0 2px 6px var(--border-text-08);
-    margin-bottom: 6px;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-1,
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
-    text-align: center;
-    font-size: clamp(18px, 5vw, 22px);
-    line-height: 1.05;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-cta-row,
-  html.k-mobile-premium-v1 .k-hero-trust,
-  html.k-mobile-premium-v1 .k-hero-bubble,
-  html.k-mobile-premium-v1 .k-hero-sub,
-  html.k-mobile-premium-v1 .k-hero-overlay {
-    display: none;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
 }
 
 /* ════════ Logo électrisé en filigrane — hero mobile ════════

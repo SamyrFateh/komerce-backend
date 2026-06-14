@@ -885,43 +885,7 @@
 }
 
 /* ═══ PREMIUM MOBILE V1 — catalogue/grille/cartes/fab (rapatrié de
-   b-mobile-premium-v1.js, Lot 2/L2-S2). Scopé html.k-mobile-premium-v1,
-   @media max 899px. Hex WhatsApp remplacé par token --whatsapp (I-3). ═══ */
 @media (max-width: 899px) {
-  html.k-mobile-premium-v1 .k-proverb-sep { display: none; }
-  html.k-mobile-premium-v1 #k-catalog-section { padding-top: 6px; }
 
-  html.k-mobile-premium-v1 .k-section-title,
-  html.k-mobile-premium-v1 .k-cat-title { margin-top: 8px; }
 
-  html.k-mobile-premium-v1 .k-grid {
-    gap: 14px;
-    padding-inline: 12px;
-  }
-  html.k-mobile-premium-v1 .k-card {
-    border-radius: 22px;
-    overflow: hidden;
-    box-shadow: 0 12px 30px var(--border-text-06);
-  }
-  html.k-mobile-premium-v1 .k-card-title {
-    font-size: 16px;
-    line-height: 1.15;
-  }
-  html.k-mobile-premium-v1 .k-card-desc {
-    font-size: 12px;
-    line-height: 1.25;
-    max-height: 2.5em;
-    overflow: hidden;
-  }
-  html.k-mobile-premium-v1 .k-card-price {
-    font-size: 22px;
-    letter-spacing: -.035em;
-  }
-  html.k-mobile-premium-v1 .k-wa-fab {
-    width: 50px;
-    height: 50px;
-    right: 16px;
-    bottom: 98px;
-    box-shadow: 0 12px 30px color-mix(in srgb, var(--whatsapp) 28%, transparent);
-  }
 }
