@@ -1,167 +1,159 @@
 # Frontend Boutique Komerce
 
-> Point d'entrée local pour le frontend Boutique.  
-> En repo complet, lire d'abord `../../AGENTS.md` puis revenir ici.
+> Point d'entrée local pour toucher `public/boutique/**`.  
+> Mis à jour : **2026-06-14**.
 
 ---
 
-## 0. Où vit la Boutique ?
+## 1. Lire d'abord
 
-Le frontend Boutique vit dans :
+Depuis le repo complet, lire :
+
+```txt
+../../docs/boutique/README.md
+```
+
+Ce fichier local donne les commandes et rappels rapides. Le guide actif complet est `docs/boutique/README.md`.
+
+Ne pas démarrer depuis `public/boutique/docs/**` : ces documents sont historiques ou générés, sauf mention contraire explicite dans `docs/boutique/README.md`.
+
+---
+
+## 2. Doctrine active
+
+La Boutique suit **Boutique First**.
+
+```txt
+Le lien partagé ouvre la boutique.
+Le participant consulte en lecture seule.
+Il règle sa part seulement si le panier est payable.
+```
+
+Lire si le changement touche le panier partagé :
+
+```txt
+../../docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md
+../../docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md
+```
+
+Toute ancienne documentation `panier collectif`, `workspace`, `event`, `V4.1`, `engagement`, `settlement` ou `contribution` est historique si elle n'est pas reprise dans ces deux documents.
+
+---
+
+## 3. Structure active
 
 ```txt
 public/boutique/
+├── README.md
+├── package.json
+├── index.html
+├── js/
+├── css/                  # sources CSS à éditer
+├── css/dist/             # bundles générés, ne jamais éditer à la main
+├── scripts/              # garde-fous et bundler CSS
+├── tests/
+└── docs/                 # historique/généré, non canonique par défaut
 ```
-
-Structure active :
-
-```txt
-public/boutique/
-├── README.md              ← point d'entrée local
-├── package.json           ← scripts npm Boutique
-├── index.html             ← page principale, charge uniquement css/dist/*.css
-├── css/                   ← sources CSS à éditer
-├── css/dist/              ← bundles générés, ne jamais éditer à la main
-├── js/                    ← scripts frontend
-├── scripts/               ← garde-fous et bundler CSS
-└── docs/                  ← docs locales / historiques / générées
-```
-
-Docs canoniques repo pour la Boutique :
-
-```txt
-docs/boutique/BOUTIQUE_CSS_PIPELINE.md
-docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md
-docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
-```
-
-Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais elles sont subordonnées à `docs/boutique/*` si elles contredisent le code actuel.
 
 ---
 
-## 1. Lecture obligatoire avant modification
+## 4. Chercher vite
 
-| Situation | Lire |
+| Besoin | Fichier principal |
 |---|---|
-| Repo complet | `../../AGENTS.md`, puis ce README |
-| Modification CSS | `../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
-| Modification ownership composant | `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
-| Modification modal | `../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` |
-| Besoin d'un contexte local historique | `docs/BOUTIQUE_DOCS_INDEX.md` |
+| Catégories / sous-catégories | `js/shop-schema.js` |
+| Rail catégories | `js/render/render-categories.js` + `js/controllers/home-controller.js` |
+| Catalogue / filtrage produits | `js/b-catalog.js` |
+| Carte produit | `js/render/render-product-card.js` |
+| Modal produit | `js/b-modal.js` |
+| Panier personnel | `js/b-cart.js` |
+| Partage du panier | `js/b-share-cart.js` |
+| Vue panier partagé participant/créateur | `js/b-group-view.js` |
+| API panier partagé frontend | `js/group/group-api.js` |
+| Statuts / helpers panier partagé | `js/group/group-helpers.js` |
+| Rendu créateur panier partagé | `js/group/group-render-creator.js` |
+| CSS panier / checkout / side-cart | `css/cart.css` |
+| CSS panier partagé | `css/group-cart-flow.css` |
+| CSS catégories | `css/categories.css` |
+| CSS produits | `css/products.css` |
+| CSS desktop | `css/boutique-desktop.css` |
+| Pipeline CSS | `scripts/deploy-css.js` |
+
+Pour le détail des owners, lire `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md`.
 
 ---
 
-## 2. Invariants Boutique actifs
+## 5. Commandes
 
-- Le JS gère le comportement, les classes d'état et les appels API.
-- Le CSS gère l'apparence, le layout et le responsive.
-- Aucun CSS structurel durable ne doit être injecté par JS.
-- Les sources CSS vivent dans `css/*.css`.
-- La prod charge uniquement `css/dist/*.css`.
-- Toute modification CSS source doit être suivie de `npm run deploy:css` ou `npm run bundle:css`.
-- Les fichiers `css/dist/*.css` ne se modifient jamais à la main.
-- Un composant = un owner documenté.
-- Les seules règles `!important` actives acceptées au 3 juin 2026 sont les guards desktop du drawer mobile dans `boutique-desktop.css`.
-
----
-
-## 3. Scripts disponibles
-
-Tous les scripts se lancent depuis `public/boutique`.
-
-| Commande | Rôle |
-|---|---|
-| `npm run deploy:css` | Bundler officiel : sources CSS → dist + cache-buster |
-| `npm run bundle:css` | Alias de compatibilité vers `deploy-css.js` |
-| `npm run check:cache` | Dry-run du bundler/cache-buster |
-| `npm run check:html` | Vérifie l'équilibre HTML et les IDs critiques |
-| `npm run check:imports` | Vérifie imports JS, existence, cycles, dead exports |
-| `npm run check:body-classes` | Vérifie les classes body ajoutées/retirées |
-| `npm run check:breakpoints` | Garde-fou breakpoints |
-| `npm run audit:arch` | Audit architecture Boutique |
-| `npm run audit:arch:live` | Génère la photo d'architecture réelle |
-| `npm run audit:ownership` | Génère la carte d'ownership live |
-| `npm run check:all` | Chaîne complète de garde-fous + e2e |
-
----
-
-## 4. Pipeline CSS actuel
-
-Source de vérité :
-
-```txt
-scripts/deploy-css.js
-```
-
-Bundles chargés par `index.html` :
-
-```txt
-css/dist/base.css
-css/dist/components.css
-css/dist/desktop.css
-css/dist/event.css
-```
-
-Composition actuelle résumée :
-
-```txt
-base.css       ← tokens + reset + layout + hero
-components.css ← categories + products + modal-shell + modal-media + modal-product + modal-product-lot4-hybrid + cart + interactions + hero-cart-proxy + group-cart-flow + shared-followup + identity
-desktop.css    ← boutique-desktop
-event.css      ← tokens + event
-```
-
-`modal-product-lot4-hybrid.css` est une extension officielle de `modal-product.css`, chargée immédiatement après lui. Elle contient la PDP hybride desktop rapatriée depuis `b-modal-approche-c-hybrid.js`.
-
----
-
-## 5. Workflow PR CSS Boutique
+Toutes les commandes se lancent depuis `public/boutique`.
 
 ```bash
-cd public/boutique
-
-# 1. Modifier uniquement les sources CSS
-# exemple : css/cart.css, css/modal-product.css, css/boutique-desktop.css
-
-# 2. Rebuilder les bundles et bumper les ?v= nécessaires
+# CSS
 npm run deploy:css
-
-# 3. Vérifier
 npm run check:cache
-npm run audit:arch
 
-# 4. Commit depuis la racine repo
-cd ../..
-git add public/boutique/css/ public/boutique/index.html public/boutique/.cache-buster-state.json
-git commit -m "style(boutique): ..."
+# JS / HTML / structure
+npm run check:html
+npm run check:imports
+npm run check:body-classes
+npm run check:breakpoints
+npm run audit:arch
+npm run audit:ownership
+
+# Garde-fou wording panier partagé Boutique First
+npm run check:group-wording
+
+# Validation complète
+npm run check:all
 ```
 
-Pour une PR Boutique non-CSS, lancer au minimum les garde-fous applicables (`check:html`, `check:imports`, `check:body-classes`, `audit:arch`).
+---
+
+## 6. Modifier du CSS
+
+1. Modifier uniquement la source owner dans `css/*.css`.
+2. Ne jamais modifier `css/dist/*.css` à la main.
+3. Rebuilder :
+
+```bash
+npm run deploy:css
+npm run check:cache
+npm run audit:arch
+```
+
+4. Commiter les sources modifiées + bundles dist + `index.html` si cache-buster changé + `.cache-buster-state.json`.
 
 ---
 
-## 6. Fichiers verrouillés — review obligatoire
+## 7. Modifier le panier partagé Boutique First
 
-Modifier ces fichiers sans review explicite est interdit. Ils portent la mécanique mobile/scroll :
+Checklist avant commit :
 
-- `js/b-pager.js` — moteur cage mobile + ghost loop
-- `js/b-store.js` — refs DOM partagées, `initDom()`
-- `js/b-scroll-owner.js` — détection mobile/desktop, scroll owner
-- script inline `<body>` dans `index.html` — proxy `window.scrollY`
+- Le lien reste `/boutique/?p=TOKEN`.
+- Le participant reste en lecture seule.
+- Le bouton argent dit `Régler ma part`.
+- Le paiement n'apparaît que si le panier est payable.
+- La fiche produit participant vient du snapshot, pas du catalogue live.
+- Aucun statut technique n'est visible.
+- Le retour paiement revient dans la boutique.
+
+Tests manuels minimum :
+
+1. `ready_to_pay` → bouton `Régler ma part` visible.
+2. `needs_validation` → articles visibles, pas de paiement, message clair.
+3. Fiche article lecture seule → aucun bouton ajouter/modifier/supprimer.
+4. Paiement success/cancel → retour boutique.
+5. Montant supérieur au reste → maximum annoncé et borné.
 
 ---
 
-## 7. En cas de doute
+## 8. En cas de doute
 
 | Situation | Action |
 |---|---|
-| Tu modifies du CSS sans savoir le bon owner | Lire `../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
-| Tu touches le DOM / rendu composant | Lire `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
+| Tu ne sais pas quel fichier toucher | Lire `../../docs/boutique/README.md` |
+| Tu touches du CSS | Lire `../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
+| Tu touches un composant JS/CSS | Lire `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
 | Tu touches la modal | Lire `../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` |
-| `audit:arch` plante | Lire le rapport, corriger avant commit |
-| Tu veux ajouter un nouveau CSS source | Ajouter dans `scripts/deploy-css.js`, documenter dans `docs/boutique/BOUTIQUE_CSS_PIPELINE.md`, puis `npm run deploy:css` |
-| Conflit entre docs | `docs/boutique/*` gagne sur `public/boutique/docs/*` sauf décision contraire explicite |
-
----
-
-*Ce README est aligné sur l'état du repo au 3 juin 2026 après le sprint de nettoyage CSS/ownership/garde-fous.*
+| Un ancien doc contredit Boutique First | Boutique First gagne |
+| Un test automatique échoue | Corriger avant commit ou documenter explicitement la dette dans `../../docs/chantier/STATUS.md` |
