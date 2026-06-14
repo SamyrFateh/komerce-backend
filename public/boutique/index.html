@@ -102,16 +102,32 @@ if('serviceWorker' in navigator){
       </svg>
       <!-- Bloc signature mobile : K + mot "Komerce" empilés (voir layout.css .k-logo-brand) -->
       <span class="k-logo-brand" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 22 155 176" class="k-logo-mini" aria-hidden="true" focusable="false">
-          <g stroke="#2a7a3e" stroke-width="15" stroke-linecap="round" fill="none">
-            <path d="M72 65.5V96M72 124v30.5"/>
-            <path d="M82.6 100.8 131.8 58.1M82.6 119.2l49.2 42.8M85.7 113 189.6 136.1"/>
+        <!-- viewBox élargi à x=286 pour inclure le cercle O (cx=234 r=38 → bord droit=272) + marge -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="48 22 238 176" class="k-logo-mini" aria-hidden="true" focusable="false">
+          <!-- traits K + nœuds + cercle O — animés -->
+          <g class="klm-green klm-lines" stroke="#2a7a3e" stroke-linecap="round" fill="none">
+            <g stroke-width="15">
+              <path d="M72 65.5V96M72 124v30.5"/>
+              <path d="M82.6 100.8 131.8 58.1M82.6 119.2l49.2 42.8M85.7 113 189.6 136.1"/>
+            </g>
+            <g stroke-width="13">
+              <circle cx="72" cy="44" r="15"/><circle cx="72" cy="176" r="15"/>
+              <circle cx="148" cy="44" r="15"/><circle cx="148" cy="176" r="15"/>
+            </g>
+            <circle cx="234" cy="146" r="38" stroke-width="15"/>
           </g>
-          <g fill="none" stroke="#2a7a3e" stroke-width="13">
-            <circle cx="72" cy="44" r="15"/><circle cx="72" cy="176" r="15"/>
-            <circle cx="148" cy="44" r="15"/><circle cx="148" cy="176" r="15"/>
+          <!-- points oranges animés -->
+          <g class="klm-heart">
+            <circle cx="72" cy="110" r="10" fill="#C85C2D"/>
+            <circle cx="234" cy="146" r="14" fill="#C85C2D"/>
           </g>
-          <circle cx="72" cy="110" r="10" fill="#C85C2D"/>
+          <!-- signal qui circule -->
+          <g class="klm-signal" fill="none" stroke-linecap="round">
+            <path class="klm-s1" pathLength="100" d="M85.7 113 189.6 136.1"/>
+            <path class="klm-s2" pathLength="100" d="M82.6 100.8 131.8 58.1"/>
+            <path class="klm-s3" pathLength="100" d="M82.6 119.2l49.2 42.8"/>
+            <circle class="klm-so" pathLength="100" cx="234" cy="146" r="38"/>
+          </g>
         </svg>
         <span class="k-logo-wordmark">Komerce</span>
       </span>
@@ -175,8 +191,8 @@ if('serviceWorker' in navigator){
         </div>
       </div>
       <div class="k-hero-bubble" aria-hidden="true">👀</div>
-      <!-- ═══ Logo électrisé en filigrane (mobile only — voir hero.css §logo-glow) ═══ -->
-      <div class="k-hero-logo-glow" aria-hidden="true">
+      <!-- logo-glow supprimé du hero (remplacé par le logo animé dans le header) -->
+      <div class="k-hero-logo-glow" aria-hidden="true" style="display:none!important">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" focusable="false">
           <!-- base : traits K + nœuds + cercle O -->
           <g class="klg-green klg-lines" fill="none" stroke="#2a7a3e" stroke-linecap="round">

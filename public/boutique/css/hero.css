@@ -235,11 +235,14 @@
   .k-hero-mini-slogan.k-hero-mini-slogan--premium {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 8px 14px 0;
-    text-align: left;
+    align-items: center;        /* centré horizontalement */
+    justify-content: center;    /* centré verticalement dans le hero */
+    padding: 0 8px;
+    text-align: center;
     pointer-events: none;
     z-index: 5;
+    /* légèrement dans la moitié haute */
+    padding-bottom: 20%;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
   .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
@@ -247,19 +250,25 @@
   .k-hero-mini-slogan--premium .k-hero-trust   { display: none; }
   .k-hero-mini-slogan--premium .k-line-1 {
     font-family: var(--font-display);
-    font-size: clamp(15px, 4vw, 18px);
+    font-size: clamp(18px, 5vw, 22px);
     font-weight: 900;
-    color: var(--text);
+    color: #fff;
     line-height: 1.1;
-    text-shadow: 0 0 10px var(--white), 0 0 20px var(--surface-white-92);
+    text-shadow:
+      0 0 8px rgba(0,0,0,.7),
+      0 2px 12px rgba(0,0,0,.5),
+      0 0 24px rgba(30,90,40,.6);
   }
   .k-hero-mini-slogan--premium .k-line-2 {
     font-family: var(--font-display);
-    font-size: clamp(17px, 4.5vw, 21px);
+    font-size: clamp(20px, 5.5vw, 26px);
     font-weight: 900;
-    color: var(--ocean-dark);
+    color: #fff;
     line-height: 1.05;
-    text-shadow: 0 0 10px var(--white), 0 0 20px var(--surface-white-92);
+    text-shadow:
+      0 0 8px rgba(0,0,0,.7),
+      0 2px 12px rgba(0,0,0,.5),
+      0 0 24px rgba(30,90,40,.6);
   }
 }
 
@@ -568,5 +577,73 @@
     border-radius: 999px;
     background: color-mix(in srgb, var(--white) 78%, transparent);
     border: 1px solid var(--border-text-06);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGO HEADER MOBILE ÉLECTRISÉ — k-logo-mini (mobile max-width:899px)
+   Classes : klm-green, klm-lines, klm-heart, klm-signal
+   Même rythme que klg-* mais scopé au header logo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 899px) {
+  .k-logo-mini {
+    --klm-bpm: 2.8s;
+    --klm-glow: 6px;
+    overflow: visible;
+  }
+
+  /* halo vert sur traits + nœuds + O */
+  .k-logo-mini .klm-green {
+    animation: klmHeartGlow var(--klm-bpm) ease-in-out infinite;
+  }
+  @keyframes klmHeartGlow {
+    0%   { filter: drop-shadow(0 0 .5px rgba(150,230,170,.2)); }
+    6%   { filter: drop-shadow(0 0 var(--klm-glow) rgba(150,230,170,.95)); }
+    13%  { filter: drop-shadow(0 0 1px rgba(150,230,170,.35)); }
+    20%  { filter: drop-shadow(0 0 calc(var(--klm-glow)*.8) rgba(150,230,170,.85)); }
+    30%  { filter: drop-shadow(0 0 .5px rgba(150,230,170,.2)); }
+    100% { filter: drop-shadow(0 0 .5px rgba(150,230,170,.2)); }
+  }
+
+  /* points oranges qui battent */
+  .k-logo-mini .klm-heart circle {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: klmHeartBeat var(--klm-bpm) ease-in-out infinite;
+  }
+  @keyframes klmHeartBeat {
+    0%   { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200,92,45,.4)); }
+    6%   { transform: scale(1.3);  filter: drop-shadow(0 0 var(--klm-glow) rgba(255,150,80,1)); }
+    13%  { transform: scale(1.02); filter: drop-shadow(0 0 1px rgba(200,92,45,.4)); }
+    20%  { transform: scale(1.2);  filter: drop-shadow(0 0 calc(var(--klm-glow)*.8) rgba(255,150,80,.9)); }
+    30%  { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200,92,45,.4)); }
+    100% { transform: scale(1);    filter: drop-shadow(0 0 1px rgba(200,92,45,.4)); }
+  }
+
+  /* signal électrique qui file le long des liaisons et du O */
+  .k-logo-mini .klm-signal path,
+  .k-logo-mini .klm-signal circle {
+    stroke: #c8ffe0;
+    stroke-width: 5;
+    stroke-dasharray: 18 82;
+    filter: drop-shadow(0 0 3px rgba(180,255,210,.9));
+    animation: klmSignal var(--klm-bpm) linear infinite;
+  }
+  .k-logo-mini .klm-signal .klm-s2 { animation-delay: .09s; }
+  .k-logo-mini .klm-signal .klm-s3 { animation-delay: .18s; }
+  .k-logo-mini .klm-signal .klm-so { animation-delay: .26s; }
+  @keyframes klmSignal {
+    0%   { stroke-dashoffset: 100; opacity: 0; }
+    4%   { opacity: 1; }
+    34%  { stroke-dashoffset: 0; opacity: 1; }
+    42%  { opacity: 0; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .k-logo-mini .klm-green,
+    .k-logo-mini .klm-heart circle,
+    .k-logo-mini .klm-signal path,
+    .k-logo-mini .klm-signal circle { animation: none; }
   }
 }
