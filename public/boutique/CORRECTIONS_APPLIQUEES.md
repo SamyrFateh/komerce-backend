@@ -181,3 +181,17 @@ Tous les hex hardcodés dans `identity.css` remplacés par les tokens CSS (`var(
 | ARCH-2 | — | Découpage `b-modal.js` (2 226 lignes) — chantier > 1 journée |
 | ARCH-3 | — | Bundler JS (esbuild/rollup) — décision d'architecture |
 | ARCH-7 | — | Tests Playwright F1–F5 — chantier dédié |
+
+---
+
+## Sprint 2026-06-15 — Ajustements visuels mobile (suite)
+
+## ✅ Search bar mobile — réduction supplémentaire
+**Fichier** : `css/layout.css`
+`.k-search` et `.k-search input` : `height: 34px → 30px`. `font-size: 16px` conservé (anti-zoom iOS, cf. FIX AUDIT 2026-06-11). `.k-search-icon` reste centré via `top:50%; transform:translateY(-50%)`, aucun ajustement nécessaire.
+
+## ✅ Slogan hero mobile — remonté encore
+**Fichier** : `css/hero.css`
+`.k-hero-mini-slogan--premium` (mobile, max-width:899px) : `padding-top: 3px → 0`. Le slogan est maintenant collé au bord supérieur du bandeau image.
+
+Bundle régénéré via `node scripts/deploy-css.js` → `base.css` v77 → v78.

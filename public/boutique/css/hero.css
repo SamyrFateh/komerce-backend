@@ -241,8 +241,8 @@
     text-align: center;
     pointer-events: none;
     z-index: 5;
-    /* ancré en haut, léger décalage pour ne pas coller au bord arrondi */
-    padding-top: 3px;
+    /* ancré en haut, collé au bord arrondi */
+    padding-top: 0;
     padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
