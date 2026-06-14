@@ -1,74 +1,51 @@
-# Pipeline CSS Boutique
+# Boutique — Pipeline CSS
 
-> **Statut** : doc d'architecture du système CSS Boutique  
-> **Date** : 3 juin 2026 — Sprint CSS final  
-> **Périmètre** : `public/boutique/css/*.css` sources + `public/boutique/css/dist/*.css` production
+> Mis à jour : **2026-06-14**  
+> Statut : document actif pour toute modification CSS Boutique.
 
 ---
 
-## 1. Ce qui est chargé en production
+## 1. Règle générale
 
-La boutique ne charge pas les fichiers CSS sources individuellement. Elle charge uniquement les bundles `dist` depuis `public/boutique/index.html` :
+La boutique ne charge pas les fichiers CSS sources individuellement. Elle charge uniquement les bundles `dist` depuis `public/boutique/index.html`.
 
-```html
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=21">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=36">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=31">
-<link rel="stylesheet" href="/boutique/css/dist/event.css?v=7">
-```
-
-Donc modifier `tokens.css`, `hero.css`, `modal-product.css`, `cart.css`, etc. n'a aucun effet visible en production tant que le déploiement CSS n'a pas tourné.
+Modifier une source CSS sans relancer le bundler ne change pas la production.
 
 ---
 
 ## 2. Source de vérité du bundling
 
-Le bundler actuel est :
+Bundler officiel :
 
 ```txt
 public/boutique/scripts/deploy-css.js
 ```
 
-Commande officielle :
+Commande :
 
 ```bash
 cd public/boutique
 npm run deploy:css
 ```
 
-`npm run bundle:css` pointe aussi vers `scripts/deploy-css.js` dans `package.json`.
+`npm run bundle:css` est un alias de compatibilité vers le même script.
 
-### Important
-
-`public/boutique/scripts/bundle-css.js` est un ancien bundler Sprint 3. Il peut encore exister dans le dépôt, mais il ne doit plus être considéré comme source de vérité. Toute documentation ou vérification doit se référer à `deploy-css.js`.
+Interdit : utiliser un ancien bundler comme source de vérité.
 
 ---
 
-## 3. Bundles générés par `deploy-css.js`
+## 3. Bundles production
 
-État réel du tableau `BUNDLES` dans `deploy-css.js` :
+Bundles chargés par `index.html` :
 
-```js
-const BUNDLES = [
-  {
-    out: 'base.css',
-    files: ['tokens', 'reset', 'layout', 'hero'],
-  },
-  {
-    out: 'components.css',
-    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
-            'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity'],
-  },
-  {
-    out: 'desktop.css',
-    files: ['boutique-desktop'],
-  },
-  {
-    out: 'event.css',
-    files: ['tokens', 'event'],
-  },
-];
+```txt
+css/dist/base.css
+css/dist/components.css
+css/dist/desktop.css
+css/dist/event.css
 ```
+
+`event.css` peut encore exister pour compatibilité ou surfaces legacy, mais la doctrine produit active est Boutique First. Aucune nouvelle UX panier partagé ne doit être construite dans une surface `event/workspace`.
 
 ---
 
@@ -78,7 +55,7 @@ const BUNDLES = [
 
 | Source | Rôle |
 |---|---|
-| `tokens.css` | Variables globales : couleurs, espacements, ombres, rayons, statuts |
+| `tokens.css` | Variables globales : couleurs, espacements, ombres, rayons |
 | `reset.css` | Reset minimal |
 | `layout.css` | Structure globale page, footer, safe-area |
 | `hero.css` | Hero mobile/base et variantes premium mobile |
@@ -92,47 +69,43 @@ const BUNDLES = [
 | `modal-shell.css` | Shell modal, overlay, topbar modal, navigation, scroll owner |
 | `modal-media.css` | Media produit, images, thumbnails, zoom |
 | `modal-product.css` | Infos produit, prix, livraison, paiement, suggestions PDP base |
-| `modal-product-lot4-hybrid.css` | Extension officielle de `modal-product.css` pour la PDP hybride desktop. Rapatriée depuis `b-modal-approche-c-hybrid.js`, chargée immédiatement après `modal-product.css` |
-| `cart.css` | Panier, side-cart base, checkout, OTP, cart pill, succès commande |
-| `interactions.css` | Animations, micro-interactions, scroll helpers, reduced-motion |
+| `modal-product-lot4-hybrid.css` | Extension officielle PDP hybride desktop |
+| `cart.css` | Panier, side-cart, checkout, OTP, succès commande |
+| `interactions.css` | Animations, micro-interactions, scroll helpers |
 | `hero-cart-proxy.css` | Interaction visuelle hero ↔ panier |
-| `group-cart-flow.css` | Flux panier collectif / groupe |
-| `shared-followup.css` | Suivi partagé / placeholder selon état du sprint |
-| `identity.css` | Identité légère / commandeur / état OTP si applicable |
+| `group-cart-flow.css` | Vue panier partagé Boutique First, suivi, lecture seule, règlement |
+| `shared-followup.css` | Suivi partagé / état de retour si encore utilisé |
+| `identity.css` | Identité légère, commandeur, états OTP si applicable |
 
 ### `desktop.css`
 
 | Source | Rôle |
 |---|---|
-| `boutique-desktop.css` | Enrichissements desktop : header, catégories desktop, side-cart desktop, guards desktop, home premium |
+| `boutique-desktop.css` | Desktop premium : header, catégories desktop, side-cart, hero desktop, sous-catégories desktop |
 
 ### `event.css`
 
 | Source | Rôle |
 |---|---|
-| `tokens.css` | Variables globales nécessaires aux pages `/event/*` |
-| `event.css` | Pages panier collectif / collective workspace |
+| `tokens.css` | Variables globales nécessaires aux pages legacy |
+| `event.css` | Compatibilité legacy event/workspace. Non canonique pour les nouveaux parcours Boutique First |
 
 ---
 
-## 5. Carte des owners par famille de sélecteurs
+## 5. Owners CSS rapides
 
 | Famille `.k-*` | Owner source | Bundle |
 |---|---|---|
 | `.k-hero-*` mobile/base | `hero.css` | `base.css` |
-| `.k-hero-*` desktop/premium desktop | `boutique-desktop.css` ou extension documentée | `desktop.css` |
-| `.k-cats-*`, `.k-chip` mobile | `categories.css` | `components.css` |
-| `.k-cats-*`, `.k-chip` desktop | `boutique-desktop.css` | `desktop.css` |
+| `.k-hero-*` desktop | `boutique-desktop.css` | `desktop.css` |
+| `.k-cats-*`, `.k-chip` | `categories.css` + desktop documenté | `components.css` / `desktop.css` |
 | `.k-grid`, `.k-card` | `products.css` | `components.css` |
 | `.k-modal-*` shell/topbar/overlay | `modal-shell.css` | `components.css` |
 | `.k-modal-*` media/images/zoom | `modal-media.css` | `components.css` |
-| `.k-modal-*` produit/prix/livraison/paiement/suggestions | `modal-product.css` | `components.css` |
-| `.k-buybox-*` PDP hybride desktop | `modal-product-lot4-hybrid.css` comme extension de `modal-product.css` | `components.css` |
-| `.k-cart-*`, `.k-side-cart`, `.k-sc-*` base | `cart.css` | `components.css` |
-| guards desktop du drawer mobile | `boutique-desktop.css` | `desktop.css` |
+| `.k-modal-*` produit/prix/livraison | `modal-product.css` | `components.css` |
+| `.k-cart-*`, `.k-side-cart`, `.k-sc-*` | `cart.css` | `components.css` |
 | `.k-group-*`, `.k-group-flow-*` | `group-cart-flow.css` | `components.css` |
-| `.ev-*` | `event.css` | `event.css` |
-| `.k-cw-*` | `event.css` si page event | `event.css` |
+| `.ev-*`, `.k-cw-*` | `event.css` legacy | `event.css` |
 
 ---
 
@@ -145,15 +118,14 @@ cd public/boutique
 npm run deploy:css
 ```
 
-À commiter avec la modification source :
+À commiter selon les bundles réellement modifiés :
 
 ```txt
+public/boutique/css/*.css
 public/boutique/css/dist/*.css
 public/boutique/index.html
 public/boutique/.cache-buster-state.json
 ```
-
-selon les bundles réellement modifiés.
 
 ### R2 — Ne jamais éditer `dist/*.css` directement
 
@@ -161,15 +133,11 @@ Les fichiers `dist` sont générés. Toute correction doit être faite dans le f
 
 ### R3 — Un composant = un owner principal
 
-Exceptions acceptées uniquement si elles sont documentées :
+Exceptions acceptées uniquement si elles sont documentées dans `BOUTIQUE_COMPONENT_OWNERSHIP.md`.
 
-- `modal-product-lot4-hybrid.css` est une extension officielle de `modal-product.css`.
-- les guards desktop du drawer mobile vivent dans `boutique-desktop.css` car ils neutralisent un état JS mobile en desktop.
-- les règles de cross-interaction légères peuvent vivre dans `interactions.css` si elles ne deviennent pas owner visuel secondaire.
+### R4 — Pas de CSS stable injecté par JS
 
-### R4 — Pas de CSS injecté durablement par JS
-
-Interdit dans `public/boutique/js` pour du style stable de composant :
+Interdit pour du style durable de composant :
 
 ```txt
 document.createElement('style')
@@ -179,59 +147,25 @@ setAttribute('style')
 innerHTML style=
 ```
 
-Le JS peut poser des classes d'état, pas dessiner les composants.
-
-### R5 — Pas de `!important` sauf garde documentée
-
-État accepté au 3 juin 2026 : les seuls `!important` actifs acceptés sont les guards desktop dans `boutique-desktop.css` sur `.k-cart-drawer.open` et `.k-cart-overlay.open`, pour empêcher l'affichage du drawer mobile en desktop.
-
-### R6 — Couleurs
-
-Les couleurs globales doivent venir de `tokens.css`. Les variables locales dans `event.css` sont acceptées uniquement si elles sont propres au design event et commentées.
+Si un overlay JS temporaire injecte du style, il doit être migré vers un owner CSS avant stabilisation.
 
 ---
 
-## 7. Vérifications utiles
+## 7. Tests CSS
+
+Après un changement CSS :
 
 ```bash
 cd public/boutique
-
-# CSS injecté par JS : doit rester vide ou limité à cas explicitement justifiés
-grep -RInE "createElement\(['\"]style|style\.textContent|style\.cssText|setAttribute\(['\"]style|innerHTML.*style=" js/
-
-# !important actifs
-grep -RIn "!important" css/*.css css/dist/*.css
-
-# Hex en dur hors tokens / cas locaux documentés
-grep -RInE "#[0-9a-fA-F]{3,8}" css/*.css css/dist/*.css
-
-# Rebuild officiel
 npm run deploy:css
-
-git diff --stat
+npm run check:cache
+npm run check:breakpoints
+npm run audit:arch
+npm run audit:ownership
 ```
 
----
+Pour une validation complète :
 
-## 8. Dette connue
-
-| Élément | Statut |
-|---|:-:|
-| CSS injecté par `b-mobile-premium-v1.js` | ✅ supprimé / rapatrié CSS |
-| CSS injecté par `b-home-premium-v1.js` | ✅ supprimé / rapatrié CSS |
-| CSS injecté par `b-modal-approche-c-hybrid.js` | ✅ supprimé / rapatrié dans `modal-product-lot4-hybrid.css` |
-| `modal-product-lot4-hybrid.css` absent de l'ancienne doc pipeline | ✅ corrigé dans cette doc |
-| `bundle-css.js` cité comme source de vérité | ✅ corrigé : source de vérité = `deploy-css.js` |
-| `!important` hero premium mobile | ✅ supprimé |
-| `!important` drawer desktop | ✅ conservés, justifiés et documentés |
-| `--ev-border-soft` local event | ✅ accepté si documenté dans `event.css` |
-| hook pre-commit de synchro CSS | ⏳ futur |
-
----
-
-## 9. Liens de référence
-
-- `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md`
-- `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`
-- `public/boutique/scripts/deploy-css.js`
-- `public/boutique/package.json`
+```bash
+npm run check:all
+```
