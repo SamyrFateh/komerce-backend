@@ -23,8 +23,7 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
-const { confirmPaymentCycle } = require('../services/order-payment-confirmation'); // [M2]
-const log = require('../utils/logger').child({ module: 'cash' }); // [M2/M4]
+const { collectCash } = require('../services/cash-operations'); // [R5]
 
 // ── Helper : is admin or relay agent ────────────────────────────────────────
 function isRelaisOrAdmin(req) {
@@ -48,101 +47,41 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
   try {
     await client.query('BEGIN');
     const { orderId } = req.params;
-    const agentId = req.user.id;
 
-    // 1. Vérifier que la commande existe et est cash (FOR UPDATE — évite les race conditions)
-    const { rows: [order] } = await client.query(`
-      SELECT id, total_kmf, payment_mode, status, relais_id
-      FROM orders WHERE id = $1 FOR UPDATE
-    `, [orderId]);
+    const result = await collectCash({ orderId, agentUser: req.user, dbClient: client });
 
-    if (!order) {
+    if (result.order_not_found) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Commande introuvable' });
     }
-    if (order.payment_mode !== 'cash_relais') {
+    if (result.invalid_payment_mode) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
     }
-
-    // PATCH P1-7 : guard statut
-    const INVALID_COLLECT_STATUSES = ['cancelled', 'refunded', 'collected'];
-    if (INVALID_COLLECT_STATUSES.includes(order.status)) {
+    if (result.invalid_status) {
       await client.query('ROLLBACK');
       return res.status(409).json({
-        error: `Collecte impossible — commande en statut '${order.status}'`,
-        current_status: order.status,
+        error: `Collecte impossible — commande en statut '${result.status}'`,
+        current_status: result.status,
       });
     }
-
-    // [M4] CROSS-RELAIS CHECK — agent_relais ne peut encaisser qu'au relais où il est affecté
-    if (req.user.role === 'agent_relais') {
-      let agentRelaisId = null;
-      let checkPossible = true;
-      try {
-        const { rows: [agent] } = await client.query(
-          'SELECT relais_id FROM users WHERE id = $1', [req.user.id]
-        );
-        agentRelaisId = agent?.relais_id || null;
-      } catch (e) {
-        checkPossible = false;
-        log.warn(`[CASH-COLLECT] users.relais_id query failed: \${e.message}`);
-      }
-
-      if (!checkPossible || !agentRelaisId) {
-        await client.query('ROLLBACK');
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)`,
-          [`agent_relais sans relais_id tente cash_collect: user=\${req.user.id}`,
-           JSON.stringify({ order_id: orderId, user_id: req.user.id })]
-        ).catch(() => {});
-        return res.status(403).json({ error: 'Configuration agent incomplète — contactez un admin' });
-      }
-
-      if (String(agentRelaisId) !== String(order.relais_id)) {
-        await client.query('ROLLBACK');
-        log.warn(`[CASH-COLLECT] ⛔ Cross-relais refusé — agent \${req.user.id} (relais \${agentRelaisId}) tentait commande \${orderId} (relais \${order.relais_id})`);
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_collect', $1, $2)`,
-          [`Cross-relais refusé — order \${orderId}`,
-           JSON.stringify({ user_id: req.user.id, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id })]
-        ).catch(() => {});
-        return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\'encaisser' });
-      }
-    }
-
-    // 2. Vérifier pas de doublon
-    const { rows: existing } = await client.query(
-      'SELECT id FROM cash_collections WHERE order_id = $1', [orderId]
-    );
-    if (existing.length > 0) {
+    if (result.agent_config_error) {
       await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'Cash déjà déclaré pour cette commande', collection_id: existing[0].id });
+      return res.status(403).json({ error: 'Configuration agent incomplète — contactez un admin' });
     }
-
-    // 3. Option C : montant = order.total_kmf (auto)
-    const amountKmf = Number(order.total_kmf);
-
-    const { rows: [collection] } = await client.query(`
-      INSERT INTO cash_collections (order_id, amount_kmf, collected_by, relais_id)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `, [orderId, amountKmf, agentId, order.relais_id]);
-
-    // [M2] Déclencher le cycle paiement → stock (confirmPaymentCycle)
-    // Avant ce fix, la commande restait en 'pending' après encaissement cash.
-    const cycleResult = await confirmPaymentCycle({
-      orderId,
-      actor:    { id: req.user.id, role: req.user.role },
-      source:   'cash_confirm',
-      dbClient: client,
-    });
-
-    if (cycleResult.stockBlocked) {
+    if (result.cross_relais_blocked) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas l\'encaisser' });
+    }
+    if (result.already_collected) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Cash déjà déclaré pour cette commande', collection_id: result.collection_id });
+    }
+    if (result.stock_blocked) {
       await client.query('ROLLBACK');
       return res.status(409).json({
         error: 'Stock insuffisant — encaissement annulé',
-        insufficient_items: cycleResult.insufficientItems,
+        insufficient_items: result.insufficient_items,
       });
     }
 
@@ -150,9 +89,9 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
 
     res.status(201).json({
       success: true,
-      message: `Cash confirmé : ${amountKmf.toLocaleString('fr-FR')} KMF`,
-      collection,
-      payment_cycle: { noop: cycleResult.noop },
+      message: `Cash confirmé : ${result.amount_kmf.toLocaleString('fr-FR')} KMF`,
+      collection: result.collection,
+      payment_cycle: { noop: result.noop },
     });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

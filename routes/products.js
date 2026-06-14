@@ -17,6 +17,7 @@ const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
 const { recordProductPriceChange } = require('../services/product-price-audit');
 const { auditProductStockChange, validatePublicationUpdate } = require('../services/product-publication-guard');
+const productAdminService = require('../services/product-admin-service');
 const log = require('../utils/logger').child({ module: 'products' });
 
 // ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ UUID validation helper ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬
@@ -27,64 +28,6 @@ function requireUUID(req, res, next) {
     return res.status(400).json({ error: 'ID produit invalide' });
   }
   next();
-}
-
-async function validateProductTaxonomyPayload(res, payload) {
-  const category = payload.category;
-  const subcategory = payload.subcategory;
-
-  if (!category) return true;
-
-  const { rows: [cat] } = await db.query(
-    `SELECT key, label
-       FROM boutique_categories
-      WHERE is_active = TRUE
-        AND (key = $1 OR $1 = ANY(db_keys))
-      LIMIT 1`,
-    [category]
-  );
-
-  if (!cat) {
-    const { rows } = await db.query(
-      `SELECT key, label, db_keys
-         FROM boutique_categories
-        WHERE is_active = TRUE
-        ORDER BY display_order`
-    );
-    return res.status(422).json({
-      error: `CatÃƒÆ’Ã‚©gorie invalide : "${category}"`,
-      validCategories: rows,
-    });
-  }
-
-  if (subcategory) {
-    const { rows: [sub] } = await db.query(
-      `SELECT key, label
-         FROM boutique_subcategories
-        WHERE category_key = $1
-          AND key = $2
-          AND is_active = TRUE
-        LIMIT 1`,
-      [cat.key, subcategory]
-    );
-
-    if (!sub) {
-      const { rows } = await db.query(
-        `SELECT key, label
-           FROM boutique_subcategories
-          WHERE category_key = $1
-            AND is_active = TRUE
-          ORDER BY display_order`,
-        [cat.key]
-      );
-      return res.status(422).json({
-        error: `Sous-catÃƒÆ’Ã‚©gorie invalide : "${subcategory}" pour "${category}"`,
-        validSubcategories: rows,
-      });
-    }
-  }
-
-  return true;
 }
 
 
@@ -328,8 +271,8 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
       return res.status(400).json(publicationCheck);
     }
 
-    const taxonomyOk = await validateProductTaxonomyPayload(res, { category, subcategory });
-    if (taxonomyOk !== true) return;
+    const taxonomyResult = await productAdminService.validateProductTaxonomyPayload(db, { category, subcategory });
+    if (!taxonomyResult.ok) return res.status(taxonomyResult.status).json(taxonomyResult.body);
 
     const { rows: [product] } = await db.query(
       `INSERT INTO products
@@ -423,8 +366,8 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
     if (req.body.category !== undefined || req.body.subcategory !== undefined) {
       const nextCategory = req.body.category !== undefined ? req.body.category : before.category;
       const nextSubcategory = req.body.subcategory !== undefined ? req.body.subcategory : before.subcategory;
-      const taxonomyOk = await validateProductTaxonomyPayload(res, { category: nextCategory, subcategory: nextSubcategory });
-      if (taxonomyOk !== true) return;
+      const taxonomyResult = await productAdminService.validateProductTaxonomyPayload(db, { category: nextCategory, subcategory: nextSubcategory });
+      if (!taxonomyResult.ok) return res.status(taxonomyResult.status).json(taxonomyResult.body);
     }
 
     values.push(req.params.id);
@@ -581,111 +524,15 @@ router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 });
 
 router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
-  const client = await db.getClient();
   try {
-    const { variants } = req.body;
-
-    if (!Array.isArray(variants)) {
-      return res.status(400).json({ error: 'variants doit être un tableau' });
-    }
-    if (variants.length > 200) {
-      return res.status(400).json({ error: 'Maximum 200 variantes par produit' });
-    }
-
-    for (const v of variants) {
-      if (!v.type || typeof v.type !== 'string' || v.type.trim().length === 0) {
-        return res.status(400).json({ error: 'Chaque variante doit avoir un "type" (ex: "Taille")' });
-      }
-      if (!v.value || typeof v.value !== 'string' || v.value.trim().length === 0) {
-        return res.status(400).json({ error: 'Chaque variante doit avoir une "value" (ex: "M")' });
-      }
-      if (v.stock !== undefined && v.stock !== null && (typeof v.stock !== 'number' || v.stock < 0)) {
-return res.status(400).json({ error: `stock invalide pour ${v.type}:${v.value} ƒ¢š¬¬ entier >= 0 ou null` });
-      }
-      if (v.price_kmf !== undefined && v.price_kmf !== null && (typeof v.price_kmf !== 'number' || v.price_kmf < 0)) {
-return res.status(400).json({ error: `price_kmf invalide pour ${v.type}:${v.value} ƒ¢š¬¬ entier >= 0 ou null` });
-      }
-    }
-
-    await client.query('BEGIN');
-
-    const { rows: [product] } = await client.query(
-      'SELECT id, name FROM products WHERE id = $1 FOR UPDATE',
-      [req.params.id]
-    );
-    if (!product) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Produit introuvable' });
-    }
-
-    if (variants.length === 0) {
-      const { rows: [pending] } = await client.query(
-        `SELECT COUNT(*)::int AS cnt
-           FROM order_items oi
-           JOIN orders o ON o.id = oi.order_id
-          WHERE oi.product_id = $1
-            AND oi.variant_combo IS NOT NULL
-            AND o.status NOT IN ('collected', 'cancelled', 'refunded')`,
-        [req.params.id]
-      );
-      if (pending.cnt > 0) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({
-          error: `Impossible de supprimer les variantes : ${pending.cnt} commande(s) en cours y font rÃƒÆ’Ã‚©fÃƒÆ’Ã‚©rence`,
-          hint: 'Attendez que les commandes en cours soient finalisÃƒÆ’Ã‚©es ou annulÃƒÆ’Ã‚©es',
-        });
-      }
-    }
-
-    await client.query('DELETE FROM product_variants WHERE product_id = $1', [req.params.id]);
-
-    const inserted = [];
-    for (let i = 0; i < variants.length; i++) {
-      const v = variants[i];
-      const { rows: [row] } = await client.query(
-        `INSERT INTO product_variants
-           (product_id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
-        [
-          req.params.id,
-          v.type.trim(),
-          v.value.trim(),
-          v.sku    || null,
-          v.stock  !== undefined ? v.stock : 0,
-          v.price_kmf || null,
-          v.image_url || null,
-          v.display_order !== undefined ? v.display_order : i,
-        ]
-      );
-      inserted.push(row);
-    }
-
-    await client.query('COMMIT');
-
-    const { rows: [updated] } = await db.query(
-      'SELECT id, name, has_variants FROM products WHERE id = $1',
-      [req.params.id]
-    );
-
-    res.json({
-      message:      `${inserted.length} variante(s) enregistrÃƒÆ’Ã‚©e(s) pour "${product.name}"`,
-      product_id:   req.params.id,
-      has_variants: updated.has_variants,
-      count:        inserted.length,
-      variants:     inserted,
-    });
+    const result = await productAdminService.replaceVariants(db, req.params.id, req.body.variants);
+    res.json(result);
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    if (err.code === '23505') {
-      return res.status(409).json({
-error: 'Doublon dƒ’‚©tectƒ’‚© ƒ¢€š¬‚¬ deux variantes ont le mƒ’‚ªme type et la mƒ’‚ªme valeur',
-        detail: err.detail,
-      });
-    }
+    if (err.status === 400) return res.status(400).json({ error: err.message });
+    if (err.status === 404) return res.status(404).json({ error: err.message });
+    if (err.status === 409) return res.status(409).json({ error: err.message, hint: err.hint });
+    if (err.code === '23505') return res.status(409).json({ error: 'Doublon détecté — deux variantes ont le même type et la même valeur', detail: err.detail });
     next(err);
-  } finally {
-    client.release();
   }
 });
 

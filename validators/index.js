@@ -457,7 +457,9 @@ const scans = {
   verifyQr: {
     body: Joi.object({
       token:    safeStr(500).required(),
-      order_id: uuid.required(),
+      // [S2] order_id optionnel — recherche par token seul (corrige le bug
+      // frontend qui n'envoyait pas order_id). Voir routes/scans.js.
+      order_id: uuid,
     }),
   },
 };

@@ -31,6 +31,7 @@ const log = require('../utils/logger').child({ module: 'purchasing' });
 
 const { triggerPurchasing } = require('../services/purchasing-trigger-service');
 const { processReceive }    = require('../services/purchasing-receive-service');
+const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -174,105 +175,59 @@ router.post('/suppliers/:id/map', ...guard, async (req, res, next) => {
 // ─── DELETE /api/purchasing/suppliers/:id — supprimer un fournisseur ──────────
 
 router.delete('/suppliers/:id', ...guard, async (req, res, next) => {
-  const client = await db.getClient();
   try {
-    await client.query('BEGIN');
-
-    const { id } = req.params;
-
-    const { rows: [sup] } = await client.query(
-      'SELECT id, name FROM suppliers WHERE id = $1 AND deleted_at IS NULL', [id]
-    );
-    if (!sup) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Fournisseur non trouvé' });
-    }
-
-    const isTestSupplier = sup.name.includes('[TEST]');
-    const forceDelete    = req.headers['x-force-delete'] === 'true';
-
-    const { rows: confirmedPOs } = await client.query(
-      `SELECT id FROM purchase_orders WHERE supplier_id = $1 AND status = 'confirmed' LIMIT 1`,
-      [id]
-    );
-    if (confirmedPOs.length && !(isTestSupplier && forceDelete)) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({
-        error: 'Impossible de supprimer ce fournisseur : des commandes confirmées existent. Annulez-les d\'abord.',
-      });
-    }
-
-    const posQuery = (isTestSupplier && forceDelete)
-      ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
-      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
-    const { rowCount: posCancelled } = await client.query(posQuery, [id]);
-
-    const { rowCount: mappingsDeleted } = await client.query(
-      'UPDATE product_suppliers SET deleted_at = NOW() WHERE supplier_id = $1 AND deleted_at IS NULL', [id]
-    );
-
-    await client.query('UPDATE suppliers SET deleted_at = NOW() WHERE id = $1', [id]);
-    await client.query('COMMIT');
-
-    log.info(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s)`);
-    res.json({ deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_cancelled: posCancelled });
-
+    const forceDelete = req.headers['x-force-delete'] === 'true';
+    const result = await deleteSupplier(req.params.id, forceDelete);
+    res.json(result);
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (err.status) return res.status(err.status).json({ error: err.message });
     next(err);
-  } finally {
-    client.release();
   }
-});
-
-// ─── GET /api/purchasing/order/:order_id/completeness [v8.2] ─────────────────
-
-router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => {
-  const { order_id } = req.params;
-  try {
-    // [B1] po.qty | [B2] po.hub_received_at | [B3] UUID → pas parseInt | [B4] JOIN via product_suppliers
-    const result = await db.query(
-      `SELECT
-         po.id,
-         p.name                                        AS product_name,
-         po.qty,
-         po.received_qty,
-         po.status,
-         (po.received_qty >= po.qty)                   AS is_complete,
-         (po.qty - po.received_qty)                    AS qty_missing,
-         s.name                                        AS supplier_name,
-         po.hub_received_at
-       FROM purchase_orders po
-       JOIN product_suppliers ps ON ps.id = po.product_supplier_id
-       JOIN products p ON p.id = ps.product_id
-       LEFT JOIN suppliers s ON s.id = ps.supplier_id
-       WHERE po.order_id = $1
-         AND po.status != 'cancelled'
-       ORDER BY po.id`,
-      [order_id]
-    );
-
-    const items       = result.rows;
-    const total       = items.length;
-    const recus       = items.filter(i => i.is_complete).length;
-    const is_complete = recus === total && total > 0;
-
-    res.json({
-      order_id,
-      is_complete,
-      items_received:   recus,
-      items_total:      total,
-      items_missing:    total - recus,
-      pct_received:     total > 0 ? Math.round(100 * recus / total) : 0,
-      items
-    });
-
-  } catch(err) { next(err); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //   COMMANDES PAR ORDER_ID — déclaré après /suppliers pour éviter conflit Express
 // ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── GET /api/purchasing/order/:order_id/completeness [v8.2] ─────────────────
+
+router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => {
+  try {
+    const { order_id } = req.params;
+
+    const { rows: pos } = await db.query(`
+      SELECT
+        po.id, po.status, po.supplier_id, po.qty_ordered, po.qty_received,
+        s.name AS supplier_name,
+        COALESCE(po.qty_received, 0)                              AS received,
+        COALESCE(po.qty_ordered, 0)                               AS ordered,
+        COALESCE(po.qty_ordered, 0) - COALESCE(po.qty_received, 0) AS remaining
+      FROM purchase_orders po
+      JOIN suppliers s ON s.id = po.supplier_id
+      WHERE po.order_id = $1
+      ORDER BY po.created_at ASC
+    `, [order_id]);
+
+    if (!pos.length) {
+      return res.status(404).json({ error: 'Aucune purchase order pour cette commande' });
+    }
+
+    const totalOrdered  = pos.reduce((s, p) => s + (p.ordered  || 0), 0);
+    const totalReceived = pos.reduce((s, p) => s + (p.received || 0), 0);
+    const allReceived   = pos.every(p => ['received', 'partially_received', 'hub_received'].includes(p.status));
+    const anyPending    = pos.some(p => ['pending', 'notified', 'confirmed'].includes(p.status));
+
+    res.json({
+      order_id,
+      complete:        allReceived,
+      any_pending:     anyPending,
+      total_ordered:   totalOrdered,
+      total_received:  totalReceived,
+      total_remaining: totalOrdered - totalReceived,
+      purchase_orders: pos,
+    });
+  } catch (err) { next(err); }
+});
 
 // ─── GET /api/purchasing/:order_id ───────────────────────────────────────────
 
@@ -294,62 +249,19 @@ router.get('/:order_id', ...guard, async (req, res, next) => {
 
 router.post('/:order_id/confirm', ...guard, async (req, res, next) => {
   try {
-    const {
-      purchase_order_id,
-      supplier_order_id,
-      unit_price_aed,
-      tracking_url,
-      tracking_number,
-      notes,
-    } = req.body;
-
-    if (!purchase_order_id) {
+    if (!req.body.purchase_order_id) {
       return res.status(400).json({ error: 'purchase_order_id obligatoire' });
     }
-
-    // A-BE-14 : vérifier le statut courant avant UPDATE
-    const { rows: [currentPo] } = await db.query(
-      'SELECT id, status FROM purchase_orders WHERE id = $1 AND order_id = $2',
-      [purchase_order_id, req.params.order_id]
+    const result = await confirmPurchaseOrder(
+      req.body.purchase_order_id,
+      req.params.order_id,
+      req.body
     );
-    if (!currentPo) return res.status(404).json({ error: 'Purchase order introuvable' });
-
-    const CONFIRMABLE_STATUSES = ['pending', 'notified'];
-    if (!CONFIRMABLE_STATUSES.includes(currentPo.status)) {
-      return res.status(409).json({
-        error: `Impossible de confirmer une PO au statut "${currentPo.status}". Statuts autorisés : pending, notified.`,
-        current_status: currentPo.status,
-      });
-    }
-
-    const { rows: [po] } = await db.query(`
-      UPDATE purchase_orders
-      SET
-        status            = 'confirmed',
-        supplier_order_id = COALESCE($1, supplier_order_id),
-        unit_price_aed    = COALESCE($2, unit_price_aed),
-        tracking_url      = COALESCE($3, tracking_url),
-        tracking_number   = COALESCE($4, tracking_number),
-        notes             = COALESCE($5, notes),
-        ordered_at        = COALESCE(ordered_at, NOW()),
-        confirmed_at      = NOW(),
-        updated_at        = NOW()
-      WHERE id = $6 AND order_id = $7
-      RETURNING *
-    `, [supplier_order_id, unit_price_aed, tracking_url, tracking_number, notes, purchase_order_id, req.params.order_id]);
-
-    if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
-
-    const { rows: [sup] } = await db.query('SELECT name FROM suppliers WHERE id = $1', [po.supplier_id]);
-    if (sup) {
-      await db.query(
-        'UPDATE orders SET supplier_name = $1, supplier_invoice_url = COALESCE($2, supplier_invoice_url), updated_at = NOW() WHERE id = $3',
-        [sup.name, tracking_url || null, req.params.order_id]
-      );
-    }
-
-    res.json({ success: true, purchase_order: po });
-  } catch(err) { next(err); }
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status });
+    next(err);
+  }
 });
 
 // ─── POST /api/purchasing/:id/receive [v8.2] ─────────────────────────────────
@@ -377,32 +289,13 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
 
 router.delete('/po/:po_id', ...guard, async (req, res, next) => {
   try {
-    const { po_id } = req.params;
     const forceDelete = req.headers['x-force-delete'] === 'true';
-
-    const { rows: [po] } = await db.query(
-      'SELECT * FROM purchase_orders WHERE id = $1', [po_id]
-    );
-    if (!po) return res.status(404).json({ error: 'Purchase order introuvable' });
-
-    // A-BE-13 : bloquer l'annulation sur tous les statuts de réception
-    const TERMINAL_RECEIVED = ['received', 'partially_received', 'hub_received'];
-    if (TERMINAL_RECEIVED.includes(po.status) && !forceDelete) {
-      return res.status(409).json({
-        error: `Impossible d'annuler une PO au statut "${po.status}". Utilisez x-force-delete si l'annulation est intentionnelle.`,
-        current_status: po.status,
-      });
-    }
-
-    await db.query(
-      `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
-      [po_id]
-    );
-
-    log.info(`[PURCHASING] PO annulée : ${po_id} (était: ${po.status})`);
-    res.json({ cancelled: true, po_id, previous_status: po.status });
-
-  } catch(err) { next(err); }
+    const result = await cancelPurchaseOrder(req.params.po_id, forceDelete);
+    res.json(result);
+  } catch (err) {
+    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status });
+    next(err);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

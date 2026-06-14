@@ -19,166 +19,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { randomBytes, randomUUID } = require('crypto');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { transitionOrderStatus } = require('../services/order-status-machine');
+const { confirmCashAndCreateParcel, createParcelManually } = require('../services/parcel-auto-create-service');
 const log = require('../utils/logger').child({ module: 'order-api-v2' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
-
-// ═══════════════════════════════════════════════════════════════
-// SHARED: Auto-create parcel for a confirmed+paid order
-// ═══════════════════════════════════════════════════════════════
-
-async function autoCreateParcel(client, orderId, actor) {
-  // 1. Load order
-  const { rows: [order] } = await client.query(
-    `SELECT o.id, o.reference, o.status, o.payment_status, o.payment_mode,
-       o.total_kmf, o.user_id, o.relais_id, o.destination_island,
-       u.full_name AS customer_name, u.phone AS customer_phone,
-       r.name AS relais_name, r.island AS relais_island
-     FROM orders o
-     LEFT JOIN users u ON u.id = o.user_id
-     LEFT JOIN relais r ON r.id = o.relais_id
-     WHERE o.id = $1`, [orderId]
-  );
-  if (!order) return { success: false, reason: 'order_not_found' };
-
-  // 2. Skip if not paid
-  if (order.payment_status !== 'paid') {
-    return { success: false, reason: 'not_paid' };
-  }
-
-  // 3. Skip if already has parcel
-  const { rows: existing } = await client.query(
-    'SELECT id, reference FROM parcels WHERE order_id = $1', [orderId]
-  );
-  if (existing.length > 0) {
-    return { success: false, reason: 'parcel_exists', parcel_ref: existing[0].reference };
-  }
-
-  // 4. Get order items
-  const { rows: items } = await client.query(
-    `SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
-       p.name AS product_name, p.weight_kg AS product_weight
-     FROM order_items oi
-     LEFT JOIN products p ON p.id = oi.product_id
-     WHERE oi.order_id = $1`, [orderId]
-  );
-  if (!items.length) return { success: false, reason: 'no_items' };
-
-  // 5. Generate parcel reference
-  const year = new Date().getFullYear();
-  const { rows: [{ max_seq }] } = await client.query(
-    `SELECT COALESCE(MAX(CAST(SUBSTRING(reference FROM 'PCL-\\d{4}-(\\d+)') AS INT)), 0) AS max_seq
-     FROM parcels WHERE reference LIKE $1`, [`PCL-${year}-%`]
-  );
-  const newSeq = (max_seq || 0) + 1;
-  const parcelRef = `PCL-${year}-${String(newSeq).padStart(4, '0')}`;
-
-  // 6. Compute weight + totals
-  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-  const weightKg = items.reduce((s, i) => s + (Number(i.product_weight) || 0.5) * i.quantity, 0);
-
-  // 7. Generate pickup code
-  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const pickupCode = Array.from({ length: 6 }, () => {
-    let b; do { b = randomBytes(1)[0]; } while (b >= 216);
-    return CHARS[b % 36];
-  }).join('');
-
-  // 8. Insert parcel
-  const parcelId = randomUUID();
-  await client.query(
-    `INSERT INTO parcels (
-       id, order_id, reference, type, status, relais_id,
-       weight_kg, destination_island, recipient_name, recipient_phone,
-       items_count, total_qty, pickup_code, prepared_at
-     ) VALUES (
-       $1::uuid, $2::uuid, $3, 'standard', 'preparation', $4::uuid,
-       $5, $6, $7, $8,
-       $9, $10, $11, NOW()
-     )`,
-    [
-      parcelId, orderId, parcelRef, order.relais_id,
-      weightKg.toFixed(2), order.relais_island || order.destination_island || 'Comores',
-      order.customer_name || 'Client', order.customer_phone || '',
-      items.length, totalQty, pickupCode,
-    ]
-  );
-
-  // 9. Insert parcel_items
-  for (const item of items) {
-    try {
-      await client.query('SAVEPOINT sp_pi');
-      await client.query(
-        `INSERT INTO parcel_items (
-           id, parcel_id, order_item_id, product_id, quantity,
-           qty_allocated, qty_packed, qty_shipped, qty_received, qty_collected,
-           verified, product_name
-         ) VALUES (
-           $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5,
-           $6, $7, 0, 0, 0,
-           false, $8
-         )`,
-        [randomUUID(), parcelId, item.id, item.product_id, item.quantity,
-         item.quantity, item.quantity, item.product_name]
-      );
-      await client.query('RELEASE SAVEPOINT sp_pi');
-    } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_pi'); }
-  }
-
-  // 10. Insert initial scan event
-  try {
-    await client.query('SAVEPOINT sp_scan');
-    await client.query(
-      `INSERT INTO scan_events (
-         id, parcel_id, order_id, event_type,
-         scan_code, scanned_by, actor_name, actor_role,
-         location, notes, status, created_at
-       ) VALUES (
-         $1::uuid, $2::uuid, $3::uuid, 'preparation',
-         $4, $5::uuid, $6, $7,
-         'Hub', $8, 'applied', NOW()
-       )`,
-      [randomUUID(), parcelId, orderId, parcelRef,
-       actor.id || null, actor.name || 'Système',
-       actor.role === 'agent_hub' ? 'hub_agent' : 'system',
-       `Colis ${parcelRef} auto-créé pour ${order.reference}`]
-    );
-    await client.query('RELEASE SAVEPOINT sp_scan');
-  } catch(_) { await client.query('ROLLBACK TO SAVEPOINT sp_scan'); }
-
-  // 11. Transition order: confirmed → ordered → preparation
-  if (order.status === 'confirmed') {
-    await transitionOrderStatus({
-      orderId, newStatus: 'ordered',
-      actor: { id: actor.id, role: actor.role || 'system' },
-      source: 'auto_parcel', note: 'Auto: colis créé → ordered',
-      dbClient: client,
-    }).catch(() => {});
-  }
-
-  await transitionOrderStatus({
-    orderId, newStatus: 'preparation',
-    actor: { id: actor.id, role: actor.role || 'system' },
-    source: 'auto_parcel', note: `Auto: colis ${parcelRef} → préparation`,
-    dbClient: client,
-  }).catch(() => {});
-
-  log.info(`📦 AUTO-PARCEL: ${parcelRef} created for ${order.reference}`);
-
-  return {
-    success: true,
-    parcel: {
-      id: parcelId, reference: parcelRef, status: 'preparation',
-      pickup_code: pickupCode, order_ref: order.reference,
-      nb_items: items.length, total_qty: totalQty,
-      weight_kg: Number(weightKg.toFixed(2)),
-    }
-  };
-}
 
 // ═══════════════════════════════════════════════════════════════
 // 0. GET / — Liste complète de toutes les commandes + KPIs
@@ -363,78 +209,26 @@ router.get('/:ref', ...guard, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════
 
 router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
-  const client = await db.getClient();
   try {
-    await client.query('BEGIN');
-    const { ref } = req.params;
-
-    const { rows: [order] } = await client.query(
-      `SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status, o.total_kmf, o.user_id,
-         u.full_name AS customer_name, u.phone AS customer_phone
-       FROM orders o
-       LEFT JOIN users u ON u.id = o.user_id
-       WHERE o.reference = $1 OR o.id::text = $1`, [ref]
-    );
-
-    if (!order) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: `Commande ${ref} introuvable` });
-    }
-    if (order.payment_mode !== 'cash_relais') {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
-    }
-    if (order.payment_status === 'paid') {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Paiement déjà confirmé' });
-    }
-
-    // Update payment fields
-    await client.query(
-      `UPDATE orders SET payment_status = 'paid',
-         cash_paid_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [order.id]
-    );
-
-    // Transition status → confirmed
-    const _confirmResult = await transitionOrderStatus({
-      orderId: order.id,
-      newStatus: 'confirmed',
-      actor: { id: req.user?.id || null, role: req.user?.role || 'system' },
-      source: 'cash_confirm',
-      note: 'Paiement cash confirmé par agent',
-      dbClient: client,
-    });
-    if (!_confirmResult.success) {
-      log.warn(`[ORDER-V2] transitionOrderStatus confirm failed for ${order.id}: ${_confirmResult.error}`);
-    }
-
-    // ✅ AUTO-PARCEL: create parcel automatically after payment confirmation
     const actor = {
-      id: req.user?.id || null,
-      name: req.user?.full_name || 'Admin CT',
-      role: req.user?.role || 'system',
+      id:        req.user?.id        || null,
+      role:      req.user?.role      || 'system',
+      full_name: req.user?.full_name || 'Admin CT',
+      email:     req.user?.email,
     };
-    const parcelResult = await autoCreateParcel(client, order.id, actor);
+    const { order, parcelResult } = await confirmCashAndCreateParcel(req.params.ref, actor);
 
-    await client.query('COMMIT');
+    log.info(`💰 Cash confirmed + auto-parcel: ${order.reference} by ${actor.email || 'system'}`);
 
-    log.info(`💰 Cash confirmed + auto-parcel: ${order.reference} by ${req.user?.email || 'system'}`);
-
-    // NOTIFICATIONS (fire-and-forget)
+    // Notifications (fire-and-forget)
     const notif = require('../services/notification-service');
     notif.notifyPaymentConfirmed(order.id, order.reference)
-      .then(result => {
-        if (result?.invoice) {
-          log.info(`🧾 Invoice ${result.invoice} sent for ${order.reference}`);
-        }
-      })
-      .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF] âŒ'));
+      .then(r => { if (r?.invoice) log.info(`🧾 Invoice ${r.invoice} sent for ${order.reference}`); })
+      .catch(e => log.error({ err: e }, '[CONFIRM-NOTIF]'));
 
     if (parcelResult.success) {
-      const notifSvc = require('../services/notification-service');
-      notifSvc.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
-        .catch(e => log.error({ err: e }, '[AUTO-PARCEL-NOTIF] âŒ'));
+      notif.notifyParcelCreated(parcelResult.parcel.reference, order.id, order.reference)
+        .catch(e => log.error({ err: e }, '[AUTO-PARCEL-NOTIF]'));
     }
 
     res.json({
@@ -443,21 +237,19 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
         ? `✅ Paiement confirmé + 📦 Colis ${parcelResult.parcel.reference} créé automatiquement`
         : `✅ Paiement confirmé pour ${order.reference} — Facture envoyée par WhatsApp`,
       order: {
-        reference: order.reference,
-        old_status: order.status,
-        new_status: parcelResult.success ? 'preparation' : 'confirmed',
+        reference:      order.reference,
+        old_status:     order.status,
+        new_status:     parcelResult.success ? 'preparation' : 'confirmed',
         payment_status: 'paid',
-        total_kmf: Number(order.total_kmf),
-        customer_name: order.customer_name,
+        total_kmf:      Number(order.total_kmf),
+        customer_name:  order.customer_name,
         customer_phone: order.customer_phone,
       },
       parcel: parcelResult.success ? parcelResult.parcel : null,
     });
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (err.status) return res.status(err.status).json({ error: err.message });
     next(err);
-  } finally {
-    client.release();
   }
 });
 
@@ -466,67 +258,29 @@ router.post('/:ref/confirm-cash', ...guard, async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════
 
 router.post('/:ref/create-parcel', ...guard, async (req, res, next) => {
-  const client = await db.getClient();
   try {
-    await client.query('BEGIN');
-    const { ref } = req.params;
-
-    // Find order
-    const { rows: [order] } = await client.query(
-      `SELECT o.id, o.reference, o.status, o.payment_status
-       FROM orders o WHERE o.reference = $1 OR o.id::text = $1`, [ref]
-    );
-
-    if (!order) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: `Commande ${ref} introuvable` });
-    }
-    if (order.payment_status !== 'paid') {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: 'Paiement non confirmé — impossible de créer un colis',
-        rule: 'PAS DE PAIEMENT = PAS DE COLIS'
-      });
-    }
-    if (!['confirmed', 'ordered'].includes(order.status)) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        error: `La commande doit être en statut "confirmed" ou "ordered" (actuellement: ${order.status})`,
-      });
-    }
-
     const actor = {
-      id: req.user?.id || null,
+      id:   req.user?.id        || null,
       name: req.user?.full_name || 'Admin CT',
-      role: req.user?.role || 'system',
+      role: req.user?.role      || 'system',
     };
+    const { order, parcel } = await createParcelManually(req.params.ref, actor);
 
-    const result = await autoCreateParcel(client, order.id, actor);
+    log.info(`📦 Manual parcel created: ${parcel.reference} for ${order.reference}`);
 
-    if (!result.success) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: `Création impossible: ${result.reason}` });
-    }
-
-    await client.query('COMMIT');
-
-    log.info(`📦 Manual parcel created: ${result.parcel.reference} for ${order.reference}`);
-
-    // NOTIFICATIONS (fire-and-forget)
     const notifSvc = require('../services/notification-service');
-    notifSvc.notifyParcelCreated(result.parcel.reference, order.id, order.reference)
-      .catch(e => log.error({ err: e }, '[CREATE-NOTIF] âŒ'));
+    notifSvc.notifyParcelCreated(parcel.reference, order.id, order.reference)
+      .catch(e => log.error({ err: e }, '[CREATE-NOTIF]'));
 
     res.json({
       success: true,
-      message: `📦 Colis ${result.parcel.reference} créé — Commande ${order.reference} en préparation`,
-      parcel: result.parcel,
+      message: `📦 Colis ${parcel.reference} créé — Commande ${order.reference} en préparation`,
+      parcel,
     });
   } catch (err) {
-    await client.query('ROLLBACK');
+    const e = {};
+    if (err.status) { e.error = err.message; if (err.rule) e.rule = err.rule; return res.status(err.status).json(e); }
     next(err);
-  } finally {
-    client.release();
   }
 });
 

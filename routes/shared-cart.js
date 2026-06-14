@@ -45,7 +45,6 @@
 
 const express = require('express');
 const stripe  = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const db      = require('../db');
 const engine  = require('../services/shared-cart-engine');
 const estimations = require('../services/shared-cart-estimation-service');
 const { confirmContributionFromStripeSafely } = require('../services/shared-cart-financial-guard');
@@ -58,6 +57,7 @@ const { updateOpenSharedCartItems, adjustAwaitingCartItems } = require('../servi
 const windowRules = require('../services/shared-cart-v41-transitions');
 const log = require('../utils/logger').child({ module: 'shared-cart' });
 const { sendTemplateWhatsApp } = require('../services/whatsapp-meta');
+const queries = require('../services/shared-cart-queries');
 
 const router      = express.Router();
 const adminRouter = express.Router();
@@ -68,18 +68,6 @@ const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:3000';
 // sur une page morte. Le front (b-group-view: consumeSharedPaymentReturn) lit
 // ?shared_payment=success|cancel et recharge la vue panier partagé.
 const STRIPE_RETURN_BASE = '/boutique/';
-
-const DEFAULT_FX_KMF_TO_EUR = 1 / 491.97;
-
-async function getFxKmfToEur() {
-  try {
-    const { rows } = await db.query(
-      `SELECT eur_to_kmf FROM finance_config WHERE id = 1 LIMIT 1`
-    );
-    if (rows.length && rows[0].eur_to_kmf) return 1 / Number(rows[0].eur_to_kmf);
-  } catch (e) { /* fallback */ }
-  return DEFAULT_FX_KMF_TO_EUR;
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ── PUBLIC : voir un panier partagé ────────────────────────────────────
@@ -188,15 +176,10 @@ router.post('/public/:token/contributions', async (req, res, next) => {
 
     // V4.1 : paiement accepté uniquement si statut 'closed'
     // (guard complet effectué dans engine.startContribution via assertCartIsClosed)
-    const { rows: cartCheckRows } = await db.query(
-      `SELECT id, status, total_kmf_snapshot, contributed_kmf, remaining_kmf
-         FROM shared_carts WHERE token = $1`,
-      [token]
-    );
-    if (!cartCheckRows.length) {
+    const cartCheck = await queries.getSharedCartByToken(token);
+    if (!cartCheck) {
       return res.status(404).json({ error: 'Panier introuvable', code: 'shared_cart_not_found' });
     }
-    const cartCheck = cartCheckRows[0];
 
     if (cartCheck.status !== 'closed') {
       const msgMap = {
@@ -242,21 +225,10 @@ router.post('/public/:token/contributions', async (req, res, next) => {
 
     // Invalider les tentatives pending existantes du même participant (idempotence)
     if (contributor_phone) {
-      await db.query(
-        `UPDATE shared_cart_contributions
-            SET status = 'failed',
-                failed_at = NOW(),
-                metadata = COALESCE(metadata, '{}'::jsonb) ||
-                           '{"superseded":true,"superseded_reason":"new_attempt_by_participant"}'::jsonb,
-                updated_at = NOW()
-          WHERE shared_cart_id = $1
-            AND contributor_phone = $2
-            AND status = 'pending'`,
-        [cartCheck.id, contributor_phone]
-      );
+      await queries.invalidatePendingContributions(cartCheck.id, contributor_phone);
     }
 
-    const fxRate    = await getFxKmfToEur();
+    const fxRate    = await queries.getFxKmfToEur();
     const amountEur = Math.max(0.5, Math.round(payableAmount * fxRate * 100) / 100);
 
     const { contribution, cart } = await engine.startContribution(token, {
@@ -328,31 +300,8 @@ router.post('/public/:token/contributions', async (req, res, next) => {
 });
 
 // ─── Stripe webhook helpers ───────────────────────────────────────────
-async function isStripeEventProcessed(event) {
-  try {
-    const { rows } = await db.query(
-      'SELECT 1 FROM stripe_events_processed WHERE stripe_event_id = $1',
-      [event.id]
-    );
-    return rows.length > 0;
-  } catch (e) {
-    log.warn({ err: e }, '[shared-cart webhook] stripe_events_processed unavailable');
-    return false;
-  }
-}
-
-async function markStripeEventProcessed(event, payloadSummary = {}) {
-  try {
-    await db.query(
-      `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (stripe_event_id) DO NOTHING`,
-      [event.id, event.type, JSON.stringify(payloadSummary || {})]
-    );
-  } catch (e) {
-    log.warn({ err: e }, '[shared-cart webhook] mark event processed failed');
-  }
-}
+const isStripeEventProcessed   = queries.isStripeEventProcessed;
+const markStripeEventProcessed = queries.markStripeEventProcessed;
 
 // ═══════════════════════════════════════════════════════════════════════
 // ── WEBHOOK Stripe (montage spécial dans server.js avec express.raw)
@@ -602,14 +551,7 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
     // Template : shared_cart_items_updated — {{1}} prénom {{2}} titre {{3}} total KMF {{4}} URL
     setImmediate(async () => {
       try {
-        const { rows: participants } = await db.query(
-          `SELECT participant_phone AS phone,
-                  SPLIT_PART(participant_name, ' ', 1) AS first_name
-             FROM shared_cart_estimations
-            WHERE shared_cart_id = $1
-              AND participant_phone IS NOT NULL`,
-          [req.params.id]
-        );
+        const participants = await queries.getParticipantsWithEstimation(req.params.id);
 
         const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
         const title    = cart.title || 'Panier groupe';
@@ -631,10 +573,9 @@ router.put('/:id/items', authenticate, async (req, res, next) => {
           });
           if (!result.success && !result.skipped) {
             log.warn({ phone: p.phone, error: result.error }, '[S2-06] items_update_notification_failed');
-            await db.query(
-              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
-                 VALUES ($1, 'items_update_notification_failed', 'system', $2)`,
-              [req.params.id, { phone: p.phone, error: result.error }]
+            await queries.logEvent(
+              req.params.id, 'items_update_notification_failed', 'system', null,
+              { phone: p.phone, error: result.error }
             ).catch(() => {});
           }
         }
@@ -668,15 +609,7 @@ router.post('/:id/close', authenticate, async (req, res, next) => {
     // Template : shared_cart_payment_open — {{1}} prénom {{2}} titre {{3}} total KMF {{4}} URL
     setImmediate(async () => {
       try {
-        const { rows: estimants } = await db.query(
-          `SELECT participant_phone AS phone,
-                  SPLIT_PART(participant_name, ' ', 1) AS first_name,
-                  amount_kmf
-             FROM shared_cart_estimations
-            WHERE shared_cart_id = $1
-              AND participant_phone IS NOT NULL`,
-          [req.params.id]
-        );
+        const estimants = await queries.getEstimants(req.params.id);
 
         const shareUrl = `${PUBLIC_BASE_URL}/boutique/?p=${cart.token}`;
         const title    = cart.title || 'Panier groupe';
@@ -698,10 +631,9 @@ router.post('/:id/close', authenticate, async (req, res, next) => {
           });
           if (!result.success && !result.skipped) {
             log.warn({ phone: e.phone, error: result.error }, '[close] payment_open_notification_failed');
-            await db.query(
-              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
-                 VALUES ($1, 'payment_open_notification_failed', 'system', $2)`,
-              [req.params.id, { phone: e.phone, error: result.error }]
+            await queries.logEvent(
+              req.params.id, 'payment_open_notification_failed', 'system', null,
+              { phone: e.phone, error: result.error }
             ).catch(() => {});
           }
         }
@@ -742,15 +674,7 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
     // Template : shared_cart_order_confirmed — {{1}} prénom {{2}} titre {{3}} référence commande
     setImmediate(async () => {
       try {
-        const { rows: contributors } = await db.query(
-          `SELECT DISTINCT contributor_phone AS phone,
-                  SPLIT_PART(contributor_name, ' ', 1) AS first_name
-             FROM shared_cart_contributions
-            WHERE shared_cart_id = $1
-              AND status = 'paid'
-              AND contributor_phone IS NOT NULL`,
-          [req.params.id]
-        );
+        const contributors = await queries.getPaidContributors(req.params.id);
 
         const title = result.sharedCart?.title || 'Panier groupe';
         const orderRef = result.order.reference;
@@ -770,11 +694,7 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
           });
           if (!notif.success && !notif.skipped) {
             log.warn({ phone: c.phone, error: notif.error }, '[finalize] order_confirmed_notification_failed');
-            await db.query(
-              `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
-                 VALUES ($1, 'order_confirmed_notification_failed', 'system', $2)`,
-              [req.params.id, { phone: c.phone, error: notif.error }]
-            ).catch(() => {});
+            await queries.logEvent(req.params.id, 'order_confirmed_notification_failed', 'system', null, { phone: c.phone, error: notif.error }).catch(() => {});
           }
         }
         log.info({ cart_id: req.params.id, count: contributors.length },
@@ -816,12 +736,7 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
  */
 router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next) => {
   try {
-    const { rows: [cart] } = await db.query(
-      `SELECT id, status, token, title, beneficiary_name_snapshot,
-              total_kmf_snapshot, remaining_kmf, beneficiary_user_id
-         FROM shared_carts WHERE id = $1`,
-      [req.params.id]
-    );
+    const cart = await queries.getCartForAwaitingChoice(req.params.id);
 
     if (!cart) return res.status(404).json({ error: 'Panier introuvable' });
     if (cart.beneficiary_user_id !== req.user.id) {
@@ -840,7 +755,7 @@ router.post('/:id/awaiting-choice/complete', authenticate, async (req, res, next
       return res.status(409).json({ error: 'Le panier est déjà entièrement financé.', code: 'already_fully_funded' });
     }
 
-    const fxRate    = await getFxKmfToEur();
+    const fxRate    = await queries.getFxKmfToEur();
     const amountEur = Math.max(0.5, Math.round(remainingNow * fxRate * 100) / 100);
 
     // Le créateur contribue via le flux standard (utilise son email et identité)
@@ -927,12 +842,8 @@ router.post('/:id/awaiting-choice/adjust', authenticate, async (req, res, next) 
 // Pas de réglage à la création : action contextuelle quand la réalité l'exige.
 router.post('/:id/extend-window', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await db.query(
-      `SELECT * FROM shared_carts WHERE id = $1 AND beneficiary_user_id = $2`,
-      [req.params.id, req.user.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Panier introuvable ou non autorisé' });
-    const cart = rows[0];
+    const cart = await queries.getCartByOwner(req.params.id, req.user.id);
+    if (!cart) return res.status(404).json({ error: 'Panier introuvable ou non autorisé' });
 
     if (!windowRules.canExtendWindow(cart)) {
       return res.status(409).json({
@@ -943,27 +854,13 @@ router.post('/:id/extend-window', authenticate, async (req, res, next) => {
       });
     }
 
-    const { rows: [updated] } = await db.query(
-      `UPDATE shared_carts
-          SET payment_window_ends_at = payment_window_ends_at + ($2 || ' hours')::INTERVAL,
-              metadata = COALESCE(metadata, '{}'::jsonb) ||
-                jsonb_build_object('payment_window_extensions',
-                  COALESCE((metadata->>'payment_window_extensions')::int, 0) + 1),
-              updated_at = NOW()
-        WHERE id = $1 AND status = 'closed'
-        RETURNING *`,
-      [req.params.id, String(windowRules.WINDOW_EXTENSION_HOURS)]
-    );
+    const updated = await queries.extendPaymentWindow(req.params.id, windowRules.WINDOW_EXTENSION_HOURS);
     if (!updated) return res.status(409).json({ error: 'Prolongation impossible (statut modifié entre-temps)', code: 'extension_not_allowed' });
 
-    await db.query(
-      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
-         VALUES ($1, 'payment_window_extended', 'user', $2, $3)`,
-      [req.params.id, req.user.id, {
-        added_hours: windowRules.WINDOW_EXTENSION_HOURS,
-        new_payment_window_ends_at: updated.payment_window_ends_at,
-      }]
-    );
+    await queries.logEvent(req.params.id, 'payment_window_extended', 'user', req.user.id, {
+      added_hours: windowRules.WINDOW_EXTENSION_HOURS,
+      new_payment_window_ends_at: updated.payment_window_ends_at,
+    });
 
     res.json({
       ok: true,
@@ -1004,35 +901,7 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
 
 adminRouter.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const conditions = [];
-    const params = [];
-    let i = 1;
-
-    if (req.query.status) {
-      conditions.push(`sc.status = $${i++}`);
-      params.push(req.query.status);
-    }
-    if (req.query.user_id) {
-      conditions.push(`sc.beneficiary_user_id = $${i++}`);
-      params.push(req.query.user_id);
-    }
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-    const { rows } = await db.query(
-      `SELECT sc.*,
-              u.full_name AS beneficiary_full_name,
-              u.email AS beneficiary_email,
-              (SELECT COUNT(*) FROM shared_cart_contributions
-                WHERE shared_cart_id = sc.id AND status = 'paid')::int AS contributors_count,
-              (SELECT COUNT(*) FROM shared_cart_contributions
-                WHERE shared_cart_id = sc.id)::int AS contributions_total_count
-         FROM shared_carts sc
-         LEFT JOIN users u ON u.id = sc.beneficiary_user_id
-         ${where}
-        ORDER BY sc.created_at DESC
-        LIMIT 200`,
-      params
-    );
+    const rows = await queries.adminListCarts({ status: req.query.status, user_id: req.query.user_id });
     res.json({ carts: rows, count: rows.length });
   } catch (err) { next(err); }
 });
@@ -1049,48 +918,22 @@ adminRouter.get('/refund-queue', authenticate, requireAdmin, async (req, res, ne
 
 adminRouter.get('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows: cartRows } = await db.query(
-      `SELECT * FROM shared_carts WHERE id = $1`, [req.params.id]
-    );
-    if (!cartRows.length) return res.status(404).json({ error: 'Panier introuvable' });
-
-    const [items, contribs, ests, events] = await Promise.all([
-      db.query(`SELECT * FROM shared_cart_items WHERE shared_cart_id = $1 ORDER BY created_at`, [req.params.id]),
-      db.query(`SELECT * FROM shared_cart_contributions WHERE shared_cart_id = $1 ORDER BY created_at DESC`, [req.params.id]),
-      db.query(`SELECT * FROM shared_cart_estimations WHERE shared_cart_id = $1 ORDER BY created_at`, [req.params.id]),
-      db.query(`SELECT * FROM shared_cart_events WHERE shared_cart_id = $1 ORDER BY created_at DESC LIMIT 100`, [req.params.id]),
-    ]);
-
-    res.json({
-      cart:          cartRows[0],
-      items:         items.rows,
-      contributions: contribs.rows,
-      estimations:   ests.rows,
-      events:        events.rows,
-    });
+    const detail = await queries.adminGetCartDetail(req.params.id);
+    if (!detail) return res.status(404).json({ error: 'Panier introuvable' });
+    res.json(detail);
   } catch (err) { next(err); }
 });
 
 // Force-expiration admin (statuts V4.1)
 adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await db.query(
-      `UPDATE shared_carts SET status = 'expired', updated_at = NOW()
-        WHERE id = $1
-          AND status IN ('open', 'closed', 'awaiting_choice')
-       RETURNING *`,
-      [req.params.id]
-    );
-    if (!rows.length) return res.status(400).json({
+    const cart = await queries.adminExpireCart(req.params.id);
+    if (!cart) return res.status(400).json({
       error: 'Statut incompatible. Seuls les paniers open, closed ou awaiting_choice peuvent être expirés.',
     });
 
-    await db.query(
-      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
-         VALUES ($1, 'cart_expired', 'admin', $2, $3)`,
-      [req.params.id, req.user.id, { manual: true, reason: req.body?.reason }]
-    );
-    res.json({ ok: true, cart: rows[0] });
+    await queries.logEvent(req.params.id, 'cart_expired', 'admin', req.user.id, { manual: true, reason: req.body?.reason });
+    res.json({ ok: true, cart });
   } catch (err) { next(err); }
 });
 
@@ -1098,22 +941,11 @@ adminRouter.post('/:id/expire', authenticate, requireAdmin, async (req, res, nex
 adminRouter.post('/:id/extend', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const days = Math.max(1, Math.min(90, Number(req.body?.days) || 7));
-    const { rows } = await db.query(
-      `UPDATE shared_carts
-          SET target_date = COALESCE(target_date, CURRENT_DATE) + ($1 || ' days')::INTERVAL,
-              updated_at = NOW()
-        WHERE id = $2 AND status = 'open'
-       RETURNING *`,
-      [String(days), req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Panier introuvable ou non ouvert' });
+    const cart = await queries.adminExtendCartDate(req.params.id, days);
+    if (!cart) return res.status(404).json({ error: 'Panier introuvable ou non ouvert' });
 
-    await db.query(
-      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
-         VALUES ($1, 'admin_extended', 'admin', $2, $3)`,
-      [req.params.id, req.user.id, { added_days: days, reason: req.body?.reason }]
-    );
-    res.json({ ok: true, cart: rows[0] });
+    await queries.logEvent(req.params.id, 'admin_extended', 'admin', req.user.id, { added_days: days, reason: req.body?.reason });
+    res.json({ ok: true, cart });
   } catch (err) { next(err); }
 });
 
@@ -1122,11 +954,7 @@ adminRouter.post('/:id/note', authenticate, requireAdmin, async (req, res, next)
     const note = req.body?.note;
     if (!note || !note.trim()) return res.status(400).json({ error: 'Note requise' });
 
-    await db.query(
-      `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, actor_id, payload)
-         VALUES ($1, 'admin_note_added', 'admin', $2, $3)`,
-      [req.params.id, req.user.id, { note }]
-    );
+    await queries.logEvent(req.params.id, 'admin_note_added', 'admin', req.user.id, { note });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

@@ -1,0 +1,339 @@
+'use strict';
+
+/**
+ * KOMERCE — services/payment-stripe.js  (R5)
+ *
+ * Logique métier Stripe extraite de routes/payments.js.
+ * La route reste une façade : auth + validate + appel service + réponse.
+ *
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  Invariants respectés                                               ║
+ * ║  I-01 : toute transition passe par order-status-machine            ║
+ * ║  I-02 : confirmPaymentCycle = seul point d'entrée paiement→stock   ║
+ * ║  I-05 : wallet non modifié ici (géré par order-payment-confirmation)║
+ * ║  I-07 : idempotence Stripe via stripe_events_processed             ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ *
+ * Exports :
+ *   createStripeIntent(order, stripe)
+ *   handleStripeSucceeded(event, intent, db, stripe)
+ *   handleStripePaymentFailed(event, intent, db)
+ *   markStripeEventProcessed(event, payloadSummary, db)
+ */
+
+const { confirmPaymentCycle }    = require('./order-payment-confirmation');
+const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
+const log = require('../utils/logger').child({ module: 'payment-stripe' });
+
+// ─── createStripeIntent ───────────────────────────────────────────────────────
+/**
+ * Crée ou réutilise un Stripe PaymentIntent pour une commande.
+ *
+ * @param {object} order   — ligne orders complète
+ * @param {object} stripe  — instance Stripe initialisée
+ * @returns {{ client_secret, amount_eur, amount_cents, order_reference, reused? }}
+ * @throws si Stripe échoue
+ */
+async function createStripeIntent(order, stripe, db) {
+  // Idempotence : réutiliser un intent existant si réutilisable
+  if (order.stripe_payment_id) {
+    try {
+      const existing = await stripe.paymentIntents.retrieve(order.stripe_payment_id);
+      const REUSABLE = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+      if (REUSABLE.includes(existing.status)) {
+        log.info({ intent_id: existing.id, status: existing.status },
+          '[STRIPE] PaymentIntent existant réutilisé');
+        return {
+          client_secret:   existing.client_secret,
+          amount_eur:      order.total_eur,
+          amount_cents:    existing.amount,
+          order_reference: order.reference,
+          reused:          true,
+        };
+      }
+      log.warn({ intent_id: existing.id, status: existing.status },
+        '[STRIPE] PaymentIntent non-réutilisable — nouvel intent créé');
+    } catch (retrieveErr) {
+      log.warn({ err: retrieveErr, intent_id: order.stripe_payment_id },
+        '[STRIPE] Échec retrieve — nouvel intent créé');
+    }
+  }
+
+  const amount_cents  = Math.round(parseFloat(order.total_eur) * 100);
+  const idempotencyKey = `order_pi_${order.id}`;
+
+  const intent = await stripe.paymentIntents.create({
+    amount:   amount_cents,
+    currency: 'eur',
+    metadata: {
+      order_reference: order.reference,
+      order_id:        order.id,
+      komerce:         'true',
+    },
+    description: `Komerce — Commande ${order.reference}`,
+  }, { idempotencyKey });
+
+  await db.query(
+    'UPDATE orders SET stripe_payment_id = $1 WHERE id = $2',
+    [intent.id, order.id]
+  );
+
+  return {
+    client_secret:   intent.client_secret,
+    amount_eur:      order.total_eur,
+    amount_cents,
+    order_reference: order.reference,
+  };
+}
+
+// ─── handleStripeSucceeded ────────────────────────────────────────────────────
+/**
+ * Gère payment_intent.succeeded.
+ * 8 chemins de sortie documentés. Retourne { received, idempotent?, ignored?, rejected?, stockBlocked? }
+ * pour que la route construise sa réponse HTTP.
+ *
+ * @param {object} event   — objet Stripe Event complet
+ * @param {object} intent  — event.data.object (PaymentIntent)
+ * @param {object} db      — module db (pool)
+ * @param {Function} triggerPurchasing — fire-and-forget (route/purchasing)
+ * @returns {object} payload de réponse
+ */
+async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
+  const orderId        = intent.metadata?.order_id;
+  const orderReference = intent.metadata?.order_reference;
+
+  // Chemin 1 : PI sans order_id metadata
+  if (!orderId) {
+    log.warn({ intent_id: intent.id }, '[STRIPE-WEBHOOK] PI sans order_id metadata, ignored');
+    await markStripeEventProcessed(event, { ignored: 'no_metadata' }, db);
+    return { received: true, ignored: true };
+  }
+
+  // Chemins 2-3 : commande introuvable ou déjà paid
+  const { rows: [existing] } = await db.query(
+    'SELECT payment_status FROM orders WHERE id = $1', [orderId]
+  );
+  if (!existing) {
+    log.warn({ order_id: orderId }, '[STRIPE-WEBHOOK] order_id not found');
+    await markStripeEventProcessed(event, { ignored: 'order_not_found', order_id: orderId }, db);
+    return { received: true, ignored: true };
+  }
+  if (existing.payment_status === 'paid') {
+    log.info({ order_id: orderId }, '[STRIPE-WEBHOOK] order already paid, skipping');
+    await markStripeEventProcessed(event, { ignored: 'already_paid', order_id: orderId }, db);
+    return { received: true, idempotent: true };
+  }
+
+  let processedOk          = false;
+  let triggerPurchasingFor = null;
+  let smsContext           = null;
+  let stockBlocked         = false;
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Cycle central I-02
+    const cycleResult = await confirmPaymentCycle({
+      orderId,
+      actor:    { id: null, role: 'system' },
+      source:   'stripe_webhook',
+      dbClient: client,
+    });
+
+    // Chemin 4 : noop
+    if (cycleResult.noop) {
+      await client.query('COMMIT');
+      await markStripeEventProcessed(event, { noop: 'confirm', order_id: orderId }, db);
+      return { received: true, idempotent: true };
+    }
+
+    // Chemin 5 : cycle rejeté
+    if (!cycleResult.success) {
+      log.error({ cycle_error: cycleResult.error }, '[STRIPE] Cycle rejected');
+      await client.query('ROLLBACK');
+      await markStripeEventProcessed(event, { rejected: 'confirm', error: cycleResult.error, order_id: orderId }, db);
+      return { received: true, rejected: true };
+    }
+
+    // Chemin 6 : stockBlocked
+    if (cycleResult.stockBlocked) {
+      stockBlocked = true;
+      const insufficientItems = cycleResult.insufficientItems;
+
+      const incidentNote = '\n[INCIDENT paid_but_stock_blocked] ' +
+        insufficientItems.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
+      await client.query(
+        `UPDATE orders SET notes = COALESCE(notes,'') || $1 WHERE id = $2`,
+        [incidentNote, orderId]
+      );
+
+      try {
+        await client.query(
+          `INSERT INTO alerts (level, source, message, payload)
+           VALUES ('critical', 'stripe_webhook', $1, $2)`,
+          [
+            `paid_but_stock_blocked — ${orderReference}`,
+            JSON.stringify({
+              order_id:                 orderId,
+              order_reference:          orderReference,
+              insufficient_items:       insufficientItems,
+              stripe_event_id:          event.id,
+              stripe_payment_intent_id: intent.id,
+            }),
+          ]
+        );
+      } catch (alertErr) {
+        log.error({ err: alertErr, order_reference: orderReference },
+          '[STRIPE-WEBHOOK] FAILED TO INSERT ALERT');
+      }
+
+      log.error(`[STRIPE-WEBHOOK] ⛔ paid_but_stock_blocked: ${orderReference} — ${insufficientItems.length} produit(s) en rupture`);
+    }
+
+    // Code secret retrait Western Union
+    const { rows: [orderRow] } = await client.query(
+      'SELECT relais_id FROM orders WHERE id = $1', [orderId]
+    );
+
+    let stripeBillingName = null;
+    let stripeCardLast4   = null;
+    let stripeEmail       = intent.receipt_email || null;
+    try {
+      const charge = intent.latest_charge && typeof intent.latest_charge === 'object'
+        ? intent.latest_charge : null;
+      if (charge) {
+        stripeBillingName = charge.billing_details?.name || null;
+        stripeCardLast4   = charge.payment_method_details?.card?.last4 || null;
+        stripeEmail       = charge.billing_details?.email || stripeEmail;
+      }
+    } catch (_) { /* non-bloquant */ }
+
+    try {
+      const genResult = await generateAndStoreSecret({
+        orderId,
+        relaisId:  orderRow?.relais_id || null,
+        channel:   'stripe',
+        dbClient:  client,
+        extraUpdates: {
+          stripe_billing_name:  stripeBillingName,
+          stripe_card_last4:    stripeCardLast4,
+          stripe_receipt_email: stripeEmail,
+        },
+      });
+      await cacheCodeForReveal(orderId, genResult.code);
+    } catch (genErr) {
+      log.error({ err: genErr }, '[STRIPE-WEBHOOK] génération code échouée');
+    }
+
+    // Marquer event traité dans la même tx
+    await client.query(
+      `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (stripe_event_id) DO NOTHING`,
+      [event.id, event.type, JSON.stringify({
+        order_id:      orderId,
+        order_reference: orderReference,
+        stock_blocked: stockBlocked,
+      })]
+    );
+
+    await client.query('COMMIT');
+    processedOk = !stockBlocked;
+    smsContext  = { order_id: orderId, order_reference: orderReference };
+    if (processedOk) triggerPurchasingFor = orderId;
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  // Post-commit : notifications + sourcing (fire-and-forget)
+  if (smsContext) {
+    log.info(`✅ Paiement Stripe confirmé : ${smsContext.order_reference}${stockBlocked ? ' (STOCK BLOCKED)' : ''}`);
+    if (processedOk) {
+      try {
+        const notifSvc = require('./notification-service');
+        notifSvc.notifyPaymentConfirmed(smsContext.order_id, smsContext.order_reference)
+          .catch(e => log.error({ err: e }, '[STRIPE-NOTIF] notification failed'));
+      } catch (e) { log.error({ err: e }, '[STRIPE-NOTIF] require error'); }
+    }
+  }
+
+  if (triggerPurchasingFor && triggerPurchasing) {
+    triggerPurchasing(triggerPurchasingFor)
+      .then(() => log.info({ order_reference: smsContext?.order_reference }, '[PURCHASING] Stripe trigger OK'))
+      .catch(async (e) => {
+        log.error({ err: e, order_reference: smsContext?.order_reference }, '[PURCHASING] Stripe trigger error');
+        try {
+          await db.query(
+            `INSERT INTO alerts (level, source, message, payload)
+             VALUES ('elevated', 'purchasing', $1, $2)`,
+            [
+              `triggerPurchasing failed: ${smsContext?.order_reference}`,
+              JSON.stringify({ order_id: triggerPurchasingFor, error: e.message, stripe_event_id: event.id }),
+            ]
+          );
+        } catch (alertErr) {
+          log.error({ err: alertErr }, '[PURCHASING] alert insert failed');
+        }
+      });
+  }
+
+  return { received: true };
+}
+
+// ─── handleStripePaymentFailed ────────────────────────────────────────────────
+/**
+ * Gère payment_intent.payment_failed.
+ * Guard strict : ne jamais écraser un statut 'paid'.
+ */
+async function handleStripePaymentFailed(event, intent, db) {
+  const orderId = intent.metadata?.order_id;
+
+  if (!orderId) {
+    log.warn({ intent_id: intent.id }, '[STRIPE-WEBHOOK] payment_failed sans order_id, ignored');
+    await markStripeEventProcessed(event, { ignored: 'no_metadata_failed' }, db);
+    return;
+  }
+
+  const upd = await db.query(
+    `UPDATE orders SET payment_status = 'failed'
+     WHERE id = $1 AND payment_status = 'pending'`,
+    [orderId]
+  );
+  if (upd.rowCount === 0) {
+    log.warn(`[STRIPE-WEBHOOK] payment_failed ignored (already paid or unknown): ${intent.metadata?.order_reference}`);
+  } else {
+    log.info(`❌ Paiement Stripe échoué : ${intent.metadata?.order_reference}`);
+  }
+
+  await markStripeEventProcessed(event, { event: 'failed', order_id: orderId, applied: upd.rowCount > 0 }, db);
+}
+
+// ─── markStripeEventProcessed ─────────────────────────────────────────────────
+/**
+ * Marque un event Stripe traité (idempotence). Hors transaction principale.
+ * Erreur loggée mais non bloquante.
+ */
+async function markStripeEventProcessed(event, payloadSummary, db) {
+  try {
+    await db.query(
+      `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (stripe_event_id) DO NOTHING`,
+      [event.id, event.type, JSON.stringify(payloadSummary || {})]
+    );
+  } catch (e) {
+    log.warn({ err: e }, '[STRIPE-WEBHOOK] markStripeEventProcessed failed');
+  }
+}
+
+module.exports = {
+  createStripeIntent,
+  handleStripeSucceeded,
+  handleStripePaymentFailed,
+  markStripeEventProcessed,
+};

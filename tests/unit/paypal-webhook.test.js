@@ -24,8 +24,8 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-jest.mock('../../middleware/auth',       () => ({ authenticate: (req, res, next) => next() }));
-jest.mock('../../middleware/auth-guest', () => ({ authenticate: (req, res, next) => next() }));
+jest.mock('../../middleware/auth',       () => ({ authenticate: (req, res, next) => next(), requireAdmin: (req, res, next) => next(), requireRole: () => (req, res, next) => next() }));
+jest.mock('../../middleware/auth-guest', () => ({ authenticateOrCreateGuest: (req, res, next) => next() }));
 
 // DB mock avec accumulateur d'appels
 const dbQueries = [];
@@ -154,7 +154,10 @@ describe('POST /api/payments/paypal/webhook', () => {
       reference_id:      null,
       amount_value:      100,
     });
-    db.query.mockResolvedValue({ rows: [] }); // toutes les recherches retournent vide
+    db.query.mockImplementation(async (sql, params) => {
+      dbQueries.push({ sql: sql.replace(/\s+/g, ' ').trim().slice(0, 80), params });
+      return { rows: [] };
+    }); // toutes les recherches retournent vide
 
     const res = await postWebhook(makeEvent());
     expect(res.status).toBe(200);

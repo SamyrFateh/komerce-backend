@@ -17,7 +17,13 @@
  *
  * Doctrine : Invariant I-08 — aucun coefficient dur dans les calculs.
  * Voir : services/pricing-recommend.js, services/pricing-dashboard.js,
- *        services/pricing-engine.js, docs/adr/ADR-011-pricing-extensible-3-niveaux.md
+ *        services/pricing-engine.js, services/pricing-rates.js,
+ *        services/pricing-apply.js, services/pricing-guards.js,
+ *        docs/adr/ADR-011-pricing-extensible-3-niveaux.md
+ *
+ * REFACTO-R1 : route = auth + validation + appel service + réponse.
+ * Logique métier déplacée vers services/pricing-rates.js (rates) et
+ * services/pricing-apply.js (apply-price / apply-all).
  */
 
 const express  = require('express');
@@ -27,10 +33,11 @@ const { authenticate, requireRole } = require('../middleware/auth');
 
 const adminOnly = [authenticate, requireRole(['admin'])];
 
-const { getRates }             = require('../utils/rates');
 const pricingEngine            = require('../services/pricing-engine');
 const pricingRecommend         = require('../services/pricing-recommend');
 const pricingDashboard         = require('../services/pricing-dashboard');
+const pricingRates             = require('../services/pricing-rates');
+const pricingApply             = require('../services/pricing-apply');
 
 // ─── Helper : erreurs HTTP depuis les services ─────────────────────────────
 function handleServiceError(err, res, next) {
@@ -103,17 +110,7 @@ router.post('/couture', async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════════════
 router.get('/rates', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await db.query(
-      'SELECT taux_change_eur_kmf, taux_aed_kmf FROM finance_config WHERE id = 1'
-    );
-    const fc = rows[0];
-    const { rows: history } = await db.query(
-      'SELECT eur_kmf, aed_kmf, valid_from FROM exchange_rates ORDER BY valid_from DESC LIMIT 5'
-    );
-    res.json({
-      current: { eur_kmf: Number(fc?.taux_change_eur_kmf) || 492, aed_kmf: Number(fc?.taux_aed_kmf) || 138 },
-      history,
-    });
+    res.json(await pricingRates.getCurrentRates());
   } catch (e) { next(e); }
 });
 
@@ -121,32 +118,12 @@ router.get('/rates', authenticate, async (req, res, next) => {
 // PUT /api/pricing/rates — mise à jour taux (admin)
 // ═══════════════════════════════════════════════════════════════════
 router.put('/rates', ...adminOnly, async (req, res, next) => {
-  const client = await db.getClient();
   try {
     const { eur_kmf, aed_kmf } = req.body;
     if (!eur_kmf || !aed_kmf) return res.status(400).json({ error: 'eur_kmf et aed_kmf requis' });
 
-    await client.query('BEGIN');
-    await client.query(
-      `UPDATE finance_config
-          SET taux_change_eur_kmf = $1, taux_aed_kmf = $2,
-              updated_at = NOW(), updated_by = $3
-        WHERE id = 1`,
-      [eur_kmf, aed_kmf, req.user?.id || null]
-    );
-    await client.query(
-      'INSERT INTO exchange_rates (eur_kmf, aed_kmf, valid_from) VALUES ($1, $2, CURRENT_DATE)',
-      [eur_kmf, aed_kmf]
-    );
-    await client.query('COMMIT');
-
-    try { const { invalidateCache } = require('../utils/rates'); invalidateCache(); } catch (_) {}
-
-    res.json({ message: 'Taux mis à jour dans finance_config + log historique', rate: { eur_kmf, aed_kmf } });
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    next(e);
-  } finally { client.release(); }
+    res.json(await pricingRates.updateRates({ eur_kmf, aed_kmf }, req.user?.id));
+  } catch (e) { next(e); }
 });
 
 // ═══════════════════════════════════════════════════════════════════
@@ -173,49 +150,8 @@ router.post('/recommend-batch', authenticate, async (req, res, next) => {
 router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
   try {
     const { product_id } = req.params;
-    const { price_kmf, source, scenario_id, scenario_label, levier, survival_price_kmf } = req.body;
-
-    if (!price_kmf || price_kmf <= 0) return res.status(400).json({ error: 'price_kmf invalide' });
-
-    const { rows: [product] } = await db.query(
-      'SELECT id, name, price_kmf FROM products WHERE id = $1', [product_id]
-    );
-    if (!product) return res.status(404).json({ error: 'Produit introuvable' });
-
-    if (survival_price_kmf && price_kmf < Number(survival_price_kmf)) {
-      return res.status(400).json({
-        error: 'Prix sous le seuil de survie : refusé par doctrine.',
-        code: 'below_survival',
-        survival_price_kmf: Number(survival_price_kmf),
-        attempted_price_kmf: price_kmf,
-      });
-    }
-
-    const oldPrice = Number(product.price_kmf) || 0;
-    const { rows: [updated] } = await db.query(
-      `UPDATE products SET price_kmf = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, price_kmf`,
-      [price_kmf, product_id]
-    );
-
-    // Audit price_history (colonnes scenario_* optionnelles — fallback gracieux)
-    try {
-      await db.query(
-        `INSERT INTO price_history
-           (product_id, old_price_kmf, new_price_kmf, source, applied_by, applied_at, scenario_id, scenario_label, levier)
-         VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8)`,
-        [product_id, oldPrice, price_kmf, source || 'manual', req.user?.id || null, scenario_id || null, scenario_label || null, levier || null]
-      );
-    } catch (_) {
-      try {
-        await db.query(
-          `INSERT INTO price_history (product_id, old_price_kmf, new_price_kmf, source, applied_by, applied_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())`,
-          [product_id, oldPrice, price_kmf, source || 'manual', req.user?.id || null]
-        );
-      } catch (_) { /* table optionnelle */ }
-    }
-
-    res.json({ ok: true, product: updated, old_price_kmf: oldPrice, new_price_kmf: price_kmf, scenario_id: scenario_id || null, levier: levier || null });
+    const result = await pricingApply.applyPrice(product_id, req.body, req.user?.id);
+    res.status(result.status).json(result.body);
   } catch (e) { next(e); }
 });
 
@@ -223,29 +159,11 @@ router.put('/apply-price/:product_id', ...adminOnly, async (req, res, next) => {
 // PUT /api/pricing/apply-all — application en masse (admin)
 // ═══════════════════════════════════════════════════════════════════
 router.put('/apply-all', ...adminOnly, async (req, res, next) => {
-  const client = await db.getClient();
   try {
     const items = req.body?.items || [];
-    if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'items array requis' });
-    if (items.length > 500) return res.status(400).json({ error: 'max 500 items par batch' });
-
-    await client.query('BEGIN');
-    const applied = [];
-    for (const it of items) {
-      if (!it.product_id || !it.price_kmf || it.price_kmf <= 0) continue;
-      const { rows: [updated] } = await client.query(
-        `UPDATE products SET price_kmf = $1, updated_at = NOW()
-          WHERE id = $2 RETURNING id, name, price_kmf`,
-        [it.price_kmf, it.product_id]
-      );
-      if (updated) applied.push(updated);
-    }
-    await client.query('COMMIT');
-    res.json({ ok: true, count: applied.length, products: applied });
-  } catch (e) {
-    await client.query('ROLLBACK').catch(() => {});
-    next(e);
-  } finally { client.release(); }
+    const result = await pricingApply.applyAll(items);
+    res.status(result.status).json(result.body);
+  } catch (e) { next(e); }
 });
 
 // ═══════════════════════════════════════════════════════════════════
