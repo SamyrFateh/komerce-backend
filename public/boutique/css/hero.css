@@ -242,8 +242,8 @@
     pointer-events: none;
     z-index: 5;
     /* légèrement dans la moitié haute */
-    padding-top: 8px;
-    padding-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 16px;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
   .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }

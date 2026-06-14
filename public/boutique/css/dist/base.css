@@ -715,7 +715,7 @@ body {
     gap: 2px;
     line-height: 1;
     align-self: center;
-    margin-top: 8px; /* compense le poids optique du wordmark sous le K */
+    margin-top: 12px; /* compense le poids optique du wordmark sous le K */
   }
   .k-logo-wordmark {
     display: block;
@@ -1979,8 +1979,8 @@ body:has(#k-page-scroll.k-pager-active) {
     pointer-events: none;
     z-index: 5;
     /* légèrement dans la moitié haute */
-    padding-top: 8px;
-    padding-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 16px;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
   .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
