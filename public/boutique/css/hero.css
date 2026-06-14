@@ -242,7 +242,7 @@
     pointer-events: none;
     z-index: 5;
     /* légèrement dans la moitié haute */
-    padding-top: 32px;   /* compense le header fixe sans trop pousser vers le bas */
+    padding-top: 16px;   /* compense le header fixe sans trop pousser vers le bas */
     padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
@@ -253,23 +253,21 @@
     font-family: var(--font-display);
     font-size: clamp(18px, 5vw, 22px);
     font-weight: 900;
-    color: #fff;
+    color: var(--ocean);
     line-height: 1.1;
     text-shadow:
-      0 0 8px rgba(0,0,0,.7),
-      0 2px 12px rgba(0,0,0,.5),
-      0 0 24px rgba(30,90,40,.6);
+      0 0 8px rgba(255,255,255,.8),
+      0 1px 4px rgba(255,255,255,.6);
   }
   .k-hero-mini-slogan--premium .k-line-2 {
     font-family: var(--font-display);
     font-size: clamp(20px, 5.5vw, 26px);
     font-weight: 900;
-    color: #fff;
+    color: var(--coral);
     line-height: 1.05;
     text-shadow:
-      0 0 8px rgba(0,0,0,.7),
-      0 2px 12px rgba(0,0,0,.5),
-      0 0 24px rgba(30,90,40,.6);
+      0 0 8px rgba(255,255,255,.8),
+      0 1px 4px rgba(255,255,255,.6);
   }
 }
 

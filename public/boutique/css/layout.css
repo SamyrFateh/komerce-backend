@@ -119,6 +119,8 @@ body {
     align-items: center;
     gap: 2px;
     line-height: 1;
+    align-self: center;
+    margin-top: 4px; /* compense le poids optique du wordmark sous le K */
   }
   .k-logo-wordmark {
     display: block;
