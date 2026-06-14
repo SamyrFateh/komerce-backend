@@ -243,7 +243,7 @@
     z-index: 5;
     /* légèrement dans la moitié haute */
     padding-top: 0;
-    padding-bottom: 40px;
+    padding-bottom: 8px; /* réduit : 40px cachait le slogan sur petits écrans (image ~79px) */
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
   .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
