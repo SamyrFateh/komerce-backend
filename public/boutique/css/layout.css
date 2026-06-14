@@ -137,8 +137,8 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
-  height: 44px;
-  border-radius: 22px;
+  height: 38px;
+  border-radius: 19px;
   background: var(--surface-white-96);
   border: 1px solid var(--border-text-08);
   box-shadow: var(--elev-1);
@@ -150,8 +150,8 @@ body {
 }
 .k-search input {
   width: 100%;
-  height: 44px;
-  padding: 0 14px 0 40px;
+  height: 38px;
+  padding: 0 12px 0 36px;
   background: transparent;
   /* FIX AUDIT 2026-06-11 : 16px minimum — sous 16px, iOS Safari zoome
      automatiquement la page au focus de l'input (dézoom manuel ensuite). */
@@ -1099,7 +1099,7 @@ body:has(#k-page-scroll.k-pager-active) {
     padding-inline: 10px;
   }
   html.k-mobile-premium-v1 .k-search {
-    min-height: 42px;
+    min-height: 38px;
     border-radius: 999px;
     box-shadow: 0 10px 22px var(--border-text-06);
   }

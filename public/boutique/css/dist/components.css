@@ -1521,6 +1521,7 @@ html.k-mobile-premium-v1 .k-chip-label {
   line-height: 1.08;
   letter-spacing: -.01em;
   font-variation-settings: 'opsz' 24;
+  white-space: nowrap;
 }
 
 .k-card-old-price {
