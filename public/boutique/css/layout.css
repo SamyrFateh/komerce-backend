@@ -94,6 +94,14 @@ body {
 /* legacy — conservé au cas où des refs existent encore */
 .k-logo-icon { display: none; }
 .k-logo-text { display: none; }
+.k-logo-mini { display: none; }
+
+/* Mobile : on n'affiche que le petit K (le logo complet vit dans le hero) */
+@media (max-width: 899px) {
+  .k-logo-svg  { display: none; }
+  .k-logo-mini { display: block; height: 40px; width: auto; flex-shrink: 0; }
+  .k-logo      { min-width: 0; }
+}
 
 /* Recherche */
 .k-search {
