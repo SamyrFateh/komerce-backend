@@ -1977,7 +1977,7 @@ body:has(#k-page-scroll.k-pager-active) {
     pointer-events: none;
     z-index: 5;
     /* légèrement dans la moitié haute */
-    padding-top: 56px;   /* compense le header fixe (--header-h mobile) */
+    padding-top: 32px;   /* compense le header fixe sans trop pousser vers le bas */
     padding-bottom: 0;
   }
   .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
