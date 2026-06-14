@@ -41,10 +41,11 @@ Le frontend Boutique vit dans `public/boutique/**`.
 
 | Besoin | Document actif |
 |---|---|
-| Commandes locales et garde-fous | [`public/boutique/README.md`](../public/boutique/README.md) |
+| Comprendre quoi chercher, où modifier, comment tester | [`docs/boutique/README.md`](./boutique/README.md) |
+| Commandes locales rapides | [`public/boutique/README.md`](../public/boutique/README.md) |
 | Pipeline CSS | [`docs/boutique/BOUTIQUE_CSS_PIPELINE.md`](./boutique/BOUTIQUE_CSS_PIPELINE.md) |
 | Ownership composants | [`docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md`](./boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md) |
-| Architecture modale | [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](./boutique/BOUTIQUE_MODAL_ARCHITECTURE.md) |
+| Architecture modal produit | [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](./boutique/BOUTIQUE_MODAL_ARCHITECTURE.md) |
 
 Les documents sous `public/boutique/docs/**` sont historiques ou générés. Ils sont toujours subordonnés aux documents ci-dessus.
 
@@ -78,6 +79,7 @@ docs/chantier/*_AUDIT_*.md
 docs/chantier/I_SWEEP_PLAN.md
 public/CHANGELOG-*.md
 routes/ORPHELINS_*.md
+public/boutique/docs/**
 ```
 
 Ils peuvent servir à comprendre l'histoire, jamais à décider une implémentation actuelle.
