@@ -24,6 +24,7 @@ const {
   createPaypalOrder,
   capturePaypalOrder,
   handlePaypalWebhookEvent,
+  refundPaypalOrder,
 } = require('../services/payment-paypal');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,39 +152,23 @@ router.post('/webhook', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. POST /api/payments/paypal/refund/:orderId  (admin)
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/refund/:orderId', authenticate, async (req, res) => {
+router.post('/refund/:orderId', authenticate, async (req, res, next) => {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin uniquement' });
 
   const { orderId } = req.params;
   const { amount_eur, reason } = req.body || {};
 
-  const { rows: [order] } = await db.query(
-    `SELECT id, reference, total_eur, payment_status, payment_mode, paypal_capture_id
-       FROM orders WHERE id = $1`,
-    [orderId]
-  );
-  if (!order)                          return res.status(404).json({ error: 'Commande introuvable' });
-  if (!order.paypal_capture_id)        return res.status(409).json({ error: 'Pas de capture PayPal liée à cette commande' });
-  if (order.payment_status !== 'paid') return res.status(409).json({ error: 'Commande non payée' });
-
   try {
-    const refundResult = await paypal.refundCapture(order.paypal_capture_id, {
-      amountEur: typeof amount_eur === 'number' ? amount_eur : undefined,
-      reason:    reason || `Refund commande ${order.reference}`,
-      invoiceId: order.reference,
+    const result = await refundPaypalOrder({
+      orderId,
+      amountEur: amount_eur,
+      reason,
+      adminUser: req.user,
+      paypal,
+      db,
     });
-
-    log.info({
-      order_id: order.id, reference: order.reference,
-      refund_id: refundResult?.id, amount_eur: amount_eur ?? order.total_eur,
-      admin_id: req.user.id,
-    }, '[PAYPAL] refund initié');
-
-    return res.json({ success: true, refund_id: refundResult?.id, status: refundResult?.status, order_id: order.id });
-  } catch (err) {
-    log.error({ err: err.message, order_id: order.id }, '[PAYPAL] refund failed');
-    return res.status(502).json({ error: 'Refund PayPal échoué', detail: err.message });
-  }
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

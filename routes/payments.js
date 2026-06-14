@@ -21,7 +21,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { getRates }          = require('../utils/rates');
 const { triggerPurchasing } = require('./purchasing');
 const { validate }          = require('../middleware/validate');
-const { confirmPaymentCycle } = require('../services/order-payment-confirmation');
+const { confirmCashByReference } = require('../services/payment-cash-confirm');
 const { payments }          = require('../validators');
 const {
   createStripeIntent,
@@ -98,113 +98,16 @@ router.post('/stripe/webhook',
 
 // ── POST /api/payments/cash/confirm ──────────────────────────────────────────
 // Confirmation cash par code de référence (≠ route /api/cash/collect qui utilise orderId).
-// La logique cross-relais et cycle reste ici (périmètre limité, pas de service dédié R5).
 router.post('/cash/confirm', authenticate, requireRole(['admin', 'agent_relais']), validate(payments.cashConfirm), async (req, res, next) => {
-  const client = await db.pool.connect();
   try {
-    await client.query('BEGIN');
-
-    const { cash_ref_code } = req.body;
-    if (!cash_ref_code) return res.status(400).json({ error: 'cash_ref_code requis' });
-
-    const { rows } = await client.query(
-      `SELECT * FROM orders
-       WHERE cash_ref_code = $1 AND payment_mode = 'cash_relais' AND payment_status = 'pending'`,
-      [cash_ref_code]
-    );
-    if (!rows.length) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Code invalide ou paiement déjà enregistré' });
-    }
-
-    const order = rows[0];
-
-    // Cross-relais check
-    if (req.user.role === 'agent_relais') {
-      let agentRelaisId = null;
-      let checkPossible = true;
-      try {
-        const { rows: [agent] } = await client.query(
-          'SELECT relais_id FROM users WHERE id = $1', [req.user.id]
-        );
-        agentRelaisId = agent?.relais_id || null;
-      } catch (e) {
-        checkPossible = false;
-        log.warn(`[CASH-CONFIRM] users.relais_id query failed: ${e.message}`);
-      }
-
-      if (!checkPossible || !agentRelaisId) {
-        await client.query('ROLLBACK');
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_confirm', $1, $2)`,
-          [`agent_relais sans relais_id tente cash_confirm: user=${req.user.id}`,
-           JSON.stringify({ order_reference: order.reference, user_id: req.user.id })]
-        ).catch(() => {});
-        return res.status(403).json({ error: 'Configuration agent incomplète — contactez un admin' });
-      }
-
-      if (String(agentRelaisId) !== String(order.relais_id)) {
-        await client.query('ROLLBACK');
-        log.warn(`[CASH-CONFIRM] ⛔ Cross-relais refusé — agent ${req.user.id} (relais ${agentRelaisId}) tentait commande ${order.reference} (relais ${order.relais_id})`);
-        db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('elevated', 'cash_confirm', $1, $2)`,
-          [`Cross-relais refusé: ${order.reference}`,
-           JSON.stringify({ user_id: req.user.id, agent_relais_id: agentRelaisId, order_relais_id: order.relais_id, order_reference: order.reference })]
-        ).catch(() => {});
-        return res.status(403).json({ error: 'Cette commande appartient à un autre relais — vous ne pouvez pas la valider' });
-      }
-    }
-
-    // Hub I-02
-    const cycleResult = await confirmPaymentCycle({
-      orderId:  order.id,
-      actor:    { id: req.user.id, role: req.user.role },
-      source:   'cash_confirm',
-      dbClient: client,
+    const result = await confirmCashByReference({
+      cashRefCode: req.body.cash_ref_code,
+      actor:       { id: req.user.id, role: req.user.role },
+      triggerPurchasing,
+      db,
     });
-
-    if (!cycleResult.success && !cycleResult.noop) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ error: cycleResult.error });
-    }
-    if (cycleResult.stockBlocked) {
-      await client.query('ROLLBACK');
-      const first = cycleResult.insufficientItems[0];
-      return res.status(409).json({
-        error: `Stock insuffisant pour "${first.product_name}" — ${first.available} restant(s).`,
-      });
-    }
-
-    await client.query(
-      'UPDATE orders SET cash_paid_at = COALESCE(cash_paid_at, NOW()) WHERE id = $1', [order.id]
-    );
-    await client.query('COMMIT');
-
-    res.json({
-      message:   'Paiement espèces confirmé — commande validée',
-      reference: order.reference,
-      paid_at:   new Date().toISOString(),
-      next_step: 'Sourcing déclenché automatiquement — bon de commande à l\'agent Dubai',
-    });
-
-    // Post-commit fire-and-forget
-    try {
-      const notifSvc = require('../services/notification-service');
-      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .catch(e => log.error({ err: e }, '[CASH-NOTIF] notification failed'));
-      triggerPurchasing(order.id)
-        .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] Cash trigger OK'))
-        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] Cash trigger error'));
-    } catch (e) {
-      log.error({ err: e }, '[CASH-POSTCOMMIT] Non-fatal notification error');
-    }
-
-  } catch (err) {
-    await client.query('ROLLBACK');
-    next(err);
-  } finally {
-    client.release();
-  }
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
 });
 
 // ── GET /api/payments/rates ───────────────────────────────────────────────────

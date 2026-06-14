@@ -77,3 +77,11 @@ Ce fichier doit rester court.
 S'il dépasse son rôle d'état courant, déplacer le détail vers un document actif référencé dans `docs/README.md`, ou laisser l'historique dans Git.
 
 Aucun nouveau document ne doit devenir opératoire sans être ajouté à `docs/README.md`.
+
+---
+
+## 7. Chantier technique — refacto routes (2026-06-14)
+
+Hors périmètre panier partagé. Voir [`docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md`](../audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md) pour le détail.
+
+État après ajustements : R5 (paiements) fermé, `routes/routes_orders_parcels.js` supprimé. `routes/products.js` reste explicitement hors scope (lot futur `R8B-products-admin`). Deux fichiers orphelins `routes_orders_status.js` / `routes_orders_cancel.js` restent en place, arbitrage FRESH-003 non tranché.

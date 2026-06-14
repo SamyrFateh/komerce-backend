@@ -485,9 +485,68 @@ async function markPaypalEventProcessed(event, status, payloadSummary, db) {
   }
 }
 
+// ─── refundPaypalOrder ─────────────────────────────────────────────────────────
+/**
+ * Effectue un refund PayPal pour une commande payée.
+ * Logique extraite de routes/payments-paypal.js — iso-comportement.
+ *
+ * Préconditions vérifiées ici (en plus de l'admin-check côté route) :
+ *   - order.paypal_capture_id présent ;
+ *   - order.payment_status === 'paid'.
+ *
+ * @param {object} params
+ * @param {string|number} params.orderId
+ * @param {number} [params.amountEur]   — montant partiel optionnel
+ * @param {string} [params.reason]
+ * @param {object} params.adminUser     — req.user (pour logs)
+ * @param {object} params.paypal        — instance paypal-client
+ * @param {object} params.db            — module db (pool)
+ * @returns {{ status: number, body: object }}
+ */
+async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal, db }) {
+  const { rows: [order] } = await db.query(
+    `SELECT id, reference, total_eur, payment_status, payment_mode, paypal_capture_id
+       FROM orders WHERE id = $1`,
+    [orderId]
+  );
+
+  if (!order) {
+    return { status: 404, body: { error: 'Commande introuvable' } };
+  }
+  if (!order.paypal_capture_id) {
+    return { status: 409, body: { error: 'Pas de capture PayPal liée à cette commande' } };
+  }
+  if (order.payment_status !== 'paid') {
+    return { status: 409, body: { error: 'Commande non payée' } };
+  }
+
+  try {
+    const refundResult = await paypal.refundCapture(order.paypal_capture_id, {
+      amountEur: typeof amountEur === 'number' ? amountEur : undefined,
+      reason:    reason || `Refund commande ${order.reference}`,
+      invoiceId: order.reference,
+    });
+
+    log.info({
+      order_id: order.id, reference: order.reference,
+      refund_id: refundResult?.id, amount_eur: amountEur ?? order.total_eur,
+      admin_id: adminUser?.id,
+    }, '[PAYPAL] refund initié');
+
+    return {
+      status: 200,
+      body: { success: true, refund_id: refundResult?.id, status: refundResult?.status, order_id: order.id },
+    };
+  } catch (err) {
+    log.error({ err: err.message, order_id: order.id }, '[PAYPAL] refund failed');
+    return { status: 502, body: { error: 'Refund PayPal échoué', detail: err.message } };
+  }
+}
+
 module.exports = {
   createPaypalOrder,
   capturePaypalOrder,
   handlePaypalWebhookEvent,
   markPaypalEventProcessed,
+  refundPaypalOrder,
 };

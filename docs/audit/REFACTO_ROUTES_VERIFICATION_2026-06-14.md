@@ -156,3 +156,62 @@ Ce qui reste avant de dire “terminé” :
 3. Finir R8 products ou le sortir explicitement du scope.
 4. Ajouter ou retrouver les tests R5 paiement.
 5. Mettre à jour le document de statut réel avec une colonne “vérifié dans code”.
+
+---
+
+## Ajustements appliqués après vérification (2026-06-14)
+
+### Fichiers supprimés
+
+- `routes/routes_orders_parcels.js` — confirmé orphelin (aucun `require`, aucune route montée). L'actif est `routes/orders/parcels.js`, monté via `routes/orders.js` ligne 36. Recherches `grep -R "routes_orders_parcels"` et `grep -R "orders/parcels" routes bootstrap server.js` confirment l'absence de toute référence active.
+
+  Note : `routes/routes_orders_status.js` et `routes/routes_orders_cancel.js` (mêmes orphelins FRESH-003) **n'ont pas été supprimés** dans ce lot — leur suppression nécessite un arbitrage fonctionnel distinct (cf `routes/ORPHELINS_FRESH003.md`, option B : la version orpheline `cancel.js` exploite des colonnes `phone_payer`/`phone_beneficiary` non utilisées par l'actif, à valider avant suppression). Hors scope de ce lot routes.
+
+### Services créés / étendus
+
+- `services/payment-cash-confirm.js` (nouveau) — extrait `POST /api/payments/cash/confirm` : transaction propre, vérification cross-relais, appel `confirmPaymentCycle`, mise à jour `cash_paid_at`, notifications/purchasing post-commit non bloquantes. Export : `confirmCashByReference({ cashRefCode, actor, triggerPurchasing, db })`.
+- `services/payment-paypal.js` (étendu) — ajout de `refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal, db })`, extrait de `POST /api/payments/paypal/refund/:orderId`. Préconditions (capture absente, non payé) + appel `paypal.refundCapture` + logging, iso-comportement.
+
+### Routes allégées
+
+- `routes/payments.js` — `/cash/confirm` devient une façade : auth + validation + appel `confirmCashByReference` + réponse. Plus aucune transaction inline.
+- `routes/payments-paypal.js` — `/refund/:orderId` devient une façade : auth admin + appel `refundPaypalOrder` + réponse.
+
+### Tests ajoutés
+
+- `tests/unit/payment-stripe.test.js` — `createStripeIntent` (réutilisation intent, création nouvelle, fallback si retrieve échoue) + `handleStripePaymentFailed` (guard ne pas dégrader `paid`→`failed`, ignoré si pas d'`order_id`).
+- `tests/unit/payment-paypal.test.js` — `createPaypalOrder` nominal, `capturePaypalOrder` amount mismatch + idempotence `already_paid`, `handlePaypalWebhookEvent` idempotence event déjà traité + signature invalide, `refundPaypalOrder` nominal + préconditions (404, capture absente, non payé, échec PayPal 502).
+- `tests/unit/payment-cash-confirm.test.js` — `confirmCashByReference` : 400 si code manquant, 404 si code introuvable, 403 cross-relais (avec et sans `relais_id`), 409 + rollback si stock bloqué, 409 si cycle rejeté, nominal admin et agent_relais (commit + notif/purchasing post-commit).
+
+Tous les nouveaux tests passent (`24/24`). Les 2 échecs préexistants dans `tests/unit/confirm-payment-cycle.test.js` (assertion `toBeUndefined()` qui matche par erreur une requête `SELECT ... FOR UPDATE`) sont antérieurs à ce lot et non liés aux changements de cette passe.
+
+### Routes encore volontairement semi-façades (documenté, hors scope de ce lot)
+
+- `routes/cash.js` — `/deposit`, `/deposits/:id/verify`, `/deposits/:id/dispute` restent inline : ce sont des insert/update simples sur une seule table, sans transaction, sans décision métier complexe (cf doctrine étape 3.3 : seules les mutations avec transaction/décision métier/update critique doivent être extraites). `/collect/:orderId` utilise déjà `services/cash-operations.js` (`collectCash`) — la route ne fait que l'orchestration BEGIN/COMMIT/ROLLBACK, conforme au modèle déjà en place ailleurs.
+- `routes/wallet.js` — hors scope, service owner historique du wallet (cf étape 6 de la doctrine).
+- `routes/admin-pricing-matrices.js` — hors scope, non critique go-live (cf étape 6 de la doctrine).
+- `routes/admin/system.js`, `routes/transitaire-api.js`, `routes/shared-cart-from-order.js`, `routes/hub-dashboard.js` — transactions inline présentes mais hors périmètre R5/R8/parcels de ce lot ; non auditées dans cette passe.
+
+### Décision sur `routes/products.js`
+
+**Option B retenue.** `routes/products.js` (576 lignes) reste semi-façade : `productAdminService` est utilisé pour certaines opérations mais create/update/delete/image/variants gardent une logique inline importante. Une extraction complète (Option A) constituerait un refacto massif disproportionné par rapport au périmètre de ce lot (« ne pas faire de refacto massif »). `routes/products.js` est donc explicitement **hors scope** de la clôture « refacto routes terminé ». Un lot séparé `R8B-products-admin` est à planifier, ciblant l'extraction vers `services/product-admin-service.js` : `createProduct`, `updateProduct`, `deleteProduct`, `setMainImage`, `appendImages`, `deleteVariant`.
+
+### Vérification finale (état post-ajustements)
+
+```txt
+auth + validation + appel service + réponse
+```
+
+- `routes/payments.js` : conforme (Stripe intent, webhook, cash/confirm, rates, config).
+- `routes/payments-paypal.js` : conforme (create-order, capture, webhook, refund).
+- `routes/cash.js` : conforme pour `/collect`, lectures et mutations simples documentées comme volontairement inline.
+- `routes/orders/parcels.js` : conforme, déjà façade ; `GET /:id/parcels` garde des lectures d'enrichissement (lecture seule, hors scope de durcissement de ce lot).
+- `routes/products.js` : explicitement hors scope (R8B à planifier).
+
+Aucun montage raw body Stripe n'a été déplacé. `confirmPaymentCycle` reste le seul point de confirmation paiement (`services/payment-cash-confirm.js` et `services/payment-paypal.js` l'appellent exclusivement).
+
+### Risques restants
+
+- `routes/products.js` reste un fichier à fort risque de dérive métier tant que R8B n'est pas planifié.
+- Les trois fichiers `routes_orders_*.js` orphelins ne sont plus que deux (`status`, `cancel`) ; ils restent un piège potentiel de merge accidentel tant que l'arbitrage FRESH-003 n'est pas tranché.
+- `routes/cash.js` reconciliation (`/reconciliation`, `/reconciliation/agents`, `/uncollected`) n'a pas été auditée en détail dans ce lot — lectures complexes potentiellement à surveiller pour performance, pas pour conformité doctrine (lecture seule).
