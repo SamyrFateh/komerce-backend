@@ -1,11 +1,15 @@
 /**
-* KOMERCE ƒ¢€š¬‚¬ Catalogue produits
+ * KOMERCE — Catalogue produits
  *
-* GET /api/products            ƒ¢‚¬ ‚¬„¢ liste paginƒ’‚©e + filtres
-* GET /api/products/:id        ƒ¢‚¬ ‚¬„¢ dƒ’‚©tail produit
-* POST /api/products           ƒ¢‚¬ ‚¬„¢ crƒ’‚©er un produit (admin)
-* PUT  /api/products/:id       ƒ¢‚¬ ‚¬„¢ modifier un produit (admin)
-* DELETE /api/products/:id     ƒ¢‚¬ ‚¬„¢ dƒ’‚©sactiver (admin)
+ * GET /api/products            — liste paginée + filtres
+ * GET /api/products/:id        — détail produit
+ * POST /api/products           — créer un produit (admin)
+ * PUT  /api/products/:id       — modifier un produit (admin)
+ * DELETE /api/products/:id     — désactiver (admin)
+ *
+ * R8B : create/update/delete/image/images/variants délégués à
+ * services/product-admin-service.js — routes = auth + validation + appel
+ * service + réponse.
  */
 
 const express = require('express');
@@ -15,12 +19,10 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
 const { products } = require('../validators');
-const { recordProductPriceChange } = require('../services/product-price-audit');
-const { auditProductStockChange, validatePublicationUpdate } = require('../services/product-publication-guard');
 const productAdminService = require('../services/product-admin-service');
 const log = require('../utils/logger').child({ module: 'products' });
 
-// ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ UUID validation helper ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬
+// ─── UUID validation helper ───────────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function requireUUID(req, res, next) {
@@ -29,7 +31,6 @@ function requireUUID(req, res, next) {
   }
   next();
 }
-
 
 // ─── GET /api/products ───────────────────────────────────────
 
@@ -223,92 +224,13 @@ router.get('/:id', requireUUID, async (req, res, next) => {
 
 // ─── POST /api/products (admin) ──────────────────────────────
 
+
+// ─── POST /api/products (admin) ──────────────────────────────
+
 router.post('/', authenticate, requireRole(['admin']), validate(products.create), async (req, res, next) => {
   try {
-    const {
-      name,
-      description,
-      category,
-      subcategory,
-      price_aed,
-      price_kmf,
-      price_eur,
-      weight_kg,
-      dimensions_cm,
-      stock,
-      image_url,
-      images,
-      badge,
-      promo_pct,
-      has_couture                = false,
-      customs_risk_coeff          = 1.0,
-      sourcing_source,
-      sort_order                  = 0,
-      requires_secure_transport   = false,
-      unsold_price_kmf,
-      unsold_channel              = 'both',
-    } = req.body;
-
-    if (!name || !category || !price_kmf) {
-      return res.status(400).json({ error: 'name, category et price_kmf sont obligatoires' });
-    }
-
-    const numericFields = { price_aed, price_kmf, price_eur, weight_kg, stock, customs_risk_coeff, sort_order, unsold_price_kmf };
-    for (const [fname, val] of Object.entries(numericFields)) {
-      if (val !== undefined && val !== null) {
-        const num = Number(val);
-        if (isNaN(num) || num < 0) {
-          return res.status(400).json({ error: `${fname} doit être un nombre positif` });
-        }
-      }
-    }
-
-    const publicationCheck = validatePublicationUpdate({
-      before: { is_active: true, is_available: req.body.is_available !== undefined ? req.body.is_available : true },
-      patch: req.body,
-    });
-    if (!publicationCheck.ok) {
-      return res.status(400).json(publicationCheck);
-    }
-
-    const taxonomyResult = await productAdminService.validateProductTaxonomyPayload(db, { category, subcategory });
-    if (!taxonomyResult.ok) return res.status(taxonomyResult.status).json(taxonomyResult.body);
-
-    const { rows: [product] } = await db.query(
-      `INSERT INTO products
-         (name, description, category, subcategory, price_aed, price_kmf, price_eur,
-          weight_kg, dimensions_cm, stock, image_url, images, badge, promo_pct,
-          has_couture, customs_risk_coeff, sourcing_source, sort_order,
-          requires_secure_transport, unsold_price_kmf, unsold_channel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
-       RETURNING *`,
-      [name, description, category, subcategory || null, price_aed, price_kmf, price_eur,
-       weight_kg, dimensions_cm, stock, image_url, images ? JSON.stringify(images) : null,
-       badge, promo_pct || 0, has_couture, customs_risk_coeff, sourcing_source, sort_order,
-       requires_secure_transport, unsold_price_kmf || null, unsold_channel]
-    );
-
-    await recordProductPriceChange(db, {
-      productId: product.id,
-      oldPriceKmf: 0,
-      newPriceKmf: product.price_kmf,
-      source: 'product_create',
-      appliedBy: req.user?.id || null,
-      note: 'CrÃƒÆ’Ã‚©ation produit catalogue',
-    });
-
-    if (product.stock !== undefined) {
-      await auditProductStockChange(db, {
-        productId: product.id,
-        oldStock: null,
-        newStock: product.stock,
-        actor: req.user?.id || null,
-        source: 'product_create',
-        note: 'CrÃƒÆ’Ã‚©ation produit catalogue',
-      });
-    }
-
-    res.status(201).json(product);
+    const result = await productAdminService.createProduct(db, req.body, req.user);
+    return res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
@@ -318,90 +240,8 @@ router.post('/', authenticate, requireRole(['admin']), validate(products.create)
 
 router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(products.update), async (req, res, next) => {
   try {
-    const fields = [
-      'name', 'description', 'category', 'subcategory', 'price_aed', 'price_kmf', 'price_eur',
-      'weight_kg', 'dimensions_cm', 'stock', 'image_url', 'images', 'badge', 'promo_pct',
-      'has_couture', 'customs_risk_coeff', 'sourcing_source', 'sort_order',
-      'is_active', 'is_available',
-      'requires_secure_transport', 'unsold_price_kmf', 'unsold_channel',
-    ];
-
-    const numericFieldNames = ['price_aed', 'price_kmf', 'price_eur', 'weight_kg', 'stock', 'customs_risk_coeff', 'sort_order', 'unsold_price_kmf'];
-    for (const fname of numericFieldNames) {
-      const val = req.body[fname];
-      if (val !== undefined && val !== null) {
-        const num = Number(val);
-        if (isNaN(num) || num < 0) {
-          return res.status(400).json({ error: `${fname} doit être un nombre positif` });
-        }
-      }
-    }
-
-    const updates = [];
-    const values  = [];
-    let   pi      = 1;
-
-    for (const field of fields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${pi++}`);
-        values.push(req.body[field]);
-      }
-    }
-
-    if (!updates.length) {
-      return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
-    }
-
-    const { rows: [before] } = await db.query(
-      'SELECT id, name, category, subcategory, price_kmf, stock, is_active, is_available FROM products WHERE id = $1',
-      [req.params.id]
-    );
-    if (!before) return res.status(404).json({ error: 'Produit introuvable' });
-
-    const publicationCheck = validatePublicationUpdate({ before, patch: req.body });
-    if (!publicationCheck.ok) {
-      return res.status(400).json(publicationCheck);
-    }
-
-    if (req.body.category !== undefined || req.body.subcategory !== undefined) {
-      const nextCategory = req.body.category !== undefined ? req.body.category : before.category;
-      const nextSubcategory = req.body.subcategory !== undefined ? req.body.subcategory : before.subcategory;
-      const taxonomyResult = await productAdminService.validateProductTaxonomyPayload(db, { category: nextCategory, subcategory: nextSubcategory });
-      if (!taxonomyResult.ok) return res.status(taxonomyResult.status).json(taxonomyResult.body);
-    }
-
-    values.push(req.params.id);
-    const { rows: [product] } = await db.query(
-      `UPDATE products SET ${updates.join(', ')}, updated_at = NOW()
-       WHERE id = $${pi} RETURNING *`,
-      values
-    );
-
-    if (!product) return res.status(404).json({ error: 'Produit introuvable' });
-
-    if (req.body.price_kmf !== undefined) {
-      await recordProductPriceChange(db, {
-        productId: product.id,
-        oldPriceKmf: before.price_kmf,
-        newPriceKmf: product.price_kmf,
-        source: 'product_update',
-        appliedBy: req.user?.id || null,
-        note: 'Modification directe catalogue',
-      });
-    }
-
-    if (req.body.stock !== undefined) {
-      await auditProductStockChange(db, {
-        productId: product.id,
-        oldStock: before.stock,
-        newStock: product.stock,
-        actor: req.user?.id || null,
-        source: 'product_update',
-        note: 'Modification directe catalogue',
-      });
-    }
-
-    res.json(product);
+    const result = await productAdminService.updateProduct(db, req.params.id, req.body, req.user);
+    return res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
@@ -411,11 +251,8 @@ router.put('/:id', authenticate, requireRole(['admin']), requireUUID, validate(p
 
 router.delete('/:id', authenticate, requireRole(['admin']), requireUUID, validate(products.delete), async (req, res, next) => {
   try {
-    await db.query(
-      `UPDATE products SET is_active = FALSE, updated_at = NOW() WHERE id = $1`,
-      [req.params.id]
-    );
-    res.json({ success: true });
+    const result = await productAdminService.deleteProduct(db, req.params.id);
+    return res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
@@ -427,25 +264,20 @@ router.delete('/:id', authenticate, requireRole(['admin']), requireUUID, validat
 router.post('/:id/image', authenticate, requireRole(['admin']), requireUUID, upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ’Ã‚©e. Champ attendu : "image" (multipart/form-data)' });
+      return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "image" (multipart/form-data)' });
     }
 
     const imageUrl = `/uploads/products/${req.file.filename}`;
+    const result = await productAdminService.setMainImage(db, req.params.id, imageUrl);
 
-    const { rows: [product] } = await db.query(
-      `UPDATE products SET image_url = $1, updated_at = NOW()
-       WHERE id = $2 AND is_active = TRUE RETURNING id, name, image_url`,
-      [imageUrl, req.params.id]
-    );
-
-    if (!product) {
+    if (result.status === 404) {
       const fs = require('fs');
       try { fs.unlinkSync(req.file.path); } catch (_) {}
-      return res.status(404).json({ error: 'Produit introuvable' });
+      return res.status(404).json(result.body);
     }
 
-log.info(`ƒ°¸¬· Image uploadƒ©e pour "${product.name}" ƒ¢¬ ¬„¢ ${imageUrl}`);
-    res.json({ success: true, image_url: imageUrl, product });
+    log.info(`Image uploadée pour "${result.body.product.name}" — ${imageUrl}`);
+    return res.json(result.body);
   } catch (err) {
     next(err);
   }
@@ -456,45 +288,27 @@ log.info(`ƒ°¸¬· Image uploadƒ©e pour "${product.name}" ƒ¢¬ ¬„¢ ${i
 router.post('/:id/images', authenticate, requireRole(['admin']), requireUUID, upload.array('images', 5), async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'Aucune image envoyÃƒÆ’Ã‚©e. Champ attendu : "images" (max 5)' });
+      return res.status(400).json({ error: 'Aucune image envoyée. Champ attendu : "images" (max 5)' });
     }
 
     const imageUrls = req.files.map(f => `/uploads/products/${f.filename}`);
+    const result = await productAdminService.appendImages(db, req.params.id, imageUrls);
 
-    const { rows: [product] } = await db.query(
-      'SELECT id, name, images FROM products WHERE id = $1 AND is_active = TRUE',
-      [req.params.id]
-    );
-
-    if (!product) {
+    if (result.status === 404) {
       const fs = require('fs');
       req.files.forEach(f => { try { fs.unlinkSync(f.path); } catch (_) {} });
-      return res.status(404).json({ error: 'Produit introuvable' });
+      return res.status(404).json(result.body);
     }
 
-    const existing = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
-    const merged = [...existing, ...imageUrls];
-
-    if (existing.length === 0) {
-      await db.query(
-        `UPDATE products SET images = $1, image_url = $2, updated_at = NOW() WHERE id = $3`,
-        [JSON.stringify(merged), imageUrls[0], req.params.id]
-      );
-    } else {
-      await db.query(
-        `UPDATE products SET images = $1, updated_at = NOW() WHERE id = $2`,
-        [JSON.stringify(merged), req.params.id]
-      );
-    }
-
-log.info(`ƒ°¸¬· ${imageUrls.length} images uploadƒ©es pour "${product.name}"`);
-    res.json({ success: true, images: merged, new_images: imageUrls });
+    const { product_name, ...body } = result.body;
+    log.info(`${imageUrls.length} images uploadées pour "${product_name}"`);
+    return res.json(body);
   } catch (err) {
     next(err);
   }
 });
 
-// ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ VAGUE 3 ƒ¢š¬¬ Admin variantes ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬ƒ¢¬š¬
+// ─── VAGUE 3 — Admin variantes ────────────────────────────────
 
 router.get('/:id/variants', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   try {
@@ -538,38 +352,8 @@ router.put('/:id/variants', authenticate, requireRole(['admin']), requireUUID, a
 
 router.delete('/:id/variants/:variantId', authenticate, requireRole(['admin']), requireUUID, async (req, res, next) => {
   try {
-    const { variantId } = req.params;
-
-    const { rows: [pending] } = await db.query(
-      `SELECT COUNT(*)::int AS cnt
-         FROM order_items oi
-         JOIN orders o ON o.id = oi.order_id
-         JOIN product_variants pv ON pv.product_id = oi.product_id
-        WHERE pv.id = $1
-          AND oi.variant_combo IS NOT NULL
-          AND oi.variant_combo ->> pv.variant_type = pv.variant_value
-          AND o.status NOT IN ('collected', 'cancelled', 'refunded')`,
-      [variantId]
-    );
-
-    if (pending.cnt > 0) {
-      return res.status(409).json({
-        error: `Impossible de supprimer : ${pending.cnt} commande(s) en cours rÃƒÆ’Ã‚©fÃƒÆ’Ã‚©rence cette variante`,
-        hint: 'Attendez que les commandes soient finalisÃƒÆ’Ã‚©es ou annulÃƒÆ’Ã‚©es',
-      });
-    }
-
-    const { rows } = await db.query(
-      'DELETE FROM product_variants WHERE id = $1 AND product_id = $2 RETURNING *',
-      [variantId, req.params.id]
-    );
-
-    if (!rows.length) return res.status(404).json({ error: 'Variante introuvable' });
-
-    res.json({
-      message: `Variante "${rows[0].variant_type}: ${rows[0].variant_value}" supprimÃƒÆ’Ã‚©e`,
-      deleted: rows[0],
-    });
+    const result = await productAdminService.deleteVariant(db, req.params.id, req.params.variantId);
+    return res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
 
