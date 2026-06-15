@@ -46,6 +46,28 @@ describe('orders.create', () => {
     expect(error).toBeUndefined();
   });
 
+  // PAY-01 — paypal_eur doit être accepté par le validateur
+  runTest('accepts paypal_eur as payment_mode', () => {
+    const valid = {
+      items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 1 }],
+      relais_id: '00000000-0000-0000-0000-000000000002',
+      payment_mode: 'paypal_eur',
+      recipient_name: 'Ali Mohamed',
+      recipient_phone: '+2693210001',
+    };
+    const { error } = validate(schema, valid);
+    expect(error).toBeUndefined();
+  });
+
+  runTest('rejects unknown payment_mode', () => {
+    const { error } = validate(schema, {
+      items: [{ product_id: '00000000-0000-0000-0000-000000000001', quantity: 1 }],
+      relais_id: '00000000-0000-0000-0000-000000000002',
+      payment_mode: 'bitcoin',
+    });
+    expect(error).toBeDefined();
+  });
+
   runTest('rejects empty items', () => {
     const { error } = validate(schema, {
       items: [],
