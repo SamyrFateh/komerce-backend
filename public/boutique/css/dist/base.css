@@ -1976,7 +1976,7 @@ body:has(#k-page-scroll.k-pager-active) {
     font-size: 15px;
     letter-spacing: .01em;
     color: var(--ocean-dark);
-    background: var(--ocean-bg-08);
+    background: var(--sand-warm);
     padding: 7px 16px;
     white-space: nowrap;
     overflow: hidden;
