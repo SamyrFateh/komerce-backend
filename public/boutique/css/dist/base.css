@@ -2376,12 +2376,48 @@ body:has(#k-page-scroll.k-pager-active) {
     100% { stroke-dashoffset: 0;   opacity: 0; }
   }
 
-  /* Shimmer "Trouve !" desktop — même recette que le bandeau mobile */
+  /* ── Slogan desktop — repositionné à gauche, lisible sur illustration ── */
+  .k-hero-mini-slogan {
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 0 0 clamp(28px, 5vw, 72px);
+    text-align: left;
+    background: linear-gradient(
+      to right,
+      var(--surface-white-92) 0%,
+      var(--surface-sand-91) 36%,
+      transparent 60%
+    );
+  }
+
+  /* Badge "La boutique comorienne" — réactivé desktop */
+  html.k-home-premium-v1 .k-hero-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ocean-dark);
+    background: rgba(255,255,255,.72);
+    border: 1px solid var(--border-ocean-14);
+    border-radius: 999px;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+  }
+
+  /* Ligne 1 — plus grande, lisible sur dégradé clair */
+  .k-hero-mini-slogan .k-line-1 {
+    font-size: clamp(20px, 2.2vw, 30px);
+    text-shadow: 0 0 18px var(--white), 0 1px 4px var(--surface-white-88);
+  }
+
+  /* Ligne 2 — shimmer coral, taille premium */
   @keyframes k-shimmer-desktop {
     0%   { background-position: -200% center; }
     100% { background-position:  200% center; }
   }
   .k-hero-mini-slogan .k-line-2 {
+    font-size: clamp(26px, 2.9vw, 40px);
     background: linear-gradient(90deg,
       var(--coral-dark) 25%, var(--terracotta) 50%, var(--coral-dark) 75%);
     background-size: 200% auto;
