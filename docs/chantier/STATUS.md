@@ -70,38 +70,41 @@ Statut : **ouvert**.
 4. **Cas D — Statuts** : aucun statut technique visible côté participant.
 5. **Cas E — Dépassement du reste** : maximum annoncé et borné avant paiement.
 
-### D-02 — Vocabulaire V4.1 encore présent dans le code interne
+### D-02 — Vocabulaire V4.1 dans le code interne shared-cart
 
-Statut : **dette de lisibilité, pas bug produit confirmé**.
+Statut : **dette de lisibilité — pas de traitement sans tests**.
 
-Le code backend conserve des noms/commentaires V4.1 (`shared-cart-engine`, cron state machine, `awaiting_choice`, `closed`, etc.). C'est acceptable tant que la projection humaine Boutique First masque ces termes. Ne pas renommer mécaniquement sans tests, car ces statuts sont liés au schéma DB, aux migrations et aux transitions.
+`routes/shared-cart.js` reste volumineux et conserve le vocabulaire V4.1 dans son en-tête/commentaires (`OPEN`, `CLOSED`, `AWAITING_CHOICE`, etc.). Ce n'est pas un bug produit tant que l'UI Boutique First projette les bons statuts humains.
 
-À surveiller : aucune UI participant ne doit exposer `open`, `closed`, `awaiting_choice`, `ordered`, `expired`, `archived`, “financé”, “cagnotte”, “engagement”, “workspace collectif”.
+Règles :
 
-### D-03 — Webhook Authkey : modèle de sécurité à enrichir
+- ne pas renommer les statuts DB mécaniquement ;
+- toute découpe ou renommage exige des tests couvrant les statuts visibles et techniques (`open`, `closed`, `awaiting_choice`, `ordered`, `cancelled`, `expired`, `archived`) ;
+- aucune UI participant ne doit exposer `open`, `closed`, `awaiting_choice`, `ordered`, `expired`, `archived`, “financé”, “cagnotte”, “engagement”, “workspace collectif”.
 
-Statut : **ouvert documentaire mineur**.
+Action ouverte : si le fichier devient un point de friction, proposer une découpe prudente en sous-routes `public` / `creator` / `admin` dans une branche dédiée avec tests.
 
-État vérifié :
+### D-03 — Webhooks WhatsApp documentés dans le modèle sécurité
 
-- Le code protège `/webhook/authkey-whatsapp` avec `verifyAuthkeyWebhook`.
-- En production, l'absence de `AUTHKEY_WEBHOOK_SECRET` fait rejeter le webhook.
-- `docs/CARTOGRAPHY_360.md` est maintenant aligné sur ce comportement.
-- `docs/backend/SECURITY-MODEL.md` reste un document de doctrine ancien, centré pickup/retrait, et ne décrit pas encore ce webhook.
-
-Action : ajouter une courte section Authkey dans `docs/backend/SECURITY-MODEL.md` ou décider que ce niveau de détail reste uniquement dans la cartographie.
-
-### D-04 — Versionning applicatif incohérent mais non bloquant
-
-Statut : **ouvert documentaire / hygiène release**.
+Statut : **clôturé — 2026-06-15**.
 
 État vérifié :
 
-- `package.json` : `10.6.1`.
-- En-tête `server.js` : `v10.6.1` avec changelogs v10/v11.
-- `/api/health` retourne `require('./package.json').version`, donc la valeur runtime suit `package.json`.
+- `/webhook/authkey-whatsapp` est protégé par `verifyAuthkeyWebhook`.
+- En production, l'absence de `AUTHKEY_WEBHOOK_SECRET` fait rejeter le webhook Authkey.
+- `docs/CARTOGRAPHY_360.md` décrit déjà ce comportement.
+- `docs/backend/SECURITY-MODEL.md` v1.1 contient maintenant une section `Webhooks entrants` : Meta WhatsApp HMAC + Authkey token partagé.
 
-Action : ne pas considérer les anciens audits mentionnant v12.3/v12.4 comme état actuel sans vérification. Décider une convention release unique avant prochain tag prod.
+### D-04 — Versionning applicatif
+
+Statut : **clôturé — 2026-06-15**.
+
+Convention adoptée et appliquée :
+
+- `package.json` est la source de vérité du numéro de version ;
+- `/api/health` retourne `require('./package.json').version` ;
+- l'en-tête statique/changelog inline de `server.js` a été nettoyé ;
+- les notes de release doivent vivre dans les commits/tags, pas dans l'en-tête serveur.
 
 ### D-05 — FRESH-003 : fichiers historiques `routes_orders_*`
 
@@ -121,13 +124,19 @@ Les trois orphelins ont été supprimés après vérification :
 
 Voir [`routes/ORPHELINS_FRESH003.md`](../../routes/ORPHELINS_FRESH003.md).
 
-### D-06 — `docs/SCHEMA.md` contient une dette N4 JWT probablement obsolète ou à revalider
+### D-06 — `revoked_tokens` / N4 JWT
 
-Statut : **à revalider contre DB live**.
+Statut : **partiellement clôturé — code vérifié, DB live à vérifier**.
 
-Le schéma daté du 26 mai 2026 indique que `revoked_tokens` n'était pas appliquée sur Railway et que le câblage applicatif restait à faire. Le code actuel démarre `startJwtRevocationCleanupCron()` et tente de purger `revoked_tokens`.
+Le câblage applicatif est confirmé :
 
-Action : vérifier DB live Railway. Si la table existe, corriger `docs/SCHEMA.md`. Si elle n'existe pas, c'est une dette technique réelle car le cron loguera une erreur périodique.
+- `routes/auth.js` génère un `jti` dans `generateToken()` ;
+- `routes/auth.js` insère le `jti` dans `revoked_tokens` au logout ;
+- `middleware/auth.js` vérifie `revoked_tokens` à l'authentification ;
+- `bootstrap/crons.js` lance `startJwtRevocationCleanupCron()` ;
+- `migrations/072_jwt_revocation.sql` est la migration attendue.
+
+Action restante : vérifier la table sur Railway (`SELECT 1 FROM revoked_tokens LIMIT 1`) et appliquer la migration si elle est absente. Tant que la table n'est pas confirmée en DB live, ce point reste ouvert opérationnellement.
 
 ### D-07 — Docs Boutique historiques subordonnées
 
@@ -142,16 +151,6 @@ Statut : **surveillance documentaire**.
 - `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`.
 
 Action : si un audit local Boutique contredit ces documents ou le code, le classer explicitement comme historique et ne pas le recopier dans une tâche.
-
-### D-08 — R6 shared-cart : dette de lisibilité confirmée
-
-Statut : **ouvert faible priorité — pas de traitement sans tests**.
-
-`routes/shared-cart.js` reste volumineux et conserve le vocabulaire V4.1 dans son en-tête/commentaires (`OPEN`, `CLOSED`, `AWAITING_CHOICE`, etc.). Ce n'est pas un bug produit tant que l'UI Boutique First projette les bons statuts humains.
-
-Règle : ne pas renommer les statuts DB mécaniquement. Toute découpe ou renommage exige des tests couvrant les statuts visibles et techniques (`open`, `closed`, `awaiting_choice`, `ordered`, `cancelled`, `expired`, `archived`).
-
-Action ouverte : si le fichier devient un point de friction, proposer une découpe prudente en sous-routes `public` / `creator` / `admin` dans une branche dédiée avec tests.
 
 ---
 
@@ -265,10 +264,9 @@ Classement opératoire :
 7. `replaceVariants` — remplace atomiquement les variantes et bloque une suppression totale si commandes en cours.
 8. `deleteVariant` — bloque si commandes en cours, supprime sinon.
 
-### Docs/code
+### Vérifications ponctuelles
 
-1. Vérifier DB live pour `revoked_tokens`.
-2. Décider si `docs/backend/SECURITY-MODEL.md` doit porter une section Authkey ou rester centré doctrine retrait/paiement.
+1. Vérifier DB live pour `revoked_tokens` et appliquer `migrations/072_jwt_revocation.sql` si la table est absente.
 
 ---
 
