@@ -2752,3 +2752,249 @@
   font-size:15px;font-weight:700;cursor:pointer}
 .k-gsnap-back:hover{filter:brightness(.95)}
 
+/* ═══════════════════════════════════════════════════════════════════
+   group-mobile-compact.css
+   Surcharge mobile uniquement — réduit le scroll inutile dans le
+   cockpit groupe (k-group-view) sans toucher le desktop.
+   À inclure APRÈS group-cart-flow.css et components.css.
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 899px) {
+
+  /* ── 1. Conteneur page ──────────────────────────────────────── */
+  .k-group-view {
+    margin-top: 8px;           /* était 22px */
+    margin-bottom: 56px;       /* était 72px */
+    padding: 0 12px;           /* était 14px */
+  }
+
+  /* ── 2. Header identité + progress-card (bloc soudé) ─────────── */
+  .k-group-view .k-group-header {
+    padding: 10px 14px 6px;    /* était 20px 18px 8px */
+    border-radius: 16px 16px 0 0; /* était 20px 20px 0 0 */
+  }
+
+  .k-group-view .k-group-header h2 {
+    font-size: 17px;           /* était 21px */
+    margin-bottom: 4px;
+  }
+
+  .k-group-view .k-group-subhead {
+    font-size: 12px;           /* était 15px */
+    line-height: 1.3;
+  }
+
+  .k-group-view .k-group-progress-card {
+    padding: 10px 14px 12px;   /* était 18px */
+    margin-bottom: 6px;        /* était 16px */
+    border-radius: 0 0 16px 16px;
+  }
+
+  /* ── 3. Cards génériques ────────────────────────────────────── */
+  .k-group-view .k-group-card,
+  .k-group-view .k-group-actions-card,
+  .k-group-view .k-group-contribute-card,
+  .k-group-view .k-group-items-card,
+  .k-gc-unified {
+    padding: 12px 14px;        /* était 18px */
+    margin-top: 6px;           /* était 12px */
+    border-radius: 16px;       /* était 20px */
+  }
+
+  /* ── 4. Section title ───────────────────────────────────────── */
+  .k-group-view .k-group-section-title {
+    font-size: 14px;           /* était 18px */
+    margin-bottom: 8px;        /* était 14px */
+  }
+
+  /* ── 5. Stats financières (3 colonnes compactes) ─────────────── */
+  .k-group-financial-summary {
+    padding: 8px 0 6px;
+  }
+
+  .k-group-financial-stats {
+    gap: 0;                    /* supprime le gap entre stats */
+  }
+
+  .k-group-financial-stat {
+    padding: 4px 6px;          /* était généreux */
+    text-align: center;
+  }
+
+  .k-group-financial-stat:not(:last-child) {
+    border-right: 1px solid var(--border);
+  }
+
+  .k-group-financial-stat strong {
+    font-size: 13px;           /* était ~16px */
+    display: block;
+  }
+
+  .k-group-financial-stat span {
+    font-size: 9px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 1px;
+  }
+
+  /* ── 6. Barre de progression ─────────────────────────────────── */
+  .k-group-view .k-group-progress {
+    height: 5px;               /* était 8px */
+    margin-bottom: 4px;
+  }
+
+  .k-group-progress-legend {
+    font-size: 9.5px;
+    gap: 6px;
+    margin-top: 3px;
+  }
+
+  /* ── 7. Boutons d'action ─────────────────────────────────────── */
+  .k-group-view .k-group-btn,
+  .k-gc-btn-main,
+  .k-gc-btn-finalize,
+  .k-gc-btn-choice {
+    min-height: 40px;          /* était 50px */
+    font-size: 13px;           /* était 14px */
+    padding: 10px 12px;
+  }
+
+  /* Rangée 2 boutons (WhatsApp + Copier) */
+  .k-group-creator-actions {
+    gap: 8px;                  /* était 12px */
+    margin-bottom: 8px;        /* était 14px */
+  }
+
+  /* ── 8. Accordéons (estimations, options) ───────────────────── */
+  .k-group-accordion > summary {
+    padding: 8px 0;            /* était ~12px */
+    font-size: 12px;
+  }
+
+  .k-group-accordion[open] .k-group-commitment-list,
+  .k-group-accordion[open] .k-group-options-body {
+    padding-top: 6px;
+  }
+
+  /* ── 9. Lignes participants ──────────────────────────────────── */
+  .k-group-commitment-row {
+    padding: 6px 0;            /* était ~10px */
+    gap: 8px;
+  }
+
+  .k-group-commitment-avatar {
+    width: 28px;               /* était 32px */
+    height: 28px;
+    font-size: 10px;
+  }
+
+  .k-group-commitment-name {
+    font-size: 12px;
+  }
+
+  .k-group-commitment-phone {
+    font-size: 10px;
+  }
+
+  .k-group-commitment-amount {
+    font-size: 12px;
+  }
+
+  /* ── 10. Self-toggle (si présent) ───────────────────────────── */
+  .k-group-view .k-group-self-toggle {
+    padding: 10px 12px;        /* était 16px 18px */
+    margin-top: 6px;           /* était 12px */
+    font-size: 13px;
+  }
+
+  /* ── 11. Carte unifiée V4 (k-gc-unified) ────────────────────── */
+  .k-gc-header {
+    margin-bottom: 8px;        /* était ~16px */
+  }
+
+  .k-group-header-title {
+    font-size: 17px;           /* était 20px+ */
+    margin: 4px 0 2px;
+  }
+
+  .k-gc-items-row {
+    padding: 6px 0;            /* était ~10px */
+    font-size: 12px;
+  }
+
+  .k-gc-sec-label {
+    font-size: 10px;
+    margin: 6px 0 4px;        /* était 10px+ */
+  }
+
+  .k-gc-est-list {
+    gap: 4px;                  /* était 8px */
+  }
+
+  .k-gc-est-row {
+    font-size: 11.5px;
+    padding: 3px 0;
+  }
+
+  .k-gc-est-agg {
+    font-size: 11px;
+    margin-top: 6px;           /* était 10px */
+  }
+
+  .k-gc-note {
+    font-size: 10.5px;
+    margin-top: 4px;           /* était 8px */
+    line-height: 1.35;
+  }
+
+  .k-gc-share-row {
+    gap: 8px;
+    margin: 8px 0;             /* était 12px */
+  }
+
+  /* ── 12. Barre financement (phase CLOSED) ───────────────────── */
+  .k-gc-fund {
+    margin: 8px 0;             /* était 14px */
+  }
+
+  .k-gc-fund-labels {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .k-gc-fund-track {
+    height: 5px;               /* était 8px */
+  }
+
+  .k-gc-fund-foot {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .k-gc-stats {
+    gap: 8px;                  /* était 12px */
+    margin-top: 8px;
+  }
+
+  .k-gc-stat strong {
+    font-size: 15px;           /* était 18px+ */
+  }
+
+  .k-gc-stat span {
+    font-size: 9.5px;
+  }
+
+  /* ── 13. Switcher paniers (si ≥2) ───────────────────────────── */
+  .k-group-cart-switcher-head {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .k-group-cart-tab {
+    padding: 8px 10px;         /* était 12px+ */
+    font-size: 11px;
+  }
+
+}
+/* ── Fin overrides mobile ─────────────────────────────────────── */
