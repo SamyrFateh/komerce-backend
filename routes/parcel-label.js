@@ -30,7 +30,7 @@ router.get('/:ref/label', async (req, res) => {
       SELECT p.id, p.reference, p.status, p.pickup_code, p.weight_kg,
              p.destination_island,
              p.created_at, p.shipped_at, p.available_at,
-             r.name AS relais_name, r.island, r.city AS relais_city
+             r.name AS relais_name, r.island, r.zone AS relais_city
       FROM parcels p
       LEFT JOIN relais r ON r.id = COALESCE(p.relay_id, p.relais_id)
       WHERE p.reference = $1

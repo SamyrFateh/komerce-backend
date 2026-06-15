@@ -1,6 +1,6 @@
 # Komerce — État opératoire du chantier
 
-> Mis à jour : **2026-06-15**  
+> Mis à jour : **2026-06-15** — patches PAY-01, FACT-01, CASH-02, LOY-01, PICKUP-01 appliqués  
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`  
 > Rôle : point de vérité opératoire pour Sonnet/agent dev.  
 > Principe : un audit historique est un indice, pas une vérité. Une dette est ouverte seulement si le code actuel, la DB live ou une doc active la confirme.
@@ -210,11 +210,11 @@ Constat : `_renderVariants()` peut changer le prix visuel, mais `addToCart()` co
 
 ### PAY-01 — PayPal checkout affiché mais bloqué à la création commande
 
-Statut : **ouvert — priorité P1 si PayPal visible en prod**.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-Le frontend peut envoyer `payment_mode: 'paypal_eur'`, mais `validators/orders.create` et `routes/orders/create.js` n'acceptent que `stripe_eur` et `cash_relais`. Le schéma DB et `routes/payments-paypal.js` savent pourtant gérer PayPal ensuite.
+`validators/index.js:180` — `payment_mode` accepte désormais `'paypal_eur'` aux côtés de `stripe_eur` et `cash_relais`.
 
-À corriger : aligner validator, route `/api/orders`, création PayPal Order et capture. Tester : création commande PayPal → create-order → capture → `confirmPaymentCycle`.
+Reste ouvert : création PayPal Order + capture + hooks post-paiement → voir PAY-02.
 
 ### PAY-02 — PayPal capture ne déclenche pas les hooks métier post-paiement
 

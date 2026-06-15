@@ -67,8 +67,8 @@ class InvoiceService {
     const items = itemsRes.rows.map(i => ({
       name: i.product_name || 'Article',
       qty: i.quantity,
-      unit_price: Math.round(i.price_kmf / i.quantity),
-      total: i.price_kmf
+      unit_price: Math.round(i.price_kmf),
+      total: Math.round(i.price_kmf * i.quantity)
     }));
 
     // Get parcel reference if exists

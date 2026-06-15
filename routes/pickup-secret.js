@@ -269,7 +269,7 @@ router.get('/receipt/:orderId', authenticate, requireRelaisOrAdmin, async (req, 
         o.reference, o.total_kmf, o.created_at,
         o.payment_received_at,
         o.payer_name,
-        r.name AS relais_name, r.city AS relais_city,
+        r.name AS relais_name, r.zone AS relais_city,
         u.full_name AS agent_name
       FROM orders o
       LEFT JOIN relais r ON r.id = o.relais_id

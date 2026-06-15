@@ -27,6 +27,7 @@ const log = require('../utils/logger').child({ module: 'cash-operations' });
  * Chemins de sortie (la route construit la réponse HTTP) :
  *   { order_not_found }          — 404
  *   { invalid_payment_mode }     — 400
+ *   { invalid_payment_status, payment_status } — 409 (déjà 'paid'/'refunded'/etc.)
  *   { invalid_status, status }   — 409
  *   { cross_relais_blocked }     — 403 + alerte insérée
  *   { agent_config_error }       — 403 + alerte insérée
@@ -46,7 +47,7 @@ async function collectCash({ orderId, agentUser, dbClient }) {
 
   // 1. Vérifier la commande (FOR UPDATE — race condition protection)
   const { rows: [order] } = await client.query(`
-    SELECT id, total_kmf, payment_mode, status, relais_id
+    SELECT id, total_kmf, payment_mode, payment_status, status, relais_id
     FROM orders WHERE id = $1 FOR UPDATE
   `, [orderId]);
 
@@ -54,6 +55,10 @@ async function collectCash({ orderId, agentUser, dbClient }) {
 
   if (order.payment_mode !== 'cash_relais') {
     return { invalid_payment_mode: true };
+  }
+
+  if (order.payment_status !== 'pending') {
+    return { invalid_payment_status: true, payment_status: order.payment_status };
   }
 
   const INVALID_COLLECT_STATUSES = ['cancelled', 'refunded', 'collected'];

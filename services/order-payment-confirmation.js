@@ -221,6 +221,19 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
     }
   }
 
+  // LOY-01 — Recalcul fidélité après paiement confirmé (fire-and-forget,
+  // hors transaction via le pool `db`, comme dans scan-operations / verify-qr).
+  // Couvre les 7 chemins de paiement (Stripe, PayPal, cash, pickup, shared-cart...)
+  // qui passent tous par ce point d'entrée unique.
+  dbClient.query('SELECT user_id FROM orders WHERE id = $1', [orderId])
+    .then(({ rows: [o] }) => {
+      if (o?.user_id) {
+        const { recalculateLoyalty } = require('../routes/loyalty');
+        return recalculateLoyalty(db, o.user_id);
+      }
+    })
+    .catch(e => log.error({ err: e }, '[confirmPaymentCycle] LOY-01 recalcul fidélité échoué:'));
+
   return { success: true, noop: false, stockBlocked: false, insufficientItems: [] };
 }
 
