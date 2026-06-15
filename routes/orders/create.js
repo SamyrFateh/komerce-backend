@@ -73,9 +73,9 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       return res.status(400).json({ error: 'items[] obligatoire (tableau, min 1 article)' });
     }
 
-    if (!['stripe_eur', 'cash_relais'].includes(payment_mode)) {
+    if (!['stripe_eur', 'cash_relais', 'paypal_eur'].includes(payment_mode)) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais' });
+      return res.status(400).json({ error: 'payment_mode invalide — valeurs : stripe_eur | cash_relais | paypal_eur' });
     }
 
     if (module_type && !MODULE_TYPES.includes(module_type)) {
