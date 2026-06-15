@@ -152,6 +152,122 @@ Statut : **surveillance documentaire**.
 
 Action : si un audit local Boutique contredit ces documents ou le code, le classer explicitement comme historique et ne pas le recopier dans une tâche.
 
+### D-08 — Audit couture / variantes bout-en-bout
+
+Statut : **ouvert — audit métier rejoué le 2026-06-15**.
+
+Source historique utile : `docs/_archive/AUDIT_BACKEND_FINDINGS.md` + `docs/audit/FRONTEND_AUDIT.md`. Ces audits ne sont pas des vérités actuelles, mais leur grille métier reste excellente : produit → boutique → panier → checkout → commande → paiement/stock → suivi/sourcing.
+
+Lecture actuelle :
+
+- le backend variantes est partiellement prêt (`product_variants`, `has_variants`, `variant_combo`, validation commande, stockage `order_items.variant_combo`) ;
+- le frontend charge et affiche certaines variantes dans la fiche produit ;
+- la couture complète n'est pas garantie : le choix client ne semble pas encore devenir un item panier/commande fiable.
+
+#### COUTURE-01 — Variantes affichées mais non propagées au panier/checkout
+
+Statut : **ouvert — priorité P0/P1**.
+
+État vérifié :
+
+- `GET /api/products/:id` charge `product.variants` si `has_variants = true` ;
+- `b-modal-core.js` appelle `_renderVariants(full.variants, full)` ;
+- `_renderVariants()` affiche des choix et peut modifier le prix visuel ;
+- `b-modal-cart.js` ajoute seulement `state.modalProduct` au panier, sans stocker de `variant_combo` ;
+- `submitOrder()` construit les items avec `product_id`, `quantity`, `confection_type: 'aucun'`, sans `variant_combo`.
+
+Conséquence métier : l'utilisateur peut croire avoir choisi une taille/variante, mais la commande peut partir comme produit simple.
+
+À corriger :
+
+1. stocker le choix variante dans un état modal explicite ;
+2. empêcher l'ajout panier si une variante obligatoire n'est pas choisie ;
+3. stocker `variant_combo` dans chaque ligne panier ;
+4. permettre deux variantes du même produit dans le panier (`robe M` + `robe L`) sans fusionner par simple `product.id` ;
+5. envoyer `variant_combo` dans `submitOrder()` ;
+6. afficher la variante dans panier, récap checkout, succès commande, suivi et admin.
+
+#### COUTURE-02 — Variantes couleur ignorées côté fiche produit
+
+Statut : **ouvert — priorité P1**.
+
+État vérifié : `_renderVariants()` ignore explicitement les types `couleur`, `color`, `coloris`, `teinte`.
+
+Conséquence métier : une variante couleur/SKU peut exister côté backend mais ne pas être choisissable par le client.
+
+À corriger : traiter les couleurs comme des choix produits réels, avec image/label/stock/prix si disponibles.
+
+#### COUTURE-03 — Stock variante non décrémenté si stock global produit `NULL`
+
+Statut : **ouvert — priorité P0/P1 backend**.
+
+État vérifié : `services/order-payment-confirmation.js` sélectionne les `order_items` avec `JOIN products p` puis filtre `AND p.stock IS NOT NULL`. La vérification et décrémentation variante se font ensuite uniquement sur les lignes retournées.
+
+Conséquence métier : si un produit est géré uniquement par variantes (`products.stock IS NULL`, `product_variants.stock` renseigné), le paiement peut ne pas décrémenter le stock variante.
+
+À corriger : inclure aussi les items avec `has_variants = true` même si `p.stock IS NULL`, puis appliquer séparément :
+
+- stock global si `p.stock IS NOT NULL` ;
+- stock variante si `variant_combo` présent et variante stockée.
+
+À couvrir par test : produit `has_variants = true`, `products.stock = NULL`, variante `stock = 1`, paiement de qty 1 → stock variante devient 0.
+
+#### COUTURE-04 — Catalogue frontend demande 1000 produits mais API plafonne à 200
+
+Statut : **ouvert — priorité P1 si catalogue > 200 produits**.
+
+État vérifié : `loadProducts()` appelle `K.products.list({ limit: 1000 })`, mais `routes/products.js` force `MAX_LIMIT = 200`.
+
+Conséquence métier : au-delà de 200 produits actifs, la boutique peut silencieusement ne pas afficher tout le catalogue.
+
+À corriger : pagination frontend par `offset` ou convention explicite backend/frontend sur la limite.
+
+#### TRACK-01 — Suivi rapide par référence obsolète
+
+Statut : **ouvert — priorité P1 UX/suivi**.
+
+État vérifié : `b-tracking.js` reconstruit une référence `KMR-2025-XXXX` à partir de 4 chiffres, alors que `services/order-service.js` génère désormais `K` + 6 caractères alphanumériques.
+
+Conséquence métier : le suivi rapide par 4 chiffres risque d'être inutilisable pour les commandes actuelles.
+
+À corriger : remplacer par l'une de ces options :
+
+- saisie de référence complète ;
+- lien/QR de suivi ;
+- historique par OTP téléphone comme chemin principal.
+
+#### TRACK-02 — Timeline frontend à harmoniser avec les statuts réels
+
+Statut : **ouvert — priorité P2**.
+
+État vérifié : `b-tracking.js` construit la timeline sur `pending`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, tandis que l'affichage connaît aussi `confirmed`, `paid`, `ordered`, `cancelled`.
+
+Conséquence métier : une commande `confirmed` ou `ordered` peut être affichée avec un statut texte correct mais une timeline peu claire.
+
+À corriger : définir une projection timeline unique pour `pending`, `confirmed`, `paid`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded`.
+
+#### COUTURE-05 — `variant_type` injecté dans le DOM sans garde suffisante
+
+Statut : **ouvert — priorité P2 sécurité/hygiène**.
+
+État vérifié : `_renderVariants()` injecte `type` dans `innerHTML` pour le label de variante. Si `variant_type` vient de la DB/admin, le risque est limité mais réel.
+
+À corriger : construire le label en DOM + `textContent`, ou appliquer `sanitize(type)`.
+
+#### COUTURE-06 — Variantes peu visibles dans suivi/admin/sourcing
+
+Statut : **à vérifier — priorité P2 métier**.
+
+Le stockage `order_items.variant_combo` existe côté commande, mais il faut vérifier que la variante choisie apparaît dans :
+
+- détail commande client ;
+- suivi client ;
+- dashboard/admin commande ;
+- sourcing/préparation ;
+- facture/notifications si applicable.
+
+Action : ne pas considérer la couture terminée tant que la variante n'est pas visible aux personnes qui doivent acheter/préparer le bon article.
+
 ---
 
 ## 5. Faux positifs / dettes écartées après vérification
@@ -218,6 +334,22 @@ La cartographie indique désormais que le chemin API canonique est `/api/dashboa
 
 Dette résiduelle : ajouter des tests ciblés pour `product-admin-service.js`, sans refaire le refacto.
 
+### FP-11 — “L'ancien audit frontend critique d'avril 2026 est encore vrai tel quel”
+
+Écarté.
+
+L'ancien audit frontend reste utile comme grille métier, mais ses bugs critiques initiaux sont majoritairement obsolètes :
+
+- `openCart()` existe ;
+- `saveCart()` existe via `b-cart-core.js` ;
+- `setQty()` existe ;
+- `komerce-api.js` est bien chargé avant `main.js` ;
+- `/api/relais` existe et est monté ;
+- le checkout utilise `stripe_eur` ;
+- le checkout passe par OTP/session httpOnly avant commande.
+
+Ne pas recopier ces bugs comme dettes ouvertes sans nouvelle preuve code.
+
 ---
 
 ## 6. Audits et historiques : règle de traitement
@@ -251,6 +383,22 @@ Classement opératoire :
 4. **Cas D — Statuts** : aucun statut technique visible.
 5. **Cas E — Dépassement du reste** : maximum annoncé et borné avant paiement.
 
+### Couture / variantes bout-en-bout
+
+À créer ou vérifier :
+
+1. Produit sans variante : parcours inchangé.
+2. Produit avec taille seule : choix obligatoire, panier affiche taille, checkout envoie `variant_combo`.
+3. Produit avec couleur seule : choix couleur visible, panier affiche couleur, checkout envoie `variant_combo`.
+4. Produit avec couleur + taille : les deux dimensions sont choisies et stockées.
+5. Deux variantes du même produit dans le panier : elles restent deux lignes distinctes.
+6. Variante en rupture : bouton désactivé, ajout impossible.
+7. Produit `products.stock = NULL` + `product_variants.stock = 1` : paiement décrémente la variante.
+8. Stripe : paiement accepté décrémente stock global et stock variante.
+9. Cash relais : confirmation agent décrémente stock global et stock variante.
+10. Wallet full : paiement intégral wallet déclenche aussi le cycle stock.
+11. Détail commande / suivi / admin / sourcing : variante visible partout où le métier en a besoin.
+
 ### Tests manquants : `product-admin-service.js`
 
 À créer dans `tests/unit/product-admin-service.test.js` :
@@ -267,6 +415,8 @@ Classement opératoire :
 ### Vérifications ponctuelles
 
 1. Vérifier DB live pour `revoked_tokens` et appliquer `migrations/072_jwt_revocation.sql` si la table est absente.
+2. Vérifier si le catalogue produit peut dépasser 200 articles actifs ; si oui, traiter `COUTURE-04` avant croissance catalogue.
+3. Vérifier le suivi rapide : désactiver ou remplacer le format `KMR-2025-XXXX` si aucune commande actuelle ne suit ce format.
 
 ---
 
