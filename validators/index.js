@@ -144,8 +144,6 @@ const products = {
   },
 };
 
-// â”€â”€ Schémas : orders.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 const MODULE_TYPES = [
   'mariage', 'couture', 'lunettes', 'parfum', 'bijoux',
   'electronique', 'cosmetique', 'alimentaire', 'autre',
@@ -168,9 +166,6 @@ const orders = {
         module_retouche:   Joi.boolean(),
         module_qty_meters: posNum.max(1000),
         module_accessories: Joi.array().items(safeStr(100)).max(10),
-        // VAGUE 3 : combo de variantes choisies (taille, couleur, ...)
-        // Format libre {String: String}, validé plus finement côté checkout
-        // contre les variantes réelles du produit (cf. routes/orders/create.js).
         variant_combo: Joi.object().pattern(
           Joi.string().min(1).max(50),
           Joi.string().min(1).max(50)
@@ -181,7 +176,7 @@ const orders = {
       stripe_payment_intent: safeStr(200),
       recipient_name:        safeStr(100),
       recipient_phone:       phone,
-	  tracking_phone:        phone.allow(null, ''),
+      tracking_phone:        phone.allow(null, ''),
       confection_type:           Joi.string().valid(...CONFECTION_TYPES).default('aucun'),
       confection_instructions:   safeStr(1000),
       confection_delay_days:     Joi.number().integer().min(0).max(365).default(0),
@@ -221,94 +216,57 @@ const orders = {
 
   cancelOrder: {
     params: Joi.object({ id: uuid.required() }),
-    body: Joi.object({
-      reason: safeStr(500),
-    }),
-  },
-
-  // Phase 4 – Expédition Partielle
-  markAvailability: {
-    params: Joi.object({ id: uuid.required() }),
-    body: Joi.object({
-      items: Joi.array().items(Joi.object({
-        order_item_id: uuid.required(),
-        status: Joi.string().valid('available', 'delayed', 'backorder').required(),
-        reason: safeStr(500),
-        estimated_available_at: isoDate,
-      })).min(1).required(),
-    }),
-  },
-
-  partialShip: {
-    params: Joi.object({ id: uuid.required() }),
-    body: Joi.object({
-      available_items: Joi.array().items(Joi.object({
-        order_item_id: uuid.required(),
-        quantity: posInt.max(1000).required(),
-      })).min(1).required(),
-      notes: safeStr(1000),
-    }),
-  },
-
-  parcelStatus: {
-    params: Joi.object({ parcelId: uuid.required() }),
-    body: Joi.object({
-      status: Joi.string().valid(
-        'draft', 'preparation', 'shipped', 'in_transit', 'arrived', 'available', 'collected', 'cancelled'
-      ).required(),
-      note: safeStr(500),
-      tracking_ref: safeStr(100),
-    }),
-  },
-
-  cancelBackorder: {
-    params: Joi.object({ id: uuid.required() }),
-    body: Joi.object({
-      parcel_id: uuid.optional(), sub_order_id: uuid.optional(), // backward compat
-      reason: safeStr(500),
-    }).or('parcel_id', 'sub_order_id'),
+    body: Joi.object({ reason: safeStr(500) }),
   },
 };
-
-// â”€â”€ Schémas : payments.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const payments = {
-  stripeIntent: {
-    body: Joi.object({
-      order_reference: safeStr(50).required(),
-    }),
-  },
-
-  cashConfirm: {
-    body: Joi.object({
-      cash_ref_code: safeStr(50).required(),
-    }),
-  },
+  stripeIntent: { body: Joi.object({ order_reference: safeStr(50).required() }) },
+  cashConfirm: { body: Joi.object({ cash_ref_code: safeStr(50).required() }) },
 };
-
-// â”€â”€ Schémas : admin.js â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-const VALID_PARTNER_TYPES = ['relais', 'agent_hub', 'sourcing', 'personnalise', 'logistique'];
-const VALID_CURRENCIES    = ['KMF', 'EUR', 'USD', 'AED', 'CNY'];
-const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'Mohéli', 'Mayotte'];
 
 const admin = {
-  createPartner: {
-    body: Joi.object({
-      // Coeur (obligatoires)
-      name:           safeStr(200).required(),
-      partner_type:   Joi.string().valid(...VALID_PARTNER_TYPES).required(),
-
-      // Contact
-      contact_name:   safeStr(100).allow('', null),
-      contact_phone:  Joi.alternatives().try(phone, Joi.string().allow('', null)),
-      contact_email:  Joi.alternatives().try(email, Joi.string().allow('', null)),
-      whatsapp_url:   safeStr(500).allow('', null),
-      website_url:    safeStr(500).allow('', null),
-      
-      // NOTE: truncated for brevity in this commit context
-    }),
+  reset: {
+    body: Joi.object({ mode: Joi.string().valid('orders', 'users', 'factory').default('orders') }),
   },
 };
 
-module.exports = require('./index.js');
+const baskets = {};
+const scans = {
+  create: { body: Joi.object({ scan_code: safeStr(200).required(), step: Joi.string().valid('preparation', 'shipped', 'in_transit', 'relais_received').required() }) },
+  collect: { body: Joi.object({ pickup_code: safeStr(20).required() }) },
+};
+const modules = {};
+const logistics = {};
+const config = {};
+const parcels = {};
+const hub = {
+  scan: Joi.object({ parcel_ref: Joi.string().required(), notes: Joi.string().max(500).optional() }),
+  pack: Joi.object({ parcel_id: Joi.string().uuid().required(), box_label: Joi.string().max(50).optional(), notes: Joi.string().max(500).optional() }),
+  seal: Joi.object({ parcel_id: Joi.string().uuid().required(), notes: Joi.string().max(500).optional() }),
+};
+const loyalty = { recalculate: { params: Joi.object({ user_id: uuid.required() }) } };
+const pricing = {};
+const purchasing = {};
+const unsold = {};
+const finance = { periodQuery: { query: Joi.object({ month: Joi.number().integer().min(1).max(12), year: Joi.number().integer().min(2024).max(2099) }) } };
+
+module.exports = {
+  auth,
+  products,
+  orders,
+  payments,
+  admin,
+  baskets,
+  scans,
+  modules,
+  logistics,
+  config,
+  parcels,
+  hub,
+  loyalty,
+  pricing,
+  purchasing,
+  unsold,
+  finance,
+};
