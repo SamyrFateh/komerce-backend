@@ -88,8 +88,6 @@ Action ouverte : si le fichier devient un point de friction, proposer une décou
 
 Statut : **clôturé — 2026-06-15**.
 
-État vérifié :
-
 - `/webhook/authkey-whatsapp` est protégé par `verifyAuthkeyWebhook`.
 - En production, l'absence de `AUTHKEY_WEBHOOK_SECRET` fait rejeter le webhook Authkey.
 - `docs/CARTOGRAPHY_360.md` décrit déjà ce comportement.
@@ -98,8 +96,6 @@ Statut : **clôturé — 2026-06-15**.
 ### D-04 — Versionning applicatif
 
 Statut : **clôturé — 2026-06-15**.
-
-Convention adoptée et appliquée :
 
 - `package.json` est la source de vérité du numéro de version ;
 - `/api/health` retourne `require('./package.json').version` ;
@@ -115,12 +111,6 @@ Les trois orphelins ont été supprimés après vérification :
 - `routes/routes_orders_cancel.js` ;
 - `routes/routes_orders_status.js` ;
 - `routes/routes_orders_parcels.js`.
-
-État vérifié :
-
-- les routes actives sont dans `routes/orders/` et montées par `routes/orders.js` ;
-- `routes_orders_cancel.js` et `routes_orders_status.js` étaient des doublons du contenu actif ;
-- `routes_orders_parcels.js` était une version inline pré-refacto R4 ; la logique active vit dans `services/parcel-operations.js` et `routes/orders/parcels.js` délègue correctement.
 
 Voir [`routes/ORPHELINS_FRESH003.md`](../../routes/ORPHELINS_FRESH003.md).
 
@@ -154,15 +144,17 @@ Action : si un audit local Boutique contredit ces documents ou le code, le class
 
 ### D-08 — Audit couture / variantes bout-en-bout
 
-Statut : **ouvert — audit métier rejoué le 2026-06-15**.
+Statut : **ouvert — audit métier rejoué et approfondi le 2026-06-15**.
 
-Source historique utile : `docs/_archive/AUDIT_BACKEND_FINDINGS.md` + `docs/audit/FRONTEND_AUDIT.md`. Ces audits ne sont pas des vérités actuelles, mais leur grille métier reste excellente : produit → boutique → panier → checkout → commande → paiement/stock → suivi/sourcing.
+Sources historiques utiles : `docs/_archive/AUDIT_BACKEND_FINDINGS.md` + `docs/audit/FRONTEND_AUDIT.md`. Ces audits ne sont pas des vérités actuelles, mais leur grille métier reste excellente : produit → boutique → panier → checkout → commande → paiement/stock → panier partagé → suivi → sourcing → facture/notifs.
 
 Lecture actuelle :
 
 - le backend variantes est partiellement prêt (`product_variants`, `has_variants`, `variant_combo`, validation commande, stockage `order_items.variant_combo`) ;
+- le validateur `orders.create` accepte déjà `items[].variant_combo` comme objet `{String:String}` ;
 - le frontend charge et affiche certaines variantes dans la fiche produit ;
-- la couture complète n'est pas garantie : le choix client ne semble pas encore devenir un item panier/commande fiable.
+- la couture complète n'est pas garantie : le choix client ne devient pas encore une ligne panier/commande fiable ;
+- même si le choix était envoyé, plusieurs sorties métier ne relisent pas encore `order_items.variant_combo`.
 
 #### COUTURE-01 — Variantes affichées mais non propagées au panier/checkout
 
@@ -174,7 +166,8 @@ Statut : **ouvert — priorité P0/P1**.
 - `b-modal-core.js` appelle `_renderVariants(full.variants, full)` ;
 - `_renderVariants()` affiche des choix et peut modifier le prix visuel ;
 - `b-modal-cart.js` ajoute seulement `state.modalProduct` au panier, sans stocker de `variant_combo` ;
-- `submitOrder()` construit les items avec `product_id`, `quantity`, `confection_type: 'aucun'`, sans `variant_combo`.
+- `submitOrder()` construit les items avec `product_id`, `quantity`, `confection_type: 'aucun'`, sans `variant_combo` ;
+- `_createKomerceOrderForPayPal()` fait la même chose côté PayPal.
 
 Conséquence métier : l'utilisateur peut croire avoir choisi une taille/variante, mais la commande peut partir comme produit simple.
 
@@ -184,8 +177,8 @@ Conséquence métier : l'utilisateur peut croire avoir choisi une taille/variant
 2. empêcher l'ajout panier si une variante obligatoire n'est pas choisie ;
 3. stocker `variant_combo` dans chaque ligne panier ;
 4. permettre deux variantes du même produit dans le panier (`robe M` + `robe L`) sans fusionner par simple `product.id` ;
-5. envoyer `variant_combo` dans `submitOrder()` ;
-6. afficher la variante dans panier, récap checkout, succès commande, suivi et admin.
+5. envoyer `variant_combo` dans `submitOrder()` et `_createKomerceOrderForPayPal()` ;
+6. afficher la variante dans panier, récap checkout, succès commande, suivi, admin, sourcing et facture.
 
 #### COUTURE-02 — Variantes couleur ignorées côté fiche produit
 
@@ -222,6 +215,70 @@ Conséquence métier : au-delà de 200 produits actifs, la boutique peut silenci
 
 À corriger : pagination frontend par `offset` ou convention explicite backend/frontend sur la limite.
 
+#### COUTURE-05 — `variant_type` injecté dans le DOM sans garde suffisante
+
+Statut : **ouvert — priorité P2 sécurité/hygiène**.
+
+État vérifié : `_renderVariants()` injecte `type` dans `innerHTML` pour le label de variante. Si `variant_type` vient de la DB/admin, le risque est limité mais réel.
+
+À corriger : construire le label en DOM + `textContent`, ou appliquer `sanitize(type)`.
+
+#### COUTURE-06 — Variantes peu visibles dans suivi/admin/sourcing/facture
+
+Statut : **ouvert — priorité P1 métier**.
+
+Le stockage `order_items.variant_combo` existe côté commande, mais plusieurs lectures métier ne le sélectionnent pas :
+
+- `routes/orders/detail.js` : items sans `variant_combo` ;
+- `routes/client-tracking.js` : items sans `variant_combo` ;
+- `routes/order-api-v2.js` : détail complet sans `variant_combo` ;
+- `services/parcel-auto-create-service.js` : `parcel_items.product_name` sans variante ;
+- `services/invoice-service.js` : facture sans variante ;
+- notifications : items envoyés sans variante.
+
+Conséquence métier : même si la variante est stockée, les personnes qui doivent acheter, préparer, livrer ou vérifier peuvent ne pas voir la taille/couleur réelle.
+
+À corriger : définir une représentation lisible unique de la variante, par exemple `Taille: M · Couleur: Bleu`, puis l'afficher dans tous les écrans/snapshots concernés.
+
+#### COUTURE-07 — Panier partagé perd les variantes
+
+Statut : **ouvert — priorité P1, surtout Boutique First**.
+
+État vérifié :
+
+- `b-share-cart.js#createSharedCart()` envoie seulement `{ product_id, quantity }` ;
+- `shared-cart-engine#createSharedCartFromCartItems()` enrichit depuis DB uniquement par `product_id` ;
+- `shared_cart_items` snapshotte nom/image/catégorie/quantité/prix, mais pas `variant_combo` ;
+- `convertSharedCartToOrder()` recrée `order_items` sans `variant_combo`.
+
+Conséquence métier : un panier partagé contenant des tailles/couleurs peut perdre l'information variante avant même le paiement collectif.
+
+À corriger : étendre le contrat `cart_items`, le snapshot `shared_cart_items`, la vue publique et la conversion vers commande.
+
+#### COUTURE-08 — Admin variante : `deleteVariant()` semble incompatible avec le modèle `variant_combo`
+
+Statut : **ouvert — priorité P1 admin/data**.
+
+État vérifié : `product-admin-service.deleteVariant()` vérifie `order_items.variant_id = $1`, mais le schéma actuel expose `order_items.variant_combo jsonb` et la recherche code ne montre pas d'autre usage de `variant_id`.
+
+Conséquence métier : suppression d'une variante peut soit échouer SQL si la colonne n'existe pas en DB live, soit ne pas bloquer correctement une variante déjà utilisée par des commandes.
+
+À corriger : remplacer le guard par une vérification contre `variant_combo` (`variant_type` + `variant_value`) et utiliser les statuts réels (`collected`, `cancelled`, `refunded`).
+
+#### COUTURE-09 — Prix variante affiché mais non porté par le panier
+
+Statut : **ouvert — priorité P1 si variantes avec prix spécifique**.
+
+État vérifié : `_renderVariants()` peut changer `dom.modalPrice` si `opt.price_kmf` existe, mais `addToCart()` conserve `product.price_kmf` et `cartTotal()` calcule sur `i.product.price_kmf`.
+
+Conséquence métier : le prix affiché pour une variante peut diverger du prix panier/checkout/commande.
+
+À corriger : porter `unit_price_kmf` au niveau ligne panier, issu de la variante choisie si elle surcharge le prix.
+
+### D-09 — Suivi client / références / timeline
+
+Statut : **ouvert**.
+
 #### TRACK-01 — Suivi rapide par référence obsolète
 
 Statut : **ouvert — priorité P1 UX/suivi**.
@@ -246,27 +303,45 @@ Conséquence métier : une commande `confirmed` ou `ordered` peut être affiché
 
 À corriger : définir une projection timeline unique pour `pending`, `confirmed`, `paid`, `ordered`, `preparation`, `shipped`, `in_transit`, `available`, `collected`, `cancelled`, `refunded`.
 
-#### COUTURE-05 — `variant_type` injecté dans le DOM sans garde suffisante
+### D-10 — Facture : incohérence prix unitaire / total ligne
 
-Statut : **ouvert — priorité P2 sécurité/hygiène**.
+Statut : **ouvert — priorité P1 comptable**.
 
-État vérifié : `_renderVariants()` injecte `type` dans `innerHTML` pour le label de variante. Si `variant_type` vient de la DB/admin, le risque est limité mais réel.
+État vérifié :
 
-À corriger : construire le label en DOM + `textContent`, ou appliquer `sanitize(type)`.
+- `routes/orders/create.js` insère `order_items.price_kmf = product.price_kmf` donc prix unitaire ;
+- `shared-cart-engine.convertSharedCartToOrder()` insère aussi `price_kmf = unit_price_kmf_snapshot` ;
+- `services/invoice-service.js` lit `oi.quantity, oi.price_kmf`, puis calcule `unit_price = price_kmf / quantity` et `total = price_kmf`.
 
-#### COUTURE-06 — Variantes peu visibles dans suivi/admin/sourcing
+Conséquence métier : pour une quantité > 1, la facture peut sous-totaliser les lignes et afficher un prix unitaire faux. Le total commande reste celui de `orders.total_kmf`, mais le détail facture devient incohérent.
 
-Statut : **à vérifier — priorité P2 métier**.
+À corriger : décider une convention unique : soit `order_items.price_kmf` = prix unitaire, soit total ligne. Vu le code commande actuel, corriger la facture pour faire `unit_price = price_kmf`, `total = price_kmf * quantity`.
 
-Le stockage `order_items.variant_combo` existe côté commande, mais il faut vérifier que la variante choisie apparaît dans :
+### D-11 — PayPal checkout affiché mais probablement cassé
 
-- détail commande client ;
-- suivi client ;
-- dashboard/admin commande ;
-- sourcing/préparation ;
-- facture/notifications si applicable.
+Statut : **ouvert — priorité P1 si PayPal visible en prod**.
 
-Action : ne pas considérer la couture terminée tant que la variante n'est pas visible aux personnes qui doivent acheter/préparer le bon article.
+État vérifié :
+
+- `b-checkout.js` affiche le mode `paypal_eur` et appelle `_createKomerceOrderForPayPal()` ;
+- `_createKomerceOrderForPayPal()` appelle `/api/orders` avec `payment_mode: 'paypal_eur'` ;
+- `validators/orders.create` n'accepte que `stripe_eur` et `cash_relais` ;
+- `routes/orders/create.js` refuse explicitement tout sauf `stripe_eur` et `cash_relais` ;
+- le schéma DB et `routes/payments-paypal.js` savent pourtant gérer `paypal_eur` ensuite.
+
+Conséquence métier : le bouton PayPal peut être visible mais échouer avant même la création du PayPal Order.
+
+À corriger : aligner `validators/orders.create`, `routes/orders/create.js`, le statut initial et le cycle PayPal. Tester création commande PayPal → create-order → capture → `confirmPaymentCycle`.
+
+### D-12 — Notifications payeur/bénéficiaire : jointure recipient probablement erronée
+
+Statut : **ouvert — priorité P1 si suivi double critique**.
+
+État vérifié : `notification-service.js` charge parfois `recipient_phone` avec `LEFT JOIN users r ON r.id = o.recipient_id`, alors que `orders.recipient_id` est alimenté depuis la table `recipients` dans `routes/orders/create.js`.
+
+Conséquence métier : certaines notifications de statut peuvent perdre le vrai bénéficiaire et retomber sur le payeur ou aucun téléphone, malgré la doctrine “suivi envoyé aux deux quand nécessaire”.
+
+À corriger : joindre `recipients r ON r.id = o.recipient_id`, et couvrir au moins : payeur diaspora + bénéficiaire local, expédition, disponibilité/retrait, annulation.
 
 ---
 
@@ -393,11 +468,20 @@ Classement opératoire :
 4. Produit avec couleur + taille : les deux dimensions sont choisies et stockées.
 5. Deux variantes du même produit dans le panier : elles restent deux lignes distinctes.
 6. Variante en rupture : bouton désactivé, ajout impossible.
-7. Produit `products.stock = NULL` + `product_variants.stock = 1` : paiement décrémente la variante.
-8. Stripe : paiement accepté décrémente stock global et stock variante.
-9. Cash relais : confirmation agent décrémente stock global et stock variante.
-10. Wallet full : paiement intégral wallet déclenche aussi le cycle stock.
-11. Détail commande / suivi / admin / sourcing : variante visible partout où le métier en a besoin.
+7. Variante avec prix spécifique : prix modal = prix panier = prix checkout = prix commande.
+8. Produit `products.stock = NULL` + `product_variants.stock = 1` : paiement décrémente la variante.
+9. Stripe : paiement accepté décrémente stock global et stock variante.
+10. Cash relais : confirmation agent décrémente stock global et stock variante.
+11. Wallet full : paiement intégral wallet déclenche aussi le cycle stock.
+12. Panier partagé : variante conservée dans snapshot public, contributions, finalisation commande.
+13. Détail commande / suivi / admin / sourcing / facture : variante visible partout où le métier en a besoin.
+14. `deleteVariant` : bloque une variante utilisée par une commande en cours et ne référence pas une colonne inexistante.
+
+### Paiements / facture / notifications
+
+1. PayPal : commande `paypal_eur` créée, PayPal Order créé, capture OK, `confirmPaymentCycle` appelé.
+2. Facture quantité > 1 : lignes cohérentes (`unit_price`, `total`, subtotal) avec `orders.total_kmf`.
+3. Notification payeur + bénéficiaire : commande diaspora vers bénéficiaire local, statut shipped/collected, les bons numéros reçoivent les bons messages.
 
 ### Tests manquants : `product-admin-service.js`
 
@@ -417,6 +501,7 @@ Classement opératoire :
 1. Vérifier DB live pour `revoked_tokens` et appliquer `migrations/072_jwt_revocation.sql` si la table est absente.
 2. Vérifier si le catalogue produit peut dépasser 200 articles actifs ; si oui, traiter `COUTURE-04` avant croissance catalogue.
 3. Vérifier le suivi rapide : désactiver ou remplacer le format `KMR-2025-XXXX` si aucune commande actuelle ne suit ce format.
+4. Vérifier si `paypal_eur` est visible en production ; si oui, traiter `D-11` avant communication utilisateur.
 
 ---
 
