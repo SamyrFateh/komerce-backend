@@ -45,14 +45,54 @@ function _isStagingAllowed(rawPhone) {
   return false;
 }
 
-// WID des templates — surchargeable via env au cas où Meta regénère les IDs
+function envFirst(...names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return String(value).trim();
+    }
+  }
+  return null;
+}
+
+// WID des templates.
+// Railway utilise aujourd'hui AUTHKEY_WID_* ; les anciens noms WID_* restent acceptés.
 const WID = {
-  ordercreated:     process.env.WID_ORDER_CREATED     || '32183',
-  paymentconfirmed: process.env.WID_PAYMENT_CONFIRMED || '32182',
-  ordershipped:     process.env.WID_ORDER_SHIPPED     || '32184',
-  orderdelivered:   process.env.WID_ORDER_DELIVERED   || '32185',
-  ordercancelled:   process.env.WID_ORDER_CANCELLED   || '32186',
-  abandonedcart:    process.env.WID_ABANDONED_CART    || '32187',
+  ordercreated: envFirst(
+    'AUTHKEY_WID_ORDER_CREATED',
+    'AUTHKEY_ORDER_CREATED_WID',
+    'WID_ORDER_CREATED'
+  ) || '32183',
+  paymentconfirmed: envFirst(
+    'AUTHKEY_WID_PAYMENT_CONFIRMED',
+    'AUTHKEY_PAYMENT_CONFIRMED_WID',
+    'WID_PAYMENT_CONFIRMED'
+  ) || '32182',
+  ordershipped: envFirst(
+    'AUTHKEY_WID_ORDER_SHIPPED',
+    'AUTHKEY_ORDER_SHIPPED_WID',
+    'WID_ORDER_SHIPPED'
+  ) || '32184',
+  orderdelivered: envFirst(
+    'AUTHKEY_WID_ORDER_DELIVERED',
+    'AUTHKEY_ORDER_DELIVERED_WID',
+    'WID_ORDER_DELIVERED'
+  ) || '32185',
+  ordercancelled: envFirst(
+    'AUTHKEY_WID_ORDER_CANCELLED',
+    'AUTHKEY_ORDER_CANCELLED_WID',
+    'WID_ORDER_CANCELLED'
+  ) || '32186',
+  abandonedcart: envFirst(
+    'AUTHKEY_WID_ABANDONED_CART',
+    'AUTHKEY_ABANDONED_CART_WID',
+    'WID_ABANDONED_CART'
+  ) || '32187',
+  invoiceready: envFirst(
+    'AUTHKEY_WID_INVOICE_READY',
+    'AUTHKEY_INVOICE_READY_WID',
+    'WID_INVOICE_READY'
+  ),
 };
 
 // ─── Détection automatique de l'indicatif pays ──────────────────────────
@@ -144,6 +184,8 @@ function toBodyValues(variables = {}) {
     'amount',
     'relay_point',
     'item_count',
+    'invoice_number',
+    'invoice_url',
     'code',
     'otp',
     'link',
@@ -261,6 +303,7 @@ async function callAuthKeyText({ mobile, message }) {
     return { ok: false, error: 'network_error', details: err.message };
   }
 }
+
 async function callAuthKey({ wid, mobile, variables = {} }) {
   if (!API_KEY) {
     return { ok: false, error: 'missing_api_key' };
@@ -277,7 +320,7 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
   // ── Staging guard ──────────────────────────────────────────────────────
   if (!_isStagingAllowed(mobile)) {
     log.warn({ mobile, wid }, '[authkey] staging: numéro non autorisé — WID bloqué');
-    return { ok: false, reason: 'staging_not_allowed', mobile };
+    return { ok: false, reason: 'staging_not_allowed', mobile, wid };
   }
 
   const bodyValues = toBodyValues(variables);
@@ -332,6 +375,7 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
         providerStatus,
         messageId,
         data,
+        wid: String(wid),
       };
     }
 
@@ -348,10 +392,11 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
       messageId,
       providerStatus,
       data,
+      wid: String(wid),
     };
   } catch (err) {
     log.error({ err, wid }, 'AuthKey request failed');
-    return { ok: false, error: 'network_error', details: err.message };
+    return { ok: false, error: 'network_error', details: err.message, wid: String(wid) };
   }
 }
 
@@ -410,6 +455,24 @@ async function notifyAbandonedCart({ mobile, name, itemCount }) {
   });
 }
 
+async function notifyInvoiceReady({ mobile, name, orderRef, invoiceNumber, invoiceUrl }) {
+  if (!WID.invoiceready) {
+    return { ok: false, error: 'missing_wid_invoice_ready' };
+  }
+  return callAuthKey({
+    wid: WID.invoiceready,
+    mobile,
+    variables: {
+      name,
+      order_ref: orderRef,
+      invoice_number: invoiceNumber,
+      invoice_url: invoiceUrl,
+      link: invoiceUrl,
+      url: invoiceUrl,
+    },
+  });
+}
+
 module.exports = {
   callAuthKey,
   callAuthKeyText,
@@ -419,8 +482,8 @@ module.exports = {
   notifyOrderDelivered,
   notifyOrderCancelled,
   notifyAbandonedCart,
+  notifyInvoiceReady,
   parseMobile,
   WID,
 };
-
 
