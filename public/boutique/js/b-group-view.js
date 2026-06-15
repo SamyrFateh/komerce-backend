@@ -804,34 +804,7 @@ function renderParticipantItemsAccordion(items, total, cart, settlementOpen) {
  * Aucun bouton ajouter / modifier / supprimer / commander seul.
  */
 function ensureSnapshotStyles() {
-  if (document.getElementById('k-group-snapshot-styles')) return;
-  const st = document.createElement('style');
-  st.id = 'k-group-snapshot-styles';
-  st.textContent = `
-.k-group-item-row--tap{cursor:pointer;transition:background .12s}
-.k-group-item-row--tap:hover{background:var(--sand,rgba(0,0,0,.03))}
-.k-group-item-row--tap:focus-visible{outline:2px solid var(--violet,#6b4eff);outline-offset:-2px}
-.k-group-item-chev{margin-left:8px;color:var(--text-muted,#999);font-size:18px;line-height:1}
-.k-gsnap-overlay{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.45);
-  display:flex;align-items:flex-end;justify-content:center;animation:kGsnapFade .2s ease}
-@keyframes kGsnapFade{from{opacity:0}to{opacity:1}}
-@media(min-width:600px){.k-gsnap-overlay{align-items:center}}
-.k-gsnap-sheet{background:var(--white,#fff);border-radius:20px 20px 0 0;width:100%;max-width:420px;
-  padding:0 0 calc(20px + env(safe-area-inset-bottom));overflow:hidden;animation:kGsnapUp .28s ease}
-@media(min-width:600px){.k-gsnap-sheet{border-radius:16px;padding-bottom:20px}}
-@keyframes kGsnapUp{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
-.k-gsnap-img{width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--sand,#f2f2f2);display:block}
-.k-gsnap-img--ph{display:flex;align-items:center;justify-content:center;font-size:48px}
-.k-gsnap-body{padding:18px 20px 4px}
-.k-gsnap-cat{font-size:12px;font-weight:600;color:var(--text-muted,#999);text-transform:uppercase;letter-spacing:.04em}
-.k-gsnap-name{font-size:18px;font-weight:800;color:var(--text,#111);margin:4px 0 8px;line-height:1.25}
-.k-gsnap-price{font-size:20px;font-weight:800;color:var(--violet,#6b4eff)}
-.k-gsnap-note{font-size:12px;color:var(--text-muted,#999);margin:12px 0 0;line-height:1.5}
-.k-gsnap-back{display:block;width:calc(100% - 40px);margin:16px 20px 0;padding:13px;
-  background:var(--violet,#6b4eff);color:#fff;border:none;border-radius:50px;
-  font-size:15px;font-weight:700;cursor:pointer}
-.k-gsnap-back:hover{filter:brightness(.95)}`;
-  document.head.appendChild(st);
+  /* CSS migré → css/group-cart-flow.css (doctrine §1). No-op conservé pour compat des appels. */
 }
 
 function openProductSnapshotSheet(item) {

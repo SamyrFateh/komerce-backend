@@ -1474,8 +1474,8 @@ body.cart-open .k-wa-fab {
 }
 
 /* ── Checkout body mobile ── */
-.k-order-body--checkout {
-  padding: 10px 14px calc(74px + env(safe-area-inset-bottom)) !important;
+.k-order-overlay.open .k-order-body--checkout {
+  padding: 10px 14px calc(74px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1671,8 +1671,8 @@ body.cart-open .k-wa-fab {
 
 /* Sur desktop, restaurer les tailles normales (breakpoint canonique 900) */
 @media (min-width: 900px) {
-  .k-order-body--checkout {
-    padding: 16px 16px calc(90px + env(safe-area-inset-bottom)) !important;
+  .k-order-overlay.open .k-order-body--checkout {
+    padding: 16px 16px calc(90px + env(safe-area-inset-bottom));
   }
   .ck-section-block { padding-top: 18px; }
   .ck-section-title { font-size: .68rem; margin-bottom: 6px; }

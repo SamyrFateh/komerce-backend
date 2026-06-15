@@ -2,12 +2,11 @@
   "total": 2,
   "perFile": {
     "group-cart-flow.css": [
-      "min:381"
+      "max:380"
     ],
     "modal-shell.css": [
       "max:1120"
     ]
   },
-  "savedAt": "2026-06-13T07:02:39.621Z",
-  "note": "group-cart-flow.css min:381 = mobile-first rewrite de max:380 (LOT6 actions-row + condensation stats). modal-shell.css max:1120 = range desktop étroit grille modale, légitimé depuis 2026-06-03."
+  "savedAt": "2026-06-15T05:41:00.344Z"
 }

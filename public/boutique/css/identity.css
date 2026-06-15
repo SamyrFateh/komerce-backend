@@ -312,8 +312,8 @@ body.k-id-scroll-lock { overflow: hidden; }
 }
 
 /* ── Sending state ───────────────────────────────────────────────────── */
-.k-id-btn--sending {
-  background: var(--coral) !important;
+.k-id-btn.k-id-btn--sending {
+  background: var(--coral);
   cursor: default;
 }
 .k-id-sending-dot {
