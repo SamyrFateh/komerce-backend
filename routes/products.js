@@ -47,7 +47,7 @@ router.get('/', async (req, res, next) => {
       offset = 0,
     } = req.query;
 
-    const MAX_LIMIT = 200;
+    const MAX_LIMIT = 1000;
     const safeLimit = Math.min(Math.max(1, parseInt(limit, 10) || 100), MAX_LIMIT);
 
     const conditions = ['p.is_active = TRUE'];

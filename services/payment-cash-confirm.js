@@ -127,6 +127,14 @@ async function confirmCashByReference({ cashRefCode, actor, triggerPurchasing, d
     };
 
     // Post-commit fire-and-forget — non bloquant
+    // LOY-01 — Hook fidélité gros panier
+    try {
+      const loyaltyService = require('./loyalty-service');
+      loyaltyService.handleOrderConfirmed({ orderId: order.id })
+        .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] hook OK:', r); })
+        .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+    } catch (_) { /* non-bloquant */ }
+
     try {
       const notifSvc = require('./notification-service');
       notifSvc.notifyPaymentConfirmed(order.id, order.reference)

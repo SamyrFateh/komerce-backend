@@ -467,6 +467,16 @@ const emailItems = items.map(i => {
 notifyOrderCreated(order, smsPhones, userEmail, emailItems, relais, cashSmsText)
   .catch(err => log.error({ err }, '[ORDER-CREATED] ❌'));
 
+// LOY-01 — Hook fidélité gros panier (wallet full payment, fire-and-forget)
+if (creditApplied > 0 && total_kmf === 0 && order.id) {
+  try {
+    const loyaltyService = require('../../services/loyalty-service');
+    loyaltyService.handleOrderConfirmed({ orderId: order.id })
+      .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] wallet hook OK:', r); })
+      .catch(e => log.warn({ err: e }, '[loyalty] wallet hook error:'));
+  } catch (_) { /* non-bloquant */ }
+}
+
     return res.status(201).json({
       discount_pct: order.discount_pct || 0,
       discount_kmf: order.discount_kmf || 0,

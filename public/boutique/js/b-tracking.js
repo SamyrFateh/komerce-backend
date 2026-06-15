@@ -205,11 +205,11 @@ export function renderTrackViewSearchMode(el) {
         <h2>📦 Suivi de commande</h2>
 
         <div id="k-track-quick">
-          <p class="k-otp-hint">Entrez les 6 chiffres de votre commande (ex: 000042)</p>
+          <p class="k-otp-hint">Entrez votre référence de commande (ex : K3XR7F)</p>
           <div class="k-track-form">
             <div class="k-track-ref-wrap">
-              <span class="k-track-ref-prefix">KOM-2026-</span>
-              <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="000042" maxlength="6" autocomplete="off">
+              <span class="k-track-ref-prefix">K</span>
+              <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="text" placeholder="3XR7F" maxlength="6" autocomplete="off" style="text-transform:uppercase">
             </div>
             <button class="k-track-btn" id="k-track-quick-btn">🔍 Suivre</button>
           </div>
@@ -247,15 +247,14 @@ export function renderTrackViewSearchMode(el) {
 
   const digitsInput = el.querySelector('#k-track-digits');
   digitsInput.addEventListener('input', () => {
-    digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 6);
+    digitsInput.value = digitsInput.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
     if (digitsInput.value.length === 6) el.querySelector('#k-track-quick-btn').click();
   });
 
   el.querySelector('#k-track-quick-btn').addEventListener('click', async () => {
-    const digits = digitsInput.value.replace(/\D/g, '');
-    if (digits.length !== 6) { showToast('Entrez 6 chiffres.', 'error'); return; }
-    const year = new Date().getFullYear();
-    const ref = 'KOM-' + year + '-' + digits.padStart(6, '0');
+    const suffix = digitsInput.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    if (suffix.length !== 6) { showToast('Entrez les 6 caractères de votre référence.', 'error'); return; }
+    const ref = 'K' + suffix;
     const btn = el.querySelector('#k-track-quick-btn');
     btn.disabled = true; btn.textContent = '⏳ Recherche…';
     try {
@@ -264,7 +263,7 @@ export function renderTrackViewSearchMode(el) {
       el.querySelector('#k-otp-step3').classList.remove('u-hidden');
       renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
     } catch(e) {
-      showToast('Commande introuvable. Vérifiez les 6 chiffres.', 'error');
+      showToast('Commande introuvable. Vérifiez la référence (ex : K3XR7F).', 'error');
       btn.disabled = false; btn.textContent = '🔍 Suivre';
     }
   });

@@ -98,6 +98,14 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
 
     // CASH-01 — Hooks post-paiement communs (notification + sourcing),
     // alignés sur /api/payments/cash/confirm et /api/pickup/pay-cash.
+    // LOY-01 — Hook fidélité gros panier
+    try {
+      const loyaltyService = require('../services/loyalty-service');
+      loyaltyService.handleOrderConfirmed({ orderId: result.collection.order_id })
+        .then(r => { if (r && !r.skipped) log.info({ orderId: result.collection.order_id }, '[loyalty] hook OK:', r); })
+        .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+    } catch (_) { /* non-bloquant */ }
+
     try {
       const { triggerPurchasing } = require('../services/purchasing-trigger-service');
       const orderId = result.collection.order_id;

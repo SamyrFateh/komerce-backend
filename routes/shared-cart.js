@@ -669,6 +669,16 @@ router.post('/:id/finalize', authenticate, async (req, res, next) => {
       remaining_cash_kmf: result.remainingCashKmf,
     });
 
+    // LOY-01 — Hook fidélité gros panier (créateur du panier partagé, fire-and-forget)
+    if (result.order?.id) {
+      try {
+        const loyaltyService = require('../services/loyalty-service');
+        loyaltyService.handleOrderConfirmed({ orderId: result.order.id })
+          .then(r => { if (r && !r.skipped) log.info({ orderId: result.order.id }, '[loyalty] hook OK:', r); })
+          .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+      } catch (_) { /* non-bloquant */ }
+    }
+
     // B-03 — Notification WhatsApp "commande confirmée" → tous les participants
     // ayant contribué (status = 'paid').
     // Template : shared_cart_order_confirmed — {{1}} prénom {{2}} titre {{3}} référence commande

@@ -12,9 +12,10 @@
 
 'use strict';
 
-jest.mock('../../utils/logger', () => ({
-  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
-}));
+jest.mock('../../utils/logger', () => {
+  const child = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
+  return { child, forModule: child };
+});
 
 jest.mock('../../services/order-payment-confirmation', () => ({
   confirmPaymentCycle: jest.fn(),
@@ -23,6 +24,14 @@ jest.mock('../../services/order-payment-confirmation', () => ({
 jest.mock('../../routes/pickup-secret', () => ({
   generateAndStoreSecret: jest.fn().mockResolvedValue({ code: 'TEST-CODE' }),
   cacheCodeForReveal: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../services/notification-service', () => ({
+  notifyPaymentConfirmed: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../routes/purchasing', () => ({
+  triggerPurchasing: jest.fn().mockResolvedValue({ ok: true }),
 }));
 
 const {

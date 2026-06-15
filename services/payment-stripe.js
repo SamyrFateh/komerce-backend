@@ -250,6 +250,16 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
     client.release();
   }
 
+  // LOY-01 — Hook fidélité gros panier (fire-and-forget, non-bloquant)
+  if (processedOk && smsContext?.order_id) {
+    try {
+      const loyaltyService = require('./loyalty-service');
+      loyaltyService.handleOrderConfirmed({ orderId: smsContext.order_id })
+        .then(r => { if (r && !r.skipped) log.info({ orderId: smsContext.order_id }, '[loyalty] hook OK:', r); })
+        .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+    } catch (_) { /* non-bloquant */ }
+  }
+
   // Post-commit : notifications + sourcing (fire-and-forget)
   if (smsContext) {
     log.info(`✅ Paiement Stripe confirmé : ${smsContext.order_reference}${stockBlocked ? ' (STOCK BLOCKED)' : ''}`);

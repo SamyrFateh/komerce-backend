@@ -874,7 +874,7 @@ async function getParcelTrace(parcelId) {
       o.reference AS order_ref, o.status AS order_status,
       o.client_name, o.client_phone, o.client_email,
       o.total_amount, o.payment_method,
-      r.name AS relais_name, r.city AS relais_city, r.address AS relais_address
+      r.name AS relais_name, r.zone AS relais_city, r.address AS relais_address
     FROM parcels p
     LEFT JOIN orders o ON o.id = p.order_id
     LEFT JOIN relais r ON r.id = p.relais_id

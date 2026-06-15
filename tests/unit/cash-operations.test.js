@@ -34,13 +34,13 @@ describe('collectCash — CASH-02 invalid_payment_status', () => {
       id: 'order-paid',
       total_kmf: '5000',
       payment_mode: 'cash_relais',
-      payment_status: 'paid',
+      payment_status: 'paid',    // déjà payée
       status: 'confirmed',
       relais_id: 'relais-1',
     };
 
     const client = makeClient([
-      { rows: [order] },
+      { rows: [order] },  // SELECT order FOR UPDATE
     ]);
 
     const result = await collectCash({
@@ -51,6 +51,7 @@ describe('collectCash — CASH-02 invalid_payment_status', () => {
 
     expect(result.invalid_payment_status).toBe(true);
     expect(result.payment_status).toBe('paid');
+    // confirmPaymentCycle ne doit PAS être appelé
     expect(mockConfirmPaymentCycle).not.toHaveBeenCalled();
   });
 
@@ -65,7 +66,7 @@ describe('collectCash — CASH-02 invalid_payment_status', () => {
     };
 
     const client = makeClient([
-      { rows: [order] },
+      { rows: [order] },  // SELECT order FOR UPDATE
     ]);
 
     const result = await collectCash({
@@ -97,10 +98,10 @@ describe('collectCash — nominal', () => {
     };
 
     const client = makeClient([
-      { rows: [order] },
-      { rows: [{ relais_id: 'relais-1' }] },
-      { rows: [] },
-      { rows: [collection] },
+      { rows: [order] },            // SELECT order FOR UPDATE
+      { rows: [{ relais_id: 'relais-1' }] }, // SELECT relais_id from users (agent check)
+      { rows: [] },                  // SELECT cash_collections (doublon check)
+      { rows: [collection] },        // INSERT cash_collections
     ]);
 
     mockConfirmPaymentCycle.mockResolvedValue({
@@ -123,10 +124,22 @@ describe('collectCash — nominal', () => {
 });
 
 // ─── CASH-02 : routes/cash répond 409 sur invalid_payment_status ─────────────
+// Test de la logique de branchement HTTP — simulé via l'interface de collectCash
+
 describe('routes/cash.js — CASH-02 réponse 409 sur invalid_payment_status', () => {
+  /**
+   * On simule ici le comportement de la route sans Express.
+   * La route fait :
+   *   const result = await collectCash(...)
+   *   if (result.invalid_payment_status) → 409
+   *
+   * On vérifie que le code route isole bien ce cas.
+   */
   test('la branche invalid_payment_status produit un status 409 et un message explicite', () => {
+    // Reproduit le branchement de routes/cash.js
     const result = { invalid_payment_status: true, payment_status: 'paid' };
 
+    // Simulation du handler route (sans Express)
     let responseStatus = null;
     let responseBody   = null;
     const res = {

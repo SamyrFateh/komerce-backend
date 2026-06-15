@@ -198,6 +198,14 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
     // PAY-02 — Hooks post-paiement communs (notification + sourcing), alignés sur Stripe/cash.
     // Ne pas notifier ni sourcer si confirmPaymentCycle a bloqué le stock.
     if (!stockBlocked) {
+      // LOY-01 — Hook fidélité gros panier
+      try {
+        const loyaltyService = require('./loyalty-service');
+        loyaltyService.handleOrderConfirmed({ orderId: order.id })
+          .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] hook OK:', r); })
+          .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+      } catch (_) { /* non-bloquant */ }
+
       try {
         const { triggerPurchasing } = require('../routes/purchasing');
         notifSvc.notifyPaymentConfirmed(order.id, order.reference)
@@ -383,6 +391,14 @@ async function _handleCaptureCompleted(event, db, paypal) {
     // PAY-02 — Hooks post-paiement communs (notification + sourcing).
     // Ne pas notifier ni sourcer si confirmPaymentCycle a bloqué le stock.
     if (!cycleResult.stockBlocked) {
+      // LOY-01 — Hook fidélité gros panier
+      try {
+        const loyaltyService = require('./loyalty-service');
+        loyaltyService.handleOrderConfirmed({ orderId: order.id })
+          .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] hook OK:', r); })
+          .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
+      } catch (_) { /* non-bloquant */ }
+
       try {
         const { triggerPurchasing } = require('../routes/purchasing');
         notifSvc.notifyPaymentConfirmed(order.id, order.reference)
