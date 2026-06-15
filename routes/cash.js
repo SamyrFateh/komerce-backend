@@ -60,6 +60,13 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Cette commande n\'est pas en paiement cash relais' });
     }
+    if (result.invalid_payment_status) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: `Encaissement impossible — commande déjà en statut paiement '${result.payment_status}'`,
+        current_payment_status: result.payment_status,
+      });
+    }
     if (result.invalid_status) {
       await client.query('ROLLBACK');
       return res.status(409).json({
