@@ -1957,50 +1957,9 @@ body:has(#k-page-scroll.k-pager-active) {
   height: 0;
 }
 
-/* Slogan mobile : affiché directement (sans dépendance à html.k-mobile-premium-v1) */
-.k-hero-mini-slogan { display: none; } /* masqué par défaut — réactivé ci-dessous */
+/* Slogan mobile : masqué — remplacé par .k-search-slogan (bandeau sous la recherche, ci-dessous) */
+.k-hero-mini-slogan { display: none; }
 .k-hero-bubble       { display: none; }
-
-/* ── Slogan "Qui cherche… trouve !" — mobile (max-width:899px) ── */
-@media (max-width: 899px) {
-  .k-hero-mini-slogan.k-hero-mini-slogan--premium {
-    display: flex;
-    flex-direction: column;
-    align-items: center;        /* centré horizontalement */
-    justify-content: flex-start; /* ancré en haut du bandeau */
-    padding: 0 8px;
-    text-align: center;
-    pointer-events: none;
-    z-index: 5;
-    /* ancré en haut, collé au bord arrondi */
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-  .k-hero-mini-slogan--premium .k-hero-badge { display: none; }
-  .k-hero-mini-slogan--premium .k-hero-sub   { display: none; }
-  .k-hero-mini-slogan--premium .k-hero-cta-row { display: none; }
-  .k-hero-mini-slogan--premium .k-hero-trust   { display: none; }
-  .k-hero-mini-slogan--premium .k-line-1 {
-    font-family: var(--font-display);
-    font-size: clamp(18px, 5vw, 22px);
-    font-weight: 900;
-    color: var(--ocean);
-    line-height: 1.1;
-    text-shadow:
-      0 0 8px rgba(255,255,255,.8),
-      0 1px 4px rgba(255,255,255,.6);
-  }
-  .k-hero-mini-slogan--premium .k-line-2 {
-    font-family: var(--font-display);
-    font-size: clamp(20px, 5.5vw, 26px);
-    font-weight: 900;
-    color: var(--coral);
-    line-height: 1.05;
-    text-shadow:
-      0 0 8px rgba(255,255,255,.8),
-      0 1px 4px rgba(255,255,255,.6);
-  }
-}
 
 /* ── Bandeau slogan recherche — mobile uniquement ───────────────
    Premier enfant de #k-hero-fixed-wrap (index.html) : mesuré par
@@ -2014,10 +1973,17 @@ body:has(#k-page-scroll.k-pager-active) {
     text-align: center;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 14px;
-    color: var(--text);
-    background: var(--sand-warm);
-    padding: 6px 16px;
+    font-size: 15px;
+    letter-spacing: .01em;
+    color: var(--ocean-dark);
+    background: var(--ocean-bg-08);
+    padding: 7px 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .k-search-slogan strong {
+    color: var(--coral);
   }
 }
 
