@@ -70,7 +70,7 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=80">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=81">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=111">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=21">
@@ -163,6 +163,10 @@ if('serviceWorker' in navigator){
 
 <!-- ═══ HERO FIXED WRAP (mobile: fixed; desktop: normal flow) ═══ -->
 <div id="k-hero-fixed-wrap">
+
+<!-- Bandeau slogan — mobile uniquement, premier enfant du wrap fixe pour être
+     mesuré par _recalcPagerVars (cf. setupMobile() plus bas) -->
+<div class="k-search-slogan">Qui cherche&nbsp;! <strong>Trouve&nbsp;!</strong></div>
 
 <!-- ═══ HERO IMAGE (scrolls normally, visible first) ═══ -->
 <h1 class="sr-only">Komerce — La boutique en ligne des Comores</h1>

@@ -271,6 +271,25 @@
   }
 }
 
+/* ── Bandeau slogan recherche — mobile uniquement ───────────────
+   Premier enfant de #k-hero-fixed-wrap (index.html) : mesuré par
+   _recalcPagerVars / setupMobile(), le catalogue se décale donc
+   automatiquement de sa hauteur, sans calcul manuel. */
+.k-search-slogan { display: none; } /* desktop : caché */
+
+@media (max-width: 899px) {
+  .k-search-slogan {
+    display: block;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--sand-warm);
+    padding: 6px 16px;
+  }
+}
+
 /* ── Rail pills texte — mobile-first ─────────────────────────── */
 .k-cats-rail {
   display: flex;
