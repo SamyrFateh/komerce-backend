@@ -103,18 +103,23 @@ Statut : **ouvert documentaire / hygiène release**.
 
 Action : ne pas considérer les anciens audits mentionnant v12.3/v12.4 comme état actuel sans vérification. Décider une convention release unique avant prochain tag prod.
 
-### D-05 — Refacto routes : fichiers historiques doublons non tranchés
+### D-05 — FRESH-003 : fichiers historiques `routes_orders_*`
 
-Statut : **ouvert technique faible priorité**.
+Statut : **clôturé — 2026-06-15**.
+
+Les trois orphelins ont été supprimés après vérification :
+
+- `routes/routes_orders_cancel.js` ;
+- `routes/routes_orders_status.js` ;
+- `routes/routes_orders_parcels.js`.
 
 État vérifié :
 
-- `routes/orders.js` monte les sous-routes actuelles depuis `routes/orders/*`.
-- `routes/orders/status.js` et `routes/routes_orders_status.js` ont le même contenu apparent.
-- `routes/orders/cancel.js` et `routes/routes_orders_cancel.js` ont le même contenu apparent.
-- Un audit de refacto routes existe, mais il reste historique tant qu'il n'est pas recoupé avec une recherche d'imports complète.
+- les routes actives sont dans `routes/orders/` et montées par `routes/orders.js` ;
+- `routes_orders_cancel.js` et `routes_orders_status.js` étaient des doublons du contenu actif ;
+- `routes_orders_parcels.js` était une version inline pré-refacto R4 ; la logique active vit dans `services/parcel-operations.js` et `routes/orders/parcels.js` délègue correctement.
 
-Action : confirmer par recherche d'imports complète avant suppression. Si aucun import, supprimer ou archiver pour éviter les faux positifs futurs.
+Voir [`routes/ORPHELINS_FRESH003.md`](../../routes/ORPHELINS_FRESH003.md).
 
 ### D-06 — `docs/SCHEMA.md` contient une dette N4 JWT probablement obsolète ou à revalider
 
@@ -137,6 +142,16 @@ Statut : **surveillance documentaire**.
 - `docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`.
 
 Action : si un audit local Boutique contredit ces documents ou le code, le classer explicitement comme historique et ne pas le recopier dans une tâche.
+
+### D-08 — R6 shared-cart : dette de lisibilité confirmée
+
+Statut : **ouvert faible priorité — pas de traitement sans tests**.
+
+`routes/shared-cart.js` reste volumineux et conserve le vocabulaire V4.1 dans son en-tête/commentaires (`OPEN`, `CLOSED`, `AWAITING_CHOICE`, etc.). Ce n'est pas un bug produit tant que l'UI Boutique First projette les bons statuts humains.
+
+Règle : ne pas renommer les statuts DB mécaniquement. Toute découpe ou renommage exige des tests couvrant les statuts visibles et techniques (`open`, `closed`, `awaiting_choice`, `ordered`, `cancelled`, `expired`, `archived`).
+
+Action ouverte : si le fichier devient un point de friction, proposer une découpe prudente en sous-routes `public` / `creator` / `admin` dans une branche dédiée avec tests.
 
 ---
 
@@ -196,6 +211,14 @@ L'historique PR indique une migration httpOnly cookie mergée. Toute réouvertur
 
 La cartographie indique désormais que le chemin API canonique est `/api/dashboard`. Les chemins HTML admin, comme `/admin/pilotage`, restent servis par le dashboard moderne.
 
+### FP-10 — “R8B products-admin est encore à refactorer”
+
+Écarté — vérifié 2026-06-15.
+
+`routes/products.js` délègue déjà les mutations admin à `services/product-admin-service.js` : create, update, delete, image principale, galerie images, remplacement de variantes et suppression de variante.
+
+Dette résiduelle : ajouter des tests ciblés pour `product-admin-service.js`, sans refaire le refacto.
+
 ---
 
 ## 6. Audits et historiques : règle de traitement
@@ -229,11 +252,23 @@ Classement opératoire :
 4. **Cas D — Statuts** : aucun statut technique visible.
 5. **Cas E — Dépassement du reste** : maximum annoncé et borné avant paiement.
 
+### Tests manquants : `product-admin-service.js`
+
+À créer dans `tests/unit/product-admin-service.test.js` :
+
+1. `createProduct` — payload valide, insert produit, audit prix/stock si applicable.
+2. `createProduct` — catégorie ou sous-catégorie invalide, réponse 422.
+3. `updateProduct` — produit inexistant, réponse 404.
+4. `deleteProduct` — désactive `is_active` sans supprimer la ligne.
+5. `setMainImage` — met à jour `image_url` et gère produit introuvable.
+6. `appendImages` — ajoute dans `images` et initialise `image_url` au premier ajout.
+7. `replaceVariants` — remplace atomiquement les variantes et bloque une suppression totale si commandes en cours.
+8. `deleteVariant` — bloque si commandes en cours, supprime sinon.
+
 ### Docs/code
 
 1. Vérifier DB live pour `revoked_tokens`.
-2. Vérifier les imports avant suppression éventuelle des doublons `routes_routes_*`.
-3. Décider si `docs/backend/SECURITY-MODEL.md` doit porter une section Authkey ou rester centré doctrine retrait/paiement.
+2. Décider si `docs/backend/SECURITY-MODEL.md` doit porter une section Authkey ou rester centré doctrine retrait/paiement.
 
 ---
 
