@@ -1,9 +1,8 @@
 # Cartographie 360 Komerce
 
 > **Statut** : cartographie documentaire canonique  
-> **Dernière consolidation** : 17 mai 2026  
-> **Méthode** : ancienne cartographie v15 remplacée par une version maintenable, vérifiée contre `server.js` et les services critiques.  
-> **Mis à jour le 17 mai 2026** : REQUIRED_ENV complet, `services/order-payment-confirmation.js` ajouté, `collective_payment` ajouté comme source de transition. **SOCLE-2** : sections 6 bis (modules cérémonie), 8 bis (notifications/SMS/idempotence Stripe), 8 ter (partage simple via `/api/shares`) ajoutées ; tables `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions`, `fabrics`, `garment_models` désormais référencées.  
+> **Dernière consolidation** : 15 juin 2026  
+> **Méthode** : version maintenable, vérifiée contre `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js`, `bootstrap/env.js` et les services critiques.  
 > **Règle** : ce document décrit les domaines et invariants. Il évite les comptages figés d'endpoints/fichiers, trop vite obsolètes. Pour le schéma DB complet, voir `SCHEMA.md`.
 
 ---
@@ -27,16 +26,18 @@ Le point d'entrée applicatif est `server.js`.
 
 | Sujet | Source de vérité |
 |---|---|
-| Boot serveur et montage des routes | `server.js` |
+| Boot serveur et montage des routes | `server.js` + `bootstrap/api-routes.js` + `bootstrap/html-routes.js` |
 | Runtime Node | `package.json` (`engines.node >=20.0.0`) |
+| Variables d'environnement | `bootstrap/env.js` |
 | Transitions commande | `services/order-status-machine.js` |
-| Cycle paiement → stock (point d'entrée unique) | `services/order-payment-confirmation.js` |
+| Cycle paiement -> stock | `services/order-payment-confirmation.js` |
 | Pricing | `services/pricing-engine.js` |
 | Wallet / avoirs | `services/wallet-service.js` |
 | Routage logistique | `services/routing.js` |
 | Sécurité pickup/collecte | `routes/pickup-secret.js`, `services/parcel-security.js` |
 | Boutique canonique | `public/boutique/index.html` |
 | Admin moderne | `public/dashboards/admin/index.html` |
+| Panier partagé Boutique First | `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md` + `docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md` |
 
 ---
 
@@ -59,7 +60,7 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/admin/boutique-categories` | Admin catégories boutique. |
 | `/api/modules` | Modules spécialisés (cérémonie : tissus + modèles, lunettes, couture). Voir §6 bis. |
 | `/api/baskets` | Paniers historiques / boutique. |
-| `/api/shares` | Partage simple de panier (système distinct de `/api/shared-carts`). Voir §8 ter. Tables : `cart_shares`, `cart_contributions`. |
+| `/api/shares` | Partage simple de panier, distinct de `/api/shared-carts`. Voir §8 ter. Tables : `cart_shares`, `cart_contributions`. |
 
 ### Commandes, paiements, factures
 
@@ -68,21 +69,32 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/orders` | Commandes. |
 | `/api/v2/orders` | API order-first moderne compatible colis-first. |
 | `/api/payments` | Paiements et webhooks Stripe principaux. |
+| `/api/payments/paypal` | Paiements et webhook PayPal. |
 | `/api/cash` | Flux cash. |
 | `/api/invoices` | Factures / mini-factures. |
 | `/api/wallet` | Wallet client. |
 
-### Paniers partagés et collectifs
+### Paniers partagés
 
 | Préfixe | Rôle |
 |---|---|
-| `/api/shared-carts` | Panier partagé MVP. |
-| `/api/admin/shared-carts` | Administration paniers partagés. |
+| `/api/shared-carts` | Panier partagé Boutique First / MVP historique côté code. |
+| `/api/admin/shared-carts` | Administration paniers partagés et remboursements. |
 | `/api/shared-carts/stripe/webhook` | Webhook Stripe panier partagé, body brut. |
-| `/api/collective-workspaces` | Workspace collectif / événement. |
-| `/api/collective-payments` | Contributions et paiements collectifs. |
-| `/api/collective-payments/stripe/webhook` | Webhook Stripe collectif, body brut. |
-| `/webhook/authkey-whatsapp` | **Webhook WhatsApp entrant (Authkey)** — GET, paramètres query : `Mobile`, `Email`, `Status`, `Log ID`, `Time`. Enregistre les statuts de livraison SMS/WhatsApp. Non authentifié (IP whitelist recommandée). |
+| `/webhook/authkey-whatsapp` | Webhook WhatsApp entrant Authkey. GET avec paramètres query `Mobile`, `Email`, `Status`, `Log ID`, `Time`. Protégé par `verifyAuthkeyWebhook` : secret partagé `AUTHKEY_WEBHOOK_SECRET` via `?token=` ou header `x-authkey-token`; fail-closed en production si secret absent. |
+
+### Système collectif historique non monté
+
+Le système `collective_workspaces` / `collective_payments` n'est plus monté côté API.
+
+| Ancien préfixe | Statut actuel |
+|---|---|
+| `/api/collective-workspaces` | Non monté. Tables `collective_*` conservées comme données historiques. |
+| `/api/collective-payments` | Non monté. |
+| `/api/collective-payments/stripe/webhook` | Supprimé. Pas de raw body configuré dans `server.js`. |
+| `/api/admin/collective` | Non monté. Services repair démontés. |
+
+Ne pas réintroduire ces routes depuis un ancien audit sans décision produit explicite.
 
 ### Logistique colis-first
 
@@ -110,7 +122,7 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/client/tracking` | Suivi côté client. |
 | `/api/pickup` | Secret/code retrait. |
 | `/s/:token` | URL courte suivi. |
-| `/c/:token` | URL courte panier partagé vers boutique. |
+| `/c/:token` | URL courte panier partagé ; redirige vers `/boutique/?p=TOKEN&tab=group`. |
 
 ### Admin, Control Tower, économie
 
@@ -118,11 +130,11 @@ Le point d'entrée applicatif est `server.js`.
 |---|---|
 | `/api/admin` | Admin général. |
 | `/api/admin/dashboard` | Dashboard admin. |
-| `/api/admin/pilotage`, `/api/admin/stats`, `/api/dashboard` | Pilotage et statistiques. |
+| `/api/dashboard` | Pilotage et statistiques, chemin API canonique. |
 | `/api/admin/rules` | Business rules. |
 | `/api/admin/radar` | Radar/alertes. |
 | `/api/admin/economic` | Moteur économique. |
-| `/api/admin/finance`, `/api/finance` | Finance ; `/api/finance` redirige vers `/api/admin/finance`. |
+| `/api/admin/finance`, `/api/finance` | Finance ; `/api/finance` répond 301 JSON vers `/api/admin/finance`. |
 | `/api/admin/finance-config` | Configuration finance. |
 | `/api/admin/loyalty` | Fidélité. |
 | `/api/admin/sourcing` | Sourcing engine + scanner. |
@@ -135,6 +147,8 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/admin/customs-categories` | Catégories douane. |
 | `/api/admin/costing` | Costing. |
 
+Les anciens alias API `/api/admin/pilotage` et `/api/admin/stats` ne sont plus montés. Les chemins HTML `/admin/pilotage` et autres vues admin restent servis par `public/dashboards/admin/index.html`.
+
 ### Pricing public/interne
 
 | Préfixe | Rôle |
@@ -142,26 +156,25 @@ Le point d'entrée applicatif est `server.js`.
 | `/api/pricing` | Recommandations pricing. |
 | `/api/pricing/strategy` | Stratégie pricing avancée. |
 | `/api/simulator` | Simulateur. |
+| `/api/admin/simulator` | Alias admin du simulateur. |
 
 ---
 
 ## 4. Surfaces HTML servies
 
-| Chemin | Fichier servi |
+| Chemin | Comportement / fichier servi |
 |---|---|
 | `/boutique`, `/Komerce_Boutique.html` | `public/boutique/index.html` |
 | fallback non-API | `public/boutique/index.html` |
 | `/mon-compte` | `public/mon-compte.html` |
-| `/cart/shared`, `/cart/shared/:token` | `public/boutique/shared-cart-public.html` |
-| `/account/shared-carts` | `public/boutique/shared-cart-account.html` |
+| `/cart/shared`, `/cart/shared/:token`, `/cart/shared/success`, `/cart/shared/cancel` | Redirection vers `/boutique/?p=TOKEN&tab=group` avec éventuel `shared_payment=success|cancel`. |
+| `/account/shared-carts` | Redirection vers `/boutique/?p=TOKEN&tab=group`. |
+| `/c/:token` | Redirection vers `/boutique/?p=TOKEN&tab=group`. |
 | `/relais`, `/Komerce_Relais.html` | `public/relais/index.html` |
 | `/hub` | `public/hub/index.html` |
-| `/event/create` | `public/boutique/event/create.html` |
-| `/event/manage/:creatorToken` | `public/boutique/event/manage.html` |
-| `/event/w/:publicToken` | `public/boutique/event/public.html` |
-| `/event/pay/:paymentToken` | `public/boutique/event/pay.html` |
-| `/control-tower.html` | `public/dashboards/admin-legacy/control-tower.html` |
-| `/admin/*` chemins modernes | `public/dashboards/admin/index.html` |
+| `/event/create`, `/event/manage/:creatorToken`, `/event/w/:publicToken`, `/event/pay/:paymentToken`, `/event/:creatorToken/manage`, `/workspace/:publicToken` | Redirection vers `/boutique`. |
+| `/control-tower.html` | Redirection 301 vers `/admin/pilotage` sauf `ADMIN_LEGACY_ENABLED=1`. |
+| `/admin/*` chemins modernes listés dans `bootstrap/html-routes.js` | `public/dashboards/admin/index.html` |
 
 ---
 
@@ -176,31 +189,38 @@ Actifs dans `server.js` :
 - `requestIdMiddleware` ;
 - rate limiting global `/api/` ;
 - rate limiting spécialisé pour login/register, cash confirm, scans collect, création commande, dashboard et admin ;
-- webhooks Stripe en `express.raw` avant parser JSON.
+- webhooks Stripe/PayPal en `express.raw` avant parser JSON.
 
 **Utilitaires partagés notables** :
 
 | Fichier | Rôle |
 |---|---|
-| `utils/phone.js` | `normalizePhone(raw, defaultCountry?)` — normalisation E.164 unifiée back/front. Sans `defaultCountry` : conservateur (pas de devinette pays). Avec `'+33'` / `'+269'` : applique les règles locales. Utilisé par `middleware/auth-guest.js` et disponible pour tout module gérant des numéros de téléphone. |
-| `utils/user-cache.js` | Cache partagé entre `auth.js` et `auth-guest.js` (N2 FIX). |
-| `utils/logger.js` | Logger structuré Pino. Seul fichier autorisé à contenir des `console.*` (fallback interne). |
-| `utils/rates.js` | Taux de change EUR↔KMF. |
+| `utils/phone.js` | `normalizePhone(raw, defaultCountry?)` — normalisation E.164 unifiée back/front. |
+| `utils/user-cache.js` | Cache partagé entre `auth.js` et `auth-guest.js`. |
+| `utils/logger.js` | Logger structuré Pino. Seul fichier autorisé à contenir des `console.*` hors exceptions historiques explicitement acceptées. |
+| `utils/rates.js` | Taux de change EUR<->KMF. |
 
-Variables **obligatoires** au boot (`REQUIRED_ENV`) :
+Variables **obligatoires** au boot (`bootstrap/env.js`) :
 
 - `DATABASE_URL` ;
 - `JWT_SECRET` ;
+- `ADMIN_PASSWORD` ;
 - `STRIPE_SECRET_KEY` ;
 - `STRIPE_WEBHOOK_SECRET` ;
+- `QR_SECRET` ;
+- `AUTHKEY_API_KEY` ;
+- `PAYPAL_CLIENT_ID` ;
+- `PAYPAL_CLIENT_SECRET` ;
+- `PAYPAL_WEBHOOK_ID`.
+
+Variables recommandées :
+
 - `STRIPE_SHARED_CART_WEBHOOK_SECRET` ;
-- `STRIPE_COLLECTIVE_WEBHOOK_SECRET` ;
-- `QR_SECRET`.
+- `PAYPAL_ENV` ;
+- `TRANSITAIRE_PASSWORD` ;
+- `AUTHKEY_WEBHOOK_SECRET`.
 
-Variables recommandées (`RECOMMENDED_ENV`) :
-
-- `ADMIN_PASSWORD` ;
-- `META_WA_APP_SECRET`.
+En production, `PAYPAL_ENV` doit valoir `production`, sinon le boot est refusé. En production, `AUTHKEY_WEBHOOK_SECRET` absent rend le webhook Authkey fail-closed.
 
 ---
 
@@ -235,10 +255,12 @@ Sources de transition reconnues :
 - `shared_cart_full_payment` ;
 - `collective_payment`.
 
+`collective_payment` reste une source technique reconnue par la machine à états, mais les routes collectives ne sont plus montées. Ne pas en déduire que le workspace collectif est actif côté API.
+
 Garanties :
 
 - transition idempotente si le statut cible est déjà présent ;
-- paiement strictement `pending → confirmed` ;
+- paiement strictement `pending -> confirmed` ;
 - scans/système forward-only ;
 - insertion dans `order_status_history` ;
 - timestamps posés une seule fois par `COALESCE` ;
@@ -324,12 +346,12 @@ Tables transverses utilisées par plusieurs services :
 
 - `notification_log` — log applicatif des notifications (email, push, in-app). Consommée par `services/notification-service.js` et `routes/notification-api.js`.
 - `sms_log` — log des SMS envoyés. Consommée par `utils/sms.js`, `routes/admin.js`, `routes/relay-dashboard.js`.
-- `stripe_events_processed` — anti-double-traitement des webhooks Stripe. Consommée par `routes/payments.js`, `routes/shared-cart.js`, `services/collective-payment-orchestrator.js`.
+- `stripe_events_processed` — anti-double-traitement des webhooks Stripe. Consommée par `routes/payments.js` et `routes/shared-cart.js`.
 
 Principes :
 
 - toute notification métier doit être tracée dans `notification_log` ou `sms_log` selon le canal ;
-- `stripe_events_processed` est la garantie d'idempotence des 3 webhooks Stripe (principal, panier partagé, paiement collectif) — voir invariant I-07.
+- `stripe_events_processed` garantit l'idempotence des webhooks Stripe actifs : principal et panier partagé.
 
 ---
 
@@ -341,13 +363,11 @@ Komerce a **deux systèmes de partage distincts**, à ne pas confondre.
 |---|---|---|
 | Source de vérité | `routes/shares.js` | `services/shared-cart-engine.js` |
 | Tables | `cart_shares`, `cart_contributions` | `shared_carts`, `shared_cart_items`, `shared_cart_contributions`, `shared_cart_events` |
-| Cas d'usage | Partage simple de panier avec contributions libres (événements, cagnottes légères) | Panier partagé MVP avec conversion vers commande, paiement Stripe dédié |
+| Cas d'usage | Partage simple de panier avec contributions libres | Panier partagé Boutique First avec paiement Stripe/cash dédié et conversion vers commande |
 | Webhook Stripe | non | oui (`/api/shared-carts/stripe/webhook`, body brut) |
 | ENUMs typés | non (champs `status` libres) | `shared_cart_status`, `shared_cart_contribution_status` |
 
-Aucun des deux n'est legacy. Ils répondent à deux besoins fonctionnels différents.
-
-Le panier événement collectif structuré est encore autre chose (`/api/collective-workspaces`, tables `collective_*`).
+`/api/shares` n'est pas le panier partagé Boutique First. Le parcours participant canonique passe par `/boutique/?p=TOKEN`.
 
 ---
 
@@ -355,11 +375,11 @@ Le panier événement collectif structuré est encore autre chose (`/api/collect
 
 Ces divergences sont connues et ne doivent pas contaminer les docs de référence :
 
-1. `package.json` indique `10.6.1`, `server.js` annonce v12.4, `/api/health` retourne `12.3`.
-2. Plusieurs audits du 7 avril et du 8 mai parlent de nombres de routes/endpoints devenus obsolètes.
-3. Des documents temporaires de prompts/roadmaps Sonnet/Temu/mobile ont été retirés de l'index principal ou doivent être archivés/supprimés dans une passe dédiée.
+1. `docs/SCHEMA.md` est daté du dump Railway du 26 mai 2026. Les mentions `revoked_tokens`, `cart_shares`/`cart_contributions` et modules spécialisés peuvent être périmées et doivent être revalidées contre DB live avant action.
+2. Plusieurs audits du 7 avril, du 8 mai et des PR fermées parlent de nombres de routes/endpoints devenus obsolètes.
+3. Les documents temporaires de prompts/roadmaps Sonnet/Temu/mobile sont historiques sauf s'ils sont listés dans `docs/README.md`.
 4. Certains noms providers email/notification varient selon les périodes ; vérifier le code avant d'affirmer un provider actif.
-5. `collective_payment` est une source de transition reconnue par `order-status-machine.js` — les anciens audits ne la listaient pas.
+5. Le code garde des noms internes V4.1 (`shared-cart-engine`, statuts DB, tests `v41`). Ce n'est pas une preuve que la doctrine V4.1 est active côté produit : la doctrine active est Boutique First.
 
 ---
 
@@ -367,11 +387,11 @@ Ces divergences sont connues et ne doivent pas contaminer les docs de référenc
 
 Pour maintenir cette cartographie :
 
-1. lire `server.js` ;
+1. lire `server.js`, `bootstrap/api-routes.js`, `bootstrap/html-routes.js` et `bootstrap/env.js` ;
 2. mettre à jour les domaines, pas seulement les chiffres ;
 3. vérifier les services critiques (voir `CONTRACTS.md`) ;
 4. confronter au schéma DB (voir `SCHEMA.md`) ;
 5. ne pas recopier un audit ancien sans confrontation au code ;
 6. documenter toute divergence code/doc dans cette section.
 
-Ce document est l'un des **4 documents socle** (cf. `AGENTS.md` §1). Toute modification structurelle du backend doit le mettre à jour dans la même PR. La règle de divergence doc ↔ code ↔ DB est définie dans `AGENTS.md` §2.
+Ce document est l'un des documents socle référencés par `docs/README.md`. Toute modification structurelle du backend doit le mettre à jour dans la même PR. La règle de divergence doc <-> code <-> DB est définie dans `AGENTS.md`.
