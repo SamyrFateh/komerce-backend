@@ -1,33 +1,37 @@
 # FRESH-003 — Fichiers orphelins routes/routes_orders_*.js
 
 ## Statut
-**Arbitrage requis avant suppression.**
 
-## Fichiers concernés
-- `routes/routes_orders_cancel.js` (243 lignes)
-- `routes/routes_orders_parcels.js` (748 lignes)
-- `routes/routes_orders_status.js` (167 lignes)
+**Clôturé — 2026-06-15.**
 
-Ces trois fichiers ont été déposés le 2026-06-06 et ne sont **jamais référencés**
-(ni `require()`, ni route montée). Les versions actives sont dans `routes/orders/`
-montées via `routes/orders.js`.
+## Décision appliquée
 
-## Différence principale identifiée (cancel)
+Les trois fichiers orphelins ont été **supprimés** après vérification.
 
-La version orpheline (`routes_orders_cancel.js`) fait un `LEFT JOIN recipients`
-et récupère `phone_payer`, `phone_beneficiary`, `recipient_phone`, `recipient_name`
-— colonnes présentes en DB mais **non exploitées** par la version active.
+## Vérification d'imports
 
-## Options
+Recherche effectuée sur les références `routes_orders_*` : aucun montage actif ni `require()` applicatif ne dépendait de ces fichiers. Les routes actives sont dans `routes/orders/` et sont montées via `routes/orders.js`.
 
-| Option | Action | Risque |
-|--------|--------|--------|
-| A — Supprimer | `git rm routes/routes_orders_*.js` | Perd la logique JOIN recipients (peut être voulu) |
-| B — Swap | Remplacer les actifs par les orphelins + tests | Plus de colonnes disponibles à l'annulation |
-| C — Conserver pour référence | Garder tel quel + note dans STATUS.md | Confusion persistante |
+## Comparaison fichier par fichier
 
-## Recommandation
-Option A si le JOIN recipients n'est pas nécessaire pour le flow d'annulation actuel.
-Confirmer que `phone_payer`/`phone_beneficiary` ne sont pas utilisés dans les notifs SMS d'annulation.
+| Orphelin supprimé | Actif conservé | Verdict |
+|---|---|---|
+| `routes/routes_orders_cancel.js` | `routes/orders/cancel.js` | Contenu identique au fichier actif au moment de l'arbitrage. Suppression directe. |
+| `routes/routes_orders_status.js` | `routes/orders/status.js` | Contenu identique au fichier actif au moment de l'arbitrage. Suppression directe. |
+| `routes/routes_orders_parcels.js` | `routes/orders/parcels.js` | Version inline pré-refacto R4. La logique métier vit dans `services/parcel-operations.js`; l'actif délègue correctement. Suppression directe. |
 
-**Action** : supprimer les 3 fichiers via `git rm routes/routes_orders_*.js` après validation.
+## Note cancel : colonnes `phone_payer` / `phone_beneficiary`
+
+Le document précédent signalait un `LEFT JOIN recipients` dans l'orphelin cancel comme différence potentielle. Après comparaison, le fichier orphelin et le fichier actif portaient la même logique utile. Les notifications d'annulation doivent rester traitées par `notifyCancellation` / `notification-service.js`, pas par conservation d'un doublon de route.
+
+## Fichiers supprimés
+
+- `routes/routes_orders_cancel.js`
+- `routes/routes_orders_parcels.js`
+- `routes/routes_orders_status.js`
+
+## Fichiers actifs inchangés
+
+- `routes/orders/cancel.js`
+- `routes/orders/parcels.js`
+- `routes/orders/status.js`
