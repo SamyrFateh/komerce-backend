@@ -24,6 +24,8 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { collectCash } = require('../services/cash-operations'); // [R5]
+const notifSvc = require('../services/notification-service');
+const log = require('../utils/logger').child({ module: 'cash-route' });
 
 // ── Helper : is admin or relay agent ────────────────────────────────────────
 function isRelaisOrAdmin(req) {
@@ -86,6 +88,25 @@ router.post('/collect/:orderId', authenticate, requireRelaisOrAdmin, async (req,
     }
 
     await client.query('COMMIT');
+
+    // CASH-01 — Hooks post-paiement communs (notification + sourcing),
+    // alignés sur /api/payments/cash/confirm et /api/pickup/pay-cash.
+    try {
+      const { triggerPurchasing } = require('../services/purchasing-trigger-service');
+      const orderId = result.collection.order_id;
+      db.query('SELECT reference FROM orders WHERE id = $1', [orderId])
+        .then(({ rows: [o] }) => {
+          const orderRef = o?.reference;
+          notifSvc.notifyPaymentConfirmed(orderId, orderRef)
+            .catch(e => log.error({ err: e }, '[CASH-COLLECT-NOTIF] notification failed'));
+          triggerPurchasing(orderId)
+            .then(() => log.info({ order_id: orderId }, '[PURCHASING] Cash collect trigger OK'))
+            .catch(e => log.error({ err: e, order_id: orderId }, '[PURCHASING] Cash collect trigger error'));
+        })
+        .catch(e => log.error({ err: e }, '[CASH-COLLECT-POSTCOMMIT] lookup reference failed'));
+    } catch (e) {
+      log.error({ err: e }, '[CASH-COLLECT-POSTCOMMIT] Non-fatal hook error');
+    }
 
     res.status(201).json({
       success: true,

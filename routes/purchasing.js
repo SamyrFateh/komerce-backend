@@ -197,11 +197,11 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => 
 
     const { rows: pos } = await db.query(`
       SELECT
-        po.id, po.status, po.supplier_id, po.qty_ordered, po.qty_received,
+        po.id, po.status, po.supplier_id, po.qty, po.received_qty,
         s.name AS supplier_name,
-        COALESCE(po.qty_received, 0)                              AS received,
-        COALESCE(po.qty_ordered, 0)                               AS ordered,
-        COALESCE(po.qty_ordered, 0) - COALESCE(po.qty_received, 0) AS remaining
+        COALESCE(po.received_qty, 0)                     AS received,
+        COALESCE(po.qty, 0)                              AS ordered,
+        COALESCE(po.qty, 0) - COALESCE(po.received_qty, 0) AS remaining
       FROM purchase_orders po
       JOIN suppliers s ON s.id = po.supplier_id
       WHERE po.order_id = $1
@@ -214,8 +214,8 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => 
 
     const totalOrdered  = pos.reduce((s, p) => s + (p.ordered  || 0), 0);
     const totalReceived = pos.reduce((s, p) => s + (p.received || 0), 0);
-    const allReceived   = pos.every(p => ['received', 'partially_received', 'hub_received'].includes(p.status));
-    const anyPending    = pos.some(p => ['pending', 'notified', 'confirmed'].includes(p.status));
+    const allReceived   = pos.every(p => p.status === 'hub_received' || p.status === 'cancelled');
+    const anyPending    = pos.some(p => ['pending', 'notified', 'confirmed', 'shipped'].includes(p.status));
 
     res.json({
       order_id,

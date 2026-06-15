@@ -1,6 +1,6 @@
 # Komerce — État opératoire du chantier
 
-> Mis à jour : **2026-06-15** — patches PAY-01, FACT-01, CASH-02, LOY-01, PICKUP-01 appliqués  
+> Mis à jour : **2026-06-15** — patches PAY-01, FACT-01, CASH-02, LOY-01, PICKUP-01, **PAY-02, CASH-01, NOTIF-01, SRC-01, SRC-02** appliqués  
 > Repo : `SamyrFateh/komerce-backend` — branche de référence : `main`  
 > Rôle : point de vérité opératoire pour Sonnet/agent dev.  
 > Principe : un audit historique est un indice, pas une vérité. Une dette est ouverte seulement si le code actuel, la DB live ou une doc active la confirme.
@@ -214,31 +214,19 @@ Statut : **clôturé — patch appliqué 2026-06-15**.
 
 `validators/index.js:180` — `payment_mode` accepte désormais `'paypal_eur'` aux côtés de `stripe_eur` et `cash_relais`.
 
-Reste ouvert : création PayPal Order + capture + hooks post-paiement → voir PAY-02.
+PAY-01 clôturé : création/annulation ordre PayPal côté route. PAY-02 clôturé : hooks post-capture (notification + sourcing) ajoutés dans `services/payment-paypal.js`.
 
-### PAY-02 — PayPal capture ne déclenche pas les hooks métier post-paiement
+### ~~PAY-02~~ — PayPal capture : hooks post-paiement manquants — **CLÔTURÉ**
 
-Statut : **ouvert — priorité P1**.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-`services/payment-paypal.js#capturePaypalOrder()` appelle bien `confirmPaymentCycle`, mais ni le service ni `routes/payments-paypal.js` ne déclenchent ensuite explicitement les mêmes effets que Stripe/cash : `notifyPaymentConfirmed`, `triggerPurchasing`, fidélité/gros panier.
+`services/payment-paypal.js` : `notifyPaymentConfirmed` + `triggerPurchasing` ajoutés post-COMMIT dans `capturePaypalOrder` (chemin nominal) et `_handleCaptureCompleted` (fallback webhook). Aligné sur Stripe/cash. Fidélité couverte par LOY-01 (`confirmPaymentCycle`).
 
-Conséquence : commande PayPal peut être payée et stock décrémenté, mais sans notification, sans sourcing fournisseur, sans fidélité.
+### ~~CASH-01~~ — Chemins cash avec effets post-paiement différents — **CLÔTURÉ**
 
-À corriger : extraire un hook post-confirmation commun Stripe/cash/PayPal/wallet.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-### CASH-01 — Deux chemins cash concurrents avec effets post-paiement différents
-
-Statut : **ouvert — priorité P1 métier/opérationnel**.
-
-Chemins constatés :
-
-- `/api/payments/cash/confirm` par `cash_ref_code` → `confirmCashByReference()` → `confirmPaymentCycle()` + notification + `triggerPurchasing`.
-- `/api/cash/collect/:orderId` → `collectCash()` → `confirmPaymentCycle()` + insert `cash_collections`, mais pas de notification/sourcing post-commit visible dans `routes/cash.js`.
-- `/api/pickup/pay-cash/:orderId` → `confirmPickupCashPayment()` → `confirmPaymentCycle()` + code retrait + `triggerPurchasing`, mais hook fidélité seulement ici.
-
-Conséquence : selon l'écran utilisé par l'agent, la commande cash peut avoir des effets métier différents.
-
-À corriger : définir un seul chemin canonique cash ou extraire un `postPaymentConfirmedHooks(orderId, channel)` commun.
+`routes/cash.js#/collect` : `notifyPaymentConfirmed` + `triggerPurchasing` ajoutés post-COMMIT, alignés sur `/api/payments/cash/confirm` et `/api/pickup/pay-cash`. Les trois chemins cash ont maintenant les mêmes effets métier. Fidélité couverte par LOY-01.
 
 ### CASH-02 — `/api/cash/collect/:orderId` ne vérifie pas explicitement `payment_status='pending'`
 
@@ -258,13 +246,11 @@ Conséquence : pour quantité > 1, détail facture faux, même si `orders.total_
 
 À corriger : facture = `unit_price = price_kmf`, `total = price_kmf * quantity`, ou changer partout la convention `order_items.price_kmf`.
 
-### NOTIF-01 — Notifications payeur/bénéficiaire : jointure recipient probablement erronée
+### ~~NOTIF-01~~ — Notifications : jointure recipient erronée — **CLÔTURÉ**
 
-Statut : **ouvert — priorité P1 si suivi double critique**.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-`notification-service.js` charge parfois `recipient_phone` avec `LEFT JOIN users r ON r.id = o.recipient_id`, alors que `recipient_id` pointe vers `recipients`. Risque : perte du bénéficiaire réel dans les notifications.
-
-À corriger : joindre `recipients r ON r.id = o.recipient_id`. Tester payeur diaspora + bénéficiaire local.
+`services/notification-service.js` : 3 occurrences `LEFT JOIN users r ON r.id = o.recipient_id` remplacées par `LEFT JOIN recipients r ON r.id = o.recipient_id` (fonctions `notifyPaymentConfirmed`, `_loadOrderFromParcel`, `notifyParcelCreated`). Le bénéficiaire local est désormais correctement résolu.
 
 ### LOY-01 — Fidélité/gros panier non appelée par tous les paiements
 
@@ -280,34 +266,17 @@ Conséquence : les gros paniers peuvent compter seulement pour certains canaux.
 
 ## 6. Dettes ouvertes — sourcing, logistique, suivi, pickup
 
-### SRC-01 — `purchase_orders` : routes en décalage avec le schéma actuel
+### ~~SRC-01~~ — `purchase_orders` : colonnes incorrectes dans completeness — **CLÔTURÉ**
 
-Statut : **ouvert — priorité P0/P1 hub Dubai**.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-`db/schema.sql` expose `purchase_orders.qty` et `received_qty`. `routes/purchasing.js#/order/:order_id/completeness` lit `qty_ordered` et `qty_received`.
+`routes/purchasing.js#/order/:order_id/completeness` : `qty_ordered`/`qty_received` remplacés par `po.qty`/`po.received_qty`. Statut `allReceived` aligné sur `hub_received` (conforme au check constraint). Endpoint de complétude opérationnel.
 
-Conséquence : l'endpoint de complétude peut casser SQL ou retourner des valeurs nulles.
+### ~~SRC-02~~ — Réception hub : statuts non conformes au check constraint — **CLÔTURÉ**
 
-À corriger : remplacer par `qty` / `received_qty` et tester réception partielle/totale.
+Statut : **clôturé — patch appliqué 2026-06-15**.
 
-### SRC-02 — Réception hub écrit des statuts absents du check constraint schema
-
-Statut : **ouvert — priorité P0/P1 à vérifier DB live**.
-
-`purchasing-receive-service.js` écrit `status = 'received'` ou `'partially_received'`. Le schéma visible contraint `purchase_orders.status` à `pending`, `notified`, `confirmed`, `shipped`, `hub_received`, `cancelled`.
-
-Conséquence : si la DB live a ce constraint, la réception hub échoue.
-
-À vérifier sur Railway :
-
-```sql
-SELECT conname, pg_get_constraintdef(oid)
-FROM pg_constraint
-WHERE conrelid = 'purchase_orders'::regclass
-  AND contype = 'c';
-```
-
-À corriger : aligner statuts code + DB, ou utiliser `hub_received` + champs quantité.
+`services/purchasing-receive-service.js` et `services/receive-purchase-order.js` : `'received'`/`'partially_received'` remplacés par `'hub_received'` (réception complète) et `'confirmed'` (réception partielle). Conformes au check constraint DB `pending|notified|confirmed|shipped|hub_received|cancelled`. La complétude est déterminée par `received_qty >= qty`, indépendamment du statut string.
 
 ### SRC-03 — Sourcing PO idempotent par fournisseur, pas par ligne commande
 

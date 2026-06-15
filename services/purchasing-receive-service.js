@@ -88,7 +88,7 @@ async function processReceive({ id, qty_recue, actor }) {
      RETURNING *`,
     [
       new_received,
-      po_complete ? 'received' : 'partially_received',
+      po_complete ? 'hub_received' : 'confirmed',
       po_complete,
       id,
     ]

@@ -62,7 +62,7 @@ async function receivePurchaseOrder({ poId, qtyReceived, actor, triggerScan3 }) 
            updated_at = NOW()
        WHERE id = $4
        RETURNING *`,
-      [newReceived, poComplete ? 'received' : 'partially_received', poComplete, po.id]
+      [newReceived, poComplete ? 'hub_received' : 'confirmed', poComplete, po.id]
     );
 
     const { rows: [completeness] } = await client.query(

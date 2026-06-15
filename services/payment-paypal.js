@@ -22,6 +22,7 @@
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
+const notifSvc = require('./notification-service');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
 // ─── createPaypalOrder ────────────────────────────────────────────────────────
@@ -241,6 +242,18 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
         .catch(e => log.error({ err: e.message }, '[PAYPAL] cacheCodeForReveal failed'));
     }
 
+    // PAY-02 — Hooks post-paiement communs (notification + sourcing), alignés sur Stripe/cash
+    try {
+      const { triggerPurchasing } = require('../routes/purchasing');
+      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+        .catch(e => log.error({ err: e }, '[PAYPAL] notification failed'));
+      triggerPurchasing(order.id)
+        .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal trigger OK'))
+        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal trigger error'));
+    } catch (e) {
+      log.error({ err: e.message }, '[PAYPAL-POSTCOMMIT] Non-fatal hook error');
+    }
+
     log.info({
       order_id: order.id, order_reference: order.reference,
       paypal_capture_id: info.paypal_capture_id,
@@ -408,6 +421,18 @@ async function _handleCaptureCompleted(event, db, paypal) {
     );
 
     await client.query('COMMIT');
+
+    // PAY-02 — Hooks post-paiement communs (notification + sourcing)
+    try {
+      const { triggerPurchasing } = require('../routes/purchasing');
+      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+        .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] notification failed'));
+      triggerPurchasing(order.id)
+        .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger OK'))
+        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger error'));
+    } catch (e) {
+      log.error({ err: e.message }, '[PAYPAL-WEBHOOK-POSTCOMMIT] Non-fatal hook error');
+    }
 
     log.info({ order_id: order.id, paypal_capture_id: info.paypal_capture_id, source: 'webhook_fallback' },
       '[PAYPAL-WEBHOOK] capture traitée via webhook (capture endpoint avait probablement échoué)');

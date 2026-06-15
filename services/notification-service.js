@@ -87,7 +87,7 @@ function pickPhone(order, fallback) {
   // [LEGACY] Priorité : tracking_phone > recipient_phone > phone_payer > user_phone > fallback
   // Conservée pour rétro-compat. Les nouvelles fonctions utilisent pickRecipients().
   return order.tracking_phone
-      || order.recipient_phone        // via JOIN users r ON r.id = o.recipient_id
+      || order.recipient_phone        // via JOIN recipients r ON r.id = o.recipient_id
       || order.phone_payer            // via JOIN users u ON u.id = o.user_id
       || order.user_phone
       || (Array.isArray(fallback) ? fallback[0] : fallback)
@@ -109,7 +109,7 @@ function pickPhone(order, fallback) {
  */
 function pickRecipients(order, event) {
   // payeur : tracking_phone (prioritaire) > phone_payer (migration 040) > user_phone
-  // bénéficiaire : recipient_phone (via JOIN users r) > phone_beneficiary > user_phone si pas de recipient distinct
+  // bénéficiaire : recipient_phone (via JOIN recipients r) > phone_beneficiary > user_phone si pas de recipient distinct
   const payer = order.tracking_phone
              || order.phone_payer
              || order.user_phone
@@ -230,7 +230,7 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
          r.full_name     AS recipient_name
        FROM orders o
        LEFT JOIN users u ON u.id = o.user_id
-       LEFT JOIN users r ON r.id = o.recipient_id
+       LEFT JOIN recipients r ON r.id = o.recipient_id
        WHERE o.id = $1`,
       [orderId]
     );
@@ -424,7 +424,7 @@ async function _loadOrderFromParcel(parcelId) {
        FROM parcels p
        LEFT JOIN orders o   ON o.id = p.order_id
        LEFT JOIN users u    ON u.id = o.user_id
-       LEFT JOIN users r    ON r.id = o.recipient_id
+       LEFT JOIN recipients r ON r.id = o.recipient_id
        LEFT JOIN relais rel ON rel.id = o.relais_id
        WHERE p.id = $1
        LIMIT 1`,
@@ -643,7 +643,7 @@ async function notifyParcelCreated(parcelRef, orderId, orderReference) {
          rel.name      AS relais_name
        FROM orders o
        LEFT JOIN users u    ON u.id = o.user_id
-       LEFT JOIN users r    ON r.id = o.recipient_id
+       LEFT JOIN recipients r ON r.id = o.recipient_id
        LEFT JOIN relais rel ON rel.id = o.relais_id
        WHERE o.id = $1`,
       [orderId]
