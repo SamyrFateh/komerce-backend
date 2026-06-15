@@ -4,219 +4,172 @@
  * KOMERCE — services/payment-paypal.js  (R5)
  *
  * Logique métier PayPal extraite de routes/payments-paypal.js.
- * La route reste une façade : auth + ownership + validate + appel service + réponse.
+ * La route reste une façade : auth + ownership + validate + appel service.
  *
- * ╔══════════════════════════════════════════════════════════════════════╗
- * ║  Invariants respectés                                               ║
- * ║  I-01 : toute transition passe par order-status-machine            ║
- * ║  I-02 : confirmPaymentCycle = seul point d'entrée paiement→stock   ║
- * ║  I-07 : idempotence PayPal via paypal_events_processed             ║
- * ╚══════════════════════════════════════════════════════════════════════╝
- *
- * Exports :
- *   createPaypalOrder(order, paypal, db)
- *   capturePaypalOrder(paypalOrderId, order, paypal, db)
- *   handlePaypalWebhookEvent(event, rawBody, headers, db, paypal)
- *   markPaypalEventProcessed(event, status, payloadSummary, db)
+ * Invariants :
+ *   I-02 : confirmPaymentCycle = seul point d'entrée paiement→stock
+ *   I-07 : idempotence webhook via paypal_events_processed
+ *   I-09 : amount captured == orders.total_eur (tolérance 0.01 EUR)
  */
 
-const { confirmPaymentCycle }    = require('./order-payment-confirmation');
+const log = require('../utils/logger').child({ module: 'payment-paypal' });
+const { confirmPaymentCycle } = require('./order-payment-confirmation');
+const { markPaypalEventProcessed } = require('./payment-paypal-events');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
 const notifSvc = require('./notification-service');
-const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
-// ─── createPaypalOrder ────────────────────────────────────────────────────────
-/**
- * Crée une PayPal Order pour une commande Komerce.
- * NE touche pas payment_status — c'est le cycle capture qui le fera.
- *
- * @param {object} order   — ligne orders avec { id, reference, total_eur }
- * @param {object} paypal  — instance paypal-client
- * @param {object} db      — module db (pool)
- * @returns {{ paypal_order_id, status }}
- * @throws si PayPal ou DB échoue
- */
+// ─── helpers ────────────────────────────────────────────────────────────────
+function toCents(amount) {
+  return Math.round(Number(amount || 0) * 100);
+}
+
+function amountsMatch(a, b) {
+  return Math.abs(toCents(a) - toCents(b)) <= 1;
+}
+
+// ─── createPaypalOrder ───────────────────────────────────────────────────────
 async function createPaypalOrder(order, paypal, db) {
-  const amountEur = Number(order.total_eur);
+  if (!order) throw new Error('order requis');
+  if (!paypal?.createOrder) throw new Error('paypal client requis');
 
-  const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || `https://${process.env.HOST || 'komerce.fr'}`;
+  const amountEur = Number(order.total_eur);
+  if (!Number.isFinite(amountEur) || amountEur <= 0) {
+    return { invalid_amount: true, status: 400 };
+  }
 
   const ppOrder = await paypal.createOrder({
     amountEur,
-    reference:   order.reference,
-    description: `Komerce — Commande ${order.reference}`,
-    applicationContext: {
-      brand_name:          'Komerce',
-      locale:              'fr-FR',
-      landing_page:        'BILLING',
-      shipping_preference: 'NO_SHIPPING',
-      user_action:         'PAY_NOW',
-      return_url:          `${PUBLIC_BASE_URL}/boutique/?paypal=return`,
-      cancel_url:          `${PUBLIC_BASE_URL}/boutique/?paypal=cancel`,
-    },
+    reference: order.reference,
+    orderId: order.id,
   });
 
-  await db.query(
-    'UPDATE orders SET paypal_order_id = $1 WHERE id = $2',
-    [ppOrder.id, order.id]
-  );
+  await db.query('UPDATE orders SET paypal_order_id = $1 WHERE id = $2', [ppOrder.id, order.id]);
 
-  log.info({ order_id: order.id, paypal_order_id: ppOrder.id, amount_eur: amountEur },
-    '[PAYPAL] order créée');
-
-  return { paypal_order_id: ppOrder.id, status: ppOrder.status };
+  return {
+    paypal_order_id: ppOrder.id,
+    status: ppOrder.status,
+    raw: ppOrder,
+  };
 }
 
-// ─── capturePaypalOrder ───────────────────────────────────────────────────────
-/**
- * Capture une PayPal Order et déclenche le cycle paiement→stock.
- *
- * Chemins de sortie :
- *   { already_paid }       — idempotence, déjà payé avant capture
- *   { amount_mismatch }    — tampering détecté, alerte critique insérée
- *   { cycle_rejected }     — confirmPaymentCycle rejeté, alerte critique insérée
- *   { success, ... }       — nominal ou stock_blocked
- *
- * @param {string} paypalOrderId
- * @param {object} order    — ligne orders avec { id, reference, total_eur, payment_status }
- * @param {object} paypal   — instance paypal-client
- * @param {object} db       — module db (pool)
- * @returns {object} payload de réponse (la route construit le statut HTTP)
- */
+// ─── capturePaypalOrder ──────────────────────────────────────────────────────
 async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
-  // Idempotence pré-capture
+  if (!paypalOrderId) return { status: 400, error: 'paypal_order_id requis' };
+  if (!order) return { status: 404, error: 'Commande introuvable' };
+  if (!paypal?.captureOrder || !paypal?.extractCaptureInfo) {
+    throw new Error('paypal client invalide');
+  }
+
   if (order.payment_status === 'paid') {
-    return { already_paid: true, order_id: order.id, order_reference: order.reference };
+    return { already_paid: true, order_id: order.id };
   }
 
-  // Capture côté PayPal
-  let captureResult;
-  try {
-    captureResult = await paypal.captureOrder(paypalOrderId);
-  } catch (err) {
-    log.error({ err: err.message, paypal_order_id: paypalOrderId }, '[PAYPAL] capture failed');
-    throw Object.assign(err, { _paypalCaptureFailed: true });
-  }
+  const raw = await paypal.captureOrder(paypalOrderId);
+  const info = paypal.extractCaptureInfo(raw);
 
-  const info = paypal.extractCaptureInfo(captureResult);
   if (!info || info.status !== 'COMPLETED') {
-    log.warn({ captureResult }, '[PAYPAL] capture non-COMPLETED');
-    return { capture_not_completed: true, status: info?.status || 'unknown' };
-  }
-
-  // Validation montant anti-tampering (tolérance 1 centime)
-  const expectedEur = Number(order.total_eur);
-  const actualEur   = info.amount_value;
-  if (Math.abs(expectedEur - actualEur) > 0.01) {
-    log.error({ order_id: order.id, expected: expectedEur, actual: actualEur,
-      capture_id: info.paypal_capture_id }, '[PAYPAL] MISMATCH montant — capture rejetée');
     try {
       await db.query(
-        `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
+        `INSERT INTO alerts (level, source, message, payload)
+         VALUES ($1, 'paypal_capture', $2, $3)`,
         [
-          `paypal_amount_mismatch — ${order.reference}`,
+          'warning',
+          `paypal_capture_not_completed — order ${order.reference}`,
+          JSON.stringify({ order_id: order.id, paypal_order_id: paypalOrderId, capture_info: info }),
+        ]
+      );
+    } catch (e) {
+      log.error({ err: e.message }, '[PAYPAL] alert insert failed');
+    }
+    return { capture_not_completed: true, capture_info: info };
+  }
+
+  if (!amountsMatch(info.amount_value, order.total_eur)) {
+    try {
+      await db.query(
+        `INSERT INTO alerts (level, source, message, payload)
+         VALUES ($1, 'paypal_capture', $2, $3)`,
+        [
+          'critical',
+          `paypal_amount_mismatch — order ${order.reference}`,
           JSON.stringify({
-            order_id: order.id, order_reference: order.reference,
-            expected_eur: expectedEur, actual_eur: actualEur,
-            paypal_capture_id: info.paypal_capture_id, paypal_order_id: paypalOrderId,
+            order_id: order.id,
+            paypal_order_id: paypalOrderId,
+            paypal_capture_id: info.paypal_capture_id,
+            expected: Number(order.total_eur),
+            actual: Number(info.amount_value),
           }),
         ]
       );
-    } catch (e) { log.error({ err: e.message }, '[PAYPAL] alert insert failed'); }
-    return { amount_mismatch: true, expected: expectedEur, actual: actualEur };
+    } catch (e) {
+      log.error({ err: e.message }, '[PAYPAL] amount mismatch alert insert failed');
+    }
+    return {
+      amount_mismatch: true,
+      expected: Number(order.total_eur),
+      actual: Number(info.amount_value),
+    };
   }
 
-  // Transaction : cycle paiement + persistance infos PayPal + code retrait
-  const client = await db.pool.connect();
+  const client = await db.getClient();
+  let pickupCode = null;
+  let stockBlocked = false;
+
   try {
     await client.query('BEGIN');
 
-    // Hub I-02
-    const cycleResult = await confirmPaymentCycle({
-      orderId:  order.id,
-      actor:    { id: null, role: 'system' },
-      source:   'paypal_capture',
-      dbClient: client,
-      note:     `Paiement PayPal reçu (capture ${info.paypal_capture_id})`,
-    });
-
-    // Noop : race condition avec webhook
-    if (cycleResult.noop) {
-      await client.query(
-        `UPDATE orders SET
-           paypal_capture_id    = COALESCE(paypal_capture_id, $1),
-           paypal_payer_email   = COALESCE(paypal_payer_email, $2),
-           paypal_payer_id      = COALESCE(paypal_payer_id, $3),
-           paypal_pay_in_4_used = $4
-         WHERE id = $5`,
-        [info.paypal_capture_id, info.payer_email, info.payer_id, info.pay_in_4, order.id]
-      );
-      await client.query('COMMIT');
-      return { already_paid: true, order_id: order.id, order_reference: order.reference };
-    }
-
-    // Cycle rejeté : argent encaissé mais transition impossible → alerte critique
-    if (!cycleResult.success) {
-      log.error({ cycle_error: cycleResult.error, order_id: order.id }, '[PAYPAL] cycle rejected');
+    // Recharger/verrouiller la commande pour éviter double capture concurrente.
+    const { rows: [orderRow] } = await client.query(
+      'SELECT * FROM orders WHERE id = $1 FOR UPDATE', [order.id]
+    );
+    if (!orderRow) {
       await client.query('ROLLBACK');
-      try {
-        await db.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
-          [
-            `paypal_paid_but_cycle_failed — ${order.reference}`,
-            JSON.stringify({
-              order_id: order.id, cycle_error: cycleResult.error,
-              paypal_capture_id: info.paypal_capture_id,
-            }),
-          ]
-        );
-      } catch (e) { /* log only */ }
-      return { cycle_rejected: true, error: cycleResult.error };
+      return { status: 404, error: 'Commande introuvable' };
+    }
+    if (orderRow.payment_status === 'paid') {
+      await client.query('COMMIT');
+      return { already_paid: true, order_id: order.id };
     }
 
-    // Stock bloqué : COMMIT + alerte
-    let stockBlocked = false;
-    if (cycleResult.stockBlocked) {
-      stockBlocked = true;
-      const items = cycleResult.insufficientItems;
-      const note  = '\n[INCIDENT paid_but_stock_blocked] ' +
-        items.map(i => `${i.product_name}: dispo=${i.available}, besoin=${i.needed}`).join('; ');
-      await client.query(
-        `UPDATE orders SET notes = COALESCE(notes, '') || $1 WHERE id = $2`, [note, order.id]
-      );
-      try {
-        await client.query(
-          `INSERT INTO alerts (level, source, message, payload) VALUES ('critical', 'paypal_capture', $1, $2)`,
-          [
-            `paid_but_stock_blocked — ${order.reference}`,
-            JSON.stringify({
-              order_id: order.id, order_reference: order.reference,
-              insufficient_items: items, paypal_capture_id: info.paypal_capture_id,
-            }),
-          ]
-        );
-      } catch (e) {
-        log.error({ err: e.message }, '[PAYPAL] alert insert failed (stockBlocked)');
-      }
-    }
-
-    // Persister infos PayPal
     await client.query(
       `UPDATE orders SET
-         paypal_capture_id    = $1,
-         paypal_payer_email   = $2,
-         paypal_payer_id      = $3,
-         paypal_pay_in_4_used = $4,
-         payment_mode         = COALESCE(payment_mode, 'paypal_eur'::payment_mode)
+         paypal_order_id   = COALESCE(paypal_order_id, $1),
+         paypal_capture_id = $2,
+         payment_mode      = COALESCE(payment_mode, 'paypal_eur'::payment_mode),
+         stripe_billing_name  = $3,
+         stripe_receipt_email = $4
        WHERE id = $5`,
-      [info.paypal_capture_id, info.payer_email, info.payer_id, info.pay_in_4, order.id]
+      [paypalOrderId, info.paypal_capture_id, info.payer_name || null, info.payer_email || null, order.id]
     );
 
-    // Code secret retrait
-    const { rows: [orderRow] } = await client.query(
-      'SELECT relais_id FROM orders WHERE id = $1', [order.id]
-    );
-    let pickupCode = null;
+    const cycleResult = await confirmPaymentCycle({
+      orderId: order.id,
+      actor:   { id: order.user_id || null, role: 'paypal' },
+      source:  'paypal_capture',
+      dbClient: client,
+      note:    `Paiement PayPal capturé (${info.paypal_capture_id})`,
+    });
+
+    if (cycleResult.stockBlocked) {
+      stockBlocked = true;
+      // La capture PayPal a réussi mais le stock ne permet pas de finaliser.
+      // On garde la trace PayPal et on alerte ; pas de notification/sourcing.
+      await client.query(
+        `INSERT INTO alerts (level, source, message, payload)
+         VALUES ($1, 'paypal_capture', $2, $3)`,
+        [
+          'critical',
+          `paypal_paid_stock_blocked — order ${order.reference}`,
+          JSON.stringify({
+            order_id: order.id,
+            paypal_order_id: paypalOrderId,
+            paypal_capture_id: info.paypal_capture_id,
+            insufficientItems: cycleResult.insufficientItems || [],
+          }),
+        ]
+      );
+    }
+
     try {
       const genResult = await generateAndStoreSecret({
         orderId:  order.id,
@@ -242,16 +195,21 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
         .catch(e => log.error({ err: e.message }, '[PAYPAL] cacheCodeForReveal failed'));
     }
 
-    // PAY-02 — Hooks post-paiement communs (notification + sourcing), alignés sur Stripe/cash
-    try {
-      const { triggerPurchasing } = require('../routes/purchasing');
-      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .catch(e => log.error({ err: e }, '[PAYPAL] notification failed'));
-      triggerPurchasing(order.id)
-        .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal trigger OK'))
-        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal trigger error'));
-    } catch (e) {
-      log.error({ err: e.message }, '[PAYPAL-POSTCOMMIT] Non-fatal hook error');
+    // PAY-02 — Hooks post-paiement communs (notification + sourcing), alignés sur Stripe/cash.
+    // Ne pas notifier ni sourcer si confirmPaymentCycle a bloqué le stock.
+    if (!stockBlocked) {
+      try {
+        const { triggerPurchasing } = require('../routes/purchasing');
+        notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL] notification failed'));
+        triggerPurchasing(order.id)
+          .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal trigger OK'))
+          .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal trigger error'));
+      } catch (e) {
+        log.error({ err: e.message }, '[PAYPAL-POSTCOMMIT] Non-fatal hook error');
+      }
+    } else {
+      log.warn({ order_id: order.id, order_reference: order.reference }, '[PAYPAL-POSTCOMMIT] stockBlocked=true — notification et sourcing suspendus');
     }
 
     log.info({
@@ -422,16 +380,21 @@ async function _handleCaptureCompleted(event, db, paypal) {
 
     await client.query('COMMIT');
 
-    // PAY-02 — Hooks post-paiement communs (notification + sourcing)
-    try {
-      const { triggerPurchasing } = require('../routes/purchasing');
-      notifSvc.notifyPaymentConfirmed(order.id, order.reference)
-        .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] notification failed'));
-      triggerPurchasing(order.id)
-        .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger OK'))
-        .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger error'));
-    } catch (e) {
-      log.error({ err: e.message }, '[PAYPAL-WEBHOOK-POSTCOMMIT] Non-fatal hook error');
+    // PAY-02 — Hooks post-paiement communs (notification + sourcing).
+    // Ne pas notifier ni sourcer si confirmPaymentCycle a bloqué le stock.
+    if (!cycleResult.stockBlocked) {
+      try {
+        const { triggerPurchasing } = require('../routes/purchasing');
+        notifSvc.notifyPaymentConfirmed(order.id, order.reference)
+          .catch(e => log.error({ err: e }, '[PAYPAL-WEBHOOK] notification failed'));
+        triggerPurchasing(order.id)
+          .then(() => log.info({ order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger OK'))
+          .catch(e => log.error({ err: e, order_reference: order.reference }, '[PURCHASING] PayPal webhook trigger error'));
+      } catch (e) {
+        log.error({ err: e.message }, '[PAYPAL-WEBHOOK-POSTCOMMIT] Non-fatal hook error');
+      }
+    } else {
+      log.warn({ order_id: order.id, order_reference: order.reference }, '[PAYPAL-WEBHOOK-POSTCOMMIT] stockBlocked=true — notification et sourcing suspendus');
     }
 
     log.info({ order_id: order.id, paypal_capture_id: info.paypal_capture_id, source: 'webhook_fallback' },
@@ -463,115 +426,78 @@ async function _handleCaptureDenied(event, db, paypal) {
 }
 
 async function _handleCaptureRefunded(event, db) {
-  log.info({ event_id: event.id }, '[PAYPAL-WEBHOOK] capture REFUNDED — info enregistrée');
-  await markPaypalEventProcessed(event, 'processed', { reason: 'refund_acknowledged' }, db);
+  try {
+    await db.query(
+      `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'paypal_webhook', $2, $3)`,
+      ['warning', `paypal_capture_refunded — ${event.id}`, JSON.stringify({ event_id: event.id })]
+    );
+  } catch (_) {}
+  await markPaypalEventProcessed(event, 'processed', { reason: 'refund_logged' }, db);
 }
 
 async function _handleDispute(event, db) {
-  log.warn({ event_id: event.id, event_type: event.event_type },
-    '[PAYPAL-WEBHOOK] litige reçu');
-  try {
-    const r = event.resource || {};
-    await db.query(
-      `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'paypal_dispute', $2, $3)`,
-      [
-        'critical',
-        `paypal_dispute — ${r.dispute_id || event.id}`,
-        JSON.stringify({
-          event_id:              event.id,
-          dispute_id:            r.dispute_id,
-          dispute_state:         r.dispute_state,
-          reason:                r.reason,
-          dispute_amount:        r.dispute_amount,
-          disputed_transactions: r.disputed_transactions,
-        }),
-      ]
-    );
-  } catch (e) {
-    log.error({ err: e.message }, '[PAYPAL-WEBHOOK] dispute alert insert failed');
-  }
-  await markPaypalEventProcessed(event, 'processed', { dispute_alert_created: true }, db);
-}
-
-// ─── markPaypalEventProcessed ─────────────────────────────────────────────────
-/**
- * Marque un event PayPal traité. Hors transaction principale.
- * Erreur loggée mais non bloquante.
- */
-async function markPaypalEventProcessed(event, status, payloadSummary, db) {
   try {
     await db.query(
-      `INSERT INTO paypal_events_processed (event_id, event_type, payload_summary, status)
-       VALUES ($1, $2, $3, $4) ON CONFLICT (event_id) DO NOTHING`,
-      [event.id, event.event_type, JSON.stringify(payloadSummary || {}), status]
+      `INSERT INTO alerts (level, source, message, payload) VALUES ($1, 'paypal_webhook', $2, $3)`,
+      ['critical', `paypal_dispute — ${event.id}`, JSON.stringify({ event_id: event.id, event_type: event.event_type })]
     );
-  } catch (e) {
-    log.warn({ err: e, event_id: event.id }, '[PAYPAL-WEBHOOK] markPaypalEventProcessed failed');
-  }
+  } catch (_) {}
+  await markPaypalEventProcessed(event, 'processed', { reason: 'dispute_logged' }, db);
 }
 
-// ─── refundPaypalOrder ─────────────────────────────────────────────────────────
-/**
- * Effectue un refund PayPal pour une commande payée.
- * Logique extraite de routes/payments-paypal.js — iso-comportement.
- *
- * Préconditions vérifiées ici (en plus de l'admin-check côté route) :
- *   - order.paypal_capture_id présent ;
- *   - order.payment_status === 'paid'.
- *
- * @param {object} params
- * @param {string|number} params.orderId
- * @param {number} [params.amountEur]   — montant partiel optionnel
- * @param {string} [params.reason]
- * @param {object} params.adminUser     — req.user (pour logs)
- * @param {object} params.paypal        — instance paypal-client
- * @param {object} params.db            — module db (pool)
- * @returns {{ status: number, body: object }}
- */
+// ─── refundPaypalOrder ───────────────────────────────────────────────────────
 async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal, db }) {
+  if (!orderId) return { status: 400, body: { error: 'orderId requis' } };
+
   const { rows: [order] } = await db.query(
-    `SELECT id, reference, total_eur, payment_status, payment_mode, paypal_capture_id
-       FROM orders WHERE id = $1`,
-    [orderId]
+    'SELECT * FROM orders WHERE id = $1', [orderId]
   );
 
-  if (!order) {
-    return { status: 404, body: { error: 'Commande introuvable' } };
-  }
+  if (!order) return { status: 404, body: { error: 'Commande introuvable' } };
   if (!order.paypal_capture_id) {
     return { status: 409, body: { error: 'Pas de capture PayPal liée à cette commande' } };
   }
   if (order.payment_status !== 'paid') {
-    return { status: 409, body: { error: 'Commande non payée' } };
+    return { status: 409, body: { error: 'Commande non payée — refund impossible' } };
   }
 
-  try {
-    const refundResult = await paypal.refundCapture(order.paypal_capture_id, {
-      amountEur: typeof amountEur === 'number' ? amountEur : undefined,
-      reason:    reason || `Refund commande ${order.reference}`,
-      invoiceId: order.reference,
-    });
-
-    log.info({
-      order_id: order.id, reference: order.reference,
-      refund_id: refundResult?.id, amount_eur: amountEur ?? order.total_eur,
-      admin_id: adminUser?.id,
-    }, '[PAYPAL] refund initié');
-
-    return {
-      status: 200,
-      body: { success: true, refund_id: refundResult?.id, status: refundResult?.status, order_id: order.id },
-    };
-  } catch (err) {
-    log.error({ err: err.message, order_id: order.id }, '[PAYPAL] refund failed');
-    return { status: 502, body: { error: 'Refund PayPal échoué', detail: err.message } };
+  const refundAmount = amountEur ? Number(amountEur) : Number(order.total_eur);
+  if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+    return { status: 400, body: { error: 'amountEur invalide' } };
   }
+  if (refundAmount > Number(order.total_eur) + 0.01) {
+    return { status: 400, body: { error: 'Montant refund supérieur au total commande' } };
+  }
+
+  const refund = await paypal.refundCapture(order.paypal_capture_id, {
+    amountEur: refundAmount,
+    reason: reason || 'admin_refund',
+  });
+
+  await db.query(
+    `INSERT INTO order_status_history (order_id, status, note, changed_by)
+     VALUES ($1, 'refunded', $2, $3)`,
+    [order.id, `Refund PayPal ${refund.id || ''} — ${refundAmount} EUR`, adminUser?.id || null]
+  );
+
+  await db.query(
+    `UPDATE orders SET payment_status = 'refunded', status = 'refunded' WHERE id = $1`,
+    [order.id]
+  );
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      refund_id: refund.id,
+      refund_status: refund.status,
+    },
+  };
 }
 
 module.exports = {
   createPaypalOrder,
   capturePaypalOrder,
   handlePaypalWebhookEvent,
-  markPaypalEventProcessed,
   refundPaypalOrder,
 };
