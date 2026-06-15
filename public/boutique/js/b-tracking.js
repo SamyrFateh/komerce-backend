@@ -205,11 +205,11 @@ export function renderTrackViewSearchMode(el) {
         <h2>📦 Suivi de commande</h2>
 
         <div id="k-track-quick">
-          <p class="k-otp-hint">Entrez les 4 derniers chiffres de votre commande</p>
+          <p class="k-otp-hint">Entrez les 6 chiffres de votre commande (ex: 000042)</p>
           <div class="k-track-form">
             <div class="k-track-ref-wrap">
-              <span class="k-track-ref-prefix">KMR-2025-</span>
-              <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="0042" maxlength="4" autocomplete="off">
+              <span class="k-track-ref-prefix">KOM-2026-</span>
+              <input class="k-track-input k-track-input--ref" id="k-track-digits" type="text" inputmode="numeric" placeholder="000042" maxlength="6" autocomplete="off">
             </div>
             <button class="k-track-btn" id="k-track-quick-btn">🔍 Suivre</button>
           </div>
@@ -247,14 +247,15 @@ export function renderTrackViewSearchMode(el) {
 
   const digitsInput = el.querySelector('#k-track-digits');
   digitsInput.addEventListener('input', () => {
-    digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 4);
-    if (digitsInput.value.length === 4) el.querySelector('#k-track-quick-btn').click();
+    digitsInput.value = digitsInput.value.replace(/\D/g, '').slice(0, 6);
+    if (digitsInput.value.length === 6) el.querySelector('#k-track-quick-btn').click();
   });
 
   el.querySelector('#k-track-quick-btn').addEventListener('click', async () => {
     const digits = digitsInput.value.replace(/\D/g, '');
-    if (digits.length !== 4) { showToast('Entrez 4 chiffres.', 'error'); return; }
-    const ref = 'KMR-2025-' + digits.padStart(4, '0');
+    if (digits.length !== 6) { showToast('Entrez 6 chiffres.', 'error'); return; }
+    const year = new Date().getFullYear();
+    const ref = 'KOM-' + year + '-' + digits.padStart(6, '0');
     const btn = el.querySelector('#k-track-quick-btn');
     btn.disabled = true; btn.textContent = '⏳ Recherche…';
     try {
@@ -263,7 +264,7 @@ export function renderTrackViewSearchMode(el) {
       el.querySelector('#k-otp-step3').classList.remove('u-hidden');
       renderOrderDetail(data.order || data, el.querySelector('#k-orders-list'));
     } catch(e) {
-      showToast('Commande introuvable. Vérifiez les 4 chiffres.', 'error');
+      showToast('Commande introuvable. Vérifiez les 6 chiffres.', 'error');
       btn.disabled = false; btn.textContent = '🔍 Suivre';
     }
   });
