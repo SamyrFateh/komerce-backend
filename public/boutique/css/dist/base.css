@@ -1982,8 +1982,18 @@ body:has(#k-page-scroll.k-pager-active) {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  @keyframes k-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
   .k-search-slogan strong {
-    color: var(--coral);
+    background: linear-gradient(90deg,
+      var(--coral-dark) 25%, var(--terracotta) 50%, var(--coral-dark) 75%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: k-shimmer 4s ease-in-out infinite;
   }
 }
 
