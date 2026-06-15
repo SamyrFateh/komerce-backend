@@ -2534,3 +2534,43 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 /* ══ FIN DIRECTION A DESKTOP SPLIT ════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   DIRECTION A — CORRECTIONS NAVBAR + LOGO + ALIGNEMENT TEXTE
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  /* ── 1. Logo agrandi dans la navbar ── */
+  html.k-home-premium-v1 .k-logo-svg {
+    height: 52px;
+  }
+  html.k-home-premium-v1 .k-logo {
+    min-width: 172px;
+  }
+  html.k-home-premium-v1 .k-header-inner {
+    height: 72px;
+  }
+
+  /* ── 2. Gap navbar→hero : supprimer l'espace blanc entre les deux ── */
+  html.k-home-premium-v1 #k-header-spacer {
+    height: var(--header-h, 72px) !important;
+  }
+  html.k-home-premium-v1 .k-hero {
+    margin-top: 0;
+  }
+
+  /* ── 3. Texte du hero aligné à gauche ── */
+  html.k-home-premium-v1 .k-hero-mini-slogan--premium {
+    text-align: left;
+    align-items: flex-start;
+  }
+  html.k-home-premium-v1 .k-hero-badge,
+  html.k-home-premium-v1 .k-hero-sub,
+  html.k-home-premium-v1 .k-hero-trust {
+    text-align: left;
+  }
+  html.k-home-premium-v1 .k-hero-cta-row {
+    justify-content: flex-start;
+  }
+}
+/* ══ FIN CORRECTIONS NAVBAR + LOGO ════════════════════════════ */
