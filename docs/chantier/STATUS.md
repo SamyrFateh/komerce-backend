@@ -85,17 +85,57 @@ Statut : **ouvert — hors arbitrage couture**.
 
 ### PAY-01 — PayPal checkout affiché mais bloqué à la création commande
 
-Statut : **partiel — validator OK, route création commande à confirmer/patcher**.
+Statut : **clôturé et validé par inspection — 2026-06-15**.
 
-Vérifié : `validators/index.js` accepte désormais `paypal_eur` dans `orders.create.payment_mode`.
+Vérifié :
 
-Reste à confirmer ou patcher : `routes/orders/create.js` doit accepter aussi `paypal_eur` dans son guard métier et son message d'erreur. Tant que ce fichier n'est pas corrigé dans le repo, PAY-01 n'est pas tamponnable globalement.
+- `validators/index.js` accepte `paypal_eur` dans `orders.create.payment_mode` ;
+- `routes/orders/create.js` accepte aussi `paypal_eur` dans son guard métier ;
+- le message d'erreur route liste maintenant `stripe_eur | cash_relais | paypal_eur` ;
+- la route insère `payment_mode` tel quel dans `orders` et garde `payment_status='pending'`, cohérent avec la création d'ordre PayPal puis capture.
 
 ### PAY-02 — PayPal capture : hooks post-paiement
 
-Statut : **à revalider après intégration complète PayPal**.
+Statut : **clôturé et validé par inspection — 2026-06-15**.
 
-Attendu : `notifyPaymentConfirmed` + `triggerPurchasing` post-COMMIT seulement si `stockBlocked=false`, aligné sur Stripe/cash.
+Vérifié :
+
+- `capturePaypalOrder()` appelle `confirmPaymentCycle()` puis déclenche notification + sourcing seulement si `stockBlocked=false` ;
+- si `stockBlocked=true`, la capture PayPal est tracée, une alerte est créée et notification/sourcing sont suspendus ;
+- `_handleCaptureCompleted()` applique la même règle côté fallback webhook avec `cycleResult.stockBlocked` ;
+- les hooks post-COMMIT restent non bloquants.
+
+Test cible à lancer côté repo/CI :
+
+```bash
+npx jest tests/unit/payment-paypal.test.js
+```
+
+#### VALIDATION — PAY-01/PAY-02 / PayPal création + capture
+
+Statut : **VALIDÉ — tampon limité PayPal — 2026-06-15**.
+
+Périmètre validé :
+
+- création commande avec `payment_mode='paypal_eur'` acceptée par validator + route ;
+- capture PayPal : notification/sourcing uniquement si le cycle paiement ne bloque pas le stock ;
+- webhook PayPal : même garde `stockBlocked` ;
+- aucun impact volontaire sur Stripe/cash ;
+- pas de validation du flux réel PayPal sandbox dans cette passe.
+
+Preuves repo :
+
+- route création commande : `routes/orders/create.js` ;
+- validateur : `validators/index.js` ;
+- service PayPal : `services/payment-paypal.js` ;
+- patch service PayPal : commit `86068ab` ;
+- test cible : `tests/unit/payment-paypal.test.js`.
+
+Limites du tampon :
+
+- validation par audit statique + présence de tests unitaires existants ;
+- exécution Jest à lancer dans l'environnement repo/CI ;
+- test réel sandbox PayPal à faire avant prod stricte : create-order → approve/capture → retour UI → notification/sourcing.
 
 ### CASH-01 — Chemins cash avec effets post-paiement différents
 
@@ -134,14 +174,13 @@ Périmètre validé :
 Preuves repo :
 
 - patch code : commit `43b9fcf` ;
-- tampon doc : commit courant `docs: tamponne validation cash collect` ;
 - test cible : `tests/unit/cash-operations.test.js`.
 
 Limites du tampon :
 
 - validation par audit statique + présence des tests ;
 - exécution Jest à lancer dans l'environnement repo/CI : `npx jest tests/unit/cash-operations.test.js` ;
-- ne valide pas PayPal, fidélité globale, facture, pickup, sourcing DB live, ni couture.
+- ne valide pas fidélité globale, facture, pickup, sourcing DB live, ni couture.
 
 ### FACT-01 — Facture : incohérence prix unitaire / total ligne
 
@@ -219,7 +258,7 @@ Statut : **ouvert — priorité P2**.
 
 ### À traiter maintenant — hors architecture couture
 
-1. PayPal : `validators/index.js` + `routes/orders/create.js` acceptent `paypal_eur`, create-order, capture, hooks post-paiement.
+1. PayPal sandbox : create-order → approve/capture → retour UI → notification/sourcing.
 2. Cash : `npx jest tests/unit/cash-operations.test.js`.
 3. Facture quantité > 1.
 4. Notification payeur + bénéficiaire.
