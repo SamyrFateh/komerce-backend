@@ -1,15 +1,11 @@
 /**
- * KOMERCE — Serveur API v10.6.1 (Cash reconciliation + Inventory proposals + Transitaire)
+ * KOMERCE — Serveur API
  *
- * Point d'entrée Node.js + Express
- * Déployé sur Railway — PORT fourni par la variable d'environnement
+ * Point d'entrée Node.js + Express.
+ * Déployé sur Railway — PORT fourni par la variable d'environnement.
  *
- * Changelog v11.2: Parcel-First API v2 (routes/parcel-api-v2.js) — refonte COLIS-FIRST
- * Changelog v10.18: routes/invoices.js ajouté (mini-facture client)
- * Changelog v10.15: routes/transit-dashboard.js ajouté (parcel-first)
- * Changelog v10.14: routes/hub-dashboard.js ajouté, hub.html
- * Changelog v10.13: routes/relay-dashboard.js ajouté, suivi.html exempté auth-guard
- * Changelog v10.12: F34 stock constraint garantit admin au démarrage
+ * Convention versioning : `package.json` est la source de vérité. `/api/health`
+ * expose `require('./package.json').version`.
  */
 
 const { loadAndValidateEnv } = require('./bootstrap/env');

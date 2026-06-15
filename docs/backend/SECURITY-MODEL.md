@@ -1,6 +1,6 @@
 # 🔐 Komerce — Modèle de sécurité
 
-> **Document de doctrine** — v1.0 — 22 avril 2026
+> **Document de doctrine** — v1.1 — 2026-06-15
 >
 > Ce document fige la philosophie et les règles de sécurité de Komerce.
 > Toute évolution du modèle d'identité, de paiement ou de retrait doit passer par une mise à jour explicite de ce document.
@@ -399,7 +399,7 @@ Komerce combine :
 
 **Auteur :** Komerce Team
 **Date :** 22 avril 2026
-**Version :** 1.0
+**Version :** 1.1
 **Prochaine revue :** après POC partenaires (prévue mi-2026)
 
 **Toute modification de cette doctrine doit faire l'objet :**
@@ -409,7 +409,45 @@ Komerce combine :
 
 ---
 
+## 🔔 Webhooks entrants — modèle de sécurité
+
+### Webhook Meta WhatsApp (`GET/POST /webhook/meta-whatsapp`)
+
+Le handshake `GET` utilise le verify token `META_WA_VERIFY_TOKEN`.
+
+Le webhook `POST` utilise une vérification HMAC-SHA256 standard Meta : signature `X-Hub-Signature-256` comparée en temps constant par `routes/meta-whatsapp.js`.
+
+Variable d'environnement : `META_WA_APP_SECRET`. Si elle est absente, le code laisse passer en dev/test avec warning. En production, cette variable doit être définie par configuration d'environnement.
+
+### Webhook Authkey WhatsApp (`GET /webhook/authkey-whatsapp`)
+
+Authkey ne supporte pas HMAC. Le durcissement retenu est un **token secret partagé** transmis en query param `?token=<secret>` dans l'URL de webhook configurée dans le dashboard Authkey.
+
+**Implémentation** : `middleware/verify-authkey-webhook.js`
+
+| Condition | Comportement |
+|---|---|
+| `AUTHKEY_WEBHOOK_SECRET` défini | Comparaison `timingSafeEqual` — 403 si invalide |
+| `AUTHKEY_WEBHOOK_SECRET` absent en production | Fail-closed — 503 (webhook rejeté) |
+| `AUTHKEY_WEBHOOK_SECRET` absent en dev/test | Fail-open — warning log, passage autorisé |
+
+**Configuration Authkey** : l'URL de webhook doit inclure le secret en query string :
+
+```txt
+https://<host>/webhook/authkey-whatsapp?token=<AUTHKEY_WEBHOOK_SECRET>
+```
+
+**Variable d'env** : `AUTHKEY_WEBHOOK_SECRET` — min 32 chars recommandé.
+Génération : `openssl rand -hex 32`.
+
+**Note** : ce token est transmis en clair dans l'URL (GET). Il est protégé par TLS en transit. Ne pas logger la query string complète ; si des access logs sont activés, masquer le paramètre `token`.
+
+---
+
 ## 📝 Changelog
+
+### v1.1 — 2026-06-15
+- Ajout section « Webhooks entrants » : Meta WhatsApp (HMAC) + Authkey (token query param).
 
 ### v1.0 — 22 avril 2026
 - Version initiale

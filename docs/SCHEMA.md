@@ -102,7 +102,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 **Invariant I-10** : les codes sont en clair uniquement pendant leur fenêtre TTL, avec le même niveau de confiance que `DATABASE_URL`. Voir **SEC-1** dans `STATUS.md`.
 
-> **N4 — Dette technique connue** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` (révocation JWT par `jti`). **Cette migration n'est pas encore appliquée sur Railway** (confirmé : table absente du dump 26 mai 2026). Le câblage applicatif (`jti` dans `generateToken`, check au middleware, INSERT au logout, cron cleanup) reste à faire. Non bloquant go-live.
+> **N4 — État vérifié code (2026-06-15)** : `migrations/072_jwt_revocation.sql` crée la table `revoked_tokens` et doit être appliquée sur Railway si la table est absente. Le câblage applicatif est présent : `routes/auth.js` génère un `jti`, insère le token au logout, `middleware/auth.js` vérifie `revoked_tokens`, et `bootstrap/crons.js` purge les lignes expirées via `startJwtRevocationCleanupCron()`. **Action DB live restante** : vérifier `SELECT 1 FROM revoked_tokens LIMIT 1`; appliquer la migration si absente.
 
 ### 4.3 Wallet (4 tables)
 
@@ -151,8 +151,6 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `cart_shares` | Partage de panier (token public). |
 | `cart_contributions` | Contributions (legacy, vérifier vs `shared_cart_contributions`). |
 
-**Dette doc à clarifier** : `cart_shares` + `cart_contributions` ne sont pas mentionnées dans `CARTOGRAPHY_360.md` §domaines. Statut : actives en DB, à confirmer côté code.
-
 ### 4.7 Workspace collectif (7 tables)
 
 | Table | Rôle |
@@ -171,7 +169,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 
 | Table | Rôle |
 |---|---|
-| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel (était hardcodé à 1 % dans `cost-allocation.js` — violation I-08 résolue). Configurable via Control Tower > Paramètres économiques. |
+| `finance_config` | **Singleton (id=1)** — source de vérité unique post-ADR-009. Colonne `provision_risque_pct NUMERIC(6,4) DEFAULT 0.01` ajoutée en migration 067 : taux de provision risque mensuel. |
 | `economic_variables` | Variables économiques (legacy, voir ADR-009). |
 | `exchange_rates` | Taux de change historisés. |
 | `pricing_components` | Composantes de pricing. |
@@ -181,7 +179,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | `pricing_category_dims` | Dimensions catégorie. |
 | `pricing_category_taxes` | Taxes par catégorie. |
 | `pricing_matrices_audit` | Audit matrices. |
-| `cost_components` | Composantes de coûts (contrainte `cost_components_family_check` rigoureuse). |
+| `cost_components` | Composantes de coûts. |
 | `cost_component_events` | Événements composantes coût. |
 | `risk_provisions` | Provisions risques. |
 | `charges` | Charges fixes. |
@@ -212,8 +210,6 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `fabrics` | Tissus (module cérémonie). |
 | `garment_models` | Modèles vêtements (module cérémonie). |
 
-**Dette doc** : `fabrics` + `garment_models` non mentionnées dans `CARTOGRAPHY_360.md` § Modules.
-
 ### 4.11 Scans et opérations terrain (4 tables)
 
 | Table | Rôle |
@@ -241,9 +237,9 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `notification_log` | Log notifications (email, push). |
 | `sms_log` | Log SMS. |
 | `signals` | Signaux opérationnels. |
-| `alerts` | Alertes (contrainte CHECK sur `severity`). |
+| `alerts` | Alertes. |
 | `incidents` | Incidents. |
-| `unsold_items` | Items invendus (trigger `auto_unsold`). |
+| `unsold_items` | Items invendus. |
 | `business_rules` | Règles métier. |
 | `business_rules_history` | Historique règles. |
 | `economic_snapshots` | Snapshots économiques. |
@@ -279,18 +275,16 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 
 | Trigger | Table | Rôle |
 |---|---|---|
-| `trg_no_delete_parcels` | `parcels` | Bloque DELETE direct (force soft-delete via `cancelled`). |
+| `trg_no_delete_parcels` | `parcels` | Bloque DELETE direct. |
 | `trg_parcel_ship_guard` | `parcels` | Contrôle transitions colis. |
 | `trg_check_parcel_item_qty` | `parcel_items` | Vérifie cohérence quantité colis vs commande. |
-| `trg_compute_real_margin` | `orders` | Recalcule marge réelle au passage `cost_real_kmf`. |
+| `trg_compute_real_margin` | `orders` | Recalcule marge réelle. |
 | `trg_customs_anomaly` | `customs_history` | Flag anomalies taux douane. |
-| `prevent_incident_delete` | `incidents` | Anti-suppression incidents (audit). |
-| `prevent_scan_event_delete` | `scan_events` | Anti-suppression scans (preuve). |
+| `prevent_incident_delete` | `incidents` | Anti-suppression incidents. |
+| `prevent_scan_event_delete` | `scan_events` | Anti-suppression scans. |
 | `auto_unsold` | déclenché | Bascule auto en `unsold_items`. |
 | `set_updated_at` × 17 tables | divers | Maintien `updated_at` automatique. |
 | `sync_has_variants` | `products` | Synchronise flag variantes. |
-
-**Conséquence** : un agent ne peut pas casser certaines invariants même en bypassant le code. La DB rejette. C'est une couche de défense supplémentaire.
 
 ---
 
@@ -299,32 +293,32 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 | Contrainte | Garantie |
 |---|---|
 | `cost_components_family_category_consistency` | Cohérence `family` ↔ `category` du composant coût. |
-| `cost_components_allocation_check` | Méthode d'allocation valide (10 méthodes admises). |
-| `cost_components_island_check` | Île valide (grande_comore, moheli, anjouan, mayotte). |
+| `cost_components_allocation_check` | Méthode d'allocation valide. |
+| `cost_components_island_check` | Île valide. |
 | `competitor_target_check` | Prix concurrent : produit OU catégorie obligatoire. |
 | `collective_workspace_contributions_content_check` | Contribution non-vide. |
-| `collective_workspace_contributions_kind_check` | Kind valide (suggestion / intention / message). |
-| `parcels_type_check` | Type de colis (standard / partial / backorder / awaiting_stock). |
+| `collective_workspace_contributions_kind_check` | Kind valide. |
+| `parcels_type_check` | Type de colis valide. |
 
 ---
 
 ## 8. Conventions transverses
 
-- **Identifiants** : `uuid` partout (via `uuid_generate_v4()` ou `gen_random_uuid()`).
-- **Timestamps** : `created_at`, `updated_at` (avec trigger `set_updated_at`), timestamps d'événement nommés `<step>_at`.
+- **Identifiants** : `uuid` partout.
+- **Timestamps** : `created_at`, `updated_at`, timestamps d'événement nommés `<step>_at`.
 - **Devises** : suffixe explicite `_kmf`, `_eur`, `_aed`.
 - **Statuts** : ENUMs typés, pas de string libre.
-- **Soft-delete** : pas de DELETE pour `parcels`, `incidents`, `scan_events` (triggers de protection).
+- **Soft-delete** : pas de DELETE pour `parcels`, `incidents`, `scan_events`.
 - **Idempotence** : `idempotency_key` pour wallet, `stripe_events_processed` pour webhooks Stripe.
 
 ---
 
 ## 9. Liens avec les autres documents socle
 
-- **`CARTOGRAPHY_360.md`** — domaines API et points de vérité. Si une table de ce document n'apparaît pas dans CARTOGRAPHY, c'est une dette doc à signaler.
+- **`CARTOGRAPHY_360.md`** — domaines API et points de vérité.
 - **`ZONE_IMPACT.md`** — invariants I-01 à I-10 qui protègent ce schéma au niveau code.
 - **`CONTRACTS.md`** — services qui consomment et mutent ces tables.
-- **`SCHEMA_GAP_KOMERCE.md`** — analyse historique des divergences `schema.sql` / migrations / runtime. Ce document remplace `SCHEMA_GAP` comme référence vivante.
+- **`SCHEMA_GAP_KOMERCE.md`** — analyse historique des divergences `schema.sql` / migrations / runtime.
 - **`ADR-009-source-verite-unifiee.md`** — `finance_config` comme singleton.
 
 ---
@@ -344,25 +338,18 @@ Voir `AGENTS.md` § "Règle de divergence". En résumé :
 Pour mettre à jour ce document après une migration DB :
 
 ```bash
-# 1. Exporter le schéma depuis Railway
 pg_dump --schema-only --no-owner --no-privileges \
   "$DATABASE_URL_PROD" > /tmp/db_schema.sql
-
-# 2. Confronter à ce document :
-# - lister les nouvelles tables (`grep "^CREATE TABLE"`)
-# - lister les nouveaux ENUMs (`grep "^CREATE TYPE"`)
-# - confronter les colonnes de orders/parcels/wallet
-# - mettre à jour les sections concernées
-
-# 3. Mettre à jour la date en tête + STATUS.md
 ```
+
+Puis confronter les nouvelles tables, nouveaux ENUMs et colonnes critiques à ce document.
 
 ---
 
 ## 12. Dette schéma connue
 
-1. **2 dossiers de migrations** (`db/migrations/` legacy + `migrations/` actif) — non bloquant mais à clarifier (cf. STATUS.md lot A5).
-2. **Collisions de numéros** dans `migrations/` : `060.sql` + `060_add_pending_at_confirmed_at.sql` ; `061.sql` + `061_boutique_categories.sql` (cf. STATUS.md lot A4).
+1. **2 dossiers de migrations** (`db/migrations/` legacy + `migrations/` actif) — non bloquant mais à clarifier.
+2. **Collisions de numéros** dans `migrations/` : `060.sql` + `060_add_pending_at_confirmed_at.sql` ; `061.sql` + `061_boutique_categories.sql`.
 3. **`db/schema.sql`** est obsolète (mars 2026, v1.3). Ce document le remplace comme référence d'état réel.
-4. **Tables non mentionnées dans CARTOGRAPHY** : ✅ **Résolu par lot SOCLE-2 (17 mai 2026)**. `fabrics`, `garment_models`, `product_variants`, `otp_codes`, `sms_log`, `notification_log`, `stripe_events_processed`, `cart_shares`, `cart_contributions` désormais référencées dans `CARTOGRAPHY_360.md`. `pickup_print_tokens` et `pickup_reveal_codes` (migration 070, SEC-1) sont des tables techniques internes — pas de domaine API propre, pas d'endpoint dédié — et ne nécessitent pas d'entrée CARTOGRAPHY.
+4. **Présence DB live de `revoked_tokens`** : à vérifier sur Railway. Le code et la migration sont prêts ; la DB live reste la source de vérité finale.
 5. **Trou apparent** dans la numérotation migrations entre 025 et 033 — vérifier l'historique git si nécessaire.
