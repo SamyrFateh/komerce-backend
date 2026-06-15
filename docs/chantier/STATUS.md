@@ -84,7 +84,7 @@ Statut : **partiellement clôturé — code vérifié, DB live à vérifier**.
 
 Câblage code confirmé : `routes/auth.js` génère un `jti`, logout insère dans `revoked_tokens`, `middleware/auth.js` vérifie la révocation, `bootstrap/crons.js` lance le cleanup, migration attendue `072_jwt_revocation.sql`.
 
-Action restante : vérifier sur Railway :
+Action restante Railway :
 
 ```sql
 SELECT 1 FROM revoked_tokens LIMIT 1;
@@ -106,81 +106,103 @@ Statut : **surveillance documentaire**.
 
 ---
 
-## 4. Audit métier bout-en-bout — dettes ouvertes
+## 4. Couture / variantes — en attente d'architecture finale
 
-Cet audit reprend la grille métier complète : catalogue → boutique → panier → checkout → commande → paiement/stock → panier partagé → suivi → sourcing → facture/notifs → dashboards.
+### ARCH-COUTURE-00 — Architecture métier couture non arrêtée
+
+Statut : **en attente — arbitrage produit/architecture requis avant patch**.
+
+Le vrai sujet couture n'est pas seulement un bug de variantes. L'architecture finale n'est pas encore arrêtée. Les points `COUTURE-*` ci-dessous sont donc des **constats d'audit** et des **risques à garder visibles**, mais ils ne doivent pas être traités comme des tickets de correction immédiats.
+
+Interdiction opératoire :
+
+- ne pas coder un système définitif de variantes/couture avant décision d'architecture ;
+- ne pas figer `variant_combo`, `variant_id`, prix variante, stock variante, panier partagé variante ou sourcing variante sans doctrine cible ;
+- ne pas faire une migration DB structurante couture sans document d'architecture validé ;
+- ne pas casser le parcours produit simple existant.
+
+Décisions à prendre avant implémentation :
+
+1. **Nature métier** : simple variante catalogue, module couture sur mesure, ou deux voies séparées ?
+2. **Identité ligne panier** : produit seul, produit + variante, ou ligne panier autonome ?
+3. **Prix** : prix produit, prix variante, prix calculé module, ou snapshot ligne ?
+4. **Stock** : stock produit, stock variante, stock tissu/métrage, ou stock fournisseur ?
+5. **Sourcing** : PO par produit, par ligne commande, par variante, ou par module couture ?
+6. **Panier partagé** : snapshot variante/module figé ou recalcul à la finalisation ?
+7. **Affichage métier** : quelle information doit voir client, créateur, admin, hub, relais, fournisseur, facture ?
+8. **DB cible** : garder `variant_combo jsonb`, ajouter `variant_id`, créer `cart_line_id`, ou créer une table dédiée aux options/modules ?
+
+Livrable attendu avant code : document court d'architecture cible, idéalement `docs/doctrine/COUTURE_ARCHITECTURE.md` ou `docs/implementation/COUTURE_ARCHITECTURE.md`, puis ajout dans `docs/README.md`.
 
 ### COUTURE-01 — Variantes affichées mais non propagées au panier/checkout
 
-Statut : **ouvert — priorité P0/P1**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-État vérifié : le backend accepte `items[].variant_combo`, `GET /api/products/:id` expose les variantes, la fiche produit les affiche, mais le panier frontend ajoute seulement `state.modalProduct`. `submitOrder()` et `_createKomerceOrderForPayPal()` envoient `product_id` + `quantity`, sans `variant_combo`.
+Constat : le backend accepte `items[].variant_combo`, `GET /api/products/:id` expose les variantes, la fiche produit les affiche, mais le panier frontend ajoute seulement `state.modalProduct`. `submitOrder()` et `_createKomerceOrderForPayPal()` envoient `product_id` + `quantity`, sans `variant_combo`.
 
-Conséquence : l'utilisateur peut croire avoir choisi une taille/couleur, mais la commande part comme produit simple.
-
-À corriger : stocker `variant_combo` dans la ligne panier, rendre le choix obligatoire si nécessaire, distinguer deux variantes d'un même produit dans le panier, envoyer `variant_combo` au checkout Stripe/cash/PayPal, afficher la variante partout.
+Ne pas patcher isolément tant que l'identité de ligne panier et le modèle cible ne sont pas décidés.
 
 ### COUTURE-02 — Variantes couleur ignorées côté fiche produit
 
-Statut : **ouvert — priorité P1**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`_renderVariants()` ignore explicitement `couleur`, `color`, `coloris`, `teinte`. Une variante couleur/SKU peut donc exister côté backend mais ne pas être choisissable.
+Constat : `_renderVariants()` ignore `couleur`, `color`, `coloris`, `teinte`. Une variante couleur/SKU peut exister côté backend mais ne pas être choisissable.
 
-À corriger : traiter les couleurs comme des choix produits réels avec label/image/stock/prix.
+À reprendre seulement après décision sur la représentation des options produit.
 
 ### COUTURE-03 — Stock variante non décrémenté si stock global produit `NULL`
 
-Statut : **ouvert — priorité P0/P1 backend**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`services/order-payment-confirmation.js` filtre les lignes sur `p.stock IS NOT NULL`, puis vérifie/décrémente les variantes seulement sur ces lignes. Si un produit est géré uniquement par `product_variants.stock` avec `products.stock = NULL`, le paiement peut ne pas décrémenter la variante. À l'annulation, la machine peut restaurer une variante qui n'a jamais été décrémentée.
+Constat : `services/order-payment-confirmation.js` filtre les lignes sur `p.stock IS NOT NULL`, puis vérifie/décrémente les variantes seulement sur ces lignes.
 
-À corriger : inclure les items `has_variants = true` même si `p.stock IS NULL`, puis séparer stock global et stock variante.
+Ne pas corriger isolément sans choisir le modèle stock cible : produit, variante, tissu/métrage, fournisseur ou mix.
 
 ### COUTURE-04 — Catalogue frontend demande 1000 produits mais API plafonne à 200
 
-Statut : **ouvert — priorité P1 si catalogue > 200 produits**.
+Statut : **ouvert — hors arbitrage couture**.
 
 `loadProducts()` demande `limit: 1000`, mais `routes/products.js` force `MAX_LIMIT = 200`. Au-delà de 200 produits actifs, la boutique peut masquer silencieusement une partie du catalogue.
 
-À corriger : pagination frontend ou convention backend/frontend explicite.
+À corriger indépendamment : pagination frontend ou convention backend/frontend explicite.
 
 ### COUTURE-05 — `variant_type` injecté dans le DOM sans garde suffisante
 
-Statut : **ouvert — priorité P2 sécurité/hygiène**.
+Statut : **en attente ARCH-COUTURE-00 — sauf correction hygiène sans changer l'architecture**.
 
-`_renderVariants()` injecte `type` dans `innerHTML`. Corriger via DOM + `textContent` ou sanitize.
+Constat : `_renderVariants()` injecte `type` dans `innerHTML`. Une correction DOM + `textContent` est possible si elle ne modifie pas le modèle métier.
 
 ### COUTURE-06 — Variantes peu visibles dans suivi/admin/sourcing/facture
 
-Statut : **ouvert — priorité P1 métier**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`order_items.variant_combo` existe, mais plusieurs lectures ne le relisent pas : `routes/orders/detail.js`, `routes/client-tracking.js`, `routes/order-api-v2.js`, `parcel-auto-create-service`, facture, notifications.
+Constat : `order_items.variant_combo` existe, mais plusieurs lectures ne le relisent pas : détail commande, tracking, API v2, colis, facture, notifications.
 
-À corriger : définir une représentation lisible unique (`Taille: M · Couleur: Bleu`) et l'afficher dans panier, checkout, commande, suivi, admin, sourcing, colis, facture, notifications.
+À reprendre après définition d'une représentation lisible unique des options/modules.
 
 ### COUTURE-07 — Panier partagé perd les variantes
 
-Statut : **ouvert — priorité P1 Boutique First**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`b-share-cart.js#createSharedCart()` envoie seulement `product_id` + `quantity`. `shared-cart-engine` enrichit par `product_id`, snapshotte sans `variant_combo`, puis `convertSharedCartToOrder()` recrée des `order_items` sans variante.
+Constat : `b-share-cart.js#createSharedCart()` envoie seulement `product_id` + `quantity`. `shared-cart-engine` enrichit par `product_id`, snapshotte sans `variant_combo`, puis `convertSharedCartToOrder()` recrée des `order_items` sans variante.
 
-À corriger : étendre contrat cart items, snapshot `shared_cart_items`, vue publique et conversion commande.
+À reprendre après décision : snapshot figé ou recalcul à finalisation.
 
 ### COUTURE-08 — Admin variante : `deleteVariant()` incompatible avec `variant_combo`
 
-Statut : **ouvert — priorité P1 admin/data**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`product-admin-service.deleteVariant()` vérifie `order_items.variant_id`, alors que le modèle actuel est `order_items.variant_combo jsonb`. Risque : erreur SQL ou suppression mal protégée d'une variante déjà utilisée.
+Constat : `product-admin-service.deleteVariant()` vérifie `order_items.variant_id`, alors que le modèle actuel visible est `order_items.variant_combo jsonb`.
 
-À corriger : guard via `variant_combo` (`variant_type` + `variant_value`) et statuts réels.
+À reprendre après décision DB cible : `variant_id`, `variant_combo`, ou table options dédiée.
 
 ### COUTURE-09 — Prix variante affiché mais non porté par le panier
 
-Statut : **ouvert — priorité P1 si variantes avec prix spécifique**.
+Statut : **en attente ARCH-COUTURE-00**.
 
-`_renderVariants()` peut changer le prix visuel, mais `addToCart()` conserve `product.price_kmf` et `cartTotal()` calcule sur `i.product.price_kmf`.
+Constat : `_renderVariants()` peut changer le prix visuel, mais `addToCart()` conserve `product.price_kmf` et `cartTotal()` calcule sur `i.product.price_kmf`.
 
-À corriger : porter `unit_price_kmf` au niveau ligne panier, issu de la variante choisie si surcharge.
+À reprendre après décision : prix produit, prix variante, prix module ou snapshot de ligne.
 
 ---
 
@@ -289,11 +311,11 @@ WHERE conrelid = 'purchase_orders'::regclass
 
 ### SRC-03 — Sourcing PO idempotent par fournisseur, pas par ligne commande
 
-Statut : **ouvert — priorité P1 avec variantes**.
+Statut : **ouvert — priorité P1 avec variantes, en attente ARCH-COUTURE-00 pour le cas variantes**.
 
-`triggerPurchasing()` évite les doublons avec `(order_id, product_supplier_id, status != cancelled)`. Si deux lignes du même produit/fournisseur apparaissent dans une commande (cas futur : variante M + variante L, ou deux lignes séparées), la seconde peut être ignorée.
+`triggerPurchasing()` évite les doublons avec `(order_id, product_supplier_id, status != cancelled)`. Si deux lignes du même produit/fournisseur apparaissent dans une commande, la seconde peut être ignorée.
 
-À corriger : idempotence par `order_item_id` ou consolidation volontaire des quantités avec détail variante.
+À corriger pour le produit simple : vérifier consolidation volontaire des quantités. À reprendre pour les variantes après ARCH-COUTURE-00.
 
 ### PICKUP-01 — Reçu pickup lit `relais.city`, absent du schéma relais
 
@@ -327,11 +349,11 @@ Statut : **ouvert — priorité P2**.
 
 ### MOD-01 — Module couture : calcul prix séparé du vrai panier/commande
 
-Statut : **ouvert — à vérifier avant activation module couture public**.
+Statut : **en attente ARCH-COUTURE-00**.
 
 `routes/modules.js#/price` sait calculer des scénarios couture (`ready_made`, `fabric_only`, `custom_from_fabric`), mais la chaîne panier/checkout actuelle reste centrée sur `products.price_kmf`. La continuité module → panier → commande → sourcing → facture n'est pas démontrée.
 
-À corriger/tester : un produit couture sur mesure doit porter son type, tissu, modèle, métrage, prix final, délai, et l'information doit survivre au checkout, paiement, sourcing, suivi et facture.
+À reprendre après décision : module couture intégré au panier ou voie séparée devis/sur-mesure.
 
 ### ECO-01 — Moteur économique : vérifier raccord dashboard ↔ pricing ↔ commandes
 
@@ -360,48 +382,33 @@ Le moteur économique (`routes/economic-engine.js`, `services/economic-engine-qu
 
 ## 9. Tests prioritaires
 
-### Panier partagé Boutique First
-
-1. Prêt à payer.
-2. À valider ensemble.
-3. Lecture seule.
-4. Statuts humains.
-5. Dépassement du reste.
-
-### Couture / variantes
-
-1. Produit sans variante : parcours inchangé.
-2. Taille seule : choix obligatoire, panier affiche taille, checkout envoie `variant_combo`.
-3. Couleur seule : choix visible, panier affiche couleur, checkout envoie `variant_combo`.
-4. Couleur + taille : deux dimensions conservées.
-5. Deux variantes du même produit : deux lignes distinctes.
-6. Variante en rupture : ajout impossible.
-7. Variante avec prix spécifique : prix modal = panier = checkout = commande.
-8. Produit `products.stock = NULL` + `product_variants.stock = 1` : paiement décrémente variante.
-9. Stripe/cash/wallet/PayPal : tous déclenchent stock + hooks métier.
-10. Panier partagé : variante conservée snapshot → paiement → commande.
-11. Suivi/admin/sourcing/facture : variante visible partout.
-12. `deleteVariant` : bloque une variante utilisée par une commande.
-
-### Paiement / cash / PayPal / facture / notifications
+### À traiter maintenant — hors architecture couture
 
 1. PayPal complet : `/api/orders` accepte `paypal_eur`, create-order, capture, hooks post-paiement.
 2. Cash : les trois chemins cash produisent les mêmes effets métier ou deux sont désactivés.
 3. Facture quantité > 1 cohérente.
 4. Notification payeur + bénéficiaire.
 5. Fidélité gros panier sur Stripe, cash, PayPal, wallet full.
+6. `purchase_orders` completeness : `qty` / `received_qty`.
+7. Réception hub : statuts compatibles DB live.
+8. Reçu pickup cash : pas de colonne inexistante.
+9. Suivi rapide : format référence actuel.
+10. Catalogue > 200 produits : pagination ou limite explicite.
 
-### Sourcing / hub / pickup / suivi
+### À mettre en attente — dépend de ARCH-COUTURE-00
 
-1. `purchase_orders` completeness : `qty` / `received_qty`.
-2. Réception hub : statuts compatibles DB live.
-3. Deux lignes même fournisseur/produit : pas de perte sourcing.
-4. Reçu pickup cash : pas de colonne inexistante.
-5. Suivi rapide : format référence actuel.
+1. Variantes panier/checkout.
+2. Couleur/taille et choix obligatoire.
+3. Stock variante.
+4. Prix variante.
+5. Panier partagé avec variantes.
+6. Variante visible suivi/admin/sourcing/facture.
+7. `deleteVariant` selon modèle DB cible.
+8. Module couture sur mesure dans panier ou voie devis séparée.
 
 ### Product admin service
 
-Créer `tests/unit/product-admin-service.test.js` : create, update, delete soft, setMainImage, appendImages, replaceVariants, deleteVariant avec commande active.
+Créer `tests/unit/product-admin-service.test.js` : create, update, delete soft, setMainImage, appendImages, replaceVariants, deleteVariant avec commande active — sauf parties `deleteVariant` dépendantes du modèle final couture.
 
 ---
 
