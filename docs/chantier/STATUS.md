@@ -78,38 +78,20 @@ Le code backend conserve des noms/commentaires V4.1 (`shared-cart-engine`, cron 
 
 À surveiller : aucune UI participant ne doit exposer `open`, `closed`, `awaiting_choice`, `ordered`, `expired`, `archived`, “financé”, “cagnotte”, “engagement”, “workspace collectif”.
 
-### D-03 — Cartographie 360 partiellement divergente du code actuel
-
-Statut : **ouvert documentaire**.
-
-Points confirmés :
-
-- `docs/CARTOGRAPHY_360.md` liste encore `/api/collective-workspaces`, `/api/collective-payments` et `/api/collective-payments/stripe/webhook` comme domaines montés.
-- Le code actuel indique au contraire que le bloc collective-workspaces est démonté et que le webhook collective-payments est supprimé.
-- `bootstrap/api-routes.js` ne monte pas `/api/collective-workspaces` ni `/api/collective-payments`.
-
-Action : mettre à jour `docs/CARTOGRAPHY_360.md` pour classer `collective_*` comme historique DB / non monté, sauf preuve inverse.
-
-### D-04 — Cartographie 360 contient des alias admin devenus 404
-
-Statut : **ouvert documentaire**.
-
-Point confirmé :
-
-- La cartographie liste `/api/admin/pilotage` et `/api/admin/stats` avec `/api/dashboard`.
-- Le manifest actuel indique que `/api/admin/pilotage` et `/api/admin/stats` ont été supprimés comme alias historiques ; le chemin canonique est `/api/dashboard`.
-
-Action : corriger `docs/CARTOGRAPHY_360.md` pour éviter qu'un agent réintroduise ces alias.
-
-### D-05 — Webhook Authkey : dette doc corrigée côté code, cartographie à affiner
+### D-03 — Webhook Authkey : modèle de sécurité à enrichir
 
 Statut : **ouvert documentaire mineur**.
 
-Le code protège `/webhook/authkey-whatsapp` avec `verifyAuthkeyWebhook`. En production, l'absence de `AUTHKEY_WEBHOOK_SECRET` fait rejeter le webhook. Les anciennes formulations “non authentifié / IP whitelist recommandée” ne reflètent plus exactement le code.
+État vérifié :
 
-Action : aligner `CARTOGRAPHY_360.md` et `SECURITY-MODEL.md` sur le secret partagé `AUTHKEY_WEBHOOK_SECRET`.
+- Le code protège `/webhook/authkey-whatsapp` avec `verifyAuthkeyWebhook`.
+- En production, l'absence de `AUTHKEY_WEBHOOK_SECRET` fait rejeter le webhook.
+- `docs/CARTOGRAPHY_360.md` est maintenant aligné sur ce comportement.
+- `docs/backend/SECURITY-MODEL.md` reste un document de doctrine ancien, centré pickup/retrait, et ne décrit pas encore ce webhook.
 
-### D-06 — Versionning applicatif incohérent mais non bloquant
+Action : ajouter une courte section Authkey dans `docs/backend/SECURITY-MODEL.md` ou décider que ce niveau de détail reste uniquement dans la cartographie.
+
+### D-04 — Versionning applicatif incohérent mais non bloquant
 
 Statut : **ouvert documentaire / hygiène release**.
 
@@ -121,7 +103,7 @@ Statut : **ouvert documentaire / hygiène release**.
 
 Action : ne pas considérer les anciens audits mentionnant v12.3/v12.4 comme état actuel sans vérification. Décider une convention release unique avant prochain tag prod.
 
-### D-07 — Refacto routes : fichiers historiques doublons non tranchés
+### D-05 — Refacto routes : fichiers historiques doublons non tranchés
 
 Statut : **ouvert technique faible priorité**.
 
@@ -130,11 +112,11 @@ Statut : **ouvert technique faible priorité**.
 - `routes/orders.js` monte les sous-routes actuelles depuis `routes/orders/*`.
 - `routes/orders/status.js` et `routes/routes_orders_status.js` ont le même contenu apparent.
 - `routes/orders/cancel.js` et `routes/routes_orders_cancel.js` ont le même contenu apparent.
-- Le `STATUS` précédent mentionnait déjà `routes_orders_status.js` / `routes_orders_cancel.js` comme orphelins à arbitrer.
+- Un audit de refacto routes existe, mais il reste historique tant qu'il n'est pas recoupé avec une recherche d'imports complète.
 
 Action : confirmer par recherche d'imports complète avant suppression. Si aucun import, supprimer ou archiver pour éviter les faux positifs futurs.
 
-### D-08 — `docs/SCHEMA.md` contient une dette N4 JWT probablement obsolète ou à revalider
+### D-06 — `docs/SCHEMA.md` contient une dette N4 JWT probablement obsolète ou à revalider
 
 Statut : **à revalider contre DB live**.
 
@@ -142,7 +124,7 @@ Le schéma daté du 26 mai 2026 indique que `revoked_tokens` n'était pas appliq
 
 Action : vérifier DB live Railway. Si la table existe, corriger `docs/SCHEMA.md`. Si elle n'existe pas, c'est une dette technique réelle car le cron loguera une erreur périodique.
 
-### D-09 — Docs Boutique historiques subordonnées
+### D-07 — Docs Boutique historiques subordonnées
 
 Statut : **surveillance documentaire**.
 
@@ -202,6 +184,18 @@ L'historique PR indique une migration httpOnly cookie mergée. Toute réouvertur
 
 `docs/CARTOGRAPHY_360.md` mentionne maintenant `/api/shares` et distingue `cart_shares` / `cart_contributions` de `/api/shared-carts`. L'ancienne dette `SCHEMA.md` sur ce point est donc probablement périmée.
 
+### FP-08 — “Les routes collective-workspaces / collective-payments sont montées”
+
+Écarté.
+
+`docs/CARTOGRAPHY_360.md` est maintenant aligné avec `server.js` et `bootstrap/api-routes.js` : les routes collectives ne sont pas montées, les tables `collective_*` restent historiques.
+
+### FP-09 — “`/api/admin/pilotage` et `/api/admin/stats` sont des alias API actifs”
+
+Écarté.
+
+La cartographie indique désormais que le chemin API canonique est `/api/dashboard`. Les chemins HTML admin, comme `/admin/pilotage`, restent servis par le dashboard moderne.
+
 ---
 
 ## 6. Audits et historiques : règle de traitement
@@ -237,10 +231,9 @@ Classement opératoire :
 
 ### Docs/code
 
-1. Vérifier que `docs/CARTOGRAPHY_360.md` ne déclare plus de routes collectives démontées comme montées.
-2. Vérifier que `docs/CARTOGRAPHY_360.md` ne déclare plus `/api/admin/pilotage` et `/api/admin/stats` comme actifs.
-3. Vérifier DB live pour `revoked_tokens`.
-4. Vérifier les imports avant suppression éventuelle des doublons `routes_routes_*`.
+1. Vérifier DB live pour `revoked_tokens`.
+2. Vérifier les imports avant suppression éventuelle des doublons `routes_routes_*`.
+3. Décider si `docs/backend/SECURITY-MODEL.md` doit porter une section Authkey ou rester centré doctrine retrait/paiement.
 
 ---
 
