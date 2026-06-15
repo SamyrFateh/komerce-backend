@@ -214,6 +214,16 @@ function toBodyValues(variables = {}) {
   return bodyValues;
 }
 
+function extractFirstUrl(text) {
+  const match = String(text || '').match(/https?:\/\/\S+/i);
+  if (!match) return null;
+  return match[0].replace(/[).,;]+$/, '');
+}
+
+function looksLikeInvoiceMessage(message) {
+  return /facture|recapitulatif|invoice|\/api\/invoices\//i.test(String(message || ''));
+}
+
 // ─── Appel générique ───────────────────────────────────────────────────
 
 async function callAuthKeyText({ mobile, message }) {
@@ -229,6 +239,21 @@ async function callAuthKeyText({ mobile, message }) {
 
   if (!cleanMobile || !country_code) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
+  }
+
+  if (WID.invoiceready && looksLikeInvoiceMessage(message)) {
+    const invoiceUrl = extractFirstUrl(message);
+    if (invoiceUrl) {
+      return callAuthKey({
+        wid: WID.invoiceready,
+        mobile,
+        variables: {
+          invoice_url: invoiceUrl,
+          link: invoiceUrl,
+          url: invoiceUrl,
+        },
+      });
+    }
   }
 
   // ── Staging guard ──────────────────────────────────────────────────────
