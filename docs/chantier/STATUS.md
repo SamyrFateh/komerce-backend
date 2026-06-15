@@ -120,6 +120,29 @@ Tampon cash : **OK code/audit statique**. Test exécutable à lancer côté repo
 npx jest tests/unit/cash-operations.test.js
 ```
 
+#### VALIDATION — CASH-02 / encaissement cash déjà payé
+
+Statut : **VALIDÉ — tampon limité à la dernière modification cash — 2026-06-15**.
+
+Périmètre validé :
+
+- service `collectCash()` : refus métier si `payment_status !== 'pending'` ;
+- route `POST /api/cash/collect/:orderId` : `ROLLBACK` + `409` avant `COMMIT` en cas de `invalid_payment_status` ;
+- absence de chute vers le chemin nominal quand `result.collection` est absent ;
+- test unitaire présent pour `paid`, `refunded`, nominal `pending`, et réponse HTTP 409 simulée.
+
+Preuves repo :
+
+- patch code : commit `43b9fcf` ;
+- tampon doc : commit courant `docs: tamponne validation cash collect` ;
+- test cible : `tests/unit/cash-operations.test.js`.
+
+Limites du tampon :
+
+- validation par audit statique + présence des tests ;
+- exécution Jest à lancer dans l'environnement repo/CI : `npx jest tests/unit/cash-operations.test.js` ;
+- ne valide pas PayPal, fidélité globale, facture, pickup, sourcing DB live, ni couture.
+
 ### FACT-01 — Facture : incohérence prix unitaire / total ligne
 
 Statut : **code apparemment corrigé, test réel à faire avant clôture**.
