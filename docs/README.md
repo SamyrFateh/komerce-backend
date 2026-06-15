@@ -1,6 +1,6 @@
 # Komerce — Documentation opératoire
 
-> Mis à jour : **2026-06-14**  
+> Mis à jour : **2026-06-15**  
 > Règle : ce fichier est l'index actif. Tout document non listé ici est **historique, contextuel ou subordonné**. Il ne doit pas servir de source de vérité pour opérer le projet.
 
 ---
@@ -30,6 +30,7 @@ Ces quatre documents suffisent pour reprendre le projet sans lire l'historique.
 | Invariants métier et fichiers sensibles | [`docs/ZONE_IMPACT.md`](./ZONE_IMPACT.md) |
 | Schéma DB réel | [`docs/SCHEMA.md`](./SCHEMA.md) |
 | Contrats de services critiques | [`docs/CONTRACTS.md`](./CONTRACTS.md) |
+| Pricing, CDR, allocations de coûts, N1/N2/N3, dashboard économique | [`docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md`](./doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md) |
 | Déploiement / production | [`docs/ops/DEPLOYMENT.md`](./ops/DEPLOYMENT.md) |
 | Sécurité backend | [`docs/backend/SECURITY-MODEL.md`](./backend/SECURITY-MODEL.md) |
 
