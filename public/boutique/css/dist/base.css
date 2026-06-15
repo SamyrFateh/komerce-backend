@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-14)
+   KOMERCE — base.css (2026-06-15)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -134,7 +134,7 @@
   /* ── Layout ──────────────────────────────────────────────── */
   --container: 1400px;
   --pad-x:     16px;
-  --header-h:  56px;
+  --header-h:  44px;
   --bnav-h:    50px;
 
   /* ── Animation ───────────────────────────────────────────── */
@@ -703,7 +703,8 @@ body {
    .k-logo-brand = conteneur flex colonne, masqué sur desktop.
    .k-logo-wordmark = libellé textuel sous le pictogramme K.
    La hauteur totale (K 30px + gap 2px + texte ~13px) tient dans
-   le header 56px avec ~5-6px de marge haut/bas. ──────────────────── */
+   le header 44px ; margin-top réduit en proportion (12px→4px) pour
+   conserver un débordement bas comparable à l'ancien header 56px. ──────────────────── */
 .k-logo-brand {
   display: none; /* masqué par défaut (desktop : le SVG complet suffit) */
 }
@@ -715,7 +716,7 @@ body {
     gap: 2px;
     line-height: 1;
     align-self: center;
-    margin-top: 12px; /* compense le poids optique du wordmark sous le K */
+    margin-top: 4px; /* compense le poids optique du wordmark sous le K */
   }
   .k-logo-wordmark {
     display: block;
@@ -816,6 +817,12 @@ body {
 }
 .k-cart-btn svg { width: 22px; height: 22px; color: var(--coral); }
 .k-cart-btn:active { background: transparent; }
+
+/* Header mobile 44px : le bouton panier (48px de base) est ramené à 40px
+   pour tenir sans marge négative — l'avatar (40px) le remplit exactement. */
+@media (max-width: 899px) {
+  .k-cart-btn { width: 40px; height: 40px; }
+}
 
 .k-cart-badge {
   position: absolute;

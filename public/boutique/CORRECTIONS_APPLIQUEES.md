@@ -195,3 +195,49 @@ Tous les hex hardcodés dans `identity.css` remplacés par les tokens CSS (`var(
 `.k-hero-mini-slogan--premium` (mobile, max-width:899px) : `padding-top: 3px → 0`. Le slogan est maintenant collé au bord supérieur du bandeau image.
 
 Bundle régénéré via `node scripts/deploy-css.js` → `base.css` v77 → v78.
+
+---
+
+## Sprint 2026-06-15 — Header mobile remonté (56px → 44px)
+
+## ⚠️ Analyse de la proposition externe (ChatGPT)
+Le patch proposé (`--mobile-header-h: 112px`, restructuration `.k-header` en grid,
+réintroduction de règles `html.k-mobile-premium-v1`) n'a **pas été appliqué tel quel** :
+- 112px aurait **doublé** la hauteur du header (effet inverse de "remonter").
+- `html.k-mobile-premium-v1` ne pilote plus aucune règle dans hero.css (nettoyé en amont),
+  la classe est toujours posée par `b-mobile-premium-v1.js` mais sans CSS associé à restaurer.
+- Le hardcode `(h + 44)` dans `index.html` est resté **inerte** jusqu'ici : `#k-page-scroll`
+  n'est `position:fixed`/`relative` qu'en mode `.k-pager-active` (où `top` vient de
+  `--pager-top`, posé séparément par `b-pager.js`). Il a quand même été corrigé par cohérence
+  (point #4 de la proposition était valable en principe).
+
+## ✅ Vrai levier : `--header-h` (var CSS unique, source de vérité)
+`#k-hero-fixed-wrap { top: var(--header-h) }` et `#k-header-spacer { height: var(--header-h) }`
+dépendent tous deux de cette variable → la réduire fait remonter **header + search bar +
+hero/slogan + tout le contenu de la page** d'un seul coup, sans double compensation.
+
+**Fichier** : `css/tokens.css`
+`--header-h: 56px → 44px` (mobile uniquement ; valeur déjà utilisée comme fallback dans
+`js/b-store.js:276` et dans le hardcode JS — donc cohérente avec l'historique du projet,
+cf. commentaire `layout.css:64` "header 44px → 3px de marge").
+
+**Garde-fous pour que rien ne déborde dans le header réduit** :
+- `css/layout.css` `.k-cart-btn` (mobile, après la règle de base 48px) : nouvel override
+  `width/height: 40px` — l'avatar 40px le remplit exactement, 0 marge perdue.
+- `css/layout.css` `.k-logo-brand` (signature "K + Komerce" empilés) : `margin-top: 12px → 4px`,
+  pour conserver un débordement bas comparable à l'existant (~3.5px contre ~5.5px avant)
+  dans le header réduit.
+
+## ✅ Fix JS (cohérence, point #4 de la proposition)
+**Fichier** : `index.html`, script inline hero sticky.
+`scroll.style.top = (h + 44) + 'px'` → remplacé par une lecture de `--header-h` via
+`getComputedStyle`, identique au pattern déjà en place dans `js/b-store.js:276`.
+
+## Bilan cumulé du sprint (3 corrections)
+- Search bar : 34px → 30px (-4px)
+- Slogan `padding-top` : 3px → 0
+- Header mobile : 56px → 44px (-12px) → décale header + hero + slogan + page de 12px vers le haut
+
+Bundles régénérés via `node scripts/deploy-css.js` → `base.css` v78→v80, `event.css` v20→v21.
+Vérifications statiques (`check:html`, `check:imports`, `check:body-classes`, `audit:arch`,
+`check:breakpoints`) : aucune nouvelle régression (les warnings restants sont pré-existants).

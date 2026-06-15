@@ -70,10 +70,10 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=78">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=80">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=110">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
-<link rel="stylesheet" href="/boutique/css/dist/event.css?v=20">
+<link rel="stylesheet" href="/boutique/css/dist/event.css?v=21">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
@@ -624,7 +624,8 @@ if('serviceWorker' in navigator){
       spacer.style.display = 'none'; // spacer not needed with fixed scroll
       var scroll = document.getElementById('k-page-scroll');
       if (scroll && !scroll.classList.contains('k-pager-active')) {
-        scroll.style.top = (h + 44) + 'px'; // 44px = header height
+        var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 44;
+        scroll.style.top = (h + headerH) + 'px'; // header height lu depuis --header-h (cf. b-store.js)
       }
     }
     update();
