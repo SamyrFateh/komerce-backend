@@ -20,7 +20,40 @@ Operational order:
 4. application code
 5. historical SQL files
 
-`docs/SCHEMA.md` must describe what exists in the live database. If it is stale, mark the divergence explicitly before relying on it.
+`docs/SCHEMA.md` must describe either:
+
+- the verified live schema, when it comes from a DB extract/check ;
+- the intended schema, when updated in the same PR as a migration that has not yet been applied to production.
+
+If `docs/SCHEMA.md` is updated from an intended migration rather than a live extract, the change must say so explicitly in the PR/STATUS note. Do not present intended schema as verified live schema.
+
+## Two Allowed Update Modes
+
+### Mode A — Verified live schema
+
+Use when the schema has been extracted or checked against the real DB.
+
+Allowed sources:
+
+- `pg_dump --schema-only`
+- direct verification queries against Railway/Postgres
+- explicit production migration verification
+
+In this mode, `docs/SCHEMA.md` may say the object exists in live DB.
+
+### Mode B — Intended migration schema
+
+Use when an agent adds or changes a migration before production has been verified.
+
+Allowed only if the same change includes:
+
+- the migration or startup migration path
+- `docs/SCHEMA.md` updated as intended schema
+- `docs/chantier/STATUS.md` or PR notes stating that live verification remains pending
+- impacted architecture headers updated
+- graph regenerated if headers changed
+
+In this mode, the agent must not claim the schema is verified live until an extract/check confirms it.
 
 ## Must Read Before DB Change
 
@@ -46,6 +79,7 @@ The same change must include:
 - update to every impacted `@db-read`, `@db-write`, and `@db-txn` header
 - regenerated architecture graph if headers changed
 - impact note in `docs/chantier/STATUS.md` if deployment/order matters
+- live verification status: verified now, or pending verification after deploy
 
 ### Changed table contract
 
@@ -55,6 +89,7 @@ If a column type, nullability, enum value, constraint, trigger, or FK behavior c
 - update affected services/routes before relying on the new contract
 - update `@inputs`, `@outputs`, `@db-read`, `@db-write`, `@db-txn`, `@doctrine`, and `@impact-areas` when relevant
 - document migration/backfill order if existing production data is affected
+- state whether `docs/SCHEMA.md` reflects verified live schema or intended migration schema
 
 ### Deleted or renamed DB object
 
@@ -65,6 +100,7 @@ A deletion or rename is forbidden unless the same change proves:
 - `docs/SCHEMA.md` removes or renames it
 - the graph no longer exposes a stale DB edge
 - a compatibility/backfill plan exists if production data is involved
+- live verification status is explicit
 
 ### DB access from code
 
@@ -85,7 +121,7 @@ node scripts/generate-komerce-arch-graph.js
 
 Then verify:
 
-- `docs/SCHEMA.md` describes the new live/intended schema
+- `docs/SCHEMA.md` describes the new live or intended schema and states which mode applies
 - impacted headers list the correct DB tables
 - graph DB table edges include the new or changed table usage
 - `files without headers: 0`
@@ -106,3 +142,5 @@ Do not bury deployment order in chat or prompt text. Put it in the active repo d
 ## Delivery Gate
 
 A PR or agent patch that changes the DB schema but does not update `docs/SCHEMA.md`, impacted architecture headers, and the generated graph is incomplete.
+
+A PR or agent patch that updates `docs/SCHEMA.md` without saying whether the change is verified live or intended migration schema is incomplete.
