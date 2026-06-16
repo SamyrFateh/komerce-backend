@@ -1,17 +1,34 @@
+﻿/**
+ * @komerce-arch
+ * @role         request-validation-schemas
+ * @domain       validation
+ * @layer        validators
+ * @criticality  high
+ * @purpose      Schémas Joi centralisés pour valider body, params et query des routes API.
+ * @inputs       HTTP request payloads, route params, query strings
+ * @outputs      Joi validation schemas
+ * @depends      joi
+ * @used-by      routes/*
+ * @db-read      none
+ * @db-write     none
+ * @db-txn       none
+ * @doctrine     API_CONTRACTS
+ * @impact-areas api, validation, security
+ */
 /**
- * KOMERCE – Schémas de validation Joi v2.0 (Vague 1)
+ * KOMERCE â€“ SchÃ©mas de validation Joi v2.0 (Vague 1)
  * 
- * Organisation : un objet exporté par route-file.
- * Chaque schéma définit { body?, params?, query? } avec des règles Joi.
+ * Organisation : un objet exportÃ© par route-file.
+ * Chaque schÃ©ma dÃ©finit { body?, params?, query? } avec des rÃ¨gles Joi.
  * 
  * Convention : 
- *   · Strings : trimmed, min 1, max raisonnable
- *   · Nombres : positifs, bornés
- *   · UUIDs : format strict (toute version)
- *   · Enums : .valid() avec les valeurs de l'app
- *   · Dates : format ISO ou timestamp
+ *   Â· Strings : trimmed, min 1, max raisonnable
+ *   Â· Nombres : positifs, bornÃ©s
+ *   Â· UUIDs : format strict (toute version)
+ *   Â· Enums : .valid() avec les valeurs de l'app
+ *   Â· Dates : format ISO ou timestamp
  *
- * v2.0 – Added validators for: loyalty, pricing, purchasing, unsold, finance
+ * v2.0 â€“ Added validators for: loyalty, pricing, purchasing, unsold, finance
  */
 
 'use strict';
@@ -21,7 +38,7 @@ const Joi = require('joi');
 const uuid     = Joi.string().uuid();
 const safeStr  = (max = 255) => Joi.string().trim().max(max);
 const email    = Joi.string().trim().lowercase().email();
-const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('Numéro de téléphone invalide');
+const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('NumÃ©ro de tÃ©lÃ©phone invalide');
 const posInt   = Joi.number().integer().positive();
 const posNum   = Joi.number().positive();
 const isoDate  = Joi.string().isoDate();
@@ -79,7 +96,7 @@ const auth = {
   },
 };
 
-// product_ref : KPR-XXXXXX — référence interne Komerce stable (RANK-02)
+// product_ref : KPR-XXXXXX â€” rÃ©fÃ©rence interne Komerce stable (RANK-02)
 const productRef = Joi.string().trim().pattern(/^KPR-\d{6,}$/).max(50)
   .messages({ 'string.pattern.base': 'product_ref doit respecter le format KPR-XXXXXX (ex: KPR-000001)' });
 
@@ -103,7 +120,7 @@ const products = {
       origin_country:     safeStr(50),
       hs_code:            safeStr(20),
       min_order_qty:      posInt,
-      product_ref:        productRef,  // optionnel — généré auto via séquence DB si absent
+      product_ref:        productRef,  // optionnel â€” gÃ©nÃ©rÃ© auto via sÃ©quence DB si absent
     }),
   },
   update: {
@@ -126,7 +143,7 @@ const products = {
       origin_country:     safeStr(50),
       hs_code:            safeStr(20),
       min_order_qty:      posInt,
-      product_ref:        productRef,  // optionnel — doit rester unique si fourni
+      product_ref:        productRef,  // optionnel â€” doit rester unique si fourni
     }).min(1),
   },
   delete: {
@@ -249,7 +266,7 @@ const payments = {
 
 const VALID_PARTNER_TYPES = ['relais', 'agent_hub', 'sourcing', 'personnalise', 'logistique'];
 const VALID_CURRENCIES    = ['KMF', 'EUR', 'USD', 'AED', 'CNY'];
-const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'Mohéli', 'Mayotte'];
+const VALID_ISLANDS       = ['Grande Comore', 'Anjouan', 'MohÃ©li', 'Mayotte'];
 
 const admin = {
   createPartner: {

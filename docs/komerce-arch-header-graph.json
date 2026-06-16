@@ -1,6 +1,5 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-06-16T14:17:25.832Z",
   "source": "@komerce-arch and @komerce-arch-lite headers",
   "scanRoots": [
     "server.js",
@@ -9,24 +8,27 @@
     "services",
     "middleware",
     "utils",
+    "core",
+    "validators",
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 306,
-    "filesWithFullHeaders": 276,
+    "scannedCodeFiles": 308,
+    "filesWithFullHeaders": 278,
     "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 306,
+    "filesWithAnyHeaders": 308,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 631,
-    "edges": 2678,
+    "graphNodes": 636,
+    "edges": 2690,
     "dbTables": 106,
-    "doctrines": 112,
-    "impactAreas": 107,
-    "unresolvedCodeEdges": 244
+    "doctrines": 113,
+    "impactAreas": 109,
+    "unresolvedCodeEdges": 249
   },
   "byDomain": {
     "bootstrap": 9,
+    "notifications": 1,
     "auth": 18,
     "boutique": 37,
     "catalog": 25,
@@ -45,12 +47,14 @@
     "operations": 4,
     "inventory": 2,
     "wallet": 5,
-    "order-payment": 1
+    "order-payment": 1,
+    "validation": 1
   },
   "byLayer": {
     "route-manifest": 1,
     "bootstrap": 6,
     "cron": 1,
+    "manual-test": 1,
     "middleware": 10,
     "ui-component": 39,
     "ui-enhancer": 3,
@@ -74,12 +78,13 @@
     "machine": 2,
     "policy": 1,
     "data-service": 1,
-    "external-adapter": 1
+    "external-adapter": 1,
+    "validators": 1
   },
   "byCriticality": {
     "critical": 66,
-    "medium": 93,
-    "high": 117,
+    "medium": 94,
+    "high": 118,
     "low": 30
   },
   "nodes": [
@@ -389,6 +394,45 @@
         "bootstrap"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "core/test-whatsapp-notifications.js",
+      "file": "core/test-whatsapp-notifications.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "whatsapp-notification-manual-test",
+      "domain": "notifications",
+      "layer": "manual-test",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": "Script manuel de test des notifications WhatsApp/AuthKey.",
+      "inputs": [
+        "CLI phone argument",
+        "env vars AUTHKEY_API_KEY",
+        "WID_OTP",
+        "WID_MAGIC_LINK"
+      ],
+      "outputs": [
+        "WhatsApp test messages",
+        "stdout report"
+      ],
+      "depends": [
+        "services/authkey-client",
+        "services/notification-service"
+      ],
+      "usedBy": [
+        "manual-ops"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "otp"
+      ],
+      "version": null
     },
     {
       "id": "middleware/auth-guest.js",
@@ -12883,6 +12927,44 @@
       "version": "2026-06"
     },
     {
+      "id": "validators/index.js",
+      "file": "validators/index.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "request-validation-schemas",
+      "domain": "validation",
+      "layer": "validators",
+      "criticality": "high",
+      "owner": null,
+      "purpose": "Schémas Joi centralisés pour valider body, params et query des routes API.",
+      "inputs": [
+        "HTTP request payloads",
+        "route params",
+        "query strings"
+      ],
+      "outputs": [
+        "Joi validation schemas"
+      ],
+      "depends": [
+        "joi"
+      ],
+      "usedBy": [
+        "routes/*"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [
+        "API_CONTRACTS"
+      ],
+      "impactAreas": [
+        "api",
+        "validation",
+        "security"
+      ],
+      "version": null
+    },
+    {
       "id": "db:economic_snapshots",
       "type": "db-table",
       "table": "economic_snapshots"
@@ -13973,6 +14055,11 @@
       "doctrine": "secrets_env_only"
     },
     {
+      "id": "doctrine:API_CONTRACTS",
+      "type": "doctrine",
+      "doctrine": "API_CONTRACTS"
+    },
+    {
       "id": "impact:all-api",
       "type": "impact-area",
       "area": "all-api"
@@ -14026,6 +14113,21 @@
       "id": "impact:auth-security",
       "type": "impact-area",
       "area": "auth-security"
+    },
+    {
+      "id": "impact:whatsapp",
+      "type": "impact-area",
+      "area": "whatsapp"
+    },
+    {
+      "id": "impact:notifications",
+      "type": "impact-area",
+      "area": "notifications"
+    },
+    {
+      "id": "impact:otp",
+      "type": "impact-area",
+      "area": "otp"
     },
     {
       "id": "impact:auth",
@@ -14108,11 +14210,6 @@
       "area": "modal-entry"
     },
     {
-      "id": "impact:otp",
-      "type": "impact-area",
-      "area": "otp"
-    },
-    {
       "id": "impact:relais",
       "type": "impact-area",
       "area": "relais"
@@ -14156,11 +14253,6 @@
       "id": "impact:creator-flow",
       "type": "impact-area",
       "area": "creator-flow"
-    },
-    {
-      "id": "impact:notifications",
-      "type": "impact-area",
-      "area": "notifications"
     },
     {
       "id": "impact:tracking",
@@ -14458,11 +14550,6 @@
       "area": "stripe"
     },
     {
-      "id": "impact:whatsapp",
-      "type": "impact-area",
-      "area": "whatsapp"
-    },
-    {
       "id": "impact:refunds",
       "type": "impact-area",
       "area": "refunds"
@@ -14506,6 +14593,16 @@
       "id": "impact:admin-debug",
       "type": "impact-area",
       "area": "admin-debug"
+    },
+    {
+      "id": "impact:api",
+      "type": "impact-area",
+      "area": "api"
+    },
+    {
+      "id": "impact:validation",
+      "type": "impact-area",
+      "area": "validation"
     }
   ],
   "edges": [
@@ -14862,6 +14959,42 @@
       "to": "impact:bootstrap",
       "type": "impact",
       "label": "bootstrap"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "services/authkey-client",
+      "type": "depends",
+      "label": "services/authkey-client"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "services/notification-service",
+      "type": "depends",
+      "label": "services/notification-service"
+    },
+    {
+      "from": "manual-ops",
+      "to": "core/test-whatsapp-notifications.js",
+      "type": "uses",
+      "label": "manual-ops"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "impact:notifications",
+      "type": "impact",
+      "label": "notifications"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "impact:otp",
+      "type": "impact",
+      "label": "otp"
     },
     {
       "from": "middleware/auth-guest.js",
@@ -30576,6 +30709,42 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "joi",
+      "type": "depends",
+      "label": "joi"
+    },
+    {
+      "from": "routes/*",
+      "to": "validators/index.js",
+      "type": "uses",
+      "label": "routes/*"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "doctrine:API_CONTRACTS",
+      "type": "doctrine",
+      "label": "API_CONTRACTS"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "impact:api",
+      "type": "impact",
+      "label": "api"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "impact:validation",
+      "type": "impact",
+      "label": "validation"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
     }
   ],
   "interventionIndex": {
@@ -30942,6 +31111,35 @@
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:bootstrap"
+      ]
+    },
+    "core/test-whatsapp-notifications.js": {
+      "role": "whatsapp-notification-manual-test",
+      "domain": "notifications",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": "Script manuel de test des notifications WhatsApp/AuthKey.",
+      "directDependsOn": [
+        "services/authkey-client",
+        "services/notification-service"
+      ],
+      "directUsedBy": [
+        "manual-ops"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [],
+      "impactAreas": [
+        "whatsapp",
+        "notifications",
+        "otp"
+      ],
+      "mustCheck": [
+        "impact:notifications",
+        "impact:otp",
+        "impact:whatsapp"
       ]
     },
     "middleware/auth-guest.js": {
@@ -42202,9 +42400,58 @@
         "doctrine:resolve_before_behavior_change",
         "impact:auth"
       ]
+    },
+    "validators/index.js": {
+      "role": "request-validation-schemas",
+      "domain": "validation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": "Schémas Joi centralisés pour valider body, params et query des routes API.",
+      "directDependsOn": [
+        "joi"
+      ],
+      "directUsedBy": [
+        "routes/*"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [
+        "API_CONTRACTS"
+      ],
+      "impactAreas": [
+        "api",
+        "validation",
+        "security"
+      ],
+      "mustCheck": [
+        "doctrine:API_CONTRACTS",
+        "impact:api",
+        "impact:security",
+        "impact:validation"
+      ]
     }
   },
   "unresolvedCodeEdges": [
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "services/authkey-client",
+      "type": "depends",
+      "label": "services/authkey-client"
+    },
+    {
+      "from": "core/test-whatsapp-notifications.js",
+      "to": "services/notification-service",
+      "type": "depends",
+      "label": "services/notification-service"
+    },
+    {
+      "from": "manual-ops",
+      "to": "core/test-whatsapp-notifications.js",
+      "type": "uses",
+      "label": "manual-ops"
+    },
     {
       "from": "public_shared_cart_links",
       "to": "public/boutique/js/b-group-view.js",
@@ -43668,6 +43915,18 @@
       "to": "env META_WA_*",
       "type": "depends",
       "label": "env META_WA_*"
+    },
+    {
+      "from": "validators/index.js",
+      "to": "joi",
+      "type": "depends",
+      "label": "joi"
+    },
+    {
+      "from": "routes/*",
+      "to": "validators/index.js",
+      "type": "uses",
+      "label": "routes/*"
     }
   ],
   "filesWithoutHeaders": [],
