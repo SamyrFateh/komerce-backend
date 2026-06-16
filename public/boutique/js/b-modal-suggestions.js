@@ -30,6 +30,73 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 
 'use strict';
 
+// RANK-01 — Map productId → cardElement pour mises à jour ciblées (évite re-render complet)
+const _sugCardMap = new Map();
+
+/**
+ * Met à jour uniquement la zone actions d'une carte suggestion existante.
+ * Préserve le DOM de la carte (image, nom, prix, reason_label).
+ * @param {string|number} pid
+ */
+function _updateCardStepper(pid) {
+  const card = _sugCardMap.get(String(pid));
+  if (!card) return;
+  const inCart = state.cart.find(i => String(i.product?.id ?? i.id) === String(pid));
+  const qty = inCart ? inCart.qty : 0;
+  const actionsEl = card.querySelector('.k-sug-card-actions');
+  if (!actionsEl) return;
+  if (qty > 0) {
+    actionsEl.innerHTML =
+      `<button class="k-sug-step k-sug-minus" data-pid="${pid}">−</button>` +
+      `<span class="k-sug-qty">${qty}</span>` +
+      `<button class="k-sug-step k-sug-plus" data-pid="${pid}">+</button>`;
+  } else {
+    actionsEl.innerHTML =
+      `<button class="k-sug-add" data-add="${pid}"><img src="/images/panier_tresse_vert.png" width="28" height="28" alt="+" style="pointer-events:none"></button>`;
+  }
+  _bindCardActions(card);
+}
+
+/**
+ * Câble les listeners d'une carte (ou re-câble après mise à jour du stepper).
+ * Idempotent : cloneNode+replace évite l'empilement de listeners.
+ * @param {HTMLElement} card
+ */
+function _bindCardActions(card) {
+  // Remplace la zone actions par un clone propre (purge les anciens listeners)
+  const old = card.querySelector('.k-sug-card-actions');
+  if (!old) return;
+  const fresh = old.cloneNode(true);
+  old.parentNode.replaceChild(fresh, old);
+
+  const addBtn = fresh.querySelector('.k-sug-add');
+  if (addBtn) {
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const product = state.products.find(p => String(p.id) === String(addBtn.dataset.add));
+      if (!product) return;
+      addToCart(product, 1, addBtn);
+      _updateCardStepper(addBtn.dataset.add);
+    });
+  }
+  const minusBtn = fresh.querySelector('.k-sug-minus');
+  if (minusBtn) {
+    minusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickRemove(minusBtn.dataset.pid, minusBtn);
+      _updateCardStepper(minusBtn.dataset.pid);
+    });
+  }
+  const plusBtn = fresh.querySelector('.k-sug-plus');
+  if (plusBtn) {
+    plusBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      quickAdd(plusBtn.dataset.pid, plusBtn);
+      _updateCardStepper(plusBtn.dataset.pid);
+    });
+  }
+}
+
   /**
    * Affiche les suggestions "🔍 Vous aimeriez vraiment" sous la fiche produit.
    * 20 produits, grille 2 colonnes, chips subcats filtrants.
@@ -72,10 +139,13 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
     sugSection.classList.remove('u-hidden');
     if (categoryName) sugSection.dataset.cat = categoryName;
     
-    // Template carte suggestion — stepper −/qty/+ en bas
+    // Template carte suggestion — stepper −/qty/+ en bas + reason_label (RANK-01)
     const cardHTML = (p) => {
-      const inCart = state.cart.find(i => String(i.product.id) === String(p.id));
+      const inCart = state.cart.find(i => String(i.product?.id ?? i.id) === String(p.id));
       const qty = inCart ? inCart.qty : 0;
+      const reasonHtml = p.reason_label
+        ? `<div class="k-sug-card-reason">${sanitize(p.reason_label)}</div>`
+        : '';
       return `
       <div class="k-sug-card" data-id="${p.id}" data-subcat="${p.subcategory || ''}">
         <div class="k-sug-card-img">
@@ -83,6 +153,7 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
           ${p.promo_pct ? `<span class="k-sug-promo-badge">-${p.promo_pct}%</span>` : ''}
         </div>
         <div class="k-sug-card-name">${sanitize(p.name)}</div>
+        ${reasonHtml}
         <div class="k-sug-card-bottom">
           <div class="k-sug-card-price">${fmtPrice(p.price_kmf)}</div>
           <div class="k-sug-card-actions">
@@ -139,6 +210,11 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
 
     // Replacer tout le contenu (remplace le vieux <div class="k-sug-rail">)
     dom.sugRail.innerHTML = html;
+    // RANK-01 — Alimenter la map productId → cardElement
+    _sugCardMap.clear();
+    dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
+      _sugCardMap.set(String(card.dataset.id), card);
+    });
     applyModalDesktopSuggestionState();
     // Masquer l'ancien h3 générique "Vous aimerez aussi" s'il existe
     const oldH3 = sugSection.querySelector('h3');
@@ -183,48 +259,9 @@ import { addToCart, quickAdd, quickRemove } from './b-cart.js';
       });
     });
 
-    // Bouton "Ajouter" (pas encore dans le panier)
-    dom.sugRail.querySelectorAll('.k-sug-add').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const product = state.products.find(p => String(p.id) === String(btn.dataset.add));
-        if (!product) return;
-        addToCart(product, 1, btn);
-        // Re-render les suggestions pour afficher le stepper
-        if (state.modalProduct) {
-          const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
-          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
-          renderSuggestions(sameCat, otherCat, mp.category);
-        }
-      });
-    });
-
-    // Stepper −/+ (déjà dans le panier)
-    dom.sugRail.querySelectorAll('.k-sug-minus').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        quickRemove(btn.dataset.pid, btn);
-        // Re-render
-        if (state.modalProduct) {
-          const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
-          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
-          renderSuggestions(sameCat, otherCat, mp.category);
-        }
-      });
-    });
-    dom.sugRail.querySelectorAll('.k-sug-plus').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        quickAdd(btn.dataset.pid, btn);
-        if (state.modalProduct) {
-          const mp = state.modalProduct;
-          const sameCat = state.products.filter(p => p.category === mp.category && p.id !== mp.id).slice(0, 20);
-          const otherCat = state.products.filter(p => p.category !== mp.category).slice(0, 10);
-          renderSuggestions(sameCat, otherCat, mp.category);
-        }
-      });
+    // RANK-01 — Câblage initial des actions via _bindCardActions (mise à jour ciblée, pas de re-render)
+    dom.sugRail.querySelectorAll('.k-sug-card').forEach(card => {
+      _bindCardActions(card);
     });
 
     // ── Modal infini : auto-advance subcats quand fin de scroll ──

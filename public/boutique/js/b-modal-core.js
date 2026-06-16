@@ -82,6 +82,53 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    */
 
 
+  /**
+   * RANK-01 — Appelle GET /api/boutique/suggestions et délègue l'affichage
+   * à renderSuggestions (surface passive). Fallback local si réseau KO.
+   * @param {Object} product - Produit actif (modalProduct)
+   */
+  function _fetchAndRenderSuggestions(product) {
+    // Construction des signaux disponibles
+    const params = new URLSearchParams({ limit: '20' });
+    if (product.id)       params.set('viewed_product_id', String(product.id));
+    if (product.category) params.set('category', product.category);
+    if (product.subcategory) params.set('subcategory', product.subcategory);
+
+    // Signal panier
+    const cartIds = (state.cart || []).map(i => String(i.product?.id ?? i.id)).filter(Boolean);
+    if (cartIds.length) params.set('cart_product_ids', cartIds.join(','));
+
+    // Signal historique produits vus
+    const viewed = (state.viewedHistory || []).filter(id => String(id) !== String(product.id));
+    if (viewed.length) params.set('recently_viewed', viewed.slice(-10).join(','));
+
+    fetch('/api/boutique/suggestions?' + params.toString(), { credentials: 'include' })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(items => {
+        // API retourne [{product_id, name, price_kmf, reason_label, category, ...}]
+        // Reconstruire sameCat / otherCat depuis la réponse enrichie
+        const sameCat = items
+          .filter(s => s.category === product.category)
+          .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
+          .filter(p => p.id);
+        const otherCat = items
+          .filter(s => s.category !== product.category)
+          .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
+          .filter(p => p.id);
+        renderSuggestions(sameCat, otherCat, product.category);
+      })
+      .catch(() => {
+        // Fallback éditorial si API indisponible — pas de Math.random()
+        const sameCat = state.products
+          .filter(p => p.category === product.category && p.id !== product.id)
+          .slice(0, 20);
+        const otherCat = state.products
+          .filter(p => p.category !== product.category && p.id !== product.id)
+          .slice(0, 16);
+        renderSuggestions(sameCat, otherCat, product.category);
+      });
+  }
+
   /* ── FIX: Back button = fermer modal au lieu de quitter le site ── */
   let _modalHistoryPushed = false;
   // BUG-02 — garde contre la boucle popstate → closeModal → history.back() → popstate
@@ -218,16 +265,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     const currentIdx = list.findIndex(p => p.id === product.id);
     updateModalNavArrows(list, currentIdx);
 
-    // Séparer clairement : même catégorie (jusqu'à 8) puis autres (jusqu'à 12)
-    const sameCat = state.products
-      .filter(p => p.category === product.category && p.id !== product.id)
-      .slice(0, 20);
-    const otherCat = state.products
-      .filter(p => p.category !== product.category && p.id !== product.id)
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 16);
-        state.modalSubcatFilter = null; // Reset subcategory filter for new product
-    renderSuggestions(sameCat, otherCat, product.category);
+    // RANK-01 : appel API ranking — surface passive, pas de tri local
+    state.modalSubcatFilter = null; // Reset subcategory filter for new product
+    _fetchAndRenderSuggestions(product);
 
     dom.modalOverlay.classList.add('open');
 
