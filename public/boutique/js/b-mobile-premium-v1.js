@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-mobile-premium-v1
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/boutique.js
+ * @purpose       supports public/boutique/js/boutique.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-mobile-premium-v1
  * @brief Couche premium mobile pour l'accueil et la PDP Komerce.
  *

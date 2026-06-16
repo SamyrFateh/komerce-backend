@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          inventory-inventory-service
+ * @domain        inventory
+ * @layer         service
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  inventory
+ * @version       2026-06
+ */
+
+/**
  * ═══════════════════════════════════════════════════════════════
  * INVENTORY SERVICE v3 — Proposals as GUIDANCE, scan-driven
  * 

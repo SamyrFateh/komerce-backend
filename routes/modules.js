@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          modules
+ * @domain        unknown
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Modules Spécialisés v7.5
  *
  * Remplace ceremony.js v7.2 — logique générique, non gravée dans le marbre.

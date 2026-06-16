@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-desktop-sidebar
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * b-desktop-sidebar.js — Sidebar catégories Temu-style (≥ 900px uniquement)
  *
  * Principe : zéro logique parallèle.

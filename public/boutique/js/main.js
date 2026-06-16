@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          boutique-main
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/boutique.js
+ * @purpose       supports public/boutique/js/boutique.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
 import './b-utils.js';
 import { bus } from './b-bus.js';
 import './b-store.js';

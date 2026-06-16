@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          catalog-b-cart-product-open-style
+ * @domain        catalog
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  catalog, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module b-cart-product-open-style
  * @brief Charge les modules UX légers branchés au boot boutique.
  */

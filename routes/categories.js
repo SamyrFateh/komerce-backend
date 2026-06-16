@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          categories
+ * @domain        unknown
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Route publique GET /api/categories
  *
  * DSC-B1 — Stratégie de cache (§4.3) :

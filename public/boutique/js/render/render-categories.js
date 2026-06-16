@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-render-categories
+ * @domain        boutique
+ * @layer         ui-renderer
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @component Boutique / Category Rail Renderer
  * @owner render-categories.js
  *

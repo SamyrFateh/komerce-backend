@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          auth-request-id
+ * @domain        auth
+ * @layer         middleware
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  auth
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Request ID Middleware (V2.2)
  *
  * Attache un identifiant unique à chaque requête pour la corrélation des erreurs.

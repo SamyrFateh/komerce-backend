@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          payment-cash
+ * @domain        payment
+ * @layer         route
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  payment
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Cash Reconciliation API v1
  *
  * Option C : l'agent relais confirme "cash reçu" → montant auto = order.total_kmf

@@ -1,3 +1,21 @@
+/**
+ * @komerce-arch
+ * @role          ops-api
+ * @domain        unknown
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
 // routes/ops-api.js — v2.2 — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
 // RequÀªte directement la DB — pas de dépendance aux services v2
 const express = require('express');

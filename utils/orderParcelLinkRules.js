@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          orders-order-parcel-link-rules
+ * @domain        orders
+ * @layer         util
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  orders, checkout, logistics
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Order ↔ Parcel Link Rules — v2.0 DEPRECATED
  *
  * ⚠️ DEPRECATED: This module is kept for backward compatibility only.

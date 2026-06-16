@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          payment-b-paypal
+ * @domain        payment
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-checkout.js
+ * @purpose       supports public/boutique/js/b-checkout.js
+ * @impact-areas  payment
+ * @version       2026-06
+ */
+
+/**
  * @module b-paypal
  * @brief Bouton PayPal officiel — diaspora France + Pay-in-4
  *

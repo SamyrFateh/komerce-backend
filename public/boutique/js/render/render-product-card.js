@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          catalog-render-product-card
+ * @domain        catalog
+ * @layer         ui-renderer
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  catalog, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module render-product-card
  * @brief Renderer unique des cartes produit Komerce.
  *

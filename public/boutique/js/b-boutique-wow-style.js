@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-boutique-wow-style
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/boutique.js
+ * @purpose       supports public/boutique/js/boutique.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @component Boutique / Polish Bootstrap
  * @owner b-boutique-wow-style.js
  *

@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-modal-cart
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-cart
  * @brief Interactions panier de la fiche produit — extrait de b-modal.js (ARCH-2, PR4).
  *

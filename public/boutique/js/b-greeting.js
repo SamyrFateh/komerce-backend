@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-greeting
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-greeting
  * @brief Salutation furtive — affiche un chip de bienvenue si l'utilisateur
  *        est reconnu (session active via cookie httpOnly).

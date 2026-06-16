@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          state-advancer
+ * @domain        unknown
+ * @layer         service
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * Simulator State Advancer v2 — exécute les transitions via les vraies fonctions backend
  * Utilise transitionOrderStatus() (state machine SSOT) — jamais d'écriture directe sur orders.status
  *

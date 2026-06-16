@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-modal
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * b-modal.js — Façade (ARCH-2 complet, PR5).
  *
  * Ce fichier est désormais une façade pure : il ré-exporte la surface publique

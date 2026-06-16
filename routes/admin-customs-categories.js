@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          dashboard-admin-customs-categories
+ * @domain        dashboard
+ * @layer         route
+ * @criticality   high
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  dashboard, admin-dashboard
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Routes admin pour customs_categories (Étape 0 audit)
  *
  * Permet à l'admin de gérer les catégories douanières dans la BDD au lieu

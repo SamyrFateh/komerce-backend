@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          catalog-product-card-view-model
+ * @domain        catalog
+ * @layer         view-model
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  catalog, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module product-card-view-model
  * @component Boutique / Product Card ViewModel
  *

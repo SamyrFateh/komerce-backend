@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          auth-rate-limit
+ * @domain        auth
+ * @layer         middleware
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  auth
+ * @version       2026-06
+ */
+
+/**
  * Rate Limiting Middleware — Komerce Backend (Vague 3)
  * =====================================================
  * Vague 3 : store Redis conditionnel pour le multi-instance.

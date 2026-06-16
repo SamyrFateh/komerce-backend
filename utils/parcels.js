@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          logistics-parcels
+ * @domain        logistics
+ * @layer         util
+ * @criticality   high
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  logistics
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Moteur Parcel-Centric (utils/parcels.js)
  *
  * Phase 1 : Fondations — Ce module pose la logique métier des colis

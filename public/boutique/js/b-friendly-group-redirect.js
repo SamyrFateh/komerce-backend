@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-friendly-group-redirect
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-group-view.js
+ * @purpose       supports public/boutique/js/b-group-view.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-friendly-group-redirect
  * @brief Compatibilité lien public court /g/:token.
  *

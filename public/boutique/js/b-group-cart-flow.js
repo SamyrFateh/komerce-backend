@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-group-cart-flow
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       supports public/boutique/js/b-cart.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-group-cart-flow
  * @deprecated PR-1 (2026-05-24) — remplacé par b-share-cart.js
  *

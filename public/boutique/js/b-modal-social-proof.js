@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-modal-social-proof
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-social-proof
  * @brief Ligne preuve sociale dans la modal produit — vendus, note, rang.
  *

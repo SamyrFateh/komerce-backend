@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          email
+ * @domain        unknown
+ * @layer         util
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
 /*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
     Variable requise : BREVO_API_KEY (commence par xkeysib-)

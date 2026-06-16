@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          purchasing
+ * @domain        unknown
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Purchasing Routes v8.2
  *
  * Routes HTTP admin uniquement — logique métier déléguée aux services :

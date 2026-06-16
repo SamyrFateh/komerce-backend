@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          economic-engine-cost-allocation
+ * @domain        economic-engine
+ * @layer         service
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  economic-engine
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Cost Allocation Service (P4 — Reventilation reelle terrain)
  * ════════════════════════════════════════════════════════════════════════
  *

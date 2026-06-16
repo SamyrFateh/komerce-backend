@@ -1,69 +1,75 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:02:52.165Z
+Generated: 2026-06-16T11:03:34.061Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
 ## Totals
 
 - Scanned code files: 306
-- Files with full headers: 65
-- Files with lite headers: 0
-- Files with any headers: 65
-- Files without headers: 241
+- Files with full headers: 276
+- Files with lite headers: 30
+- Files with any headers: 306
+- Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 314
-- Edges: 1037
+- Graph nodes: 561
+- Edges: 1955
 - DB tables: 37
-- Doctrines: 111
-- Impact areas: 101
-- Unresolved code edges: 295
+- Doctrines: 112
+- Impact areas: 106
+- Unresolved code edges: 441
 
 ## Domains
 
-- auth: 3
-- bootstrap: 3
-- boutique: 16
-- catalog: 10
+- auth: 17
+- bootstrap: 9
+- boutique: 37
+- catalog: 21
 - checkout: 2
 - collective-workspace: 3
-- economic-engine: 2
-- notification: 2
+- dashboard: 28
+- economic-engine: 24
+- inventory: 2
+- logistics: 26
+- notification: 6
 - order-payment: 1
-- orders: 3
-- payment: 3
-- recommendations: 2
-- shared-cart: 13
+- orders: 21
+- payment: 14
+- recommendations: 4
+- shared-cart: 33
 - tracking: 1
-- wallet: 1
+- unknown: 54
+- wallet: 3
 
 ## Layers
 
 - api-client: 2
+- bootstrap: 6
 - controller: 1
 - cron: 1
 - data-service: 1
 - entrypoint: 1
 - external-adapter: 1
 - machine: 2
+- middleware: 10
 - policy: 1
-- route: 9
+- route: 97
 - route-manifest: 1
 - schema: 1
-- service: 9
+- service: 98
 - state: 1
 - state-store: 1
-- ui-component: 11
+- ui-component: 39
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
 - ui-page: 6
-- ui-renderer: 4
+- ui-renderer: 6
 - ui-service: 1
 - ui-state: 2
-- util: 1
+- util: 17
 - util-ui: 2
-- view-model: 1
+- view-model: 3
 
 ## Critical And High Files
 
@@ -75,17 +81,68 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-share-cart.js — shared-cart-creation-from-boutique (shared-cart, critical, full)
 - public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
 - public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
+- routes/admin-collective-repairs.js — shared-cart-admin-collective-repairs (shared-cart, critical, full)
+- routes/admin/delete-order-cascade.js — orders-delete-order-cascade (orders, critical, full)
+- routes/admin/orders.js — orders-orders (orders, critical, full)
+- routes/cash.js — payment-cash (payment, critical, full)
+- routes/collective-workspaces.js — shared-cart-collective-workspaces (shared-cart, critical, full)
+- routes/hub-mark-ordered.js — orders-hub-mark-ordered (orders, critical, full)
+- routes/inventory-api.js — inventory-inventory-api (inventory, critical, full)
+- routes/order-api-v2.js — orders-order-api-v2 (orders, critical, full)
 - routes/orders.js — orders-http-facade (orders, critical, full)
+- routes/orders/cancel.js — orders-cancel (orders, critical, full)
+- routes/orders/create.js — orders-create (orders, critical, full)
+- routes/orders/detail.js — orders-detail (orders, critical, full)
+- routes/orders/list.js — orders-list (orders, critical, full)
+- routes/orders/parcels.js — orders-parcels (orders, critical, full)
+- routes/orders/qr.js — orders-qr (orders, critical, full)
+- routes/orders/status.js — orders-status (orders, critical, full)
+- routes/payments-paypal.js — payment-payments-paypal (payment, critical, full)
 - routes/payments.js — payment-http-facade (payment, critical, full)
+- routes/pickup-pay-cash.js — payment-pickup-pay-cash (payment, critical, full)
+- routes/shared-cart-cash.js — shared-cart-shared-cart-cash (shared-cart, critical, full)
+- routes/shared-cart-from-order.js — shared-cart-shared-cart-from-order (shared-cart, critical, full)
+- routes/shared-cart-refund-admin.js — shared-cart-shared-cart-refund-admin (shared-cart, critical, full)
 - routes/shared-cart.js — shared-cart-http-facade (shared-cart, critical, full)
 - server.js — api-server-entrypoint (bootstrap, critical, full)
+- services/admin-order-refund.js — orders-admin-order-refund (orders, critical, full)
+- services/cancel-order-purchase-orders.js — orders-cancel-order-purchase-orders (orders, critical, full)
+- services/cancel-shared-cart-with-refunds.js — shared-cart-cancel-shared-cart-with-refunds (shared-cart, critical, full)
+- services/cash-operations.js — payment-cash-operations (payment, critical, full)
+- services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
+- services/collective-close-order-service.js — shared-cart-collective-close-order-service (shared-cart, critical, full)
+- services/collective-payment-orchestrator.js — shared-cart-collective-payment-orchestrator (shared-cart, critical, full)
+- services/collective-ready-to-order-orchestrator.js — shared-cart-collective-ready-to-order-orchestrator (shared-cart, critical, full)
+- services/collective-stock-reservation-service.js — shared-cart-collective-stock-reservation-service (shared-cart, critical, full)
+- services/collective-workspace-engine.js — shared-cart-collective-workspace-engine (shared-cart, critical, full)
+- services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
+- services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
+- services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
+- services/order-cost-snapshot.js — orders-order-cost-snapshot (orders, critical, full)
 - services/order-payment-confirmation.js — payment-to-stock-single-entry (order-payment, critical, full)
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
 - services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
+- services/payment-paypal-events.js — payment-payment-paypal-events (payment, critical, full)
+- services/payment-paypal.js — payment-payment-paypal (payment, critical, full)
 - services/payment-stripe.js — stripe-payment-service (payment, critical, full)
+- services/paypal-client.js — payment-paypal-client (payment, critical, full)
+- services/receive-purchase-order.js — orders-receive-purchase-order (orders, critical, full)
+- services/repair-collective-ready-to-capture.js — shared-cart-repair-collective-ready-to-capture (shared-cart, critical, full)
+- services/repair-collective-stock-reservations.js — shared-cart-repair-collective-stock-reservations (shared-cart, critical, full)
+- services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (orders, critical, full)
+- services/repair-ordered-without-purchase-orders.js — orders-repair-ordered-without-purchase-orders (orders, critical, full)
+- services/shared-cart-cash-service.js — shared-cart-shared-cart-cash-service (shared-cart, critical, full)
+- services/shared-cart-commitment-service.js — shared-cart-shared-cart-commitment-service (shared-cart, critical, full)
 - services/shared-cart-engine.js — shared-cart-state-machine (shared-cart, critical, full)
 - services/shared-cart-financial-guard.js — shared-cart-financial-guard (shared-cart, critical, full)
+- services/shared-cart-refund-queue.js — shared-cart-shared-cart-refund-queue (shared-cart, critical, full)
+- services/shared-cart-v4-settlement.js — shared-cart-shared-cart-v4-settlement (shared-cart, critical, full)
 - services/shared-cart-v41-transitions.js — shared-cart-v41-transition-projector (shared-cart, critical, full)
+- utils/orderParcelLinkRules.js — orders-order-parcel-link-rules (orders, critical, full)
+- middleware/auth-guest.js — auth-auth-guest (auth, high, full)
+- middleware/auth.js — auth-auth (auth, high, full)
+- middleware/soft-auth.js — auth-soft-auth (auth, high, full)
+- middleware/verify-authkey-webhook.js — auth-verify-authkey-webhook (auth, high, full)
 - public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
 - public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
 - public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
@@ -109,22 +166,129 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
 - public/boutique/js/view-models/modal-view-model.js — product-modal-view-model (boutique, high, full)
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
+- routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
+- routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
+- routes/admin-customs-categories.js — dashboard-admin-customs-categories (dashboard, high, full)
+- routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (dashboard, high, full)
+- routes/admin-dashboard.js — dashboard-admin-dashboard (dashboard, high, full)
+- routes/admin-finance-config.js — economic-engine-admin-finance-config (economic-engine, high, full)
+- routes/admin-loyalty.js — dashboard-admin-loyalty (dashboard, high, full)
+- routes/admin-pricing-components.js — economic-engine-admin-pricing-components (economic-engine, high, full)
+- routes/admin-pricing-matrices.js — economic-engine-admin-pricing-matrices (economic-engine, high, full)
+- routes/admin-radar.js — dashboard-admin-radar (dashboard, high, full)
+- routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (dashboard, high, full)
+- routes/admin-rules.js — dashboard-admin-rules (dashboard, high, full)
+- routes/admin.js — dashboard-admin (dashboard, high, full)
+- routes/admin/customs.js — dashboard-customs (dashboard, high, full)
+- routes/admin/dashboard.js — dashboard-dashboard (dashboard, high, full)
+- routes/admin/index.js — dashboard-index (dashboard, high, full)
+- routes/admin/partners.js — dashboard-partners (dashboard, high, full)
+- routes/admin/system.js — dashboard-system (dashboard, high, full)
+- routes/admin/users.js — dashboard-users (dashboard, high, full)
+- routes/auth.js — auth-auth (auth, high, full)
 - routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
+- routes/client-auth.js — auth-client-auth (auth, high, full)
+- routes/client-tracking.js — logistics-client-tracking (logistics, high, full)
+- routes/dashboard-clients.js — dashboard-dashboard-clients (dashboard, high, full)
+- routes/dashboard-finance.js — economic-engine-dashboard-finance (economic-engine, high, full)
+- routes/dashboard-hub.js — dashboard-dashboard-hub (dashboard, high, full)
+- routes/dashboard-ops.js — dashboard-dashboard-ops (dashboard, high, full)
+- routes/dashboard-shared.js — dashboard-dashboard-shared (dashboard, high, full)
+- routes/dashboard.js — dashboard-dashboard (dashboard, high, full)
 - routes/economic-engine.js — economic-engine-http-facade (economic-engine, high, full)
+- routes/finance.js — economic-engine-finance (economic-engine, high, full)
+- routes/hub-dashboard.js — dashboard-hub-dashboard (dashboard, high, full)
 - routes/otp.js — client-otp-session (auth, high, full)
+- routes/parcel-api-v2.js — logistics-parcel-api-v2 (logistics, high, full)
+- routes/parcel-api-v2/helpers.js — logistics-helpers (logistics, high, full)
+- routes/parcel-api-v2/index.js — logistics-index (logistics, high, full)
+- routes/parcel-api-v2/read.js — logistics-read (logistics, high, full)
+- routes/parcel-api-v2/scans.js — logistics-scans (logistics, high, full)
+- routes/parcel-label.js — logistics-parcel-label (logistics, high, full)
+- routes/parcels.js — logistics-parcels (logistics, high, full)
+- routes/pricing-strategy.js — economic-engine-pricing-strategy (economic-engine, high, full)
+- routes/pricing.js — economic-engine-pricing (economic-engine, high, full)
 - routes/products.js — products-http-facade (catalog, high, full)
+- routes/relay-dashboard.js — dashboard-relay-dashboard (dashboard, high, full)
+- routes/tracking.js — logistics-tracking (logistics, high, full)
+- routes/transit-dashboard.js — logistics-transit-dashboard (logistics, high, full)
 - routes/wallet.js — wallet-http-facade (wallet, high, full)
+- services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
+- services/authkey-client.js — auth-authkey-client (auth, high, full)
+- services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
+- services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
+- services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
+- services/dashboard-metrics.js — dashboard-dashboard-metrics (dashboard, high, full)
+- services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
+- services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
 - services/order-service.js — order-domain-helpers (orders, high, full)
+- services/otp-test-mode.js — auth-otp-test-mode (auth, high, full)
+- services/parcel-auto-create-service.js — logistics-parcel-auto-create-service (logistics, high, full)
+- services/parcel-guards.js — logistics-parcel-guards (logistics, high, full)
+- services/parcel-operations.js — logistics-parcel-operations (logistics, high, full)
+- services/parcel-security.js — logistics-parcel-security (logistics, high, full)
+- services/parcel-service.js — logistics-parcel-service (logistics, high, full)
+- services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
+- services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
+- services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
+- services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
+- services/pricing-engine.js — economic-engine-pricing-engine (economic-engine, high, full)
+- services/pricing-guards.js — economic-engine-pricing-guards (economic-engine, high, full)
+- services/pricing-output.js — economic-engine-pricing-output (economic-engine, high, full)
+- services/pricing-rates.js — economic-engine-pricing-rates (economic-engine, high, full)
+- services/pricing-recommend.js — economic-engine-pricing-recommend (economic-engine, high, full)
+- services/pricing-strategy-service.js — economic-engine-pricing-strategy-service (economic-engine, high, full)
+- services/product-admin-service.js — catalog-product-admin-service (catalog, high, full)
+- services/product-price-audit.js — catalog-product-price-audit (catalog, high, full)
+- services/product-publication-guard.js — catalog-product-publication-guard (catalog, high, full)
+- services/purchasing-admin-service.js — dashboard-purchasing-admin-service (dashboard, high, full)
+- services/relay-dashboard-queries.js — dashboard-relay-dashboard-queries (dashboard, high, full)
 - services/shared-cart-estimation-service.js — shared-cart-estimation-service (shared-cart, high, full)
 - services/shared-cart-items-service.js — shared-cart-items-update-service (shared-cart, high, full)
 - services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
+- services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
+- services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
+- services/wallet-service.js — wallet-wallet-service (wallet, high, full)
 - services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
+- utils/parcels.js — logistics-parcels (logistics, high, full)
+- utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
+- utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)
 
 ## Lite Aggregated Files
 
-- none
+- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-b-boutique-wow-style)
+- public/boutique/js/b-cart-groups-tab.js -> owner public/boutique/js/b-cart.js (boutique-b-cart-groups-tab)
+- public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
+- public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
+- public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
+- public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
+- public/boutique/js/b-friendly-group-redirect.js -> owner public/boutique/js/b-group-view.js (boutique-b-friendly-group-redirect)
+- public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
+- public/boutique/js/b-group-cart-flow.js -> owner public/boutique/js/b-cart.js (boutique-b-group-cart-flow)
+- public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
+- public/boutique/js/b-mobile-modal-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-modal-v1)
+- public/boutique/js/b-mobile-premium-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-premium-v1)
+- public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
+- public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
+- public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
+- public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
+- public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
+- public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
+- public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
+- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-group-view.js (boutique-b-share-phone-guard)
+- public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
+- public/boutique/js/collective-close-order-service.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-close-order-service)
+- public/boutique/js/collective-ready-to-order-orchestrator.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-ready-to-order-orchestrator)
+- public/boutique/js/group/group-state.js -> owner public/boutique/js/b-group-view.js (shared-cart-group-state)
+- public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
+- public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
+- public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
+- public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
+- public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
+- public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
 
 ## DB Write Edges
 
@@ -249,11 +413,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: b-subcat.js -> public/boutique/js/b-scroll-owner.js (b-subcat.js)
 - uses: b-subcat.js -> public/boutique/js/shop-schema.js (b-subcat.js)
 - uses: b-tracking.js -> public/boutique/js/b-phone.js (b-tracking.js)
-- depends: bootstrap/api-routes.js -> routes/meta-whatsapp.js (routes/meta-whatsapp.js)
-- depends: bootstrap/api-routes.js -> routes/shared-cart-cash.js (routes/shared-cart-cash.js)
-- depends: bootstrap/crons.js -> services/cash-reminder-service.js (services/cash-reminder-service.js)
-- depends: bootstrap/crons.js -> services/inventory-service.js (services/inventory-service.js)
-- depends: bootstrap/crons.js -> utils/rules.js (utils/rules.js)
 - uses: boutique.js -> public/boutique/js/b-cart-pill.js (boutique.js)
 - uses: boutique.js -> public/boutique/js/b-cart.js (boutique.js)
 - uses: boutique.js -> public/boutique/js/b-catalog-desktop-enhancers.js (boutique.js)
@@ -307,169 +466,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-bus.js (b-bus.js)
 - depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-catalog.js (b-catalog.js)
 - depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-scroll-owner.js (b-scroll-owner.js)
+- depends: public/boutique/js/b-catalog-desktop-enhancers.js -> controllers/home-controller.js (controllers/home-controller.js)
+- depends: public/boutique/js/b-catalog-desktop-enhancers.js -> shop-schema.js (shop-schema.js)
+- depends: public/boutique/js/b-catalog.js -> b-modal.js (b-modal.js)
+- depends: public/boutique/js/b-catalog.js -> b-pager.js (b-pager.js)
+- depends: public/boutique/js/b-catalog.js -> b-store.js (b-store.js)
 
 ## Files Still Without Headers Or Aggregation
 
-- bootstrap/app.js
-- bootstrap/env.js
-- bootstrap/html-routes.js
-- bootstrap/security.js
-- bootstrap/server-lifecycle.js
-- bootstrap/startup-migrations.js
-- middleware/auth-guest.js
-- middleware/auth.js
-- middleware/error-handler.js
-- middleware/rate-limit.js
-- middleware/request-id.js
-- middleware/require-verified-identity.js
-- middleware/soft-auth.js
-- middleware/upload.js
-- middleware/validate.js
-- middleware/verify-authkey-webhook.js
-- public/boutique/js/b-boutique-wow-style.js
-- public/boutique/js/b-bus.js
-- public/boutique/js/b-cart-core.js
-- public/boutique/js/b-cart-groups-tab.js
-- public/boutique/js/b-cart-product-open-style.js
-- public/boutique/js/b-desktop-global-cart-access.js
-- public/boutique/js/b-desktop-sidebar.js
-- public/boutique/js/b-desktop-upgrade.js
-- public/boutique/js/b-friendly-group-redirect.js
-- public/boutique/js/b-greeting.js
-- public/boutique/js/b-group-cart-flow.js
-- public/boutique/js/b-home-premium-v1.js
-- public/boutique/js/b-mobile-modal-v1.js
-- public/boutique/js/b-mobile-premium-v1.js
-- public/boutique/js/b-modal-cart.js
-- public/boutique/js/b-modal-nav.js
-- public/boutique/js/b-modal-social-proof.js
-- public/boutique/js/b-modal.js
-- public/boutique/js/b-paypal.js
-- public/boutique/js/b-pdp-curation-suggestions.js
-- public/boutique/js/b-product-open-contract.js
-- public/boutique/js/b-share-phone-guard.js
-- public/boutique/js/card-config.js
-- public/boutique/js/collective-close-order-service.js
-- public/boutique/js/collective-ready-to-order-orchestrator.js
-- public/boutique/js/group/group-state.js
-- public/boutique/js/main.js
-- public/boutique/js/render/render-categories.js
-- public/boutique/js/render/render-product-card.js
-- public/boutique/js/taxonomy-no-hardcode.test.js
-- public/boutique/js/view-models/product-card-model.js
-- public/boutique/js/view-models/product-card-view-model.js
-- routes/admin-collective-repairs.js
-- routes/admin-cost-components.js
-- routes/admin-costing.js
-- routes/admin-customs-categories.js
-- routes/admin-customs-shipments.js
-- routes/admin-dashboard.js
-- routes/admin-finance-config.js
-- routes/admin-loyalty.js
-- routes/admin-pricing-components.js
-- routes/admin-pricing-matrices.js
-- routes/admin-radar.js
-- routes/admin-risk-provisions.js
-- routes/admin-rules.js
-- routes/admin.js
-- routes/admin/customs.js
-- routes/admin/dashboard.js
-- routes/admin/delete-order-cascade.js
-- routes/admin/index.js
-- routes/admin/orders.js
-- routes/admin/partners.js
-- routes/admin/system.js
-- routes/admin/users.js
-- routes/alerts.js
-- routes/auth.js
-- routes/auto-distribute-api.js
-- routes/baskets.js
-- routes/carriers.js
-- routes/cash.js
-- routes/categories.js
-- routes/client-auth.js
-- routes/client-tracking.js
-- routes/collective-workspaces.js
-- routes/config.js
-- routes/dashboard-clients.js
-- routes/dashboard-finance.js
-- routes/dashboard-hub.js
-- routes/dashboard-ops.js
-- routes/dashboard-shared.js
-- routes/dashboard.js
-- routes/finance.js
-- routes/health.js
-- routes/hub-dashboard.js
-- routes/hub-mark-ordered.js
-- routes/hub.js
-- routes/inventory-api.js
-- routes/invoices.js
-- routes/logistics.js
-- routes/loyalty.js
-- routes/meta-whatsapp.js
-- routes/modules.js
-- routes/notification-api.js
-- routes/ops-api.js
-- routes/order-api-v2.js
-- routes/orders/cancel.js
-- routes/orders/create.js
-- routes/orders/detail.js
-- routes/orders/list.js
-- routes/orders/parcels.js
-- routes/orders/qr.js
-- routes/orders/status.js
-- routes/parcel-api-v2.js
-- routes/parcel-api-v2/helpers.js
-- routes/parcel-api-v2/index.js
-- routes/parcel-api-v2/read.js
-- routes/parcel-api-v2/scans.js
-- routes/parcel-label.js
-- routes/parcels.js
-- routes/payments-paypal.js
-- routes/pickup-pay-cash.js
-- routes/pickup-secret.js
-- routes/pricing-strategy.js
-- routes/pricing.js
-- routes/purchasing.js
-- routes/relais.js
-- routes/relay-dashboard.js
-- routes/scans.js
-- routes/shared-cart-cash.js
-- routes/shared-cart-from-order.js
-- routes/shared-cart-refund-admin.js
-- routes/shares.js
-- routes/signals.js
-- routes/simulator.js
-- routes/sourcing-engine.js
-- routes/sourcing-scanner.js
-- routes/tracking.js
-- routes/transit-dashboard.js
-- routes/transitaire-api.js
-- routes/unsold.js
-- services/admin-order-refund.js
-- services/alert-engine.js
-- services/apply-pricing-updates.js
-- services/authkey-client.js
-- services/auto-parcel.js
-- services/boutique-ranking-engine.js
-- services/cancel-order-purchase-orders.js
-- services/cancel-shared-cart-with-refunds.js
-- services/cash-operations.js
-- services/cash-reminder-service.js
-- services/collective-close-order-service.js
-- services/collective-payment-orchestrator.js
-- services/collective-ready-to-order-orchestrator.js
-- services/collective-stock-reservation-service.js
-- services/collective-workspace-engine.js
-- services/confirm-pickup-cash-payment.js
-- services/cost-allocation.js
-- services/create-stripe-order-intent.js
-- services/customs-shipment-service.js
-- services/dashboard-cache.js
-- services/dashboard-clients-queries.js
-- services/dashboard-finance-metrics.js
-- services/dashboard-metrics.js
-- services/dashboard-ops-queries.js
+- none
 
 ## Intervention Rule
 

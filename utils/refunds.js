@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          refunds
+ * @domain        unknown
+ * @layer         util
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Refund Engine v1.0 (Point 6 Phase 3)
  *
  * Logique de remboursement centralisée :

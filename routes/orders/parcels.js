@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          orders-parcels
+ * @domain        orders
+ * @layer         route
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  orders, checkout, logistics
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Expédition partielle & colis (Parcel-Centric v2.0 — Phase 4)
  *
  * POST   /:id/mark-availability      → marquer la disponibilité des articles

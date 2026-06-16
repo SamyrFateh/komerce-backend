@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          logistics-parcel-sync
+ * @domain        logistics
+ * @layer         util
+ * @criticality   high
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  logistics
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Parcel Sync Engine (utils/parcelSync.js) — v3.0 MACHINE
  *
  * Phase 3 : SOURCE DE VÉRITÉ UNIQUE pour orders.status.

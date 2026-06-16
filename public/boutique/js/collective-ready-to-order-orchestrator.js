@@ -1,3 +1,14 @@
+/**
+ * @komerce-arch-lite
+ * @role          shared-cart-collective-ready-to-order-orchestrator
+ * @domain        shared-cart
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-group-view.js
+ * @purpose       supports public/boutique/js/b-group-view.js
+ * @impact-areas  shared-cart, checkout
+ * @version       2026-06
+ */
+
 'use strict';
 /**
  * TOMBSTONE — COLLECTIVE-CLEANUP (2026-05-26)

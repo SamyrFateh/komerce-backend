@@ -1,3 +1,21 @@
+/**
+ * @komerce-arch
+ * @role          orders-repair-ordered-without-purchase-orders
+ * @domain        orders
+ * @layer         service
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  orders, checkout
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

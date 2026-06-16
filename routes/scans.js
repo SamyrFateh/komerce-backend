@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          logistics-scans
+ * @domain        logistics
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  logistics
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Routes scan logistique (REFACTO-R3) — façade mince
  *
  * POST /api/scans             → scanOps.recordScan()

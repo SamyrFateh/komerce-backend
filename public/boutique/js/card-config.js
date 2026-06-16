@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-card-config
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module card-config
  * @brief Configuration déclarative du rendu des cartes produit Komerce.
  *

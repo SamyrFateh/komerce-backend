@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-modal-nav
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-nav
  * @brief Navigation prev/next entre produits dans la modal — extrait de b-modal.js (ARCH-2, PR3).
  *

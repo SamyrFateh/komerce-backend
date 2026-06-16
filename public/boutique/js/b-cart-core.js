@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-b-cart-core
+ * @domain        boutique
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * b-cart-core.js — Module ES · §3 TOAST & CART CORE
  * Extrait de boutique.js Sprint 2F
  * Dépendances : b-store.js (state, dom)

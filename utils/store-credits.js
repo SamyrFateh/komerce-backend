@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          wallet-store-credits
+ * @domain        wallet
+ * @layer         util
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  wallet
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Store Credits — ⚠️ DEPRECATED (D5)
  *
  * Ce module est DEPRECATED. Utiliser services/wallet-service.js à la place.

@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-share-phone-guard
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-group-view.js
+ * @purpose       supports public/boutique/js/b-group-view.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-share-phone-guard
  * @brief Tombstone — ancien guard guest désactivé.
  *

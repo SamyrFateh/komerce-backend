@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          recommendations-b-pdp-curation-suggestions
+ * @domain        recommendations
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-suggestions.js
+ * @purpose       supports public/boutique/js/b-modal-suggestions.js
+ * @impact-areas  recommendations
+ * @version       2026-06
+ */
+
+/**
  * @module b-pdp-curation-suggestions
  * @brief Curation éditoriale des suggestions sous PDP desktop.
  *

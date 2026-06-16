@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          catalog-taxonomy-no-hardcode-test
+ * @domain        catalog
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  catalog
+ * @version       2026-06
+ */
+
+/**
  * DSC-A3 — Tests de garde taxonomie
  *
  * Invariants vérifiés en CI :

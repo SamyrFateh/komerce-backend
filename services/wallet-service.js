@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          wallet-wallet-service
+ * @domain        wallet
+ * @layer         service
+ * @criticality   high
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  wallet
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Wallet Service v1.2 (F23 race fix) (Phase 5: reverseLot with consumption guard)
  *
  * Système de portefeuille client unifié.

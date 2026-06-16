@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-home-premium-v1
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-home-premium-v1
  * @brief Couche premium desktop pour la page d'accueil Komerce.
  *

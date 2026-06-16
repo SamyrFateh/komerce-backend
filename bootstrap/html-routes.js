@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          bootstrap-html-routes
+ * @domain        bootstrap
+ * @layer         bootstrap
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  bootstrap
+ * @version       2026-06
+ */
+
 'use strict';
 
 const path = require('path');

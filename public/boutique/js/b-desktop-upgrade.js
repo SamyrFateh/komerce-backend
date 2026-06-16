@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-desktop-upgrade
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       supports public/boutique/js/b-catalog.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * b-desktop-upgrade.js — Orchestrateur des enrichissements desktop ≥ 900px.
  *
  * Ce module ne fait que :

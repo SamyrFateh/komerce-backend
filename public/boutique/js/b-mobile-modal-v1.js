@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-mobile-modal-v1
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/boutique.js
+ * @purpose       supports public/boutique/js/boutique.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-mobile-modal-v1
  * @brief Couche mobile-only pour réaligner la PDP / modal Komerce.
  *

@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          shared-cart-group-state
+ * @domain        shared-cart
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-group-view.js
+ * @purpose       supports public/boutique/js/b-group-view.js
+ * @impact-areas  shared-cart
+ * @version       2026-06
+ */
+
+/**
  * @module group/group-state.js
  * @owner group refactor — helpers sélection et synchronisation d'état
  *

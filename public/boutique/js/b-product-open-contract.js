@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          catalog-b-product-open-contract
+ * @domain        catalog
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-modal-core.js
+ * @purpose       supports public/boutique/js/b-modal-core.js
+ * @impact-areas  catalog, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module b-product-open-contract
  * @brief Contrat unique d'ouverture produit depuis les surfaces panier.
  *

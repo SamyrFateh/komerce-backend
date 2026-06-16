@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          notification-alerts
+ * @domain        notification
+ * @layer         route
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       db.js, middleware/auth.js, services/*
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  notification
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Routes alertes v1.0
  * 
  * GET  /api/v2/alerts           — Liste alertes actives

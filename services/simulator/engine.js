@@ -1,4 +1,22 @@
 /**
+ * @komerce-arch
+ * @role          engine
+ * @domain        unknown
+ * @layer         service
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @db-read       @unknown
+ * @db-write      @unknown
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  unknown
+ * @version       2026-06
+ */
+
+/**
  * Simulator Engine v2 — moteur autonome avec setInterval
  * Tourne dans le process Railway, piloté via API admin
  *

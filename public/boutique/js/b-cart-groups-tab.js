@@ -1,4 +1,15 @@
 /**
+ * @komerce-arch-lite
+ * @role          boutique-b-cart-groups-tab
+ * @domain        boutique
+ * @layer         ui-component
+ * @owner         public/boutique/js/b-cart.js
+ * @purpose       supports public/boutique/js/b-cart.js
+ * @impact-areas  boutique
+ * @version       2026-06
+ */
+
+/**
  * @module b-cart-groups-tab
  * @brief Compatibilité locale paniers partagés.
  *

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          auth-validate
+ * @domain        auth
+ * @layer         middleware
+ * @criticality   medium
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result, side_effects
+ * @depends       @unknown
+ * @used-by       @unknown
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  auth
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Middleware de validation centralisé
  * 
  * Usage dans les routes :
