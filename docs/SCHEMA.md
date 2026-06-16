@@ -7,6 +7,23 @@
 
 ---
 
+## 0. Gouvernance DB obligatoire
+
+Toute modification de schéma DB doit respecter :
+
+```txt
+docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
+```
+
+Une migration, une modification de table/colonne/enum/index/trigger/fonction/contrainte, ou un nouvel accès DB depuis le code est incomplète tant que :
+
+- `docs/SCHEMA.md` décrit le schéma live ou le schéma visé ;
+- les headers `@db-read`, `@db-write`, `@db-txn` des fichiers lecteurs/écrivains sont à jour ;
+- `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` sont régénérés si les headers changent ;
+- l'ordre migration/deploy/rollback est documenté si la production est impactée.
+
+---
+
 ## 1. Règle d'usage
 
 Ce document est la **réponse unique** à la question : *"qu'est-ce qui existe vraiment en base aujourd'hui ?"*.
@@ -315,6 +332,8 @@ Au-delà du code applicatif, la DB enforce elle-même plusieurs invariants :
 
 ## 9. Liens avec les autres documents socle
 
+- **`KOMERCE_DB_SCHEMA_DOCTRINE.md`** — gouvernance obligatoire des migrations et du schéma vivant.
+- **`KOMERCE_ARCH_GRAPH_DOCTRINE.md`** — synchronisation obligatoire avec headers et graphe.
 - **`CARTOGRAPHY_360.md`** — domaines API et points de vérité.
 - **`ZONE_IMPACT.md`** — invariants I-01 à I-10 qui protègent ce schéma au niveau code.
 - **`CONTRACTS.md`** — services qui consomment et mutent ces tables.
