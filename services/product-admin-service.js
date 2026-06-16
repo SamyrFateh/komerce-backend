@@ -146,7 +146,8 @@ async function createProduct(db, payload, adminUser) {
   }
 
   const fields = ['name', 'category', 'price_kmf'];
-  const optionals = ['sku', 'description', 'subcategory', 'price_aed', 'price_eur', 'weight_kg',
+  // product_ref : optionnel — si absent, la DB génère KPR-XXXXXX via DEFAULT + séquence (migration 081)
+  const optionals = ['sku', 'product_ref', 'description', 'subcategory', 'price_aed', 'price_eur', 'weight_kg',
                      'dimensions_cm', 'stock', 'image_url', 'images', 'badge', 'emoji', 'promo_pct',
                      'is_available', 'is_active', 'has_couture', 'sourcing_source',
                      'requires_secure_transport', 'customs_risk_coeff', 'unsold_price_kmf',
@@ -159,10 +160,19 @@ async function createProduct(db, payload, adminUser) {
   const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
   const values      = fields.map(f => payload[f]);
 
-  const { rows: [product] } = await db.query(
-    `INSERT INTO products (${cols}) VALUES (${placeholders}) RETURNING *`,
-    values
-  );
+  let product;
+  try {
+    const { rows: [row] } = await db.query(
+      `INSERT INTO products (${cols}) VALUES (${placeholders}) RETURNING *`,
+      values
+    );
+    product = row;
+  } catch (err) {
+    if (err.code === '23505' && err.constraint === 'products_product_ref_unique') {
+      return { status: 409, body: { error: `product_ref déjà utilisé : "${payload.product_ref}"`, code: 'product_ref_conflict' } };
+    }
+    throw err;
+  }
 
   // Audits
   await recordProductPriceChange(db, {
@@ -192,7 +202,8 @@ async function createProduct(db, payload, adminUser) {
  * @returns {{ status: number, body: object }}
  */
 async function updateProduct(db, productId, payload, adminUser) {
-  const ALLOWED = ['name', 'sku', 'description', 'category', 'subcategory',
+  // product_ref accepté en update — doit rester unique (contrainte DB)
+  const ALLOWED = ['name', 'sku', 'product_ref', 'description', 'category', 'subcategory',
                    'price_kmf', 'price_aed', 'price_eur', 'weight_kg', 'dimensions_cm',
                    'stock', 'badge', 'emoji', 'promo_pct', 'is_available', 'is_active',
                    'has_couture', 'sourcing_source', 'requires_secure_transport',
@@ -233,10 +244,19 @@ async function updateProduct(db, productId, payload, adminUser) {
   const values     = fields.map(f => payload[f]);
   values.push(productId);
 
-  const { rows: [updated] } = await db.query(
-    `UPDATE products SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`,
-    values
-  );
+  let updated;
+  try {
+    const { rows: [row] } = await db.query(
+      `UPDATE products SET ${setClauses}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+    updated = row;
+  } catch (err) {
+    if (err.code === '23505' && err.constraint === 'products_product_ref_unique') {
+      return { status: 409, body: { error: `product_ref déjà utilisé : "${payload.product_ref}"`, code: 'product_ref_conflict' } };
+    }
+    throw err;
+  }
 
   // Audit prix si changement
   if (payload.price_kmf !== undefined && Number(payload.price_kmf) !== Number(before.price_kmf)) {

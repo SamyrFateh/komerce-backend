@@ -79,6 +79,10 @@ const auth = {
   },
 };
 
+// product_ref : KPR-XXXXXX — référence interne Komerce stable (RANK-02)
+const productRef = Joi.string().trim().pattern(/^KPR-\d{6,}$/).max(50)
+  .messages({ 'string.pattern.base': 'product_ref doit respecter le format KPR-XXXXXX (ex: KPR-000001)' });
+
 const products = {
   create: {
     body: Joi.object({
@@ -99,6 +103,7 @@ const products = {
       origin_country:     safeStr(50),
       hs_code:            safeStr(20),
       min_order_qty:      posInt,
+      product_ref:        productRef,  // optionnel — généré auto via séquence DB si absent
     }),
   },
   update: {
@@ -121,6 +126,7 @@ const products = {
       origin_country:     safeStr(50),
       hs_code:            safeStr(20),
       min_order_qty:      posInt,
+      product_ref:        productRef,  // optionnel — doit rester unique si fourni
     }).min(1),
   },
   delete: {

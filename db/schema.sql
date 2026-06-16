@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict WxEfrN3AikBoV02qB2893G4eoeVa9YFQncQDk0XjZr5PdCy2cYaJVZzrbGaBAzl
+\restrict ad6AODOERXoHf8NTdWkYvzDe6Kk2MgpPdctKzRw0pUWO6mscN7JyLGkLorQyb8B
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -1030,6 +1030,42 @@ CREATE TABLE public.competitor_prices (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT competitor_target_check CHECK (((product_id IS NOT NULL) OR (category IS NOT NULL)))
 );
+
+
+--
+-- Name: cost_benchmarks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cost_benchmarks (
+    id integer NOT NULL,
+    category text DEFAULT 'all'::text NOT NULL,
+    cost_family text NOT NULL,
+    expected_share_pct numeric(6,2) NOT NULL,
+    warn_ratio numeric(5,2) DEFAULT 1.30 NOT NULL,
+    alert_ratio numeric(5,2) DEFAULT 1.60 NOT NULL,
+    is_active boolean DEFAULT true NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: cost_benchmarks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.cost_benchmarks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: cost_benchmarks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.cost_benchmarks_id_seq OWNED BY public.cost_benchmarks.id;
 
 
 --
@@ -4178,6 +4214,13 @@ ALTER TABLE ONLY public.boutique_subcategories ALTER COLUMN id SET DEFAULT nextv
 
 
 --
+-- Name: cost_benchmarks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_benchmarks ALTER COLUMN id SET DEFAULT nextval('public.cost_benchmarks_id_seq'::regclass);
+
+
+--
 -- Name: loyalty_tiers id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -4443,6 +4486,22 @@ ALTER TABLE ONLY public.collective_workspaces
 
 ALTER TABLE ONLY public.competitor_prices
     ADD CONSTRAINT competitor_prices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cost_benchmarks cost_benchmarks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_benchmarks
+    ADD CONSTRAINT cost_benchmarks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cost_benchmarks cost_benchmarks_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cost_benchmarks
+    ADD CONSTRAINT cost_benchmarks_unique UNIQUE (category, cost_family);
 
 
 --
@@ -5446,6 +5505,13 @@ CREATE INDEX idx_contributions_share ON public.cart_contributions USING btree (s
 --
 
 CREATE INDEX idx_contributions_status ON public.cart_contributions USING btree (status);
+
+
+--
+-- Name: idx_cost_benchmarks_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cost_benchmarks_active ON public.cost_benchmarks USING btree (category, cost_family) WHERE (is_active = true);
 
 
 --
@@ -8726,5 +8792,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict WxEfrN3AikBoV02qB2893G4eoeVa9YFQncQDk0XjZr5PdCy2cYaJVZzrbGaBAzl
+\unrestrict ad6AODOERXoHf8NTdWkYvzDe6Kk2MgpPdctKzRw0pUWO6mscN7JyLGkLorQyb8B
 

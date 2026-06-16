@@ -315,18 +315,30 @@ Vérifié dans `b-modal-core.js` et `b-modal-suggestions.js` :
 5. `applyModalDesktopSuggestionState` reste privée (non exportée).
 6. Découplage cycle préservé : clic carte → `bus.emit('modal:open', {id})`, pas d'import direct.
 
-### RANK-02 — Dette product_ref : sku sans contrainte d'unicité
+### RANK-02 — product_ref : référence interne Komerce stable
 
-Statut : **ouvert — priorité P2**.
+Statut : **clôturé — 2026-06-16**.
 
-Le champ `sku` sur la table `products` n'a pas de contrainte d'unicité DB.
-Des produits issus de sourcing peuvent ne pas avoir de SKU.
+Livré dans `migrations/081_product_ref.sql` + `services/product-admin-service.js`
++ `validators/index.js` + `routes/products.js` :
 
-Conséquence actuelle : le moteur de ranking utilise exclusivement `product.id` (UUID).
-Toute surface frontend passant un identifiant produit doit passer l'UUID.
+1. `products.product_ref TEXT` ajouté (migration 081).
+2. Backfill produits existants : `KPR-000001`, `KPR-000002`, … (ordre `created_at`).
+3. Contrainte `UNIQUE (product_ref)` posée après backfill.
+4. Défaut DB via séquence `product_ref_seq` → génération automatique si absent à la création.
+5. `validators/index.js` : `product_ref` autorisé en `create` et `update` (format `KPR-XXXXXX`).
+6. `product-admin-service.js` : `product_ref` dans `optionals` (create) et `ALLOWED` (update) ;
+   doublon → HTTP 409 `product_ref_conflict`.
+7. `GET /api/products` expose `product_ref` dans la liste ; `GET /api/products/:id` via `SELECT *`.
+8. `product.id` (UUID) reste l'identifiant technique de toutes les relations DB.
+9. `sku` reste séparé (réf fournisseur / variante / stock).
+10. Aucune catégorie dans la ref → stable si la catégorie change.
 
-Livrable attendu : migration ajoutant `UNIQUE` sur `sku` (nullable OK) + vérification
-des insertions sourcing. Bloquer avant tout système de tracking comportemental fin.
+Dette résiduelle séparée :
+
+- `sku` n'a toujours pas de contrainte `UNIQUE` DB. Les produits sourcing peuvent
+  ne pas avoir de SKU. Rouvrir en tant que `RANK-04` seulement avec preuve de collision réelle
+  (le moteur de ranking utilise `product_ref` ou `product.id`, pas `sku`).
 
 ### RANK-03 — Route boutique-suggestions câblée, non testée en intégration
 

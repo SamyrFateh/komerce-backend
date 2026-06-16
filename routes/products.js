@@ -84,6 +84,7 @@ router.get('/', async (req, res, next) => {
     const { rows } = await db.query(
       `SELECT
          p.id,
+         p.product_ref,
          p.sku,
          p.name,
          p.description,
