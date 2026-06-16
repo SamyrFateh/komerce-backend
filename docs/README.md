@@ -13,12 +13,14 @@ Pour toute nouvelle session, lire uniquement dans cet ordre :
 |---:|---|---|
 | 1 | [`AGENTS.md`](../AGENTS.md) | Règles obligatoires pour agent/dev |
 | 2 | [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./KOMERCE_ARCH_GRAPH_DOCTRINE.md) | Doctrine obligatoire du graphe avant toute intervention fonctionnelle |
-| 3 | [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) | Couverture et dette active de cartographie |
-| 4 | [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./KOMERCE_ARCH_HEADER_GRAPH.md) | Graphe lisible d'intervention |
-| 5 | [`docs/komerce-arch-header-graph.json`](./komerce-arch-header-graph.json) | Graphe machine-readable et `interventionIndex` |
-| 6 | [`docs/chantier/STATUS.md`](./chantier/STATUS.md) | État opératoire actuel, dettes ouvertes, tests à faire |
-| 7 | [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Doctrine produit active du panier partagé |
-| 8 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
+| 3 | [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./KOMERCE_DB_SCHEMA_DOCTRINE.md) | Doctrine obligatoire du schéma DB |
+| 4 | [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) | Couverture et dette active de cartographie |
+| 5 | [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./KOMERCE_ARCH_HEADER_GRAPH.md) | Graphe lisible d'intervention |
+| 6 | [`docs/komerce-arch-header-graph.json`](./komerce-arch-header-graph.json) | Graphe machine-readable et `interventionIndex` |
+| 7 | [`docs/SCHEMA.md`](./SCHEMA.md) | Schéma DB canonique |
+| 8 | [`docs/chantier/STATUS.md`](./chantier/STATUS.md) | État opératoire actuel, dettes ouvertes, tests à faire |
+| 9 | [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Doctrine produit active du panier partagé |
+| 10 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
 
 Ces documents suffisent pour reprendre le projet sans lire l'historique.
 
@@ -38,19 +40,34 @@ Une intervention est incomplète si elle change le comportement sans mettre à j
 
 ---
 
-## 3. Socle technique de référence
+## 3. Doctrine DB obligatoire
+
+Le schéma DB est un contrat vivant.
+
+Toute migration ou modification de table, colonne, enum, index, trigger, fonction ou contrainte doit respecter :
+
+```txt
+docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
+```
+
+Une intervention DB est incomplète si `docs/SCHEMA.md`, les headers `@db-read/@db-write/@db-txn` et le graphe ne sont pas alignés.
+
+---
+
+## 4. Socle technique de référence
 
 À lire seulement si la modification touche la zone concernée :
 
 | Besoin | Document actif |
 |---|---|
 | Doctrine graphe obligatoire | [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./KOMERCE_ARCH_GRAPH_DOCTRINE.md) |
+| Doctrine schéma DB obligatoire | [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./KOMERCE_DB_SCHEMA_DOCTRINE.md) |
 | Statut cartographie architecture | [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) |
 | Graphe architecture lisible | [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./KOMERCE_ARCH_HEADER_GRAPH.md) |
 | Graphe architecture machine-readable | [`docs/komerce-arch-header-graph.json`](./komerce-arch-header-graph.json) |
+| Schéma DB réel | [`docs/SCHEMA.md`](./SCHEMA.md) |
 | Cartographie générale backend/frontend | [`docs/CARTOGRAPHY_360.md`](./CARTOGRAPHY_360.md) |
 | Invariants métier et fichiers sensibles | [`docs/ZONE_IMPACT.md`](./ZONE_IMPACT.md) |
-| Schéma DB réel | [`docs/SCHEMA.md`](./SCHEMA.md) |
 | Contrats de services critiques | [`docs/CONTRACTS.md`](./CONTRACTS.md) |
 | Pricing, CDR, allocations de coûts, N1/N2/N3, dashboard économique | [`docs/doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md`](./doctrine/MOTEUR_ECONOMIQUE_ALLOCATION.md) |
 | Personnalisation boutique, suggestions, re-ranking accueil, habitudes de navigation | [`docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md`](./doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md) |
@@ -59,7 +76,7 @@ Une intervention est incomplète si elle change le comportement sans mettre à j
 
 ---
 
-## 4. Boutique
+## 5. Boutique
 
 Le frontend Boutique vit dans `public/boutique/**`.
 
@@ -79,7 +96,7 @@ Les documents sous `public/boutique/docs/**` sont historiques ou générés. Ils
 
 ---
 
-## 5. Doctrine produit active
+## 6. Doctrine produit active
 
 La doctrine active du panier partagé est **Boutique First** :
 
@@ -96,7 +113,7 @@ Conséquence : toute documentation V4.1, collective workspace, cagnotte, engagem
 
 ---
 
-## 6. Archive
+## 7. Archive
 
 Les dossiers suivants sont **non opératoires par défaut** :
 
@@ -116,7 +133,7 @@ Si une information utile d'un ancien document est encore nécessaire, elle doit 
 
 ---
 
-## 7. Règle de conflit
+## 8. Règle de conflit
 
 En cas de conflit :
 
@@ -128,13 +145,15 @@ Pour le panier partagé, la doctrine Boutique First gagne sur tous les anciens d
 
 ---
 
-## 8. Definition of Done documentaire
+## 9. Definition of Done documentaire
 
 Une PR est documentairement propre si :
 
 - elle respecte `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` ;
+- elle respecte `docs/KOMERCE_DB_SCHEMA_DOCTRINE.md` si la DB est touchée ;
 - elle ne crée pas de nouvelle source de vérité inutile ;
 - elle met à jour le document actif concerné ;
+- elle met à jour `docs/SCHEMA.md` si le schéma DB change ;
 - elle met à jour les headers et le graphe si le contrat fonctionnel change ;
 - elle n'oblige pas un futur agent à relire des audits historiques ;
 - elle laisse `docs/README.md` comme point d'entrée unique.
