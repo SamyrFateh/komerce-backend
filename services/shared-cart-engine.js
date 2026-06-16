@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-state-machine
+ * @domain        shared-cart
+ * @layer         service
+ * @criticality   critical
+ * @inputs        cart_id, token, cart_items, payment_event, timer_event, creator_action
+ * @outputs       shared_cart, contribution, next_status, order, events
+ * @depends       db.js, services/whatsapp-meta.js, services/order-service.js, services/routing.js, services/order-payment-confirmation.js, utils/rates.js
+ * @used-by       routes/shared-cart.js, bootstrap/crons.js
+ * @doctrine      paiement_seul_acte_engageant, panier_ouvert_ferme, snapshot_fige, fenetre_paiement_48h, choix_createur_72h, idempotence_financiere
+ * @impact-areas  participant-flow, creator-flow, checkout, orders, notifications, stock, economic-engine
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Shared Cart Engine  V4.1
  * ═══════════════════════════════════════════════════════════════════════
  *

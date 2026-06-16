@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          api-server-entrypoint
+ * @domain        bootstrap
+ * @layer         entrypoint
+ * @criticality   critical
+ * @inputs        http_requests, env_vars, raw_webhooks, static_assets
+ * @outputs       mounted_api, boutique_static, crons, server_lifecycle
+ * @depends       bootstrap/env.js, bootstrap/security.js, bootstrap/api-routes.js, bootstrap/html-routes.js, bootstrap/crons.js, routes/shared-cart.js
+ * @used-by       railway-runtime
+ * @doctrine      raw_body_webhook_intact, routes_canoniques, static_boutique_served
+ * @impact-areas  all-api, shared-cart, payments, boutique, crons, auth
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Serveur API
  *
  * Point d'entrée Node.js + Express.

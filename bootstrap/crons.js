@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          operational-crons
+ * @domain        bootstrap
+ * @layer         cron
+ * @criticality   critical
+ * @inputs        timers, database_state, rules
+ * @outputs       automatic_transitions, purges, reminders
+ * @depends       services/cash-reminder-service.js, services/inventory-service.js, services/shared-cart-engine.js, utils/rules.js
+ * @used-by       server.js
+ * @doctrine      shared_cart_state_machine_v41, idempotence_cron, retention_snapshots
+ * @impact-areas  shared-cart, cash-reminders, inventory, auth-security, economic-engine
+ * @version       2026-06
+ */
+
 'use strict';
 
 const log = require('../utils/logger').child({ module: 'bootstrap-crons' });

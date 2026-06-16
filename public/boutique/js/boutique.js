@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-ui-orchestrator
+ * @domain        boutique
+ * @layer         ui-page
+ * @criticality   critical
+ * @inputs        dom, state, bus_events
+ * @outputs       catalog_init, cart_init, modal_init, checkout_init, navigation_init, share_cart_init
+ * @depends       b-store.js, b-cart-core.js, b-catalog.js, b-modal.js, b-cart.js, b-checkout.js, b-nav.js, b-share-cart.js
+ * @used-by       public/boutique/index.html
+ * @doctrine      boutique_canal_decouverte, navigation_sans_friction, side_cart_non_intrusif
+ * @impact-areas  boutique-home, product-discovery, side-cart, checkout, shared-cart, responsive-layout
+ * @version       2026-06
+ */
+
+/**
  * @module boutique
  * @brief Komerce boutique — §13 INIT (orchestrateur)
  *

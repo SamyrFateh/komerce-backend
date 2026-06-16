@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          economic-engine-calculation-service
+ * @domain        economic-engine
+ * @layer         service
+ * @criticality   high
+ * @inputs        economic_variables, charges, trigger_event
+ * @outputs       computed_variables, alerts, snapshots, executive_summary
+ * @depends       db.js, utils/eco-bridge.js
+ * @used-by       routes/economic-engine.js, admin-dashboards
+ * @doctrine      couts_repartis_par_commande, coherence_model_economique, snapshot_debounce, sov_drift
+ * @impact-areas  pricing, margin, dashboard, admin-economic, finance-config
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

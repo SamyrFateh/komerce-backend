@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          client-otp-session
+ * @domain        auth
+ * @layer         route
+ * @criticality   high
+ * @inputs        phone, code, name, purpose
+ * @outputs       kmrc_jwt_cookie, lightweight_user, otp_state
+ * @depends       services/notification-service.js, services/otp-test-mode.js, utils/phone.js, db.js
+ * @used-by       bootstrap/api-routes.js, public/boutique/js/b-identity.js, public/boutique/js/b-tracking.js, checkout
+ * @doctrine      otp_une_fois, session_client_legere, test_mode_never_prod, phone_normalization
+ * @impact-areas  checkout, participant-flow, tracking, shared-cart-access, auth
+ * @version       2026-06
+ */
+
 'use strict';
 
 const express = require('express');

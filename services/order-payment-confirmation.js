@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          payment-to-stock-single-entry
+ * @domain        order-payment
+ * @layer         service
+ * @criticality   critical
+ * @inputs        orderId, actor, source, dbClient
+ * @outputs       confirmed_order, ordered_transition, stock_decrement, stockBlocked
+ * @depends       services/order-status-machine.js, db.js
+ * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
+ * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert
+ * @impact-areas  orders, stock, payments, shared-cart, wallet, sourcing, loyalty
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

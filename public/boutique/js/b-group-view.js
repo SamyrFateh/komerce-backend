@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-boutique-view
+ * @domain        shared-cart
+ * @layer         ui-component
+ * @criticality   critical
+ * @inputs        share_token, public_cart_data, owner_identity, estimations, contributions
+ * @outputs       group_view, payment_actions, creator_actions, polling, banner_state
+ * @depends       group/group-api.js, group/group-state.js, group/group-helpers.js, group/group-render-creator.js, b-identity.js, b-group-banner.js
+ * @used-by       b-nav.js, b-share-cart.js, public_shared_cart_links
+ * @doctrine      paiement_seul_acte_engageant, estimations_indicatives, participant_peut_verifier, createur_decide_gap
+ * @impact-areas  participant-flow, creator-flow, checkout, notifications, side-cart
+ * @version       2026-06
+ */
+
+/**
  * @module b-group-view
  * @owner sélecteurs .k-group-* — onglet dédié panier partagé
  *

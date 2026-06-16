@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-checkout-orchestrator
+ * @domain        checkout
+ * @layer         ui-component
+ * @criticality   critical
+ * @inputs        cart_state, identity, phone, relais, payment_mode
+ * @outputs       order_creation, stripe_payment_intent, checkout_modal_state
+ * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/orders.js, routes/payments.js
+ * @used-by       b-boutique.js, b-nav.js, b-share-cart.js
+ * @doctrine      paiement_seul_acte_engageant, otp_une_fois, checkout_sans_friction
+ * @impact-areas  checkout, payments, otp, order-creation, cart, shared-cart
+ * @version       2026-06
+ */
+
+/**
  * @module b-checkout
  * @brief §11 CHECKOUT — Commande, paiement, wallet, order success
  *

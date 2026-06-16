@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          payment-http-facade
+ * @domain        payment
+ * @layer         route
+ * @criticality   critical
+ * @inputs        order_reference, stripe_webhook, cash_ref_code
+ * @outputs       stripe_intent, payment_confirmation, rates_config
+ * @depends       services/payment-stripe.js, services/payment-cash-confirm.js, routes/purchasing.js, utils/rates.js, validators.js
+ * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js
+ * @doctrine      raw_body_webhook_intact, idempotence_stripe, payment_to_stock_single_entry
+ * @impact-areas  checkout, orders, stock, cash, sourcing, notifications
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — routes/payments.js  (R5)
  *
  * Façade pure : auth + validate + appel service + réponse HTTP.
