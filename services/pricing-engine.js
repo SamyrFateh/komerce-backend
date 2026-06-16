@@ -26,6 +26,7 @@ const { loadGlobalConfig, computeCDR } = require('./pricing-cdr');
 const {
   computePrices,
   computeScenarios,
+  computeStrategies,
   computeHealthStatus,
   computeSourcingDecision,
   buildAlerts,
@@ -136,7 +137,20 @@ async function computeMarketConfidence(productId) {
  * @param {Object} options { config? } pour réutiliser une config déjà chargée (batch)
  */
 async function recommend(input, options = {}) {
-  const config = options.config || (await loadGlobalConfig());
+  let config = options.config || (await loadGlobalConfig());
+
+  // Overrides de simulation (carte économique éditable) : on clone la config
+  // pour ne jamais muter celle d'un batch partagé. Permet d'éditer les leviers
+  // N3 (charges fixes, volume cible, articles/commande) en live.
+  if (input.finance_overrides || input.monthly_fixed_costs_kmf != null) {
+    config = {
+      ...config,
+      finance: { ...config.finance, ...(input.finance_overrides || {}) },
+      ...(input.monthly_fixed_costs_kmf != null
+        ? { charges: [{ recurrence_period: 'monthly', amount_kmf: Number(input.monthly_fixed_costs_kmf), is_active: true }] }
+        : {}),
+    };
+  }
   const fc = config.finance;
 
   // ── Résolution produit ────────────────────────────────────────────
@@ -198,6 +212,50 @@ async function recommend(input, options = {}) {
   const dataQuality = buildDataQuality(input, { hasProduct: !!product, hasCustomsCategory: !!cat, hasFinanceConfig: !!fc && Object.keys(fc).length > 0, warnings });
   const subjectType = inferSubjectType(input, { hasProduct: !!product });
 
+  // ── 10. Contrat doctrinal (source unique, dérivé du breakdown) ────
+  //   N1 = coût rendu relais (landed_relay)
+  //   N2 = business variable = paiement + provision risque  (jamais le fixe)
+  //   N3 = charges fixes imputées
+  //   coût variable complet = N1 + N2 ; CDR complet = N1 + N2 + N3
+  const n1LandedRelay   = breakdown.landed_relay_cost_kmf;
+  const n2BusinessVar   = r(breakdown.business.payment + breakdown.business.risk_provision);
+  const variableComplete = r(n1LandedRelay + n2BusinessVar);     // == variable_cost_estimated_kmf
+  const n3FixedOverhead = breakdown.business.fixed_overhead;     // == fixed_cost_allocation_kmf
+  const cdrComplete     = r(variableComplete + n3FixedOverhead); // == cost_complete_estimated_kmf
+
+  // ── 11. Stratégie prix (le choix humain, par défaut « mechanical ») ──
+  const pricingStrategy = input.pricing_strategy || 'mechanical';
+  const finalPrice = input.final_price_kmf != null ? r(input.final_price_kmf)
+                   : (pricingStrategy === 'mechanical' ? prices.recommended_price_kmf : null);
+  //   strategy_risk : où tombe le prix final par rapport aux deux frontières
+  let strategyRisk = null;
+  if (finalPrice != null && finalPrice > 0) {
+    if (finalPrice < variableComplete)      strategyRisk = 'destructive';   // sous coût variable
+    else if (finalPrice < cdrComplete)      strategyRisk = 'undercovered';  // contributif mais sous CDR
+    else                                    strategyRisk = 'covered';       // structure incluse
+  }
+  const allocationAverages = {
+    articles_per_order:    Number(fc.avg_articles_per_order)    || 2.5,
+    articles_per_parcel:   Number(fc.avg_articles_per_parcel)   || 4.0,
+    articles_per_shipment: Number(fc.avg_articles_per_shipment) || 200.0,
+    confidence:            fc.allocation_confidence || 'low',
+  };
+
+  // ── 12. Stratégies canoniques (doctrine §6/§7) ───────────────────
+  const strategies = computeStrategies({
+    variable_complete:   variableComplete,
+    cdr_complete:        cdrComplete,
+    minimum_safe:        prices.minimum_safe_price_kmf,
+    recommended:         prices.recommended_price_kmf,
+    target_margin_pct:   prices.target_margin_pct,
+    monthly_fixed_costs: cdr.monthly_fixed_costs_kmf,
+  }, fc, input);
+
+  // ── 13. Unité + formule N3 (contrat §8, vue produit = par article) ─
+  const _frfmt = n => new Intl.NumberFormat('fr-FR').format(Math.round(Number(n) || 0));
+  const n3AllocationUnit = 'article';
+  const n3Formula = `${_frfmt(cdr.monthly_fixed_costs_kmf)} / ${cdr.target_orders_per_month} commandes / ${allocationAverages.articles_per_order} articles = ${_frfmt(n3FixedOverhead)} KMF par article`;
+
   return {
     // ── Subject ──────────────────────────────────────────────────────
     subject_type: subjectType,
@@ -206,6 +264,25 @@ async function recommend(input, options = {}) {
     category:     merged.category,
     channel:      ctx.channel,
 
+    // ── Contrat doctrinal (noms canoniques — source de vérité UI) ────
+    n1_landed_relay_cost_kmf:        n1LandedRelay,
+    n2_business_variable_cost_kmf:   n2BusinessVar,
+    variable_cost_complete_kmf:      variableComplete,
+    contribution_kmf:                estimatedContribution !== null ? r(estimatedContribution) : null,
+    n3_fixed_overhead_allocation_kmf: n3FixedOverhead,
+    n3_allocation_unit:              n3AllocationUnit,
+    n3_formula:                      n3Formula,
+    cdr_complete_kmf:                cdrComplete,
+    minimum_safe_price_kmf:          prices.minimum_safe_price_kmf,
+    recommended_price_kmf:           prices.recommended_price_kmf,
+    final_price_kmf:                 finalPrice,
+    pricing_strategy:                pricingStrategy,
+    strategy_risk:                   strategyRisk,
+    strategies:                      strategies,
+    safety_margin_pct:               prices.safety_margin_pct,
+    allocations:                     cdr.details._allocations || [],
+    allocation_averages:             allocationAverages,
+
     // ── Coûts doctrinaux ─────────────────────────────────────────────
     landed_relay_cost_kmf:      breakdown.landed_relay_cost_kmf,
     business_complete_cost_kmf: breakdown.business_complete_cost_kmf,
@@ -213,19 +290,12 @@ async function recommend(input, options = {}) {
       landed_relay: breakdown.landed_relay,
       business:     breakdown.business,
       allocations:  cdr.details._allocations || [],
-      allocation_averages: {
-        articles_per_order:    Number(fc.avg_articles_per_order)    || 2.5,
-        articles_per_parcel:   Number(fc.avg_articles_per_parcel)   || 4.0,
-        articles_per_shipment: Number(fc.avg_articles_per_shipment) || 200.0,
-        confidence:            fc.allocation_confidence || 'low',
-      },
+      allocation_averages: allocationAverages,
     },
 
     // ── Prix ─────────────────────────────────────────────────────────
     current_price_kmf:      r(currentPrice),
     survival_price_kmf:     prices.survival_price_kmf,
-    minimum_safe_price_kmf: prices.minimum_safe_price_kmf,
-    recommended_price_kmf:  prices.recommended_price_kmf,
     test_price_kmf:         prices.test_price_kmf,
 
     // ── Scénarios ────────────────────────────────────────────────────
@@ -284,6 +354,7 @@ module.exports = {
   computeCDR,
   computePrices,
   computeScenarios,
+  computeStrategies: require('./pricing-output').computeStrategies,
   computeFixedCostAllocation: require('./pricing-cdr').computeFixedCostAllocation,
   computeMarketConfidence,
   computeHealthStatus,

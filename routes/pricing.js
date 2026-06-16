@@ -65,6 +65,20 @@ router.post('/calculate', async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// POST /api/pricing/flow — chaîne doctrinale brute (dashboard boîtes & flèches)
+//   Renvoie directement la sortie de pricing-engine.recommend() : contrat
+//   doctrinal complet (N1/N2/N3, frontières, contribution, scénarios). Accepte
+//   un input libre pour l'impact live (override d'un coût et recalcul propagé).
+//   Body : { product_id?, category?, cost_kmf?, weight_kg?, volume_m3?,
+//            current_price_kmf?, channel?, pricing_strategy?, final_price_kmf? }
+// ═══════════════════════════════════════════════════════════════════
+router.post('/flow', adminOnly, async (req, res, next) => {
+  try {
+    res.json(await pricingEngine.recommend(req.body || {}));
+  } catch (e) { handleServiceError(e, res, next); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/couture — calcul prix tenue couture
 // ═══════════════════════════════════════════════════════════════════
 router.post('/couture', async (req, res, next) => {

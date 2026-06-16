@@ -118,10 +118,20 @@ function computeFixedCostAllocation(charges, finance) {
     warnings.push(`objectif_commandes_mois absent dans finance_config — utilisation valeur par défaut ${DEFAULT_TARGET_ORDERS_PER_MONTH}.`);
   }
 
+  // Doctrine §9/§10 : N3 est imputé PAR ARTICLE, pas par commande. La chaîne entière
+  // (N1, N2, contribution, prix) est par article — N3 doit l'être aussi, sinon le CDR
+  // mélange deux unités et se retrouve gonflé.
+  //   charges mensuelles / commandes cibles / articles par commande
+  // Avant : (monthly / orders) + perOrder  → quote-part PAR COMMANDE (incohérent).
+  const avgArticlesPerOrder = Number(finance.avg_articles_per_order) || 2.5;
+  const fixedPerOrder   = (monthlyFixedCosts / targetOrdersPerMonth) + totalPerOrder;
+  const fixedPerArticle = fixedPerOrder / avgArticlesPerOrder;
+
   return {
-    fixed_cost_allocation_kmf: r((monthlyFixedCosts / targetOrdersPerMonth) + totalPerOrder),
+    fixed_cost_allocation_kmf: r(fixedPerArticle),
     monthly_fixed_costs_kmf: r(monthlyFixedCosts),
     target_orders_per_month: targetOrdersPerMonth,
+    articles_per_order: avgArticlesPerOrder,
     warnings,
   };
 }
@@ -196,11 +206,22 @@ function computeCDR(product, ctx = {}) {
 
     if (!details._allocations) details._allocations = [];
     if (amount > 0) {
+      // base de répartition (doctrine §5)
+      const basis = ({ kmf_per_kg: 'weight', kmf_per_m3: 'volume', pct: 'value' })[c.unit] || 'quantity';
+      const lineConfidence = allocationLevel === 'article' ? 'high' : (fc.allocation_confidence || 'low');
       details._allocations.push({
         component_key: c.key || null, component_label: c.label || c.key || '',
         category: c.category || null, unit: c.unit,
+        // ── noms doctrinaux (contrat §8) ──
+        allocation_level: allocationLevel,        // article | parcel | order | shipment | month
+        allocation_basis: basis,                  // quantity | weight | volume | value | manual
+        engaged_cost_kmf: r(engagedAmount),
+        allocation_divisor: r(allocationDivisor * 100) / 100,
+        allocated_cost_kmf: r(amount),
+        confidence: lineConfidence,
+        // ── alias historiques (compatibilité) ──
         engaged_amount_kmf: r(engagedAmount), engaged_level: allocationLevel,
-        allocation_divisor: r(allocationDivisor * 100) / 100, imputed_amount_kmf: r(amount),
+        imputed_amount_kmf: r(amount),
       });
     }
 
@@ -247,8 +268,11 @@ function computeCDR(product, ctx = {}) {
     }
   }
 
+  // Doctrine §3 : la provision risque est un coût VARIABLE (N2). Elle se calcule sur
+  // le coût variable engagé (N1 + paiement), jamais sur la quote-part de charges fixes (N3).
+  // Avant : baseRisks = variable + fixe → gonflait N2 avec une part de N3.
   let risksAmount = 0;
-  const baseRisks = variableCostEstimated + fixedAlloc.fixed_cost_allocation_kmf;
+  const baseRisks = variableCostEstimated;
   for (const p of cfg.provisions) risksAmount += baseRisks * (Number(p.rate_pct) / 100);
   details.risks = r(risksAmount);
 

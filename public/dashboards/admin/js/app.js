@@ -70,6 +70,7 @@
     { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', shell: 'ct', section: 'PRICING',   roles: ['admin'] },
     { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
+    { path: '/admin/economic-flow',     view: 'EconomicFlowView',      label: 'Carte économique',      icon: '🔭', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/categories',        view: 'CategoriesView',        label: 'Catégories boutique',   icon: '🏷️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
     { path: '/admin/products',          view: 'ProductsView',          label: 'Produits boutique',     icon: '🛍️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
 

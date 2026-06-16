@@ -76,8 +76,13 @@ function computePrices(cdr, cat, finance) {
   // 1. Prix de survie : coûts variables sans risques
   const survivalPrice = cdr.variable_cost_estimated_kmf - cdr.risk_provision_estimated_kmf;
 
-  // 2. Prix minimum sûr : cost_complete_estimated_kmf
-  const minSafePrice = cdr.cost_complete_estimated_kmf;
+  // 2. Prix plancher (doctrine §5) : coût variable complet (N1 + N2) + marge de sécurité.
+  //    INTERDIT : minimum_safe_price == CDR complet. Le plancher protège contre la vente
+  //    DESTRUCTRICE (sous le coût variable). La couverture du CDR, elle, est portée par
+  //    recommended_price. Deux frontières distinctes, jamais confondues.
+  const variableComplete = cdr.variable_cost_estimated_kmf;
+  const safetyPct  = Number(finance?.minimum_safety_margin_pct) || 10;
+  const minSafePrice = arrondiPsycho(variableComplete * (1 + safetyPct / 100));
 
   // 3. Prix conseillé : CDR / (1 - marge_cible)
   let recommendedPrice = 0;
@@ -95,6 +100,7 @@ function computePrices(cdr, cat, finance) {
     recommended_price_kmf: r(recommendedPrice),
     test_price_kmf: r(testPrice),
     target_margin_pct: Number(targetMarginPct),
+    safety_margin_pct: Number(safetyPct),
   };
 }
 
@@ -253,6 +259,76 @@ function computeScenarios(cdr, prices, cat, finance) {
   });
 
   return scenarios;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STRATÉGIES PRIX CANONIQUES (Doctrine §6 / §7)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Produit les 6 stratégies canoniques avec, pour chacune, les lignes du §7 :
+ * prix final, écart au plancher, écart au coût variable, contribution,
+ * écart au CDR, charges fixes non couvertes, volume de compensation, verdict.
+ *
+ * @param {Object} m  { variable_complete, cdr_complete, minimum_safe, recommended,
+ *                      target_margin_pct, monthly_fixed_costs }
+ * @param {Object} finance  finance_config (premium_markup_pct, acceptable_undercoverage_pct)
+ * @param {Object} input    { competitor_price_kmf?, final_price_kmf? }
+ */
+function computeStrategies(m, finance = {}, input = {}) {
+  const variable    = Number(m.variable_complete) || 0;
+  const cdr         = Number(m.cdr_complete) || 0;
+  const minSafe     = Number(m.minimum_safe) || 0;
+  const recommended = Number(m.recommended) || 0;
+  const monthlyFixed = Number(m.monthly_fixed_costs) || 0;
+  const margeDec    = (Number(m.target_margin_pct) || 40) / 100;
+
+  const premiumPct      = Number(finance.premium_markup_pct)        || 15;
+  const undercoveragePct = Number(finance.acceptable_undercoverage_pct) || 15;
+  const competitor      = Number(input.competitor_price_kmf) || 0;
+  const manualPrice     = Number(input.final_price_kmf) || 0;
+
+  let conquestPrice = 0;
+  if (margeDec > 0 && margeDec < 1) {
+    conquestPrice = arrondiPsycho((cdr * (1 - undercoveragePct / 100)) / (1 - margeDec));
+  }
+
+  const defs = [
+    { id: 'mechanical',         label: 'Mécanique (suivre le moteur)', price: recommended },
+    { id: 'competition_aligned', label: 'Aligné concurrence',           price: competitor > 0 ? competitor : recommended, needs_input: competitor <= 0 ? 'prix concurrent' : null },
+    { id: 'premium',            label: 'Premium',                       price: arrondiPsycho(recommended * (1 + premiumPct / 100)) },
+    { id: 'loss_leader',        label: 'Produit d\'appel',              price: minSafe },
+    { id: 'conquest',           label: 'Conquête (sous-couverture)',    price: conquestPrice },
+    { id: 'manual',             label: 'Manuel',                        price: manualPrice > 0 ? manualPrice : recommended, needs_input: manualPrice <= 0 ? 'prix fixé à la main' : null },
+  ];
+
+  return defs.map(d => {
+    const price        = r(d.price);
+    const contribution = price - variable;          // = écart au coût variable
+    const gapToFloor   = price - minSafe;
+    const gapToCdr     = price - cdr;
+    const uncoveredFixed = price < cdr ? r(cdr - price) : 0;
+    const volumeToCompensate = contribution > 0 ? Math.ceil(monthlyFixed / contribution) : null;
+
+    let verdict;
+    if (price <= 0)              verdict = 'WATCH';
+    else if (price < variable)   verdict = 'LOSS';     // destructif
+    else if (price < cdr)        verdict = 'WATCH';     // contributif mais sous-couvert
+    else if (price >= recommended) verdict = 'PRIORITY';
+    else                         verdict = 'TEST';
+
+    return {
+      id: d.id, label: d.label, needs_input: d.needs_input || null,
+      final_price_kmf: price,
+      gap_to_floor_kmf: r(gapToFloor),
+      gap_to_variable_kmf: r(contribution),
+      contribution_kmf: r(contribution),
+      gap_to_cdr_kmf: r(gapToCdr),
+      uncovered_fixed_kmf: uncoveredFixed,
+      volume_to_compensate: volumeToCompensate,
+      verdict,
+    };
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -495,6 +571,7 @@ function inferSubjectType(input, context) {
 module.exports = {
   computePrices,
   computeScenarios,
+  computeStrategies,
   computeHealthStatus,
   computeSourcingDecision,
   buildAlerts,

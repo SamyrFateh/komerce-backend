@@ -25,121 +25,85 @@ const log           = require('../utils/logger').child({ module: 'pricing-dashbo
  * @returns {Promise<object>} { kpis, alerts, doctrine, generated_at }
  */
 async function computeDashboard() {
-  // 1. Config finance
+  // 1. Config finance (cible + objectif, pour affichage KPI uniquement)
   const { rows: [fc] } = await db.query(
-    'SELECT target_marge_brute_pct, taux_aed_kmf, taux_change_eur_kmf, fret_eur_per_m3, objectif_commandes_mois FROM finance_config WHERE id = 1'
+    'SELECT target_marge_brute_pct, objectif_commandes_mois FROM finance_config WHERE id = 1'
   );
   const margeCiblePct = Number(fc?.target_marge_brute_pct) || 40;
 
-  // 2. Configurations pricing
-  const [catsRes, compRes, provRes, chargesRes] = await Promise.all([
-    db.query('SELECT * FROM customs_categories WHERE is_active = TRUE'),
-    db.query('SELECT * FROM pricing_components WHERE is_active = TRUE'),
-    db.query('SELECT * FROM risk_provisions    WHERE is_active = TRUE'),
-    db.query('SELECT * FROM charges            WHERE is_active = TRUE'),
-  ]);
-  const cats = {};
-  catsRes.rows.forEach(c => { cats[c.key] = c; });
+  // 2. Config moteur (source de vérité unique — doctrine §13).
+  //    AUCUN recalcul parallèle ici : on ne lit plus pricing_components ni les taux
+  //    pour refaire un CDR « maison ». Tout passe par pricing-engine.recommend().
+  const config = await pricingEngine.loadGlobalConfig();
 
-  const taxAED  = Number(fc?.taux_aed_kmf)         || 138;
-  const taxEUR  = Number(fc?.taux_change_eur_kmf)   || 492;
-  const fretEur = Number(fc?.fret_eur_per_m3)       || 180;
-
-  // 3. Niveau 2 constant
-  const totalMensuel = chargesRes.rows
-    .filter(c => c.recurrence_period === 'monthly')
-    .reduce((s, c) => s + Number(c.amount_kmf), 0)
-    + Math.round(
-        chargesRes.rows
-          .filter(c => c.recurrence_period === 'weekly')
-          .reduce((s, c) => s + Number(c.amount_kmf), 0)
-        * 4.33
-      );
-  const totalPerOrder = chargesRes.rows
-    .filter(c => c.recurrence_period === 'per_order')
-    .reduce((s, c) => s + Number(c.amount_kmf), 0);
-  const volume  = Number(fc?.objectif_commandes_mois) || 100;
-  const niveau2 = Math.round(totalMensuel / volume + totalPerOrder);
-
-  // 4. Tous les produits actifs
+  // 3. Tous les produits actifs
   const { rows: products } = await db.query(
     'SELECT id, name, category, price_kmf, cost_kmf, weight_kg FROM products WHERE is_active = TRUE'
   );
 
-  // 5. CDR + verdict par produit
+  // 4. CDR + verdict par produit — VIA LE MOTEUR (une seule vérité)
   const productsAtLoss    = [];
   const productsCritical  = [];
   const margesByCategory  = {};
   let nbAligned = 0, nbUnder = 0, nbOver = 0, nbUnset = 0;
   let totalMargeEffective = 0, totalAvecPrix = 0;
+  let nbRecoFailed = 0;
+  let n3Sample = null;   // quote-part charges fixes (identique tous produits si scope global)
+
+  const dist = {
+    by_health:   { loss: 0, danger: 0, fragile: 0, healthy: 0, strong: 0, unknown: 0 },
+    by_sourcing: { PRIORITY: 0, TEST: 0, WATCH: 0, AVOID: 0, LOSS: 0, RENEGOTIATE: 0, INCREASE_PRICE: 0 },
+    by_market:   { unknown: 0, testing: 0, validated: 0, scaling: 0, rejected: 0 },
+    sample_size: 0,
+  };
 
   for (const p of products) {
-    const category     = p.category || 'phones';
-    const cat          = cats[category];
-    const margeCibleProd = cat?.default_margin_pct
-      ? Number(cat.default_margin_pct) / 100
-      : margeCiblePct / 100;
+    const category = p.category || 'phones';
+    let reco;
+    try {
+      reco = await pricingEngine.recommend(
+        { product_id: p.id, category, current_price_kmf: p.price_kmf },
+        { config }
+      );
+    } catch (_) { nbRecoFailed++; continue; }
 
-    const prixAchatKmf = Number(p.cost_kmf) || 0;
-    const volM3        = 0.005;
-    const fretKmf      = volM3 * fretEur * taxEUR;
-    let n1             = prixAchatKmf + fretKmf;
+    // Champs doctrinaux = source de vérité (mêmes chiffres que /recommend)
+    const cdr         = reco.cdr_complete_kmf;
+    const prixCalcule = reco.recommended_price_kmf;
+    const prixActuel  = reco.current_price_kmf || 0;
+    const margeEff    = reco.estimated_margin_pct;   // (prix - CDR complet) / prix
+    if (n3Sample === null) n3Sample = reco.n3_fixed_overhead_allocation_kmf;
 
-    for (const c of compRes.rows) {
-      const v = Number(c.default_value);
-      const a = c.applies_to || 'all';
-      if (a !== 'all' && !a.startsWith('category:' + category)) continue;
-      switch (c.unit) {
-        case 'pct':         n1 += n1 * (v / 100); break;
-        case 'kmf':         n1 += v; break;
-        case 'kmf_per_kg':  n1 += v * (Number(p.weight_kg) || 1); break;
-        case 'kmf_per_m3':  n1 += v * volM3; break;
-        case 'aed':         n1 += v * taxAED; break;
-        case 'eur':         n1 += v * taxEUR; break;
-      }
-    }
-    if (cat) {
-      const base = prixAchatKmf + fretKmf;
-      n1 += base * Number(cat.douane_pct) / 100;
-      n1 += base * Number(cat.tva_pct) / 100;
-      n1 += base * Number(cat.taxe_add_pct) / 100;
-    }
+    // Distributions doctrine (repris du même reco, plus de 2ᵉ boucle)
+    if (reco.health_status     && dist.by_health[reco.health_status]       != null) dist.by_health[reco.health_status]++;
+    if (reco.sourcing_decision && dist.by_sourcing[reco.sourcing_decision] != null) dist.by_sourcing[reco.sourcing_decision]++;
+    if (reco.market_confidence && dist.by_market[reco.market_confidence]   != null) dist.by_market[reco.market_confidence]++;
+    dist.sample_size++;
 
-    const baseProv = n1 + niveau2;
-    let n3         = 0;
-    for (const pr of provRes.rows) {
-      n3 += baseProv * (Number(pr.rate_pct) / 100);
-    }
-
-    const cdr          = Math.round(n1 + niveau2 + n3);
-    const prixCalcule  = Math.round(cdr / (1 - margeCibleProd));
-    const prixActuel   = Number(p.price_kmf) || 0;
-
-    let margeEff = null;
-    if (prixActuel > 0) {
-      margeEff = Math.round((1 - cdr / prixActuel) * 1000) / 10;
+    if (margeEff !== null && prixActuel > 0) {
       totalMargeEffective += margeEff;
       totalAvecPrix++;
       if (!margesByCategory[category]) margesByCategory[category] = { sum: 0, count: 0 };
-      margesByCategory[category].sum   += margeEff;
+      margesByCategory[category].sum += margeEff;
       margesByCategory[category].count++;
     }
 
-    let status;
-    if (prixActuel <= 0) { status = 'unset'; nbUnset++; }
-    else {
+    if (prixActuel <= 0) { nbUnset++; }
+    else if (prixCalcule > 0) {
       const ecart = (prixActuel - prixCalcule) / prixCalcule;
-      if (Math.abs(ecart) <= 0.05) { status = 'aligned';     nbAligned++; }
-      else if (ecart < 0)          { status = 'underpriced'; nbUnder++;   }
-      else                         { status = 'overpriced';  nbOver++;    }
+      if (Math.abs(ecart) <= 0.05) { nbAligned++; }
+      else if (ecart < 0)          { nbUnder++;   }
+      else                         { nbOver++;    }
     }
 
+    // À perte = sous le CDR complet (frontière de couverture totale, vérité moteur)
     if (prixActuel > 0 && prixActuel < cdr) {
       productsAtLoss.push({ id: p.id, name: p.name, price_kmf: prixActuel, cdr_kmf: cdr, gap_kmf: cdr - prixActuel });
     } else if (margeEff !== null && margeEff < 10) {
       productsCritical.push({ id: p.id, name: p.name, marge_pct: margeEff, price_kmf: prixActuel });
     }
   }
+  const niveau2 = n3Sample != null ? n3Sample : 0;
 
   // 6. KPIs agrégés
   const nbWithCost       = products.filter(p => Number(p.cost_kmf) > 0).length;
@@ -205,32 +169,15 @@ async function computeDashboard() {
     count: nbUnset,
   });
 
-  // 9. Doctrine (distributions health/sourcing/market)
-  let doctrine = null;
-  try {
-    const config = await pricingEngine.loadGlobalConfig();
-    const dist   = {
-      by_health:   { loss: 0, danger: 0, fragile: 0, healthy: 0, strong: 0, unknown: 0 },
-      by_sourcing: { PRIORITY: 0, TEST: 0, WATCH: 0, AVOID: 0, LOSS: 0, RENEGOTIATE: 0, INCREASE_PRICE: 0 },
-      by_market:   { unknown: 0, testing: 0, validated: 0, scaling: 0, rejected: 0 },
-      sample_size: 0,
-    };
-    for (const p of products) {
-      try {
-        const reco = await pricingEngine.recommend(
-          { product_id: p.id, category: p.category, current_price_kmf: p.price_kmf },
-          { config }
-        );
-        if (reco.health_status   && dist.by_health[reco.health_status]     != null) dist.by_health[reco.health_status]++;
-        if (reco.sourcing_decision && dist.by_sourcing[reco.sourcing_decision] != null) dist.by_sourcing[reco.sourcing_decision]++;
-        if (reco.market_confidence && dist.by_market[reco.market_confidence]  != null) dist.by_market[reco.market_confidence]++;
-        dist.sample_size++;
-      } catch (_) {}
-    }
-    doctrine = dist;
-  } catch (errCfg) {
-    log.warn({ err: errCfg }, 'pricing-engine indisponible — doctrine non calculée');
-  }
+  // 9. Doctrine : distributions déjà calculées dans la boucle unique ci-dessus
+  const doctrine = dist;
+
+  if (nbRecoFailed > 0) alerts.push({
+    severity: 'info', code: 'reco_failed',
+    title: 'Produits non calculés',
+    message: `${nbRecoFailed} produit(s) n'ont pas pu être évalués par le moteur (données manquantes).`,
+    count: nbRecoFailed,
+  });
 
   return {
     kpis: {
@@ -246,6 +193,8 @@ async function computeDashboard() {
       couverture_cost_pct:  couvertureCostPct,
       last_config_change_at: lastChange,
       niveau2_kmf:          niveau2,
+      n3_fixed_overhead_allocation_kmf: niveau2,
+      source_of_truth:      'pricing-engine',
     },
     alerts,
     doctrine,

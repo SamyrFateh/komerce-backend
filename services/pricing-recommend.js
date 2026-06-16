@@ -254,12 +254,17 @@ async function computeRecommend(b = {}) {
   }
 
   return {
-    // ─── Champs legacy (compatibilité Atelier / Dashboard existants) ───
-    prix_recommande_kmf:       prixRecommande,
+    // ─── Champs de décision : RELAYÉS depuis le moteur (doctrine §13) ───
+    //   Les noms legacy restent pour compatibilité mais ne portent plus une
+    //   vérité parallèle : quand le moteur a répondu, ce sont SES chiffres.
+    //   La décomposition niveau1/2/3 ci-dessous reste la vue composant de
+    //   l'Atelier (informative), pas une source de prix concurrente.
+    prix_recommande_kmf:       doctrine ? doctrine.recommended_price_kmf : prixRecommande,
     prix_recommande_brut_kmf:  Math.round(prixRecommandeBrut),
-    cout_total_kmf:            coutTotal,
+    cout_total_kmf:            doctrine ? doctrine.cdr_complete_kmf : coutTotal,
     marge_cible_pct:           Number((margeCiblePct * 100).toFixed(1)),
     marge_atteinte_pct:        Number(margeAtteintePct.toFixed(2)),
+    source_of_truth:           doctrine ? 'pricing-engine' : 'legacy-fallback',
 
     niveau1: {
       total:       niveau1Total,
@@ -293,6 +298,23 @@ async function computeRecommend(b = {}) {
     ...(doctrine ? {
       subject_type:                     doctrine.subject_type,
       candidate_id:                     doctrine.candidate_id,
+      // ─── Contrat doctrinal canonique (noms de vérité) ───
+      n1_landed_relay_cost_kmf:         doctrine.n1_landed_relay_cost_kmf,
+      n2_business_variable_cost_kmf:    doctrine.n2_business_variable_cost_kmf,
+      variable_cost_complete_kmf:       doctrine.variable_cost_complete_kmf,
+      contribution_kmf:                 doctrine.contribution_kmf,
+      n3_fixed_overhead_allocation_kmf: doctrine.n3_fixed_overhead_allocation_kmf,
+      n3_allocation_unit:               doctrine.n3_allocation_unit,
+      n3_formula:                       doctrine.n3_formula,
+      cdr_complete_kmf:                 doctrine.cdr_complete_kmf,
+      final_price_kmf:                  doctrine.final_price_kmf,
+      pricing_strategy:                 doctrine.pricing_strategy,
+      strategy_risk:                    doctrine.strategy_risk,
+      strategies:                       doctrine.strategies,
+      safety_margin_pct:                doctrine.safety_margin_pct,
+      allocations:                      doctrine.allocations,
+      allocation_averages:              doctrine.allocation_averages,
+      scenarios:                        doctrine.scenarios,
       landed_relay_cost_kmf:            doctrine.landed_relay_cost_kmf,
       business_complete_cost_kmf:       doctrine.business_complete_cost_kmf,
       cost_breakdown:                   doctrine.cost_breakdown,

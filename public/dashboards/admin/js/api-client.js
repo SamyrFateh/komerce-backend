@@ -198,6 +198,9 @@
   // Products (catalogue, utilisé par pricing/sourcing)
   function getProducts(params)                 { return fetchJSON(apiUrl('/products', { limit: 500, ...params })); }
 
+  // Pricing — chaîne doctrinale (boîtes & flèches + impact live)
+  function getPricingFlow(body)                { return fetchMutation(apiUrl('/pricing/flow'), 'POST', body || {}); }
+
   // Loyalty
   function getLoyaltyPending()                 { return fetchJSON(apiUrl('/admin/loyalty/pending')); }
   function getLoyaltyHistory(params)           { return fetchJSON(apiUrl('/admin/loyalty/history', params)); }
@@ -652,6 +655,7 @@
     updatePartner,
     deletePartner,
     getProducts,
+    getPricingFlow,
     getLoyaltyPending,
     getLoyaltyHistory,
     createLoyaltyAction,
