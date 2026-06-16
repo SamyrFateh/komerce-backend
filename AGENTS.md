@@ -10,11 +10,13 @@ Lire uniquement dans cet ordre :
 
 1. [`docs/README.md`](./docs/README.md) — index documentaire actif ;
 2. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — doctrine obligatoire du graphe ;
-3. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
-4. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-5. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
-6. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-7. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+3. [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./docs/KOMERCE_DB_SCHEMA_DOCTRINE.md) — doctrine obligatoire du schéma DB ;
+4. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
+5. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+6. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
+7. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
+8. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+9. Les documents actifs listés par `docs/README.md` selon la zone touchée.
 
 Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
 
@@ -62,7 +64,25 @@ Une intervention fonctionnelle sans mise à jour du header et du graphe est inco
 
 ---
 
-## 3. Doctrine produit active — panier partagé
+## 3. Gouvernance DB obligatoire
+
+Tout changement de schéma DB doit suivre :
+
+```txt
+docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
+```
+
+Règle : une migration, un changement de table, colonne, enum, index, trigger, fonction ou contrainte est incomplet tant que :
+
+- la migration ou le chemin startup est explicite ;
+- `docs/SCHEMA.md` est mis à jour ;
+- les headers des fichiers lecteurs/écrivains sont mis à jour ;
+- le graphe est régénéré si les headers changent ;
+- l'ordre migration/deploy/rollback est documenté si la production est impactée.
+
+---
+
+## 4. Doctrine produit active — panier partagé
 
 Le modèle actif est **Boutique First**.
 
@@ -83,7 +103,7 @@ Toute documentation V4.1, collective workspace, cagnotte, engagement ou financem
 
 ---
 
-## 4. Hiérarchie documentaire
+## 5. Hiérarchie documentaire
 
 En cas de conflit :
 
@@ -99,7 +119,7 @@ Une doc ancienne qui contredit `docs/README.md` ou la doctrine Boutique First es
 
 ---
 
-## 5. Règle de divergence
+## 6. Règle de divergence
 
 Si code, DB et docs ne racontent pas la même chose :
 
@@ -109,7 +129,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 6. Règles techniques non négociables
+## 7. Règles techniques non négociables
 
 - Statuts commande : passer par `services/order-status-machine.js`.
 - Paiements Stripe/cash/wallet/shared-cart : passer par les services propriétaires documentés.
@@ -120,7 +140,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 7. Règle Boutique
+## 8. Règle Boutique
 
 Si une modification touche :
 
@@ -140,12 +160,13 @@ Interdits Boutique :
 
 ---
 
-## 8. Règle de fin de session
+## 9. Règle de fin de session
 
 Avant commit ou PR :
 
 - mettre à jour `docs/chantier/STATUS.md` si l'état courant change ;
 - mettre à jour le document actif concerné ;
+- mettre à jour `docs/SCHEMA.md` si le schéma DB change ;
 - mettre à jour les headers `@komerce-arch` / `@komerce-arch-lite` concernés ;
 - régénérer `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` si la cartographie change ;
 - ne pas ajouter de nouveau document hors index sans l'ajouter à `docs/README.md` ;
