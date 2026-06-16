@@ -47,7 +47,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 | Objet | Compte | Note |
 |---|---|---|
-| Tables | 93 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
+| Tables | 94 | Sans compter les tables système (+2 tables SEC-1 : `pickup_print_tokens`, `pickup_reveal_codes`) |
 | Vues | 16 | Préfixe `v_` ou `customs_*` |
 | ENUMs | 14 | Types métier critiques |
 | Index | 264 | Performance + contraintes uniques |
@@ -138,18 +138,19 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (8 tables)
+### 4.4 Paiements et finance (9 tables)
 
 | Table | Rôle |
 |---|---|
 | `cash_collections` | Encaissements cash relais. |
 | `cash_deposits` | Dépôts agents. |
 | `cash_reconciliation` | Réconciliation cash. |
-| `invoices` | Factures / mini-factures. |
-| `refunds` | Remboursements. |
+| `invoices` | Factures / mini-factures. Contrainte UNIQUE(order_id) — une seule facture par commande. |
+| `refunds` | Remboursements. Contraintes UNIQUE(order_id, refund_type) et UNIQUE(stripe_refund_id) pour idempotence ON CONFLICT. |
 | `disputes` | Litiges. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
+| `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`. Migration 014. |
 
 ### 4.5 Paniers et catalogue (7 tables)
 

@@ -19,9 +19,9 @@
     "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 647,
-    "edges": 2803,
-    "dbTables": 107,
+    "graphNodes": 646,
+    "edges": 2802,
+    "dbTables": 106,
     "doctrines": 119,
     "impactAreas": 109,
     "unresolvedCodeEdges": 265
@@ -6771,9 +6771,7 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [
-        "(délégué à services/payment-paypal.js)"
-      ],
+      "dbWrite": [],
       "dbTxn": [],
       "doctrine": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
@@ -13551,11 +13549,6 @@
       "id": "db:parcel_events",
       "type": "db-table",
       "table": "parcel_events"
-    },
-    {
-      "id": "db:(délégué à services/payment-paypal.js)",
-      "type": "db-table",
-      "table": "(délégué à services/payment-paypal.js)"
     },
     {
       "id": "db:stripe_events_processed",
@@ -23617,12 +23610,6 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
-    },
-    {
-      "from": "routes/payments-paypal.js",
-      "to": "db:(délégué à services/payment-paypal.js)",
-      "type": "db-write",
-      "label": "(délégué à services/payment-paypal.js)"
     },
     {
       "from": "routes/payments-paypal.js",
@@ -38096,9 +38083,7 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [
-        "(délégué à services/payment-paypal.js)"
-      ],
+      "dbWrite": [],
       "doctrines": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
       ],
@@ -38108,7 +38093,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:(délégué à services/payment-paypal.js)",
         "db:orders",
         "doctrine:route = auth + ownership + validate + appel service + réponse HTTP",
         "impact:checkout",

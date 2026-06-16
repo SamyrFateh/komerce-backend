@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict gSpcFO49cEqp6bbCOdwQ3H5Koho0MtxCePbmBeVCsugvithqPaEwKKctOht4gxp
+\restrict LbbrCFDTe439bkbIvznUfj64D0SOxxkr3gUaN4l4aujgxsVDuIkLbYPtcEnmcFb
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -2627,6 +2627,18 @@ COMMENT ON TABLE public.pickup_print_tokens IS 'Tokens Ã©phÃ©mÃ¨res (TTL 2
 
 
 --
+-- Name: pickup_proof_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.pickup_proof_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: pickup_reveal_codes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3129,6 +3141,18 @@ CREATE TABLE public.recipients (
     is_default boolean DEFAULT false NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+
+--
+-- Name: refund_receipt_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.refund_receipt_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -3768,6 +3792,31 @@ CREATE VIEW public.suppliers_stats AS
 
 
 --
+-- Name: transaction_documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.transaction_documents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    document_type text NOT NULL,
+    subject_type text NOT NULL,
+    subject_id uuid NOT NULL,
+    order_id uuid,
+    refund_id uuid,
+    reference text NOT NULL,
+    status text DEFAULT 'generated'::text NOT NULL,
+    file_url text,
+    file_storage_key text,
+    issued_at timestamp with time zone DEFAULT now() NOT NULL,
+    issued_by uuid,
+    metadata jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT transaction_documents_status_check CHECK ((status = ANY (ARRAY['generated'::text, 'delivered'::text, 'error'::text]))),
+    CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text])))
+);
+
+
+--
 -- Name: unsold_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4229,6 +4278,18 @@ CREATE TABLE public.wallet_credit_lots (
     CONSTRAINT wallet_credit_lots_remaining_kmf_check CHECK ((remaining_kmf >= 0)),
     CONSTRAINT wallet_credit_lots_status_check CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'used'::character varying, 'expired'::character varying, 'reversed'::character varying])::text[])))
 );
+
+
+--
+-- Name: wallet_receipt_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.wallet_receipt_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -4726,6 +4787,14 @@ ALTER TABLE ONLY public.invoices
 
 
 --
+-- Name: invoices invoices_order_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.invoices
+    ADD CONSTRAINT invoices_order_id_unique UNIQUE (order_id);
+
+
+--
 -- Name: invoices invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5070,11 +5139,27 @@ ALTER TABLE ONLY public.recipients
 
 
 --
+-- Name: refunds refunds_order_refund_type_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refunds
+    ADD CONSTRAINT refunds_order_refund_type_unique UNIQUE (order_id, refund_type);
+
+
+--
 -- Name: refunds refunds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.refunds
     ADD CONSTRAINT refunds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: refunds refunds_stripe_refund_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refunds
+    ADD CONSTRAINT refunds_stripe_refund_id_unique UNIQUE (stripe_refund_id);
 
 
 --
@@ -5283,6 +5368,22 @@ ALTER TABLE ONLY public.supplier_catalog_imports
 
 ALTER TABLE ONLY public.suppliers
     ADD CONSTRAINT suppliers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transaction_documents transaction_documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transaction_documents transaction_documents_subject_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_subject_unique UNIQUE (document_type, subject_type, subject_id);
 
 
 --
@@ -7314,6 +7415,34 @@ CREATE INDEX idx_suppliers_active ON public.suppliers USING btree (id) WHERE (de
 
 
 --
+-- Name: idx_txdoc_issued; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_txdoc_issued ON public.transaction_documents USING btree (issued_at DESC);
+
+
+--
+-- Name: idx_txdoc_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_txdoc_order ON public.transaction_documents USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: idx_txdoc_refund; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_txdoc_refund ON public.transaction_documents USING btree (refund_id) WHERE (refund_id IS NOT NULL);
+
+
+--
+-- Name: idx_txdoc_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_txdoc_type ON public.transaction_documents USING btree (document_type);
+
+
+--
 -- Name: idx_unsold_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8830,6 +8959,30 @@ ALTER TABLE ONLY public.supplier_catalog_imports
 
 
 --
+-- Name: transaction_documents transaction_documents_issued_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_issued_by_fkey FOREIGN KEY (issued_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: transaction_documents transaction_documents_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE SET NULL;
+
+
+--
+-- Name: transaction_documents transaction_documents_refund_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transaction_documents
+    ADD CONSTRAINT transaction_documents_refund_id_fkey FOREIGN KEY (refund_id) REFERENCES public.refunds(id) ON DELETE SET NULL;
+
+
+--
 -- Name: unsold_items unsold_items_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8921,5 +9074,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict gSpcFO49cEqp6bbCOdwQ3H5Koho0MtxCePbmBeVCsugvithqPaEwKKctOht4gxp
+\unrestrict LbbrCFDTe439bkbIvznUfj64D0SOxxkr3gUaN4l4aujgxsVDuIkLbYPtcEnmcFb
 
