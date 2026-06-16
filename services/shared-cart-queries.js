@@ -8,8 +8,8 @@
  * @outputs       shared_cart_records, contribution_records, participant_records
  * @depends       db.js
  * @used-by       routes/shared-cart.js, shared-cart-engine.js, shared-cart-services
- * @db-read       finance_config, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_log, users
- * @db-write      shared_cart_contributions, shared_cart_events, shared_carts, stripe_events_log
+ * @db-read       finance_config, shared_cart_contributions, shared_cart_estimations, shared_cart_events, shared_cart_items, shared_carts, stripe_events_processed, users
+ * @db-write      shared_cart_contributions, shared_cart_events, shared_carts, stripe_events_processed
  * @db-txn        centralized_lookup_no_mutation
  * @doctrine      backend_source_verite, lookup_centralise, token_public_controle
  * @impact-areas  shared-cart, participant-flow, creator-flow, admin-debug, crons
@@ -54,7 +54,7 @@ async function getFxKmfToEur() {
  */
 async function isStripeEventProcessed(event) {
   const { rows } = await db.query(
-    `SELECT id FROM stripe_events_log
+    `SELECT stripe_event_id FROM stripe_events_processed
       WHERE stripe_event_id = $1 AND event_type = $2`,
     [event.id, event.type]
   );
@@ -68,7 +68,7 @@ async function isStripeEventProcessed(event) {
  */
 async function markStripeEventProcessed(event, payloadSummary) {
   await db.query(
-    `INSERT INTO stripe_events_log (stripe_event_id, event_type, payload_summary)
+    `INSERT INTO stripe_events_processed (stripe_event_id, event_type, payload_summary)
        VALUES ($1, $2, $3)
        ON CONFLICT (stripe_event_id) DO NOTHING`,
     [event.id, event.type, payloadSummary]
