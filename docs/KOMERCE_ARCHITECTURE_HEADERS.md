@@ -4,6 +4,19 @@
 
 It does not replace product doctrine. It tells humans and AI where doctrine lives in code, what a file expects, what it produces, what it depends on, which database surfaces it touches, and what can break if it changes.
 
+## Core Rule
+
+Every source file must be represented in the architecture map.
+
+A file can be represented in one of three ways:
+
+1. Full node: the file has a complete `@komerce-arch` header.
+2. Aggregated node: the file is explicitly attached to a parent/header owner.
+3. Orphan/debt: the file is not yet understood and must be resolved before structural edits.
+
+No structurally relevant file should remain silent.
+If a file has no utility, it should be removed or merged. If it has utility, it should be mapped.
+
 ## Official Header
 
 ```js
@@ -26,6 +39,30 @@ It does not replace product doctrine. It tells humans and AI where doctrine live
  */
 ```
 
+## Lightweight Aggregation Header
+
+Use this for tiny files, pure constants, simple render helpers, narrow adapters, tests that only support a mapped owner, or files that should not become first-class architecture nodes.
+
+```js
+/**
+ * @komerce-arch-lite
+ * @role          product-card-render-helper
+ * @domain        catalog
+ * @layer         ui-renderer
+ * @owner         public/boutique/js/b-catalog.js
+ * @purpose       renders product card HTML for catalog surfaces
+ * @impact-areas  product-grid, modal-entry
+ * @version       2026-06
+ */
+```
+
+Rules:
+
+- Use `@komerce-arch` for structural nodes.
+- Use `@komerce-arch-lite` for files whose impact is fully owned by another node.
+- `@owner` is mandatory for lite headers.
+- If no clear owner exists, the file is not lite; give it a full header or mark it as architecture debt.
+
 ## Database Fields
 
 Database fields are optional, but mandatory for high/critical backend files that touch persistent state.
@@ -44,31 +81,33 @@ Rules:
 
 ## Rules
 
-- Keep headers short: 10 to 17 lines when DB fields are needed.
+- Full headers stay short: 10 to 17 lines when DB fields are needed.
+- Lite headers stay very short: 6 to 8 lines.
 - Describe contracts, role, doctrine and impact, not implementation details.
 - `@depends` lists verified technical or business dependencies.
 - `@used-by` lists significant consumers. Use `@unknown` if not verified.
 - `@doctrine` lists invariants that must not be broken.
 - `@impact-areas` lists flows to verify before editing.
 - `@criticality` is one of `low`, `medium`, `high`, `critical`.
-- Trivial helpers, simple tests, config files and migrations do not need full headers.
+- Tests, config files and migrations can be aggregated, but should not be invisible when they encode architecture or doctrine.
 
 ## Mandatory AI Workflow
 
 Before modifying Komerce code:
 
-1. Read `docs/KOMERCE_ARCHITECTURE_MAP.md` or the machine-readable map.
+1. Read `docs/komerce-arch-header-graph.json`.
 2. Identify target files.
-3. List related files through `depends`, `used-by` and `impact-areas`.
-4. List relevant DB reads, DB writes and transaction constraints.
-5. List relevant doctrines.
-6. Announce the intervention map.
-7. Edit only after that.
+3. Locate the target in `interventionIndex` or through its lite `@owner`.
+4. List related files through `depends`, `used-by`, `owner`, `db-read`, `db-write` and `impact-areas`.
+5. List relevant DB reads, DB writes and transaction constraints.
+6. List relevant doctrines.
+7. Announce the intervention map.
+8. Edit only after that.
 
 ## Initial Domains
 
-`bootstrap`, `shared-cart`, `checkout`, `payment`, `auth`, `notification`, `economic-engine`, `catalog`, `boutique`, `order`, `inventory`, `dashboard`, `pricing`, `sourcing`, `wallet`, `tracking`, `recommendations`.
+`bootstrap`, `shared-cart`, `checkout`, `payment`, `auth`, `notification`, `economic-engine`, `catalog`, `boutique`, `order`, `inventory`, `dashboard`, `pricing`, `sourcing`, `wallet`, `tracking`, `recommendations`, `test`, `config`, `migration`.
 
 ## Initial Layers
 
-`entrypoint`, `route`, `service`, `machine`, `policy`, `cron`, `data-service`, `external-adapter`, `api-client`, `ui-page`, `ui-component`, `ui-state`, `ui-layout`, `view-model`, `schema`, `catalog-data`, `ux-policy`, `script`.
+`entrypoint`, `route`, `service`, `machine`, `policy`, `cron`, `data-service`, `external-adapter`, `api-client`, `ui-page`, `ui-component`, `ui-state`, `ui-layout`, `ui-renderer`, `view-model`, `schema`, `catalog-data`, `ux-policy`, `script`, `test`, `config`, `migration`.
