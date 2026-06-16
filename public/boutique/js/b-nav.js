@@ -7,7 +7,7 @@
  * @inputs        tab_selection, dom_state, group_context
  * @outputs       active_view, cart_drawer, group_view, relais_preload
  * @depends       b-store.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-group-view.js, b-pager.js
- * @used-by       b-boutique.js
+ * @used-by       boutique.js
  * @doctrine      navigation_sans_friction, participant_peut_verifier, mobile_desktop_coherence
  * @impact-areas  boutique-navigation, group-view, cart, tracking, checkout
  * @version       2026-06

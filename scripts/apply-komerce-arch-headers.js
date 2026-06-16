@@ -187,7 +187,7 @@ const HEADERS = {
  * @inputs        cart_state, shared_cart_context, product_actions, viewport
  * @outputs       cart_drawer, side_cart, quantity_changes, shared_cart_item_updates
  * @depends       b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, routes/shared-cart.js
- * @used-by       b-boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
+ * @used-by       boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
  * @doctrine      panier_ouvert_ferme, participant_lecture_seule, side_cart_non_intrusif, modal_produit_sans_chevauchement
  * @impact-areas  checkout-entry, side-cart, shared-cart-editing, participant-flow, responsive-layout
  * @version       2026-06
@@ -202,7 +202,7 @@ const HEADERS = {
  * @inputs        cart_state, identity, phone, relais, payment_mode
  * @outputs       order_creation, stripe_payment_intent, checkout_modal_state
  * @depends       b-store.js, b-cart-core.js, b-cart.js, b-identity.js, b-checkout-render.js, b-phone.js, routes/orders.js, routes/payments.js
- * @used-by       b-boutique.js, b-nav.js, b-share-cart.js
+ * @used-by       boutique.js, b-nav.js, b-share-cart.js
  * @doctrine      paiement_seul_acte_engageant, otp_une_fois, checkout_sans_friction
  * @impact-areas  checkout, payments, otp, order-creation, cart, shared-cart
  * @version       2026-06
@@ -232,7 +232,7 @@ const HEADERS = {
  * @inputs        products, active_category, active_subcategory, search, pagination
  * @outputs       product_grid, home_sections, category_state
  * @depends       b-store.js, b-subcat.js, b-pager.js, b-modal.js, shop-schema.js, render/render-product-card.js, render/render-home-sections.js, product-store.js
- * @used-by       b-boutique.js, b-desktop-sidebar.js, b-subcat.js, b-nav.js
+ * @used-by       boutique.js, b-desktop-sidebar.js, b-subcat.js, b-nav.js
  * @doctrine      boutique_canal_decouverte, categorie_souscategorie_switch_fluide, navigation_sans_friction
  * @impact-areas  product-discovery, category-navigation, modal-entry, side-cart-layout
  * @version       2026-06
@@ -247,7 +247,7 @@ const HEADERS = {
  * @inputs        active_category, subcategory_chips, product_list, viewport
  * @outputs       subcategory_rail, filtered_grid, modal_product_entry
  * @depends       b-store.js, shop-schema.js, b-pager.js, b-catalog.js, b-modal.js, b-cart.js, b-scroll-owner.js
- * @used-by       b-boutique.js, b-catalog.js
+ * @used-by       boutique.js, b-catalog.js
  * @doctrine      categorie_souscategorie_switch_fluide, navigation_sans_friction, mobile_desktop_coherence
  * @impact-areas  category-navigation, product-grid, header-position, responsive-layout
  * @version       2026-06
@@ -262,7 +262,7 @@ const HEADERS = {
  * @inputs        cart_state, phone_identity, share_mode, delivery_date_options
  * @outputs       shared_cart_link, clear_local_cart_signal, group_view_transition
  * @depends       b-store.js, b-cart-core.js, b-cart.js, b-group-view.js, b-group-banner.js, b-phone.js, b-checkout.js, b-identity.js
- * @used-by       b-boutique.js, b-modal-approche-c-hybrid.js
+ * @used-by       boutique.js, b-modal-approche-c-hybrid.js
  * @doctrine      partager_geste_natif, panier_ouvert_ferme, paiement_seul_acte_engageant, boutique_canal_decouverte
  * @impact-areas  shared-cart-creation, checkout, participant-flow, creator-flow, local-cart
  * @version       2026-06
@@ -277,7 +277,7 @@ const HEADERS = {
  * @inputs        tab_selection, dom_state, group_context
  * @outputs       active_view, cart_drawer, group_view, relais_preload
  * @depends       b-store.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-group-view.js, b-pager.js
- * @used-by       b-boutique.js
+ * @used-by       boutique.js
  * @doctrine      navigation_sans_friction, participant_peut_verifier, mobile_desktop_coherence
  * @impact-areas  boutique-navigation, group-view, cart, tracking, checkout
  * @version       2026-06

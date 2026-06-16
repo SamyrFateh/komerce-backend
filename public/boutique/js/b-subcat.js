@@ -7,7 +7,7 @@
  * @inputs        active_category, subcategory_chips, product_list, viewport
  * @outputs       subcategory_rail, filtered_grid, modal_product_entry
  * @depends       b-store.js, shop-schema.js, b-pager.js, b-catalog.js, b-modal.js, b-cart.js, b-scroll-owner.js
- * @used-by       b-boutique.js, b-catalog.js
+ * @used-by       boutique.js, b-catalog.js
  * @doctrine      categorie_souscategorie_switch_fluide, navigation_sans_friction, mobile_desktop_coherence
  * @impact-areas  category-navigation, product-grid, header-position, responsive-layout
  * @version       2026-06

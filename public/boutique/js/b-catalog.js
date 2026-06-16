@@ -7,7 +7,7 @@
  * @inputs        products, active_category, active_subcategory, search, pagination
  * @outputs       product_grid, home_sections, category_state
  * @depends       b-store.js, b-subcat.js, b-pager.js, b-modal.js, shop-schema.js, render/render-product-card.js, render/render-home-sections.js, product-store.js
- * @used-by       b-boutique.js, b-desktop-sidebar.js, b-subcat.js, b-nav.js
+ * @used-by       boutique.js, b-desktop-sidebar.js, b-subcat.js, b-nav.js
  * @doctrine      boutique_canal_decouverte, categorie_souscategorie_switch_fluide, navigation_sans_friction
  * @impact-areas  product-discovery, category-navigation, modal-entry, side-cart-layout
  * @version       2026-06

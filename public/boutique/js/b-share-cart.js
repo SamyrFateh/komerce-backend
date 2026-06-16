@@ -7,7 +7,7 @@
  * @inputs        cart_state, phone_identity, share_mode, delivery_date_options
  * @outputs       shared_cart_link, clear_local_cart_signal, group_view_transition
  * @depends       b-store.js, b-cart-core.js, b-cart.js, b-group-view.js, b-group-banner.js, b-phone.js, b-checkout.js, b-identity.js
- * @used-by       b-boutique.js, b-modal-approche-c-hybrid.js
+ * @used-by       boutique.js, b-modal-approche-c-hybrid.js
  * @doctrine      partager_geste_natif, panier_ouvert_ferme, paiement_seul_acte_engageant, boutique_canal_decouverte
  * @impact-areas  shared-cart-creation, checkout, participant-flow, creator-flow, local-cart
  * @version       2026-06

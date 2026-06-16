@@ -7,7 +7,7 @@
  * @inputs        cart_state, shared_cart_context, product_actions, viewport
  * @outputs       cart_drawer, side_cart, quantity_changes, shared_cart_item_updates
  * @depends       b-store.js, b-cart-core.js, b-catalog.js, b-scroll-owner.js, shop-schema.js, routes/shared-cart.js
- * @used-by       b-boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
+ * @used-by       boutique.js, b-checkout.js, b-modal-core.js, b-nav.js, b-share-cart.js
  * @doctrine      panier_ouvert_ferme, participant_lecture_seule, side_cart_non_intrusif, modal_produit_sans_chevauchement
  * @impact-areas  checkout-entry, side-cart, shared-cart-editing, participant-flow, responsive-layout
  * @version       2026-06
