@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-15)
+   KOMERCE — base.css (2026-06-16)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -2528,9 +2528,12 @@ body:has(#k-page-scroll.k-pager-active) {
     z-index: 3;
   }
 
-  /* ── Réinitialise le sticky margin ── */
+  /* ── Sticky bar hors du hero-fixed-wrap (fix overflow:clip) ──
+     La barre est maintenant sibling du wrap, plus enfant.
+     top = header premium (72px) au lieu de 68px base. */
   html.k-home-premium-v1 .k-hero-cats-sticky {
     margin-top: 0;
+    top: 72px; /* header premium h = 72px (règle ci-dessous dans CORRECTIONS) */
   }
 }
 /* ══ FIN DIRECTION A DESKTOP SPLIT ════════════════════════════ */

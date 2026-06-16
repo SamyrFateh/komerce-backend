@@ -70,7 +70,10 @@ if('serviceWorker' in navigator){
 <!-- comps   = categories + products + modal + cart + interactions + hero-cart-proxy -->
 <!-- desktop = boutique-desktop -->
 <!-- event   = chargé sur toutes les pages pour l'instant (à isoler sur /event/*) -->
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=85">
+<script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
+(function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
+</script>
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=86">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=111">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
 <link rel="stylesheet" href="/boutique/css/dist/event.css?v=21">
@@ -232,6 +235,7 @@ if('serviceWorker' in navigator){
 
 <!-- ═══ SENTINEL (invisible marker for IntersectionObserver) ═══ -->
 <div id="k-bar-sentinel"></div>
+</div><!-- /k-hero-fixed-wrap — fermé ici pour libérer le sticky du overflow:clip premium -->
 
 <!-- ═══ SLOGAN + PILLS + CATÉGORIES (sticks on scroll) ═══ -->
 <div class="k-hero-cats-sticky" id="k-sticky-bar">
@@ -311,7 +315,6 @@ if('serviceWorker' in navigator){
   <!-- ═══ SOUS-CATÉGORIES ═══ -->
   <div id="k-subcats-wrap"></div>
 </div><!-- /k-hero-cats-sticky -->
-</div><!-- /k-hero-fixed-wrap -->
 <div id="k-bar-spacer"></div>
 
 <div id="k-page-scroll">
