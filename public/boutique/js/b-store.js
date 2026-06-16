@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-shared-state
+ * @domain        boutique
+ * @layer         state
+ * @criticality   critical
+ * @inputs        dom_refs, persisted_cart, products, session_context
+ * @outputs       shared_state, dom_registry, constants, scroll_context
+ * @depends       localStorage, sessionStorage, DOM
+ * @used-by       all-boutique-js-modules
+ * @doctrine      state_partage_explicite, panier_local_source_unique, dom_refs_centralisees
+ * @impact-areas  all-boutique, cart, checkout, catalog, modal, shared-cart, tracking
+ * @version       2026-06
+ */
+
+/**
  * @module b-store
  * @brief Source de vérité unique pour l'état applicatif et les constantes.
  *

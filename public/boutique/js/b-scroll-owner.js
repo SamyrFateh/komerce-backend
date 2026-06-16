@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-scroll-owner
+ * @domain        boutique
+ * @layer         ui-infrastructure
+ * @criticality   high
+ * @inputs        viewport, page_scroll, modal_state, desktop_state
+ * @outputs       scroll_positions, ownership_guards, layout_resets
+ * @depends       DOM
+ * @used-by       b-catalog.js, b-subcat.js, b-nav.js, b-cart.js, modal-modules, desktop-enhancers
+ * @doctrine      scroll_owner_unique, mobile_desktop_coherence, modal_produit_sans_chevauchement
+ * @impact-areas  responsive-layout, modal, category-navigation, side-cart-layout
+ * @version       2026-06
+ */
+
+/**
  * b-scroll-owner.js — Source de vérité du scroll boutique
  *
  * Desktop:

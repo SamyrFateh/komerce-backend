@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-home-navigation-controller
+ * @domain        catalog
+ * @layer         controller
+ * @criticality   high
+ * @inputs        category_clicks, chip_state, viewport, render_callbacks
+ * @outputs       active_category, centered_chip, subcategory_rail, home_refresh
+ * @depends       b-store.js, shop-schema.js
+ * @used-by       b-catalog.js, b-catalog-desktop-enhancers.js
+ * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, desktop_mobile_coherence
+ * @impact-areas  home-navigation, category-rail, product-discovery, desktop-catalog
+ * @version       2026-06
+ */
+
+/**
  * @component Boutique / Home Controller
  * @owner home-controller.js
  *

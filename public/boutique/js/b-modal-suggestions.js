@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          product-modal-suggestions
+ * @domain        recommendations
+ * @layer         ui-component
+ * @criticality   high
+ * @inputs        current_product, catalog_state, navigation_context
+ * @outputs       suggestion_rail, related_products, discovery_paths
+ * @depends       b-store.js, b-utils.js, shop-schema.js
+ * @used-by       b-modal-core.js
+ * @doctrine      suggestions_decouverte_non_intrusives, boutique_canal_decouverte, no_hardcoded_taxonomy
+ * @impact-areas  product-discovery, modal, personalization, catalog-navigation
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-suggestions
  * @brief Rail de suggestions de la fiche produit — extrait de b-modal.js (ARCH-2, PR2).
  *

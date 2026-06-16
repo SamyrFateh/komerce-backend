@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          floating-cart-pill
+ * @domain        boutique
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        cart_state, scroll_state, viewport
+ * @outputs       floating_cart_cta, cart_feedback, quick_checkout_entry
+ * @depends       b-bus.js, b-cart-core.js, b-scroll-owner.js, b-store.js, b-utils.js
+ * @used-by       boutique.js
+ * @doctrine      panier_visible_sans_friction, side_cart_non_intrusif, checkout_entry_visible
+ * @impact-areas  cart, checkout-entry, mobile-layout, desktop-layout
+ * @version       2026-06
+ */
+
+/**
  * @module b-cart-pill
  * @brief Pill flottante & déplaçable affichant le résumé du panier (catalogue uniquement).
  *

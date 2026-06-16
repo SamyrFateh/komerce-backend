@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          hybrid-product-modal-flow
+ * @domain        boutique
+ * @layer         ui-experiment
+ * @criticality   medium
+ * @inputs        modal_context, product_state, cart_actions
+ * @outputs       hybrid_modal_actions, share_entry, cart_entry
+ * @depends       b-cart.js, b-share-cart.js, b-modal-core.js
+ * @used-by       modal-surfaces
+ * @doctrine      modal_produit_sans_chevauchement, partager_geste_natif, checkout_sans_friction
+ * @impact-areas  product-modal, cart, shared-cart-creation, checkout-entry
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-approche-c-hybrid
  * @brief Approche C hybride pour la PDP desktop Komerce.
  *

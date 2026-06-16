@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-status-banner
+ * @domain        shared-cart
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        shared_cart_state, expiry, contribution_state
+ * @outputs       banner_visibility, banner_content, group_shortcut
+ * @depends       b-store.js, b-utils.js
+ * @used-by       b-share-cart.js, b-group-view.js, boutique.js
+ * @doctrine      suivi_panier_visible, panier_ouvert_ferme, participant_peut_verifier
+ * @impact-areas  shared-cart, participant-flow, creator-flow, navigation
+ * @version       2026-06
+ */
+
+/**
  * @module b-group-banner
  * @brief Bannière permanente — rappel panier groupe en cours.
  *

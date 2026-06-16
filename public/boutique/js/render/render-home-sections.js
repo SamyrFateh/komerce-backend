@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          home-sections-renderer
+ * @domain        catalog
+ * @layer         ui-renderer
+ * @criticality   medium
+ * @inputs        product_sections, category_order, render_card_callback
+ * @outputs       home_section_html, category_blocks, see_all_actions
+ * @depends       shop-schema.js, render/render-product-card.js
+ * @used-by       b-catalog.js
+ * @doctrine      boutique_canal_decouverte, rendu_sans_logique_metier, taxonomy_source_unique
+ * @impact-areas  home, catalog, product-grid, category-navigation
+ * @version       2026-06
+ */
+
+/**
  * @module render-home-sections
  * @brief Renderer unique des sections home Komerce.
  *

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-product-store
+ * @domain        catalog
+ * @layer         state-store
+ * @criticality   high
+ * @inputs        raw_products, cache_state, availability_flags
+ * @outputs       normalized_products, cached_products, promo_products
+ * @depends       localStorage, shop-schema.js
+ * @used-by       b-catalog.js, boutique.js, suggestion-modules
+ * @doctrine      product_source_unique, catalogue_cache_fallback, produit_reference_stable
+ * @impact-areas  catalog, product-discovery, suggestions, offline-fallback
+ * @version       2026-06
+ */
+
+/**
  * @module product-store
  * @brief Source unique des produits normalises de la boutique.
  *

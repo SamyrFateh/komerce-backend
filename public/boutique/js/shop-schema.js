@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-taxonomy-schema
+ * @domain        catalog
+ * @layer         schema
+ * @criticality   high
+ * @inputs        category_keys, db_categories, subcategory_config
+ * @outputs       normalized_categories, section_order, icons, subcategories
+ * @depends       none
+ * @used-by       b-catalog.js, b-subcat.js, b-cart.js, b-desktop-sidebar.js, renderers
+ * @doctrine      taxonomy_source_unique, categories_sans_hardcode_metier, navigation_sans_friction
+ * @impact-areas  catalog, category-navigation, product-grid, admin-category-config
+ * @version       2026-06
+ */
+
+/**
  * @module shop-schema
  * @brief Source de vérité déclarative de la boutique Komerce.
  *

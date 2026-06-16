@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          product-modal-view-model
+ * @domain        boutique
+ * @layer         view-model
+ * @criticality   high
+ * @inputs        product, cart_context, media_context, viewport
+ * @outputs       modal_classes, display_sections, action_visibility
+ * @depends       b-utils.js
+ * @used-by       b-modal-desktop-enhancers.js, b-modal-core.js
+ * @doctrine      fiche_produit_lisible, modal_contract_stable, desktop_premium
+ * @impact-areas  product-modal, layout-contract, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module modal-view-model
  * @component Boutique / Modal ViewModel
  *

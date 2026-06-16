@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-front-api
+ * @domain        shared-cart
+ * @layer         api-client
+ * @criticality   high
+ * @inputs        share_token, contribution_payload, creator_action
+ * @outputs       shared_cart_data, payment_links, action_results
+ * @depends       routes/shared-cart.js, fetch
+ * @used-by       b-group-view.js
+ * @doctrine      backend_source_verite, paiement_seul_acte_engageant, participant_peut_verifier
+ * @impact-areas  shared-cart, participant-flow, creator-flow, checkout, payments
+ * @version       2026-06
+ */
+
+/**
  * @module group/group-api.js
  * @owner group refactor — couche réseau pour les paniers partagés
  *

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-creator-renderer
+ * @domain        shared-cart
+ * @layer         ui-renderer
+ * @criticality   high
+ * @inputs        group_state, creator_permissions, contributions, cart_items
+ * @outputs       creator_actions, articles_panel, progress_view, cart_switcher
+ * @depends       group/group-helpers.js, group/group-state.js, b-utils.js
+ * @used-by       b-group-view.js
+ * @doctrine      createur_decide_gap, estimations_indicatives, participant_lecture_seule
+ * @impact-areas  creator-flow, shared-cart-dashboard, participant-summary, gap-resolution
+ * @version       2026-06
+ */
+
+/**
  * @module group/group-render-creator.js
  * @owner group refactor — rendus HTML stateless du cockpit créateur
  *

@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          collective-workspace-payment
+ * @domain        collective-workspace
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        payment_token, participant_identity, amount
+ * @outputs       payment_attempt, confirmation_state, error_state
+ * @depends       routes/collective-workspaces.js, payment-api
+ * @used-by       public_event_payment_links
+ * @doctrine      paiement_seul_acte_engageant, lien_public_controle
+ * @impact-areas  collective-workspaces, payments, participant-flow
+ * @version       2026-06
+ */
+
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page PAIEMENT CASH (boutique)
 

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          mini-cart-summary
+ * @domain        boutique
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        cart_state, cart_update_events
+ * @outputs       compact_cart_summary, quick_cart_feedback
+ * @depends       b-cart-core.js, b-store.js, b-utils.js
+ * @used-by       boutique.js, cart-surfaces
+ * @doctrine      side_cart_non_intrusif, panier_visible_sans_friction
+ * @impact-areas  cart, side-cart, checkout-entry, responsive-layout
+ * @version       2026-06
+ */
+
+/**
  * @module b-mini-cart
  * @brief Floating mini-cart Komerce — pastille draggable → pill expansible.
  *

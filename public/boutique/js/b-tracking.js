@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          order-tracking-view
+ * @domain        tracking
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        order_reference, phone, otp_code, client_session
+ * @outputs       tracking_view, order_history, timeline, otp_state
+ * @depends       b-phone.js, b-utils.js, b-cart-core.js, routes/otp.js, routes/orders.js
+ * @used-by       b-nav.js, boutique.js
+ * @doctrine      otp_une_fois, suivi_client_simple, reference_commande_lisible
+ * @impact-areas  tracking, auth, orders, participant-flow, customer-support
+ * @version       2026-06
+ */
+
+/**
  * @module b-tracking
  * @brief Suivi commandes uniquement.
  * Les paniers partagés sont gérés dans b-group-view.js (onglet Groupe).

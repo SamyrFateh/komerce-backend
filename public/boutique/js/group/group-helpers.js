@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          shared-cart-front-helpers
+ * @domain        shared-cart
+ * @layer         util-ui
+ * @criticality   medium
+ * @inputs        shared_cart_data, personalized_params, amounts
+ * @outputs       formatted_progress, parsed_params, display_helpers
+ * @depends       b-utils.js
+ * @used-by       b-group-view.js, group-render-creator.js, b-nav.js
+ * @doctrine      estimations_indicatives, montant_lisible, lien_personnalise_lisible
+ * @impact-areas  shared-cart, participant-flow, creator-flow, personalized-links
+ * @version       2026-06
+ */
+
+/**
  * @module group/group-helpers.js
  * @owner group refactor — helpers de calcul pur (aucun effet de bord)
  *

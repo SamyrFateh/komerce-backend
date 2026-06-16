@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          boutique-api-client
+ * @domain        boutique
+ * @layer         api-client
+ * @criticality   high
+ * @inputs        api_requests, credentials, payloads
+ * @outputs       normalized_api_responses, api_errors
+ * @depends       backend_api
+ * @used-by       boutique.js, public/boutique/index.html, feature_modules
+ * @doctrine      api_frontend_unique, credentials_preserved, errors_lisibles
+ * @impact-areas  all-boutique-api, checkout, catalog, tracking, shared-cart
+ * @version       2026-06
+ */
+
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — API Unifiée v1.1
    Couche unique pour tous les écrans (Hub, Pipeline, Relais, Dashboard, Admin)

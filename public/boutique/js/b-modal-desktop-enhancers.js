@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          desktop-product-modal-enhancer
+ * @domain        boutique
+ * @layer         ui-enhancer
+ * @criticality   high
+ * @inputs        modal_state, product_view_model, desktop_viewport, bus_events
+ * @outputs       desktop_modal_layout, contract_classes, enhanced_actions
+ * @depends       b-bus.js, b-catalog.js, b-modal.js, b-scroll-owner.js, view-models/modal-view-model.js
+ * @used-by       boutique.js, b-modal-core.js
+ * @doctrine      modal_produit_sans_chevauchement, desktop_premium, participant_peut_verifier
+ * @impact-areas  modal-desktop, product-discovery, side-cart-layout, responsive-layout
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-desktop-enhancers
  * @brief Enrichissements desktop ≥ 900px de la modal produit.
  *

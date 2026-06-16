@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          mobile-category-pager
+ * @domain        catalog
+ * @layer         ui-state
+ * @criticality   high
+ * @inputs        category_sections, scroll_state, viewport, modal_events
+ * @outputs       horizontal_pager_state, active_chip_sync, section_auto_advance
+ * @depends       b-bus.js, b-scroll-owner.js, b-store.js
+ * @used-by       b-catalog.js, b-subcat.js, b-nav.js
+ * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, mobile_desktop_coherence
+ * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid
+ * @version       2026-06
+ */
+
+/**
  * b-pager.js — Pager horizontal catégories principales mobile
  *
  * Features :

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          product-modal-image-ux
+ * @domain        boutique
+ * @layer         ui-enhancer
+ * @criticality   medium
+ * @inputs        product_images, modal_media_state, pointer_events
+ * @outputs       image_zoom_state, carousel_interactions, media_focus
+ * @depends       b-store.js
+ * @used-by       b-modal-core.js
+ * @doctrine      image_produit_inspectable, modal_produit_sans_chevauchement
+ * @impact-areas  product-modal, media-carousel, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-image-ux
  * @brief Expérience image de la modal produit — compteur 1/N et lightbox mobile.
  *

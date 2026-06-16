@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          collective-workspace-public-view
+ * @domain        collective-workspace
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        public_workspace_token, visitor_context
+ * @outputs       public_workspace_view, participant_actions
+ * @depends       routes/collective-workspaces.js
+ * @used-by       public_event_links
+ * @doctrine      consultation_publique_sans_friction, lien_public_controle
+ * @impact-areas  event-flow, participant-flow, public-sharing
+ * @version       2026-06
+ */
+
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page PUBLIQUE / PARTICIPER (boutique)
    Route : /event/w/:public_token

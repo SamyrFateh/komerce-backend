@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          phone-normalization-ui
+ * @domain        auth
+ * @layer         util-ui
+ * @criticality   high
+ * @inputs        country_code, local_digits, phone_input
+ * @outputs       normalized_phone, e164_phone, validation_state, phone_dom
+ * @depends       none
+ * @used-by       b-checkout.js, b-identity.js, b-tracking.js, b-share-cart.js
+ * @doctrine      phone_normalization, format_local_lisible, otp_une_fois
+ * @impact-areas  otp, checkout, tracking, shared-cart-access, identity
+ * @version       2026-06
+ */
+
+/**
  * @module b-phone
  * @brief Utilitaires téléphone partagés — indicatifs, format, validation, rendu.
  * Source de vérité unique pour tous les champs téléphone du site.

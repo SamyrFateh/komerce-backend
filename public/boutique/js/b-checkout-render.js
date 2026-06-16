@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          checkout-dom-renderer
+ * @domain        checkout
+ * @layer         ui-renderer
+ * @criticality   high
+ * @inputs        order_data, identity, relay_options, payment_state
+ * @outputs       checkout_form_dom, identity_recap, success_dom, confirm_button_state
+ * @depends       b-utils.js
+ * @used-by       b-checkout.js, b-share-cart.js
+ * @doctrine      checkout_sans_friction, otp_une_fois, rendu_sans_logique_metier
+ * @impact-areas  checkout, otp, relais, payment-ui, order-success
+ * @version       2026-06
+ */
+
+/**
  * @module b-checkout-render
  * @brief S3.1 — Fonctions de rendu DOM pures extraites de b-checkout.js
  *

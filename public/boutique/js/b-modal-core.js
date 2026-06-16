@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          product-modal-orchestrator
+ * @domain        boutique
+ * @layer         ui-component
+ * @criticality   high
+ * @inputs        product_id, product_data, cart_state, modal_events
+ * @outputs       product_detail_modal, add_to_cart_path, suggestions_slot, modal_lifecycle
+ * @depends       b-store.js, b-cart.js, b-cart-core.js, b-modal-product.js, b-modal-suggestions.js, b-modal-nav.js, b-modal-cart.js, b-modal-image-ux.js, routes/products.js
+ * @used-by       b-modal.js, b-catalog.js, b-subcat.js, b-cart.js
+ * @doctrine      participant_peut_verifier, boutique_preuve_confiance, modal_produit_sans_chevauchement
+ * @impact-areas  product-discovery, participant-flow, creator-flow, modal-layout, cart, suggestions
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-core
  * @brief Cycle open/close, state, overlay, body-lock, historique, setupModal
  *        — extrait de b-modal.js (ARCH-2, PR5 — extraction finale).

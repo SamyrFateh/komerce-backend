@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          collective-workspace-manager
+ * @domain        collective-workspace
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        workspace_id, auth_context, workspace_mutations
+ * @outputs       workspace_admin_view, participant_links, management_actions
+ * @depends       routes/collective-workspaces.js
+ * @used-by       event-management-pages
+ * @doctrine      workspace_partage_lisible, lien_public_controle, action_createur_tracee
+ * @impact-areas  collective-workspaces, event-flow, creator-management
+ * @version       2026-06
+ */
+
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page ORGANISATEUR (boutique)
    Route : /event/manage/:creator_token

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          product-modal-content-renderer
+ * @domain        boutique
+ * @layer         ui-renderer
+ * @criticality   high
+ * @inputs        product, variant_state, media_state
+ * @outputs       modal_product_content, carousel_state, product_detail_sections
+ * @depends       b-store.js, b-utils.js, b-bus.js
+ * @used-by       b-modal-core.js
+ * @doctrine      boutique_preuve_confiance, fiche_produit_lisible, modal_produit_sans_chevauchement
+ * @impact-areas  product-modal, product-discovery, participant-verification, media-carousel
+ * @version       2026-06
+ */
+
+/**
  * @module b-modal-product
  * @brief Rendu de la fiche produit dans la modal — extrait de b-modal.js (ARCH-2, PR1).
  *

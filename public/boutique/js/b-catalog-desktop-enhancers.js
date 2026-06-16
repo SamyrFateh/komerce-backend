@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          desktop-catalog-enhancer
+ * @domain        catalog
+ * @layer         ui-enhancer
+ * @criticality   high
+ * @inputs        catalog_state, desktop_viewport, view_events
+ * @outputs       desktop_sidebar_sync, merch_cards, promo_strip, category_focus
+ * @depends       b-bus.js, b-catalog.js, b-scroll-owner.js, controllers/home-controller.js, shop-schema.js
+ * @used-by       boutique.js
+ * @doctrine      boutique_canal_decouverte, desktop_premium, navigation_sans_friction
+ * @impact-areas  desktop-catalog, category-navigation, home-layout, side-cart-layout
+ * @version       2026-06
+ */
+
+/**
  * @module b-catalog-desktop-enhancers
  * @brief Enrichissements desktop ≥ 900px du catalogue et de la home.
  *

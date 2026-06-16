@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          favorites-view
+ * @domain        boutique
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        favorites_state, product_store
+ * @outputs       favorites_grid, favorite_actions
+ * @depends       b-store.js, b-cart-core.js, b-catalog.js
+ * @used-by       b-nav.js, boutique.js
+ * @doctrine      favoris_locaux_simples, boutique_canal_decouverte
+ * @impact-areas  favorites, product-discovery, cart-entry, navigation
+ * @version       2026-06
+ */
+
+/**
  * @module b-favs
  * @brief Favoris — renderFavView, updateFavPromoBadge, shareWishlistWhatsApp
  *

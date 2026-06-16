@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-ui-utilities
+ * @domain        boutique
+ * @layer         util
+ * @criticality   high
+ * @inputs        raw_values, api_paths, product_media, currency_values
+ * @outputs       sanitized_html, formatted_values, optimized_images, api_results
+ * @depends       fetch, Intl
+ * @used-by       all-boutique-js-modules
+ * @doctrine      sanitize_before_render, api_errors_lisibles, prix_lisible
+ * @impact-areas  all-boutique, security, catalog, checkout, modal, tracking
+ * @version       2026-06
+ */
+
+/**
  * @module b-utils
  * @brief Helpers purs : image Cloudinary, prix, format, sanitize, carousel.
  *
