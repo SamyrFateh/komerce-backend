@@ -1,6 +1,6 @@
 # Boutique Komerce — Guide opératoire
 
-> Mis à jour : **2026-06-14**  
+> Mis à jour : **2026-06-16**  
 > Statut : **point d'entrée actif pour toute modification Boutique**.
 
 Ce document répond aux quatre questions pratiques :
@@ -11,6 +11,26 @@ Où modifier ?
 Comment toucher le code ?
 Comment valider ?
 ```
+
+---
+
+## 0. Doctrine graphe obligatoire
+
+Toute modification Boutique doit respecter :
+
+```txt
+docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
+```
+
+Avant de toucher `public/boutique/**`, lire aussi :
+
+```txt
+docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md
+docs/KOMERCE_ARCH_HEADER_GRAPH.md
+docs/komerce-arch-header-graph.json
+```
+
+Règle : aucun nouveau fichier Boutique ne doit être muet. Il doit avoir un header `@komerce-arch` ou être agrégé par `@komerce-arch-lite` avec `@owner`.
 
 ---
 
@@ -52,7 +72,8 @@ Règle :
 
 - modifier les sources `js/**` et `css/**` ;
 - ne jamais éditer `css/dist/**` à la main ;
-- rebuild CSS avec `npm run deploy:css` si une source CSS change.
+- rebuild CSS avec `npm run deploy:css` si une source CSS change ;
+- mettre à jour les headers architecture et le graphe si le contrat fonctionnel change.
 
 ---
 
@@ -88,6 +109,7 @@ Règle :
 
 | Besoin | Lire |
 |---|---|
+| Doctrine graphe obligatoire | `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` |
 | Point d'entrée local + commandes | `public/boutique/README.md` |
 | Pipeline CSS | `docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
 | Ownership composants JS/CSS | `docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
@@ -102,8 +124,10 @@ Les docs sous `public/boutique/docs/**` sont historiques ou générées. Elles n
 ### Cas A — Changement JS simple
 
 1. Identifier le fichier owner dans la carte ci-dessus.
-2. Modifier uniquement ce fichier et ses helpers directs.
-3. Lancer :
+2. Lire son header et son `interventionIndex` dans le graphe.
+3. Modifier uniquement ce fichier et ses helpers directs.
+4. Mettre à jour le header si le contrat change.
+5. Lancer :
 
 ```bash
 cd public/boutique
@@ -111,6 +135,12 @@ npm run check:imports
 npm run check:html
 npm run check:body-classes
 npm run audit:arch
+```
+
+6. Depuis la racine, régénérer le graphe si la cartographie change :
+
+```bash
+node scripts/generate-komerce-arch-graph.js
 ```
 
 ### Cas B — Changement CSS
@@ -126,11 +156,13 @@ npm run audit:arch
 ```
 
 3. Commiter les sources CSS, les bundles `css/dist/**`, `index.html` si le cache-buster change, et `.cache-buster-state.json`.
+4. Si un nouveau fichier CSS source apparaît ou change d'owner, mettre à jour la cartographie.
 
 ### Cas C — Panier partagé Boutique First
 
 Lire d'abord :
 
+- `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`
 - `docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`
 - `docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`
 
@@ -193,6 +225,8 @@ npm run check:all
 Une modification Boutique est finie si :
 
 - le bon owner a été modifié ;
+- le header architecture du fichier touché a été lu et mis à jour si nécessaire ;
+- le graphe a été régénéré si la cartographie change ;
 - aucun ancien doc n'a été utilisé comme vérité active ;
 - les garde-fous applicables passent ;
 - les tests manuels du parcours touché sont faits ;
