@@ -1,6 +1,6 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-06-16T11:27:55.124Z",
+  "generatedAt": "2026-06-16T11:31:25.660Z",
   "source": "@komerce-arch and @komerce-arch-lite headers",
   "scanRoots": [
     "server.js",
@@ -18,9 +18,9 @@
     "filesWithAnyHeaders": 306,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 693,
-    "edges": 2834,
-    "dbTables": 168,
+    "graphNodes": 692,
+    "edges": 2829,
+    "dbTables": 167,
     "doctrines": 112,
     "impactAreas": 107,
     "unresolvedCodeEdges": 244
@@ -3519,7 +3519,6 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "LATERAL",
         "customs_shipments",
         "finance_config",
         "order_item_cost_imputations",
@@ -3527,8 +3526,7 @@
         "order_items",
         "orders",
         "parcels",
-        "products",
-        "relais"
+        "products"
       ],
       "dbWrite": [
         "finance_config"
@@ -5014,9 +5012,7 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [],
-      "dbWrite": [
-        "rule"
-      ],
+      "dbWrite": [],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -8629,10 +8625,10 @@
       ],
       "dbWrite": [
         "OF",
+        "ROLLBACK",
         "collective_payment_sessions",
         "collective_payment_tokens",
         "collective_workspace_contributions",
-        "collective_workspace_events",
         "collective_workspace_items",
         "collective_workspaces"
       ],
@@ -8881,7 +8877,6 @@
       "dbRead": [
         "NOW",
         "client_agg",
-        "grouped",
         "oc",
         "order_items",
         "orders",
@@ -11322,7 +11317,6 @@
       "dbWrite": [
         "OF",
         "alerts",
-        "attempts",
         "orders",
         "scans"
       ],
@@ -11883,7 +11877,6 @@
         "users"
       ],
       "dbWrite": [
-        "SET",
         "signals"
       ],
       "dbTxn": [
@@ -12408,7 +12401,6 @@
         "users"
       ],
       "dbWrite": [
-        "OF",
         "orders",
         "scans"
       ],
@@ -12454,7 +12446,9 @@
         "wallets"
       ],
       "dbWrite": [
+        "SELECT",
         "SET",
+        "UPDATE",
         "orders",
         "wallet_consumptions",
         "wallet_credit_lots",
@@ -13062,11 +13056,6 @@
       "table": "cost_components"
     },
     {
-      "id": "db:LATERAL",
-      "type": "db-table",
-      "table": "LATERAL"
-    },
-    {
       "id": "db:customs_shipments",
       "type": "db-table",
       "table": "customs_shipments"
@@ -13107,11 +13096,6 @@
       "table": "products"
     },
     {
-      "id": "db:relais",
-      "type": "db-table",
-      "table": "relais"
-    },
-    {
       "id": "db:customs_categories",
       "type": "db-table",
       "table": "customs_categories"
@@ -13140,6 +13124,11 @@
       "id": "db:real_by_day",
       "type": "db-table",
       "table": "real_by_day"
+    },
+    {
+      "id": "db:relais",
+      "type": "db-table",
+      "table": "relais"
     },
     {
       "id": "db:signals",
@@ -13382,11 +13371,6 @@
       "table": "cash_deposits"
     },
     {
-      "id": "db:rule",
-      "type": "db-table",
-      "table": "rule"
-    },
-    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -13400,6 +13384,11 @@
       "id": "db:economic_snapshots",
       "type": "db-table",
       "table": "economic_snapshots"
+    },
+    {
+      "id": "db:LATERAL",
+      "type": "db-table",
+      "table": "LATERAL"
     },
     {
       "id": "db:order_comments",
@@ -13657,9 +13646,9 @@
       "table": "OF"
     },
     {
-      "id": "db:collective_workspace_events",
+      "id": "db:ROLLBACK",
       "type": "db-table",
-      "table": "collective_workspace_events"
+      "table": "ROLLBACK"
     },
     {
       "id": "db:customs_shipment_parcels",
@@ -13680,11 +13669,6 @@
       "id": "db:client_agg",
       "type": "db-table",
       "table": "client_agg"
-    },
-    {
-      "id": "db:grouped",
-      "type": "db-table",
-      "table": "grouped"
     },
     {
       "id": "db:oc",
@@ -13842,11 +13826,6 @@
       "table": "weekly_gaps"
     },
     {
-      "id": "db:attempts",
-      "type": "db-table",
-      "table": "attempts"
-    },
-    {
       "id": "db:shared_cart_commitments",
       "type": "db-table",
       "table": "shared_cart_commitments"
@@ -13875,6 +13854,16 @@
       "id": "db:wallet_credit_lots",
       "type": "db-table",
       "table": "wallet_credit_lots"
+    },
+    {
+      "id": "db:SELECT",
+      "type": "db-table",
+      "table": "SELECT"
+    },
+    {
+      "id": "db:UPDATE",
+      "type": "db-table",
+      "table": "UPDATE"
     },
     {
       "id": "doctrine:routes_canoniques",
@@ -19073,12 +19062,6 @@
     },
     {
       "from": "routes/admin-costing.js",
-      "to": "db:LATERAL",
-      "type": "db-read",
-      "label": "LATERAL"
-    },
-    {
-      "from": "routes/admin-costing.js",
       "to": "db:customs_shipments",
       "type": "db-read",
       "label": "customs_shipments"
@@ -19124,12 +19107,6 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
-    },
-    {
-      "from": "routes/admin-costing.js",
-      "to": "db:relais",
-      "type": "db-read",
-      "label": "relais"
     },
     {
       "from": "routes/admin-costing.js",
@@ -21476,12 +21453,6 @@
       "to": "routes/config.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
-    },
-    {
-      "from": "routes/config.js",
-      "to": "db:rule",
-      "type": "db-write",
-      "label": "rule"
     },
     {
       "from": "routes/config.js",
@@ -26639,6 +26610,12 @@
     },
     {
       "from": "services/collective-workspace-engine.js",
+      "to": "db:ROLLBACK",
+      "type": "db-write",
+      "label": "ROLLBACK"
+    },
+    {
+      "from": "services/collective-workspace-engine.js",
       "to": "db:collective_payment_sessions",
       "type": "db-write",
       "label": "collective_payment_sessions"
@@ -26654,12 +26631,6 @@
       "to": "db:collective_workspace_contributions",
       "type": "db-write",
       "label": "collective_workspace_contributions"
-    },
-    {
-      "from": "services/collective-workspace-engine.js",
-      "to": "db:collective_workspace_events",
-      "type": "db-write",
-      "label": "collective_workspace_events"
     },
     {
       "from": "services/collective-workspace-engine.js",
@@ -26948,12 +26919,6 @@
       "to": "db:client_agg",
       "type": "db-read",
       "label": "client_agg"
-    },
-    {
-      "from": "services/dashboard-clients-queries.js",
-      "to": "db:grouped",
-      "type": "db-read",
-      "label": "grouped"
     },
     {
       "from": "services/dashboard-clients-queries.js",
@@ -30275,12 +30240,6 @@
     },
     {
       "from": "services/scan-operations.js",
-      "to": "db:attempts",
-      "type": "db-write",
-      "label": "attempts"
-    },
-    {
-      "from": "services/scan-operations.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -31181,12 +31140,6 @@
     },
     {
       "from": "services/signal-service.js",
-      "to": "db:SET",
-      "type": "db-write",
-      "label": "SET"
-    },
-    {
-      "from": "services/signal-service.js",
       "to": "db:signals",
       "type": "db-write",
       "label": "signals"
@@ -31583,12 +31536,6 @@
     },
     {
       "from": "services/verify-qr-collection.js",
-      "to": "db:OF",
-      "type": "db-write",
-      "label": "OF"
-    },
-    {
-      "from": "services/verify-qr-collection.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -31655,9 +31602,21 @@
     },
     {
       "from": "services/wallet-service.js",
+      "to": "db:SELECT",
+      "type": "db-write",
+      "label": "SELECT"
+    },
+    {
+      "from": "services/wallet-service.js",
       "to": "db:SET",
       "type": "db-write",
       "label": "SET"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "db:UPDATE",
+      "type": "db-write",
+      "label": "UPDATE"
     },
     {
       "from": "services/wallet-service.js",
@@ -35430,7 +35389,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "LATERAL",
         "customs_shipments",
         "finance_config",
         "order_item_cost_imputations",
@@ -35438,8 +35396,7 @@
         "order_items",
         "orders",
         "parcels",
-        "products",
-        "relais"
+        "products"
       ],
       "dbWrite": [
         "finance_config"
@@ -35453,7 +35410,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:LATERAL",
         "db:customs_shipments",
         "db:finance_config",
         "db:order_item_cost_imputations",
@@ -35462,7 +35418,6 @@
         "db:orders",
         "db:parcels",
         "db:products",
-        "db:relais",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:economic-engine",
@@ -36806,9 +36761,7 @@
       ],
       "ownedFiles": [],
       "dbRead": [],
-      "dbWrite": [
-        "rule"
-      ],
+      "dbWrite": [],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -36817,7 +36770,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:rule",
         "doctrine:resolve_before_behavior_change",
         "impact:operations",
         "middleware/auth.js"
@@ -40049,10 +40001,10 @@
       ],
       "dbWrite": [
         "OF",
+        "ROLLBACK",
         "collective_payment_sessions",
         "collective_payment_tokens",
         "collective_workspace_contributions",
-        "collective_workspace_events",
         "collective_workspace_items",
         "collective_workspaces"
       ],
@@ -40064,10 +40016,10 @@
       ],
       "mustCheck": [
         "db:OF",
+        "db:ROLLBACK",
         "db:collective_payment_sessions",
         "db:collective_payment_tokens",
         "db:collective_workspace_contributions",
-        "db:collective_workspace_events",
         "db:collective_workspace_items",
         "db:collective_workspaces",
         "db:legacy",
@@ -40272,7 +40224,6 @@
       "dbRead": [
         "NOW",
         "client_agg",
-        "grouped",
         "oc",
         "order_items",
         "orders",
@@ -40294,7 +40245,6 @@
       "mustCheck": [
         "db:NOW",
         "db:client_agg",
-        "db:grouped",
         "db:oc",
         "db:order_items",
         "db:orders",
@@ -42451,7 +42401,6 @@
       "dbWrite": [
         "OF",
         "alerts",
-        "attempts",
         "orders",
         "scans"
       ],
@@ -42464,7 +42413,6 @@
       "mustCheck": [
         "db:OF",
         "db:alerts",
-        "db:attempts",
         "db:order_items",
         "db:orders",
         "db:recipients",
@@ -42980,7 +42928,6 @@
         "users"
       ],
       "dbWrite": [
-        "SET",
         "signals"
       ],
       "doctrines": [
@@ -42991,7 +42938,6 @@
       ],
       "mustCheck": [
         "db:NOW",
-        "db:SET",
         "db:cash_collections",
         "db:order_items",
         "db:orders",
@@ -43386,7 +43332,6 @@
         "users"
       ],
       "dbWrite": [
-        "OF",
         "orders",
         "scans"
       ],
@@ -43397,7 +43342,6 @@
         "unknown"
       ],
       "mustCheck": [
-        "db:OF",
         "db:orders",
         "db:recipients",
         "db:relais",
@@ -43427,7 +43371,9 @@
         "wallets"
       ],
       "dbWrite": [
+        "SELECT",
         "SET",
+        "UPDATE",
         "orders",
         "wallet_consumptions",
         "wallet_credit_lots",
@@ -43441,7 +43387,9 @@
         "wallet"
       ],
       "mustCheck": [
+        "db:SELECT",
         "db:SET",
+        "db:UPDATE",
         "db:orders",
         "db:users",
         "db:wallet",

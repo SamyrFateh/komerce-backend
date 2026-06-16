@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       order_items, orders, recipients, relais, users
- * @db-write      OF, alerts, attempts, orders, scans
+ * @db-write      OF, alerts, orders, scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

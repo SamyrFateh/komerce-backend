@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       NOW, cash_collections, order_items, orders, parcels, products, users
- * @db-write      SET, signals
+ * @db-write      signals
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

@@ -1,6 +1,6 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:27:55.124Z
+Generated: 2026-06-16T11:31:25.660Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
@@ -12,9 +12,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 306
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 693
-- Edges: 2834
-- DB tables: 168
+- Graph nodes: 692
+- Edges: 2829
+- DB tables: 167
 - Doctrines: 112
 - Impact areas: 107
 - Unresolved code edges: 244
@@ -304,7 +304,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/repair-collective-stock-reservations.js -> alerts
 - WRITE services/repair-ordered-without-purchase-orders.js -> alerts
 - WRITE services/scan-operations.js -> alerts
-- WRITE services/scan-operations.js -> attempts
 - WRITE routes/admin/system.js -> basket_items
 - WRITE routes/admin/users.js -> basket_items
 - WRITE routes/admin/system.js -> baskets
@@ -323,7 +322,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/collective-workspace-engine.js -> collective_payment_tokens
 - WRITE services/collective-stock-reservation-service.js -> collective_stock_reservations
 - WRITE services/collective-workspace-engine.js -> collective_workspace_contributions
-- WRITE services/collective-workspace-engine.js -> collective_workspace_events
 - WRITE services/collective-workspace-engine.js -> collective_workspace_items
 - WRITE services/collective-workspace-engine.js -> collective_workspaces
 - WRITE services/pricing-strategy-service.js -> competitor_prices
@@ -374,7 +372,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin/users.js -> notifications
 - WRITE services/collective-workspace-engine.js -> OF
 - WRITE services/scan-operations.js -> OF
-- WRITE services/verify-qr-collection.js -> OF
 - WRITE routes/hub-dashboard.js -> order_comments
 - WRITE routes/hub-mark-ordered.js -> order_comments
 - WRITE routes/relay-dashboard.js -> order_comments
@@ -413,6 +410,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/create-stripe-order-intent.js -> orders
 - WRITE services/customs-shipment-service.js -> orders
 - WRITE services/inventory-service.js -> orders
+- WRITE services/order-cost-snapshot.js -> orders
+- WRITE services/order-payment-confirmation.js -> orders
+- WRITE services/order-service.js -> orders
 
 ## Unresolved Code Edges
 
