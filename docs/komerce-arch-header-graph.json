@@ -1,6 +1,6 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-06-16T10:52:19.342Z",
+  "generatedAt": "2026-06-16T11:02:52.165Z",
   "source": "@komerce-arch and @komerce-arch-lite headers",
   "scanRoots": [
     "server.js",
