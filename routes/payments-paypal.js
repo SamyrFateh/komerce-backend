@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, services/payment-paypal.js, services/payment-paypal-events.js
- * @used-by       bootstrap/api-routes.js
+ * @depends       @unknown
+ * @used-by       @unknown
  * @db-read       orders, paypal_events_processed
  * @db-write      alerts, order_status_history, orders, paypal_events_processed
  * @db-txn        resolve_before_behavior_change
@@ -33,7 +33,6 @@ const log = require('../utils/logger').child({ module: 'payment-paypal' });
  *   I-09 : amount captured == orders.total_eur (tolérance 0.01 EUR)
  */
 
-const log = require('../utils/logger').child({ module: 'payment-paypal' });
 const { confirmPaymentCycle } = require('./order-payment-confirmation');
 const { markPaypalEventProcessed } = require('./payment-paypal-events');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
