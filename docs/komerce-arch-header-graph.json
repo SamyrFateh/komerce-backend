@@ -20,11 +20,11 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 646,
-    "edges": 2794,
+    "edges": 2798,
     "dbTables": 107,
     "doctrines": 118,
     "impactAreas": 109,
-    "unresolvedCodeEdges": 263
+    "unresolvedCodeEdges": 264
   },
   "byDomain": {
     "bootstrap": 9,
@@ -6759,8 +6759,14 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js",
+        "services/payment-paypal.js",
+        "services/payment-paypal-events.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
       "dbRead": [
         "orders",
         "paypal_events_processed"
@@ -23560,6 +23566,30 @@
     },
     {
       "from": "routes/payments-paypal.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "services/payment-paypal.js",
+      "type": "depends",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "services/payment-paypal-events.js",
+      "type": "depends",
+      "label": "services/payment-paypal-events.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/payments-paypal.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/payments-paypal.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -31791,6 +31821,7 @@
         "routes/parcel-api-v2/scans.js",
         "routes/parcel-label.js",
         "routes/parcels.js",
+        "routes/payments-paypal.js",
         "routes/payments.js",
         "routes/pickup-pay-cash.js",
         "routes/pickup-secret.js",
@@ -38007,8 +38038,14 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/payment-paypal.js",
+        "services/payment-paypal-events.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "orders",
@@ -38028,13 +38065,16 @@
         "checkout"
       ],
       "mustCheck": [
+        "bootstrap/api-routes.js",
         "db:alerts",
         "db:order_status_history",
         "db:orders",
         "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:payment"
+        "impact:payment",
+        "services/payment-paypal-events.js",
+        "services/payment-paypal.js"
       ]
     },
     "routes/payments.js": {
@@ -41063,7 +41103,8 @@
         "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:payment"
+        "impact:payment",
+        "routes/payments-paypal.js"
       ]
     },
     "services/payment-paypal.js": {
@@ -41100,7 +41141,8 @@
         "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:payment"
+        "impact:payment",
+        "routes/payments-paypal.js"
       ]
     },
     "services/payment-stripe.js": {
@@ -44715,6 +44757,12 @@
       "to": "services/*",
       "type": "depends",
       "label": "services/*"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "routes/payments.js",
