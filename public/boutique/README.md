@@ -1,11 +1,32 @@
 # Frontend Boutique Komerce
 
 > Point d'entrée local pour le frontend Boutique.  
-> En repo complet, lire d'abord `../../AGENTS.md` puis revenir ici.
+> En repo complet, lire d'abord `../../AGENTS.md`, `../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`, puis revenir ici.
 
 ---
 
-## 0. Où vit la Boutique ?
+## 0. Doctrine graphe obligatoire
+
+Toute modification fonctionnelle Boutique est soumise à :
+
+```txt
+../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
+```
+
+Règle locale :
+
+- aucun nouveau fichier `js/**`, `css/**`, renderer, controller, helper, API client ou state module ne doit être créé sans header ou owner cartographié ;
+- un fichier autonome reçoit `@komerce-arch` ;
+- un fichier support reçoit `@komerce-arch-lite` avec `@owner` explicite ;
+- tout changement de contrat met à jour `@inputs`, `@outputs`, `@depends`, `@used-by`, `@doctrine`, `@impact-areas` ;
+- tout changement d'appel API ou de flux impactant le backend doit être visible dans le graphe ;
+- après changement structurel, régénérer depuis la racine : `node scripts/generate-komerce-arch-graph.js`.
+
+Un changement Boutique sans cartographie à jour est incomplet.
+
+---
+
+## 1. Où vit la Boutique ?
 
 Le frontend Boutique vit dans :
 
@@ -30,6 +51,7 @@ public/boutique/
 Docs canoniques repo pour la Boutique :
 
 ```txt
+docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
 docs/boutique/BOUTIQUE_CSS_PIPELINE.md
 docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md
 docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md
@@ -39,11 +61,13 @@ Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais ell
 
 ---
 
-## 1. Lecture obligatoire avant modification
+## 2. Lecture obligatoire avant modification
 
 | Situation | Lire |
 |---|---|
-| Repo complet | `../../AGENTS.md`, puis ce README |
+| Repo complet | `../../AGENTS.md`, `../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`, puis ce README |
+| Modification JS fonctionnelle | Header du fichier + `../../docs/komerce-arch-header-graph.json` |
+| Nouveau fichier Boutique | `../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` avant création |
 | Modification CSS | `../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
 | Modification ownership composant | `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
 | Modification modal | `../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` |
@@ -51,7 +75,7 @@ Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais ell
 
 ---
 
-## 2. Invariants Boutique actifs
+## 3. Invariants Boutique actifs
 
 - Le JS gère le comportement, les classes d'état et les appels API.
 - Le CSS gère l'apparence, le layout et le responsive.
@@ -61,11 +85,12 @@ Les docs sous `public/boutique/docs/` restent utiles en contexte local, mais ell
 - Toute modification CSS source doit être suivie de `npm run deploy:css` ou `npm run bundle:css`.
 - Les fichiers `css/dist/*.css` ne se modifient jamais à la main.
 - Un composant = un owner documenté.
+- Un fichier source Boutique = un header complet ou un owner lite dans le graphe.
 - Les seules règles `!important` actives acceptées au 3 juin 2026 sont les guards desktop du drawer mobile dans `boutique-desktop.css`.
 
 ---
 
-## 3. Scripts disponibles
+## 4. Scripts disponibles
 
 Tous les scripts se lancent depuis `public/boutique`.
 
@@ -85,7 +110,7 @@ Tous les scripts se lancent depuis `public/boutique`.
 
 ---
 
-## 4. Pipeline CSS actuel
+## 5. Pipeline CSS actuel
 
 Source de vérité :
 
@@ -115,7 +140,7 @@ event.css      ← tokens + event
 
 ---
 
-## 5. Workflow PR CSS Boutique
+## 6. Workflow PR CSS Boutique
 
 ```bash
 cd public/boutique
@@ -136,11 +161,11 @@ git add public/boutique/css/ public/boutique/index.html public/boutique/.cache-b
 git commit -m "style(boutique): ..."
 ```
 
-Pour une PR Boutique non-CSS, lancer au minimum les garde-fous applicables (`check:html`, `check:imports`, `check:body-classes`, `audit:arch`).
+Pour une PR Boutique non-CSS, lancer au minimum les garde-fous applicables (`check:html`, `check:imports`, `check:body-classes`, `audit:arch`) et vérifier la doctrine graphe si le comportement change.
 
 ---
 
-## 6. Fichiers verrouillés — review obligatoire
+## 7. Fichiers verrouillés — review obligatoire
 
 Modifier ces fichiers sans review explicite est interdit. Ils portent la mécanique mobile/scroll :
 
@@ -151,17 +176,18 @@ Modifier ces fichiers sans review explicite est interdit. Ils portent la mécani
 
 ---
 
-## 7. En cas de doute
+## 8. En cas de doute
 
 | Situation | Action |
 |---|---|
 | Tu modifies du CSS sans savoir le bon owner | Lire `../../docs/boutique/BOUTIQUE_CSS_PIPELINE.md` |
 | Tu touches le DOM / rendu composant | Lire `../../docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md` |
 | Tu touches la modal | Lire `../../docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md` |
+| Tu crées un fichier JS/CSS | Lire `../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` et ajouter header/owner |
 | `audit:arch` plante | Lire le rapport, corriger avant commit |
 | Tu veux ajouter un nouveau CSS source | Ajouter dans `scripts/deploy-css.js`, documenter dans `docs/boutique/BOUTIQUE_CSS_PIPELINE.md`, puis `npm run deploy:css` |
 | Conflit entre docs | `docs/boutique/*` gagne sur `public/boutique/docs/*` sauf décision contraire explicite |
 
 ---
 
-*Ce README est aligné sur l'état du repo au 3 juin 2026 après le sprint de nettoyage CSS/ownership/garde-fous.*
+*Ce README est aligné sur l'état du repo au 16 juin 2026 après mise en place de la doctrine graphe obligatoire.*
