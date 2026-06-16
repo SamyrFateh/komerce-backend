@@ -16,11 +16,30 @@ Lire dans cet ordre :
 
 1. [`AGENTS.md`](./AGENTS.md) — règles obligatoires agent/dev ;
 2. [`docs/README.md`](./docs/README.md) — index actif, docs à lire, archive ;
-3. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-4. [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — doctrine produit active du panier partagé ;
-5. [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — mise en œuvre datée.
+3. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — état de la cartographie architecture ;
+4. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+5. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+6. [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — doctrine produit active du panier partagé ;
+7. [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — mise en œuvre datée.
 
 Tout autre document non listé par `docs/README.md` est historique, contextuel ou subordonné.
+
+---
+
+## Gouvernance architecture obligatoire
+
+Toute création, modification ou suppression de feature fonctionnelle est incomplète tant que la cartographie architecture n'est pas à jour.
+
+Règle obligatoire :
+
+- lire le header `@komerce-arch` ou `@komerce-arch-lite` de chaque fichier touché avant modification ;
+- créer un header pour tout nouveau fichier source ;
+- mettre à jour les champs `@inputs`, `@outputs`, `@depends`, `@used-by`, `@db-read`, `@db-write`, `@db-txn`, `@doctrine`, `@impact-areas` quand le contrat fonctionnel change ;
+- pour une suppression ou fusion, nettoyer les références `@depends`, `@used-by`, `@owner` ;
+- régénérer le graphe avec `node scripts/generate-komerce-arch-graph.js` ;
+- vérifier `files without headers: 0` et `lite headers without owner: 0`.
+
+Un champ incertain doit rester explicitement en `@unknown` ou `resolve_before_behavior_change`; il ne faut pas inventer une cartographie faussement précise.
 
 ---
 
@@ -70,6 +89,8 @@ Une PR doit :
 
 - respecter les invariants listés dans `docs/README.md` et `AGENTS.md` ;
 - mettre à jour le document actif concerné ;
+- mettre à jour la cartographie `@komerce-arch` si le contrat fonctionnel change ;
+- régénérer le graphe architecture après tout ajout, suppression ou changement structurel ;
 - ne pas créer une nouvelle source de vérité sans raison explicite ;
 - laisser les anciens documents en archive ou subordonnés.
 
