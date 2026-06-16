@@ -14,10 +14,24 @@ It should be read with:
 
 ## Rule
 
-Before changing a structurally relevant file, read its `@komerce-arch` header.
-If a high/critical file has no header yet, add the header before changing behavior.
+Before changing a structurally relevant file, read its architecture header.
+If a file has no header or aggregation owner yet, classify it before changing behavior.
 
 The headers are the source of truth. The generated graph is the intervention schema.
+
+## Total Cartography Rule
+
+Every source file must be represented in the graph.
+
+A file has three possible statuses:
+
+1. Full node: complete `@komerce-arch` header.
+2. Lite node: short `@komerce-arch-lite` header attached to an owner.
+3. Orphan/debt: no header or owner yet; must be classified before structural edits.
+
+No useful file should remain invisible.
+If a file has no independent utility, it should be merged into its owner or removed.
+If it has utility, it must be mapped.
 
 ## Living Graph Rule
 
@@ -29,6 +43,8 @@ Source fields:
 - `@domain`
 - `@layer`
 - `@criticality`
+- `@owner`
+- `@purpose`
 - `@depends`
 - `@used-by`
 - `@db-read`
@@ -45,6 +61,7 @@ Generated outputs:
 Maintenance rule:
 
 - update the file header when a file contract changes
+- use `@komerce-arch-lite` for files fully owned by another mapped node
 - regenerate the graph after header changes
 - do not hand-edit the generated graph
 - if DB reads/writes change, update `@db-read`, `@db-write`, `@db-txn` first
@@ -182,6 +199,19 @@ Representative files verified:
 - `routes/orders.js`
 - `services/economic-engine-queries.js`
 
+## Phase 4 — Total Coverage
+
+Next objective: no silent source file.
+
+Priority:
+
+- add full headers to remaining structural `routes/*`, `services/*`, `middleware/*`, `utils/*`
+- add lite headers to small helper/render/test/config files that have a clear owner
+- aggregate tiny boutique modules under their owner node
+- aggregate tests under the doctrine or module they protect
+- aggregate migrations under schema/domain owners only when they encode architecture
+- keep generated graph as the authoritative intervention index
+
 ## Tooling Added
 
 Header application scripts:
@@ -213,19 +243,6 @@ Permanent workflows:
 - `.github/workflows/apply-komerce-arch-headers.yml`
 - `.github/workflows/generate-komerce-arch-graph.yml`
 
-## Next Phase — Remaining Surface
-
-Priority 4 should cover:
-
-- remaining `routes/*` not yet tagged
-- remaining `services/*` not yet tagged
-- `middleware/*`
-- `utils/*`
-- remaining `public/boutique/js/*` small modules
-- CSS ownership docs if desired, but not necessarily file headers
-- migrations only if they carry architectural doctrine; otherwise keep excluded
-- tests only if they encode critical doctrine; otherwise keep excluded
-
 ## Current Position
 
 The critical behavioral spine is now cartographed:
@@ -250,6 +267,7 @@ This gives AI agents a much stronger starting point before intervention:
 - what it emits
 - what it depends on
 - what depends on it
+- which owner owns it if it is aggregated
 - which DB tables it reads/writes
 - which transaction/idempotency constraints matter
 - which doctrines must not be broken
