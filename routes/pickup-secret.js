@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, pickup_print_tokens, pickup_reveal_codes, products, relais, users
- * @db-write      SET, avec, orders, pickup_print_tokens, pickup_reveal_codes
+ * @db-write      SET, orders, pickup_print_tokens, pickup_reveal_codes
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

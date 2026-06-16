@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       carriers, parcels
- * @db-write      carrier, carriers, customs, parcels
+ * @db-write      carriers, parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

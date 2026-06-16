@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       orders, users, wallet, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
- * @db-write      SET, atomique, et, orders, pour, prevents, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write      SET, orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  wallet

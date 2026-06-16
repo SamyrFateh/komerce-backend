@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       purchase_orders
- * @db-write      PO, purchase_orders
+ * @db-write      purchase_orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout

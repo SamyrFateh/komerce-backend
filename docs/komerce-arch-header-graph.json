@@ -1,6 +1,6 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-06-16T11:25:06.898Z",
+  "generatedAt": "2026-06-16T11:27:55.124Z",
   "source": "@komerce-arch and @komerce-arch-lite headers",
   "scanRoots": [
     "server.js",
@@ -18,9 +18,9 @@
     "filesWithAnyHeaders": 306,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 713,
-    "edges": 2857,
-    "dbTables": 188,
+    "graphNodes": 693,
+    "edges": 2834,
+    "dbTables": 168,
     "doctrines": 112,
     "impactAreas": 107,
     "unresolvedCodeEdges": 244
@@ -3856,8 +3856,6 @@
         "users"
       ],
       "dbWrite": [
-        "const",
-        "log",
         "pricing_category_dims",
         "pricing_category_taxes",
         "pricing_matrices_audit"
@@ -4744,9 +4742,7 @@
         "parcels"
       ],
       "dbWrite": [
-        "carrier",
         "carriers",
-        "customs",
         "parcels"
       ],
       "dbTxn": [
@@ -5421,7 +5417,6 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "P2",
         "orders",
         "parcels"
       ],
@@ -5918,7 +5913,6 @@
       ],
       "dbRead": [
         "LATERAL",
-        "business",
         "incidents",
         "invoices",
         "order_items",
@@ -6968,7 +6962,6 @@
       ],
       "dbWrite": [
         "SET",
-        "avec",
         "orders",
         "pickup_print_tokens",
         "pickup_reveal_codes"
@@ -7597,7 +7590,6 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "ct",
         "signals"
       ],
       "dbWrite": [
@@ -8235,7 +8227,6 @@
       "usedBy": [],
       "dbRead": [
         "LATERAL",
-        "existing",
         "order_items",
         "orders",
         "parcel_items",
@@ -8643,10 +8634,7 @@
         "collective_workspace_contributions",
         "collective_workspace_events",
         "collective_workspace_items",
-        "collective_workspaces",
-        "et",
-        "filtre",
-        "pour"
+        "collective_workspaces"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -9288,7 +9276,6 @@
       ],
       "dbWrite": [
         "inventory_items",
-        "order",
         "orders",
         "parcel_items"
       ],
@@ -9325,7 +9312,6 @@
       "depends": [],
       "usedBy": [],
       "dbRead": [
-        "DB",
         "invoices",
         "order_items",
         "orders",
@@ -10918,7 +10904,6 @@
         "purchase_orders"
       ],
       "dbWrite": [
-        "PO",
         "purchase_orders"
       ],
       "dbTxn": [
@@ -10963,9 +10948,7 @@
         "scan_events"
       ],
       "dbWrite": [
-        "direct",
-        "incidents",
-        "orders"
+        "incidents"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -11001,7 +10984,6 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [
-        "completed",
         "refunds"
       ],
       "dbTxn": [
@@ -11902,7 +11884,6 @@
       ],
       "dbWrite": [
         "SET",
-        "a",
         "signals"
       ],
       "dbTxn": [
@@ -12474,11 +12455,7 @@
       ],
       "dbWrite": [
         "SET",
-        "atomique",
-        "et",
         "orders",
-        "pour",
-        "prevents",
         "wallet_consumptions",
         "wallet_credit_lots",
         "wallet_transactions",
@@ -13200,16 +13177,6 @@
       "table": "pricing_category_taxes"
     },
     {
-      "id": "db:const",
-      "type": "db-table",
-      "table": "const"
-    },
-    {
-      "id": "db:log",
-      "type": "db-table",
-      "table": "log"
-    },
-    {
       "id": "db:pricing_matrices_audit",
       "type": "db-table",
       "table": "pricing_matrices_audit"
@@ -13395,16 +13362,6 @@
       "table": "carriers"
     },
     {
-      "id": "db:carrier",
-      "type": "db-table",
-      "table": "carrier"
-    },
-    {
-      "id": "db:customs",
-      "type": "db-table",
-      "table": "customs"
-    },
-    {
       "id": "db:agent_collections",
       "type": "db-table",
       "table": "agent_collections"
@@ -13445,11 +13402,6 @@
       "table": "economic_snapshots"
     },
     {
-      "id": "db:P2",
-      "type": "db-table",
-      "table": "P2"
-    },
-    {
       "id": "db:order_comments",
       "type": "db-table",
       "table": "order_comments"
@@ -13488,11 +13440,6 @@
       "id": "db:notification_log",
       "type": "db-table",
       "table": "notification_log"
-    },
-    {
-      "id": "db:business",
-      "type": "db-table",
-      "table": "business"
     },
     {
       "id": "db:wallet_accounts",
@@ -13570,11 +13517,6 @@
       "table": "pickup_reveal_codes"
     },
     {
-      "id": "db:avec",
-      "type": "db-table",
-      "table": "avec"
-    },
-    {
       "id": "db:cost_benchmarks",
       "type": "db-table",
       "table": "cost_benchmarks"
@@ -13630,11 +13572,6 @@
       "table": "cart_contributions"
     },
     {
-      "id": "db:ct",
-      "type": "db-table",
-      "table": "ct"
-    },
-    {
       "id": "db:sourcing_candidate_events",
       "type": "db-table",
       "table": "sourcing_candidate_events"
@@ -13685,11 +13622,6 @@
       "table": "alerts"
     },
     {
-      "id": "db:existing",
-      "type": "db-table",
-      "table": "existing"
-    },
-    {
       "id": "db:collective_stock_reservations",
       "type": "db-table",
       "table": "collective_stock_reservations"
@@ -13728,21 +13660,6 @@
       "id": "db:collective_workspace_events",
       "type": "db-table",
       "table": "collective_workspace_events"
-    },
-    {
-      "id": "db:et",
-      "type": "db-table",
-      "table": "et"
-    },
-    {
-      "id": "db:filtre",
-      "type": "db-table",
-      "table": "filtre"
-    },
-    {
-      "id": "db:pour",
-      "type": "db-table",
-      "table": "pour"
     },
     {
       "id": "db:customs_shipment_parcels",
@@ -13855,16 +13772,6 @@
       "table": "inventory_items"
     },
     {
-      "id": "db:order",
-      "type": "db-table",
-      "table": "order"
-    },
-    {
-      "id": "db:DB",
-      "type": "db-table",
-      "table": "DB"
-    },
-    {
       "id": "db:notification_templates",
       "type": "db-table",
       "table": "notification_templates"
@@ -13935,21 +13842,6 @@
       "table": "weekly_gaps"
     },
     {
-      "id": "db:PO",
-      "type": "db-table",
-      "table": "PO"
-    },
-    {
-      "id": "db:direct",
-      "type": "db-table",
-      "table": "direct"
-    },
-    {
-      "id": "db:completed",
-      "type": "db-table",
-      "table": "completed"
-    },
-    {
       "id": "db:attempts",
       "type": "db-table",
       "table": "attempts"
@@ -13963,11 +13855,6 @@
       "id": "db:financial_alerts",
       "type": "db-table",
       "table": "financial_alerts"
-    },
-    {
-      "id": "db:a",
-      "type": "db-table",
-      "table": "a"
     },
     {
       "id": "db:simulator",
@@ -13988,16 +13875,6 @@
       "id": "db:wallet_credit_lots",
       "type": "db-table",
       "table": "wallet_credit_lots"
-    },
-    {
-      "id": "db:atomique",
-      "type": "db-table",
-      "table": "atomique"
-    },
-    {
-      "id": "db:prevents",
-      "type": "db-table",
-      "table": "prevents"
     },
     {
       "id": "doctrine:routes_canoniques",
@@ -19712,18 +19589,6 @@
     },
     {
       "from": "routes/admin-pricing-matrices.js",
-      "to": "db:const",
-      "type": "db-write",
-      "label": "const"
-    },
-    {
-      "from": "routes/admin-pricing-matrices.js",
-      "to": "db:log",
-      "type": "db-write",
-      "label": "log"
-    },
-    {
-      "from": "routes/admin-pricing-matrices.js",
       "to": "db:pricing_category_dims",
       "type": "db-write",
       "label": "pricing_category_dims"
@@ -21242,21 +21107,9 @@
     },
     {
       "from": "routes/carriers.js",
-      "to": "db:carrier",
-      "type": "db-write",
-      "label": "carrier"
-    },
-    {
-      "from": "routes/carriers.js",
       "to": "db:carriers",
       "type": "db-write",
       "label": "carriers"
-    },
-    {
-      "from": "routes/carriers.js",
-      "to": "db:customs",
-      "type": "db-write",
-      "label": "customs"
     },
     {
       "from": "routes/carriers.js",
@@ -22148,12 +22001,6 @@
     },
     {
       "from": "routes/health.js",
-      "to": "db:P2",
-      "type": "db-read",
-      "label": "P2"
-    },
-    {
-      "from": "routes/health.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -22799,12 +22646,6 @@
       "to": "db:LATERAL",
       "type": "db-read",
       "label": "LATERAL"
-    },
-    {
-      "from": "routes/ops-api.js",
-      "to": "db:business",
-      "type": "db-read",
-      "label": "business"
     },
     {
       "from": "routes/ops-api.js",
@@ -24566,12 +24407,6 @@
     },
     {
       "from": "routes/pickup-secret.js",
-      "to": "db:avec",
-      "type": "db-write",
-      "label": "avec"
-    },
-    {
-      "from": "routes/pickup-secret.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -25532,12 +25367,6 @@
     },
     {
       "from": "routes/signals.js",
-      "to": "db:ct",
-      "type": "db-read",
-      "label": "ct"
-    },
-    {
-      "from": "routes/signals.js",
       "to": "db:signals",
       "type": "db-read",
       "label": "signals"
@@ -26408,12 +26237,6 @@
     },
     {
       "from": "services/auto-parcel.js",
-      "to": "db:existing",
-      "type": "db-read",
-      "label": "existing"
-    },
-    {
-      "from": "services/auto-parcel.js",
       "to": "db:order_items",
       "type": "db-read",
       "label": "order_items"
@@ -26849,24 +26672,6 @@
       "to": "db:collective_workspaces",
       "type": "db-write",
       "label": "collective_workspaces"
-    },
-    {
-      "from": "services/collective-workspace-engine.js",
-      "to": "db:et",
-      "type": "db-write",
-      "label": "et"
-    },
-    {
-      "from": "services/collective-workspace-engine.js",
-      "to": "db:filtre",
-      "type": "db-write",
-      "label": "filtre"
-    },
-    {
-      "from": "services/collective-workspace-engine.js",
-      "to": "db:pour",
-      "type": "db-write",
-      "label": "pour"
     },
     {
       "from": "services/collective-workspace-engine.js",
@@ -27866,12 +27671,6 @@
     },
     {
       "from": "services/inventory-service.js",
-      "to": "db:order",
-      "type": "db-write",
-      "label": "order"
-    },
-    {
-      "from": "services/inventory-service.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -27893,12 +27692,6 @@
       "to": "impact:inventory",
       "type": "impact",
       "label": "inventory"
-    },
-    {
-      "from": "services/invoice-service.js",
-      "to": "db:DB",
-      "type": "db-read",
-      "label": "DB"
     },
     {
       "from": "services/invoice-service.js",
@@ -29996,12 +29789,6 @@
     },
     {
       "from": "services/receive-purchase-order.js",
-      "to": "db:PO",
-      "type": "db-write",
-      "label": "PO"
-    },
-    {
-      "from": "services/receive-purchase-order.js",
       "to": "db:purchase_orders",
       "type": "db-write",
       "label": "purchase_orders"
@@ -30062,21 +29849,9 @@
     },
     {
       "from": "services/reconciliation-service.js",
-      "to": "db:direct",
-      "type": "db-write",
-      "label": "direct"
-    },
-    {
-      "from": "services/reconciliation-service.js",
       "to": "db:incidents",
       "type": "db-write",
       "label": "incidents"
-    },
-    {
-      "from": "services/reconciliation-service.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
     },
     {
       "from": "services/reconciliation-service.js",
@@ -30089,12 +29864,6 @@
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
-    },
-    {
-      "from": "services/refund-service.js",
-      "to": "db:completed",
-      "type": "db-write",
-      "label": "completed"
     },
     {
       "from": "services/refund-service.js",
@@ -31418,12 +31187,6 @@
     },
     {
       "from": "services/signal-service.js",
-      "to": "db:a",
-      "type": "db-write",
-      "label": "a"
-    },
-    {
-      "from": "services/signal-service.js",
       "to": "db:signals",
       "type": "db-write",
       "label": "signals"
@@ -31898,33 +31661,9 @@
     },
     {
       "from": "services/wallet-service.js",
-      "to": "db:atomique",
-      "type": "db-write",
-      "label": "atomique"
-    },
-    {
-      "from": "services/wallet-service.js",
-      "to": "db:et",
-      "type": "db-write",
-      "label": "et"
-    },
-    {
-      "from": "services/wallet-service.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
-    },
-    {
-      "from": "services/wallet-service.js",
-      "to": "db:pour",
-      "type": "db-write",
-      "label": "pour"
-    },
-    {
-      "from": "services/wallet-service.js",
-      "to": "db:prevents",
-      "type": "db-write",
-      "label": "prevents"
     },
     {
       "from": "services/wallet-service.js",
@@ -36001,8 +35740,6 @@
         "users"
       ],
       "dbWrite": [
-        "const",
-        "log",
         "pricing_category_dims",
         "pricing_category_taxes",
         "pricing_matrices_audit"
@@ -36016,8 +35753,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:const",
-        "db:log",
         "db:pricing_category_dims",
         "db:pricing_category_taxes",
         "db:pricing_matrices_audit",
@@ -36826,9 +36561,7 @@
         "parcels"
       ],
       "dbWrite": [
-        "carrier",
         "carriers",
-        "customs",
         "parcels"
       ],
       "doctrines": [
@@ -36839,9 +36572,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:carrier",
         "db:carriers",
-        "db:customs",
         "db:parcels",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
@@ -37423,7 +37154,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "P2",
         "orders",
         "parcels"
       ],
@@ -37436,7 +37166,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:P2",
         "db:orders",
         "db:parcels",
         "doctrine:resolve_before_behavior_change",
@@ -37858,7 +37587,6 @@
       "ownedFiles": [],
       "dbRead": [
         "LATERAL",
-        "business",
         "incidents",
         "invoices",
         "order_items",
@@ -37882,7 +37610,6 @@
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:LATERAL",
-        "db:business",
         "db:incidents",
         "db:invoices",
         "db:order_items",
@@ -38853,7 +38580,6 @@
       ],
       "dbWrite": [
         "SET",
-        "avec",
         "orders",
         "pickup_print_tokens",
         "pickup_reveal_codes"
@@ -38867,7 +38593,6 @@
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:SET",
-        "db:avec",
         "db:order_items",
         "db:orders",
         "db:pickup_print_tokens",
@@ -39436,7 +39161,6 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "ct",
         "signals"
       ],
       "dbWrite": [
@@ -39450,7 +39174,6 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
-        "db:ct",
         "db:signals",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown",
@@ -40003,7 +39726,6 @@
       "ownedFiles": [],
       "dbRead": [
         "LATERAL",
-        "existing",
         "order_items",
         "orders",
         "parcel_items",
@@ -40023,7 +39745,6 @@
       ],
       "mustCheck": [
         "db:LATERAL",
-        "db:existing",
         "db:order_items",
         "db:orders",
         "db:parcel_items",
@@ -40333,10 +40054,7 @@
         "collective_workspace_contributions",
         "collective_workspace_events",
         "collective_workspace_items",
-        "collective_workspaces",
-        "et",
-        "filtre",
-        "pour"
+        "collective_workspaces"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -40352,10 +40070,7 @@
         "db:collective_workspace_events",
         "db:collective_workspace_items",
         "db:collective_workspaces",
-        "db:et",
-        "db:filtre",
         "db:legacy",
-        "db:pour",
         "db:products",
         "db:relais",
         "doctrine:resolve_before_behavior_change",
@@ -40953,7 +40668,6 @@
       ],
       "dbWrite": [
         "inventory_items",
-        "order",
         "orders",
         "parcel_items"
       ],
@@ -40967,7 +40681,6 @@
         "bootstrap/crons.js",
         "db:AVG",
         "db:inventory_items",
-        "db:order",
         "db:order_items",
         "db:orders",
         "db:parcel_items",
@@ -40989,7 +40702,6 @@
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
-        "DB",
         "invoices",
         "order_items",
         "orders",
@@ -41009,7 +40721,6 @@
         "checkout"
       ],
       "mustCheck": [
-        "db:DB",
         "db:invoices",
         "db:order_items",
         "db:orders",
@@ -42384,7 +42095,6 @@
         "purchase_orders"
       ],
       "dbWrite": [
-        "PO",
         "purchase_orders"
       ],
       "doctrines": [
@@ -42395,7 +42105,6 @@
         "checkout"
       ],
       "mustCheck": [
-        "db:PO",
         "db:purchase_orders",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
@@ -42421,9 +42130,7 @@
         "scan_events"
       ],
       "dbWrite": [
-        "direct",
-        "incidents",
-        "orders"
+        "incidents"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -42432,7 +42139,6 @@
         "unknown"
       ],
       "mustCheck": [
-        "db:direct",
         "db:incidents",
         "db:order_items",
         "db:orders",
@@ -42455,7 +42161,6 @@
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [
-        "completed",
         "refunds"
       ],
       "doctrines": [
@@ -42465,7 +42170,6 @@
         "unknown"
       ],
       "mustCheck": [
-        "db:completed",
         "db:refunds",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown"
@@ -43277,7 +42981,6 @@
       ],
       "dbWrite": [
         "SET",
-        "a",
         "signals"
       ],
       "doctrines": [
@@ -43289,7 +42992,6 @@
       "mustCheck": [
         "db:NOW",
         "db:SET",
-        "db:a",
         "db:cash_collections",
         "db:order_items",
         "db:orders",
@@ -43726,11 +43428,7 @@
       ],
       "dbWrite": [
         "SET",
-        "atomique",
-        "et",
         "orders",
-        "pour",
-        "prevents",
         "wallet_consumptions",
         "wallet_credit_lots",
         "wallet_transactions",
@@ -43744,11 +43442,7 @@
       ],
       "mustCheck": [
         "db:SET",
-        "db:atomique",
-        "db:et",
         "db:orders",
-        "db:pour",
-        "db:prevents",
         "db:users",
         "db:wallet",
         "db:wallet_consumptions",

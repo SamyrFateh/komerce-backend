@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       incidents, order_items, orders, parcel_items, parcels, scan_events
- * @db-write      direct, incidents, orders
+ * @db-write      incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

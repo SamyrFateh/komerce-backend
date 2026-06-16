@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       DB, invoices, order_items, orders, parcels, products, recipients, relais
+ * @db-read       invoices, order_items, orders, parcels, products, recipients, relais
  * @db-write      invoices
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

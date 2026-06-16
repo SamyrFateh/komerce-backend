@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       collective_payment_sessions, collective_payment_tokens, collective_workspace_contributions, collective_workspace_items, collective_workspaces, legacy, products, relais
- * @db-write      OF, collective_payment_sessions, collective_payment_tokens, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces, et, filtre, pour
+ * @db-write      OF, collective_payment_sessions, collective_payment_tokens, collective_workspace_contributions, collective_workspace_events, collective_workspace_items, collective_workspaces
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  shared-cart

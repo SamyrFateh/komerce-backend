@@ -1,6 +1,6 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:25:06.898Z
+Generated: 2026-06-16T11:27:55.124Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
@@ -12,9 +12,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 306
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 713
-- Edges: 2857
-- DB tables: 188
+- Graph nodes: 693
+- Edges: 2834
+- DB tables: 168
 - Doctrines: 112
 - Impact areas: 107
 - Unresolved code edges: 244
@@ -304,17 +304,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/repair-collective-stock-reservations.js -> alerts
 - WRITE services/repair-ordered-without-purchase-orders.js -> alerts
 - WRITE services/scan-operations.js -> alerts
-- WRITE services/signal-service.js -> a
-- WRITE services/wallet-service.js -> atomique
 - WRITE services/scan-operations.js -> attempts
-- WRITE routes/pickup-secret.js -> avec
 - WRITE routes/admin/system.js -> basket_items
 - WRITE routes/admin/users.js -> basket_items
 - WRITE routes/admin/system.js -> baskets
 - WRITE routes/admin/users.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
-- WRITE routes/carriers.js -> carrier
 - WRITE routes/carriers.js -> carriers
 - WRITE routes/shares.js -> cart_contributions
 - WRITE routes/orders/create.js -> cart_shares
@@ -331,8 +327,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/collective-workspace-engine.js -> collective_workspace_items
 - WRITE services/collective-workspace-engine.js -> collective_workspaces
 - WRITE services/pricing-strategy-service.js -> competitor_prices
-- WRITE services/refund-service.js -> completed
-- WRITE routes/admin-pricing-matrices.js -> const
 - WRITE routes/pricing.js -> cost_benchmarks
 - WRITE routes/admin-cost-components.js -> cost_component_events
 - WRITE routes/admin-cost-components.js -> cost_components
@@ -340,22 +334,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/status.js -> customs_history
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE routes/carriers.js -> customs
-- WRITE services/reconciliation-service.js -> direct
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE services/economic-engine-queries.js -> economic_alerts
 - WRITE routes/economic-engine.js -> economic_charges
 - WRITE routes/economic-engine.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
 - WRITE routes/economic-engine.js -> economic_variables
-- WRITE services/collective-workspace-engine.js -> et
-- WRITE services/wallet-service.js -> et
 - WRITE routes/admin-finance-config.js -> exchange_rates
 - WRITE services/pricing-rates.js -> exchange_rates
 - WRITE routes/modules.js -> fabrics
 - WRITE routes/admin/system.js -> favorites
 - WRITE routes/admin/users.js -> favorites
-- WRITE services/collective-workspace-engine.js -> filtre
 - WRITE routes/admin-costing.js -> finance_config
 - WRITE routes/admin-finance-config.js -> finance_config
 - WRITE services/pricing-rates.js -> finance_config
@@ -372,7 +361,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/order-payment-confirmation.js -> inventory_reservations
 - WRITE routes/admin/system.js -> invoices
 - WRITE services/invoice-service.js -> invoices
-- WRITE routes/admin-pricing-matrices.js -> log
 - WRITE routes/admin/system.js -> loyalty_history
 - WRITE routes/admin/users.js -> loyalty_history
 - WRITE routes/admin/system.js -> loyalty_points
@@ -411,8 +399,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/payment-cash-confirm.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/payment-stripe.js -> order_status_history
-- WRITE services/inventory-service.js -> order
 - WRITE routes/admin/delete-order-cascade.js -> orders
+- WRITE routes/admin/system.js -> orders
+- WRITE routes/orders.js -> orders
+- WRITE routes/orders/create.js -> orders
+- WRITE routes/orders/qr.js -> orders
+- WRITE routes/orders/status.js -> orders
+- WRITE routes/parcels.js -> orders
+- WRITE routes/pickup-secret.js -> orders
+- WRITE routes/tracking.js -> orders
+- WRITE services/admin-order-refund.js -> orders
+- WRITE services/cash-reminder-service.js -> orders
+- WRITE services/create-stripe-order-intent.js -> orders
+- WRITE services/customs-shipment-service.js -> orders
+- WRITE services/inventory-service.js -> orders
 
 ## Unresolved Code Edges
 
