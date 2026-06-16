@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          order-status-state-machine
+ * @domain        orders
+ * @layer         machine
+ * @criticality   critical
+ * @inputs        order_id, current_status, target_status, actor, reason
+ * @outputs       validated_transition, order_history, side_effects
+ * @depends       db.js, services/notification-service.js
+ * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
+ * @doctrine      status_transition_source_unique, payment_to_stock_single_entry, annulation_tracee
+ * @impact-areas  orders, payments, stock, wallet, sourcing, notifications, dashboards
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Order Status Machine (services/order-status-machine.js) — v1.4 (pending status)
  *
  * ╔══════════════════════════════════════════════════════════════════════╗

@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          shared-cart-v41-transition-projector
+ * @domain        shared-cart
+ * @layer         machine
+ * @criticality   critical
+ * @inputs        shared_cart_status, event_date, payment_window, creator_choice, contribution_state
+ * @outputs       projected_status, deadline_state, allowed_actions
+ * @depends       doctrine/V4.1, utils/rules.js
+ * @used-by       services/shared-cart-engine.js, services/shared-cart-items-service.js, routes/shared-cart.js
+ * @doctrine      panier_ouvert_ferme, fenetre_paiement_48h, choix_createur_72h, paiement_seul_acte_engageant
+ * @impact-areas  shared-cart, participant-flow, creator-flow, checkout, crons
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

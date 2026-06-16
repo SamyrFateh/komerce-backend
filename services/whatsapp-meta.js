@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          meta-whatsapp-adapter
+ * @domain        notification
+ * @layer         external-adapter
+ * @criticality   high
+ * @inputs        phone_number_id, template_name, recipient_phone, message_payload
+ * @outputs       meta_message_id, delivery_response, adapter_error
+ * @depends       Meta Graph API, env META_WA_*
+ * @used-by       notification-service.js, routes/meta-whatsapp.js
+ * @doctrine      whatsapp_template_trace, provider_adapter_isole, secrets_env_only
+ * @impact-areas  whatsapp, otp, notifications, shared-cart, checkout
+ * @version       2026-06
+ */
+
 'use strict';
 
 const fetch = global.fetch;

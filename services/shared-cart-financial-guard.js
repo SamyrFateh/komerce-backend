@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          shared-cart-financial-guard
+ * @domain        shared-cart
+ * @layer         policy
+ * @criticality   critical
+ * @inputs        contribution_event, stripe_event, shared_cart_state, amount
+ * @outputs       validated_contribution, rejected_event, financial_alert
+ * @depends       db.js, services/shared-cart-queries.js
+ * @used-by       routes/shared-cart.js, services/shared-cart-engine.js
+ * @doctrine      idempotence_financiere, paiement_seul_acte_engageant, no_overcollection_silent
+ * @impact-areas  shared-cart, payments, stripe, participant-flow, creator-flow
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          order-domain-helpers
+ * @domain        orders
+ * @layer         service
+ * @criticality   high
+ * @inputs        order_payload, wallet_context, reference_seed
+ * @outputs       order_reference, pickup_code, wallet_applied_state
+ * @depends       db.js, services/wallet-service.js
+ * @used-by       routes/orders.js, shared-cart-engine.js, checkout-flows
+ * @doctrine      reference_commande_lisible, wallet_applique_une_fois, helpers_sans_route_http
+ * @impact-areas  checkout, orders, wallet, tracking, shared-cart
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Order Service v2.0
  *
  * Helpers commandes : références, codes, wallet.

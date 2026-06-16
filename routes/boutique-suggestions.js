@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-suggestions-http-facade
+ * @domain        recommendations
+ * @layer         route
+ * @criticality   high
+ * @inputs        visitor_context, navigation_context, product_context
+ * @outputs       ranked_products, discovery_sections, personalization_debug
+ * @depends       services/boutique-suggestion-service.js, product-store, doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md
+ * @used-by       bootstrap/api-routes.js, modal-suggestions, home-personalization
+ * @doctrine      suggestions_decouverte_non_intrusives, personnalisation_navigation, boutique_canal_decouverte
+ * @impact-areas  product-discovery, modal, home-ranking, personalization, catalog
+ * @version       2026-06
+ */
+
+/**
  * Route : GET /api/boutique/suggestions
  *
  * Surface de ranking boutique — relaie le moteur de personnalisation.

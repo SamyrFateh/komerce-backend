@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          orders-http-facade
+ * @domain        orders
+ * @layer         route
+ * @criticality   critical
+ * @inputs        cart_items, client_identity, relais_id, payment_mode, wallet_choice
+ * @outputs       order, order_history, tracking_data, wallet_application
+ * @depends       services/order-service.js, services/order-status-machine.js, services/inventory-service.js, services/notification-service.js, db.js
+ * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js, public/boutique/js/b-tracking.js
+ * @doctrine      paiement_seul_acte_engageant, order_creation_idempotent, stock_apres_paiement
+ * @impact-areas  checkout, orders, tracking, wallet, stock, notifications, shared-cart
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Commandes v7.5 → v8.0 (refactorisé)
  *
  * POST  /api/orders               → créer une commande (client authentifié)

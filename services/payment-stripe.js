@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          stripe-payment-service
+ * @domain        payment
+ * @layer         service
+ * @criticality   critical
+ * @inputs        payment_intent, stripe_event, order_reference, metadata
+ * @outputs       payment_confirmation, processed_event, stock_transition, notifications
+ * @depends       services/order-payment-confirmation.js, services/notification-service.js, services/loyalty-service.js, routes/pickup-secret.js
+ * @used-by       routes/payments.js, stripe_webhooks
+ * @doctrine      idempotence_stripe, payment_to_stock_single_entry, raw_body_webhook_intact, wallet_non_modifie_ici
+ * @impact-areas  payments, orders, stock, pickup, notifications, loyalty, sourcing
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          shared-cart-items-update-service
+ * @domain        shared-cart
+ * @layer         service
+ * @criticality   high
+ * @inputs        shared_cart_id, cart_items, actor_identity, open_cart_state
+ * @outputs       updated_cart_items, snapshot_recalculation, participant_notification_signal
+ * @depends       db.js, services/shared-cart-queries.js, services/shared-cart-v41-transitions.js
+ * @used-by       routes/shared-cart.js, public/boutique/js/b-cart.js
+ * @doctrine      panier_ouvert_modifiable, snapshot_fige_apres_fermeture, participant_lecture_seule
+ * @impact-areas  shared-cart-editing, creator-flow, participant-flow, cart, notifications
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

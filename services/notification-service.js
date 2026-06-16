@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          customer-notification-orchestrator
+ * @domain        notification
+ * @layer         service
+ * @criticality   high
+ * @inputs        phone, template_context, notification_event, channel_preferences
+ * @outputs       whatsapp_message, sms_fallback, email_fallback, delivery_log
+ * @depends       services/whatsapp-meta.js, providers/authkey, email-provider
+ * @used-by       otp.js, payment-stripe.js, order-status-machine.js, shared-cart-engine.js, reminders
+ * @doctrine      notification_non_bloquante, otp_message_lisible, fallback_trace
+ * @impact-areas  otp, checkout, shared-cart, orders, customer-support, whatsapp
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

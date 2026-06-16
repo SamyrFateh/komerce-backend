@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          wallet-http-facade
+ * @domain        wallet
+ * @layer         route
+ * @criticality   high
+ * @inputs        client_session, wallet_mutation, order_reference
+ * @outputs       wallet_balance, ledger_entries, wallet_application_result
+ * @depends       services/wallet-service.js, middleware/auth.js, db.js
+ * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js, dashboards
+ * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
+ * @impact-areas  checkout, wallet, orders, refunds, admin-dashboard
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Wallet API v1.0
  *
  * Remplace routes/credits.js.

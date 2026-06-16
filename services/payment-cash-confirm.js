@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          cash-payment-confirmation-service
+ * @domain        payment
+ * @layer         service
+ * @criticality   critical
+ * @inputs        cash_ref_code, relais_actor, order_reference
+ * @outputs       payment_confirmation, stock_transition, rollback_or_alert
+ * @depends       services/order-payment-confirmation.js, db.js
+ * @used-by       routes/payments.js, relais-dashboard
+ * @doctrine      payment_to_stock_single_entry, cash_validation_tracee, cash_rollback_vs_stripe_alert
+ * @impact-areas  cash, orders, stock, relais, notifications, sourcing
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

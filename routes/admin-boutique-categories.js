@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-taxonomy-admin-api
+ * @domain        catalog
+ * @layer         route
+ * @criticality   high
+ * @inputs        admin_category_payload, subcategory_payload, ordering
+ * @outputs       category_config, subcategory_config, taxonomy_mutation_result
+ * @depends       db.js, middleware/auth.js
+ * @used-by       bootstrap/api-routes.js, admin-dashboard, shop-schema-sync
+ * @doctrine      categories_maj_sans_code, taxonomy_source_db, no_hardcoded_taxonomy
+ * @impact-areas  catalog, boutique-admin, category-navigation, product-discovery
+ * @version       2026-06
+ */
+
+/**
  * KOMERCE — Routes admin boutique_categories / boutique_subcategories
  *
  * Permet à l'admin de gérer les catégories et sous-catégories boutique

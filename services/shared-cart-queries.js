@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          shared-cart-db-query-service
+ * @domain        shared-cart
+ * @layer         data-service
+ * @criticality   high
+ * @inputs        shared_cart_id, token, user_id, status_filters
+ * @outputs       shared_cart_records, contribution_records, participant_records
+ * @depends       db.js
+ * @used-by       routes/shared-cart.js, shared-cart-engine.js, shared-cart-services
+ * @doctrine      backend_source_verite, lookup_centralise, token_public_controle
+ * @impact-areas  shared-cart, participant-flow, creator-flow, admin-debug, crons
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**

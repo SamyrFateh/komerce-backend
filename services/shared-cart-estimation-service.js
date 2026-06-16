@@ -1,3 +1,18 @@
+/**
+ * @komerce-arch
+ * @role          shared-cart-estimation-service
+ * @domain        shared-cart
+ * @layer         service
+ * @criticality   high
+ * @inputs        shared_cart_id, participant_identity, estimated_amount
+ * @outputs       estimation_snapshot, aggregate_estimation, creator_visibility
+ * @depends       db.js, services/shared-cart-queries.js
+ * @used-by       routes/shared-cart.js, b-group-view.js
+ * @doctrine      estimations_indicatives, paiement_seul_acte_engageant, visibilite_createur
+ * @impact-areas  participant-flow, creator-flow, shared-cart-progress, notifications
+ * @version       2026-06
+ */
+
 'use strict';
 
 /**
