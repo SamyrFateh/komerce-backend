@@ -7,17 +7,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Totals
 
 - Scanned code files: 312
-- Files with full headers: 280
+- Files with full headers: 282
 - Files with lite headers: 30
-- Files with any headers: 310
-- Files without headers: 2
+- Files with any headers: 312
+- Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 644
-- Edges: 2776
-- DB tables: 107
-- Doctrines: 118
+- Graph nodes: 648
+- Edges: 2803
+- DB tables: 108
+- Doctrines: 119
 - Impact areas: 109
-- Unresolved code edges: 263
+- Unresolved code edges: 265
 
 ## Domains
 
@@ -37,7 +37,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 4
 - order-payment: 1
 - orders: 24
-- payment: 12
+- payment: 14
 - recommendations: 4
 - refunds: 1
 - shared-cart: 34
@@ -59,10 +59,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 10
 - policy: 1
-- route: 96
+- route: 97
 - route-manifest: 1
 - schema: 1
-- service: 101
+- service: 102
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -104,6 +104,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/orders/parcels.js — orders-parcels (orders, critical, full)
 - routes/orders/qr.js — orders-qr (orders, critical, full)
 - routes/orders/status.js — orders-status (orders, critical, full)
+- routes/payments-paypal.js — route-payment-paypal (payment, critical, full)
 - routes/payments.js — payment-http-facade (payment, critical, full)
 - routes/pickup-pay-cash.js — payment-pickup-pay-cash (payment, critical, full)
 - routes/shared-cart-cash.js — shared-cart-shared-cart-cash (shared-cart, critical, full)
@@ -129,6 +130,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
 - services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
 - services/payment-paypal-events.js — payment-payment-paypal-events (payment, critical, full)
+- services/payment-paypal.js — payment-paypal (payment, critical, full)
 - services/payment-stripe.js — stripe-payment-service (payment, critical, full)
 - services/paypal-client.js — payment-paypal-client (payment, critical, full)
 - services/receive-purchase-order.js — orders-receive-purchase-order (orders, critical, full)
@@ -298,6 +300,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE routes/payments-paypal.js -> (délégué à services/payment-paypal.js)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -305,6 +308,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notification-service.js -> alerts
 - WRITE services/order-payment-confirmation.js -> alerts
 - WRITE services/payment-cash-confirm.js -> alerts
+- WRITE services/payment-paypal.js -> alerts
 - WRITE services/payment-stripe.js -> alerts
 - WRITE services/product-publication-guard.js -> alerts
 - WRITE services/purchasing-trigger-service.js -> alerts
@@ -385,6 +389,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/create.js -> order_status_history
 - WRITE services/order-status-machine.js -> order_status_history
 - WRITE services/parcel-operations.js -> order_status_history
+- WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/shared-cart-engine.js -> order_status_history
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
@@ -405,6 +410,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-auto-create-service.js -> orders
 - WRITE services/parcelOptimizationService.js -> orders
 - WRITE services/payment-cash-confirm.js -> orders
+- WRITE services/payment-paypal.js -> orders
 - WRITE services/payment-stripe.js -> orders
 - WRITE services/purchasing-admin-service.js -> orders
 - WRITE services/routing.js -> orders
@@ -414,10 +420,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/verify-qr-collection.js -> orders
 - WRITE services/wallet-service.js -> orders
 - WRITE routes/otp.js -> otp_codes
-- WRITE services/parcel-security.js -> parcel_events
-- WRITE routes/admin/system.js -> parcel_items
-- WRITE routes/hub-dashboard.js -> parcel_items
-- WRITE routes/parcels.js -> parcel_items
 
 ## Unresolved Code Edges
 
@@ -544,8 +546,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Files Still Without Headers Or Aggregation
 
-- routes/payments-paypal.js
-- services/payment-paypal.js
+- none
 
 ## Intervention Rule
 
