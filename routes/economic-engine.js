@@ -8,6 +8,9 @@
  * @outputs       executive_summary, variables, charges, coherence, history
  * @depends       services/economic-engine-queries.js, utils/eco-bridge.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js, admin-dashboards
+ * @db-read       economic_variables, economic_charges, economic_snapshots, orders, products
+ * @db-write      economic_variables, economic_charges, economic_snapshots
+ * @db-txn        invalidate_cache_after_mutation, admin_only_mutation
  * @doctrine      moteur_economique_lisible, route_facade_service, invalidate_cache_after_mutation
  * @impact-areas  admin-dashboard, pricing, margin, cost-model, snapshots
  * @version       2026-06

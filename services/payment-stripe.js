@@ -8,6 +8,9 @@
  * @outputs       payment_confirmation, processed_event, stock_transition, notifications
  * @depends       services/order-payment-confirmation.js, services/notification-service.js, services/loyalty-service.js, routes/pickup-secret.js
  * @used-by       routes/payments.js, stripe_webhooks
+ * @db-read       orders, payments, stripe_events, transactions
+ * @db-write      stripe_events, payments, transactions, order_status_history
+ * @db-txn        stripe_event_idempotency, payment_to_stock_single_entry
  * @doctrine      idempotence_stripe, payment_to_stock_single_entry, raw_body_webhook_intact, wallet_non_modifie_ici
  * @impact-areas  payments, orders, stock, pickup, notifications, loyalty, sourcing
  * @version       2026-06

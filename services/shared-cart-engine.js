@@ -8,6 +8,9 @@
  * @outputs       shared_cart, contribution, next_status, order, events
  * @depends       db.js, services/whatsapp-meta.js, services/order-service.js, services/routing.js, services/order-payment-confirmation.js, utils/rates.js
  * @used-by       routes/shared-cart.js, bootstrap/crons.js
+ * @db-read       shared_carts, shared_cart_items, shared_cart_contributions, orders, products
+ * @db-write      shared_carts, shared_cart_events, shared_cart_contributions, orders
+ * @db-txn        required_for_state_transition, idempotent_payment_events, snapshot_consistency
  * @doctrine      paiement_seul_acte_engageant, panier_ouvert_ferme, snapshot_fige, fenetre_paiement_48h, choix_createur_72h, idempotence_financiere
  * @impact-areas  participant-flow, creator-flow, checkout, orders, notifications, stock, economic-engine
  * @version       2026-06

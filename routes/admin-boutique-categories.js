@@ -8,6 +8,9 @@
  * @outputs       category_config, subcategory_config, taxonomy_mutation_result
  * @depends       db.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js, admin-dashboard, shop-schema-sync
+ * @db-read       boutique_categories, boutique_subcategories
+ * @db-write      boutique_categories, boutique_subcategories
+ * @db-txn        taxonomy_order_consistency, admin_only_mutation
  * @doctrine      categories_maj_sans_code, taxonomy_source_db, no_hardcoded_taxonomy
  * @impact-areas  catalog, boutique-admin, category-navigation, product-discovery
  * @version       2026-06

@@ -8,6 +8,9 @@
  * @outputs       projected_status, deadline_state, allowed_actions
  * @depends       doctrine/V4.1, utils/rules.js
  * @used-by       services/shared-cart-engine.js, services/shared-cart-items-service.js, routes/shared-cart.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        pure_projection_no_db_write
  * @doctrine      panier_ouvert_ferme, fenetre_paiement_48h, choix_createur_72h, paiement_seul_acte_engageant
  * @impact-areas  shared-cart, participant-flow, creator-flow, checkout, crons
  * @version       2026-06

@@ -8,6 +8,9 @@
  * @outputs       kmrc_jwt_cookie, lightweight_user, otp_state
  * @depends       services/notification-service.js, services/otp-test-mode.js, utils/phone.js, db.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-identity.js, public/boutique/js/b-tracking.js, checkout
+ * @db-read       users, otp_codes, jwt_revocations
+ * @db-write      users, otp_codes, sessions
+ * @db-txn        otp_single_use, test_mode_never_prod, phone_normalization
  * @doctrine      otp_une_fois, session_client_legere, test_mode_never_prod, phone_normalization
  * @impact-areas  checkout, participant-flow, tracking, shared-cart-access, auth
  * @version       2026-06

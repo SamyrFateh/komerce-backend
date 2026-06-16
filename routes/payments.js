@@ -8,6 +8,9 @@
  * @outputs       stripe_intent, payment_confirmation, rates_config
  * @depends       services/payment-stripe.js, services/payment-cash-confirm.js, routes/purchasing.js, utils/rates.js, validators.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js
+ * @db-read       orders, payments, transactions, rates
+ * @db-write      payments, transactions, stripe_events
+ * @db-txn        raw_body_preserved, mutation_delegated_to_payment_services
  * @doctrine      raw_body_webhook_intact, idempotence_stripe, payment_to_stock_single_entry
  * @impact-areas  checkout, orders, stock, cash, sourcing, notifications
  * @version       2026-06

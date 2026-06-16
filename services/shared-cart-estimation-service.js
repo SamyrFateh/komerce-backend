@@ -8,6 +8,9 @@
  * @outputs       estimation_snapshot, aggregate_estimation, creator_visibility
  * @depends       db.js, services/shared-cart-queries.js
  * @used-by       routes/shared-cart.js, b-group-view.js
+ * @db-read       shared_carts, shared_cart_estimations, users
+ * @db-write      shared_cart_estimations, shared_cart_events
+ * @db-txn        estimation_is_not_payment, aggregate_recalculation
  * @doctrine      estimations_indicatives, paiement_seul_acte_engageant, visibilite_createur
  * @impact-areas  participant-flow, creator-flow, shared-cart-progress, notifications
  * @version       2026-06

@@ -8,6 +8,9 @@
  * @outputs       confirmed_order, ordered_transition, stock_decrement, stockBlocked
  * @depends       services/order-status-machine.js, db.js
  * @used-by       services/payment-stripe.js, services/payment-cash-confirm.js, services/shared-cart-engine.js, paypal-flows, wallet-full-order-flows
+ * @db-read       orders, order_items, products, stock_movements
+ * @db-write      orders, order_status_history, products, stock_movements, inventory_reservations
+ * @db-txn        caller_transaction_required, stock_for_update, confirmPaymentCycle_unique
  * @doctrine      transaction_existante_obligatoire, confirmPaymentCycle_unique, stock_for_update, cash_rollback_vs_stripe_alert
  * @impact-areas  orders, stock, payments, shared-cart, wallet, sourcing, loyalty
  * @version       2026-06

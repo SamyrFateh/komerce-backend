@@ -8,6 +8,9 @@
  * @outputs       shared_cart_records, contribution_records, participant_records
  * @depends       db.js
  * @used-by       routes/shared-cart.js, shared-cart-engine.js, shared-cart-services
+ * @db-read       shared_carts, shared_cart_items, shared_cart_contributions, shared_cart_estimations, users
+ * @db-write      none
+ * @db-txn        centralized_lookup_no_mutation
  * @doctrine      backend_source_verite, lookup_centralise, token_public_controle
  * @impact-areas  shared-cart, participant-flow, creator-flow, admin-debug, crons
  * @version       2026-06

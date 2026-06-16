@@ -8,6 +8,9 @@
  * @outputs       computed_variables, alerts, snapshots, executive_summary
  * @depends       db.js, utils/eco-bridge.js
  * @used-by       routes/economic-engine.js, admin-dashboards
+ * @db-read       economic_variables, economic_charges, economic_snapshots, orders, products, pricing_benchmarks
+ * @db-write      economic_snapshots, economic_alerts
+ * @db-txn        snapshot_debounce, coherence_model_recalculation
  * @doctrine      couts_repartis_par_commande, coherence_model_economique, snapshot_debounce, sov_drift
  * @impact-areas  pricing, margin, dashboard, admin-economic, finance-config
  * @version       2026-06

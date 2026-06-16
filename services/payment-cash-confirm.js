@@ -8,6 +8,9 @@
  * @outputs       payment_confirmation, stock_transition, rollback_or_alert
  * @depends       services/order-payment-confirmation.js, db.js
  * @used-by       routes/payments.js, relais-dashboard
+ * @db-read       orders, payments, transactions
+ * @db-write      payments, transactions, order_status_history
+ * @db-txn        cash_confirmation_idempotency, rollback_or_alert_on_stock_failure
  * @doctrine      payment_to_stock_single_entry, cash_validation_tracee, cash_rollback_vs_stripe_alert
  * @impact-areas  cash, orders, stock, relais, notifications, sourcing
  * @version       2026-06
