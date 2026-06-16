@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict CuPJtEZhcSOuC4CYDx1MnwCzqrfHp1rSYid6GgJfAfTdMYiiUrruTWVI2HEhoaQ
+\restrict gSpcFO49cEqp6bbCOdwQ3H5Koho0MtxCePbmBeVCsugvithqPaEwKKctOht4gxp
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -8921,5 +8921,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict CuPJtEZhcSOuC4CYDx1MnwCzqrfHp1rSYid6GgJfAfTdMYiiUrruTWVI2HEhoaQ
+\unrestrict gSpcFO49cEqp6bbCOdwQ3H5Koho0MtxCePbmBeVCsugvithqPaEwKKctOht4gxp
 

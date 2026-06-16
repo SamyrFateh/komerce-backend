@@ -13,14 +13,14 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 313,
-    "filesWithFullHeaders": 281,
+    "scannedCodeFiles": 312,
+    "filesWithFullHeaders": 280,
     "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 311,
+    "filesWithAnyHeaders": 310,
     "filesWithoutHeaders": 2,
     "liteWithoutOwner": 0,
-    "graphNodes": 645,
-    "edges": 2785,
+    "graphNodes": 644,
+    "edges": 2776,
     "dbTables": 107,
     "doctrines": 118,
     "impactAreas": 109,
@@ -35,7 +35,7 @@
     "checkout": 2,
     "shared-cart": 34,
     "recommendations": 4,
-    "payment": 13,
+    "payment": 12,
     "tracking": 1,
     "collective-workspace": 3,
     "economic-engine": 24,
@@ -76,7 +76,7 @@
     "view-model": 3,
     "route": 96,
     "entrypoint": 1,
-    "service": 102,
+    "service": 101,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -84,7 +84,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 65,
+    "critical": 64,
     "medium": 96,
     "high": 118,
     "low": 32
@@ -10116,49 +10116,6 @@
       "usedBy": [],
       "dbRead": [],
       "dbWrite": [
-        "paypal_events_processed"
-      ],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "payment",
-        "checkout"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "services/payment-paypal.js",
-      "file": "services/payment-paypal.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "payment-payment-paypal",
-      "domain": "payment",
-      "layer": "service",
-      "criticality": "critical",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [
-        "orders",
-        "paypal_events_processed"
-      ],
-      "dbWrite": [
-        "alerts",
-        "order_status_history",
-        "orders",
         "paypal_events_processed"
       ],
       "dbTxn": [
@@ -28136,60 +28093,6 @@
       "label": "checkout"
     },
     {
-      "from": "services/payment-paypal.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "db:paypal_events_processed",
-      "type": "db-read",
-      "label": "paypal_events_processed"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "db:alerts",
-      "type": "db-write",
-      "label": "alerts"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "db:order_status_history",
-      "type": "db-write",
-      "label": "order_status_history"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "db:paypal_events_processed",
-      "type": "db-write",
-      "label": "paypal_events_processed"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "impact:payment",
-      "type": "impact",
-      "label": "payment"
-    },
-    {
-      "from": "services/payment-paypal.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
       "from": "services/payment-stripe.js",
       "to": "services/order-payment-confirmation.js",
       "type": "depends",
@@ -40932,43 +40835,6 @@
         "impact:payment"
       ]
     },
-    "services/payment-paypal.js": {
-      "role": "payment-payment-paypal",
-      "domain": "payment",
-      "criticality": "critical",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [
-        "orders",
-        "paypal_events_processed"
-      ],
-      "dbWrite": [
-        "alerts",
-        "order_status_history",
-        "orders",
-        "paypal_events_processed"
-      ],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "payment",
-        "checkout"
-      ],
-      "mustCheck": [
-        "db:alerts",
-        "db:order_status_history",
-        "db:orders",
-        "db:paypal_events_processed",
-        "doctrine:resolve_before_behavior_change",
-        "impact:checkout",
-        "impact:payment"
-      ]
-    },
     "services/payment-stripe.js": {
       "role": "stripe-payment-service",
       "domain": "payment",
@@ -45118,8 +44984,8 @@
     }
   ],
   "filesWithoutHeaders": [
-    "routes/payments-paypal-facade-final.js",
-    "services/payment-paypal-final.js"
+    "routes/payments-paypal.js",
+    "services/payment-paypal.js"
   ],
   "liteWithoutOwner": []
 }

@@ -1,13 +1,23 @@
 /**
- * KOMERCE — routes/payments-paypal.js  (R5)
- *
- * Façade pure : auth + ownership + validate + appel service + réponse HTTP.
- * Toute logique métier PayPal déléguée à services/payment-paypal.js.
+ * @komerce-arch
+ * @role          route-payment-paypal
+ * @domain        payment
+ * @layer         route
+ * @criticality   critical
+ * @inputs        runtime_context, request_or_service_payload
+ * @outputs       response_or_domain_result
+ * @depends       db.js, middleware/auth.js, middleware/auth-guest.js, services/paypal-client.js, services/payment-paypal.js
+ * @used-by       bootstrap/api-routes.js
+ * @db-read       orders
+ * @db-write      (délégué à services/payment-paypal.js)
+ * @doctrine      route = auth + ownership + validate + appel service + réponse HTTP
+ * @impact-areas  payment, checkout
+ * @version       2026-06
  *
  * POST /api/payments/paypal/create-order           → createPaypalOrder
  * POST /api/payments/paypal/capture/:paypalOrderId → capturePaypalOrder
  * POST /api/payments/paypal/webhook                → handlePaypalWebhookEvent
- * POST /api/payments/paypal/refund/:orderId        → inline (admin, refund PayPal direct)
+ * POST /api/payments/paypal/refund/:orderId        → refundPaypalOrder
  */
 
 'use strict';

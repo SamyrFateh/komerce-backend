@@ -1,3 +1,21 @@
+/**
+ * @komerce-arch
+ * @role          payment-paypal
+ * @domain        payment
+ * @layer         service
+ * @criticality   critical
+ * @inputs        order, paypal_client, db, webhook_event
+ * @outputs       capture_result, refund_result, side_effects
+ * @depends       db.js, services/paypal-client.js, services/order-payment-confirmation.js, services/documents/refund-receipt.js, routes/pickup-secret.js
+ * @used-by       routes/payments-paypal.js
+ * @db-read       orders, paypal_events_processed
+ * @db-write      alerts, order_status_history, orders, paypal_events_processed, refunds
+ * @db-txn        resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change
+ * @impact-areas  payment, checkout
+ * @version       2026-06
+ */
+
 'use strict';
 
 const refundReceiptService = require('./documents/refund-receipt');
