@@ -7,17 +7,17 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Totals
 
 - Scanned code files: 308
-- Files with full headers: 276
+- Files with full headers: 278
 - Files with lite headers: 30
-- Files with any headers: 306
-- Files without headers: 2
+- Files with any headers: 308
+- Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 631
-- Edges: 2678
+- Graph nodes: 636
+- Edges: 2690
 - DB tables: 106
-- Doctrines: 112
-- Impact areas: 107
-- Unresolved code edges: 244
+- Doctrines: 113
+- Impact areas: 109
+- Unresolved code edges: 249
 
 ## Domains
 
@@ -32,6 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - inventory: 2
 - logistics: 29
 - notification: 6
+- notifications: 1
 - operations: 4
 - order-payment: 1
 - orders: 23
@@ -40,6 +41,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared-cart: 34
 - tracking: 1
 - unknown: 37
+- validation: 1
 - wallet: 5
 
 ## Layers
@@ -52,6 +54,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - entrypoint: 1
 - external-adapter: 1
 - machine: 2
+- manual-test: 1
 - middleware: 10
 - policy: 1
 - route: 97
@@ -70,6 +73,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-state: 2
 - util: 17
 - util-ui: 2
+- validators: 1
 - view-model: 3
 
 ## Critical And High Files
@@ -257,6 +261,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/parcels.js — logistics-parcels (logistics, high, full)
 - utils/parcelSync.js — logistics-parcel-sync (logistics, high, full)
 - utils/pricing-cache.js — economic-engine-pricing-cache (economic-engine, high, full)
+- validators/index.js — request-validation-schemas (validation, high, full)
 
 ## Lite Aggregated Files
 
@@ -426,11 +431,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
 - uses: checkout -> routes/otp.js (checkout)
+- depends: core/test-whatsapp-notifications.js -> services/authkey-client (services/authkey-client)
+- depends: core/test-whatsapp-notifications.js -> services/notification-service (services/notification-service)
 - uses: dashboards -> routes/wallet.js (dashboards)
 - uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
 - uses: event-management-pages -> public/boutique/js/event-manage.js (event-management-pages)
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
+- uses: manual-ops -> core/test-whatsapp-notifications.js (manual-ops)
 - uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
 - uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
@@ -454,6 +462,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: reminders -> services/notification-service.js (reminders)
 - uses: renderers -> public/boutique/js/shop-schema.js (renderers)
+- uses: routes/* -> validators/index.js (routes/*)
 - depends: routes/admin-boutique-categories.js -> db.js (db.js)
 - depends: routes/admin-collective-repairs.js -> db.js (db.js)
 - depends: routes/admin-collective-repairs.js -> services/* (services/*)
@@ -532,15 +541,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-hub.js -> services/* (services/*)
 - depends: routes/dashboard-ops.js -> db.js (db.js)
 - depends: routes/dashboard-ops.js -> services/* (services/*)
-- depends: routes/dashboard-shared.js -> db.js (db.js)
-- depends: routes/dashboard-shared.js -> services/* (services/*)
-- depends: routes/dashboard.js -> db.js (db.js)
-- depends: routes/dashboard.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
-- core/test-whatsapp-notifications.js
-- validators/index.js
+- none
 
 ## Intervention Rule
 
