@@ -136,7 +136,14 @@ function main() {
   const rawEdges = [];
   const roleToFile = new Map();
   const fileSet = new Set(files);
+  const basenameToFiles = new Map();
   const filesWithoutHeaders = [];
+
+  for (const file of files) {
+    const base = path.basename(file);
+    if (!basenameToFiles.has(base)) basenameToFiles.set(base, []);
+    basenameToFiles.get(base).push(file);
+  }
 
   for (const file of files) {
     const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -202,11 +209,27 @@ function main() {
     if (fileSet.has(target)) return target;
     if (roleToFile.has(target)) return roleToFile.get(target);
 
-    if (!target.includes('/') && !target.endsWith('.js')) {
-      return roleToFile.get(target) || target;
+    const clean = normalizeTarget(target);
+    const base = path.basename(clean);
+    const baseMatches = basenameToFiles.get(base) || [];
+    const nodeMatches = baseMatches.filter(file => nodeIds.has(file));
+
+    if (nodeMatches.length === 1) return nodeMatches[0];
+
+    if (baseMatches.length > 1 && !clean.includes('/')) {
+      const boutique = baseMatches.filter(file => file.startsWith('public/boutique/js/'));
+      if (boutique.length === 1 && nodeIds.has(boutique[0])) return boutique[0];
+      const route = baseMatches.filter(file => file.startsWith('routes/'));
+      if (route.length === 1 && nodeIds.has(route[0])) return route[0];
+      const service = baseMatches.filter(file => file.startsWith('services/'));
+      if (service.length === 1 && nodeIds.has(service[0])) return service[0];
     }
 
-    return target;
+    if (!clean.includes('/') && !clean.endsWith('.js')) {
+      return roleToFile.get(clean) || clean;
+    }
+
+    return clean;
   }
 
   for (const node of nodes) {
