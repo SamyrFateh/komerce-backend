@@ -356,7 +356,7 @@
       prix:"Le choix humain assumé, montré avec ses conséquences.",
     };
     let extra = '';
-    if (b.id === 'n1' || b.id === 'n2') extra = _allocPanel(f);
+    if (b.id === 'n1' || b.id === 'n2') extra = _allocPanel(f) + _propPanel(f);
     if (b.id === 'cvc' || b.id === 'cdr' || b.id === 'contrib') extra = _propPanel(f);
     if (b.id === 'n3') extra = `<div class="efv-section-title">Formule N3 (par ${_esc(f.n3_allocation_unit || 'article')})</div>
       <div class="efv-alloc">${_esc(f.n3_formula || '')}</div>` + _propPanel(f);
@@ -389,17 +389,44 @@
     return `<div class="efv-section-title">Imputation + proportions (ce qui pèse)</div>${items}`;
   }
 
+  function _diagChip(d) {
+    const m = {
+      'surcharge':    'efv-danger',
+      'à surveiller': 'efv-warn',
+      'normal':       'efv-ok',
+      'référence':    'efv-neutral',
+    };
+    return `<span class="efv-chip ${m[d] || 'efv-neutral'}">${_esc(d)}</span>`;
+  }
+
   function _propPanel(f) {
+    const P = f.proportions;
+    if (P && P.families) {
+      const fam = P.families.map(x =>
+        `<div class="efv-alloc"><b>${_esc(x.family)}</b> ${_esc(x.label)} : <b>${_fmt(x.amount_kmf)}</b>
+          <span style="color:var(--text-tertiary)"> · ${x.share_of_cdr_pct}% du CDR · ${x.share_of_price_pct}% du prix</span></div>`).join('');
+      const lines = P.lines.map(x => {
+        const exp = x.expected_share_pct != null ? ` · attendu ${x.expected_share_pct}%` : '';
+        const cal = x.basis === 'benchmark' ? ' 🎯' : (x.basis === 'heuristic' ? ' ~' : '');
+        return `<div class="efv-alloc" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="flex:1">[${_esc(x.family)}] ${_esc(x.label)} : <b>${_fmt(x.amount_kmf)}</b>
+            <span style="color:var(--text-tertiary)"> · ${x.share_of_family_pct}% de ${_esc(x.family)} · ${x.share_of_cdr_pct}% du CDR${exp}</span></span>
+          ${_diagChip(x.diagnostic)}<span title="${x.basis === 'benchmark' ? 'calibré (benchmark)' : x.basis === 'heuristic' ? 'heuristique' : 'référence'}" style="color:var(--text-tertiary);font-size:11px">${cal}</span></div>`;
+      }).join('');
+      const basisLabel = { benchmark: 'calibré sur benchmarks', mixed: 'partiellement calibré', heuristic: 'heuristique' }[P.diagnostic_basis] || P.diagnostic_basis;
+      const note = `<div style="font-size:11px;color:var(--text-tertiary);margin-top:6px">Diagnostic ${basisLabel} · ${P.benchmarks_calibrated}/${P.lines_evaluated} lignes calibrées · confiance ${P.confidence}.${P.diagnostic_basis !== 'benchmark' ? ' Renseigner des benchmarks par famille (🎯) fiabilise le verdict.' : ''}</div>`;
+      return `<div class="efv-section-title">Poids par famille</div>${fam}
+        <div class="efv-section-title">Poids de chaque charge dans sa famille + surcharge</div>${lines}${note}`;
+    }
+    // repli si proportions absentes
     const price = f.current_price_kmf, cdr = f.cdr_complete_kmf;
     const rows = [
-      ['N1 · coût rendu relais', f.n1_landed_relay_cost_kmf, `${_pct(f.n1_landed_relay_cost_kmf, cdr)} du CDR · ${_pct(f.n1_landed_relay_cost_kmf, price)} du prix`],
-      ['N2 · business variable', f.n2_business_variable_cost_kmf, `${_pct(f.n2_business_variable_cost_kmf, cdr)} du CDR · ${_pct(f.n2_business_variable_cost_kmf, price)} du prix`],
-      ['N3 · charges fixes', f.n3_fixed_overhead_allocation_kmf, `${_pct(f.n3_fixed_overhead_allocation_kmf, cdr)} du CDR · ${_pct(f.n3_fixed_overhead_allocation_kmf, price)} du prix`],
-      ['Contribution', f.contribution_kmf, f.contribution_kmf == null ? '—' : `${_pct(f.contribution_kmf, price)} du prix`],
-      ['Marge complète', price ? price - cdr : null, price ? `${_pct(price - cdr, price)} du prix` : '—'],
+      ['N1', f.n1_landed_relay_cost_kmf], ['N2', f.n2_business_variable_cost_kmf],
+      ['N3', f.n3_fixed_overhead_allocation_kmf], ['Contribution', f.contribution_kmf],
+      ['Marge complète', price ? price - cdr : null],
     ];
-    const body = rows.map(([k, v, p]) => `<div class="efv-alloc">${k} : <b>${v == null ? '—' : _fmt(v)}</b> <span style="color:var(--text-tertiary)">· ${p}</span></div>`).join('');
-    return `<div class="efv-section-title">Proportions — où part chaque franc</div>${body}`;
+    return `<div class="efv-section-title">Proportions</div>` + rows.map(([k, v]) =>
+      `<div class="efv-alloc">${k} : <b>${v == null ? '—' : _fmt(v)}</b> <span style="color:var(--text-tertiary)">· ${_pct(v, cdr)} du CDR · ${_pct(v, price)} du prix</span></div>`).join('');
   }
 
   function _stratPanel(f) {

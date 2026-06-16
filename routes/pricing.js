@@ -79,6 +79,52 @@ router.post('/flow', adminOnly, async (req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+// Benchmarks de surcharge par famille (calibration §6)
+//   GET  /api/pricing/benchmarks            → liste
+//   PUT  /api/pricing/benchmarks            → upsert { category, cost_family,
+//                                              expected_share_pct, warn_ratio?, alert_ratio? }
+//   DELETE /api/pricing/benchmarks/:category/:cost_family
+// ═══════════════════════════════════════════════════════════════════
+router.get('/benchmarks', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT category, cost_family, expected_share_pct, warn_ratio, alert_ratio, is_active, updated_at FROM cost_benchmarks ORDER BY category, cost_family'
+    );
+    res.json({ items: rows });
+  } catch (e) { handleServiceError(e, res, next); }
+});
+
+router.put('/benchmarks', adminOnly, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    if (!b.cost_family || b.expected_share_pct == null) {
+      return res.status(400).json({ error: 'cost_family et expected_share_pct requis' });
+    }
+    const { rows } = await db.query(
+      `INSERT INTO cost_benchmarks (category, cost_family, expected_share_pct, warn_ratio, alert_ratio, is_active, updated_at)
+       VALUES ($1, $2, $3, $4, $5, TRUE, NOW())
+       ON CONFLICT (category, cost_family) DO UPDATE SET
+         expected_share_pct = EXCLUDED.expected_share_pct,
+         warn_ratio = EXCLUDED.warn_ratio,
+         alert_ratio = EXCLUDED.alert_ratio,
+         is_active = TRUE, updated_at = NOW()
+       RETURNING category, cost_family, expected_share_pct, warn_ratio, alert_ratio`,
+      [b.category || 'all', b.cost_family, Number(b.expected_share_pct),
+       Number(b.warn_ratio) || 1.3, Number(b.alert_ratio) || 1.6]
+    );
+    res.json(rows[0]);
+  } catch (e) { handleServiceError(e, res, next); }
+});
+
+router.delete('/benchmarks/:category/:cost_family', adminOnly, async (req, res, next) => {
+  try {
+    await db.query('DELETE FROM cost_benchmarks WHERE category = $1 AND cost_family = $2',
+      [req.params.category, req.params.cost_family]);
+    res.json({ deleted: true });
+  } catch (e) { handleServiceError(e, res, next); }
+});
+
+// ═══════════════════════════════════════════════════════════════════
 // POST /api/pricing/couture — calcul prix tenue couture
 // ═══════════════════════════════════════════════════════════════════
 router.post('/couture', async (req, res, next) => {

@@ -200,6 +200,12 @@
 
   // Pricing — chaîne doctrinale (boîtes & flèches + impact live)
   function getPricingFlow(body)                { return fetchMutation(apiUrl('/pricing/flow'), 'POST', body || {}); }
+  // Pricing — pilotage catalogue (vérité unique, relaie le moteur)
+  function getPricingDashboard()               { return fetchJSON(apiUrl('/pricing/dashboard')); }
+  // Pricing — benchmarks de surcharge par famille (calibration §6)
+  function getCostBenchmarks()                 { return fetchJSON(apiUrl('/pricing/benchmarks')); }
+  function upsertCostBenchmark(body)           { return fetchMutation(apiUrl('/pricing/benchmarks'), 'PUT', body); }
+  function deleteCostBenchmark(cat, family)    { return fetchMutation(apiUrl('/pricing/benchmarks/' + encodeURIComponent(cat) + '/' + encodeURIComponent(family)), 'DELETE'); }
 
   // Loyalty
   function getLoyaltyPending()                 { return fetchJSON(apiUrl('/admin/loyalty/pending')); }
@@ -656,6 +662,10 @@
     deletePartner,
     getProducts,
     getPricingFlow,
+    getPricingDashboard,
+    getCostBenchmarks,
+    upsertCostBenchmark,
+    deleteCostBenchmark,
     getLoyaltyPending,
     getLoyaltyHistory,
     createLoyaltyAction,

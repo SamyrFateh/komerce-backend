@@ -93,6 +93,15 @@ async function loadGlobalConfig() {
   const categories = {};
   catsRes.rows.forEach(c => { categories[c.key] = c; });
 
+  // Benchmarks de surcharge par famille (optionnel — calibration). Table absente → [].
+  let costBenchmarks = [];
+  try {
+    const bmRes = await db.query('SELECT category, cost_family, expected_share_pct, warn_ratio, alert_ratio FROM cost_benchmarks WHERE is_active = TRUE');
+    costBenchmarks = bmRes.rows;
+  } catch (err) {
+    costBenchmarks = [];
+  }
+
   return {
     finance: fcRes.rows[0] || {},
     categories,
@@ -100,6 +109,7 @@ async function loadGlobalConfig() {
     components_source: componentsSource,
     provisions: provRes.rows,
     charges: chargesRes.rows,
+    cost_benchmarks: costBenchmarks,
   };
 }
 

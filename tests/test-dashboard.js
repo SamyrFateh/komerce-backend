@@ -17,7 +17,7 @@ require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: {
 
 // Stub moteur : recommend() = SEULE source. Le dashboard ne doit utiliser QUE ces champs.
 const enginePath = require.resolve('./services/pricing-engine');
-const CDR = 14007, RECO = 23990, N3 = 5250;
+const CDR = 14007, RECO = 23990, N3 = 5250, VAR = 9000;
 require.cache[enginePath] = { id: enginePath, filename: enginePath, loaded: true, exports: {
   loadGlobalConfig: async () => ({ finance: {}, categories: {}, components: [], provisions: [], charges: [] }),
   recommend: async (input) => {
@@ -25,6 +25,7 @@ require.cache[enginePath] = { id: enginePath, filename: enginePath, loaded: true
     const margin = price > 0 ? Math.round((1 - CDR / price) * 1000) / 10 : null;
     return {
       cdr_complete_kmf: CDR, recommended_price_kmf: RECO, current_price_kmf: price,
+      variable_cost_complete_kmf: VAR,
       n3_fixed_overhead_allocation_kmf: N3, estimated_margin_pct: margin,
       health_status: price > 0 && price < CDR ? 'loss' : (margin >= 40 ? 'healthy' : 'fragile'),
       sourcing_decision: price > 0 && price < CDR ? 'LOSS' : 'TEST',
@@ -56,6 +57,10 @@ const { computeDashboard } = require('./services/pricing-dashboard');
   check('1 produit sans prix', out.kpis.nb_unset === 1);
   check('distribution health alimentée (sample 3)', out.doctrine.sample_size === 3);
   check('1 verdict LOSS dans la distribution', out.doctrine.by_sourcing.LOSS === 1);
+  check('frontières exposées (catalogue par article)', !!out.frontiers);
+  check('produit prix 8000 < coût variable 9000 → destructif', out.frontiers.destructive === 1);
+  check('produit prix 23990 ≥ CDR → couvert', out.frontiers.covered === 1);
+  check('produit sans prix → unpriced', out.frontiers.unpriced === 1);
 
   console.log('');
   console.log(ok ? '✅ DASHBOARD BRANCHÉ SUR LE MOTEUR — VÉRITÉ UNIQUE' : '❌ ÉCHEC');

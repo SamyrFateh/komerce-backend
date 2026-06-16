@@ -50,6 +50,9 @@ async function computeDashboard() {
   let nbRecoFailed = 0;
   let n3Sample = null;   // quote-part charges fixes (identique tous produits si scope global)
 
+  // Lecture catalogue par les DEUX frontières (doctrine §7)
+  const frontiers = { destructive: 0, undercovered: 0, covered: 0, unpriced: 0 };
+
   const dist = {
     by_health:   { loss: 0, danger: 0, fragile: 0, healthy: 0, strong: 0, unknown: 0 },
     by_sourcing: { PRIORITY: 0, TEST: 0, WATCH: 0, AVOID: 0, LOSS: 0, RENEGOTIATE: 0, INCREASE_PRICE: 0 },
@@ -73,6 +76,13 @@ async function computeDashboard() {
     const prixActuel  = reco.current_price_kmf || 0;
     const margeEff    = reco.estimated_margin_pct;   // (prix - CDR complet) / prix
     if (n3Sample === null) n3Sample = reco.n3_fixed_overhead_allocation_kmf;
+
+    // Classement par frontières (doctrine §7) : destructif < coût variable ≤ sous-couvert < CDR ≤ couvert
+    const variableComplete = reco.variable_cost_complete_kmf;
+    if (prixActuel <= 0)                       frontiers.unpriced++;
+    else if (prixActuel < variableComplete)    frontiers.destructive++;
+    else if (prixActuel < cdr)                 frontiers.undercovered++;
+    else                                       frontiers.covered++;
 
     // Distributions doctrine (repris du même reco, plus de 2ᵉ boucle)
     if (reco.health_status     && dist.by_health[reco.health_status]       != null) dist.by_health[reco.health_status]++;
@@ -198,6 +208,7 @@ async function computeDashboard() {
     },
     alerts,
     doctrine,
+    frontiers,
     generated_at: new Date().toISOString(),
   };
 }

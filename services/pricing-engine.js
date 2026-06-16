@@ -27,6 +27,7 @@ const {
   computePrices,
   computeScenarios,
   computeStrategies,
+  buildProportions,
   computeHealthStatus,
   computeSourcingDecision,
   buildAlerts,
@@ -256,6 +257,29 @@ async function recommend(input, options = {}) {
   const n3AllocationUnit = 'article';
   const n3Formula = `${_frfmt(cdr.monthly_fixed_costs_kmf)} / ${cdr.target_orders_per_month} commandes / ${allocationAverages.articles_per_order} articles = ${_frfmt(n3FixedOverhead)} KMF par article`;
 
+  // ── 14. Proportions + diagnostic de surcharge (doctrine §6) ──────
+  //   Benchmarks par famille : la ligne catégorie-spécifique l'emporte sur 'all'.
+  const benchmarks = {};
+  (config.cost_benchmarks || []).forEach(b => {
+    const isSpecific = b.category === merged.category;
+    const isAll = b.category === 'all' || b.category == null;
+    if (!isSpecific && !isAll) return;
+    if (!benchmarks[b.cost_family] || isSpecific) {
+      benchmarks[b.cost_family] = {
+        expected_share_pct: Number(b.expected_share_pct),
+        warn_ratio: Number(b.warn_ratio) || 1.3,
+        alert_ratio: Number(b.alert_ratio) || 1.6,
+        _specific: isSpecific,
+      };
+    }
+  });
+  const proportions = buildProportions(
+    breakdown,
+    { n1: n1LandedRelay, n2: n2BusinessVar, n3: n3FixedOverhead, cdr: cdrComplete, price: currentPrice },
+    fc,
+    benchmarks
+  );
+
   return {
     // ── Subject ──────────────────────────────────────────────────────
     subject_type: subjectType,
@@ -282,6 +306,7 @@ async function recommend(input, options = {}) {
     safety_margin_pct:               prices.safety_margin_pct,
     allocations:                     cdr.details._allocations || [],
     allocation_averages:             allocationAverages,
+    proportions:                     proportions,
 
     // ── Coûts doctrinaux ─────────────────────────────────────────────
     landed_relay_cost_kmf:      breakdown.landed_relay_cost_kmf,

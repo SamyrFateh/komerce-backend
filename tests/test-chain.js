@@ -5,7 +5,7 @@ require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true,
   exports: { query: async () => ({ rows: [] }), pool: {} } };
 
 const { computeCDR } = require('./services/pricing-cdr');
-const { computePrices, buildCostBreakdown } = require('./services/pricing-output');
+const { computePrices, buildCostBreakdown, buildProportions } = require('./services/pricing-output');
 
 const config = {
   finance: {
@@ -86,6 +86,14 @@ const allocSample = (cdr.details._allocations || []).find(a => a.allocation_leve
 check('allocation expose allocation_level', !!allocSample && allocSample.allocation_level === 'order');
 check('allocation expose allocation_basis', !!allocSample && allocSample.allocation_basis === 'quantity');
 check('allocation expose engaged_cost_kmf + allocated_cost_kmf', !!allocSample && allocSample.engaged_cost_kmf != null && allocSample.allocated_cost_kmf != null);
+
+// ── Proportions & surcharge (MOTEUR_ECONOMIQUE_ALLOCATION §6) ──
+const prop = buildProportions(bk, { n1: n1, n2: n2, n3: n3, cdr: cdrComplete, price: price }, config.finance);
+check('proportions : 3 familles (N1/N2/N3)', prop.families.length === 3);
+check('chaque ligne a un poids dans sa famille', prop.lines.every(l => l.share_of_family_pct != null));
+check('chaque ligne a un diagnostic de surcharge', prop.lines.every(l => ['normal', 'à surveiller', 'surcharge', 'référence'].includes(l.diagnostic)));
+const achat = prop.lines.find(l => l.label === 'Achat fournisseur');
+check('achat fournisseur = référence (jamais alarmé)', !!achat && achat.diagnostic === 'référence');
 
 // Test : prix sous coût variable = destructif
 const pDestruct = variableComplete - 500;

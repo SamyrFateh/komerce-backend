@@ -262,6 +262,97 @@ function computeScenarios(cdr, prices, cat, finance) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// PROPORTIONS & SURCHARGE (Doctrine ALLOCATION §6)
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Pour chaque ligne de coût : son poids DANS SA FAMILLE (N1/N2/N3), sa part du
+ * CDR et du prix, et un diagnostic de surcharge.
+ *   Montant -> famille -> proportion -> diagnostic (normal | à surveiller | surcharge)
+ *
+ * Seuils sur la part du CDR (configurables) ; l'achat fournisseur est exclu de
+ * l'alerte (c'est la valeur, pas une charge à optimiser). Sans benchmark calibré,
+ * le diagnostic est heuristique → confiance basse, jamais alarmiste à tort.
+ */
+function buildProportions(breakdown, totals, finance = {}, benchmarks = {}) {
+  const lr = (breakdown && breakdown.landed_relay) || {};
+  const bz = (breakdown && breakdown.business) || {};
+  const n1 = Number(totals.n1) || 0, n2 = Number(totals.n2) || 0;
+  const n3 = Number(totals.n3) || 0, cdr = Number(totals.cdr) || 0;
+  const price = Number(totals.price) || 0;
+
+  const warnPct  = Number(finance.surcharge_warn_pct)  || 12;
+  const alertPct = Number(finance.surcharge_alert_pct) || 20;
+
+  // [costKey, label, level, isReference?]
+  const LINES = [
+    ['product_purchase', 'Achat fournisseur', 'N1', true],
+    ['sourcing', 'Sourcing', 'N1'], ['hub', 'Hub Dubai', 'N1'], ['packaging', 'Emballage', 'N1'],
+    ['freight', 'Fret', 'N1'], ['customs', 'Douane', 'N1'], ['port_transitary', 'Port / transitaire', 'N1'],
+    ['local_distribution', 'Distribution locale', 'N1'], ['relay', 'Relais', 'N1'],
+    ['payment', 'Frais de paiement', 'N2'], ['risk_provision', 'Provision risque', 'N2'],
+    ['fixed_overhead', 'Charges fixes imputées', 'N3'],
+  ];
+  const srcOf = key => (key === 'payment' || key === 'risk_provision') ? bz[key]
+                     : (key === 'fixed_overhead') ? n3 : lr[key];
+  const familyTotal = lvl => (lvl === 'N1' ? n1 : lvl === 'N2' ? n2 : n3);
+  const pct = (part, whole) => (whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0);
+
+  let nBench = 0, nEval = 0;
+  const lines = LINES.map(([key, label, level, isRef]) => {
+    const amount = Number(srcOf(key)) || 0;
+    if (!(amount > 0)) return null;
+    const shareCdr = pct(amount, cdr);
+    const bm = benchmarks[key];
+    let diagnostic, basis, confidence;
+    if (bm && bm.expected_share_pct != null) {
+      // calibré : comparaison à la part attendue × tolérance
+      nEval++; nBench++;
+      const exp = Number(bm.expected_share_pct);
+      const warn  = exp * (Number(bm.warn_ratio)  || 1.3);
+      const alert = exp * (Number(bm.alert_ratio) || 1.6);
+      if (shareCdr > alert)      diagnostic = 'surcharge';
+      else if (shareCdr > warn)  diagnostic = 'à surveiller';
+      else                       diagnostic = 'normal';
+      basis = 'benchmark'; confidence = 'high';
+    } else if (isRef) {
+      diagnostic = 'référence'; basis = 'reference'; confidence = 'high';
+    } else {
+      // heuristique : seuils globaux sur la part du CDR
+      nEval++;
+      if (shareCdr >= alertPct)     diagnostic = 'surcharge';
+      else if (shareCdr >= warnPct) diagnostic = 'à surveiller';
+      else                          diagnostic = 'normal';
+      basis = 'heuristic'; confidence = 'low';
+    }
+    return {
+      cost_key: key, label, family: level,
+      amount_kmf: r(amount),
+      share_of_family_pct: pct(amount, familyTotal(level)),
+      share_of_cdr_pct: shareCdr,
+      share_of_price_pct: pct(amount, price),
+      expected_share_pct: bm ? Number(bm.expected_share_pct) : null,
+      diagnostic, basis, confidence,
+    };
+  }).filter(Boolean);
+
+  const families = [
+    { family: 'N1', label: 'Coût rendu relais', amount_kmf: r(n1), share_of_cdr_pct: pct(n1, cdr), share_of_price_pct: pct(n1, price) },
+    { family: 'N2', label: 'Business variable', amount_kmf: r(n2), share_of_cdr_pct: pct(n2, cdr), share_of_price_pct: pct(n2, price) },
+    { family: 'N3', label: 'Charges fixes imputées', amount_kmf: r(n3), share_of_cdr_pct: pct(n3, cdr), share_of_price_pct: pct(n3, price) },
+  ];
+
+  const overallConfidence = !nEval ? 'low' : (nBench === nEval ? 'high' : (nBench > 0 ? 'partial' : 'low'));
+  return {
+    lines, families,
+    diagnostic_basis: nBench === 0 ? 'heuristic' : (nBench === nEval ? 'benchmark' : 'mixed'),
+    confidence: overallConfidence,
+    benchmarks_calibrated: nBench, lines_evaluated: nEval,
+    thresholds: { warn_pct: warnPct, alert_pct: alertPct, basis: 'share_of_cdr' },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // STRATÉGIES PRIX CANONIQUES (Doctrine §6 / §7)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -572,6 +663,7 @@ module.exports = {
   computePrices,
   computeScenarios,
   computeStrategies,
+  buildProportions,
   computeHealthStatus,
   computeSourcingDecision,
   buildAlerts,

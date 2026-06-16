@@ -198,14 +198,45 @@ function _renderColBusiness() {
   const r = _ps.currentReco;
   if (!r) return '<div class="apv-kempty">En attente du calcul…</div>';
   const business = (r.cost_breakdown || {}).business || {};
-  const landed = r.landed_relay_cost_kmf || 0;
-  const total = r.business_complete_cost_kmf || r.cost_complete_estimated_kmf || 0;
-  let html = '<div class="apv-ktotal apv-ktotal-green"><div class="apv-ktotal-label">Total business</div><div class="apv-ktotal-value">' + _fmt(total) + '</div></div>';
-  let detBody = '<div class="apv-kline apv-kline-report"><span class="apv-kline-icon">═</span><span class="apv-kline-label">Coût rendu relais (report)</span><span class="apv-kline-val">' + _fmt(landed) + '</span></div>';
-  [['💳','Frais paiement',business.payment],['🛡️','Provision risques',business.risk_provision],['🏢','Part charges fixes',business.fixed_overhead]].forEach(([emoji,label,val]) => {
-    detBody += '<div class="apv-kline"><span class="apv-kline-icon">' + emoji + '</span><span class="apv-kline-label">' + label + '</span><span class="apv-kline-val">' + (val > 0 ? '+ ' + _fmt(val) : '—') + '</span></div>';
+  const n1  = r.n1_landed_relay_cost_kmf || r.landed_relay_cost_kmf || 0;
+  const n2  = r.n2_business_variable_cost_kmf != null ? r.n2_business_variable_cost_kmf : ((business.payment || 0) + (business.risk_provision || 0));
+  const cvc = r.variable_cost_complete_kmf != null ? r.variable_cost_complete_kmf : (n1 + n2);
+  const n3  = r.n3_fixed_overhead_allocation_kmf != null ? r.n3_fixed_overhead_allocation_kmf : (business.fixed_overhead || 0);
+  const cdr = r.cdr_complete_kmf != null ? r.cdr_complete_kmf : (cvc + n3);
+  const price = r.current_price_kmf || 0;
+  const contribution = r.contribution_kmf != null ? r.contribution_kmf : (price > 0 ? price - cvc : null);
+  const margeComplete = price > 0 ? price - cdr : null;
+
+  let html = '<div class="apv-ktotal apv-ktotal-green"><div class="apv-ktotal-label">CDR complet · N1+N2+N3</div><div class="apv-ktotal-value">' + _fmt(cdr) + '</div></div>';
+
+  // N2 business variable
+  let n2Body = '<div class="apv-kline apv-kline-report"><span class="apv-kline-icon">═</span><span class="apv-kline-label">N1 · coût rendu relais (report)</span><span class="apv-kline-val">' + _fmt(n1) + '</span></div>';
+  [['💳','Frais paiement',business.payment],['🛡️','Provision risque',business.risk_provision]].forEach(([emoji,label,val]) => {
+    n2Body += '<div class="apv-kline"><span class="apv-kline-icon">' + emoji + '</span><span class="apv-kline-label">' + label + '</span><span class="apv-kline-val">' + (val > 0 ? '+ ' + _fmt(val) : '—') + '</span></div>';
   });
-  html += _kSection('biz-detail', 'Détail (3 lignes business)', detBody, false);
+  n2Body += '<div class="apv-kline" style="border-top:1px solid #e2e8f0;font-weight:700;"><span class="apv-kline-label">N2 · business variable</span><span class="apv-kline-val">' + _fmt(n2) + '</span></div>';
+  html += _kSection('n2-detail', '🟢 N2 · business variable', n2Body, false);
+
+  // Frontière rouge
+  html += '<div class="apv-kline" style="background:#fef2f2;border-left:3px solid #dc2626;padding:8px 10px;margin:6px 0;border-radius:0 6px 6px 0;"><span class="apv-kline-label" style="color:#b91c1c;font-weight:700;">🔴 Coût variable complet (N1+N2)</span><span class="apv-kline-val" style="color:#b91c1c;font-weight:800;">' + _fmt(cvc) + '</span></div>';
+  html += '<p class="apv-mini-text apv-italic" style="margin:0 0 8px 4px;">Sous cette ligne, chaque vente détruit de l\'argent.</p>';
+
+  // N3
+  let n3Body = '<div class="apv-kline"><span class="apv-kline-icon">🏢</span><span class="apv-kline-label">Charges fixes imputées / article</span><span class="apv-kline-val">' + _fmt(n3) + '</span></div>';
+  if (r.n3_formula) n3Body += '<p class="apv-mini-text" style="margin:4px 0 0 4px;">' + _esc(r.n3_formula) + '</p>';
+  html += _kSection('n3-detail', '🟠 N3 · charges fixes imputées', n3Body, false);
+
+  // Contribution vs marge complète
+  if (price > 0) {
+    const contribColor = contribution >= 0 ? '#166534' : '#b91c1c';
+    const margeColor = margeComplete >= 0 ? '#166534' : '#a16207';
+    let cBody = '<div class="apv-kline"><span class="apv-kline-label">Prix de vente actuel</span><span class="apv-kline-val">' + _fmt(price) + '</span></div>';
+    cBody += '<div class="apv-kline"><span class="apv-kline-label">Contribution <span style="color:#94a3b8;">(prix − coût variable)</span></span><span class="apv-kline-val" style="color:' + contribColor + ';font-weight:700;">' + _fmt(contribution) + '</span></div>';
+    cBody += '<div class="apv-kline"><span class="apv-kline-label">Marge complète <span style="color:#94a3b8;">(prix − CDR)</span></span><span class="apv-kline-val" style="color:' + margeColor + ';font-weight:700;">' + _fmt(margeComplete) + '</span></div>';
+    cBody += '<p class="apv-mini-text apv-italic" style="margin:4px 0 0 4px;">La contribution couvre les charges fixes ; la marge complète, c\'est ce qui reste une fois la structure payée.</p>';
+    html += _kSection('contrib-detail', '🟣 Contribution & marge complète', cBody, true);
+  }
+
   if (r.monthly_break_even_orders || r.target_orders_per_month) {
     let pilBody = '';
     if (r.target_orders_per_month) pilBody += '<div class="apv-kline"><span class="apv-kline-label">Cible mensuelle</span><span class="apv-kline-val">' + r.target_orders_per_month + ' commandes</span></div>';
@@ -262,9 +293,11 @@ function _renderColDecision() {
     html += _kSection('selected-detail', 'Détail du scénario', dBody, false);
   }
 
-  let safeBody = '<div class="apv-kline"><span class="apv-kline-label">💀 Prix de survie</span><span class="apv-kline-val">' + _fmt(r.survival_price_kmf) + '</span></div>';
-  safeBody += '<div class="apv-kline"><span class="apv-kline-label">🛡️ Minimum sûr</span><span class="apv-kline-val">' + _fmt(r.minimum_safe_price_kmf) + '</span></div>';
-  html += _kSection('safety', 'Garde-fous', safeBody, false);
+  let safeBody = '<div class="apv-kline"><span class="apv-kline-label">🔴 Coût variable complet</span><span class="apv-kline-val">' + _fmt(r.variable_cost_complete_kmf || r.survival_price_kmf) + '</span></div>';
+  safeBody += '<div class="apv-kline"><span class="apv-kline-label">🟤 CDR complet</span><span class="apv-kline-val">' + _fmt(r.cdr_complete_kmf || r.cost_complete_estimated_kmf) + '</span></div>';
+  safeBody += '<div class="apv-kline"><span class="apv-kline-label">🛡️ Prix plancher (sécurité)</span><span class="apv-kline-val">' + _fmt(r.minimum_safe_price_kmf) + '</span></div>';
+  safeBody += '<p class="apv-mini-text apv-italic" style="margin:4px 0 0 4px;">Plancher = coût variable + marge de sécurité. Il n\'est jamais égal au CDR.</p>';
+  html += _kSection('safety', '🚧 Frontières & plancher', safeBody, false);
 
   if (selected && selected.selectable && _userCanApply() && r.product_id) {
     html += '<div class="apv-apply-zone"><button class="apv-apply-btn" data-act="apply-scenario" data-product-id="' + _esc(r.product_id) + '" data-price="' + selected.price_kmf + '" data-scenario-id="' + _esc(selected.id) + '" data-scenario-label="' + _esc(selected.label) + '" data-levier="' + _esc(selected.levier||'') + '" data-survival="' + r.survival_price_kmf + '">✓ Appliquer ce scénario (' + _fmt(selected.price_kmf) + ')</button></div>';
@@ -341,7 +374,7 @@ function _renderHTML(container) {
   html += '<div class="apv-kanban">';
   html += _kanbanCol(1, 'gray',  '🎯 Objet',                _renderColObjet());
   html += _kanbanCol(2, 'blue',  '📦 Coût rendu relais',    _renderColRelais());
-  html += _kanbanCol(3, 'green', '💼 Coût complet business', _renderColBusiness());
+  html += _kanbanCol(3, 'green', '💼 N2, N3 → CDR complet', _renderColBusiness());
   html += _kanbanCol(4, 'amber', '🎯 Décision',             _renderColDecision());
   html += '</div>';
 

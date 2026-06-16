@@ -314,6 +314,7 @@ async function computeRecommend(b = {}) {
       safety_margin_pct:                doctrine.safety_margin_pct,
       allocations:                      doctrine.allocations,
       allocation_averages:              doctrine.allocation_averages,
+      proportions:                      doctrine.proportions,
       scenarios:                        doctrine.scenarios,
       landed_relay_cost_kmf:            doctrine.landed_relay_cost_kmf,
       business_complete_cost_kmf:       doctrine.business_complete_cost_kmf,
