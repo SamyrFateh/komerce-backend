@@ -98,10 +98,17 @@ function extractSqlTables(src) {
   const stripped = src
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/^\s*\/\/.*$/gm, ' ');
+  const sqlParts = [];
+  const queryCallRe = /\b(?:db|pool|client)\.query\s*\(\s*(`[\s\S]*?`|'[\s\S]*?'|"[\s\S]*?")/g;
+  for (const match of stripped.matchAll(queryCallRe)) {
+    sqlParts.push(match[1].slice(1, -1));
+  }
+
+  const sql = sqlParts.join('\n');
   const read = new Set();
   const write = new Set();
   const addMatches = (re, set) => {
-    for (const match of stripped.matchAll(re)) {
+    for (const match of sql.matchAll(re)) {
       const table = match[1];
       if (table && !table.includes('$')) set.add(table);
     }
@@ -137,6 +144,7 @@ function hasSuspiciousDbToken(value) {
         'a',
         'avec',
         'atomique',
+        'carrier',
         'completed',
         'const',
         'customs',
