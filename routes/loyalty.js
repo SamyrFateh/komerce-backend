@@ -1,18 +1,18 @@
 /**
  * @komerce-arch
  * @role          loyalty
- * @domain        unknown
+ * @domain        wallet
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       loyalty_tiers, users, v_loyalty_summary
+ * @db-write      loyalty_tiers
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  wallet
  * @version       2026-06
  */
 

@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       LATERAL, customs_shipment_parcels, customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcel_items, parcels, products
+ * @db-write      order_item_real_cost_allocations
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine

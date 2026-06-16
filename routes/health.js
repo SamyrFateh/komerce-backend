@@ -1,18 +1,18 @@
 /**
  * @komerce-arch
  * @role          health
- * @domain        unknown
+ * @domain        operations
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       @unknown
+ * @db-read       P2, orders, parcels
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  operations
  * @version       2026-06
  */
 

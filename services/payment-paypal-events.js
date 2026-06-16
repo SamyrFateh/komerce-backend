@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       @unknown
- * @db-write      @unknown
+ * @db-write      paypal_events_processed
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  payment, checkout

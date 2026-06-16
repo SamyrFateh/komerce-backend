@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       agent_collections, agent_deposits, cash_collections, cash_deposits, orders, users
+ * @db-write      cash_deposits
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  payment

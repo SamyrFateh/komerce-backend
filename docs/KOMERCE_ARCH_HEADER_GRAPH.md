@@ -1,6 +1,6 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:13:49.445Z
+Generated: 2026-06-16T11:21:03.939Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
@@ -12,34 +12,35 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 306
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 561
-- Edges: 1955
-- DB tables: 37
+- Graph nodes: 713
+- Edges: 2857
+- DB tables: 188
 - Doctrines: 112
-- Impact areas: 106
+- Impact areas: 107
 - Unresolved code edges: 244
 
 ## Domains
 
-- auth: 17
+- auth: 18
 - bootstrap: 9
 - boutique: 37
-- catalog: 21
+- catalog: 25
 - checkout: 2
 - collective-workspace: 3
 - dashboard: 28
 - economic-engine: 24
 - inventory: 2
-- logistics: 26
+- logistics: 29
 - notification: 6
+- operations: 4
 - order-payment: 1
-- orders: 21
+- orders: 23
 - payment: 14
 - recommendations: 4
-- shared-cart: 33
+- shared-cart: 34
 - tracking: 1
-- unknown: 54
-- wallet: 3
+- unknown: 37
+- wallet: 5
 
 ## Layers
 
@@ -292,62 +293,126 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE services/admin-order-refund.js -> alerts
+- WRITE services/cancel-order-purchase-orders.js -> alerts
+- WRITE services/cash-operations.js -> alerts
+- WRITE services/confirm-pickup-cash-payment.js -> alerts
+- WRITE services/payment-paypal.js -> alerts
+- WRITE services/product-publication-guard.js -> alerts
+- WRITE services/purchasing-trigger-service.js -> alerts
+- WRITE services/repair-collective-ready-to-capture.js -> alerts
+- WRITE services/repair-collective-stock-reservations.js -> alerts
+- WRITE services/repair-ordered-without-purchase-orders.js -> alerts
+- WRITE services/scan-operations.js -> alerts
+- WRITE services/signal-service.js -> a
+- WRITE services/wallet-service.js -> atomique
+- WRITE services/scan-operations.js -> attempts
+- WRITE routes/pickup-secret.js -> avec
+- WRITE routes/admin/system.js -> basket_items
+- WRITE routes/admin/users.js -> basket_items
+- WRITE routes/admin/system.js -> baskets
+- WRITE routes/admin/users.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
+- WRITE routes/carriers.js -> carrier
+- WRITE routes/carriers.js -> carriers
+- WRITE routes/shares.js -> cart_contributions
+- WRITE routes/orders/create.js -> cart_shares
+- WRITE routes/shares.js -> cart_shares
+- WRITE services/cash-operations.js -> cash_collections
+- WRITE services/confirm-pickup-cash-payment.js -> cash_collections
+- WRITE routes/cash.js -> cash_deposits
+- WRITE routes/admin/delete-order-cascade.js -> ceremony_order_items
+- WRITE services/collective-workspace-engine.js -> collective_payment_sessions
+- WRITE services/collective-workspace-engine.js -> collective_payment_tokens
+- WRITE services/collective-stock-reservation-service.js -> collective_stock_reservations
+- WRITE services/collective-workspace-engine.js -> collective_workspace_contributions
+- WRITE services/collective-workspace-engine.js -> collective_workspace_events
+- WRITE services/collective-workspace-engine.js -> collective_workspace_items
+- WRITE services/collective-workspace-engine.js -> collective_workspaces
+- WRITE services/pricing-strategy-service.js -> competitor_prices
+- WRITE services/refund-service.js -> completed
+- WRITE routes/admin-pricing-matrices.js -> const
+- WRITE routes/pricing.js -> cost_benchmarks
+- WRITE routes/admin-cost-components.js -> cost_component_events
+- WRITE routes/admin-cost-components.js -> cost_components
+- WRITE routes/admin-customs-categories.js -> customs_categories
+- WRITE routes/orders/status.js -> customs_history
+- WRITE services/customs-shipment-service.js -> customs_shipment_parcels
+- WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE routes/carriers.js -> customs
+- WRITE services/reconciliation-service.js -> direct
+- WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE services/economic-engine-queries.js -> economic_alerts
 - WRITE routes/economic-engine.js -> economic_charges
 - WRITE routes/economic-engine.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
 - WRITE routes/economic-engine.js -> economic_variables
+- WRITE services/collective-workspace-engine.js -> et
+- WRITE services/wallet-service.js -> et
+- WRITE routes/admin-finance-config.js -> exchange_rates
+- WRITE services/pricing-rates.js -> exchange_rates
+- WRITE routes/modules.js -> fabrics
+- WRITE routes/admin/system.js -> favorites
+- WRITE routes/admin/users.js -> favorites
+- WRITE services/collective-workspace-engine.js -> filtre
+- WRITE routes/admin-costing.js -> finance_config
+- WRITE routes/admin-finance-config.js -> finance_config
+- WRITE services/pricing-rates.js -> finance_config
 - WRITE services/shared-cart-financial-guard.js -> financial_alerts
+- WRITE routes/modules.js -> garment_models
+- WRITE routes/admin/system.js -> incidents
+- WRITE routes/admin/users.js -> incidents
+- WRITE routes/ops-api.js -> incidents
+- WRITE services/alert-engine.js -> incidents
+- WRITE services/incident-service.js -> incidents
+- WRITE services/reconciliation-service.js -> incidents
+- WRITE services/scan-engine.js -> incidents
+- WRITE services/inventory-service.js -> inventory_items
 - WRITE services/order-payment-confirmation.js -> inventory_reservations
+- WRITE routes/admin/system.js -> invoices
+- WRITE services/invoice-service.js -> invoices
+- WRITE routes/admin-pricing-matrices.js -> log
+- WRITE routes/admin/system.js -> loyalty_history
+- WRITE routes/admin/users.js -> loyalty_history
+- WRITE routes/admin/system.js -> loyalty_points
+- WRITE routes/admin/users.js -> loyalty_points
+- WRITE routes/admin-loyalty.js -> loyalty_rewards
+- WRITE services/loyalty-service.js -> loyalty_rewards
+- WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/simulator/state-advancer.js -> notification_log
 - WRITE services/notification-service.js -> notification_logs
+- WRITE routes/admin/system.js -> notifications
+- WRITE routes/admin/users.js -> notifications
+- WRITE services/collective-workspace-engine.js -> OF
+- WRITE services/scan-operations.js -> OF
+- WRITE services/verify-qr-collection.js -> OF
+- WRITE routes/hub-dashboard.js -> order_comments
+- WRITE routes/hub-mark-ordered.js -> order_comments
+- WRITE routes/relay-dashboard.js -> order_comments
+- WRITE routes/hub-dashboard.js -> order_incidents
+- WRITE routes/relay-dashboard.js -> order_incidents
+- WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
+- WRITE services/cost-allocation.js -> order_item_real_cost_allocations
+- WRITE routes/admin/delete-order-cascade.js -> order_items
+- WRITE routes/admin/system.js -> order_items
 - WRITE routes/orders.js -> order_items
+- WRITE routes/orders/create.js -> order_items
+- WRITE services/parcel-operations.js -> order_items
+- WRITE services/scan-engine.js -> order_items
+- WRITE routes/admin/delete-order-cascade.js -> order_status_history
+- WRITE routes/admin/system.js -> order_status_history
+- WRITE routes/admin/users.js -> order_status_history
 - WRITE routes/orders.js -> order_status_history
+- WRITE routes/orders/create.js -> order_status_history
 - WRITE services/order-payment-confirmation.js -> order_status_history
 - WRITE services/order-status-machine.js -> order_status_history
+- WRITE services/parcel-operations.js -> order_status_history
 - WRITE services/payment-cash-confirm.js -> order_status_history
+- WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/payment-stripe.js -> order_status_history
-- WRITE routes/orders.js -> orders
-- WRITE services/order-payment-confirmation.js -> orders
-- WRITE services/order-service.js -> orders
-- WRITE services/order-status-machine.js -> orders
-- WRITE services/shared-cart-engine.js -> orders
-- WRITE routes/otp.js -> otp_codes
-- WRITE routes/payments.js -> payments
-- WRITE services/payment-cash-confirm.js -> payments
-- WRITE services/payment-stripe.js -> payments
-- WRITE routes/boutique-suggestions.js -> personalization_events
-- WRITE routes/products.js -> product_images
-- WRITE routes/products.js -> products
-- WRITE services/order-payment-confirmation.js -> products
-- WRITE routes/otp.js -> sessions
-- WRITE routes/shared-cart.js -> shared_cart_contributions
-- WRITE services/shared-cart-engine.js -> shared_cart_contributions
-- WRITE services/shared-cart-financial-guard.js -> shared_cart_contributions
-- WRITE routes/shared-cart.js -> shared_cart_estimations
-- WRITE services/shared-cart-estimation-service.js -> shared_cart_estimations
-- WRITE services/shared-cart-engine.js -> shared_cart_events
-- WRITE services/shared-cart-estimation-service.js -> shared_cart_events
-- WRITE services/shared-cart-financial-guard.js -> shared_cart_events
-- WRITE services/shared-cart-items-service.js -> shared_cart_events
-- WRITE routes/shared-cart.js -> shared_cart_items
-- WRITE services/shared-cart-items-service.js -> shared_cart_items
-- WRITE routes/shared-cart.js -> shared_carts
-- WRITE services/shared-cart-engine.js -> shared_carts
-- WRITE services/shared-cart-items-service.js -> shared_carts
-- WRITE services/order-payment-confirmation.js -> stock_movements
-- WRITE routes/payments.js -> stripe_events
-- WRITE services/payment-stripe.js -> stripe_events
-- WRITE routes/boutique-suggestions.js -> suggestion_logs
-- WRITE routes/payments.js -> transactions
-- WRITE services/payment-cash-confirm.js -> transactions
-- WRITE services/payment-stripe.js -> transactions
-- WRITE routes/otp.js -> users
-- WRITE routes/wallet.js -> wallet_accounts
-- WRITE routes/orders.js -> wallet_ledger
-- WRITE routes/wallet.js -> wallet_ledger
-- WRITE services/order-service.js -> wallet_ledger
+- WRITE services/inventory-service.js -> order
+- WRITE routes/admin/delete-order-cascade.js -> orders
 
 ## Unresolved Code Edges
 

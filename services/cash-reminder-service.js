@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       orders, parcels, users
+ * @db-write      orders, parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  payment

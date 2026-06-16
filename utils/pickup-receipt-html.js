@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          pickup-receipt-html
- * @domain        unknown
+ * @domain        logistics
  * @layer         util
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  logistics
  * @version       2026-06
  */
 

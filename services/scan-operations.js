@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       order_items, orders, recipients, relais, users
+ * @db-write      OF, alerts, attempts, orders, scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

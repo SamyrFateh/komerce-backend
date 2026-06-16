@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       LATERAL, customs_shipments, finance_config, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, products, relais
+ * @db-write      finance_config
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  economic-engine, admin-dashboard

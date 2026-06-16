@@ -1,18 +1,18 @@
 /**
  * @komerce-arch
  * @role          invoice-service
- * @domain        unknown
+ * @domain        orders
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       DB, invoices, order_items, orders, parcels, products, recipients, relais
+ * @db-write      invoices
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  orders, checkout
  * @version       2026-06
  */
 

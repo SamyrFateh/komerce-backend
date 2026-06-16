@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
+ * @db-read       actual_orders, collective_payment_sessions, collective_workspace_contributions, collective_workspace_items, collective_workspaces, order_aggs, order_item_cost_imputations, order_item_real_cost_allocations, order_set, orders, orders_with_variable, parcels, scan_events, signals, transit_parcels, unnest
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

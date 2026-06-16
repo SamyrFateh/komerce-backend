@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
+ * @db-read       charges, customs_categories, finance_config, pricing_components, products, risk_provisions
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

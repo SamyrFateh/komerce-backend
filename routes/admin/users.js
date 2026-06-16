@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       basket_items, baskets, favorites, loyalty_history, loyalty_points, notifications, orders, recipients, refresh_tokens, sessions, user_addresses, users, wallet_transactions, wallets, wishlists
+ * @db-write      basket_items, baskets, favorites, incidents, loyalty_history, loyalty_points, notifications, order_status_history, recipients, refresh_tokens, scan_events, scans, sessions, sms_log, user_addresses, users, wallet_transactions, wallets, wishlists
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard

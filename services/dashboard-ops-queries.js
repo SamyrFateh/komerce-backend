@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
+ * @db-read       customs_effective_rates, exchange_rates, incidents, invoices, order_items, orders, parcels, products, recipients, relais, scan_events, users
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

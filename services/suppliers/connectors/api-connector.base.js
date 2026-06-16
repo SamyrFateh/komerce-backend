@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          api-connector-base
- * @domain        unknown
+ * @domain        catalog
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -12,7 +12,7 @@
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @impact-areas  catalog, product-discovery
  * @version       2026-06
  */
 

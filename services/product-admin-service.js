@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       @unknown
- * @db-write      @unknown
+ * @db-read       boutique_categories, boutique_subcategories, order_items, orders, product_variants, products
+ * @db-write      product_variants, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  catalog, product-discovery, admin-dashboard
