@@ -1,6 +1,6 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:21:03.939Z
+Generated: 2026-06-16T11:25:06.898Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
