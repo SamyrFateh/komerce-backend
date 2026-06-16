@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db.js, services/payment-paypal.js, services/payment-paypal-events.js
+ * @used-by       bootstrap/api-routes.js
  * @db-read       orders, paypal_events_processed
  * @db-write      alerts, order_status_history, orders, paypal_events_processed
  * @db-txn        resolve_before_behavior_change
@@ -18,7 +18,7 @@
 
 'use strict';
 
-const refundReceiptService = require('./documents/refund-receipt');
+const refundReceiptService = require('../services/documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'payment-paypal' });
 
 /**
