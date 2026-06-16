@@ -16,30 +16,28 @@ Lire dans cet ordre :
 
 1. [`AGENTS.md`](./AGENTS.md) — règles obligatoires agent/dev ;
 2. [`docs/README.md`](./docs/README.md) — index actif, docs à lire, archive ;
-3. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — état de la cartographie architecture ;
-4. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-5. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-6. [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — doctrine produit active du panier partagé ;
-7. [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — mise en œuvre datée.
+3. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — doctrine obligatoire du graphe ;
+4. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — état de la cartographie architecture ;
+5. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+6. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+7. [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — doctrine produit active du panier partagé ;
+8. [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — mise en œuvre datée.
 
 Tout autre document non listé par `docs/README.md` est historique, contextuel ou subordonné.
 
 ---
 
-## Gouvernance architecture obligatoire
+## Doctrine graphe obligatoire
 
-Toute création, modification ou suppression de feature fonctionnelle est incomplète tant que la cartographie architecture n'est pas à jour.
+Peu importe où un agent arrive dans le dépôt, toute création, modification ou suppression de feature fonctionnelle doit suivre :
 
-Règle obligatoire :
+```txt
+docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
+```
 
-- lire le header `@komerce-arch` ou `@komerce-arch-lite` de chaque fichier touché avant modification ;
-- créer un header pour tout nouveau fichier source ;
-- mettre à jour les champs `@inputs`, `@outputs`, `@depends`, `@used-by`, `@db-read`, `@db-write`, `@db-txn`, `@doctrine`, `@impact-areas` quand le contrat fonctionnel change ;
-- pour une suppression ou fusion, nettoyer les références `@depends`, `@used-by`, `@owner` ;
-- régénérer le graphe avec `node scripts/generate-komerce-arch-graph.js` ;
-- vérifier `files without headers: 0` et `lite headers without owner: 0`.
+Cette doctrine rend obligatoire la mise à jour des headers `@komerce-arch` / `@komerce-arch-lite` et la régénération du graphe quand le contrat fonctionnel change.
 
-Un champ incertain doit rester explicitement en `@unknown` ou `resolve_before_behavior_change`; il ne faut pas inventer une cartographie faussement précise.
+Un changement fonctionnel sans cartographie à jour est incomplet.
 
 ---
 
@@ -88,6 +86,7 @@ npm run check:all
 Une PR doit :
 
 - respecter les invariants listés dans `docs/README.md` et `AGENTS.md` ;
+- respecter `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` ;
 - mettre à jour le document actif concerné ;
 - mettre à jour la cartographie `@komerce-arch` si le contrat fonctionnel change ;
 - régénérer le graphe architecture après tout ajout, suppression ou changement structurel ;
