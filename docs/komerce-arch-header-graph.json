@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 308,
-    "filesWithFullHeaders": 278,
+    "scannedCodeFiles": 312,
+    "filesWithFullHeaders": 282,
     "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 308,
+    "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 635,
-    "edges": 2690,
-    "dbTables": 105,
-    "doctrines": 113,
+    "graphNodes": 646,
+    "edges": 2798,
+    "dbTables": 107,
+    "doctrines": 118,
     "impactAreas": 109,
-    "unresolvedCodeEdges": 249
+    "unresolvedCodeEdges": 264
   },
   "byDomain": {
     "bootstrap": 9,
@@ -40,14 +40,16 @@
     "collective-workspace": 3,
     "economic-engine": 24,
     "dashboard": 28,
-    "orders": 23,
+    "orders": 24,
     "notification": 6,
-    "unknown": 37,
+    "unknown": 35,
     "logistics": 29,
     "operations": 4,
     "inventory": 2,
     "wallet": 5,
+    "documents": 4,
     "order-payment": 1,
+    "refunds": 1,
     "validation": 1
   },
   "byLayer": {
@@ -72,9 +74,9 @@
     "state-store": 1,
     "schema": 1,
     "view-model": 3,
-    "route": 97,
+    "route": 96,
+    "service": 103,
     "entrypoint": 1,
-    "service": 98,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -83,9 +85,9 @@
   },
   "byCriticality": {
     "critical": 66,
-    "medium": 94,
+    "medium": 96,
     "high": 118,
-    "low": 30
+    "low": 32
   },
   "nodes": [
     {
@@ -6045,7 +6047,12 @@
         "recipients",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "order_status_history",
+        "orders",
+        "refunds",
+        "transaction_documents"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6315,12 +6322,13 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "order_id",
+        "status",
+        "note (admin/agent)"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "updated order status",
+        "pickup_proof (if collected)"
       ],
       "depends": [
         "db.js",
@@ -6344,6 +6352,8 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
+        "order_status_machine",
+        "pickup_collected_proof",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
@@ -6735,9 +6745,9 @@
       "file": "routes/payments-paypal.js",
       "type": "file",
       "headerType": "full",
-      "role": "payment-payments-paypal",
+      "role": "payment-payment-paypal",
       "domain": "payment",
-      "layer": "route",
+      "layer": "service",
       "criticality": "critical",
       "owner": null,
       "purpose": null,
@@ -6751,16 +6761,22 @@
       ],
       "depends": [
         "db.js",
-        "middleware/auth.js",
-        "services/*"
+        "services/payment-paypal.js",
+        "services/payment-paypal-events.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "orders"
+        "orders",
+        "paypal_events_processed"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "alerts",
+        "order_status_history",
+        "orders",
+        "paypal_events_processed"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7364,8 +7380,16 @@
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "shared_carts",
+        "shared_cart_contributions",
+        "orders"
+      ],
+      "dbWrite": [
+        "shared_cart_contributions",
+        "refunds",
+        "transaction_documents"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -7895,7 +7919,13 @@
         "orders",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "wallet_transactions",
+        "wallet_credit_lots",
+        "wallet_consumptions",
+        "wallets",
+        "transaction_documents"
+      ],
       "dbTxn": [
         "ledger_append_only",
         "credit_debit_idempotent"
@@ -7985,8 +8015,16 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js",
+        "services/refund-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "usedBy": [
+        "routes/admin.js",
+        "routes/admin/orders.js"
+      ],
       "dbRead": [
         "orders",
         "refunds"
@@ -8262,8 +8300,15 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js",
+        "services/refund-service.js",
+        "services/shared-cart-refund-queue.js"
+      ],
+      "usedBy": [
+        "routes/shared-cart.js",
+        "routes/shared-cart-refund-admin.js"
+      ],
       "dbRead": [
         "shared_cart_contributions",
         "shared_carts"
@@ -8943,6 +8988,184 @@
       "impactAreas": [
         "dashboard",
         "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/documents/document-service.js",
+      "file": "services/documents/document-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "document-service",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "subject (événement confirmé)",
+        "document_type",
+        "metadata"
+      ],
+      "outputs": [
+        "transaction_documents row (stable",
+        "idempotent)"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/documents/refund-receipt.js",
+        "services/documents/contribution-receipt.js"
+      ],
+      "dbRead": [
+        "transaction_documents"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "dbTxn": [
+        "caller_transaction_optional"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds",
+        "shared-cart",
+        "wallet"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/documents/pickup-proof.js",
+      "file": "services/documents/pickup-proof.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-proof",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "orderId (commande en statut 'collected')"
+      ],
+      "outputs": [
+        "transaction_documents row (pickup_proof)"
+      ],
+      "depends": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "usedBy": [
+        "services/verify-qr-collection.js (post-commit)"
+      ],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "dbTxn": [
+        "caller_transaction_optional"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/documents/refund-receipt.js",
+      "file": "services/documents/refund-receipt.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "refund-receipt",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "refundId (remboursement confirmé)"
+      ],
+      "outputs": [
+        "transaction_documents row (refund_receipt)"
+      ],
+      "depends": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/orders/cancel.js (post-commit)",
+        "services/refund-service.js (post-commit)"
+      ],
+      "dbRead": [
+        "refunds",
+        "orders",
+        "invoices"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "dbTxn": [
+        "caller_transaction_optional"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/documents/wallet-receipt.js",
+      "file": "services/documents/wallet-receipt.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "wallet-receipt",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "low",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "walletTransactionId"
+      ],
+      "outputs": [
+        "transaction_documents row (wallet_receipt)"
+      ],
+      "depends": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "usedBy": [
+        "services/wallet-service.js (post-commit)"
+      ],
+      "dbRead": [
+        "wallet_transactions",
+        "wallet_lots",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "dbTxn": [
+        "caller_transaction_optional"
+      ],
+      "doctrine": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "wallet"
       ],
       "version": "2026-06"
     },
@@ -10829,22 +11052,39 @@
       "type": "file",
       "headerType": "full",
       "role": "refund-service",
-      "domain": "unknown",
+      "domain": "refunds",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "client",
+        "order",
+        "amountKmf",
+        "amountEur",
+        "refundType",
+        "reason",
+        "userId"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "refund row",
+        "stripe/wallet refund result"
       ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
+      "depends": [
+        "db.js",
+        "stripe",
+        "services/wallet-service.js"
+      ],
+      "usedBy": [
+        "routes/orders/cancel.js",
+        "services/admin-order-refund.js",
+        "services/cancel-shared-cart-with-refunds.js"
+      ],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "wallets"
+      ],
       "dbWrite": [
         "refunds"
       ],
@@ -10852,10 +11092,14 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
+        "refund_confirmed_only",
+        "idempotent_stripe_refund",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "orders",
+        "refunds",
+        "wallet"
       ],
       "version": "2026-06"
     },
@@ -11616,8 +11860,15 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js",
+        "services/refund-service.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "usedBy": [
+        "services/cancel-shared-cart-with-refunds.js",
+        "routes/shared-cart-refund-admin.js"
+      ],
       "dbRead": [
         "shared_cart_contributions",
         "shared_carts",
@@ -12260,22 +12511,37 @@
       "type": "file",
       "headerType": "full",
       "role": "verify-qr-collection",
-      "domain": "unknown",
+      "domain": "orders",
       "layer": "service",
       "criticality": "medium",
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "token",
+        "orderId",
+        "user (agent_relais/admin)"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "collected status",
+        "scan row",
+        "pickup_proof document"
       ],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
+      "depends": [
+        "db.js",
+        "services/order-status-machine.js",
+        "services/notification-service.js",
+        "utils/parcelSync.js",
+        "services/documents/pickup-proof.js"
+      ],
+      "usedBy": [
+        "routes/orders/qr.js"
+      ],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
       "dbWrite": [
         "orders",
         "scans"
@@ -12284,10 +12550,11 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
+        "pickup_collected_proof",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "orders"
       ],
       "version": "2026-06"
     },
@@ -12310,8 +12577,15 @@
         "response_or_domain_result",
         "side_effects"
       ],
-      "depends": [],
-      "usedBy": [],
+      "depends": [
+        "db.js",
+        "services/documents/wallet-receipt.js"
+      ],
+      "usedBy": [
+        "routes/wallet.js",
+        "routes/payments.js",
+        "services/order-payment-confirmation.js"
+      ],
       "dbRead": [
         "orders",
         "users",
@@ -12331,7 +12605,9 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "wallet_ledger_trace",
+        "credit_debit_idempotent",
+        "wallet_non_cadeau_cache"
       ],
       "impactAreas": [
         "wallet"
@@ -13235,6 +13511,16 @@
       "table": "notification_log"
     },
     {
+      "id": "db:refunds",
+      "type": "db-table",
+      "table": "refunds"
+    },
+    {
+      "id": "db:transaction_documents",
+      "type": "db-table",
+      "table": "transaction_documents"
+    },
+    {
       "id": "db:product_variants",
       "type": "db-table",
       "table": "product_variants"
@@ -13258,6 +13544,16 @@
       "id": "db:parcel_events",
       "type": "db-table",
       "table": "parcel_events"
+    },
+    {
+      "id": "db:paypal_events_processed",
+      "type": "db-table",
+      "table": "paypal_events_processed"
+    },
+    {
+      "id": "db:alerts",
+      "type": "db-table",
+      "table": "alerts"
     },
     {
       "id": "db:stripe_events_processed",
@@ -13300,6 +13596,11 @@
       "table": "shared_cart_items"
     },
     {
+      "id": "db:shared_cart_contributions",
+      "type": "db-table",
+      "table": "shared_cart_contributions"
+    },
+    {
       "id": "db:cart_contributions",
       "type": "db-table",
       "table": "cart_contributions"
@@ -13340,19 +13641,24 @@
       "table": "v_unsold_pipeline"
     },
     {
-      "id": "db:refunds",
+      "id": "db:wallet_transactions",
       "type": "db-table",
-      "table": "refunds"
+      "table": "wallet_transactions"
     },
     {
-      "id": "db:alerts",
+      "id": "db:wallet_credit_lots",
       "type": "db-table",
-      "table": "alerts"
+      "table": "wallet_credit_lots"
     },
     {
-      "id": "db:shared_cart_contributions",
+      "id": "db:wallet_consumptions",
       "type": "db-table",
-      "table": "shared_cart_contributions"
+      "table": "wallet_consumptions"
+    },
+    {
+      "id": "db:wallets",
+      "type": "db-table",
+      "table": "wallets"
     },
     {
       "id": "db:collective_stock_reservations",
@@ -13410,6 +13716,11 @@
       "table": "store_credits"
     },
     {
+      "id": "db:wallet_lots",
+      "type": "db-table",
+      "table": "wallet_lots"
+    },
+    {
       "id": "db:economic_variables",
       "type": "db-table",
       "table": "economic_variables"
@@ -13418,11 +13729,6 @@
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
-    },
-    {
-      "id": "db:paypal_events_processed",
-      "type": "db-table",
-      "table": "paypal_events_processed"
     },
     {
       "id": "db:price_history",
@@ -13450,11 +13756,6 @@
       "table": "pricing_strategy_history"
     },
     {
-      "id": "db:wallets",
-      "type": "db-table",
-      "table": "wallets"
-    },
-    {
       "id": "db:shared_cart_commitments",
       "type": "db-table",
       "table": "shared_cart_commitments"
@@ -13473,21 +13774,6 @@
       "id": "db:shared_cart_estimations",
       "type": "db-table",
       "table": "shared_cart_estimations"
-    },
-    {
-      "id": "db:wallet_consumptions",
-      "type": "db-table",
-      "table": "wallet_consumptions"
-    },
-    {
-      "id": "db:wallet_credit_lots",
-      "type": "db-table",
-      "table": "wallet_credit_lots"
-    },
-    {
-      "id": "db:wallet_transactions",
-      "type": "db-table",
-      "table": "wallet_transactions"
     },
     {
       "id": "doctrine:routes_canoniques",
@@ -13845,6 +14131,16 @@
       "doctrine": "stock_apres_paiement"
     },
     {
+      "id": "doctrine:order_status_machine",
+      "type": "doctrine",
+      "doctrine": "order_status_machine"
+    },
+    {
+      "id": "doctrine:pickup_collected_proof",
+      "type": "doctrine",
+      "doctrine": "pickup_collected_proof"
+    },
+    {
       "id": "doctrine:test_mode_never_prod",
       "type": "doctrine",
       "doctrine": "test_mode_never_prod"
@@ -13898,6 +14194,11 @@
       "id": "doctrine:static_boutique_served",
       "type": "doctrine",
       "doctrine": "static_boutique_served"
+    },
+    {
+      "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "doctrine": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
     },
     {
       "id": "doctrine:couts_repartis_par_commande",
@@ -13983,6 +14284,16 @@
       "id": "doctrine:wallet_non_modifie_ici",
       "type": "doctrine",
       "doctrine": "wallet_non_modifie_ici"
+    },
+    {
+      "id": "doctrine:refund_confirmed_only",
+      "type": "doctrine",
+      "doctrine": "refund_confirmed_only"
+    },
+    {
+      "id": "doctrine:idempotent_stripe_refund",
+      "type": "doctrine",
+      "doctrine": "idempotent_stripe_refund"
     },
     {
       "id": "doctrine:snapshot_fige",
@@ -22157,6 +22468,30 @@
     },
     {
       "from": "routes/orders/cancel.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/orders/cancel.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -22640,6 +22975,18 @@
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
+    },
+    {
+      "from": "routes/orders/status.js",
+      "to": "doctrine:order_status_machine",
+      "type": "doctrine",
+      "label": "order_status_machine"
+    },
+    {
+      "from": "routes/orders/status.js",
+      "to": "doctrine:pickup_collected_proof",
+      "type": "doctrine",
+      "label": "pickup_collected_proof"
     },
     {
       "from": "routes/orders/status.js",
@@ -23225,15 +23572,15 @@
     },
     {
       "from": "routes/payments-paypal.js",
-      "to": "middleware/auth.js",
+      "to": "services/payment-paypal.js",
       "type": "depends",
-      "label": "middleware/auth.js"
+      "label": "services/payment-paypal.js"
     },
     {
       "from": "routes/payments-paypal.js",
-      "to": "services/*",
+      "to": "services/payment-paypal-events.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/payment-paypal-events.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -23246,6 +23593,36 @@
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db:paypal_events_processed",
+      "type": "db-read",
+      "label": "paypal_events_processed"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "routes/payments-paypal.js",
+      "to": "db:paypal_events_processed",
+      "type": "db-write",
+      "label": "paypal_events_processed"
     },
     {
       "from": "routes/payments-paypal.js",
@@ -24107,6 +24484,42 @@
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:shared_carts",
+      "type": "db-read",
+      "label": "shared_carts"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:shared_cart_contributions",
+      "type": "db-read",
+      "label": "shared_cart_contributions"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:shared_cart_contributions",
+      "type": "db-write",
+      "label": "shared_cart_contributions"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -24893,6 +25306,36 @@
     },
     {
       "from": "routes/wallet.js",
+      "to": "db:wallet_transactions",
+      "type": "db-write",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:wallet_credit_lots",
+      "type": "db-write",
+      "label": "wallet_credit_lots"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:wallet_consumptions",
+      "type": "db-write",
+      "label": "wallet_consumptions"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:wallets",
+      "type": "db-write",
+      "label": "wallets"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/wallet.js",
       "to": "doctrine:wallet_ledger_trace",
       "type": "doctrine",
       "label": "wallet_ledger_trace"
@@ -25034,6 +25477,42 @@
       "to": "impact:auth",
       "type": "impact",
       "label": "auth"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "routes/admin.js",
+      "to": "services/admin-order-refund.js",
+      "type": "uses",
+      "label": "routes/admin.js"
+    },
+    {
+      "from": "routes/admin/orders.js",
+      "to": "services/admin-order-refund.js",
+      "type": "uses",
+      "label": "routes/admin/orders.js"
     },
     {
       "from": "services/admin-order-refund.js",
@@ -25286,6 +25765,36 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "services/shared-cart-refund-queue.js",
+      "type": "depends",
+      "label": "services/shared-cart-refund-queue.js"
+    },
+    {
+      "from": "routes/shared-cart.js",
+      "to": "services/cancel-shared-cart-with-refunds.js",
+      "type": "uses",
+      "label": "routes/shared-cart.js"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "services/cancel-shared-cart-with-refunds.js",
+      "type": "uses",
+      "label": "routes/shared-cart-refund-admin.js"
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
@@ -26108,6 +26617,240 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "services/documents/document-service.js",
+      "type": "uses",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/documents/contribution-receipt.js",
+      "to": "services/documents/document-service.js",
+      "type": "uses",
+      "label": "services/documents/contribution-receipt.js"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "db:transaction_documents",
+      "type": "db-read",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "impact:shared-cart",
+      "type": "impact",
+      "label": "shared-cart"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "services/documents/document-service.js",
+      "type": "depends",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js (post-commit)",
+      "to": "services/documents/pickup-proof.js",
+      "type": "uses",
+      "label": "services/verify-qr-collection.js (post-commit)"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "services/documents/document-service.js",
+      "type": "depends",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/orders/cancel.js (post-commit)",
+      "to": "services/documents/refund-receipt.js",
+      "type": "uses",
+      "label": "routes/orders/cancel.js (post-commit)"
+    },
+    {
+      "from": "services/refund-service.js (post-commit)",
+      "to": "services/documents/refund-receipt.js",
+      "type": "uses",
+      "label": "services/refund-service.js (post-commit)"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "services/documents/document-service.js",
+      "type": "depends",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js (post-commit)",
+      "to": "services/documents/wallet-receipt.js",
+      "type": "uses",
+      "label": "services/wallet-service.js (post-commit)"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db:wallet_transactions",
+      "type": "db-read",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db:wallet_lots",
+      "type": "db-read",
+      "label": "wallet_lots"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+      "type": "doctrine",
+      "label": "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
     },
     {
       "from": "services/economic-engine-queries.js",
@@ -28475,9 +29218,75 @@
     },
     {
       "from": "services/refund-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "stripe",
+      "type": "depends",
+      "label": "stripe"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "services/wallet-service.js",
+      "type": "depends",
+      "label": "services/wallet-service.js"
+    },
+    {
+      "from": "routes/orders/cancel.js",
+      "to": "services/refund-service.js",
+      "type": "uses",
+      "label": "routes/orders/cancel.js"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "services/refund-service.js",
+      "type": "uses",
+      "label": "services/admin-order-refund.js"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "services/refund-service.js",
+      "type": "uses",
+      "label": "services/cancel-shared-cart-with-refunds.js"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "db:wallets",
+      "type": "db-read",
+      "label": "wallets"
+    },
+    {
+      "from": "services/refund-service.js",
       "to": "db:refunds",
       "type": "db-write",
       "label": "refunds"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "doctrine:refund_confirmed_only",
+      "type": "doctrine",
+      "label": "refund_confirmed_only"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "doctrine:idempotent_stripe_refund",
+      "type": "doctrine",
+      "label": "idempotent_stripe_refund"
     },
     {
       "from": "services/refund-service.js",
@@ -28487,9 +29296,21 @@
     },
     {
       "from": "services/refund-service.js",
-      "to": "impact:unknown",
+      "to": "impact:orders",
       "type": "impact",
-      "label": "unknown"
+      "label": "orders"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "impact:refunds",
+      "type": "impact",
+      "label": "refunds"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
     },
     {
       "from": "services/relay-dashboard-queries.js",
@@ -29675,6 +30496,36 @@
     },
     {
       "from": "services/shared-cart-refund-queue.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/shared-cart-refund-queue.js",
+      "to": "services/refund-service.js",
+      "type": "depends",
+      "label": "services/refund-service.js"
+    },
+    {
+      "from": "services/shared-cart-refund-queue.js",
+      "to": "services/documents/refund-receipt.js",
+      "type": "depends",
+      "label": "services/documents/refund-receipt.js"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "services/shared-cart-refund-queue.js",
+      "type": "uses",
+      "label": "services/cancel-shared-cart-with-refunds.js"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "services/shared-cart-refund-queue.js",
+      "type": "uses",
+      "label": "routes/shared-cart-refund-admin.js"
+    },
+    {
+      "from": "services/shared-cart-refund-queue.js",
       "to": "db:shared_cart_contributions",
       "type": "db-read",
       "label": "shared_cart_contributions"
@@ -30233,6 +31084,66 @@
     },
     {
       "from": "services/verify-qr-collection.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "services/notification-service.js",
+      "type": "depends",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "utils/parcelSync.js",
+      "type": "depends",
+      "label": "utils/parcelSync.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "services/documents/pickup-proof.js",
+      "type": "depends",
+      "label": "services/documents/pickup-proof.js"
+    },
+    {
+      "from": "routes/orders/qr.js",
+      "to": "services/verify-qr-collection.js",
+      "type": "uses",
+      "label": "routes/orders/qr.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
@@ -30245,15 +31156,51 @@
     },
     {
       "from": "services/verify-qr-collection.js",
+      "to": "doctrine:pickup_collected_proof",
+      "type": "doctrine",
+      "label": "pickup_collected_proof"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
     },
     {
       "from": "services/verify-qr-collection.js",
-      "to": "impact:unknown",
+      "to": "impact:orders",
       "type": "impact",
-      "label": "unknown"
+      "label": "orders"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "services/documents/wallet-receipt.js",
+      "type": "depends",
+      "label": "services/documents/wallet-receipt.js"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "services/wallet-service.js",
+      "type": "uses",
+      "label": "routes/wallet.js"
+    },
+    {
+      "from": "routes/payments.js",
+      "to": "services/wallet-service.js",
+      "type": "uses",
+      "label": "routes/payments.js"
+    },
+    {
+      "from": "services/order-payment-confirmation.js",
+      "to": "services/wallet-service.js",
+      "type": "uses",
+      "label": "services/order-payment-confirmation.js"
     },
     {
       "from": "services/wallet-service.js",
@@ -30323,9 +31270,21 @@
     },
     {
       "from": "services/wallet-service.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:wallet_ledger_trace",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "wallet_ledger_trace"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "doctrine:credit_debit_idempotent",
+      "type": "doctrine",
+      "label": "credit_debit_idempotent"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "doctrine:wallet_non_cadeau_cache",
+      "type": "doctrine",
+      "label": "wallet_non_cadeau_cache"
     },
     {
       "from": "services/wallet-service.js",
@@ -31262,7 +32221,6 @@
         "routes/parcel-api-v2/scans.js",
         "routes/parcel-label.js",
         "routes/parcels.js",
-        "routes/payments-paypal.js",
         "routes/pickup-pay-cash.js",
         "routes/pickup-secret.js",
         "routes/pricing-strategy.js",
@@ -34718,7 +35676,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/admin-order-refund.js"
       ]
     },
     "routes/admin/customs.js": {
@@ -34905,7 +35864,8 @@
         "impact:admin-dashboard",
         "impact:checkout",
         "impact:orders",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/admin-order-refund.js"
       ]
     },
     "routes/admin/partners.js": {
@@ -36416,7 +37376,12 @@
         "recipients",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "order_status_history",
+        "orders",
+        "refunds",
+        "transaction_documents"
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -36426,13 +37391,17 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:order_status_history",
         "db:orders",
         "db:recipients",
+        "db:refunds",
+        "db:transaction_documents",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/refund-service.js"
       ]
     },
     "routes/orders/create.js": {
@@ -36667,7 +37636,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/verify-qr-collection.js"
       ]
     },
     "routes/orders/status.js": {
@@ -36697,6 +37667,8 @@
         "orders"
       ],
       "doctrines": [
+        "order_status_machine",
+        "pickup_collected_proof",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
@@ -36710,6 +37682,8 @@
         "db:recipients",
         "db:relais",
         "db:users",
+        "doctrine:order_status_machine",
+        "doctrine:pickup_collected_proof",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
@@ -37058,7 +38032,7 @@
       ]
     },
     "routes/payments-paypal.js": {
-      "role": "payment-payments-paypal",
+      "role": "payment-payment-paypal",
       "domain": "payment",
       "criticality": "critical",
       "headerType": "full",
@@ -37066,17 +38040,23 @@
       "purpose": null,
       "directDependsOn": [
         "db.js",
-        "middleware/auth.js",
-        "services/*"
+        "services/payment-paypal.js",
+        "services/payment-paypal-events.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "orders",
+        "paypal_events_processed"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "alerts",
+        "order_status_history",
+        "orders",
+        "paypal_events_processed"
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -37086,11 +38066,15 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:alerts",
+        "db:order_status_history",
         "db:orders",
+        "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:payment",
-        "middleware/auth.js"
+        "services/payment-paypal-events.js",
+        "services/payment-paypal.js"
       ]
     },
     "routes/payments.js": {
@@ -37147,6 +38131,7 @@
         "routes/purchasing.js",
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
+        "services/wallet-service.js",
         "utils/rates.js"
       ]
     },
@@ -37619,8 +38604,16 @@
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "shared_carts",
+        "shared_cart_contributions",
+        "orders"
+      ],
+      "dbWrite": [
+        "shared_cart_contributions",
+        "refunds",
+        "transaction_documents"
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -37630,10 +38623,17 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:orders",
+        "db:refunds",
+        "db:shared_cart_contributions",
+        "db:shared_carts",
+        "db:transaction_documents",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:shared-cart",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-refund-queue.js"
       ]
     },
     "routes/shared-cart.js": {
@@ -37694,6 +38694,7 @@
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/group/group-api.js",
         "server.js",
+        "services/cancel-shared-cart-with-refunds.js",
         "services/shared-cart-engine.js",
         "services/shared-cart-estimation-service.js",
         "services/shared-cart-financial-guard.js",
@@ -38095,7 +39096,13 @@
         "orders",
         "users"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "wallet_transactions",
+        "wallet_credit_lots",
+        "wallet_consumptions",
+        "wallets",
+        "transaction_documents"
+      ],
       "doctrines": [
         "wallet_ledger_trace",
         "credit_debit_idempotent",
@@ -38111,7 +39118,12 @@
       "mustCheck": [
         "bootstrap/api-routes.js",
         "db:orders",
+        "db:transaction_documents",
         "db:users",
+        "db:wallet_consumptions",
+        "db:wallet_credit_lots",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:credit_debit_idempotent",
         "doctrine:wallet_ledger_trace",
         "doctrine:wallet_non_cadeau_cache",
@@ -38184,8 +39196,16 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/refund-service.js",
+        "services/order-status-machine.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "directUsedBy": [
+        "routes/admin.js",
+        "routes/admin/orders.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "orders",
@@ -38210,7 +39230,12 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:checkout",
-        "impact:orders"
+        "impact:orders",
+        "routes/admin.js",
+        "routes/admin/orders.js",
+        "services/documents/refund-receipt.js",
+        "services/order-status-machine.js",
+        "services/refund-service.js"
       ]
     },
     "services/alert-engine.js": {
@@ -38406,8 +39431,15 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/refund-service.js",
+        "services/shared-cart-refund-queue.js"
+      ],
+      "directUsedBy": [
+        "routes/shared-cart.js",
+        "routes/shared-cart-refund-admin.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "shared_cart_contributions",
@@ -38429,7 +39461,11 @@
         "db:shared_cart_events",
         "db:shared_carts",
         "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
+        "impact:shared-cart",
+        "routes/shared-cart-refund-admin.js",
+        "routes/shared-cart.js",
+        "services/refund-service.js",
+        "services/shared-cart-refund-queue.js"
       ]
     },
     "services/cash-operations.js": {
@@ -39003,6 +40039,172 @@
         "impact:dashboard"
       ]
     },
+    "services/documents/document-service.js": {
+      "role": "document-service",
+      "domain": "documents",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/documents/refund-receipt.js",
+        "services/documents/contribution-receipt.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "transaction_documents"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds",
+        "shared-cart",
+        "wallet"
+      ],
+      "mustCheck": [
+        "db:transaction_documents",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:orders",
+        "impact:refunds",
+        "impact:shared-cart",
+        "impact:wallet",
+        "services/documents/pickup-proof.js",
+        "services/documents/refund-receipt.js",
+        "services/documents/wallet-receipt.js"
+      ]
+    },
+    "services/documents/pickup-proof.js": {
+      "role": "pickup-proof",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/verify-qr-collection.js (post-commit)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "db:recipients",
+        "db:transaction_documents",
+        "db:users",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:orders",
+        "services/documents/document-service.js",
+        "services/verify-qr-collection.js"
+      ]
+    },
+    "services/documents/refund-receipt.js": {
+      "role": "refund-receipt",
+      "domain": "documents",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/cancel.js (post-commit)",
+        "services/refund-service.js (post-commit)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "refunds",
+        "orders",
+        "invoices"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "orders",
+        "refunds"
+      ],
+      "mustCheck": [
+        "db:invoices",
+        "db:orders",
+        "db:refunds",
+        "db:transaction_documents",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:orders",
+        "impact:refunds",
+        "services/admin-order-refund.js",
+        "services/documents/document-service.js",
+        "services/shared-cart-refund-queue.js"
+      ]
+    },
+    "services/documents/wallet-receipt.js": {
+      "role": "wallet-receipt",
+      "domain": "documents",
+      "criticality": "low",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/wallet-service.js (post-commit)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "wallet_transactions",
+        "wallet_lots",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "doctrines": [
+        "DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md"
+      ],
+      "impactAreas": [
+        "wallet"
+      ],
+      "mustCheck": [
+        "db:transaction_documents",
+        "db:users",
+        "db:wallet_lots",
+        "db:wallet_transactions",
+        "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
+        "impact:wallet",
+        "services/documents/document-service.js",
+        "services/wallet-service.js"
+      ]
+    },
     "services/economic-engine-queries.js": {
       "role": "economic-engine-calculation-service",
       "domain": "economic-engine",
@@ -39376,6 +40578,7 @@
         "services/order-status-machine.js",
         "services/payment-stripe.js",
         "services/shared-cart-engine.js",
+        "services/verify-qr-collection.js",
         "services/whatsapp-meta.js"
       ]
     },
@@ -39478,7 +40681,8 @@
         "services/order-status-machine.js",
         "services/payment-cash-confirm.js",
         "services/payment-stripe.js",
-        "services/shared-cart-engine.js"
+        "services/shared-cart-engine.js",
+        "services/wallet-service.js"
       ]
     },
     "services/order-service.js": {
@@ -39589,8 +40793,10 @@
         "impact:stock",
         "impact:wallet",
         "routes/orders.js",
+        "services/admin-order-refund.js",
         "services/notification-service.js",
-        "services/order-payment-confirmation.js"
+        "services/order-payment-confirmation.js",
+        "services/verify-qr-collection.js"
       ]
     },
     "services/otp-test-mode.js": {
@@ -39897,7 +41103,8 @@
         "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:payment"
+        "impact:payment",
+        "routes/payments-paypal.js"
       ]
     },
     "services/payment-paypal.js": {
@@ -39934,7 +41141,8 @@
         "db:paypal_events_processed",
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
-        "impact:payment"
+        "impact:payment",
+        "routes/payments-paypal.js"
       ]
     },
     "services/payment-stripe.js": {
@@ -40632,28 +41840,55 @@
     },
     "services/refund-service.js": {
       "role": "refund-service",
-      "domain": "unknown",
+      "domain": "refunds",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "stripe",
+        "services/wallet-service.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/cancel.js",
+        "services/admin-order-refund.js",
+        "services/cancel-shared-cart-with-refunds.js"
+      ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "orders",
+        "refunds",
+        "wallets"
+      ],
       "dbWrite": [
         "refunds"
       ],
       "doctrines": [
+        "refund_confirmed_only",
+        "idempotent_stripe_refund",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "orders",
+        "refunds",
+        "wallet"
       ],
       "mustCheck": [
+        "db:orders",
         "db:refunds",
+        "db:wallets",
+        "doctrine:idempotent_stripe_refund",
+        "doctrine:refund_confirmed_only",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:orders",
+        "impact:refunds",
+        "impact:wallet",
+        "routes/orders/cancel.js",
+        "services/admin-order-refund.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/shared-cart-refund-queue.js",
+        "services/wallet-service.js"
       ]
     },
     "services/relay-dashboard-queries.js": {
@@ -41356,8 +42591,15 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/refund-service.js",
+        "services/documents/refund-receipt.js"
+      ],
+      "directUsedBy": [
+        "services/cancel-shared-cart-with-refunds.js",
+        "routes/shared-cart-refund-admin.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "shared_cart_contributions",
@@ -41380,7 +42622,11 @@
         "db:shared_carts",
         "db:users",
         "doctrine:resolve_before_behavior_change",
-        "impact:shared-cart"
+        "impact:shared-cart",
+        "routes/shared-cart-refund-admin.js",
+        "services/cancel-shared-cart-with-refunds.js",
+        "services/documents/refund-receipt.js",
+        "services/refund-service.js"
       ]
     },
     "services/shared-cart-v4-settlement.js": {
@@ -41866,30 +43112,53 @@
     },
     "services/verify-qr-collection.js": {
       "role": "verify-qr-collection",
-      "domain": "unknown",
+      "domain": "orders",
       "criticality": "medium",
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/order-status-machine.js",
+        "services/notification-service.js",
+        "utils/parcelSync.js",
+        "services/documents/pickup-proof.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/qr.js"
+      ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "orders",
+        "recipients",
+        "relais",
+        "users"
+      ],
       "dbWrite": [
         "orders",
         "scans"
       ],
       "doctrines": [
+        "pickup_collected_proof",
         "resolve_before_behavior_change"
       ],
       "impactAreas": [
-        "unknown"
+        "orders"
       ],
       "mustCheck": [
         "db:orders",
+        "db:recipients",
+        "db:relais",
         "db:scans",
+        "db:users",
+        "doctrine:pickup_collected_proof",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:orders",
+        "routes/orders/qr.js",
+        "services/documents/pickup-proof.js",
+        "services/notification-service.js",
+        "services/order-status-machine.js",
+        "utils/parcelSync.js"
       ]
     },
     "services/wallet-service.js": {
@@ -41899,8 +43168,15 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
-      "directUsedBy": [],
+      "directDependsOn": [
+        "db.js",
+        "services/documents/wallet-receipt.js"
+      ],
+      "directUsedBy": [
+        "routes/wallet.js",
+        "routes/payments.js",
+        "services/order-payment-confirmation.js"
+      ],
       "ownedFiles": [],
       "dbRead": [
         "orders",
@@ -41918,7 +43194,9 @@
         "wallets"
       ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "wallet_ledger_trace",
+        "credit_debit_idempotent",
+        "wallet_non_cadeau_cache"
       ],
       "impactAreas": [
         "wallet"
@@ -41930,10 +43208,16 @@
         "db:wallet_credit_lots",
         "db:wallet_transactions",
         "db:wallets",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:credit_debit_idempotent",
+        "doctrine:wallet_ledger_trace",
+        "doctrine:wallet_non_cadeau_cache",
         "impact:wallet",
+        "routes/payments.js",
         "routes/wallet.js",
-        "services/order-service.js"
+        "services/documents/wallet-receipt.js",
+        "services/order-payment-confirmation.js",
+        "services/order-service.js",
+        "services/refund-service.js"
       ]
     },
     "services/whatsapp-meta.js": {
@@ -42142,7 +43426,8 @@
         "db:parcels",
         "db:scans",
         "doctrine:resolve_before_behavior_change",
-        "impact:logistics"
+        "impact:logistics",
+        "services/verify-qr-collection.js"
       ]
     },
     "utils/parcels.js": {
@@ -43480,12 +44765,6 @@
       "label": "db.js"
     },
     {
-      "from": "routes/payments-paypal.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
       "from": "routes/payments.js",
       "to": "validators.js",
       "type": "depends",
@@ -43762,6 +45041,72 @@
       "label": "railway-runtime"
     },
     {
+      "from": "services/admin-order-refund.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/documents/document-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/documents/contribution-receipt.js",
+      "to": "services/documents/document-service.js",
+      "type": "uses",
+      "label": "services/documents/contribution-receipt.js"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/verify-qr-collection.js (post-commit)",
+      "to": "services/documents/pickup-proof.js",
+      "type": "uses",
+      "label": "services/verify-qr-collection.js (post-commit)"
+    },
+    {
+      "from": "services/documents/refund-receipt.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/orders/cancel.js (post-commit)",
+      "to": "services/documents/refund-receipt.js",
+      "type": "uses",
+      "label": "routes/orders/cancel.js (post-commit)"
+    },
+    {
+      "from": "services/refund-service.js (post-commit)",
+      "to": "services/documents/refund-receipt.js",
+      "type": "uses",
+      "label": "services/refund-service.js (post-commit)"
+    },
+    {
+      "from": "services/documents/wallet-receipt.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js (post-commit)",
+      "to": "services/documents/wallet-receipt.js",
+      "type": "uses",
+      "label": "services/wallet-service.js (post-commit)"
+    },
+    {
       "from": "services/economic-engine-queries.js",
       "to": "db.js",
       "type": "depends",
@@ -43858,6 +45203,18 @@
       "label": "stripe_webhooks"
     },
     {
+      "from": "services/refund-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/refund-service.js",
+      "to": "stripe",
+      "type": "depends",
+      "label": "stripe"
+    },
+    {
       "from": "services/shared-cart-engine.js",
       "to": "db.js",
       "type": "depends",
@@ -43894,10 +45251,28 @@
       "label": "shared-cart-services"
     },
     {
+      "from": "services/shared-cart-refund-queue.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/shared-cart-v41-transitions.js",
       "to": "doctrine/V4.1",
       "type": "depends",
       "label": "doctrine/V4.1"
+    },
+    {
+      "from": "services/verify-qr-collection.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/wallet-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/whatsapp-meta.js",
