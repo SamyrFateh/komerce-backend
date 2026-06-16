@@ -1,0 +1,60 @@
+name: Apply DB Schema Doctrine Note Once
+
+on:
+  push:
+    paths:
+      - .github/workflows/apply-db-schema-doctrine-note-once.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-db-schema-doctrine-note:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add DB schema doctrine note
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/SCHEMA.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '## 1. Règle d\'usage'
+          block = '''## 0. Gouvernance DB obligatoire
+
+Toute modification de schéma DB doit respecter :
+
+```txt
+docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
+```
+
+Une migration, une modification de table/colonne/enum/index/trigger/fonction/contrainte, ou un nouvel accès DB depuis le code est incomplète tant que :
+
+- `docs/SCHEMA.md` décrit le schéma live ou le schéma visé ;
+- les headers `@db-read`, `@db-write`, `@db-txn` des fichiers lecteurs/écrivains sont à jour ;
+- `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` sont régénérés si les headers changent ;
+- l'ordre migration/deploy/rollback est documenté si la production est impactée.
+
+---
+
+'''
+          if '## 0. Gouvernance DB obligatoire' not in text:
+              text = text.replace(marker, block + marker, 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit DB schema doctrine note
+        run: |
+          if git diff --quiet; then
+            echo "No DB schema doctrine note changes to commit."
+            exit 0
+          fi
+          git config user.name "komerce-docs-bot"
+          git config user.email "komerce-docs-bot@users.noreply.github.com"
+          git add docs/SCHEMA.md
+          git commit -m "Document DB schema governance in SCHEMA"
+          git push
