@@ -19,6 +19,22 @@ If a file has no header or aggregation owner yet, classify it before changing be
 
 The headers are the source of truth. The generated graph is the intervention schema.
 
+## Current Coverage
+
+Latest generated graph:
+
+- scanned code files: 306
+- full `@komerce-arch` headers: 276
+- lite `@komerce-arch-lite` headers: 30
+- files with any header/aggregation: 306
+- files without header/aggregation: 0
+- lite headers without owner: 0
+- graph nodes: 561
+- graph edges: 1955
+- DB table nodes: 37
+- doctrine nodes: 112
+- impact-area nodes: 106
+
 ## Total Cartography Rule
 
 Every source file must be represented in the graph.
@@ -201,16 +217,21 @@ Representative files verified:
 
 ## Phase 4 — Total Coverage
 
-Next objective: no silent source file.
+Applied.
 
-Priority:
+Result:
 
-- add full headers to remaining structural `routes/*`, `services/*`, `middleware/*`, `utils/*`
-- add lite headers to small helper/render/test/config files that have a clear owner
-- aggregate tiny boutique modules under their owner node
-- aggregate tests under the doctrine or module they protect
-- aggregate migrations under schema/domain owners only when they encode architecture
-- keep generated graph as the authoritative intervention index
+- no silent scanned source file remains
+- structural files have full headers
+- small/owned files have lite headers with explicit owners
+- generated graph contains an `interventionIndex` for every scanned source file
+
+Quality debt still to refine:
+
+- replace generic `@unknown` dependencies and DB fields when touching those files
+- reduce unresolved code edges by converting shorthand references to full paths
+- improve inferred domains for generic admin/dashboard/support files
+- promote important lite files to full nodes if they gain independent responsibility
 
 ## Tooling Added
 
@@ -219,6 +240,7 @@ Header application scripts:
 - `scripts/apply-komerce-arch-headers.js`
 - `scripts/apply-komerce-arch-headers-phase2.js`
 - `scripts/apply-komerce-arch-headers-phase3.js`
+- `scripts/apply-komerce-arch-total-coverage.js`
 
 DB enrichment script:
 
@@ -237,6 +259,7 @@ One-shot workflows:
 - `.github/workflows/enrich-komerce-arch-db-fields-once.yml`
 - `.github/workflows/audit-komerce-arch-headers-once.yml`
 - `.github/workflows/generate-komerce-arch-graph-once.yml`
+- `.github/workflows/apply-komerce-arch-total-coverage-once.yml`
 
 Permanent workflows:
 
@@ -245,7 +268,7 @@ Permanent workflows:
 
 ## Current Position
 
-The critical behavioral spine is now cartographed:
+The critical behavioral spine and the full scanned source surface are now cartographed:
 
 - boutique discovery and navigation
 - cart and side-cart
@@ -259,6 +282,7 @@ The critical behavioral spine is now cartographed:
 - notifications and WhatsApp adapter
 - economic engine facade/service
 - DB reads/writes/transaction constraints for critical backend files
+- all scanned backend/frontend source files, either as full nodes or lite owner-owned nodes
 
 This gives AI agents a much stronger starting point before intervention:
 
