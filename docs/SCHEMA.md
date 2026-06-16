@@ -76,6 +76,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | `collective_contribution_status` | statut contribution dans workspace | `services/collective-workspace-engine.js` |
 | `shared_cart_status` | cycle de vie panier partagé MVP | `services/shared-cart-engine.js` |
 | `shared_cart_contribution_status` | statut contribution panier partagé | `services/shared-cart-engine.js` |
+| `shared_cart_commitment_status` | cycle de vie engagement indicatif (pré-règlement) panier partagé v4 | `migrations/071b_shared_cart_commitments.sql` |
 
 **Règle absolue** : aucune valeur d'ENUM ne se modifie hors migration SQL. Les valeurs `pending_group_payment` et `in_transit` ont été ajoutées via migrations 059 et `fixMissingSchema()` respectivement.
 
@@ -162,13 +163,14 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 
-### 4.6 Paniers partagés (7 tables)
+### 4.6 Paniers partagés (8 tables)
 
 | Table | Rôle |
 |---|---|
 | `shared_carts` | Panier partagé MVP. |
 | `shared_cart_items` | Items panier partagé. |
 | `shared_cart_contributions` | Contributions des participants. |
+| `shared_cart_commitments` | Engagements indicatifs (pré-règlement) v4 — distinct de `shared_cart_contributions` qui porte le paiement réel. PK uuid, FK `shared_cart_id`, FK optionnelle `contribution_id`. |
 | `shared_cart_events` | Événements panier partagé. |
 | `cart_shares` | Partage de panier (token public). |
 | `cart_contributions` | Contributions (legacy, vérifier vs `shared_cart_contributions`). |

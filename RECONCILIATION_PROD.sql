@@ -72,7 +72,80 @@ DO $$ BEGIN RAISE NOTICE '✅ 073 appliquée — cash contributions activées'; 
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- 3. COLONNE MANQUANTE — shared_cart_contributions.commitment_id
+-- 3. MIGRATION 071b — Table shared_cart_commitments
+--    Cause : services/shared-cart-commitment-service.js fait INSERT/UPDATE/
+--            SELECT sur shared_cart_commitments, table ABSENTE de la base live
+--            (migrations/071b_shared_cart_commitments.sql jamais appliquée).
+--    NB : la section 4 ci-dessous référence déjà shared_cart_commitments(id)
+--         via FK — sans cette section, RECONCILIATION_PROD.sql plantait lui-
+--         même à l'exécution (table inexistante référencée). Contenu identique
+--         à migrations/071b_shared_cart_commitments.sql (idempotent, copié ici
+--         pour que ce script reste auto-suffisant indépendamment du runner).
+-- ════════════════════════════════════════════════════════════════════════════
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'shared_cart_commitment_status') THEN
+    CREATE TYPE shared_cart_commitment_status AS ENUM (
+      'pledged',               -- engagement indicatif actif
+      'updated',                -- statut historique possible, non requis pour ligne courante
+      'withdrawn',               -- retiré avant passage au règlement
+      'locked_for_settlement',    -- figé lors du passage au règlement
+      'payment_pending',           -- paiement attendu pendant la fenêtre de règlement
+      'paid',                       -- engagement honoré par paiement réel
+      'not_honored',                -- non réglé dans le délai
+      'covered_by_creator',          -- compensé par le créateur
+      'cancelled'                     -- annulé avec le panier
+    );
+    RAISE NOTICE '✅ enum shared_cart_commitment_status créé';
+  ELSE
+    RAISE NOTICE '↩ enum shared_cart_commitment_status déjà présent';
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS shared_cart_commitments (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  shared_cart_id        UUID NOT NULL REFERENCES shared_carts(id) ON DELETE CASCADE,
+
+  -- Identité volontairement simple : téléphone + nom affiché.
+  -- Le nom n'est jamais supposé unique.
+  participant_name      TEXT NOT NULL,
+  participant_phone     TEXT,
+
+  amount_kmf            INTEGER NOT NULL CHECK (amount_kmf > 0),
+  message               TEXT,
+  status                shared_cart_commitment_status NOT NULL DEFAULT 'pledged',
+
+  locked_at             TIMESTAMPTZ,
+  withdrawn_at          TIMESTAMPTZ,
+  paid_at               TIMESTAMPTZ,
+
+  -- Lien optionnel vers le paiement réel quand il existe.
+  contribution_id       UUID REFERENCES shared_cart_contributions(id) ON DELETE SET NULL,
+
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  metadata              JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_shared_cart_commitments_cart
+  ON shared_cart_commitments(shared_cart_id, status, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_shared_cart_commitments_phone
+  ON shared_cart_commitments(shared_cart_id, participant_phone)
+  WHERE participant_phone IS NOT NULL;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_shared_cart_commitments_updated') THEN
+    CREATE TRIGGER trg_shared_cart_commitments_updated BEFORE UPDATE ON shared_cart_commitments
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+  END IF;
+END $$;
+
+DO $$ BEGIN RAISE NOTICE '✅ 071b appliquée — shared_cart_commitments présente'; END $$;
+
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 4. COLONNE MANQUANTE — shared_cart_contributions.commitment_id
 --    Cause : services/shared-cart-engine.js INSERT ...commitment_id ($10)
 --            → crash ("column commitment_id does not exist").
 --            services/shared-cart-financial-guard.js (GAP 4) la lit pour passer
@@ -102,7 +175,7 @@ DO $$ BEGIN RAISE NOTICE '✅ commitment_id ajoutée sur shared_cart_contributio
 
 
 -- ════════════════════════════════════════════════════════════════════════════
--- 4. VÉRIFICATION FINALE (lecture seule)
+-- 5. VÉRIFICATION FINALE (lecture seule)
 -- ════════════════════════════════════════════════════════════════════════════
 DO $$
 DECLARE missing TEXT := '';
@@ -113,6 +186,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
     WHERE table_name='shared_cart_contributions' AND column_name='payment_method') THEN
     missing := missing || ' shared_cart_contributions.payment_method'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+    WHERE table_name='shared_cart_commitments') THEN
+    missing := missing || ' shared_cart_commitments (table)'; END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns
     WHERE table_name='shared_cart_contributions' AND column_name='commitment_id') THEN
     missing := missing || ' shared_cart_contributions.commitment_id'; END IF;
