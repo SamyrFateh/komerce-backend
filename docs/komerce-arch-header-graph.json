@@ -19,9 +19,9 @@
     "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 648,
+    "graphNodes": 647,
     "edges": 2803,
-    "dbTables": 108,
+    "dbTables": 107,
     "doctrines": 119,
     "impactAreas": 109,
     "unresolvedCodeEdges": 265
@@ -9147,7 +9147,7 @@
       ],
       "dbRead": [
         "wallet_transactions",
-        "wallet_lots",
+        "wallet_credit_lots",
         "users"
       ],
       "dbWrite": [
@@ -13721,11 +13721,6 @@
       "id": "db:store_credits",
       "type": "db-table",
       "table": "store_credits"
-    },
-    {
-      "id": "db:wallet_lots",
-      "type": "db-table",
-      "table": "wallet_lots"
     },
     {
       "id": "db:economic_variables",
@@ -26829,9 +26824,9 @@
     },
     {
       "from": "services/documents/wallet-receipt.js",
-      "to": "db:wallet_lots",
+      "to": "db:wallet_credit_lots",
       "type": "db-read",
-      "label": "wallet_lots"
+      "label": "wallet_credit_lots"
     },
     {
       "from": "services/documents/wallet-receipt.js",
@@ -40231,7 +40226,7 @@
       "ownedFiles": [],
       "dbRead": [
         "wallet_transactions",
-        "wallet_lots",
+        "wallet_credit_lots",
         "users"
       ],
       "dbWrite": [
@@ -40246,7 +40241,7 @@
       "mustCheck": [
         "db:transaction_documents",
         "db:users",
-        "db:wallet_lots",
+        "db:wallet_credit_lots",
         "db:wallet_transactions",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
         "impact:wallet",

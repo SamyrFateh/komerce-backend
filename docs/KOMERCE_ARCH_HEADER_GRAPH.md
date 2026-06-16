@@ -12,9 +12,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 648
+- Graph nodes: 647
 - Edges: 2803
-- DB tables: 108
+- DB tables: 107
 - Doctrines: 119
 - Impact areas: 109
 - Unresolved code edges: 265
