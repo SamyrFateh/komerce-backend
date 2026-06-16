@@ -1,0 +1,92 @@
+{
+  "version": "2026-06",
+  "format": "komerce-arch-map-v1",
+  "workflow": [
+    "Read this map before modifying Komerce code.",
+    "Identify target files.",
+    "List depends, usedBy, impactAreas and doctrines.",
+    "Announce intervention map before editing."
+  ],
+  "files": {
+    "server.js": {
+      "role": "api-server-entrypoint",
+      "domain": "bootstrap",
+      "layer": "entrypoint",
+      "criticality": "critical",
+      "depends": ["bootstrap/env.js", "bootstrap/security.js", "bootstrap/api-routes.js", "bootstrap/html-routes.js", "bootstrap/crons.js", "routes/shared-cart.js"],
+      "usedBy": ["Railway runtime"],
+      "doctrine": ["raw_body_webhook_intact", "routes_canoniques", "static_boutique_served"],
+      "impactAreas": ["all-api", "shared-cart", "payments", "boutique", "crons", "auth"]
+    },
+    "bootstrap/api-routes.js": {
+      "role": "api-route-manifest",
+      "domain": "bootstrap",
+      "layer": "route-manifest",
+      "criticality": "critical",
+      "depends": ["routes/orders.js", "routes/payments.js", "routes/otp.js", "routes/shared-cart-cash.js", "routes/meta-whatsapp.js", "routes/economic-engine.js", "routes/boutique-suggestions.js"],
+      "usedBy": ["server.js"],
+      "doctrine": ["routes_canoniques", "stripe_raw_body_preserve"],
+      "impactAreas": ["all-api", "checkout", "shared-cart", "payment", "dashboard", "economic-engine", "boutique"]
+    },
+    "bootstrap/crons.js": {
+      "role": "operational-crons",
+      "domain": "bootstrap",
+      "layer": "cron",
+      "criticality": "critical",
+      "depends": ["services/cash-reminder-service.js", "services/inventory-service.js", "services/shared-cart-engine.js", "utils/rules.js"],
+      "usedBy": ["server.js"],
+      "doctrine": ["shared_cart_state_machine_v41", "idempotence_cron", "retention_snapshots"],
+      "impactAreas": ["shared-cart", "cash-reminders", "inventory", "auth-security", "economic-engine"]
+    },
+    "services/shared-cart-engine.js": {
+      "role": "shared-cart-state-machine",
+      "domain": "shared-cart",
+      "layer": "service",
+      "criticality": "critical",
+      "depends": ["db.js", "services/whatsapp-meta.js", "services/order-service.js", "services/routing.js", "services/order-payment-confirmation.js", "utils/rates.js"],
+      "usedBy": ["routes/shared-cart.js", "bootstrap/crons.js"],
+      "doctrine": ["paiement_seul_acte_engageant", "panier_ouvert_ferme", "snapshot_fige", "fenetre_paiement_48h", "choix_createur_72h", "idempotence_financiere"],
+      "impactAreas": ["participant-flow", "creator-flow", "checkout", "orders", "notifications", "stock", "economic-engine"]
+    },
+    "routes/shared-cart.js": {
+      "role": "shared-cart-http-facade",
+      "domain": "shared-cart",
+      "layer": "route",
+      "criticality": "critical",
+      "depends": ["services/shared-cart-engine.js", "services/shared-cart-estimation-service.js", "services/shared-cart-financial-guard.js", "services/shared-cart-items-service.js", "services/shared-cart-v41-transitions.js", "services/shared-cart-queries.js", "services/whatsapp-meta.js", "services/cancel-shared-cart-with-refunds.js"],
+      "usedBy": ["server.js", "public/boutique/js/b-group-view.js", "public/boutique/js/b-share-cart.js", "public/boutique/js/b-cart.js"],
+      "doctrine": ["paiement_seul_acte_engageant", "estimations_indicatives", "participant_peut_verifier", "retour_stripe_boutique", "panier_ouvert_ferme"],
+      "impactAreas": ["shared-cart", "checkout", "participant-flow", "creator-dashboard", "Stripe", "WhatsApp", "boutique"]
+    },
+    "services/order-payment-confirmation.js": {
+      "role": "payment-to-stock-single-entry",
+      "domain": "order-payment",
+      "layer": "service",
+      "criticality": "critical",
+      "depends": ["services/order-status-machine.js", "db.js"],
+      "usedBy": ["services/payment-stripe.js", "services/payment-cash-confirm.js", "services/shared-cart-engine.js", "PayPal flows", "wallet-full order flows"],
+      "doctrine": ["transaction_existante_obligatoire", "confirmPaymentCycle_unique", "stock_for_update", "cash_rollback_vs_stripe_alert"],
+      "impactAreas": ["orders", "stock", "payments", "shared-cart", "wallet", "sourcing", "loyalty"]
+    },
+    "public/boutique/js/b-cart.js": {
+      "role": "boutique-cart-and-side-cart",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "depends": ["public/boutique/js/b-store.js", "public/boutique/js/b-cart-core.js", "public/boutique/js/b-catalog.js", "public/boutique/js/b-scroll-owner.js", "public/boutique/js/shop-schema.js", "routes/shared-cart.js"],
+      "usedBy": ["public/boutique/js/boutique.js", "public/boutique/js/b-checkout.js", "public/boutique/js/b-modal-core.js", "public/boutique/js/b-nav.js", "public/boutique/js/b-share-cart.js"],
+      "doctrine": ["panier_ouvert_ferme", "participant_lecture_seule", "side_cart_non_intrusif", "modal_produit_sans_chevauchement"],
+      "impactAreas": ["checkout-entry", "side-cart", "shared-cart-editing", "participant-flow", "responsive-layout"]
+    },
+    "public/boutique/js/b-checkout.js": {
+      "role": "boutique-checkout-orchestrator",
+      "domain": "checkout",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "depends": ["public/boutique/js/b-store.js", "public/boutique/js/b-cart-core.js", "public/boutique/js/b-cart.js", "public/boutique/js/b-identity.js", "public/boutique/js/b-checkout-render.js", "public/boutique/js/b-phone.js", "routes/orders.js", "routes/payments.js"],
+      "usedBy": ["public/boutique/js/boutique.js", "public/boutique/js/b-nav.js", "public/boutique/js/b-share-cart.js"],
+      "doctrine": ["paiement_seul_acte_engageant", "otp_une_fois", "checkout_sans_friction"],
+      "impactAreas": ["checkout", "payments", "OTP", "order-creation", "cart", "shared-cart"]
+    }
+  }
+}
