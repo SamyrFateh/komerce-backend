@@ -11,6 +11,7 @@ It should be read with:
 - `docs/KOMERCE_DB_TOUCHPOINTS_MAP.md`
 - `scripts/audit-komerce-arch-headers.js`
 - `scripts/generate-komerce-arch-graph.js`
+- `scripts/refine-komerce-arch-quality.js`
 
 ## Rule
 
@@ -21,7 +22,7 @@ The headers are the source of truth. The generated graph is the intervention sch
 
 ## Current Coverage
 
-Latest generated graph:
+Latest generated graph: `2026-06-16T11:31:25.660Z`
 
 - scanned code files: 306
 - full `@komerce-arch` headers: 276
@@ -29,11 +30,13 @@ Latest generated graph:
 - files with any header/aggregation: 306
 - files without header/aggregation: 0
 - lite headers without owner: 0
-- graph nodes: 561
-- graph edges: 1955
-- DB table nodes: 37
+- graph nodes: 692
+- graph edges: 2829
+- DB table nodes: 167
 - doctrine nodes: 112
-- impact-area nodes: 106
+- impact-area nodes: 107
+- unresolved code edges: 244
+- remaining `unknown` domain files: 37
 
 ## Total Cartography Rule
 
@@ -80,7 +83,8 @@ Maintenance rule:
 - use `@komerce-arch-lite` for files fully owned by another mapped node
 - regenerate the graph after header changes
 - do not hand-edit the generated graph
-- if DB reads/writes change, update `@db-read`, `@db-write`, `@db-txn` first
+- if DB reads/writes change, update `@db-read`, `@db-write`, and `@db-txn` first
+- if a field is still `@unknown`, resolve it before behavior changes in that file
 
 Workflow:
 
@@ -226,11 +230,28 @@ Result:
 - small/owned files have lite headers with explicit owners
 - generated graph contains an `interventionIndex` for every scanned source file
 
-Quality debt still to refine:
+## Phase 5 — Quality Refinement
+
+Applied.
+
+Result:
+
+- unresolved code edges reduced from 441 to 244 by resolving unique basename references
+- `unknown` domain files reduced from 54 to 37 by safe filename/path inference
+- DB table nodes increased from 37 to 167 by extracting direct SQL table usage from `db.query`, `pool.query`, and `client.query` calls
+- polluted DB guesses from comments/log strings were cleaned back to `@unknown`
+
+Verified examples:
+
+- `routes/config.js` keeps `@db-read @unknown` and `@db-write @unknown` because it delegates DB work to `utils/rules`
+- `routes/carriers.js` resolves direct DB touchpoints to `carriers, parcels`
+- `routes/invoices.js` resolves to domain `orders` and reads `orders`
+
+Quality debt still explicit:
 
 - replace generic `@unknown` dependencies and DB fields when touching those files
-- reduce unresolved code edges by converting shorthand references to full paths
-- improve inferred domains for generic admin/dashboard/support files
+- reduce remaining unresolved code edges by replacing conceptual labels with actual file paths where useful
+- resolve the remaining 37 `unknown` domain files manually instead of guessing
 - promote important lite files to full nodes if they gain independent responsibility
 
 ## Tooling Added
@@ -242,9 +263,10 @@ Header application scripts:
 - `scripts/apply-komerce-arch-headers-phase3.js`
 - `scripts/apply-komerce-arch-total-coverage.js`
 
-DB enrichment script:
+DB and quality scripts:
 
 - `scripts/enrich-komerce-arch-db-fields.js`
+- `scripts/refine-komerce-arch-quality.js`
 
 Graph and audit scripts:
 
@@ -260,6 +282,8 @@ One-shot workflows:
 - `.github/workflows/audit-komerce-arch-headers-once.yml`
 - `.github/workflows/generate-komerce-arch-graph-once.yml`
 - `.github/workflows/apply-komerce-arch-total-coverage-once.yml`
+- `.github/workflows/refine-komerce-arch-quality-once.yml`
+- `.github/workflows/refine-komerce-arch-quality-v2-once.yml`
 
 Permanent workflows:
 
@@ -296,3 +320,5 @@ This gives AI agents a much stronger starting point before intervention:
 - which transaction/idempotency constraints matter
 - which doctrines must not be broken
 - which user/business flows may be impacted
+
+The remaining work is quality debt, not coverage debt: all scanned files are represented, and ambiguous fields are deliberately visible instead of silently invented.
