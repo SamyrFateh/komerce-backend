@@ -9,14 +9,53 @@ Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeu
 Lire uniquement dans cet ordre :
 
 1. [`docs/README.md`](./docs/README.md) — index documentaire actif ;
-2. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-3. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+2. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
+3. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+4. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
+5. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+6. Les documents actifs listés par `docs/README.md` selon la zone touchée.
 
 Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
 
 ---
 
-## 2. Doctrine produit active — panier partagé
+## 2. Gouvernance architecture obligatoire
+
+Toute création, modification ou suppression de feature fonctionnelle doit maintenir la cartographie `@komerce-arch`.
+
+Avant modification :
+
+1. lire le header `@komerce-arch` ou `@komerce-arch-lite` de chaque fichier touché ;
+2. lire `interventionIndex["<file>"]` dans `docs/komerce-arch-header-graph.json` pour identifier les fichiers, tables, doctrines et zones d'impact à vérifier ;
+3. si un fichier touché contient `@unknown` ou `resolve_before_behavior_change` sur le champ concerné, résoudre ce point avant de changer le comportement.
+
+Pendant modification :
+
+- tout nouveau fichier source doit naître avec un header ;
+- utiliser `@komerce-arch` si le fichier porte une responsabilité autonome ;
+- utiliser `@komerce-arch-lite` si le fichier est un support possédé par un owner explicite ;
+- mettre à jour `@inputs`, `@outputs`, `@depends`, `@used-by`, `@db-read`, `@db-write`, `@db-txn`, `@doctrine`, `@impact-areas` dès que le contrat fonctionnel change ;
+- en cas de suppression ou fusion, supprimer ou transférer les références `@depends`, `@used-by`, `@owner`.
+
+Après modification :
+
+```bash
+node scripts/generate-komerce-arch-graph.js
+```
+
+Vérifier obligatoirement :
+
+- `files without headers: 0` ;
+- `lite headers without owner: 0` ;
+- les nouveaux edges du graphe sont cohérents ;
+- les accès DB nouveaux ou modifiés sont déclarés ;
+- les champs incertains restent explicitement en `@unknown` ou `resolve_before_behavior_change`, jamais inventés.
+
+Une intervention fonctionnelle sans mise à jour du header et du graphe est incomplète.
+
+---
+
+## 3. Doctrine produit active — panier partagé
 
 Le modèle actif est **Boutique First**.
 
@@ -37,7 +76,7 @@ Toute documentation V4.1, collective workspace, cagnotte, engagement ou financem
 
 ---
 
-## 3. Hiérarchie documentaire
+## 4. Hiérarchie documentaire
 
 En cas de conflit :
 
@@ -53,7 +92,7 @@ Une doc ancienne qui contredit `docs/README.md` ou la doctrine Boutique First es
 
 ---
 
-## 4. Règle de divergence
+## 5. Règle de divergence
 
 Si code, DB et docs ne racontent pas la même chose :
 
@@ -63,7 +102,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 5. Règles techniques non négociables
+## 6. Règles techniques non négociables
 
 - Statuts commande : passer par `services/order-status-machine.js`.
 - Paiements Stripe/cash/wallet/shared-cart : passer par les services propriétaires documentés.
@@ -74,7 +113,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 6. Règle Boutique
+## 7. Règle Boutique
 
 Si une modification touche :
 
@@ -82,7 +121,7 @@ Si une modification touche :
 - `docs/boutique/**` ;
 - un script racine qui affecte la Boutique ;
 
-alors lire les documents Boutique actifs listés dans `docs/README.md`.
+alors lire les documents Boutique actifs listés dans `docs/README.md` et [`public/boutique/README.md`](./public/boutique/README.md).
 
 Interdits Boutique :
 
@@ -94,11 +133,13 @@ Interdits Boutique :
 
 ---
 
-## 7. Règle de fin de session
+## 8. Règle de fin de session
 
 Avant commit ou PR :
 
 - mettre à jour `docs/chantier/STATUS.md` si l'état courant change ;
 - mettre à jour le document actif concerné ;
+- mettre à jour les headers `@komerce-arch` / `@komerce-arch-lite` concernés ;
+- régénérer `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` si la cartographie change ;
 - ne pas ajouter de nouveau document hors index sans l'ajouter à `docs/README.md` ;
 - laisser les anciens documents en archive/subordination plutôt que les réactiver implicitement.
