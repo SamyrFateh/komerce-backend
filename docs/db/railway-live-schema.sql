@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Js2vucuosMbsoFoQFMwzQZe2evfaPelbNwNcCLbkfJvp1AqocEZVKWGdB0ENhXB
+\restrict CuPJtEZhcSOuC4CYDx1MnwCzqrfHp1rSYid6GgJfAfTdMYiiUrruTWVI2HEhoaQ
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -191,6 +191,23 @@ CREATE TYPE public.scan_step AS ENUM (
     'in_transit',
     'relais_received',
     'collected'
+);
+
+
+--
+-- Name: shared_cart_commitment_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.shared_cart_commitment_status AS ENUM (
+    'pledged',
+    'updated',
+    'withdrawn',
+    'locked_for_settlement',
+    'payment_pending',
+    'paid',
+    'not_honored',
+    'covered_by_creator',
+    'cancelled'
 );
 
 
@@ -3261,6 +3278,29 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: shared_cart_commitments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.shared_cart_commitments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    shared_cart_id uuid NOT NULL,
+    participant_name text NOT NULL,
+    participant_phone text,
+    amount_kmf integer NOT NULL,
+    message text,
+    status public.shared_cart_commitment_status DEFAULT 'pledged'::public.shared_cart_commitment_status NOT NULL,
+    locked_at timestamp with time zone,
+    withdrawn_at timestamp with time zone,
+    paid_at timestamp with time zone,
+    contribution_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    CONSTRAINT shared_cart_commitments_amount_kmf_check CHECK ((amount_kmf > 0))
+);
+
+
+--
 -- Name: shared_cart_contributions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3291,6 +3331,7 @@ CREATE TABLE public.shared_cart_contributions (
     cash_relais_id uuid,
     cash_confirmed_by uuid,
     cash_confirmed_at timestamp with time zone,
+    commitment_id uuid,
     CONSTRAINT shared_cart_contributions_amount_kmf_check CHECK ((amount_kmf > 0)),
     CONSTRAINT shared_cart_contributions_amount_paid_check CHECK ((amount_paid > (0)::numeric))
 );
@@ -5090,6 +5131,14 @@ ALTER TABLE ONLY public.scans
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (filename);
+
+
+--
+-- Name: shared_cart_commitments shared_cart_commitments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shared_cart_commitments
+    ADD CONSTRAINT shared_cart_commitments_pkey PRIMARY KEY (id);
 
 
 --
@@ -7020,6 +7069,20 @@ CREATE INDEX idx_sep_processed_at ON public.stripe_events_processed USING btree 
 
 
 --
+-- Name: idx_shared_cart_commitments_cart; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_shared_cart_commitments_cart ON public.shared_cart_commitments USING btree (shared_cart_id, status, created_at DESC);
+
+
+--
+-- Name: idx_shared_cart_commitments_phone; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_shared_cart_commitments_phone ON public.shared_cart_commitments USING btree (shared_cart_id, participant_phone) WHERE (participant_phone IS NOT NULL);
+
+
+--
 -- Name: idx_shared_cart_contrib_cash_pending; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7031,6 +7094,13 @@ CREATE INDEX idx_shared_cart_contrib_cash_pending ON public.shared_cart_contribu
 --
 
 CREATE UNIQUE INDEX idx_shared_cart_contrib_cash_reference ON public.shared_cart_contributions USING btree (cash_reference) WHERE (cash_reference IS NOT NULL);
+
+
+--
+-- Name: idx_shared_cart_contrib_commitment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_shared_cart_contrib_commitment ON public.shared_cart_contributions USING btree (commitment_id) WHERE (commitment_id IS NOT NULL);
 
 
 --
@@ -7563,6 +7633,13 @@ CREATE TRIGGER trg_risk_provisions_updated BEFORE UPDATE ON public.risk_provisio
 --
 
 CREATE TRIGGER trg_sc_updated BEFORE UPDATE ON public.sourcing_candidates FOR EACH ROW EXECUTE FUNCTION public.sc_set_updated();
+
+
+--
+-- Name: shared_cart_commitments trg_shared_cart_commitments_updated; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_shared_cart_commitments_updated BEFORE UPDATE ON public.shared_cart_commitments FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
 --
@@ -8561,6 +8638,22 @@ ALTER TABLE ONLY public.scans
 
 
 --
+-- Name: shared_cart_commitments shared_cart_commitments_contribution_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shared_cart_commitments
+    ADD CONSTRAINT shared_cart_commitments_contribution_id_fkey FOREIGN KEY (contribution_id) REFERENCES public.shared_cart_contributions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: shared_cart_commitments shared_cart_commitments_shared_cart_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shared_cart_commitments
+    ADD CONSTRAINT shared_cart_commitments_shared_cart_id_fkey FOREIGN KEY (shared_cart_id) REFERENCES public.shared_carts(id) ON DELETE CASCADE;
+
+
+--
 -- Name: shared_cart_contributions shared_cart_contributions_cash_confirmed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8574,6 +8667,14 @@ ALTER TABLE ONLY public.shared_cart_contributions
 
 ALTER TABLE ONLY public.shared_cart_contributions
     ADD CONSTRAINT shared_cart_contributions_cash_relais_id_fkey FOREIGN KEY (cash_relais_id) REFERENCES public.relais(id) ON DELETE SET NULL;
+
+
+--
+-- Name: shared_cart_contributions shared_cart_contributions_commitment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shared_cart_contributions
+    ADD CONSTRAINT shared_cart_contributions_commitment_id_fkey FOREIGN KEY (commitment_id) REFERENCES public.shared_cart_commitments(id) ON DELETE SET NULL;
 
 
 --
@@ -8820,5 +8921,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Js2vucuosMbsoFoQFMwzQZe2evfaPelbNwNcCLbkfJvp1AqocEZVKWGdB0ENhXB
+\unrestrict CuPJtEZhcSOuC4CYDx1MnwCzqrfHp1rSYid6GgJfAfTdMYiiUrruTWVI2HEhoaQ
 
