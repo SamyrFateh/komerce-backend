@@ -300,18 +300,20 @@ Ajouté dans `docs/README.md` tableau boutique.
 
 ### RANK-01 — b-modal-suggestions.js : doit devenir surface passive
 
-Statut : **ouvert — dette frontend**.
+Statut : **clôturé — 2026-06-16**.
 
-Le fichier `public/boutique/js/b-modal-suggestions.js` (non présent dans ce repo)
-doit :
+Vérifié dans `b-modal-core.js` et `b-modal-suggestions.js` :
 
-1. Appeler `GET /api/boutique/suggestions?viewed_product_id=UUID&category=...&...`
-2. Recevoir `[{ product_id, name, price_kmf, reason_label, ... }]` et afficher.
-3. Ne pas contenir de logique de tri ou de scoring.
-4. Sur événement `cart:updated` : mise à jour ciblée de la carte concernée (badge/bouton),
-   pas de re-render complet de la liste (maintenir une map `productId → cardElement`).
-
-Livrable : PR frontend modifiant `b-modal-suggestions.js` pour consommer l'API.
+1. `_fetchAndRenderSuggestions(product)` dans `b-modal-core.js` appelle
+   `GET /api/boutique/suggestions?viewed_product_id=…&category=…&cart_product_ids=…&recently_viewed=…` ;
+   fallback éditorial (`.slice(0,20)`, pas de `Math.random()`) si réseau KO.
+2. `renderSuggestions` consomme le tableau enrichi `[{ product_id, reason_label, … }]`
+   et affiche `reason_label` via `.k-sug-card-reason`.
+3. Aucune logique de tri/scoring dans `b-modal-suggestions.js`.
+4. Map `_sugCardMap (productId → cardElement)` alimentée après chaque render ;
+   actions panier (`+/−/add`) appellent `_updateCardStepper` ciblé — pas de re-render complet.
+5. `applyModalDesktopSuggestionState` reste privée (non exportée).
+6. Découplage cycle préservé : clic carte → `bus.emit('modal:open', {id})`, pas d'import direct.
 
 ### RANK-02 — Dette product_ref : sku sans contrainte d'unicité
 
