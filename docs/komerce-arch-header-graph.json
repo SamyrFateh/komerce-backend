@@ -19,9 +19,9 @@
     "filesWithAnyHeaders": 308,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 636,
+    "graphNodes": 635,
     "edges": 2690,
-    "dbTables": 106,
+    "dbTables": 105,
     "doctrines": 113,
     "impactAreas": 109,
     "unresolvedCodeEdges": 249
@@ -11571,14 +11571,14 @@
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts",
-        "stripe_events_log",
+        "stripe_events_processed",
         "users"
       ],
       "dbWrite": [
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts",
-        "stripe_events_log"
+        "stripe_events_processed"
       ],
       "dbTxn": [
         "centralized_lookup_no_mutation"
@@ -13473,11 +13473,6 @@
       "id": "db:shared_cart_estimations",
       "type": "db-table",
       "table": "shared_cart_estimations"
-    },
-    {
-      "id": "db:stripe_events_log",
-      "type": "db-table",
-      "table": "stripe_events_log"
     },
     {
       "id": "db:wallet_consumptions",
@@ -29596,9 +29591,9 @@
     },
     {
       "from": "services/shared-cart-queries.js",
-      "to": "db:stripe_events_log",
+      "to": "db:stripe_events_processed",
       "type": "db-read",
-      "label": "stripe_events_log"
+      "label": "stripe_events_processed"
     },
     {
       "from": "services/shared-cart-queries.js",
@@ -29626,9 +29621,9 @@
     },
     {
       "from": "services/shared-cart-queries.js",
-      "to": "db:stripe_events_log",
+      "to": "db:stripe_events_processed",
       "type": "db-write",
-      "label": "stripe_events_log"
+      "label": "stripe_events_processed"
     },
     {
       "from": "services/shared-cart-queries.js",
@@ -41309,14 +41304,14 @@
         "shared_cart_events",
         "shared_cart_items",
         "shared_carts",
-        "stripe_events_log",
+        "stripe_events_processed",
         "users"
       ],
       "dbWrite": [
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts",
-        "stripe_events_log"
+        "stripe_events_processed"
       ],
       "doctrines": [
         "backend_source_verite",
@@ -41337,7 +41332,7 @@
         "db:shared_cart_events",
         "db:shared_cart_items",
         "db:shared_carts",
-        "db:stripe_events_log",
+        "db:stripe_events_processed",
         "db:users",
         "doctrine:backend_source_verite",
         "doctrine:lookup_centralise",
