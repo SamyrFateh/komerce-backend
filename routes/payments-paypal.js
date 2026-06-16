@@ -33,10 +33,10 @@ const log = require('../utils/logger').child({ module: 'payment-paypal' });
  *   I-09 : amount captured == orders.total_eur (tolérance 0.01 EUR)
  */
 
-const { confirmPaymentCycle } = require('./order-payment-confirmation');
-const { markPaypalEventProcessed } = require('./payment-paypal-events');
+const { confirmPaymentCycle } = require('../services/order-payment-confirmation');
+const { markPaypalEventProcessed } = require('../services/payment-paypal-events');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
-const notifSvc = require('./notification-service');
+const notifSvc = require('../services/notification-service');
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 function toCents(amount) {
@@ -220,7 +220,7 @@ async function capturePaypalOrder(paypalOrderId, order, paypal, db) {
     if (!stockBlocked) {
       // LOY-01 — Hook fidélité gros panier
       try {
-        const loyaltyService = require('./loyalty-service');
+        const loyaltyService = require('../services/loyalty-service');
         loyaltyService.handleOrderConfirmed({ orderId: order.id })
           .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] hook OK:', r); })
           .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
@@ -413,7 +413,7 @@ async function _handleCaptureCompleted(event, db, paypal) {
     if (!cycleResult.stockBlocked) {
       // LOY-01 — Hook fidélité gros panier
       try {
-        const loyaltyService = require('./loyalty-service');
+        const loyaltyService = require('../services/loyalty-service');
         loyaltyService.handleOrderConfirmed({ orderId: order.id })
           .then(r => { if (r && !r.skipped) log.info({ orderId: order.id }, '[loyalty] hook OK:', r); })
           .catch(e => log.warn({ err: e }, '[loyalty] hook error:'));
