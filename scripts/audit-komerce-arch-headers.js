@@ -18,8 +18,7 @@ const INCLUDED_ROOTS = [
   'services',
   'middleware',
   'utils',
-  'public/boutique/js',
-  'scripts'
+  'public/boutique/js'
 ];
 
 const EXCLUDED_PARTS = new Set([
@@ -60,7 +59,6 @@ function layerOf(file) {
   if (file.startsWith('public/boutique/js/view-models/')) return 'boutique-view-model';
   if (file.startsWith('public/boutique/js/controllers/')) return 'boutique-controller';
   if (file.startsWith('public/boutique/js/')) return 'boutique-js';
-  if (file.startsWith('scripts/')) return 'script';
   return 'other';
 }
 
