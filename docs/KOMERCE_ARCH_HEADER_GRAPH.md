@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 308
-- Files with full headers: 278
+- Scanned code files: 312
+- Files with full headers: 282
 - Files with lite headers: 30
-- Files with any headers: 308
+- Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 635
-- Edges: 2690
-- DB tables: 105
-- Doctrines: 113
+- Graph nodes: 646
+- Edges: 2798
+- DB tables: 107
+- Doctrines: 118
 - Impact areas: 109
-- Unresolved code edges: 249
+- Unresolved code edges: 264
 
 ## Domains
 
@@ -28,6 +28,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - checkout: 2
 - collective-workspace: 3
 - dashboard: 28
+- documents: 4
 - economic-engine: 24
 - inventory: 2
 - logistics: 29
@@ -35,12 +36,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notifications: 1
 - operations: 4
 - order-payment: 1
-- orders: 23
+- orders: 24
 - payment: 14
 - recommendations: 4
+- refunds: 1
 - shared-cart: 34
 - tracking: 1
-- unknown: 37
+- unknown: 35
 - validation: 1
 - wallet: 5
 
@@ -57,10 +59,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 10
 - policy: 1
-- route: 97
+- route: 96
 - route-manifest: 1
 - schema: 1
-- service: 98
+- service: 103
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -102,7 +104,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/orders/parcels.js — orders-parcels (orders, critical, full)
 - routes/orders/qr.js — orders-qr (orders, critical, full)
 - routes/orders/status.js — orders-status (orders, critical, full)
-- routes/payments-paypal.js — payment-payments-paypal (payment, critical, full)
+- routes/payments-paypal.js — payment-payment-paypal (payment, critical, full)
 - routes/payments.js — payment-http-facade (payment, critical, full)
 - routes/pickup-pay-cash.js — payment-pickup-pay-cash (payment, critical, full)
 - routes/shared-cart-cash.js — shared-cart-shared-cart-cash (shared-cart, critical, full)
@@ -298,6 +300,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE routes/payments-paypal.js -> alerts
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -382,17 +385,21 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-engine.js -> order_items
 - WRITE services/shared-cart-engine.js -> order_items
 - WRITE routes/admin/system.js -> order_status_history
+- WRITE routes/orders/cancel.js -> order_status_history
 - WRITE routes/orders/create.js -> order_status_history
+- WRITE routes/payments-paypal.js -> order_status_history
 - WRITE services/order-status-machine.js -> order_status_history
 - WRITE services/parcel-operations.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/shared-cart-engine.js -> order_status_history
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
+- WRITE routes/orders/cancel.js -> orders
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
 - WRITE routes/orders/status.js -> orders
 - WRITE routes/parcels.js -> orders
+- WRITE routes/payments-paypal.js -> orders
 - WRITE routes/pickup-secret.js -> orders
 - WRITE routes/tracking.js -> orders
 - WRITE services/admin-order-refund.js -> orders
@@ -413,11 +420,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/shared-cart-engine.js -> orders
 - WRITE services/simulator/state-advancer.js -> orders
 - WRITE services/verify-qr-collection.js -> orders
-- WRITE services/wallet-service.js -> orders
-- WRITE routes/otp.js -> otp_codes
-- WRITE services/parcel-security.js -> parcel_events
-- WRITE routes/admin/system.js -> parcel_items
-- WRITE routes/hub-dashboard.js -> parcel_items
 
 ## Unresolved Code Edges
 
