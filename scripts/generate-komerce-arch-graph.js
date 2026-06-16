@@ -4,7 +4,12 @@
  * Generates a machine-readable and human-readable graph from @komerce-arch headers.
  *
  * Source of truth: file headers.
- * Output: docs/komerce-arch-header-graph.json and docs/KOMERCE_ARCH_HEADER_GRAPH.md.
+ * Outputs:
+ * - docs/komerce-arch-header-graph.json
+ * - docs/KOMERCE_ARCH_HEADER_GRAPH.md
+ *
+ * This script is intentionally dependency-free so it can run in GitHub Actions
+ * without installing the application packages.
  */
 
 const fs = require('fs');
@@ -24,18 +29,30 @@ const SCAN_ROOTS = [
 ];
 
 const EXTENSIONS = new Set(['.js', '.cjs', '.mjs']);
-const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '.cache', '.next']);
+const IGNORE_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'coverage',
+  '.cache',
+  '.next',
+  'tmp',
+  'temp'
+]);
 
-const FIELD_RE = /^ \* @(\S+)\s*(.*)$/;
+const FIELD_RE = /^\s*\*\s+@(\S+)\s*(.*)$/;
+const ARCH_MARKER = '@komerce-arch';
 
 function walk(relativePath, out) {
   const full = path.join(ROOT, relativePath);
   if (!fs.existsSync(full)) return;
+
   const stat = fs.statSync(full);
   if (stat.isFile()) {
     if (EXTENSIONS.has(path.extname(full))) out.push(relativePath.replace(/\\/g, '/'));
     return;
   }
+
   if (!stat.isDirectory()) return;
   for (const entry of fs.readdirSync(full)) {
     if (IGNORE_DIRS.has(entry)) continue;
@@ -44,12 +61,15 @@ function walk(relativePath, out) {
 }
 
 function parseHeader(src) {
-  const start = src.indexOf('/**');
+  const firstMeaningful = src.replace(/^\uFEFF/, '').trimStart();
+  const start = firstMeaningful.indexOf('/**');
   if (start !== 0) return null;
-  const end = src.indexOf('*/', start);
+
+  const end = firstMeaningful.indexOf('*/', start);
   if (end < 0) return null;
-  const block = src.slice(start, end + 2);
-  if (!block.includes('@komerce-arch')) return null;
+
+  const block = firstMeaningful.slice(start, end + 2);
+  if (!block.includes(ARCH_MARKER)) return null;
 
   const fields = {};
   for (const line of block.split(/\r?\n/)) {
@@ -63,16 +83,20 @@ function parseHeader(src) {
 }
 
 function splitList(value) {
-  if (!value || value === 'none') return [];
-  return value
+  if (!value) return [];
+  const clean = String(value).trim();
+  if (!clean || clean === 'none' || clean === 'n/a') return [];
+
+  return clean
     .split(',')
     .map(x => x.trim())
     .filter(Boolean)
-    .filter(x => x !== '@unknown');
+    .filter(x => x !== '@unknown')
+    .map(normalizeTarget);
 }
 
 function normalizeTarget(target) {
-  return target
+  return String(target)
     .replace(/^`|`$/g, '')
     .replace(/^\.\//, '')
     .trim();
@@ -80,6 +104,25 @@ function normalizeTarget(target) {
 
 function edgeId(edge) {
   return [edge.from, edge.to, edge.type, edge.label || ''].join('::');
+}
+
+function groupCount(items, keyFn) {
+  return items.reduce((acc, item) => {
+    const key = keyFn(item) || 'unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function pushSortedList(md, title, rows, empty = '- none') {
+  md.push(`## ${title}`);
+  md.push('');
+  if (!rows.length) {
+    md.push(empty);
+  } else {
+    for (const row of rows) md.push(row);
+  }
+  md.push('');
 }
 
 function main() {
@@ -91,11 +134,15 @@ function main() {
   const rawEdges = [];
   const roleToFile = new Map();
   const fileSet = new Set(files);
+  const filesWithoutHeaders = [];
 
   for (const file of files) {
     const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
     const fields = parseHeader(src);
-    if (!fields) continue;
+    if (!fields) {
+      filesWithoutHeaders.push(file);
+      continue;
+    }
 
     const node = {
       id: file,
@@ -106,8 +153,8 @@ function main() {
       criticality: fields.criticality || null,
       inputs: splitList(fields.inputs),
       outputs: splitList(fields.outputs),
-      depends: splitList(fields.depends).map(normalizeTarget),
-      usedBy: splitList(fields['used-by']).map(normalizeTarget),
+      depends: splitList(fields.depends),
+      usedBy: splitList(fields['used-by']),
       dbRead: splitList(fields['db-read']),
       dbWrite: splitList(fields['db-write']),
       dbTxn: splitList(fields['db-txn']),
@@ -115,6 +162,7 @@ function main() {
       impactAreas: splitList(fields['impact-areas']),
       version: fields.version || null
     };
+
     nodes.push(node);
     if (node.role) roleToFile.set(node.role, file);
   }
@@ -146,8 +194,11 @@ function main() {
     if (nodeIds.has(target)) return target;
     if (fileSet.has(target)) return target;
     if (roleToFile.has(target)) return roleToFile.get(target);
-    if (target.startsWith('public/boutique/js/') && nodeIds.has(target)) return target;
-    if (!target.includes('/') && !target.endsWith('.js')) return roleToFile.get(target) || target;
+
+    if (!target.includes('/') && !target.endsWith('.js')) {
+      return roleToFile.get(target) || target;
+    }
+
     return target;
   }
 
@@ -189,46 +240,87 @@ function main() {
     ...impactNodes.values()
   ];
 
-  const byDomain = nodes.reduce((acc, node) => {
-    const key = node.domain || 'unknown';
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  const byCriticality = nodes.reduce((acc, node) => {
-    const key = node.criticality || 'unknown';
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {});
-
-  const unresolvedEdges = edges.filter(edge => {
+  const graphNodeIds = new Set(allNodes.map(n => n.id));
+  const unresolvedCodeEdges = edges.filter(edge => {
     if (edge.to.startsWith('db:') || edge.to.startsWith('doctrine:') || edge.to.startsWith('impact:')) return false;
     if (edge.from.startsWith('db:') || edge.from.startsWith('doctrine:') || edge.from.startsWith('impact:')) return false;
-    return !nodeIds.has(edge.to) || !nodeIds.has(edge.from);
+    return !graphNodeIds.has(edge.to) || !graphNodeIds.has(edge.from);
   });
+
+  const interventionIndex = {};
+  for (const node of nodes) {
+    const adjacent = edges.filter(edge => edge.from === node.id || edge.to === node.id);
+    interventionIndex[node.id] = {
+      role: node.role,
+      domain: node.domain,
+      criticality: node.criticality,
+      directDependsOn: adjacent.filter(e => e.from === node.id && e.type === 'depends').map(e => e.to),
+      directUsedBy: adjacent.filter(e => e.to === node.id && e.type === 'uses').map(e => e.from),
+      dbRead: node.dbRead,
+      dbWrite: node.dbWrite,
+      doctrines: node.doctrine,
+      impactAreas: node.impactAreas,
+      mustCheck: Array.from(new Set([
+        ...adjacent
+          .filter(e => ['depends', 'uses'].includes(e.type))
+          .map(e => (e.from === node.id ? e.to : e.from))
+          .filter(id => graphNodeIds.has(id)),
+        ...node.impactAreas.map(area => `impact:${area}`),
+        ...node.doctrine.map(doc => `doctrine:${doc}`),
+        ...node.dbRead.map(table => `db:${table}`),
+        ...node.dbWrite.map(table => `db:${table}`)
+      ])).sort()
+    };
+  }
 
   const graph = {
     version: '2026-06',
     generatedAt: new Date().toISOString(),
     source: '@komerce-arch headers',
+    scanRoots: SCAN_ROOTS,
     totals: {
+      scannedCodeFiles: files.length,
       filesWithHeaders: nodes.length,
+      filesWithoutHeaders: filesWithoutHeaders.length,
       graphNodes: allNodes.length,
       edges: edges.length,
       dbTables: tableNodes.size,
       doctrines: doctrineNodes.size,
       impactAreas: impactNodes.size,
-      unresolvedCodeEdges: unresolvedEdges.length
+      unresolvedCodeEdges: unresolvedCodeEdges.length
     },
-    byDomain,
-    byCriticality,
+    byDomain: groupCount(nodes, n => n.domain),
+    byLayer: groupCount(nodes, n => n.layer),
+    byCriticality: groupCount(nodes, n => n.criticality),
     nodes: allNodes,
     edges,
-    unresolvedCodeEdges: unresolvedEdges
+    interventionIndex,
+    unresolvedCodeEdges,
+    filesWithoutHeaders
   };
 
   fs.mkdirSync(DOCS, { recursive: true });
   fs.writeFileSync(path.join(DOCS, 'komerce-arch-header-graph.json'), JSON.stringify(graph, null, 2) + '\n');
+
+  const criticalFiles = nodes
+    .filter(n => ['critical', 'high'].includes(n.criticality))
+    .sort((a, b) => (a.criticality === b.criticality ? a.file.localeCompare(b.file) : a.criticality.localeCompare(b.criticality)))
+    .map(n => `- ${n.file} — ${n.role || 'no-role'} (${n.domain || 'unknown'}, ${n.criticality || 'unknown'})`);
+
+  const dbWrites = edges
+    .filter(e => e.type === 'db-write')
+    .sort((a, b) => `${a.label}${a.from}`.localeCompare(`${b.label}${b.from}`))
+    .slice(0, 120)
+    .map(e => `- WRITE ${e.from} -> ${e.label}`);
+
+  const unresolvedRows = unresolvedCodeEdges
+    .sort((a, b) => `${a.from}${a.to}${a.type}`.localeCompare(`${b.from}${b.to}${b.type}`))
+    .slice(0, 120)
+    .map(e => `- ${e.type}: ${e.from} -> ${e.to} (${e.label})`);
+
+  const uncoveredRows = filesWithoutHeaders
+    .slice(0, 160)
+    .map(file => `- ${file}`);
 
   const md = [];
   md.push('# Komerce Architecture Header Graph');
@@ -239,7 +331,9 @@ function main() {
   md.push('');
   md.push('## Totals');
   md.push('');
+  md.push(`- Scanned code files: ${graph.totals.scannedCodeFiles}`);
   md.push(`- Files with headers: ${graph.totals.filesWithHeaders}`);
+  md.push(`- Files without headers: ${graph.totals.filesWithoutHeaders}`);
   md.push(`- Graph nodes: ${graph.totals.graphNodes}`);
   md.push(`- Edges: ${graph.totals.edges}`);
   md.push(`- DB tables: ${graph.totals.dbTables}`);
@@ -247,40 +341,24 @@ function main() {
   md.push(`- Impact areas: ${graph.totals.impactAreas}`);
   md.push(`- Unresolved code edges: ${graph.totals.unresolvedCodeEdges}`);
   md.push('');
-  md.push('## Domains');
+
+  pushSortedList(md, 'Domains', Object.entries(graph.byDomain).sort().map(([domain, count]) => `- ${domain}: ${count}`));
+  pushSortedList(md, 'Layers', Object.entries(graph.byLayer).sort().map(([layer, count]) => `- ${layer}: ${count}`));
+  pushSortedList(md, 'Critical And High Files', criticalFiles);
+  pushSortedList(md, 'DB Write Edges', dbWrites);
+  pushSortedList(md, 'Unresolved Code Edges', unresolvedRows);
+  pushSortedList(md, 'Files Still Without Headers', uncoveredRows);
+
+  md.push('## Intervention Rule');
   md.push('');
-  for (const [domain, count] of Object.entries(byDomain).sort()) md.push(`- ${domain}: ${count}`);
+  md.push('Before modifying a structural file, open `docs/komerce-arch-header-graph.json`, read `interventionIndex["<file>"]`, then check every `mustCheck` target before editing.');
   md.push('');
-  md.push('## Critical Files');
-  md.push('');
-  for (const node of nodes.filter(n => n.criticality === 'critical').sort((a, b) => a.file.localeCompare(b.file))) {
-    md.push(`- ${node.file} — ${node.role || 'no-role'} (${node.domain || 'unknown'})`);
-  }
-  md.push('');
-  md.push('## DB Touchpoint Edges');
-  md.push('');
-  for (const edge of edges.filter(e => e.type === 'db-write').slice(0, 80)) {
-    md.push(`- WRITE ${edge.from} -> ${edge.label}`);
-  }
-  md.push('');
-  md.push('## Unresolved Code Edges');
-  md.push('');
-  if (!unresolvedEdges.length) {
-    md.push('- none');
-  } else {
-    for (const edge of unresolvedEdges.slice(0, 80)) {
-      md.push(`- ${edge.type}: ${edge.from} -> ${edge.to} (${edge.label})`);
-    }
-  }
-  md.push('');
-  md.push('## Maintenance Rule');
-  md.push('');
-  md.push('When a file header changes, regenerate this graph. When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` first.');
+  md.push('When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` before regenerating this graph.');
   md.push('');
 
   fs.writeFileSync(path.join(DOCS, 'KOMERCE_ARCH_HEADER_GRAPH.md'), md.join('\n'));
 
-  console.log(`Generated graph: ${graph.totals.filesWithHeaders} files, ${graph.totals.edges} edges`);
+  console.log(`Generated graph: ${graph.totals.filesWithHeaders} files, ${graph.totals.edges} edges, ${graph.totals.unresolvedCodeEdges} unresolved code edges`);
 }
 
 main();
