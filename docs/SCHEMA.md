@@ -17,10 +17,13 @@ docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
 
 Une migration, une modification de table/colonne/enum/index/trigger/fonction/contrainte, ou un nouvel accès DB depuis le code est incomplète tant que :
 
-- `docs/SCHEMA.md` décrit le schéma live ou le schéma visé ;
+- `docs/SCHEMA.md` décrit le schéma live vérifié ou le schéma visé par migration ;
+- le mode est explicite : `verified_live_schema` ou `intended_migration_schema` ;
 - les headers `@db-read`, `@db-write`, `@db-txn` des fichiers lecteurs/écrivains sont à jour ;
 - `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` sont régénérés si les headers changent ;
 - l'ordre migration/deploy/rollback est documenté si la production est impactée.
+
+Règle stricte : un agent peut mettre à jour ce document depuis une migration comme schéma visé, mais il ne doit pas présenter ce changement comme vérifié en production tant qu'un extract ou une requête DB live ne l'a pas confirmé.
 
 ---
 
