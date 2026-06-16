@@ -47,6 +47,7 @@ Le frontend Boutique vit dans `public/boutique/**`.
 | Pipeline CSS | [`docs/boutique/BOUTIQUE_CSS_PIPELINE.md`](./boutique/BOUTIQUE_CSS_PIPELINE.md) |
 | Ownership composants | [`docs/boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md`](./boutique/BOUTIQUE_COMPONENT_OWNERSHIP.md) |
 | Architecture modal produit | [`docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md`](./boutique/BOUTIQUE_MODAL_ARCHITECTURE.md) |
+| Personnalisation / ranking / suggestions | [`docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md`](./doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md) |
 
 Les documents sous `public/boutique/docs/**` sont historiques ou générés. Ils sont toujours subordonnés aux documents ci-dessus.
 

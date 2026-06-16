@@ -22,6 +22,7 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   const adminCostComponentsRouter    = require('../routes/admin-cost-components');
   const categoriesRouter = require('../routes/categories');
   const adminBoutiqueCategoriesRouter = require('../routes/admin-boutique-categories');
+  const boutiqueSuggestionsRouter = require('../routes/boutique-suggestions');
 
   app.use('/api/transit-dashboard', transitDashRouter);
   app.use('/api/auth',       authRouter);
@@ -36,6 +37,7 @@ function mountApiRoutesBeforeStripeOwnedBlocks(app) {
   app.use('/api/admin/customs-categories', adminCustomsCategoriesRouter);
   app.use('/api/categories', categoriesRouter);
   app.use('/api/admin/boutique-categories', adminBoutiqueCategoriesRouter);
+  app.use('/api/boutique/suggestions', boutiqueSuggestionsRouter);
   app.use('/api/admin/pricing-components', adminPricingComponentsRouter);
   app.use('/api/admin/cost-components',    adminCostComponentsRouter);
 }

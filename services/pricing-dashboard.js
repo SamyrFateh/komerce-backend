@@ -42,7 +42,8 @@ async function computeDashboard() {
   );
 
   // 4. CDR + verdict par produit — VIA LE MOTEUR (une seule vérité)
-  const productsAtLoss    = [];
+  const productsDestructive  = [];  // prix < coût variable → vente destructrice (§7 doctrine)
+  const productsUndercovered = [];  // coût variable ≤ prix < CDR → contributif mais sous-couvert
   const productsCritical  = [];
   const margesByCategory  = {};
   let nbAligned = 0, nbUnder = 0, nbOver = 0, nbUnset = 0;
@@ -106,9 +107,13 @@ async function computeDashboard() {
       else                         { nbOver++;    }
     }
 
-    // À perte = sous le CDR complet (frontière de couverture totale, vérité moteur)
-    if (prixActuel > 0 && prixActuel < cdr) {
-      productsAtLoss.push({ id: p.id, name: p.name, price_kmf: prixActuel, cdr_kmf: cdr, gap_kmf: cdr - prixActuel });
+    // Doctrine §7 : deux frontières distinctes.
+    //   Destructif (à perte) = prix < coût variable complet (N1+N2)
+    //   Sous-couvert         = coût variable ≤ prix < CDR complet (contributif mais structure non couverte)
+    if (prixActuel > 0 && prixActuel < variableComplete) {
+      productsDestructive.push({ id: p.id, name: p.name, price_kmf: prixActuel, variable_cost_kmf: variableComplete, cdr_kmf: cdr, gap_kmf: variableComplete - prixActuel });
+    } else if (prixActuel > 0 && prixActuel < cdr) {
+      productsUndercovered.push({ id: p.id, name: p.name, price_kmf: prixActuel, variable_cost_kmf: variableComplete, cdr_kmf: cdr, gap_to_cdr_kmf: cdr - prixActuel });
     } else if (margeEff !== null && margeEff < 10) {
       productsCritical.push({ id: p.id, name: p.name, marge_pct: margeEff, price_kmf: prixActuel });
     }
@@ -143,11 +148,17 @@ async function computeDashboard() {
 
   // 8. Alertes
   const alerts = [];
-  if (productsAtLoss.length) alerts.push({
-    severity: 'critical', code: 'sale_at_loss',
-    title: 'Produits vendus à perte',
-    message: `${productsAtLoss.length} produit(s) ont un prix actuel inférieur à leur coût de revient.`,
-    count: productsAtLoss.length, products: productsAtLoss.slice(0, 10),
+  if (productsDestructive.length) alerts.push({
+    severity: 'critical', code: 'sale_destructive',
+    title: 'Ventes destructrices (sous coût variable)',
+    message: `${productsDestructive.length} produit(s) vendus en-dessous du coût variable complet — chaque vente détruit de la trésorerie.`,
+    count: productsDestructive.length, products: productsDestructive.slice(0, 10),
+  });
+  if (productsUndercovered.length) alerts.push({
+    severity: 'warning', code: 'sale_undercovered',
+    title: 'Ventes sous CDR (contributives mais structure non couverte)',
+    message: `${productsUndercovered.length} produit(s) couvrent leurs coûts variables mais n'amortissent pas la structure (entre coût variable et CDR complet).`,
+    count: productsUndercovered.length, products: productsUndercovered.slice(0, 10),
   });
   if (productsCritical.length) alerts.push({
     severity: 'warning', code: 'low_margin',
@@ -199,7 +210,8 @@ async function computeDashboard() {
       nb_underpriced:       nbUnder,
       nb_overpriced:        nbOver,
       nb_unset:             nbUnset,
-      nb_at_loss:           productsAtLoss.length,
+      nb_destructive:       productsDestructive.length,
+      nb_undercovered:      productsUndercovered.length,
       couverture_cost_pct:  couvertureCostPct,
       last_config_change_at: lastChange,
       niveau2_kmf:          niveau2,

@@ -250,6 +250,114 @@ Variantes panier/checkout, couleur/taille, stock/prix variante, panier partage a
 
 ---
 
+---
+
+## 9. Moteur économique — alignement doctrine (2026-06-16)
+
+### ECO-01 — pricing-dashboard : libellés "à perte" confondaient deux frontières
+
+Statut : **clôturé — 2026-06-16**.
+
+Avant : `productsAtLoss` regroupait tous les produits `prix < CDR` sous le libellé
+"Produits vendus à perte". Or la doctrine §7 distingue deux situations radicalement différentes.
+
+Corrigé dans `services/pricing-dashboard.js` :
+
+- `productsDestructive` → `prix < variable_cost_complete` → alerte `sale_destructive` critique.
+- `productsUndercovered` → `variable_cost ≤ prix < CDR` → alerte `sale_undercovered` warning.
+- KPIs : `nb_at_loss` remplacé par `nb_destructive` + `nb_undercovered`.
+
+### ECO-02 — computeRecommendBatch : vérité legacy parallèle sur recommended_price_kmf
+
+Statut : **clôturé — 2026-06-16**.
+
+Avant : la boucle d'enrichissement doctrine dans `pricing-recommend.js#computeRecommendBatch()`
+ne remplaçait pas `recommended_price_kmf` ni `cost_total_kmf` dans les items — ils restaient
+les valeurs calculées localement (niveau1+2+3 legacy).
+
+Corrigé : quand le moteur répond, les items relaient `doctrine.recommended_price_kmf`,
+`doctrine.cdr_complete_kmf`, `doctrine.n1/n2/n3_*`, et posent `source_of_truth: 'pricing-engine'`.
+
+### ECO-03 — N3 par article / prix plancher ≠ CDR (vérification)
+
+Statut : **clôturé par inspection code**.
+
+- `computeFixedCostAllocation` retourne `fixedPerArticle` = charges / commandes / articles ✓
+- `pricing-engine` expose `n3_allocation_unit: 'article'` et `n3_formula` ✓
+- `minimum_safe_price_kmf` est calculé dans `pricing-output.js` depuis `variable_cost_complete`,
+  pas depuis `cdr_complete` ✓
+
+---
+
+## 10. Personnalisation boutique — ranking séparé (2026-06-16)
+
+### RANK-00 — Doctrine créée
+
+Statut : **clôturé — 2026-06-16**.
+
+`docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md` créé comme document actif.
+Ajouté dans `docs/README.md` tableau boutique.
+
+### RANK-01 — b-modal-suggestions.js : doit devenir surface passive
+
+Statut : **ouvert — dette frontend**.
+
+Le fichier `public/boutique/js/b-modal-suggestions.js` (non présent dans ce repo)
+doit :
+
+1. Appeler `GET /api/boutique/suggestions?viewed_product_id=UUID&category=...&...`
+2. Recevoir `[{ product_id, name, price_kmf, reason_label, ... }]` et afficher.
+3. Ne pas contenir de logique de tri ou de scoring.
+4. Sur événement `cart:updated` : mise à jour ciblée de la carte concernée (badge/bouton),
+   pas de re-render complet de la liste (maintenir une map `productId → cardElement`).
+
+Livrable : PR frontend modifiant `b-modal-suggestions.js` pour consommer l'API.
+
+### RANK-02 — Dette product_ref : sku sans contrainte d'unicité
+
+Statut : **ouvert — priorité P2**.
+
+Le champ `sku` sur la table `products` n'a pas de contrainte d'unicité DB.
+Des produits issus de sourcing peuvent ne pas avoir de SKU.
+
+Conséquence actuelle : le moteur de ranking utilise exclusivement `product.id` (UUID).
+Toute surface frontend passant un identifiant produit doit passer l'UUID.
+
+Livrable attendu : migration ajoutant `UNIQUE` sur `sku` (nullable OK) + vérification
+des insertions sourcing. Bloquer avant tout système de tracking comportemental fin.
+
+### RANK-03 — Route boutique-suggestions câblée, non testée en intégration
+
+Statut : **ouvert — test recommandé**.
+
+`GET /api/boutique/suggestions` câblé dans `bootstrap/api-routes.js`.
+Service `services/boutique-ranking-engine.js` créé.
+
+Tests recommandés :
+
+```bash
+# Aucun signal → fallback éditorial
+curl /api/boutique/suggestions
+
+# Signal catégorie
+curl '/api/boutique/suggestions?category=phones&limit=4'
+
+# Signal viewed_product_id → doit être absent des résultats
+curl '/api/boutique/suggestions?viewed_product_id=UUID&category=phones'
+
+# Signaux combinés
+curl '/api/boutique/suggestions?category=phones&recently_viewed=A,B&cart_product_ids=C'
+```
+
+Quand une dette est traitee :
+
+1. citer le fichier/code qui la ferme ;
+2. deplacer l'ancien point en faux positif ou le supprimer ;
+3. corriger la doc active concernee dans la meme PR ;
+4. ne jamais reactiver un audit historique sans preuve code/DB.
+
+Aucun nouveau document ne devient operatoire sans etre ajoute a `docs/README.md`.
+
 ## 8. Regle de mise a jour
 
 Quand une dette est traitee :

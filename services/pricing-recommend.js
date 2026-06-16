@@ -502,9 +502,18 @@ async function computeRecommendBatch(b = {}) {
         );
         items[i] = {
           ...it,
+          // Champs décisionnels : relayés depuis le moteur (doctrine §1)
+          recommended_price_kmf:       doctrine.recommended_price_kmf,
+          cost_total_kmf:              doctrine.cdr_complete_kmf,
+          // Champs de pilotage moteur
           survival_price_kmf:          doctrine.survival_price_kmf,
           minimum_safe_price_kmf:      doctrine.minimum_safe_price_kmf,
           test_price_kmf:              doctrine.test_price_kmf,
+          variable_cost_complete_kmf:  doctrine.variable_cost_complete_kmf,
+          n1_landed_relay_cost_kmf:    doctrine.n1_landed_relay_cost_kmf,
+          n2_business_variable_cost_kmf: doctrine.n2_business_variable_cost_kmf,
+          n3_fixed_overhead_allocation_kmf: doctrine.n3_fixed_overhead_allocation_kmf,
+          cdr_complete_kmf:            doctrine.cdr_complete_kmf,
           cost_complete_estimated_kmf: doctrine.cost_complete_estimated_kmf,
           estimated_margin_pct:        doctrine.estimated_margin_pct,
           estimated_contribution_kmf:  doctrine.estimated_contribution_kmf,
@@ -512,6 +521,7 @@ async function computeRecommendBatch(b = {}) {
           market_confidence:           doctrine.market_confidence,
           sourcing_decision:           doctrine.sourcing_decision,
           reason:                      doctrine.reason,
+          source_of_truth:             'pricing-engine',
         };
       } catch (_) {
         // Item laissé en format legacy si doctrine échoue
