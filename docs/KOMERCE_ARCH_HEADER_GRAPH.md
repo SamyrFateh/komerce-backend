@@ -1,153 +1,480 @@
 # Komerce Architecture Header Graph
 
-Version: 2026-06
+Generated: 2026-06-16T10:52:19.342Z
 
-This file is the human-readable graph entrypoint for the `@komerce-arch` layer.
+This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
-Source of truth: file headers.
-Generated target: `docs/komerce-arch-header-graph.json`.
-Generator: `node scripts/generate-komerce-arch-graph.js`.
+## Totals
 
-> Maintenance rule: do not hand-edit this file for durable changes. Update file headers first, then regenerate the graph.
+- Scanned code files: 306
+- Files with full headers: 65
+- Files with lite headers: 0
+- Files with any headers: 65
+- Files without headers: 241
+- Lite headers without owner: 0
+- Graph nodes: 314
+- Edges: 1037
+- DB tables: 37
+- Doctrines: 111
+- Impact areas: 101
+- Unresolved code edges: 295
 
-## Current Status
+## Domains
 
-The graph generator is present and dependency-free. It scans:
+- auth: 3
+- bootstrap: 3
+- boutique: 16
+- catalog: 10
+- checkout: 2
+- collective-workspace: 3
+- economic-engine: 2
+- notification: 2
+- order-payment: 1
+- orders: 3
+- payment: 3
+- recommendations: 2
+- shared-cart: 13
+- tracking: 1
+- wallet: 1
 
-- `server.js`
-- `bootstrap/**`
-- `routes/**`
-- `services/**`
-- `middleware/**`
-- `utils/**`
-- `public/boutique/js/**`
+## Layers
 
-It creates:
+- api-client: 2
+- controller: 1
+- cron: 1
+- data-service: 1
+- entrypoint: 1
+- external-adapter: 1
+- machine: 2
+- policy: 1
+- route: 9
+- route-manifest: 1
+- schema: 1
+- service: 9
+- state: 1
+- state-store: 1
+- ui-component: 11
+- ui-enhancer: 3
+- ui-experiment: 1
+- ui-infrastructure: 1
+- ui-page: 6
+- ui-renderer: 4
+- ui-service: 1
+- ui-state: 2
+- util: 1
+- util-ui: 2
+- view-model: 1
 
-- file nodes
-- DB table nodes
-- doctrine nodes
-- impact-area nodes
-- dependency edges
-- usage edges
-- DB read/write edges
-- doctrine edges
-- impact edges
-- unresolved-code-edge diagnostics
-- per-file `interventionIndex`
+## Critical And High Files
+
+- bootstrap/api-routes.js — api-route-manifest (bootstrap, critical, full)
+- bootstrap/crons.js — operational-crons (bootstrap, critical, full)
+- public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
+- public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
+- public/boutique/js/b-group-view.js — shared-cart-boutique-view (shared-cart, critical, full)
+- public/boutique/js/b-share-cart.js — shared-cart-creation-from-boutique (shared-cart, critical, full)
+- public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
+- public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
+- routes/orders.js — orders-http-facade (orders, critical, full)
+- routes/payments.js — payment-http-facade (payment, critical, full)
+- routes/shared-cart.js — shared-cart-http-facade (shared-cart, critical, full)
+- server.js — api-server-entrypoint (bootstrap, critical, full)
+- services/order-payment-confirmation.js — payment-to-stock-single-entry (order-payment, critical, full)
+- services/order-status-machine.js — order-status-state-machine (orders, critical, full)
+- services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
+- services/payment-stripe.js — stripe-payment-service (payment, critical, full)
+- services/shared-cart-engine.js — shared-cart-state-machine (shared-cart, critical, full)
+- services/shared-cart-financial-guard.js — shared-cart-financial-guard (shared-cart, critical, full)
+- services/shared-cart-v41-transitions.js — shared-cart-v41-transition-projector (shared-cart, critical, full)
+- public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
+- public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
+- public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
+- public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
+- public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
+- public/boutique/js/b-modal-desktop-enhancers.js — desktop-product-modal-enhancer (boutique, high, full)
+- public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
+- public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
+- public/boutique/js/b-nav.js — boutique-view-navigation (boutique, high, full)
+- public/boutique/js/b-pager.js — mobile-category-pager (catalog, high, full)
+- public/boutique/js/b-phone.js — phone-normalization-ui (auth, high, full)
+- public/boutique/js/b-scroll-owner.js — boutique-scroll-owner (boutique, high, full)
+- public/boutique/js/b-subcat.js — boutique-subcategory-navigation (catalog, high, full)
+- public/boutique/js/b-tracking.js — order-tracking-view (tracking, high, full)
+- public/boutique/js/b-utils.js — boutique-ui-utilities (boutique, high, full)
+- public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
+- public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
+- public/boutique/js/group/group-render-creator.js — shared-cart-creator-renderer (shared-cart, high, full)
+- public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
+- public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
+- public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
+- public/boutique/js/view-models/modal-view-model.js — product-modal-view-model (boutique, high, full)
+- routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
+- routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
+- routes/economic-engine.js — economic-engine-http-facade (economic-engine, high, full)
+- routes/otp.js — client-otp-session (auth, high, full)
+- routes/products.js — products-http-facade (catalog, high, full)
+- routes/wallet.js — wallet-http-facade (wallet, high, full)
+- services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
+- services/notification-service.js — customer-notification-orchestrator (notification, high, full)
+- services/order-service.js — order-domain-helpers (orders, high, full)
+- services/shared-cart-estimation-service.js — shared-cart-estimation-service (shared-cart, high, full)
+- services/shared-cart-items-service.js — shared-cart-items-update-service (shared-cart, high, full)
+- services/shared-cart-queries.js — shared-cart-db-query-service (shared-cart, high, full)
+- services/whatsapp-meta.js — meta-whatsapp-adapter (notification, high, full)
+
+## Lite Aggregated Files
+
+- none
+
+## DB Write Edges
+
+- WRITE routes/admin-boutique-categories.js -> boutique_categories
+- WRITE routes/admin-boutique-categories.js -> boutique_subcategories
+- WRITE services/economic-engine-queries.js -> economic_alerts
+- WRITE routes/economic-engine.js -> economic_charges
+- WRITE routes/economic-engine.js -> economic_snapshots
+- WRITE services/economic-engine-queries.js -> economic_snapshots
+- WRITE routes/economic-engine.js -> economic_variables
+- WRITE services/shared-cart-financial-guard.js -> financial_alerts
+- WRITE services/order-payment-confirmation.js -> inventory_reservations
+- WRITE services/notification-service.js -> notification_logs
+- WRITE routes/orders.js -> order_items
+- WRITE routes/orders.js -> order_status_history
+- WRITE services/order-payment-confirmation.js -> order_status_history
+- WRITE services/order-status-machine.js -> order_status_history
+- WRITE services/payment-cash-confirm.js -> order_status_history
+- WRITE services/payment-stripe.js -> order_status_history
+- WRITE routes/orders.js -> orders
+- WRITE services/order-payment-confirmation.js -> orders
+- WRITE services/order-service.js -> orders
+- WRITE services/order-status-machine.js -> orders
+- WRITE services/shared-cart-engine.js -> orders
+- WRITE routes/otp.js -> otp_codes
+- WRITE routes/payments.js -> payments
+- WRITE services/payment-cash-confirm.js -> payments
+- WRITE services/payment-stripe.js -> payments
+- WRITE routes/boutique-suggestions.js -> personalization_events
+- WRITE routes/products.js -> product_images
+- WRITE routes/products.js -> products
+- WRITE services/order-payment-confirmation.js -> products
+- WRITE routes/otp.js -> sessions
+- WRITE routes/shared-cart.js -> shared_cart_contributions
+- WRITE services/shared-cart-engine.js -> shared_cart_contributions
+- WRITE services/shared-cart-financial-guard.js -> shared_cart_contributions
+- WRITE routes/shared-cart.js -> shared_cart_estimations
+- WRITE services/shared-cart-estimation-service.js -> shared_cart_estimations
+- WRITE services/shared-cart-engine.js -> shared_cart_events
+- WRITE services/shared-cart-estimation-service.js -> shared_cart_events
+- WRITE services/shared-cart-financial-guard.js -> shared_cart_events
+- WRITE services/shared-cart-items-service.js -> shared_cart_events
+- WRITE routes/shared-cart.js -> shared_cart_items
+- WRITE services/shared-cart-items-service.js -> shared_cart_items
+- WRITE routes/shared-cart.js -> shared_carts
+- WRITE services/shared-cart-engine.js -> shared_carts
+- WRITE services/shared-cart-items-service.js -> shared_carts
+- WRITE services/order-payment-confirmation.js -> stock_movements
+- WRITE routes/payments.js -> stripe_events
+- WRITE services/payment-stripe.js -> stripe_events
+- WRITE routes/boutique-suggestions.js -> suggestion_logs
+- WRITE routes/payments.js -> transactions
+- WRITE services/payment-cash-confirm.js -> transactions
+- WRITE services/payment-stripe.js -> transactions
+- WRITE routes/otp.js -> users
+- WRITE routes/wallet.js -> wallet_accounts
+- WRITE routes/orders.js -> wallet_ledger
+- WRITE routes/wallet.js -> wallet_ledger
+- WRITE services/order-service.js -> wallet_ledger
+
+## Unresolved Code Edges
+
+- uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
+- uses: admin-dashboards -> routes/economic-engine.js (admin-dashboards)
+- uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
+- uses: admin-flows -> services/order-status-machine.js (admin-flows)
+- uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
+- uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-cart.js -> public/boutique/js/b-modal-core.js (b-cart.js)
+- uses: b-cart.js -> public/boutique/js/b-scroll-owner.js (b-cart.js)
+- uses: b-cart.js -> public/boutique/js/shop-schema.js (b-cart.js)
+- uses: b-catalog-desktop-enhancers.js -> public/boutique/js/controllers/home-controller.js (b-catalog-desktop-enhancers.js)
+- uses: b-catalog.js -> public/boutique/js/b-modal-core.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/b-pager.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/b-scroll-owner.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/b-subcat.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/controllers/home-controller.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/product-store.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/render/render-home-sections.js (b-catalog.js)
+- uses: b-catalog.js -> public/boutique/js/shop-schema.js (b-catalog.js)
+- uses: b-checkout.js -> public/boutique/js/b-cart.js (b-checkout.js)
+- uses: b-checkout.js -> public/boutique/js/b-checkout-render.js (b-checkout.js)
+- uses: b-checkout.js -> public/boutique/js/b-identity.js (b-checkout.js)
+- uses: b-checkout.js -> public/boutique/js/b-phone.js (b-checkout.js)
+- uses: b-desktop-sidebar.js -> public/boutique/js/b-catalog.js (b-desktop-sidebar.js)
+- uses: b-desktop-sidebar.js -> public/boutique/js/shop-schema.js (b-desktop-sidebar.js)
+- uses: b-group-view.js -> public/boutique/js/b-group-banner.js (b-group-view.js)
+- uses: b-group-view.js -> public/boutique/js/b-identity.js (b-group-view.js)
+- uses: b-group-view.js -> public/boutique/js/group/group-api.js (b-group-view.js)
+- uses: b-group-view.js -> public/boutique/js/group/group-helpers.js (b-group-view.js)
+- uses: b-group-view.js -> public/boutique/js/group/group-render-creator.js (b-group-view.js)
+- uses: b-group-view.js -> services/shared-cart-estimation-service.js (b-group-view.js)
+- uses: b-identity.js -> public/boutique/js/b-phone.js (b-identity.js)
+- uses: b-modal-approche-c-hybrid.js -> public/boutique/js/b-share-cart.js (b-modal-approche-c-hybrid.js)
+- uses: b-modal-core.js -> public/boutique/js/b-cart.js (b-modal-core.js)
+- uses: b-modal-core.js -> public/boutique/js/b-modal-desktop-enhancers.js (b-modal-core.js)
+- uses: b-modal-core.js -> public/boutique/js/b-modal-image-ux.js (b-modal-core.js)
+- uses: b-modal-core.js -> public/boutique/js/b-modal-product.js (b-modal-core.js)
+- uses: b-modal-core.js -> public/boutique/js/b-modal-suggestions.js (b-modal-core.js)
+- uses: b-modal-core.js -> public/boutique/js/view-models/modal-view-model.js (b-modal-core.js)
+- uses: b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-view-model.js (b-modal-desktop-enhancers.js)
+- uses: b-modal.js -> public/boutique/js/b-modal-core.js (b-modal.js)
+- uses: b-nav.js -> public/boutique/js/b-cart.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-catalog.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-checkout.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-favs.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-group-view.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-pager.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-scroll-owner.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/b-tracking.js (b-nav.js)
+- uses: b-nav.js -> public/boutique/js/group/group-helpers.js (b-nav.js)
+- uses: b-share-cart.js -> public/boutique/js/b-cart.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-checkout-render.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-checkout.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-group-banner.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-group-view.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-identity.js (b-share-cart.js)
+- uses: b-share-cart.js -> public/boutique/js/b-phone.js (b-share-cart.js)
+- uses: b-subcat.js -> public/boutique/js/b-catalog.js (b-subcat.js)
+- uses: b-subcat.js -> public/boutique/js/b-modal-core.js (b-subcat.js)
+- uses: b-subcat.js -> public/boutique/js/b-pager.js (b-subcat.js)
+- uses: b-subcat.js -> public/boutique/js/b-scroll-owner.js (b-subcat.js)
+- uses: b-subcat.js -> public/boutique/js/shop-schema.js (b-subcat.js)
+- uses: b-tracking.js -> public/boutique/js/b-phone.js (b-tracking.js)
+- depends: bootstrap/api-routes.js -> routes/meta-whatsapp.js (routes/meta-whatsapp.js)
+- depends: bootstrap/api-routes.js -> routes/shared-cart-cash.js (routes/shared-cart-cash.js)
+- depends: bootstrap/crons.js -> services/cash-reminder-service.js (services/cash-reminder-service.js)
+- depends: bootstrap/crons.js -> services/inventory-service.js (services/inventory-service.js)
+- depends: bootstrap/crons.js -> utils/rules.js (utils/rules.js)
+- uses: boutique.js -> public/boutique/js/b-cart-pill.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-cart.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-catalog-desktop-enhancers.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-catalog.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-checkout.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-favs.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-group-banner.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-mini-cart.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-modal-desktop-enhancers.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-nav.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-share-cart.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-subcat.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/b-tracking.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/komerce-api.js (boutique.js)
+- uses: boutique.js -> public/boutique/js/product-store.js (boutique.js)
+- uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
+- uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
+- uses: checkout-flows -> services/order-service.js (checkout-flows)
+- uses: checkout -> routes/otp.js (checkout)
+- uses: dashboards -> routes/wallet.js (dashboards)
+- uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
+- uses: event-management-pages -> public/boutique/js/event-manage.js (event-management-pages)
+- uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
+- uses: group-render-creator.js -> public/boutique/js/group/group-helpers.js (group-render-creator.js)
+- uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
+- uses: komerce-api.js -> routes/products.js (komerce-api.js)
+- uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
+- uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
+- uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
+- uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
+- uses: order-payment-confirmation.js -> services/order-status-machine.js (order-payment-confirmation.js)
+- uses: order-status-machine.js -> services/notification-service.js (order-status-machine.js)
+- uses: otp.js -> services/notification-service.js (otp.js)
+- uses: payment-stripe.js -> services/notification-service.js (payment-stripe.js)
+- uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
+- uses: public_event_links -> public/boutique/js/event-public.js (public_event_links)
+- uses: public_event_payment_links -> public/boutique/js/event-pay.js (public_event_payment_links)
+- uses: public_shared_cart_links -> public/boutique/js/b-group-view.js (public_shared_cart_links)
+- uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
+- uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
+- depends: public/boutique/js/b-cart-pill.js -> b-bus.js (b-bus.js)
+- depends: public/boutique/js/b-cart-pill.js -> b-cart-core.js (b-cart-core.js)
+- depends: public/boutique/js/b-cart-pill.js -> b-scroll-owner.js (b-scroll-owner.js)
+- depends: public/boutique/js/b-cart-pill.js -> b-store.js (b-store.js)
+- depends: public/boutique/js/b-cart-pill.js -> b-utils.js (b-utils.js)
+- depends: public/boutique/js/b-cart.js -> b-cart-core.js (b-cart-core.js)
+- depends: public/boutique/js/b-cart.js -> b-catalog.js (b-catalog.js)
+- depends: public/boutique/js/b-cart.js -> b-scroll-owner.js (b-scroll-owner.js)
+- depends: public/boutique/js/b-cart.js -> b-store.js (b-store.js)
+- depends: public/boutique/js/b-cart.js -> shop-schema.js (shop-schema.js)
+- depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-bus.js (b-bus.js)
+- depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-catalog.js (b-catalog.js)
+- depends: public/boutique/js/b-catalog-desktop-enhancers.js -> b-scroll-owner.js (b-scroll-owner.js)
+
+## Files Still Without Headers Or Aggregation
+
+- bootstrap/app.js
+- bootstrap/env.js
+- bootstrap/html-routes.js
+- bootstrap/security.js
+- bootstrap/server-lifecycle.js
+- bootstrap/startup-migrations.js
+- middleware/auth-guest.js
+- middleware/auth.js
+- middleware/error-handler.js
+- middleware/rate-limit.js
+- middleware/request-id.js
+- middleware/require-verified-identity.js
+- middleware/soft-auth.js
+- middleware/upload.js
+- middleware/validate.js
+- middleware/verify-authkey-webhook.js
+- public/boutique/js/b-boutique-wow-style.js
+- public/boutique/js/b-bus.js
+- public/boutique/js/b-cart-core.js
+- public/boutique/js/b-cart-groups-tab.js
+- public/boutique/js/b-cart-product-open-style.js
+- public/boutique/js/b-desktop-global-cart-access.js
+- public/boutique/js/b-desktop-sidebar.js
+- public/boutique/js/b-desktop-upgrade.js
+- public/boutique/js/b-friendly-group-redirect.js
+- public/boutique/js/b-greeting.js
+- public/boutique/js/b-group-cart-flow.js
+- public/boutique/js/b-home-premium-v1.js
+- public/boutique/js/b-mobile-modal-v1.js
+- public/boutique/js/b-mobile-premium-v1.js
+- public/boutique/js/b-modal-cart.js
+- public/boutique/js/b-modal-nav.js
+- public/boutique/js/b-modal-social-proof.js
+- public/boutique/js/b-modal.js
+- public/boutique/js/b-paypal.js
+- public/boutique/js/b-pdp-curation-suggestions.js
+- public/boutique/js/b-product-open-contract.js
+- public/boutique/js/b-share-phone-guard.js
+- public/boutique/js/card-config.js
+- public/boutique/js/collective-close-order-service.js
+- public/boutique/js/collective-ready-to-order-orchestrator.js
+- public/boutique/js/group/group-state.js
+- public/boutique/js/main.js
+- public/boutique/js/render/render-categories.js
+- public/boutique/js/render/render-product-card.js
+- public/boutique/js/taxonomy-no-hardcode.test.js
+- public/boutique/js/view-models/product-card-model.js
+- public/boutique/js/view-models/product-card-view-model.js
+- routes/admin-collective-repairs.js
+- routes/admin-cost-components.js
+- routes/admin-costing.js
+- routes/admin-customs-categories.js
+- routes/admin-customs-shipments.js
+- routes/admin-dashboard.js
+- routes/admin-finance-config.js
+- routes/admin-loyalty.js
+- routes/admin-pricing-components.js
+- routes/admin-pricing-matrices.js
+- routes/admin-radar.js
+- routes/admin-risk-provisions.js
+- routes/admin-rules.js
+- routes/admin.js
+- routes/admin/customs.js
+- routes/admin/dashboard.js
+- routes/admin/delete-order-cascade.js
+- routes/admin/index.js
+- routes/admin/orders.js
+- routes/admin/partners.js
+- routes/admin/system.js
+- routes/admin/users.js
+- routes/alerts.js
+- routes/auth.js
+- routes/auto-distribute-api.js
+- routes/baskets.js
+- routes/carriers.js
+- routes/cash.js
+- routes/categories.js
+- routes/client-auth.js
+- routes/client-tracking.js
+- routes/collective-workspaces.js
+- routes/config.js
+- routes/dashboard-clients.js
+- routes/dashboard-finance.js
+- routes/dashboard-hub.js
+- routes/dashboard-ops.js
+- routes/dashboard-shared.js
+- routes/dashboard.js
+- routes/finance.js
+- routes/health.js
+- routes/hub-dashboard.js
+- routes/hub-mark-ordered.js
+- routes/hub.js
+- routes/inventory-api.js
+- routes/invoices.js
+- routes/logistics.js
+- routes/loyalty.js
+- routes/meta-whatsapp.js
+- routes/modules.js
+- routes/notification-api.js
+- routes/ops-api.js
+- routes/order-api-v2.js
+- routes/orders/cancel.js
+- routes/orders/create.js
+- routes/orders/detail.js
+- routes/orders/list.js
+- routes/orders/parcels.js
+- routes/orders/qr.js
+- routes/orders/status.js
+- routes/parcel-api-v2.js
+- routes/parcel-api-v2/helpers.js
+- routes/parcel-api-v2/index.js
+- routes/parcel-api-v2/read.js
+- routes/parcel-api-v2/scans.js
+- routes/parcel-label.js
+- routes/parcels.js
+- routes/payments-paypal.js
+- routes/pickup-pay-cash.js
+- routes/pickup-secret.js
+- routes/pricing-strategy.js
+- routes/pricing.js
+- routes/purchasing.js
+- routes/relais.js
+- routes/relay-dashboard.js
+- routes/scans.js
+- routes/shared-cart-cash.js
+- routes/shared-cart-from-order.js
+- routes/shared-cart-refund-admin.js
+- routes/shares.js
+- routes/signals.js
+- routes/simulator.js
+- routes/sourcing-engine.js
+- routes/sourcing-scanner.js
+- routes/tracking.js
+- routes/transit-dashboard.js
+- routes/transitaire-api.js
+- routes/unsold.js
+- services/admin-order-refund.js
+- services/alert-engine.js
+- services/apply-pricing-updates.js
+- services/authkey-client.js
+- services/auto-parcel.js
+- services/boutique-ranking-engine.js
+- services/cancel-order-purchase-orders.js
+- services/cancel-shared-cart-with-refunds.js
+- services/cash-operations.js
+- services/cash-reminder-service.js
+- services/collective-close-order-service.js
+- services/collective-payment-orchestrator.js
+- services/collective-ready-to-order-orchestrator.js
+- services/collective-stock-reservation-service.js
+- services/collective-workspace-engine.js
+- services/confirm-pickup-cash-payment.js
+- services/cost-allocation.js
+- services/create-stripe-order-intent.js
+- services/customs-shipment-service.js
+- services/dashboard-cache.js
+- services/dashboard-clients-queries.js
+- services/dashboard-finance-metrics.js
+- services/dashboard-metrics.js
+- services/dashboard-ops-queries.js
 
 ## Intervention Rule
 
-Before modifying a structural file, an IA must open:
+Before modifying a structural file, open `docs/komerce-arch-header-graph.json`, read `interventionIndex["<file>"]`, then check every `mustCheck` target before editing.
 
-```txt
-docs/komerce-arch-header-graph.json
-```
+For a lite file, follow its `owner` edge first. If no owner exists, stop and classify the file before editing.
 
-Then read:
-
-```txt
-interventionIndex["<file-path>"]
-```
-
-The IA must list before editing:
-
-- direct dependencies
-- direct consumers
-- DB tables read or written
-- doctrines to preserve
-- impact areas
-- `mustCheck` targets
-
-## Critical Seed Nodes
-
-These nodes are already known as first-class intervention roots:
-
-- `server.js` — API/runtime entrypoint
-- `bootstrap/api-routes.js` — API route manifest
-- `bootstrap/crons.js` — operational cron launcher
-- `services/shared-cart-engine.js` — shared cart state machine
-- `routes/shared-cart.js` — shared cart HTTP facade
-- `services/order-payment-confirmation.js` — payment-to-stock single entry
-- `services/payment-stripe.js` — Stripe adapter/webhook bridge
-- `services/payment-cash-confirm.js` — cash confirmation adapter
-- `services/order-status-machine.js` — order lifecycle machine
-- `routes/orders.js` — order HTTP facade
-- `routes/otp.js` — OTP/auth facade
-- `routes/economic-engine.js` — economic engine API facade
-- `services/economic-engine-queries.js` — economic engine DB/calculation layer
-- `services/whatsapp-meta.js` — Meta WhatsApp notification adapter
-- `services/notification-service.js` — notification orchestration
-- `routes/products.js` — product/catalog API facade
-- `routes/admin-boutique-categories.js` — catalog taxonomy admin API
-- `routes/wallet.js` — wallet ledger API
-- `public/boutique/js/boutique.js` — boutique orchestrator
-- `public/boutique/js/b-cart.js` — cart and side-cart
-- `public/boutique/js/b-checkout.js` — checkout orchestrator
-- `public/boutique/js/b-group-view.js` — shared cart participant/creator view
-- `public/boutique/js/b-modal-core.js` — product modal shell
-- `public/boutique/js/b-catalog.js` — product discovery/catalog rendering
-- `public/boutique/js/b-subcat.js` — subcategory navigation
-- `public/boutique/js/b-share-cart.js` — share-cart UX flow
-- `public/boutique/js/b-nav.js` — boutique navigation/view switcher
-
-## High-Value Intervention Examples
-
-### Touching `public/boutique/js/b-cart.js`
-
-Must check:
-
-- `public/boutique/js/b-cart-core.js`
-- `public/boutique/js/b-checkout.js`
-- `public/boutique/js/b-modal-core.js`
-- `public/boutique/js/b-share-cart.js`
-- `routes/shared-cart.js`
-- `impact:side-cart`
-- `impact:checkout-entry`
-- `impact:participant-flow`
-- `doctrine:panier_ouvert_ferme`
-- `doctrine:participant_lecture_seule`
-
-### Touching `services/order-payment-confirmation.js`
-
-Must check:
-
-- `services/payment-stripe.js`
-- `services/payment-cash-confirm.js`
-- `services/shared-cart-engine.js`
-- `services/order-status-machine.js`
-- `db:orders`
-- `db:order_items`
-- `db:stock_movements`
-- `db:wallet_transactions`
-- `doctrine:transaction_existante_obligatoire`
-- `doctrine:confirmPaymentCycle_unique`
-- `doctrine:stock_for_update`
-
-### Touching `services/shared-cart-engine.js`
-
-Must check:
-
-- `bootstrap/crons.js`
-- `routes/shared-cart.js`
-- `services/order-payment-confirmation.js`
-- `services/whatsapp-meta.js`
-- `db:shared_carts`
-- `db:shared_cart_contributions`
-- `db:orders`
-- `impact:participant-flow`
-- `impact:creator-flow`
-- `impact:notifications`
-- `doctrine:paiement_seul_acte_engageant`
-- `doctrine:fenetre_paiement_48h`
-- `doctrine:choix_createur_72h`
-
-## Next Regeneration
-
-Run:
-
-```bash
-node scripts/generate-komerce-arch-graph.js
-```
-
-The generated JSON is the machine-readable contract used by IA agents.
+When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` before regenerating this graph.
