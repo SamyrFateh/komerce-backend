@@ -1,13 +1,14 @@
 name: governance
 
-# Enforcement actif (transition levee le 2026-06-16, headers nettoyes).
-# - Le tier BLOQUANT (headers manquants, lite sans owner, mots-clefs SQL) fait
-#   echouer la CI.
-# - La dette (edges morts, tables hors SCHEMA.md, @unknown, txn argent) est gelee
-#   via scripts/arch-debt-budget.json : non bloquante, mais le rapport l'affiche.
+# Enforcement actif (base 0, recale le 2026-06-16 contre le dump live Railway).
+# - Hygiene headers (sans header, lite sans owner, mots-clefs SQL) => bloquant.
+# - Drift SCHEMA.md/headers <-> DB live (docs/db/railway-live-schema.sql) => bloquant :
+#   fiction hors liste blanche, fantome SCHEMA.md, ou cliquet tables non-doc depasse.
+# - Le bruit n'est plus budgete : il est elimine a la source (parsers). Le residuel
+#   reel est nomme dans scripts/arch-debt-budget.json (liste blanche + cliquet 0).
 # - Le drift de graphe (graphe non regenere) bloque aussi.
-# Pour repasser temporairement en observation : remplacer `npm run arch:check`
-# par `npm run arch:report` (sortie non bloquante).
+# Rafraichir le dump live : pg_dump --schema-only > docs/db/railway-live-schema.sql
+# Repasser en observation : `npm run arch:report` et arch-schema-drift-check.js --report.
 
 on:
   pull_request:
@@ -36,6 +37,11 @@ jobs:
             docs/KOMERCE_ARCH_HEADER_GRAPH.md \
           || (echo "::error::Graphe non regenere. Lance 'npm run arch:gen' et commit les fichiers docs/komerce-arch-header-graph.*" && exit 1)
 
-      # Enforcement : tier BLOQUANT fait echouer la CI. Dette gelee = non bloquante.
+      # Enforcement : tier BLOQUANT fait echouer la CI. Observe = non bloquant.
       - name: Architecture / DB check (bloquant)
         run: npm run arch:check
+
+      # BLOQUANT : drift SCHEMA.md / headers <-> DB live (docs/db/railway-live-schema.sql).
+      # Echoue sur fiction hors liste blanche, fantome SCHEMA.md, ou cliquet depasse.
+      - name: Schema drift vs live DB (bloquant)
+        run: node scripts/arch-schema-drift-check.js

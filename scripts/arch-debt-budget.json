@@ -1,13 +1,22 @@
 {
-  "_comment": "Budget de dette. Regle: ne jamais augmenter pour masquer une regression; baisser a chaque resolution. Re-cale le 2026-06-16 apres nettoyage enrich (--write).",
-  "_notes": {
-    "tablesOutsideSchema": "131 -> 28 : suppression des tables fictives/anglaises; les 28 restantes sont reelles-mais-non-documentees, a arbitrer (ajout SCHEMA.md mode A/B) ou a corriger.",
-    "unknownTokens": "376 -> 448 : hausse VOULUE. On a converti de la fausse precision (tables inventees) en @unknown assume la ou le SQL est dynamique. Plafond gele a 448, ne doit que baisser.",
-    "deadEdges": "inchange : non touche par enrich (depends/used-by).",
-    "unresolvedMoneyTxn": "inchange : @db-txn jamais modifie par enrich (decision humaine)."
+  "_doctrine": "Base 0. Le bruit est elimine a la source (parsers), pas budgete. Ce qui reste est du signal reel, nomme, et ne peut que diminuer. Recale 2026-06-16 contre le dump live Railway (docs/db/railway-live-schema.sql, pg_dump 16/06).",
+
+  "knownDriftAllowlist": {
+    "_role": "Fiction CONNUE et figee : un header @db-* (et le code) nomme une table absente de la DB live. Bloquant SAUF si listee ici. Liste nominative (pas un compteur) : empeche toute SUBSTITUTION d'un bug par un autre. Objectif : liste vide. Toute entree perimee (fiction disparue) est elle aussi bloquante => force le nettoyage.",
+    "shared_cart_commitments": "services/shared-cart-commitment-service.js fait INSERT/UPDATE/SELECT sur shared_cart_commitments, table ABSENTE du dump live (99 tables). Migration jamais appliquee OU code mort. Le header est honnete; c'est le code/DB qui divergent. Resolution humaine requise (doctrine: pas de correction silencieuse sur flux panier-partage).",
+    "stripe_events_log": "services/shared-cart-queries.js fait SELECT id / INSERT INTO stripe_events_log; la table live est stripe_events_processed (memes colonnes: stripe_event_id, event_type, payload_summary). Double defaut: nom de table errone + SELECT id alors que PK = stripe_event_id. Chemin idempotence Stripe casse contre la DB live. Resolution humaine requise (flux paiement)."
   },
-  "deadEdges": 233,
-  "tablesOutsideSchema": 28,
-  "unknownTokens": 448,
-  "unresolvedMoneyTxn": 43
+
+  "ratchet": {
+    "_role": "Dette de documentation reelle, plafond qui ne peut que baisser. liveTablesUndocumented = tables BASE live absentes du catalogue SCHEMA.md (hors meta-infra schema_migrations).",
+    "liveTablesUndocumented": 0,
+    "_note_liveTablesUndocumented": "Refermee a 0 le 2026-06-16 : cost_benchmarks, paypal_events_processed, pickup_verify_attempts, revoked_tokens, shared_cart_estimations ajoutees a SCHEMA.md depuis leur DDL live verifie."
+  },
+
+  "observedOnly": {
+    "_role": "Mesure informative, JAMAIS bloquante, sans budget. Ce ne sont pas des regressions : c'est de l'etat structurel ou de la sante doctrine. Affiche pour visibilite, ne casse jamais la CI.",
+    "deadEdges": "Aretes depends/used-by non resolues vers un noeud du graphe (db.js racine, services/*, roles, providers externes). Structurel, pas une fiction DB.",
+    "doctrineTxnPresence": "Nombre de fichiers portant resolve_before_behavior_change en @db-txn. C'est la PRESENCE d'un invariant doctrine = sain, pas une dette. (Ancien 'unresolvedMoneyTxn' : reclasse, ce n'etait pas un defaut.)",
+    "unknownDynamicSql": "Tokens @unknown en @db-read/@db-write la ou le SQL est construit dynamiquement. Incertitude assumee, pas une table fictive."
+  }
 }

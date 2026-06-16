@@ -25,6 +25,8 @@ const SCAN_ROOTS = [
   'services',
   'middleware',
   'utils',
+  'core',
+  'validators',
   'public/boutique/js'
 ];
 
@@ -62,7 +64,9 @@ function walk(relativePath, out) {
 }
 
 function parseHeader(src) {
-  const firstMeaningful = src.replace(/^\uFEFF/, '').trimStart();
+  // Retire un BOM puis un shebang (#!...) eventuel : un script CLI ne doit pas
+  // pouvoir echapper au scan simplement parce qu'il commence par #!/usr/bin/env.
+  const firstMeaningful = src.replace(/^\uFEFF/, '').replace(/^#![^\n]*\n/, '').trimStart();
   const start = firstMeaningful.indexOf('/**');
   if (start !== 0) return null;
 
@@ -318,7 +322,6 @@ function main() {
 
   const graph = {
     version: '2026-06',
-    generatedAt: new Date().toISOString(),
     source: '@komerce-arch and @komerce-arch-lite headers',
     scanRoots: SCAN_ROOTS,
     totals: {
@@ -377,7 +380,7 @@ function main() {
   const md = [];
   md.push('# Komerce Architecture Header Graph');
   md.push('');
-  md.push(`Generated: ${graph.generatedAt}`);
+  md.push(`Version: ${graph.version} (artefact deterministe — fonction pure des headers)`);
   md.push('');
   md.push('This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.');
   md.push('');

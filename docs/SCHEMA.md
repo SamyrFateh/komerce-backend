@@ -109,7 +109,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 **Triggers de protection** : `trg_no_delete_parcels` (DELETE bloqué) + `trg_parcel_ship_guard` (transitions contrôlées) + `trg_check_parcel_item_qty` (cohérence quantités).
 
-### 4.2 bis — Sécurité pickup — tokens éphémères (2 tables)
+### 4.2 bis — Sécurité pickup — tokens éphémères (3 tables)
 
 > **Ajouté** : migration 070 (SEC-1, 24 mai 2026). Remplace les deux Maps in-memory de `routes/pickup-secret.js` pour survivre aux redémarrages et fonctionner en multi-instance Railway.
 
@@ -117,6 +117,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 |---|---|
 | `pickup_print_tokens` | Token one-shot (TTL 2 min) pour accès au HTML imprimable du reçu cash après encaissement. PK = token hex 48 bytes. FK → `orders(id)` ON DELETE CASCADE. Supprimé à la première lecture. |
 | `pickup_reveal_codes` | Code pickup en clair (8 chars), stocké max 30 min pour révélation one-shot après paiement Stripe/Wallet/MM. PK = `order_id`. Supprimé immédiatement après `GET /reveal-once`. |
+| `pickup_verify_attempts` | Anti-bruteforce de la vérification pickup : compteur par (`attempt_key`, `token`, `ip_hash`) avec fenêtre `reset_at`. Rate-limit multi-instance (remplace un compteur in-memory). |
 
 **Nettoyage** : `startPickupTokenCleanupCron()` toutes les 5 min dans `bootstrap/crons.js`. Multi-instance safe — aucune Map in-memory résiduelle pour ces deux flows.
 
@@ -136,7 +137,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 
 Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `services/wallet-service.js`.
 
-### 4.4 Paiements et finance (7 tables)
+### 4.4 Paiements et finance (8 tables)
 
 | Table | Rôle |
 |---|---|
@@ -147,6 +148,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `refunds` | Remboursements. |
 | `disputes` | Litiges. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
+| `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
 
 ### 4.5 Paniers et catalogue (7 tables)
 
@@ -160,7 +162,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 
-### 4.6 Paniers partagés (6 tables)
+### 4.6 Paniers partagés (7 tables)
 
 | Table | Rôle |
 |---|---|
@@ -170,6 +172,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `shared_cart_events` | Événements panier partagé. |
 | `cart_shares` | Partage de panier (token public). |
 | `cart_contributions` | Contributions (legacy, vérifier vs `shared_cart_contributions`). |
+| `shared_cart_estimations` | Estimations de contribution par participant (montant `amount_kmf` > 0, CHECK). PK uuid, FK logique `shared_cart_id`. |
 
 ### 4.7 Workspace collectif (7 tables)
 
@@ -202,6 +205,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | `cost_components` | Composantes de coûts. |
 | `cost_component_events` | Événements composantes coût. |
 | `risk_provisions` | Provisions risques. |
+| `cost_benchmarks` | Seuils de part de coût attendue par famille/catégorie (`expected_share_pct`, `warn_ratio` 1.30, `alert_ratio` 1.60). Alimente les alertes d'écart coût. |
 | `charges` | Charges fixes. |
 | `competitor_prices` | Prix concurrents. |
 | `price_history` | Historique prix. |
@@ -240,12 +244,13 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 | `inventory_items` | Inventaire hub. |
 | `carriers` | Transporteurs. |
 
-### 4.12 Utilisateurs et fidélité (5 tables)
+### 4.12 Utilisateurs et fidélité (6 tables)
 
 | Table | Rôle |
 |---|---|
 | `users` | Utilisateurs (rôle via ENUM `user_role`). |
 | `otp_codes` | Codes OTP. |
+| `revoked_tokens` | Révocation JWT (logout) : `jti` révoqué, `expires_at` pour purge. Câblage : `routes/auth.js` insère au logout, `middleware/auth.js` vérifie, cron de purge dans `bootstrap/crons.js`. Migration 072. |
 | `recipients` | Destinataires (peuvent être ≠ user). |
 | `loyalty_tiers` | Niveaux fidélité. |
 | `loyalty_rewards` | Récompenses. |
