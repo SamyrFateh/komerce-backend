@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, recipients, users
- * @db-write      @unknown
+ * @db-write      order_status_history, orders, refunds, transaction_documents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout
@@ -47,6 +47,7 @@ const { getRule }                  = require('../../utils/rules');
 const { processRefund }            = require('../../services/refund-service');
 const { notifyCancellation }       = require('../../services/notification-service');
 const { transitionOrderStatus }    = require('../../services/order-status-machine');
+const refundReceiptService         = require('../../services/documents/refund-receipt');
 const log = require('../../utils/logger').child({ module: 'cancel' });
 
 // ─── POST /api/orders/:id/cancel ─────────────────────────────────────────────
@@ -188,7 +189,28 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
 
     await client.query('COMMIT');
 
-    // ── 8. SMS client (non bloquant) ───────────────────────────────────────
+    // ── 8. Reçu de remboursement (post-commit, non bloquant) ──────────────
+    // Doctrine : refund_confirmed → reçu émis. Jamais avant COMMIT.
+    // refundResult.walletTxId ou stripeRefundId est dans la table refunds.
+    // On cherche le refund row pour récupérer son id.
+    if (refundResult) {
+      // Le refundRowId n'est pas exposé par processRefund — on le retrouve
+      // via la clé stable (order_id + refund_type + status completed).
+      db.query(
+        `SELECT id FROM refunds
+         WHERE order_id = $1 AND status = 'completed'
+         ORDER BY completed_at DESC LIMIT 1`,
+        [id]
+      ).then(({ rows: [row] }) => {
+        if (row) {
+          return refundReceiptService.issue(row.id, { issuedBy: req.user.id });
+        }
+      }).catch(err => {
+        log.warn({ err, order_id: id }, '[CANCEL] Émission reçu remboursement échouée (non-fatal)');
+      });
+    }
+
+    // ── 9. SMS client (non bloquant) ───────────────────────────────────────
     const smsRefundInfo = refundResult ? {
       method:    refundResult.method,
       amountEur: refundResult.amountEur,

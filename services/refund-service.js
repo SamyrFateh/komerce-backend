@@ -1,18 +1,18 @@
 /**
  * @komerce-arch
  * @role          refund-service
- * @domain        unknown
+ * @domain        refunds
  * @layer         service
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
- * @db-read       @unknown
+ * @inputs        client, order, amountKmf, amountEur, refundType, reason, userId
+ * @outputs       refund row, stripe/wallet refund result
+ * @depends       db.js, stripe, services/wallet-service.js
+ * @used-by       routes/orders/cancel.js, services/admin-order-refund.js, services/cancel-shared-cart-with-refunds.js
+ * @db-read       orders, refunds, wallets
  * @db-write      refunds
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @doctrine      refund_confirmed_only, idempotent_stripe_refund, resolve_before_behavior_change
+ * @impact-areas  orders, refunds, wallet
  * @version       2026-06
  */
 
@@ -34,6 +34,7 @@
 
 const stripe        = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const walletService = require('./wallet-service');
+const refundReceiptService = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'refund-service' });
 
 /**
@@ -55,16 +56,25 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
   // PATCH P2-2 : INSERT refund en 'pending' AVANT l'appel Stripe.
   // Avant : INSERT après Stripe → si crash DB post-refund, argent remboursé sans trace.
   // Maintenant : INSERT pending → Stripe → UPDATE completed. Idempotence garantie.
+  // ON CONFLICT sur (order_id, refund_type) — contrainte ajoutée en migration 014.
   const { rows: [pendingRefund] } = await dbClient.query(
     `INSERT INTO refunds
        (order_id, amount_kmf, amount_eur, refund_type, refund_method,
         stripe_refund_id, store_credit_id, reason, initiated_by, status)
      VALUES ($1,$2,$3,$4,'pending_stripe',NULL,NULL,$5,$6,'pending')
-     ON CONFLICT DO NOTHING
+     ON CONFLICT (order_id, refund_type) DO NOTHING
      RETURNING id`,
     [order.id, amountKmf, amountEur, refundType, reason || 'Annulation client', initiatedBy]
   );
-  const refundRowId = pendingRefund?.id;
+  // Fallback SELECT si conflict (retry) — toujours résoudre refundRowId
+  let refundRowId = pendingRefund?.id;
+  if (!refundRowId) {
+    const { rows: [existing] } = await dbClient.query(
+      `SELECT id FROM refunds WHERE order_id = $1 AND refund_type = $2 LIMIT 1`,
+      [order.id, refundType]
+    );
+    refundRowId = existing?.id || null;
+  }
 
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
     refundMethod    = 'stripe';
@@ -109,7 +119,14 @@ async function processRefund(dbClient, order, amountKmf, amountEur, refundType, 
     );
   }
 
-  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
+  // Reçu de remboursement — émis par le caller post-commit (non bloquant).
+  // processRefund s'exécute dans la transaction du caller : le reçu doit être
+  // déclenché après COMMIT. On expose refundRowId pour que le caller le fasse.
+  // Exemple dans cancel.js : db.query SELECT id FROM refunds … .then(row => refundReceiptService.issue(row.id))
+  // Pour les callers qui ne gèrent pas eux-mêmes le post-commit, on attache
+  // une fonction helper non bloquante sur le résultat.
+
+  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf, refundRowId };
 }
 
 /**
@@ -128,17 +145,25 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
   const idempotencyKey = _buildIdempotencyKey(order.id, refundType, parcelId);
 
   // A-BE-06 : INSERT refund en 'pending' AVANT tout appel Stripe ou wallet.
-  // ON CONFLICT DO NOTHING garantit l'idempotence sur retry.
+  // ON CONFLICT sur (order_id, refund_type) — contrainte ajoutée en migration 014.
   const { rows: [pendingRefund] } = await dbClient.query(
     `INSERT INTO refunds
        (order_id, amount_kmf, amount_eur, refund_type, refund_method,
         stripe_refund_id, store_credit_id, reason, initiated_by, status)
      VALUES ($1,$2,$3,$4,'pending_stripe',NULL,NULL,$5,$6,'pending')
-     ON CONFLICT DO NOTHING
+     ON CONFLICT (order_id, refund_type) DO NOTHING
      RETURNING id`,
     [order.id, amountKmf, amountEur, refundType, reason || 'Annulation', initiatedBy]
   );
-  const refundRowId = pendingRefund?.id;
+  // Fallback SELECT si conflict (retry)
+  let refundRowId = pendingRefund?.id;
+  if (!refundRowId) {
+    const { rows: [existing] } = await dbClient.query(
+      `SELECT id FROM refunds WHERE order_id = $1 AND refund_type = $2 LIMIT 1`,
+      [order.id, refundType]
+    );
+    refundRowId = existing?.id || null;
+  }
 
   if (order.payment_mode === 'stripe_eur' && order.stripe_payment_id) {
     const amountCents = Math.round(amountEur * 100);
@@ -201,7 +226,7 @@ async function processRefundWithFallback(dbClient, order, amountKmf, amountEur, 
     );
   }
 
-  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf };
+  return { method: refundMethod, stripeRefundId, walletTxId, amountEur, amountKmf, refundRowId };
 }
 
 module.exports = { processRefund, processRefundWithFallback, _buildIdempotencyKey };

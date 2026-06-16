@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db.js, services/documents/wallet-receipt.js
+ * @used-by       routes/wallet.js, routes/payments.js, services/order-payment-confirmation.js
  * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-write      orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
  * @impact-areas  wallet
  * @version       2026-06
  */
@@ -35,6 +35,7 @@
 'use strict';
 
 const db = require('../db');
+const walletReceiptService = require('./documents/wallet-receipt');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
 // ── Schema Migration ────────────────────────────────────────────────────────
@@ -176,6 +177,12 @@ async function credit(client, opts) {
   `, [wallet.id, tx.id, amountKmf, reason, referenceId || null, expiresAt || null]);
 
   return { transaction: tx, lot: lotRes.rows[0], duplicate: false };
+}
+
+// Émet un reçu wallet post-credit (non bloquant, appelé par le caller après COMMIT)
+// Usage : walletService.issueReceiptForCredit(txId, issuedBy).catch(...)
+async function issueReceiptForCredit(walletTransactionId, issuedBy) {
+  return walletReceiptService.issue(walletTransactionId, { issuedBy });
 }
 
 // ── Debit : Consommation FIFO des lots ──────────────────────────────────────
@@ -439,7 +446,10 @@ async function reverseLot(client, { lotId, adminId, note }) {
 
   log.info(`[WALLET] ✅ Lot ${lotId} reversed: ${amountToReverse} KMF — new balance: ${newBalance}`);
 
-  return { transaction: tx, reversed_kmf: amountToReverse };
+  // Reçu wallet (post-opération, non bloquant) — émis par le caller après COMMIT.
+  // reverseLot s'exécute dans la transaction du caller.
+  // Exposer txId pour que la route/service puisse émettre le reçu.
+  return { transaction: tx, reversed_kmf: amountToReverse, walletTxId: tx.id };
 }
 
 // ── Queries (read-only, pool) ───────────────────────────────────────────────
@@ -532,6 +542,7 @@ module.exports = {
   removeFromOrder,
   createCreditFromCancel,
   reverseLot,
+  issueReceiptForCredit,
   getBalance,
   getBalanceInTx,
   getTransactions,

@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db.js, services/refund-service.js, services/documents/refund-receipt.js
+ * @used-by       services/cancel-shared-cart-with-refunds.js, routes/shared-cart-refund-admin.js
  * @db-read       shared_cart_contributions, shared_carts, users
  * @db-write      shared_cart_contributions, shared_cart_events
  * @db-txn        resolve_before_behavior_change
@@ -35,6 +35,8 @@
  */
 
 const db = require('../db');
+const refundReceiptService = require('./documents/refund-receipt');
+const log = require('../utils/logger').child({ module: 'shared-cart-refund-queue' });
 
 function clampLimit(value) {
   const n = Number(value) || 50;
@@ -192,7 +194,58 @@ async function markManualRefundProcessed(contributionId, adminUserId, options = 
       }]
     );
 
-    return updatedContribution;
+    // ── INSERT refunds (trace comptable) ──────────────────────────────────
+    // Doctrine : refund_confirmed → ligne refunds 'completed'.
+    // Le remboursement manuel est confirmé ici par l'admin.
+    // payment_method = 'cash' ou 'stripe' selon la contribution (stripe remboursé
+    // hors-bande = méthode 'manual_cash' ; on stocke ce que sait la contribution).
+    const contribMeta   = updatedContribution.metadata || {};
+    const paymentMethod = updatedContribution.payment_method || 'cash';
+    const refundMethod  = paymentMethod === 'stripe' ? 'manual_cash' : 'cash';
+    const amountKmf     = Number(updatedContribution.amount_kmf || 0);
+    const amountEur     = updatedContribution.amount_paid
+      ? Number(updatedContribution.amount_paid)
+      : null;
+
+    // ON CONFLICT sur (order_id, refund_type) : uniquement si la contribution
+    // est rattachée à un order (panier finalisé). Sinon insert direct.
+    // Note : shared_cart.finalized_order_id peut être null si le panier
+    // a été annulé avant finalisation.
+    const { rows: [cartRow] } = await client.query(
+      `SELECT finalized_order_id FROM shared_carts WHERE id = $1`,
+      [updatedContribution.shared_cart_id]
+    );
+    const orderId = cartRow?.finalized_order_id || null;
+
+    let refundRowId = null;
+    if (orderId) {
+      const { rows: [refundRow] } = await client.query(
+        `INSERT INTO refunds
+           (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+            stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
+         VALUES ($1, $2, $3, 'partial', $4, $5, NULL, $6, $7, 'completed', $8)
+         ON CONFLICT (order_id, refund_type) DO NOTHING
+         RETURNING id`,
+        [
+          orderId, amountKmf, amountEur, refundMethod,
+          contribMeta.manual_refund_reference || null,
+          note || `Remboursement manuel contribution panier partagé`,
+          adminUserId,
+          now,
+        ]
+      );
+      if (refundRow) {
+        refundRowId = refundRow.id;
+      } else {
+        const { rows: [existing] } = await client.query(
+          `SELECT id FROM refunds WHERE order_id = $1 AND refund_type = 'partial' LIMIT 1`,
+          [orderId]
+        );
+        refundRowId = existing?.id || null;
+      }
+    }
+
+    return { contribution: updatedContribution, refundRowId };
   });
 }
 

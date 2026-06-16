@@ -1,18 +1,18 @@
 /**
  * @komerce-arch
  * @role          verify-qr-collection
- * @domain        unknown
+ * @domain        orders
  * @layer         service
  * @criticality   medium
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
- * @db-read       @unknown
+ * @inputs        token, orderId, user (agent_relais/admin)
+ * @outputs       collected status, scan row, pickup_proof document
+ * @depends       db.js, services/order-status-machine.js, services/notification-service.js, utils/parcelSync.js, services/documents/pickup-proof.js
+ * @used-by       routes/orders/qr.js
+ * @db-read       orders, recipients, relais, users
  * @db-write      orders, scans
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
- * @impact-areas  unknown
+ * @doctrine      pickup_collected_proof, resolve_before_behavior_change
+ * @impact-areas  orders
  * @version       2026-06
  */
 
@@ -32,6 +32,7 @@ const { notifyText } = require('../services/notification-service'); // ZG-1: rem
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { transitionOrderStatus } = require('./order-status-machine');
 const log = require('../utils/logger').child({ module: 'verify-qr-collection' });
+const pickupProofService = require('./documents/pickup-proof');
 
 async function verifyQrCollection({ token, orderId, user }) {
   if (!token) return { status: 400, body: { error: 'token est requis' } };
@@ -156,6 +157,11 @@ async function verifyQrCollection({ token, orderId, user }) {
     }, client);
 
     await client.query('COMMIT');
+
+    // Preuve de retrait (post-commit, non bloquant)
+    pickupProofService.issue(order.id, { issuedBy: user.id }).catch(err => {
+      log.warn({ err, order_id: order.id }, '[verify-qr] émission preuve de retrait échouée (non-fatal)');
+    });
 
     if (order.user_phone) {
       notifyText(

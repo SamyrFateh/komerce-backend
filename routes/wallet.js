@@ -9,7 +9,7 @@
  * @depends       services/wallet-service.js, middleware/auth.js, db.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js, dashboards
  * @db-read       orders, users
- * @db-write      @unknown
+ * @db-write      wallet_transactions, wallet_credit_lots, wallet_consumptions, wallets, transaction_documents
  * @db-txn        ledger_append_only, credit_debit_idempotent
  * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
  * @impact-areas  checkout, wallet, orders, refunds, admin-dashboard
@@ -42,6 +42,8 @@ const router        = express.Router();
 const db            = require('../db');
 const { authenticate } = require('../middleware/auth');
 const walletService = require('../services/wallet-service');
+const walletReceiptService = require('../services/documents/wallet-receipt');
+const log = require('../utils/logger').child({ module: 'wallet-routes' });
 
 router.use(authenticate);
 
@@ -220,6 +222,13 @@ router.post('/admin/credit', requireAdmin, async (req, res, next) => {
     });
     await client.query('COMMIT');
 
+    // Reçu wallet (post-commit, non bloquant) — crédit manuel significatif
+    if (result.transaction?.id && !result.duplicate) {
+      walletReceiptService.issue(result.transaction.id, { issuedBy: req.user.id }).catch(err => {
+        log.warn({ err, tx_id: result.transaction.id }, '[wallet] émission reçu crédit manuel échouée (non-fatal)');
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: `${Number(amount_kmf).toLocaleString('fr-FR')} KMF crédités à ${user.full_name}`,
@@ -249,6 +258,14 @@ router.post('/admin/order-credit/:orderId', requireAdmin, async (req, res, next)
     }
 
     await client.query('COMMIT');
+
+    // Reçu wallet (post-commit, non bloquant) — avoir depuis commande
+    if (result.transaction?.id) {
+      walletReceiptService.issue(result.transaction.id, { issuedBy: req.user.id }).catch(err => {
+        log.warn({ err, tx_id: result.transaction.id }, '[wallet] émission reçu order-credit échouée (non-fatal)');
+      });
+    }
+
     res.status(201).json({ success: true, message: 'Avoir créé', ...result });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -272,6 +289,13 @@ router.post('/admin/reverse-lot', requireAdmin, async (req, res, next) => {
       note,
     });
     await client.query('COMMIT');
+
+    // Reçu wallet (post-commit, non bloquant) — reversal significatif
+    if (result.walletTxId) {
+      walletReceiptService.issue(result.walletTxId, { issuedBy: req.user.id }).catch(err => {
+        log.warn({ err, tx_id: result.walletTxId }, '[wallet] émission reçu reversal échouée (non-fatal)');
+      });
+    }
 
     res.json({
       success:      true,

@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db.js, services/refund-service.js, services/shared-cart-refund-queue.js
+ * @used-by       routes/shared-cart.js, routes/shared-cart-refund-admin.js
  * @db-read       shared_cart_contributions, shared_carts
  * @db-write      shared_cart_contributions, shared_cart_events, shared_carts
  * @db-txn        resolve_before_behavior_change
@@ -55,6 +55,7 @@ const db = require('../db');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const log = require('../utils/logger').child({ module: 'cancel-shared-cart-with-refunds' });
 const { sendTemplateWhatsApp } = require('./whatsapp-meta');
+const refundReceiptService = require('./documents/refund-receipt');
 
 function r(n) {
   return Math.round(Number(n) || 0);
@@ -175,9 +176,45 @@ async function refundOneContribution(cart, contribution) {
     })]
   );
 
+  // ── INSERT dans refunds (trace comptable) ────────────────────────────────
+  // Doctrine : contribution_refunded → ligne refunds 'completed'
+  // ON CONFLICT sur stripe_refund_id (contrainte migration 014) pour idempotence.
+  let refundRowId = null;
+  try {
+    const amountKmf = r(contribution.amount_kmf);
+    const amountEur = contribution.amount_eur ? Number(contribution.amount_eur) : null;
+
+    const { rows: [refundRow] } = await db.query(
+      `INSERT INTO refunds
+         (order_id, amount_kmf, amount_eur, refund_type, refund_method,
+          stripe_refund_id, store_credit_id, reason, initiated_by, status, completed_at)
+       VALUES (
+         (SELECT order_id FROM shared_carts WHERE id = $1),
+         $2, $3, 'partial', 'stripe', $4, NULL,
+         'shared_cart_cancellation', NULL, 'completed', NOW()
+       )
+       ON CONFLICT (stripe_refund_id) DO NOTHING
+       RETURNING id`,
+      [cart.id, amountKmf, amountEur, refund.id]
+    );
+
+    if (refundRow) {
+      refundRowId = refundRow.id;
+    } else {
+      // Conflict (retry) → retrouver l'existant
+      const { rows: [existing] } = await db.query(
+        `SELECT id FROM refunds WHERE stripe_refund_id = $1 LIMIT 1`,
+        [refund.id]
+      );
+      refundRowId = existing?.id || null;
+    }
+  } catch (err) {
+    log.warn({ err, contribution_id: contribution.id, cart_id: cart.id },
+      '[cancel-with-refunds] INSERT refunds échoué (non-fatal)');
+  }
+
   await db.query(
-    `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)
-       VALUES ($1, 'contribution_refunded', 'system', $2)`,
+    `INSERT INTO shared_cart_events (shared_cart_id, event_type, actor_type, payload)\n       VALUES ($1, 'contribution_refunded', 'system', $2)`,
     [cart.id, {
       contribution_id: contribution.id,
       amount_kmf: r(contribution.amount_kmf),
@@ -185,6 +222,15 @@ async function refundOneContribution(cart, contribution) {
       stripe_refund_status: refund.status,
     }]
   );
+
+  // ── Reçu de remboursement (post-opération, non bloquant) ─────────────────
+  // Doctrine : refund_confirmed → reçu émis.
+  if (refundRowId) {
+    refundReceiptService.issue(refundRowId).catch(err => {
+      log.warn({ err, contribution_id: contribution.id, cart_id: cart.id },
+        '[cancel-with-refunds] émission reçu contribution échouée (non-fatal)');
+    });
+  }
 
   return {
     contribution_id: contribution.id,

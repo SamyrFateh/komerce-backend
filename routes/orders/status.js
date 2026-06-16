@@ -4,14 +4,14 @@
  * @domain        orders
  * @layer         route
  * @criticality   critical
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
+ * @inputs        order_id, status, note (admin/agent)
+ * @outputs       updated order status, pickup_proof (if collected)
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, recipients, relais, users
  * @db-write      customs_history, orders
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      order_status_machine, pickup_collected_proof, resolve_before_behavior_change
  * @impact-areas  orders, checkout
  * @version       2026-06
  */
@@ -39,6 +39,7 @@ const { recalculateLoyalty }        = require('../loyalty');
 const { notifyStatusChange }        = require('../../services/notification-service');
 const { transitionOrderStatus }     = require('../../services/order-status-machine');
 const log = require('../../utils/logger').child({ module: 'status' });
+const pickupProofService = require('../../services/documents/pickup-proof');
 
 // ─── PATCH /api/orders/:id/status ────────────────────────────────────────────
 
@@ -92,6 +93,13 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     }
 
     await client.query('COMMIT');
+
+    // ── Preuve de retrait (post-commit, non bloquant) ─────────────────────
+    if (status === 'collected') {
+      pickupProofService.issue(order.id, { issuedBy: req.user.id }).catch(err => {
+        log.warn({ err, order_id: order.id }, '[status] émission preuve de retrait échouée (non-fatal)');
+      });
+    }
 
     // ── Recalculer le palier fidélité après collecte ──────────────────────
     if (status === 'collected' && order.user_id) {

@@ -6,8 +6,8 @@
  * @criticality   critical
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       @unknown
- * @used-by       @unknown
+ * @depends       db.js, services/refund-service.js, services/order-status-machine.js, services/documents/refund-receipt.js
+ * @used-by       routes/admin.js, routes/admin/orders.js
  * @db-read       orders, refunds
  * @db-write      alerts, orders
  * @db-txn        resolve_before_behavior_change
@@ -29,8 +29,10 @@
  */
 
 const db = require('../db');
-const { processRefund } = require('./refund-service');
+const { processRefund }       = require('./refund-service');
 const { transitionOrderStatus } = require('./order-status-machine');
+const refundReceiptService    = require('./documents/refund-receipt');
+const log = require('../utils/logger').child({ module: 'admin-order-refund' });
 
 async function refundCancelledOrder({ orderId, user, dryRun = true, reason = null, cashMode = 'manual' }) {
   if (!user?.id || user.role !== 'admin') {
@@ -173,6 +175,19 @@ async function refundCancelledOrder({ orderId, user, dryRun = true, reason = nul
     );
 
     await client.query('COMMIT');
+
+    // ── Reçu de remboursement (post-commit, non bloquant) ─────────────────
+    // Doctrine : refund_confirmed → reçu émis. Jamais avant COMMIT.
+    db.query(
+      `SELECT id FROM refunds
+       WHERE order_id = $1 AND status = 'completed'
+       ORDER BY completed_at DESC LIMIT 1`,
+      [order.id]
+    ).then(({ rows: [row] }) => {
+      if (row) return refundReceiptService.issue(row.id, { issuedBy: user.id });
+    }).catch(err => {
+      log.warn({ err, order_id: order.id }, '[admin-order-refund] Émission reçu remboursement échouée (non-fatal)');
+    });
 
     return {
       status: 200,
