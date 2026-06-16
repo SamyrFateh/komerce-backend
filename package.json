@@ -6,6 +6,9 @@
   "scripts": {
     "start": "npm run build && node server.js",
     "dev": "nodemon server.js",
+    "arch:gen": "node scripts/generate-komerce-arch-graph.js",
+    "arch:report": "npm run arch:gen && node scripts/arch-db-check.js --report",
+    "arch:check": "npm run arch:gen && node scripts/arch-db-check.js",
     "test": "jest --runInBand --forceExit --detectOpenHandles",
     "test:verbose": "jest --runInBand --forceExit --detectOpenHandles --verbose",
     "test:unit:v41": "jest tests/unit/shared-cart-v41-transitions.test.js --no-coverage",
