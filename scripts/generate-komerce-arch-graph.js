@@ -42,6 +42,7 @@ const IGNORE_DIRS = new Set([
 
 const FIELD_RE = /^\s*\*\s+@(\S+)\s*(.*)$/;
 const ARCH_MARKER = '@komerce-arch';
+const ARCH_LITE_MARKER = '@komerce-arch-lite';
 
 function walk(relativePath, out) {
   const full = path.join(ROOT, relativePath);
@@ -79,6 +80,7 @@ function parseHeader(src) {
     const value = m[2].trim();
     fields[key] = value;
   }
+  fields.__headerType = block.includes(ARCH_LITE_MARKER) ? 'lite' : 'full';
   return fields;
 }
 
@@ -144,13 +146,18 @@ function main() {
       continue;
     }
 
+    const isLite = fields.__headerType === 'lite';
     const node = {
       id: file,
       file,
+      type: isLite ? 'file-lite' : 'file',
+      headerType: fields.__headerType,
       role: fields.role || null,
       domain: fields.domain || null,
       layer: fields.layer || null,
-      criticality: fields.criticality || null,
+      criticality: fields.criticality || (isLite ? 'low' : null),
+      owner: fields.owner ? normalizeTarget(fields.owner) : null,
+      purpose: fields.purpose || null,
       inputs: splitList(fields.inputs),
       outputs: splitList(fields.outputs),
       depends: splitList(fields.depends),
@@ -203,6 +210,9 @@ function main() {
   }
 
   for (const node of nodes) {
+    if (node.owner) {
+      rawEdges.push({ from: node.id, to: resolveCodeTarget(node.owner), type: 'owned-by', label: node.owner });
+    }
     for (const dep of node.depends) {
       rawEdges.push({ from: node.id, to: resolveCodeTarget(dep), type: 'depends', label: dep });
     }
@@ -234,7 +244,7 @@ function main() {
   }
 
   const allNodes = [
-    ...nodes.map(n => ({ ...n, type: 'file' })),
+    ...nodes,
     ...tableNodes.values(),
     ...doctrineNodes.values(),
     ...impactNodes.values()
@@ -247,22 +257,32 @@ function main() {
     return !graphNodeIds.has(edge.to) || !graphNodeIds.has(edge.from);
   });
 
+  const liteWithoutOwner = nodes.filter(n => n.headerType === 'lite' && !n.owner).map(n => n.file);
+  const fullNodes = nodes.filter(n => n.headerType === 'full');
+  const liteNodes = nodes.filter(n => n.headerType === 'lite');
+
   const interventionIndex = {};
   for (const node of nodes) {
     const adjacent = edges.filter(edge => edge.from === node.id || edge.to === node.id);
+    const ownerTarget = node.owner ? resolveCodeTarget(node.owner) : null;
     interventionIndex[node.id] = {
       role: node.role,
       domain: node.domain,
       criticality: node.criticality,
+      headerType: node.headerType,
+      owner: ownerTarget,
+      purpose: node.purpose,
       directDependsOn: adjacent.filter(e => e.from === node.id && e.type === 'depends').map(e => e.to),
       directUsedBy: adjacent.filter(e => e.to === node.id && e.type === 'uses').map(e => e.from),
+      ownedFiles: adjacent.filter(e => e.to === node.id && e.type === 'owned-by').map(e => e.from),
       dbRead: node.dbRead,
       dbWrite: node.dbWrite,
       doctrines: node.doctrine,
       impactAreas: node.impactAreas,
       mustCheck: Array.from(new Set([
+        ...(ownerTarget ? [ownerTarget] : []),
         ...adjacent
-          .filter(e => ['depends', 'uses'].includes(e.type))
+          .filter(e => ['depends', 'uses', 'owned-by'].includes(e.type))
           .map(e => (e.from === node.id ? e.to : e.from))
           .filter(id => graphNodeIds.has(id)),
         ...node.impactAreas.map(area => `impact:${area}`),
@@ -276,12 +296,15 @@ function main() {
   const graph = {
     version: '2026-06',
     generatedAt: new Date().toISOString(),
-    source: '@komerce-arch headers',
+    source: '@komerce-arch and @komerce-arch-lite headers',
     scanRoots: SCAN_ROOTS,
     totals: {
       scannedCodeFiles: files.length,
-      filesWithHeaders: nodes.length,
+      filesWithFullHeaders: fullNodes.length,
+      filesWithLiteHeaders: liteNodes.length,
+      filesWithAnyHeaders: nodes.length,
       filesWithoutHeaders: filesWithoutHeaders.length,
+      liteWithoutOwner: liteWithoutOwner.length,
       graphNodes: allNodes.length,
       edges: edges.length,
       dbTables: tableNodes.size,
@@ -296,7 +319,8 @@ function main() {
     edges,
     interventionIndex,
     unresolvedCodeEdges,
-    filesWithoutHeaders
+    filesWithoutHeaders,
+    liteWithoutOwner
   };
 
   fs.mkdirSync(DOCS, { recursive: true });
@@ -305,7 +329,12 @@ function main() {
   const criticalFiles = nodes
     .filter(n => ['critical', 'high'].includes(n.criticality))
     .sort((a, b) => (a.criticality === b.criticality ? a.file.localeCompare(b.file) : a.criticality.localeCompare(b.criticality)))
-    .map(n => `- ${n.file} — ${n.role || 'no-role'} (${n.domain || 'unknown'}, ${n.criticality || 'unknown'})`);
+    .map(n => `- ${n.file} — ${n.role || 'no-role'} (${n.domain || 'unknown'}, ${n.criticality || 'unknown'}, ${n.headerType})`);
+
+  const liteRows = liteNodes
+    .sort((a, b) => a.file.localeCompare(b.file))
+    .slice(0, 160)
+    .map(n => `- ${n.file} -> owner ${n.owner || '@missing'} (${n.role || 'no-role'})`);
 
   const dbWrites = edges
     .filter(e => e.type === 'db-write')
@@ -327,13 +356,16 @@ function main() {
   md.push('');
   md.push(`Generated: ${graph.generatedAt}`);
   md.push('');
-  md.push('This graph is generated from `@komerce-arch` headers. Do not edit it by hand; update headers, then regenerate.');
+  md.push('This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.');
   md.push('');
   md.push('## Totals');
   md.push('');
   md.push(`- Scanned code files: ${graph.totals.scannedCodeFiles}`);
-  md.push(`- Files with headers: ${graph.totals.filesWithHeaders}`);
+  md.push(`- Files with full headers: ${graph.totals.filesWithFullHeaders}`);
+  md.push(`- Files with lite headers: ${graph.totals.filesWithLiteHeaders}`);
+  md.push(`- Files with any headers: ${graph.totals.filesWithAnyHeaders}`);
   md.push(`- Files without headers: ${graph.totals.filesWithoutHeaders}`);
+  md.push(`- Lite headers without owner: ${graph.totals.liteWithoutOwner}`);
   md.push(`- Graph nodes: ${graph.totals.graphNodes}`);
   md.push(`- Edges: ${graph.totals.edges}`);
   md.push(`- DB tables: ${graph.totals.dbTables}`);
@@ -345,20 +377,23 @@ function main() {
   pushSortedList(md, 'Domains', Object.entries(graph.byDomain).sort().map(([domain, count]) => `- ${domain}: ${count}`));
   pushSortedList(md, 'Layers', Object.entries(graph.byLayer).sort().map(([layer, count]) => `- ${layer}: ${count}`));
   pushSortedList(md, 'Critical And High Files', criticalFiles);
+  pushSortedList(md, 'Lite Aggregated Files', liteRows);
   pushSortedList(md, 'DB Write Edges', dbWrites);
   pushSortedList(md, 'Unresolved Code Edges', unresolvedRows);
-  pushSortedList(md, 'Files Still Without Headers', uncoveredRows);
+  pushSortedList(md, 'Files Still Without Headers Or Aggregation', uncoveredRows);
 
   md.push('## Intervention Rule');
   md.push('');
   md.push('Before modifying a structural file, open `docs/komerce-arch-header-graph.json`, read `interventionIndex["<file>"]`, then check every `mustCheck` target before editing.');
+  md.push('');
+  md.push('For a lite file, follow its `owner` edge first. If no owner exists, stop and classify the file before editing.');
   md.push('');
   md.push('When a file starts reading/writing DB tables, update `@db-read`, `@db-write`, and `@db-txn` before regenerating this graph.');
   md.push('');
 
   fs.writeFileSync(path.join(DOCS, 'KOMERCE_ARCH_HEADER_GRAPH.md'), md.join('\n'));
 
-  console.log(`Generated graph: ${graph.totals.filesWithHeaders} files, ${graph.totals.edges} edges, ${graph.totals.unresolvedCodeEdges} unresolved code edges`);
+  console.log(`Generated graph: ${fullNodes.length} full, ${liteNodes.length} lite, ${edges.length} edges, ${filesWithoutHeaders.length} uncovered`);
 }
 
 main();
