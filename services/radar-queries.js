@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       agent_gaps, cash_collections, cash_deposits, cc_aligned, finance_config, incidents, orders, parcels, products, signals, users, wallets, weekly_gaps
+ * @db-read       cash_collections, cash_deposits, finance_config, incidents, orders, parcels, products, signals, users, wallets
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

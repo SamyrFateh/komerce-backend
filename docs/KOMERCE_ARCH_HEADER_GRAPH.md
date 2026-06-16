@@ -1,32 +1,29 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T11:31:25.660Z
+Generated: 2026-06-16T13:15:31.647Z
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
 ## Totals
 
-- Scanned code files: 306
-- Files with full headers: 276
-- Files with lite headers: 30
-- Files with any headers: 306
+- Scanned code files: 235
+- Files with full headers: 235
+- Files with lite headers: 0
+- Files with any headers: 235
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 692
-- Edges: 2829
-- DB tables: 167
-- Doctrines: 112
-- Impact areas: 107
-- Unresolved code edges: 244
+- Graph nodes: 470
+- Edges: 2097
+- DB tables: 106
+- Doctrines: 70
+- Impact areas: 59
+- Unresolved code edges: 233
 
 ## Domains
 
-- auth: 18
+- auth: 16
 - bootstrap: 9
-- boutique: 37
-- catalog: 25
-- checkout: 2
-- collective-workspace: 3
+- catalog: 11
 - dashboard: 28
 - economic-engine: 24
 - inventory: 2
@@ -35,18 +32,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - operations: 4
 - order-payment: 1
 - orders: 23
-- payment: 14
-- recommendations: 4
-- shared-cart: 34
-- tracking: 1
+- payment: 13
+- recommendations: 2
+- shared-cart: 25
 - unknown: 37
 - wallet: 5
 
 ## Layers
 
-- api-client: 2
 - bootstrap: 6
-- controller: 1
 - cron: 1
 - data-service: 1
 - entrypoint: 1
@@ -56,32 +50,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - policy: 1
 - route: 97
 - route-manifest: 1
-- schema: 1
 - service: 98
-- state: 1
-- state-store: 1
-- ui-component: 39
-- ui-enhancer: 3
-- ui-experiment: 1
-- ui-infrastructure: 1
-- ui-page: 6
-- ui-renderer: 6
-- ui-service: 1
-- ui-state: 2
-- util: 17
-- util-ui: 2
-- view-model: 3
+- util: 16
 
 ## Critical And High Files
 
 - bootstrap/api-routes.js — api-route-manifest (bootstrap, critical, full)
 - bootstrap/crons.js — operational-crons (bootstrap, critical, full)
-- public/boutique/js/b-cart.js — boutique-cart-and-side-cart (boutique, critical, full)
-- public/boutique/js/b-checkout.js — boutique-checkout-orchestrator (checkout, critical, full)
-- public/boutique/js/b-group-view.js — shared-cart-boutique-view (shared-cart, critical, full)
-- public/boutique/js/b-share-cart.js — shared-cart-creation-from-boutique (shared-cart, critical, full)
-- public/boutique/js/b-store.js — boutique-shared-state (boutique, critical, full)
-- public/boutique/js/boutique.js — boutique-ui-orchestrator (boutique, critical, full)
 - routes/admin-collective-repairs.js — shared-cart-admin-collective-repairs (shared-cart, critical, full)
 - routes/admin/delete-order-cascade.js — orders-delete-order-cascade (orders, critical, full)
 - routes/admin/orders.js — orders-orders (orders, critical, full)
@@ -144,28 +119,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - middleware/auth.js — auth-auth (auth, high, full)
 - middleware/soft-auth.js — auth-soft-auth (auth, high, full)
 - middleware/verify-authkey-webhook.js — auth-verify-authkey-webhook (auth, high, full)
-- public/boutique/js/b-catalog-desktop-enhancers.js — desktop-catalog-enhancer (catalog, high, full)
-- public/boutique/js/b-catalog.js — boutique-catalog-renderer (catalog, high, full)
-- public/boutique/js/b-checkout-render.js — checkout-dom-renderer (checkout, high, full)
-- public/boutique/js/b-identity.js — boutique-client-identity (auth, high, full)
-- public/boutique/js/b-modal-core.js — product-modal-orchestrator (boutique, high, full)
-- public/boutique/js/b-modal-desktop-enhancers.js — desktop-product-modal-enhancer (boutique, high, full)
-- public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
-- public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
-- public/boutique/js/b-nav.js — boutique-view-navigation (boutique, high, full)
-- public/boutique/js/b-pager.js — mobile-category-pager (catalog, high, full)
-- public/boutique/js/b-phone.js — phone-normalization-ui (auth, high, full)
-- public/boutique/js/b-scroll-owner.js — boutique-scroll-owner (boutique, high, full)
-- public/boutique/js/b-subcat.js — boutique-subcategory-navigation (catalog, high, full)
-- public/boutique/js/b-tracking.js — order-tracking-view (tracking, high, full)
-- public/boutique/js/b-utils.js — boutique-ui-utilities (boutique, high, full)
-- public/boutique/js/controllers/home-controller.js — boutique-home-navigation-controller (catalog, high, full)
-- public/boutique/js/group/group-api.js — shared-cart-front-api (shared-cart, high, full)
-- public/boutique/js/group/group-render-creator.js — shared-cart-creator-renderer (shared-cart, high, full)
-- public/boutique/js/komerce-api.js — boutique-api-client (boutique, high, full)
-- public/boutique/js/product-store.js — boutique-product-store (catalog, high, full)
-- public/boutique/js/shop-schema.js — boutique-taxonomy-schema (catalog, high, full)
-- public/boutique/js/view-models/modal-view-model.js — product-modal-view-model (boutique, high, full)
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
@@ -260,36 +213,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Lite Aggregated Files
 
-- public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-b-boutique-wow-style)
-- public/boutique/js/b-cart-groups-tab.js -> owner public/boutique/js/b-cart.js (boutique-b-cart-groups-tab)
-- public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
-- public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
-- public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)
-- public/boutique/js/b-desktop-upgrade.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-upgrade)
-- public/boutique/js/b-friendly-group-redirect.js -> owner public/boutique/js/b-group-view.js (boutique-b-friendly-group-redirect)
-- public/boutique/js/b-greeting.js -> owner public/boutique/js/b-catalog.js (boutique-b-greeting)
-- public/boutique/js/b-group-cart-flow.js -> owner public/boutique/js/b-cart.js (boutique-b-group-cart-flow)
-- public/boutique/js/b-home-premium-v1.js -> owner public/boutique/js/b-catalog.js (boutique-b-home-premium-v1)
-- public/boutique/js/b-mobile-modal-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-modal-v1)
-- public/boutique/js/b-mobile-premium-v1.js -> owner public/boutique/js/boutique.js (boutique-b-mobile-premium-v1)
-- public/boutique/js/b-modal-cart.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-cart)
-- public/boutique/js/b-modal-nav.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-nav)
-- public/boutique/js/b-modal-social-proof.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal-social-proof)
-- public/boutique/js/b-modal.js -> owner public/boutique/js/b-modal-core.js (boutique-b-modal)
-- public/boutique/js/b-paypal.js -> owner public/boutique/js/b-checkout.js (payment-b-paypal)
-- public/boutique/js/b-pdp-curation-suggestions.js -> owner public/boutique/js/b-modal-suggestions.js (recommendations-b-pdp-curation-suggestions)
-- public/boutique/js/b-product-open-contract.js -> owner public/boutique/js/b-modal-core.js (catalog-b-product-open-contract)
-- public/boutique/js/b-share-phone-guard.js -> owner public/boutique/js/b-group-view.js (boutique-b-share-phone-guard)
-- public/boutique/js/card-config.js -> owner public/boutique/js/b-catalog.js (boutique-card-config)
-- public/boutique/js/collective-close-order-service.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-close-order-service)
-- public/boutique/js/collective-ready-to-order-orchestrator.js -> owner public/boutique/js/b-group-view.js (shared-cart-collective-ready-to-order-orchestrator)
-- public/boutique/js/group/group-state.js -> owner public/boutique/js/b-group-view.js (shared-cart-group-state)
-- public/boutique/js/main.js -> owner public/boutique/js/boutique.js (boutique-main)
-- public/boutique/js/render/render-categories.js -> owner public/boutique/js/b-catalog.js (boutique-render-categories)
-- public/boutique/js/render/render-product-card.js -> owner public/boutique/js/b-catalog.js (catalog-render-product-card)
-- public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
-- public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
-- public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
+- none
 
 ## DB Write Edges
 
@@ -297,19 +221,24 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
 - WRITE services/confirm-pickup-cash-payment.js -> alerts
+- WRITE services/notification-service.js -> alerts
+- WRITE services/order-payment-confirmation.js -> alerts
+- WRITE services/payment-cash-confirm.js -> alerts
 - WRITE services/payment-paypal.js -> alerts
+- WRITE services/payment-stripe.js -> alerts
 - WRITE services/product-publication-guard.js -> alerts
 - WRITE services/purchasing-trigger-service.js -> alerts
 - WRITE services/repair-collective-ready-to-capture.js -> alerts
 - WRITE services/repair-collective-stock-reservations.js -> alerts
 - WRITE services/repair-ordered-without-purchase-orders.js -> alerts
 - WRITE services/scan-operations.js -> alerts
-- WRITE routes/admin/system.js -> basket_items
-- WRITE routes/admin/users.js -> basket_items
-- WRITE routes/admin/system.js -> baskets
-- WRITE routes/admin/users.js -> baskets
+- WRITE utils/parcelSync.js -> alerts
+- WRITE services/shared-cart-engine.js -> basket_items
+- WRITE services/shared-cart-engine.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
+- WRITE utils/rules.js -> business_rules_history
+- WRITE utils/rules.js -> business_rules
 - WRITE routes/carriers.js -> carriers
 - WRITE routes/shares.js -> cart_contributions
 - WRITE routes/orders/create.js -> cart_shares
@@ -317,11 +246,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/cash-operations.js -> cash_collections
 - WRITE services/confirm-pickup-cash-payment.js -> cash_collections
 - WRITE routes/cash.js -> cash_deposits
-- WRITE routes/admin/delete-order-cascade.js -> ceremony_order_items
+- WRITE bootstrap/startup-migrations.js -> charges
+- WRITE services/economic-engine-queries.js -> charges
 - WRITE services/collective-workspace-engine.js -> collective_payment_sessions
 - WRITE services/collective-workspace-engine.js -> collective_payment_tokens
 - WRITE services/collective-stock-reservation-service.js -> collective_stock_reservations
 - WRITE services/collective-workspace-engine.js -> collective_workspace_contributions
+- WRITE services/collective-workspace-engine.js -> collective_workspace_events
 - WRITE services/collective-workspace-engine.js -> collective_workspace_items
 - WRITE services/collective-workspace-engine.js -> collective_workspaces
 - WRITE services/pricing-strategy-service.js -> competitor_prices
@@ -332,46 +263,31 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/status.js -> customs_history
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE routes/admin/delete-order-cascade.js -> disputes
-- WRITE services/economic-engine-queries.js -> economic_alerts
-- WRITE routes/economic-engine.js -> economic_charges
-- WRITE routes/economic-engine.js -> economic_snapshots
+- WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
-- WRITE routes/economic-engine.js -> economic_variables
+- WRITE services/economic-engine-queries.js -> economic_variables
 - WRITE routes/admin-finance-config.js -> exchange_rates
 - WRITE services/pricing-rates.js -> exchange_rates
 - WRITE routes/modules.js -> fabrics
-- WRITE routes/admin/system.js -> favorites
-- WRITE routes/admin/users.js -> favorites
+- WRITE bootstrap/startup-migrations.js -> finance_config
 - WRITE routes/admin-costing.js -> finance_config
 - WRITE routes/admin-finance-config.js -> finance_config
 - WRITE services/pricing-rates.js -> finance_config
-- WRITE services/shared-cart-financial-guard.js -> financial_alerts
 - WRITE routes/modules.js -> garment_models
 - WRITE routes/admin/system.js -> incidents
-- WRITE routes/admin/users.js -> incidents
 - WRITE routes/ops-api.js -> incidents
 - WRITE services/alert-engine.js -> incidents
 - WRITE services/incident-service.js -> incidents
 - WRITE services/reconciliation-service.js -> incidents
 - WRITE services/scan-engine.js -> incidents
 - WRITE services/inventory-service.js -> inventory_items
-- WRITE services/order-payment-confirmation.js -> inventory_reservations
 - WRITE routes/admin/system.js -> invoices
 - WRITE services/invoice-service.js -> invoices
-- WRITE routes/admin/system.js -> loyalty_history
-- WRITE routes/admin/users.js -> loyalty_history
-- WRITE routes/admin/system.js -> loyalty_points
-- WRITE routes/admin/users.js -> loyalty_points
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
+- WRITE services/notification-service.js -> notification_log
 - WRITE services/simulator/state-advancer.js -> notification_log
-- WRITE services/notification-service.js -> notification_logs
-- WRITE routes/admin/system.js -> notifications
-- WRITE routes/admin/users.js -> notifications
-- WRITE services/collective-workspace-engine.js -> OF
-- WRITE services/scan-operations.js -> OF
 - WRITE routes/hub-dashboard.js -> order_comments
 - WRITE routes/hub-mark-ordered.js -> order_comments
 - WRITE routes/relay-dashboard.js -> order_comments
@@ -379,26 +295,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/relay-dashboard.js -> order_incidents
 - WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
 - WRITE services/cost-allocation.js -> order_item_real_cost_allocations
-- WRITE routes/admin/delete-order-cascade.js -> order_items
 - WRITE routes/admin/system.js -> order_items
-- WRITE routes/orders.js -> order_items
 - WRITE routes/orders/create.js -> order_items
 - WRITE services/parcel-operations.js -> order_items
 - WRITE services/scan-engine.js -> order_items
-- WRITE routes/admin/delete-order-cascade.js -> order_status_history
+- WRITE services/shared-cart-engine.js -> order_items
 - WRITE routes/admin/system.js -> order_status_history
-- WRITE routes/admin/users.js -> order_status_history
-- WRITE routes/orders.js -> order_status_history
 - WRITE routes/orders/create.js -> order_status_history
-- WRITE services/order-payment-confirmation.js -> order_status_history
 - WRITE services/order-status-machine.js -> order_status_history
 - WRITE services/parcel-operations.js -> order_status_history
-- WRITE services/payment-cash-confirm.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
-- WRITE services/payment-stripe.js -> order_status_history
+- WRITE services/shared-cart-engine.js -> order_status_history
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
-- WRITE routes/orders.js -> orders
 - WRITE routes/orders/create.js -> orders
 - WRITE routes/orders/qr.js -> orders
 - WRITE routes/orders/status.js -> orders
@@ -411,8 +320,23 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> orders
 - WRITE services/inventory-service.js -> orders
 - WRITE services/order-cost-snapshot.js -> orders
-- WRITE services/order-payment-confirmation.js -> orders
-- WRITE services/order-service.js -> orders
+- WRITE services/order-status-machine.js -> orders
+- WRITE services/parcel-auto-create-service.js -> orders
+- WRITE services/parcelOptimizationService.js -> orders
+- WRITE services/payment-cash-confirm.js -> orders
+- WRITE services/payment-paypal.js -> orders
+- WRITE services/payment-stripe.js -> orders
+- WRITE services/purchasing-admin-service.js -> orders
+- WRITE services/routing.js -> orders
+- WRITE services/scan-operations.js -> orders
+- WRITE services/shared-cart-engine.js -> orders
+- WRITE services/simulator/state-advancer.js -> orders
+- WRITE services/verify-qr-collection.js -> orders
+- WRITE services/wallet-service.js -> orders
+- WRITE routes/otp.js -> otp_codes
+- WRITE services/parcel-security.js -> parcel_events
+- WRITE routes/admin/system.js -> parcel_items
+- WRITE routes/hub-dashboard.js -> parcel_items
 
 ## Unresolved Code Edges
 
@@ -420,40 +344,30 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-dashboards -> routes/economic-engine.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
-- uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
-- uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
+- uses: b-group-view.js -> services/shared-cart-estimation-service.js (b-group-view.js)
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
-- uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
 - uses: checkout -> routes/otp.js (checkout)
 - uses: dashboards -> routes/wallet.js (dashboards)
-- uses: desktop-enhancers -> public/boutique/js/b-scroll-owner.js (desktop-enhancers)
-- uses: event-management-pages -> public/boutique/js/event-manage.js (event-management-pages)
-- uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
-- uses: modal-modules -> public/boutique/js/b-scroll-owner.js (modal-modules)
+- uses: komerce-api.js -> routes/products.js (komerce-api.js)
 - uses: modal-suggestions -> routes/boutique-suggestions.js (modal-suggestions)
-- uses: modal-surfaces -> public/boutique/js/b-modal-approche-c-hybrid.js (modal-surfaces)
 - uses: paypal-flows -> services/order-payment-confirmation.js (paypal-flows)
-- uses: public_event_links -> public/boutique/js/event-public.js (public_event_links)
-- uses: public_event_payment_links -> public/boutique/js/event-pay.js (public_event_payment_links)
-- uses: public_shared_cart_links -> public/boutique/js/b-group-view.js (public_shared_cart_links)
-- uses: public/boutique/index.html -> public/boutique/js/boutique.js (public/boutique/index.html)
-- uses: public/boutique/index.html -> public/boutique/js/komerce-api.js (public/boutique/index.html)
-- depends: public/boutique/js/b-scroll-owner.js -> DOM (DOM)
-- depends: public/boutique/js/b-store.js -> DOM (DOM)
-- depends: public/boutique/js/b-store.js -> localStorage (localStorage)
-- depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
-- depends: public/boutique/js/b-utils.js -> fetch (fetch)
-- depends: public/boutique/js/b-utils.js -> Intl (Intl)
-- depends: public/boutique/js/event-pay.js -> payment-api (payment-api)
-- depends: public/boutique/js/group/group-api.js -> fetch (fetch)
-- depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
-- depends: public/boutique/js/product-store.js -> localStorage (localStorage)
+- uses: public/boutique/js/b-cart.js -> routes/shared-cart.js (public/boutique/js/b-cart.js)
+- uses: public/boutique/js/b-cart.js -> services/shared-cart-items-service.js (public/boutique/js/b-cart.js)
+- uses: public/boutique/js/b-catalog.js -> routes/products.js (public/boutique/js/b-catalog.js)
+- uses: public/boutique/js/b-checkout.js -> routes/orders.js (public/boutique/js/b-checkout.js)
+- uses: public/boutique/js/b-checkout.js -> routes/payments.js (public/boutique/js/b-checkout.js)
+- uses: public/boutique/js/b-checkout.js -> routes/wallet.js (public/boutique/js/b-checkout.js)
+- uses: public/boutique/js/b-group-view.js -> routes/shared-cart.js (public/boutique/js/b-group-view.js)
+- uses: public/boutique/js/b-identity.js -> routes/otp.js (public/boutique/js/b-identity.js)
+- uses: public/boutique/js/b-modal-core.js -> routes/products.js (public/boutique/js/b-modal-core.js)
+- uses: public/boutique/js/b-share-cart.js -> routes/shared-cart.js (public/boutique/js/b-share-cart.js)
+- uses: public/boutique/js/b-tracking.js -> routes/orders.js (public/boutique/js/b-tracking.js)
+- uses: public/boutique/js/b-tracking.js -> routes/otp.js (public/boutique/js/b-tracking.js)
 - uses: railway-runtime -> server.js (railway-runtime)
 - uses: relais-dashboard -> services/payment-cash-confirm.js (relais-dashboard)
 - uses: reminders -> services/notification-service.js (reminders)
-- uses: renderers -> public/boutique/js/shop-schema.js (renderers)
 - depends: routes/admin-boutique-categories.js -> db.js (db.js)
 - depends: routes/admin-collective-repairs.js -> db.js (db.js)
 - depends: routes/admin-collective-repairs.js -> services/* (services/*)
@@ -536,6 +450,16 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/dashboard-shared.js -> services/* (services/*)
 - depends: routes/dashboard.js -> db.js (db.js)
 - depends: routes/dashboard.js -> services/* (services/*)
+- depends: routes/finance.js -> db.js (db.js)
+- depends: routes/finance.js -> services/* (services/*)
+- depends: routes/health.js -> db.js (db.js)
+- depends: routes/health.js -> services/* (services/*)
+- depends: routes/hub-dashboard.js -> db.js (db.js)
+- depends: routes/hub-dashboard.js -> services/* (services/*)
+- depends: routes/hub-mark-ordered.js -> db.js (db.js)
+- depends: routes/hub-mark-ordered.js -> services/* (services/*)
+- depends: routes/hub.js -> db.js (db.js)
+- depends: routes/hub.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 

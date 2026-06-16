@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       order_items, orders, parcel_events, parcel_items, parcels, products, relais, users
+ * @db-read       order_items, orders, parcel_events, parcel_items, parcels, products, users
  * @db-write      orders, parcel_items, parcels
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

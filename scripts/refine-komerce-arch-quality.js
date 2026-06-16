@@ -15,6 +15,10 @@
 const fs = require('fs');
 const path = require('path');
 
+// Extracteur SQL UNIQUE du repo. Aucune duplication de parseur : toute
+// derivation @db-read/@db-write passe par enrich-komerce-arch-db-fields.
+const { extractTables, SQL_KEYWORDS } = require('./enrich-komerce-arch-db-fields.js');
+
 const ROOT = path.resolve(__dirname, '..');
 
 const SCAN_ROOTS = [
@@ -95,35 +99,9 @@ function inferImpactAreas(file, domain) {
 }
 
 function extractSqlTables(src) {
-  const stripped = src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/^\s*\/\/.*$/gm, ' ');
-  const sqlParts = [];
-  const queryCallRe = /\b(?:db|pool|client)\.query\s*\(\s*(`[\s\S]*?`|'[\s\S]*?'|"[\s\S]*?")/g;
-  for (const match of stripped.matchAll(queryCallRe)) {
-    sqlParts.push(match[1].slice(1, -1));
-  }
-
-  const sql = sqlParts.join('\n');
-  const read = new Set();
-  const write = new Set();
-  const addMatches = (re, set) => {
-    for (const match of sql.matchAll(re)) {
-      const table = match[1];
-      if (table && !table.includes('$')) set.add(table);
-    }
-  };
-
-  addMatches(/\bfrom\s+([a-z_][a-z0-9_]*)\b/gi, read);
-  addMatches(/\bjoin\s+([a-z_][a-z0-9_]*)\b/gi, read);
-  addMatches(/\binsert\s+into\s+([a-z_][a-z0-9_]*)\b/gi, write);
-  addMatches(/\bupdate\s+([a-z_][a-z0-9_]*)\b/gi, write);
-  addMatches(/\bdelete\s+from\s+([a-z_][a-z0-9_]*)\b/gi, write);
-
-  return {
-    read: Array.from(read).sort(),
-    write: Array.from(write).sort()
-  };
+  // Delegue a l'extracteur unique (strip commentaires, denylist mots-clefs,
+  // exclusion CTE). Empeche toute repousse de bruit SQL dans les headers.
+  return extractTables(src);
 }
 
 function isUnknownValue(value) {
@@ -140,6 +118,7 @@ function hasSuspiciousDbToken(value) {
       if (/[A-Z]/.test(item)) return true;
       if (!/^[a-z][a-z0-9_]*$/.test(item)) return true;
       if (item.length < 3) return true;
+      if (SQL_KEYWORDS.has(item.toLowerCase())) return true;
       return [
         'a',
         'avec',
@@ -147,12 +126,10 @@ function hasSuspiciousDbToken(value) {
         'carrier',
         'completed',
         'const',
-        'customs',
         'direct',
         'et',
         'filtre',
         'log',
-        'order',
         'rule'
       ].includes(item);
     });

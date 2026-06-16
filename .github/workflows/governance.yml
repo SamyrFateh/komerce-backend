@@ -1,0 +1,41 @@
+name: governance
+
+# Enforcement actif (transition levee le 2026-06-16, headers nettoyes).
+# - Le tier BLOQUANT (headers manquants, lite sans owner, mots-clefs SQL) fait
+#   echouer la CI.
+# - La dette (edges morts, tables hors SCHEMA.md, @unknown, txn argent) est gelee
+#   via scripts/arch-debt-budget.json : non bloquante, mais le rapport l'affiche.
+# - Le drift de graphe (graphe non regenere) bloque aussi.
+# Pour repasser temporairement en observation : remplacer `npm run arch:check`
+# par `npm run arch:report` (sortie non bloquante).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  arch-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Regenere le graphe a partir des headers (sans dependances applicatives).
+      - name: Generate architecture graph
+        run: npm run arch:gen
+
+      # BLOQUANT : interdit une PR qui modifie des headers sans regenerer le graphe.
+      - name: Graph regenerated in PR (drift)
+        run: |
+          git diff --exit-code -- \
+            docs/komerce-arch-header-graph.json \
+            docs/KOMERCE_ARCH_HEADER_GRAPH.md \
+          || (echo "::error::Graphe non regenere. Lance 'npm run arch:gen' et commit les fichiers docs/komerce-arch-header-graph.*" && exit 1)
+
+      # Enforcement : tier BLOQUANT fait echouer la CI. Dette gelee = non bloquante.
+      - name: Architecture / DB check (bloquant)
+        run: npm run arch:check

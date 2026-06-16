@@ -8,8 +8,8 @@
  * @outputs       meta_message_id, delivery_response, adapter_error
  * @depends       Meta Graph API, env META_WA_*
  * @used-by       notification-service.js, routes/meta-whatsapp.js
- * @db-read       none
- * @db-write      none
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        external_provider_only, secrets_env_only
  * @doctrine      whatsapp_template_trace, provider_adapter_isole, secrets_env_only
  * @impact-areas  whatsapp, otp, notifications, shared-cart, checkout

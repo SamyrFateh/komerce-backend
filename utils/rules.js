@@ -7,6 +7,8 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
+ * @db-write      business_rules, business_rules_history
+ * @db-read      business_rules, business_rules_history, users
  * @used-by       @unknown
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

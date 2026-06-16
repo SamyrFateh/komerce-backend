@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       ceremony_order_items, disputes, order_items, order_status_history, orders, scans
- * @db-write      ceremony_order_items, disputes, order_items, order_status_history, orders, scans, sms_log
+ * @db-read       orders
+ * @db-write      orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  orders, checkout, admin-dashboard

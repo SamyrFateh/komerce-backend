@@ -9,7 +9,7 @@
  * @depends       @unknown
  * @used-by       @unknown
  * @db-read       customs_effective_rates, customs_shipment_parcels, customs_shipments, order_items, orders, parcels, products
- * @db-write      SET, customs_shipment_parcels, customs_shipments, orders
+ * @db-write      customs_shipment_parcels, customs_shipments, orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  unknown

@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       orders, users, wallet, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
- * @db-write      SELECT, SET, UPDATE, orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-read       orders, users, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
+ * @db-write      orders, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  wallet

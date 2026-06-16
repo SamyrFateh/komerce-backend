@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       current, incidents, orders, parcels, scan_events
+ * @db-read       incidents, orders, parcels, scan_events
  * @db-write      incidents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       parcel_items, parcels, scans, simulator
+ * @db-read       parcel_items, parcels, scans
  * @db-write      parcel_items, parcels, scans
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

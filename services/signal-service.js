@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       NOW, cash_collections, order_items, orders, parcels, products, users
+ * @db-read       cash_collections, order_items, orders, parcels, products, users
  * @db-write      signals
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

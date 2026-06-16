@@ -8,8 +8,8 @@
  * @outputs       ranked_products, discovery_sections, personalization_debug
  * @depends       services/boutique-suggestion-service.js, product-store, doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md
  * @used-by       bootstrap/api-routes.js, modal-suggestions, home-personalization
- * @db-read       products, product_events, product_suggestions, visitor_navigation
- * @db-write      suggestion_logs, personalization_events
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        read_mostly, suggestions_non_blocking
  * @doctrine      suggestions_decouverte_non_intrusives, personnalisation_navigation, boutique_canal_decouverte
  * @impact-areas  product-discovery, modal, home-ranking, personalization, catalog

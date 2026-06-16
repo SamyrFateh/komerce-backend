@@ -1,0 +1,13 @@
+{
+  "_comment": "Budget de dette. Regle: ne jamais augmenter pour masquer une regression; baisser a chaque resolution. Re-cale le 2026-06-16 apres nettoyage enrich (--write).",
+  "_notes": {
+    "tablesOutsideSchema": "131 -> 28 : suppression des tables fictives/anglaises; les 28 restantes sont reelles-mais-non-documentees, a arbitrer (ajout SCHEMA.md mode A/B) ou a corriger.",
+    "unknownTokens": "376 -> 448 : hausse VOULUE. On a converti de la fausse precision (tables inventees) en @unknown assume la ou le SQL est dynamique. Plafond gele a 448, ne doit que baisser.",
+    "deadEdges": "inchange : non touche par enrich (depends/used-by).",
+    "unresolvedMoneyTxn": "inchange : @db-txn jamais modifie par enrich (decision humaine)."
+  },
+  "deadEdges": 233,
+  "tablesOutsideSchema": 28,
+  "unknownTokens": 448,
+  "unresolvedMoneyTxn": 43
+}

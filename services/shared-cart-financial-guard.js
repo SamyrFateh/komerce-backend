@@ -8,8 +8,8 @@
  * @outputs       validated_contribution, rejected_event, financial_alert
  * @depends       db.js, services/shared-cart-queries.js
  * @used-by       routes/shared-cart.js, services/shared-cart-engine.js
- * @db-read       shared_carts, shared_cart_contributions, stripe_events
- * @db-write      shared_cart_contributions, shared_cart_events, financial_alerts
+ * @db-read       shared_cart_contributions, shared_carts
+ * @db-write      shared_cart_contributions, shared_cart_events, shared_carts
  * @db-txn        idempotent_contribution_event, no_silent_overcollection
  * @doctrine      idempotence_financiere, paiement_seul_acte_engageant, no_overcollection_silent
  * @impact-areas  shared-cart, payments, stripe, participant-flow, creator-flow

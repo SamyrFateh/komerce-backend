@@ -8,8 +8,8 @@
  * @outputs       updated_cart_items, snapshot_recalculation, participant_notification_signal
  * @depends       db.js, services/shared-cart-queries.js, services/shared-cart-v41-transitions.js
  * @used-by       routes/shared-cart.js, public/boutique/js/b-cart.js
- * @db-read       shared_carts, shared_cart_items, products
- * @db-write      shared_cart_items, shared_cart_events, shared_carts
+ * @db-read       products, shared_cart_contributions, shared_cart_items, shared_carts
+ * @db-write      shared_cart_events, shared_cart_items, shared_carts
  * @db-txn        open_cart_only, snapshot_locked_after_close
  * @doctrine      panier_ouvert_modifiable, snapshot_fige_apres_fermeture, participant_lecture_seule
  * @impact-areas  shared-cart-editing, creator-flow, participant-flow, cart, notifications

@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       charges, competitor_prices, customs_categories, finance_config, order_items, orders, price_history, pricing_components, pricing_strategies, pricing_strategy_history, products, risk_provisions, users
+ * @db-read       competitor_prices, pricing_strategies, products
  * @db-write      competitor_prices, price_history, pricing_strategies, pricing_strategy_history, products
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

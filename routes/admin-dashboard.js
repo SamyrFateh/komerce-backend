@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       ca_by_day, collective_workspaces, customs_shipments, est_by_day, order_item_cost_imputations, order_item_real_cost_allocations, order_set, orders, parcels, real_by_day, relais, signals
+ * @db-read       @unknown
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

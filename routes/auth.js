@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       loyalty_tiers, users
- * @db-write      SET, revoked_tokens, users
+ * @db-write      revoked_tokens, users
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  auth

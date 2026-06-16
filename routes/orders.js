@@ -8,8 +8,8 @@
  * @outputs       order, order_history, tracking_data, wallet_application
  * @depends       services/order-service.js, services/order-status-machine.js, services/inventory-service.js, services/notification-service.js, db.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js, public/boutique/js/b-tracking.js
- * @db-read       orders, order_items, products, users, wallet_accounts, wallet_ledger
- * @db-write      orders, order_items, order_status_history, wallet_ledger
+ * @db-read       @unknown
+ * @db-write      @unknown
  * @db-txn        order_creation_idempotency, stock_after_payment_only
  * @doctrine      paiement_seul_acte_engageant, order_creation_idempotent, stock_apres_paiement
  * @impact-areas  checkout, orders, tracking, wallet, stock, notifications, shared-cart

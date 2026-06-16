@@ -8,8 +8,8 @@
  * @outputs       product_list, product_detail, product_mutation_result
  * @depends       db.js, validators.js, middleware/auth.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-catalog.js, public/boutique/js/b-modal-core.js, komerce-api.js
- * @db-read       products, product_images, boutique_categories, boutique_subcategories
- * @db-write      products, product_images
+ * @db-read       product_variants, products
+ * @db-write      @unknown
  * @db-txn        product_reference_stable, deactivate_not_delete
  * @doctrine      catalogue_source_db, produit_reference_stable, produit_desactive_non_supprime
  * @impact-areas  catalog, product-discovery, modal, admin-products, suggestions

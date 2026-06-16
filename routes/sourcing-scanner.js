@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
- * @db-write      SET, products, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
+ * @db-write      products, sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  logistics

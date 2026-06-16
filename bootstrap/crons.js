@@ -7,6 +7,8 @@
  * @inputs        timers, database_state, rules
  * @outputs       automatic_transitions, purges, reminders
  * @depends       services/cash-reminder-service.js, services/inventory-service.js, services/shared-cart-engine.js, utils/rules.js
+ * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
+ * @db-read      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
  * @doctrine      shared_cart_state_machine_v41, idempotence_cron, retention_snapshots
  * @impact-areas  shared-cart, cash-reminders, inventory, auth-security, economic-engine

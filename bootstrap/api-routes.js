@@ -7,6 +7,8 @@
  * @inputs        express_app
  * @outputs       mounted_api_routes
  * @depends       routes/orders.js, routes/payments.js, routes/otp.js, routes/shared-cart-cash.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js
+ * @db-write      @unknown
+ * @db-read      @unknown
  * @used-by       server.js
  * @doctrine      routes_canoniques, stripe_raw_body_preserve, alias_historiques_limites
  * @impact-areas  all-api, checkout, shared-cart, payment, dashboard, economic-engine, boutique

@@ -8,8 +8,8 @@
  * @outputs       whatsapp_message, sms_fallback, email_fallback, delivery_log
  * @depends       services/whatsapp-meta.js, providers/authkey, email-provider
  * @used-by       otp.js, payment-stripe.js, order-status-machine.js, shared-cart-engine.js, reminders
- * @db-read       notification_templates, users, orders, shared_carts
- * @db-write      notification_logs
+ * @db-read       orders, parcels, recipients, relais, users
+ * @db-write      alerts, notification_log
  * @db-txn        notification_non_blocking, failure_logged_not_rolled_back
  * @doctrine      notification_non_bloquante, otp_message_lisible, fallback_trace
  * @impact-areas  otp, checkout, shared-cart, orders, customer-support, whatsapp

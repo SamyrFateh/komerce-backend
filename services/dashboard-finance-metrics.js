@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       age, finance_config, first_orders, order_items, orders, orders_flagged, orders_with_phone, parcel_items, parcels, products, recipients, refunds, relais, store_credits, users
+ * @db-read       age, finance_config, order_items, orders, parcel_items, parcels, products, recipients, refunds, relais, store_credits, users
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
