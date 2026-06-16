@@ -8,12 +8,50 @@ It should be read with:
 - `docs/KOMERCE_ARCHITECTURE_HEADERS.md`
 - `docs/KOMERCE_ARCHITECTURE_MAP.md`
 - `docs/komerce-architecture-map.json`
+- `docs/KOMERCE_DB_TOUCHPOINTS_MAP.md`
 - `scripts/audit-komerce-arch-headers.js`
+- `scripts/generate-komerce-arch-graph.js`
 
 ## Rule
 
 Before changing a structurally relevant file, read its `@komerce-arch` header.
 If a high/critical file has no header yet, add the header before changing behavior.
+
+The headers are the source of truth. The generated graph is the intervention schema.
+
+## Living Graph Rule
+
+The architecture graph is generated from headers, not written manually.
+
+Source fields:
+
+- `@role`
+- `@domain`
+- `@layer`
+- `@criticality`
+- `@depends`
+- `@used-by`
+- `@db-read`
+- `@db-write`
+- `@db-txn`
+- `@doctrine`
+- `@impact-areas`
+
+Generated outputs:
+
+- `docs/KOMERCE_ARCH_HEADER_GRAPH.md`
+- `docs/komerce-arch-header-graph.json`
+
+Maintenance rule:
+
+- update the file header when a file contract changes
+- regenerate the graph after header changes
+- do not hand-edit the generated graph
+- if DB reads/writes change, update `@db-read`, `@db-write`, `@db-txn` first
+
+Workflow:
+
+- `.github/workflows/generate-komerce-arch-graph.yml`
 
 ## Phase 1 — Critical Spine
 
@@ -125,6 +163,25 @@ Representative files verified:
 - `routes/boutique-suggestions.js`
 - `routes/admin-boutique-categories.js`
 
+## Phase DB — Database Touchpoints
+
+Applied and verified on representative files.
+
+Covered metadata:
+
+- `@db-read`
+- `@db-write`
+- `@db-txn`
+
+Representative files verified:
+
+- `services/shared-cart-engine.js`
+- `services/payment-stripe.js`
+- `services/order-payment-confirmation.js`
+- `routes/otp.js`
+- `routes/orders.js`
+- `services/economic-engine-queries.js`
+
 ## Tooling Added
 
 Header application scripts:
@@ -133,20 +190,28 @@ Header application scripts:
 - `scripts/apply-komerce-arch-headers-phase2.js`
 - `scripts/apply-komerce-arch-headers-phase3.js`
 
-Audit script:
+DB enrichment script:
+
+- `scripts/enrich-komerce-arch-db-fields.js`
+
+Graph and audit scripts:
 
 - `scripts/audit-komerce-arch-headers.js`
+- `scripts/generate-komerce-arch-graph.js`
 
 One-shot workflows:
 
 - `.github/workflows/apply-komerce-arch-headers-once.yml`
 - `.github/workflows/apply-komerce-arch-headers-phase2-once.yml`
 - `.github/workflows/apply-komerce-arch-headers-phase3-once.yml`
+- `.github/workflows/enrich-komerce-arch-db-fields-once.yml`
 - `.github/workflows/audit-komerce-arch-headers-once.yml`
+- `.github/workflows/generate-komerce-arch-graph-once.yml`
 
-Manual workflow:
+Permanent workflows:
 
 - `.github/workflows/apply-komerce-arch-headers.yml`
+- `.github/workflows/generate-komerce-arch-graph.yml`
 
 ## Next Phase — Remaining Surface
 
@@ -176,6 +241,7 @@ The critical behavioral spine is now cartographed:
 - personalization/suggestions entrypoint
 - notifications and WhatsApp adapter
 - economic engine facade/service
+- DB reads/writes/transaction constraints for critical backend files
 
 This gives AI agents a much stronger starting point before intervention:
 
@@ -184,5 +250,7 @@ This gives AI agents a much stronger starting point before intervention:
 - what it emits
 - what it depends on
 - what depends on it
+- which DB tables it reads/writes
+- which transaction/idempotency constraints matter
 - which doctrines must not be broken
 - which user/business flows may be impacted
