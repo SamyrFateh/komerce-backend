@@ -12,9 +12,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 647
-- Edges: 2803
-- DB tables: 107
+- Graph nodes: 646
+- Edges: 2802
+- DB tables: 106
 - Doctrines: 119
 - Impact areas: 109
 - Unresolved code edges: 265
@@ -300,7 +300,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
-- WRITE routes/payments-paypal.js -> (délégué à services/payment-paypal.js)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -420,6 +419,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/verify-qr-collection.js -> orders
 - WRITE services/wallet-service.js -> orders
 - WRITE routes/otp.js -> otp_codes
+- WRITE services/parcel-security.js -> parcel_events
 
 ## Unresolved Code Edges
 
