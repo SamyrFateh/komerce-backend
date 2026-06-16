@@ -1,6 +1,5 @@
 {
   "version": "2026-06",
-  "generatedAt": "2026-06-16T14:17:25.832Z",
   "source": "@komerce-arch and @komerce-arch-lite headers",
   "scanRoots": [
     "server.js",
@@ -9,14 +8,16 @@
     "services",
     "middleware",
     "utils",
+    "core",
+    "validators",
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 306,
+    "scannedCodeFiles": 308,
     "filesWithFullHeaders": 276,
     "filesWithLiteHeaders": 30,
     "filesWithAnyHeaders": 306,
-    "filesWithoutHeaders": 0,
+    "filesWithoutHeaders": 2,
     "liteWithoutOwner": 0,
     "graphNodes": 631,
     "edges": 2678,
@@ -43670,6 +43671,9 @@
       "label": "env META_WA_*"
     }
   ],
-  "filesWithoutHeaders": [],
+  "filesWithoutHeaders": [
+    "core/test-whatsapp-notifications.js",
+    "validators/index.js"
+  ],
   "liteWithoutOwner": []
 }

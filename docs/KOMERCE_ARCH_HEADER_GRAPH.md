@@ -1,16 +1,16 @@
 # Komerce Architecture Header Graph
 
-Generated: 2026-06-16T14:17:25.832Z
+Version: 2026-06 (artefact deterministe — fonction pure des headers)
 
 This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. Do not edit it by hand; update headers, then regenerate.
 
 ## Totals
 
-- Scanned code files: 306
+- Scanned code files: 308
 - Files with full headers: 276
 - Files with lite headers: 30
 - Files with any headers: 306
-- Files without headers: 0
+- Files without headers: 2
 - Lite headers without owner: 0
 - Graph nodes: 631
 - Edges: 2678
@@ -539,7 +539,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Files Still Without Headers Or Aggregation
 
-- none
+- core/test-whatsapp-notifications.js
+- validators/index.js
 
 ## Intervention Rule
 
