@@ -9,11 +9,12 @@ Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeu
 Lire uniquement dans cet ordre :
 
 1. [`docs/README.md`](./docs/README.md) — index documentaire actif ;
-2. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
-3. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-4. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
-5. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-6. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+2. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — doctrine obligatoire du graphe ;
+3. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
+4. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+5. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
+6. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+7. Les documents actifs listés par `docs/README.md` selon la zone touchée.
 
 Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
 
@@ -22,6 +23,12 @@ Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelo
 ## 2. Gouvernance architecture obligatoire
 
 Toute création, modification ou suppression de feature fonctionnelle doit maintenir la cartographie `@komerce-arch`.
+
+La règle détaillée vit dans :
+
+```txt
+docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
+```
 
 Avant modification :
 
