@@ -95,10 +95,13 @@ function inferImpactAreas(file, domain) {
 }
 
 function extractSqlTables(src) {
+  const stripped = src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ');
   const read = new Set();
   const write = new Set();
   const addMatches = (re, set) => {
-    for (const match of src.matchAll(re)) {
+    for (const match of stripped.matchAll(re)) {
       const table = match[1];
       if (table && !table.includes('$')) set.add(table);
     }
@@ -118,6 +121,37 @@ function extractSqlTables(src) {
 
 function isUnknownValue(value) {
   return value === 'unknown' || value === '@unknown';
+}
+
+function hasSuspiciousDbToken(value) {
+  if (!value || value === '@unknown') return false;
+  return value
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .some(item => {
+      if (/[A-Z]/.test(item)) return true;
+      if (!/^[a-z][a-z0-9_]*$/.test(item)) return true;
+      if (item.length < 3) return true;
+      return [
+        'a',
+        'avec',
+        'atomique',
+        'completed',
+        'const',
+        'customs',
+        'direct',
+        'et',
+        'filtre',
+        'log',
+        'order',
+        'rule'
+      ].includes(item);
+    });
+}
+
+function shouldRewriteDbField(value) {
+  return value === '@unknown' || hasSuspiciousDbToken(value);
 }
 
 function apply(file) {
@@ -147,13 +181,13 @@ function apply(file) {
 
   const tables = extractSqlTables(src.slice(match[0].length));
   const dbRead = fieldValue(block, 'db-read');
-  if (dbRead === '@unknown' && tables.read.length) {
-    block = replaceField(block, 'db-read', tables.read.join(', '));
+  if (shouldRewriteDbField(dbRead)) {
+    block = replaceField(block, 'db-read', tables.read.length ? tables.read.join(', ') : '@unknown');
   }
 
   const dbWrite = fieldValue(block, 'db-write');
-  if (dbWrite === '@unknown' && tables.write.length) {
-    block = replaceField(block, 'db-write', tables.write.join(', '));
+  if (shouldRewriteDbField(dbWrite)) {
+    block = replaceField(block, 'db-write', tables.write.length ? tables.write.join(', ') : '@unknown');
   }
 
   if (block === originalBlock) return { file, changed: false, reason: 'already-specific-or-ambiguous' };
