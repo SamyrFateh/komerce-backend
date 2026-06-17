@@ -41,6 +41,12 @@ jobs:
       - name: Architecture / DB check (bloquant)
         run: npm run arch:check
 
+      # BLOQUANT : le budget doit etre reconcilie. Si un correctif a resolu une fiction
+      # (DB corrigee ou header re-tagge) sans elaguer l'allowlist, echoue avec le remede
+      # exact (npm run arch:reconcile -- --write) au lieu d'un blocage generique.
+      - name: Budget reconcilie ? (bloquant)
+        run: node scripts/arch-reconcile.js --check
+
       # BLOQUANT : drift SCHEMA.md / headers <-> DB live (docs/db/railway-live-schema.sql).
       # Echoue sur fiction hors liste blanche, fantome SCHEMA.md, ou cliquet depasse.
       - name: Schema drift vs live DB (bloquant)

@@ -144,6 +144,63 @@ HOOK
 # Rendre le hook exécutable
 chmod +x "$PRE_PUSH_HOOK"
 
+# ============================================================
+# Hook pre-commit : regeneration + reconciliation automatiques
+# ============================================================
+PRE_COMMIT_HOOK="$HOOKS_DIR/pre-commit"
+if [ -f "$PRE_COMMIT_HOOK" ]; then
+  echo "⚠️  Un hook pre-commit existe deja — sauvegarde dans $PRE_COMMIT_HOOK.backup"
+  cp "$PRE_COMMIT_HOOK" "$PRE_COMMIT_HOOK.backup"
+fi
+
+cat > "$PRE_COMMIT_HOOK" << 'PCHOOK'
+#!/bin/bash
+# ============================================================
+# KOMERCE — Pre-commit : reprise automatique de la gouvernance
+# 1. regenere le graphe d'architecture (deterministe)
+# 2. reconcile le budget (elague les fictions resolues, abaisse le cliquet)
+# 3. re-stage les artefacts regeneres / reconcilies
+# 4. ne bloque que sur un vrai probleme non resoluble automatiquement
+# Bypass d'urgence : git commit --no-verify
+# ============================================================
+set -e
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+
+echo ""
+echo "🛡️  Komerce — reprise gouvernance (pre-commit)..."
+
+# 1. Graphe a jour a partir des headers
+node scripts/generate-komerce-arch-graph.js >/dev/null 2>&1 || true
+
+# 2. Reconciliation auto du budget (resoudre = automatique)
+RECON=$(node scripts/arch-reconcile.js --write 2>&1) || true
+if echo "$RECON" | grep -q "Budget reconcilie et reecrit"; then
+  echo -e "${YELLOW}↻ Budget reconcilie automatiquement :${NC}"
+  echo "$RECON" | grep -E "elaguee|abaisse" | sed 's/^/   /'
+fi
+
+# 3. Re-stage les artefacts s'ils ont change
+git add docs/komerce-arch-header-graph.json docs/KOMERCE_ARCH_HEADER_GRAPH.md scripts/arch-debt-budget.json 2>/dev/null || true
+
+# 4. Portes : ne bloquer que sur un vrai probleme restant
+if ! node scripts/arch-db-check.js >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Hygiene headers : violation bloquante.${NC} Lance: npm run arch:check"
+  exit 1
+fi
+if ! node scripts/arch-schema-drift-check.js >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Drift SCHEMA.md <-> DB live non resolu automatiquement.${NC}"
+  echo "   Detail : npm run arch:drift"
+  echo "   (fiction hors liste = vrai bug ; fantome = retirer de SCHEMA.md ; cliquet depasse = documenter)"
+  exit 1
+fi
+
+echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes).${NC}"
+exit 0
+PCHOOK
+
+chmod +x "$PRE_COMMIT_HOOK"
+echo "✅ Hook pre-commit installe (regeneration + reconciliation automatiques)."
+
 echo ""
 echo "✅ Hook pre-push installé avec succès !"
 echo ""
