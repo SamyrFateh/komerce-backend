@@ -113,6 +113,13 @@ const WID = {
   ),
 };
 
+// Le template facture reste disponible, mais il ne doit pas détourner par défaut
+// les messages texte contenant une URL. Un template mal paramétré peut sinon
+// envoyer la valeur d'exemple Meta/AuthKey (ex: "Test") au lieu du vrai lien.
+const USE_INVOICE_READY_TEMPLATE = String(process.env.AUTHKEY_USE_INVOICE_READY_TEMPLATE || '')
+  .trim()
+  .toLowerCase() === 'true';
+
 // ─── Détection automatique de l'indicatif pays ──────────────────────────
 // Komerce sert les Comores (269) ET la diaspora (France 33, etc.)
 // On détecte l'indicatif depuis le numéro lui-même plutôt qu'une valeur fixe.
@@ -259,7 +266,7 @@ async function callAuthKeyText({ mobile, message }) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
   }
 
-  if (WID.invoiceready && looksLikeInvoiceMessage(message)) {
+  if (USE_INVOICE_READY_TEMPLATE && WID.invoiceready && looksLikeInvoiceMessage(message)) {
     const invoiceUrl = extractFirstUrl(message);
     if (invoiceUrl) {
       return callAuthKey({
@@ -529,4 +536,3 @@ module.exports = {
   parseMobile,
   WID,
 };
-
