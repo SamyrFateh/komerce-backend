@@ -406,8 +406,13 @@ function suppressSecurity(category, line, content) {
   }
 }
 
+// L'outillage de securite lui-meme ENUMERE les motifs d'attaque (innerHTML, document.write,
+// eval, etc.) comme donnees : le scanner ne doit pas se scanner lui-meme (meta-faux-positif).
+const SECURITY_TOOLING = /(?:^|\/)(?:impact-check\.js|impact-config\.json|impact-suppressions\.json|arch-doctrine-sanitize-check\.js)$/;
+
 // ── Scan de sécurité ─────────────────────────────────────────
 function scanSecurity(filePath, content, changedLines) {
+  if (SECURITY_TOOLING.test(String(filePath).replace(/\\/g, '/'))) return [];
   const issues = [];
   const seen = new Set();   // dedupe file:line:category (plusieurs patterns peuvent matcher la meme ligne)
   const lines = content.split('\n');
