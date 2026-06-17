@@ -889,3 +889,39 @@
 
 
 }
+
+/* ── VOIR PLUS — bouton section desktop (home activeCat=all) ──────
+   Mobile non impacté : le renderer n'injecte pas .k-sec-see-more
+   en mode mobile (guard isMobile dans render-home-sections.js).
+   ──────────────────────────────────────────────────────────────── */
+@media (min-width: 900px) {
+  .k-sec-see-more-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 20px;
+  }
+  .k-sec-see-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 20px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .k-sec-see-more:hover {
+    background: var(--sand-warm);
+    border-color: var(--border-text-12);
+    color: var(--text);
+  }
+  .k-sec-see-more:active {
+    transform: scale(.97);
+  }
+}

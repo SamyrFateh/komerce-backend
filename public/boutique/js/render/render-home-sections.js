@@ -183,9 +183,33 @@ export function renderHomeSections({
       parts.push(railHtml);
     }
 
+    const INITIAL_VISIBLE = 4;
+    const visibleProducts = products.slice(0, INITIAL_VISIBLE);
+    const hiddenProducts  = products.slice(INITIAL_VISIBLE);
+    const hasMore         = hiddenProducts.length > 0;
+
     parts.push('<div class="k-sec-grid">');
-    for (const product of products) parts.push(renderCard(product));
-    parts.push('</div></div>');
+    for (const product of visibleProducts) parts.push(renderCard(product));
+    if (hasMore) {
+      for (const product of hiddenProducts) {
+        // Wrap chaque carte cachée dans un span invisible — retiré au clic "Voir plus"
+        parts.push('<span class="k-sec-more-card" style="display:none;contents:none;">' + renderCard(product) + '</span>');
+      }
+    }
+    parts.push('</div>');
+
+    // Bouton "Voir plus" — affiché uniquement s'il reste des cartes cachées
+    if (hasMore) {
+      parts.push(
+        '<div class="k-sec-see-more-wrap">' +
+          '<button class="k-sec-see-more" type="button" data-see-more-cat="' + sanitize(category) + '">' +
+            'Voir plus (' + hiddenProducts.length + ')' +
+          '</button>' +
+        '</div>'
+      );
+    }
+
+    parts.push('</div>');
   }
 
   return parts.join('');

@@ -294,7 +294,10 @@ function handleCategorySelection(cat, deps) {
     state.activeSubcat = null;
     setActiveCat(cat);
     renderSubcatRail(cat);
-    requestAnimationFrame(() => scrollPageToTop('smooth'));
+    // Desktop : l'utilisateur est déjà en bas — on scrolle vers le catalogue,
+    // pas vers le hero. Mobile : scrollPageToTop reste le bon comportement
+    // (le pager gère le positionnement via scrollPagerToCat).
+    requestAnimationFrame(() => window.innerWidth >= 900 ? scrollToCatalog() : scrollPageToTop('smooth'));
     return;
   }
 
@@ -318,7 +321,7 @@ function handleCategorySelection(cat, deps) {
   state.activeSubcat = null;
   setActiveCat(cat);
   renderSubcatRail(cat);
-  requestAnimationFrame(() => scrollPageToTop('smooth'));
+  requestAnimationFrame(() => window.innerWidth >= 900 ? scrollToCatalog() : scrollPageToTop('smooth'));
 }
 
 export function setupHomeController(deps) {

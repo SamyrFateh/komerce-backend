@@ -667,8 +667,8 @@
        Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
        4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
        sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 8px;
     max-width: none;
     height: auto;
     margin: 0;
@@ -694,20 +694,17 @@
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 100px;
-    min-height: 88px;
-    /* Ancrage des enfants absolus */
+    height: 72px;
+    min-height: 64px;
     position: relative;
     display: block;
     padding: 0;
-    /* Visuel premium */
-    border-radius: 18px;
+    border-radius: 14px;
     border: none;
     background: var(--sand-warm);
     box-shadow: var(--shadow-md);
     cursor: pointer;
     overflow: hidden;
-    /* Transitions lift */
     transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
@@ -799,9 +796,9 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 7px 10px 9px;
+    padding: 5px 8px 7px;
     color: var(--white);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     line-height: 1.05;
     letter-spacing: -.02em;

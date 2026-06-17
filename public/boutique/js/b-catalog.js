@@ -362,7 +362,9 @@ function renderGrid() {
   const useSections = state.activeCat === 'all' || _isMobile;
   let pageItems;
   if (useSections) {
-    pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 48, 4);
+    // Desktop : 16 par section max (4 visibles + 12 révélables via "Voir plus").
+    // Mobile : inchangé.
+    pageItems = _isMobile ? _balancedPick(list, 160) : _balancedPick(list, 160, 16);
   } else {
     pageItems = list.slice(0, state.pageSize);
   }
@@ -537,6 +539,27 @@ function _bindGridEvents() {
 
   // bindCarouselDots reste par-carte (touch listeners spécifiques au DOM)
   dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));
+
+  // ── VOIR PLUS — révèle les cartes cachées de la section inline ──
+  dom.grid.querySelectorAll('.k-sec-see-more').forEach(btn => {
+    if (btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const wrap = btn.closest('.k-cat-section');
+      if (!wrap) return;
+      // Révèle les cartes cachées en retirant le wrapper span invisible
+      wrap.querySelectorAll('.k-sec-more-card').forEach(span => {
+        const card = span.firstElementChild;
+        if (card) {
+          span.replaceWith(card);
+          bindCarouselDots(card);
+        }
+      });
+      // Masque le bouton "Voir plus" — plus rien à révéler
+      btn.closest('.k-sec-see-more-wrap').remove();
+    });
+  });
 
   dom.grid.querySelectorAll('.k-sec-see-all').forEach(btn => {
     if (btn.dataset.bound === '1') return;

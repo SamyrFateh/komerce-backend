@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-16)
+   KOMERCE — base.css (2026-06-17)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -1352,6 +1352,20 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-desktop-catalog-wrap { gap: 24px; }
 }
 
+/* ── Centrage symétrique quand le side-cart est docké ──────────
+   Sans correction : body pose padding-right:240px → le wrap colle
+   au bord gauche, les cartes ne sont pas centrées dans l'espace utile.
+   Fix : padding-left = sc-reserve-w / 2 pour rééquilibrer visuellement.
+   Cappé à @min-width:1100px pour éviter un débordement sur les petits
+   écrans desktop (900–1099px) où chaque pixel compte.
+   ──────────────────────────────────────────────────────────────── */
+@media (min-width: 1100px) {
+  body:has(.k-side-cart.has-items) #k-desktop-catalog-wrap,
+  body.sc-reserve #k-desktop-catalog-wrap {
+    padding-left: calc(var(--sc-reserve-w, 240px) / 2);
+  }
+}
+
 
 
 /* PATCH #227 — desktop stabilization (consolidé) */
@@ -2052,7 +2066,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
      object-position:50% 45% : centre vertical sur les personnages. */
   .k-hero-img {
-    height: 200px;
+    height: 150px;
     aspect-ratio: unset;
     object-fit: cover;
     object-position: 50% 15%;
@@ -2324,7 +2338,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* ── Wrapper hero : hauteur compacte ── */
   html.k-home-premium-v1 #k-hero-fixed-wrap,
   html.k-home-premium-v1 .k-hero {
-    height: clamp(180px, 22vw, 240px);
+    height: 150px;
     overflow: clip;
   }
 
@@ -2444,7 +2458,7 @@ body:has(#k-page-scroll.k-pager-active) {
     font-size: clamp(11px, 1vw, 13px);
     color: #5a6a58;
     line-height: 1.45;
-    margin: 0 0 10px;
+    margin: 0 0 6px;
     max-width: 300px;
   }
 
@@ -2454,7 +2468,7 @@ body:has(#k-page-scroll.k-pager-active) {
     gap: 8px;
     align-items: center;
     flex-wrap: wrap;
-    margin-bottom: 9px;
+    margin-bottom: 5px;
   }
 
   html.k-home-premium-v1 .k-hero-cta-primary {
