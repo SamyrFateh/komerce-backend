@@ -1,19 +1,4 @@
 /**
- * @komerce-arch
- * @role          boutique-view-navigation
- * @domain        boutique
- * @layer         ui-state
- * @criticality   high
- * @inputs        tab_selection, dom_state, group_context
- * @outputs       active_view, cart_drawer, group_view, relais_preload
- * @depends       b-store.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-group-view.js, b-pager.js
- * @used-by       boutique.js
- * @doctrine      navigation_sans_friction, participant_peut_verifier, mobile_desktop_coherence
- * @impact-areas  boutique-navigation, group-view, cart, tracking, checkout
- * @version       2026-06
- */
-
-/**
  * @module b-nav
  * @brief Navigation — switchView, setupBnav, setupDrawer, setupInfiniteScroll, loadRelais
  *
@@ -30,7 +15,6 @@ import { renderGrid, appendNextPage }    from './b-catalog.js';
 import { renderFavView }                 from './b-favs.js';
 import { renderTrackView }               from './b-tracking.js';
 import { renderGroupView, detectParticipantToken, stopPolling } from './b-group-view.js';
-import { readPersonalizedParams } from './group/group-helpers.js';
 import { destroyMobilePager }            from './b-pager.js';
 import { scrollPageToTop }               from './b-scroll-owner.js';
 
@@ -170,18 +154,14 @@ export function switchView(tab) {
   const trackView  = document.getElementById('k-track-view');
   const groupView  = document.getElementById('k-group-view');
   const heroWrap   = document.getElementById('k-hero-fixed-wrap');
-  const stickyBar  = document.getElementById('k-sticky-bar');
-  const barSpacer  = document.getElementById('k-bar-spacer');
   const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
-  if (catalog)    catalog.classList.toggle('u-hidden', tab !== 'shop');
-  if (favView)    favView.classList.toggle('show', tab === 'fav');
-  if (trackView)  trackView.classList.toggle('show', tab === 'track');
-  if (groupView)  groupView.classList.toggle('show', tab === 'group');
-  if (promoSec)   promoSec.classList.toggle('u-hidden', tab !== 'shop');
-  if (heroWrap)   heroWrap.classList.toggle('u-hidden', tab !== 'shop');
-  if (stickyBar)  stickyBar.classList.toggle('u-hidden', tab !== 'shop');
-  if (barSpacer)  barSpacer.classList.toggle('u-hidden', tab !== 'shop');
+  if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
+  if (favView)   favView.classList.toggle('show', tab === 'fav');
+  if (trackView) trackView.classList.toggle('show', tab === 'track');
+  if (groupView) groupView.classList.toggle('show', tab === 'group');
+  if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
+  if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
 
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
   bus.emit('view:changed', tab);
@@ -244,8 +224,6 @@ export function setupBnav() {
 export function handleParticipantUrl() {
   const token = detectParticipantToken();
   if (!token) return;
-  // D-03 — lire who/amt AVANT de nettoyer l'URL (lien personnalisé GAP-B)
-  const { who, amt } = readPersonalizedParams(window.location.href);
   // Nettoyer l'URL sans recharger la page
   try {
     const clean = window.location.origin + window.location.pathname;
@@ -255,7 +233,7 @@ export function handleParticipantUrl() {
   document.querySelectorAll('.k-bnav-item, .k-header-nav-btn').forEach(i => {
     i.classList.toggle('active', i.dataset.tab === 'group');
   });
-  renderGroupView({ participantToken: token, personalized: { who, amt } });
+  renderGroupView({ participantToken: token });
   switchView('group');
 }
 

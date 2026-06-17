@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — components.css (2026-06-17)
+   KOMERCE — components.css (2026-06-15)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── categories.css ──────────────────────────────────────── */
@@ -625,10 +625,9 @@
     top: 68px;
     z-index: 180;
     margin-top: 0;
-    /* Opaque (pas de rgba) : la barre doit masquer totalement les cartes
-       qui défilent dessous au scroll, pas laisser transparaître leurs
-       couleurs/images à travers un fond semi-transparent + blur. */
-    background: rgb(248, 246, 241);
+    background: rgba(248, 246, 241, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: 0 0 20px 20px;
     /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
     box-shadow:
@@ -672,8 +671,8 @@
        Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
        4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
        sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
-    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
     max-width: none;
     height: auto;
     margin: 0;
@@ -699,17 +698,20 @@
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 72px;
-    min-height: 64px;
+    height: 100px;
+    min-height: 88px;
+    /* Ancrage des enfants absolus */
     position: relative;
     display: block;
     padding: 0;
-    border-radius: 14px;
+    /* Visuel premium */
+    border-radius: 18px;
     border: none;
     background: var(--sand-warm);
     box-shadow: var(--shadow-md);
     cursor: pointer;
     overflow: hidden;
+    /* Transitions lift */
     transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
@@ -801,9 +803,9 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 5px 8px 7px;
+    padding: 7px 10px 9px;
     color: var(--white);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     line-height: 1.05;
     letter-spacing: -.02em;
@@ -1914,42 +1916,6 @@
 @media (max-width: 899px) {
 
 
-}
-
-/* ── VOIR PLUS — bouton section desktop (home activeCat=all) ──────
-   Mobile non impacté : le renderer n'injecte pas .k-sec-see-more
-   en mode mobile (guard isMobile dans render-home-sections.js).
-   ──────────────────────────────────────────────────────────────── */
-@media (min-width: 900px) {
-  .k-sec-see-more-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 12px 0 20px;
-  }
-  .k-sec-see-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 20px;
-    height: 36px;
-    border-radius: 999px;
-    border: 1.5px solid var(--border);
-    background: var(--white);
-    color: var(--text-muted);
-    font-family: var(--font);
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .15s, border-color .15s, color .15s;
-  }
-  .k-sec-see-more:hover {
-    background: var(--sand-warm);
-    border-color: var(--border-text-12);
-    color: var(--text);
-  }
-  .k-sec-see-more:active {
-    transform: scale(.97);
-  }
 }
 
 

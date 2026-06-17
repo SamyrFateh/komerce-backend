@@ -757,20 +757,6 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-desktop-catalog-wrap { gap: 24px; }
 }
 
-/* ── Centrage symétrique quand le side-cart est docké ──────────
-   Sans correction : body pose padding-right:240px → le wrap colle
-   au bord gauche, les cartes ne sont pas centrées dans l'espace utile.
-   Fix : padding-left = sc-reserve-w / 2 pour rééquilibrer visuellement.
-   Cappé à @min-width:1100px pour éviter un débordement sur les petits
-   écrans desktop (900–1099px) où chaque pixel compte.
-   ──────────────────────────────────────────────────────────────── */
-@media (min-width: 1100px) {
-  body:has(.k-side-cart.has-items) #k-desktop-catalog-wrap,
-  body.sc-reserve #k-desktop-catalog-wrap {
-    padding-left: calc(var(--sc-reserve-w, 240px) / 2);
-  }
-}
-
 
 
 /* PATCH #227 — desktop stabilization (consolidé) */

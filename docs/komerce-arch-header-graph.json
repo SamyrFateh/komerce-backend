@@ -14,23 +14,23 @@
   ],
   "totals": {
     "scannedCodeFiles": 313,
-    "filesWithFullHeaders": 283,
+    "filesWithFullHeaders": 282,
     "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 313,
-    "filesWithoutHeaders": 0,
+    "filesWithAnyHeaders": 312,
+    "filesWithoutHeaders": 1,
     "liteWithoutOwner": 0,
-    "graphNodes": 652,
-    "edges": 2865,
+    "graphNodes": 649,
+    "edges": 2848,
     "dbTables": 107,
     "doctrines": 122,
-    "impactAreas": 110,
-    "unresolvedCodeEdges": 266
+    "impactAreas": 108,
+    "unresolvedCodeEdges": 276
   },
   "byDomain": {
     "bootstrap": 9,
     "notifications": 1,
     "auth": 18,
-    "boutique": 37,
+    "boutique": 36,
     "catalog": 25,
     "checkout": 2,
     "shared-cart": 34,
@@ -64,7 +64,7 @@
     "ui-page": 6,
     "ui-service": 1,
     "ui-experiment": 1,
-    "ui-state": 2,
+    "ui-state": 1,
     "util-ui": 2,
     "ui-infrastructure": 1,
     "state": 1,
@@ -86,7 +86,7 @@
   "byCriticality": {
     "critical": 66,
     "medium": 96,
-    "high": 119,
+    "high": 118,
     "low": 32
   },
   "nodes": [
@@ -2045,58 +2045,6 @@
       "doctrine": [],
       "impactAreas": [
         "boutique"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/b-nav.js",
-      "file": "public/boutique/js/b-nav.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "boutique-view-navigation",
-      "domain": "boutique",
-      "layer": "ui-state",
-      "criticality": "high",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "tab_selection",
-        "dom_state",
-        "group_context"
-      ],
-      "outputs": [
-        "active_view",
-        "cart_drawer",
-        "group_view",
-        "relais_preload"
-      ],
-      "depends": [
-        "b-store.js",
-        "b-cart.js",
-        "b-checkout.js",
-        "b-catalog.js",
-        "b-favs.js",
-        "b-tracking.js",
-        "b-group-view.js",
-        "b-pager.js"
-      ],
-      "usedBy": [
-        "boutique.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [
-        "navigation_sans_friction",
-        "participant_peut_verifier",
-        "mobile_desktop_coherence"
-      ],
-      "impactAreas": [
-        "boutique-navigation",
-        "group-view",
-        "cart",
-        "tracking",
-        "checkout"
       ],
       "version": "2026-06"
     },
@@ -14739,16 +14687,6 @@
       "area": "catalog-navigation"
     },
     {
-      "id": "impact:boutique-navigation",
-      "type": "impact-area",
-      "area": "boutique-navigation"
-    },
-    {
-      "id": "impact:group-view",
-      "type": "impact-area",
-      "area": "group-view"
-    },
-    {
       "id": "impact:mobile-navigation",
       "type": "impact-area",
       "area": "mobile-navigation"
@@ -15803,7 +15741,7 @@
       "label": "b-modal-core.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-cart.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -16013,7 +15951,7 @@
       "label": "b-subcat.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-catalog.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -16181,7 +16119,7 @@
       "label": "boutique.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-checkout.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -16301,7 +16239,7 @@
       "label": "b-catalog.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-favs.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -16493,7 +16431,7 @@
       "label": "b-group-banner.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-group-view.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -17255,108 +17193,6 @@
       "label": "boutique"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-store.js",
-      "type": "depends",
-      "label": "b-store.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-cart.js",
-      "type": "depends",
-      "label": "b-cart.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-checkout.js",
-      "type": "depends",
-      "label": "b-checkout.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-catalog.js",
-      "type": "depends",
-      "label": "b-catalog.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-favs.js",
-      "type": "depends",
-      "label": "b-favs.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-tracking.js",
-      "type": "depends",
-      "label": "b-tracking.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-group-view.js",
-      "type": "depends",
-      "label": "b-group-view.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "public/boutique/js/b-pager.js",
-      "type": "depends",
-      "label": "b-pager.js"
-    },
-    {
-      "from": "public/boutique/js/boutique.js",
-      "to": "public/boutique/js/b-nav.js",
-      "type": "uses",
-      "label": "boutique.js"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "doctrine:navigation_sans_friction",
-      "type": "doctrine",
-      "label": "navigation_sans_friction"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "doctrine:participant_peut_verifier",
-      "type": "doctrine",
-      "label": "participant_peut_verifier"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "doctrine:mobile_desktop_coherence",
-      "type": "doctrine",
-      "label": "mobile_desktop_coherence"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "impact:boutique-navigation",
-      "type": "impact",
-      "label": "boutique-navigation"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "impact:group-view",
-      "type": "impact",
-      "label": "group-view"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "impact:cart",
-      "type": "impact",
-      "label": "cart"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "impact:tracking",
-      "type": "impact",
-      "label": "tracking"
-    },
-    {
-      "from": "public/boutique/js/b-nav.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
       "from": "public/boutique/js/b-pager.js",
       "to": "public/boutique/js/b-bus.js",
       "type": "depends",
@@ -17387,7 +17223,7 @@
       "label": "b-subcat.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-pager.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -17567,7 +17403,7 @@
       "label": "b-subcat.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-scroll-owner.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -17969,7 +17805,7 @@
       "label": "routes/orders.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/b-tracking.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -18138,7 +17974,7 @@
     },
     {
       "from": "public/boutique/js/boutique.js",
-      "to": "public/boutique/js/b-nav.js",
+      "to": "b-nav.js",
       "type": "depends",
       "label": "b-nav.js"
     },
@@ -18545,7 +18381,7 @@
       "label": "group-render-creator.js"
     },
     {
-      "from": "public/boutique/js/b-nav.js",
+      "from": "b-nav.js",
       "to": "public/boutique/js/group/group-helpers.js",
       "type": "uses",
       "label": "b-nav.js"
@@ -33162,7 +32998,7 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/b-share-cart.js"
       ],
       "ownedFiles": [
@@ -33201,7 +33037,6 @@
         "public/boutique/js/b-group-cart-flow.js",
         "public/boutique/js/b-modal-approche-c-hybrid.js",
         "public/boutique/js/b-modal-core.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
@@ -33280,7 +33115,7 @@
         "public/boutique/js/boutique.js",
         "public/boutique/js/b-desktop-sidebar.js",
         "public/boutique/js/b-subcat.js",
-        "public/boutique/js/b-nav.js"
+        "b-nav.js"
       ],
       "ownedFiles": [
         "public/boutique/js/b-desktop-global-cart-access.js",
@@ -33327,7 +33162,6 @@
         "public/boutique/js/b-modal-core.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
@@ -33408,7 +33242,7 @@
       ],
       "directUsedBy": [
         "public/boutique/js/boutique.js",
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/b-share-cart.js"
       ],
       "ownedFiles": [
@@ -33443,7 +33277,6 @@
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-checkout-render.js",
         "public/boutique/js/b-identity.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-paypal.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-share-cart.js",
@@ -33531,7 +33364,7 @@
         "public/boutique/js/b-catalog.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/boutique.js"
       ],
       "ownedFiles": [],
@@ -33556,7 +33389,6 @@
         "impact:product-discovery",
         "public/boutique/js/b-cart-core.js",
         "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/boutique.js"
       ]
@@ -33685,7 +33517,7 @@
         "public/boutique/js/b-group-banner.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/b-share-cart.js",
         "public_shared_cart_links"
       ],
@@ -33724,7 +33556,6 @@
         "public/boutique/js/b-friendly-group-redirect.js",
         "public/boutique/js/b-group-banner.js",
         "public/boutique/js/b-identity.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-share-phone-guard.js",
         "public/boutique/js/collective-close-order-service.js",
@@ -34271,63 +34102,6 @@
         "public/boutique/js/boutique.js"
       ]
     },
-    "public/boutique/js/b-nav.js": {
-      "role": "boutique-view-navigation",
-      "domain": "boutique",
-      "criticality": "high",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "public/boutique/js/b-store.js",
-        "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-checkout.js",
-        "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-favs.js",
-        "public/boutique/js/b-tracking.js",
-        "public/boutique/js/b-group-view.js",
-        "public/boutique/js/b-pager.js"
-      ],
-      "directUsedBy": [
-        "public/boutique/js/boutique.js"
-      ],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [
-        "navigation_sans_friction",
-        "participant_peut_verifier",
-        "mobile_desktop_coherence"
-      ],
-      "impactAreas": [
-        "boutique-navigation",
-        "group-view",
-        "cart",
-        "tracking",
-        "checkout"
-      ],
-      "mustCheck": [
-        "doctrine:mobile_desktop_coherence",
-        "doctrine:navigation_sans_friction",
-        "doctrine:participant_peut_verifier",
-        "impact:boutique-navigation",
-        "impact:cart",
-        "impact:checkout",
-        "impact:group-view",
-        "impact:tracking",
-        "public/boutique/js/b-cart.js",
-        "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-checkout.js",
-        "public/boutique/js/b-favs.js",
-        "public/boutique/js/b-group-view.js",
-        "public/boutique/js/b-pager.js",
-        "public/boutique/js/b-scroll-owner.js",
-        "public/boutique/js/b-store.js",
-        "public/boutique/js/b-tracking.js",
-        "public/boutique/js/boutique.js",
-        "public/boutique/js/group/group-helpers.js"
-      ]
-    },
     "public/boutique/js/b-pager.js": {
       "role": "mobile-category-pager",
       "domain": "catalog",
@@ -34343,7 +34117,7 @@
       "directUsedBy": [
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-subcat.js",
-        "public/boutique/js/b-nav.js"
+        "b-nav.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -34369,7 +34143,6 @@
         "impact:scroll-ownership",
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-catalog.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js"
@@ -34497,7 +34270,7 @@
       "directUsedBy": [
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-subcat.js",
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/b-cart.js",
         "modal-modules",
         "desktop-enhancers"
@@ -34529,7 +34302,6 @@
         "public/boutique/js/b-catalog-desktop-enhancers.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-subcat.js"
       ]
@@ -34670,7 +34442,6 @@
         "public/boutique/js/b-modal-image-ux.js",
         "public/boutique/js/b-modal-product.js",
         "public/boutique/js/b-modal-suggestions.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-subcat.js",
@@ -34746,7 +34517,7 @@
         "routes/orders.js"
       ],
       "directUsedBy": [
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/boutique.js"
       ],
       "ownedFiles": [],
@@ -34774,7 +34545,6 @@
         "impact:participant-flow",
         "impact:tracking",
         "public/boutique/js/b-cart-core.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js",
@@ -34849,7 +34619,7 @@
         "public/boutique/js/b-modal.js",
         "public/boutique/js/b-cart.js",
         "public/boutique/js/b-checkout.js",
-        "public/boutique/js/b-nav.js",
+        "b-nav.js",
         "public/boutique/js/b-share-cart.js"
       ],
       "directUsedBy": [
@@ -34900,7 +34670,6 @@
         "public/boutique/js/b-mobile-premium-v1.js",
         "public/boutique/js/b-modal-desktop-enhancers.js",
         "public/boutique/js/b-modal.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
@@ -35180,7 +34949,7 @@
       "directUsedBy": [
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/group/group-render-creator.js",
-        "public/boutique/js/b-nav.js"
+        "b-nav.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -35205,7 +34974,6 @@
         "impact:personalized-links",
         "impact:shared-cart",
         "public/boutique/js/b-group-view.js",
-        "public/boutique/js/b-nav.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/group/group-render-creator.js"
       ]
@@ -44426,6 +44194,36 @@
       "label": "manual-ops"
     },
     {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-cart.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-catalog.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-checkout.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-favs.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-group-view.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
       "from": "public_shared_cart_links",
       "to": "public/boutique/js/b-group-view.js",
       "type": "uses",
@@ -44444,10 +44242,22 @@
       "label": "modal-surfaces"
     },
     {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-pager.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
       "from": "public/boutique/js/b-scroll-owner.js",
       "to": "DOM",
       "type": "depends",
       "label": "DOM"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-scroll-owner.js",
+      "type": "uses",
+      "label": "b-nav.js"
     },
     {
       "from": "modal-modules",
@@ -44486,6 +44296,12 @@
       "label": "all-boutique-js-modules"
     },
     {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/b-tracking.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
       "from": "public/boutique/js/b-utils.js",
       "to": "fetch",
       "type": "depends",
@@ -44502,6 +44318,12 @@
       "to": "public/boutique/js/b-utils.js",
       "type": "uses",
       "label": "all-boutique-js-modules"
+    },
+    {
+      "from": "public/boutique/js/boutique.js",
+      "to": "b-nav.js",
+      "type": "depends",
+      "label": "b-nav.js"
     },
     {
       "from": "public/boutique/index.html",
@@ -44538,6 +44360,12 @@
       "to": "fetch",
       "type": "depends",
       "label": "fetch"
+    },
+    {
+      "from": "b-nav.js",
+      "to": "public/boutique/js/group/group-helpers.js",
+      "type": "uses",
+      "label": "b-nav.js"
     },
     {
       "from": "public/boutique/js/komerce-api.js",
@@ -46004,6 +45832,8 @@
       "label": "routes/*"
     }
   ],
-  "filesWithoutHeaders": [],
+  "filesWithoutHeaders": [
+    "public/boutique/js/b-nav.js"
+  ],
   "liteWithoutOwner": []
 }
