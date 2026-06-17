@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 312,
-    "filesWithFullHeaders": 282,
+    "scannedCodeFiles": 313,
+    "filesWithFullHeaders": 283,
     "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 312,
+    "filesWithAnyHeaders": 313,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 647,
-    "edges": 2852,
+    "graphNodes": 652,
+    "edges": 2865,
     "dbTables": 107,
-    "doctrines": 119,
-    "impactAreas": 109,
-    "unresolvedCodeEdges": 265
+    "doctrines": 122,
+    "impactAreas": 110,
+    "unresolvedCodeEdges": 266
   },
   "byDomain": {
     "bootstrap": 9,
@@ -40,7 +40,7 @@
     "collective-workspace": 3,
     "economic-engine": 24,
     "dashboard": 28,
-    "orders": 24,
+    "orders": 25,
     "notification": 6,
     "unknown": 35,
     "logistics": 29,
@@ -76,7 +76,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 102,
+    "service": 103,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -86,7 +86,7 @@
   "byCriticality": {
     "critical": 66,
     "medium": 96,
-    "high": 118,
+    "high": 119,
     "low": 32
   },
   "nodes": [
@@ -5645,18 +5645,23 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "orders"
+        "orders",
+        "invoices"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "invoices"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "facture_apres_paiement_confirme",
+        "lien_facture_whatsapp_token_public"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "whatsapp"
       ],
       "version": "2026-06"
     },
@@ -9430,6 +9435,48 @@
       ],
       "impactAreas": [
         "inventory"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/invoice-public-token.js",
+      "file": "services/invoice-public-token.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "invoice-public-token",
+      "domain": "orders",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "invoice_url",
+        "runtime_secret"
+      ],
+      "outputs": [
+        "signed_public_invoice_token",
+        "verified_order_id"
+      ],
+      "depends": [
+        "crypto"
+      ],
+      "usedBy": [
+        "routes/invoices.js",
+        "services/authkey-client.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [
+        "lien_facture_public_non_devinable",
+        "facture_apres_paiement_confirme"
+      ],
+      "impactAreas": [
+        "orders",
+        "invoices",
+        "whatsapp",
+        "customer-support"
       ],
       "version": "2026-06"
     },
@@ -14177,6 +14224,16 @@
       "doctrine": "invalidate_cache_after_mutation"
     },
     {
+      "id": "doctrine:facture_apres_paiement_confirme",
+      "type": "doctrine",
+      "doctrine": "facture_apres_paiement_confirme"
+    },
+    {
+      "id": "doctrine:lien_facture_whatsapp_token_public",
+      "type": "doctrine",
+      "doctrine": "lien_facture_whatsapp_token_public"
+    },
+    {
       "id": "doctrine:order_creation_idempotent",
       "type": "doctrine",
       "doctrine": "order_creation_idempotent"
@@ -14280,6 +14337,11 @@
       "id": "doctrine:sov_drift",
       "type": "doctrine",
       "doctrine": "sov_drift"
+    },
+    {
+      "id": "doctrine:lien_facture_public_non_devinable",
+      "type": "doctrine",
+      "doctrine": "lien_facture_public_non_devinable"
     },
     {
       "id": "doctrine:notification_non_bloquante",
@@ -14935,6 +14997,11 @@
       "id": "impact:finance-config",
       "type": "impact-area",
       "area": "finance-config"
+    },
+    {
+      "id": "impact:invoices",
+      "type": "impact-area",
+      "area": "invoices"
     },
     {
       "id": "impact:loyalty",
@@ -22061,9 +22128,27 @@
     },
     {
       "from": "routes/invoices.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "db:invoices",
+      "type": "db-write",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "doctrine:facture_apres_paiement_confirme",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "facture_apres_paiement_confirme"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "doctrine:lien_facture_whatsapp_token_public",
+      "type": "doctrine",
+      "label": "lien_facture_whatsapp_token_public"
     },
     {
       "from": "routes/invoices.js",
@@ -22076,6 +22161,12 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
     },
     {
       "from": "routes/logistics.js",
@@ -27464,6 +27555,60 @@
       "to": "impact:inventory",
       "type": "impact",
       "label": "inventory"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "services/invoice-public-token.js",
+      "type": "uses",
+      "label": "routes/invoices.js"
+    },
+    {
+      "from": "services/authkey-client.js",
+      "to": "services/invoice-public-token.js",
+      "type": "uses",
+      "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "doctrine:lien_facture_public_non_devinable",
+      "type": "doctrine",
+      "label": "lien_facture_public_non_devinable"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "doctrine:facture_apres_paiement_confirme",
+      "type": "doctrine",
+      "label": "facture_apres_paiement_confirme"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "impact:invoices",
+      "type": "impact",
+      "label": "invoices"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "impact:customer-support",
+      "type": "impact",
+      "label": "customer-support"
     },
     {
       "from": "services/invoice-service.js",
@@ -37429,23 +37574,32 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "orders",
+        "invoices"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "invoices"
+      ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "facture_apres_paiement_confirme",
+        "lien_facture_whatsapp_token_public"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "whatsapp"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:invoices",
         "db:orders",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:facture_apres_paiement_confirme",
+        "doctrine:lien_facture_whatsapp_token_public",
         "impact:checkout",
         "impact:orders",
-        "middleware/auth.js"
+        "impact:whatsapp",
+        "middleware/auth.js",
+        "services/invoice-public-token.js"
       ]
     },
     "routes/logistics.js": {
@@ -39763,7 +39917,8 @@
       ],
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
-        "impact:auth"
+        "impact:auth",
+        "services/invoice-public-token.js"
       ]
     },
     "services/auto-parcel.js": {
@@ -40875,6 +41030,44 @@
         "doctrine:resolve_before_behavior_change",
         "impact:inventory",
         "routes/orders.js"
+      ]
+    },
+    "services/invoice-public-token.js": {
+      "role": "invoice-public-token",
+      "domain": "orders",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "crypto"
+      ],
+      "directUsedBy": [
+        "routes/invoices.js",
+        "services/authkey-client.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [
+        "lien_facture_public_non_devinable",
+        "facture_apres_paiement_confirme"
+      ],
+      "impactAreas": [
+        "orders",
+        "invoices",
+        "whatsapp",
+        "customer-support"
+      ],
+      "mustCheck": [
+        "doctrine:facture_apres_paiement_confirme",
+        "doctrine:lien_facture_public_non_devinable",
+        "impact:customer-support",
+        "impact:invoices",
+        "impact:orders",
+        "impact:whatsapp",
+        "routes/invoices.js",
+        "services/authkey-client.js"
       ]
     },
     "services/invoice-service.js": {
@@ -45617,6 +45810,12 @@
       "to": "services/economic-engine-queries.js",
       "type": "uses",
       "label": "admin-dashboards"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "crypto",
+      "type": "depends",
+      "label": "crypto"
     },
     {
       "from": "services/notification-service.js",

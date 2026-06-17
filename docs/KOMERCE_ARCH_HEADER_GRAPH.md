@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 312
-- Files with full headers: 282
+- Scanned code files: 313
+- Files with full headers: 283
 - Files with lite headers: 30
-- Files with any headers: 312
+- Files with any headers: 313
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 647
-- Edges: 2852
+- Graph nodes: 652
+- Edges: 2865
 - DB tables: 107
-- Doctrines: 119
-- Impact areas: 109
-- Unresolved code edges: 265
+- Doctrines: 122
+- Impact areas: 110
+- Unresolved code edges: 266
 
 ## Domains
 
@@ -36,7 +36,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notifications: 1
 - operations: 4
 - order-payment: 1
-- orders: 24
+- orders: 25
 - payment: 14
 - recommendations: 4
 - refunds: 1
@@ -62,7 +62,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 102
+- service: 103
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -230,6 +230,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/dashboard-ops-queries.js — dashboard-dashboard-ops-queries (dashboard, high, full)
 - services/economic-engine-queries.js — economic-engine-calculation-service (economic-engine, high, full)
 - services/hub-dashboard-queries.js — dashboard-hub-dashboard-queries (dashboard, high, full)
+- services/invoice-public-token.js — invoice-public-token (orders, high, full)
 - services/notification-service.js — customer-notification-orchestrator (notification, high, full)
 - services/order-service.js — order-domain-helpers (orders, high, full)
 - services/otp-test-mode.js — auth-otp-test-mode (auth, high, full)
@@ -371,6 +372,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-engine.js -> incidents
 - WRITE services/inventory-service.js -> inventory_items
 - WRITE routes/admin/system.js -> invoices
+- WRITE routes/invoices.js -> invoices
 - WRITE services/invoice-service.js -> invoices
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
@@ -419,7 +421,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcelOptimizationService.js -> orders
 - WRITE services/payment-cash-confirm.js -> orders
 - WRITE services/payment-paypal.js -> orders
-- WRITE services/payment-stripe.js -> orders
 
 ## Unresolved Code Edges
 
