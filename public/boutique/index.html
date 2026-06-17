@@ -5,8 +5,8 @@
 <script>
 /* Nuclear SW reset v302 — runs ONCE to clear all old caches */
 (function(){
-  if(localStorage.getItem('sw_reset_v330'))return;
-  localStorage.setItem('sw_reset_v330','1');
+  if(localStorage.getItem('sw_reset_v331'))return;
+  localStorage.setItem('sw_reset_v331','1');
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.getRegistrations().then(function(regs){
     Promise.all(regs.map(function(r){return r.unregister();})).then(function(){
@@ -36,7 +36,7 @@ if('serviceWorker' in navigator){
   if(window.caches){
     caches.keys().then(function(names){
       names.forEach(function(n){
-        if(n.indexOf('komerce-v330') === -1) caches.delete(n);
+        if(n.indexOf('komerce-v331') === -1) caches.delete(n);
       });
     });
   }
@@ -73,10 +73,10 @@ if('serviceWorker' in navigator){
 <script>/* Anti-FOUC premium desktop — doit s'exécuter AVANT tout CSS rendu */
 (function(){if(window.innerWidth>=900){document.documentElement.classList.add('k-home-premium-v1');}}());
 </script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=89">
-<link rel="stylesheet" href="/boutique/css/dist/components.css?v=115">
-<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=39">
-<link rel="stylesheet" href="/boutique/css/dist/event.css?v=21">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=90">
+<link rel="stylesheet" href="/boutique/css/dist/components.css?v=116">
+<link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=40">
+<link rel="stylesheet" href="/boutique/css/dist/event.css?v=22">
 
 <!-- Stripe: NO defer — must be ready before boutique.js runs -->
 <script src="https://js.stripe.com/v3/"></script>
