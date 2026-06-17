@@ -32,6 +32,43 @@ import { isDesktop }               from './b-scroll-owner.js';
 
 // ── Variables CSS de la cage ──────────────────────────────────────
 
+// ── Recalc robuste : re-mesure --pager-top APRÈS stabilisation (image hero / polices / resize) ──
+// Cause du bug : _recalcPagerVars() ne tournait qu'une fois (1 rAF), souvent AVANT le chargement
+// de l'image hero → #k-hero-fixed-wrap trop court → --pager-top trop petit → le pager fixe remonte
+// sous le hero. Ces hooks relancent la mesure une fois le layout réellement stabilisé.
+let _stabilizationHooksInstalled = false;
+let _recalcRaf = 0;
+
+function _scheduleRecalc() {
+  if (_recalcRaf) cancelAnimationFrame(_recalcRaf);
+  _recalcRaf = requestAnimationFrame(function () {
+    _recalcRaf = requestAnimationFrame(function () {
+      _recalcRaf = 0;
+      _recalcPagerVars();
+    });
+  });
+}
+
+function _installStabilizationHooks() {
+  if (_stabilizationHooksInstalled) return;
+  _stabilizationHooksInstalled = true;
+
+  const wrap = document.getElementById('k-hero-fixed-wrap');
+  const img  = wrap && (wrap.querySelector('.k-hero-img') || wrap.querySelector('img'));
+  if (img && !img.complete) {                         // 1) image hero chargée → wrap plus haut → re-mesurer
+    img.addEventListener('load',  _scheduleRecalc, { once: true });
+    img.addEventListener('error', _scheduleRecalc, { once: true });
+  }
+  if (document.fonts && document.fonts.ready) {        // 2) polices chargées → métriques slogan/chips
+    document.fonts.ready.then(_scheduleRecalc).catch(function () {});
+  }
+  if (window.ResizeObserver && wrap) {                 // 3) toute variation de hauteur du wrap fixe
+    try { new ResizeObserver(_scheduleRecalc).observe(wrap); } catch (e) {}
+  }
+  window.addEventListener('resize', _scheduleRecalc, { passive: true });           // 4) resize / rotation
+  window.addEventListener('orientationchange', _scheduleRecalc, { passive: true });
+}
+
 function _recalcPagerVars() {
   // PATCH #233 — no pager vars on desktop
   if (isDesktop()) {
@@ -78,6 +115,9 @@ function _recalcPagerVars() {
     ps.style.right = '0';
     ps.style.width = '100vw';
   }
+
+  // Câble (une seule fois) les re-mesures après stabilisation du layout.
+  _installStabilizationHooks();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
