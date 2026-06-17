@@ -620,9 +620,10 @@
     top: 68px;
     z-index: 180;
     margin-top: 0;
-    background: rgba(248, 246, 241, 0.82);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* Opaque (pas de rgba) : la barre doit masquer totalement les cartes
+       qui défilent dessous au scroll, pas laisser transparaître leurs
+       couleurs/images à travers un fond semi-transparent + blur. */
+    background: rgb(248, 246, 241);
     border-radius: 0 0 20px 20px;
     /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
     box-shadow:
