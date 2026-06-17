@@ -251,8 +251,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  @keyframes k-shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+  }
   .k-search-slogan strong {
-    color: var(--coral);
+    background: linear-gradient(90deg,
+      var(--coral-dark) 25%, var(--terracotta) 50%, var(--coral-dark) 75%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: k-shimmer 4s ease-in-out infinite;
   }
 }
 
@@ -321,7 +331,7 @@
   /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
      object-position:50% 45% : centre vertical sur les personnages. */
   .k-hero-img {
-    height: 150px;
+    height: 200px;
     aspect-ratio: unset;
     object-fit: cover;
     object-position: 50% 15%;
@@ -347,68 +357,16 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — hero (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2).
-   Scopé html.k-mobile-premium-v1, dans @media max 899px (mobile). Owner du hero.
-   !important retirés (Lot 5) — spécificité 0-2-0 bat la règle base 0-1-0 (.k-hero-overlay etc. { display:none }).
    Aucune règle CSS ou JS ne remet ces éléments visible. ════════ */
 @media (max-width: 899px) {
-  html.k-mobile-premium-v1 #k-hero-fixed-wrap {
-    background:
-      radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--ocean-bg-08) 68%, transparent), transparent 26%),
-      var(--sand-warm);
-  }
 
-  html.k-mobile-premium-v1 .k-hero-inner { padding: 0 10px; }
 
-  html.k-mobile-premium-v1 .k-hero-media {
-    border-radius: 22px;
-    height: 118px;
-    max-height: 118px;
-    overflow: hidden;
-    box-shadow: 0 10px 24px var(--border-text-06);
-  }
 
-  html.k-mobile-premium-v1 .k-hero-img {
-    height: 118px;
-    object-fit: cover;
-    object-position: center;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
-    padding: 10px 12px 0;
-    align-items: flex-start;
-    text-align: left;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-hero-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 88%, transparent);
-    color: var(--text);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    box-shadow: 0 2px 6px var(--border-text-08);
-    margin-bottom: 6px;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-1,
-  html.k-mobile-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
-    text-align: left;
-    font-size: 18px;
-    line-height: 1.05;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-cta-row,
-  html.k-mobile-premium-v1 .k-hero-trust,
-  html.k-mobile-premium-v1 .k-hero-bubble,
-  html.k-mobile-premium-v1 .k-hero-sub,
-  html.k-mobile-premium-v1 .k-hero-overlay {
-    display: none;
-  }
 
-  html.k-mobile-premium-v1 .k-hero-cats-sticky { padding-top: 6px; }
 }
 
 /* ════════ Logo électrisé en filigrane — hero mobile ════════
@@ -631,270 +589,3 @@
     .k-logo-mini .klm-signal circle { animation: none; }
   }
 }
-
-/* ══════════════════════════════════════════════════════════════
-   DIRECTION A — HERO DESKTOP SPLIT  (≥900px + .k-home-premium-v1)
-   Structure réelle : .k-hero-inner > .k-hero-media > (picture + .k-hero-mini-slogan)
-   Stratégie : .k-hero-media devient un grid 50/50 inversé :
-     colonne 1 = mini-slogan (texte), colonne 2 = picture (image).
-   Hauteur compacte : clamp(180px, 22vw, 240px).
-   Zéro modif HTML.
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-
-  /* ── Wrapper hero : hauteur compacte ── */
-  html.k-home-premium-v1 #k-hero-fixed-wrap,
-  html.k-home-premium-v1 .k-hero {
-    height: 150px;
-    overflow: clip;
-  }
-
-  html.k-home-premium-v1 .k-hero-inner {
-    height: 100%;
-    max-width: var(--container);
-    margin: 0 auto;
-  }
-
-  /* ── k-hero-media : grid 50/50 ── */
-  html.k-home-premium-v1 .k-hero-media {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr;
-    height: 100%;
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-    position: relative;
-    background: var(--hero-bg);
-  }
-
-  /* ── Colonne droite : image ── */
-  html.k-home-premium-v1 .k-hero-media picture {
-    grid-column: 2;
-    grid-row: 1;
-    display: block;
-    overflow: hidden;
-  }
-
-  html.k-home-premium-v1 .k-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 20%;
-    aspect-ratio: unset;
-    display: block;
-  }
-
-  /* ── Colonne gauche : texte ── */
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium {
-    display: flex !important;
-    flex-direction: column;
-    justify-content: center;
-    gap: 0;
-    grid-column: 1;
-    grid-row: 1;
-    padding: 0 36px 0 clamp(20px, 4vw, 52px);
-    background: var(--hero-bg);
-    /* Fondu doux vers la droite (vers l'image) */
-    position: relative;
-  }
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium::after {
-    content: '';
-    position: absolute;
-    right: -28px;
-    top: 0; bottom: 0;
-    width: 56px;
-    background: linear-gradient(to right, var(--hero-bg), transparent);
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  /* Masquer le bubble & logo-glow sur desktop */
-  html.k-home-premium-v1 .k-hero-bubble { display: none !important; }
-
-  /* Badge eyebrow */
-  html.k-home-premium-v1 .k-hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--green-text);
-    margin-bottom: 6px;
-  }
-  html.k-home-premium-v1 .k-hero-badge::before {
-    content: '';
-    display: inline-block;
-    width: 18px;
-    height: 2px;
-    background: var(--green-text);
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  /* Titre display — line 1 */
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-1 {
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(22px, 2.4vw, 32px);
-    font-weight: 800;
-    line-height: 1.1;
-    color: var(--green-dark-text);
-    letter-spacing: -.02em;
-  }
-
-  /* Titre display — line 2 (italic coral) */
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
-    display: block;
-    font-family: var(--font-display);
-    font-size: clamp(22px, 2.4vw, 32px);
-    font-weight: 800;
-    font-style: italic;
-    line-height: 1.1;
-    color: var(--coral);
-    letter-spacing: -.02em;
-    margin-bottom: 8px;
-  }
-
-  /* Sous-titre */
-  html.k-home-premium-v1 .k-hero-sub {
-    display: block;
-    font-size: clamp(11px, 1vw, 13px);
-    color: #5a6a58;
-    line-height: 1.45;
-    margin: 0 0 6px;
-    max-width: 300px;
-  }
-
-  /* CTAs row */
-  html.k-home-premium-v1 .k-hero-cta-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 5px;
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-primary {
-    background: var(--coral);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 8px 16px;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(200,92,45,.28);
-    transition: background .15s, box-shadow .15s;
-    white-space: nowrap;
-  }
-  html.k-home-premium-v1 .k-hero-cta-primary:hover {
-    background: var(--coral-dark);
-    box-shadow: 0 4px 14px rgba(200,92,45,.38);
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-ghost {
-    background: transparent;
-    color: var(--green-text);
-    border: 1.5px solid currentColor;
-    border-radius: var(--radius-sm);
-    padding: 7px 14px;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background .15s, color .15s;
-    white-space: nowrap;
-  }
-  html.k-home-premium-v1 .k-hero-cta-ghost:hover {
-    background: var(--green-bg);
-    color: var(--green-dark-text);
-  }
-
-  /* Trust bar */
-  html.k-home-premium-v1 .k-hero-trust {
-    display: flex !important;
-    align-items: center;
-    gap: 5px;
-    font-size: 10.5px;
-    color: #7a8a78;
-    flex-wrap: wrap;
-  }
-  html.k-home-premium-v1 .k-hero-trust .k-trust-sep {
-    color: #b8cbb5;
-  }
-
-  /* ── Badge flottant "Livraison express" en overlay sur l'image ── */
-  html.k-home-premium-v1 .k-hero-media::after {
-    content: '● Livraison express disponible';
-    position: absolute;
-    top: 14px;
-    right: 18px;
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(42,122,62,.18);
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-family: var(--font);
-    font-size: 10.5px;
-    font-weight: 600;
-    color: var(--green-dark-text);
-    letter-spacing: .01em;
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  /* ── Sticky bar hors du hero-fixed-wrap (fix overflow:clip) ──
-     La barre est maintenant sibling du wrap, plus enfant.
-     top = header premium (72px) au lieu de 68px base. */
-  html.k-home-premium-v1 .k-hero-cats-sticky {
-    margin-top: 0;
-    top: 72px; /* header premium h = 72px (règle ci-dessous dans CORRECTIONS) */
-  }
-}
-/* ══ FIN DIRECTION A DESKTOP SPLIT ════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════
-   DIRECTION A — CORRECTIONS NAVBAR + LOGO + ALIGNEMENT TEXTE
-   ══════════════════════════════════════════════════════════════ */
-@media (min-width: 900px) {
-
-  /* ── 1. Logo agrandi dans la navbar ── */
-  html.k-home-premium-v1 .k-logo-svg {
-    height: 52px;
-  }
-  html.k-home-premium-v1 .k-logo {
-    min-width: 172px;
-  }
-  html.k-home-premium-v1 .k-header-inner {
-    height: 72px;
-  }
-
-  /* ── 2. Gap navbar→hero : supprimer l'espace blanc entre les deux ── */
-  html.k-home-premium-v1 #k-header-spacer {
-    height: var(--header-h, 72px) !important;
-  }
-  html.k-home-premium-v1 .k-hero {
-    margin-top: 0;
-  }
-
-  /* ── 3. Texte du hero aligné à gauche ── */
-  html.k-home-premium-v1 .k-hero-mini-slogan--premium {
-    text-align: left;
-    align-items: flex-start;
-  }
-  html.k-home-premium-v1 .k-hero-badge,
-  html.k-home-premium-v1 .k-hero-sub,
-  html.k-home-premium-v1 .k-hero-trust {
-    text-align: left;
-  }
-  html.k-home-premium-v1 .k-hero-cta-row {
-    justify-content: flex-start;
-  }
-}
-/* ══ FIN CORRECTIONS NAVBAR + LOGO ════════════════════════════ */

@@ -757,20 +757,6 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-desktop-catalog-wrap { gap: 24px; }
 }
 
-/* ── Centrage symétrique quand le side-cart est docké ──────────
-   Sans correction : body pose padding-right:240px → le wrap colle
-   au bord gauche, les cartes ne sont pas centrées dans l'espace utile.
-   Fix : padding-left = sc-reserve-w / 2 pour rééquilibrer visuellement.
-   Cappé à @min-width:1100px pour éviter un débordement sur les petits
-   écrans desktop (900–1099px) où chaque pixel compte.
-   ──────────────────────────────────────────────────────────────── */
-@media (min-width: 1100px) {
-  body:has(.k-side-cart.has-items) #k-desktop-catalog-wrap,
-  body.sc-reserve #k-desktop-catalog-wrap {
-    padding-left: calc(var(--sc-reserve-w, 240px) / 2);
-  }
-}
-
 
 
 /* PATCH #227 — desktop stabilization (consolidé) */
@@ -1115,19 +1101,6 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 
 /* ═══ PREMIUM MOBILE V1 — header/recherche (rapatrié de b-mobile-premium-v1.js,
-   Lot 2/L2-S2). Scopé html.k-mobile-premium-v1, @media max 899px. ═══ */
-@media (max-width: 899px) {
-  html.k-mobile-premium-v1 .k-header-inner {
-    gap: 8px;
-    padding-inline: 10px;
-  }
-  html.k-mobile-premium-v1 .k-search {
-    min-height: 42px;
-    border-radius: 999px;
-    box-shadow: 0 10px 22px var(--border-text-06);
-  }
-  html.k-mobile-premium-v1 .k-search input { font-size: 14px; }
-}
 
 /* ── Premium desktop home — header / search / catalog (rapatrié de b-home-premium-v1.js, Lot 3) ── */
 @media (min-width: 900px) {
