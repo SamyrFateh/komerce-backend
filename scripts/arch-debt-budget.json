@@ -6,7 +6,9 @@
   "ratchet": {
     "_role": "Dette de doc reelle, plafond qui ne peut que BAISSER. arch-reconcile l abaisse automatiquement a la mesure courante; il ne le releve jamais (un nouveau manque reste bloquant).",
     "liveTablesUndocumented": 0,
-    "_note_liveTablesUndocumented": "Refermee a 0 le 2026-06-16 : cost_benchmarks, paypal_events_processed, pickup_verify_attempts, revoked_tokens, shared_cart_estimations ajoutees a SCHEMA.md depuis leur DDL live verifie."
+    "_note_liveTablesUndocumented": "Refermee a 0 le 2026-06-16 : cost_benchmarks, paypal_events_processed, pickup_verify_attempts, revoked_tokens, shared_cart_estimations ajoutees a SCHEMA.md depuis leur DDL live verifie.",
+    "_note_headerUnderDeclaration": "Cale a 0 par arch-reconcile (cliquet : ne peut que baisser).",
+    "headerUnderDeclaration": 0
   },
   "observedOnly": {
     "_role": "Mesure informative, JAMAIS bloquante, sans budget. Ce ne sont pas des regressions : c'est de l'etat structurel ou de la sante doctrine. Affiche pour visibilite, ne casse jamais la CI.",

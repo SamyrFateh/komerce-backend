@@ -12,9 +12,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 646
-- Edges: 2802
-- DB tables: 106
+- Graph nodes: 647
+- Edges: 2852
+- DB tables: 107
 - Doctrines: 119
 - Impact areas: 109
 - Unresolved code edges: 265
@@ -316,7 +316,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/repair-ordered-without-purchase-orders.js -> alerts
 - WRITE services/scan-operations.js -> alerts
 - WRITE utils/parcelSync.js -> alerts
+- WRITE routes/admin/system.js -> basket_items
+- WRITE routes/admin/users.js -> basket_items
 - WRITE services/shared-cart-engine.js -> basket_items
+- WRITE routes/admin/system.js -> baskets
+- WRITE routes/admin/users.js -> baskets
 - WRITE services/shared-cart-engine.js -> baskets
 - WRITE routes/admin-boutique-categories.js -> boutique_categories
 - WRITE routes/admin-boutique-categories.js -> boutique_subcategories
@@ -346,6 +350,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/orders/status.js -> customs_history
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_snapshots
 - WRITE services/economic-engine-queries.js -> economic_variables
@@ -358,6 +363,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pricing-rates.js -> finance_config
 - WRITE routes/modules.js -> garment_models
 - WRITE routes/admin/system.js -> incidents
+- WRITE routes/admin/users.js -> incidents
 - WRITE routes/ops-api.js -> incidents
 - WRITE services/alert-engine.js -> incidents
 - WRITE services/incident-service.js -> incidents
@@ -378,12 +384,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/relay-dashboard.js -> order_incidents
 - WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
 - WRITE services/cost-allocation.js -> order_item_real_cost_allocations
+- WRITE routes/admin/delete-order-cascade.js -> order_items
 - WRITE routes/admin/system.js -> order_items
 - WRITE routes/orders/create.js -> order_items
 - WRITE services/parcel-operations.js -> order_items
 - WRITE services/scan-engine.js -> order_items
 - WRITE services/shared-cart-engine.js -> order_items
+- WRITE routes/admin/delete-order-cascade.js -> order_status_history
 - WRITE routes/admin/system.js -> order_status_history
+- WRITE routes/admin/users.js -> order_status_history
 - WRITE routes/orders/cancel.js -> order_status_history
 - WRITE routes/orders/create.js -> order_status_history
 - WRITE services/order-status-machine.js -> order_status_history
@@ -411,15 +420,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/payment-cash-confirm.js -> orders
 - WRITE services/payment-paypal.js -> orders
 - WRITE services/payment-stripe.js -> orders
-- WRITE services/purchasing-admin-service.js -> orders
-- WRITE services/routing.js -> orders
-- WRITE services/scan-operations.js -> orders
-- WRITE services/shared-cart-engine.js -> orders
-- WRITE services/simulator/state-advancer.js -> orders
-- WRITE services/verify-qr-collection.js -> orders
-- WRITE services/wallet-service.js -> orders
-- WRITE routes/otp.js -> otp_codes
-- WRITE services/parcel-security.js -> parcel_events
 
 ## Unresolved Code Edges
 

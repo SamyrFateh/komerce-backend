@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       shared_carts, shared_cart_contributions, orders
- * @db-write      shared_cart_contributions, refunds, transaction_documents
+ * @db-read       orders, shared_cart_contributions, shared_carts
+ * @db-write      refunds, shared_cart_contributions, transaction_documents
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  shared-cart, admin-dashboard

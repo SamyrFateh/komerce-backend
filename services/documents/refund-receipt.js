@@ -8,7 +8,7 @@
  * @outputs       transaction_documents row (refund_receipt)
  * @depends       services/documents/document-service.js, db.js
  * @used-by       routes/orders/cancel.js (post-commit), services/refund-service.js (post-commit)
- * @db-read       refunds, orders, invoices
+ * @db-read       invoices, orders, refunds
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md

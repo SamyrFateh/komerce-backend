@@ -9,7 +9,7 @@
  * @depends       db.js, services/refund-service.js, services/documents/refund-receipt.js
  * @used-by       services/cancel-shared-cart-with-refunds.js, routes/shared-cart-refund-admin.js
  * @db-read       shared_cart_contributions, shared_carts, users
- * @db-write      shared_cart_contributions, shared_cart_events
+ * @db-write      refunds, shared_cart_contributions, shared_cart_events
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  shared-cart

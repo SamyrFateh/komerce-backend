@@ -110,6 +110,94 @@ function parseHeaderTableTokens(graph) {
   return byToken;
 }
 
+/**
+ * Variante lecture/ecriture de extractSqlTableRefs : meme scan (fichier entier,
+ * commentaires retires, CTE exclus), mais separe les tables LUES (FROM/JOIN/USING)
+ * des tables ECRITES (INSERT INTO / UPDATE / DELETE FROM). Source unique utilisee par
+ * l'enrichisseur (pour remplir @db-read/@db-write) ET par le controle (union = refs).
+ */
+function extractSqlTableRefsRW(source) {
+  let s = String(source);
+  s = s.replace(/\/\*[\s\S]*?\*\//g, ' ');   // bloc JS (inclut le header)
+  s = s.replace(/\/\/[^\n]*/g, ' ');          // ligne JS
+  s = s.replace(/--[^\n]*/g, ' ');            // ligne SQL
+
+  const cte = new Set();
+  let m;
+  const cteRe = /\b(?:with|,)\s+([a-z_][a-z0-9_]*)\s+as\s*\(/gi;
+  while ((m = cteRe.exec(s)) !== null) cte.add(m[1].toLowerCase());
+
+  const reads = new Set();
+  const writes = new Set();
+  const tbl = '"?(?:public\\.)?"?([a-z_][a-z0-9_]*)"?';
+  const grab = (re, set) => {
+    let mm;
+    while ((mm = re.exec(s)) !== null) {
+      const t = mm[1].toLowerCase();
+      if (!cte.has(t)) set.add(t);
+    }
+  };
+  grab(new RegExp(`\\bfrom\\s+${tbl}`, 'gi'), reads);
+  grab(new RegExp(`\\bjoin\\s+${tbl}`, 'gi'), reads);
+  grab(new RegExp(`\\busing\\s+${tbl}`, 'gi'), reads);
+  grab(new RegExp(`\\binsert\\s+into\\s+${tbl}`, 'gi'), writes);
+  grab(new RegExp(`\\bupdate\\s+(?:only\\s+)?${tbl}`, 'gi'), writes);
+  grab(new RegExp(`\\bdelete\\s+from\\s+${tbl}`, 'gi'), writes);
+  // DELETE FROM est aussi capture par le motif FROM -> retirer des reads ce qui est ecrit.
+  for (const w of writes) reads.delete(w);
+  return { reads, writes };
+}
+
+/**
+ * Extrait les tables reellement referencees par le SQL STATIQUE d'un fichier source.
+ * Union lecture+ecriture. Conservateur (commentaires/CTE retires) ; le consommateur
+ * ANCRE ensuite sur les vraies tables live. SQL dynamique = @unknown assume.
+ */
+function extractSqlTableRefs(source) {
+  const { reads, writes } = extractSqlTableRefsRW(source);
+  return new Set([...reads, ...writes]);
+}
+
+/**
+ * Sous-declaration : pour chaque fichier scanne, les tables LIVE reellement touchees
+ * par son SQL statique doivent etre declarees dans @db-read / @db-write. Retourne les
+ * manques (table touchee mais non declaree). Ancre sur les tables live -> tres peu de
+ * faux positifs. Lecture seule, aucun exit.
+ */
+function analyzeHeaderSql(root = REPO_ROOT) {
+  const P = paths(root);
+  const live = parseLiveSchema(readOrThrow(P.liveSql, 'dump live'));
+  const graph = JSON.parse(readOrThrow(P.graph, 'docs/komerce-arch-header-graph.json'));
+  const nodes = (graph.nodes || []).filter(n => (n.type === 'file' || n.type === 'file-lite') && n.file);
+
+  const findings = []; // { file, missing:[tables] }
+  let totalUnder = 0;
+  for (const n of nodes) {
+    const abs = path.join(root, n.file);
+    if (!fs.existsSync(abs)) continue;
+    let src;
+    try { src = fs.readFileSync(abs, 'utf8'); } catch { continue; }
+
+    const declared = new Set([
+      ...(n.dbRead || []),
+      ...(n.dbWrite || [])
+    ].map(t => String(t).toLowerCase().trim()));
+
+    const refs = extractSqlTableRefs(src);
+    const missing = [...refs]
+      .filter(t => live.tables.has(t))   // ancrage : seulement de vraies tables live
+      .filter(t => !declared.has(t))     // touchee par le code, absente du header
+      .sort();
+
+    if (missing.length) {
+      findings.push({ file: n.file, missing });
+      totalUnder += missing.length;
+    }
+  }
+  findings.sort((a, b) => a.file.localeCompare(b.file));
+  return { paths: P, findings, totalUnder };
+}
+
 /** Budget brut (objet complet, meta-cles comprises) — pour mutation par reconcile. */
 function loadBudgetRaw(root = REPO_ROOT) {
   const p = paths(root).budget;
@@ -184,6 +272,7 @@ module.exports = {
   REPO_ROOT, paths,
   SQL_NOISE, PG_SYSTEM_RE, DOCTRINE_INVARIANTS, INFRA_TABLES,
   parseLiveSchema, parseDocumentedTokens, parseHeaderTableTokens,
+  extractSqlTableRefs, extractSqlTableRefsRW, analyzeHeaderSql,
   loadBudgetRaw, normalizeAllowlist, ratchetMaxOf,
   analyze
 };

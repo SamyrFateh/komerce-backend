@@ -51,3 +51,9 @@ jobs:
       # Echoue sur fiction hors liste blanche, fantome SCHEMA.md, ou cliquet depasse.
       - name: Schema drift vs live DB (bloquant)
         run: node scripts/arch-schema-drift-check.js
+
+      # BLOQUANT : headers <-> SQL reel du fichier (sous-declaration, §2.2).
+      # Une table live touchee par le code doit etre declaree dans @db-read/@db-write.
+      # Cliquet : ne bloque qu'au-dela du plafond fige (observation tant que non baseline).
+      - name: Headers vs SQL reel (bloquant)
+        run: node scripts/arch-header-sql-check.js

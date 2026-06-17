@@ -9,7 +9,7 @@
  * @depends       services/documents/document-service.js, db.js
  * @used-by       services/wallet-service.js (post-commit),
  *                routes/wallet.js (admin credit/reverse-lot, post-commit)
- * @db-read       wallet_transactions, wallet_credit_lots, users
+ * @db-read       users, wallet_credit_lots, wallet_transactions
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md

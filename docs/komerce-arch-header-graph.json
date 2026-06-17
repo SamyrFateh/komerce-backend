@@ -19,9 +19,9 @@
     "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 646,
-    "edges": 2802,
-    "dbTables": 106,
+    "graphNodes": 647,
+    "edges": 2852,
+    "dbTables": 107,
     "doctrines": 119,
     "impactAreas": 109,
     "unresolvedCodeEdges": 265
@@ -3604,7 +3604,8 @@
         "order_items",
         "orders",
         "parcels",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [
         "finance_config"
@@ -3734,7 +3735,16 @@
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "collective_workspaces",
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
+      ],
       "dbWrite": [],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -4220,7 +4230,12 @@
         "orders"
       ],
       "dbWrite": [
-        "orders"
+        "disputes",
+        "order_items",
+        "order_status_history",
+        "orders",
+        "scans",
+        "sms_log"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -4409,6 +4424,8 @@
         "users"
       ],
       "dbWrite": [
+        "basket_items",
+        "baskets",
         "incidents",
         "invoices",
         "order_items",
@@ -4421,7 +4438,9 @@
         "relais",
         "scan_events",
         "sms_log",
-        "users"
+        "users",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -4467,7 +4486,17 @@
         "users"
       ],
       "dbWrite": [
-        "users"
+        "basket_items",
+        "baskets",
+        "incidents",
+        "order_status_history",
+        "recipients",
+        "scan_events",
+        "scans",
+        "sms_log",
+        "users",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbTxn": [
         "resolve_before_behavior_change"
@@ -6045,6 +6074,7 @@
       "dbRead": [
         "orders",
         "recipients",
+        "refunds",
         "users"
       ],
       "dbWrite": [
@@ -6722,6 +6752,7 @@
         "parcel_items",
         "parcels",
         "products",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -7374,13 +7405,13 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "shared_carts",
+        "orders",
         "shared_cart_contributions",
-        "orders"
+        "shared_carts"
       ],
       "dbWrite": [
-        "shared_cart_contributions",
         "refunds",
+        "shared_cart_contributions",
         "transaction_documents"
       ],
       "dbTxn": [
@@ -7913,11 +7944,11 @@
         "users"
       ],
       "dbWrite": [
-        "wallet_transactions",
-        "wallet_credit_lots",
+        "transaction_documents",
         "wallet_consumptions",
-        "wallets",
-        "transaction_documents"
+        "wallet_credit_lots",
+        "wallet_transactions",
+        "wallets"
       ],
       "dbTxn": [
         "ledger_append_only",
@@ -8307,6 +8338,7 @@
         "shared_carts"
       ],
       "dbWrite": [
+        "refunds",
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts"
@@ -8921,7 +8953,16 @@
       "depends": [],
       "usedBy": [],
       "dbRead": [
-        "orders"
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "scan_events",
+        "signals"
       ],
       "dbWrite": [],
       "dbTxn": [
@@ -9058,6 +9099,7 @@
       "dbRead": [
         "orders",
         "recipients",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -9100,9 +9142,9 @@
         "services/refund-service.js (post-commit)"
       ],
       "dbRead": [
-        "refunds",
+        "invoices",
         "orders",
-        "invoices"
+        "refunds"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -9144,9 +9186,9 @@
         "services/wallet-service.js (post-commit)"
       ],
       "dbRead": [
-        "wallet_transactions",
+        "users",
         "wallet_credit_lots",
-        "users"
+        "wallet_transactions"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -10656,9 +10698,17 @@
       "depends": [],
       "usedBy": [],
       "dbRead": [
+        "charges",
         "competitor_prices",
+        "customs_categories",
+        "finance_config",
+        "order_items",
+        "orders",
+        "pricing_components",
         "pricing_strategies",
-        "products"
+        "products",
+        "risk_provisions",
+        "users"
       ],
       "dbWrite": [
         "competitor_prices",
@@ -11880,6 +11930,7 @@
         "users"
       ],
       "dbWrite": [
+        "refunds",
         "shared_cart_contributions",
         "shared_cart_events"
       ],
@@ -13356,9 +13407,24 @@
       "table": "products"
     },
     {
+      "id": "db:relais",
+      "type": "db-table",
+      "table": "relais"
+    },
+    {
       "id": "db:customs_categories",
       "type": "db-table",
       "table": "customs_categories"
+    },
+    {
+      "id": "db:collective_workspaces",
+      "type": "db-table",
+      "table": "collective_workspaces"
+    },
+    {
+      "id": "db:signals",
+      "type": "db-table",
+      "table": "signals"
     },
     {
       "id": "db:exchange_rates",
@@ -13406,14 +13472,29 @@
       "table": "business_rules_history"
     },
     {
+      "id": "db:disputes",
+      "type": "db-table",
+      "table": "disputes"
+    },
+    {
+      "id": "db:order_status_history",
+      "type": "db-table",
+      "table": "order_status_history"
+    },
+    {
+      "id": "db:scans",
+      "type": "db-table",
+      "table": "scans"
+    },
+    {
+      "id": "db:sms_log",
+      "type": "db-table",
+      "table": "sms_log"
+    },
+    {
       "id": "db:recipients",
       "type": "db-table",
       "table": "recipients"
-    },
-    {
-      "id": "db:relais",
-      "type": "db-table",
-      "table": "relais"
     },
     {
       "id": "db:partners",
@@ -13426,6 +13507,16 @@
       "table": "suppliers_stats"
     },
     {
+      "id": "db:basket_items",
+      "type": "db-table",
+      "table": "basket_items"
+    },
+    {
+      "id": "db:baskets",
+      "type": "db-table",
+      "table": "baskets"
+    },
+    {
       "id": "db:incidents",
       "type": "db-table",
       "table": "incidents"
@@ -13434,11 +13525,6 @@
       "id": "db:invoices",
       "type": "db-table",
       "table": "invoices"
-    },
-    {
-      "id": "db:order_status_history",
-      "type": "db-table",
-      "table": "order_status_history"
     },
     {
       "id": "db:parcel_items",
@@ -13451,9 +13537,14 @@
       "table": "scan_events"
     },
     {
-      "id": "db:sms_log",
+      "id": "db:wallet_transactions",
       "type": "db-table",
-      "table": "sms_log"
+      "table": "wallet_transactions"
+    },
+    {
+      "id": "db:wallets",
+      "type": "db-table",
+      "table": "wallets"
     },
     {
       "id": "db:loyalty_tiers",
@@ -13484,11 +13575,6 @@
       "id": "db:order_incidents",
       "type": "db-table",
       "table": "order_incidents"
-    },
-    {
-      "id": "db:scans",
-      "type": "db-table",
-      "table": "scans"
     },
     {
       "id": "db:shipments",
@@ -13601,11 +13687,6 @@
       "table": "cart_contributions"
     },
     {
-      "id": "db:signals",
-      "type": "db-table",
-      "table": "signals"
-    },
-    {
       "id": "db:sourcing_candidate_events",
       "type": "db-table",
       "table": "sourcing_candidate_events"
@@ -13636,24 +13717,14 @@
       "table": "v_unsold_pipeline"
     },
     {
-      "id": "db:wallet_transactions",
-      "type": "db-table",
-      "table": "wallet_transactions"
-    },
-    {
-      "id": "db:wallet_credit_lots",
-      "type": "db-table",
-      "table": "wallet_credit_lots"
-    },
-    {
       "id": "db:wallet_consumptions",
       "type": "db-table",
       "table": "wallet_consumptions"
     },
     {
-      "id": "db:wallets",
+      "id": "db:wallet_credit_lots",
       "type": "db-table",
-      "table": "wallets"
+      "table": "wallet_credit_lots"
     },
     {
       "id": "db:alerts",
@@ -13669,11 +13740,6 @@
       "id": "db:collective_workspace_items",
       "type": "db-table",
       "table": "collective_workspace_items"
-    },
-    {
-      "id": "db:collective_workspaces",
-      "type": "db-table",
-      "table": "collective_workspaces"
     },
     {
       "id": "db:collective_payment_sessions",
@@ -13759,16 +13825,6 @@
       "id": "db:shared_cart_commitments",
       "type": "db-table",
       "table": "shared_cart_commitments"
-    },
-    {
-      "id": "db:basket_items",
-      "type": "db-table",
-      "table": "basket_items"
-    },
-    {
-      "id": "db:baskets",
-      "type": "db-table",
-      "table": "baskets"
     },
     {
       "id": "db:shared_cart_estimations",
@@ -19245,6 +19301,12 @@
     },
     {
       "from": "routes/admin-costing.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/admin-costing.js",
       "to": "db:finance_config",
       "type": "db-write",
       "label": "finance_config"
@@ -19386,6 +19448,54 @@
       "to": "routes/admin-dashboard.js",
       "type": "uses",
       "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/admin-dashboard.js",
+      "to": "db:signals",
+      "type": "db-read",
+      "label": "signals"
     },
     {
       "from": "routes/admin-dashboard.js",
@@ -19977,9 +20087,39 @@
     },
     {
       "from": "routes/admin/delete-order-cascade.js",
+      "to": "db:disputes",
+      "type": "db-write",
+      "label": "disputes"
+    },
+    {
+      "from": "routes/admin/delete-order-cascade.js",
+      "to": "db:order_items",
+      "type": "db-write",
+      "label": "order_items"
+    },
+    {
+      "from": "routes/admin/delete-order-cascade.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "routes/admin/delete-order-cascade.js",
       "to": "db:orders",
       "type": "db-write",
       "label": "orders"
+    },
+    {
+      "from": "routes/admin/delete-order-cascade.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
+    },
+    {
+      "from": "routes/admin/delete-order-cascade.js",
+      "to": "db:sms_log",
+      "type": "db-write",
+      "label": "sms_log"
     },
     {
       "from": "routes/admin/delete-order-cascade.js",
@@ -20265,6 +20405,18 @@
     },
     {
       "from": "routes/admin/system.js",
+      "to": "db:basket_items",
+      "type": "db-write",
+      "label": "basket_items"
+    },
+    {
+      "from": "routes/admin/system.js",
+      "to": "db:baskets",
+      "type": "db-write",
+      "label": "baskets"
+    },
+    {
+      "from": "routes/admin/system.js",
       "to": "db:incidents",
       "type": "db-write",
       "label": "incidents"
@@ -20343,6 +20495,18 @@
     },
     {
       "from": "routes/admin/system.js",
+      "to": "db:wallet_transactions",
+      "type": "db-write",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "routes/admin/system.js",
+      "to": "db:wallets",
+      "type": "db-write",
+      "label": "wallets"
+    },
+    {
+      "from": "routes/admin/system.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -20397,9 +20561,69 @@
     },
     {
       "from": "routes/admin/users.js",
+      "to": "db:basket_items",
+      "type": "db-write",
+      "label": "basket_items"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:baskets",
+      "type": "db-write",
+      "label": "baskets"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:incidents",
+      "type": "db-write",
+      "label": "incidents"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:order_status_history",
+      "type": "db-write",
+      "label": "order_status_history"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:recipients",
+      "type": "db-write",
+      "label": "recipients"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:scan_events",
+      "type": "db-write",
+      "label": "scan_events"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:scans",
+      "type": "db-write",
+      "label": "scans"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:sms_log",
+      "type": "db-write",
+      "label": "sms_log"
+    },
+    {
+      "from": "routes/admin/users.js",
       "to": "db:users",
       "type": "db-write",
       "label": "users"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:wallet_transactions",
+      "type": "db-write",
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "routes/admin/users.js",
+      "to": "db:wallets",
+      "type": "db-write",
+      "label": "wallets"
     },
     {
       "from": "routes/admin/users.js",
@@ -22467,6 +22691,12 @@
     },
     {
       "from": "routes/orders/cancel.js",
+      "to": "db:refunds",
+      "type": "db-read",
+      "label": "refunds"
+    },
+    {
+      "from": "routes/orders/cancel.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -23535,6 +23765,12 @@
     },
     {
       "from": "routes/parcels.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "routes/parcels.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -24471,18 +24707,6 @@
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
-      "to": "db:shared_carts",
-      "type": "db-read",
-      "label": "shared_carts"
-    },
-    {
-      "from": "routes/shared-cart-refund-admin.js",
-      "to": "db:shared_cart_contributions",
-      "type": "db-read",
-      "label": "shared_cart_contributions"
-    },
-    {
-      "from": "routes/shared-cart-refund-admin.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -24490,14 +24714,26 @@
     {
       "from": "routes/shared-cart-refund-admin.js",
       "to": "db:shared_cart_contributions",
-      "type": "db-write",
+      "type": "db-read",
       "label": "shared_cart_contributions"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:shared_carts",
+      "type": "db-read",
+      "label": "shared_carts"
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
       "to": "db:refunds",
       "type": "db-write",
       "label": "refunds"
+    },
+    {
+      "from": "routes/shared-cart-refund-admin.js",
+      "to": "db:shared_cart_contributions",
+      "type": "db-write",
+      "label": "shared_cart_contributions"
     },
     {
       "from": "routes/shared-cart-refund-admin.js",
@@ -25293,15 +25529,9 @@
     },
     {
       "from": "routes/wallet.js",
-      "to": "db:wallet_transactions",
+      "to": "db:transaction_documents",
       "type": "db-write",
-      "label": "wallet_transactions"
-    },
-    {
-      "from": "routes/wallet.js",
-      "to": "db:wallet_credit_lots",
-      "type": "db-write",
-      "label": "wallet_credit_lots"
+      "label": "transaction_documents"
     },
     {
       "from": "routes/wallet.js",
@@ -25311,15 +25541,21 @@
     },
     {
       "from": "routes/wallet.js",
-      "to": "db:wallets",
+      "to": "db:wallet_credit_lots",
       "type": "db-write",
-      "label": "wallets"
+      "label": "wallet_credit_lots"
     },
     {
       "from": "routes/wallet.js",
-      "to": "db:transaction_documents",
+      "to": "db:wallet_transactions",
       "type": "db-write",
-      "label": "transaction_documents"
+      "label": "wallet_transactions"
+    },
+    {
+      "from": "routes/wallet.js",
+      "to": "db:wallets",
+      "type": "db-write",
+      "label": "wallets"
     },
     {
       "from": "routes/wallet.js",
@@ -25794,6 +26030,12 @@
       "to": "db:shared_carts",
       "type": "db-read",
       "label": "shared_carts"
+    },
+    {
+      "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
@@ -26493,9 +26735,63 @@
     },
     {
       "from": "services/dashboard-metrics.js",
+      "to": "db:collective_payment_sessions",
+      "type": "db-read",
+      "label": "collective_payment_sessions"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:collective_workspace_contributions",
+      "type": "db-read",
+      "label": "collective_workspace_contributions"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:collective_workspace_items",
+      "type": "db-read",
+      "label": "collective_workspace_items"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:collective_workspaces",
+      "type": "db-read",
+      "label": "collective_workspaces"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:order_item_cost_imputations",
+      "type": "db-read",
+      "label": "order_item_cost_imputations"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-read",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/dashboard-metrics.js",
+      "to": "db:signals",
+      "type": "db-read",
+      "label": "signals"
     },
     {
       "from": "services/dashboard-metrics.js",
@@ -26697,6 +26993,12 @@
     },
     {
       "from": "services/documents/pickup-proof.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/documents/pickup-proof.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -26745,9 +27047,9 @@
     },
     {
       "from": "services/documents/refund-receipt.js",
-      "to": "db:refunds",
+      "to": "db:invoices",
       "type": "db-read",
-      "label": "refunds"
+      "label": "invoices"
     },
     {
       "from": "services/documents/refund-receipt.js",
@@ -26757,9 +27059,9 @@
     },
     {
       "from": "services/documents/refund-receipt.js",
-      "to": "db:invoices",
+      "to": "db:refunds",
       "type": "db-read",
-      "label": "invoices"
+      "label": "refunds"
     },
     {
       "from": "services/documents/refund-receipt.js",
@@ -26805,9 +27107,9 @@
     },
     {
       "from": "services/documents/wallet-receipt.js",
-      "to": "db:wallet_transactions",
+      "to": "db:users",
       "type": "db-read",
-      "label": "wallet_transactions"
+      "label": "users"
     },
     {
       "from": "services/documents/wallet-receipt.js",
@@ -26817,9 +27119,9 @@
     },
     {
       "from": "services/documents/wallet-receipt.js",
-      "to": "db:users",
+      "to": "db:wallet_transactions",
       "type": "db-read",
-      "label": "users"
+      "label": "wallet_transactions"
     },
     {
       "from": "services/documents/wallet-receipt.js",
@@ -28767,9 +29069,45 @@
     },
     {
       "from": "services/pricing-strategy-service.js",
+      "to": "db:charges",
+      "type": "db-read",
+      "label": "charges"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
       "to": "db:competitor_prices",
       "type": "db-read",
       "label": "competitor_prices"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:customs_categories",
+      "type": "db-read",
+      "label": "customs_categories"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:finance_config",
+      "type": "db-read",
+      "label": "finance_config"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:pricing_components",
+      "type": "db-read",
+      "label": "pricing_components"
     },
     {
       "from": "services/pricing-strategy-service.js",
@@ -28782,6 +29120,18 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:risk_provisions",
+      "type": "db-read",
+      "label": "risk_provisions"
+    },
+    {
+      "from": "services/pricing-strategy-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
     },
     {
       "from": "services/pricing-strategy-service.js",
@@ -30570,6 +30920,12 @@
       "to": "db:users",
       "type": "db-read",
       "label": "users"
+    },
+    {
+      "from": "services/shared-cart-refund-queue.js",
+      "to": "db:refunds",
+      "type": "db-write",
+      "label": "refunds"
     },
     {
       "from": "services/shared-cart-refund-queue.js",
@@ -35269,7 +35625,8 @@
         "order_items",
         "orders",
         "parcels",
-        "products"
+        "products",
+        "relais"
       ],
       "dbWrite": [
         "finance_config"
@@ -35291,6 +35648,7 @@
         "db:orders",
         "db:parcels",
         "db:products",
+        "db:relais",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:economic-engine",
@@ -35384,7 +35742,16 @@
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "collective_workspaces",
+        "customs_shipments",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "relais",
+        "signals"
+      ],
       "dbWrite": [],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -35395,6 +35762,14 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:collective_workspaces",
+        "db:customs_shipments",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "db:parcels",
+        "db:relais",
+        "db:signals",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -35797,7 +36172,12 @@
         "orders"
       ],
       "dbWrite": [
-        "orders"
+        "disputes",
+        "order_items",
+        "order_status_history",
+        "orders",
+        "scans",
+        "sms_log"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -35809,7 +36189,12 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:disputes",
+        "db:order_items",
+        "db:order_status_history",
         "db:orders",
+        "db:scans",
+        "db:sms_log",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:checkout",
@@ -35968,6 +36353,8 @@
         "users"
       ],
       "dbWrite": [
+        "basket_items",
+        "baskets",
         "incidents",
         "invoices",
         "order_items",
@@ -35980,7 +36367,9 @@
         "relais",
         "scan_events",
         "sms_log",
-        "users"
+        "users",
+        "wallet_transactions",
+        "wallets"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -35991,6 +36380,8 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:basket_items",
+        "db:baskets",
         "db:incidents",
         "db:invoices",
         "db:order_items",
@@ -36004,6 +36395,8 @@
         "db:scan_events",
         "db:sms_log",
         "db:users",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -36031,7 +36424,17 @@
         "users"
       ],
       "dbWrite": [
-        "users"
+        "basket_items",
+        "baskets",
+        "incidents",
+        "order_status_history",
+        "recipients",
+        "scan_events",
+        "scans",
+        "sms_log",
+        "users",
+        "wallet_transactions",
+        "wallets"
       ],
       "doctrines": [
         "resolve_before_behavior_change"
@@ -36042,8 +36445,18 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:basket_items",
+        "db:baskets",
+        "db:incidents",
+        "db:order_status_history",
         "db:orders",
+        "db:recipients",
+        "db:scan_events",
+        "db:scans",
+        "db:sms_log",
         "db:users",
+        "db:wallet_transactions",
+        "db:wallets",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -37405,6 +37818,7 @@
       "dbRead": [
         "orders",
         "recipients",
+        "refunds",
         "users"
       ],
       "dbWrite": [
@@ -38035,6 +38449,7 @@
         "parcel_items",
         "parcels",
         "products",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -38056,6 +38471,7 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
+        "db:relais",
         "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
@@ -38632,13 +39048,13 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "shared_carts",
+        "orders",
         "shared_cart_contributions",
-        "orders"
+        "shared_carts"
       ],
       "dbWrite": [
-        "shared_cart_contributions",
         "refunds",
+        "shared_cart_contributions",
         "transaction_documents"
       ],
       "doctrines": [
@@ -39124,11 +39540,11 @@
         "users"
       ],
       "dbWrite": [
-        "wallet_transactions",
-        "wallet_credit_lots",
+        "transaction_documents",
         "wallet_consumptions",
-        "wallets",
-        "transaction_documents"
+        "wallet_credit_lots",
+        "wallet_transactions",
+        "wallets"
       ],
       "doctrines": [
         "wallet_ledger_trace",
@@ -39473,6 +39889,7 @@
         "shared_carts"
       ],
       "dbWrite": [
+        "refunds",
         "shared_cart_contributions",
         "shared_cart_events",
         "shared_carts"
@@ -39484,6 +39901,7 @@
         "shared-cart"
       ],
       "mustCheck": [
+        "db:refunds",
         "db:shared_cart_contributions",
         "db:shared_cart_events",
         "db:shared_carts",
@@ -39999,7 +40417,16 @@
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "collective_payment_sessions",
+        "collective_workspace_contributions",
+        "collective_workspace_items",
+        "collective_workspaces",
+        "order_item_cost_imputations",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "scan_events",
+        "signals"
       ],
       "dbWrite": [],
       "doctrines": [
@@ -40010,7 +40437,16 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:collective_payment_sessions",
+        "db:collective_workspace_contributions",
+        "db:collective_workspace_items",
+        "db:collective_workspaces",
+        "db:order_item_cost_imputations",
+        "db:order_item_real_cost_allocations",
         "db:orders",
+        "db:parcels",
+        "db:scan_events",
+        "db:signals",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard"
@@ -40126,6 +40562,7 @@
       "dbRead": [
         "orders",
         "recipients",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -40140,6 +40577,7 @@
       "mustCheck": [
         "db:orders",
         "db:recipients",
+        "db:relais",
         "db:transaction_documents",
         "db:users",
         "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
@@ -40165,9 +40603,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "refunds",
+        "invoices",
         "orders",
-        "invoices"
+        "refunds"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -40209,9 +40647,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "wallet_transactions",
+        "users",
         "wallet_credit_lots",
-        "users"
+        "wallet_transactions"
       ],
       "dbWrite": [
         "transaction_documents"
@@ -41537,9 +41975,17 @@
       "directUsedBy": [],
       "ownedFiles": [],
       "dbRead": [
+        "charges",
         "competitor_prices",
+        "customs_categories",
+        "finance_config",
+        "order_items",
+        "orders",
+        "pricing_components",
         "pricing_strategies",
-        "products"
+        "products",
+        "risk_provisions",
+        "users"
       ],
       "dbWrite": [
         "competitor_prices",
@@ -41555,11 +42001,19 @@
         "economic-engine"
       ],
       "mustCheck": [
+        "db:charges",
         "db:competitor_prices",
+        "db:customs_categories",
+        "db:finance_config",
+        "db:order_items",
+        "db:orders",
         "db:price_history",
+        "db:pricing_components",
         "db:pricing_strategies",
         "db:pricing_strategy_history",
         "db:products",
+        "db:risk_provisions",
+        "db:users",
         "doctrine:resolve_before_behavior_change",
         "impact:economic-engine"
       ]
@@ -42651,6 +43105,7 @@
         "users"
       ],
       "dbWrite": [
+        "refunds",
         "shared_cart_contributions",
         "shared_cart_events"
       ],
@@ -42661,6 +43116,7 @@
         "shared-cart"
       ],
       "mustCheck": [
+        "db:refunds",
         "db:shared_cart_contributions",
         "db:shared_cart_events",
         "db:shared_carts",

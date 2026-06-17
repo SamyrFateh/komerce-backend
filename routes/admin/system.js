@@ -9,7 +9,7 @@
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
  * @db-read       order_items, orders, partners, products, relais, users
- * @db-write      incidents, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users
+ * @db-write      basket_items, baskets, incidents, invoices, order_items, order_status_history, orders, parcel_items, parcels, partners, products, relais, scan_events, sms_log, users, wallet_transactions, wallets
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
  * @impact-areas  dashboard, admin-dashboard

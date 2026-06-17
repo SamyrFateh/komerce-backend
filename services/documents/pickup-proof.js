@@ -9,7 +9,7 @@
  * @depends       services/documents/document-service.js, db.js
  * @used-by       services/verify-qr-collection.js (post-commit),
  *                routes/orders/status.js (post-commit, transition collected)
- * @db-read       orders, recipients, users
+ * @db-read       orders, recipients, relais, users
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md

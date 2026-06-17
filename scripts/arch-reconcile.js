@@ -6,11 +6,10 @@
  * @domain       governance
  * @layer        tooling
  * @criticality  high
- * @purpose      Reprise automatique du budget apres correction. Quand une fiction est
- *               resolue (DB corrigee OU header re-tagge) ou qu'une table est documentee,
- *               recale le budget tout seul : elague les entrees d'allowlist resolues et
- *               abaisse le cliquet. Supprime la corvee d'edition JSON manuelle.
- * @inputs       scripts/lib/arch-drift-core.js (analyse), scripts/arch-debt-budget.json
+ * @purpose      Reprise automatique du budget apres correction. Elague les entrees
+ *               d'allowlist resolues et abaisse les cliquets a la mesure courante.
+ *               Supprime la corvee d'edition JSON manuelle.
+ * @inputs       scripts/lib/arch-drift-core.js, scripts/arch-debt-budget.json
  * @outputs      stdout report, [--write] reecrit scripts/arch-debt-budget.json, exit code
  * @depends      scripts/lib/arch-drift-core.js
  * @used-by      .github/workflows/governance.yml, scripts/setup-hooks.sh
@@ -21,9 +20,11 @@
  * @impact-areas governance, ci
  *
  * Asymetrie volontaire :
- *   - RESOUDRE est automatique : on elague une fiction disparue, on abaisse le cliquet.
- *   - SUPPRIMER reste un acte humain : reconcile n'AJOUTE jamais a l'allowlist et ne
- *     RELEVE jamais le cliquet. Un nouveau bug reste donc bloquant (pas d'auto-masquage).
+ *   - RESOUDRE est automatique : elague une fiction disparue, abaisse un cliquet.
+ *   - SUPPRIMER reste humain : n'AJOUTE jamais a l'allowlist, ne RELEVE jamais un cliquet.
+ *     Un nouveau probleme reste donc bloquant (pas d'auto-masquage).
+ *
+ * Cliquets geres : liveTablesUndocumented (drift), headerUnderDeclaration (headers<->SQL).
  *
  * Modes :
  *   node scripts/arch-reconcile.js            # dry-run : montre le plan, n'ecrit rien
@@ -37,10 +38,30 @@ const core = require('./lib/arch-drift-core');
 const WRITE = process.argv.includes('--write');
 const CHECK = process.argv.includes('--check');
 
+const RATCHET_LABELS = {
+  liveTablesUndocumented: 'Tables live non documentees',
+  headerUnderDeclaration: 'Sous-declaration headers<->SQL'
+};
+
+function metricState(key, measured, currentRaw) {
+  const current = (typeof currentRaw === 'number') ? currentRaw : Infinity;
+  const newVal = (current === Infinity || measured < current) ? measured : current;
+  return {
+    key,
+    measured,
+    current,
+    newVal,
+    isBaseline: current === Infinity,                     // 1re definition du plafond (opt-in)
+    changes: current !== newVal && newVal !== Infinity,  // abaissement ou baseline
+    over: current !== Infinity && measured > current      // regression : reste a la main
+  };
+}
+
 function main() {
-  let a;
+  let a, headerSql;
   try {
     a = core.analyze();
+    headerSql = core.analyzeHeaderSql();
   } catch (e) {
     console.error('FATAL: ' + e.message);
     process.exit(2);
@@ -51,19 +72,19 @@ function main() {
     console.error('FATAL: scripts/arch-debt-budget.json absent ou illisible.');
     process.exit(2);
   }
+  const ratchet = budget.ratchet || {};
 
-  // ---- Reprises AUTO possibles ----
   // 1. Allowlist : entrees resolues (fiction disparue) a elaguer.
   const toPrune = a.allowlistResolved.slice().sort();
 
-  // 2. Cliquet : abaisser a la mesure courante si elle est plus basse (jamais relever).
-  const measured = a.undocumented.length;
-  const currentMax = a.ratchetMax; // Infinity si non defini
-  const canLower = currentMax === Infinity ? true : measured < currentMax;
-  const newRatchet = canLower ? measured : currentMax;
-  const ratchetChanges = currentMax !== newRatchet && newRatchet !== Infinity;
+  // 2. Cliquets : abaisser/baseliner a la mesure courante.
+  const metrics = [
+    metricState('liveTablesUndocumented', a.undocumented.length, ratchet.liveTablesUndocumented),
+    metricState('headerUnderDeclaration', headerSql.totalUnder, ratchet.headerUnderDeclaration)
+  ];
+  const metricsToLower = metrics.filter(m => m.changes);
 
-  // ---- Ce que reconcile NE touche PAS (reste a la main) ----
+  // 3. Ce que reconcile NE touche PAS (reste a la main).
   const stillManual = [];
   if (a.fictionUnlisted.length) {
     stillManual.push(`Fiction hors liste (vrai bug a corriger, ou a inscrire volontairement dans l'allowlist) : ${a.fictionUnlisted.map(f => f.token).join(', ')}`);
@@ -71,15 +92,17 @@ function main() {
   if (a.ghosts.length) {
     stillManual.push(`Fantomes SCHEMA.md (retirer du doc, ces objets n'existent pas live) : ${a.ghosts.join(', ')}`);
   }
-  if (currentMax !== Infinity && measured > currentMax) {
-    stillManual.push(`Cliquet depasse : ${measured} tables non documentees > plafond ${currentMax} (documente-les dans SCHEMA.md ; reconcile ne releve jamais le plafond)`);
+  for (const m of metrics) {
+    if (m.over) {
+      stillManual.push(`${RATCHET_LABELS[m.key]} : ${m.measured} > plafond ${m.current} (a corriger ; reconcile ne releve jamais un cliquet)`);
+    }
   }
 
-  const hasAutoWork = toPrune.length > 0 || ratchetChanges;
+  const hasAutoWork = toPrune.length > 0 || metricsToLower.length > 0;
 
   // ---- Rapport ----
   console.log('============================================================');
-  console.log(' KOMERCE - Reconciliation du budget de drift');
+  console.log(' KOMERCE - Reconciliation du budget');
   console.log('============================================================');
   console.log(`Mode                    : ${WRITE ? '--write' : CHECK ? '--check' : 'dry-run'}`);
   console.log('');
@@ -90,10 +113,10 @@ function main() {
   } else {
     console.log('Allowlist a elaguer (fiction resolue) : (aucune)');
   }
-  if (ratchetChanges) {
-    console.log(`Cliquet liveTablesUndocumented        : ${currentMax === Infinity ? '(non defini)' : currentMax} -> ${newRatchet}`);
-  } else {
-    console.log(`Cliquet liveTablesUndocumented        : ${currentMax === Infinity ? '(non defini)' : currentMax} (inchange)`);
+  for (const m of metrics) {
+    const cur = m.current === Infinity ? '(non defini)' : m.current;
+    if (m.changes) console.log(`Cliquet ${m.key.padEnd(22)}: ${cur} -> ${m.newVal}`);
+    else           console.log(`Cliquet ${m.key.padEnd(22)}: ${cur} (inchange)`);
   }
   console.log('');
 
@@ -103,15 +126,22 @@ function main() {
     console.log('');
   }
 
-  // ---- Mode --check : verifie que le budget est deja a jour ----
+  // ---- Mode --check ----
+  // Ne bloque QUE sur ce qui rend le budget malhonnete : une fiction resolue laissee
+  // dans l'allowlist (la porte de drift bloque dessus). Baseliner/resserrer un cliquet
+  // est optionnel (offert par --write), jamais impose ici.
   if (CHECK) {
     console.log('============================================================');
-    if (hasAutoWork) {
-      console.error(`🚫 Budget non reconcilie : ${toPrune.length} entree(s) a elaguer` + (ratchetChanges ? `, cliquet a abaisser a ${newRatchet}` : '') + '.');
+    if (toPrune.length) {
+      console.error(`🚫 Budget non reconcilie : ${toPrune.length} entree(s) d'allowlist resolue(s) a elaguer (${toPrune.join(', ')}).`);
       console.error('   Lance : npm run arch:reconcile -- --write   puis commit du budget.');
       process.exit(1);
     }
-    console.log('✅ Budget deja reconcilie (rien a faire).');
+    console.log('✅ Budget reconcilie (allowlist a jour).');
+    const offer = metricsToLower.filter(m => m.isBaseline).map(m => m.key);
+    const tidy  = metricsToLower.filter(m => !m.isBaseline).map(m => m.key);
+    if (offer.length) console.log(`   (optionnel) cliquet a baseliner : ${offer.join(', ')} -> npm run arch:reconcile -- --write`);
+    if (tidy.length)  console.log(`   (optionnel) cliquet resserrable : ${tidy.join(', ')} -> npm run arch:reconcile -- --write`);
     process.exit(0);
   }
 
@@ -121,7 +151,6 @@ function main() {
     console.log('✅ Rien a reconcilier. Budget deja a jour.');
     process.exit(0);
   }
-
   if (!WRITE) {
     console.log('============================================================');
     console.log('DRY-RUN : aucun fichier modifie. Relance avec --write pour appliquer :');
@@ -129,24 +158,26 @@ function main() {
     process.exit(0);
   }
 
-  // --write : muter le budget en preservant meta-cles, notes et autres sections.
+  // --write : muter en preservant meta-cles, notes et autres sections.
   budget.knownDriftAllowlist = budget.knownDriftAllowlist || {};
   for (const t of toPrune) delete budget.knownDriftAllowlist[t];
 
-  if (ratchetChanges) {
+  if (metricsToLower.length) {
     budget.ratchet = budget.ratchet || {};
-    budget.ratchet.liveTablesUndocumented = newRatchet;
-    budget.ratchet._note_liveTablesUndocumented =
-      `Abaisse a ${newRatchet} par arch-reconcile (cliquet : ne peut que baisser).`;
+    for (const m of metricsToLower) {
+      budget.ratchet[m.key] = m.newVal;
+      budget.ratchet[`_note_${m.key}`] =
+        `Cale a ${m.newVal} par arch-reconcile (cliquet : ne peut que baisser).`;
+    }
   }
 
   fs.writeFileSync(a.paths.budget, JSON.stringify(budget, null, 2) + '\n', 'utf8');
 
   console.log('============================================================');
-  console.log(`✅ Budget reconcilie et reecrit : scripts/arch-debt-budget.json`);
+  console.log('✅ Budget reconcilie et reecrit : scripts/arch-debt-budget.json');
   if (toPrune.length) console.log(`   - ${toPrune.length} entree(s) d'allowlist elaguee(s)`);
-  if (ratchetChanges) console.log(`   - cliquet abaisse a ${newRatchet}`);
-  console.log('   Pense a committer le budget. La porte de drift repassera au vert.');
+  for (const m of metricsToLower) console.log(`   - cliquet ${m.key} cale a ${m.newVal}`);
+  console.log('   Pense a committer le budget.');
   process.exit(0);
 }
 

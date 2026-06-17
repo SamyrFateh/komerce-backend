@@ -9,7 +9,7 @@
  * @depends       services/wallet-service.js, middleware/auth.js, db.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-checkout.js, dashboards
  * @db-read       orders, users
- * @db-write      wallet_transactions, wallet_credit_lots, wallet_consumptions, wallets, transaction_documents
+ * @db-write      transaction_documents, wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets
  * @db-txn        ledger_append_only, credit_debit_idempotent
  * @doctrine      wallet_ledger_trace, credit_debit_idempotent, wallet_non_cadeau_cache
  * @impact-areas  checkout, wallet, orders, refunds, admin-dashboard

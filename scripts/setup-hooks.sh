@@ -193,6 +193,12 @@ if ! node scripts/arch-schema-drift-check.js >/dev/null 2>&1; then
   echo "   (fiction hors liste = vrai bug ; fantome = retirer de SCHEMA.md ; cliquet depasse = documenter)"
   exit 1
 fi
+if ! node scripts/arch-header-sql-check.js >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Sous-declaration headers<->SQL au-dela du cliquet.${NC}"
+  echo "   Detail : npm run arch:headers-sql"
+  echo "   (declare les tables manquantes dans @db-read/@db-write, ou reconcile si baisse legitime)"
+  exit 1
+fi
 
 echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes).${NC}"
 exit 0
