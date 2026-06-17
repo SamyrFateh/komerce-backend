@@ -12,10 +12,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 647
-- Edges: 2852
+- Graph nodes: 649
+- Edges: 2856
 - DB tables: 107
-- Doctrines: 119
+- Doctrines: 121
 - Impact areas: 109
 - Unresolved code edges: 265
 
@@ -371,6 +371,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/scan-engine.js -> incidents
 - WRITE services/inventory-service.js -> inventory_items
 - WRITE routes/admin/system.js -> invoices
+- WRITE routes/invoices.js -> invoices
 - WRITE services/invoice-service.js -> invoices
 - WRITE routes/admin-loyalty.js -> loyalty_rewards
 - WRITE services/loyalty-service.js -> loyalty_rewards
@@ -419,7 +420,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcelOptimizationService.js -> orders
 - WRITE services/payment-cash-confirm.js -> orders
 - WRITE services/payment-paypal.js -> orders
-- WRITE services/payment-stripe.js -> orders
 
 ## Unresolved Code Edges
 

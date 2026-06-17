@@ -19,10 +19,10 @@
     "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 647,
-    "edges": 2852,
+    "graphNodes": 649,
+    "edges": 2856,
     "dbTables": 107,
-    "doctrines": 119,
+    "doctrines": 121,
     "impactAreas": 109,
     "unresolvedCodeEdges": 265
   },
@@ -5645,18 +5645,23 @@
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "orders"
+        "orders",
+        "invoices"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "invoices"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "facture_apres_paiement_confirme",
+        "lien_facture_whatsapp_token_public"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "whatsapp"
       ],
       "version": "2026-06"
     },
@@ -14177,6 +14182,16 @@
       "doctrine": "invalidate_cache_after_mutation"
     },
     {
+      "id": "doctrine:facture_apres_paiement_confirme",
+      "type": "doctrine",
+      "doctrine": "facture_apres_paiement_confirme"
+    },
+    {
+      "id": "doctrine:lien_facture_whatsapp_token_public",
+      "type": "doctrine",
+      "doctrine": "lien_facture_whatsapp_token_public"
+    },
+    {
       "id": "doctrine:order_creation_idempotent",
       "type": "doctrine",
       "doctrine": "order_creation_idempotent"
@@ -22061,9 +22076,27 @@
     },
     {
       "from": "routes/invoices.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "db:invoices",
+      "type": "db-read",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "db:invoices",
+      "type": "db-write",
+      "label": "invoices"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "doctrine:facture_apres_paiement_confirme",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "facture_apres_paiement_confirme"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "doctrine:lien_facture_whatsapp_token_public",
+      "type": "doctrine",
+      "label": "lien_facture_whatsapp_token_public"
     },
     {
       "from": "routes/invoices.js",
@@ -22076,6 +22109,12 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "routes/invoices.js",
+      "to": "impact:whatsapp",
+      "type": "impact",
+      "label": "whatsapp"
     },
     {
       "from": "routes/logistics.js",
@@ -37429,22 +37468,30 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "orders",
+        "invoices"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "invoices"
+      ],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "facture_apres_paiement_confirme",
+        "lien_facture_whatsapp_token_public"
       ],
       "impactAreas": [
         "orders",
-        "checkout"
+        "checkout",
+        "whatsapp"
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:invoices",
         "db:orders",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:facture_apres_paiement_confirme",
+        "doctrine:lien_facture_whatsapp_token_public",
         "impact:checkout",
         "impact:orders",
+        "impact:whatsapp",
         "middleware/auth.js"
       ]
     },
