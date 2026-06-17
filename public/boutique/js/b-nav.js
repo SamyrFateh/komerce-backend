@@ -170,14 +170,18 @@ export function switchView(tab) {
   const trackView  = document.getElementById('k-track-view');
   const groupView  = document.getElementById('k-group-view');
   const heroWrap   = document.getElementById('k-hero-fixed-wrap');
+  const stickyBar  = document.getElementById('k-sticky-bar');
+  const barSpacer  = document.getElementById('k-bar-spacer');
   const pageScroll = dom.pageScroll;
   const promoSec   = document.getElementById('k-promos-section');
-  if (catalog)   catalog.classList.toggle('u-hidden', tab !== 'shop');
-  if (favView)   favView.classList.toggle('show', tab === 'fav');
-  if (trackView) trackView.classList.toggle('show', tab === 'track');
-  if (groupView) groupView.classList.toggle('show', tab === 'group');
-  if (promoSec)  promoSec.classList.toggle('u-hidden', tab !== 'shop');
-  if (heroWrap)  heroWrap.classList.toggle('u-hidden', tab !== 'shop');
+  if (catalog)    catalog.classList.toggle('u-hidden', tab !== 'shop');
+  if (favView)    favView.classList.toggle('show', tab === 'fav');
+  if (trackView)  trackView.classList.toggle('show', tab === 'track');
+  if (groupView)  groupView.classList.toggle('show', tab === 'group');
+  if (promoSec)   promoSec.classList.toggle('u-hidden', tab !== 'shop');
+  if (heroWrap)   heroWrap.classList.toggle('u-hidden', tab !== 'shop');
+  if (stickyBar)  stickyBar.classList.toggle('u-hidden', tab !== 'shop');
+  if (barSpacer)  barSpacer.classList.toggle('u-hidden', tab !== 'shop');
 
   // Notifier les modules desktop (sidebar, merch cards, promo strip)
   bus.emit('view:changed', tab);

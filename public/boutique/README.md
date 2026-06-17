@@ -1,5 +1,17 @@
 # Frontend Boutique Komerce
 
+> ### ⛔ Un hook te bloque au `commit` / `push` ? Lis ceci AVANT tout.
+> **Avant de committer**, lance la porte en local — ça évite l'écrasante majorité des blocages :
+> ```bash
+> npm run arch:gate && npm run arch:doctrine
+> ```
+> **Si un hook te bloque quand même : ne bypasse pas par réflexe.** Le runbook donne, pour chaque
+> message d'erreur, le diagnostic et la résolution exacte :
+> → [`doc/RUNBOOK_DEBLOCAGE_HOOKS.md`](./doc/RUNBOOK_DEBLOCAGE_HOOKS.md) (copie racine : `../../RUNBOOK_DEBLOCAGE_HOOKS.md`)
+>
+> `--no-verify` est une soupape d'urgence (faux positif confirmé ou urgence prod), pas une habitude —
+> la CI rejoue les mêmes portes de toute façon.
+
 > Point d'entrée local pour le frontend Boutique.  
 > En repo complet, lire d'abord `../../AGENTS.md`, `../../docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`, puis revenir ici.
 
