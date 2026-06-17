@@ -32,6 +32,7 @@ const router = express.Router();
 const invoiceService = require('../services/invoice-service');
 const db = require('../db');
 const { authenticate } = require('../middleware/auth');
+const { verifyInvoicePublicToken } = require('../services/invoice-public-token');
 const log = require('../utils/logger').child({ module: 'invoices' });
 
 // ── Middleware: authenticate (extracts JWT → req.user) + check ──
@@ -86,23 +87,21 @@ function renderInvoice(res, invoice, mode = 'a5') {
 // ── GET /api/invoices/public/:token — Public WhatsApp invoice link ──
 router.get('/public/:token', async (req, res) => {
   try {
-    const { rows: [invoice] } = await db.query(`
-      SELECT i.*, o.reference AS order_reference, p.reference AS parcel_reference
-      FROM invoices i
-      LEFT JOIN orders o ON o.id = i.order_id
-      LEFT JOIN parcels p ON p.id = i.parcel_id
-      WHERE i.public_token = $1
-        AND i.payment_status = 'paid'
-      LIMIT 1
-    `, [req.params.token]);
-
-    if (!invoice) {
+    const orderId = verifyInvoicePublicToken(req.params.token);
+    if (!orderId) {
       return res.status(404).json({ error: 'Facture introuvable ou non disponible' });
     }
 
+    const invoice = await invoiceService.getOrCreateInvoice(orderId);
     return renderInvoice(res, invoice, req.query.mode || 'a5');
   } catch (err) {
     log.error({ err }, '[INVOICE] Public generate error:');
+    if (err.message.includes('introuvable')) {
+      return res.status(404).json({ error: err.message });
+    }
+    if (err.message.includes('non payée')) {
+      return res.status(400).json({ error: err.message });
+    }
     res.status(500).json({ error: err.message });
   }
 });
