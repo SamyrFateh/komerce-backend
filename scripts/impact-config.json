@@ -42,123 +42,301 @@
   "architecture": {
     "routes": {
       "admin.js": {
-        "tables": ["users", "products", "orders", "relais", "exchange_rates", "shipments", "disputes"],
-        "services": ["email"],
-        "middleware": ["auth", "rate-limit"],
+        "tables": [
+          "users",
+          "products",
+          "orders",
+          "relais",
+          "exchange_rates",
+          "shipments",
+          "disputes"
+        ],
+        "services": [
+          "email"
+        ],
+        "middleware": [
+          "auth",
+          "rate-limit"
+        ],
         "critical": true
       },
       "auth.js": {
-        "tables": ["users"],
-        "services": ["email", "sms"],
-        "middleware": ["rate-limit"],
+        "tables": [
+          "users"
+        ],
+        "services": [
+          "email",
+          "sms"
+        ],
+        "middleware": [
+          "rate-limit"
+        ],
         "critical": true
       },
       "baskets.js": {
-        "tables": ["baskets", "basket_items", "products", "users"],
+        "tables": [
+          "baskets",
+          "basket_items",
+          "products",
+          "users"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "dashboard.js": {
-        "tables": ["orders", "order_items", "products", "users", "scans", "shipments", "sms_log", "disputes"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "users",
+          "scans",
+          "shipments",
+          "sms_log",
+          "disputes"
+        ],
         "services": [],
-        "middleware": ["auth"],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "finance.js": {
-        "tables": ["orders", "order_items", "products", "exchange_rates"],
-        "services": ["stripe"],
-        "middleware": ["auth"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "exchange_rates"
+        ],
+        "services": [
+          "stripe"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "health.js": {
         "tables": [],
-        "services": ["pg"],
+        "services": [
+          "pg"
+        ],
         "middleware": []
       },
       "logistics.js": {
-        "tables": ["shipments", "orders", "scans"],
+        "tables": [
+          "shipments",
+          "orders",
+          "scans"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "loyalty.js": {
-        "tables": ["orders", "users"],
+        "tables": [
+          "orders",
+          "users"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "modules.js": {
-        "tables": ["products", "ceremony_fabrics", "ceremony_models", "ceremony_order_items", "exchange_rates"],
+        "tables": [
+          "products",
+          "ceremony_fabrics",
+          "ceremony_models",
+          "ceremony_order_items",
+          "exchange_rates"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "orders.js": {
         "_note": "Routeur principal — délègue aux sous-fichiers routes/orders/",
-        "tables": ["orders", "order_items", "products", "baskets", "basket_items", "users", "recipients", "relais", "scans", "sms_log", "order_status_history", "shipments"],
-        "services": ["stripe", "sms", "email"],
-        "middleware": ["auth", "rate-limit"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "baskets",
+          "basket_items",
+          "users",
+          "recipients",
+          "relais",
+          "scans",
+          "sms_log",
+          "order_status_history",
+          "shipments"
+        ],
+        "services": [
+          "stripe",
+          "sms",
+          "email"
+        ],
+        "middleware": [
+          "auth",
+          "rate-limit"
+        ],
         "critical": true
       },
       "orders/create.js": {
         "_note": "Création commande — status initial = confirmed",
-        "tables": ["orders", "order_items", "products", "baskets", "basket_items", "users", "recipients", "relais"],
-        "services": ["sms", "email"],
-        "middleware": ["auth"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "baskets",
+          "basket_items",
+          "users",
+          "recipients",
+          "relais"
+        ],
+        "services": [
+          "sms",
+          "email"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "orders/status.js": {
         "_note": "Transitions de statut commande — VALID_TRANSITIONS enforced",
-        "tables": ["orders", "order_status_history", "sms_log"],
-        "services": ["sms"],
-        "middleware": ["auth"],
+        "tables": [
+          "orders",
+          "order_status_history",
+          "sms_log"
+        ],
+        "services": [
+          "sms"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "payments.js": {
-        "tables": ["orders", "sms_log"],
-        "services": ["stripe", "sms"],
-        "middleware": ["auth"],
+        "tables": [
+          "orders",
+          "sms_log"
+        ],
+        "services": [
+          "stripe",
+          "sms"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "pilotage.js": {
-        "tables": ["orders", "order_items", "products", "users", "scans", "shipments", "disputes", "relais", "exchange_rates"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "users",
+          "scans",
+          "shipments",
+          "disputes",
+          "relais",
+          "exchange_rates"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "pricing.js": {
-        "tables": ["exchange_rates"],
+        "tables": [
+          "exchange_rates"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "products.js": {
-        "tables": ["products"],
+        "tables": [
+          "products"
+        ],
         "services": [],
-        "middleware": ["auth", "upload"]
+        "middleware": [
+          "auth",
+          "upload"
+        ]
       },
       "purchasing.js": {
-        "tables": ["orders", "order_items", "products", "scans", "shipments"],
-        "services": ["sms"],
-        "middleware": ["auth"],
+        "tables": [
+          "orders",
+          "order_items",
+          "products",
+          "scans",
+          "shipments"
+        ],
+        "services": [
+          "sms"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "relais.js": {
-        "tables": ["relais"],
+        "tables": [
+          "relais"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "scans.js": {
-        "tables": ["scans", "orders", "order_items", "order_status_history", "sms_log", "recipients", "relais"],
-        "services": ["sms"],
-        "middleware": ["auth"],
+        "tables": [
+          "scans",
+          "orders",
+          "order_items",
+          "order_status_history",
+          "sms_log",
+          "recipients",
+          "relais"
+        ],
+        "services": [
+          "sms"
+        ],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       },
       "unsold.js": {
-        "tables": ["products", "order_items"],
+        "tables": [
+          "products",
+          "order_items"
+        ],
         "services": [],
-        "middleware": ["auth"]
+        "middleware": [
+          "auth"
+        ]
       },
       "parcels.js": {
         "_note": "CRUD colis + bootstrap + optimize — applique les link rules order↔parcel",
-        "tables": ["parcels", "parcel_items", "orders", "order_items", "products"],
+        "tables": [
+          "parcels",
+          "parcel_items",
+          "orders",
+          "order_items",
+          "products"
+        ],
         "services": [],
-        "middleware": ["auth"],
+        "middleware": [
+          "auth"
+        ],
         "critical": true
       }
     },
@@ -173,41 +351,77 @@
       },
       "upload.js": {
         "critical": false,
-        "affects": ["products"]
+        "affects": [
+          "products"
+        ]
       }
     },
     "utils": {
       "email.js": {
-        "services": ["nodemailer"],
-        "usedBy": ["auth", "orders", "admin"]
+        "services": [
+          "nodemailer"
+        ],
+        "usedBy": [
+          "auth",
+          "orders",
+          "admin"
+        ]
       },
       "pricing.js": {
         "services": [],
-        "usedBy": ["orders", "modules", "purchasing", "finance"]
+        "usedBy": [
+          "orders",
+          "modules",
+          "purchasing",
+          "finance"
+        ]
       },
       "rates.js": {
         "services": [],
-        "usedBy": ["orders", "pricing", "finance"]
+        "usedBy": [
+          "orders",
+          "pricing",
+          "finance"
+        ]
       },
       "reference.js": {
         "services": [],
-        "usedBy": ["orders", "purchasing", "scans"]
+        "usedBy": [
+          "orders",
+          "purchasing",
+          "scans"
+        ]
       },
       "sms.js": {
-        "services": ["africastalking"],
-        "usedBy": ["orders", "payments", "scans", "purchasing", "auth"],
+        "services": [
+          "africastalking"
+        ],
+        "usedBy": [
+          "orders",
+          "payments",
+          "scans",
+          "purchasing",
+          "auth"
+        ],
         "critical": true
       },
       "parcelOptimizationService.js": {
         "services": [],
-        "usedBy": ["parcels"],
+        "usedBy": [
+          "parcels"
+        ],
         "critical": false
       },
       "orderParcelLinkRules.js": {
         "_note": "Moteur de link rules order↔parcel (Option C). Modifie orders.status directement via R1/R2/R3.",
         "services": [],
-        "usedBy": ["parcels"],
-        "tables": ["orders", "parcels"],
+        "usedBy": [
+          "parcels"
+        ],
+        "tables": [
+          "orders",
+          "parcels"
+        ],
         "critical": true
       }
     },
@@ -222,7 +436,11 @@
       },
       "schema_extension.sql": {
         "critical": true,
-        "affects": ["modules", "orders", "disputes"]
+        "affects": [
+          "modules",
+          "orders",
+          "disputes"
+        ]
       },
       "seed.sql": {
         "critical": false,
@@ -250,46 +468,93 @@
     }
   },
   "tables": {
-    "critical": ["users", "orders", "order_items", "scans", "payments", "order_status_history"],
-    "sensitive": ["sms_log", "exchange_rates", "disputes", "shipments", "recipients", "parcels", "parcel_items"],
-    "standard": ["products", "baskets", "basket_items", "relais", "fabrics", "garment_models", "ceremony_fabrics", "ceremony_models", "ceremony_order_items"]
+    "critical": [
+      "users",
+      "orders",
+      "order_items",
+      "scans",
+      "payments",
+      "order_status_history"
+    ],
+    "sensitive": [
+      "sms_log",
+      "exchange_rates",
+      "disputes",
+      "shipments",
+      "recipients",
+      "parcels",
+      "parcel_items"
+    ],
+    "standard": [
+      "products",
+      "baskets",
+      "basket_items",
+      "relais",
+      "fabrics",
+      "garment_models",
+      "ceremony_fabrics",
+      "ceremony_models",
+      "ceremony_order_items"
+    ]
   },
   "externalServices": {
     "stripe": {
       "risk": "critical",
-      "files": ["routes/payments.js", "routes/orders.js", "routes/finance.js"]
+      "files": [
+        "routes/payments.js",
+        "routes/orders.js",
+        "routes/finance.js"
+      ]
     },
     "africastalking": {
       "risk": "critical",
-      "files": ["utils/sms.js"]
+      "files": [
+        "utils/sms.js"
+      ]
     },
     "nodemailer": {
       "risk": "high",
-      "files": ["utils/email.js"]
+      "files": [
+        "utils/email.js"
+      ]
     },
     "pg": {
       "risk": "critical",
-      "files": ["db.js", "db/index.js"]
+      "files": [
+        "db.js",
+        "db/index.js"
+      ]
     },
     "jsonwebtoken": {
       "risk": "critical",
-      "files": ["middleware/auth.js"]
+      "files": [
+        "middleware/auth.js"
+      ]
     },
     "bcryptjs": {
       "risk": "high",
-      "files": ["routes/auth.js"]
+      "files": [
+        "routes/auth.js"
+      ]
     },
     "multer": {
       "risk": "medium",
-      "files": ["middleware/upload.js"]
+      "files": [
+        "middleware/upload.js"
+      ]
     },
     "stripe_webhook": {
       "risk": "critical",
-      "files": ["routes/payments.js"]
+      "files": [
+        "routes/payments.js"
+      ]
     },
     "pdfkit": {
       "risk": "low",
-      "files": ["routes/orders.js", "routes/purchasing.js"]
+      "files": [
+        "routes/orders.js",
+        "routes/purchasing.js"
+      ]
     }
   },
   "securityPatterns": {
@@ -297,9 +562,9 @@
       "patterns": [
         "\\$\\{.*\\}.*(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE)",
         "\\+\\s*(?:req\\.|params\\.|query\\.|body\\.).*(?:SELECT|INSERT|UPDATE|DELETE)",
-        "'\\s*\\+\\s*(?:req\\.|params\\.|query\\.|body\\.)",
+        "[`'\"]\\s*\\+\\s*(?:req\\.|params\\.|query\\.|body\\.)",
         "(?:query|exec)\\s*\\(\\s*[`'\"].*\\$\\{",
-        "pool\\.query\\s*\\(\\s*[`'\"].*\\+\\s*(?:req|params|query|body)"
+        "\\w+\\.query\\s*\\(\\s*[`'\"].*\\+\\s*(?:req|params|query|body)"
       ],
       "severity": "critical",
       "score": 25
@@ -364,11 +629,37 @@
   "cascade": {
     "maxDepth": 5,
     "chains": {
-      "orders_full": ["orders.js", "payments.js", "purchasing.js", "scans.js", "loyalty.js"],
-      "scan_chain": ["scans.js", "orders.js", "sms.js", "order_status_history"],
-      "auth_chain": ["auth.js", "middleware/auth.js", "all_authenticated_routes"],
-      "payment_flow": ["payments.js", "orders.js", "sms.js", "email.js", "stripe"],
-      "parcel_chain": ["parcels.js", "orderParcelLinkRules.js", "orders.js", "sms.js"]
+      "orders_full": [
+        "orders.js",
+        "payments.js",
+        "purchasing.js",
+        "scans.js",
+        "loyalty.js"
+      ],
+      "scan_chain": [
+        "scans.js",
+        "orders.js",
+        "sms.js",
+        "order_status_history"
+      ],
+      "auth_chain": [
+        "auth.js",
+        "middleware/auth.js",
+        "all_authenticated_routes"
+      ],
+      "payment_flow": [
+        "payments.js",
+        "orders.js",
+        "sms.js",
+        "email.js",
+        "stripe"
+      ],
+      "parcel_chain": [
+        "parcels.js",
+        "orderParcelLinkRules.js",
+        "orders.js",
+        "sms.js"
+      ]
     }
   }
 }

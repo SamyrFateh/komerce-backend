@@ -199,6 +199,14 @@ if ! node scripts/arch-header-sql-check.js >/dev/null 2>&1; then
   echo "   (declare les tables manquantes dans @db-read/@db-write, ou reconcile si baisse legitime)"
   exit 1
 fi
+# 5. Doctrine sanitize_before_render : ne bloque QUE si une source externe (req/params/
+#    location/URL…) atterrit non echappee dans un sink HTML, sur les lignes ajoutees.
+if ! node scripts/arch-doctrine-sanitize-check.js >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Doctrine sanitize_before_render : entree externe rendue sans echappement.${NC}"
+  echo "   Detail : npm run arch:doctrine    (sweep complet : npm run arch:doctrine:all)"
+  echo "   (echappe la donnee avec sanitize(...) / escapeHtml(...) avant le rendu)"
+  exit 1
+fi
 
 echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes).${NC}"
 exit 0

@@ -30,6 +30,25 @@ try {
   process.exit(1);
 }
 
+// Liste d'exceptions nommee (optionnelle) : faux positifs confirmes, epingles par
+// fichier + categorie + sous-chaine (survit aux deplacements de lignes), avec raison.
+// Reconciliable comme l'allowlist de drift. Format :
+//   [{ "file": "routes/admin-costing.js", "category": "sqlInjection",
+//      "contains": "UPDATE finance_config SET", "reason": "colonnes en dur, valeurs $N" }]
+let SUPPRESS_LIST = [];
+try {
+  SUPPRESS_LIST = JSON.parse(fs.readFileSync(path.join(__dirname, 'impact-suppressions.json'), 'utf-8'));
+  if (!Array.isArray(SUPPRESS_LIST)) SUPPRESS_LIST = [];
+} catch { SUPPRESS_LIST = []; }
+
+function isNamedException(filePath, category, line) {
+  return SUPPRESS_LIST.some(e =>
+    e && e.category === category &&
+    typeof e.file === 'string' && filePath.replace(/\\/g, '/').endsWith(e.file) &&
+    typeof e.contains === 'string' && line.includes(e.contains)
+  );
+}
+
 // ── Arguments CLI ────────────────────────────────────────────
 const args = parseArgs(process.argv.slice(2));
 
@@ -167,7 +186,38 @@ function categorizeFile(filePath) {
 }
 
 // ── Analyse d'impact en cascade ──────────────────────────────
-function analyzeImpact(changedFiles) {
+// ── Lignes reellement ajoutees/modifiees (pour cibler le scan securite) ──
+// Retourne Map<file, Set<numeroLigneNouvelle>>, ou null en mode --all (pas de diff).
+// On ne veut JAMAIS bloquer sur du code preexistant qu'on n'a pas touche : le scan
+// securite ne regarde donc que les lignes du diff.
+function getChangedLineMap() {
+  if (args.all) return null;
+  const cmd = args.diff
+    ? `git diff --unified=0 ${args.diff}`
+    : 'git diff --cached --unified=0';
+  let out;
+  try {
+    out = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+  } catch {
+    return null; // en cas de doute, pas de filtrage -> comportement historique
+  }
+  const map = new Map();
+  let current = null;
+  for (const line of out.split('\n')) {
+    const f = line.match(/^\+\+\+ b\/(.+)$/);
+    if (f) { current = f[1]; if (!map.has(current)) map.set(current, new Set()); continue; }
+    if (line.startsWith('+++') || line.startsWith('---')) continue;
+    const h = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
+    if (h && current) {
+      const start = parseInt(h[1], 10);
+      const count = h[2] === undefined ? 1 : parseInt(h[2], 10);
+      for (let i = 0; i < count; i++) map.get(current).add(start + i);
+    }
+  }
+  return map;
+}
+
+function analyzeImpact(changedFiles, changedLines) {
   const impact = {
     files: new Set(),
     tables: new Set(),
@@ -270,10 +320,12 @@ function analyzeImpact(changedFiles) {
       }
     }
 
-    // — Security scan on file content —
+    // — Security scan on file content (limite aux lignes du diff) —
     if (fs.existsSync(file)) {
       const content = fs.readFileSync(file, 'utf-8');
-      const secIssues = scanSecurity(file, content);
+      // null => mode --all (scan complet). Sinon, uniquement les lignes changees.
+      const fileLines = changedLines ? (changedLines.get(file) || new Set()) : null;
+      const secIssues = scanSecurity(file, content, fileLines);
       impact.securityIssues.push(...secIssues);
     }
 
@@ -293,9 +345,71 @@ function analyzeImpact(changedFiles) {
   return impact;
 }
 
+// ── Suppresseurs "convention-aware" : ne pas flagger un motif sûr-par-convention ──
+// Chaque regle encode une convention du repo (echappeur, placeholder $N, auth routeur…).
+// Objectif : que la porte se declenche RAREMENT et JUSTE, pas qu'elle hurle a chaque commit.
+function isSafeInterp(x) {
+  // x = "${...}". Sûr si echappe / formate / identifiant / numerique / litteral.
+  return /sanitize\s*\(|escapeHtml\s*\(|DOMPurify|safe[A-Z]\w*|fmt\w*\s*\(/.test(x)
+      || /^\$\{\s*[\w.]*\bid\b[\w.]*\s*\}$/.test(x)        // ${p.id}, ${x.userId}
+      || /^\$\{\s*[-+*/%\d\s().]+\}$/.test(x)              // expression numerique
+      || /^\$\{\s*(['"]).*?\1\s*\}$/.test(x);              // litteral
+}
+
+function suppressSecurity(category, line, content) {
+  const L = line.trim();
+  switch (category) {
+    case 'sqlInjection': {
+      const concat = /['"`]\s*\+\s*(?:req|params|query|body)\b/.test(L); // concat d'entree utilisateur
+      // Commandes a identifiant pur (jamais de valeur utilisateur dans la chaine).
+      if (!concat && /\b(?:SAVEPOINT|RELEASE\s+SAVEPOINT|ROLLBACK\s+TO|TRUNCATE|DROP)\b/i.test(L)) return true;
+      // Neutraliser les interpolations SÛRES, puis voir s'il reste une interpolation crue.
+      let s = L
+        .replace(/\$\$\{[^}]*\}/g, ' ')                                     // placeholders $1,$2…
+        .replace(/\b(?:FROM|JOIN|INTO|UPDATE|TABLE)\s+\$\{[a-z_]\w*\}/gi, ' _tbl_ ') // table nue
+        .replace(/\$\{[a-z_]\w*\}\s*\./gi, ' _alias_.');                    // ${alias}.colonne
+      const remainingRaw = /\$\{[^}]*\}/.test(s);
+      if (!remainingRaw && !concat) return true;                           // plus rien de cru -> sûr
+      return false;                                                        // valeur interpolee crue -> on GARDE
+    }
+    case 'xss': {
+      if (!/innerHTML\s*\+?=/.test(L)) return false;       // autres patterns (document.write/res.send) : garder
+      const rhs = (L.split(/innerHTML\s*\+?=/)[1] || '');
+      if (/^\s*(?:''|""|``|'\s*'|"\s*")\s*;?\s*$/.test(rhs)) return true;      // = '' (vide)
+      if (/sanitize\s*\(|escapeHtml\s*\(|DOMPurify/.test(L)) return true;      // echappeur present
+      if (/\brender\w*\s*\(|\w*Markup\s*\(/.test(rhs)) return true;            // builder HTML (convention render*)
+      if (/\binnerHTML\b/.test(rhs)) return true;                             // concat d'innerHTML existant
+      const interps = rhs.match(/\$\{[^}]*\}/g) || [];
+      if (interps.length && interps.every(isSafeInterp)) return true;         // toutes interps echappees
+      return false;                                        // innerHTML = <var brute> -> on GARDE
+    }
+    case 'hardcodedSecrets': {
+      const m = L.match(/(?:password|passwd|secret|key|token|api[_-]?key|apikey)\s*[:=]\s*['"]([^'"]+)['"]/i);
+      if (!m) return false;                                // patterns STRIPE_/Bearer : garder
+      const val = m[1];
+      if (val.length < 16) return true;                    // trop court pour un secret reel
+      if (/^[a-z][a-z0-9_]*$/.test(val)) return true;      // label snake_case (ex: estimated_price)
+      return false;
+    }
+    case 'dangerousOps': {
+      if (/\b(?:child_process|execSync|spawnSync|spawn\s*\()/.test(L)) return false; // reels -> garder
+      if (/\beval\s*\(|new\s+Function\s*\(/.test(L)) return false;
+      if (/\.\s*exec\s*\(/.test(L)) return true;           // regex.exec()/methode -> faux positif
+      return false;                                        // TRUNCATE/DROP : reels, geres par le tiering
+    }
+    case 'missingAuth': {
+      // file-level : si le routeur cable l'auth, on ne flagge plus ses routes ligne a ligne
+      return /router\.use\(\s*[^)]*(?:authenticate|requireAuth|verifyToken|protect|requireRole|isAuth|ensureAuth)/.test(content)
+          || /\b(?:guard|requireRole|requireAdmin|requireAuth|authenticate)\b/.test(content);
+    }
+    default: return false;
+  }
+}
+
 // ── Scan de sécurité ─────────────────────────────────────────
-function scanSecurity(filePath, content) {
+function scanSecurity(filePath, content, changedLines) {
   const issues = [];
+  const seen = new Set();   // dedupe file:line:category (plusieurs patterns peuvent matcher la meme ligne)
   const lines = content.split('\n');
 
   for (const [category, config] of Object.entries(CONFIG.securityPatterns)) {
@@ -303,11 +417,20 @@ function scanSecurity(filePath, content) {
       try {
         const regex = new RegExp(pattern, 'gi');
         lines.forEach((line, idx) => {
+          // Ne scanner que les lignes reellement changees (si fournies).
+          if (changedLines && !changedLines.has(idx + 1)) return;
           // Ignore commentaires
           const trimmed = line.trim();
           if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) return;
 
           if (regex.test(line)) {
+            // Suppression convention-aware (echappeur, placeholder $N, auth routeur…)
+            if (suppressSecurity(category, line, content)) { regex.lastIndex = 0; return; }
+            // Exception nommee et justifiee (faux positif confirme, reconciliable)
+            if (isNamedException(filePath, category, line)) { regex.lastIndex = 0; return; }
+            const k = `${idx + 1}:${category}`;
+            if (seen.has(k)) { regex.lastIndex = 0; return; }
+            seen.add(k);
             issues.push({
               file: filePath,
               line: idx + 1,
@@ -366,10 +489,14 @@ function calculateScore(impact, changedFiles) {
   // Services externes
   score += impact.services.size * w.externalServiceAffected;
 
-  // Issues de sécurité
-  score += impact.securityIssues.filter(i => i.severity === 'critical').length * w.securityIssue;
-  score += impact.securityIssues.filter(i => i.severity === 'high').length * (w.securityIssue * 0.6);
-  score += impact.securityIssues.filter(i => i.severity === 'medium').length * (w.securityIssue * 0.3);
+  // Issues de sécurité — paliers : plein poids en contexte critique, avertissement sinon.
+  // Hors fichier critique, une alerte heuristique informe mais ne suffit pas a BLOCK.
+  const critSet = new Set(impact.criticalFiles);
+  for (const issue of impact.securityIssues) {
+    const sevMul = issue.severity === 'critical' ? 1 : issue.severity === 'high' ? 0.6 : 0.3;
+    const ctxMul = critSet.has(issue.file) ? 1 : 0.35;
+    score += w.securityIssue * sevMul * ctxMul;
+  }
 
   // Profondeur de cascade
   const maxCascadeDepth = Math.max(0, ...impact.cascadeChains.map(c => c.depth));
@@ -614,12 +741,13 @@ function generatePRComment(impact) {
 // ── Exécution principale ─────────────────────────────────────
 function main() {
   const changedFiles = getChangedFiles();
+  const changedLines = getChangedLineMap();
 
   if (args.verbose) {
     console.log(`\n📂 ${changedFiles.length} fichier(s) à analyser...\n`);
   }
 
-  const impact = analyzeImpact(changedFiles);
+  const impact = analyzeImpact(changedFiles, changedLines);
 
   // Sortie console (sauf si --json seul)
   if (!args.json || args.verbose) {
@@ -652,4 +780,9 @@ function main() {
 }
 
 // ── Go ! ─────────────────────────────────────────────────────
-main();
+if (require.main === module) main();
+
+module.exports = {
+  scanSecurity, suppressSecurity, isSafeInterp,
+  calculateScore, getLevel, getChangedLineMap, analyzeImpact
+};

@@ -30,7 +30,9 @@
     "db:sync": "npm run db:snapshot && npm run arch:reconcile:write && npm run arch:gate",
     "arch:headers-sql": "node scripts/arch-header-sql-check.js",
     "arch:enrich": "node scripts/enrich-komerce-arch-db-fields.js",
-    "arch:enrich:write": "node scripts/enrich-komerce-arch-db-fields.js --write"
+    "arch:enrich:write": "node scripts/enrich-komerce-arch-db-fields.js --write",
+    "arch:doctrine": "node scripts/arch-doctrine-sanitize-check.js",
+    "arch:doctrine:all": "node scripts/arch-doctrine-sanitize-check.js --all"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

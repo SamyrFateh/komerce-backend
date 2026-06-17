@@ -57,3 +57,9 @@ jobs:
       # Cliquet : ne bloque qu'au-dela du plafond fige (observation tant que non baseline).
       - name: Headers vs SQL reel (bloquant)
         run: node scripts/arch-header-sql-check.js
+
+      # BLOQUANT : doctrine sanitize_before_render. Bloque si une source externe
+      # (req/params/query/body, location, URL…) est rendue sans echappement dans un
+      # sink HTML, sur le diff de la PR. Backstop d'un --no-verify local.
+      - name: Doctrine sanitize_before_render (bloquant)
+        run: node scripts/arch-doctrine-sanitize-check.js --diff=origin/${{ github.base_ref || 'main' }}
