@@ -7,23 +7,23 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Totals
 
 - Scanned code files: 313
-- Files with full headers: 282
+- Files with full headers: 283
 - Files with lite headers: 30
-- Files with any headers: 312
-- Files without headers: 1
+- Files with any headers: 313
+- Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 649
-- Edges: 2848
+- Graph nodes: 654
+- Edges: 2867
 - DB tables: 107
 - Doctrines: 122
-- Impact areas: 108
-- Unresolved code edges: 276
+- Impact areas: 112
+- Unresolved code edges: 266
 
 ## Domains
 
 - auth: 18
 - bootstrap: 9
-- boutique: 36
+- boutique: 37
 - catalog: 25
 - checkout: 2
 - collective-workspace: 3
@@ -65,7 +65,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 103
 - state: 1
 - state-store: 1
-- ui-component: 39
+- ui-component: 40
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
@@ -158,6 +158,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/b-modal-desktop-enhancers.js — desktop-product-modal-enhancer (boutique, high, full)
 - public/boutique/js/b-modal-product.js — product-modal-content-renderer (boutique, high, full)
 - public/boutique/js/b-modal-suggestions.js — product-modal-suggestions (recommendations, high, full)
+- public/boutique/js/b-nav.js — boutique-nav (boutique, high, full)
 - public/boutique/js/b-pager.js — mobile-category-pager (catalog, high, full)
 - public/boutique/js/b-phone.js — phone-normalization-ui (auth, high, full)
 - public/boutique/js/b-scroll-owner.js — boutique-scroll-owner (boutique, high, full)
@@ -429,15 +430,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
-- uses: b-nav.js -> public/boutique/js/b-cart.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-catalog.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-checkout.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-favs.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-group-view.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-pager.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-scroll-owner.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/b-tracking.js (b-nav.js)
-- uses: b-nav.js -> public/boutique/js/group/group-helpers.js (b-nav.js)
 - uses: cancellation-flows -> services/order-status-machine.js (cancellation-flows)
 - uses: cart-surfaces -> public/boutique/js/b-mini-cart.js (cart-surfaces)
 - uses: checkout-flows -> services/order-service.js (checkout-flows)
@@ -465,7 +457,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
 - depends: public/boutique/js/b-utils.js -> fetch (fetch)
 - depends: public/boutique/js/b-utils.js -> Intl (Intl)
-- depends: public/boutique/js/boutique.js -> b-nav.js (b-nav.js)
 - depends: public/boutique/js/event-pay.js -> payment-api (payment-api)
 - depends: public/boutique/js/group/group-api.js -> fetch (fetch)
 - depends: public/boutique/js/komerce-api.js -> backend_api (backend_api)
@@ -543,10 +534,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: routes/client-tracking.js -> services/* (services/*)
 - depends: routes/collective-workspaces.js -> db.js (db.js)
 - depends: routes/collective-workspaces.js -> services/* (services/*)
+- depends: routes/config.js -> db.js (db.js)
+- depends: routes/config.js -> services/* (services/*)
+- depends: routes/dashboard-clients.js -> db.js (db.js)
+- depends: routes/dashboard-clients.js -> services/* (services/*)
+- depends: routes/dashboard-finance.js -> db.js (db.js)
+- depends: routes/dashboard-finance.js -> services/* (services/*)
+- depends: routes/dashboard-hub.js -> db.js (db.js)
+- depends: routes/dashboard-hub.js -> services/* (services/*)
+- depends: routes/dashboard-ops.js -> db.js (db.js)
+- depends: routes/dashboard-ops.js -> services/* (services/*)
 
 ## Files Still Without Headers Or Aggregation
 
-- public/boutique/js/b-nav.js
+- none
 
 ## Intervention Rule
 

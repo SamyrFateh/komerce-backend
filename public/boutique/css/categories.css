@@ -620,9 +620,10 @@
     top: 68px;
     z-index: 180;
     margin-top: 0;
-    background: rgba(248, 246, 241, 0.82);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    /* Opaque (pas de rgba) : la barre doit masquer totalement les cartes
+       qui défilent dessous au scroll, pas laisser transparaître leurs
+       couleurs/images à travers un fond semi-transparent + blur. */
+    background: rgb(248, 246, 241);
     border-radius: 0 0 20px 20px;
     /* PALETTE-FIX-01 : ocean au lieu de rgba(31,48,36,…) */
     box-shadow:
@@ -666,8 +667,8 @@
        Remplace l'ancien repeat(8) + le palier magique @900-1180px qui forçait
        4 colonnes quand 8×92px ne tenaient pas. auto-fit fait ça nativement,
        sans breakpoint intermédiaire. Voir check-breakpoints (900/1200 only). */
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 8px;
     max-width: none;
     height: auto;
     margin: 0;
@@ -693,20 +694,17 @@
     min-width: 0;
     max-width: none;
     width: 100%;
-    height: 100px;
-    min-height: 88px;
-    /* Ancrage des enfants absolus */
+    height: 72px;
+    min-height: 64px;
     position: relative;
     display: block;
     padding: 0;
-    /* Visuel premium */
-    border-radius: 18px;
+    border-radius: 14px;
     border: none;
     background: var(--sand-warm);
     box-shadow: var(--shadow-md);
     cursor: pointer;
     overflow: hidden;
-    /* Transitions lift */
     transition: transform .20s var(--ease), box-shadow .20s var(--ease);
   }
 
@@ -798,9 +796,9 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 7px 10px 9px;
+    padding: 5px 8px 7px;
     color: var(--white);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     line-height: 1.05;
     letter-spacing: -.02em;
@@ -885,13 +883,72 @@
 }
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM MOBILE V1 — catégories (rapatrié de b-mobile-premium-v1.js, Lot 2/L2-S2)
+   Scopé à l'état html.k-mobile-premium-v1 posé par le JS. Owner officiel des chips.
+   !important retirés (L4-S11) — spécificité 0-2-0 suffit à battre les règles base. ═══ */
+html.k-mobile-premium-v1 .k-cats-shell { padding: 0 10px 8px; }
 
+html.k-mobile-premium-v1 .k-cats {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 10px;
+  padding: 6px 12px 10px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+html.k-mobile-premium-v1 .k-cats::-webkit-scrollbar { display: none; }
 
+html.k-mobile-premium-v1 .k-chip,
+html.k-mobile-premium-v1 .k-chip.is-active,
+html.k-mobile-premium-v1 .k-chip.active {
+  flex: 0 0 auto;
+  width: clamp(60px, 16vw, 64px);
+  min-width: clamp(60px, 16vw, 64px);
+  max-width: clamp(60px, 16vw, 64px);
+  height: 84px;
+  min-height: 84px;
+  padding: 6px 4px 6px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  background: color-mix(in srgb, var(--white) 86%, transparent);
+  box-shadow: 0 6px 14px var(--border-text-06);
+  scroll-snap-align: start;
+}
 
+html.k-mobile-premium-v1 .k-chip-photo {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: center;
+}
 
+html.k-mobile-premium-v1 .k-chip-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: normal;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.15;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-align: center;
+}
 
 /* Premium mobile : sous-catégories (rapatrié de b-mobile-premium-v1.js, L2-S2). */
 @media (max-width: 899px) {
+  html.k-mobile-premium-v1 #k-subcats-wrap { margin-top: -4px; }
 
   /* ── Polish léger catégories mobile (hauteur du rail INCHANGÉE → pager safe) ──
      On ne touche ni min-height, ni padding, ni la grille, ni la taille 26×26 de

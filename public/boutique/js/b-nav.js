@@ -1,4 +1,19 @@
 /**
+ * @komerce-arch
+ * @role          boutique-nav
+ * @domain        boutique
+ * @layer         ui-component
+ * @criticality   high
+ * @inputs        view_requests, bus_events, drawer_state, scroll_state, relais_data
+ * @outputs       active_view, drawer_state, infinite_scroll, relais_list
+ * @depends       b-bus.js, b-store.js, b-utils.js, b-cart-core.js, b-cart.js, b-checkout.js, b-catalog.js, b-favs.js, b-tracking.js, b-group-view.js, b-pager.js, b-scroll-owner.js
+ * @used-by       boutique.js
+ * @doctrine      navigation_sans_friction, mobile_desktop_coherence
+ * @impact-areas  boutique-navigation, view-switching, drawer, infinite-scroll
+ * @version       2026-06
+ */
+
+/**
  * @module b-nav
  * @brief Navigation — switchView, setupBnav, setupDrawer, setupInfiniteScroll, loadRelais
  *
