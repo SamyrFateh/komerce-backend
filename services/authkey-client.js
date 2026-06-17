@@ -31,6 +31,7 @@
 const AUTHKEY_URL = 'https://authkey.io/restapi/requestjson.php';
 const API_KEY = process.env.AUTHKEY_API_KEY;
 const log = require('../utils/logger').child({ module: 'authkey-client' });
+const { publicInvoiceUrlFromOrderUrl } = require('./invoice-public-token');
 
 // ── Staging whitelist guard ────────────────────────────────────────────────
 // En dehors de production, les notifications WhatsApp ne partent que vers
@@ -113,12 +114,11 @@ const WID = {
   ),
 };
 
-// Le template facture reste disponible, mais il ne doit pas détourner par défaut
-// les messages texte contenant une URL. Un template mal paramétré peut sinon
-// envoyer la valeur d'exemple Meta/AuthKey (ex: "Test") au lieu du vrai lien.
-const USE_INVOICE_READY_TEMPLATE = String(process.env.AUTHKEY_USE_INVOICE_READY_TEMPLATE || '')
+// Le template facture est le canal attendu quand il existe. On garde un opt-out
+// explicite pour diagnostic si le template AuthKey est cassé en production.
+const USE_INVOICE_READY_TEMPLATE = String(process.env.AUTHKEY_USE_INVOICE_READY_TEMPLATE || 'true')
   .trim()
-  .toLowerCase() === 'true';
+  .toLowerCase() !== 'false';
 
 // ─── Détection automatique de l'indicatif pays ──────────────────────────
 // Komerce sert les Comores (269) ET la diaspora (France 33, etc.)
@@ -149,25 +149,16 @@ const KNOWN_PREFIXES = [
 
 /**
  * Extrait { country_code, mobile } d'un numéro quel que soit son format.
- *
- * Exemples :
- *   "+269 3324567"       → { country_code: "269", mobile: "3324567" }
- *   "06 12 34 56 78"     → { country_code: "33",  mobile: "612345678" }  (0 retiré)
- *   "0033612345678"      → { country_code: "33",  mobile: "612345678" }
- *   "+33 6 12 34 56 78"  → { country_code: "33",  mobile: "612345678" }
- *   "3324567"            → { country_code: "269", mobile: "3324567" }  (fallback)
  */
 function parseMobile(raw) {
   let digits = String(raw || '').replace(/\D/g, '');
 
   if (!digits) return { country_code: null, mobile: null };
 
-  // Format "00XX..." → retire le 00 (notation internationale européenne)
   if (digits.startsWith('00')) {
     digits = digits.slice(2);
   }
 
-  // Cherche un indicatif connu au début
   for (const { code, length } of KNOWN_PREFIXES) {
     if (digits.startsWith(code) && digits.length >= code.length + 6) {
       return {
@@ -177,7 +168,6 @@ function parseMobile(raw) {
     }
   }
 
-  // Numéro français sans indicatif : "06..." ou "07..." → 0 retiré + indicatif 33
   if (/^0[67]\d{8}$/.test(digits)) {
     return {
       country_code: '33',
@@ -185,17 +175,12 @@ function parseMobile(raw) {
     };
   }
 
-  // Fallback : pas d'indicatif détectable, on suppose le pays par défaut (Comores)
   return {
     country_code: DEFAULT_COUNTRY_CODE,
     mobile: digits,
   };
 }
 
-// ─── Mapping variables templates AuthKey ────────────────────────────────
-// AuthKey requestjson.php attend les variables template dans bodyValues.var1,
-// bodyValues.var2, etc. Les helpers métier gardent des noms lisibles,
-// puis ce helper transforme dans l'ordre attendu par les templates.
 function toBodyValues(variables = {}) {
   if (!variables || typeof variables !== 'object') return {};
 
@@ -229,7 +214,6 @@ function toBodyValues(variables = {}) {
     }
   }
 
-  // Compat directe si un appelant fournit déjà var1/var2/var3.
   for (const key of Object.keys(variables)) {
     if (/^var\d+$/.test(key) && variables[key] !== undefined && variables[key] !== null) {
       bodyValues[key] = String(variables[key]);
@@ -249,7 +233,14 @@ function looksLikeInvoiceMessage(message) {
   return /facture|recapitulatif|invoice|\/api\/invoices\//i.test(String(message || ''));
 }
 
-// ─── Appel générique ───────────────────────────────────────────────────
+function toPublicInvoiceUrl(invoiceUrl) {
+  try {
+    return publicInvoiceUrlFromOrderUrl(invoiceUrl);
+  } catch (err) {
+    log.warn({ err, invoice_url: invoiceUrl }, '[authkey] invoice public URL signing failed; using original URL');
+    return invoiceUrl;
+  }
+}
 
 async function callAuthKeyText({ mobile, message }) {
   if (!API_KEY) {
@@ -273,15 +264,14 @@ async function callAuthKeyText({ mobile, message }) {
         wid: WID.invoiceready,
         mobile,
         variables: {
-          invoice_url: invoiceUrl,
-          link: invoiceUrl,
-          url: invoiceUrl,
+          bodyValues: {
+            var1: toPublicInvoiceUrl(invoiceUrl),
+          },
         },
       });
     }
   }
 
-  // ── Staging guard ──────────────────────────────────────────────────────
   if (!_isStagingAllowed(mobile)) {
     log.warn({ mobile, event: 'free_text' }, '[authkey] staging: numéro non autorisé — message bloqué');
     return { ok: false, reason: 'staging_not_allowed', mobile };
@@ -367,7 +357,6 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
     return { ok: false, error: 'invalid_mobile', raw: mobile };
   }
 
-  // ── Staging guard ──────────────────────────────────────────────────────
   if (!_isStagingAllowed(mobile)) {
     log.warn({ mobile, wid }, '[authkey] staging: numéro non autorisé — WID bloqué');
     return { ok: false, reason: 'staging_not_allowed', mobile, wid };
@@ -450,14 +439,6 @@ async function callAuthKey({ wid, mobile, variables = {} }) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  Helpers métier — un par template
-//  Les clés des variables doivent correspondre aux noms utilisés dans
-//  les templates AuthKey (ex: {{#name#}}, {{#order_ref#}}).
-//  Si les templates utilisent {{1}}, {{2}} (syntaxe Meta standard),
-//  AuthKey les mappe automatiquement par ordre d'apparition.
-// ═══════════════════════════════════════════════════════════════════════
-
 async function notifyOrderCreated({ mobile, name, orderRef, amount }) {
   return callAuthKey({
     wid: WID.ordercreated,
@@ -505,7 +486,7 @@ async function notifyAbandonedCart({ mobile, name, itemCount }) {
   });
 }
 
-async function notifyInvoiceReady({ mobile, name, orderRef, invoiceNumber, invoiceUrl }) {
+async function notifyInvoiceReady({ mobile, invoiceUrl }) {
   if (!WID.invoiceready) {
     return { ok: false, error: 'missing_wid_invoice_ready' };
   }
@@ -513,12 +494,9 @@ async function notifyInvoiceReady({ mobile, name, orderRef, invoiceNumber, invoi
     wid: WID.invoiceready,
     mobile,
     variables: {
-      name,
-      order_ref: orderRef,
-      invoice_number: invoiceNumber,
-      invoice_url: invoiceUrl,
-      link: invoiceUrl,
-      url: invoiceUrl,
+      bodyValues: {
+        var1: toPublicInvoiceUrl(invoiceUrl),
+      },
     },
   });
 }
