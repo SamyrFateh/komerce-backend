@@ -642,8 +642,12 @@
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
-  /* ── Wrapper hero : hauteur compacte ── */
-  html.k-home-premium-v1 #k-hero-fixed-wrap,
+  /* ── Wrapper hero : laisse de la place pour la sticky bar ── */
+  html.k-home-premium-v1 #k-hero-fixed-wrap {
+    height: auto;
+    overflow: visible;
+  }
+  /* ── Hero lui-même : hauteur compacte ── */
   html.k-home-premium-v1 .k-hero {
     height: 150px;
     overflow: clip;
@@ -849,8 +853,8 @@
     z-index: 3;
   }
 
-  /* ── Sticky bar hors du hero-fixed-wrap (fix overflow:clip) ──
-     La barre est maintenant sibling du wrap, plus enfant.
+  /* ── Sticky bar enfant de #k-hero-fixed-wrap ──
+     #k-hero-fixed-wrap est overflow:visible → les chips ne sont plus clippées.
      top = header premium (72px) au lieu de 68px base. */
   html.k-home-premium-v1 .k-hero-cats-sticky {
     margin-top: 0;
