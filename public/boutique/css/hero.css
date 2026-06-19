@@ -964,3 +964,25 @@
   }
 }
 /* ══ FIN LOT NAV-STICKY-DESKTOP ════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   LOT NAV-STICKY-DESKTOP — correctif clip héro (2026-06-19)
+   La colonne texte premium empile badge + 2 lignes titre + sous-titre
+   + 2 CTA (bouton primaire min-height:44px) + pastille de réassurance,
+   soit ~196px de contenu, dans un .k-hero figé à height:150px +
+   overflow:clip → le bas (pastille « 450+ produits · Paiement cash ·
+   Retrait relais » + le bas du CTA) était rogné → effet « texte coupé /
+   pas fini » sous le slogan.
+   Fix : hauteur pilotée par le contenu (height:auto) avec un plancher
+   compact. L'image (colonne droite, object-fit:cover) suit la hauteur.
+   Rien à masquer : la réassurance reste un argument utile (cf. brief).
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 .k-hero {
+    height: auto;
+    min-height: 168px;
+    /* overflow:clip conservé (hérité) : ne rogne plus en vertical puisque
+       la hauteur suit le contenu ; borne juste le fondu ::after horizontal. */
+  }
+}
+/* ══ FIN correctif clip héro ═══════════════════════════════════════ */

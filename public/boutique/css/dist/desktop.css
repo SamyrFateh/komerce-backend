@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop.css (2026-06-18)
+   KOMERCE — desktop.css (2026-06-19)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── boutique-desktop.css ────────────────────────────────── */
@@ -38,8 +38,18 @@
    et à mesure que les cartes arrivent (effet "saut de footer").
    100vh - header (~68px) laisse la grille remplir l'écran dès le 1er paint. */
 @media (min-width: 900px) {
+  /* Plancher modeste en régime normal : le footer ne se colle pas sous 2-3
+     produits, mais on ne réserve PLUS tout le viewport (ce qui laissait un
+     grand vide blanc avant le footer sur l'accueil court — cf. capture). */
   #k-catalog-section {
-    min-height: calc(100vh - 68px);
+    min-height: 360px;
+  }
+  /* Anti-saut de footer UNIQUEMENT au boot : tant que #k-grid n'a pas reçu
+     sa classe d'état (k-grid-has-sections / k-grid-cat-pager / ...), il vaut
+     « k-grid » seul → on réserve le viewport. Dès que la grille est peuplée,
+     la classe apparaît, le plancher reprend et le vide disparaît. */
+  #k-catalog-section:has(#k-grid:not([class*="k-grid-"])) {
+    min-height: calc(100vh - var(--header-h, 72px));
   }
 }
 
