@@ -534,3 +534,6 @@ const AccountingView = (function () {
 
   return { render };
 })();
+
+/* Exposition globale — requis par app.js (global[route.view]) */
+if (typeof window !== 'undefined') window.AccountingView = AccountingView;
