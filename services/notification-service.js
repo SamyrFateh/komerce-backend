@@ -298,11 +298,23 @@ async function notifyPaymentConfirmed(orderId, orderReference) {
         ? `Komerce : votre paiement est enregistre. Recapitulatif : ${invoiceUrl}`
         : `Komerce : votre facture est disponible : ${invoiceUrl}`;
 
-      await notifyText(phone, msg, 'invoice_ready', orderId);
-      log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '🧾 Invoice link sent');
+      // FIX : notifyText ne LÈVE PAS sur un envoi bloqué/refusé — il RETOURNE
+      // { ok:false, reason/error }. Avant, on loggait « sent » sans regarder.
+      // On vérifie le résultat et on remonte une alerte radar comme pour le paiement.
+      const sendResult = await notifyText(phone, msg, 'invoice_ready', orderId);
+      if (sendResult && sendResult.ok) {
+        log.info({ order_ref: orderReference, invoice_number: invoice.invoice_number }, '🧾 Invoice link sent');
+      } else {
+        const reason = (sendResult && (sendResult.reason || sendResult.error)) || 'unknown';
+        log.warn({ order_ref: orderReference, invoice_number: invoice.invoice_number, reason },
+          '🧾 Invoice link NOT sent');
+        _alertNotificationFailure({ event: 'invoice_ready', orderRef: orderReference, orderId, error: reason });
+      }
     } catch (invErr) {
-      // Non-bloquant : race condition payment_status possible, on log et on passe.
+      // Génération de facture impossible (ex. payment_status pas encore 'paid' — race).
+      // Non-bloquant pour le flux paiement, mais désormais VISIBLE dans le radar.
       log.warn({ err: invErr, order_ref: orderReference }, '🧾 Invoice notification skipped (non-fatal)');
+      _alertNotificationFailure({ event: 'invoice_ready', orderRef: orderReference, orderId, error: invErr.message });
     }
   } catch (err) {
     log.error({ err, order_id: orderId, order_ref: orderReference }, 'Payment confirmed notification failed');
