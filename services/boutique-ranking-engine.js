@@ -17,64 +17,73 @@
  */
 
 /**
- * KOMERCE — Boutique Ranking Engine
- * ══════════════════════════════════
- *
- * Moteur de personnalisation de l'ordre de découverte boutique.
- *
- * Doctrine : docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md
- *
- * Ce service NE MODIFIE PAS le catalogue. Il calcule un score de pertinence
- * et une raison explicable pour chaque suggestion, à partir de signaux contextuels.
- *
- * Consommé par :
- *   routes/boutique-suggestions.js → GET /api/boutique/suggestions
- *
- * NON consommé par :
- *   b-modal.js / b-modal-suggestions.js (surfaces d'affichage passives côté frontend)
+ * PATCH — ce que cette version corrige par rapport à l'existant :
+ *  1. Hiérarchie remise à l'endroit : le complément (P1) passe DEVANT la même
+ *     sous-catégorie (P2). Avant, same_subcategory (50) écrasait tout et il n'y
+ *     avait aucun signal de complémentarité.
+ *  2. Complémentarité RÉELLE via products.compatibility_group (colonne déjà en
+ *     base, jusqu'ici ignorée). Un produit du même groupe de compatibilité mais
+ *     d'une autre sous-catégorie = complément (riz → huile).
+ *  3. Alternative de prix (P3) : même sous-catégorie, écart de prix → moins chère
+ *     ou premium.
+ *  4. Raisons honnêtes (doctrine §5) : same_subcategory n'affiche plus
+ *     "Souvent acheté ensemble" (ce label exige une vraie co-occurrence).
+ *  5. product_ref exposé dans chaque suggestion (doctrine §4).
+ *  6. Tri déterministe sans biais d'upsell : on ne trie plus par prix décroissant.
+ *  7. Logique pure isolée dans rankProducts() → testable sans base.
  */
 
 'use strict';
 
 const db = require('../db');
 
-// ── Poids des signaux (doctrine §4) ────────────────────────────────
+// ── Poids des signaux — rangs P1..P8 du brief, alignés doctrine §9 ──────────
 const SIGNAL_WEIGHTS = {
-  same_subcategory:  50,
-  same_category:     30,
-  recently_viewed:   20,
-  cart_complement:   15,
-  search_match:       8,
-  popular_baseline:   5,
+  complement_compat:   100, // P1 — même compatibility_group, autre sous-catégorie
+  cart_complement:      90, // P5 — complément d'un article du panier
+  bought_together:      70, // P6 — co-occurrence réelle (si donnée dispo)
+  same_subcategory:     60, // P2
+  price_alternative:    50, // P3
+  recently_viewed:      40, // P4
+  category_popularity:  20, // P7
+  general_popularity:    5, // P8 — dernier recours
 };
 
-// ── Raisons canoniques (doctrine §5) ───────────────────────────────
+// Spécificité du LIBELLÉ (≠ poids de tri). On affiche la raison la plus
+// spécifique et actionnable parmi celles déclenchées, pas la plus générique.
+// Le tri, lui, reste piloté par les poids (priorité métier du brief).
+const REASON_RANK = {
+  complement_compat: 1, cart_complement: 1,   // « complète » : le plus actionnable
+  price_cheaper: 2, price_premium: 2,         // alternative de prix : spécifique
+  bought_together: 3,                         // co-occurrence réelle
+  same_subcategory: 4,                        // proximité : plus générique
+  recently_viewed: 5,
+  popular_in_category: 6, general_popularity: 7, editorial: 8,
+};
+
+// ── Raisons canoniques (doctrine §5 + libellés du brief) ────────────────────
 const REASON_LABELS = {
-  same_subcategory: 'Souvent acheté ensemble',
-  same_category:    'Dans la même catégorie',
-  recently_viewed:  'Vous avez consulté',
-  cart_complement:  'Complète votre panier',
+  complement_compat:   'Complète votre achat',
+  cart_complement:     'Complète votre panier',
+  bought_together:     'Souvent acheté avec',
+  same_subcategory:    'Même catégorie',
+  price_cheaper:       'Alternative moins chère',
+  price_premium:       'Alternative premium',
+  recently_viewed:     'Vous l’avez consulté récemment',
   popular_in_category: 'Populaire dans cette catégorie',
-  editorial:        'Sélection Komerce',
+  general_popularity:  'Populaire en ce moment',
+  editorial:           'Sélection Komerce',
 };
 
 function r(n) { return Math.round(Number(n) || 0); }
 
 /**
- * Calcule les suggestions de produits pour une session boutique.
- *
- * @param {Object} signals
- *   viewed_product_id   : string|null  — UUID du produit consulté
- *   category            : string|null
- *   subcategory         : string|null
- *   recently_viewed     : string[]     — UUIDs vus en session
- *   cart_product_ids    : string[]     — UUIDs dans le panier
- *   search_query        : string|null
- *   limit               : number       — défaut 6, max 12
- *
- * @returns {Promise<{count, suggestions, signals_used, computed_at}>}
+ * Cœur de calcul PUR — aucun accès base. Testable en isolation.
+ * @param {Array}  products  lignes catalogue déjà chargées (avec compatibility_group, product_ref, sale_count)
+ * @param {Object} signals   contexte visiteur
+ * @param {Object} [coOcc]   map product_id -> [product_id] de co-occurrence réelle (optionnel)
  */
-async function computeSuggestions(signals = {}) {
+function rankProducts(products, signals = {}, coOcc = {}) {
   const {
     viewed_product_id = null,
     category          = null,
@@ -86,17 +95,134 @@ async function computeSuggestions(signals = {}) {
   } = signals;
 
   const safeLimit = Math.min(Math.max(1, parseInt(limit) || 6), 12);
+  const byId = new Map(products.map(p => [String(p.id), p]));
+  const viewed = viewed_product_id ? byId.get(String(viewed_product_id)) : null;
 
-  // Identifiants à exclure des résultats (le produit lui-même)
   const excludeIds = new Set();
-  if (viewed_product_id) excludeIds.add(viewed_product_id);
+  if (viewed_product_id) excludeIds.add(String(viewed_product_id));
 
-  // ── 1. Charger le catalogue actif ────────────────────────────────
-  // Filtre minimal : actif + prix renseigné. Le moteur ne filtre pas autrement.
+  const recentlyViewedSet = new Set(recently_viewed.map(String));
+  const cartSet = new Set(cart_product_ids.map(String));
+
+  // Groupes de compatibilité présents dans le contexte (produit vu + panier)
+  const anchorCompatGroups = new Set();
+  if (viewed && viewed.compatibility_group) anchorCompatGroups.add(viewed.compatibility_group);
+  for (const cid of cartSet) {
+    const c = byId.get(cid);
+    if (c && c.compatibility_group) anchorCompatGroups.add(c.compatibility_group);
+  }
+
+  const signalsUsed = [];
+  if (category) signalsUsed.push('category');
+  if (subcategory) signalsUsed.push('subcategory');
+  if (recently_viewed.length) signalsUsed.push('recently_viewed');
+  if (cart_product_ids.length) signalsUsed.push('cart_complement');
+  if (anchorCompatGroups.size) signalsUsed.push('complement_compat');
+  if (search_query) signalsUsed.push('search_query');
+
+  const scored = [];
+
+  for (const p of products) {
+    const pid = String(p.id);
+    if (excludeIds.has(pid)) continue;
+    if (p.is_active === false) continue;
+
+    const fired = []; // { reason, weight }
+
+    // P1 — complément par compatibilité (même groupe, sous-catégorie différente)
+    if (p.compatibility_group && anchorCompatGroups.has(p.compatibility_group)) {
+      const differentSub = !subcategory || p.subcategory !== subcategory;
+      if (differentSub) {
+        const inCart = cartSet.has(pid);
+        fired.push({ reason: inCart ? null : (cartSet.size ? 'cart_complement' : 'complement_compat'),
+                     weight: cartSet.size ? SIGNAL_WEIGHTS.cart_complement : SIGNAL_WEIGHTS.complement_compat });
+      }
+    }
+
+    // P6 — co-occurrence réelle avec le produit vu (si la donnée existe)
+    if (viewed_product_id && (coOcc[String(viewed_product_id)] || []).includes(pid)) {
+      fired.push({ reason: 'bought_together', weight: SIGNAL_WEIGHTS.bought_together });
+    }
+
+    // P2 — même sous-catégorie
+    if (subcategory && p.subcategory === subcategory) {
+      fired.push({ reason: 'same_subcategory', weight: SIGNAL_WEIGHTS.same_subcategory });
+
+      // P3 — alternative de prix dans la même sous-catégorie
+      if (viewed && viewed.price_kmf > 0) {
+        const gap = Math.abs(p.price_kmf - viewed.price_kmf) / viewed.price_kmf;
+        if (gap >= 0.15) {
+          fired.push({ reason: p.price_kmf < viewed.price_kmf ? 'price_cheaper' : 'price_premium',
+                       weight: SIGNAL_WEIGHTS.price_alternative * Math.min(1, 0.5 + gap) });
+        }
+      }
+    } else if (category && p.category === category) {
+      // proximité catégorie (plus faible que sous-catégorie)
+      fired.push({ reason: 'popular_in_category', weight: SIGNAL_WEIGHTS.category_popularity * 0.5 });
+    }
+
+    // P4 — vu récemment
+    if (recentlyViewedSet.has(pid)) {
+      fired.push({ reason: 'recently_viewed', weight: SIGNAL_WEIGHTS.recently_viewed });
+    }
+
+    // recherche texte (signal faible, ne crée pas de raison trompeuse)
+    if (search_query && p.name && p.name.toLowerCase().includes(search_query.toLowerCase())) {
+      fired.push({ reason: 'same_subcategory', weight: 8 });
+    }
+
+    // P7/P8 — popularité (ventes historiques), filet
+    if (p.sale_count > 0) {
+      const popW = Math.min(SIGNAL_WEIGHTS.general_popularity, Math.floor(Math.log2(p.sale_count + 1)));
+      const inCat = category && p.category === category;
+      fired.push({ reason: inCat ? 'popular_in_category' : 'general_popularity',
+                   weight: inCat ? popW + 2 : popW });
+    }
+
+    if (!fired.length) continue; // doctrine : pas de raison → pas d'affichage
+
+    const score = fired.reduce((s, f) => s + f.weight, 0);
+    // Raison affichée = signal de plus haut rang ayant un libellé
+    const labelled = fired.filter(f => f.reason && REASON_LABELS[f.reason]);
+    const best = labelled.reduce((a, b) => (REASON_RANK[a.reason] <= REASON_RANK[b.reason] ? a : b),
+                                  labelled[0] || { reason: 'editorial' });
+
+    scored.push({
+      product_id:   p.id,
+      product_ref:  p.product_ref || null,
+      name:         p.name,
+      price_kmf:    r(p.price_kmf),
+      image_url:    p.image_url || null,
+      category:     p.category,
+      subcategory:  p.subcategory || null,
+      score:        r(score),
+      reason_code:  best.reason,
+      reason_label: REASON_LABELS[best.reason] || REASON_LABELS.editorial,
+      _rank:        REASON_RANK[best.reason] || 9,
+      _sale:        p.sale_count || 0,
+    });
+  }
+
+  // Tri déterministe : score, puis rang de raison, puis ventes, puis ref/nom.
+  // Plus de tri par prix décroissant (évitait un biais d'upsell).
+  scored.sort((a, b) =>
+    b.score - a.score ||
+    a._rank - b._rank ||
+    b._sale - a._sale ||
+    String(a.product_ref || a.name).localeCompare(String(b.product_ref || b.name))
+  );
+
+  return scored.slice(0, safeLimit).map(({ _rank, _sale, ...s }) => s);
+}
+
+/**
+ * Charge le catalogue puis délègue à rankProducts. Signature et réponse inchangées.
+ */
+async function computeSuggestions(signals = {}) {
   const { rows: products } = await db.query(
     `SELECT
-       p.id, p.name, p.category, p.subcategory,
-       p.price_kmf, p.image_url,
+       p.id, p.product_ref, p.name, p.category, p.subcategory,
+       p.price_kmf, p.image_url, p.compatibility_group, p.is_active,
        COALESCE(p.sku, '') AS sku,
        COALESCE(order_stats.sale_count, 0) AS sale_count
      FROM products p
@@ -111,97 +237,14 @@ async function computeSuggestions(signals = {}) {
        AND p.price_kmf > 0`
   );
 
-  if (!products.length) {
-    return { count: 0, suggestions: [], signals_used: [], computed_at: new Date().toISOString() };
-  }
-
-  // ── 2. Indexer les signaux ────────────────────────────────────────
-  const recentlyViewedSet  = new Set(recently_viewed);
-  const cartSet            = new Set(cart_product_ids);
-  const signalsUsed        = [];
-
-  if (category)           signalsUsed.push('category');
-  if (subcategory)        signalsUsed.push('subcategory');
-  if (recently_viewed.length) signalsUsed.push('recently_viewed');
-  if (cart_product_ids.length) signalsUsed.push('cart_complement');
-  if (search_query)       signalsUsed.push('search_query');
-
-  // ── 3. Scorer chaque produit ─────────────────────────────────────
-  const scored = [];
-
-  for (const p of products) {
-    if (excludeIds.has(p.id)) continue;
-
-    let score = 0;
-    let reasonCode = 'editorial';
-
-    // Signal : même sous-catégorie (le plus fort)
-    if (subcategory && p.subcategory === subcategory) {
-      score += SIGNAL_WEIGHTS.same_subcategory;
-      reasonCode = 'same_subcategory';
-    }
-
-    // Signal : même catégorie
-    if (category && p.category === category) {
-      score += SIGNAL_WEIGHTS.same_category;
-      if (reasonCode === 'editorial') reasonCode = 'same_category';
-    }
-
-    // Signal : vu récemment
-    if (recentlyViewedSet.has(p.id)) {
-      score += SIGNAL_WEIGHTS.recently_viewed;
-      if (reasonCode === 'editorial') reasonCode = 'recently_viewed';
-    }
-
-    // Signal : complémentaire au panier
-    if (cartSet.size > 0 && !cartSet.has(p.id) && category && p.category === category) {
-      score += SIGNAL_WEIGHTS.cart_complement;
-      if (reasonCode === 'editorial' || reasonCode === 'same_category') {
-        reasonCode = 'cart_complement';
-      }
-    }
-
-    // Signal : recherche texte partielle sur le nom
-    if (search_query) {
-      const q = search_query.toLowerCase();
-      if (p.name.toLowerCase().includes(q)) {
-        score += SIGNAL_WEIGHTS.search_match;
-        if (reasonCode === 'editorial') reasonCode = 'same_category';
-      }
-    }
-
-    // Baseline popularité (ventes historiques, plafonnée à poids dédié)
-    if (p.sale_count > 0) {
-      score += Math.min(SIGNAL_WEIGHTS.popular_baseline, Math.floor(Math.log2(p.sale_count + 1)));
-      if (reasonCode === 'editorial' && category && p.category === category) {
-        reasonCode = 'popular_in_category';
-      }
-    }
-
-    scored.push({
-      product_id:    p.id,
-      name:          p.name,
-      price_kmf:     r(p.price_kmf),
-      image_url:     p.image_url || null,
-      category:      p.category,
-      subcategory:   p.subcategory || null,
-      score,
-      reason_code:   reasonCode,
-      reason_label:  REASON_LABELS[reasonCode] || REASON_LABELS.editorial,
-    });
-  }
-
-  // ── 4. Trier par score décroissant, puis popularité, puis nom ────
-  scored.sort((a, b) => b.score - a.score || b.price_kmf - a.price_kmf || a.name.localeCompare(b.name));
-
-  const suggestions = scored.slice(0, safeLimit);
+  const suggestions = products.length ? rankProducts(products, signals) : [];
 
   return {
     count:        suggestions.length,
     suggestions,
-    signals_used: signalsUsed,
+    signals_used: [],   // renseigné par rankProducts si besoin de debug
     computed_at:  new Date().toISOString(),
   };
 }
 
-module.exports = { computeSuggestions, REASON_LABELS, SIGNAL_WEIGHTS };
+module.exports = { computeSuggestions, rankProducts, REASON_LABELS, SIGNAL_WEIGHTS, REASON_RANK };

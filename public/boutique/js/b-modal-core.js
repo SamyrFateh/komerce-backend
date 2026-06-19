@@ -119,9 +119,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     fetch('/api/boutique/suggestions?' + params.toString(), { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(items => {
-        // API retourne [{product_id, name, price_kmf, reason_label, category, ...}]
-        // Reconstruire sameCat / otherCat depuis la réponse enrichie
+      .then(payload => {
+        // FIX : la route renvoie un OBJET { count, suggestions, ... }, pas un tableau.
+        // items.filter() levait une TypeError -> catch -> fallback systématique.
+        const items = Array.isArray(payload) ? payload : (payload && payload.suggestions) || [];
+        if (!items.length) throw new Error('empty-suggestions');
+        // Reconstruire sameCat / otherCat depuis la réponse enrichie (reason_label inclus)
         const sameCat = items
           .filter(s => s.category === product.category)
           .map(s => Object.assign({}, state.products.find(p => String(p.id) === String(s.product_id)) || {}, s))
