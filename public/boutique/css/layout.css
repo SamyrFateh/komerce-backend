@@ -1158,3 +1158,18 @@ body:has(#k-page-scroll.k-pager-active) {
      barre contextuelle sticky ; l'accueil va droit aux cartes. */
   html.k-home-premium-v1 #k-catalog-section { padding-top: 12px; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LOT NAV-STICKY-DESKTOP — décalage des ancres sous la barre épinglée.
+   --nav-stack-h (= header + barre univers/sous-cats) est écrit par
+   b-catalog-desktop-enhancers.js. Fallback = header + 64px le temps que
+   le JS s'exécute. Cible : le scroll du CTA héro (scrollIntoView sur
+   #k-catalog-section) et tout deep-link vers une section (.k-sec-header).
+   Scopé desktop premium → aucun impact mobile.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+  html.k-home-premium-v1 #k-catalog-section,
+  html.k-home-premium-v1 .k-sec-header {
+    scroll-margin-top: var(--nav-stack-h, calc(var(--header-h, 72px) + 64px));
+  }
+}

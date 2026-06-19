@@ -432,6 +432,45 @@ function _setupViewChangedGuard() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  NAV-STICKY-DESKTOP — variable --nav-stack-h (header + barre sticky)
+//  Consommée par scroll-margin-top (layout.css) pour que les ancres
+//  (CTA héro → #k-catalog-section, deep-links → .k-sec-header) ne
+//  passent jamais sous la barre épinglée. La barre change de hauteur
+//  quand la ligne sous-cats apparaît/disparaît → ResizeObserver.
+// ═══════════════════════════════════════════════════════════════
+
+function setupNavStackVar() {
+  if (!isDesktop()) return;
+
+  var bar    = document.getElementById('k-sticky-bar');   // .k-hero-cats-sticky
+  var header = document.querySelector('.k-header');
+  if (!bar) return;
+
+  var root = document.documentElement;
+  var raf  = 0;
+
+  function measure() {
+    raf = 0;
+    var headerH = header ? header.getBoundingClientRect().height : 72;
+    var barH    = bar.getBoundingClientRect().height;
+    root.style.setProperty('--nav-stack-h', Math.round(headerH + barH) + 'px');
+  }
+  function update() {
+    if (raf) return;
+    raf = requestAnimationFrame(measure);
+  }
+
+  update();
+
+  if (typeof ResizeObserver !== 'undefined') {
+    var ro = new ResizeObserver(update);
+    ro.observe(bar);
+    if (header) ro.observe(header);
+  }
+  window.addEventListener('resize', update, { passive: true });
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  ENTRY POINT
 // ═══════════════════════════════════════════════════════════════
 
@@ -446,6 +485,7 @@ export function setupCatalogDesktopEnhancers() {
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();
+  setupNavStackVar();
   // Overlay désactivé : le fix CSS (suppression opacity:0 !important sur
   // .k-card-add au hover) suffit. Le voile vert masquait les boutons via
   // mix-blend-mode:multiply sur l'image du panier. Plus de doublon à gérer.

@@ -902,3 +902,65 @@
   }
 }
 /* ══ FIN CORRECTIONS NAVBAR + LOGO ════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════
+   LOT NAV-STICKY-DESKTOP (2026-06-19)
+   Barre univers + sous-cats épinglée sous le header (desktop premium).
+
+   Pourquoi display:contents sur le wrap :
+     .k-hero-cats-sticky est le dernier enfant de #k-hero-fixed-wrap.
+     Un position:sticky est borné par son bloc englobant → collée en bas
+     de son wrapper, la barre ne « voyagerait » pas le long de la page.
+     display:contents supprime la boîte du wrap → hero ET barre deviennent
+     enfants directs de <body> ; le bloc englobant de la barre devient
+     <body> (toute la hauteur du document) → elle colle sur tout le
+     catalogue.
+
+   Réserve side-cart : body.sc-reserve / :has(.k-side-cart.has-items)
+     pose déjà padding-right sur <body> (cf. BOUTIQUE_SIDE_CART_DOCTRINE).
+     La barre, désormais enfant <body> comme le footer, s'arrête donc
+     d'elle-même avant le panneau fixed. L'ancienne réserve de largeur
+     posée sur #k-hero-fixed-wrap (boutique-desktop.css) devient inerte
+     sous display:contents — sans effet de bord (la .k-hero-img garde sa
+     propre contrainte max-width).
+
+   --header-h aligné à 72px (= header premium) → top exact, et corrige
+     au passage l'écart 68/72 sur la home premium.
+   --nav-stack-h (header + barre) est écrit par
+     b-catalog-desktop-enhancers.js (ResizeObserver) et consommé par
+     scroll-margin-top (layout.css) → les ancres ne passent jamais sous
+     la barre.
+
+   Mobile (#k-hero-fixed-wrap position:fixed) et pages non-home : intacts,
+   tout est scopé @media(min-width:900px) + html.k-home-premium-v1.
+   ══════════════════════════════════════════════════════════════════ */
+@media (min-width: 900px) {
+
+  html.k-home-premium-v1 { --header-h: 72px; }
+
+  /* Le wrapper cesse d'être un bloc englobant. */
+  html.k-home-premium-v1 #k-hero-fixed-wrap { display: contents; }
+
+  /* Fond premium rapatrié du wrap (perdu avec display:contents). */
+  html.k-home-premium-v1 .k-hero {
+    background:
+      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
+      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
+  }
+
+  /* Barre nav épinglée sous le header, sur tout le scroll catalogue.
+     (Owner unique de position/top/z-index/background de la barre desktop
+     premium — supersède le bloc CORRECTIONS plus haut, même specificity,
+     déclaré après dans la cascade.) */
+  html.k-home-premium-v1 .k-hero-cats-sticky {
+    position: sticky;
+    top: var(--header-h, 72px);
+    z-index: 110;                 /* > .k-header (z-index:100) */
+    margin-top: 0;
+    background: var(--page-bg);   /* opaque : la grille ne transparaît pas dessous */
+    box-shadow:
+      0 1px 0 var(--border-text-07),
+      0 6px 18px -12px rgba(28, 26, 23, .22);
+  }
+}
+/* ══ FIN LOT NAV-STICKY-DESKTOP ════════════════════════════════════ */
