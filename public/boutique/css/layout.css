@@ -448,6 +448,12 @@ body {
   margin: 0;
 }
 /* ── Cage fixe du pager mobile Temu ───────────────────────────── */
+/* FIX-FOOTER-PAGER : quand #k-page-scroll passe en position:fixed,
+   il sort du flux normal → le footer remonte et devient visible.
+   On le masque explicitement pendant toute la durée du pager. */
+body:has(#k-page-scroll.k-pager-active) .k-footer {
+  display: none;
+}
 body:has(#k-page-scroll.k-pager-active) {
   overflow: hidden;
   overscroll-behavior: none;

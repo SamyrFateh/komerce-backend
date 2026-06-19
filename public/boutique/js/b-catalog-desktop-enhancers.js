@@ -61,26 +61,40 @@ function setupSubcatOnHover() {
   if (!catsEl) return;
 
   var _hoverTimer = null;
-  var _currentCat = null;
+  var _previewActive = false; // true = on est en mode aperçu (pas en sélection)
 
   catsEl.addEventListener('mouseenter', function(e) {
     var chip = e.target.closest('.k-chip');
     if (!chip) return;
     var cat = chip.dataset.cat;
-    if (!cat || cat === 'all' || cat === _currentCat) return;
+    if (!cat || cat === 'all') return;
 
-    // Délai court pour éviter le flash au passage rapide entre chips
+    // Même univers que l'actif → pas d'aperçu, c'est déjà le bon rendu
+    if (cat === state.activeCat) {
+      if (_hoverTimer) { clearTimeout(_hoverTimer); _hoverTimer = null; }
+      return;
+    }
+
+    // Délai court anti-flash au passage rapide entre chips
     if (_hoverTimer) clearTimeout(_hoverTimer);
     _hoverTimer = setTimeout(function() {
-      _currentCat = cat;
+      _previewActive = true;
+      // Aperçu uniquement visuel : on peuple la barre sans toucher à
+      // state.activeCat ni à la grille.
       renderSubcatRail(cat);
       syncRailActiveState(cat, { center: false });
     }, 80);
   }, true);
 
-  // Annuler le timer si on quitte la zone chips sans s'arrêter
+  // Quitter la zone chips → revenir à l'univers actif
   catsEl.addEventListener('mouseleave', function() {
     if (_hoverTimer) { clearTimeout(_hoverTimer); _hoverTimer = null; }
+    if (_previewActive) {
+      _previewActive = false;
+      // Restaurer le rendu de l'univers actif sélectionné
+      renderSubcatRail(state.activeCat || null);
+      syncRailActiveState(state.activeCat || 'all', { center: false });
+    }
   });
 }
 
@@ -476,12 +490,11 @@ function setupNavStackVar() {
 
 export function setupCatalogDesktopEnhancers() {
   if (!isDesktop()) return;
-  // [DÉSACTIVÉ — NAV-DESKTOP consolidation] setupSubcatOnHover() peuplait la barre
-  // contextuelle au survol d'une chip, ce qui affichait les sous-cats d'une catégorie
-  // SURVOLÉE alors que la grille montrait la catégorie ACTIVE → effet fantôme + désync.
-  // La barre est désormais pilotée uniquement par la sélection (clic), via
-  // home-controller.renderSubcatRail. Survol = no-op. Fonction conservée (réversible).
-  // setupSubcatOnHover();
+  // [HOVER-PREVIEW] setupSubcatOnHover() — réactivé avec séparation preview/état :
+  // survol = aperçu transitoire (barre seulement, grille intacte) ; mouseleave =
+  // retour à l'univers actif ; clic = sélection réelle (comportement inchangé).
+  // Scopé desktop + barre épinglée (isDesktop() guard dans la fonction).
+  setupSubcatOnHover();
   setupPromoStrip();
   setupHomepageMerchandising();
   setupHeroSearchBar();
