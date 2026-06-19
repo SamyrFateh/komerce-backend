@@ -38,9 +38,9 @@
    * CSS — injecté une seule fois, namespaced sv-*
    * ══════════════════════════════════════════════════════════════════════ */
   (function injectStyles() {
-    if (document.getElementById('sv-styles')) return;
+    if (document.getElementById('sante-styles')) return;
     const s = document.createElement('style');
-    s.id = 'sv-styles';
+    s.id = 'sante-styles';
     s.textContent = `
       /* ── Hero score ─────────────────────────────────────────────────── */
       .sv-hero {

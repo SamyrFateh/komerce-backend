@@ -629,3 +629,35 @@
   font-size: var(--fs-sm);
   color: var(--text-secondary);
 }
+
+/* === KMC-VIEW-HEADER / KMC-SECTION-BLOCK (CustomsView, SuppliersView, etc.) === */
+.kmc-view-header {
+  margin-bottom: var(--sp-6);
+}
+
+.kmc-view-header h2 {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.kmc-subtitle {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-top: var(--sp-1);
+}
+
+.kmc-section-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-5);
+}
+
+.kmc-section-block > h3 {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-4);
+}
