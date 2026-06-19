@@ -184,9 +184,15 @@ function parseMobile(raw) {
 function toBodyValues(variables = {}) {
   if (!variables || typeof variables !== 'object') return {};
 
+  // Passage direct bodyValues (escape hatch explicite)
   if (variables.bodyValues && typeof variables.bodyValues === 'object') {
     return variables.bodyValues;
   }
+
+  // AuthKey résout {#name#}, {#order_ref#}, etc. par le NOM de la clé dans bodyValues.
+  // On passe les variables nommées directement — plus de conversion var1/var2/var3
+  // qui empêchait la substitution côté template.
+  const bodyValues = {};
 
   const orderedKeys = [
     'name',
@@ -204,16 +210,13 @@ function toBodyValues(variables = {}) {
     'expiry',
   ];
 
-  const bodyValues = {};
-  let index = 1;
-
   for (const key of orderedKeys) {
     if (variables[key] !== undefined && variables[key] !== null && variables[key] !== '') {
-      bodyValues['var' + index] = String(variables[key]);
-      index++;
+      bodyValues[key] = String(variables[key]);
     }
   }
 
+  // Compat : si l'appelant passait déjà des clés var1/var2 explicites, on les garde
   for (const key of Object.keys(variables)) {
     if (/^var\d+$/.test(key) && variables[key] !== undefined && variables[key] !== null) {
       bodyValues[key] = String(variables[key]);
