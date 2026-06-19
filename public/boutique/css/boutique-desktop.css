@@ -33,18 +33,26 @@
    et à mesure que les cartes arrivent (effet "saut de footer").
    100vh - header (~68px) laisse la grille remplir l'écran dès le 1er paint. */
 @media (min-width: 900px) {
-  /* Plancher modeste en régime normal : le footer ne se colle pas sous 2-3
-     produits, mais on ne réserve PLUS tout le viewport (ce qui laissait un
-     grand vide blanc avant le footer sur l'accueil court — cf. capture). */
+  /* Plancher modeste : le footer ne se colle pas sous 1-2 produits, mais on
+     ne réserve PLUS tout le viewport par défaut (ce qui laissait un grand vide
+     avant le footer sur les pages courtes — cf. capture). */
   #k-catalog-section {
     min-height: 360px;
   }
-  /* Anti-saut de footer UNIQUEMENT au boot : tant que #k-grid n'a pas reçu
-     sa classe d'état (k-grid-has-sections / k-grid-cat-pager / ...), il vaut
-     « k-grid » seul → on réserve le viewport. Dès que la grille est peuplée,
-     la classe apparaît, le plancher reprend et le vide disparaît. */
+  /* Réserve le viewport TANT qu'il reste des pages à charger (classe
+     k-cat-has-more posée par b-catalog.js sur le pager catégorie) OU au boot
+     avant que #k-grid ne reçoive sa classe d'état. Effet : le footer ne surgit
+     jamais en plein scroll infini (plus de saut), et il remonte sous le contenu
+     une fois la catégorie épuisée (plus de grand vide). */
+  #k-catalog-section.k-cat-has-more,
   #k-catalog-section:has(#k-grid:not([class*="k-grid-"])) {
     min-height: calc(100vh - var(--header-h, 72px));
+  }
+  /* État « catégorie vide » (0 produit) : le message occupe la largeur utile
+     de la grille au lieu de laisser un trou. */
+  #k-grid > .k-sec-empty {
+    grid-column: 1 / -1;
+    min-height: 220px;
   }
 }
 
@@ -165,14 +173,12 @@
     border-top: 2px solid var(--ocean-light);
   }
 
-  /* Le FOND du footer s'arrête avant le side-cart (doctrine RÉSERVE, comme le
-     contenu). margin-right = largeur réservée quand le panier est docké ; le
-     padding-right du body ne contraint que le flux, pas la peinture du fond.
-     Voir BOUTIQUE_SIDE_CART_DOCTRINE.md. */
-  body.sc-reserve .k-footer,
-  body:has(.k-side-cart.has-items) .k-footer {
-    margin-right: var(--sc-reserve-w, 240px);
-  }
+  /* Le footer est enfant direct de <body> ; quand le panier est docké, le
+     padding-right du body (body.sc-reserve / :has(.k-side-cart.has-items),
+     = largeur exacte du side-cart) confine DÉJÀ le footer : son fond s'arrête
+     pile au bord gauche du panneau. L'ancien margin-right ajoutait une SECONDE
+     réserve → bande vide visible entre footer et side-cart. Supprimé : le
+     footer est désormais collé au side-cart. (Voir BOUTIQUE_SIDE_CART_DOCTRINE.) */
 
   .k-footer-grid {
     display: grid;

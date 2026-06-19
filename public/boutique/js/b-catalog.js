@@ -119,6 +119,14 @@ bus.on('catalog:cat-changed', function(cat) {
 /**
  * Charge la page suivante de produits (scroll infini — desktop).
  */
+/* Réserve de hauteur catalogue (desktop) : pose/retire k-cat-has-more sur
+   #k-catalog-section. Tant qu'il reste des pages à charger, le CSS réserve le
+   viewport → le footer ne surgit pas en plein scroll infini (anti-saut). */
+function _setCatHasMore(hasMore) {
+  const sec = document.getElementById('k-catalog-section');
+  if (sec) sec.classList.toggle('k-cat-has-more', !!hasMore);
+}
+
 function appendNextPage() {
   const spinner = document.getElementById('k-load-more-spinner');
 
@@ -148,6 +156,7 @@ function appendNextPage() {
   const start = (state.page + 1) * state.pageSize;
   if (start >= list.length) {
     if (spinner) spinner.classList.remove('show');
+    _setCatHasMore(false);            // pager épuisé → libère la réserve de hauteur
     return;
   }
   state.page += 1;
@@ -162,6 +171,7 @@ function appendNextPage() {
     card.dataset.bound = '1';
     bindCarouselDots(card);
   });
+  _setCatHasMore((state.page + 1) * state.pageSize < list.length); // reste-t-il des pages ?
   if (spinner) spinner.classList.remove('show');
 }
 
@@ -413,6 +423,7 @@ function renderGrid() {
         ensureDesktopScrollOwner();
       });
     }
+    _setCatHasMore(false); // vue sections/accueil : pas de pager auto → plancher seul
     return;
   }
 
@@ -434,7 +445,17 @@ function renderGrid() {
     _renderSubcatRail(state.activeCat, { count: _catCount });
   }
 
-  dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
+  if (pageItems.length === 0) {
+    // Catégorie sans produit : message au lieu d'un grand vide avant le footer.
+    dom.grid.innerHTML =
+      '<div class="k-sec-empty"><span class="k-sec-empty-icon">📦</span>' +
+      '<span class="k-sec-empty-msg">Bientôt disponible dans cette catégorie</span></div>';
+    _setCatHasMore(false);
+  } else {
+    dom.grid.innerHTML = pageItems.map(p => renderProductCard(p)).join('');
+    // Desktop : réserve la hauteur tant que le pager (sentinel) peut charger plus.
+    _setCatHasMore(!_isMobile && list.length > pageItems.length);
+  }
   _triggerGridEnterAnim();
   dom.grid.querySelectorAll('.k-card').forEach(card => bindCarouselDots(card));
 }
