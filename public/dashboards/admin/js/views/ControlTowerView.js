@@ -430,6 +430,9 @@
       ]);
 
       // ── KPIs ─────────────────────────────────────────────────────────
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       KpiCard.renderBar(document.getElementById('ct-kpis'), data.kpis || []);
 
       // ── Charts ───────────────────────────────────────────────────────

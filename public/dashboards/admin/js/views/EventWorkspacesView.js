@@ -110,6 +110,9 @@
       const data = await KmcApi.getEventWorkspaces(filters);
 
       // KPIs
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       KpiCard.renderBar(document.getElementById('ws-kpis'), data.kpis || []);
 
       // Funnel

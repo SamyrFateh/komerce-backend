@@ -368,6 +368,9 @@
         KmcApi.getTransitaireParcels(),
       ]);
 
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       renderKpiBar(document.getElementById('tr-kpis'), stats);
       renderParcelsTable(
         document.getElementById('tr-parcels'),

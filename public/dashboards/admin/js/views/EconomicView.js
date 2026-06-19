@@ -70,6 +70,9 @@
       KmcApi.getEconomicCoherence().catch(() => null),
     ]);
 
+    // Guard : navigation entre-temps → rootEl détaché du DOM
+    if (!rootEl || !document.contains(rootEl)) return;
+
     _renderFrontiers(document.getElementById('eco-frontiers'), dash);
     _renderCatKpis(document.getElementById('eco-cat-kpis'), dash);
     _renderAction(document.getElementById('eco-action'), dash);

@@ -112,10 +112,16 @@ function _scheduleRecalc(container, delayMs) {
   _recalcTimer = setTimeout(async () => {
     if (_ps.buildMode === 'catalog' && !_ps.selectedProductId) return;
     if (_ps.buildMode === 'simulation' && (!_ps.inputPrixAchat || _ps.inputPrixAchat <= 0)) return;
+    // Guard : navigation entre-temps → container détaché du DOM
+    if (!container || !document.contains(container)) return;
     _ps.isComputing = true; _renderHTML(container);
     try { await _computeReco(); }
     catch (err) { _ps.lastError = err.message || 'Erreur inconnue'; _ps.currentReco = null; }
-    finally { _ps.isComputing = false; _renderHTML(container); }
+    finally {
+      _ps.isComputing = false;
+      if (!container || !document.contains(container)) return;
+      _renderHTML(container);
+    }
   }, delayMs || 300);
 }
 
@@ -612,6 +618,8 @@ global.PricingView = async function(container) {
   try {
     await _loadAll();
     await _loadCatalog();
+    // Guard : navigation entre-temps → container détaché du DOM
+    if (!container || !document.contains(container)) return;
     _ps.loaded = true;
     _renderHTML(container);
   } catch (err) {

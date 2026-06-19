@@ -55,6 +55,9 @@
         KmcApi.getCashUncollected({ hours: 72 }).catch(() => null),
       ]);
 
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       _renderKpis(document.getElementById('inv-kpis'), invoices, uncollected);
       _renderInvoices(document.getElementById('inv-table'), invoices);
       _renderUncollected(document.getElementById('inv-uncollected'), uncollected);
@@ -65,6 +68,7 @@
 
     } catch (err) {
       console.error('[InvoicesView] error:', err);
+      if (!rootEl || !document.contains(rootEl)) return;
       document.getElementById('inv-kpis').innerHTML =
         `<div class="error-state">❌ Erreur : ${err.message || 'inconnue'}</div>`;
     }

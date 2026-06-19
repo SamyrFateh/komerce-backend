@@ -212,6 +212,9 @@
       if (!Array.isArray(_s.products)) _s.products = [];
     } catch (e) { _s.products = []; }
 
+    // Guard : navigation entre-temps → rootEl détaché du DOM
+    if (!rootEl || !document.contains(rootEl)) return;
+
     const sel = document.getElementById('efv-product');
     if (!_s.products.length) { sel.innerHTML = '<option>Aucun produit</option>'; return; }
     sel.innerHTML = _s.products.map(p => `<option value="${_esc(p.id)}">${_esc(p.name || p.id)}</option>`).join('');

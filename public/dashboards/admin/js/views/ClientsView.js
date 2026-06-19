@@ -135,6 +135,9 @@
         KmcApi.getClientsList(filters, { page: 1, page_size: 25, segment: 'all', vip_threshold: DEFAULT_VIP_THRESHOLD }),
       ]);
 
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       renderKpis(document.getElementById('cli-kpis'), summary.kpi);
       renderBody(document.getElementById('cli-body'), summary, list);
     } catch (err) {

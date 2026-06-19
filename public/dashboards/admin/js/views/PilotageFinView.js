@@ -60,6 +60,9 @@
         KmcApi.getEconomicVariables().catch(() => null),
       ]);
 
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       _renderKpis(document.getElementById('pf-kpis'), finance);
       _renderChartCA(document.getElementById('pf-chart-ca'), history);
       _renderChartMix(document.getElementById('pf-chart-mix'), finance);

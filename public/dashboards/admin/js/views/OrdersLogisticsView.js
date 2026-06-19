@@ -74,6 +74,9 @@
       const data = await KmcApi.getLogistics(filters);
 
       // KPIs
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       KpiCard.renderBar(document.getElementById('ops-kpis'), data.kpis || []);
 
       // Pipelines (funnel charts)

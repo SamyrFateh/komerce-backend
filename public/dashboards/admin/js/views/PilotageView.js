@@ -51,6 +51,9 @@
       const data = await KmcApi.getUnified(filters);
 
       // KPIs globaux
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       KpiCard.renderBar(document.getElementById('pilotage-kpis'), data.kpis_global || []);
 
       // Blocs vues

@@ -158,6 +158,9 @@
     `;
     rootEl.innerHTML = html;
 
+    // Guard : navigation entre-temps → rootEl détaché du DOM
+    if (!rootEl || !document.contains(rootEl)) return;
+
     const content = document.getElementById('sr-content');
     if (_activeTab === 'synthesis') _renderSynthesis(content);
     else _renderProducts(content, rootEl);

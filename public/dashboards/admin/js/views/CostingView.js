@@ -84,6 +84,9 @@
       const data = await KmcApi.getCosting(filters);
 
       // KPIs (8) — incluant 3 niveaux de marge
+      // Guard : navigation entre-temps → rootEl détaché du DOM
+      if (!rootEl || !document.contains(rootEl)) return;
+
       KpiCard.renderBar(document.getElementById('cost-kpis'), data.kpis || []);
 
       // Charts
