@@ -558,3 +558,74 @@
 .kmc-bg-blue   { background: var(--kmc-blue-bg);   color: var(--kmc-blue-text); }
 .kmc-bg-amber  { background: rgba(244,184,96,0.18); color: #92400E; }
 .kmc-bg-gray   { background: var(--kmc-gray-bg);   color: var(--kmc-gray-text); }
+
+/* === CT-KPI (AccountingView) === */
+.ct-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.ct-kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--sp-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.ct-kpi-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ct-kpi-value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.ct-kpi-label {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-top: var(--sp-1);
+}
+
+.acct-unit-label {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+}
+
+/* === KMC-KPI (CustomsView) === */
+.kmc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
+.kmc-kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--sp-4);
+}
+
+.kmc-kpi-value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: var(--sp-1);
+}
+
+.kmc-kpi-label {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+}
