@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-06-20T20:39:14.879Z",
+  "generatedAt": "2026-06-20T20:43:30.364Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
     "total": 460,
-    "protected": 402,
+    "protected": 403,
     "public": 5,
-    "unprotected": 46,
+    "unprotected": 45,
     "admin_no_guard": 2,
     "unknown": 5
   },
@@ -288,12 +288,6 @@
     },
     {
       "key": "GET /api/tracking/{token}",
-      "level": "UNPROTECTED",
-      "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/parcels/{ref}/label",
       "level": "UNPROTECTED",
       "severity": "medium",
       "roles": []
@@ -3246,8 +3240,12 @@
     },
     {
       "key": "GET /api/v2/parcels/{ref}/label",
-      "level": "UNPROTECTED",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "POST /api/v2/parcels/{ref}/scan",

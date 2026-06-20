@@ -19,11 +19,22 @@
 // ─── Parcel Label Generator ─────────────────────────────────
 // GET /api/v2/parcels/:ref/label  → HTML imprimable avec QR code
 // GET /api/v2/parcels/:ref/label?format=thermal → optimisé 80mm
+//
+// SÉCURITÉ — ajouté 2026-06-20 : cette route exposait pickup_code,
+// nom + téléphone client, détail commandes/montants SANS AUCUNE garde,
+// via une référence colis séquentielle et devinable (KOM-P-{année}-{NNNNNN},
+// cf. services/auto-parcel.js#nextParcelRef). Violation de la doctrine [S1]
+// documentée dans routes/logistics.js (étiquettes banalisées, jamais de
+// pickup_code/nom/téléphone visible). Garde alignée sur le routeur frère
+// parcel-api-v2/index.js, monté sur le même préfixe /api/v2/parcels.
 // ─────────────────────────────────────────────────────────────
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { authenticate, requireRole } = require('../middleware/auth');
 const log = require('../utils/logger').child({ module: 'parcel-label' });
+
+const labelAuth = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relais'])];
 
 // ── Helper: format date ──
 function fmtDate(d) {
@@ -38,7 +49,7 @@ function fmtPrice(n) {
 }
 
 // ── GET /:ref/label ──────────────────────────────────────────
-router.get('/:ref/label', async (req, res) => {
+router.get('/:ref/label', ...labelAuth, async (req, res) => {
   const { ref } = req.params;
   const thermal = req.query.format === 'thermal';
 

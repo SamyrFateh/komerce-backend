@@ -27,7 +27,6 @@
     "GET /api/shared-carts/public/{token}/estimations/by-phone",
     "GET /api/shares/{token}",
     "GET /api/tracking/{token}",
-    "GET /api/v2/parcels/{ref}/label",
     "GET /health",
     "GET /health/metrics",
     "GET /health/ready",
