@@ -1,21 +1,15 @@
 {
-  "generatedAt": "2026-06-20T19:27:38.473Z",
+  "generatedAt": "2026-06-20T20:34:57.065Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
     "total": 460,
-    "protected": 363,
+    "protected": 402,
     "public": 5,
-    "unprotected": 37,
+    "unprotected": 46,
     "admin_no_guard": 2,
-    "unknown": 53
+    "unknown": 5
   },
   "flagged": [
-    {
-      "key": "GET /api/admin/dashboard",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
     {
       "key": "GET /api/admin/pricing-components/{id}",
       "level": "ADMIN_NO_GUARD",
@@ -26,72 +20,6 @@
       "key": "GET /api/admin/pricing-components",
       "level": "ADMIN_NO_GUARD",
       "severity": "high",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/candidates/{id}/import-product",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/candidates/{id}/reject",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/candidates/{id}/scan",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/candidates/{id}/watchlist",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/admin/sourcing/candidates/{id}",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "PUT /api/admin/sourcing/candidates/{id}",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/candidates/scan-batch",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/admin/sourcing/candidates",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/admin/sourcing/catalogs/import",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/admin/sourcing/catalogs",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/admin/sourcing/connectors",
-      "level": "UNKNOWN",
-      "severity": "audit",
       "roles": []
     },
     {
@@ -107,33 +35,21 @@
       "roles": []
     },
     {
-      "key": "GET /api/auth/invoices",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
       "key": "GET /api/auth/magic-link/validate",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "POST /api/auth/magic-link",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "POST /api/auth/orders-by-phone",
       "level": "UNPROTECTED",
       "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "GET /api/auth/orders",
-      "level": "UNKNOWN",
-      "severity": "audit",
       "roles": []
     },
     {
@@ -179,30 +95,6 @@
       "roles": []
     },
     {
-      "key": "POST /api/hub/auto-distribute/cleanup",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/hub/auto-distribute",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/hub/auto-distribute",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/hub/orders/mark-ordered",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
       "key": "GET /api/invoices/public/{token}",
       "level": "UNPROTECTED",
       "severity": "medium",
@@ -242,12 +134,6 @@
       "key": "GET /api/modules",
       "level": "UNPROTECTED",
       "severity": "medium",
-      "roles": []
-    },
-    {
-      "key": "POST /api/orders/{id}/qr-token",
-      "level": "UNKNOWN",
-      "severity": "audit",
       "roles": []
     },
     {
@@ -329,90 +215,6 @@
       "roles": []
     },
     {
-      "key": "GET /api/shared-carts/{id}/as-cart-items",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/awaiting-choice/complete",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/cancel",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/close",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/extend-window",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/{id}/finalize",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "PUT /api/shared-carts/{id}/items",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/{id}",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/from-basket",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/from-cart-items",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "POST /api/shared-carts/from-order",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/shared-carts/mine",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
       "key": "POST /api/shared-carts/public/{token}/contributions/cash",
       "level": "UNPROTECTED",
       "severity": "medium",
@@ -420,38 +222,38 @@
     },
     {
       "key": "POST /api/shared-carts/public/{token}/contributions",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}/estimations",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/public/{token}/estimations",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
@@ -491,45 +293,9 @@
       "roles": []
     },
     {
-      "key": "GET /api/v2/alerts",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/parcels/{id}/orders",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/parcels/{id}/scans",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/parcels/{id}",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/parcels/{ref}/detail",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
       "key": "GET /api/v2/parcels/{ref}/label",
-      "level": "UNKNOWN",
-      "severity": "audit",
-      "roles": []
-    },
-    {
-      "key": "GET /api/v2/reconciliation/summary",
-      "level": "UNKNOWN",
-      "severity": "audit",
+      "level": "UNPROTECTED",
+      "severity": "medium",
       "roles": []
     },
     {
@@ -909,8 +675,10 @@
     },
     {
       "key": "GET /api/admin/dashboard",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "PUT /api/admin/economic/charges/{id}/toggle",
@@ -1449,53 +1217,73 @@
     },
     {
       "key": "POST /api/admin/sourcing/candidates/{id}/import-product",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/sourcing/candidates/{id}/reject",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/sourcing/candidates/{id}/scan",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/sourcing/candidates/{id}/watchlist",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/admin/sourcing/candidates/{id}",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "PUT /api/admin/sourcing/candidates/{id}",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/sourcing/candidates/scan-batch",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/admin/sourcing/candidates",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/sourcing/catalogs/import",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/admin/sourcing/catalogs",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/admin/sourcing/config",
@@ -1506,8 +1294,10 @@
     },
     {
       "key": "GET /api/admin/sourcing/connectors",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "GET /api/admin/sourcing/products/{id}/variants",
@@ -1589,7 +1379,7 @@
     },
     {
       "key": "GET /api/auth/invoices",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -1604,12 +1394,12 @@
     },
     {
       "key": "GET /api/auth/magic-link/validate",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/auth/magic-link",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
@@ -1629,7 +1419,7 @@
     },
     {
       "key": "GET /api/auth/orders",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -2026,18 +1816,27 @@
     },
     {
       "key": "POST /api/hub/auto-distribute/cleanup",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "GET /api/hub/auto-distribute",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "POST /api/hub/auto-distribute",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "POST /api/hub/batch-scan",
@@ -2113,8 +1912,11 @@
     },
     {
       "key": "POST /api/hub/orders/mark-ordered",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
     },
     {
       "key": "POST /api/hub/pack",
@@ -2366,8 +2168,11 @@
     },
     {
       "key": "POST /api/orders/{id}/qr-token",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
     },
     {
       "key": "PATCH /api/orders/{id}/status",
@@ -2386,10 +2191,7 @@
     {
       "key": "GET /api/orders/{ref}",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_relais"
-      ]
+      "roles": []
     },
     {
       "key": "GET /api/orders/credits",
@@ -3004,52 +2806,52 @@
     },
     {
       "key": "GET /api/shared-carts/{id}/as-cart-items",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/awaiting-choice/complete",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/cancel",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/close",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/extend-window",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/{id}/finalize",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "PUT /api/shared-carts/{id}/items",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/{id}",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -3062,22 +2864,22 @@
     },
     {
       "key": "POST /api/shared-carts/from-basket",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/from-cart-items",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/from-order",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/mine",
-      "level": "UNKNOWN",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -3087,32 +2889,32 @@
     },
     {
       "key": "POST /api/shared-carts/public/{token}/contributions",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}/estimations",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "POST /api/shared-carts/public/{token}/estimations",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/shared-carts/public/{token}",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
@@ -3304,8 +3106,12 @@
     },
     {
       "key": "GET /api/v2/alerts",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/global",
@@ -3404,27 +3210,43 @@
     },
     {
       "key": "GET /api/v2/parcels/{id}/orders",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/parcels/{id}/scans",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/parcels/{id}",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/parcels/{ref}/detail",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/parcels/{ref}/label",
-      "level": "UNKNOWN",
+      "level": "UNPROTECTED",
       "roles": []
     },
     {
@@ -3510,8 +3332,12 @@
     },
     {
       "key": "GET /api/v2/reconciliation/summary",
-      "level": "UNKNOWN",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
     },
     {
       "key": "GET /api/v2/reconciliation",

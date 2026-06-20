@@ -50,10 +50,16 @@ function tokens(s) {
 function mergeInto(t, a) { t.authn = t.authn || a.authn; t.admin = t.admin || a.admin; a.roles.forEach(r => t.roles.add(r)); }
 
 // renvoie {method, route} → guards, en suivant router.use sous-routeurs
-function staticGuards(routeFile, prefix, seen, acc, inherited) {
+// `varName` : nom de la variable routeur à analyser dans ce fichier (par défaut
+// 'router'). Nécessaire car certains fichiers exportent plusieurs routeurs
+// (router + adminRouter) avec des routes disjointes — analyser sous le mauvais
+// nom revient à ne rien trouver (les regex étaient codées en dur sur 'router').
+function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
   seen = seen || new Set(); acc = acc || [];
   inherited = inherited || { authn: false, roles: new Set(), admin: false };
-  if (seen.has(routeFile + '@' + prefix)) return acc; seen.add(routeFile + '@' + prefix);
+  varName = varName || 'router';
+  const vEsc = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (seen.has(routeFile + '@' + prefix + '@' + varName)) return acc; seen.add(routeFile + '@' + prefix + '@' + varName);
   const src = read(routeFile); if (!src) return acc;
   // re-export : module.exports = require('./x') → suivre
   const reexp = src.match(/module\.exports\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/);
@@ -61,7 +67,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited) {
     let p = reexp[1].replace(/^\.\//, '');
     let sf = /^routes\//.test(p) ? p : path.normalize(path.join(path.dirname(routeFile), reexp[1])).replace(/\\/g, '/');
     if (!sf.endsWith('.js')) sf += '.js';
-    return staticGuards(sf, prefix, seen, acc, inherited);
+    return staticGuards(sf, prefix, seen, acc, inherited, varName);
   }
   const alias = {};
   for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g))
@@ -69,7 +75,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited) {
 
   // gardes au NIVEAU ROUTEUR : router.use(authenticate, requireAdmin) sans require → tout le fichier
   const fileBase = { authn: inherited.authn, roles: new Set(inherited.roles), admin: inherited.admin };
-  for (const m of src.matchAll(/router\.use\(\s*([^\n;]+)/g)) {
+  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.use\\(\\s*([^\\n;]+)', 'g'))) {
     const arg = m[1];
     if (/require\(/.test(arg)) continue; // montage de sous-routeur, pas une garde
     if (/authenticate|requireRole|requireAdmin/.test(arg)) {
@@ -80,18 +86,42 @@ function staticGuards(routeFile, prefix, seen, acc, inherited) {
     }
   }
 
-  for (const m of src.matchAll(/router\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*,?([\s\S]{0,400}?)(async\s*\(|\(\s*req|function\s*\()/g)) {
+  // Le groupe de gardes (entre la route et le handler) est lazy/borné à 400 car.
+  // S'il ne trouve pas de handler inline sur CETTE route (ex: handler nommé,
+  // `router.post('/x', mw, namedHandler)`), il continue d'avancer et peut
+  // engloutir la DÉCLARATION SUIVANTE jusqu'à atteindre son handler inline —
+  // ce qui fait disparaître la route suivante du résultat. On interdit donc à
+  // la fenêtre de traverser un autre `vEsc.<méthode>(`.
+  const guardGap = '(?:(?!\\b' + vEsc + '\\.(?:get|post|put|delete|patch)\\b)[\\s\\S]){0,400}?';
+  const seenRoutes = new Set(); // method+route déjà capturés par la passe inline, pour éviter les doublons avec la passe "handler nommé"
+  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.(get|post|put|delete|patch)\\s*\\(\\s*[\'"`]([^\'"`]+)[\'"`]\\s*,?(' + guardGap + ')(async\\s*\\(|\\(\\s*req|function\\s*\\()', 'g'))) {
     const chain = m[3] || '';
     const t = { authn: fileBase.authn, roles: new Set(fileBase.roles), admin: fileBase.admin };
     mergeInto(t, tokens(chain));
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
-    acc.push({ method: m[1].toUpperCase(), route: norm(prefix + '/' + m[2]),
-               authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
+    const route = norm(prefix + '/' + m[2]);
+    seenRoutes.add(m[1].toUpperCase() + ' ' + route);
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
+  }
+  // Passe complémentaire : routes avec un HANDLER NOMMÉ plutôt qu'inline, ex.
+  // `router.get('/x', authenticate, requireAdmin, namedHandler);` — le pattern
+  // ci-dessus exige un handler inline et ne peut structurellement pas matcher
+  // ces lignes. On capture toute la chaîne jusqu'au `;` de fin de l'appel.
+  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.(get|post|put|delete|patch)\\s*\\(\\s*[\'"`]([^\'"`]+)[\'"`]\\s*,([^\\n;]*)\\)\\s*;', 'g'))) {
+    const route = norm(prefix + '/' + m[2]);
+    const key = m[1].toUpperCase() + ' ' + route;
+    if (seenRoutes.has(key)) continue; // déjà capturée par la passe inline
+    seenRoutes.add(key);
+    const chain = m[3] || '';
+    const t = { authn: fileBase.authn, roles: new Set(fileBase.roles), admin: fileBase.admin };
+    mergeInto(t, tokens(chain));
+    for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
   }
   // sous-routeurs (héritent fileBase)
   const v2spec = {};
   for (const m of src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/g)) v2spec[m[1]] = m[2];
-  for (const m of src.matchAll(/router\.use\(\s*(?:(['"`])([^'"`]+)\1\s*,\s*)?([^\n;]+)/g)) {
+  for (const m of src.matchAll(new RegExp('\\b' + vEsc + '\\.use\\(\\s*(?:([\'"`])([^\'"`]+)\\1\\s*,\\s*)?([^\\n;]+)', 'g'))) {
     const sub = m[2] || ''; const arg = (m[3] || '').trim();
     let spec = null; const inl = arg.match(/require\(\s*['"]([^'"]+)['"]\s*\)/);
     if (inl) spec = inl[1]; else { const vn = arg.split(/[\s,(]/)[0]; if (v2spec[vn]) spec = v2spec[vn]; }
@@ -99,13 +129,17 @@ function staticGuards(routeFile, prefix, seen, acc, inherited) {
       let p = spec.replace(/^\.\//, '').replace(/^\.\.\//, '');
       let sf = /^routes\//.test(p) ? p : path.normalize(path.join(path.dirname(routeFile), spec)).replace(/\\/g, '/');
       if (!sf.endsWith('.js')) sf += '.js';
-      staticGuards(sf, norm(prefix + '/' + sub), seen, acc, fileBase);
+      staticGuards(sf, norm(prefix + '/' + sub), seen, acc, fileBase, varName);
     }
   }
   return acc;
 }
 
 // prefix → fichier (pour mapper l'inventaire runtime aux fichiers + monter les gardes)
+// `exportName` : certains fichiers exportent PLUSIEURS routeurs (ex: shared-cart.js
+// exporte { router, adminRouter }, montés sur 2 préfixes différents avec des routes
+// différentes). On garde le nom de variable réellement monté (ex: 'adminRouter')
+// pour que staticGuards analyse le BON routeur, pas toujours le littéral 'router'.
 function buildMounts() {
   const mounts = [];
   for (const f of ['bootstrap/api-routes.js', 'server.js']) {
@@ -119,7 +153,10 @@ function buildMounts() {
       const inl = arg.match(/require\(\s*['"][^'"]*routes\/([\w/-]+)['"]/);
       if (inl) file = 'routes/' + inl[1].replace(/\.js$/, '') + '.js';
       else { const vn = arg.split(/[\s,().]/)[0]; if (v2f[vn]) file = v2f[vn]; }
-      if (file) mounts.push({ prefix, file });
+      // nom de l'export monté : 'sharedCart.adminRouter' → 'adminRouter' ; 'router' → 'router'
+      const dotMatch = arg.match(/^\w+\.(\w+)/);
+      const exportName = dotMatch ? dotMatch[1] : 'router';
+      if (file) mounts.push({ prefix, file, exportName });
     }
   }
   return mounts;
@@ -151,21 +188,35 @@ function runtimeInventory() {
 }
 
 // ── jointure inventaire ↔ gardes statiques (par suffixe) ─────────────────────
+// Deux choses peuvent faire qu'un préfixe seul ne suffit pas à trouver la garde :
+// 1. Plusieurs fichiers montés sur le MÊME préfixe (ex: deux routers sur
+//    /api/admin/sourcing, trois sur /api/hub) → il faut les gardes de TOUS.
+// 2. Express teste les mounts dans l'ORDRE DE DÉCLARATION, pas seulement le
+//    préfixe le plus spécifique : si /api/admin/dashboard (mount le plus long)
+//    n'a pas de route pour le tail demandé, Express passe au mount suivant qui
+//    matche, même plus court (ex: /api/admin, dont la route interne /dashboard
+//    répond). Donc on garde TOUS les mounts dont le préfixe matche, du plus
+//    long au plus court, et `classify` essaie dans cet ordre.
 const mounts = buildMounts().sort((a, b) => b.prefix.length - a.prefix.length);
-const mountFor = p => { for (const m of mounts) if (p === m.prefix || p.startsWith(m.prefix + '/')) return m; return null; };
+const mountsFor = p => mounts.filter(m => p === m.prefix || p.startsWith(m.prefix + '/'));
 
 const guardCache = {};
-function guardsForFile(f) { if (!(f in guardCache)) guardCache[f] = f ? staticGuards(f, '') : []; return guardCache[f]; }
+function guardsForFile(f, exportName) {
+  const cacheKey = f + '@' + (exportName || 'router');
+  if (!(cacheKey in guardCache)) guardCache[cacheKey] = f ? staticGuards(f, '', null, null, null, exportName) : [];
+  return guardCache[cacheKey];
+}
 
 function classify(method, p) {
-  const mt = mountFor(p);
-  const file = mt && mt.file;
-  const tail = mt ? norm(p.slice(mt.prefix.length)) : p;
+  const mts = mountsFor(p);
   let best = null;
-  for (const g of guardsForFile(file)) {
-    if (g.method !== method) continue;
-    if (g.route === tail || tail.endsWith(g.route) || g.route.endsWith(tail)) {
-      if (!best || g.route.length > best.route.length) best = g;
+  for (const mt of mts) {
+    const tail = norm(p.slice(mt.prefix.length));
+    for (const g of guardsForFile(mt.file, mt.exportName)) {
+      if (g.method !== method) continue;
+      if (g.route === tail || tail.endsWith(g.route) || g.route.endsWith(tail)) {
+        if (!best || g.route.length > best.route.length) best = g;
+      }
     }
   }
   const isAdminPath = /^\/api\/admin(\/|$)/.test(p);
