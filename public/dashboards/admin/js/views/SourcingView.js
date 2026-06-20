@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-sourcing-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        sourcing candidates, suppliers, benchmarks
+ * @outputs       sourcing_page_dom (pipeline sourcing, fournisseurs, prix benchmark)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  sourcing, suppliers, pricing, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Sourcing Intelligence /admin/sourcing
  * ════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.sourcing (ct-views-sourcing.js — 717 lignes)

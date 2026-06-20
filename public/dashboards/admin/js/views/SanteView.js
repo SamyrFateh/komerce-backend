@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-sante-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to), business health KPIs
+ * @outputs       sante_page_dom (santé business, KPIs critiques, signaux faibles)
+ * @depends       api-client.js, filters-store.js, utils.js, components/KpiCard.js, components/Charts.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  health, kpi, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Santé Business /admin/sante
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Est-ce que la machine tourne, et est-ce qu'elle ne va pas casser ?"

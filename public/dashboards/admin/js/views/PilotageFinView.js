@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-pilotage-fin-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        filters (from, to), projection and product mix data
+ * @outputs       pilotage_fin_page_dom (projection CA, mix produit, scénarios)
+ * @depends       api-client.js, filters-store.js, utils.js, components/Charts.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  finance, projection, product-mix, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Pilotage Financier /admin/pilotage-fin
  * ════════════════════════════════════════════════════════════════════════
  * Questions : Trajectoire du CA ? Mix catégories ? Fidélité ?

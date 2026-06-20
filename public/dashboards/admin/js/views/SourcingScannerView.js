@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-sourcing-scanner-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        catalogue candidates, scan results
+ * @outputs       sourcing_scanner_page_dom (scan catalogue, scoring candidats)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  sourcing, catalog, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Scanner Catalogue Fournisseur /admin/sourcing-scanner
  * ═══════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.sourcing_scanner (ct-views-sourcing-scanner.js — 817 lignes)

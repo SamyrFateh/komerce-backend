@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-filter-state-store
+ * @domain        admin-dashboard
+ * @layer         state-store
+ * @criticality   high
+ * @inputs        url_query_params (from, to, island, relais_id, status, payment_status, cost_status, channel, origin)
+ * @outputs       filter_state_object, change_notifications_to_subscribers
+ * @depends       none
+ * @used-by       app.js, all views (via global KmcFilters)
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  admin-dashboard, date-filtering, all-views
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Filters Store
  * ════════════════════════════════════════════════════════════════════════
  * Etat global des filtres dashboard, synchronisé avec l'URL (?from=...&to=...).

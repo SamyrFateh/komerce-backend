@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-chart-components
+ * @domain        admin-dashboard
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        canvas_element, chart_data_object
+ * @outputs       rendered_chart (LineChart, DonutChart, Funnel wrappers)
+ * @depends       chart.umd.min.js (Chart.js global)
+ * @used-by       multiple views (SanteView, EconomicView, PilotageView, PricingView, etc.)
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      none
+ * @impact-areas  admin-dashboard, data-visualization
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Charts (LineChart, DonutChart, Funnel)
  * ════════════════════════════════════════════════════════════════════════
  * Wrappers Chart.js avec presets Komerce (couleurs, formatage KMF).

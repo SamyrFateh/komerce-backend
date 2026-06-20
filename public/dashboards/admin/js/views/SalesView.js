@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-sales-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        filters (from, to, island), sales data
+ * @outputs       sales_page_dom (CA, volume, tendances par île et canal)
+ * @depends       api-client.js, filters-store.js, utils.js, components/Charts.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  sales, revenue, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Ventes /admin/sales
  * ════════════════════════════════════════════════════════════════════════
  * Migration de ct-views-sales.js (v2, ADR-002) vers l'architecture moderne.

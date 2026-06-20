@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-inventory-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        hub inventory data
+ * @outputs       inventory_page_dom (stock hub par produit, mouvements)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  inventory, hub, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Inventaire /admin/inventory
  * ════════════════════════════════════════════════════════════════════════
  * Migration de ct-views-inventory.js (CTInventory) vers l'architecture moderne.

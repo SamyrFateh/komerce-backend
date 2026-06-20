@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-simulator-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   low
+ * @inputs        simulation parameters (product, volume, costs)
+ * @outputs       simulator_page_dom (résultats de simulation prix / marge)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  pricing, simulation, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — SimulatorView /admin/simulator
  * ════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.simulator (ct-views-simulator.js v2)

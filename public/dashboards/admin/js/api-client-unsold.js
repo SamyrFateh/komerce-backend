@@ -1,3 +1,13 @@
+/**
+ * @komerce-arch-lite
+ * @role          unsold-stats-api-patch
+ * @domain        admin-dashboard
+ * @layer         api-client
+ * @owner         dashboards/admin/js/api-client.js
+ * @purpose       patches KmcApi post-load avec getUnsoldStats() → GET /api/unsold/stats/summary
+ * @impact-areas  control-tower, admin-dashboard
+ * @version       2026-06
+ */
 (function (global) {
   'use strict';
 

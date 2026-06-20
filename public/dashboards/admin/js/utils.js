@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-xss-escape-helpers
+ * @domain        admin-dashboard
+ * @layer         ui-renderer
+ * @criticality   medium
+ * @inputs        raw_strings (user-facing or API-sourced)
+ * @outputs       escaped_html via esc(), escAttr(), safeError()
+ * @depends       none
+ * @used-by       all views in dashboards/admin/js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      none
+ * @impact-areas  admin-dashboard (XSS prevention — must be loaded before any view)
+ * @version       2026-06
+ */
+/**
  * KOMERCE — Helpers admin moderne (FRESH-104)
  *
  * Centralise les helpers d'échappement HTML pour éliminer les XSS dans

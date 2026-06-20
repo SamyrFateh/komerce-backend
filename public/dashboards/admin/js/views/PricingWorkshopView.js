@@ -1,3 +1,20 @@
+/**
+ * @komerce-arch
+ * @role          admin-pricing-workshop-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        pricing workshop config (charges, transitaire, provisions)
+ * @outputs       pricing_workshop_page_dom (config des coûts fixes et variables)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  pricing, config, cost-components, admin-dashboard
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
  *  PricingWorkshopView.js — Komerce Control Tower
  *  ⚙️ Configuration des coûts (cost_components)

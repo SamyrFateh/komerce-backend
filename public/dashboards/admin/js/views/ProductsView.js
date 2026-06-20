@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-products-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        products list, categories, product card config
+ * @outputs       products_page_dom (grille produits, création, édition, images)
+ * @depends       api-client.js, filters-store.js, utils.js, product-card-model.admin.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  catalog, products, boutique, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue /admin/products
  * ════════════════════════════════════════════════════════════════════════
  * Gestion CRUD des produits boutique depuis le dashboard admin.

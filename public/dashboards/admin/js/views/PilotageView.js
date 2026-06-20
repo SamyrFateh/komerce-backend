@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-pilotage-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to), pilotage KPIs
+ * @outputs       pilotage_page_dom (KPI bar, tendances, alertes opé)
+ * @depends       api-client.js, filters-store.js, utils.js, components/KpiCard.js, components/Charts.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  pilotage, kpi, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue unifiée /admin/pilotage
  * ════════════════════════════════════════════════════════════════════════
  * Carte du système : 4 blocs vues + KPI bar globale + economic flow.

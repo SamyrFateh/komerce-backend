@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-problems-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        problems list (commandes bloquées, paiements en attente, ruptures)
+ * @outputs       problems_page_dom (liste triée par criticité, actions rapides)
+ * @depends       api-client.js, filters-store.js, utils.js, components/UI.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  problems, incidents, orders, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Anomalies /admin/problems
  * ════════════════════════════════════════════════════════════════════════
  * Migration de ct-views-problems.js vers l'architecture moderne.

@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-spa-entrypoint
+ * @domain        admin-dashboard
+ * @layer         entrypoint
+ * @criticality   critical
+ * @inputs        url_path, user_session, filter_state
+ * @outputs       shell_dom, sidebar_nav_dom, dispatched_view
+ * @depends       api-client.js, filters-store.js, utils.js, views/*
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  admin-dashboard, auth, all-spa-routes
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — App
  * Routing SPA (pushState) + shell CT/BO + dispatch.
  *

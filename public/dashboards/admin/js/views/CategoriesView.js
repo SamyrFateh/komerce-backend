@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-categories-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        categories list, product counts
+ * @outputs       categories_page_dom (liste, création, édition, images)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  catalog, categories, boutique
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue /admin/categories
  * ════════════════════════════════════════════════════════════════════════
  * Gestion CRUD des catégories et sous-catégories boutique.

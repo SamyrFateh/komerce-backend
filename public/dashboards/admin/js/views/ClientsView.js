@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-clients-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        filters (from, to, island), client segments
+ * @outputs       clients_page_dom (KPI bar, segments, top VIP, clients à risque)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  clients, support, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Clients /admin/clients
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Comment se porte notre base clients ? Qui est à risque ?"

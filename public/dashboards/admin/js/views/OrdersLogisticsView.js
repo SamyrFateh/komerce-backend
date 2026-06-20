@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-orders-logistics-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to, status), orders and parcels data
+ * @outputs       orders_logistics_page_dom (commandes, colis, pipeline livraison)
+ * @depends       api-client.js, filters-store.js, utils.js, components/KpiCard.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  orders, logistics, parcels, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Commandes & logistique /admin/orders-logistics
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Qu'est-ce qu'il faut traiter ? Où sont les commandes ?"

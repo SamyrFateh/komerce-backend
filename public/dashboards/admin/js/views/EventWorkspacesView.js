@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-event-workspaces-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        event workspaces list
+ * @outputs       event_workspaces_page_dom (paniers événement, participants, statuts)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  group-cart, event-workspaces, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Panier événement /admin/event-workspaces
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Combien d'événements en cours, où accompagner SANS culpabiliser ?"

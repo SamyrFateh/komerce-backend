@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-costing-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        product costing data
+ * @outputs       costing_page_dom (coût rendu relais par produit)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  costing, logistics, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Coût rendu relais /admin/costing
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Combien Komerce gagne ou perd réellement par cmd, produit, relais ?"

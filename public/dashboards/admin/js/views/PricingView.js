@@ -1,3 +1,20 @@
+/**
+ * @komerce-arch
+ * @role          admin-pricing-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        product list, cost components, pricing data
+ * @outputs       pricing_page_dom (construction du prix par produit)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  pricing, cost-components, economic-engine, admin-dashboard
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
  *  PricingView.js — Komerce Control Tower
  *  🧮 Construction du Prix — Atelier de décision produit

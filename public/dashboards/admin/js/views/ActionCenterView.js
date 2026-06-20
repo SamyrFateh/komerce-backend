@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-action-center-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        signals list, stats
+ * @outputs       action_center_page_dom (alertes, incidents, acknowledge / snooze / resolve)
+ * @depends       api-client.js, filters-store.js, utils.js, components/UI.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  alerts, signals, incidents, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Centre d'actions /admin/action-center
  * ════════════════════════════════════════════════════════════════
  * Cockpit décisionnel : tous les signaux actifs, groupés par famille,

@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-product-card-view-model
+ * @domain        admin-dashboard
+ * @layer         view-model
+ * @criticality   medium
+ * @inputs        product_object, category_object, card_config_v1
+ * @outputs       resolved_card_model (imageUrl, title, subtitle, priceLabel, badges, stockLabel, themeToken, accentToken, isAvailable)
+ * @depends       none
+ * @used-by       views/ProductsView.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      none
+ * @impact-areas  product-catalog, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * @module product-card-model.admin
  * @brief Version autonome de resolveProductCardModel pour le dashboard admin.
  *

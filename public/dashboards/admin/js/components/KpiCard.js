@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-kpi-card-component
+ * @domain        admin-dashboard
+ * @layer         ui-component
+ * @criticality   medium
+ * @inputs        kpi_object (label, value, delta, data_quality, icon)
+ * @outputs       kpi_card_dom (data_quality always visible — doctrine)
+ * @depends       none
+ * @used-by       multiple views (PilotageView, SanteView, EconomicView, ControlTowerView, etc.)
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      none
+ * @impact-areas  admin-dashboard, kpi-display
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — KpiCard component
  * ════════════════════════════════════════════════════════════════════════
  * Rend un KPI avec :

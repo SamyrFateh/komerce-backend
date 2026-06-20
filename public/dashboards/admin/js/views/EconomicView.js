@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-economic-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to), economic coherence + executive + charges data
+ * @outputs       economic_page_dom (santé économique, marges, cohérence)
+ * @depends       api-client.js, filters-store.js, utils.js, components/Charts.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  economic, finance, margins, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Santé économique /admin/economic  (v2 — alignée doctrine)
  * ════════════════════════════════════════════════════════════════════════════
  * Deux lectures, jamais mélangées (doctrine §3 « toujours comparer la même unité ») :

@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-pricing-strategy-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        pricing strategies, candidates, benchmarks
+ * @outputs       pricing_strategy_page_dom (stratégies actives, simulation, validation)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  pricing, strategy, sourcing, economic-engine, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Stratégie de Prix /admin/pricing-strategy
  * ═══════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.pricing_strategy (ct-views-pricing-strategy.js — 571 lignes)

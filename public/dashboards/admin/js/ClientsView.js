@@ -1,4 +1,14 @@
 /**
+ * @komerce-arch-lite
+ * @role          clients-view-root-legacy
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @owner         dashboards/admin/js/views/ClientsView.js
+ * @purpose       copie legacy à la racine js/ — remplacée par views/ClientsView.js
+ * @impact-areas  clients, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Clients /admin/clients
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Comment se porte notre base clients ? Qui est à risque ?"

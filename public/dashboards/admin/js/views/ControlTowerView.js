@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-control-tower-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to), ops pipeline, unsold stats
+ * @outputs       control_tower_page_dom (pipeline commandes, hub & relais, stocks invendus)
+ * @depends       api-client.js, api-client-unsold.js, filters-store.js, utils.js, components/KpiCard.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  hub-relais, ops, control-tower, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Tour de contrôle /admin/control-tower
  * ════════════════════════════════════════════════════════════════════════
  * Question : "Faut-il agir aujourd'hui ?"

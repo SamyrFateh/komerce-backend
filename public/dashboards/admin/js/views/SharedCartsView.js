@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-shared-carts-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        shared carts list (open, closed, ordered, expired)
+ * @outputs       shared_carts_page_dom (liste paniers partagés, détail, actions support)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  shared-cart, support, checkout, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — SharedCartsView /admin/shared-carts
  * ════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.shared_carts (ct-views-shared-carts.js)

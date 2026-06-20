@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-settings-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        parametres plateforme (taux FX, config finance, SMS, WhatsApp)
+ * @outputs       settings_page_dom
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  settings, config, finance-config, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — SettingsView /admin/settings
  * ════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.settings (ct-views-settings.js — v1.0)

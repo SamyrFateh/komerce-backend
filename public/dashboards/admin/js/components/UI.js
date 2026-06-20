@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-alert-ui-component
+ * @domain        admin-dashboard
+ * @layer         ui-component
+ * @criticality   low
+ * @inputs        alert_object (key, level, message, action_url)
+ * @outputs       alert_dom_element
+ * @depends       none
+ * @used-by       views/ActionCenterView.js, views/ProblemsView.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      none
+ * @impact-areas  admin-dashboard, alerts-display
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — AlertList component
  * ════════════════════════════════════════════════════════════════════════ */
 

@@ -1,3 +1,20 @@
+/**
+ * @komerce-arch
+ * @role          admin-accounting-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        filters (from, to), cash reconciliation and charges data
+ * @outputs       accounting_page_dom (réconciliation, impayés, charges économiques, financement)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  accounting, finance, cash-reconciliation
+ * @version       2026-06
+ */
 /* ═══════════════════════════════════════════════════════════════════════════
    AccountingView — /admin/accounting
    Lot 7 — parité ct-views-accounting.js (legacy)

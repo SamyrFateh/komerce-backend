@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-transitaire-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        transitaire partner data, customs charges config
+ * @outputs       transitaire_page_dom (config transitaire, calibrage charges)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  logistics, transitaire, customs, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Transitaire /admin/transitaire
  * ════════════════════════════════════════════════════════════════════════
  * Migration de ct-views-transitaire.js → architecture moderne (Vague 1).

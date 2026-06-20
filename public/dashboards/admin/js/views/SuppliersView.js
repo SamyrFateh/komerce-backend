@@ -1,4 +1,21 @@
 /**
+ * @komerce-arch
+ * @role          admin-suppliers-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   medium
+ * @inputs        suppliers list, partner stats
+ * @outputs       suppliers_page_dom (fournisseurs, stats achats, contact)
+ * @depends       api-client.js, filters-store.js, utils.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  suppliers, sourcing, finance, admin-dashboard
+ * @version       2026-06
+ */
+/**
  * KOMERCE Dashboard — Vue Fournisseurs /admin/suppliers
  * ═══════════════════════════════════════════════════════════════════════════
  * Migration de CT.views.suppliers (ct-views-suppliers.js — 581 lignes)
