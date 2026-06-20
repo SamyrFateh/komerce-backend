@@ -1,13 +1,13 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T13:17:57.811Z.
+> Régénéré le 2026-06-20T13:41:30.781Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **654** nœuds · Contrat : **192** endpoints
+- Backend : **654** nœuds · Contrat : **417** endpoints
 - Boutique : **70** modules, 58 endpoints
 - Dashboards : **40** modules, 111 arêtes d'appel
 
@@ -16,7 +16,7 @@
 - Endpoints consommés par au moins un front : **89**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
 - 🔴 Coutures **fantômes** (front → hors contrat) : **8**
-- ⚠️ Tables touchées par **les deux** fronts : **6**
+- ⚠️ Tables touchées par **les deux** fronts : **10**
 
 ## 1. Endpoints partagés — toucher = casse double
 
@@ -31,25 +31,29 @@ Endpoints appelés par un front mais absents du contrat backend — route legacy
 
 | Endpoint | Appelé par |
 |---|---|
-| `/api/admin/dashboard/costing` ❌ | dashboards:CostingView |
-| `/api/admin/dashboard/event-workspaces` ❌ | dashboards:EventWorkspacesView |
-| `/api/admin/dashboard/unified` ❌ | dashboards:PilotageView |
-| `/api/boutique/suggestions` ❌ | boutique:b-modal-core |
 | `/api/collective-workspaces` ❌ | boutique:b-cart-groups-tab |
-| `/api/dashboard/pipeline` ❌ | dashboards:HubRelaisView |
-| `/api/pricing/flow` ❌ | dashboards:EconomicFlowView |
+| `/api/logistics/containers` ❌ | boutique:komerce-api |
+| `/api/orders/stats` ❌ | boutique:komerce-api |
+| `/api/parcels/stats` ❌ | boutique:komerce-api |
+| `/api/purchasing/orders` ❌ | boutique:komerce-api |
+| `/api/scans/hub/pack` ❌ | boutique:komerce-api |
+| `/api/scans/hub/seal` ❌ | boutique:komerce-api |
 | `/api/v2/scan` ❌ | dashboards:HubRelaisView |
 
 ## 3. Tables à rayon de casse maximal (lues/écrites pour les 2 fronts)
 
 | Table | Routes | Modules boutique | Vues dashboards |
 |---|---|---|---|
-| `orders` | 10 | 3 | 5 |
-| `parcel_items` | 2 | 1 | 2 |
-| `parcels` | 4 | 1 | 2 |
-| `product_variants` | 1 | 1 | 2 |
-| `products` | 5 | 3 | 3 |
-| `users` | 7 | 5 | 5 |
+| `invoices` | 2 | 1 | 1 |
+| `order_items` | 4 | 2 | 1 |
+| `orders` | 15 | 4 | 10 |
+| `parcel_items` | 3 | 1 | 2 |
+| `parcels` | 9 | 2 | 7 |
+| `product_variants` | 2 | 1 | 4 |
+| `products` | 8 | 4 | 6 |
+| `relais` | 7 | 4 | 6 |
+| `scan_events` | 2 | 1 | 1 |
+| `users` | 9 | 5 | 5 |
 
 ## 4. Carte des coutures (partagés + fantômes)
 
@@ -64,20 +68,20 @@ graph TD
   ep__api_products["/api/products"] --> rt_routes_products_js["routes/products.js"]
   BTQ((boutique)) -->|1| ep__api_products
   DASH((dashboards)) -->|2| ep__api_products
-  ep__api_admin_dashboard_costing["/api/admin/dashboard/costing ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_admin_dashboard_costing
-  ep__api_admin_dashboard_event_workspaces["/api/admin/dashboard/event-workspaces ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_admin_dashboard_event_workspaces
-  ep__api_admin_dashboard_unified["/api/admin/dashboard/unified ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_admin_dashboard_unified
-  ep__api_boutique_suggestions["/api/boutique/suggestions ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_boutique_suggestions
   ep__api_collective_workspaces["/api/collective-workspaces ❌"]:::phantom
   BTQ((boutique)) -->|1| ep__api_collective_workspaces
-  ep__api_dashboard_pipeline["/api/dashboard/pipeline ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_dashboard_pipeline
-  ep__api_pricing_flow["/api/pricing/flow ❌"]:::phantom
-  DASH((dashboards)) -->|1| ep__api_pricing_flow
+  ep__api_logistics_containers["/api/logistics/containers ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_logistics_containers
+  ep__api_orders_stats["/api/orders/stats ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_orders_stats
+  ep__api_parcels_stats["/api/parcels/stats ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_parcels_stats
+  ep__api_purchasing_orders["/api/purchasing/orders ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_purchasing_orders
+  ep__api_scans_hub_pack["/api/scans/hub/pack ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_scans_hub_pack
+  ep__api_scans_hub_seal["/api/scans/hub/seal ❌"]:::phantom
+  BTQ((boutique)) -->|1| ep__api_scans_hub_seal
   ep__api_v2_scan["/api/v2/scan ❌"]:::phantom
   DASH((dashboards)) -->|1| ep__api_v2_scan
   classDef phantom fill:#fdd,stroke:#c00;

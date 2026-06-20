@@ -16,8 +16,13 @@
     "view:changed"
   ],
   "notFoundEndpoints": [
-    "/api/boutique/suggestions",
-    "/api/collective-workspaces"
+    "/api/collective-workspaces",
+    "/api/logistics/containers",
+    "/api/orders/stats",
+    "/api/parcels/stats",
+    "/api/purchasing/orders",
+    "/api/scans/hub/pack",
+    "/api/scans/hub/seal"
   ],
-  "savedAt": "2026-06-20T12:49:29.067Z"
+  "savedAt": "2026-06-20T13:33:13.582Z"
 }

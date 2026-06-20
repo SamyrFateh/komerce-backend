@@ -1,7 +1,7 @@
 # Dashboards 360 — carte d'architecture admin (générée)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T13:12:26.098Z.
+> Régénéré le 2026-06-20T13:32:23.577Z.
 > Pendant front du graphe backend : les dashboards se couplent par la chaîne **route → vue → KmcApi → endpoint → contrat**, pas par un bus ni par les imports.
 
 ## Synthèse
@@ -10,7 +10,7 @@
 - Routes SPA : **30**
 - Méthodes `KmcApi` : **117** exportées, 98 appelées par au moins une vue
 - Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 6 violation(s) de doctrine
-- Contrats non prouvés réellement appelés : **43** (signal de risque, cf. bug `getOps()`/`.orders`)
+- Contrats non prouvés réellement appelés : **59** (signal de risque, cf. bug `getOps()`/`.orders`)
 
 ## 1. Routeur SPA → Vues
 
@@ -56,7 +56,7 @@
 | AccountingView | `getEconomicCharges` | ✅ | `GET /api/admin/economic/charges` | ⚪ non prouvé |
 | AccountingView | `getFinance` | ✅ | `GET /api/dashboard/finance` | ⚪ non prouvé |
 | ActionCenterView | `acknowledgeSignal` | ✅ | `POST /api/admin/signals/…` | 🔵 url dynamique (non comparable) |
-| ActionCenterView | `generateSignals` | ✅ | `POST /api/admin/signals/generate` | 🔴 endpoint introuvable |
+| ActionCenterView | `generateSignals` | ✅ | `POST /api/admin/signals/generate` | ⚪ non prouvé |
 | ActionCenterView | `getSignalsList` | ✅ | `GET /api/admin/signals` | ⚪ non prouvé |
 | ActionCenterView | `getSignalsStats` | ✅ | `GET /api/admin/signals/stats` | ⚪ non prouvé |
 | ActionCenterView | `resolveSignal` | ✅ | `POST /api/admin/signals/…` | 🔵 url dynamique (non comparable) |
@@ -67,27 +67,27 @@
 | ControlTowerView | `getControlTower` | ✅ | `GET /api/admin/dashboard/control-tower` | ⚪ non prouvé |
 | ControlTowerView | `getOps` | ✅ | `GET /api/dashboard/ops` | ⚪ non prouvé |
 | ControlTowerView | `getUnsoldStats` | ✅ | — | ❓ url non résolue |
-| CostingView | `getCosting` | ✅ | `GET /api/admin/dashboard/costing` | 🔴 endpoint introuvable |
+| CostingView | `getCosting` | ✅ | `GET /api/admin/dashboard/costing` | ⚪ non prouvé |
 | CostingView | `getCostingOrders` | ✅ | `GET /api/admin/costing/orders` | ⚪ non prouvé |
 | CostingView | `getCostingProducts` | ✅ | `GET /api/admin/costing/products` | ⚪ non prouvé |
 | CostingView | `getCostingRelais` | ✅ | `GET /api/admin/costing/relais` | ⚪ non prouvé |
-| CustomsView | `createCustomsShipment` | ✅ | `POST /api/admin/customs-shipments` | 🔴 endpoint introuvable |
+| CustomsView | `createCustomsShipment` | ✅ | `POST /api/admin/customs-shipments` | ⚪ non prouvé |
 | CustomsView | `getCustomsRatesEffective` | ✅ | `GET /api/admin/customs-shipments/rates/effective` | ⚪ non prouvé |
 | CustomsView | `getCustomsShipment` | ✅ | `GET /api/admin/customs-shipments/…` | 🔵 url dynamique (non comparable) |
 | CustomsView | `getCustomsShipments` | ✅ | `GET /api/admin/customs-shipments` | ⚪ non prouvé |
 | CustomsView | `getPartnersLogistique` | ✅ | `GET /api/admin/partners` | ⚪ non prouvé |
-| EconomicFlowView | `getPricingFlow` | ✅ | `POST /api/pricing/flow` | 🔴 endpoint introuvable |
+| EconomicFlowView | `getPricingFlow` | ✅ | `POST /api/pricing/flow` | ⚪ non prouvé |
 | EconomicFlowView | `getProducts` | ✅ | `GET /api/products` | ⚪ non prouvé |
 | EconomicView | `getEconomicCharges` | ✅ | `GET /api/admin/economic/charges` | ⚪ non prouvé |
 | EconomicView | `getEconomicCoherence` | ✅ | `GET /api/admin/economic/coherence` | ⚪ non prouvé |
 | EconomicView | `getEconomicExecutive` | ✅ | `GET /api/admin/economic/executive` | ⚪ non prouvé |
 | EconomicView | `getPricingDashboard` | ✅ | `GET /api/pricing/dashboard` | ⚪ non prouvé |
-| EventWorkspacesView | `getEventWorkspaces` | ✅ | `GET /api/admin/dashboard/event-workspaces` | 🔴 endpoint introuvable |
-| HubRelaisView | `autoDistribute` | ✅ | `POST /api/hub/auto-distribute` | 🔴 endpoint introuvable |
+| EventWorkspacesView | `getEventWorkspaces` | ✅ | `GET /api/admin/dashboard/event-workspaces` | ⚪ non prouvé |
+| HubRelaisView | `autoDistribute` | ✅ | `POST /api/hub/auto-distribute` | ⚪ non prouvé |
 | HubRelaisView | `getDistribution` | ✅ | `GET /api/hub/auto-distribute` | ⚪ non prouvé |
 | HubRelaisView | `getParcels` | ✅ | `GET /api/v2/parcels` | ⚪ non prouvé |
-| HubRelaisView | `getPipeline` | ✅ | `GET /api/dashboard/pipeline` | 🔴 endpoint introuvable |
-| HubRelaisView | `hubMarkOrdered` | ✅ | `POST /api/hub/orders/mark-ordered` | 🔴 endpoint introuvable |
+| HubRelaisView | `getPipeline` | ✅ | `GET /api/dashboard/pipeline` | ⚪ non prouvé |
+| HubRelaisView | `hubMarkOrdered` | ✅ | `POST /api/hub/orders/mark-ordered` | ⚪ non prouvé |
 | HubRelaisView | `hubShip` | ✅ | `POST /api/v2/scan` | 🔴 endpoint introuvable |
 | HubRelaisView | `relaisCollect` | ✅ | `POST /api/v2/scan` | 🔴 endpoint introuvable |
 | HubRelaisView | `relaisConfirmCash` | ✅ | `POST /api/v2/orders/…` | 🔵 url dynamique (non comparable) |
@@ -95,8 +95,8 @@
 | InventoryView | `getHubInventoryOpenParcels` | ✅ | `GET /api/hub/inventory/open-parcels` | ⚪ non prouvé |
 | InventoryView | `getHubInventoryProposals` | ✅ | `GET /api/hub/inventory/proposals` | ⚪ non prouvé |
 | InventoryView | `getHubInventoryStats` | ✅ | `GET /api/hub/inventory/stats` | ⚪ non prouvé |
-| InventoryView | `hubInventoryProposeAll` | ✅ | `POST /api/hub/inventory/propose-all` | 🔴 endpoint introuvable |
-| InventoryView | `hubInventoryScanAssign` | ✅ | `POST /api/hub/inventory/scan-assign` | 🔴 endpoint introuvable |
+| InventoryView | `hubInventoryProposeAll` | ✅ | `POST /api/hub/inventory/propose-all` | ⚪ non prouvé |
+| InventoryView | `hubInventoryScanAssign` | ✅ | `POST /api/hub/inventory/scan-assign` | ⚪ non prouvé |
 | InvoicesView | `getCashReconciliation` | ✅ | `GET /api/cash/reconciliation` | ⚪ non prouvé |
 | InvoicesView | `getCashUncollected` | ✅ | `GET /api/cash/uncollected` | ⚪ non prouvé |
 | InvoicesView | `getInvoices` | ✅ | `GET /api/invoices` | ⚪ non prouvé |
@@ -105,9 +105,9 @@
 | PilotageFinView | `getEconomicHistory` | ✅ | `GET /api/admin/economic/history` | ⚪ non prouvé |
 | PilotageFinView | `getEconomicVariables` | ✅ | `GET /api/admin/economic/variables` | ⚪ non prouvé |
 | PilotageFinView | `getFinance` | ✅ | `GET /api/dashboard/finance` | ⚪ non prouvé |
-| PilotageView | `getUnified` | ✅ | `GET /api/admin/dashboard/unified` | 🔴 endpoint introuvable |
-| PricingStrategyView | `applyPricingStrategy` | ✅ | `POST /api/pricing/strategy/apply` | 🔴 endpoint introuvable |
-| PricingStrategyView | `createPricingCompetitor` | ✅ | `POST /api/pricing/strategy/competitors` | 🔴 endpoint introuvable |
+| PilotageView | `getUnified` | ✅ | `GET /api/admin/dashboard/unified` | ⚪ non prouvé |
+| PricingStrategyView | `applyPricingStrategy` | ✅ | `POST /api/pricing/strategy/apply` | ⚪ non prouvé |
+| PricingStrategyView | `createPricingCompetitor` | ✅ | `POST /api/pricing/strategy/competitors` | ⚪ non prouvé |
 | PricingStrategyView | `deletePricingCompetitor` | ✅ | `DELETE /api/pricing/strategy/competitors/…` | 🔵 url dynamique (non comparable) |
 | PricingStrategyView | `getPricingStrategy` | ✅ | `GET /api/pricing/strategy` | ⚪ non prouvé |
 | PricingStrategyView | `getProducts` | ✅ | `GET /api/products` | ⚪ non prouvé |
@@ -144,7 +144,7 @@
 | SourcingScannerView | `getSourcingCandidate` | ✅ | `GET /api/admin/sourcing/candidates/…` | 🔵 url dynamique (non comparable) |
 | SourcingScannerView | `getSourcingCandidates` | ✅ | `GET /api/admin/sourcing/candidates` | ⚪ non prouvé |
 | SourcingScannerView | `getSourcingCatalogs` | ✅ | `GET /api/admin/sourcing/catalogs` | ⚪ non prouvé |
-| SourcingScannerView | `importSourcingCatalog` | ✅ | `POST /api/admin/sourcing/catalogs/import` | 🔴 endpoint introuvable |
+| SourcingScannerView | `importSourcingCatalog` | ✅ | `POST /api/admin/sourcing/catalogs/import` | ⚪ non prouvé |
 | SourcingScannerView | `importSourcingProduct` | ✅ | `POST /api/admin/sourcing/candidates/…` | 🔵 url dynamique (non comparable) |
 | SourcingScannerView | `rejectSourcingCandidate` | ✅ | `POST /api/admin/sourcing/candidates/…` | 🔵 url dynamique (non comparable) |
 | SourcingScannerView | `scanSourcingCandidate` | ✅ | `POST /api/admin/sourcing/candidates/…` | 🔵 url dynamique (non comparable) |
@@ -153,7 +153,7 @@
 | SourcingView | `getSourcingAnalysis` | ✅ | `GET /api/admin/sourcing/analysis` | ⚪ non prouvé |
 | SourcingView | `getSourcingSynthesis` | ✅ | `GET /api/admin/sourcing/synthesis` | ⚪ non prouvé |
 | SourcingView | `updateSourcingProduct` | ✅ | `PUT /api/admin/sourcing/products/…` | 🔵 url dynamique (non comparable) |
-| SuppliersView | `createPartner` | ✅ | `POST /api/admin/partners` | 🔴 endpoint introuvable |
+| SuppliersView | `createPartner` | ✅ | `POST /api/admin/partners` | ⚪ non prouvé |
 | SuppliersView | `deletePartner` | ✅ | `DELETE /api/admin/partners/…` | 🔵 url dynamique (non comparable) |
 | SuppliersView | `getPartners` | ✅ | `GET /api/admin/partners` | ⚪ non prouvé |
 | SuppliersView | `getPartnersStats` | ✅ | `GET /api/admin/partners/stats` | ⚪ non prouvé |
@@ -161,7 +161,7 @@
 | TransitaireView | `getTransitaireHistory` | ✅ | `GET /api/transitaire/history` | ⚪ non prouvé |
 | TransitaireView | `getTransitaireParcels` | ✅ | `GET /api/transitaire/parcels` | ⚪ non prouvé |
 | TransitaireView | `getTransitaireStats` | ✅ | `GET /api/transitaire/stats` | ⚪ non prouvé |
-| TransitaireView | `shipTransitaireParcel` | ✅ | `POST /api/transitaire/ship` | 🔴 endpoint introuvable |
+| TransitaireView | `shipTransitaireParcel` | ✅ | `POST /api/transitaire/ship` | ⚪ non prouvé |
 
 ### Diagramme
 
@@ -206,42 +206,42 @@ graph LR
   ActionCenterView -->|acknowledgeSignal| _api_admin_signals["/api/admin/signals"]
   ActionCenterView -->|snoozeSignal| _api_admin_signals["/api/admin/signals"]
   ActionCenterView -->|resolveSignal| _api_admin_signals["/api/admin/signals"]
-  ActionCenterView -->|generateSignals| _api_admin_signals_generate["/api/admin/signals/generate"]
+  ActionCenterView -->|generateSignals❓| _api_admin_signals_generate["/api/admin/signals/generate"]
   ClientsView -->|getClients❓| _api_dashboard_clients["/api/dashboard/clients"]
   ClientsView -->|getClientsList❓| _api_dashboard_clients_list["/api/dashboard/clients/list"]
   ClientsView -->|getClientDetail❓| _api_dashboard_clients_detail["/api/dashboard/clients/detail"]
   ControlTowerView -->|getControlTower❓| _api_admin_dashboard_control_tower["/api/admin/dashboard/control-tower"]
   ControlTowerView -->|getOps❓| _api_dashboard_ops["/api/dashboard/ops"]
-  CostingView -->|getCosting| _api_admin_dashboard_costing["/api/admin/dashboard/costing"]
+  CostingView -->|getCosting❓| _api_admin_dashboard_costing["/api/admin/dashboard/costing"]
   CostingView -->|getCostingOrders❓| _api_admin_costing_orders["/api/admin/costing/orders"]
   CostingView -->|getCostingProducts❓| _api_admin_costing_products["/api/admin/costing/products"]
   CostingView -->|getCostingRelais❓| _api_admin_costing_relais["/api/admin/costing/relais"]
   CustomsView -->|getCustomsShipments❓| _api_admin_customs_shipments["/api/admin/customs-shipments"]
   CustomsView -->|getCustomsRatesEffective❓| _api_admin_customs_shipments_rates_effective["/api/admin/customs-shipments/rates/effective"]
   CustomsView -->|getPartnersLogistique❓| _api_admin_partners["/api/admin/partners"]
-  CustomsView -->|createCustomsShipment| _api_admin_customs_shipments["/api/admin/customs-shipments"]
+  CustomsView -->|createCustomsShipment❓| _api_admin_customs_shipments["/api/admin/customs-shipments"]
   CustomsView -->|getCustomsShipment| _api_admin_customs_shipments["/api/admin/customs-shipments"]
   EconomicFlowView -->|getProducts❓| _api_products["/api/products"]
-  EconomicFlowView -->|getPricingFlow| _api_pricing_flow["/api/pricing/flow"]
+  EconomicFlowView -->|getPricingFlow❓| _api_pricing_flow["/api/pricing/flow"]
   EconomicView -->|getPricingDashboard❓| _api_pricing_dashboard["/api/pricing/dashboard"]
   EconomicView -->|getEconomicExecutive❓| _api_admin_economic_executive["/api/admin/economic/executive"]
   EconomicView -->|getEconomicCharges❓| _api_admin_economic_charges["/api/admin/economic/charges"]
   EconomicView -->|getEconomicCoherence❓| _api_admin_economic_coherence["/api/admin/economic/coherence"]
-  EventWorkspacesView -->|getEventWorkspaces| _api_admin_dashboard_event_workspaces["/api/admin/dashboard/event-workspaces"]
-  HubRelaisView -->|getPipeline| _api_dashboard_pipeline["/api/dashboard/pipeline"]
+  EventWorkspacesView -->|getEventWorkspaces❓| _api_admin_dashboard_event_workspaces["/api/admin/dashboard/event-workspaces"]
+  HubRelaisView -->|getPipeline❓| _api_dashboard_pipeline["/api/dashboard/pipeline"]
   HubRelaisView -->|getParcels❓| _api_v2_parcels["/api/v2/parcels"]
-  HubRelaisView -->|hubMarkOrdered| _api_hub_orders_mark_ordered["/api/hub/orders/mark-ordered"]
+  HubRelaisView -->|hubMarkOrdered❓| _api_hub_orders_mark_ordered["/api/hub/orders/mark-ordered"]
   HubRelaisView -->|hubShip| _api_v2_scan["/api/v2/scan"]
-  HubRelaisView -->|autoDistribute| _api_hub_auto_distribute["/api/hub/auto-distribute"]
+  HubRelaisView -->|autoDistribute❓| _api_hub_auto_distribute["/api/hub/auto-distribute"]
   HubRelaisView -->|getDistribution❓| _api_hub_auto_distribute["/api/hub/auto-distribute"]
   HubRelaisView -->|relaisConfirmCash| _api_v2_orders["/api/v2/orders"]
   HubRelaisView -->|relaisReceive| _api_v2_scan["/api/v2/scan"]
   HubRelaisView -->|relaisCollect| _api_v2_scan["/api/v2/scan"]
-  InventoryView -->|hubInventoryScanAssign| _api_hub_inventory_scan_assign["/api/hub/inventory/scan-assign"]
+  InventoryView -->|hubInventoryScanAssign❓| _api_hub_inventory_scan_assign["/api/hub/inventory/scan-assign"]
   InventoryView -->|getHubInventoryStats❓| _api_hub_inventory_stats["/api/hub/inventory/stats"]
   InventoryView -->|getHubInventoryProposals❓| _api_hub_inventory_proposals["/api/hub/inventory/proposals"]
   InventoryView -->|getHubInventoryOpenParcels❓| _api_hub_inventory_open_parcels["/api/hub/inventory/open-parcels"]
-  InventoryView -->|hubInventoryProposeAll| _api_hub_inventory_propose_all["/api/hub/inventory/propose-all"]
+  InventoryView -->|hubInventoryProposeAll❓| _api_hub_inventory_propose_all["/api/hub/inventory/propose-all"]
   InvoicesView -->|getInvoices❓| _api_invoices["/api/invoices"]
   InvoicesView -->|getCashReconciliation❓| _api_cash_reconciliation["/api/cash/reconciliation"]
   InvoicesView -->|getCashUncollected❓| _api_cash_uncollected["/api/cash/uncollected"]
@@ -250,12 +250,12 @@ graph LR
   PilotageFinView -->|getFinance❓| _api_dashboard_finance["/api/dashboard/finance"]
   PilotageFinView -->|getEconomicHistory❓| _api_admin_economic_history["/api/admin/economic/history"]
   PilotageFinView -->|getEconomicVariables❓| _api_admin_economic_variables["/api/admin/economic/variables"]
-  PilotageView -->|getUnified| _api_admin_dashboard_unified["/api/admin/dashboard/unified"]
+  PilotageView -->|getUnified❓| _api_admin_dashboard_unified["/api/admin/dashboard/unified"]
   PricingStrategyView -->|getProducts❓| _api_products["/api/products"]
   PricingStrategyView -->|getPricingStrategy❓| _api_pricing_strategy["/api/pricing/strategy"]
-  PricingStrategyView -->|createPricingCompetitor| _api_pricing_strategy_competitors["/api/pricing/strategy/competitors"]
+  PricingStrategyView -->|createPricingCompetitor❓| _api_pricing_strategy_competitors["/api/pricing/strategy/competitors"]
   PricingStrategyView -->|deletePricingCompetitor| _api_pricing_strategy_competitors["/api/pricing/strategy/competitors"]
-  PricingStrategyView -->|applyPricingStrategy| _api_pricing_strategy_apply["/api/pricing/strategy/apply"]
+  PricingStrategyView -->|applyPricingStrategy❓| _api_pricing_strategy_apply["/api/pricing/strategy/apply"]
   ProblemsView -->|getOrders❓| _api_orders["/api/orders"]
   ProblemsView -->|getParcelReconciliation❓| _api_v2_parcels_reconciliation["/api/v2/parcels/reconciliation"]
   SalesView -->|getSales❓| _api_dashboard_sales["/api/dashboard/sales"]
@@ -269,7 +269,7 @@ graph LR
   SanteView -->|getFinanceConfig❓| _api_admin_finance_config["/api/admin/finance-config"]
   SourcingScannerView -->|getSourcingCatalogs❓| _api_admin_sourcing_catalogs["/api/admin/sourcing/catalogs"]
   SourcingScannerView -->|getSourcingCandidates❓| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
-  SourcingScannerView -->|importSourcingCatalog| _api_admin_sourcing_catalogs_import["/api/admin/sourcing/catalogs/import"]
+  SourcingScannerView -->|importSourcingCatalog❓| _api_admin_sourcing_catalogs_import["/api/admin/sourcing/catalogs/import"]
   SourcingScannerView -->|getSourcingCandidate| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
   SourcingScannerView -->|updateSourcingCandidate| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
   SourcingScannerView -->|scanSourcingCandidate| _api_admin_sourcing_candidates["/api/admin/sourcing/candidates"]
@@ -282,9 +282,9 @@ graph LR
   SuppliersView -->|getPartners❓| _api_admin_partners["/api/admin/partners"]
   SuppliersView -->|getPartnersStats❓| _api_admin_partners_stats["/api/admin/partners/stats"]
   SuppliersView -->|updatePartner| _api_admin_partners["/api/admin/partners"]
-  SuppliersView -->|createPartner| _api_admin_partners["/api/admin/partners"]
+  SuppliersView -->|createPartner❓| _api_admin_partners["/api/admin/partners"]
   SuppliersView -->|deletePartner| _api_admin_partners["/api/admin/partners"]
-  TransitaireView -->|shipTransitaireParcel| _api_transitaire_ship["/api/transitaire/ship"]
+  TransitaireView -->|shipTransitaireParcel❓| _api_transitaire_ship["/api/transitaire/ship"]
   TransitaireView -->|getTransitaireStats❓| _api_transitaire_stats["/api/transitaire/stats"]
   TransitaireView -->|getTransitaireParcels❓| _api_transitaire_parcels["/api/transitaire/parcels"]
   TransitaireView -->|getTransitaireHistory❓| _api_transitaire_history["/api/transitaire/history"]
@@ -297,8 +297,8 @@ graph LR
 
 ## 4. Signaux informatifs (non bloquants)
 
-- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/costing/orders`, `GET /api/admin/costing/products`, `GET /api/admin/costing/relais`, `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`
-- ❔ **Endpoints résolus mais absents du contrat OpenAPI** (à vérifier — route peut-être non montée ou contrat backend pas régénéré) : `GET /api/admin/dashboard/costing`, `GET /api/admin/dashboard/event-workspaces`, `GET /api/admin/dashboard/unified`, `GET /api/dashboard/pipeline`, `POST /api/admin/customs-shipments`, `POST /api/admin/partners`, `POST /api/admin/signals/generate`, `POST /api/admin/sourcing/catalogs/import`, `POST /api/hub/auto-distribute`, `POST /api/hub/inventory/propose-all`, `POST /api/hub/inventory/scan-assign`, `POST /api/hub/orders/mark-ordered`, `POST /api/pricing/flow`, `POST /api/pricing/strategy/apply`, `POST /api/pricing/strategy/competitors`, `POST /api/transitaire/ship`, `POST /api/v2/scan`
+- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/costing/orders`, `GET /api/admin/costing/products`, `GET /api/admin/costing/relais`, `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/costing`, `GET /api/admin/dashboard/event-workspaces`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/dashboard/unified`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/pipeline`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`, `POST /api/admin/customs-shipments`, `POST /api/admin/partners`, `POST /api/admin/signals/generate`, `POST /api/admin/sourcing/catalogs/import`, `POST /api/hub/auto-distribute`, `POST /api/hub/inventory/propose-all`, `POST /api/hub/inventory/scan-assign`, `POST /api/hub/orders/mark-ordered`, `POST /api/pricing/flow`, `POST /api/pricing/strategy/apply`, `POST /api/pricing/strategy/competitors`, `POST /api/transitaire/ship`
+- ❔ **Endpoints résolus mais absents du contrat OpenAPI** (à vérifier — route peut-être non montée ou contrat backend pas régénéré) : `POST /api/v2/scan`
 - 🔵 **URLs construites dynamiquement** (segment avec id/paramètre concaténé — non comparables au contrat tel quel, à vérifier à la main si besoin) : `acknowledgeSignal (préfixe: POST /api/admin/signals/…)`, `deletePartner (préfixe: DELETE /api/admin/partners/…)`, `deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)`, `getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)`, `getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)`, `importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)`, `rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `relaisConfirmCash (préfixe: POST /api/v2/orders/…)`, `resolveSignal (préfixe: POST /api/admin/signals/…)`, `scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `snoozeSignal (préfixe: POST /api/admin/signals/…)`, `updatePartner (préfixe: PUT /api/admin/partners/…)`, `updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)`, `updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)`, `watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`
 - ❓ **Méthodes API dont l'URL n'a pas pu être résolue statiquement** (à vérifier à la main) : `expireSharedCart`, `extendSharedCart`, `getSettingRule`, `getSettings`, `getSettingsAudit`, `getSettingsDims`, `getSettingsTaxes`, `getSharedCart`, `getSharedCarts`, `getUnsoldStats`, `noteSharedCart`, `patchSettingRule`, `putSettingsDims`, `putSettingsTaxes`, `resetSettingRule`, `simCleanup`, `simJournal`, `simStart`, `simStatus`, `simStop`
 - ⚠️ **fetch() brut sans doctrine déclarée** (écart au standard, pas une violation formelle) : `api-client-unsold.js (1 fetch() brut)`

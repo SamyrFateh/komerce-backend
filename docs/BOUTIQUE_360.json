@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-20T13:17:56.628Z",
+  "generatedAt": "2026-06-20T13:41:30.297Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
@@ -11,8 +11,8 @@
     "orphanEmit": 2,
     "orphanListen": 1,
     "undeclared": 7,
-    "notFoundEndpoints": 2,
-    "unprovenEndpoints": 32,
+    "notFoundEndpoints": 7,
+    "unprovenEndpoints": 27,
     "dynamicEndpoints": 28
   },
   "modules": [
@@ -2308,7 +2308,7 @@
       "route": "/api/boutique/suggestions",
       "raw": "/api/boutique/suggestions?",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "b-modal-core",
@@ -2623,7 +2623,7 @@
       "route": "/api/parcels/stats",
       "raw": "/api/parcels/stats",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
@@ -2651,14 +2651,14 @@
       "route": "/api/scans/hub/pack",
       "raw": "/api/scans/hub/pack",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
       "route": "/api/scans/hub/seal",
       "raw": "/api/scans/hub/seal",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
@@ -2700,7 +2700,7 @@
       "route": "/api/orders/stats",
       "raw": "/api/orders/stats",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
@@ -2735,7 +2735,7 @@
       "route": "/api/logistics/containers",
       "raw": "/api/logistics/containers",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
@@ -2798,7 +2798,7 @@
       "route": "/api/purchasing/orders",
       "raw": "/api/purchasing/orders",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "shop-schema",
@@ -2850,8 +2850,13 @@
       "view:switch"
     ],
     "notFoundEndpoints": [
-      "/api/boutique/suggestions",
-      "/api/collective-workspaces"
+      "/api/collective-workspaces",
+      "/api/logistics/containers",
+      "/api/orders/stats",
+      "/api/parcels/stats",
+      "/api/purchasing/orders",
+      "/api/scans/hub/pack",
+      "/api/scans/hub/seal"
     ],
     "unprovenEndpoints": [
       "/api/auth/login",
@@ -2859,29 +2864,24 @@
       "/api/auth/me",
       "/api/auth/otp/request",
       "/api/auth/otp/verify",
+      "/api/boutique/suggestions",
       "/api/carriers",
       "/api/categories",
       "/api/client/tracking",
       "/api/health",
       "/api/hub/scan",
-      "/api/logistics/containers",
       "/api/logistics/shipments",
       "/api/orders",
-      "/api/orders/stats",
       "/api/parcels",
       "/api/parcels/optimize",
-      "/api/parcels/stats",
       "/api/payments/paypal/create-order",
       "/api/payments/stripe/intent",
       "/api/products",
       "/api/public/config",
-      "/api/purchasing/orders",
       "/api/purchasing/suppliers",
       "/api/relais",
       "/api/relais/public",
       "/api/scans",
-      "/api/scans/hub/pack",
-      "/api/scans/hub/seal",
       "/api/shared-carts/from-cart-items",
       "/api/shared-carts/mine",
       "/api/shares",

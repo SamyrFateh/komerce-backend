@@ -250,36 +250,126 @@ const openapi = {
   paths: {},
 };
 
-let unknownCount = 0;
+// ── 5bis. INVENTAIRE COMPLET par introspection runtime ───────────────────────
+//   On monte les vrais routeurs (bootstrap/api-routes.js exporte ses fonctions de
+//   montage + blocs Stripe-owned de server.js) sur une app Express nue, puis on
+//   parcourt app._router.stack. C'est la SEULE source fiable : elle suit les
+//   sous-routeurs (router.use) ET les re-exports (module.exports = require(...)),
+//   et reflète exactement ce qui est monté (pas le code mort). Le scan statique de
+//   ROUTE_SCHEMA_MAP (45 entrées) reste l'overlay de SCHÉMAS, plus l'inventaire.
+const express = require('express');
 
-for (const route of ROUTE_SCHEMA_MAP) {
-  const { prefix, method, schema } = route;
+const normPath = p => ('/' + p.split('/').filter(Boolean).join('/'))
+  .replace(/:([A-Za-z0-9_]+)/g, '{$1}').replace(/\/+$/, '') || '/';
+
+function extractMountPath(layer) {
+  if (layer.path) return layer.path;
+  const src = layer.regexp && layer.regexp.source;
+  if (!src || /^\^\\\/\?(\(\?=|\$)/.test(src)) return '';
+  let m = src.replace(/^\^/, '')
+             .replace(/\\\/\?\(\?=\\\/\|\$\)$/, '')
+             .replace(/\$$/, '')
+             .replace(/\\\//g, '/');
+  if (layer.keys && layer.keys.length) {
+    let i = 0; m = m.replace(/\(\[\^\\\/\]\+\?\)/g, () => ':' + (layer.keys[i++]?.name || 'id'));
+  }
+  return m === '/' ? '' : m;
+}
+
+function listMountedRoutes() {
+  const app = express();
+  const apiRoutes = require('../bootstrap/api-routes');
+  apiRoutes.mountApiRoutesBeforeStripeOwnedBlocks(app);
+  apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
+  // blocs Stripe-owned montés directement dans server.js
+  try { app.use('/api/shared-carts', require('../routes/shared-cart').router); } catch (_) {}
+  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart-refund-admin').router); } catch (_) {}
+  try { const sc = require('../routes/shared-cart'); if (sc.adminRouter) app.use('/api/admin/shared-carts', sc.adminRouter); } catch (_) {}
+  const stack = (app._router || app.router).stack;
+  const out = [];
+  (function walk(layers, prefix) {
+    for (const layer of layers) {
+      if (layer.route) {
+        const full = (prefix + layer.route.path).replace(/\/+/g, '/');
+        for (const m of Object.keys(layer.route.methods))
+          if (layer.route.methods[m]) out.push({ method: m.toUpperCase(), path: full });
+      } else if (layer.handle && layer.handle.stack) {
+        walk(layer.handle.stack, prefix + extractMountPath(layer));
+      }
+    }
+  })(stack, '');
+  // routes branchées DIRECTEMENT dans server.js (app.get/post('/api/...')) hors fonctions de montage
+  try {
+    const srv = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+    for (const m of srv.matchAll(/\bapp\.(get|post|put|delete|patch)\(\s*['"](\/api[^'"]*)['"]/g))
+      out.push({ method: m[1].toUpperCase(), path: m[2] });
+  } catch (_) {}
+  return out;
+}
+
+// prefix → fichier de route (pour x-route-file), scanné statiquement sur les montages
+function buildRouteFileMap() {
+  const map = [];
+  for (const f of ['../bootstrap/api-routes.js', '../server.js']) {
+    let src; try { src = fs.readFileSync(path.join(__dirname, f), 'utf8'); } catch { continue; }
+    const v2f = {};
+    for (const m of src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      const mm = m[2].match(/routes\/([\w/-]+)/); if (mm) v2f[m[1]] = 'routes/' + mm[1].replace(/\.js$/, '') + '.js';
+    }
+    for (const m of src.matchAll(/app\.use\(\s*['"](\/api[^'"]*)['"]\s*,\s*([^\n;]+)/g)) {
+      const prefix = normPath(m[1]); const arg = m[2].trim(); let file = null;
+      const inl = arg.match(/require\(\s*['"][^'"]*routes\/([\w/-]+)['"]/);
+      if (inl) file = 'routes/' + inl[1].replace(/\.js$/, '') + '.js';
+      else { const vn = arg.split(/[\s,().]/)[0]; if (v2f[vn]) file = v2f[vn]; }
+      if (file) map.push({ prefix, file });
+    }
+  }
+  return map.sort((a, b) => b.prefix.length - a.prefix.length);
+}
+function routeFileFor(p, map) {
+  for (const { prefix, file } of map) if (p === prefix || p.startsWith(prefix + '/')) return file;
+  return `routes/${p.split('/')[2] || 'unknown'}.js`;
+}
+
+// overlay schémas : index ROUTE_SCHEMA_MAP par "METHOD norm(prefix)"
+const schemaIndex = {};
+for (const r of ROUTE_SCHEMA_MAP) schemaIndex[`${r.method.toUpperCase()} ${normPath(r.prefix)}`] = r;
+
+const inventory   = listMountedRoutes();
+const routeFiles  = buildRouteFileMap();
+
+// GARDE-FOU anti-régression : un montage partiel ne doit JAMAIS écraser le contrat.
+if (inventory.length < 150) {
+  console.error(`✖ Introspection: seulement ${inventory.length} routes (< 150 attendu). Montage incomplet — écriture ANNULÉE pour ne pas régresser le contrat.`);
+  process.exit(1);
+}
+
+let unknownCount = 0;
+const seenOps = new Set();
+for (const ep of inventory) {
+  const prefix = normPath(ep.path);
+  const method = ep.method.toLowerCase();
+  const key = `${ep.method} ${prefix}`;
+  if (seenOps.has(key)) continue; seenOps.add(key);
   if (!openapi.paths[prefix]) openapi.paths[prefix] = {};
 
-  const op = {
-    summary: `${method.toUpperCase()} ${prefix}`,
-    'x-route-file': `routes/${prefix.split('/')[2] || 'unknown'}.js`,
-  };
-
-  const reqBody = buildRequestBody(schema);
-  const params  = buildParameters(schema);
+  const op = { summary: `${ep.method} ${prefix}`, 'x-route-file': routeFileFor(prefix, routeFiles) };
+  const enrich = schemaIndex[key];
+  const reqBody = enrich ? buildRequestBody(enrich.schema) : null;
+  const params  = enrich ? buildParameters(enrich.schema) : [];
   if (reqBody) op.requestBody = { ...reqBody, 'x-contract-status': 'joi' };
   if (params.length) op.parameters = params;
 
   const respSchema = buildResponseSchema(prefix, method);
   if (respSchema['x-contract-status'] === 'UNKNOWN') unknownCount++;
-
-  op.responses = {
-    '200': {
-      description: 'Succès',
-      content: { 'application/json': { schema: respSchema } }
-    }
-  };
+  op.responses = { '200': { description: 'Succès', content: { 'application/json': { schema: respSchema } } } };
 
   openapi.paths[prefix][method] = op;
 }
 
+openapi['x-inventory-source'] = 'runtime-introspection';
 openapi['x-contract-debt'].unknown_responses = unknownCount;
+openapi['x-contract-debt'].total_routes = Object.keys(openapi.paths).length;
 
 // ── 6. Écrire le fichier + résumé de dette ───────────────────────────────────
 const outDir  = path.join(__dirname, '..', 'docs', 'contract');

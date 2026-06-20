@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-20T13:12:26.098Z",
+  "generatedAt": "2026-06-20T13:32:23.577Z",
   "summary": {
     "modules": 40,
     "routes": 30,
@@ -9,7 +9,7 @@
     "deadApiMethods": 17,
     "missingApiMethods": 0,
     "doctrineViolations": 6,
-    "unprovenContracts": 43
+    "unprovenContracts": 59
   },
   "modules": [
     {
@@ -1434,7 +1434,7 @@
       "route": "/api/admin/signals/generate",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "ClientsView",
@@ -1497,7 +1497,7 @@
       "route": "/api/admin/dashboard/costing",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "CostingView",
@@ -1560,7 +1560,7 @@
       "route": "/api/admin/customs-shipments",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "CustomsView",
@@ -1587,7 +1587,7 @@
       "route": "/api/pricing/flow",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "EconomicView",
@@ -1632,7 +1632,7 @@
       "route": "/api/admin/dashboard/event-workspaces",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "HubRelaisView",
@@ -1641,7 +1641,7 @@
       "route": "/api/dashboard/pipeline",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "HubRelaisView",
@@ -1659,7 +1659,7 @@
       "route": "/api/hub/orders/mark-ordered",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "HubRelaisView",
@@ -1677,7 +1677,7 @@
       "route": "/api/hub/auto-distribute",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "HubRelaisView",
@@ -1722,7 +1722,7 @@
       "route": "/api/hub/inventory/scan-assign",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "InventoryView",
@@ -1758,7 +1758,7 @@
       "route": "/api/hub/inventory/propose-all",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "InvoicesView",
@@ -1839,7 +1839,7 @@
       "route": "/api/admin/dashboard/unified",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "PricingStrategyView",
@@ -1866,7 +1866,7 @@
       "route": "/api/pricing/strategy/competitors",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "PricingStrategyView",
@@ -1884,7 +1884,7 @@
       "route": "/api/pricing/strategy/apply",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "ProblemsView",
@@ -2181,7 +2181,7 @@
       "route": "/api/admin/sourcing/catalogs/import",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "SourcingScannerView",
@@ -2298,7 +2298,7 @@
       "route": "/api/admin/partners",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "SuppliersView",
@@ -2316,7 +2316,7 @@
       "route": "/api/transitaire/ship",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "TransitaireView",
@@ -2393,7 +2393,10 @@
       "GET /api/admin/customs-shipments",
       "GET /api/admin/customs-shipments/rates/effective",
       "GET /api/admin/dashboard/control-tower",
+      "GET /api/admin/dashboard/costing",
+      "GET /api/admin/dashboard/event-workspaces",
       "GET /api/admin/dashboard/logistics",
+      "GET /api/admin/dashboard/unified",
       "GET /api/admin/economic/charges",
       "GET /api/admin/economic/coherence",
       "GET /api/admin/economic/executive",
@@ -2415,6 +2418,7 @@
       "GET /api/dashboard/clients/list",
       "GET /api/dashboard/finance",
       "GET /api/dashboard/ops",
+      "GET /api/dashboard/pipeline",
       "GET /api/dashboard/sales",
       "GET /api/hub/auto-distribute",
       "GET /api/hub/inventory/open-parcels",
@@ -2429,13 +2433,7 @@
       "GET /api/transitaire/parcels",
       "GET /api/transitaire/stats",
       "GET /api/v2/parcels",
-      "GET /api/v2/parcels/reconciliation"
-    ],
-    "notFoundContracts": [
-      "GET /api/admin/dashboard/costing",
-      "GET /api/admin/dashboard/event-workspaces",
-      "GET /api/admin/dashboard/unified",
-      "GET /api/dashboard/pipeline",
+      "GET /api/v2/parcels/reconciliation",
       "POST /api/admin/customs-shipments",
       "POST /api/admin/partners",
       "POST /api/admin/signals/generate",
@@ -2447,7 +2445,9 @@
       "POST /api/pricing/flow",
       "POST /api/pricing/strategy/apply",
       "POST /api/pricing/strategy/competitors",
-      "POST /api/transitaire/ship",
+      "POST /api/transitaire/ship"
+    ],
+    "notFoundContracts": [
       "POST /api/v2/scan"
     ],
     "unresolvedRoutes": [

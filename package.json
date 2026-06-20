@@ -42,7 +42,8 @@
     "meta:graph": "node scripts/gen-meta-graph.js",
     "meta:graph:check": "node scripts/gen-meta-graph.js --check",
     "meta:graph:save": "node scripts/gen-meta-graph.js --save",
-    "arch:360:all": "npm run arch:gen && npm run dashboards:360 && npm run boutique:360 && npm run meta:graph"
+    "arch:360:all": "npm run arch:gen && npm run dashboards:360 && npm run boutique:360 && npm run meta:graph",
+    "contract:generate": "node scripts/contract-generate.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
