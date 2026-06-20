@@ -520,6 +520,22 @@
       return;
     }
 
+    // Accès direct (URL, lien partagé, retour navigateur...) sur une route
+    // dont le rôle courant est exclu : on évite d'invoquer la vue (qui
+    // appellerait l'API et afficherait un 403 brut) et on explicite plutôt
+    // l'absence de droits.
+    if (route.roles && !route.roles.includes(userRole())) {
+      main.innerHTML = `
+        <div class="empty-state">
+          <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+          <h2>Accès refusé</h2>
+          <p style="margin-top:12px;color:var(--text-secondary);">
+            Vous n'avez pas les droits nécessaires pour consulter « ${route.label} ».
+          </p>
+        </div>`;
+      return;
+    }
+
     const View = global[route.view];
     if (!View) {
       main.innerHTML = `<div class="error-state">Vue ${route.view} non chargée</div>`;
