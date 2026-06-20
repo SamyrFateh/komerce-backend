@@ -407,10 +407,10 @@
     }
 
     /* ── PILIER 3 — Pipeline ─────────────────────────────────────────── */
-    if (d.ops?.kpi) {
-      const blocages    = d.ops.kpi.blocages   || d.ops.kpi.cmds_bloquees   || 0;
-      const retards     = d.ops.kpi.retards    || d.ops.kpi.retards_critiques || 0;
-      const totalActifs = d.ops.kpi.total_actifs || d.ops.kpi.cmds_actives  || 1;
+    if (d.ops?.activite) {
+      const blocages    = d.ops.activite.commandes_bloquees || 0;
+      const retards     = d.ops.sla?.late                   || 0;
+      const totalActifs = d.ops.activite.commandes_en_cours || 1;
       const blockedCount = blocages + retards;
       const pctBlocked   = (blockedCount / totalActifs * 100);
 

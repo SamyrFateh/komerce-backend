@@ -207,6 +207,16 @@
   // Products (catalogue, utilisé par pricing/sourcing)
   function getProducts(params)                 { return fetchJSON(apiUrl('/products', { limit: 500, ...params })); }
 
+  // ── Pricing Strategy (ADR-013) — manquait dans KmcApi, vues jamais branchées ──
+  function getPricingStrategy(params)           { return fetchJSON(apiUrl('/pricing/strategy', params)); }
+  function applyPricingStrategy(body)           { return fetchMutation(apiUrl('/pricing/strategy/apply'), 'POST', body); }
+  function getPricingCompetitors(params)        { return fetchJSON(apiUrl('/pricing/strategy/competitors', params)); }
+  function createPricingCompetitor(body)        { return fetchMutation(apiUrl('/pricing/strategy/competitors'), 'POST', body); }
+  function deletePricingCompetitor(id)          { return fetchMutation(apiUrl('/pricing/strategy/competitors/' + id), 'DELETE'); }
+
+  // ── Invendus — manquait dans KmcApi, utilisé par ControlTowerView ──
+  function getUnsoldStats()                     { return fetchJSON(apiUrl('/unsold/stats/summary')); }
+
   // Pricing — chaîne doctrinale (boîtes & flèches + impact live)
   function getPricingFlow(body)                { return fetchMutation(apiUrl('/pricing/flow'), 'POST', body || {}); }
   // Pricing — pilotage catalogue (vérité unique, relaie le moteur)
@@ -671,6 +681,12 @@
     updatePartner,
     deletePartner,
     getProducts,
+    getPricingStrategy,
+    applyPricingStrategy,
+    getPricingCompetitors,
+    createPricingCompetitor,
+    deletePricingCompetitor,
+    getUnsoldStats,
     getPricingFlow,
     getPricingDashboard,
     getCostBenchmarks,
