@@ -1,0 +1,3615 @@
+{
+  "generatedAt": "2026-06-20T19:27:38.473Z",
+  "source": "hybrid: runtime inventory + static guard analysis",
+  "summary": {
+    "total": 460,
+    "protected": 363,
+    "public": 5,
+    "unprotected": 37,
+    "admin_no_guard": 2,
+    "unknown": 53
+  },
+  "flagged": [
+    {
+      "key": "GET /api/admin/dashboard",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/pricing-components/{id}",
+      "level": "ADMIN_NO_GUARD",
+      "severity": "high",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/pricing-components",
+      "level": "ADMIN_NO_GUARD",
+      "severity": "high",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/import-product",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/reject",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/scan",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/watchlist",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/candidates/{id}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/admin/sourcing/candidates/{id}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/scan-batch",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/candidates",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/catalogs/import",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/catalogs",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/connectors",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/admin-reset",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/guest-checkout",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/invoices",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/magic-link/validate",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/magic-link",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/orders-by-phone",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/orders",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/request",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/test-reset",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/verify",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/boutique/suggestions",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/categories",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client/magic-link/validate",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/client/magic-link",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/auto-distribute/cleanup",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/hub/auto-distribute",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/auto-distribute",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/orders/mark-ordered",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices/public/{token}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/loyalty/tiers",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules/{type}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules/fabrics",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules/models",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/modules/price",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/qr-token",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/orders/retrait/{token}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/payments/config",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/create-order",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/calculate",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/couture",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products/{id}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products/categories",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products/subcategories",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relais/{id}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relais/public",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relais",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/{id}/as-cart-items",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/complete",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/cancel",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/close",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/extend-window",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/finalize",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/shared-carts/{id}/items",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/{id}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/from-basket",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/from-cart-items",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/from-order",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/mine",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/contributions/cash",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/contributions",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}/estimations",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/estimations",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/shares/{token}/contributions/{id}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shares/{token}/contributions",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shares/{token}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shares",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "POST /api/tracking/{token}/verify-pickup",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/tracking/{token}",
+      "level": "UNPROTECTED",
+      "severity": "medium",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/alerts",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}/orders",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}/scans",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}/detail",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}/label",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/reconciliation/summary",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /health/metrics",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /health/ready",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /health",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /webhook/meta-whatsapp",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "POST /webhook/meta-whatsapp",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    }
+  ],
+  "routes": [
+    {
+      "key": "GET /api/admin/alerts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/boutique-categories/{key}/subcategories/{subKey}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/boutique-categories/{key}/subcategories/{subKey}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories/{key}/subcategories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/boutique-categories/{key}/subcategories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/boutique-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/boutique-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/boutique-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components/_meta",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/cost-components/{id}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/cost-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/cost-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/monthly-fixed/{yearMonth}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/orders/{id}/lock-purchase",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/orders/{orderId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/orders",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/parcels/{id}/allocate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/recalibration-apply",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/recalibration-proposal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/costing/relais",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/costing/shipments/{id}/allocate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/counts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/customs-categories/{key}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/customs-categories/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-categories",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments/{id}/deactivate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/customs-shipments/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/customs-shipments/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments/rates/effective",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs-shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/customs-shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/customs",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/dashboard/cache/clear",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/control-tower",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/costing",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/event-workspaces",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/logistics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard/unified",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/dashboard",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/admin/economic/charges/{id}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/economic/charges/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/economic/charges/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/economic/charges",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/economic/charges",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/economic/coherence",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/economic/executive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/economic/history",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/economic/redistribute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/economic/variables/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/economic/variables",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance-config/schema",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance-config",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/finance-config",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance/export",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance/report",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance/stripe-proofs",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/finance/summary",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/loyalty/history",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/loyalty/pending",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/loyalty/reward/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/loyalty/skip/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/loyalty/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/margins",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/orders/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/orders",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/partners/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/partners/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/partners/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/partners/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/partners",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/partners",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/pricing-components/{id}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/pricing-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/pricing-components/{id}",
+      "level": "ADMIN_NO_GUARD",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/admin/pricing-components/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/pricing-components",
+      "level": "ADMIN_NO_GUARD",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/pricing-components",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/pricing-matrices/dims/{category}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/pricing-matrices/dims",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/pricing-matrices/taxes/{category}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/pricing-matrices/taxes",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/radar/alerts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/radar/cache/invalidate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/radar/money",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/radar/orders-by-detail/{detail}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/radar/status-details",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/radar",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/reset",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/risk-provisions/{id}/toggle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/risk-provisions/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/risk-provisions/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/risk-provisions/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/risk-provisions",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/risk-provisions",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/rules/{key}/reset",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/rules/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/rules/{key}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/rules/audit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/rules",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/seed-test",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/signals/{id}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/signals/{id}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/signals/{id}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/signals/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/signals/generate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/signals/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/signals",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/simulator/cleanup",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/simulator/journal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/simulator/start",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/simulator/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/simulator/stop",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/sourcing/analysis/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/sourcing/analysis",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/sourcing/bulk-rail",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/import-product",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/reject",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/scan",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/{id}/watchlist",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/candidates/{id}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/admin/sourcing/candidates/{id}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/candidates/scan-batch",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/candidates",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/admin/sourcing/catalogs/import",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/catalogs",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/config",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/sourcing/connectors",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/admin/sourcing/products/{id}/variants",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/sourcing/products/{id}/variants",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/sourcing/products/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/sourcing/synthesis",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/users/{id}/password",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/admin/users/{id}/role",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/users/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/users",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/users",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/auth/admin-reset",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/auto-register",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/guest-checkout",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/invoices",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/login",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/logout",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/magic-link/validate",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/magic-link",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/me",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/auth/me",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/orders-by-phone",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/auth/orders",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/request",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/test-reset",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/otp/verify",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/register",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /api/boutique/suggestions",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/carriers/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/carriers/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/carriers/customs/{parcel_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/carriers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/carriers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/cash/collect/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/cash/collections",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/cash/deposit",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/cash/deposits/{id}/dispute",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/cash/deposits/{id}/verify",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/cash/deposits",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/cash/reconciliation/agents",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/cash/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/cash/uncollected",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/categories",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client/invoices",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client/magic-link/validate",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/client/magic-link",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client/orders",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/client/tracking",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/dashboard/annulations-parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/clients/detail",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/clients/list",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/clients",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/finance",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/forecast",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/global",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/history",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/hub-dubai",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/hub",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/ops",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/payments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/pilotage",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/pipeline",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/relais",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/retards",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/sales",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/dashboard/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/hub-dash/dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/auto-prepare",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/backorder",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/comment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/create-parcel",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/escalate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/incident",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/orders/{id}/start-prep",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub-dash/orders/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/parcels/{id}/add-item",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/parcels/{id}/ready",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/parcels/{id}/remove-item",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub-dash/parcels/{id}/ship",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub-dash/queue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub-dash/validate/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/auto-distribute/cleanup",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/hub/auto-distribute",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/auto-distribute",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/batch-scan",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/inventory/buffer",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/inventory/open-parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/inventory/order/{id}/dispatch",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/inventory/proposals",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/inventory/propose-all",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/inventory/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/inventory/scan-assign",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/inventory/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/orders/mark-ordered",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/hub/pack",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/pending",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/scan",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/hub/seal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/search",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/stats/week",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/hub/today",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/invoices/{orderId}/deliver",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices/{orderId}/download",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices/{orderId}/json",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices/public/{token}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/invoices",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/logistics/labels/{shipment_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/logistics/manifest/{shipment_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/logistics/shipments/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/logistics/shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/logistics/shipments",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/loyalty/me",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/loyalty/recalculate-all",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/loyalty/recalculate/{user_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/loyalty/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/loyalty/tiers/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/loyalty/tiers",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/loyalty/users",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/modules/{type}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules/fabrics",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/modules/fabrics",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/modules/models",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/modules/models",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/modules/price",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/modules",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/cancel-backorder",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/cancel",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/orders/{id}/cost",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/orders/{id}/history",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/mark-availability",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/orders/{id}/parcels",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders/{id}/partial-ship",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/orders/{id}/qr-token",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/orders/{id}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/orders/{id}/sub-orders",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/orders/{ref}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/orders/credits",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/orders/parcels/{parcelId}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/orders/problems",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/orders/relais",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/orders/retrait/{token}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/orders/sub-orders/{subId}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/orders",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/orders",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/parcels/{id}/items/{item_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/parcels/{id}/items",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "PATCH /api/parcels/{id}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/parcels/{id}/verify-seal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/parcels/{id}/weight",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/parcels/{ref}/events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/parcels/{ref}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/parcels/bootstrap/{orderId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/parcels/optimize",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "GET /api/parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/payments/cash/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/payments/config",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/capture/{paypalOrderId}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/create-order",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/refund/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/paypal/webhook",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "GET /api/payments/rates",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/stripe/intent",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/payments/stripe/webhook",
+      "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/collect/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/pay-cash/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pickup/receipt/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/regenerate/{orderId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/pickup/reveal-once/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pickup/status/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pickup/verify/{orderId}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/pricing/apply-all",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/pricing/apply-price/{product_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/pricing/benchmarks-gap",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/pricing/benchmarks/{category}/{cost_family}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/pricing/benchmarks",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/benchmarks",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/pricing/benchmarks",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/pricing/calculate",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/couture",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/dashboard",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/flow",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/pricing/rates",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/pricing/rates",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/pricing/recommend-batch",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/recommend",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/strategy/apply",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/pricing/strategy/competitors/{id}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/strategy/competitors",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/pricing/strategy/competitors",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/strategy/history",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/pricing/strategy",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/products/{id}/image",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/products/{id}/images",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/products/{id}/variants/{variantId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/products/{id}/variants",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PUT /api/products/{id}/variants",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/products/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/products/{id}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/products/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/products/categories",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products/subcategories",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/products",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/products",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/{id}/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/{order_id}/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/{order_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/order/{order_id}/completeness",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/purchasing/po/{po_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/suppliers/{id}/map",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "DELETE /api/purchasing/suppliers/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/suppliers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/suppliers",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/relais/{id}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relais/public",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relais",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/relay/dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "PATCH /api/relay/orders/{id}/client-absent",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/comment",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/escalate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/relay/orders/{id}/incident",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/relay/orders/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/relay/orders",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/scans/{order_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/scans/collect",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/scans/hub/pending",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/scans/hub/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/scans/verify-qr",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/scans",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/{id}/as-cart-items",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/awaiting-choice/complete",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/cancel",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/close",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/extend-window",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/{id}/finalize",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "PUT /api/shared-carts/{id}/items",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/{id}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/contributions/{id}/confirm-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/shared-carts/from-basket",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/from-cart-items",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/from-order",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/mine",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/contributions/cash",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/contributions",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}/estimations/by-phone",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}/estimations",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shared-carts/public/{token}/estimations",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shared-carts/public/{token}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "PATCH /api/shares/{token}/contributions/{id}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shares/{token}/contributions",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/shares/{token}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/shares",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/simulator/cleanup",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/simulator/journal",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/simulator/start",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/simulator/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/simulator/stop",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/tracking/{token}/verify-pickup",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/tracking/{token}",
+      "level": "UNPROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/transit-dashboard/{ref}/transit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/transit-dashboard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/transit/{ref}/transit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/transitaire/history",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "GET /api/transitaire/parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/transitaire/ship",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "GET /api/transitaire/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "GET /api/transit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/unsold/{id}/resolve",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/unsold/{id}/whatsapp",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/unsold/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "PATCH /api/unsold/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/unsold/scan",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/unsold/stats/summary",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/unsold",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/v2/alerts/{id}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/alerts",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/global",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/incidents",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/invoices",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/notifications/stats",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/v2/notifications",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/v2/orders/{ref}/confirm-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "POST /api/v2/orders/{ref}/create-parcel",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/orders/{ref}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/orders/pending-cash",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/orders/ready-for-parcel",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/orders",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}/orders",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}/scans",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{id}",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}/detail",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}/label",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /api/v2/parcels/{ref}/scan",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}/timeline",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/{ref}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/alerts",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/critical",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/kpis",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/parcels",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/reconciliation/summary",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /api/v2/reconciliation",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/v2/scan-events",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub",
+        "agent_relais"
+      ]
+    },
+    {
+      "key": "GET /api/wallet/admin/{userId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/wallet/admin/credit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/wallet/admin/order-credit/{orderId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/wallet/admin/reverse-lot",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/wallet/admin",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/wallet/apply",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/wallet/remove",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/wallet/transactions",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/wallet",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /health/metrics",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /health/ready",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /health",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /webhook/meta-whatsapp",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "POST /webhook/meta-whatsapp",
+      "level": "UNKNOWN",
+      "roles": []
+    }
+  ]
+}
