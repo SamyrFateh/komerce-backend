@@ -32,7 +32,10 @@
     "arch:enrich": "node scripts/enrich-komerce-arch-db-fields.js",
     "arch:enrich:write": "node scripts/enrich-komerce-arch-db-fields.js --write",
     "arch:doctrine": "node scripts/arch-doctrine-sanitize-check.js",
-    "arch:doctrine:all": "node scripts/arch-doctrine-sanitize-check.js --all"
+    "arch:doctrine:all": "node scripts/arch-doctrine-sanitize-check.js --all",
+    "dashboards:360": "node scripts/gen-dashboards-360.js",
+    "dashboards:360:check": "node scripts/gen-dashboards-360.js --check",
+    "dashboards:360:save": "node scripts/gen-dashboards-360.js --save"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

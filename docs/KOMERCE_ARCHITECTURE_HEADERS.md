@@ -106,8 +106,30 @@ Before modifying Komerce code:
 
 ## Initial Domains
 
-`bootstrap`, `shared-cart`, `checkout`, `payment`, `auth`, `notification`, `economic-engine`, `catalog`, `boutique`, `order`, `inventory`, `dashboard`, `pricing`, `sourcing`, `wallet`, `tracking`, `recommendations`, `test`, `config`, `migration`.
+`bootstrap`, `shared-cart`, `checkout`, `payment`, `auth`, `notification`, `economic-engine`, `catalog`, `boutique`, `order`, `inventory`, `dashboard`, `admin-dashboard`, `pricing`, `sourcing`, `wallet`, `tracking`, `recommendations`, `test`, `config`, `migration`.
+
+`admin-dashboard` is the dedicated domain for `dashboards/admin/js/**` (the admin SPA: CT/BO shells, views, API client, filters store). Use `dashboard` for backend dashboard routes/services (`routes/dashboard*.js`, `services/dashboard-*.js`); use `admin-dashboard` for the frontend that consumes them. Kept distinct because the coupling mechanism differs end to end — see `docs/DASHBOARDS_360.md`.
 
 ## Initial Layers
 
-`entrypoint`, `route`, `service`, `machine`, `policy`, `cron`, `data-service`, `external-adapter`, `api-client`, `ui-page`, `ui-component`, `ui-state`, `ui-layout`, `ui-renderer`, `view-model`, `schema`, `catalog-data`, `ux-policy`, `script`, `test`, `config`, `migration`.
+`entrypoint`, `route`, `service`, `machine`, `policy`, `cron`, `data-service`, `external-adapter`, `api-client`, `ui-page`, `ui-component`, `ui-state`, `ui-layout`, `ui-renderer`, `view-model`, `state-store`, `schema`, `catalog-data`, `ux-policy`, `script`, `test`, `config`, `migration`.
+
+`state-store` is for observable state containers with subscribe/notify (e.g. `filters-store.js`). Distinct from `ui-state`, which stays for transient render-local state owned by a single component.
+
+## Dashboards Coupling Rule
+
+`dashboards/admin/js/**` does not couple through imports (like the backend) or through an event bus (like the boutique — see `docs/BOUTIQUE_360.md`). It couples through a three-link chain: SPA router (`app.js` → `ROUTES`) → view (`views/*.js`) → `KmcApi.method()` → `api-client.js` → backend endpoint → contract proof status (`docs/contract/openapi.json`).
+
+Any change to this chain (adding a route, a view, a `KmcApi` method, or a backend endpoint it depends on) must keep `docs/DASHBOARDS_360.md` consistent. Run:
+
+```bash
+node scripts/gen-dashboards-360.js
+```
+
+Then verify:
+
+- no new orphan route (`view` declared without a matching file)
+- no new missing API method (called by a view, not exported by `KmcApi` — guaranteed crash)
+- no new dead API method left unaddressed (exported, never called — usually dead code or a forgotten wire-up)
+- no new `kmc_api_only` doctrine violation (raw `fetch()` in a file that declares the doctrine)
+- review new `UNKNOWN`-contract calls in §4 of the report — not blocking, but each one is an unverified response shape, exactly the failure mode that caused the Hub & Relais `.orders` incident.

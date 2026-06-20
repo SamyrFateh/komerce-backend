@@ -1,0 +1,25 @@
+{
+  "orphanRoutes": [],
+  "deadApiMethods": [
+    "createEconomicCharge",
+    "createLoyaltyAction",
+    "deleteCostBenchmark",
+    "getCostBenchmarks",
+    "getLoyaltyHistory",
+    "getLoyaltyPending",
+    "getParcelAlerts",
+    "getParcelCritical",
+    "getParcelKpis",
+    "getPricingCompetitors",
+    "redistributeEconomic",
+    "sourcingBulkRail",
+    "updateCustomsShipment",
+    "updateEconomicCharge",
+    "updateEconomicVariable",
+    "updateFinanceConfig",
+    "upsertCostBenchmark"
+  ],
+  "missingApiMethods": [],
+  "doctrineViolations": [],
+  "savedAt": "2026-06-20T09:11:50.886Z"
+}

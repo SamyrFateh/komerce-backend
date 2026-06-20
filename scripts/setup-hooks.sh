@@ -45,6 +45,14 @@ if [ ! -f "scripts/impact-config.json" ]; then
   exit 1
 fi
 
+# gen-dashboards-360.js est optionnel a l'installation : le hook le gere lui-meme
+# (garde "if [ -d dashboards/admin/js ]"), donc non bloquant ici si absent pour
+# l'instant — juste un avertissement pour ne pas le perdre de vue.
+if [ -d "dashboards/admin/js" ] && [ ! -f "scripts/gen-dashboards-360.js" ]; then
+  echo "⚠️  dashboards/admin/js present mais scripts/gen-dashboards-360.js absent"
+  echo "   Le bloc 7 du hook pre-commit (carte 360 dashboards) sera silencieusement inactif."
+fi
+
 echo "📂 Répertoire hooks : $HOOKS_DIR"
 
 # Créer le répertoire hooks si nécessaire
@@ -238,6 +246,27 @@ if [ -d public/boutique ]; then
     echo "   (ownership CSS / hex hors tokens / breakpoints / injection CSS — corrige avant commit)"
     exit 1
   fi
+fi
+
+# 7. Carte 360 des dashboards admin (chaine route -> vue -> KmcApi -> endpoint -> contrat).
+#    Independant du bloc boutique ci-dessus : pas de bus ici, la couture est cette chaine.
+#    Auto-regenere le rapport (comme le graphe @komerce-arch), puis bloque uniquement sur
+#    une regression reelle au-dela du cliquet fige (route orpheline, methode API manquante
+#    -> crash garanti, methode API morte, violation de la doctrine kmc_api_only).
+#    Les contrats non prouves (UNKNOWN) restent informatifs, jamais bloquants.
+if [ -d dashboards/admin/js ]; then
+  node scripts/gen-dashboards-360.js >/dev/null 2>&1 || true
+  git add docs/DASHBOARDS_360.json docs/DASHBOARDS_360.md 2>/dev/null || true
+
+  if ! node scripts/gen-dashboards-360.js --check >/tmp/dashboards-360-check.log 2>&1; then
+    echo -e "${RED}🚫 Dashboards 360 : nouvelle anomalie bloquante hors baseline.${NC}"
+    cat /tmp/dashboards-360-check.log | grep -E "↑|✖"
+    echo "   Detail complet : npm run dashboards:360:check"
+    echo "   (relie la chaine route/vue/API, ou si legitime : npm run dashboards:360:save)"
+    rm -f /tmp/dashboards-360-check.log
+    exit 1
+  fi
+  rm -f /tmp/dashboards-360-check.log
 fi
 
 echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes, boutique verte).${NC}"

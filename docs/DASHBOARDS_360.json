@@ -1,0 +1,2213 @@
+{
+  "generatedAt": "2026-06-20T09:11:50.886Z",
+  "summary": {
+    "modules": 40,
+    "routes": 30,
+    "apiMethodsExported": 114,
+    "apiMethodsCalled": 95,
+    "orphanRoutes": 0,
+    "deadApiMethods": 17,
+    "missingApiMethods": 0,
+    "doctrineViolations": 0,
+    "unprovenContracts": 40
+  },
+  "modules": [
+    {
+      "file": "api-client-unsold.js",
+      "id": "api-client-unsold",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 1
+    },
+    {
+      "file": "api-client.js",
+      "id": "api-client",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-dashboard-api-client",
+      "domain": "admin-dashboard",
+      "layer": "api-client",
+      "criticality": "critical",
+      "owner": null,
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "HubRelaisView.js"
+      ],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "app.js",
+      "id": "app",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getFinanceConfig"
+      ],
+      "rawFetchCount": 2
+    },
+    {
+      "file": "ClientsView.js",
+      "id": "ClientsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getClients",
+        "getClientsList",
+        "getClientDetail"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "components/Charts.js",
+      "id": "Charts",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "components/KpiCard.js",
+      "id": "KpiCard",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "components/UI.js",
+      "id": "UI",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "filters-store.js",
+      "id": "filters-store",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-dashboard-filters-store",
+      "domain": "admin-dashboard",
+      "layer": "state-store",
+      "criticality": "medium",
+      "owner": null,
+      "doctrine": [
+        "none"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "HubRelaisView.js"
+      ],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "product-card-model.admin.js",
+      "id": "product-card-model.admin",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "utils.js",
+      "id": "utils",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/AccountingView.js",
+      "id": "AccountingView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getFinance",
+        "getEconomicCharges",
+        "getCashReconciliation",
+        "getCashUncollected"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/ActionCenterView.js",
+      "id": "ActionCenterView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSignalsStats",
+        "getSignalsList",
+        "acknowledgeSignal",
+        "snoozeSignal",
+        "resolveSignal",
+        "generateSignals"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/CategoriesView.js",
+      "id": "CategoriesView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 1
+    },
+    {
+      "file": "views/ClientsView.js",
+      "id": "ClientsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getClients",
+        "getClientsList",
+        "getClientDetail"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/ControlTowerView.js",
+      "id": "ControlTowerView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getControlTower",
+        "getOps",
+        "getUnsoldStats"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/CostingView.js",
+      "id": "CostingView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getCosting"
+      ],
+      "rawFetchCount": 3
+    },
+    {
+      "file": "views/CustomsView.js",
+      "id": "CustomsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getCustomsShipments",
+        "getCustomsRatesEffective",
+        "getPartnersLogistique",
+        "createCustomsShipment",
+        "getCustomsShipment"
+      ],
+      "rawFetchCount": 1
+    },
+    {
+      "file": "views/EconomicFlowView.js",
+      "id": "EconomicFlowView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getProducts",
+        "getPricingFlow"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/EconomicView.js",
+      "id": "EconomicView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getPricingDashboard",
+        "getEconomicExecutive",
+        "getEconomicCharges",
+        "getEconomicCoherence"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/EventWorkspacesView.js",
+      "id": "EventWorkspacesView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getEventWorkspaces"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/HubRelaisView.js",
+      "id": "HubRelaisView",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-hub-relais-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
+      "owner": null,
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
+      "apiCalls": [
+        "getPipeline",
+        "getParcels",
+        "hubMarkOrdered",
+        "hubShip",
+        "autoDistribute",
+        "getDistribution",
+        "relaisConfirmCash",
+        "relaisReceive",
+        "relaisCollect"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/InventoryView.js",
+      "id": "InventoryView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "hubInventoryScanAssign",
+        "getHubInventoryStats",
+        "getHubInventoryProposals",
+        "getHubInventoryOpenParcels",
+        "hubInventoryProposeAll"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/InvoicesView.js",
+      "id": "InvoicesView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getInvoices",
+        "getCashReconciliation",
+        "getCashUncollected"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/OrdersLogisticsView.js",
+      "id": "OrdersLogisticsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getLogistics",
+        "getOrders"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/PilotageFinView.js",
+      "id": "PilotageFinView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getFinance",
+        "getEconomicHistory",
+        "getEconomicVariables"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/PilotageView.js",
+      "id": "PilotageView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getUnified"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/PricingStrategyView.js",
+      "id": "PricingStrategyView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getProducts",
+        "getPricingStrategy",
+        "createPricingCompetitor",
+        "deletePricingCompetitor",
+        "applyPricingStrategy"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/PricingView.js",
+      "id": "PricingView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 2
+    },
+    {
+      "file": "views/PricingWorkshopView.js",
+      "id": "PricingWorkshopView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 1
+    },
+    {
+      "file": "views/ProblemsView.js",
+      "id": "ProblemsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getOrders",
+        "getParcelReconciliation"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/ProductsView.js",
+      "id": "ProductsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [],
+      "rawFetchCount": 4
+    },
+    {
+      "file": "views/SalesView.js",
+      "id": "SalesView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSales"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SanteView.js",
+      "id": "SanteView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getOps",
+        "getFinance",
+        "getClients",
+        "getSales",
+        "getCashReconciliation",
+        "getCashUncollected",
+        "getCustomsRatesEffective",
+        "getFinanceConfig"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SettingsView.js",
+      "id": "SettingsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSettingRule",
+        "patchSettingRule",
+        "getSettings",
+        "resetSettingRule",
+        "putSettingsTaxes",
+        "putSettingsDims",
+        "getSettingsTaxes",
+        "getSettingsDims",
+        "getSettingsAudit"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SharedCartsView.js",
+      "id": "SharedCartsView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSharedCarts",
+        "getSharedCart",
+        "extendSharedCart",
+        "expireSharedCart",
+        "noteSharedCart"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SimulatorView.js",
+      "id": "SimulatorView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "simStatus",
+        "simStart",
+        "simStop",
+        "simCleanup",
+        "simJournal"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SourcingScannerView.js",
+      "id": "SourcingScannerView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSourcingCatalogs",
+        "getSourcingCandidates",
+        "importSourcingCatalog",
+        "getSourcingCandidate",
+        "updateSourcingCandidate",
+        "scanSourcingCandidate",
+        "importSourcingProduct",
+        "watchlistSourcingCandidate",
+        "rejectSourcingCandidate"
+      ],
+      "rawFetchCount": 1
+    },
+    {
+      "file": "views/SourcingView.js",
+      "id": "SourcingView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getSourcingSynthesis",
+        "getSourcingAnalysis",
+        "updateSourcingProduct"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/SuppliersView.js",
+      "id": "SuppliersView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "getPartners",
+        "getPartnersStats",
+        "updatePartner",
+        "createPartner",
+        "deletePartner"
+      ],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "views/TransitaireView.js",
+      "id": "TransitaireView",
+      "hasHeader": false,
+      "isLite": false,
+      "role": null,
+      "domain": null,
+      "layer": null,
+      "criticality": null,
+      "owner": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "apiCalls": [
+        "shipTransitaireParcel",
+        "getTransitaireStats",
+        "getTransitaireParcels",
+        "getTransitaireHistory"
+      ],
+      "rawFetchCount": 0
+    }
+  ],
+  "routes": [
+    {
+      "path": "/admin/pilotage",
+      "view": "PilotageView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/sante",
+      "view": "SanteView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/control-tower",
+      "view": "ControlTowerView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/costing",
+      "view": "CostingView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/orders-logistics",
+      "view": "OrdersLogisticsView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/event-workspaces",
+      "view": "EventWorkspacesView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/sales",
+      "view": "SalesView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/economic",
+      "view": "EconomicView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/pilotage-fin",
+      "view": "PilotageFinView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/invoices",
+      "view": "InvoicesView",
+      "shell": "ct",
+      "roles": null
+    },
+    {
+      "path": "/admin/sourcing",
+      "view": "SourcingView",
+      "shell": "ct",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "path": "/admin/sourcing-scanner",
+      "view": "SourcingScannerView",
+      "shell": "ct",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "path": "/admin/pricing",
+      "view": "PricingView",
+      "shell": "ct",
+      "roles": [
+        "admin",
+        "sourcing",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/pricing-workshop",
+      "view": "PricingWorkshopView",
+      "shell": "ct",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/pricing-strategy",
+      "view": "PricingStrategyView",
+      "shell": "ct",
+      "roles": [
+        "admin",
+        "sourcing",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/economic-flow",
+      "view": "EconomicFlowView",
+      "shell": "ct",
+      "roles": [
+        "admin",
+        "sourcing",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/categories",
+      "view": "CategoriesView",
+      "shell": "ct",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/products",
+      "view": "ProductsView",
+      "shell": "ct",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/problems",
+      "view": "ProblemsView",
+      "shell": "bo",
+      "roles": null
+    },
+    {
+      "path": "/admin/alerts",
+      "view": "ActionCenterView",
+      "shell": "bo",
+      "roles": null
+    },
+    {
+      "path": "/admin/clients",
+      "view": "ClientsView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "support",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/hub-relais",
+      "view": "HubRelaisView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "hub",
+        "relais"
+      ]
+    },
+    {
+      "path": "/admin/transitaire",
+      "view": "TransitaireView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "hub"
+      ]
+    },
+    {
+      "path": "/admin/inventory",
+      "view": "InventoryView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "hub"
+      ]
+    },
+    {
+      "path": "/admin/accounting",
+      "view": "AccountingView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/customs",
+      "view": "CustomsView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "finance"
+      ]
+    },
+    {
+      "path": "/admin/suppliers",
+      "view": "SuppliersView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "path": "/admin/settings",
+      "view": "SettingsView",
+      "shell": "bo",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/simulator",
+      "view": "SimulatorView",
+      "shell": "bo",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "path": "/admin/shared-carts",
+      "view": "SharedCartsView",
+      "shell": "bo",
+      "roles": [
+        "admin",
+        "support"
+      ]
+    }
+  ],
+  "callEdges": [
+    {
+      "view": "AccountingView",
+      "method": "getFinance",
+      "defined": true,
+      "route": "/api/dashboard/finance",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "AccountingView",
+      "method": "getEconomicCharges",
+      "defined": true,
+      "route": "/api/admin/economic/charges",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "AccountingView",
+      "method": "getCashReconciliation",
+      "defined": true,
+      "route": "/api/cash/reconciliation",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "AccountingView",
+      "method": "getCashUncollected",
+      "defined": true,
+      "route": "/api/cash/uncollected",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "getSignalsStats",
+      "defined": true,
+      "route": "/api/admin/signals/stats",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "getSignalsList",
+      "defined": true,
+      "route": "/api/admin/signals",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "acknowledgeSignal",
+      "defined": true,
+      "route": "/api/admin/signals",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "snoozeSignal",
+      "defined": true,
+      "route": "/api/admin/signals",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "resolveSignal",
+      "defined": true,
+      "route": "/api/admin/signals",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "ActionCenterView",
+      "method": "generateSignals",
+      "defined": true,
+      "route": "/api/admin/signals/generate",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "ClientsView",
+      "method": "getClients",
+      "defined": true,
+      "route": "/api/dashboard/clients",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ClientsView",
+      "method": "getClientsList",
+      "defined": true,
+      "route": "/api/dashboard/clients/list",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ClientsView",
+      "method": "getClientDetail",
+      "defined": true,
+      "route": "/api/dashboard/clients/detail",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getControlTower",
+      "defined": true,
+      "route": "/api/admin/dashboard/control-tower",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getOps",
+      "defined": true,
+      "route": "/api/dashboard/ops",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ControlTowerView",
+      "method": "getUnsoldStats",
+      "defined": true,
+      "route": null,
+      "httpMethod": null,
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "CostingView",
+      "method": "getCosting",
+      "defined": true,
+      "route": "/api/admin/dashboard/costing",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "CustomsView",
+      "method": "getCustomsShipments",
+      "defined": true,
+      "route": "/api/admin/customs-shipments",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "CustomsView",
+      "method": "getCustomsRatesEffective",
+      "defined": true,
+      "route": "/api/admin/customs-shipments/rates/effective",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "CustomsView",
+      "method": "getPartnersLogistique",
+      "defined": true,
+      "route": "/api/admin/partners",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "CustomsView",
+      "method": "createCustomsShipment",
+      "defined": true,
+      "route": "/api/admin/customs-shipments",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "CustomsView",
+      "method": "getCustomsShipment",
+      "defined": true,
+      "route": "/api/admin/customs-shipments",
+      "httpMethod": "GET",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "EconomicFlowView",
+      "method": "getProducts",
+      "defined": true,
+      "route": "/api/products",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "EconomicFlowView",
+      "method": "getPricingFlow",
+      "defined": true,
+      "route": "/api/pricing/flow",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "EconomicView",
+      "method": "getPricingDashboard",
+      "defined": true,
+      "route": "/api/pricing/dashboard",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicExecutive",
+      "defined": true,
+      "route": "/api/admin/economic/executive",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicCharges",
+      "defined": true,
+      "route": "/api/admin/economic/charges",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "EconomicView",
+      "method": "getEconomicCoherence",
+      "defined": true,
+      "route": "/api/admin/economic/coherence",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "EventWorkspacesView",
+      "method": "getEventWorkspaces",
+      "defined": true,
+      "route": "/api/admin/dashboard/event-workspaces",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "getPipeline",
+      "defined": true,
+      "route": "/api/dashboard/pipeline",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "getParcels",
+      "defined": true,
+      "route": "/api/v2/parcels",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "hubMarkOrdered",
+      "defined": true,
+      "route": "/api/hub/orders/mark-ordered",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "hubShip",
+      "defined": true,
+      "route": "/api/v2/scan",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "autoDistribute",
+      "defined": true,
+      "route": "/api/hub/auto-distribute",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "getDistribution",
+      "defined": true,
+      "route": "/api/hub/auto-distribute",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "relaisConfirmCash",
+      "defined": true,
+      "route": "/api/v2/orders",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "relaisReceive",
+      "defined": true,
+      "route": "/api/v2/scan",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "HubRelaisView",
+      "method": "relaisCollect",
+      "defined": true,
+      "route": "/api/v2/scan",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "InventoryView",
+      "method": "hubInventoryScanAssign",
+      "defined": true,
+      "route": "/api/hub/inventory/scan-assign",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "InventoryView",
+      "method": "getHubInventoryStats",
+      "defined": true,
+      "route": "/api/hub/inventory/stats",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "InventoryView",
+      "method": "getHubInventoryProposals",
+      "defined": true,
+      "route": "/api/hub/inventory/proposals",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "InventoryView",
+      "method": "getHubInventoryOpenParcels",
+      "defined": true,
+      "route": "/api/hub/inventory/open-parcels",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "InventoryView",
+      "method": "hubInventoryProposeAll",
+      "defined": true,
+      "route": "/api/hub/inventory/propose-all",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "InvoicesView",
+      "method": "getInvoices",
+      "defined": true,
+      "route": "/api/invoices",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "InvoicesView",
+      "method": "getCashReconciliation",
+      "defined": true,
+      "route": "/api/cash/reconciliation",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "InvoicesView",
+      "method": "getCashUncollected",
+      "defined": true,
+      "route": "/api/cash/uncollected",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "OrdersLogisticsView",
+      "method": "getLogistics",
+      "defined": true,
+      "route": "/api/admin/dashboard/logistics",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "OrdersLogisticsView",
+      "method": "getOrders",
+      "defined": true,
+      "route": "/api/orders",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getFinance",
+      "defined": true,
+      "route": "/api/dashboard/finance",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getEconomicHistory",
+      "defined": true,
+      "route": "/api/admin/economic/history",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PilotageFinView",
+      "method": "getEconomicVariables",
+      "defined": true,
+      "route": "/api/admin/economic/variables",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PilotageView",
+      "method": "getUnified",
+      "defined": true,
+      "route": "/api/admin/dashboard/unified",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "PricingStrategyView",
+      "method": "getProducts",
+      "defined": true,
+      "route": "/api/products",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PricingStrategyView",
+      "method": "getPricingStrategy",
+      "defined": true,
+      "route": "/api/pricing/strategy",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "PricingStrategyView",
+      "method": "createPricingCompetitor",
+      "defined": true,
+      "route": "/api/pricing/strategy/competitors",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "PricingStrategyView",
+      "method": "deletePricingCompetitor",
+      "defined": true,
+      "route": "/api/pricing/strategy/competitors",
+      "httpMethod": "DELETE",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "PricingStrategyView",
+      "method": "applyPricingStrategy",
+      "defined": true,
+      "route": "/api/pricing/strategy/apply",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "ProblemsView",
+      "method": "getOrders",
+      "defined": true,
+      "route": "/api/orders",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "ProblemsView",
+      "method": "getParcelReconciliation",
+      "defined": true,
+      "route": "/api/v2/parcels/reconciliation",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SalesView",
+      "method": "getSales",
+      "defined": true,
+      "route": "/api/dashboard/sales",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getOps",
+      "defined": true,
+      "route": "/api/dashboard/ops",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getFinance",
+      "defined": true,
+      "route": "/api/dashboard/finance",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getClients",
+      "defined": true,
+      "route": "/api/dashboard/clients",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getSales",
+      "defined": true,
+      "route": "/api/dashboard/sales",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getCashReconciliation",
+      "defined": true,
+      "route": "/api/cash/reconciliation",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getCashUncollected",
+      "defined": true,
+      "route": "/api/cash/uncollected",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getCustomsRatesEffective",
+      "defined": true,
+      "route": "/api/admin/customs-shipments/rates/effective",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SanteView",
+      "method": "getFinanceConfig",
+      "defined": true,
+      "route": "/api/admin/finance-config",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SettingsView",
+      "method": "getSettingRule",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "patchSettingRule",
+      "defined": true,
+      "route": null,
+      "httpMethod": "PATCH",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "getSettings",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "resetSettingRule",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "putSettingsTaxes",
+      "defined": true,
+      "route": null,
+      "httpMethod": "PUT",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "putSettingsDims",
+      "defined": true,
+      "route": null,
+      "httpMethod": "PUT",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "getSettingsTaxes",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "getSettingsDims",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SettingsView",
+      "method": "getSettingsAudit",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SharedCartsView",
+      "method": "getSharedCarts",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SharedCartsView",
+      "method": "getSharedCart",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SharedCartsView",
+      "method": "extendSharedCart",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SharedCartsView",
+      "method": "expireSharedCart",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SharedCartsView",
+      "method": "noteSharedCart",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SimulatorView",
+      "method": "simStatus",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SimulatorView",
+      "method": "simStart",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SimulatorView",
+      "method": "simStop",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SimulatorView",
+      "method": "simCleanup",
+      "defined": true,
+      "route": null,
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SimulatorView",
+      "method": "simJournal",
+      "defined": true,
+      "route": null,
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "getSourcingCatalogs",
+      "defined": true,
+      "route": "/api/admin/sourcing/catalogs",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "getSourcingCandidates",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "importSourcingCatalog",
+      "defined": true,
+      "route": "/api/admin/sourcing/catalogs/import",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "getSourcingCandidate",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "GET",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "updateSourcingCandidate",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "PUT",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "scanSourcingCandidate",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "importSourcingProduct",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "watchlistSourcingCandidate",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingScannerView",
+      "method": "rejectSourcingCandidate",
+      "defined": true,
+      "route": "/api/admin/sourcing/candidates",
+      "httpMethod": "POST",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SourcingView",
+      "method": "getSourcingSynthesis",
+      "defined": true,
+      "route": "/api/admin/sourcing/synthesis",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SourcingView",
+      "method": "getSourcingAnalysis",
+      "defined": true,
+      "route": "/api/admin/sourcing/analysis",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SourcingView",
+      "method": "updateSourcingProduct",
+      "defined": true,
+      "route": "/api/admin/sourcing/products",
+      "httpMethod": "PUT",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SuppliersView",
+      "method": "getPartners",
+      "defined": true,
+      "route": "/api/admin/partners",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SuppliersView",
+      "method": "getPartnersStats",
+      "defined": true,
+      "route": "/api/admin/partners/stats",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "SuppliersView",
+      "method": "updatePartner",
+      "defined": true,
+      "route": "/api/admin/partners",
+      "httpMethod": "PUT",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "SuppliersView",
+      "method": "createPartner",
+      "defined": true,
+      "route": "/api/admin/partners",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "SuppliersView",
+      "method": "deletePartner",
+      "defined": true,
+      "route": "/api/admin/partners",
+      "httpMethod": "DELETE",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "view": "TransitaireView",
+      "method": "shipTransitaireParcel",
+      "defined": true,
+      "route": "/api/transitaire/ship",
+      "httpMethod": "POST",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "TransitaireView",
+      "method": "getTransitaireStats",
+      "defined": true,
+      "route": "/api/transitaire/stats",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "TransitaireView",
+      "method": "getTransitaireParcels",
+      "defined": true,
+      "route": "/api/transitaire/parcels",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "TransitaireView",
+      "method": "getTransitaireHistory",
+      "defined": true,
+      "route": "/api/transitaire/history",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    }
+  ],
+  "headerCoverage": {
+    "total": 40,
+    "full": 3,
+    "lite": 0,
+    "missing": 37
+  },
+  "liteMissingOwner": [],
+  "diagnostics": {
+    "orphanRoutes": [],
+    "deadApiMethods": [
+      "createEconomicCharge",
+      "createLoyaltyAction",
+      "deleteCostBenchmark",
+      "getCostBenchmarks",
+      "getLoyaltyHistory",
+      "getLoyaltyPending",
+      "getParcelAlerts",
+      "getParcelCritical",
+      "getParcelKpis",
+      "getPricingCompetitors",
+      "redistributeEconomic",
+      "sourcingBulkRail",
+      "updateCustomsShipment",
+      "updateEconomicCharge",
+      "updateEconomicVariable",
+      "updateFinanceConfig",
+      "upsertCostBenchmark"
+    ],
+    "missingApiMethods": [],
+    "doctrineViolations": [],
+    "rawFetchDebt": [
+      "api-client-unsold.js (1 fetch() brut)",
+      "app.js (2 fetch() brut)",
+      "views/CategoriesView.js (1 fetch() brut)",
+      "views/CostingView.js (3 fetch() brut)",
+      "views/CustomsView.js (1 fetch() brut)",
+      "views/PricingView.js (2 fetch() brut)",
+      "views/PricingWorkshopView.js (1 fetch() brut)",
+      "views/ProductsView.js (4 fetch() brut)",
+      "views/SourcingScannerView.js (1 fetch() brut)"
+    ],
+    "unprovenContracts": [
+      "GET /api/admin/customs-shipments",
+      "GET /api/admin/customs-shipments/rates/effective",
+      "GET /api/admin/dashboard/control-tower",
+      "GET /api/admin/dashboard/logistics",
+      "GET /api/admin/economic/charges",
+      "GET /api/admin/economic/coherence",
+      "GET /api/admin/economic/executive",
+      "GET /api/admin/economic/history",
+      "GET /api/admin/economic/variables",
+      "GET /api/admin/finance-config",
+      "GET /api/admin/partners",
+      "GET /api/admin/partners/stats",
+      "GET /api/admin/signals",
+      "GET /api/admin/signals/stats",
+      "GET /api/admin/sourcing/analysis",
+      "GET /api/admin/sourcing/candidates",
+      "GET /api/admin/sourcing/catalogs",
+      "GET /api/admin/sourcing/synthesis",
+      "GET /api/cash/reconciliation",
+      "GET /api/cash/uncollected",
+      "GET /api/dashboard/clients",
+      "GET /api/dashboard/clients/detail",
+      "GET /api/dashboard/clients/list",
+      "GET /api/dashboard/finance",
+      "GET /api/dashboard/ops",
+      "GET /api/dashboard/sales",
+      "GET /api/hub/auto-distribute",
+      "GET /api/hub/inventory/open-parcels",
+      "GET /api/hub/inventory/proposals",
+      "GET /api/hub/inventory/stats",
+      "GET /api/invoices",
+      "GET /api/orders",
+      "GET /api/pricing/dashboard",
+      "GET /api/pricing/strategy",
+      "GET /api/products",
+      "GET /api/transitaire/history",
+      "GET /api/transitaire/parcels",
+      "GET /api/transitaire/stats",
+      "GET /api/v2/parcels",
+      "GET /api/v2/parcels/reconciliation"
+    ],
+    "notFoundContracts": [
+      "GET /api/admin/dashboard/costing",
+      "GET /api/admin/dashboard/event-workspaces",
+      "GET /api/admin/dashboard/unified",
+      "GET /api/dashboard/pipeline",
+      "POST /api/admin/customs-shipments",
+      "POST /api/admin/partners",
+      "POST /api/admin/signals/generate",
+      "POST /api/admin/sourcing/catalogs/import",
+      "POST /api/hub/auto-distribute",
+      "POST /api/hub/inventory/propose-all",
+      "POST /api/hub/inventory/scan-assign",
+      "POST /api/hub/orders/mark-ordered",
+      "POST /api/pricing/flow",
+      "POST /api/pricing/strategy/apply",
+      "POST /api/pricing/strategy/competitors",
+      "POST /api/transitaire/ship",
+      "POST /api/v2/scan"
+    ],
+    "unresolvedRoutes": [
+      "expireSharedCart",
+      "extendSharedCart",
+      "getSettingRule",
+      "getSettings",
+      "getSettingsAudit",
+      "getSettingsDims",
+      "getSettingsTaxes",
+      "getSharedCart",
+      "getSharedCarts",
+      "getUnsoldStats",
+      "noteSharedCart",
+      "patchSettingRule",
+      "putSettingsDims",
+      "putSettingsTaxes",
+      "resetSettingRule",
+      "simCleanup",
+      "simJournal",
+      "simStart",
+      "simStatus",
+      "simStop"
+    ],
+    "dynamicRoutes": [
+      "acknowledgeSignal (préfixe: POST /api/admin/signals/…)",
+      "deletePartner (préfixe: DELETE /api/admin/partners/…)",
+      "deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)",
+      "getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)",
+      "getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)",
+      "importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)",
+      "rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)",
+      "relaisConfirmCash (préfixe: POST /api/v2/orders/…)",
+      "resolveSignal (préfixe: POST /api/admin/signals/…)",
+      "scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)",
+      "snoozeSignal (préfixe: POST /api/admin/signals/…)",
+      "updatePartner (préfixe: PUT /api/admin/partners/…)",
+      "updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)",
+      "updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)",
+      "watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)"
+    ]
+  },
+  "byDomain": {
+    "(non typé)": [
+      "api-client-unsold.js",
+      "app.js",
+      "ClientsView.js",
+      "components/Charts.js",
+      "components/KpiCard.js",
+      "components/UI.js",
+      "product-card-model.admin.js",
+      "utils.js",
+      "views/AccountingView.js",
+      "views/ActionCenterView.js",
+      "views/CategoriesView.js",
+      "views/ClientsView.js",
+      "views/ControlTowerView.js",
+      "views/CostingView.js",
+      "views/CustomsView.js",
+      "views/EconomicFlowView.js",
+      "views/EconomicView.js",
+      "views/EventWorkspacesView.js",
+      "views/InventoryView.js",
+      "views/InvoicesView.js",
+      "views/OrdersLogisticsView.js",
+      "views/PilotageFinView.js",
+      "views/PilotageView.js",
+      "views/PricingStrategyView.js",
+      "views/PricingView.js",
+      "views/PricingWorkshopView.js",
+      "views/ProblemsView.js",
+      "views/ProductsView.js",
+      "views/SalesView.js",
+      "views/SanteView.js",
+      "views/SettingsView.js",
+      "views/SharedCartsView.js",
+      "views/SimulatorView.js",
+      "views/SourcingScannerView.js",
+      "views/SourcingView.js",
+      "views/SuppliersView.js",
+      "views/TransitaireView.js"
+    ],
+    "admin-dashboard": [
+      "api-client.js",
+      "filters-store.js",
+      "views/HubRelaisView.js"
+    ]
+  }
+}
