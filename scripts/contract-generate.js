@@ -241,7 +241,6 @@ const openapi = {
       '  - x-contract-status: "UNKNOWN"  → non couvert, à compléter',
     ].join('\n'),
   },
-  'x-generated-at': new Date().toISOString(),
   'x-contract-debt': {
     unknown_responses: 0,
     total_routes: ROUTE_SCHEMA_MAP.length,

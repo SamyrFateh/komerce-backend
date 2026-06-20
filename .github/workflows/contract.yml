@@ -1,4 +1,12 @@
-name: Contract Check
+name: Contract & Security (app-booting gates)
+
+# Ces portes BOOTENT l'app (introspection runtime) : trop lourdes pour le
+# pre-commit, elles vivent donc en CI. Elles ferment le maillon faible de la
+# gouvernance : le contrat OpenAPI est la clef de voûte que les cartes 360 +
+# meta utilisent pour résoudre les appels front -> backend, mais c'est le SEUL
+# artefact que le pre-commit ne régénère pas. Ici on le régénère et on bloque
+# si le contrat committé est PÉRIMÉ (route changée sans `npm run contract:generate`).
+
 on:
   pull_request:
     branches: [main]
@@ -6,8 +14,31 @@ on:
     branches: [main]
 
 jobs:
-  contract:
+  contract-security:
     runs-on: ubuntu-latest
+
+    # Secrets factices : l'app doit BOOTER pour l'introspection. Aucune valeur
+    # réelle requise (le contrat s'écrit avant le seed DB ; l'ECONNREFUSED 5432
+    # éventuel est inoffensif). Mêmes conventions que le job integration de ci.yml.
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-dummy
+      SESSION_SECRET: ci-dummy
+      INTERNAL_API_KEY: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      JWT_EXPIRES: 7d
+      APP_URL: http://localhost
+      PUBLIC_URL: http://localhost
+      PUBLIC_BASE_URL: http://localhost
+      ADMIN_RESET_KEY: ci-dummy
+      INVOICE_PUBLIC_LINK_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,10 +46,29 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+
+      # 1. Régénère le contrat par introspection runtime (vérité terrain).
       - name: Générer le contrat
         run: npm run contract:generate
-      - name: Vérifier la dérive
-        run: npm run contract:check
-        env:
-          BOUTIQUE_DIR: public/boutique/js
-          DASHBOARDS_DIR: public/dashboards
+
+      # 2. BLOQUANT — maillon faible fermé : le contrat committé doit être à jour.
+      #    Si une route a changé sans régénération, le diff n'est pas vide => échec
+      #    avec le remède exact. (Même logique que le "drift" du graphe dans governance.yml.)
+      - name: Contrat à jour dans la PR (drift)
+        run: |
+          git diff --exit-code -- docs/contract/openapi.json \
+          || (echo "::error::Contrat périmé. Lance 'npm run contract:generate' et commit docs/contract/openapi.json" && exit 1)
+
+      # 3. BLOQUANT — coutures front -> contrat (boutique + dashboards + meta),
+      #    résolues contre le contrat FRAÎCHEMENT régénéré ci-dessus.
+      - name: Boutique 360 (couture -> contrat)
+        run: npm run boutique:360:check
+      - name: Dashboards 360 (couture -> contrat)
+        run: npm run dashboards:360:check
+      - name: Meta-graphe (coutures fantômes)
+        run: npm run meta:graph:check
+
+      # 4. BLOQUANT — couverture des gardes : aucune NOUVELLE route admin sans
+      #    garde / non protégée / non classable hors baseline.
+      - name: Security 360 (gardes)
+        run: npm run security:360:check
