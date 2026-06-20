@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T13:41:30.297Z.
+> Régénéré le 2026-06-20T14:08:16.777Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **4**
-- Endpoints appelés : **58** — 🔴 7 hors contrat · ⚪ 27 non prouvés · 🔵 28 dynamiques
+- Modules JS : **69** (69 headés) · Événements bus : **16** · Bundles CSS : **4**
+- Endpoints appelés : **54** — 🔴 0 hors contrat · ⚪ 29 non prouvés · 🔵 28 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -25,21 +25,20 @@
 | `/api/categories` | shop-schema | ⚪ non prouvé |
 | `/api/client/tracking` | b-tracking | ⚪ non prouvé |
 | `/api/collective-payments` | event-pay | 🔵 dynamique |
-| `/api/collective-workspaces` | b-cart-groups-tab, event-manage | 🔴 hors contrat |
+| `/api/collective-workspaces` | event-manage | 🔵 dynamique |
 | `/api/collective-workspaces/me` | event-manage | 🔵 dynamique |
 | `/api/collective-workspaces/public` | event-public | 🔵 dynamique |
 | `/api/health` | komerce-api | ⚪ non prouvé |
+| `/api/hub/pack` | komerce-api | ⚪ non prouvé |
 | `/api/hub/scan` | komerce-api | ⚪ non prouvé |
-| `/api/logistics/containers` | komerce-api | 🔴 hors contrat |
+| `/api/hub/seal` | komerce-api | ⚪ non prouvé |
 | `/api/logistics/shipments` | komerce-api | ⚪ non prouvé |
 | `/api/logistics/shipments/{id}` | komerce-api | 🔵 dynamique |
 | `/api/orders` | b-checkout, b-tracking, komerce-api | ⚪ non prouvé |
-| `/api/orders/stats` | komerce-api | 🔴 hors contrat |
 | `/api/orders/{id}` | komerce-api | 🔵 dynamique |
 | `/api/parcels` | komerce-api | ⚪ non prouvé |
 | `/api/parcels/bootstrap/{id}` | komerce-api | 🔵 dynamique |
 | `/api/parcels/optimize` | komerce-api | ⚪ non prouvé |
-| `/api/parcels/stats` | komerce-api | 🔴 hors contrat |
 | `/api/parcels/{id}` | komerce-api | 🔵 dynamique |
 | `/api/parcels/{id}/items` | komerce-api | 🔵 dynamique |
 | `/api/payments/paypal/capture/{id}` | b-paypal | 🔵 dynamique |
@@ -48,14 +47,11 @@
 | `/api/products` | b-modal-core, komerce-api | 🔵 dynamique |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal | ⚪ non prouvé |
-| `/api/purchasing/orders` | komerce-api | 🔴 hors contrat |
 | `/api/purchasing/suppliers` | komerce-api | ⚪ non prouvé |
 | `/api/purchasing/suppliers/{id}` | komerce-api | 🔵 dynamique |
 | `/api/relais` | b-checkout | ⚪ non prouvé |
 | `/api/relais/public` | b-nav | ⚪ non prouvé |
 | `/api/scans` | komerce-api | ⚪ non prouvé |
-| `/api/scans/hub/pack` | komerce-api | 🔴 hors contrat |
-| `/api/scans/hub/seal` | komerce-api | 🔴 hors contrat |
 | `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
 | `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
 | `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
@@ -72,8 +68,6 @@
 | `/api/shared-carts/{id}/items` | b-cart | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
 | `/api/wallet` | b-checkout | ⚪ non prouvé |
-
-> 🔴 **Hors contrat** (même classe que `.orders`/`getCosting`) : `/api/collective-workspaces`, `/api/logistics/containers`, `/api/orders/stats`, `/api/parcels/stats`, `/api/purchasing/orders`, `/api/scans/hub/pack`, `/api/scans/hub/seal`
 
 ## 2. Topologie du bus
 

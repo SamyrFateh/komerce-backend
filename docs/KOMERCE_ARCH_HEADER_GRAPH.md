@@ -6,14 +6,14 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 313
+- Scanned code files: 312
 - Files with full headers: 283
-- Files with lite headers: 30
-- Files with any headers: 313
+- Files with lite headers: 29
+- Files with any headers: 312
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 654
-- Edges: 2867
+- Graph nodes: 653
+- Edges: 2865
 - DB tables: 107
 - Doctrines: 122
 - Impact areas: 112
@@ -23,7 +23,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 - auth: 18
 - bootstrap: 9
-- boutique: 37
+- boutique: 36
 - catalog: 25
 - checkout: 2
 - collective-workspace: 3
@@ -65,7 +65,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - service: 103
 - state: 1
 - state-store: 1
-- ui-component: 40
+- ui-component: 39
 - ui-enhancer: 3
 - ui-experiment: 1
 - ui-infrastructure: 1
@@ -269,7 +269,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Lite Aggregated Files
 
 - public/boutique/js/b-boutique-wow-style.js -> owner public/boutique/js/boutique.js (boutique-b-boutique-wow-style)
-- public/boutique/js/b-cart-groups-tab.js -> owner public/boutique/js/b-cart.js (boutique-b-cart-groups-tab)
 - public/boutique/js/b-cart-product-open-style.js -> owner public/boutique/js/b-modal-core.js (catalog-b-cart-product-open-style)
 - public/boutique/js/b-desktop-global-cart-access.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-global-cart-access)
 - public/boutique/js/b-desktop-sidebar.js -> owner public/boutique/js/b-catalog.js (boutique-b-desktop-sidebar)

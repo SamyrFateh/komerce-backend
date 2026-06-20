@@ -15,14 +15,6 @@
     "toast",
     "view:changed"
   ],
-  "notFoundEndpoints": [
-    "/api/collective-workspaces",
-    "/api/logistics/containers",
-    "/api/orders/stats",
-    "/api/parcels/stats",
-    "/api/purchasing/orders",
-    "/api/scans/hub/pack",
-    "/api/scans/hub/seal"
-  ],
-  "savedAt": "2026-06-20T13:33:13.582Z"
+  "notFoundEndpoints": [],
+  "savedAt": "2026-06-20T14:00:53.089Z"
 }

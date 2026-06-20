@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-20T13:41:30.781Z",
+  "generatedAt": "2026-06-20T14:08:17.591Z",
   "sources": {
     "backend": {
-      "nodes": 654
+      "nodes": 653
     },
     "boutique": {
-      "modules": 70,
-      "endpoints": 58
+      "modules": 69,
+      "endpoints": 54
     },
     "dashboards": {
       "modules": 40,
@@ -17,23 +17,12 @@
     }
   },
   "summary": {
-    "endpointsConsumed": 89,
+    "endpointsConsumed": 84,
     "sharedEndpoints": 2,
-    "phantomSeams": 8,
+    "phantomSeams": 1,
     "sharedTables": 10
   },
   "endpoints": {
-    "/api/collective-workspaces": {
-      "boutique": [
-        "b-cart-groups-tab"
-      ],
-      "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
-    },
     "/api/shares": {
       "boutique": [
         "b-cart",
@@ -356,17 +345,6 @@
         "users"
       ]
     },
-    "/api/parcels/stats": {
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
-    },
     "/api/parcels/optimize": {
       "boutique": [
         "komerce-api"
@@ -407,27 +385,41 @@
         "users"
       ]
     },
-    "/api/scans/hub/pack": {
+    "/api/hub/pack": {
       "boutique": [
         "komerce-api"
       ],
       "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/hub.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "orders",
+        "parcel_items",
+        "parcels",
+        "users"
+      ]
     },
-    "/api/scans/hub/seal": {
+    "/api/hub/seal": {
       "boutique": [
         "komerce-api"
       ],
       "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/hub.js",
+      "services": [
+        "services/*"
+      ],
+      "tables": [
+        "orders",
+        "parcel_items",
+        "parcels",
+        "users"
+      ]
     },
     "/api/scans": {
       "boutique": [
@@ -449,17 +441,6 @@
         "users"
       ]
     },
-    "/api/orders/stats": {
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
-    },
     "/api/logistics/shipments": {
       "boutique": [
         "komerce-api"
@@ -479,17 +460,6 @@
         "shipments",
         "users"
       ]
-    },
-    "/api/logistics/containers": {
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
     },
     "/api/carriers": {
       "boutique": [
@@ -541,17 +511,6 @@
         "purchase_orders",
         "suppliers"
       ]
-    },
-    "/api/purchasing/orders": {
-      "boutique": [
-        "komerce-api"
-      ],
-      "dashboards": [],
-      "inContract": false,
-      "status": "NOT_FOUND",
-      "routeFile": null,
-      "services": [],
-      "tables": []
     },
     "/api/categories": {
       "boutique": [
@@ -1461,13 +1420,6 @@
       "/api/products"
     ],
     "phantomSeams": [
-      "/api/collective-workspaces",
-      "/api/logistics/containers",
-      "/api/orders/stats",
-      "/api/parcels/stats",
-      "/api/purchasing/orders",
-      "/api/scans/hub/pack",
-      "/api/scans/hub/seal",
       "/api/v2/scan"
     ],
     "sharedTables": [

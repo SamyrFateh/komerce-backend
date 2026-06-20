@@ -194,7 +194,6 @@ window.K = (() => {
     create(data) { return request('/api/parcels', 'POST', data); },
     update(id, data) { return request(`/api/parcels/${id}`, 'PUT', data); },
     addItem(parcelId, data) { return request(`/api/parcels/${parcelId}/items`, 'POST', data); },
-    stats() { return request('/api/parcels/stats'); },
 
     // ── Moteur d'optimisation (Vague 4) ──
     optimize(orderId, config = {}) {
@@ -211,10 +210,10 @@ window.K = (() => {
       return request('/api/hub/scan', 'POST', { barcode, scanned_by: scannedBy });
     },
     pack(parcelId) {
-      return request('/api/scans/hub/pack', 'POST', { parcel_id: parcelId });
+      return request('/api/hub/pack', 'POST', { parcel_id: parcelId });
     },
     seal(parcelId) {
-      return request('/api/scans/hub/seal', 'POST', { parcel_id: parcelId });
+      return request('/api/hub/seal', 'POST', { parcel_id: parcelId });
     },
     getDraftParcels() {
       return request('/api/parcels?status=draft');
@@ -237,7 +236,6 @@ window.K = (() => {
       return request('/api/orders' + (qs ? '?' + qs : ''));
     },
     get(id) { return request(`/api/orders/${id}`); },
-    stats() { return request('/api/orders/stats'); },
 	 // ✅ ICI
   create(data) {
     return request('/api/orders', 'POST', data);
@@ -253,9 +251,6 @@ window.K = (() => {
       },
       get(id) { return request(`/api/logistics/shipments/${id}`); },
       create(data) { return request('/api/logistics/shipments', 'POST', data); },
-    },
-    containers: {
-      list() { return request('/api/logistics/containers'); },
     },
   };
 
@@ -281,12 +276,6 @@ window.K = (() => {
     suppliers: {
       list() { return request('/api/purchasing/suppliers'); },
       get(id) { return request(`/api/purchasing/suppliers/${id}`); },
-    },
-    orders: {
-      list(filters = {}) {
-        const qs = new URLSearchParams(filters).toString();
-        return request('/api/purchasing/orders' + (qs ? '?' + qs : ''));
-      },
     },
   };
 

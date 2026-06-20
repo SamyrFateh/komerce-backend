@@ -13,14 +13,14 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 313,
+    "scannedCodeFiles": 312,
     "filesWithFullHeaders": 283,
-    "filesWithLiteHeaders": 30,
-    "filesWithAnyHeaders": 313,
+    "filesWithLiteHeaders": 29,
+    "filesWithAnyHeaders": 312,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 654,
-    "edges": 2867,
+    "graphNodes": 653,
+    "edges": 2865,
     "dbTables": 107,
     "doctrines": 122,
     "impactAreas": 112,
@@ -30,7 +30,7 @@
     "bootstrap": 9,
     "notifications": 1,
     "auth": 18,
-    "boutique": 37,
+    "boutique": 36,
     "catalog": 25,
     "checkout": 2,
     "shared-cart": 34,
@@ -58,7 +58,7 @@
     "cron": 1,
     "manual-test": 1,
     "middleware": 10,
-    "ui-component": 40,
+    "ui-component": 39,
     "ui-enhancer": 3,
     "ui-renderer": 6,
     "ui-page": 6,
@@ -87,7 +87,7 @@
     "critical": 66,
     "medium": 96,
     "high": 119,
-    "low": 32
+    "low": 31
   },
   "nodes": [
     {
@@ -853,30 +853,6 @@
       "doctrine": [
         "resolve_before_behavior_change"
       ],
-      "impactAreas": [
-        "boutique"
-      ],
-      "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/b-cart-groups-tab.js",
-      "file": "public/boutique/js/b-cart-groups-tab.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "boutique-b-cart-groups-tab",
-      "domain": "boutique",
-      "layer": "ui-component",
-      "criticality": "low",
-      "owner": "public/boutique/js/b-cart.js",
-      "purpose": "supports public/boutique/js/b-cart.js",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbTxn": [],
-      "doctrine": [],
       "impactAreas": [
         "boutique"
       ],
@@ -15650,18 +15626,6 @@
     },
     {
       "from": "public/boutique/js/b-cart-core.js",
-      "to": "impact:boutique",
-      "type": "impact",
-      "label": "boutique"
-    },
-    {
-      "from": "public/boutique/js/b-cart-groups-tab.js",
-      "to": "public/boutique/js/b-cart.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-cart.js"
-    },
-    {
-      "from": "public/boutique/js/b-cart-groups-tab.js",
       "to": "impact:boutique",
       "type": "impact",
       "label": "boutique"
@@ -33080,27 +33044,6 @@
         "public/boutique/js/boutique.js"
       ]
     },
-    "public/boutique/js/b-cart-groups-tab.js": {
-      "role": "boutique-b-cart-groups-tab",
-      "domain": "boutique",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/b-cart.js",
-      "purpose": "supports public/boutique/js/b-cart.js",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "doctrines": [],
-      "impactAreas": [
-        "boutique"
-      ],
-      "mustCheck": [
-        "impact:boutique",
-        "public/boutique/js/b-cart.js"
-      ]
-    },
     "public/boutique/js/b-cart-pill.js": {
       "role": "floating-cart-pill",
       "domain": "boutique",
@@ -33194,7 +33137,6 @@
         "public/boutique/js/b-share-cart.js"
       ],
       "ownedFiles": [
-        "public/boutique/js/b-cart-groups-tab.js",
         "public/boutique/js/b-group-cart-flow.js"
       ],
       "dbRead": [],
@@ -33223,7 +33165,6 @@
         "impact:shared-cart-editing",
         "impact:side-cart",
         "public/boutique/js/b-cart-core.js",
-        "public/boutique/js/b-cart-groups-tab.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-checkout.js",
         "public/boutique/js/b-group-cart-flow.js",

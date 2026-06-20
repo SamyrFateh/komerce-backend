@@ -1,21 +1,21 @@
 # Méta-graphe des coutures — les 3 territoires
 
 > ⚠️ Généré par `scripts/gen-meta-graph.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T13:41:30.781Z.
+> Régénéré le 2026-06-20T14:08:17.591Z.
 > Clé de voûte : le contrat OpenAPI. Chaque endpoint consommé est remonté
 > jusqu'à sa route backend → services → tables (`x-route-file`).
 
 ## Sources cousues
 
-- Backend : **654** nœuds · Contrat : **417** endpoints
-- Boutique : **70** modules, 58 endpoints
+- Backend : **653** nœuds · Contrat : **417** endpoints
+- Boutique : **69** modules, 54 endpoints
 - Dashboards : **40** modules, 111 arêtes d'appel
 
 ## Synthèse des coutures
 
-- Endpoints consommés par au moins un front : **89**
+- Endpoints consommés par au moins un front : **84**
 - 🔗 Endpoints **partagés** (boutique + dashboards) : **2** — rayon de casse amplifié
-- 🔴 Coutures **fantômes** (front → hors contrat) : **8**
+- 🔴 Coutures **fantômes** (front → hors contrat) : **1**
 - ⚠️ Tables touchées par **les deux** fronts : **10**
 
 ## 1. Endpoints partagés — toucher = casse double
@@ -31,13 +31,6 @@ Endpoints appelés par un front mais absents du contrat backend — route legacy
 
 | Endpoint | Appelé par |
 |---|---|
-| `/api/collective-workspaces` ❌ | boutique:b-cart-groups-tab |
-| `/api/logistics/containers` ❌ | boutique:komerce-api |
-| `/api/orders/stats` ❌ | boutique:komerce-api |
-| `/api/parcels/stats` ❌ | boutique:komerce-api |
-| `/api/purchasing/orders` ❌ | boutique:komerce-api |
-| `/api/scans/hub/pack` ❌ | boutique:komerce-api |
-| `/api/scans/hub/seal` ❌ | boutique:komerce-api |
 | `/api/v2/scan` ❌ | dashboards:HubRelaisView |
 
 ## 3. Tables à rayon de casse maximal (lues/écrites pour les 2 fronts)
@@ -68,20 +61,6 @@ graph TD
   ep__api_products["/api/products"] --> rt_routes_products_js["routes/products.js"]
   BTQ((boutique)) -->|1| ep__api_products
   DASH((dashboards)) -->|2| ep__api_products
-  ep__api_collective_workspaces["/api/collective-workspaces ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_collective_workspaces
-  ep__api_logistics_containers["/api/logistics/containers ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_logistics_containers
-  ep__api_orders_stats["/api/orders/stats ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_orders_stats
-  ep__api_parcels_stats["/api/parcels/stats ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_parcels_stats
-  ep__api_purchasing_orders["/api/purchasing/orders ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_purchasing_orders
-  ep__api_scans_hub_pack["/api/scans/hub/pack ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_scans_hub_pack
-  ep__api_scans_hub_seal["/api/scans/hub/seal ❌"]:::phantom
-  BTQ((boutique)) -->|1| ep__api_scans_hub_seal
   ep__api_v2_scan["/api/v2/scan ❌"]:::phantom
   DASH((dashboards)) -->|1| ep__api_v2_scan
   classDef phantom fill:#fdd,stroke:#c00;

@@ -1,18 +1,18 @@
 {
-  "generatedAt": "2026-06-20T13:41:30.297Z",
+  "generatedAt": "2026-06-20T14:08:16.777Z",
   "summary": {
-    "modules": 70,
-    "withHeader": 70,
+    "modules": 69,
+    "withHeader": 69,
     "events": 16,
     "declaredActive": 10,
     "declaredDead": 5,
     "cssBundles": 4,
-    "endpoints": 58,
+    "endpoints": 54,
     "orphanEmit": 2,
     "orphanListen": 1,
     "undeclared": 7,
-    "notFoundEndpoints": 7,
-    "unprovenEndpoints": 27,
+    "notFoundEndpoints": 0,
+    "unprovenEndpoints": 29,
     "dynamicEndpoints": 28
   },
   "modules": [
@@ -73,24 +73,6 @@
       "imports": [
         "b-store",
         "b-bus"
-      ],
-      "bodyClasses": []
-    },
-    {
-      "file": "public/boutique/js/b-cart-groups-tab.js",
-      "id": "b-cart-groups-tab",
-      "hasHeader": true,
-      "role": "boutique-b-cart-groups-tab",
-      "domain": "boutique",
-      "layer": "ui-component",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [
-        "b-cart-core"
       ],
       "bodyClasses": []
     },
@@ -2185,13 +2167,6 @@
   ],
   "callEdges": [
     {
-      "module": "b-cart-groups-tab",
-      "route": "/api/collective-workspaces",
-      "raw": "/api/collective-workspaces",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
-    },
-    {
       "module": "b-cart",
       "route": "/api/shared-carts/{id}/items",
       "raw": "/api/shared-carts/${ctx.shared_cart_id}/items",
@@ -2620,13 +2595,6 @@
     },
     {
       "module": "komerce-api",
-      "route": "/api/parcels/stats",
-      "raw": "/api/parcels/stats",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
-    },
-    {
-      "module": "komerce-api",
       "route": "/api/parcels/optimize",
       "raw": "/api/parcels/optimize",
       "dynamic": false,
@@ -2648,17 +2616,17 @@
     },
     {
       "module": "komerce-api",
-      "route": "/api/scans/hub/pack",
-      "raw": "/api/scans/hub/pack",
+      "route": "/api/hub/pack",
+      "raw": "/api/hub/pack",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "komerce-api",
-      "route": "/api/scans/hub/seal",
-      "raw": "/api/scans/hub/seal",
+      "route": "/api/hub/seal",
+      "raw": "/api/hub/seal",
       "dynamic": false,
-      "contractStatus": "NOT_FOUND"
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "komerce-api",
@@ -2697,13 +2665,6 @@
     },
     {
       "module": "komerce-api",
-      "route": "/api/orders/stats",
-      "raw": "/api/orders/stats",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
-    },
-    {
-      "module": "komerce-api",
       "route": "/api/orders",
       "raw": "/api/orders",
       "dynamic": false,
@@ -2729,13 +2690,6 @@
       "raw": "/api/logistics/shipments",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
-    },
-    {
-      "module": "komerce-api",
-      "route": "/api/logistics/containers",
-      "raw": "/api/logistics/containers",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
     },
     {
       "module": "komerce-api",
@@ -2794,13 +2748,6 @@
       "contractStatus": "DYNAMIC"
     },
     {
-      "module": "komerce-api",
-      "route": "/api/purchasing/orders",
-      "raw": "/api/purchasing/orders",
-      "dynamic": false,
-      "contractStatus": "NOT_FOUND"
-    },
-    {
       "module": "shop-schema",
       "route": "/api/categories",
       "raw": "/api/categories",
@@ -2849,15 +2796,7 @@
     "declaredUnused": [
       "view:switch"
     ],
-    "notFoundEndpoints": [
-      "/api/collective-workspaces",
-      "/api/logistics/containers",
-      "/api/orders/stats",
-      "/api/parcels/stats",
-      "/api/purchasing/orders",
-      "/api/scans/hub/pack",
-      "/api/scans/hub/seal"
-    ],
+    "notFoundEndpoints": [],
     "unprovenEndpoints": [
       "/api/auth/login",
       "/api/auth/logout",
@@ -2869,7 +2808,9 @@
       "/api/categories",
       "/api/client/tracking",
       "/api/health",
+      "/api/hub/pack",
       "/api/hub/scan",
+      "/api/hub/seal",
       "/api/logistics/shipments",
       "/api/orders",
       "/api/parcels",
@@ -2980,17 +2921,16 @@
     "/api/collective-workspaces/me",
     "/api/collective-workspaces/public",
     "/api/health",
+    "/api/hub/pack",
     "/api/hub/scan",
-    "/api/logistics/containers",
+    "/api/hub/seal",
     "/api/logistics/shipments",
     "/api/logistics/shipments/{id}",
     "/api/orders",
-    "/api/orders/stats",
     "/api/orders/{id}",
     "/api/parcels",
     "/api/parcels/bootstrap/{id}",
     "/api/parcels/optimize",
-    "/api/parcels/stats",
     "/api/parcels/{id}",
     "/api/parcels/{id}/items",
     "/api/payments/paypal/capture/{id}",
@@ -2999,14 +2939,11 @@
     "/api/products",
     "/api/products/{id}",
     "/api/public/config",
-    "/api/purchasing/orders",
     "/api/purchasing/suppliers",
     "/api/purchasing/suppliers/{id}",
     "/api/relais",
     "/api/relais/public",
     "/api/scans",
-    "/api/scans/hub/pack",
-    "/api/scans/hub/seal",
     "/api/shared-carts/from-cart-items",
     "/api/shared-carts/mine",
     "/api/shared-carts/public/{id}",
