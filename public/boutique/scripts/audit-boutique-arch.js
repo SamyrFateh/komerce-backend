@@ -129,12 +129,25 @@ const HEX_ALLOWLIST = [
   { file: 'paypal.css', hex: '#6b7785',  reason: 'Brand PayPal grey – non tokenisable' },
   { file: 'paypal.css', hex: '#c33',     reason: 'Brand PayPal error – non tokenisable' },
   { file: 'paypal.css', hex: '#fdecea',  reason: 'Brand PayPal error bg – non tokenisable' },
+
+  // group-cart-flow.css — hex présents UNIQUEMENT comme fallback de var(--token, #hex)
+  // (group-snap sheet + tap-row). Les tokens --violet/--text-muted/--white/--text existent
+  // dans tokens.css ; ces hex sont des filets navigateurs sans token, même doctrine que les
+  // fallbacks interactions.css/cart.css ci-dessus.
+  { file: 'group-cart-flow.css', hex: '#6b4eff', reason: 'Fallback var(--violet) – filet navigateurs anciens' },
+  { file: 'group-cart-flow.css', hex: '#999',    reason: 'Fallback var(--text-muted) – filet navigateurs anciens' },
+  { file: 'group-cart-flow.css', hex: '#fff',    reason: 'Fallback var(--white) – filet navigateurs anciens' },
+  { file: 'group-cart-flow.css', hex: '#111',    reason: 'Fallback var(--text) – filet navigateurs anciens' },
+  { file: 'group-cart-flow.css', hex: '#f2f2f2', reason: 'Fallback skeleton img group-snap – filet navigateurs anciens' },
+
+  // layout.css — fallback de var(--green-dark-text, #1d5b2a) ; le token existe (même valeur).
+  { file: 'layout.css', hex: '#1d5b2a', reason: 'Fallback var(--green-dark-text) – filet navigateurs anciens' },
 ];
 
 // Bundles attendus
 const EXPECTED_BUNDLES = {
   'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'shared-followup', 'identity', 'paypal'],
+  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal'],
   'desktop.css':    ['boutique-desktop'],
   'event.css':      ['event'],
 };

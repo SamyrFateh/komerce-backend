@@ -57,7 +57,7 @@
   background:var(--white);outline:none;box-sizing:border-box;transition:border-color .2s;
   min-width:0}
 .k-sm-phone-input:focus{border-color:var(--violet)}
-.k-sm-phone-input.k-valid{border-color:#22c55e}
+.k-sm-phone-input.k-valid{border-color:var(--green-valid)}
 .k-sm-phone-input.k-invalid{border-color:var(--red-danger-text)}
 .k-sm-name-input:not(:placeholder-shown):invalid{border-color:var(--red-danger-text)}
 .k-sm-nature{display:flex;flex-direction:column;gap:8px;margin-top:6px}

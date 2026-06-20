@@ -214,7 +214,33 @@ if ! node scripts/arch-doctrine-sanitize-check.js >/dev/null 2>&1; then
   exit 1
 fi
 
-echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes).${NC}"
+# 6. Invariants boutique (chaine statique, sans e2e) : ownership CSS, hex/tokens,
+#    breakpoints, injection CSS, equilibre HTML, imports JS, cache-buster.
+#    Sous-shell : le cd ne fuit pas. Ne tourne que si le dossier boutique existe.
+if [ -d public/boutique ]; then
+  # 6a. Auto-regeneration des bundles CSS (meme philosophie que le graphe backend) :
+  #     rebuild dist + bump des ?v= + cache-buster, puis re-stage. Plus besoin de
+  #     lancer `npm run deploy:css` a la main a chaque etape.
+  REBUILD=$( cd public/boutique && node scripts/deploy-css.js 2>&1 ) || {
+    echo -e "${RED}🚫 deploy-css a echoue.${NC}"
+    echo "$REBUILD" | tail -6
+    exit 1
+  }
+  if echo "$REBUILD" | grep -q "bundle(s) modifié"; then
+    echo -e "${YELLOW}↻ Bundles CSS regeneres automatiquement (dist + ?v= + cache-buster).${NC}"
+    git add public/boutique/css/dist public/boutique/index.html public/boutique/.cache-buster-state.json 2>/dev/null || true
+  fi
+
+  # 6b. Invariants boutique (apres rebuild : check:cache est donc forcement vert ici).
+  if ! ( cd public/boutique && npm run --silent check:fast >/dev/null 2>&1 ); then
+    echo -e "${RED}🚫 Invariants boutique : violation.${NC}"
+    echo "   Detail : ( cd public/boutique && npm run check:fast )"
+    echo "   (ownership CSS / hex hors tokens / breakpoints / injection CSS — corrige avant commit)"
+    exit 1
+  fi
+fi
+
+echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes, boutique verte).${NC}"
 exit 0
 PCHOOK
 

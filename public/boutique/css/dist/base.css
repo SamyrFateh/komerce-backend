@@ -100,6 +100,14 @@
   --hero-bg:      var(--sand-bright);
   --hero-border:  transparent;
   --hero-shadow:  none;
+  /* POLISH — hero logo-glow : halo lumineux du logo SVG (lignes/texte + stroke diffus) */
+  --hero-glow-bright: #f4fff7;  /* halo le plus clair — lignes + remplissage texte logo */
+  --hero-glow-mid:    #e8fff0;  /* stroke glow intermediaire */
+  --hero-glow-soft:   #c8ffe0;  /* stroke glow diffus */
+  /* POLISH — hero textes desatures (gris-sauge propres au hero, hors palette sage checkout) */
+  --hero-text-muted:  #5a6a58;
+  --hero-text-soft:   #7a8a78;
+  --hero-text-faint:  #b8cbb5;
 
   --coral:        #C85C2D;
   --coral-dark:   #A84820;
@@ -224,6 +232,7 @@
   --green-dark-text:  #1d5b2a;
   --green-text:       #1a7a3e;
   --green-bg:         #e8f7ee;
+  --green-valid:      #22c55e;  /* bordure champ valide (ex: téléphone share-cart) */
 
   --red-text:         #cc2200;
   --red-text-md:      #cc4400;
@@ -2226,8 +2235,8 @@ body:has(#k-page-scroll.k-pager-active) {
     height: auto;
   }
   /* recolore le logo en blanc lumineux pour qu'il ressorte sur l'illustration */
-  .k-hero-logo-glow .klg-lines { stroke: #f4fff7; }
-  .k-hero-logo-glow .klg-text path { fill: #f4fff7; }
+  .k-hero-logo-glow .klg-lines { stroke: var(--hero-glow-bright); }
+  .k-hero-logo-glow .klg-text path { fill: var(--hero-glow-bright); }
 
   /* halo vert qui bat (double toc-toc puis repos) sur traits + nœuds + O + lettres */
   .k-hero-logo-glow .klg-green {
@@ -2260,7 +2269,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* connexion : un éclat lumineux file le long de chaque liaison puis fait le tour du O */
   .k-hero-logo-glow .klg-signal path,
   .k-hero-logo-glow .klg-signal circle {
-    stroke: #e8fff0;
+    stroke: var(--hero-glow-mid);
     stroke-width: 6;
     stroke-dasharray: 18 82;
     filter: drop-shadow(0 0 3px rgba(200, 255, 215, .9));
@@ -2386,7 +2395,7 @@ body:has(#k-page-scroll.k-pager-active) {
   /* signal électrique qui file le long des liaisons et du O */
   .k-logo-mini .klm-signal path,
   .k-logo-mini .klm-signal circle {
-    stroke: #c8ffe0;
+    stroke: var(--hero-glow-soft);
     stroke-width: 5;
     stroke-dasharray: 18 82;
     filter: drop-shadow(0 0 3px rgba(180,255,210,.9));
@@ -2546,7 +2555,7 @@ body:has(#k-page-scroll.k-pager-active) {
   html.k-home-premium-v1 .k-hero-sub {
     display: block;
     font-size: clamp(11px, 1vw, 13px);
-    color: #5a6a58;
+    color: var(--hero-text-muted);
     line-height: 1.45;
     margin: 0 0 6px;
     max-width: 300px;
@@ -2563,7 +2572,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
   html.k-home-premium-v1 .k-hero-cta-primary {
     background: var(--coral);
-    color: #fff;
+    color: var(--white);
     border: none;
     border-radius: var(--radius-sm);
     padding: 8px 16px;
@@ -2604,11 +2613,11 @@ body:has(#k-page-scroll.k-pager-active) {
     align-items: center;
     gap: 5px;
     font-size: 10.5px;
-    color: #7a8a78;
+    color: var(--hero-text-soft);
     flex-wrap: wrap;
   }
   html.k-home-premium-v1 .k-hero-trust .k-trust-sep {
-    color: #b8cbb5;
+    color: var(--hero-text-faint);
   }
 
   /* ── Badge flottant "Livraison express" en overlay sur l'image ── */
@@ -2719,6 +2728,13 @@ body:has(#k-page-scroll.k-pager-active) {
 
   /* Le wrapper cesse d'être un bloc englobant. */
   html.k-home-premium-v1 #k-hero-fixed-wrap { display: contents; }
+
+  /* Hors vue Boutique (Favoris/Suivi/Groupe) : display:contents laisse les
+     enfants (hero + chips #k-cats) visibles malgré .u-hidden sur le wrap,
+     car #k-hero-fixed-wrap (ID) bat .u-hidden (classe) en spécificité.
+     On rétablit explicitement le masquage ici, à spécificité égale ou
+     supérieure, pour les 3 vues non-shop. */
+  html.k-home-premium-v1 #k-hero-fixed-wrap.u-hidden { display: none; }
 
   /* Fond premium rapatrié du wrap (perdu avec display:contents). */
   html.k-home-premium-v1 .k-hero {

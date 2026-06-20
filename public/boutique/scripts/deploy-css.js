@@ -243,5 +243,15 @@ if (!DRY) {
   });
 }
 
+// En mode --dry (check:cache), un bundle "modifié" = dist périmé vs sources.
+// On bloque : la règle « rebuild après modif source / dist jamais édité à la main »
+// devient exécutable (et non plus seulement informative). En pre-commit, le hook
+// régénère automatiquement, donc ce cas ne se présente qu'en bypass ou en CI.
+if (DRY && changed.length > 0) {
+  console.error(`\n${RED}${BOLD}✖ dist périmé : ${changed.length} bundle(s) à régénérer (${changed.join(', ')}).${R}`);
+  console.error(`${DIM}  Lance : npm run deploy:css  puis recommite. (En pre-commit c'est automatique.)${R}\n`);
+  process.exit(1);
+}
+
 console.log(`\n${GRN}${BOLD}✔ deploy-css terminé${DRY ? ' (dry-run — rien écrit)' : ''}.${R}`);
 console.log(`${DIM}  Pensez à commiter : index.html + .cache-buster-state.json${R}\n`);

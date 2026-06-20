@@ -100,6 +100,14 @@
   --hero-bg:      var(--sand-bright);
   --hero-border:  transparent;
   --hero-shadow:  none;
+  /* POLISH — hero logo-glow : halo lumineux du logo SVG (lignes/texte + stroke diffus) */
+  --hero-glow-bright: #f4fff7;  /* halo le plus clair — lignes + remplissage texte logo */
+  --hero-glow-mid:    #e8fff0;  /* stroke glow intermediaire */
+  --hero-glow-soft:   #c8ffe0;  /* stroke glow diffus */
+  /* POLISH — hero textes desatures (gris-sauge propres au hero, hors palette sage checkout) */
+  --hero-text-muted:  #5a6a58;
+  --hero-text-soft:   #7a8a78;
+  --hero-text-faint:  #b8cbb5;
 
   --coral:        #C85C2D;
   --coral-dark:   #A84820;
@@ -224,6 +232,7 @@
   --green-dark-text:  #1d5b2a;
   --green-text:       #1a7a3e;
   --green-bg:         #e8f7ee;
+  --green-valid:      #22c55e;  /* bordure champ valide (ex: téléphone share-cart) */
 
   --red-text:         #cc2200;
   --red-text-md:      #cc4400;
