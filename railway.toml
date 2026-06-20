@@ -5,6 +5,7 @@
 # ============================================================
 
 [deploy]
+releaseCommand = "node scripts/migrate.js"
 # Railway ne déploiera QUE si un fichier matchant ces patterns change.
 # Les commits qui ne touchent que docs/, .github/, scripts/ seront ignorés.
 watchPatterns = [
@@ -17,6 +18,8 @@ watchPatterns = [
   "dashboard-app/**",
   "public/dashboards/**",
   "bootstrap/**",
+  "migrations/**",
+  "scripts/**",
   "server.js",
   "db.js",
   "package.json",

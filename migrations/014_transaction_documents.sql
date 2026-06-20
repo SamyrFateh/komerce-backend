@@ -20,8 +20,15 @@
 --     SELECT MIN(id) FROM invoices GROUP BY order_id
 --   );
 --
-ALTER TABLE invoices
-  ADD CONSTRAINT invoices_order_id_unique UNIQUE (order_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'invoices_order_id_unique'
+  ) THEN
+    ALTER TABLE invoices
+      ADD CONSTRAINT invoices_order_id_unique UNIQUE (order_id);
+  END IF;
+END $$;
 
 
 -- ── 2. Table transaction_documents ───────────────────────────────────────────
@@ -99,10 +106,10 @@ CREATE TABLE IF NOT EXISTS transaction_documents (
 );
 
 -- Index pour lookups fréquents
-CREATE INDEX idx_txdoc_order    ON transaction_documents (order_id)  WHERE order_id  IS NOT NULL;
-CREATE INDEX idx_txdoc_refund   ON transaction_documents (refund_id) WHERE refund_id IS NOT NULL;
-CREATE INDEX idx_txdoc_type     ON transaction_documents (document_type);
-CREATE INDEX idx_txdoc_issued   ON transaction_documents (issued_at DESC);
+CREATE INDEX IF NOT EXISTS idx_txdoc_order    ON transaction_documents (order_id)  WHERE order_id  IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_txdoc_refund   ON transaction_documents (refund_id) WHERE refund_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_txdoc_type     ON transaction_documents (document_type);
+CREATE INDEX IF NOT EXISTS idx_txdoc_issued   ON transaction_documents (issued_at DESC);
 
 -- ── 3. Contraintes UNIQUE sur refunds ────────────────────────────────────────
 --
@@ -119,11 +126,22 @@ CREATE INDEX idx_txdoc_issued   ON transaction_documents (issued_at DESC);
 --     SELECT MIN(id) FROM refunds GROUP BY order_id, refund_type
 --   );
 --
-ALTER TABLE refunds
-  ADD CONSTRAINT refunds_order_refund_type_unique UNIQUE (order_id, refund_type);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'refunds_order_refund_type_unique'
+  ) THEN
+    ALTER TABLE refunds
+      ADD CONSTRAINT refunds_order_refund_type_unique UNIQUE (order_id, refund_type);
+  END IF;
 
-ALTER TABLE refunds
-  ADD CONSTRAINT refunds_stripe_refund_id_unique UNIQUE (stripe_refund_id);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'refunds_stripe_refund_id_unique'
+  ) THEN
+    ALTER TABLE refunds
+      ADD CONSTRAINT refunds_stripe_refund_id_unique UNIQUE (stripe_refund_id);
+  END IF;
+END $$;
 
 
 -- Séquences pour les références lisibles des documents
