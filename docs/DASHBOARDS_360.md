@@ -1,16 +1,16 @@
 # Dashboards 360 — carte d'architecture admin (générée)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-20T09:11:50.886Z.
+> Régénéré le 2026-06-20T13:12:26.098Z.
 > Pendant front du graphe backend : les dashboards se couplent par la chaîne **route → vue → KmcApi → endpoint → contrat**, pas par un bus ni par les imports.
 
 ## Synthèse
 
-- Modules JS : **40** (3 header complet, 0 lite, **37 sans header**)
+- Modules JS : **40** (40 header complet, 0 lite, **0 sans header**)
 - Routes SPA : **30**
-- Méthodes `KmcApi` : **114** exportées, 95 appelées par au moins une vue
-- Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 0 violation(s) de doctrine
-- Contrats non prouvés réellement appelés : **40** (signal de risque, cf. bug `getOps()`/`.orders`)
+- Méthodes `KmcApi` : **117** exportées, 98 appelées par au moins une vue
+- Santé chaîne : 0 route(s) orpheline(s), 17 méthode(s) API morte(s), 0 méthode(s) API absente(s) (crash garanti), 6 violation(s) de doctrine
+- Contrats non prouvés réellement appelés : **43** (signal de risque, cf. bug `getOps()`/`.orders`)
 
 ## 1. Routeur SPA → Vues
 
@@ -68,6 +68,9 @@
 | ControlTowerView | `getOps` | ✅ | `GET /api/dashboard/ops` | ⚪ non prouvé |
 | ControlTowerView | `getUnsoldStats` | ✅ | — | ❓ url non résolue |
 | CostingView | `getCosting` | ✅ | `GET /api/admin/dashboard/costing` | 🔴 endpoint introuvable |
+| CostingView | `getCostingOrders` | ✅ | `GET /api/admin/costing/orders` | ⚪ non prouvé |
+| CostingView | `getCostingProducts` | ✅ | `GET /api/admin/costing/products` | ⚪ non prouvé |
+| CostingView | `getCostingRelais` | ✅ | `GET /api/admin/costing/relais` | ⚪ non prouvé |
 | CustomsView | `createCustomsShipment` | ✅ | `POST /api/admin/customs-shipments` | 🔴 endpoint introuvable |
 | CustomsView | `getCustomsRatesEffective` | ✅ | `GET /api/admin/customs-shipments/rates/effective` | ⚪ non prouvé |
 | CustomsView | `getCustomsShipment` | ✅ | `GET /api/admin/customs-shipments/…` | 🔵 url dynamique (non comparable) |
@@ -210,6 +213,9 @@ graph LR
   ControlTowerView -->|getControlTower❓| _api_admin_dashboard_control_tower["/api/admin/dashboard/control-tower"]
   ControlTowerView -->|getOps❓| _api_dashboard_ops["/api/dashboard/ops"]
   CostingView -->|getCosting| _api_admin_dashboard_costing["/api/admin/dashboard/costing"]
+  CostingView -->|getCostingOrders❓| _api_admin_costing_orders["/api/admin/costing/orders"]
+  CostingView -->|getCostingProducts❓| _api_admin_costing_products["/api/admin/costing/products"]
+  CostingView -->|getCostingRelais❓| _api_admin_costing_relais["/api/admin/costing/relais"]
   CustomsView -->|getCustomsShipments❓| _api_admin_customs_shipments["/api/admin/customs-shipments"]
   CustomsView -->|getCustomsRatesEffective❓| _api_admin_customs_shipments_rates_effective["/api/admin/customs-shipments/rates/effective"]
   CustomsView -->|getPartnersLogistique❓| _api_admin_partners["/api/admin/partners"]
@@ -287,72 +293,66 @@ graph LR
 ## 3. Anomalies bloquantes (cliquet)
 
 - 🟠 **Méthodes API mortes** (exportées, jamais appelées) : `createEconomicCharge`, `createLoyaltyAction`, `deleteCostBenchmark`, `getCostBenchmarks`, `getLoyaltyHistory`, `getLoyaltyPending`, `getParcelAlerts`, `getParcelCritical`, `getParcelKpis`, `getPricingCompetitors`, `redistributeEconomic`, `sourcingBulkRail`, `updateCustomsShipment`, `updateEconomicCharge`, `updateEconomicVariable`, `updateFinanceConfig`, `upsertCostBenchmark`
+- 🟣 **Violations de doctrine `kmc_api_only`** (fetch() brut malgré la doctrine déclarée) : `views/CategoriesView.js (1 fetch() brut)`, `views/CustomsView.js (1 fetch() brut)`, `views/PricingView.js (2 fetch() brut)`, `views/PricingWorkshopView.js (1 fetch() brut)`, `views/ProductsView.js (4 fetch() brut)`, `views/SourcingScannerView.js (1 fetch() brut)`
 
 ## 4. Signaux informatifs (non bloquants)
 
-- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`
+- ⚪ **Contrats appelés mais non prouvés** (`UNKNOWN` dans openapi.json — aucun test d'intégration ne couvre la forme de réponse) : `GET /api/admin/costing/orders`, `GET /api/admin/costing/products`, `GET /api/admin/costing/relais`, `GET /api/admin/customs-shipments`, `GET /api/admin/customs-shipments/rates/effective`, `GET /api/admin/dashboard/control-tower`, `GET /api/admin/dashboard/logistics`, `GET /api/admin/economic/charges`, `GET /api/admin/economic/coherence`, `GET /api/admin/economic/executive`, `GET /api/admin/economic/history`, `GET /api/admin/economic/variables`, `GET /api/admin/finance-config`, `GET /api/admin/partners`, `GET /api/admin/partners/stats`, `GET /api/admin/signals`, `GET /api/admin/signals/stats`, `GET /api/admin/sourcing/analysis`, `GET /api/admin/sourcing/candidates`, `GET /api/admin/sourcing/catalogs`, `GET /api/admin/sourcing/synthesis`, `GET /api/cash/reconciliation`, `GET /api/cash/uncollected`, `GET /api/dashboard/clients`, `GET /api/dashboard/clients/detail`, `GET /api/dashboard/clients/list`, `GET /api/dashboard/finance`, `GET /api/dashboard/ops`, `GET /api/dashboard/sales`, `GET /api/hub/auto-distribute`, `GET /api/hub/inventory/open-parcels`, `GET /api/hub/inventory/proposals`, `GET /api/hub/inventory/stats`, `GET /api/invoices`, `GET /api/orders`, `GET /api/pricing/dashboard`, `GET /api/pricing/strategy`, `GET /api/products`, `GET /api/transitaire/history`, `GET /api/transitaire/parcels`, `GET /api/transitaire/stats`, `GET /api/v2/parcels`, `GET /api/v2/parcels/reconciliation`
 - ❔ **Endpoints résolus mais absents du contrat OpenAPI** (à vérifier — route peut-être non montée ou contrat backend pas régénéré) : `GET /api/admin/dashboard/costing`, `GET /api/admin/dashboard/event-workspaces`, `GET /api/admin/dashboard/unified`, `GET /api/dashboard/pipeline`, `POST /api/admin/customs-shipments`, `POST /api/admin/partners`, `POST /api/admin/signals/generate`, `POST /api/admin/sourcing/catalogs/import`, `POST /api/hub/auto-distribute`, `POST /api/hub/inventory/propose-all`, `POST /api/hub/inventory/scan-assign`, `POST /api/hub/orders/mark-ordered`, `POST /api/pricing/flow`, `POST /api/pricing/strategy/apply`, `POST /api/pricing/strategy/competitors`, `POST /api/transitaire/ship`, `POST /api/v2/scan`
 - 🔵 **URLs construites dynamiquement** (segment avec id/paramètre concaténé — non comparables au contrat tel quel, à vérifier à la main si besoin) : `acknowledgeSignal (préfixe: POST /api/admin/signals/…)`, `deletePartner (préfixe: DELETE /api/admin/partners/…)`, `deletePricingCompetitor (préfixe: DELETE /api/pricing/strategy/competitors/…)`, `getCustomsShipment (préfixe: GET /api/admin/customs-shipments/…)`, `getSourcingCandidate (préfixe: GET /api/admin/sourcing/candidates/…)`, `importSourcingProduct (préfixe: POST /api/admin/sourcing/candidates/…)`, `rejectSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `relaisConfirmCash (préfixe: POST /api/v2/orders/…)`, `resolveSignal (préfixe: POST /api/admin/signals/…)`, `scanSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`, `snoozeSignal (préfixe: POST /api/admin/signals/…)`, `updatePartner (préfixe: PUT /api/admin/partners/…)`, `updateSourcingCandidate (préfixe: PUT /api/admin/sourcing/candidates/…)`, `updateSourcingProduct (préfixe: PUT /api/admin/sourcing/products/…)`, `watchlistSourcingCandidate (préfixe: POST /api/admin/sourcing/candidates/…)`
 - ❓ **Méthodes API dont l'URL n'a pas pu être résolue statiquement** (à vérifier à la main) : `expireSharedCart`, `extendSharedCart`, `getSettingRule`, `getSettings`, `getSettingsAudit`, `getSettingsDims`, `getSettingsTaxes`, `getSharedCart`, `getSharedCarts`, `getUnsoldStats`, `noteSharedCart`, `patchSettingRule`, `putSettingsDims`, `putSettingsTaxes`, `resetSettingRule`, `simCleanup`, `simJournal`, `simStart`, `simStatus`, `simStop`
-- ⚠️ **fetch() brut sans doctrine déclarée** (écart au standard, pas une violation formelle) : `api-client-unsold.js (1 fetch() brut)`, `app.js (2 fetch() brut)`, `views/CategoriesView.js (1 fetch() brut)`, `views/CostingView.js (3 fetch() brut)`, `views/CustomsView.js (1 fetch() brut)`, `views/PricingView.js (2 fetch() brut)`, `views/PricingWorkshopView.js (1 fetch() brut)`, `views/ProductsView.js (4 fetch() brut)`, `views/SourcingScannerView.js (1 fetch() brut)`
+- ⚠️ **fetch() brut sans doctrine déclarée** (écart au standard, pas une violation formelle) : `api-client-unsold.js (1 fetch() brut)`
 
 ## 5. Couverture des headers
 
-Complet : **3** · Lite : **0** · Sans header : **37**
-
-Fichiers sans header : `api-client-unsold.js`, `app.js`, `ClientsView.js`, `components/Charts.js`, `components/KpiCard.js`, `components/UI.js`, `product-card-model.admin.js`, `utils.js`, `views/AccountingView.js`, `views/ActionCenterView.js`, `views/CategoriesView.js`, `views/ClientsView.js`, `views/ControlTowerView.js`, `views/CostingView.js`, `views/CustomsView.js`, `views/EconomicFlowView.js`, `views/EconomicView.js`, `views/EventWorkspacesView.js`, `views/InventoryView.js`, `views/InvoicesView.js`, `views/OrdersLogisticsView.js`, `views/PilotageFinView.js`, `views/PilotageView.js`, `views/PricingStrategyView.js`, `views/PricingView.js`, `views/PricingWorkshopView.js`, `views/ProblemsView.js`, `views/ProductsView.js`, `views/SalesView.js`, `views/SanteView.js`, `views/SettingsView.js`, `views/SharedCartsView.js`, `views/SimulatorView.js`, `views/SourcingScannerView.js`, `views/SourcingView.js`, `views/SuppliersView.js`, `views/TransitaireView.js`
+Complet : **40** · Lite : **0** · Sans header : **0**
 
 ## 6. Modules par domaine
-
-### (non typé)
-
-| Module | Rôle | Couche | Criticité | Doctrine |
-|---|---|---|---|---|
-| `api-client-unsold.js` | — | — | — | — |
-| `app.js` | — | — | — | — |
-| `ClientsView.js` | — | — | — | — |
-| `components/Charts.js` | — | — | — | — |
-| `components/KpiCard.js` | — | — | — | — |
-| `components/UI.js` | — | — | — | — |
-| `product-card-model.admin.js` | — | — | — | — |
-| `utils.js` | — | — | — | — |
-| `views/AccountingView.js` | — | — | — | — |
-| `views/ActionCenterView.js` | — | — | — | — |
-| `views/CategoriesView.js` | — | — | — | — |
-| `views/ClientsView.js` | — | — | — | — |
-| `views/ControlTowerView.js` | — | — | — | — |
-| `views/CostingView.js` | — | — | — | — |
-| `views/CustomsView.js` | — | — | — | — |
-| `views/EconomicFlowView.js` | — | — | — | — |
-| `views/EconomicView.js` | — | — | — | — |
-| `views/EventWorkspacesView.js` | — | — | — | — |
-| `views/InventoryView.js` | — | — | — | — |
-| `views/InvoicesView.js` | — | — | — | — |
-| `views/OrdersLogisticsView.js` | — | — | — | — |
-| `views/PilotageFinView.js` | — | — | — | — |
-| `views/PilotageView.js` | — | — | — | — |
-| `views/PricingStrategyView.js` | — | — | — | — |
-| `views/PricingView.js` | — | — | — | — |
-| `views/PricingWorkshopView.js` | — | — | — | — |
-| `views/ProblemsView.js` | — | — | — | — |
-| `views/ProductsView.js` | — | — | — | — |
-| `views/SalesView.js` | — | — | — | — |
-| `views/SanteView.js` | — | — | — | — |
-| `views/SettingsView.js` | — | — | — | — |
-| `views/SharedCartsView.js` | — | — | — | — |
-| `views/SimulatorView.js` | — | — | — | — |
-| `views/SourcingScannerView.js` | — | — | — | — |
-| `views/SourcingView.js` | — | — | — | — |
-| `views/SuppliersView.js` | — | — | — | — |
-| `views/TransitaireView.js` | — | — | — | — |
 
 ### admin-dashboard
 
 | Module | Rôle | Couche | Criticité | Doctrine |
 |---|---|---|---|---|
+| `api-client-unsold.js` | unsold-stats-api-patch | api-client | — | — |
 | `api-client.js` | admin-dashboard-api-client | api-client | critical | kmc_api_only |
-| `filters-store.js` | admin-dashboard-filters-store | state-store | medium | none |
+| `app.js` | admin-spa-entrypoint | entrypoint | critical | kmc_api_only |
+| `ClientsView.js` | clients-view-root-legacy | ui-page | — | — |
+| `components/Charts.js` | admin-chart-components | ui-component | medium | none |
+| `components/KpiCard.js` | admin-kpi-card-component | ui-component | medium | none |
+| `components/UI.js` | admin-alert-ui-component | ui-component | low | none |
+| `filters-store.js` | admin-filter-state-store | state-store | high | kmc_api_only |
+| `product-card-model.admin.js` | admin-product-card-view-model | view-model | medium | none |
+| `utils.js` | admin-xss-escape-helpers | ui-renderer | medium | none |
+| `views/AccountingView.js` | admin-accounting-view | ui-page | high | kmc_api_only |
+| `views/ActionCenterView.js` | admin-action-center-view | ui-page | high | kmc_api_only |
+| `views/CategoriesView.js` | admin-categories-view | ui-page | medium | kmc_api_only |
+| `views/ClientsView.js` | admin-clients-view | ui-page | medium | kmc_api_only |
+| `views/ControlTowerView.js` | admin-control-tower-view | ui-page | high | kmc_api_only |
+| `views/CostingView.js` | admin-costing-view | ui-page | medium | kmc_api_only |
+| `views/CustomsView.js` | admin-customs-view | ui-page | high | kmc_api_only |
+| `views/EconomicFlowView.js` | admin-economic-flow-view | ui-page | medium | kmc_api_only |
+| `views/EconomicView.js` | admin-economic-view | ui-page | high | kmc_api_only |
+| `views/EventWorkspacesView.js` | admin-event-workspaces-view | ui-page | medium | kmc_api_only |
 | `views/HubRelaisView.js` | admin-hub-relais-view | ui-page | high | kmc_api_only |
+| `views/InventoryView.js` | admin-inventory-view | ui-page | medium | kmc_api_only |
+| `views/InvoicesView.js` | admin-invoices-view | ui-page | high | kmc_api_only |
+| `views/OrdersLogisticsView.js` | admin-orders-logistics-view | ui-page | high | kmc_api_only |
+| `views/PilotageFinView.js` | admin-pilotage-fin-view | ui-page | medium | kmc_api_only |
+| `views/PilotageView.js` | admin-pilotage-view | ui-page | high | kmc_api_only |
+| `views/PricingStrategyView.js` | admin-pricing-strategy-view | ui-page | high | kmc_api_only |
+| `views/PricingView.js` | admin-pricing-view | ui-page | high | kmc_api_only |
+| `views/PricingWorkshopView.js` | admin-pricing-workshop-view | ui-page | medium | kmc_api_only |
+| `views/ProblemsView.js` | admin-problems-view | ui-page | high | kmc_api_only |
+| `views/ProductsView.js` | admin-products-view | ui-page | medium | kmc_api_only |
+| `views/SalesView.js` | admin-sales-view | ui-page | medium | kmc_api_only |
+| `views/SanteView.js` | admin-sante-view | ui-page | high | kmc_api_only |
+| `views/SettingsView.js` | admin-settings-view | ui-page | medium | kmc_api_only |
+| `views/SharedCartsView.js` | admin-shared-carts-view | ui-page | high | kmc_api_only |
+| `views/SimulatorView.js` | admin-simulator-view | ui-page | low | kmc_api_only |
+| `views/SourcingScannerView.js` | admin-sourcing-scanner-view | ui-page | medium | kmc_api_only |
+| `views/SourcingView.js` | admin-sourcing-view | ui-page | medium | kmc_api_only |
+| `views/SuppliersView.js` | admin-suppliers-view | ui-page | medium | kmc_api_only |
+| `views/TransitaireView.js` | admin-transitaire-view | ui-page | medium | kmc_api_only |
 
 ---
 *Carte vérifiée en pre-commit par `check:dashboards-360` (cliquet sur les anomalies bloquantes ; les signaux informatifs ne bloquent jamais).*

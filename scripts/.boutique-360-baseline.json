@@ -1,0 +1,23 @@
+{
+  "orphanEmit": [
+    "sidebar:built",
+    "toast"
+  ],
+  "orphanListen": [
+    "modal:product-changed"
+  ],
+  "undeclared": [
+    "carousel:changed",
+    "modal:closed",
+    "modal:opened",
+    "modal:product-changed",
+    "sidebar:built",
+    "toast",
+    "view:changed"
+  ],
+  "notFoundEndpoints": [
+    "/api/boutique/suggestions",
+    "/api/collective-workspaces"
+  ],
+  "savedAt": "2026-06-20T12:49:29.067Z"
+}

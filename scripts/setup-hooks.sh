@@ -269,7 +269,45 @@ if [ -d dashboards/admin/js ]; then
   rm -f /tmp/dashboards-360-check.log
 fi
 
-echo -e "${GREEN}✅ Gouvernance OK (graphe + budget a jour, portes vertes, boutique verte).${NC}"
+# 8. Carte 360 boutique (couplage par BUS + couture endpoints -> contrat OpenAPI).
+#    Frere de l'etape 7 : auto-regenere docs/BOUTIQUE_360.{json,md}, re-stage, puis bloque
+#    sur une regression hors baseline (emission/ecouteur orphelin, evenement non declare,
+#    endpoint NOT_FOUND = appel boutique vers un endpoint absent du contrat).
+if [ -d public/boutique/js ]; then
+  node scripts/gen-boutique-360.js >/dev/null 2>&1 || true
+  git add docs/BOUTIQUE_360.json docs/BOUTIQUE_360.md 2>/dev/null || true
+
+  if ! node scripts/gen-boutique-360.js --check >/tmp/boutique-360-check.log 2>&1; then
+    echo -e "${RED}🚫 Boutique 360 : nouvelle anomalie bloquante hors baseline.${NC}"
+    cat /tmp/boutique-360-check.log | grep -E "↑|✖"
+    echo "   Detail : npm run boutique:360:check"
+    echo "   (relie le bus ou corrige l'endpoint, ou si legitime : npm run boutique:360:save)"
+    rm -f /tmp/boutique-360-check.log
+    exit 1
+  fi
+  rm -f /tmp/boutique-360-check.log
+fi
+
+# 9. Meta-graphe des COUTURES : coud backend + boutique + dashboards via le contrat OpenAPI.
+#    Tourne en dernier (a besoin des 3 cartes fraiches). Bloque uniquement sur une NOUVELLE
+#    couture fantome (un front appelle un endpoint absent du contrat). Endpoints partages et
+#    contrats UNKNOWN restent informatifs.
+if [ -f docs/komerce-arch-header-graph.json ] && [ -f docs/BOUTIQUE_360.json ] && [ -f docs/DASHBOARDS_360.json ]; then
+  node scripts/gen-meta-graph.js >/dev/null 2>&1 || true
+  git add docs/META_GRAPH.json docs/META_GRAPH.md 2>/dev/null || true
+
+  if ! node scripts/gen-meta-graph.js --check >/tmp/meta-check.log 2>&1; then
+    echo -e "${RED}🚫 Meta-graphe : nouvelle couture fantome hors baseline.${NC}"
+    cat /tmp/meta-check.log | grep -E "↑|✖"
+    echo "   Detail : npm run meta:graph:check"
+    echo "   (ajoute l'endpoint au contrat / corrige l'appel, ou si legitime : npm run meta:graph:save)"
+    rm -f /tmp/meta-check.log
+    exit 1
+  fi
+  rm -f /tmp/meta-check.log
+fi
+
+echo -e "${GREEN}✅ Gouvernance OK (graphe + budget, portes vertes, boutique verte, 360 x3 + meta).${NC}"
 exit 0
 PCHOOK
 

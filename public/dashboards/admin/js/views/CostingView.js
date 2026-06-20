@@ -185,11 +185,7 @@
       qs.set('limit', '50');
       if (force) qs.set('refresh', '1');
 
-      const res = await fetch(`/api/admin/costing/orders?${qs.toString()}`, {
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      const data = await res.json();
+      const data = await KmcApi.getCostingOrders(Object.fromEntries(qs));
       const orders = data.orders || [];
 
       DataTable.render(tableEl, {
@@ -259,9 +255,7 @@
       if (filters.from) qs.set('from', filters.from);
       if (filters.to)   qs.set('to', filters.to);
       qs.set('limit', '10');
-      const res = await fetch(`/api/admin/costing/products?${qs.toString()}`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
+      const data = await KmcApi.getCostingProducts(Object.fromEntries(qs));
       DataTable.render(tableEl, {
         emptyText: 'Aucune donnée produit',
         columns: [
@@ -301,9 +295,7 @@
       const qs = new URLSearchParams();
       if (filters.from) qs.set('from', filters.from);
       if (filters.to)   qs.set('to', filters.to);
-      const res = await fetch(`/api/admin/costing/relais?${qs.toString()}`, { credentials: 'include' });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
+      const data = await KmcApi.getCostingRelais(Object.fromEntries(qs));
       DataTable.render(tableEl, {
         emptyText: 'Aucune donnée relais',
         columns: [

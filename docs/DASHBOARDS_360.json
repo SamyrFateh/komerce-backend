@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-06-20T09:11:50.886Z",
+  "generatedAt": "2026-06-20T13:12:26.098Z",
   "summary": {
     "modules": 40,
     "routes": 30,
-    "apiMethodsExported": 114,
-    "apiMethodsCalled": 95,
+    "apiMethodsExported": 117,
+    "apiMethodsCalled": 98,
     "orphanRoutes": 0,
     "deadApiMethods": 17,
     "missingApiMethods": 0,
-    "doctrineViolations": 0,
-    "unprovenContracts": 40
+    "doctrineViolations": 6,
+    "unprovenContracts": 43
   },
   "modules": [
     {
       "file": "api-client-unsold.js",
       "id": "api-client-unsold",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
+      "role": "unsold-stats-api-patch",
+      "domain": "admin-dashboard",
+      "layer": "api-client",
       "criticality": null,
-      "owner": null,
+      "owner": "dashboards/admin/js/api-client.js",
       "doctrine": [],
       "depends": [],
       "usedBy": [],
@@ -53,31 +53,40 @@
     {
       "file": "app.js",
       "id": "app",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-spa-entrypoint",
+      "domain": "admin-dashboard",
+      "layer": "entrypoint",
+      "criticality": "critical",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "views/*"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getFinanceConfig"
       ],
-      "rawFetchCount": 2
+      "rawFetchCount": 0
     },
     {
       "file": "ClientsView.js",
       "id": "ClientsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
+      "role": "clients-view-root-legacy",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
       "criticality": null,
-      "owner": null,
+      "owner": "dashboards/admin/js/views/ClientsView.js",
       "doctrine": [],
       "depends": [],
       "usedBy": [],
@@ -91,59 +100,37 @@
     {
       "file": "components/Charts.js",
       "id": "Charts",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-chart-components",
+      "domain": "admin-dashboard",
+      "layer": "ui-component",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "none"
+      ],
+      "depends": [
+        "chart.umd.min.js (Chart.js global)"
+      ],
+      "usedBy": [
+        "multiple views (SanteView",
+        "EconomicView",
+        "PilotageView",
+        "PricingView",
+        "etc.)"
+      ],
       "apiCalls": [],
       "rawFetchCount": 0
     },
     {
       "file": "components/KpiCard.js",
       "id": "KpiCard",
-      "hasHeader": false,
-      "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
-      "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "apiCalls": [],
-      "rawFetchCount": 0
-    },
-    {
-      "file": "components/UI.js",
-      "id": "UI",
-      "hasHeader": false,
-      "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
-      "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "apiCalls": [],
-      "rawFetchCount": 0
-    },
-    {
-      "file": "filters-store.js",
-      "id": "filters-store",
       "hasHeader": true,
       "isLite": false,
-      "role": "admin-dashboard-filters-store",
+      "role": "admin-kpi-card-component",
       "domain": "admin-dashboard",
-      "layer": "state-store",
+      "layer": "ui-component",
       "criticality": "medium",
       "owner": null,
       "doctrine": [
@@ -153,7 +140,57 @@
         "none"
       ],
       "usedBy": [
-        "HubRelaisView.js"
+        "multiple views (PilotageView",
+        "SanteView",
+        "EconomicView",
+        "ControlTowerView",
+        "etc.)"
+      ],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "components/UI.js",
+      "id": "UI",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-alert-ui-component",
+      "domain": "admin-dashboard",
+      "layer": "ui-component",
+      "criticality": "low",
+      "owner": null,
+      "doctrine": [
+        "none"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "views/ActionCenterView.js",
+        "views/ProblemsView.js"
+      ],
+      "apiCalls": [],
+      "rawFetchCount": 0
+    },
+    {
+      "file": "filters-store.js",
+      "id": "filters-store",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "admin-filter-state-store",
+      "domain": "admin-dashboard",
+      "layer": "state-store",
+      "criticality": "high",
+      "owner": null,
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "app.js",
+        "all views (via global KmcFilters)"
       ],
       "apiCalls": [],
       "rawFetchCount": 0
@@ -161,48 +198,68 @@
     {
       "file": "product-card-model.admin.js",
       "id": "product-card-model.admin",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-product-card-view-model",
+      "domain": "admin-dashboard",
+      "layer": "view-model",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "none"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "views/ProductsView.js"
+      ],
       "apiCalls": [],
       "rawFetchCount": 0
     },
     {
       "file": "utils.js",
       "id": "utils",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-xss-escape-helpers",
+      "domain": "admin-dashboard",
+      "layer": "ui-renderer",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "none"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "all views in dashboards/admin/js"
+      ],
       "apiCalls": [],
       "rawFetchCount": 0
     },
     {
       "file": "views/AccountingView.js",
       "id": "AccountingView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-accounting-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getFinance",
         "getEconomicCharges",
@@ -214,16 +271,25 @@
     {
       "file": "views/ActionCenterView.js",
       "id": "ActionCenterView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-action-center-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/UI.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSignalsStats",
         "getSignalsList",
@@ -237,32 +303,48 @@
     {
       "file": "views/CategoriesView.js",
       "id": "CategoriesView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-categories-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [],
       "rawFetchCount": 1
     },
     {
       "file": "views/ClientsView.js",
       "id": "ClientsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-clients-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getClients",
         "getClientsList",
@@ -273,16 +355,26 @@
     {
       "file": "views/ControlTowerView.js",
       "id": "ControlTowerView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-control-tower-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "api-client-unsold.js",
+        "filters-store.js",
+        "utils.js",
+        "components/KpiCard.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getControlTower",
         "getOps",
@@ -293,34 +385,53 @@
     {
       "file": "views/CostingView.js",
       "id": "CostingView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-costing-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "apiCalls": [
-        "getCosting"
+      "doctrine": [
+        "kmc_api_only"
       ],
-      "rawFetchCount": 3
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
+      "apiCalls": [
+        "getCosting",
+        "getCostingOrders",
+        "getCostingProducts",
+        "getCostingRelais"
+      ],
+      "rawFetchCount": 0
     },
     {
       "file": "views/CustomsView.js",
       "id": "CustomsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-customs-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getCustomsShipments",
         "getCustomsRatesEffective",
@@ -333,16 +444,24 @@
     {
       "file": "views/EconomicFlowView.js",
       "id": "EconomicFlowView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-economic-flow-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getProducts",
         "getPricingFlow"
@@ -352,16 +471,25 @@
     {
       "file": "views/EconomicView.js",
       "id": "EconomicView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-economic-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/Charts.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getPricingDashboard",
         "getEconomicExecutive",
@@ -373,16 +501,24 @@
     {
       "file": "views/EventWorkspacesView.js",
       "id": "EventWorkspacesView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-event-workspaces-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getEventWorkspaces"
       ],
@@ -424,16 +560,24 @@
     {
       "file": "views/InventoryView.js",
       "id": "InventoryView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-inventory-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "hubInventoryScanAssign",
         "getHubInventoryStats",
@@ -446,16 +590,24 @@
     {
       "file": "views/InvoicesView.js",
       "id": "InvoicesView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-invoices-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getInvoices",
         "getCashReconciliation",
@@ -466,16 +618,25 @@
     {
       "file": "views/OrdersLogisticsView.js",
       "id": "OrdersLogisticsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-orders-logistics-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/KpiCard.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getLogistics",
         "getOrders"
@@ -485,16 +646,25 @@
     {
       "file": "views/PilotageFinView.js",
       "id": "PilotageFinView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-pilotage-fin-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/Charts.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getFinance",
         "getEconomicHistory",
@@ -505,16 +675,26 @@
     {
       "file": "views/PilotageView.js",
       "id": "PilotageView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-pilotage-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/KpiCard.js",
+        "components/Charts.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getUnified"
       ],
@@ -523,16 +703,24 @@
     {
       "file": "views/PricingStrategyView.js",
       "id": "PricingStrategyView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-pricing-strategy-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getProducts",
         "getPricingStrategy",
@@ -545,48 +733,73 @@
     {
       "file": "views/PricingView.js",
       "id": "PricingView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-pricing-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [],
       "rawFetchCount": 2
     },
     {
       "file": "views/PricingWorkshopView.js",
       "id": "PricingWorkshopView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-pricing-workshop-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [],
       "rawFetchCount": 1
     },
     {
       "file": "views/ProblemsView.js",
       "id": "ProblemsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-problems-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/UI.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getOrders",
         "getParcelReconciliation"
@@ -596,32 +809,50 @@
     {
       "file": "views/ProductsView.js",
       "id": "ProductsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-products-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "product-card-model.admin.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [],
       "rawFetchCount": 4
     },
     {
       "file": "views/SalesView.js",
       "id": "SalesView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-sales-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/Charts.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSales"
       ],
@@ -630,16 +861,26 @@
     {
       "file": "views/SanteView.js",
       "id": "SanteView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-sante-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js",
+        "components/KpiCard.js",
+        "components/Charts.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getOps",
         "getFinance",
@@ -655,16 +896,24 @@
     {
       "file": "views/SettingsView.js",
       "id": "SettingsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-settings-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSettingRule",
         "patchSettingRule",
@@ -681,16 +930,24 @@
     {
       "file": "views/SharedCartsView.js",
       "id": "SharedCartsView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-shared-carts-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "high",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSharedCarts",
         "getSharedCart",
@@ -703,16 +960,24 @@
     {
       "file": "views/SimulatorView.js",
       "id": "SimulatorView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-simulator-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "low",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "simStatus",
         "simStart",
@@ -725,16 +990,24 @@
     {
       "file": "views/SourcingScannerView.js",
       "id": "SourcingScannerView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-sourcing-scanner-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSourcingCatalogs",
         "getSourcingCandidates",
@@ -751,16 +1024,24 @@
     {
       "file": "views/SourcingView.js",
       "id": "SourcingView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-sourcing-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getSourcingSynthesis",
         "getSourcingAnalysis",
@@ -771,16 +1052,24 @@
     {
       "file": "views/SuppliersView.js",
       "id": "SuppliersView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-suppliers-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "getPartners",
         "getPartnersStats",
@@ -793,16 +1082,24 @@
     {
       "file": "views/TransitaireView.js",
       "id": "TransitaireView",
-      "hasHeader": false,
+      "hasHeader": true,
       "isLite": false,
-      "role": null,
-      "domain": null,
-      "layer": null,
-      "criticality": null,
+      "role": "admin-transitaire-view",
+      "domain": "admin-dashboard",
+      "layer": "ui-page",
+      "criticality": "medium",
       "owner": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
+      "doctrine": [
+        "kmc_api_only"
+      ],
+      "depends": [
+        "api-client.js",
+        "filters-store.js",
+        "utils.js"
+      ],
+      "usedBy": [
+        "none"
+      ],
       "apiCalls": [
         "shipTransitaireParcel",
         "getTransitaireStats",
@@ -1201,6 +1498,33 @@
       "httpMethod": "GET",
       "dynamic": false,
       "contractStatus": "NOT_FOUND"
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingOrders",
+      "defined": true,
+      "route": "/api/admin/costing/orders",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingProducts",
+      "defined": true,
+      "route": "/api/admin/costing/products",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "view": "CostingView",
+      "method": "getCostingRelais",
+      "defined": true,
+      "route": "/api/admin/costing/relais",
+      "httpMethod": "GET",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
     },
     {
       "view": "CustomsView",
@@ -2024,9 +2348,9 @@
   ],
   "headerCoverage": {
     "total": 40,
-    "full": 3,
+    "full": 40,
     "lite": 0,
-    "missing": 37
+    "missing": 0
   },
   "liteMissingOwner": [],
   "diagnostics": {
@@ -2051,19 +2375,21 @@
       "upsertCostBenchmark"
     ],
     "missingApiMethods": [],
-    "doctrineViolations": [],
-    "rawFetchDebt": [
-      "api-client-unsold.js (1 fetch() brut)",
-      "app.js (2 fetch() brut)",
+    "doctrineViolations": [
       "views/CategoriesView.js (1 fetch() brut)",
-      "views/CostingView.js (3 fetch() brut)",
       "views/CustomsView.js (1 fetch() brut)",
       "views/PricingView.js (2 fetch() brut)",
       "views/PricingWorkshopView.js (1 fetch() brut)",
       "views/ProductsView.js (4 fetch() brut)",
       "views/SourcingScannerView.js (1 fetch() brut)"
     ],
+    "rawFetchDebt": [
+      "api-client-unsold.js (1 fetch() brut)"
+    ],
     "unprovenContracts": [
+      "GET /api/admin/costing/orders",
+      "GET /api/admin/costing/products",
+      "GET /api/admin/costing/relais",
       "GET /api/admin/customs-shipments",
       "GET /api/admin/customs-shipments/rates/effective",
       "GET /api/admin/dashboard/control-tower",
@@ -2165,13 +2491,15 @@
     ]
   },
   "byDomain": {
-    "(non typé)": [
+    "admin-dashboard": [
       "api-client-unsold.js",
+      "api-client.js",
       "app.js",
       "ClientsView.js",
       "components/Charts.js",
       "components/KpiCard.js",
       "components/UI.js",
+      "filters-store.js",
       "product-card-model.admin.js",
       "utils.js",
       "views/AccountingView.js",
@@ -2184,6 +2512,7 @@
       "views/EconomicFlowView.js",
       "views/EconomicView.js",
       "views/EventWorkspacesView.js",
+      "views/HubRelaisView.js",
       "views/InventoryView.js",
       "views/InvoicesView.js",
       "views/OrdersLogisticsView.js",
@@ -2203,11 +2532,6 @@
       "views/SourcingView.js",
       "views/SuppliersView.js",
       "views/TransitaireView.js"
-    ],
-    "admin-dashboard": [
-      "api-client.js",
-      "filters-store.js",
-      "views/HubRelaisView.js"
     ]
   }
 }

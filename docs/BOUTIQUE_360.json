@@ -1,0 +1,3027 @@
+{
+  "generatedAt": "2026-06-20T13:17:56.628Z",
+  "summary": {
+    "modules": 70,
+    "withHeader": 70,
+    "events": 16,
+    "declaredActive": 10,
+    "declaredDead": 5,
+    "cssBundles": 4,
+    "endpoints": 58,
+    "orphanEmit": 2,
+    "orphanListen": 1,
+    "undeclared": 7,
+    "notFoundEndpoints": 2,
+    "unprovenEndpoints": 32,
+    "dynamicEndpoints": 28
+  },
+  "modules": [
+    {
+      "file": "public/boutique/js/b-boutique-wow-style.js",
+      "id": "b-boutique-wow-style",
+      "hasHeader": true,
+      "role": "boutique-b-boutique-wow-style",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-bus.js",
+      "id": "b-bus",
+      "hasHeader": true,
+      "role": "boutique-b-bus",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-cart-core.js",
+      "id": "b-cart-core",
+      "hasHeader": true,
+      "role": "boutique-b-cart-core",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "side-cart:render",
+        "cart:update"
+      ],
+      "listens": [
+        "cart:update"
+      ],
+      "imports": [
+        "b-store",
+        "b-bus"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-cart-groups-tab.js",
+      "id": "b-cart-groups-tab",
+      "hasHeader": true,
+      "role": "boutique-b-cart-groups-tab",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-cart-core"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-cart-pill.js",
+      "id": "b-cart-pill",
+      "hasHeader": true,
+      "role": "floating-cart-pill",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "panier_visible_sans_friction",
+        "side_cart_non_intrusif",
+        "checkout_entry_visible"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-cart-core.js",
+        "b-scroll-owner.js",
+        "b-store.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [
+        "cart:update"
+      ],
+      "imports": [
+        "b-bus",
+        "b-scroll-owner",
+        "b-store",
+        "b-cart-core",
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-cart-product-open-style.js",
+      "id": "b-cart-product-open-style",
+      "hasHeader": true,
+      "role": "catalog-b-cart-product-open-style",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-cart.js",
+      "id": "b-cart",
+      "hasHeader": true,
+      "role": "boutique-cart-and-side-cart",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "doctrine": [
+        "panier_ouvert_ferme",
+        "participant_lecture_seule",
+        "side_cart_non_intrusif",
+        "modal_produit_sans_chevauchement"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js",
+        "b-catalog.js",
+        "b-scroll-owner.js",
+        "shop-schema.js",
+        "routes/shared-cart.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-checkout.js",
+        "b-modal-core.js",
+        "b-nav.js",
+        "b-share-cart.js"
+      ],
+      "emits": [
+        "modal:close",
+        "side-cart:render",
+        "checkout:open",
+        "modal:open"
+      ],
+      "listens": [
+        "side-cart:render"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-catalog",
+        "b-utils",
+        "b-cart-core",
+        "b-scroll-owner",
+        "shop-schema"
+      ],
+      "bodyClasses": [
+        "cart-open",
+        "cart-empty",
+        "sc-reserve"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-catalog-desktop-enhancers.js",
+      "id": "b-catalog-desktop-enhancers",
+      "hasHeader": true,
+      "role": "desktop-catalog-enhancer",
+      "domain": "catalog",
+      "layer": "ui-enhancer",
+      "criticality": "high",
+      "doctrine": [
+        "boutique_canal_decouverte",
+        "desktop_premium",
+        "navigation_sans_friction"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-catalog.js",
+        "b-scroll-owner.js",
+        "controllers/home-controller.js",
+        "shop-schema.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [
+        "view:changed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "shop-schema",
+        "b-catalog",
+        "home-controller",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-catalog.js",
+      "id": "b-catalog",
+      "hasHeader": true,
+      "role": "boutique-catalog-renderer",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "boutique_canal_decouverte",
+        "categorie_souscategorie_switch_fluide",
+        "navigation_sans_friction"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-subcat.js",
+        "b-pager.js",
+        "b-modal.js",
+        "shop-schema.js",
+        "render/render-product-card.js",
+        "render/render-home-sections.js",
+        "product-store.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-desktop-sidebar.js",
+        "b-subcat.js",
+        "b-nav.js"
+      ],
+      "emits": [
+        "catalog:cat-changed"
+      ],
+      "listens": [
+        "chip:center",
+        "cat:select",
+        "catalog:cat-changed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-cart",
+        "b-subcat",
+        "b-pager",
+        "b-modal",
+        "shop-schema",
+        "render-product-card",
+        "render-home-sections",
+        "home-controller",
+        "b-scroll-owner",
+        "product-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-checkout-render.js",
+      "id": "b-checkout-render",
+      "hasHeader": true,
+      "role": "checkout-dom-renderer",
+      "domain": "checkout",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "checkout_sans_friction",
+        "otp_une_fois",
+        "rendu_sans_logique_metier"
+      ],
+      "depends": [
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-checkout.js",
+        "b-share-cart.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-checkout.js",
+      "id": "b-checkout",
+      "hasHeader": true,
+      "role": "boutique-checkout-orchestrator",
+      "domain": "checkout",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "doctrine": [
+        "paiement_seul_acte_engageant",
+        "otp_une_fois",
+        "checkout_sans_friction"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js",
+        "b-cart.js",
+        "b-identity.js",
+        "b-checkout-render.js",
+        "b-phone.js",
+        "routes/orders.js",
+        "routes/payments.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-nav.js",
+        "b-share-cart.js"
+      ],
+      "emits": [
+        "modal:close"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-paypal",
+        "b-cart",
+        "b-scroll-owner",
+        "b-identity",
+        "b-checkout-render",
+        "b-phone"
+      ],
+      "bodyClasses": [
+        "cart-open",
+        "k-order-body--checkout",
+        "ck-is-me"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-desktop-global-cart-access.js",
+      "id": "b-desktop-global-cart-access",
+      "hasHeader": true,
+      "role": "boutique-b-desktop-global-cart-access",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [
+        "cart-open"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-desktop-sidebar.js",
+      "id": "b-desktop-sidebar",
+      "hasHeader": true,
+      "role": "boutique-b-desktop-sidebar",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "sidebar:built"
+      ],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-bus",
+        "b-catalog",
+        "b-scroll-owner",
+        "home-controller",
+        "shop-schema"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-desktop-upgrade.js",
+      "id": "b-desktop-upgrade",
+      "hasHeader": true,
+      "role": "boutique-b-desktop-upgrade",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-scroll-owner",
+        "b-catalog-desktop-enhancers",
+        "b-modal-desktop-enhancers"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-favs.js",
+      "id": "b-favs",
+      "hasHeader": true,
+      "role": "favorites-view",
+      "domain": "boutique",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "doctrine": [
+        "favoris_locaux_simples",
+        "boutique_canal_decouverte"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js",
+        "b-catalog.js"
+      ],
+      "usedBy": [
+        "b-nav.js",
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-cart",
+        "b-modal"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-friendly-group-redirect.js",
+      "id": "b-friendly-group-redirect",
+      "hasHeader": true,
+      "role": "boutique-b-friendly-group-redirect",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-greeting.js",
+      "id": "b-greeting",
+      "hasHeader": true,
+      "role": "boutique-b-greeting",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-group-banner.js",
+      "id": "b-group-banner",
+      "hasHeader": true,
+      "role": "shared-cart-status-banner",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "suivi_panier_visible",
+        "panier_ouvert_ferme",
+        "participant_peut_verifier"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-share-cart.js",
+        "b-group-view.js",
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-group-cart-flow.js",
+      "id": "b-group-cart-flow",
+      "hasHeader": true,
+      "role": "boutique-b-group-cart-flow",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-group-view.js",
+      "id": "b-group-view",
+      "hasHeader": true,
+      "role": "shared-cart-boutique-view",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "doctrine": [
+        "paiement_seul_acte_engageant",
+        "estimations_indicatives",
+        "participant_peut_verifier",
+        "createur_decide_gap"
+      ],
+      "depends": [
+        "group/group-api.js",
+        "group/group-state.js",
+        "group/group-helpers.js",
+        "group/group-render-creator.js",
+        "b-identity.js",
+        "b-group-banner.js"
+      ],
+      "usedBy": [
+        "b-nav.js",
+        "b-share-cart.js",
+        "public_shared_cart_links"
+      ],
+      "emits": [
+        "side-cart:render"
+      ],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-bus",
+        "b-cart-core",
+        "b-utils",
+        "b-group-banner",
+        "b-identity",
+        "group-api",
+        "group-state",
+        "group-helpers",
+        "group-render-creator"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-home-premium-v1.js",
+      "id": "b-home-premium-v1",
+      "hasHeader": true,
+      "role": "boutique-b-home-premium-v1",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "view:changed",
+        "catalog:cat-changed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-identity.js",
+      "id": "b-identity",
+      "hasHeader": true,
+      "role": "boutique-client-identity",
+      "domain": "auth",
+      "layer": "ui-service",
+      "criticality": "high",
+      "doctrine": [
+        "otp_une_fois",
+        "session_client_legere",
+        "premiere_commande_sans_friction"
+      ],
+      "depends": [
+        "b-phone.js",
+        "b-utils.js",
+        "routes/otp.js"
+      ],
+      "usedBy": [
+        "b-checkout.js",
+        "b-share-cart.js",
+        "b-group-view.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-cart-core",
+        "b-utils",
+        "b-phone"
+      ],
+      "bodyClasses": [
+        "k-id-scroll-lock"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-mini-cart.js",
+      "id": "b-mini-cart",
+      "hasHeader": true,
+      "role": "mini-cart-summary",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "side_cart_non_intrusif",
+        "panier_visible_sans_friction"
+      ],
+      "depends": [
+        "b-cart-core.js",
+        "b-store.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "cart-surfaces"
+      ],
+      "emits": [],
+      "listens": [
+        "cart:update"
+      ],
+      "imports": [
+        "b-store",
+        "b-cart-core",
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-mobile-modal-v1.js",
+      "id": "b-mobile-modal-v1",
+      "hasHeader": true,
+      "role": "boutique-b-mobile-modal-v1",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:opened"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-mobile-premium-v1.js",
+      "id": "b-mobile-premium-v1",
+      "hasHeader": true,
+      "role": "boutique-b-mobile-premium-v1",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:opened"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-approche-c-hybrid.js",
+      "id": "b-modal-approche-c-hybrid",
+      "hasHeader": true,
+      "role": "hybrid-product-modal-flow",
+      "domain": "boutique",
+      "layer": "ui-experiment",
+      "criticality": "medium",
+      "doctrine": [
+        "modal_produit_sans_chevauchement",
+        "partager_geste_natif",
+        "checkout_sans_friction"
+      ],
+      "depends": [
+        "b-cart.js",
+        "b-share-cart.js",
+        "b-modal-core.js"
+      ],
+      "usedBy": [
+        "modal-surfaces"
+      ],
+      "emits": [],
+      "listens": [
+        "modal:opened",
+        "modal:closed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-scroll-owner",
+        "b-modal",
+        "b-cart",
+        "b-share-cart"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-cart.js",
+      "id": "b-modal-cart",
+      "hasHeader": true,
+      "role": "boutique-b-modal-cart",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-cart"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-core.js",
+      "id": "b-modal-core",
+      "hasHeader": true,
+      "role": "product-modal-orchestrator",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "participant_peut_verifier",
+        "boutique_preuve_confiance",
+        "modal_produit_sans_chevauchement"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart.js",
+        "b-cart-core.js",
+        "b-modal-product.js",
+        "b-modal-suggestions.js",
+        "b-modal-nav.js",
+        "b-modal-cart.js",
+        "b-modal-image-ux.js",
+        "routes/products.js"
+      ],
+      "usedBy": [
+        "b-modal.js",
+        "b-catalog.js",
+        "b-subcat.js",
+        "b-cart.js"
+      ],
+      "emits": [
+        "modal:opened",
+        "modal:closed",
+        "cat:select"
+      ],
+      "listens": [
+        "modal:close",
+        "modal:open"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-cart",
+        "shop-schema",
+        "b-scroll-owner",
+        "b-modal-image-ux",
+        "b-modal-social-proof",
+        "b-modal-product",
+        "b-modal-suggestions",
+        "b-modal-nav",
+        "b-modal-cart"
+      ],
+      "bodyClasses": [
+        "modal-open",
+        "modal-has-cart"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-modal-desktop-enhancers.js",
+      "id": "b-modal-desktop-enhancers",
+      "hasHeader": true,
+      "role": "desktop-product-modal-enhancer",
+      "domain": "boutique",
+      "layer": "ui-enhancer",
+      "criticality": "high",
+      "doctrine": [
+        "modal_produit_sans_chevauchement",
+        "desktop_premium",
+        "participant_peut_verifier"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-catalog.js",
+        "b-modal.js",
+        "b-scroll-owner.js",
+        "view-models/modal-view-model.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-modal-core.js"
+      ],
+      "emits": [
+        "modal:close",
+        "toast"
+      ],
+      "listens": [
+        "modal:opened",
+        "modal:close"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-modal",
+        "b-catalog",
+        "shop-schema",
+        "b-scroll-owner",
+        "modal-view-model"
+      ],
+      "bodyClasses": [
+        "is-open"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-modal-image-ux.js",
+      "id": "b-modal-image-ux",
+      "hasHeader": true,
+      "role": "product-modal-image-ux",
+      "domain": "boutique",
+      "layer": "ui-enhancer",
+      "criticality": "medium",
+      "doctrine": [
+        "image_produit_inspectable",
+        "modal_produit_sans_chevauchement"
+      ],
+      "depends": [
+        "b-store.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js"
+      ],
+      "emits": [],
+      "listens": [
+        "carousel:changed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-nav.js",
+      "id": "b-modal-nav",
+      "hasHeader": true,
+      "role": "boutique-b-modal-nav",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "modal:open"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-product.js",
+      "id": "b-modal-product",
+      "hasHeader": true,
+      "role": "product-modal-content-renderer",
+      "domain": "boutique",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "boutique_preuve_confiance",
+        "fiche_produit_lisible",
+        "modal_produit_sans_chevauchement"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js",
+        "b-bus.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js"
+      ],
+      "emits": [
+        "carousel:changed"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils"
+      ],
+      "bodyClasses": [
+        "k-sg-open"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-modal-social-proof.js",
+      "id": "b-modal-social-proof",
+      "hasHeader": true,
+      "role": "boutique-b-modal-social-proof",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:product-changed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal-suggestions.js",
+      "id": "b-modal-suggestions",
+      "hasHeader": true,
+      "role": "product-modal-suggestions",
+      "domain": "recommendations",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "suggestions_decouverte_non_intrusives",
+        "boutique_canal_decouverte",
+        "no_hardcoded_taxonomy"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-utils.js",
+        "shop-schema.js"
+      ],
+      "usedBy": [
+        "b-modal-core.js"
+      ],
+      "emits": [
+        "modal:open"
+      ],
+      "listens": [
+        "modal:open"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-scroll-owner",
+        "b-cart"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-modal.js",
+      "id": "b-modal",
+      "hasHeader": true,
+      "role": "boutique-b-modal",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-modal-core",
+        "b-modal-product",
+        "b-modal-suggestions",
+        "b-modal-nav"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-nav.js",
+      "id": "b-nav",
+      "hasHeader": true,
+      "role": "boutique-nav",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "navigation_sans_friction",
+        "mobile_desktop_coherence"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-store.js",
+        "b-utils.js",
+        "b-cart-core.js",
+        "b-cart.js",
+        "b-checkout.js",
+        "b-catalog.js",
+        "b-favs.js",
+        "b-tracking.js",
+        "b-group-view.js",
+        "b-pager.js",
+        "b-scroll-owner.js"
+      ],
+      "usedBy": [
+        "boutique.js"
+      ],
+      "emits": [
+        "view:changed"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-cart",
+        "b-checkout",
+        "b-catalog",
+        "b-favs",
+        "b-tracking",
+        "b-group-view",
+        "b-pager",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": [
+        "k-view-shop",
+        "k-view-",
+        "cart-open"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-pager.js",
+      "id": "b-pager",
+      "hasHeader": true,
+      "role": "mobile-category-pager",
+      "domain": "catalog",
+      "layer": "ui-state",
+      "criticality": "high",
+      "doctrine": [
+        "navigation_sans_friction",
+        "categorie_souscategorie_switch_fluide",
+        "mobile_desktop_coherence"
+      ],
+      "depends": [
+        "b-bus.js",
+        "b-scroll-owner.js",
+        "b-store.js"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "b-subcat.js",
+        "b-nav.js"
+      ],
+      "emits": [
+        "chip:center"
+      ],
+      "listens": [
+        "modal:opened",
+        "modal:closed"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-paypal.js",
+      "id": "b-paypal",
+      "hasHeader": true,
+      "role": "payment-b-paypal",
+      "domain": "payment",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "b-cart-core"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-pdp-curation-suggestions.js",
+      "id": "b-pdp-curation-suggestions",
+      "hasHeader": true,
+      "role": "recommendations-b-pdp-curation-suggestions",
+      "domain": "recommendations",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [
+        "modal:opened"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-phone.js",
+      "id": "b-phone",
+      "hasHeader": true,
+      "role": "phone-normalization-ui",
+      "domain": "auth",
+      "layer": "util-ui",
+      "criticality": "high",
+      "doctrine": [
+        "phone_normalization",
+        "format_local_lisible",
+        "otp_une_fois"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "b-checkout.js",
+        "b-identity.js",
+        "b-tracking.js",
+        "b-share-cart.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-product-open-contract.js",
+      "id": "b-product-open-contract",
+      "hasHeader": true,
+      "role": "catalog-b-product-open-contract",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [
+        "product:open-from-cart"
+      ],
+      "listens": [
+        "modal:open",
+        "product:open-from-cart"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-modal"
+      ],
+      "bodyClasses": [
+        "cart-open"
+      ]
+    },
+    {
+      "file": "public/boutique/js/b-scroll-owner.js",
+      "id": "b-scroll-owner",
+      "hasHeader": true,
+      "role": "boutique-scroll-owner",
+      "domain": "boutique",
+      "layer": "ui-infrastructure",
+      "criticality": "high",
+      "doctrine": [
+        "scroll_owner_unique",
+        "mobile_desktop_coherence",
+        "modal_produit_sans_chevauchement"
+      ],
+      "depends": [
+        "DOM"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "b-subcat.js",
+        "b-nav.js",
+        "b-cart.js",
+        "modal-modules",
+        "desktop-enhancers"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-share-cart.js",
+      "id": "b-share-cart",
+      "hasHeader": true,
+      "role": "shared-cart-creation-from-boutique",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": "critical",
+      "doctrine": [
+        "partager_geste_natif",
+        "panier_ouvert_ferme",
+        "paiement_seul_acte_engageant",
+        "boutique_canal_decouverte"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js",
+        "b-cart.js",
+        "b-group-view.js",
+        "b-group-banner.js",
+        "b-phone.js",
+        "b-checkout.js",
+        "b-identity.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-modal-approche-c-hybrid.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-cart-core",
+        "b-cart",
+        "b-group-view",
+        "b-group-banner",
+        "b-phone",
+        "b-checkout",
+        "b-identity"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-share-phone-guard.js",
+      "id": "b-share-phone-guard",
+      "hasHeader": true,
+      "role": "boutique-b-share-phone-guard",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-store.js",
+      "id": "b-store",
+      "hasHeader": true,
+      "role": "boutique-shared-state",
+      "domain": "boutique",
+      "layer": "state",
+      "criticality": "critical",
+      "doctrine": [
+        "state_partage_explicite",
+        "panier_local_source_unique",
+        "dom_refs_centralisees"
+      ],
+      "depends": [
+        "localStorage",
+        "sessionStorage",
+        "DOM"
+      ],
+      "usedBy": [
+        "all-boutique-js-modules"
+      ],
+      "emits": [
+        "catalog:cat-changed"
+      ],
+      "listens": [],
+      "imports": [
+        "b-bus"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-subcat.js",
+      "id": "b-subcat",
+      "hasHeader": true,
+      "role": "boutique-subcategory-navigation",
+      "domain": "catalog",
+      "layer": "ui-component",
+      "criticality": "high",
+      "doctrine": [
+        "categorie_souscategorie_switch_fluide",
+        "navigation_sans_friction",
+        "mobile_desktop_coherence"
+      ],
+      "depends": [
+        "b-store.js",
+        "shop-schema.js",
+        "b-pager.js",
+        "b-catalog.js",
+        "b-modal.js",
+        "b-cart.js",
+        "b-scroll-owner.js"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "b-catalog.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "shop-schema",
+        "b-cart-core",
+        "b-pager",
+        "b-catalog",
+        "b-modal",
+        "b-cart",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-tracking.js",
+      "id": "b-tracking",
+      "hasHeader": true,
+      "role": "order-tracking-view",
+      "domain": "tracking",
+      "layer": "ui-page",
+      "criticality": "high",
+      "doctrine": [
+        "otp_une_fois",
+        "suivi_client_simple",
+        "reference_commande_lisible"
+      ],
+      "depends": [
+        "b-phone.js",
+        "b-utils.js",
+        "b-cart-core.js",
+        "routes/otp.js",
+        "routes/orders.js"
+      ],
+      "usedBy": [
+        "b-nav.js",
+        "boutique.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "b-cart-core",
+        "b-phone"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/b-utils.js",
+      "id": "b-utils",
+      "hasHeader": true,
+      "role": "boutique-ui-utilities",
+      "domain": "boutique",
+      "layer": "util",
+      "criticality": "high",
+      "doctrine": [
+        "sanitize_before_render",
+        "api_errors_lisibles",
+        "prix_lisible"
+      ],
+      "depends": [
+        "fetch",
+        "Intl"
+      ],
+      "usedBy": [
+        "all-boutique-js-modules"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/boutique.js",
+      "id": "boutique",
+      "hasHeader": true,
+      "role": "boutique-ui-orchestrator",
+      "domain": "boutique",
+      "layer": "ui-page",
+      "criticality": "critical",
+      "doctrine": [
+        "boutique_canal_decouverte",
+        "navigation_sans_friction",
+        "side_cart_non_intrusif"
+      ],
+      "depends": [
+        "b-store.js",
+        "b-cart-core.js",
+        "b-catalog.js",
+        "b-modal.js",
+        "b-cart.js",
+        "b-checkout.js",
+        "b-nav.js",
+        "b-share-cart.js"
+      ],
+      "usedBy": [
+        "public/boutique/index.html"
+      ],
+      "emits": [],
+      "listens": [
+        "checkout:open"
+      ],
+      "imports": [
+        "b-bus",
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "b-catalog",
+        "b-subcat",
+        "b-modal",
+        "b-cart",
+        "b-checkout",
+        "b-nav",
+        "b-favs",
+        "b-tracking",
+        "b-pager",
+        "b-scroll-owner",
+        "b-share-cart"
+      ],
+      "bodyClasses": [
+        "k-view-shop"
+      ]
+    },
+    {
+      "file": "public/boutique/js/card-config.js",
+      "id": "card-config",
+      "hasHeader": true,
+      "role": "boutique-card-config",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/collective-close-order-service.js",
+      "id": "collective-close-order-service",
+      "hasHeader": true,
+      "role": "shared-cart-collective-close-order-service",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/collective-ready-to-order-orchestrator.js",
+      "id": "collective-ready-to-order-orchestrator",
+      "hasHeader": true,
+      "role": "shared-cart-collective-ready-to-order-orchestrator",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/controllers/home-controller.js",
+      "id": "home-controller",
+      "hasHeader": true,
+      "role": "boutique-home-navigation-controller",
+      "domain": "catalog",
+      "layer": "controller",
+      "criticality": "high",
+      "doctrine": [
+        "navigation_sans_friction",
+        "categorie_souscategorie_switch_fluide",
+        "desktop_mobile_coherence"
+      ],
+      "depends": [
+        "b-store.js",
+        "shop-schema.js"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "b-catalog-desktop-enhancers.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "render-categories",
+        "shop-schema",
+        "b-catalog",
+        "b-scroll-owner"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/event-manage.js",
+      "id": "event-manage",
+      "hasHeader": true,
+      "role": "collective-workspace-manager",
+      "domain": "collective-workspace",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "doctrine": [
+        "workspace_partage_lisible",
+        "lien_public_controle",
+        "action_createur_tracee"
+      ],
+      "depends": [
+        "routes/collective-workspaces.js"
+      ],
+      "usedBy": [
+        "event-management-pages"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/event-pay.js",
+      "id": "event-pay",
+      "hasHeader": true,
+      "role": "collective-workspace-payment",
+      "domain": "collective-workspace",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "doctrine": [
+        "paiement_seul_acte_engageant",
+        "lien_public_controle"
+      ],
+      "depends": [
+        "routes/collective-workspaces.js",
+        "payment-api"
+      ],
+      "usedBy": [
+        "public_event_payment_links"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/event-public.js",
+      "id": "event-public",
+      "hasHeader": true,
+      "role": "collective-workspace-public-view",
+      "domain": "collective-workspace",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "doctrine": [
+        "consultation_publique_sans_friction",
+        "lien_public_controle"
+      ],
+      "depends": [
+        "routes/collective-workspaces.js"
+      ],
+      "usedBy": [
+        "public_event_links"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/group/group-api.js",
+      "id": "group-api",
+      "hasHeader": true,
+      "role": "shared-cart-front-api",
+      "domain": "shared-cart",
+      "layer": "api-client",
+      "criticality": "high",
+      "doctrine": [
+        "backend_source_verite",
+        "paiement_seul_acte_engageant",
+        "participant_peut_verifier"
+      ],
+      "depends": [
+        "routes/shared-cart.js",
+        "fetch"
+      ],
+      "usedBy": [
+        "b-group-view.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/group/group-helpers.js",
+      "id": "group-helpers",
+      "hasHeader": true,
+      "role": "shared-cart-front-helpers",
+      "domain": "shared-cart",
+      "layer": "util-ui",
+      "criticality": "medium",
+      "doctrine": [
+        "estimations_indicatives",
+        "montant_lisible",
+        "lien_personnalise_lisible"
+      ],
+      "depends": [
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-group-view.js",
+        "group-render-creator.js",
+        "b-nav.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/group/group-render-creator.js",
+      "id": "group-render-creator",
+      "hasHeader": true,
+      "role": "shared-cart-creator-renderer",
+      "domain": "shared-cart",
+      "layer": "ui-renderer",
+      "criticality": "high",
+      "doctrine": [
+        "createur_decide_gap",
+        "estimations_indicatives",
+        "participant_lecture_seule"
+      ],
+      "depends": [
+        "group/group-helpers.js",
+        "group/group-state.js",
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-group-view.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "group-state",
+        "group-helpers"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/group/group-state.js",
+      "id": "group-state",
+      "hasHeader": true,
+      "role": "shared-cart-group-state",
+      "domain": "shared-cart",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "group-helpers"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/komerce-api.js",
+      "id": "komerce-api",
+      "hasHeader": true,
+      "role": "boutique-api-client",
+      "domain": "boutique",
+      "layer": "api-client",
+      "criticality": "high",
+      "doctrine": [
+        "api_frontend_unique",
+        "credentials_preserved",
+        "errors_lisibles"
+      ],
+      "depends": [
+        "backend_api"
+      ],
+      "usedBy": [
+        "boutique.js",
+        "public/boutique/index.html",
+        "feature_modules"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/main.js",
+      "id": "main",
+      "hasHeader": true,
+      "role": "boutique-main",
+      "domain": "boutique",
+      "layer": "ui-component",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-bus",
+        "b-share-phone-guard",
+        "b-desktop-upgrade",
+        "b-scroll-owner",
+        "b-product-open-contract",
+        "b-cart-product-open-style",
+        "b-modal-desktop-enhancers",
+        "b-modal-approche-c-hybrid",
+        "b-pdp-curation-suggestions",
+        "b-home-premium-v1",
+        "b-greeting"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/product-store.js",
+      "id": "product-store",
+      "hasHeader": true,
+      "role": "boutique-product-store",
+      "domain": "catalog",
+      "layer": "state-store",
+      "criticality": "high",
+      "doctrine": [
+        "product_source_unique",
+        "catalogue_cache_fallback",
+        "produit_reference_stable"
+      ],
+      "depends": [
+        "localStorage",
+        "shop-schema.js"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "boutique.js",
+        "suggestion-modules"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "shop-schema"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/render/render-categories.js",
+      "id": "render-categories",
+      "hasHeader": true,
+      "role": "boutique-render-categories",
+      "domain": "boutique",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils",
+        "shop-schema"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/render/render-home-sections.js",
+      "id": "render-home-sections",
+      "hasHeader": true,
+      "role": "home-sections-renderer",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": "medium",
+      "doctrine": [
+        "boutique_canal_decouverte",
+        "rendu_sans_logique_metier",
+        "taxonomy_source_unique"
+      ],
+      "depends": [
+        "shop-schema.js",
+        "render/render-product-card.js"
+      ],
+      "usedBy": [
+        "b-catalog.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "shop-schema",
+        "product-store",
+        "b-utils",
+        "b-store"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/render/render-product-card.js",
+      "id": "render-product-card",
+      "hasHeader": true,
+      "role": "catalog-render-product-card",
+      "domain": "catalog",
+      "layer": "ui-renderer",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-store",
+        "b-utils",
+        "b-cart-core",
+        "product-card-view-model",
+        "shop-schema"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/shop-schema.js",
+      "id": "shop-schema",
+      "hasHeader": true,
+      "role": "boutique-taxonomy-schema",
+      "domain": "catalog",
+      "layer": "schema",
+      "criticality": "high",
+      "doctrine": [
+        "taxonomy_source_unique",
+        "categories_sans_hardcode_metier",
+        "navigation_sans_friction"
+      ],
+      "depends": [
+        "none"
+      ],
+      "usedBy": [
+        "b-catalog.js",
+        "b-subcat.js",
+        "b-cart.js",
+        "b-desktop-sidebar.js",
+        "renderers"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/view-models/modal-view-model.js",
+      "id": "modal-view-model",
+      "hasHeader": true,
+      "role": "product-modal-view-model",
+      "domain": "boutique",
+      "layer": "view-model",
+      "criticality": "high",
+      "doctrine": [
+        "fiche_produit_lisible",
+        "modal_contract_stable",
+        "desktop_premium"
+      ],
+      "depends": [
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-modal-desktop-enhancers.js",
+        "b-modal-core.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/view-models/product-card-model.js",
+      "id": "product-card-model",
+      "hasHeader": true,
+      "role": "catalog-product-card-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "card-config"
+      ],
+      "bodyClasses": []
+    },
+    {
+      "file": "public/boutique/js/view-models/product-card-view-model.js",
+      "id": "product-card-view-model",
+      "hasHeader": true,
+      "role": "catalog-product-card-view-model",
+      "domain": "catalog",
+      "layer": "view-model",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
+      ],
+      "bodyClasses": []
+    }
+  ],
+  "events": {
+    "side-cart:render": {
+      "emitters": [
+        "b-cart",
+        "b-cart-core",
+        "b-group-view"
+      ],
+      "listeners": [
+        "b-cart"
+      ]
+    },
+    "cart:update": {
+      "emitters": [
+        "b-cart-core"
+      ],
+      "listeners": [
+        "b-cart-core",
+        "b-cart-pill",
+        "b-mini-cart"
+      ]
+    },
+    "modal:close": {
+      "emitters": [
+        "b-cart",
+        "b-checkout",
+        "b-modal-desktop-enhancers"
+      ],
+      "listeners": [
+        "b-modal-core",
+        "b-modal-desktop-enhancers"
+      ]
+    },
+    "checkout:open": {
+      "emitters": [
+        "b-cart"
+      ],
+      "listeners": [
+        "boutique"
+      ]
+    },
+    "modal:open": {
+      "emitters": [
+        "b-cart",
+        "b-modal-nav",
+        "b-modal-suggestions"
+      ],
+      "listeners": [
+        "b-modal-core",
+        "b-modal-suggestions",
+        "b-product-open-contract"
+      ]
+    },
+    "view:changed": {
+      "emitters": [
+        "b-nav"
+      ],
+      "listeners": [
+        "b-catalog-desktop-enhancers",
+        "b-home-premium-v1"
+      ]
+    },
+    "catalog:cat-changed": {
+      "emitters": [
+        "b-catalog",
+        "b-store"
+      ],
+      "listeners": [
+        "b-catalog",
+        "b-home-premium-v1"
+      ]
+    },
+    "chip:center": {
+      "emitters": [
+        "b-pager"
+      ],
+      "listeners": [
+        "b-catalog"
+      ]
+    },
+    "cat:select": {
+      "emitters": [
+        "b-modal-core"
+      ],
+      "listeners": [
+        "b-catalog"
+      ]
+    },
+    "sidebar:built": {
+      "emitters": [
+        "b-desktop-sidebar"
+      ],
+      "listeners": []
+    },
+    "modal:opened": {
+      "emitters": [
+        "b-modal-core"
+      ],
+      "listeners": [
+        "b-mobile-modal-v1",
+        "b-mobile-premium-v1",
+        "b-modal-approche-c-hybrid",
+        "b-modal-desktop-enhancers",
+        "b-pager",
+        "b-pdp-curation-suggestions"
+      ]
+    },
+    "modal:closed": {
+      "emitters": [
+        "b-modal-core"
+      ],
+      "listeners": [
+        "b-modal-approche-c-hybrid",
+        "b-pager"
+      ]
+    },
+    "toast": {
+      "emitters": [
+        "b-modal-desktop-enhancers"
+      ],
+      "listeners": []
+    },
+    "carousel:changed": {
+      "emitters": [
+        "b-modal-product"
+      ],
+      "listeners": [
+        "b-modal-image-ux"
+      ]
+    },
+    "modal:product-changed": {
+      "emitters": [],
+      "listeners": [
+        "b-modal-social-proof"
+      ]
+    },
+    "product:open-from-cart": {
+      "emitters": [
+        "b-product-open-contract"
+      ],
+      "listeners": [
+        "b-product-open-contract"
+      ]
+    }
+  },
+  "bundles": [
+    {
+      "out": "base.css",
+      "files": [
+        "tokens",
+        "reset",
+        "layout",
+        "hero"
+      ]
+    },
+    {
+      "out": "components.css",
+      "files": [
+        "categories",
+        "products",
+        "modal-shell",
+        "modal-media",
+        "modal-product",
+        "modal-product-lot4-hybrid",
+        "cart",
+        "interactions",
+        "hero-cart-proxy",
+        "group-cart-flow",
+        "share-cart",
+        "shared-followup",
+        "identity",
+        "paypal"
+      ]
+    },
+    {
+      "out": "desktop.css",
+      "files": [
+        "boutique-desktop"
+      ]
+    },
+    {
+      "out": "event.css",
+      "files": [
+        "tokens",
+        "event"
+      ]
+    }
+  ],
+  "callEdges": [
+    {
+      "module": "b-cart-groups-tab",
+      "route": "/api/collective-workspaces",
+      "raw": "/api/collective-workspaces",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "module": "b-cart",
+      "route": "/api/shared-carts/{id}/items",
+      "raw": "/api/shared-carts/${ctx.shared_cart_id}/items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-cart",
+      "route": "/api/shares",
+      "raw": "/api/shares",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-cart",
+      "route": "/api/shares",
+      "raw": "/api/shares/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-cart",
+      "route": "/api/shared-carts/{id}/items",
+      "raw": "/api/shared-carts/${ctx.shared_cart_id}/items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/public/config",
+      "raw": "/api/public/config",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/relais",
+      "raw": "/api/relais",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/wallet",
+      "raw": "/api/wallet",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/orders",
+      "raw": "/api/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/orders",
+      "raw": "/api/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/payments/stripe/intent",
+      "raw": "/api/payments/stripe/intent",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/orders",
+      "raw": "/api/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-favs",
+      "route": "/api/shares",
+      "raw": "/api/shares",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-greeting",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-group-banner",
+      "route": "/api/shared-carts/public/{id}",
+      "raw": "/api/shared-carts/public/${state.shareToken}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-identity",
+      "route": "/api/auth/otp/request",
+      "raw": "/api/auth/otp/request",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-identity",
+      "route": "/api/auth/otp/verify",
+      "raw": "/api/auth/otp/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-modal-core",
+      "route": "/api/boutique/suggestions",
+      "raw": "/api/boutique/suggestions?",
+      "dynamic": false,
+      "contractStatus": "NOT_FOUND"
+    },
+    {
+      "module": "b-modal-core",
+      "route": "/api/products",
+      "raw": "/api/products/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-nav",
+      "route": "/api/relais/public",
+      "raw": "/api/relais/public",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-paypal",
+      "route": "/api/public/config",
+      "raw": "/api/public/config",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-paypal",
+      "route": "/api/payments/paypal/create-order",
+      "raw": "/api/payments/paypal/create-order",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-paypal",
+      "route": "/api/payments/paypal/capture/{id}",
+      "raw": "/api/payments/paypal/capture/${encodeURIComponent(data.orderID)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-paypal",
+      "route": "/api/public/config",
+      "raw": "/api/public/config",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-share-cart",
+      "route": "/api/shared-carts/from-cart-items",
+      "raw": "/api/shared-carts/from-cart-items",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-share-cart",
+      "route": "/api/shared-carts/mine",
+      "raw": "/api/shared-carts/mine",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/orders",
+      "raw": "/api/orders/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/orders",
+      "raw": "/api/orders?limit=20",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/orders",
+      "raw": "/api/orders/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/auth/otp/request",
+      "raw": "/api/auth/otp/request",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/auth/otp/verify",
+      "raw": "/api/auth/otp/verify",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/client/tracking",
+      "raw": "/api/client/tracking",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-tracking",
+      "route": "/api/auth/otp/request",
+      "raw": "/api/auth/otp/request",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "event-manage",
+      "route": "/api/collective-workspaces",
+      "raw": "/api/collective-workspaces/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-manage",
+      "route": "/api/collective-workspaces",
+      "raw": "/api/collective-workspaces/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-manage",
+      "route": "/api/collective-workspaces/me",
+      "raw": "/api/collective-workspaces/me/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-pay",
+      "route": "/api/collective-payments",
+      "raw": "/api/collective-payments/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-pay",
+      "route": "/api/collective-payments",
+      "raw": "/api/collective-payments/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-public",
+      "route": "/api/collective-workspaces/public",
+      "raw": "/api/collective-workspaces/public/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "event-public",
+      "route": "/api/collective-workspaces/public",
+      "raw": "/api/collective-workspaces/public/",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/mine",
+      "raw": "/api/shared-carts/mine",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}",
+      "raw": "/api/shared-carts/${cartId}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/as-cart-items",
+      "raw": "/api/shared-carts/${cartId}/as-cart-items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/close",
+      "raw": "/api/shared-carts/${cartId}/close",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/extend-window",
+      "raw": "/api/shared-carts/${cartId}/extend-window",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/finalize",
+      "raw": "/api/shared-carts/${cartId}/finalize",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/{id}/cancel",
+      "raw": "/api/shared-carts/${cartId}/cancel",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}",
+      "raw": "/api/shared-carts/public/${token}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}/estimations",
+      "raw": "/api/shared-carts/public/${token}/estimations",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}/estimations",
+      "raw": "/api/shared-carts/public/${token}/estimations",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}/estimations/{id}",
+      "raw": "/api/shared-carts/public/${token}/estimations/${estimationId}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}/estimations/by-phone",
+      "raw": "/api/shared-carts/public/${token}/estimations/by-phone?phone=${encodeURIComponent(phone)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "group-api",
+      "route": "/api/shared-carts/public/{id}/contributions",
+      "raw": "/api/shared-carts/public/${token}/contributions",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/health",
+      "raw": "/api/health",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/auth/login",
+      "raw": "/api/auth/login",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/auth/logout",
+      "raw": "/api/auth/logout",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/auth/me",
+      "raw": "/api/auth/me",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels",
+      "raw": "/api/parcels",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/{id}",
+      "raw": "/api/parcels/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels",
+      "raw": "/api/parcels",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/{id}",
+      "raw": "/api/parcels/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/{id}/items",
+      "raw": "/api/parcels/${parcelId}/items",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/stats",
+      "raw": "/api/parcels/stats",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/optimize",
+      "raw": "/api/parcels/optimize",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels/bootstrap/{id}",
+      "raw": "/api/parcels/bootstrap/${orderId}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/hub/scan",
+      "raw": "/api/hub/scan",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/scans/hub/pack",
+      "raw": "/api/scans/hub/pack",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/scans/hub/seal",
+      "raw": "/api/scans/hub/seal",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/parcels",
+      "raw": "/api/parcels?status=draft",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/scans",
+      "raw": "/api/scans",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/scans",
+      "raw": "/api/scans",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/orders",
+      "raw": "/api/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/orders/{id}",
+      "raw": "/api/orders/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/orders/stats",
+      "raw": "/api/orders/stats",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/orders",
+      "raw": "/api/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/logistics/shipments",
+      "raw": "/api/logistics/shipments",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/logistics/shipments/{id}",
+      "raw": "/api/logistics/shipments/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/logistics/shipments",
+      "raw": "/api/logistics/shipments",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/logistics/containers",
+      "raw": "/api/logistics/containers",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/carriers",
+      "raw": "/api/carriers",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/carriers/{id}",
+      "raw": "/api/carriers/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/carriers",
+      "raw": "/api/carriers",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/carriers/{id}",
+      "raw": "/api/carriers/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/products",
+      "raw": "/api/products",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/products/{id}",
+      "raw": "/api/products/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/purchasing/suppliers",
+      "raw": "/api/purchasing/suppliers",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/purchasing/suppliers/{id}",
+      "raw": "/api/purchasing/suppliers/${id}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "komerce-api",
+      "route": "/api/purchasing/orders",
+      "raw": "/api/purchasing/orders",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "shop-schema",
+      "route": "/api/categories",
+      "raw": "/api/categories",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    }
+  ],
+  "registry": {
+    "active": [
+      "modal:open",
+      "modal:close",
+      "cart:update",
+      "side-cart:render",
+      "checkout:open",
+      "product:open-from-cart",
+      "view:switch",
+      "cat:select",
+      "chip:center",
+      "catalog:cat-changed"
+    ],
+    "dead": [
+      "cart:add",
+      "cart:open",
+      "cart:close",
+      "search:query",
+      "pager:navigate"
+    ]
+  },
+  "diagnostics": {
+    "orphanEmit": [
+      "sidebar:built",
+      "toast"
+    ],
+    "orphanListen": [
+      "modal:product-changed"
+    ],
+    "undeclared": [
+      "carousel:changed",
+      "modal:closed",
+      "modal:opened",
+      "modal:product-changed",
+      "sidebar:built",
+      "toast",
+      "view:changed"
+    ],
+    "declaredUnused": [
+      "view:switch"
+    ],
+    "notFoundEndpoints": [
+      "/api/boutique/suggestions",
+      "/api/collective-workspaces"
+    ],
+    "unprovenEndpoints": [
+      "/api/auth/login",
+      "/api/auth/logout",
+      "/api/auth/me",
+      "/api/auth/otp/request",
+      "/api/auth/otp/verify",
+      "/api/carriers",
+      "/api/categories",
+      "/api/client/tracking",
+      "/api/health",
+      "/api/hub/scan",
+      "/api/logistics/containers",
+      "/api/logistics/shipments",
+      "/api/orders",
+      "/api/orders/stats",
+      "/api/parcels",
+      "/api/parcels/optimize",
+      "/api/parcels/stats",
+      "/api/payments/paypal/create-order",
+      "/api/payments/stripe/intent",
+      "/api/products",
+      "/api/public/config",
+      "/api/purchasing/orders",
+      "/api/purchasing/suppliers",
+      "/api/relais",
+      "/api/relais/public",
+      "/api/scans",
+      "/api/scans/hub/pack",
+      "/api/scans/hub/seal",
+      "/api/shared-carts/from-cart-items",
+      "/api/shared-carts/mine",
+      "/api/shares",
+      "/api/wallet"
+    ],
+    "dynamicEndpoints": [
+      "/api/carriers/{id}",
+      "/api/collective-payments",
+      "/api/collective-workspaces",
+      "/api/collective-workspaces/me",
+      "/api/collective-workspaces/public",
+      "/api/logistics/shipments/{id}",
+      "/api/orders",
+      "/api/orders/{id}",
+      "/api/parcels/bootstrap/{id}",
+      "/api/parcels/{id}",
+      "/api/parcels/{id}/items",
+      "/api/payments/paypal/capture/{id}",
+      "/api/products",
+      "/api/products/{id}",
+      "/api/purchasing/suppliers/{id}",
+      "/api/shared-carts/public/{id}",
+      "/api/shared-carts/public/{id}/contributions",
+      "/api/shared-carts/public/{id}/estimations",
+      "/api/shared-carts/public/{id}/estimations/by-phone",
+      "/api/shared-carts/public/{id}/estimations/{id}",
+      "/api/shared-carts/{id}",
+      "/api/shared-carts/{id}/as-cart-items",
+      "/api/shared-carts/{id}/cancel",
+      "/api/shared-carts/{id}/close",
+      "/api/shared-carts/{id}/extend-window",
+      "/api/shared-carts/{id}/finalize",
+      "/api/shared-carts/{id}/items",
+      "/api/shares"
+    ]
+  },
+  "bodyClasses": {
+    "static": [],
+    "dynamic": {
+      "cart-open": [
+        "b-cart",
+        "b-checkout",
+        "b-desktop-global-cart-access",
+        "b-nav",
+        "b-product-open-contract"
+      ],
+      "cart-empty": [
+        "b-cart"
+      ],
+      "sc-reserve": [
+        "b-cart"
+      ],
+      "k-order-body--checkout": [
+        "b-checkout"
+      ],
+      "ck-is-me": [
+        "b-checkout"
+      ],
+      "k-id-scroll-lock": [
+        "b-identity"
+      ],
+      "modal-open": [
+        "b-modal-core"
+      ],
+      "modal-has-cart": [
+        "b-modal-core"
+      ],
+      "is-open": [
+        "b-modal-desktop-enhancers"
+      ],
+      "k-sg-open": [
+        "b-modal-product"
+      ],
+      "k-view-shop": [
+        "b-nav",
+        "boutique"
+      ],
+      "k-view-": [
+        "b-nav"
+      ]
+    }
+  },
+  "endpoints": [
+    "/api/auth/login",
+    "/api/auth/logout",
+    "/api/auth/me",
+    "/api/auth/otp/request",
+    "/api/auth/otp/verify",
+    "/api/boutique/suggestions",
+    "/api/carriers",
+    "/api/carriers/{id}",
+    "/api/categories",
+    "/api/client/tracking",
+    "/api/collective-payments",
+    "/api/collective-workspaces",
+    "/api/collective-workspaces/me",
+    "/api/collective-workspaces/public",
+    "/api/health",
+    "/api/hub/scan",
+    "/api/logistics/containers",
+    "/api/logistics/shipments",
+    "/api/logistics/shipments/{id}",
+    "/api/orders",
+    "/api/orders/stats",
+    "/api/orders/{id}",
+    "/api/parcels",
+    "/api/parcels/bootstrap/{id}",
+    "/api/parcels/optimize",
+    "/api/parcels/stats",
+    "/api/parcels/{id}",
+    "/api/parcels/{id}/items",
+    "/api/payments/paypal/capture/{id}",
+    "/api/payments/paypal/create-order",
+    "/api/payments/stripe/intent",
+    "/api/products",
+    "/api/products/{id}",
+    "/api/public/config",
+    "/api/purchasing/orders",
+    "/api/purchasing/suppliers",
+    "/api/purchasing/suppliers/{id}",
+    "/api/relais",
+    "/api/relais/public",
+    "/api/scans",
+    "/api/scans/hub/pack",
+    "/api/scans/hub/seal",
+    "/api/shared-carts/from-cart-items",
+    "/api/shared-carts/mine",
+    "/api/shared-carts/public/{id}",
+    "/api/shared-carts/public/{id}/contributions",
+    "/api/shared-carts/public/{id}/estimations",
+    "/api/shared-carts/public/{id}/estimations/by-phone",
+    "/api/shared-carts/public/{id}/estimations/{id}",
+    "/api/shared-carts/{id}",
+    "/api/shared-carts/{id}/as-cart-items",
+    "/api/shared-carts/{id}/cancel",
+    "/api/shared-carts/{id}/close",
+    "/api/shared-carts/{id}/extend-window",
+    "/api/shared-carts/{id}/finalize",
+    "/api/shared-carts/{id}/items",
+    "/api/shares",
+    "/api/wallet"
+  ]
+}

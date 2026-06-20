@@ -20,6 +20,13 @@
     "upsertCostBenchmark"
   ],
   "missingApiMethods": [],
-  "doctrineViolations": [],
-  "savedAt": "2026-06-20T09:11:50.886Z"
+  "doctrineViolations": [
+    "views/CategoriesView.js (1 fetch() brut)",
+    "views/CustomsView.js (1 fetch() brut)",
+    "views/PricingView.js (2 fetch() brut)",
+    "views/PricingWorkshopView.js (1 fetch() brut)",
+    "views/ProductsView.js (4 fetch() brut)",
+    "views/SourcingScannerView.js (1 fetch() brut)"
+  ],
+  "savedAt": "2026-06-20T13:12:25.864Z"
 }

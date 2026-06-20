@@ -132,6 +132,7 @@
   }
 
   async function requireSession() {
+    // kmc-api-allow: bootstrap session, KmcApi pas encore chargé au démarrage du routeur SPA
     const res = await fetch('/api/auth/me', {
       method: 'GET',
       credentials: 'include',
@@ -644,6 +645,7 @@
 
   async function _logout() {
     try {
+      // kmc-api-allow: logout au bootstrap, hors cycle KmcApi
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (_) { /* ignorer les erreurs réseau */ }
     redirectToLogin();

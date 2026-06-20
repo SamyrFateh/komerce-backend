@@ -107,8 +107,18 @@ function collectModules() {
     // appels KmcApi.xxx( dans le corps du fichier
     const apiCalls = [...code.matchAll(/KmcApi\.(\w+)\s*\(/g)].map(m => m[1]);
 
-    // fetch() brut hors api-client.js lui-même (les vues ne devraient jamais le faire)
-    const rawFetches = rel === 'api-client.js' ? [] : [...code.matchAll(/\bfetch\s*\(/g)];
+    // fetch() brut hors api-client.js lui-même (les vues ne devraient jamais le faire).
+    // Exemption : une ligne portant `// kmc-api-allow: <raison>` (ou la ligne juste au-dessus)
+    // est tolérée — pour les cas légitimes hors KmcApi (ex. bootstrap auth avant chargement).
+    const rawFetches = [];
+    if (rel !== 'api-client.js') {
+      const ls = code.split('\n');
+      ls.forEach((line, i) => {
+        if (!/\bfetch\s*\(/.test(line)) return;
+        const allowed = /kmc-api-allow/.test(line) || (i > 0 && /kmc-api-allow/.test(ls[i - 1]));
+        if (!allowed) rawFetches.push(line);
+      });
+    }
 
     modules.push({
       file: rel,

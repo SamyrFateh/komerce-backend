@@ -1,0 +1,149 @@
+# Boutique 360 — carte d'architecture front (générée)
+
+> ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
+> Régénéré le 2026-06-20T13:17:56.628Z.
+> Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
+
+## Synthèse
+
+- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **4**
+- Endpoints appelés : **58** — 🔴 2 hors contrat · ⚪ 32 non prouvés · 🔵 28 dynamiques
+- Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
+
+## 1. Couture API → backend (résolue au contrat OpenAPI)
+
+| Endpoint | Appelé par | Statut contrat |
+|---|---|---|
+| `/api/auth/login` | komerce-api | ⚪ non prouvé |
+| `/api/auth/logout` | komerce-api | ⚪ non prouvé |
+| `/api/auth/me` | b-greeting, komerce-api | ⚪ non prouvé |
+| `/api/auth/otp/request` | b-identity, b-tracking | ⚪ non prouvé |
+| `/api/auth/otp/verify` | b-identity, b-tracking | ⚪ non prouvé |
+| `/api/boutique/suggestions` | b-modal-core | 🔴 hors contrat |
+| `/api/carriers` | komerce-api | ⚪ non prouvé |
+| `/api/carriers/{id}` | komerce-api | 🔵 dynamique |
+| `/api/categories` | shop-schema | ⚪ non prouvé |
+| `/api/client/tracking` | b-tracking | ⚪ non prouvé |
+| `/api/collective-payments` | event-pay | 🔵 dynamique |
+| `/api/collective-workspaces` | b-cart-groups-tab, event-manage | 🔴 hors contrat |
+| `/api/collective-workspaces/me` | event-manage | 🔵 dynamique |
+| `/api/collective-workspaces/public` | event-public | 🔵 dynamique |
+| `/api/health` | komerce-api | ⚪ non prouvé |
+| `/api/hub/scan` | komerce-api | ⚪ non prouvé |
+| `/api/logistics/containers` | komerce-api | ⚪ non prouvé |
+| `/api/logistics/shipments` | komerce-api | ⚪ non prouvé |
+| `/api/logistics/shipments/{id}` | komerce-api | 🔵 dynamique |
+| `/api/orders` | b-checkout, b-tracking, komerce-api | ⚪ non prouvé |
+| `/api/orders/stats` | komerce-api | ⚪ non prouvé |
+| `/api/orders/{id}` | komerce-api | 🔵 dynamique |
+| `/api/parcels` | komerce-api | ⚪ non prouvé |
+| `/api/parcels/bootstrap/{id}` | komerce-api | 🔵 dynamique |
+| `/api/parcels/optimize` | komerce-api | ⚪ non prouvé |
+| `/api/parcels/stats` | komerce-api | ⚪ non prouvé |
+| `/api/parcels/{id}` | komerce-api | 🔵 dynamique |
+| `/api/parcels/{id}/items` | komerce-api | 🔵 dynamique |
+| `/api/payments/paypal/capture/{id}` | b-paypal | 🔵 dynamique |
+| `/api/payments/paypal/create-order` | b-paypal | ⚪ non prouvé |
+| `/api/payments/stripe/intent` | b-checkout | ⚪ non prouvé |
+| `/api/products` | b-modal-core, komerce-api | 🔵 dynamique |
+| `/api/products/{id}` | komerce-api | 🔵 dynamique |
+| `/api/public/config` | b-checkout, b-paypal | ⚪ non prouvé |
+| `/api/purchasing/orders` | komerce-api | ⚪ non prouvé |
+| `/api/purchasing/suppliers` | komerce-api | ⚪ non prouvé |
+| `/api/purchasing/suppliers/{id}` | komerce-api | 🔵 dynamique |
+| `/api/relais` | b-checkout | ⚪ non prouvé |
+| `/api/relais/public` | b-nav | ⚪ non prouvé |
+| `/api/scans` | komerce-api | ⚪ non prouvé |
+| `/api/scans/hub/pack` | komerce-api | ⚪ non prouvé |
+| `/api/scans/hub/seal` | komerce-api | ⚪ non prouvé |
+| `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
+| `/api/shared-carts/mine` | b-share-cart, group-api | ⚪ non prouvé |
+| `/api/shared-carts/public/{id}` | b-group-banner, group-api | 🔵 dynamique |
+| `/api/shared-carts/public/{id}/contributions` | group-api | 🔵 dynamique |
+| `/api/shared-carts/public/{id}/estimations` | group-api | 🔵 dynamique |
+| `/api/shared-carts/public/{id}/estimations/by-phone` | group-api | 🔵 dynamique |
+| `/api/shared-carts/public/{id}/estimations/{id}` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/as-cart-items` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/cancel` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/close` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/extend-window` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/finalize` | group-api | 🔵 dynamique |
+| `/api/shared-carts/{id}/items` | b-cart | 🔵 dynamique |
+| `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
+| `/api/wallet` | b-checkout | ⚪ non prouvé |
+
+> 🔴 **Hors contrat** (même classe que `.orders`/`getCosting`) : `/api/boutique/suggestions`, `/api/collective-workspaces`
+
+## 2. Topologie du bus
+
+| Événement | Émetteurs | Écouteurs | Statut |
+|---|---|---|---|
+| `carousel:changed` | b-modal-product | b-modal-image-ux | 🟡 non déclaré |
+| `cart:update` | b-cart-core | b-cart-core, b-cart-pill, b-mini-cart | 🟢 sain |
+| `cat:select` | b-modal-core | b-catalog | 🟢 sain |
+| `catalog:cat-changed` | b-catalog, b-store | b-catalog, b-home-premium-v1 | 🟢 sain |
+| `checkout:open` | b-cart | boutique | 🟢 sain |
+| `chip:center` | b-pager | b-catalog | 🟢 sain |
+| `modal:close` | b-cart, b-checkout, b-modal-desktop-enhancers | b-modal-core, b-modal-desktop-enhancers | 🟢 sain |
+| `modal:closed` | b-modal-core | b-modal-approche-c-hybrid, b-pager | 🟡 non déclaré |
+| `modal:open` | b-cart, b-modal-nav, b-modal-suggestions | b-modal-core, b-modal-suggestions, b-product-open-contract | 🟢 sain |
+| `modal:opened` | b-modal-core | b-mobile-modal-v1, b-mobile-premium-v1, b-modal-approche-c-hybrid, b-modal-desktop-enhancers, b-pager, b-pdp-curation-suggestions | 🟡 non déclaré |
+| `modal:product-changed` | — | b-modal-social-proof | 🟠 écouteur orphelin |
+| `product:open-from-cart` | b-product-open-contract | b-product-open-contract | 🟢 sain |
+| `side-cart:render` | b-cart, b-cart-core, b-group-view | b-cart | 🟢 sain |
+| `sidebar:built` | b-desktop-sidebar | — | 🔴 émission orpheline |
+| `toast` | b-modal-desktop-enhancers | — | 🔴 émission orpheline |
+| `view:changed` | b-nav | b-catalog-desktop-enhancers, b-home-premium-v1 | 🟡 non déclaré |
+
+### Diagramme
+
+```mermaid
+graph LR
+  b_cart_core["b-cart-core"] -->|side-cart:render| b_cart["b-cart"]
+  b_group_view["b-group-view"] -->|side-cart:render| b_cart["b-cart"]
+  b_cart_core["b-cart-core"] -->|cart:update| b_cart_pill["b-cart-pill"]
+  b_cart_core["b-cart-core"] -->|cart:update| b_mini_cart["b-mini-cart"]
+  b_cart["b-cart"] -->|modal:close| b_modal_core["b-modal-core"]
+  b_cart["b-cart"] -->|modal:close| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
+  b_checkout["b-checkout"] -->|modal:close| b_modal_core["b-modal-core"]
+  b_checkout["b-checkout"] -->|modal:close| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
+  b_modal_desktop_enhancers["b-modal-desktop-enhancers"] -->|modal:close| b_modal_core["b-modal-core"]
+  b_cart["b-cart"] -->|checkout:open| boutique["boutique"]
+  b_cart["b-cart"] -->|modal:open| b_modal_core["b-modal-core"]
+  b_cart["b-cart"] -->|modal:open| b_modal_suggestions["b-modal-suggestions"]
+  b_cart["b-cart"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
+  b_modal_nav["b-modal-nav"] -->|modal:open| b_modal_core["b-modal-core"]
+  b_modal_nav["b-modal-nav"] -->|modal:open| b_modal_suggestions["b-modal-suggestions"]
+  b_modal_nav["b-modal-nav"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
+  b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_modal_core["b-modal-core"]
+  b_modal_suggestions["b-modal-suggestions"] -->|modal:open| b_product_open_contract["b-product-open-contract"]
+  b_nav["b-nav"] -->|view:changed| b_catalog_desktop_enhancers["b-catalog-desktop-enhancers"]
+  b_nav["b-nav"] -->|view:changed| b_home_premium_v1["b-home-premium-v1"]
+  b_catalog["b-catalog"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
+  b_store["b-store"] -->|catalog:cat-changed| b_catalog["b-catalog"]
+  b_store["b-store"] -->|catalog:cat-changed| b_home_premium_v1["b-home-premium-v1"]
+  b_pager["b-pager"] -->|chip:center| b_catalog["b-catalog"]
+  b_modal_core["b-modal-core"] -->|cat:select| b_catalog["b-catalog"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_mobile_modal_v1["b-mobile-modal-v1"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_mobile_premium_v1["b-mobile-premium-v1"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_pager["b-pager"]
+  b_modal_core["b-modal-core"] -->|modal:opened| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
+  b_modal_core["b-modal-core"] -->|modal:closed| b_modal_approche_c_hybrid["b-modal-approche-c-hybrid"]
+  b_modal_core["b-modal-core"] -->|modal:closed| b_pager["b-pager"]
+  b_modal_product["b-modal-product"] -->|carousel:changed| b_modal_image_ux["b-modal-image-ux"]
+```
+
+## 3. Bundles CSS
+
+| Bundle | Sources |
+|---|---|
+| `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
+| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal` |
+| `css/dist/desktop.css` | `boutique-desktop` |
+| `css/dist/event.css` | `tokens`, `event` |
+
+---
+*Carte vérifiée en pre-commit par `boutique:360:check` (cliquet bus + endpoints hors contrat).*

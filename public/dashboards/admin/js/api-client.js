@@ -99,6 +99,10 @@
 
   function getControlTower(filters, extra)   { return fetchJSON(dashboardUrl('control-tower',   filters, extra)); }
   function getCosting(filters, extra)        { return fetchJSON(dashboardUrl('costing',          filters, extra)); }
+  // Sous-routes costing détaillées (ex-fetch() bruts de CostingView, migrées vers KmcApi).
+  function getCostingOrders(params)          { return fetchJSON(apiUrl('/admin/costing/orders',   params)); }
+  function getCostingProducts(params)        { return fetchJSON(apiUrl('/admin/costing/products', params)); }
+  function getCostingRelais(params)          { return fetchJSON(apiUrl('/admin/costing/relais',   params)); }
   function getLogistics(filters, extra)      { return fetchJSON(dashboardUrl('logistics',        filters, extra)); }
   function getEventWorkspaces(filters, extra){ return fetchJSON(dashboardUrl('event-workspaces', filters, extra)); }
   function getUnified(filters, extra)        { return fetchJSON(dashboardUrl('unified',          filters, extra)); }
@@ -642,6 +646,9 @@
     // Déjà présents
     getControlTower,
     getCosting,
+    getCostingOrders,
+    getCostingProducts,
+    getCostingRelais,
     getLogistics,
     getEventWorkspaces,
     getUnified,

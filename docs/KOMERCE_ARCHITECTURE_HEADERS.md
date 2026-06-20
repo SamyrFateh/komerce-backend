@@ -133,3 +133,24 @@ Then verify:
 - no new dead API method left unaddressed (exported, never called — usually dead code or a forgotten wire-up)
 - no new `kmc_api_only` doctrine violation (raw `fetch()` in a file that declares the doctrine)
 - review new `UNKNOWN`-contract calls in §4 of the report — not blocking, but each one is an unverified response shape, exactly the failure mode that caused the Hub & Relais `.orders` incident.
+
+## Boutique Coupling Rule
+
+`public/boutique/js/**` couples through an **event bus** (`b-bus.js`), not imports or a SPA chain. Modules `emit`/`on` named events; the bus registry in `b-bus.js` is the source of truth. The boutique's backend seam is its set of `/api/*` calls, resolved against `docs/contract/openapi.json`. Keep `docs/BOUTIQUE_360.md` consistent on any change:
+
+```bash
+node scripts/gen-boutique-360.js
+```
+
+Blocking regressions (cliquet on `.boutique-360-baseline.json`): new orphan emit (emitted, no listener), new orphan listener (listened, no emitter), new undeclared event (used but absent from the `b-bus.js` registry), new `NOT_FOUND` endpoint (boutique calls a path absent from the contract — same failure class as the dashboards `.orders` / `getCosting` incidents).
+
+## Meta-Graph — Seams Between the Three Territories
+
+The three territory maps (`komerce-arch-header-graph.json`, `BOUTIQUE_360.json`, `DASHBOARDS_360.json`) are stitched by `gen-meta-graph.js` around the keystone: the OpenAPI contract. Every consumed endpoint is traced via `x-route-file` down to its backend route → services → tables, giving the real blast radius: *touch this table / route / endpoint, and here is who breaks across backend, boutique, and dashboards.*
+
+```bash
+node scripts/gen-meta-graph.js          # regenerate docs/META_GRAPH.md
+node scripts/gen-meta-graph.js --check  # cliquet (pre-commit)
+```
+
+It reports: **shared endpoints** (called by both fronts — amplified change-risk), **shared tables** (read/written for both fronts), and **phantom seams** (a front calling an endpoint absent from the contract). The cliquet (`.meta-graph-baseline.json`) blocks only *new* phantom seams; shared endpoints and `UNKNOWN` contracts are informational. This is the layer that guarantees no added or removed feature escapes notice: it makes the full cross-territory dependency explicit and gated.

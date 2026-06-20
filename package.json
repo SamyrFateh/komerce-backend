@@ -35,7 +35,14 @@
     "arch:doctrine:all": "node scripts/arch-doctrine-sanitize-check.js --all",
     "dashboards:360": "node scripts/gen-dashboards-360.js",
     "dashboards:360:check": "node scripts/gen-dashboards-360.js --check",
-    "dashboards:360:save": "node scripts/gen-dashboards-360.js --save"
+    "dashboards:360:save": "node scripts/gen-dashboards-360.js --save",
+    "boutique:360": "node scripts/gen-boutique-360.js",
+    "boutique:360:check": "node scripts/gen-boutique-360.js --check",
+    "boutique:360:save": "node scripts/gen-boutique-360.js --save",
+    "meta:graph": "node scripts/gen-meta-graph.js",
+    "meta:graph:check": "node scripts/gen-meta-graph.js --check",
+    "meta:graph:save": "node scripts/gen-meta-graph.js --save",
+    "arch:360:all": "npm run arch:gen && npm run dashboards:360 && npm run boutique:360 && npm run meta:graph"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
