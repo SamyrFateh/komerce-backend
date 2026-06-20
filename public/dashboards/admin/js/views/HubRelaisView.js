@@ -1,4 +1,20 @@
 /**
+ * @komerce-arch
+ * @role          admin-hub-relais-view
+ * @domain        admin-dashboard
+ * @layer         ui-page
+ * @criticality   high
+ * @inputs        pipeline.orders[], parcels[]
+ * @outputs       hub_panel_dom, relais_panel_dom
+ * @depends       api-client.js, filters-store.js
+ * @used-by       none
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  hub-relais, admin-dashboard
+ * @version       2026-06
+ *
  * KOMERCE Dashboard — HubRelaisView.js  /admin/hub-relais
  * ════════════════════════════════════════════════════════════════════════
  * Fusion des deux vues legacy : CT.views.hub + CT.views.relais
@@ -11,7 +27,7 @@
  *   - Rôle lu depuis la plateforme moderne (jamais `founder`).
  *
  * Endpoints consommés (tous dans KmcApi) :
- *   getOps(filters)                            → pipeline commandes + colis
+ *   getPipeline()                               → commandes groupées par statut (Hub : pending/confirmed/ordered ; Relais : pending cash)
  *   getParcels(params)                         → liste colis filtrée
  *   getParcelKpis()                            → KPIs colis
  *   getParcelAlerts()                          → alertes colis

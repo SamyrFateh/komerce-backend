@@ -1,4 +1,20 @@
 /**
+ * @komerce-arch
+ * @role          admin-dashboard-api-client
+ * @domain        admin-dashboard
+ * @layer         api-client
+ * @criticality   critical
+ * @inputs        filters_state, view_params
+ * @outputs       fetchJSON_promises
+ * @depends       none
+ * @used-by       HubRelaisView.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      kmc_api_only
+ * @impact-areas  admin-dashboard
+ * @version       2026-06
+ *
  * KOMERCE Dashboard — API Client
  * ════════════════════════════════════════════════════════════════════════
  * Wrapper fetch() avec gestion auth (cookie httpOnly), filtres, et erreurs.
@@ -213,9 +229,6 @@
   function getPricingCompetitors(params)        { return fetchJSON(apiUrl('/pricing/strategy/competitors', params)); }
   function createPricingCompetitor(body)        { return fetchMutation(apiUrl('/pricing/strategy/competitors'), 'POST', body); }
   function deletePricingCompetitor(id)          { return fetchMutation(apiUrl('/pricing/strategy/competitors/' + id), 'DELETE'); }
-
-  // ── Invendus — manquait dans KmcApi, utilisé par ControlTowerView ──
-  function getUnsoldStats()                     { return fetchJSON(apiUrl('/unsold/stats/summary')); }
 
   // Pricing — chaîne doctrinale (boîtes & flèches + impact live)
   function getPricingFlow(body)                { return fetchMutation(apiUrl('/pricing/flow'), 'POST', body || {}); }
@@ -686,7 +699,6 @@
     getPricingCompetitors,
     createPricingCompetitor,
     deletePricingCompetitor,
-    getUnsoldStats,
     getPricingFlow,
     getPricingDashboard,
     getCostBenchmarks,
