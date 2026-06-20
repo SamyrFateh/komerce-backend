@@ -203,7 +203,7 @@
     const desc = `${items.length || o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)} · ${o.relais_island || '—'}`;
     return `<tr>
       <td class="hr-td-ref">${o.reference}</td>
-      <td>${o.customer_name || 'Client'}</td>
+      <td>${o.client_name || 'Client'}</td>
       <td class="hr-td-secondary">${desc}</td>
       <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
       <td class="hr-td-action">
@@ -284,13 +284,18 @@
   }
 
   async function populateHub(wrapperEl, refreshView) {
-    const [opsData, parcelsData] = await Promise.all([
-      KmcApi.getOps(KmcFilters.get()),
+    const [pipelineData, parcelsData] = await Promise.all([
+      KmcApi.getPipeline(),
       KmcApi.getParcels({ limit: 500 }),
     ]);
 
-    const orders  = opsData.orders  || [];
-    const parcels = parcelsData.parcels || [];
+    const pl       = pipelineData.pipeline || {};
+    const orders    = [
+      ...(pl.pending?.orders     || []),
+      ...(pl.confirmed?.orders   || []),
+      ...(pl.ordered?.orders     || []),
+    ];
+    const parcels  = parcelsData.parcels || [];
 
     // ── Segmentation orders ──
     const confirmed  = orders.filter(o => o.status === 'confirmed');
@@ -365,14 +370,14 @@
       <div class="hr-forecast-label">🛍️ Attente paiement (${pending.length})</div>
       ${miniTable(pending, [
         o => `<strong>${o.reference}</strong>`,
-        o => o.customer_name || '—',
+        o => o.client_name || '—',
         o => o.payment_mode === 'stripe_eur' ? '💳' : '💰',
         o => fmtAgo(o.created_at),
       ])}
       <div class="hr-forecast-label">📋 À répartir (${ordered.length})</div>
       ${miniTable(ordered, [
         o => `<strong>${o.reference}</strong>`,
-        o => o.customer_name || '—',
+        o => o.client_name || '—',
         o => `${o.nb_items || '—'} art.`,
         o => fmtAgo(o.created_at),
       ])}
@@ -522,7 +527,7 @@
             <div class="hr-alert-unassigned-title">⏳ ${unassigned.length} commande(s) non assignée(s)</div>
             ${unassigned.map(o => `
               <div class="hr-unassigned-row">
-                <span><strong>${o.reference}</strong> — ${o.customer_name || '?'}</span>
+                <span><strong>${o.reference}</strong> — ${o.client_name || '?'}</span>
                 <span class="hr-td-secondary">${o.items_count || '?'} art. · ${o.relais_name || o.relais_island || '?'}</span>
               </div>`).join('')}
             <div class="hr-alert-unassigned-hint">
@@ -589,12 +594,13 @@
   }
 
   async function populateRelais(wrapperEl, refreshView) {
-    const [opsData, parcelsData] = await Promise.all([
-      KmcApi.getOps(KmcFilters.get()),
+    const [pipelineData, parcelsData] = await Promise.all([
+      KmcApi.getPipeline(),
       KmcApi.getParcels({ limit: 500 }),
     ]);
 
-    const orders  = opsData.orders  || [];
+    const pl      = pipelineData.pipeline || {};
+    const orders  = pl.pending?.orders || [];
     const parcels = parcelsData.parcels || [];
 
     // ── Segmentation ──
@@ -635,7 +641,7 @@
         const desc = `${o.nb_items || 0} art. · ${fmtKmf(o.total_kmf)}${o.cash_code ? ` · 🔑 ${o.cash_code}` : ''}`;
         return `<tr>
           <td class="hr-td-ref">${o.reference}</td>
-          <td>${o.customer_name || 'Client'}</td>
+          <td>${o.client_name || 'Client'}</td>
           <td class="hr-td-secondary">${desc}</td>
           <td class="hr-td-muted hr-td-nowrap">${fmtAgo(o.created_at)}</td>
           <td class="hr-td-action">

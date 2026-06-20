@@ -133,6 +133,15 @@
   }
 
   /**
+   * Pipeline — commandes brutes groupées par statut
+   * (confirmed/ordered/preparation/shipped/in_transit/available/collected/cancelled/refunded)
+   * Utilisé par Hub & Relais pour les onglets Commander/Emballer/Attente.
+   */
+  function getPipeline() {
+    return fetchJSON(legacyDashboardUrl('pipeline'));
+  }
+
+  /**
    * Parcels v2 — liste des colis
    * @param {object} params  URLSearchParams directs (sort, order, status, …)
    */
@@ -621,6 +630,7 @@
     getClientDetail,
     getSales,
     getOps,
+    getPipeline,
     getParcels,
     getParcelKpis,
     getParcelAlerts,

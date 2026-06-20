@@ -258,7 +258,7 @@ async function getPipeline() {
     ORDER BY o.created_at DESC
   `);
 
-  const STAGES = ['confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
+  const STAGES = ['pending','confirmed','ordered','preparation','shipped','in_transit','available','collected','cancelled','refunded'];
   const pipeline = {};
   for (const s of STAGES) pipeline[s] = { count: 0, orders: [] };
 
