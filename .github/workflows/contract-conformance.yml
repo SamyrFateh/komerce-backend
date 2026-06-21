@@ -1,0 +1,121 @@
+name: Contract conformance (P4-1 — observe)
+
+# Audit EMPIRIQUE : confronte le vrai comportement de l'app au contrat OpenAPI,
+# par une méthode INDÉPENDANTE de la dérivation qui a produit le contrat
+# (introspection). Schemathesis génère des requêtes depuis docs/contract/openapi.json,
+# les envoie à l'app bootée, et vérifie que les réponses sont conformes (code de
+# statut déclaré, pas de 500 inattendu, méthodes supportées, etc.).
+#
+# MODE OBSERVE : non bloquant pour ce premier passage (continue-on-error). Les
+# réponses du contrat sont surtout des schémas UNKNOWN → on calibre d'abord le
+# bruit (rapport JUnit en artefact), puis on promeut en bloquant une fois trié.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  conformance:
+    name: OpenAPI conformance (Schemathesis)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # requiredEnv complet de bootstrap/env.js (l'app process.exit(1) sinon) + PORT.
+    env:
+      PORT: '3000'
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      NODE_ENV: test
+      JWT_SECRET: ci-dummy
+      ADMIN_PASSWORD: ci-dummy
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-dummy
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
+      META_WA_TOKEN: ci-dummy
+      META_WA_PHONE_NUMBER_ID: ci-dummy
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Schemathesis
+        run: python -m pip install --quiet schemathesis
+
+      - name: Load DB schema
+        run: psql "$DATABASE_URL" -f db/schema.sql
+
+      # Token admin via le harness d'intégration éprouvé (seed user + sign JWT).
+      # NB: on capture dans une variable d'abord — `echo "X=$(cmd)" >> file` n'est
+      # PAS détecté par `set -e` si `cmd` échoue (l'échec est dans la substitution,
+      # pas dans `echo`), donc un échec silencieux donnerait un PROBE_TOKEN vide.
+      - name: Generate admin probe token
+        run: |
+          TOKEN="$(node scripts/ci-probe-token.js)"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::ci-probe-token.js n'a produit aucun token"; exit 1
+          fi
+          echo "PROBE_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Boot the app
+        run: |
+          node server.js > /tmp/server.log 2>&1 &
+          echo "Waiting for /api/health..."
+          for i in $(seq 1 30); do
+            if curl -fsS "http://localhost:3000/api/health" >/dev/null 2>&1; then
+              echo "App is up."; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::App did not become healthy in time"; cat /tmp/server.log; exit 1
+
+      # Sonde de conformité — OBSERVE (continue-on-error). Le token couvre les
+      # endpoints authentifiés ; --continue-on-failure parcourt tout le contrat.
+      - name: Schemathesis conformance (observe)
+        continue-on-error: true
+        run: >-
+          schemathesis run docs/contract/openapi.json
+          --url http://localhost:3000
+          -H "Authorization: Bearer ${PROBE_TOKEN}"
+          --continue-on-failure
+          --max-examples 5
+          --report junit --report-dir schemathesis-report
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schemathesis-report
+          path: schemathesis-report/
+          if-no-files-found: warn
+
+      - name: App logs (on failure)
+        if: failure()
+        run: cat /tmp/server.log || true

@@ -59,7 +59,11 @@ function countLines(filePath) {
 }
 
 function rel(filePath) {
-  return path.relative(ROOT, filePath);
+  // Normaliser en forward-slash : sur Windows, path.relative() renvoie des
+  // backslashes, ce qui casse toute comparaison Set.has(relPath) contre les
+  // allowlists (écrites en forward-slash) — ex. services/payment-service.js
+  // n'est plus reconnu comme owner légitime → faux I-BACK-4 bloquant.
+  return path.relative(ROOT, filePath).split(path.sep).join('/');
 }
 
 // ════════════════════════════════════════════════════════════════
