@@ -6,7 +6,7 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"      → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"     → réponse couverte par un test intégration\n  - x-contract-status: \"scan-*\"   → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"  → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 461,
+    "unknown_responses": 456,
     "total_routes": 418,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
@@ -37,6 +37,16 @@
       "post": {
         "summary": "POST /api/transit-dashboard/{ref}/transit",
         "x-route-file": "routes/transit-dashboard.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -52,17 +62,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/auth/register": {
@@ -377,8 +377,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -545,6 +552,16 @@
       "get": {
         "summary": "GET /api/products/{id}",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -560,17 +577,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/products/{id}",
@@ -688,6 +695,16 @@
       "delete": {
         "summary": "DELETE /api/products/{id}",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -703,23 +720,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/products/{id}/image": {
       "post": {
         "summary": "POST /api/products/{id}/image",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -735,23 +752,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/products/{id}/images": {
       "post": {
         "summary": "POST /api/products/{id}/images",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -767,23 +784,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/products/{id}/variants": {
       "get": {
         "summary": "GET /api/products/{id}/variants",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -799,21 +816,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/products/{id}/variants",
         "x-route-file": "routes/products.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -829,39 +846,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/products/{id}/variants/{variantId}": {
       "delete": {
         "summary": "DELETE /api/products/{id}/variants/{variantId}",
         "x-route-file": "routes/products.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -879,7 +870,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/orders": {
@@ -1212,22 +1219,6 @@
       "post": {
         "summary": "POST /api/orders/{id}/qr-token",
         "x-route-file": "routes/orders.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -1237,13 +1228,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/orders/retrait/{token}": {
-      "get": {
-        "summary": "GET /api/orders/retrait/{token}",
-        "x-route-file": "routes/orders.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1259,7 +1244,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/orders/retrait/{token}": {
+      "get": {
+        "summary": "GET /api/orders/retrait/{token}",
+        "x-route-file": "routes/orders.js",
         "parameters": [
           {
             "name": "token",
@@ -1269,13 +1260,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/orders/{id}/mark-availability": {
       "post": {
         "summary": "POST /api/orders/{id}/mark-availability",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1291,23 +1308,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/partial-ship": {
       "post": {
         "summary": "POST /api/orders/{id}/partial-ship",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1323,23 +1340,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/sub-orders": {
       "get": {
         "summary": "GET /api/orders/{id}/sub-orders",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1355,39 +1372,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/parcels": {
       "get": {
         "summary": "GET /api/orders/{id}/parcels",
         "x-route-file": "routes/orders.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -1397,13 +1388,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/orders/parcels/{parcelId}/status": {
-      "patch": {
-        "summary": "PATCH /api/orders/parcels/{parcelId}/status",
-        "x-route-file": "routes/orders.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1419,7 +1404,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/orders/parcels/{parcelId}/status": {
+      "patch": {
+        "summary": "PATCH /api/orders/parcels/{parcelId}/status",
+        "x-route-file": "routes/orders.js",
         "parameters": [
           {
             "name": "parcelId",
@@ -1429,13 +1420,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/orders/sub-orders/{subId}/status": {
-      "patch": {
-        "summary": "PATCH /api/orders/sub-orders/{subId}/status",
-        "x-route-file": "routes/orders.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1451,7 +1436,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/orders/sub-orders/{subId}/status": {
+      "patch": {
+        "summary": "PATCH /api/orders/sub-orders/{subId}/status",
+        "x-route-file": "routes/orders.js",
         "parameters": [
           {
             "name": "subId",
@@ -1461,13 +1452,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/orders/{id}/cancel-backorder": {
       "post": {
         "summary": "POST /api/orders/{id}/cancel-backorder",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1483,23 +1500,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/cancel": {
       "post": {
         "summary": "POST /api/orders/{id}/cancel",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1515,23 +1532,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/status": {
       "patch": {
         "summary": "PATCH /api/orders/{id}/status",
         "x-route-file": "routes/orders.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1547,39 +1564,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/orders/{id}/cost": {
       "patch": {
         "summary": "PATCH /api/orders/{id}/cost",
         "x-route-file": "routes/orders.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -1589,13 +1580,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/orders/{ref}": {
-      "get": {
-        "summary": "GET /api/orders/{ref}",
-        "x-route-file": "routes/orders.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1611,7 +1596,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/orders/{ref}": {
+      "get": {
+        "summary": "GET /api/orders/{ref}",
+        "x-route-file": "routes/orders.js",
         "parameters": [
           {
             "name": "ref",
@@ -1621,13 +1612,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/orders/{id}/history": {
-      "get": {
-        "summary": "GET /api/orders/{id}/history",
-        "x-route-file": "routes/orders.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1643,7 +1628,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/orders/{id}/history": {
+      "get": {
+        "summary": "GET /api/orders/{id}/history",
+        "x-route-file": "routes/orders.js",
         "parameters": [
           {
             "name": "id",
@@ -1653,7 +1644,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/relais": {
@@ -1704,6 +1711,16 @@
       "get": {
         "summary": "GET /api/relais/{id}",
         "x-route-file": "routes/relais.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1719,17 +1736,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/finance/summary": {
@@ -1888,6 +1895,16 @@
       "get": {
         "summary": "GET /api/admin/customs-shipments/{id}",
         "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1903,21 +1920,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "patch": {
         "summary": "PATCH /api/admin/customs-shipments/{id}",
         "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1933,21 +1950,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/customs-shipments/{id}",
         "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1963,23 +1980,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/customs-shipments/{id}/deactivate": {
       "post": {
         "summary": "POST /api/admin/customs-shipments/{id}/deactivate",
         "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -1995,23 +2012,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/customs-shipments/{id}/activate": {
       "post": {
         "summary": "POST /api/admin/customs-shipments/{id}/activate",
         "x-route-file": "routes/admin-customs-shipments.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2027,17 +2044,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/customs-categories": {
@@ -2086,6 +2093,16 @@
       "get": {
         "summary": "GET /api/admin/customs-categories/{key}",
         "x-route-file": "routes/admin-customs-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2101,21 +2118,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/customs-categories/{key}",
         "x-route-file": "routes/admin-customs-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2131,21 +2148,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/customs-categories/{key}",
         "x-route-file": "routes/admin-customs-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2161,23 +2178,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/customs-categories/{key}/toggle": {
       "put": {
         "summary": "PUT /api/admin/customs-categories/{key}/toggle",
         "x-route-file": "routes/admin-customs-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2193,17 +2210,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/categories": {
@@ -2274,6 +2281,16 @@
       "get": {
         "summary": "GET /api/admin/boutique-categories/{key}",
         "x-route-file": "routes/admin-boutique-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2289,21 +2306,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/boutique-categories/{key}",
         "x-route-file": "routes/admin-boutique-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2319,21 +2336,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/boutique-categories/{key}",
         "x-route-file": "routes/admin-boutique-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2349,23 +2366,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/boutique-categories/{key}/subcategories": {
       "get": {
         "summary": "GET /api/admin/boutique-categories/{key}/subcategories",
         "x-route-file": "routes/admin-boutique-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2381,21 +2398,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "post": {
         "summary": "POST /api/admin/boutique-categories/{key}/subcategories",
         "x-route-file": "routes/admin-boutique-categories.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2411,39 +2428,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/boutique-categories/{key}/subcategories/{subKey}": {
       "put": {
         "summary": "PUT /api/admin/boutique-categories/{key}/subcategories/{subKey}",
         "x-route-file": "routes/admin-boutique-categories.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "key",
@@ -2461,27 +2452,27 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/boutique-categories/{key}/subcategories/{subKey}",
         "x-route-file": "routes/admin-boutique-categories.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "key",
@@ -2499,7 +2490,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/boutique/suggestions": {
@@ -2570,6 +2577,16 @@
       "get": {
         "summary": "GET /api/admin/pricing-components/{id}",
         "x-route-file": "routes/admin-pricing-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2585,21 +2602,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/pricing-components/{id}",
         "x-route-file": "routes/admin-pricing-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2615,21 +2632,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/pricing-components/{id}",
         "x-route-file": "routes/admin-pricing-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2645,23 +2662,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/pricing-components/{id}/toggle": {
       "put": {
         "summary": "PUT /api/admin/pricing-components/{id}/toggle",
         "x-route-file": "routes/admin-pricing-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2677,17 +2694,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/cost-components/_meta": {
@@ -2758,6 +2765,16 @@
       "get": {
         "summary": "GET /api/admin/cost-components/{id}",
         "x-route-file": "routes/admin-cost-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2773,21 +2790,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/cost-components/{id}",
         "x-route-file": "routes/admin-cost-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2803,21 +2820,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/cost-components/{id}",
         "x-route-file": "routes/admin-cost-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2833,23 +2850,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/cost-components/{id}/toggle": {
       "post": {
         "summary": "POST /api/admin/cost-components/{id}/toggle",
         "x-route-file": "routes/admin-cost-components.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2865,17 +2882,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/risk-provisions": {
@@ -2924,6 +2931,16 @@
       "get": {
         "summary": "GET /api/admin/risk-provisions/{id}",
         "x-route-file": "routes/admin-risk-provisions.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2939,21 +2956,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/risk-provisions/{id}",
         "x-route-file": "routes/admin-risk-provisions.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2969,21 +2986,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/risk-provisions/{id}",
         "x-route-file": "routes/admin-risk-provisions.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -2999,23 +3016,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/risk-provisions/{id}/toggle": {
       "put": {
         "summary": "PUT /api/admin/risk-provisions/{id}/toggle",
         "x-route-file": "routes/admin-risk-provisions.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3031,17 +3048,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/dashboard/control-tower": {
@@ -3202,6 +3209,16 @@
       "get": {
         "summary": "GET /api/admin/costing/orders/{orderId}",
         "x-route-file": "routes/admin-costing.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3217,17 +3234,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/costing/products": {
@@ -3278,6 +3285,16 @@
       "post": {
         "summary": "POST /api/admin/costing/shipments/{id}/allocate",
         "x-route-file": "routes/admin-costing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3293,23 +3310,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/costing/parcels/{id}/allocate": {
       "post": {
         "summary": "POST /api/admin/costing/parcels/{id}/allocate",
         "x-route-file": "routes/admin-costing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3325,39 +3342,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/costing/orders/{id}/lock-purchase": {
       "post": {
         "summary": "POST /api/admin/costing/orders/{id}/lock-purchase",
         "x-route-file": "routes/admin-costing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -3367,13 +3358,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/admin/costing/monthly-fixed/{yearMonth}": {
-      "post": {
-        "summary": "POST /api/admin/costing/monthly-fixed/{yearMonth}",
-        "x-route-file": "routes/admin-costing.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3389,7 +3374,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/admin/costing/monthly-fixed/{yearMonth}": {
+      "post": {
+        "summary": "POST /api/admin/costing/monthly-fixed/{yearMonth}",
+        "x-route-file": "routes/admin-costing.js",
         "parameters": [
           {
             "name": "yearMonth",
@@ -3399,7 +3390,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/admin/costing/recalibration-proposal": {
@@ -3536,6 +3543,16 @@
       "get": {
         "summary": "GET /api/admin/partners/{id}",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3551,21 +3568,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/partners/{id}",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3581,21 +3598,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/partners/{id}",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3611,17 +3628,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/users": {
@@ -3670,6 +3677,16 @@
       "put": {
         "summary": "PUT /api/admin/users/{id}/role",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3685,23 +3702,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/users/{id}/password": {
       "put": {
         "summary": "PUT /api/admin/users/{id}/password",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3717,23 +3734,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/users/{id}": {
       "delete": {
         "summary": "DELETE /api/admin/users/{id}",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3749,17 +3766,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/dashboard": {
@@ -3904,8 +3911,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "orders": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -3920,6 +3934,16 @@
       "delete": {
         "summary": "DELETE /api/admin/orders/{id}",
         "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -3935,17 +3959,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/rules": {
@@ -3996,6 +4010,16 @@
       "get": {
         "summary": "GET /api/admin/rules/{key}",
         "x-route-file": "routes/admin-rules.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4011,21 +4035,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "patch": {
         "summary": "PATCH /api/admin/rules/{key}",
         "x-route-file": "routes/admin-rules.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4041,23 +4065,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/rules/{key}/reset": {
       "post": {
         "summary": "POST /api/admin/rules/{key}/reset",
         "x-route-file": "routes/admin-rules.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4073,17 +4097,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/radar": {
@@ -4178,6 +4192,16 @@
       "get": {
         "summary": "GET /api/admin/radar/orders-by-detail/{detail}",
         "x-route-file": "routes/admin-radar.js",
+        "parameters": [
+          {
+            "name": "detail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4193,17 +4217,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "detail",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/radar/cache/invalidate": {
@@ -4276,6 +4290,16 @@
       "put": {
         "summary": "PUT /api/admin/economic/variables/{key}",
         "x-route-file": "routes/economic-engine.js",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4291,17 +4315,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "key",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/economic/charges": {
@@ -4350,6 +4364,16 @@
       "put": {
         "summary": "PUT /api/admin/economic/charges/{id}",
         "x-route-file": "routes/economic-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4365,21 +4389,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/admin/economic/charges/{id}",
         "x-route-file": "routes/economic-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4395,23 +4419,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/economic/charges/{id}/toggle": {
       "put": {
         "summary": "PUT /api/admin/economic/charges/{id}/toggle",
         "x-route-file": "routes/economic-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4427,17 +4451,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/economic/coherence": {
@@ -4596,6 +4610,16 @@
       "post": {
         "summary": "POST /api/admin/loyalty/reward/{id}",
         "x-route-file": "routes/admin-loyalty.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4611,23 +4635,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/loyalty/skip/{id}": {
       "post": {
         "summary": "POST /api/admin/loyalty/skip/{id}",
         "x-route-file": "routes/admin-loyalty.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4643,17 +4667,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/loyalty/history": {
@@ -4726,6 +4740,16 @@
       "get": {
         "summary": "GET /api/admin/sourcing/analysis/{id}",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4741,17 +4765,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/synthesis": {
@@ -4780,6 +4794,16 @@
       "put": {
         "summary": "PUT /api/admin/sourcing/products/{id}",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4795,17 +4819,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/bulk-rail": {
@@ -4856,6 +4870,16 @@
       "get": {
         "summary": "GET /api/admin/sourcing/products/{id}/variants",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4871,21 +4895,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/sourcing/products/{id}/variants",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -4901,17 +4925,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/connectors": {
@@ -5006,6 +5020,16 @@
       "get": {
         "summary": "GET /api/admin/sourcing/candidates/{id}",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5021,21 +5045,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "put": {
         "summary": "PUT /api/admin/sourcing/candidates/{id}",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5051,23 +5075,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/candidates/{id}/scan": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/scan",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5083,17 +5107,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/candidates/scan-batch": {
@@ -5122,6 +5136,16 @@
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/import-product",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5137,23 +5161,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/candidates/{id}/reject": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/reject",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5169,23 +5193,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/sourcing/candidates/{id}/watchlist": {
       "post": {
         "summary": "POST /api/admin/sourcing/candidates/{id}/watchlist",
         "x-route-file": "routes/sourcing-engine.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5201,17 +5225,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/signals": {
@@ -5284,6 +5298,16 @@
       "post": {
         "summary": "POST /api/admin/signals/{id}/acknowledge",
         "x-route-file": "routes/signals.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5299,23 +5323,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/signals/{id}/snooze": {
       "post": {
         "summary": "POST /api/admin/signals/{id}/snooze",
         "x-route-file": "routes/signals.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5331,23 +5355,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/signals/{id}/resolve": {
       "post": {
         "summary": "POST /api/admin/signals/{id}/resolve",
         "x-route-file": "routes/signals.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5363,23 +5387,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/signals/{id}": {
       "delete": {
         "summary": "DELETE /api/admin/signals/{id}",
         "x-route-file": "routes/signals.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5395,17 +5419,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/pricing-matrices/taxes": {
@@ -5434,6 +5448,16 @@
       "put": {
         "summary": "PUT /api/admin/pricing-matrices/taxes/{category}",
         "x-route-file": "routes/admin-pricing-matrices.js",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5449,17 +5473,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "category",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/pricing-matrices/dims": {
@@ -5488,6 +5502,16 @@
       "put": {
         "summary": "PUT /api/admin/pricing-matrices/dims/{category}",
         "x-route-file": "routes/admin-pricing-matrices.js",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5503,17 +5527,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "category",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/dashboard/ops": {
@@ -5960,6 +5974,16 @@
       "get": {
         "summary": "GET /api/relay/orders/{id}",
         "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -5975,23 +5999,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/relay/orders/{id}/incident": {
       "post": {
         "summary": "POST /api/relay/orders/{id}/incident",
         "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6007,23 +6031,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/relay/orders/{id}/comment": {
       "post": {
         "summary": "POST /api/relay/orders/{id}/comment",
         "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6039,23 +6063,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/relay/orders/{id}/escalate": {
       "post": {
         "summary": "POST /api/relay/orders/{id}/escalate",
         "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6071,23 +6095,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/relay/orders/{id}/client-absent": {
       "patch": {
         "summary": "PATCH /api/relay/orders/{id}/client-absent",
         "x-route-file": "routes/relay-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6103,17 +6127,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/dashboard": {
@@ -6164,6 +6178,16 @@
       "get": {
         "summary": "GET /api/hub-dash/orders/{id}",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6179,23 +6203,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/validate/{id}": {
       "get": {
         "summary": "GET /api/hub-dash/validate/{id}",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6211,23 +6235,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/start-prep": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/start-prep",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6243,23 +6267,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/create-parcel": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/create-parcel",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6275,23 +6299,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/auto-prepare": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/auto-prepare",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6307,23 +6331,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/parcels/{id}/add-item": {
       "post": {
         "summary": "POST /api/hub-dash/parcels/{id}/add-item",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6339,23 +6363,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/parcels/{id}/remove-item": {
       "post": {
         "summary": "POST /api/hub-dash/parcels/{id}/remove-item",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6371,23 +6395,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/parcels/{id}/ready": {
       "post": {
         "summary": "POST /api/hub-dash/parcels/{id}/ready",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6403,23 +6427,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/parcels/{id}/ship": {
       "post": {
         "summary": "POST /api/hub-dash/parcels/{id}/ship",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6435,23 +6459,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/incident": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/incident",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6467,23 +6491,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/escalate": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/escalate",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6499,23 +6523,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/comment": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/comment",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6531,23 +6555,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub-dash/orders/{id}/backorder": {
       "post": {
         "summary": "POST /api/hub-dash/orders/{id}/backorder",
         "x-route-file": "routes/hub-dashboard.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6563,17 +6587,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/transit": {
@@ -6602,6 +6616,16 @@
       "post": {
         "summary": "POST /api/transit/{ref}/transit",
         "x-route-file": "routes/transit-dashboard.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6617,17 +6641,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels": {
@@ -6744,6 +6758,16 @@
       "get": {
         "summary": "GET /api/v2/parcels/{ref}",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6759,23 +6783,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels/{ref}/timeline": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}/timeline",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6791,23 +6815,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels/{ref}/scan": {
       "post": {
         "summary": "POST /api/v2/parcels/{ref}/scan",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6823,23 +6847,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels/{ref}/label": {
       "get": {
         "summary": "GET /api/v2/parcels/{ref}/label",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6855,17 +6879,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/orders": {
@@ -6938,6 +6952,16 @@
       "get": {
         "summary": "GET /api/v2/orders/{ref}",
         "x-route-file": "routes/order-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6953,23 +6977,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/orders/{ref}/confirm-cash": {
       "post": {
         "summary": "POST /api/v2/orders/{ref}/confirm-cash",
         "x-route-file": "routes/order-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -6985,23 +7009,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/orders/{ref}/create-parcel": {
       "post": {
         "summary": "POST /api/v2/orders/{ref}/create-parcel",
         "x-route-file": "routes/order-api-v2.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7017,17 +7041,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/notifications": {
@@ -7188,22 +7202,6 @@
       "post": {
         "summary": "POST /api/v2/alerts/{id}/acknowledge",
         "x-route-file": "routes/ops-api.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -7213,13 +7211,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/v2/parcels/{ref}/detail": {
-      "get": {
-        "summary": "GET /api/v2/parcels/{ref}/detail",
-        "x-route-file": "routes/parcel-api-v2.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7235,7 +7227,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/v2/parcels/{ref}/detail": {
+      "get": {
+        "summary": "GET /api/v2/parcels/{ref}/detail",
+        "x-route-file": "routes/parcel-api-v2.js",
         "parameters": [
           {
             "name": "ref",
@@ -7245,13 +7243,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/v2/parcels/{id}": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7267,23 +7291,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels/{id}/scans": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}/scans",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7299,23 +7323,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/parcels/{id}/orders": {
       "get": {
         "summary": "GET /api/v2/parcels/{id}/orders",
         "x-route-file": "routes/parcel-api-v2.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7331,17 +7355,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/v2/invoices": {
@@ -7392,6 +7406,16 @@
       "get": {
         "summary": "GET /api/tracking/{token}",
         "x-route-file": "routes/tracking.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7407,23 +7431,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/tracking/{token}/verify-pickup": {
       "post": {
         "summary": "POST /api/tracking/{token}/verify-pickup",
         "x-route-file": "routes/tracking.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7439,17 +7463,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/auth/otp/request": {
@@ -7783,6 +7797,16 @@
       "post": {
         "summary": "POST /api/pickup/pay-cash/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7798,23 +7822,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/receipt/{orderId}": {
       "get": {
         "summary": "GET /api/pickup/receipt/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7830,23 +7854,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/verify/{orderId}": {
       "post": {
         "summary": "POST /api/pickup/verify/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7862,23 +7886,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/collect/{orderId}": {
       "post": {
         "summary": "POST /api/pickup/collect/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7894,23 +7918,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/regenerate/{orderId}": {
       "post": {
         "summary": "POST /api/pickup/regenerate/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7926,23 +7950,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/status/{orderId}": {
       "get": {
         "summary": "GET /api/pickup/status/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7958,23 +7982,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pickup/reveal-once/{orderId}": {
       "get": {
         "summary": "GET /api/pickup/reveal-once/{orderId}",
         "x-route-file": "routes/pickup-secret.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -7990,23 +8014,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/cash/collect/{orderId}": {
       "post": {
         "summary": "POST /api/cash/collect/{orderId}",
         "x-route-file": "routes/cash.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8022,17 +8046,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/cash/collections": {
@@ -8105,6 +8119,16 @@
       "post": {
         "summary": "POST /api/cash/deposits/{id}/verify",
         "x-route-file": "routes/cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8120,23 +8144,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/cash/deposits/{id}/dispute": {
       "post": {
         "summary": "POST /api/cash/deposits/{id}/dispute",
         "x-route-file": "routes/cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8152,17 +8176,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/cash/reconciliation": {
@@ -8411,6 +8425,16 @@
       "get": {
         "summary": "GET /api/invoices/public/{token}",
         "x-route-file": "routes/invoices.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8426,17 +8450,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/invoices": {
@@ -8465,6 +8479,16 @@
       "get": {
         "summary": "GET /api/invoices/{orderId}",
         "x-route-file": "routes/invoices.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8480,23 +8504,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/invoices/{orderId}/json": {
       "get": {
         "summary": "GET /api/invoices/{orderId}/json",
         "x-route-file": "routes/invoices.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8512,23 +8536,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/invoices/{orderId}/download": {
       "get": {
         "summary": "GET /api/invoices/{orderId}/download",
         "x-route-file": "routes/invoices.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8544,23 +8568,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/invoices/{orderId}/deliver": {
       "post": {
         "summary": "POST /api/invoices/{orderId}/deliver",
         "x-route-file": "routes/invoices.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8576,17 +8600,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pricing/strategy/competitors": {
@@ -8635,6 +8649,16 @@
       "delete": {
         "summary": "DELETE /api/pricing/strategy/competitors/{id}",
         "x-route-file": "routes/pricing-strategy.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8650,17 +8674,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pricing/strategy": {
@@ -8819,22 +8833,6 @@
       "delete": {
         "summary": "DELETE /api/pricing/benchmarks/{category}/{cost_family}",
         "x-route-file": "routes/pricing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "category",
@@ -8852,7 +8850,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/pricing/couture": {
@@ -8967,6 +8981,16 @@
       "put": {
         "summary": "PUT /api/pricing/apply-price/{product_id}",
         "x-route-file": "routes/pricing.js",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -8982,17 +9006,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "product_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/pricing/apply-all": {
@@ -9171,6 +9185,16 @@
       "get": {
         "summary": "GET /api/modules/{type}",
         "x-route-file": "routes/modules.js",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9186,17 +9210,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "type",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/modules/price": {
@@ -9267,22 +9281,6 @@
       "patch": {
         "summary": "PATCH /api/logistics/shipments/{id}",
         "x-route-file": "routes/logistics.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -9292,13 +9290,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/logistics/labels/{shipment_id}": {
       "get": {
         "summary": "GET /api/logistics/labels/{shipment_id}",
         "x-route-file": "routes/logistics.js",
+        "parameters": [
+          {
+            "name": "shipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9314,23 +9338,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "shipment_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/logistics/manifest/{shipment_id}": {
       "get": {
         "summary": "GET /api/logistics/manifest/{shipment_id}",
         "x-route-file": "routes/logistics.js",
+        "parameters": [
+          {
+            "name": "shipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9346,17 +9370,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "shipment_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/parcels": {
@@ -9405,6 +9419,16 @@
       "get": {
         "summary": "GET /api/parcels/{ref}",
         "x-route-file": "routes/parcels.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9420,39 +9444,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "ref",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/parcels/{ref}/events": {
       "get": {
         "summary": "GET /api/parcels/{ref}/events",
         "x-route-file": "routes/parcels.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "ref",
@@ -9462,13 +9460,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/parcels/{id}/status": {
       "patch": {
         "summary": "PATCH /api/parcels/{id}/status",
         "x-route-file": "routes/parcels.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9484,23 +9508,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/parcels/{id}/weight": {
       "post": {
         "summary": "POST /api/parcels/{id}/weight",
         "x-route-file": "routes/parcels.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9516,23 +9540,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/parcels/{id}/verify-seal": {
       "post": {
         "summary": "POST /api/parcels/{id}/verify-seal",
         "x-route-file": "routes/parcels.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9548,39 +9572,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/parcels/{id}/items": {
       "post": {
         "summary": "POST /api/parcels/{id}/items",
         "x-route-file": "routes/parcels.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -9590,13 +9588,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/parcels/{id}/items/{item_id}": {
-      "delete": {
-        "summary": "DELETE /api/parcels/{id}/items/{item_id}",
-        "x-route-file": "routes/parcels.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9612,7 +9604,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/parcels/{id}/items/{item_id}": {
+      "delete": {
+        "summary": "DELETE /api/parcels/{id}/items/{item_id}",
+        "x-route-file": "routes/parcels.js",
         "parameters": [
           {
             "name": "id",
@@ -9630,7 +9628,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/parcels/optimize": {
@@ -9659,6 +9673,16 @@
       "post": {
         "summary": "POST /api/parcels/bootstrap/{orderId}",
         "x-route-file": "routes/parcels.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -9674,17 +9698,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/hub/scan": {
@@ -10043,6 +10057,16 @@
       "get": {
         "summary": "GET /api/hub/inventory/order/{id}/dispatch",
         "x-route-file": "routes/inventory-api.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10058,17 +10082,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/transitaire/parcels": {
@@ -10269,6 +10283,16 @@
       "patch": {
         "summary": "PATCH /api/carriers/{id}",
         "x-route-file": "routes/carriers.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10284,21 +10308,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "delete": {
         "summary": "DELETE /api/carriers/{id}",
         "x-route-file": "routes/carriers.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10314,39 +10338,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/carriers/customs/{parcel_id}": {
       "patch": {
         "summary": "PATCH /api/carriers/customs/{parcel_id}",
         "x-route-file": "routes/carriers.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "parcel_id",
@@ -10356,7 +10354,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/wallet": {
@@ -10473,6 +10487,16 @@
       "get": {
         "summary": "GET /api/wallet/admin/{userId}",
         "x-route-file": "routes/wallet.js",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10488,17 +10512,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/wallet/admin/credit": {
@@ -10527,6 +10541,16 @@
       "post": {
         "summary": "POST /api/wallet/admin/order-credit/{orderId}",
         "x-route-file": "routes/wallet.js",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10542,17 +10566,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "orderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/wallet/admin/reverse-lot": {
@@ -10603,6 +10617,16 @@
       "post": {
         "summary": "POST /api/payments/paypal/capture/{paypalOrderId}",
         "x-route-file": "routes/payments-paypal.js",
+        "parameters": [
+          {
+            "name": "paypalOrderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10618,17 +10642,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "paypalOrderId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/payments/paypal/webhook": {
@@ -10657,22 +10671,6 @@
       "post": {
         "summary": "POST /api/payments/paypal/refund/{orderId}",
         "x-route-file": "routes/payments-paypal.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "orderId",
@@ -10682,7 +10680,34 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "refund_id": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/payments/stripe/intent": {
@@ -10779,8 +10804,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }
@@ -10839,22 +10875,6 @@
       "post": {
         "summary": "POST /api/shared-carts/public/{token}/contributions/cash",
         "x-route-file": "routes/shared-cart-cash.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "token",
@@ -10864,13 +10884,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/shared-carts/contributions/{id}/confirm-cash": {
-      "post": {
-        "summary": "POST /api/shared-carts/contributions/{id}/confirm-cash",
-        "x-route-file": "routes/shared-cart-cash.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -10886,7 +10900,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/shared-carts/contributions/{id}/confirm-cash": {
+      "post": {
+        "summary": "POST /api/shared-carts/contributions/{id}/confirm-cash",
+        "x-route-file": "routes/shared-cart-cash.js",
         "parameters": [
           {
             "name": "id",
@@ -10896,7 +10916,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/scans": {
@@ -11063,6 +11099,16 @@
       "get": {
         "summary": "GET /api/scans/{order_id}",
         "x-route-file": "routes/scans.js",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11078,17 +11124,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/purchasing": {
@@ -11159,6 +11195,16 @@
       "post": {
         "summary": "POST /api/purchasing/suppliers/{id}/map",
         "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11174,23 +11220,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/purchasing/suppliers/{id}": {
       "delete": {
         "summary": "DELETE /api/purchasing/suppliers/{id}",
         "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11206,23 +11252,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/purchasing/order/{order_id}/completeness": {
       "get": {
         "summary": "GET /api/purchasing/order/{order_id}/completeness",
         "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11238,23 +11284,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/purchasing/{order_id}": {
       "get": {
         "summary": "GET /api/purchasing/{order_id}",
         "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11270,39 +11316,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/purchasing/{order_id}/confirm": {
       "post": {
         "summary": "POST /api/purchasing/{order_id}/confirm",
         "x-route-file": "routes/purchasing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "order_id",
@@ -11312,13 +11332,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/purchasing/{id}/receive": {
-      "post": {
-        "summary": "POST /api/purchasing/{id}/receive",
-        "x-route-file": "routes/purchasing.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11334,7 +11348,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/purchasing/{id}/receive": {
+      "post": {
+        "summary": "POST /api/purchasing/{id}/receive",
+        "x-route-file": "routes/purchasing.js",
         "parameters": [
           {
             "name": "id",
@@ -11344,13 +11364,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/purchasing/po/{po_id}": {
-      "delete": {
-        "summary": "DELETE /api/purchasing/po/{po_id}",
-        "x-route-file": "routes/purchasing.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11366,7 +11380,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}": {
+      "delete": {
+        "summary": "DELETE /api/purchasing/po/{po_id}",
+        "x-route-file": "routes/purchasing.js",
         "parameters": [
           {
             "name": "po_id",
@@ -11376,7 +11396,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/loyalty/tiers": {
@@ -11471,22 +11507,6 @@
       "put": {
         "summary": "PUT /api/loyalty/tiers/{id}",
         "x-route-file": "routes/loyalty.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -11496,13 +11516,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/loyalty/recalculate/{user_id}": {
-      "post": {
-        "summary": "POST /api/loyalty/recalculate/{user_id}",
-        "x-route-file": "routes/loyalty.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11518,7 +11532,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/loyalty/recalculate/{user_id}": {
+      "post": {
+        "summary": "POST /api/loyalty/recalculate/{user_id}",
+        "x-route-file": "routes/loyalty.js",
         "parameters": [
           {
             "name": "user_id",
@@ -11528,7 +11548,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/loyalty/recalculate-all": {
@@ -11623,6 +11659,16 @@
       "get": {
         "summary": "GET /api/unsold/{id}",
         "x-route-file": "routes/unsold.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11638,21 +11684,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "patch": {
         "summary": "PATCH /api/unsold/{id}",
         "x-route-file": "routes/unsold.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11668,23 +11714,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/unsold/{id}/resolve": {
       "post": {
         "summary": "POST /api/unsold/{id}/resolve",
         "x-route-file": "routes/unsold.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11700,23 +11746,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/unsold/{id}/whatsapp": {
       "get": {
         "summary": "GET /api/unsold/{id}/whatsapp",
         "x-route-file": "routes/unsold.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11732,17 +11778,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shares": {
@@ -11771,6 +11807,16 @@
       "get": {
         "summary": "GET /api/shares/{token}",
         "x-route-file": "routes/shares.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11786,39 +11832,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shares/{token}/contributions": {
       "post": {
         "summary": "POST /api/shares/{token}/contributions",
         "x-route-file": "routes/shares.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "token",
@@ -11828,13 +11848,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/shares/{token}/contributions/{id}": {
-      "patch": {
-        "summary": "PATCH /api/shares/{token}/contributions/{id}",
-        "x-route-file": "routes/shares.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -11850,7 +11864,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/shares/{token}/contributions/{id}": {
+      "patch": {
+        "summary": "PATCH /api/shares/{token}/contributions/{id}",
+        "x-route-file": "routes/shares.js",
         "parameters": [
           {
             "name": "token",
@@ -11868,7 +11888,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/health": {
@@ -11975,11 +12011,11 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden — token de vérification Meta invalide ou absent"
+          },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
-          },
-          "403": {
-            "description": "Forbidden — invalid or missing Meta webhook verification token"
           }
         }
       },
@@ -12008,6 +12044,16 @@
       "get": {
         "summary": "GET /api/shared-carts/public/{token}",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12054,23 +12100,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/public/{token}/estimations": {
       "get": {
         "summary": "GET /api/shared-carts/public/{token}/estimations",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12086,21 +12132,21 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       },
       "post": {
         "summary": "POST /api/shared-carts/public/{token}/estimations",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12116,39 +12162,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/public/{token}/estimations/{estimationId}": {
       "delete": {
         "summary": "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
         "x-route-file": "routes/shared-cart-cash.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "token",
@@ -12166,13 +12186,39 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/shared-carts/public/{token}/estimations/by-phone": {
       "get": {
         "summary": "GET /api/shared-carts/public/{token}/estimations/by-phone",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12188,23 +12234,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/public/{token}/contributions": {
       "post": {
         "summary": "POST /api/shared-carts/public/{token}/contributions",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12220,17 +12266,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "token",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/from-cart-items": {
@@ -12325,6 +12361,16 @@
       "get": {
         "summary": "GET /api/shared-carts/{id}",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12340,23 +12386,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/as-cart-items": {
       "get": {
         "summary": "GET /api/shared-carts/{id}/as-cart-items",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12372,23 +12418,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/items": {
       "put": {
         "summary": "PUT /api/shared-carts/{id}/items",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12404,23 +12450,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/close": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/close",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12436,7 +12482,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/shared-carts/{id}/finalize": {
+      "post": {
+        "summary": "POST /api/shared-carts/{id}/finalize",
+        "x-route-file": "routes/shared-cart-cash.js",
         "parameters": [
           {
             "name": "id",
@@ -12446,13 +12498,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/shared-carts/{id}/finalize": {
-      "post": {
-        "summary": "POST /api/shared-carts/{id}/finalize",
-        "x-route-file": "routes/shared-cart-cash.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12479,23 +12525,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/awaiting-choice/complete": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/complete",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12511,23 +12557,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/awaiting-choice/adjust": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/adjust",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12543,23 +12589,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/extend-window": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/extend-window",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12575,23 +12621,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/awaiting-choice/cancel": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/awaiting-choice/cancel",
         "x-route-file": "routes/shared-cart-cash.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12607,39 +12653,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/{id}/cancel": {
       "post": {
         "summary": "POST /api/shared-carts/{id}/cancel",
         "x-route-file": "routes/shared-cart-cash.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        },
         "parameters": [
           {
             "name": "id",
@@ -12649,13 +12669,7 @@
               "type": "string"
             }
           }
-        ]
-      }
-    },
-    "/api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded": {
-      "post": {
-        "summary": "POST /api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded",
-        "x-route-file": "routes/shared-cart-refund-admin.js",
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12671,7 +12685,13 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
+        }
+      }
+    },
+    "/api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded": {
+      "post": {
+        "summary": "POST /api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded",
+        "x-route-file": "routes/shared-cart-refund-admin.js",
         "parameters": [
           {
             "name": "contributionId",
@@ -12681,7 +12701,23 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/admin/shared-carts": {
@@ -12732,6 +12768,16 @@
       "get": {
         "summary": "GET /api/admin/shared-carts/{id}",
         "x-route-file": "routes/shared-cart-refund-admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12747,23 +12793,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/shared-carts/{id}/expire": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/expire",
         "x-route-file": "routes/shared-cart-refund-admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12779,23 +12825,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/shared-carts/{id}/extend": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/extend",
         "x-route-file": "routes/shared-cart-refund-admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12811,23 +12857,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/admin/shared-carts/{id}/note": {
       "post": {
         "summary": "POST /api/admin/shared-carts/{id}/note",
         "x-route-file": "routes/shared-cart-refund-admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Succès",
@@ -12843,17 +12889,7 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
-        },
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
+        }
       }
     },
     "/api/shared-carts/stripe/webhook": {
@@ -12888,8 +12924,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "UNKNOWN",
-                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "db_latency_ms": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
                 }
               }
             }

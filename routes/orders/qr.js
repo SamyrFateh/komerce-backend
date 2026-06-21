@@ -66,7 +66,7 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
     }
 
     // Générer le token : SHA256(orderId + relaisId + timestamp + QR_SECRET)
-    // QR_SECRET est obligatoire au démarrage via scripts/validate-required-env.js.
+    // QR_SECRET est obligatoire au démarrage via bootstrap/env.js (requiredEnv).
     const secret    = process.env.QR_SECRET;
     const timestamp = Date.now().toString();
     const token     = crypto

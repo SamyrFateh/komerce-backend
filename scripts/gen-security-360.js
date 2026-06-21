@@ -171,14 +171,53 @@ function extractMountPath(layer) {
   if (layer.keys && layer.keys.length) { let i = 0; m = m.replace(/\(\[\^\\\/\]\+\?\)/g, () => ':' + (layer.keys[i++]?.name || 'id')); }
   return m === '/' ? '' : m;
 }
+// ── dérive les mounts /api/* présents UNIQUEMENT dans server.js (pas dans
+//    bootstrap/api-routes.js) — ex: les blocs "Stripe-owned" montés directement
+//    dans server.js. Évite le whack-a-mole du hardcode : au prochain mount ajouté
+//    dans server.js, il est vu automatiquement, sans toucher ce script.
+//    Garde-fou : chaque mount est requis dans son PROPRE try/catch (un require qui
+//    échoue ne doit jamais faire disparaître silencieusement les autres mounts).
+function deriveServerJsOnlyMounts() {
+  const src = read('server.js'); if (!src) return [];
+  const v2spec = {};
+  for (const m of src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+    v2spec[m[1]] = m[2];
+  }
+  const out = [];
+  for (const m of src.matchAll(/app\.use\(\s*['"](\/api[^'"]*)['"]\s*,\s*([^\n;]+)/g)) {
+    const prefix = m[1]; const arg = m[2].trim();
+    // require('...') inline, éventuellement suivi de .exportName
+    let inl = arg.match(/require\(\s*['"]([^'"]+)['"]\s*\)\s*(?:\.(\w+))?/);
+    let modulePath, exportName;
+    if (inl) { modulePath = inl[1]; exportName = inl[2] || null; }
+    else {
+      // variable.exportName où la variable a été require()-ée plus haut
+      const dot = arg.match(/^(\w+)(?:\.(\w+))?/);
+      if (dot && v2spec[dot[1]]) { modulePath = v2spec[dot[1]]; exportName = dot[2] || null; }
+    }
+    if (modulePath) out.push({ prefix, modulePath, exportName });
+  }
+  return out;
+}
+
 function runtimeInventory() {
   const app = express();
   const ar = require('../bootstrap/api-routes');
   ar.mountApiRoutesBeforeStripeOwnedBlocks(app); ar.mountApiRoutesAfterStripeOwnedBlocks(app);
-  try { app.use('/api/shared-carts', require('../routes/shared-cart').router); } catch (_) {}
-  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart-refund-admin').router); } catch (_) {}
-  // server.js:179 — second export nommé monté au MÊME préfixe (routes admin disjointes)
-  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart').adminRouter); } catch (_) {}
+  for (const { prefix, modulePath, exportName } of deriveServerJsOnlyMounts()) {
+    // Seuls les fichiers locaux (chemins relatifs) sont des routeurs candidats —
+    // exclut le bruit comme 'express.raw' (middleware body-parser, pas un routeur).
+    if (!modulePath.startsWith('.')) continue;
+    try {
+      // modulePath vient d'un require() écrit DANS server.js (à ROOT) — résoudre
+      // contre ROOT, pas contre __dirname (scripts/), sinon require() cherche au
+      // mauvais endroit pour tout chemin relatif ('./routes/x', '../x').
+      const resolved = path.join(ROOT, modulePath);
+      const mod = require(resolved);
+      const handler = exportName ? mod[exportName] : (mod.router || mod);
+      if (handler) app.use(prefix, handler);
+    } catch (_) { /* un mount qui échoue ne doit pas tuer le scan */ }
+  }
   const stack = (app._router || app.router).stack; const out = [];
   (function walk(layers, prefix) {
     for (const l of layers) {

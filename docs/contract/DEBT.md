@@ -7,14 +7,12 @@ puis relancer `npm run contract:generate`.
 - `POST /api/auth/register`
 - `POST /api/auth/otp/request`
 - `POST /api/auth/otp/verify`
-- `GET /api/products`
 - `GET /api/products/{id}`
 - `POST /api/products`
 - `PUT /api/products/{id}`
 - `PUT /api/orders/{id}/status`
 - `DELETE /api/orders/{id}`
 - `POST /api/payments/stripe/intent`
-- `POST /api/payments/cash/confirm`
 - `POST /api/shared-carts/from-cart-items`
 - `GET /api/shared-carts/mine`
 - `GET /api/parcels`
@@ -41,4 +39,3 @@ puis relancer `npm run contract:generate`.
 - `GET /api/transitaire/parcels`
 - `POST /api/simulator/start`
 - `GET /api/simulator/status`
-- `GET /api/health`
