@@ -168,9 +168,12 @@ describe('refundPaypalOrder', () => {
   });
 
   test('nominal : refund effectué', async () => {
-    mockDbQuery.mockResolvedValueOnce({
-      rows: [{ id: 'order-6', reference: 'KMC-006', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-6' }],
-    });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-6', reference: 'KMC-006', total_eur: '10.00', payment_status: 'paid', paypal_capture_id: 'CAP-6' }] }) // SELECT order
+      .mockResolvedValueOnce({ rows: [{ id: 'refund-1' }] })  // INSERT refunds RETURNING id
+      .mockResolvedValueOnce({ rows: [] })                    // INSERT order_status_history
+      .mockResolvedValueOnce({ rowCount: 1 })                 // markRefunded → UPDATE orders SET payment_status='refunded'...
+      .mockResolvedValueOnce({ rowCount: 1 });                // UPDATE orders SET status='refunded' (I3, exception tracée)
     const paypal = {
       refundCapture: jest.fn().mockResolvedValue({ id: 'REFUND-1', status: 'COMPLETED' }),
     };
@@ -184,8 +187,19 @@ describe('refundPaypalOrder', () => {
     expect(result.body.success).toBe(true);
     expect(result.body.refund_id).toBe('REFUND-1');
     expect(paypal.refundCapture).toHaveBeenCalledWith('CAP-6', expect.objectContaining({
-      amountEur: 10, reason: 'Client request', invoiceId: 'KMC-006',
+      amountEur: 10, reason: 'Client request',
     }));
+
+    // P3-A.4 : payment_status passe par markRefunded (payment-service.js),
+    // status reste une mutation directe distincte (I3, exception documentée).
+    expect(mockDbQuery).toHaveBeenNthCalledWith(4,
+      `UPDATE orders SET payment_status = 'refunded', updated_at = NOW() WHERE id = $1`,
+      ['order-6']
+    );
+    expect(mockDbQuery).toHaveBeenNthCalledWith(5,
+      `UPDATE orders SET status = 'refunded' WHERE id = $1`,
+      ['order-6']
+    );
   });
 
   test('502 si refundCapture échoue', async () => {

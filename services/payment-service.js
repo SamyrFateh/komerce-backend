@@ -30,7 +30,9 @@
  *
  * NORMALISATION : toutes les mutations posent updated_at = NOW(). C'est le seul
  * ecart de comportement vs l'existant (payment-stripe.js ne le posait pas) —
- * benin et coherent, a confirmer en revue avant bascule du site Stripe.
+ * benin et coherent. Confirmé en revue et appliqué lors de la bascule du site
+ * Stripe (P3-A.3, 2026-06) : handleStripePaymentFailed pose désormais aussi
+ * updated_at sur la transition pending→failed.
  */
 const db = require('../db');
 

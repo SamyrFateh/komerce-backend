@@ -98,6 +98,17 @@ const ALLOWED_STATUS_UPDATE_FILES = new Set([
   'scripts/fix-schema.js',       // migrations inline légitimes
   'scripts/reset-admin.js',      // script admin one-shot
   'scripts/seed.js',             // seed de données test
+
+  // ── Exception délibérée (P3-A.4, 2026-06) — PAS une dette à fermer ──────────
+  // refundPaypalOrder force status='refunded' depuis N'IMPORTE QUEL statut payé
+  // (seule précondition : payment_status='paid' + capture existante — cf.
+  // docs/audit/REFACTO_ROUTES_VERIFICATION_2026-06-14.md). order-status-machine
+  // n'autorise 'refunded' que depuis 'cancelled' (VALID_TRANSITIONS) : y passer
+  // bloquerait ce refund APRÈS que l'argent ait déjà été rendu via
+  // paypal.refundCapture() — incohérence DB pire que le statu quo. Décision :
+  // payment_status (I4) centralisé via payment-service.js, status (I3) reste
+  // ici intentionnellement. Resoumettre à revue si la précondition métier change.
+  'services/payment-paypal.js',
 ]);
 
 // I-BACK-4 : UPDATE orders SET payment_status= hors order-status-machine.js
@@ -109,13 +120,10 @@ const ALLOWED_PAYMENT_STATUS_FILES = new Set([
   'scripts/reset-admin.js',
 
   // ── Owners paiement reconnus — DETTE TRACÉE → Lot P3-A ──────────────────────
-  // Ces 4 services mutent légitimement payment_status aujourd'hui, mais devront
-  // être centralisés derrière services/payment-service.js (markPaid/markRefunded/
-  // markFailed) pour rendre l'invariant structurel. Allowlist d'intention : le
-  // cliquet bloque toujours tout NOUVEAU site non listé.
-  'services/payment-paypal.js',            // refund PayPal ('refunded' + status)
-  'services/admin-order-refund.js',        // refund admin ('refunded')
-  'services/payment-stripe.js',            // échec paiement ('failed', gardé pending→failed)
+  // Les 4 sites identifiés par le découpage P3-A ont tous été migrés derrière
+  // payment-service.js (markPaid/markRefunded/markFailed) — P3-A.1 à .4, 2026-06.
+  // Liste laissée en place (vide) comme cliquet : tout NOUVEAU site non listé
+  // sera bloqué par I-BACK-4.
 
   // ── Outil de test/chaos — PAS de la prod paiement ──────────────────────────
   // Pose volontairement des états (in)cohérents pour les scénarios de simulation.

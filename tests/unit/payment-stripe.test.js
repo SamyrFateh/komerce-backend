@@ -139,8 +139,7 @@ describe('handleStripePaymentFailed — guard ne pas dégrader paid → failed',
     await handleStripePaymentFailed(event, intent, { query: mockDbQuery });
 
     expect(mockDbQuery).toHaveBeenNthCalledWith(1,
-      `UPDATE orders SET payment_status = 'failed'
-     WHERE id = $1 AND payment_status = 'pending'`,
+      `UPDATE orders SET payment_status = 'failed', updated_at = NOW() WHERE id = $1 AND payment_status = 'pending'`,
       ['order-1']
     );
   });

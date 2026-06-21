@@ -40,6 +40,7 @@
  */
 
 const { confirmPaymentCycle }    = require('./order-payment-confirmation');
+const { markFailed }             = require('./payment-service');
 const { generateAndStoreSecret, cacheCodeForReveal } = require('../routes/pickup-secret');
 const log = require('../utils/logger').child({ module: 'payment-stripe' });
 
@@ -327,12 +328,8 @@ async function handleStripePaymentFailed(event, intent, db) {
     return;
   }
 
-  const upd = await db.query(
-    `UPDATE orders SET payment_status = 'failed'
-     WHERE id = $1 AND payment_status = 'pending'`,
-    [orderId]
-  );
-  if (upd.rowCount === 0) {
+  const upd = await markFailed(orderId, { client: db, guardPending: true });
+  if (!upd.changed) {
     log.warn(`[STRIPE-WEBHOOK] payment_failed ignored (already paid or unknown): ${intent.metadata?.order_reference}`);
   } else {
     log.info(`❌ Paiement Stripe échoué : ${intent.metadata?.order_reference}`);

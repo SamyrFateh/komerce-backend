@@ -31,6 +31,7 @@
 const db = require('../db');
 const { processRefund }       = require('./refund-service');
 const { transitionOrderStatus } = require('./order-status-machine');
+const { markRefunded }        = require('./payment-service');
 const refundReceiptService    = require('./documents/refund-receipt');
 const log = require('../utils/logger').child({ module: 'admin-order-refund' });
 
@@ -169,10 +170,7 @@ async function refundCancelledOrder({ orderId, user, dryRun = true, reason = nul
       return { status: 409, body: { error: statusResult.error } };
     }
 
-    await client.query(
-      `UPDATE orders SET payment_status = 'refunded', updated_at = NOW() WHERE id = $1`,
-      [order.id]
-    );
+    await markRefunded(order.id, { client });
 
     await client.query('COMMIT');
 
