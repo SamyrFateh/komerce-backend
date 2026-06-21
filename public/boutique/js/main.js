@@ -25,26 +25,6 @@ import { setupHomePremiumV1 } from './b-home-premium-v1.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 
-function applyHeroMoonSlogan() {
-  const headline = 'La lune,';
-  const promise = 'vous pouvez l\u2019attraper.';
-
-  const searchSlogan = document.querySelector('.k-search-slogan');
-  if (searchSlogan) {
-    searchSlogan.innerHTML = headline + ' <strong>' + promise + '</strong>';
-  }
-
-  const heroLine1 = document.querySelector('.k-hero-mini-slogan--premium .k-line-1');
-  const heroLine2 = document.querySelector('.k-hero-mini-slogan--premium .k-line-2');
-  if (heroLine1) heroLine1.textContent = headline;
-  if (heroLine2) heroLine2.textContent = promise;
-
-  const stickyTitleTop = document.querySelector('.k-hero-title-top');
-  const stickyTitleBottom = document.querySelector('.k-hero-title-bottom');
-  if (stickyTitleTop) stickyTitleTop.textContent = headline;
-  if (stickyTitleBottom) stickyTitleBottom.textContent = promise;
-}
-
 function setupBoutiqueRuntime() {
   setupSharePhoneGuard();
   setupModalContractClasses();
@@ -54,7 +34,6 @@ function setupBoutiqueRuntime() {
   setupHomePremiumV1();
   setupProductOpenContract();
   setupCartProductOpenStyle();
-  applyHeroMoonSlogan();
   // FIX GREETING — appelé après le boot, best-effort (silencieux si non connecté)
   greetIfKnown();
 }
@@ -80,7 +59,6 @@ if (typeof window !== 'undefined') {
         setupApprocheCHybridPdp();
         setupPdpCurationSuggestions();
         setupHomePremiumV1();
-        applyHeroMoonSlogan();
       }
     }, 150);
   }, { passive: true });
