@@ -143,6 +143,7 @@ describe('markManualRefundProcessed — happy path', () => {
       { rows: [makeFullContribution()] },  // SELECT FOR UPDATE
       { rows: [refunded] },                // UPDATE → RETURNING
       { rows: [] },                        // INSERT event
+      { rows: [{ finalized_order_id: null }] }, // SELECT finalized_order_id (panier non finalisé → pas d'INSERT refunds)
     ]);
     db.getClient.mockResolvedValueOnce(client);
 
@@ -150,7 +151,7 @@ describe('markManualRefundProcessed — happy path', () => {
       'contrib-001', 'admin-001',
       { refund_reference: 're_test_001', note: 'Remboursé manuellement' }
     );
-    expect(result.status).toBe('refunded');
+    expect(result.contribution.status).toBe('refunded');
     expectTransactionCommitted(client);
 
     // L'UPDATE doit poser status = 'refunded'

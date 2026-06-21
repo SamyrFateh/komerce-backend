@@ -25,12 +25,17 @@ jest.mock('../../utils/user-cache', () => {
   return { get: (k) => store.get(k), set: (k, v) => store.set(k, v), clear: () => store.clear() };
 });
 
+// middleware/soft-auth.js capture JWT_SECRET au chargement du module (même
+// convention que middleware/auth.js — évite un process.env.lookup par requête) :
+// il faut donc fixer process.env.JWT_SECRET AVANT de le require, sinon il capture
+// la valeur d'environnement ambiante (ex. JWT_SECRET=dummy passé en CLI) et tous
+// les tokens signés avec SECRET ci-dessous échouent silencieusement la vérification.
+const SECRET = 'test-secret';
+process.env.JWT_SECRET = SECRET;
+
 const db        = require('../../db');
 const userCache = require('../../utils/user-cache');
 const { softAuthenticate } = require('../../middleware/soft-auth');
-
-const SECRET = 'test-secret';
-process.env.JWT_SECRET = SECRET;
 
 const USER = { id: 'user-001', full_name: 'Alice', role: 'customer', email: 'a@a.com', phone: '+269600001', currency_pref: 'KMF', relais_id: null };
 
@@ -51,7 +56,10 @@ function makeToken(payload = {}, options = {}) {
 }
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  // resetAllMocks (pas clearAllMocks) : clearAllMocks ne vide PAS la file des
+  // mockResolvedValueOnce() en attente, ce qui a permis à des valeurs mockées
+  // non consommées de fuiter d'un test au suivant (cause du bug ci-dessus).
+  jest.resetAllMocks();
   userCache.clear();
 });
 
@@ -69,7 +77,7 @@ test('pas de token → next() sans req.user', async () => {
 });
 
 test('token valide, utilisateur en DB → req.user peuplé, next()', async () => {
-  const token = makeToken();
+  const token = makeToken({ jti: 'jti-001' }); // jti requis pour déclencher le check revoked_tokens (2 appels DB attendus ci-dessous)
   const req   = makeReq(token);
   const next  = jest.fn();
 
@@ -124,7 +132,7 @@ test('token révoqué (jti présent) → next() sans req.user', async () => {
 });
 
 test('utilisateur introuvable en DB → next() sans req.user', async () => {
-  const token = makeToken();
+  const token = makeToken({ jti: 'jti-002' }); // jti requis pour déclencher le check revoked_tokens (2 appels DB attendus ci-dessous)
   const req   = makeReq(token);
   const next  = jest.fn();
 

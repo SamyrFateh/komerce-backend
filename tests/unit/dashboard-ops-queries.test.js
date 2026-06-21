@@ -220,7 +220,7 @@ describe('getPipeline', () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     const result = await opsQueries.getPipeline();
     expect(Object.keys(result.pipeline)).toEqual([
-      'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit',
+      'pending', 'confirmed', 'ordered', 'preparation', 'shipped', 'in_transit',
       'available', 'collected', 'cancelled', 'refunded',
     ]);
     expect(result.total).toBe(0);

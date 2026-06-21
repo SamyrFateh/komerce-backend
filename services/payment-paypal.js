@@ -531,10 +531,16 @@ async function refundPaypalOrder({ orderId, amountEur, reason, adminUser, paypal
     return { status: 400, body: { error: 'Montant refund supérieur au total commande' } };
   }
 
-  const refund = await paypal.refundCapture(order.paypal_capture_id, {
-    amountEur: refundAmount,
-    reason:    reason || 'admin_refund',
-  });
+  let refund;
+  try {
+    refund = await paypal.refundCapture(order.paypal_capture_id, {
+      amountEur: refundAmount,
+      reason:    reason || 'admin_refund',
+    });
+  } catch (err) {
+    log.error({ err: err.message, order_id: order.id, capture_id: order.paypal_capture_id }, '[PAYPAL] refundCapture failed');
+    return { status: 502, body: { error: 'Échec refund PayPal', detail: err.message } };
+  }
 
   const totalKmf     = Number(order.total_kmf || 0);
   const totalEur     = Number(order.total_eur || 0);

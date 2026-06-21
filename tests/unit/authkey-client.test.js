@@ -56,10 +56,14 @@ describe('authkey-client — staging whitelist guard', () => {
     process.env.NODE_ENV = 'staging';
     process.env.AUTHKEY_ALLOWED_PHONES = '+2693301234,+33612345678';
     process.env.AUTHKEY_API_KEY = 'test-key';
-    // Mock fetch pour retourner une réponse succès
+    // Mock fetch pour retourner une réponse succès. Le code réel appelle
+    // response.text() (pas .json()) sur tous les chemins, puis JSON.parse —
+    // le mock doit donc fournir .text(), pas .json(), pour matcher la vraie
+    // forme de Response et éviter un "response.text is not a function" interne
+    // (silencieux car rattrapé, mais bruite les logs et masque un vrai échec réseau).
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ error: 0, message: 'Message Queued' }),
+      text: async () => JSON.stringify({ error: 0, message: 'Message Queued' }),
     });
     const client = require('../../services/authkey-client');
     await client.notifyOrderCreated({ mobile: '+2693301234', name: 'Test', orderRef: 'REF001', amount: '1000 KMF' });
@@ -86,14 +90,14 @@ describe('authkey-client — parseMobile', () => {
     process.env.AUTHKEY_COUNTRY_CODE = '269';
     const { parseMobile } = require('../../services/authkey-client');
     const result = parseMobile('3301234');
-    expect(result.countryCode).toBe('269');
-    expect(result.number).toBeTruthy();
+    expect(result.country_code).toBe('269');
+    expect(result.mobile).toBeTruthy();
   });
 
   it('parse un numéro international complet avec +33', () => {
     process.env.NODE_ENV = 'production';
     const { parseMobile } = require('../../services/authkey-client');
     const result = parseMobile('+33612345678');
-    expect(result.countryCode).toBe('33');
+    expect(result.country_code).toBe('33');
   });
 });

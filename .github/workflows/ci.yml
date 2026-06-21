@@ -35,24 +35,13 @@ jobs:
       - name: Backend architecture audit (invariants)
         run: npm run backend:audit
 
-      # Gate VERTE et bloquante sur les suites saines (47). Exclut les 9 suites
-      # en échec préexistant (dette test-infra/mocks, voir docs/KNOWN_FAILING_TESTS.md)
-      # et tests/integration (qui tournent dans le job Postgres). Ainsi une NOUVELLE
-      # régression sur une suite saine bloque immédiatement.
-      - name: Run unit tests (enforced — healthy suites)
+      # Gate VERTE et bloquante sur toutes les suites unit. Les 9 suites de quarantaine
+      # d'origine sont toutes résorbées (8 réparées, 1 supprimée — modèle obsolète,
+      # voir docs/KNOWN_FAILING_TESTS.md). Exclut juste tests/integration (job Postgres).
+      - name: Run unit tests (enforced)
         run: >-
           npx jest --testPathPatterns="tests/unit" --ci --runInBand
           --testPathIgnorePatterns="tests/integration"
-          --testPathIgnorePatterns="tests/unit/(soft-auth|shared-cart-v4|dashboard-ops-queries|shared-cart-lot9-business|cancel-shared-cart-with-refunds|confirm-payment-cycle|shared-cart-refund-queue|payment-paypal|authkey-client)\.test\.js"
-
-      # Dette VISIBLE, non bloquante : les 9 suites en quarantaine tournent quand
-      # même pour rester sous les yeux (on saura quand une est réparée ou quand une
-      # nouvelle casse). À résorber via le lot P7-tests (triage mock-périmé vs vrai bug).
-      - name: Quarantined suites (known-failing, non-blocking)
-        continue-on-error: true
-        run: >-
-          npx jest --ci --runInBand
-          --testPathPatterns="tests/unit/(soft-auth|shared-cart-v4|dashboard-ops-queries|shared-cart-lot9-business|cancel-shared-cart-with-refunds|confirm-payment-cycle|shared-cart-refund-queue|payment-paypal|authkey-client)\.test\.js"
 
   # ─────────────────────────────────────────────────────────────
   # Job 2 — Tests d'intégration : Postgres jetable (service container).

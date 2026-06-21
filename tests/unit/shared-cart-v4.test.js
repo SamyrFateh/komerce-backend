@@ -584,19 +584,25 @@ describe('startExpireCartsCron (S3-04)', () => {
   test('[S3-04-T1] expireOldCarts() est appelé et retourne le nombre de paniers expirés', async () => {
     const db = require('../../db');
 
-    // 1 panier expiré
+    // runSharedCartStateMachineTick émet 5 transitions séquentielles (T1..T5),
+    // chacune avec au moins 1 requête SQL. Scénario : rien à faire pour T1/T2/T3/T5,
+    // 1 panier expiré sur T4 (AWAITING_CHOICE → expired).
     db.query
-      .mockResolvedValueOnce({ rows: [{ id: 'cart-old', beneficiary_user_id: 'u1', contributed_kmf: 0 }] }) // UPDATE RETURNING
-      .mockResolvedValueOnce({ rows: [] }); // INSERT event cart_expired
+      .mockResolvedValueOnce({ rows: [] })  // T1 : UPDATE OPEN→CLOSED (aucun panier)
+      .mockResolvedValueOnce({ rows: [] })  // T2 : UPDATE CLOSED→AWAITING_CHOICE (aucun)
+      .mockResolvedValueOnce({ rows: [] })  // T3 : SELECT CLOSED+fenêtre+remaining=0 (aucun)
+      .mockResolvedValueOnce({ rows: [{ id: 'cart-old', contributed_kmf: 0 }] }) // T4 : UPDATE AWAITING_CHOICE→expired RETURNING
+      .mockResolvedValueOnce({ rows: [] })  // T4 : INSERT event cart_expired
+      .mockResolvedValueOnce({ rows: [] }); // T5 : UPDATE expired→archived (aucun)
 
     const { expireOldCarts } = require('../../services/shared-cart-engine');
     const count = await expireOldCarts();
 
     expect(count).toBe(1);
-    // UPDATE + INSERT = 2 appels
-    expect(db.query).toHaveBeenCalledTimes(2);
+    expect(db.query).toHaveBeenCalledTimes(6);
 
-    const [updateSql] = db.query.mock.calls[0];
+    // T4 est le 4e appel (index 3) — l'UPDATE qui passe à 'expired'
+    const [updateSql] = db.query.mock.calls[3];
     expect(String(updateSql)).toMatch(/UPDATE shared_carts/);
     expect(String(updateSql)).toMatch(/status = 'expired'/);
   });

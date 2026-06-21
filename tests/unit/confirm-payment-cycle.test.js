@@ -179,8 +179,9 @@ describe('confirmPaymentCycle — stock suffisant', () => {
 
     expect(result.success).toBe(true);
     expect(result.stockBlocked).toBe(false);
-    // Aucun UPDATE ne doit avoir été émis
-    const updateCall = dbClient.query.mock.calls.find(([sql]) => sql.includes('UPDATE'));
+    // Aucun UPDATE de stock ne doit avoir été émis (le SELECT ... FOR UPDATE OF p
+    // est un verrou de ligne en lecture, pas une instruction UPDATE)
+    const updateCall = dbClient.query.mock.calls.find(([sql]) => sql.includes('UPDATE products'));
     expect(updateCall).toBeUndefined();
   });
 });
@@ -214,8 +215,9 @@ describe('confirmPaymentCycle — stockBlocked', () => {
       available: 1,
       needed: 5,
     });
-    // Aucun UPDATE ne doit avoir été émis (on ne décrémente pas si bloqué)
-    const updateCall = dbClient.query.mock.calls.find(([sql]) => sql.includes('UPDATE'));
+    // Aucun UPDATE de stock ne doit avoir été émis (on ne décrémente pas si bloqué ;
+    // le SELECT ... FOR UPDATE est un verrou de ligne en lecture, pas une UPDATE)
+    const updateCall = dbClient.query.mock.calls.find(([sql]) => sql.includes('UPDATE products'));
     expect(updateCall).toBeUndefined();
   });
 

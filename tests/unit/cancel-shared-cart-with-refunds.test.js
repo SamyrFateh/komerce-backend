@@ -125,11 +125,15 @@ describe('cancelSharedCartWithRefunds — remboursement Stripe', () => {
       .mockResolvedValueOnce({ id: 're_aaa', status: 'succeeded' })
       .mockResolvedValueOnce({ id: 're_bbb', status: 'succeeded' });
 
-    // refundOneContribution fait des appels db.query() directs (hors transaction)
+    // refundOneContribution fait des appels db.query() directs (hors transaction) :
+    // UPDATE contribution → refunded, puis INSERT refunds (trace comptable,
+    // doctrine "refund_confirmed → ligne refunds 'completed'"), puis INSERT event.
     db.query
       .mockResolvedValueOnce({ rows: [{ ...contribA, status: 'refunded' }] }) // UPDATE contribA → refunded
+      .mockResolvedValueOnce({ rows: [{ id: 'refund-row-A' }] })                // INSERT refunds A
       .mockResolvedValueOnce({ rows: [] })                                     // INSERT event contribution_refunded A
       .mockResolvedValueOnce({ rows: [{ ...contribB, status: 'refunded' }] }) // UPDATE contribB → refunded
+      .mockResolvedValueOnce({ rows: [{ id: 'refund-row-B' }] })                // INSERT refunds B
       .mockResolvedValueOnce({ rows: [] });                                    // INSERT event contribution_refunded B
 
     const result = await cancelSharedCartWithRefunds('cart-001', 'user-001', 'changement de plan');
