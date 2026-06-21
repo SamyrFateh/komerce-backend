@@ -119,8 +119,8 @@ const ROUTE_SCHEMA_MAP = [
   // AUTH
   { prefix: '/api/auth/login',             method: 'post',   schema: validators.auth?.login },
   { prefix: '/api/auth/register',          method: 'post',   schema: validators.auth?.register },
-  { prefix: '/api/auth/otp/request',       method: 'post',   schema: validators.auth?.otpRequest },
-  { prefix: '/api/auth/otp/verify',        method: 'post',   schema: validators.auth?.otpVerify },
+  { prefix: '/api/auth/otp/request',       method: 'post',   schema: null }, // pas de validate() Joi sur cette route (validation inline manuelle dans routes/otp.js) — validators.auth.otpRequest n'a jamais existé
+  { prefix: '/api/auth/otp/verify',        method: 'post',   schema: null }, // idem
   // PRODUCTS
   { prefix: '/api/products',              method: 'get',    schema: validators.products?.list },
   { prefix: '/api/products/{id}',         method: 'get',    schema: validators.products?.getOne },
@@ -129,8 +129,12 @@ const ROUTE_SCHEMA_MAP = [
   // ORDERS
   { prefix: '/api/orders',               method: 'post',   schema: validators.orders?.create },
   { prefix: '/api/orders',               method: 'get',    schema: validators.orders?.list },
-  { prefix: '/api/orders/{id}/status',   method: 'put',    schema: validators.orders?.updateStatus },
-  { prefix: '/api/orders/{id}',          method: 'delete', schema: validators.orders?.cancelOrder },
+  { prefix: '/api/orders/{id}/status',   method: 'patch',  schema: validators.orders?.updateStatus },
+  // Pas de DELETE /api/orders/{id} en vrai (vérifié contre routes/orders/cancel.js) :
+  // l'annulation est POST /api/orders/{id}/cancel. L'ancienne entrée 'delete' ici ne
+  // matchait jamais aucune route réelle → le schéma Joi cancelOrder n'était jamais
+  // attaché. Corrigé pour pointer sur la vraie route.
+  { prefix: '/api/orders/{id}/cancel',   method: 'post',   schema: validators.orders?.cancelOrder },
   // PAYMENTS
   { prefix: '/api/payments/stripe/intent', method: 'post', schema: validators.payments?.stripeIntent },
   { prefix: '/api/payments/cash/confirm',  method: 'post', schema: validators.payments?.cashConfirm },
@@ -194,11 +198,37 @@ const KNOWN_RESPONSES = {
     post: { fields: ['reference','status','total_kmf','id'], source: 'test+scan' },
     get:  { fields: ['reference','status','total_kmf','phone'], source: 'test' }
   },
+  // POST /api/auth/login : CORRIGÉ — l'entrée précédente listait 'token' avec
+  // source 'test', mais routes/auth.js fait `setAuthCookie(res, token)` (cookie
+  // httpOnly) puis `res.json({ user: userResponse(user) })` — pas de `token` dans
+  // le corps JSON. Confirmé aussi par tests/e2e.sh (`curl -c "$AC" ...login`, -c =
+  // sauvegarde cookie). Aucun test jest n'asserte ce corps → source 'route-read'.
   '/api/auth/login': {
-    post: { fields: ['token','user'], source: 'test' }
+    post: { fields: ['user'], source: 'route-read' }
   },
+  // GET /api/auth/me : CORRIGÉ — l'entrée précédente listait 'name' avec source
+  // 'test', mais la colonne réelle (SELECT u.full_name ...) est 'full_name'. 'name'
+  // n'existe pas dans la réponse. Aucun test jest sur ce corps → 'route-read'.
   '/api/auth/me': {
-    get: { fields: ['id','phone','role','name'], source: 'test' }
+    get: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'route-read' }
+  },
+  // POST /api/auth/register : `res.status(201).json({ user: userResponse(user) })`,
+  // même forme que /login. Pas de test sur le corps de succès (tests/integration/
+  // api.test.js ne couvre que les rejets) → 'route-read'.
+  '/api/auth/register': {
+    post: { fields: ['user'], source: 'route-read' }
+  },
+  // POST /api/auth/otp/request : routes/otp.js, chemin de succès `res.json({ ok,
+  // success, message, expiresIn, retryAfter, _dev? })`. _dev est conditionnel
+  // (dev + OTP_DEV_ECHO seulement) donc volontairement omis de la liste. Pas de
+  // test sur ce corps → 'route-read'.
+  '/api/auth/otp/request': {
+    post: { fields: ['ok','success','message','expiresIn','retryAfter'], source: 'route-read' }
+  },
+  // POST /api/auth/otp/verify : routes/otp.js, chemin de succès `res.json({ ok,
+  // success, message, created, user })`. Pas de test sur ce corps → 'route-read'.
+  '/api/auth/otp/verify': {
+    post: { fields: ['ok','success','message','created','user'], source: 'route-read' }
   },
   '/api/client/tracking': {
     get: { fields: ['status','reference','expires_at','pickup_code'], source: 'scan-boutique' }
@@ -224,11 +254,68 @@ const KNOWN_RESPONSES = {
   },
   // GET /api/products : tests/integration/api.test.js
   '/api/products': {
-    get: { fields: ['products'], source: 'test' }
+    get: { fields: ['products'], source: 'test' },
+    // POST /api/products : routes/products.js fait `res.status(result.status).json(result.body)`
+    // où result.body = product = `INSERT INTO products (...) RETURNING *` (product-admin-service.js).
+    // Pas de test d'intégration sur ce endpoint → 'route-read'. Sous-ensemble stable de
+    // colonnes confirmées dans le code (liste `fields`/`optionals` de createProduct) ;
+    // la ligne réelle a plus de colonnes (RETURNING *), volontairement non exhaustif.
+    post: { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available'], source: 'route-read' }
+  },
+  // GET /api/products/{id} : routes/products.js → `SELECT * FROM products WHERE id = $1`,
+  // + `variants` ajouté si has_variants. PUT /api/products/{id} : même passthrough
+  // result.body que POST (updateProduct → `UPDATE ... RETURNING *`). Pas de test → 'route-read'.
+  '/api/products/{id}': {
+    get: { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available','variants'], source: 'route-read' },
+    put: { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available'], source: 'route-read' }
   },
   // GET /api/health : tests/integration/api.test.js + admin-authz-probe.test.js
   '/api/health': {
     get: { fields: ['status','db_latency_ms'], source: 'test' }
+  },
+  // ── L4 (2e itération) — admin / paiement / commandes ──────────────────────
+  // POST /api/payments/stripe/intent : routes/payments.js fait `res.json(result)`
+  // où result = createStripeIntent(...). Shape testée explicitement dans
+  // tests/unit/payment-stripe.test.js (result.client_secret, result.reused,
+  // existing/non-reused branches) — même pattern passthrough que cash/confirm
+  // et paypal/refund.
+  '/api/payments/stripe/intent': {
+    post: { fields: ['client_secret','amount_eur','amount_cents','order_reference','reused'], source: 'test' }
+  },
+  // PATCH /api/orders/{id}/status : routes/orders/status.js → `res.json({ success: true, status })`
+  // sur le seul chemin de succès. Pas de test d'intégration sur le corps HTTP
+  // (order-status-machine.test.js couvre le service, pas la route) → lu directement
+  // dans le handler, pas dans un test : source 'route-read', pas 'test'.
+  '/api/orders/{id}/status': {
+    patch: { fields: ['success','status'], source: 'route-read' }
+  },
+  // POST /api/orders/{id}/cancel : routes/orders/cancel.js → objet de réponse final
+  // construit explicitement avec ces clés. Pas de test d'intégration sur le corps
+  // HTTP → source 'route-read'.
+  '/api/orders/{id}/cancel': {
+    post: { fields: ['success','reference','status','refund','message'], source: 'route-read' }
+  },
+  // GET /api/admin/costing/orders|products|relais : routes/admin-costing.js, top-level
+  // de chaque res.json(...) lu directement dans le handler (pas de test) → 'route-read'.
+  '/api/admin/costing/orders': {
+    get: { fields: ['orders','pagination','doctrine_phase'], source: 'route-read' }
+  },
+  '/api/admin/costing/products': {
+    get: { fields: ['products','doctrine_phase'], source: 'route-read' }
+  },
+  '/api/admin/costing/relais': {
+    get: { fields: ['relais','doctrine_phase'], source: 'route-read' }
+  },
+  // GET /api/admin/radar : routes/admin-radar.js → res.json(await radar.getRadarSummary())
+  // ; shape lue dans services/radar-queries.js, pas de test dédié → 'route-read'.
+  '/api/admin/radar': {
+    get: { fields: ['ok','alert_count','generated_at','hint'], source: 'route-read' }
+  },
+  // GET /api/admin/radar/alerts : routes/admin-radar.js → res.json(await radar.getAlerts())
+  // ; shape couverte par tests/unit/radar-queries.test.js (describe('getAlerts'),
+  // assertions sur result.alerts et result.total) → 'test'.
+  '/api/admin/radar/alerts': {
+    get: { fields: ['generated_at','total','critical','signal','alerts'], source: 'test' }
   },
 };
 
@@ -259,10 +346,12 @@ const openapi = {
       'NE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.',
       '',
       'Statuts de contrat :',
-      '  - x-contract-status: "joi"      → requête haute fidélité (schéma Joi)',
-      '  - x-contract-status: "test"     → réponse couverte par un test intégration',
-      '  - x-contract-status: "scan-*"   → champs observés dans le code front',
-      '  - x-contract-status: "UNKNOWN"  → non couvert, à compléter',
+      '  - x-contract-status: "joi"       → requête haute fidélité (schéma Joi)',
+      '  - x-contract-status: "test"      → réponse couverte par un test intégration/unitaire',
+      '  - x-contract-status: "route-read" → champs lus directement dans le handler (res.json),',
+      '                                       pas de test sur le corps HTTP — confiance < "test"',
+      '  - x-contract-status: "scan-*"    → champs observés dans le code front',
+      '  - x-contract-status: "UNKNOWN"   → non couvert, à compléter',
     ].join('\n'),
   },
   'x-contract-debt': {
