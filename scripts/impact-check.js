@@ -149,7 +149,10 @@ function getAllProjectFiles() {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        const relPath = path.relative(process.cwd(), fullPath);
+        // Normaliser en forward-slash : sur Windows, path.relative() renvoie des
+        // backslashes, ce qui casse le check 'public/uploads' ci-dessous et les
+        // ignorePatterns multi-segments (node_modules/**, docs/**, ...) dans isIgnored().
+        const relPath = path.relative(process.cwd(), fullPath).split(path.sep).join('/');
         if (entry.isDirectory()) {
           if (!['node_modules', '.git', 'public/uploads'].includes(relPath)) walk(fullPath);
         } else {
@@ -165,7 +168,12 @@ function getAllProjectFiles() {
 function isIgnored(filePath) {
   const ignorePatterns = CONFIG.ignorePatterns || [];
   return ignorePatterns.some(pattern => {
-    const regex = new RegExp('^' + pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*') + '$');
+    // Une seule passe : '**' -> '.*' (récursif) et '*' -> '[^/]*' (un niveau).
+    // BUG corrigé : deux .replace() séquentiels remangent le '*' inséré pour '**'
+    // (ex. 'node_modules/**' devenait '^node_modules/.[^/]*$' — un seul niveau,
+    // jamais récursif, sur TOUTE plateforme — indépendant du souci Windows ci-dessus).
+    const regexStr = pattern.replace(/\*\*|\*/g, (m) => (m === '**' ? '.*' : '[^/]*'));
+    const regex = new RegExp('^' + regexStr + '$');
     return regex.test(filePath);
   });
 }
