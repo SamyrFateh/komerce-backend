@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 312,
-    "filesWithFullHeaders": 283,
+    "scannedCodeFiles": 313,
+    "filesWithFullHeaders": 284,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 312,
+    "filesWithAnyHeaders": 313,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 653,
-    "edges": 2865,
+    "graphNodes": 655,
+    "edges": 2877,
     "dbTables": 107,
-    "doctrines": 122,
+    "doctrines": 123,
     "impactAreas": 112,
-    "unresolvedCodeEdges": 266
+    "unresolvedCodeEdges": 267
   },
   "byDomain": {
     "bootstrap": 9,
@@ -35,7 +35,7 @@
     "checkout": 2,
     "shared-cart": 34,
     "recommendations": 4,
-    "payment": 14,
+    "payment": 15,
     "tracking": 1,
     "collective-workspace": 3,
     "economic-engine": 24,
@@ -76,7 +76,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 103,
+    "service": 104,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -84,7 +84,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 66,
+    "critical": 67,
     "medium": 96,
     "high": 119,
     "low": 31
@@ -10297,6 +10297,57 @@
       "version": "2026-06"
     },
     {
+      "id": "services/payment-service.js",
+      "file": "services/payment-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "payment-status-owner",
+      "domain": "payment",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "options { client",
+        "cashPaidAt",
+        "guardPending }"
+      ],
+      "outputs": [
+        "orders.payment_status",
+        "payment_timestamps"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "services/admin-order-refund.js",
+        "services/payment-stripe.js",
+        "services/parcel-auto-create-service.js",
+        "services/payment-paypal.js"
+      ],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [
+        "orders"
+      ],
+      "dbTxn": [
+        "payment_status_single_owner",
+        "optional_caller_transaction"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change",
+        "payment_status_single_entry"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "dashboards"
+      ],
+      "version": "2026-06"
+    },
+    {
       "id": "services/payment-stripe.js",
       "file": "services/payment-stripe.js",
       "type": "file",
@@ -14382,6 +14433,11 @@
       "id": "doctrine:cash_validation_tracee",
       "type": "doctrine",
       "doctrine": "cash_validation_tracee"
+    },
+    {
+      "id": "doctrine:payment_status_single_entry",
+      "type": "doctrine",
+      "doctrine": "payment_status_single_entry"
     },
     {
       "id": "doctrine:wallet_non_modifie_ici",
@@ -28783,6 +28839,78 @@
       "label": "checkout"
     },
     {
+      "from": "services/payment-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/admin-order-refund.js",
+      "to": "services/payment-service.js",
+      "type": "uses",
+      "label": "services/admin-order-refund.js"
+    },
+    {
+      "from": "services/payment-stripe.js",
+      "to": "services/payment-service.js",
+      "type": "uses",
+      "label": "services/payment-stripe.js"
+    },
+    {
+      "from": "services/parcel-auto-create-service.js",
+      "to": "services/payment-service.js",
+      "type": "uses",
+      "label": "services/parcel-auto-create-service.js"
+    },
+    {
+      "from": "services/payment-paypal.js",
+      "to": "services/payment-service.js",
+      "type": "uses",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "doctrine:payment_status_single_entry",
+      "type": "doctrine",
+      "label": "payment_status_single_entry"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/payment-service.js",
+      "to": "impact:dashboards",
+      "type": "impact",
+      "label": "dashboards"
+    },
+    {
       "from": "services/payment-stripe.js",
       "to": "services/order-payment-confirmation.js",
       "type": "depends",
@@ -39805,6 +39933,7 @@
         "routes/admin/orders.js",
         "services/documents/refund-receipt.js",
         "services/order-status-machine.js",
+        "services/payment-service.js",
         "services/refund-service.js"
       ]
     },
@@ -41496,7 +41625,8 @@
         "db:scan_events",
         "db:users",
         "doctrine:resolve_before_behavior_change",
-        "impact:logistics"
+        "impact:logistics",
+        "services/payment-service.js"
       ]
     },
     "services/parcel-guards.js": {
@@ -41788,7 +41918,53 @@
         "routes/pickup-secret.js",
         "services/documents/refund-receipt.js",
         "services/order-payment-confirmation.js",
+        "services/payment-service.js",
         "services/paypal-client.js"
+      ]
+    },
+    "services/payment-service.js": {
+      "role": "payment-status-owner",
+      "domain": "payment",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/admin-order-refund.js",
+        "services/payment-stripe.js",
+        "services/parcel-auto-create-service.js",
+        "services/payment-paypal.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders"
+      ],
+      "dbWrite": [
+        "orders"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change",
+        "payment_status_single_entry"
+      ],
+      "impactAreas": [
+        "payments",
+        "orders",
+        "dashboards"
+      ],
+      "mustCheck": [
+        "db:orders",
+        "doctrine:payment_status_single_entry",
+        "doctrine:resolve_before_behavior_change",
+        "impact:dashboards",
+        "impact:orders",
+        "impact:payments",
+        "services/admin-order-refund.js",
+        "services/parcel-auto-create-service.js",
+        "services/payment-paypal.js",
+        "services/payment-stripe.js"
       ]
     },
     "services/payment-stripe.js": {
@@ -41851,7 +42027,8 @@
         "routes/pickup-secret.js",
         "services/loyalty-service.js",
         "services/notification-service.js",
-        "services/order-payment-confirmation.js"
+        "services/order-payment-confirmation.js",
+        "services/payment-service.js"
       ]
     },
     "services/paypal-client.js": {
@@ -45870,6 +46047,12 @@
     },
     {
       "from": "services/payment-paypal.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/payment-service.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"

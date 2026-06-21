@@ -104,6 +104,7 @@ const ALLOWED_STATUS_UPDATE_FILES = new Set([
 // La machine à états elle-même set payment_status — c'est son rôle.
 const ALLOWED_PAYMENT_STATUS_FILES = new Set([
   'services/order-status-machine.js', // owner légitime (machine à états)
+  'services/payment-service.js',       // owner légitime (P3-A : owner cible payment_status)
   'scripts/fix-schema.js',
   'scripts/reset-admin.js',
 
