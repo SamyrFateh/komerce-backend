@@ -43,6 +43,7 @@ const { randomBytes, randomUUID } = require('crypto');
 const db  = require('../db');
 
 const { transitionOrderStatus } = require('./order-status-machine');
+const { markPaid } = require('./payment-service');
 const log = require('../utils/logger').child({ module: 'parcel-auto-create-service' });
 
 /**
@@ -249,10 +250,7 @@ async function confirmCashAndCreateParcel(ref, actor) {
       const err = new Error('Paiement déjà confirmé'); err.status = 400; throw err;
     }
 
-    await client.query(
-      `UPDATE orders SET payment_status = 'paid', cash_paid_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [order.id]
-    );
+    await markPaid(order.id, { client, cashPaidAt: true });
 
     const dbActor = { id: actor.id || null, role: actor.role || 'system' };
     const _confirmResult = await transitionOrderStatus({

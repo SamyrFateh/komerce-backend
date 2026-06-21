@@ -116,7 +116,6 @@ const ALLOWED_PAYMENT_STATUS_FILES = new Set([
   'services/payment-paypal.js',            // refund PayPal ('refunded' + status)
   'services/admin-order-refund.js',        // refund admin ('refunded')
   'services/payment-stripe.js',            // échec paiement ('failed', gardé pending→failed)
-  'services/parcel-auto-create-service.js',// paiement cash confirmé ('paid' + cash_paid_at)
 
   // ── Outil de test/chaos — PAS de la prod paiement ──────────────────────────
   // Pose volontairement des états (in)cohérents pour les scénarios de simulation.
