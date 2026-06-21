@@ -156,7 +156,7 @@ function buildMounts() {
       // nom de l'export monté : 'sharedCart.adminRouter' → 'adminRouter' ; 'router' → 'router'
       const dotMatch = arg.match(/^\w+\.(\w+)/);
       const exportName = dotMatch ? dotMatch[1] : 'router';
-      if (file) mounts.push({ prefix, file, exportName });
+      if (file) mounts.push({ prefix, file, exportName, __source: f });
     }
   }
   return mounts;
@@ -171,14 +171,24 @@ function extractMountPath(layer) {
   if (layer.keys && layer.keys.length) { let i = 0; m = m.replace(/\(\[\^\\\/\]\+\?\)/g, () => ':' + (layer.keys[i++]?.name || 'id')); }
   return m === '/' ? '' : m;
 }
+// mounts /api/... montés DIRECTEMENT dans server.js (pas via bootstrap/api-routes.js)
+// — dérivés de buildMounts() plutôt que codés en dur, pour qu'un nouveau mount
+// dans server.js soit vu automatiquement par le scan sans toucher ce script.
+function serverJsDirectMounts() {
+  return buildMounts().filter(m => m.__source === 'server.js');
+}
+
 function runtimeInventory() {
   const app = express();
   const ar = require('../bootstrap/api-routes');
   ar.mountApiRoutesBeforeStripeOwnedBlocks(app); ar.mountApiRoutesAfterStripeOwnedBlocks(app);
-  try { app.use('/api/shared-carts', require('../routes/shared-cart').router); } catch (_) {}
-  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart-refund-admin').router); } catch (_) {}
-  // server.js:179 — second export nommé monté au MÊME préfixe (routes admin disjointes)
-  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart').adminRouter); } catch (_) {}
+  for (const m of serverJsDirectMounts()) {
+    try {
+      const mod = require(path.join(ROOT, m.file));
+      const router = m.exportName === 'router' && !mod.router ? mod : mod[m.exportName];
+      if (router) app.use(m.prefix, router);
+    } catch (_) { /* un require qui échoue ne doit pas tuer le scan */ }
+  }
   const stack = (app._router || app.router).stack; const out = [];
   (function walk(layers, prefix) {
     for (const l of layers) {
