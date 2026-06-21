@@ -1,4 +1,4 @@
-name: Contract conformance (P4-1 — observe)
+name: Contract conformance (P4-1 — bloquant)
 
 # Audit EMPIRIQUE : confronte le vrai comportement de l'app au contrat OpenAPI,
 # par une méthode INDÉPENDANTE de la dérivation qui a produit le contrat
@@ -6,9 +6,12 @@ name: Contract conformance (P4-1 — observe)
 # les envoie à l'app bootée, et vérifie que les réponses sont conformes (code de
 # statut déclaré, pas de 500 inattendu, méthodes supportées, etc.).
 #
-# MODE OBSERVE : non bloquant pour ce premier passage (continue-on-error). Les
-# réponses du contrat sont surtout des schémas UNKNOWN → on calibre d'abord le
-# bruit (rapport JUnit en artefact), puis on promeut en bloquant une fois trié.
+# MODE BLOQUANT : promu depuis observe après calibration du bruit (P4-1).
+# Exclusions calibrées :
+#   - unsupported_method : Express renvoie 404 sur TRACE (pas 405) — comportement
+#     framework non modifiable, pas un bug applicatif.
+# 429 désormais documenté dans le contrat → plus de bruit response_conformance.
+# Path params manquants corrigés dans openapi.json → plus d'erreurs Schema Error.
 
 on:
   pull_request:
@@ -96,16 +99,18 @@ jobs:
           done
           echo "::error::App did not become healthy in time"; cat /tmp/server.log; exit 1
 
-      # Sonde de conformité — OBSERVE (continue-on-error). Le token couvre les
-      # endpoints authentifiés ; --continue-on-failure parcourt tout le contrat.
-      - name: Schemathesis conformance (observe)
-        continue-on-error: true
+      # Sonde de conformité — BLOQUANT. Le token couvre les endpoints authentifiés ;
+      # --continue-on-failure parcourt tout le contrat avant d'échouer (rapport complet).
+      # unsupported_method exclu : Express renvoie 404 sur TRACE, Schemathesis attend 405
+      # → bruit pur non actionnable (244 faux positifs identifiés lors du calibrage).
+      - name: Schemathesis conformance (bloquant)
         run: >-
           schemathesis run docs/contract/openapi.json
           --url http://localhost:3000
           -H "Authorization: Bearer ${PROBE_TOKEN}"
           --continue-on-failure
           --max-examples 5
+          --exclude-checks unsupported_method
           --report junit --report-dir schemathesis-report
 
       - name: Upload conformance report
