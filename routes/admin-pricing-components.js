@@ -50,7 +50,7 @@ const VALID_CATEGORIES = ['sourcing', 'transit', 'douane', 'hub', 'distribution'
 const VALID_UNITS      = ['pct', 'kmf', 'kmf_per_kg', 'kmf_per_m3', 'aed', 'aed_per_unit'];
 
 // ─── GET /api/admin/pricing-components ─────────────────────────────────────
-router.get('/', authenticate, async (req, res, next) => {
+router.get('/', ...guard, async (req, res, next) => {
   try {
     const { category, active } = req.query;
     const conditions = ['1=1'];
@@ -80,7 +80,7 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 // ─── GET /api/admin/pricing-components/:id ─────────────────────────────────
-router.get('/:id', authenticate, async (req, res, next) => {
+router.get('/:id', ...guard, async (req, res, next) => {
   try {
     const { rows: [row] } = await db.query(
       'SELECT * FROM pricing_components WHERE id = $1', [req.params.id]

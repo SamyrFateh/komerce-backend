@@ -1,8 +1,6 @@
 {
   "flagged": [
     "DELETE /api/shared-carts/public/{token}/estimations/{estimationId}",
-    "GET /api/admin/pricing-components",
-    "GET /api/admin/pricing-components/{id}",
     "GET /api/auth/magic-link/validate",
     "GET /api/boutique/suggestions",
     "GET /api/categories",

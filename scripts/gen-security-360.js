@@ -268,3 +268,4 @@ if (MODE === 'check') {
   console.log(`\x1b[32m✔ Security 360 : aucune nouvelle anomalie (${current.length} connus).\x1b[0m`); process.exit(0);
 }
 console.log(`Security 360 · ${summary.total} routes · 🟢 ${summary.protected} · ⚪ ${summary.public} · 🟠 ${summary.unprotected} · 🔴 ${summary.admin_no_guard} · ❔ ${summary.unknown}`);
+process.exit(0);
