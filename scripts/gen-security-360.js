@@ -177,6 +177,8 @@ function runtimeInventory() {
   ar.mountApiRoutesBeforeStripeOwnedBlocks(app); ar.mountApiRoutesAfterStripeOwnedBlocks(app);
   try { app.use('/api/shared-carts', require('../routes/shared-cart').router); } catch (_) {}
   try { app.use('/api/admin/shared-carts', require('../routes/shared-cart-refund-admin').router); } catch (_) {}
+  // server.js:179 — second export nommé monté au MÊME préfixe (routes admin disjointes)
+  try { app.use('/api/admin/shared-carts', require('../routes/shared-cart').adminRouter); } catch (_) {}
   const stack = (app._router || app.router).stack; const out = [];
   (function walk(layers, prefix) {
     for (const l of layers) {

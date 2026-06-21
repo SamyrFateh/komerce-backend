@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-06-21T03:12:24.588Z",
+  "generatedAt": "2026-06-21T07:58:47.701Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 461,
-    "protected": 405,
+    "total": 467,
+    "protected": 411,
     "public": 5,
     "unprotected": 45,
     "admin_no_guard": 0,
@@ -1096,7 +1096,49 @@
       ]
     },
     {
+      "key": "POST /api/admin/shared-carts/{id}/expire",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/shared-carts/{id}/extend",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/shared-carts/{id}/note",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/shared-carts/{id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/shared-carts/refund-queue",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/shared-carts",
       "level": "PROTECTED",
       "roles": [
         "admin"
