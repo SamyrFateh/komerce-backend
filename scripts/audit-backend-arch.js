@@ -101,11 +101,26 @@ const ALLOWED_STATUS_UPDATE_FILES = new Set([
 ]);
 
 // I-BACK-4 : UPDATE orders SET payment_status= hors order-status-machine.js
-// La machine à états elle-même set payment_status — c'est son rôle
+// La machine à états elle-même set payment_status — c'est son rôle.
 const ALLOWED_PAYMENT_STATUS_FILES = new Set([
-  'services/order-status-machine.js', // owner légitime
+  'services/order-status-machine.js', // owner légitime (machine à états)
   'scripts/fix-schema.js',
   'scripts/reset-admin.js',
+
+  // ── Owners paiement reconnus — DETTE TRACÉE → Lot P3-A ──────────────────────
+  // Ces 4 services mutent légitimement payment_status aujourd'hui, mais devront
+  // être centralisés derrière services/payment-service.js (markPaid/markRefunded/
+  // markFailed) pour rendre l'invariant structurel. Allowlist d'intention : le
+  // cliquet bloque toujours tout NOUVEAU site non listé.
+  'services/payment-paypal.js',            // refund PayPal ('refunded' + status)
+  'services/admin-order-refund.js',        // refund admin ('refunded')
+  'services/payment-stripe.js',            // échec paiement ('failed', gardé pending→failed)
+  'services/parcel-auto-create-service.js',// paiement cash confirmé ('paid' + cash_paid_at)
+
+  // ── Outil de test/chaos — PAS de la prod paiement ──────────────────────────
+  // Pose volontairement des états (in)cohérents pour les scénarios de simulation.
+  // Ne doit PAS passer par payment-service.js (ce serait dénaturer le chaos-testing).
+  'services/simulator/state-advancer.js',
 ]);
 
 // I-BACK-6 : routes/X-engine.js — engines dans routes/ (à migrer vers services/)
@@ -252,6 +267,14 @@ function checkI5_adminAuth() {
   for (const file of adminFiles) {
     const content = readFile(file);
     const relPath = rel(file);
+
+    // Façade / fichier de montage : ne déclare aucune route propre
+    // (ex. routes/admin.js = `module.exports = require('./admin/index')`).
+    // Les guards vivent dans les fichiers délégués, vérifiés là où ils sont.
+    // Vérifier un tel fichier pour des tokens de guard est un faux positif.
+    const declaresRoutes = /\brouter\.(get|post|put|delete|patch)\s*\(/.test(content);
+    if (!declaresRoutes) continue;
+
     const hasAuthenticate = /authenticate/.test(content);
     const hasRequireRole  = /requireRole|requireAdmin|isAdmin/.test(content);
 
@@ -322,9 +345,21 @@ function checkI7_noConsoleLog() {
 // ════════════════════════════════════════════════════════════════
 function checkI8_noRawSqlInterpolation() {
   const files = [...walkJs(ROUTES_DIR), ...walkJs(SERVICES_DIR)];
-  // Pattern : template literal contenant du SQL avec ${...}
-  // On cherche les backtick strings avec SELECT/INSERT/UPDATE/DELETE ET ${}
-  const sqlPattern = /`[^`]*(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)[^`]*\$\{[^}]+\}[^`]*`/i;
+  // Contexte SQL : template literal avec un mot SQL ET une interpolation ${...}
+  const sqlCtx = /`[^`]*\b(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE)\b[^`]*\$\{[^}]+\}[^`]*`/i;
+
+  // VRAIE injection : une valeur interpolée non paramétrée — entre quotes,
+  // ou directement après un comparateur. La lookbehind (?<!\$) exclut les
+  // placeholders `$${i}` (qui produisent $1, $2 — donc déjà paramétrés).
+  const valueInjection = /(['"]\s*(?<!\$)\$\{[^}]+\}|[=<>]\s*(?<!\$)\$\{[^}]+\}|\bLIKE\s+(?<!\$)\$\{|\bIN\s*\(\s*(?<!\$)\$\{)/i;
+
+  // Identifiant interpolé (table/colonne) — NON paramétrable par nature.
+  // Sûr seulement si la source est une whitelist littérale. On surveille (warn),
+  // on ne bloque pas, car le codebase le fait via des maps/tableaux en dur.
+  const identifierInterp = /\b(FROM|JOIN|INTO|UPDATE|TABLE|ORDER\s+BY)\s+(?<!\$)\$\{[^}]+\}/i;
+
+  // Bruit : lignes de log (le mot "from"/"where" y déclenche faussement sqlCtx).
+  const isLogLine = l => /\b(log|logger|console)\s*\.\s*(log|info|warn|error|debug)\s*\(/.test(l);
 
   for (const file of files) {
     const relPath = rel(file);
@@ -332,17 +367,24 @@ function checkI8_noRawSqlInterpolation() {
     const lines   = content.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (lines[i].trim().startsWith('//')) continue;
-      if (!sqlPattern.test(line)) continue;
+      if (line.trim().startsWith('//')) continue;
+      if (!sqlCtx.test(line)) continue;
+      if (isLogLine(line)) continue;
+      if (ALLOWED_RAW_SQL_PATTERNS.some(p => p.test(line))) continue;
 
-      // Vérifier si c'est un pattern autorisé (DDL, savepoints)
-      const isAllowed = ALLOWED_RAW_SQL_PATTERNS.some(p => p.test(line));
-      if (!isAllowed) {
+      if (valueInjection.test(line)) {
         violate('I-BACK-8',
-          `${relPath}:${i + 1} — query SQL avec interpolation \${variable}`,
-          'Utiliser des requêtes paramétrées : $1, $2, ... avec [value1, value2]'
+          `${relPath}:${i + 1} — valeur interpolée non paramétrée dans une requête SQL`,
+          'Injection possible : utiliser des paramètres $1, $2, ... avec [value1, value2]'
+        );
+      } else if (identifierInterp.test(line)) {
+        warn('I-BACK-8',
+          `${relPath}:${i + 1} — identifiant SQL interpolé (table/colonne)`,
+          'Vérifier que la source est une whitelist littérale, jamais une entrée utilisateur'
         );
       }
+      // sinon : clause structurelle (`WHERE ${where}`, `(${cols})`) bâtie avec
+      // des $N — sûre par construction, non signalée.
     }
   }
 }
