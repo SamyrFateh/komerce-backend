@@ -206,6 +206,30 @@ const KNOWN_RESPONSES = {
   '/api/pricing/apply-price/{id}': {
     post: { fields: ['status','recommended_price','health_status'], source: 'scan-dashboards' }
   },
+  // ── L4 (burn-down UNKNOWN) — admin / paiement / commandes, vérifié contre tests ──
+  // GET /api/admin/orders : tests/integration/api.test.js + admin-authz-probe.test.js
+  '/api/admin/orders': {
+    get: { fields: ['orders'], source: 'test' }
+  },
+  // POST /api/payments/cash/confirm : la route (routes/payments.js) fait
+  // `res.status(result.status).json(result.body)` — le body testé dans
+  // tests/unit/payment-cash-confirm.test.js (succès) est donc le body HTTP réel.
+  '/api/payments/cash/confirm': {
+    post: { fields: ['reference','message'], source: 'test' }
+  },
+  // POST /api/payments/paypal/refund/{orderId} : même pattern de passthrough
+  // dans routes/payments-paypal.js, testé dans tests/unit/payment-paypal.test.js.
+  '/api/payments/paypal/refund/{orderId}': {
+    post: { fields: ['success','refund_id'], source: 'test' }
+  },
+  // GET /api/products : tests/integration/api.test.js
+  '/api/products': {
+    get: { fields: ['products'], source: 'test' }
+  },
+  // GET /api/health : tests/integration/api.test.js + admin-authz-probe.test.js
+  '/api/health': {
+    get: { fields: ['status','db_latency_ms'], source: 'test' }
+  },
 };
 
 function buildResponseSchema(routePrefix, method) {
@@ -343,6 +367,16 @@ if (inventory.length < 150) {
   process.exit(1);
 }
 
+// Surcharges de réponse par route — pour les cas réels observés (ex: probe Schemathesis)
+// qui ne rentrent pas dans le moule "200 + UNKNOWN/test" et ne justifient pas une entrée
+// KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
+// Format : "METHOD /chemin/{param}" → { [code]: { description } }
+const RESPONSE_OVERRIDES = {
+  'GET /webhook/meta-whatsapp': {
+    '403': { description: 'Forbidden — token de vérification Meta invalide ou absent' },
+  },
+};
+
 let unknownCount = 0;
 const seenOps = new Set();
 for (const ep of inventory) {
@@ -355,13 +389,34 @@ for (const ep of inventory) {
   const op = { summary: `${ep.method} ${prefix}`, 'x-route-file': routeFileFor(prefix, routeFiles) };
   const enrich = schemaIndex[key];
   const reqBody = enrich ? buildRequestBody(enrich.schema) : null;
-  const params  = enrich ? buildParameters(enrich.schema) : [];
+  const joiParams = enrich ? buildParameters(enrich.schema) : [];
+
+  // Tout {param} du gabarit d'URL DOIT être déclaré, Joi ou pas — sinon Schemathesis
+  // ne peut pas instancier la requête (Schema Error "Path parameter not defined").
+  // Les params Joi (plus riches : type, format, enum...) priment ; les params restants
+  // du gabarit sans schéma Joi reçoivent un fallback string générique.
+  const pathParamNames = [...prefix.matchAll(/\{([^}]+)\}/g)].map(m => m[1]);
+  const joiParamNames = new Set(joiParams.filter(p => p.in === 'path').map(p => p.name));
+  const fallbackParams = pathParamNames
+    .filter(name => !joiParamNames.has(name))
+    .map(name => ({ name, in: 'path', required: true, schema: { type: 'string' } }));
+  const params = [...joiParams, ...fallbackParams];
+
   if (reqBody) op.requestBody = { ...reqBody, 'x-contract-status': 'joi' };
   if (params.length) op.parameters = params;
 
   const respSchema = buildResponseSchema(prefix, method);
   if (respSchema['x-contract-status'] === 'UNKNOWN') unknownCount++;
-  op.responses = { '200': { description: 'Succès', content: { 'application/json': { schema: respSchema } } } };
+  op.responses = {
+    '200': { description: 'Succès', content: { 'application/json': { schema: respSchema } } },
+    // 429 documenté par défaut : le rate-limiter global peut se déclencher sur n'importe
+    // quel endpoint, et un 429 non documenté est sinon signalé à tort par Schemathesis
+    // comme "undocumented HTTP status" (bruit calibré en P4-1).
+    '429': { description: 'Too Many Requests — rate limit exceeded' },
+  };
+
+  const overrides = RESPONSE_OVERRIDES[`${ep.method} ${prefix}`];
+  if (overrides) Object.assign(op.responses, overrides);
 
   openapi.paths[prefix][method] = op;
 }
