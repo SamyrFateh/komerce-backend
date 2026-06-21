@@ -222,6 +222,14 @@ if ! node scripts/arch-doctrine-sanitize-check.js >/dev/null 2>&1; then
   exit 1
 fi
 
+# 5b. Audit d'architecture backend (invariants I-BACK-*) : 100% statique, rapide.
+#     SQL non parametre, owner unique payment_status, auth admin, etc.
+if ! node scripts/audit-backend-arch.js >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Audit backend : violation d'invariant (SQL non parametre / owner payment_status / auth admin).${NC}"
+  echo "   Detail : npm run backend:audit"
+  exit 1
+fi
+
 # 6. Invariants boutique (chaine statique, sans e2e) : ownership CSS, hex/tokens,
 #    breakpoints, injection CSS, equilibre HTML, imports JS, cache-buster.
 #    Sous-shell : le cd ne fuit pas. Ne tourne que si le dossier boutique existe.
