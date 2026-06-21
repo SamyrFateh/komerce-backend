@@ -51,6 +51,12 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
     'PAYPAL_CLIENT_ID',
     'PAYPAL_CLIENT_SECRET',
     'PAYPAL_WEBHOOK_ID',
+    // P4-2 : routes/meta-whatsapp.js vérifiait la signature HMAC seulement si
+    // cette variable était présente, avec fail-open silencieux (juste un warn)
+    // sinon — un webhook prod sans la variable acceptait n'importe quel POST
+    // non signé. Suit désormais la même doctrine que les autres secrets de
+    // webhook (STRIPE_WEBHOOK_SECRET, PAYPAL_WEBHOOK_ID) : requis au boot.
+    'META_WA_APP_SECRET',
   ];
 
   const recommendedEnv = [

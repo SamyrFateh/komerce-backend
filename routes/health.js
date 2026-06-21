@@ -119,4 +119,13 @@ router.get('/metrics', authenticate, requireRole(['admin']), async (req, res) =>
   }
 });
 
+// ── GET /health/version — Version info (toy route P2-2) ─────────────────────
+
+router.get('/version', (req, res) => {
+  res.json({
+    version: process.env.npm_package_version || 'unknown',
+    commit: process.env.GIT_SHA || 'local',
+  });
+});
+
 module.exports = router;

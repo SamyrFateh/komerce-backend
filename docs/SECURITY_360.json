@@ -1,27 +1,15 @@
 {
-  "generatedAt": "2026-06-20T22:14:59.276Z",
+  "generatedAt": "2026-06-21T03:12:24.588Z",
   "source": "hybrid: runtime inventory + static guard analysis",
   "summary": {
-    "total": 460,
-    "protected": 403,
+    "total": 461,
+    "protected": 405,
     "public": 5,
     "unprotected": 45,
-    "admin_no_guard": 2,
-    "unknown": 5
+    "admin_no_guard": 0,
+    "unknown": 6
   },
   "flagged": [
-    {
-      "key": "GET /api/admin/pricing-components/{id}",
-      "level": "ADMIN_NO_GUARD",
-      "severity": "high",
-      "roles": []
-    },
-    {
-      "key": "GET /api/admin/pricing-components",
-      "level": "ADMIN_NO_GUARD",
-      "severity": "high",
-      "roles": []
-    },
     {
       "key": "POST /api/auth/admin-reset",
       "level": "UNPROTECTED",
@@ -300,6 +288,12 @@
     },
     {
       "key": "GET /health/ready",
+      "level": "UNKNOWN",
+      "severity": "audit",
+      "roles": []
+    },
+    {
+      "key": "GET /health/version",
       "level": "UNKNOWN",
       "severity": "audit",
       "roles": []
@@ -914,8 +908,10 @@
     },
     {
       "key": "GET /api/admin/pricing-components/{id}",
-      "level": "ADMIN_NO_GUARD",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "PUT /api/admin/pricing-components/{id}",
@@ -926,8 +922,10 @@
     },
     {
       "key": "GET /api/admin/pricing-components",
-      "level": "ADMIN_NO_GUARD",
-      "roles": []
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
     },
     {
       "key": "POST /api/admin/pricing-components",
@@ -3417,6 +3415,11 @@
     },
     {
       "key": "GET /health/ready",
+      "level": "UNKNOWN",
+      "roles": []
+    },
+    {
+      "key": "GET /health/version",
       "level": "UNKNOWN",
       "roles": []
     },

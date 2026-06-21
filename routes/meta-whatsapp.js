@@ -24,20 +24,21 @@ const crypto = require('crypto');
 const log = require('../utils/logger').child({ module: 'meta-whatsapp' });
 
 const VERIFY_TOKEN   = process.env.META_WA_VERIFY_TOKEN || 'komerce_meta_verify_token';
-const WA_APP_SECRET  = process.env.META_WA_APP_SECRET || '';
+const WA_APP_SECRET  = process.env.META_WA_APP_SECRET;
+
+// P4-2 : l'ancien comportement laissait passer les POST sans vérification HMAC
+// si META_WA_APP_SECRET était absent (fail-open silencieux, juste un warn).
+// Comme pour JWT_SECRET (routes/auth.js, N7), pas de fallback autorisé : le
+// process refuse de démarrer plutôt que d'exposer un webhook non authentifié.
+if (!WA_APP_SECRET) {
+  log.error('FATAL: META_WA_APP_SECRET manquant — démarrage impossible');
+  process.exit(1); // pas de fallback autorisé, même en dev
+}
 
 /**
  * Vérifie la signature HMAC-SHA256 envoyée par Meta dans X-Hub-Signature-256.
- * Si META_WA_APP_SECRET n'est pas défini (environnement dev), on laisse passer.
- * En production, la variable DOIT être définie — le webhook rejette sinon.
  */
 function verifyMetaSignature(req, res, next) {
-  if (!WA_APP_SECRET) {
-    // Dev : pas de secret configuré → on loggue et on laisse passer
-    log.warn('[META-WA] META_WA_APP_SECRET absent — vérification HMAC désactivée (DEV uniquement)');
-    return next();
-  }
-
   const sig = req.headers['x-hub-signature-256'];
   if (!sig || !sig.startsWith('sha256=')) {
     return res.status(403).json({ error: 'Signature Meta manquante' });
@@ -49,10 +50,18 @@ function verifyMetaSignature(req, res, next) {
     .update(rawBody, 'utf8')
     .digest('hex');
 
-  const valid = crypto.timingSafeEqual(
-    Buffer.from(sig, 'utf8'),
-    Buffer.from(expected, 'utf8')
-  );
+  // P4-2 : timingSafeEqual exige deux buffers de MÊME longueur, sinon il
+  // lève une exception (pas un simple false) — une signature malformée ou
+  // tronquée ferait planter le process avant ce guard (500 non contrôlé
+  // au lieu d'un rejet 403 propre).
+  const sigBuf = Buffer.from(sig, 'utf8');
+  const expectedBuf = Buffer.from(expected, 'utf8');
+  if (sigBuf.length !== expectedBuf.length) {
+    log.warn('[META-WA] Signature HMAC de longueur invalide — requête rejetée');
+    return res.status(403).json({ error: 'Signature Meta invalide' });
+  }
+
+  const valid = crypto.timingSafeEqual(sigBuf, expectedBuf);
 
   if (!valid) {
     log.warn('[META-WA] Signature HMAC invalide — requête rejetée');

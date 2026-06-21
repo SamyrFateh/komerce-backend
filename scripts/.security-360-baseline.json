@@ -28,6 +28,7 @@
     "GET /health",
     "GET /health/metrics",
     "GET /health/ready",
+    "GET /health/version",
     "GET /webhook/meta-whatsapp",
     "PATCH /api/shares/{token}/contributions/{id}",
     "POST /api/auth/admin-reset",

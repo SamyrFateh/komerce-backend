@@ -1,19 +1,17 @@
 # Security 360 — couverture des gardes (hybride runtime + statique)
 
-> 2026-06-20T22:14:59.276Z — 460 endpoints
+> 2026-06-21T03:12:24.588Z — 461 endpoints
 
 | Niveau | Compte |
 |---|---|
-| 🟢 PROTECTED | 403 |
+| 🟢 PROTECTED | 405 |
 | ⚪ PUBLIC (légitime) | 5 |
 | 🟠 UNPROTECTED | 45 |
-| 🔴 ADMIN_NO_GUARD | 2 |
-| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 5 |
+| 🔴 ADMIN_NO_GUARD | 0 |
+| ❔ UNKNOWN (statique n'a pas atteint — à auditer) | 6 |
 
 ## Flaggés
 
-- 🔴 `GET /api/admin/pricing-components/{id}` — ADMIN_NO_GUARD
-- 🔴 `GET /api/admin/pricing-components` — ADMIN_NO_GUARD
 - 🟠 `POST /api/auth/admin-reset` — UNPROTECTED
 - 🟠 `POST /api/auth/guest-checkout` — UNPROTECTED
 - 🟠 `GET /api/auth/magic-link/validate` — UNPROTECTED
@@ -61,6 +59,7 @@
 - 🟠 `GET /api/tracking/{token}` — UNPROTECTED
 - ❔ `GET /health/metrics` — UNKNOWN
 - ❔ `GET /health/ready` — UNKNOWN
+- ❔ `GET /health/version` — UNKNOWN
 - ❔ `GET /health` — UNKNOWN
 - ❔ `GET /webhook/meta-whatsapp` — UNKNOWN
 - ❔ `POST /webhook/meta-whatsapp` — UNKNOWN
