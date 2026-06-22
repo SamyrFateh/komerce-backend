@@ -471,11 +471,23 @@ DoD : rien à retirer de la allowlist (vide pour ces entrées). Section conserv�
 
 ### GOV-06 — Plan tests E2E API (B1)
 
-Statut : **ouvert — infra déjà en place**.
+Statut : **clos — 2026-06-23**.
 
-Parcours critiques à couvrir : checkout cash, checkout Stripe/PayPal webhook, remboursement, panier partagé V4 cycle complet, admin commande bout en bout.
-Infra : harness `tests/integration/test-harness/seed-helpers.js`, Postgres jetable CI, `ci-probe-token.js`.
-DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
+5 parcours critiques implémentés dans `tests/integration/e2e-critical-flows.test.js` (12 assertions) :
+
+1. **checkout_cash** — POST `/api/orders` (cash_relais) → POST `/api/v2/orders/:ref/confirm-cash` → `payment_status=paid` vérifié en DB.
+2. **stripe_webhook** — HMAC signé localement (secret CI : `whsec_dummy`) → POST `/api/payments/stripe/webhook` → `payment_status=paid` en DB. + contrôle négatif (signature invalide → 400).
+3. **remboursement** — ordre non payé → POST `/api/orders/:id/cancel` → `status=cancelled`. + contrôle négatif (déjà annulé → 422).
+4. **panier_shared_v4** — création depuis items → fermeture → contribution cash publique → confirmation admin. Cycle OPEN→CLOSED + contribution `confirmed` en DB.
+5. **admin_order_e2e** — transitions `confirmed→ordered→preparation` via PATCH `/api/orders/:id/status`, vérification `order_status_history`, + contrôle négatif (transition rétrograde → 4xx).
+
+Câblage CI : le job `integration` existant (`.github/workflows/ci.yml` L118) lance `for f in tests/integration/*.test.js` — le fichier est capté automatiquement sans modification yml.
+
+Notes d'implémentation :
+- Webhook Stripe : `crypto.createHmac('sha256', secret).update('${t}.${payload}')` — signature locale valide car STRIPE_WEBHOOK_SECRET est contrôlé en CI (`whsec_dummy`). Aucun appel réseau Stripe requis.
+- Panier partagé : flux cash uniquement (pas Stripe) — testable en CI sans mock externe.
+- Commandes créées via HTTP pour les tests 1 et 4 (vrai flux), INSERTs directs pour 2, 3, 5 (isole le SUT).
+- EADDRINUSE connu : lancer les fichiers integration séparément (`for f in ...`) comme ci.yml, pas en batch `npx jest tests/integration/`.
 
 ### Feuille de route priorisée (mise à jour audit 2026-06-22)
 
@@ -497,7 +509,7 @@ DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 
 9. **AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).
 10. **GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).
-11. **GOV-06** (5 tests E2E parcours critiques).
+11. ~~**GOV-06** (5 tests E2E parcours critiques).~~ — ✅ **clôturé 2026-06-23** (`e2e-critical-flows.test.js`, 12 assertions, 5 parcours, câblage CI automatique).
 12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
 13. ~~**AUD-07** (migrer 6 interpolations SQL vers paramètres)~~ — ✅ **clôturé 2026-06-23** (allowlists explicites + annotations, 0 input user dans les identifiants SQL).
 14. ~~**AUD-08** (test unitaire `invoice-service.js`)~~ — ✅ **clôturé 2026-06-23** (11/11 tests verts, FACT-01 régression couverte).
