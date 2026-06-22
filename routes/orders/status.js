@@ -73,6 +73,16 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     );
     if (!order) return res.status(404).json({ error: 'Commande introuvable' });
 
+    // GOV-02 (volet 2) — IDOR cross-relais : agent_relais est multi-tenant
+    // (plusieurs points relais physiques). Un agent_relais ne peut agir que
+    // sur les commandes de SON relais. admin et agent_hub ont une portée
+    // globale, non concernés par ce garde-fou.
+    if (req.user.role === 'agent_relais' && String(order.relais_id) !== String(req.user.relais_id)) {
+      await client.query('ROLLBACK');
+      log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+      return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
+    }
+
     const result = await transitionOrderStatus({
       orderId: order.id,
       newStatus: status,

@@ -426,12 +426,23 @@ Bonus : `payments.js:89` et `shared-cart.js:337` — fuite `err.message` dans le
 
 ### GOV-02 — 45 routes UNPROTECTED non auditées (A2)
 
-Statut : **partiellement clos — classification faite, sonde IDOR restante**.
+Statut : **clos — 2026-06-23**.
 
-Volet 1 — ✅ **clos 2026-06-22** : les 45 routes UNPROTECTED sont classées et justifiées dans `docs/audit/GOV-02_UNPROTECTED_CLASSIFICATION.md` (18 publiques légitimes, 12 sécurisées par token, 9 auth portée par middleware parent, 1 faux positif, 5 à surveiller documentées). Verdict : 0 route dangereusement ouverte.
+Volet 1 — ✅ clos 2026-06-22 : les 45 routes UNPROTECTED sont classées et justifiées dans `docs/audit/GOV-02_UNPROTECTED_CLASSIFICATION.md` (18 publiques légitimes, 12 sécurisées par token, 9 auth portée par middleware parent, 1 faux positif, 5 à surveiller documentées). Verdict : 0 route dangereusement ouverte.
 
-Volet 2 — **ouvert** : 141 routes role-protégées (agent_hub 87 · agent_relais 50 · agent_transitaire 4) ne sont couvertes que par analyse statique, pas de sonde runtime. Actions restantes : sonde multi-rôles + audit IDOR (ressource user A inaccessible par user B).
-DoD restant : matrice rôle×route verte CI.
+Volet 2 — ✅ clos 2026-06-23. **Correction importante** : `tests/integration/relais-idor-probe.test.js` affirmait dans son docstring qu'un garde-fou d'ownership cross-relais avait déjà été posé sur `routes/orders/status.js`, `routes/orders/qr.js` et `services/parcel-operations.js` (à l'image de `routes/relay-dashboard.js`). Vérification du code réel : **ce garde-fou n'existait pas** — `requireRole` ne vérifiait que le rôle, jamais l'ownership. Un `agent_relais` du relais B pouvait changer le statut, générer le QR de retrait, ou faire avancer un colis d'une commande appartenant au relais A. IDOR cross-tenant réel, non corrigé malgré la doc.
+
+Corrigé maintenant, sur le même pattern que `relay-dashboard.js::assertOrderBelongsToRelais` (exclut `admin` et `agent_hub`, qui ont une portée globale — seul `agent_relais` est multi-tenant) :
+
+- `routes/orders/status.js` — PATCH `/:id/status`, garde posée après le fetch de la commande, avant `transitionOrderStatus`.
+- `routes/orders/qr.js` — POST `/:id/qr-token`, garde posée après le fetch, avant génération du token.
+- `services/parcel-operations.js` — `updateParcelStatus()`, garde posée après le fetch du colis (via `order.relais_id` joint), avant validation de transition.
+
+**Vérifié en conditions réelles**, pas seulement par lecture de code : Postgres monté en local à partir de `docs/db/railway-live-schema.sql`, serveur démarré, suite `relais-idor-probe.test.js` exécutée avec `DATABASE_URL` réel → **348/348 verts**, incluant la matrice rôle×route (141 occurrences de rôle) et les 4 tests IDOR dédiés (3 cas négatifs + 1 contrôle positif confirmant que `agent_relais A` garde l'accès à ses propres commandes).
+
+Bonus trouvé en cours de route : le fichier de test était dupliqué à l'identique dans `tests/unit/` (mauvais répertoire — c'est un test d'intégration nécessitant DB) → supprimé. Son nettoyage `afterAll` faisait un `DELETE FROM parcels` qui se heurtait au trigger `trg_no_delete_parcels` (022) → corrigé en `UPDATE ... SET status = 'cancelled'`.
+
+DoD satisfait : matrice rôle×route verte (test exécuté, pas seulement écrit), IDOR cross-relais fermé sur les 3 points d'entrée identifiés.
 
 ### GOV-03 — Faille high Nodemailer (CRLF) non gatée (A5)
 
@@ -473,7 +484,7 @@ DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 1. ~~**GOV-01** (73 catches 500 → `next(err)`)~~ — ✅ **clôturé 2026-06-22** (69/73 corrigés, 4 cas spéciaux maintenus).
 2. ~~**GOV-03** (`npm audit fix` Nodemailer + job CI)~~ — ✅ **clôturé 2026-06-23** (nodemailer 9.0.1, gate Node câblée, job CI actif).
 3. ~~**GOV-05** (vérifier `shared_cart_commitments` en DB live)~~ — ✅ **clôturé 2026-06-23** (les deux tables confirmées en DB live, aucune fiction).
-4. **GOV-02** (volet 2 restant : sonde multi-rôles + IDOR sur 141 routes role-protégées — classification des 45 UNPROTECTED déjà close).
+4. ~~**GOV-02** (volet 2 restant : sonde multi-rôles + IDOR sur 141 routes role-protégées — classification des 45 UNPROTECTED déjà close).~~ — ✅ **clôturé 2026-06-23** (IDOR cross-relais réellement corrigé sur 3 fichiers — la doc le prétendait déjà fait, ce n'était pas le cas — et vérifié par exécution live, 348/348).
 
 **P1 — H-24h** :
 
@@ -490,6 +501,8 @@ DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
 13. ~~**AUD-07** (migrer 6 interpolations SQL vers paramètres)~~ — ✅ **clôturé 2026-06-23** (allowlists explicites + annotations, 0 input user dans les identifiants SQL).
 14. ~~**AUD-08** (test unitaire `invoice-service.js`)~~ — ✅ **clôturé 2026-06-23** (11/11 tests verts, FACT-01 régression couverte).
+15. ~~**AUD-09** (3 routes orphelines)~~ — ✅ **clôturé 2026-06-23** (3 fichiers supprimés, voir §12).
+16. ~~**AUD-10** (4 collisions de numéros de migration)~~ — ✅ **clôturé 2026-06-23** (renommage 083-086 + script de bascule schema_migrations, voir §12).
 
 ---
 
@@ -567,17 +580,32 @@ DoD satisfait.
 
 ### AUD-09 — 3 routes orphelines avec header `@used-by` divergent
 
-Statut : **ouvert — priorité P2 (hygiène)**.
+Statut : **clos — 2026-06-23**.
 
-`routes/admin-collective-repairs.js`, `routes/pickup-pay-cash.js`, `routes/alerts.js` déclarent `@used-by bootstrap/api-routes.js` mais ne sont montés nulle part.
-DoD : fichiers supprimés ou header corrigé.
+Les 3 fichiers étaient bien orphelins (aucun `require()` nulle part dans le code, vérifié par grep exhaustif) :
+
+- `routes/admin-collective-repairs.js` — système `collective_workspaces` démonté (ZG-3, 2026-05-30). Supprimé.
+- `routes/pickup-pay-cash.js` — duplicata mort : `confirmPickupCashPayment()` est déjà servi par `middleware/auth.js` (god-middleware, voir AUD-05) et `routes/pickup-secret.js`. Rien perdu. Supprimé.
+- `routes/alerts.js` (+ `services/alert-engine.js`, devenu orphelin par ricochet) — legacy : le dashboard admin (`ActionCenterView`) utilise en réalité le système "Signals" (`KmcApi.getSignalsStats/getSignalsList/generateSignals`), pas `AlertEngine`. `/admin/alerts` ne pointe plus vers cette route depuis le passage aux Signals. Supprimé.
+
+DoD satisfait — 0 fichier orphelin restant, `backend:audit` et `arch:gate` toujours verts après suppression (240 fichiers scannés, 0 violation).
 
 ### AUD-10 — 4 collisions de numéros de migration
 
-Statut : **ouvert — priorité P2 (hygiène)**.
+Statut : **clos — 2026-06-23**.
 
-Numéros dupliqués : `014`, `072`, `073`, `074`. Risque faible si `deploy-all.sql` gère l'ordre.
-DoD : numéros dédoublonnés.
+Les 4 paires en collision (`014`, `072`, `073`, `074`) sont déjà appliquées en prod (projet à la migration 082, pré-golive) — un simple renommage casse le tracking `schema_migrations` (clé = nom de fichier exact) et fait rejouer la migration au prochain déploiement. Vérifié : les 4 fichiers renommés sont entièrement idempotents (`IF NOT EXISTS` / `DO $$ ... pg_constraint` partout), donc risque réel faible, mais traité proprement quand même :
+
+- `014_transaction_documents.sql` → `083_transaction_documents.sql`
+- `072_jwt_revocation.sql` → `084_jwt_revocation.sql`
+- `073_shared_cart_cash_contributions.sql` → `085_shared_cart_cash_contributions.sql`
+- `074_invoice_public_token.sql` → `086_invoice_public_token.sql`
+
+(`014_parcels_final_cleanup.sql`, `072_boutique_category_images.sql`, `073_pickup_verify_attempts.sql`, `074_add_v4_status_values.sql` gardent leur numéro — un seul fichier par collision suffisait à dédoublonner.)
+
+**Action déploiement requise (une seule fois) :** lancer `psql "$DATABASE_URL" -f migrations/AUD-10_rename_tracking_fix.sql` sur la DB live **avant** de déployer ce commit, pour réaligner `schema_migrations.filename` sur les nouveaux noms. Validé en local : `run-migrations.js --baseline` reconnaît bien les 4 nouveaux noms sans tenter de les ré-exécuter une fois le script lancé.
+
+DoD satisfait — numéros dédoublonnés, `arch:gate` vert, script de bascule DB fourni.
 
 
 

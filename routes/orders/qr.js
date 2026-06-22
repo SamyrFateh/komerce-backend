@@ -58,6 +58,14 @@ router.post('/:id/qr-token', authenticate, requireRole(['admin', 'agent_relais']
       return res.status(404).json({ error: 'Commande introuvable' });
     }
 
+    // GOV-02 (volet 2) — IDOR cross-relais : un agent_relais ne peut générer
+    // un QR de retrait que pour une commande de SON relais. admin a une
+    // portée globale, non concerné par ce garde-fou.
+    if (req.user.role === 'agent_relais' && String(order.relais_id) !== String(req.user.relais_id)) {
+      log.warn(`[IDOR] bloqué — user ${req.user.id} (relais ${req.user.relais_id}) → order ${order.id} (relais ${order.relais_id})`);
+      return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais" });
+    }
+
     if (order.status !== 'available') {
       return res.status(422).json({
         error: `Impossible de générer un QR — statut actuel : ${order.status} (attendu : available)`,

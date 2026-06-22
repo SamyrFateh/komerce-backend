@@ -191,7 +191,7 @@ if (!hasIntegrationEnv) {
 
         expect(res.status).toBe(403);
       } finally {
-        await db.query(`DELETE FROM parcels WHERE id = $1`, [parcel.id]);
+        await db.query(`UPDATE parcels SET status = 'cancelled' WHERE id = $1`, [parcel.id]);
       }
     });
 

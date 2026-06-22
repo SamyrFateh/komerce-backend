@@ -385,6 +385,15 @@ async function updateParcelStatus(parcelId, body, user) {
       return { status: 404, body: { error: 'Colis introuvable' } };
     }
 
+    // GOV-02 (volet 2) — IDOR cross-relais : un agent_relais ne peut agir
+    // que sur les colis d'une commande de SON relais. admin et agent_hub
+    // ont une portée globale, non concernés par ce garde-fou.
+    if (user?.role === 'agent_relais' && String(parcel.relais_id) !== String(user.relais_id)) {
+      await client.query('ROLLBACK');
+      log.warn(`[IDOR] bloqué — user ${user.id} (relais ${user.relais_id}) → parcel ${parcel.id} (order relais ${parcel.relais_id})`);
+      return { status: 403, body: { error: "Ce colis n'appartient pas à une commande de votre relais" } };
+    }
+
     // Valider la transition (I-03 parcel)
     const transGuard = validateParcelTransition(parcel.status, status);
     if (!transGuard.ok) {
