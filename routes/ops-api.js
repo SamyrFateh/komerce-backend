@@ -28,7 +28,7 @@ router.use(authenticate, requireRole(['admin', 'agent_hub', 'agent_relais']));
 
 // ——— GET /api/v2/global —————————————————————————————————————————————
 // Dashboard summary — all KPIs in one call
-router.get('/global', async (req, res) => {
+router.get('/global', async (req, res, next) => {
   try {
     // Orders summary
     const { rows: orderStats } = await pool.query(`
@@ -124,13 +124,12 @@ router.get('/global', async (req, res) => {
       alerts: alertCount
     });
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/global error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/incidents ——————————————————————————————————————————
-router.get('/incidents', async (req, res) => {
+router.get('/incidents', async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
@@ -158,13 +157,12 @@ router.get('/incidents', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/incidents error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/reconciliation/summary —————————————————————————————
-const reconciliationHandler = async (req, res) => {
+const reconciliationHandler = async (req, res, next) => {
   try {
     // Reconciliation based on parcel_items.verified status
     const { rows: summary } = await pool.query(`
@@ -235,8 +233,7 @@ const reconciliationHandler = async (req, res) => {
       parcels
     });
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/reconciliation/summary error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
@@ -246,7 +243,7 @@ router.get('/reconciliation/summary', reconciliationHandler);
 
 // ——— GET /api/v2/alerts —————————————————————————————————————————————
 // Auto-generated alerts from business rules
-router.get('/alerts', async (req, res) => {
+router.get('/alerts', async (req, res, next) => {
   try {
     const alerts = [];
 
@@ -355,13 +352,12 @@ message: `⚠️ Anomalie poids — ${i.parcel_reference}: ${i.title}`,
 
     res.json(alerts);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/alerts error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— POST /api/v2/alerts/:id/acknowledge ————————————————————————————
-router.post('/alerts/:id/acknowledge', async (req, res) => {
+router.post('/alerts/:id/acknowledge', async (req, res, next) => {
   try {
     // For incident-based alerts, mark as resolved
     const alertId = req.params.id;
@@ -377,15 +373,14 @@ router.post('/alerts/:id/acknowledge', async (req, res) => {
     
     res.json({ success: true, message: 'Alerte acquittée' });
   } catch (err) {
-    log.error({ err }, 'POST /api/v2/alerts/:id/acknowledge error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ─── GET /api/v2/parcels/:ref/detail ────────────────────────────────
 // Combined drill-down: parcel + scans + orders+items in one call
 // Accepts UUID or reference (PCL-2026-xxxx)
-router.get('/parcels/:ref/detail', async (req, res) => {
+router.get('/parcels/:ref/detail', async (req, res, next) => {
   try {
     const ref = req.params.ref;
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref);
@@ -452,13 +447,12 @@ router.get('/parcels/:ref/detail', async (req, res) => {
 
     res.json({ parcel, scans, orders });
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/parcels/:ref/detail error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/parcels/:id ————————————————————————————————————————
-router.get('/parcels/:id', async (req, res) => {
+router.get('/parcels/:id', async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
@@ -480,13 +474,12 @@ router.get('/parcels/:id', async (req, res) => {
     if (!rows.length) return res.status(404).json({ error: 'Colis non trouvé' });
     res.json(rows[0]);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/parcels/:id error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/parcels/:id/scans ——————————————————————————————————
-router.get('/parcels/:id/scans', async (req, res) => {
+router.get('/parcels/:id/scans', async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
@@ -502,14 +495,13 @@ router.get('/parcels/:id/scans', async (req, res) => {
     `, [req.params.id]);
     res.json(rows);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/parcels/:id/scans error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/parcels/:id/orders —————————————————————————————————
 // Returns orders linked to this parcel + their items (for drill-down accordion)
-router.get('/parcels/:id/orders', async (req, res) => {
+router.get('/parcels/:id/orders', async (req, res, next) => {
   try {
     // Get the order linked to this parcel
     const { rows: parcels } = await pool.query(
@@ -550,15 +542,14 @@ router.get('/parcels/:id/orders', async (req, res) => {
 
     res.json(orders);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/parcels/:id/orders error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 
 // ——— GET /api/v2/invoices ———————————————————————————————————————————
 // List all invoices with order + client info
-router.get('/invoices', async (req, res) => {
+router.get('/invoices', async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
@@ -577,14 +568,13 @@ router.get('/invoices', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/invoices error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/scan-events ————————————————————————————————————————
 // List recent scan events across all parcels
-router.get('/scan-events', async (req, res) => {
+router.get('/scan-events', async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 100, 500);
     const { rows } = await pool.query(`
@@ -603,14 +593,13 @@ router.get('/scan-events', async (req, res) => {
     `, [limit]);
     res.json(rows);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/scan-events error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ——— GET /api/v2/parcels ————————————————————————————————————————————
 // List all parcels with order + relay info
-router.get('/parcels', async (req, res) => {
+router.get('/parcels', async (req, res, next) => {
   try {
     const { rows } = await pool.query(`
       SELECT 
@@ -634,8 +623,7 @@ router.get('/parcels', async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    log.error({ err }, 'GET /api/v2/parcels error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

@@ -116,8 +116,7 @@ router.get('/', async function(req, res) {
       offset:  offset
     });
   } catch (err) {
-    log.error({ err }, '[signals] list error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -161,8 +160,7 @@ router.get('/stats', async function(req, res) {
       byFamily:   byFamily
     });
   } catch (err) {
-    log.error({ err }, '[signals] stats error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -176,8 +174,7 @@ router.post('/generate', async function(req, res) {
     var result = await signalService.generateSignals(types);
     res.json({ ok: true, result: result });
   } catch (err) {
-    log.error({ err }, '[signals] generate error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -198,7 +195,7 @@ router.post('/:id/acknowledge', async function(req, res) {
     }
     res.json({ ok: true, signal: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -223,7 +220,7 @@ router.post('/:id/snooze', async function(req, res) {
     }
     res.json({ ok: true, signal: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -248,7 +245,7 @@ router.post('/:id/resolve', async function(req, res) {
     }
     res.json({ ok: true, signal: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -263,7 +260,7 @@ router.delete('/:id', async function(req, res) {
     }
     res.json({ ok: true, deleted: req.params.id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

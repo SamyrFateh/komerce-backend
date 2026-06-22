@@ -49,27 +49,25 @@ router.use(authenticate, requireAdmin);
 seedEconomicData().catch(err => log.error({ err }, '[Economic] Seed error'));
 
 // GET /executive
-router.get('/executive', async (req, res) => {
+router.get('/executive', async (req, res, next) => {
   try {
     res.json(await buildExecutiveSummary());
   } catch (err) {
-    log.error('[Economic] Executive error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /variables
-router.get('/variables', async (req, res) => {
+router.get('/variables', async (req, res, next) => {
   try {
     res.json(await getVariables());
   } catch (err) {
-    log.error('[Economic] Variables error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PUT /variables/:key
-router.put('/variables/:key', async (req, res) => {
+router.put('/variables/:key', async (req, res, next) => {
   try {
     const key = req.params.key;
     const result = await updateVariable(key, req.body);
@@ -78,23 +76,21 @@ router.put('/variables/:key', async (req, res) => {
     ecoBridge.invalidateChargesCache();
     res.json(result);
   } catch (err) {
-    log.error('[Economic] Update variable error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /charges
-router.get('/charges', async (req, res) => {
+router.get('/charges', async (req, res, next) => {
   try {
     res.json(await getCharges());
   } catch (err) {
-    log.error('[Economic] Charges error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /charges
-router.post('/charges', async (req, res) => {
+router.post('/charges', async (req, res, next) => {
   try {
     const result = await createCharge(req.body);
     if (result.error) return res.status(result.status || 400).json({ error: result.error });
@@ -102,13 +98,12 @@ router.post('/charges', async (req, res) => {
     ecoBridge.invalidateChargesCache();
     res.json(result);
   } catch (err) {
-    log.error('[Economic] Create charge error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PUT /charges/:id
-router.put('/charges/:id', async (req, res) => {
+router.put('/charges/:id', async (req, res, next) => {
   try {
     const result = await updateCharge(req.params.id, req.body);
     if (result.error) return res.status(result.status || 400).json({ error: result.error });
@@ -116,13 +111,12 @@ router.put('/charges/:id', async (req, res) => {
     ecoBridge.invalidateChargesCache();
     res.json(result);
   } catch (err) {
-    log.error('[Economic] Update charge error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PUT /charges/:id/toggle
-router.put('/charges/:id/toggle', async (req, res) => {
+router.put('/charges/:id/toggle', async (req, res, next) => {
   try {
     const result = await toggleCharge(req.params.id);
     if (result.error) return res.status(result.status || 404).json({ error: result.error });
@@ -130,13 +124,12 @@ router.put('/charges/:id/toggle', async (req, res) => {
     ecoBridge.invalidateChargesCache();
     res.json(result);
   } catch (err) {
-    log.error('[Economic] Toggle charge error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // DELETE /charges/:id
-router.delete('/charges/:id', async (req, res) => {
+router.delete('/charges/:id', async (req, res, next) => {
   try {
     const force = req.query.force === 'true' || req.query.force === '1';
     const result = await deleteCharge(req.params.id, force);
@@ -145,39 +138,35 @@ router.delete('/charges/:id', async (req, res) => {
     ecoBridge.invalidateChargesCache();
     res.json(result);
   } catch (err) {
-    log.error('[Economic] Delete charge error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /coherence
-router.get('/coherence', async (req, res) => {
+router.get('/coherence', async (req, res, next) => {
   try {
     res.json(await getCoherence());
   } catch (err) {
-    log.error('[Economic] Coherence error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /history
-router.get('/history', async (req, res) => {
+router.get('/history', async (req, res, next) => {
   try {
     res.json(await getHistory());
   } catch (err) {
-    log.error('[Economic] History error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /redistribute
-router.post('/redistribute', async (req, res) => {
+router.post('/redistribute', async (req, res, next) => {
   try {
     await redistribute('manual_force');
     res.json(await buildExecutiveSummary());
   } catch (err) {
-    log.error('[Economic] Redistribute error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

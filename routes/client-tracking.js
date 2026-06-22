@@ -48,7 +48,7 @@ const STATUS_ORDER = [
  * GET /api/client/tracking
  * Returns ALL orders for the authenticated client with full timelines
  */
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -218,8 +218,7 @@ router.get('/', authenticate, async (req, res) => {
       count: result.length
     });
   } catch (err) {
-    log.error({ err }, '[CLIENT-TRACKING] ❌');
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 

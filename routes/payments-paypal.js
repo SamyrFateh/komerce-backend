@@ -40,7 +40,7 @@ const {
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. POST /api/payments/paypal/create-order
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/create-order', authGuest, async (req, res) => {
+router.post('/create-order', authGuest, async (req, res, next) => {
   const { order_reference, order_id } = req.body || {};
   if (!order_reference && !order_id) {
     return res.status(400).json({ error: 'order_reference ou order_id requis' });
@@ -77,15 +77,14 @@ router.post('/create-order', authGuest, async (req, res) => {
     return res.json(result);
 
   } catch (err) {
-    log.error({ err: err.message, stack: err.stack }, '[PAYPAL] create-order failed');
-    return res.status(500).json({ error: 'Erreur création PayPal Order', detail: err.message });
+    next(err);
   }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. POST /api/payments/paypal/capture/:paypalOrderId
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/capture/:paypalOrderId', authGuest, async (req, res) => {
+router.post('/capture/:paypalOrderId', authGuest, async (req, res, next) => {
   const { paypalOrderId } = req.params;
   if (!paypalOrderId) return res.status(400).json({ error: 'paypalOrderId requis' });
 
@@ -119,7 +118,7 @@ router.post('/capture/:paypalOrderId', authGuest, async (req, res) => {
     }
     log.error({ err: err.message, stack: err.stack, order_id: order.id },
       '[PAYPAL] capture handler crashed');
-    return res.status(500).json({ error: 'Erreur interne', detail: err.message });
+    return next(err);
   }
 });
 

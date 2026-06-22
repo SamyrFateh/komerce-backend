@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22**.
 
 Validation effectuee (2026-06-15) :
 
@@ -28,6 +28,15 @@ Validation gouvernance ajoutée (2026-06-22) :
 - Contrat OpenAPI : 418 paths / 468 opérations. Dette : 442/468 réponses encore `UNKNOWN`.
 - Suite unit : 52/52 verte.
 - 2 fictions DB ouvertes nommées dans `scripts/arch-debt-budget.json` (voir §11).
+
+Audit pré-golive exhaustif (2026-06-22) :
+
+- Rapport : `docs/audit/AUDIT_PREGOLIVE_2026-06-22.md` — 5 passes, 22 findings.
+- Verdict : **GO conditionnel** — 4 bloquants (GOV-01/02/03/05), tous corrigeables en ≤ 1 jour-homme.
+- Invariants I-01 à I-10 : tous respectés sauf I-01 violation documentée `payment-paypal.js:L588` (refund, décision P3-A.4).
+- 3 flows paiement tracés end-to-end (Stripe/Cash/PayPal) : atomicité, idempotence et compensation validés.
+- 10 constats nouveaux ajoutés (NEW-005 à NEW-022), intégrés ci-dessous en §12.
+- `stripe_events_log` (GOV-05 #1) : fiction probablement résolue dans le code (vérification DB live requise).
 
 Limites du tampon :
 
@@ -403,11 +412,17 @@ Aucun nouveau document ne devient operatoire sans etre ajoute a `docs/README.md`
 
 ### GOV-01 — 73 catches locaux `res.status(500)` (A4)
 
-Statut : **ouvert — priorité haute**.
+Statut : **clôturé — 2026-06-22**.
 
-73 `catch { res.status(500) }` dans 22 fichiers de routes court-circuitent l'error-handler global. Conséquence : `22P02 → 400` ne s'applique pas, fuite de message d'erreur brut.
-Action : remplacer par `catch (err) { next(err) }` route par route.
-DoD : 0 `res.status(500)` local hors error-handler ; porte `server_error` Schemathesis bloquante.
+69 `catch { res.status(500) }` remplacés par `catch { next(err) }` dans 19 fichiers de routes. Paramètre `next` ajouté à toutes les signatures de handler concernées. Patch : `scripts/fix-gov01-catches.js` + corrections manuelles.
+
+4 occurrences maintenues (cas spéciaux légitimes) :
+- `shared-cart.js:388` — webhook Stripe, doit retourner 500 pour retry.
+- `payments.js:142` — config check `if (!key)`, pas un catch.
+- `orders/qr.js:243` — endpoint HTML, `next(err)` donnerait du JSON.
+- `pickup-secret.js:520` — saturation business logic, pas un catch d'exception.
+
+Bonus : `payments.js:89` et `shared-cart.js:337` — fuite `err.message` dans les réponses de signature webhook Stripe masquée (message statique).
 
 ### GOV-02 — 45 routes UNPROTECTED non auditées (A2)
 
@@ -420,10 +435,10 @@ DoD : 0 UNPROTECTED non justifiée ; matrice rôle×route verte CI.
 
 ### GOV-03 — Faille high Nodemailer (CRLF) non gatée (A5)
 
-Statut : **ouvert — gain immédiat**.
+Statut : **ouvert — script CI prêt, `npm audit fix` requis**.
 
-`npm audit` remonte au moins une faille high (Nodemailer, injection CRLF). Aucune porte CI.
-Action : job `npm audit --audit-level=high` (observe → bloquant).
+`npm audit` remonte au moins une faille high (Nodemailer, injection CRLF). Script CI câblé : `scripts/npm-audit-gate.sh` (mode bloquant + mode observe).
+Action restante : (1) `npm audit fix` dans l'environnement de build. (2) Ajouter dans `package.json` : `"audit:gate": "bash scripts/npm-audit-gate.sh"`. (3) Câbler dans GitHub Actions.
 DoD : 0 high/critical, ou exception datée ; job câblé.
 
 ### GOV-04 — Contrat OpenAPI : 442/468 réponses UNKNOWN (A3)
@@ -439,8 +454,8 @@ Statut : **ouvert — arbitrage humain requis**.
 
 Deux divergences code↔DB sur des flux argent, figées dans `scripts/arch-debt-budget.json#knownDriftAllowlist` :
 
-1. **`stripe_events_log`** (`services/shared-cart-queries.js`) — table live est `stripe_events_processed`. En plus : `SELECT id` alors que PK est `stripe_event_id`. Chemin d'idempotence Stripe **cassé contre la DB live**. Correctif probable : renommer table + corriger colonne.
-2. **`shared_cart_commitments`** (`services/shared-cart-commitment-service.js`) — table absente du dump live, mais INSERT/UPDATE/SELECT dessus. Migration jamais appliquée ou code mort. À trancher.
+1. **`stripe_events_log`** (`services/shared-cart-queries.js`) — **probablement résolu** (audit 2026-06-22). Le code actuel (L57) lit correctement `SELECT stripe_event_id FROM stripe_events_processed`. La fiction de nom de table et de colonne semble corrigée. Vérification DB live requise pour confirmer et retirer de l'allowlist.
+2. **`shared_cart_commitments`** (`services/shared-cart-commitment-service.js`) — **bloquant** (audit 2026-06-22). 6 requêtes SQL actives (SELECT L148, SELECT L171, UPDATE L182, INSERT L210, UPDATE L255, UPDATE L284). Si la table est absente du dump live, le flow commitment est silencieusement cassé en production. Vérifier `SELECT 1 FROM information_schema.tables WHERE table_name = 'shared_cart_commitments'` en DB live.
 
 DoD : retirer l'entrée de la allowlist une fois chaque défaut résolu (le contrôle exige alors que la fiction ait disparu).
 
@@ -452,14 +467,105 @@ Parcours critiques à couvrir : checkout cash, checkout Stripe/PayPal webhook, r
 Infra : harness `tests/integration/test-harness/seed-helpers.js`, Postgres jetable CI, `ci-probe-token.js`.
 DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 
-### Feuille de route priorisée (AUDIT_ET_TESTS_PLAN.md §C)
+### Feuille de route priorisée (mise à jour audit 2026-06-22)
 
-1. **GOV-01** (catches 500 → `next(err)`) — débloque porte conformance.
-2. **GOV-03** (`npm audit` CI) — faille high ouverte.
-3. **GOV-02** (sonde multi-rôles + IDOR + 45 UNPROTECTED).
-4. **GOV-06** (E2E API parcours critiques).
-5. **GOV-04** (brûler UNKNOWN contrat).
-6. **GOV-05** (trancher les 2 fictions DB).
+**P0 — AVANT le push (≤ 1 jour)** :
+
+1. ~~**GOV-01** (73 catches 500 → `next(err)`)~~ — ✅ **clôturé 2026-06-22** (69/73 corrigés, 4 cas spéciaux maintenus).
+2. **GOV-03** (`npm audit fix` Nodemailer + job CI) — script CI prêt (`scripts/npm-audit-gate.sh`), `npm audit fix` requis côté build.
+3. **GOV-05** (vérifier `shared_cart_commitments` en DB live — 15 min) + retirer `stripe_events_log` si confirmé.
+4. **GOV-02** (documenter/justifier 45 routes UNPROTECTED, sonde multi-rôles + IDOR).
+
+**P1 — H-24h** :
+
+5. ~~**AUD-01** (INSERT `order_status_history` pour refund PayPal)~~ — ✅ **faux positif** (trace déjà présente L569).
+6. **AUD-02** (sondes Redis/Stripe/PayPal dans healthcheck).
+7. ~~**AUD-03** (masquer `err.message` webhooks Stripe)~~ — ✅ **clôturé 2026-06-22**.
+8. **AUD-04** (auditer scripts inline pour retrait `unsafe-inline` CSP).
+
+**P2 — post-Golive H+1 semaine** :
+
+9. **AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).
+10. **GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).
+11. **GOV-06** (5 tests E2E parcours critiques).
+12. **AUD-06** (sanitization dashboard admin + audit innerHTML boutique).
+13. **AUD-07** (migrer 6 interpolations SQL vers paramètres).
+14. **AUD-08** (test unitaire `invoice-service.js`).
+
+---
+
+## 12. Constats audit pré-golive (2026-06-22)
+
+> Source : `docs/audit/AUDIT_PREGOLIVE_2026-06-22.md` — 5 passes, 22 findings.
+
+### AUD-01 — PayPal refund : violation I-01 (trace `order_status_history` présente)
+
+Statut : **reclassé faux positif — 2026-06-22**.
+
+Le code `services/payment-paypal.js:L569` fait déjà `INSERT INTO order_status_history (order_id, status, note, changed_by)` avant le `UPDATE orders SET status = 'refunded'` (L588). L'historique est bien tracé. La violation I-01 (UPDATE direct hors `order-status-machine.js`) reste une dette architecturale documentée (décision P3-A.4), pas un défaut d'audit.
+
+### AUD-02 — Healthcheck ne couvre pas Redis/Stripe/PayPal
+
+Statut : **ouvert — priorité P1**.
+
+`routes/health.js` sonde uniquement la DB (`SELECT 1`). Redis (rate limiting), Stripe (paiements carte), PayPal (paiements diaspora) absents.
+DoD : `/api/health/detailed` retourne le statut de chaque dépendance externe.
+
+### AUD-03 — Fuite `err.message` dans webhooks Stripe
+
+Statut : **clôturé — 2026-06-22**.
+
+`routes/shared-cart.js:L337` et `routes/payments.js:L89` : message d'erreur de signature Stripe remplacé par message statique `'Webhook signature invalid'`.
+
+### AUD-04 — `unsafe-inline` dans CSP scriptSrc
+
+Statut : **ouvert — priorité P1**.
+
+`bootstrap/security.js:L53` inclut `'unsafe-inline'` dans `scriptSrc`. Commentaire FRESH-030 reconnaît le problème. Migration vers nonce CSP ou fichiers externes requise.
+DoD : `unsafe-inline` retiré de scriptSrc.
+
+### AUD-05 — `auth.js` god-middleware (10 handlers métier inline)
+
+Statut : **ouvert — priorité P2 (dette architecturale)**.
+
+`middleware/auth.js` contient 10 fonctions `is*Request()` + 10 `handle*()`. Le middleware intercepte les requêtes après auth et exécute la logique métier avant le routeur Express.
+Risque : regex de route-matching fragile, middlewares de route contournés, testabilité réduite.
+DoD : `authenticate()` ne fait que extraire/vérifier/charger user/next.
+
+### AUD-06 — Dashboard admin : pas de sanitization HTML
+
+Statut : **ouvert — priorité P2**.
+
+`dash/dashboards/admin/js/views/*.js` interpole des données serveur (noms produits, utilisateurs) dans innerHTML sans échappement. XSS stored possible via un nom de produit malicieux.
+DoD : fonction `esc()` ajoutée et appliquée à toutes les interpolations de données serveur.
+
+### AUD-07 — 6 interpolations SQL hors paramètre
+
+Statut : **ouvert — priorité P2 (couvert par les 7 warnings `backend:audit`)**.
+
+`routes/parcels.js:L103`, `routes/admin/system.js:L100,L306`, `routes/admin-costing.js:L642`, `services/parcel-security.js:L233`, `services/dashboard-metrics.js:L241`. Aucune n'interpole d'input utilisateur direct — valeurs construites côté serveur.
+DoD : 0 interpolation SQL hors paramètre ; warnings `backend:audit` à 0.
+
+### AUD-08 — `invoice-service.js` sans fichier test
+
+Statut : **ouvert — priorité P2**.
+
+Le service de facture (corrigé par FACT-01) n'a aucun test dédié. Risque de régression sur le calcul `unit_price * quantity`.
+DoD : 1 test unitaire minimum couvrant le calcul ligne et le rendu.
+
+### AUD-09 — 3 routes orphelines avec header `@used-by` divergent
+
+Statut : **ouvert — priorité P2 (hygiène)**.
+
+`routes/admin-collective-repairs.js`, `routes/pickup-pay-cash.js`, `routes/alerts.js` déclarent `@used-by bootstrap/api-routes.js` mais ne sont montés nulle part.
+DoD : fichiers supprimés ou header corrigé.
+
+### AUD-10 — 4 collisions de numéros de migration
+
+Statut : **ouvert — priorité P2 (hygiène)**.
+
+Numéros dupliqués : `014`, `072`, `073`, `074`. Risque faible si `deploy-all.sql` gère l'ordre.
+DoD : numéros dédoublonnés.
 
 
 

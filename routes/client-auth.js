@@ -43,7 +43,7 @@ function canEchoMagicLink() {
  * Request a magic link — generates token and returns success
  * In production, this would send via WhatsApp/SMS
  */
-router.post('/magic-link', async (req, res) => {
+router.post('/magic-link', async (req, res, next) => {
   try {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, error: 'Numéro de téléphone requis' });
@@ -103,8 +103,7 @@ router.post('/magic-link', async (req, res) => {
       _dev_link: canEchoMagicLink() ? magicLink : undefined,
     });
   } catch (err) {
-    log.error('Magic link request error:', err);
-    res.status(500).json({ success: false, error: 'Erreur serveur' });
+    next(err);
   }
 });
 
@@ -112,7 +111,7 @@ router.post('/magic-link', async (req, res) => {
  * GET /api/auth/magic-link/validate
  * Validate magic token, create session, redirect to /mon-compte
  */
-router.get('/magic-link/validate', async (req, res) => {
+router.get('/magic-link/validate', async (req, res, next) => {
   try {
     const { token } = req.query;
     if (!token) return res.redirect('/mon-compte?error=token_missing');
@@ -161,7 +160,7 @@ router.get('/magic-link/validate', async (req, res) => {
  * GET /api/client/orders
  * Returns orders for the authenticated client
  */
-router.get('/orders', authenticate, async (req, res) => {
+router.get('/orders', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -207,8 +206,7 @@ router.get('/orders', authenticate, async (req, res) => {
 
     res.json({ orders });
   } catch (err) {
-    log.error('Client orders error:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
@@ -216,7 +214,7 @@ router.get('/orders', authenticate, async (req, res) => {
  * GET /api/client/invoices
  * Returns invoices for the authenticated client
  */
-router.get('/invoices', authenticate, async (req, res) => {
+router.get('/invoices', authenticate, async (req, res, next) => {
   try {
     const userId = req.user.id;
 
@@ -244,8 +242,7 @@ router.get('/invoices', authenticate, async (req, res) => {
       }))
     });
   } catch (err) {
-    log.error('Client invoices error:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 

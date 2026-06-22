@@ -26,7 +26,7 @@ const { safeSyncScanToParcels } = require('../utils/parcelSync');
 // ─────────────────────────────────────────────
 // GET — colis prêts pour transit (shipped)
 // ─────────────────────────────────────────────
-router.get('/', authenticate, requireAdmin, async (req, res) => {
+router.get('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const result = await db.query(`
       SELECT reference, destination_island, destination_relais AS relais_name, weight_kg, created_at
@@ -37,15 +37,14 @@ router.get('/', authenticate, requireAdmin, async (req, res) => {
 
     res.json({ parcels: result.rows });
   } catch (err) {
-    log.error(err);
-    res.status(500).json({ error: 'Erreur transit dashboard' });
+    next(err);
   }
 });
 
 // ─────────────────────────────────────────────
 // POST — passer en transit
 // ─────────────────────────────────────────────
-router.post('/:ref/transit', authenticate, requireAdmin, async (req, res) => {
+router.post('/:ref/transit', authenticate, requireAdmin, async (req, res, next) => {
   const { ref } = req.params;
 
   try {
@@ -77,8 +76,7 @@ router.post('/:ref/transit', authenticate, requireAdmin, async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    log.error(err);
-    res.status(500).json({ error: 'Erreur passage en transit' });
+    next(err);
   }
 });
 

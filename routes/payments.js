@@ -86,7 +86,7 @@ router.post('/stripe/webhook',
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
       log.error({ err }, 'Webhook Stripe signature invalide');
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      return res.status(400).send('Webhook signature invalid');
     }
 
     // Idempotence forte dès l'entrée (I-07)

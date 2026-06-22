@@ -148,7 +148,7 @@ async function issueVerifiedSession(res, phone, name) {
  *
  * UX Komerce : téléphone → code OTP → session client légère.
  */
-router.post('/request', async (req, res) => {
+router.post('/request', async (req, res, next) => {
   try {
     let { phone, purpose = 'login' } = req.body || {};
 
@@ -284,19 +284,14 @@ router.post('/request', async (req, res) => {
         : undefined,
     });
   } catch (err) {
-    log.error({ err }, '[OTP] request error:');
-    return res.status(500).json({
-      ok: false,
-      success: false,
-      error: 'Erreur serveur',
-    });
+    next(err);
   }
 });
 
 /**
  * POST /api/auth/otp/verify
  */
-router.post('/verify', async (req, res) => {
+router.post('/verify', async (req, res, next) => {
   try {
     let { phone, code, name, purpose = 'login' } = req.body || {};
 
@@ -422,12 +417,7 @@ router.post('/verify', async (req, res) => {
       user: buildUserPayload(user, phone),
     });
   } catch (err) {
-    log.error({ err }, '[OTP] verify error:');
-    return res.status(500).json({
-      ok: false,
-      success: false,
-      error: 'Erreur serveur',
-    });
+    next(err);
   }
 });
 
@@ -440,7 +430,7 @@ router.post('/verify', async (req, res) => {
 // rejouer un parcours d'authentification "à neuf".
 //
 // Sécurité : 404 si hors mode test (donc invisible/inerte en production).
-router.post('/test-reset', async (req, res) => {
+router.post('/test-reset', async (req, res, next) => {
   if (!isOtpTestMode()) {
     return res.status(404).json({ ok: false, error: 'Not found' });
   }
@@ -470,8 +460,7 @@ router.post('/test-reset', async (req, res) => {
       log.warn(`[OTP][TEST] test-reset → ${phone} (users supprimés: ${rows.length})`);
     }
   } catch (err) {
-    log.error({ err }, '[OTP][TEST] test-reset purge error');
-    return res.status(500).json({ ok: false, error: 'Erreur purge test' });
+    next(err);
   }
 
   return res.json({ ok: true, success: true, cleared: 'kmrc_jwt', purged });

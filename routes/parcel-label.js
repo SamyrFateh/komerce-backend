@@ -49,7 +49,7 @@ function fmtPrice(n) {
 }
 
 // ── GET /:ref/label ──────────────────────────────────────────
-router.get('/:ref/label', ...labelAuth, async (req, res) => {
+router.get('/:ref/label', ...labelAuth, async (req, res, next) => {
   const { ref } = req.params;
   const thermal = req.query.format === 'thermal';
 
@@ -265,8 +265,7 @@ router.get('/:ref/label', ...labelAuth, async (req, res) => {
     res.send(html);
 
   } catch (err) {
-    log.error('[LABEL]', err);
-    res.status(500).json({ error: 'Erreur génération étiquette', detail: err.message });
+    next(err);
   }
 });
 

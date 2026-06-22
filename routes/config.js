@@ -52,13 +52,12 @@ router.use(authenticate, requireRole(['admin']));
 // 1. GET /api/config/rules — Liste toutes les règles groupées par catégorie
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/rules', async (req, res) => {
+router.get('/rules', async (req, res, next) => {
   try {
     const categories = await getAllRules();
     res.json({ categories });
   } catch (err) {
-    log.error({ err }, '[CONFIG] List rules error:');
-    res.status(500).json({ error: 'Erreur récupération des règles' });
+    next(err);
   }
 });
 
@@ -66,7 +65,7 @@ router.get('/rules', async (req, res) => {
 // 2. GET /api/config/rules/:key — Détail d'une règle + historique récent
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/rules/:key', async (req, res) => {
+router.get('/rules/:key', async (req, res, next) => {
   try {
     const rule = await getRuleByKey(req.params.key);
     if (!rule) return res.status(404).json({ error: 'Règle introuvable' });
@@ -89,8 +88,7 @@ router.get('/rules/:key', async (req, res) => {
       history:     history.slice(0, 10),
     });
   } catch (err) {
-    log.error({ err }, '[CONFIG] Get rule error:');
-    res.status(500).json({ error: 'Erreur récupération de la règle' });
+    next(err);
   }
 });
 
@@ -99,7 +97,7 @@ router.get('/rules/:key', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // Body : { value: <new_value>, reason?: "Retour terrain — ..." }
 
-router.put('/rules/:key', validate(configSchemas.updateRule), async (req, res) => {
+router.put('/rules/:key', validate(configSchemas.updateRule), async (req, res, next) => {
   try {
     const { value, reason } = req.body;
 
@@ -124,7 +122,7 @@ router.put('/rules/:key', validate(configSchemas.updateRule), async (req, res) =
       return res.status(422).json({ error: err.message });
     }
 
-    res.status(500).json({ error: 'Erreur mise à jour de la règle' });
+    next(err);
   }
 });
 
@@ -132,7 +130,7 @@ router.put('/rules/:key', validate(configSchemas.updateRule), async (req, res) =
 // 4. POST /api/config/rules/:key/reset — Reset à la valeur par défaut
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.post('/rules/:key/reset', async (req, res) => {
+router.post('/rules/:key/reset', async (req, res, next) => {
   try {
     const rule = await resetRule(req.params.key, req.user.id);
 
@@ -147,7 +145,7 @@ router.post('/rules/:key/reset', async (req, res) => {
     if (err.message.includes('introuvable')) {
       return res.status(404).json({ error: err.message });
     }
-    res.status(500).json({ error: 'Erreur reset de la règle' });
+    next(err);
   }
 });
 
@@ -155,7 +153,7 @@ router.post('/rules/:key/reset', async (req, res) => {
 // 5. GET /api/config/rules/:key/history — Historique des modifications
 // ═══════════════════════════════════════════════════════════════════════════════
 
-router.get('/rules/:key/history', async (req, res) => {
+router.get('/rules/:key/history', async (req, res, next) => {
   try {
     const rule = await getRuleByKey(req.params.key);
     if (!rule) return res.status(404).json({ error: 'Règle introuvable' });
@@ -175,8 +173,7 @@ router.get('/rules/:key/history', async (req, res) => {
       })),
     });
   } catch (err) {
-    log.error({ err }, '[CONFIG] Rule history error:');
-    res.status(500).json({ error: 'Erreur historique de la règle' });
+    next(err);
   }
 });
 

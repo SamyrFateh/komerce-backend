@@ -49,8 +49,7 @@ router.post('/auto-distribute', ...guard, async (req, res, next) => {
       cleanup
     });
   } catch (e) {
-    log.error('[AUTO-DISTRIBUTE]', e);
-    res.status(500).json({ error: e.message });
+    next(e);
   }
 });
 
@@ -60,8 +59,7 @@ router.get('/auto-distribute', ...guard, async (req, res, next) => {
     const data = await autoParcel.getDistribution();
     res.json(data);
   } catch (e) {
-    log.error('[AUTO-DISTRIBUTE]', e);
-    res.status(500).json({ error: e.message });
+    next(e);
   }
 });
 
@@ -71,8 +69,7 @@ router.post('/auto-distribute/cleanup', ...guard, async (req, res, next) => {
     const result = await autoParcel.cleanupGhostParcels();
     res.json({ message: `${result.cancelled} colis fantômes annulés`, ...result });
   } catch (e) {
-    log.error('[AUTO-DISTRIBUTE]', e);
-    res.status(500).json({ error: e.message });
+    next(e);
   }
 });
 

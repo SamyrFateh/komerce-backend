@@ -36,7 +36,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 
 // ── GET /health — Basic health ──────────────────────────────────────────────
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const start = Date.now();
     await db.query('SELECT 1');
@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
 
 // ── GET /health/ready — Readiness ───────────────────────────────────────────
 
-router.get('/ready', async (req, res) => {
+router.get('/ready', async (req, res, next) => {
   try {
     await db.query('SELECT 1');
     res.json({ status: 'ready' });
@@ -74,7 +74,7 @@ router.get('/ready', async (req, res) => {
 
 // ── GET /health/metrics — Full metrics (admin only) ─────────────────────────
 
-router.get('/metrics', authenticate, requireRole(['admin']), async (req, res) => {
+router.get('/metrics', authenticate, requireRole(['admin']), async (req, res, next) => {
   try {
     const appMetrics = getMetrics();
 
@@ -115,7 +115,7 @@ router.get('/metrics', authenticate, requireRole(['admin']), async (req, res) =>
       },
     });
   } catch (err) {
-    res.status(500).json({ error: 'Metrics unavailable', detail: err.message });
+    next(err);
   }
 });
 

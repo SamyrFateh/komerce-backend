@@ -334,7 +334,7 @@ async function stripeWebhookHandler(req, res) {
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
     log.error({ err }, '[shared-cart webhook] signature invalide');
-    return res.status(400).send(`Webhook signature invalid: ${err.message}`);
+    return res.status(400).send('Webhook signature invalid');
   }
 
   log.info(`[shared-cart webhook] event ${event.type} reçu`);

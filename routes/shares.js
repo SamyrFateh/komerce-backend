@@ -65,7 +65,7 @@ async function enrichItems(items) {
 }
 
 /* ── POST /api/shares — créer un lien (simple ou événement) ── */
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
   
     const {
@@ -114,13 +114,12 @@ router.post('/', async (req, res) => {
       total_kmf
     });
   } catch (err) {
-    log.error('[shares] POST error:', err);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
 /* ── GET /api/shares/:token — lire un panier partagé ── */
-router.get('/:token', async (req, res) => {
+router.get('/:token', async (req, res, next) => {
   try {
   
     const { token } = req.params;
@@ -175,13 +174,12 @@ router.get('/:token', async (req, res) => {
       contributions
     });
   } catch (err) {
-    log.error('[shares] GET error:', err);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
 /* ── POST /api/shares/:token/contributions — pledger ── */
-router.post('/:token/contributions', async (req, res) => {
+router.post('/:token/contributions', async (req, res, next) => {
   try {
   
     const { token } = req.params;
@@ -237,13 +235,12 @@ router.post('/:token/contributions', async (req, res) => {
 
     return res.status(201).json({ contribution: insertRows[0] });
   } catch (err) {
-    log.error('[shares] contribution error:', err);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
 /* ── PATCH /api/shares/:token/contributions/:id — confirmer paiement (admin) ── */
-router.patch('/:token/contributions/:id', async (req, res) => {
+router.patch('/:token/contributions/:id', async (req, res, next) => {
   try {
   
     const { token, id } = req.params;
@@ -266,8 +263,7 @@ router.patch('/:token/contributions/:id', async (req, res) => {
 
     return res.json({ ok: true });
   } catch (err) {
-    log.error('[shares] PATCH contribution error:', err);
-    return res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 

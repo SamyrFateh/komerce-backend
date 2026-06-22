@@ -110,7 +110,7 @@ async function checkPickupVerifyLimit(token, req) {
  * Public tracking endpoint — no auth required
  * Returns order tracking data by qr_token
  */
-router.get('/:token', async (req, res) => {
+router.get('/:token', async (req, res, next) => {
   try {
     const { token } = req.params;
     if (!token || token.length < 4 || token.length > 20) {
@@ -282,8 +282,7 @@ router.get('/:token', async (req, res) => {
       timeline: timeline
     });
   } catch (err) {
-    log.error('Tracking error:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
+    next(err);
   }
 });
 
@@ -291,7 +290,7 @@ router.get('/:token', async (req, res) => {
  * POST /api/tracking/:token/verify-pickup
  * Verify pickup code — only works when order is at relay
  */
-router.post('/:token/verify-pickup', async (req, res) => {
+router.post('/:token/verify-pickup', async (req, res, next) => {
   try {
     const { token } = req.params;
     const { code } = req.body;
@@ -330,8 +329,7 @@ router.post('/:token/verify-pickup', async (req, res) => {
       crypto.timingSafeEqual(expected, provided);
     res.json({ valid: valid });
   } catch (err) {
-    log.error('Verify pickup error:', err);
-    res.status(500).json({ valid: false, error: 'Erreur serveur' });
+    next(err);
   }
 });
 

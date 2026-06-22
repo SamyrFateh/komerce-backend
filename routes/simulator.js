@@ -62,7 +62,7 @@ router.post('/stop', ...adminAuth, async (req, res, next) => {
 });
 
 // GET /status — Statut temps réel
-router.get('/status', ...adminAuth, async (req, res) => {
+router.get('/status', ...adminAuth, async (req, res, next) => {
   try {
     res.json(engine.getStatus());
   } catch(e) {
@@ -71,7 +71,7 @@ router.get('/status', ...adminAuth, async (req, res) => {
 });
 
 // GET /journal — Journal complet
-router.get('/journal', ...adminAuth, async (req, res) => {
+router.get('/journal', ...adminAuth, async (req, res, next) => {
   try {
     res.json({ entries: journal.getAll() });
   } catch(e) {
@@ -80,7 +80,7 @@ router.get('/journal', ...adminAuth, async (req, res) => {
 });
 
 // POST /cleanup — Nettoyer les données de simulation
-router.post('/cleanup', ...adminAuth, async (req, res) => {
+router.post('/cleanup', ...adminAuth, async (req, res, next) => {
   try {
     // Stop simulation first if running
     try { await engine.stop(); } catch(_) {}
@@ -91,7 +91,7 @@ router.post('/cleanup', ...adminAuth, async (req, res) => {
       ...results
     });
   } catch(e) {
-    res.status(500).json({ error: e.message });
+    next(e);
   }
 });
 

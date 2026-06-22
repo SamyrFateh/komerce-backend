@@ -162,10 +162,7 @@ router.post('/:id/cancel', authenticate, validate(orders.cancelOrder), async (re
         );
       } catch (refundErr) {
         await client.query('ROLLBACK');
-        log.error('[CANCEL] Refund error:', refundErr.message);
-        return res.status(500).json({
-          error: `Annulation impossible — erreur remboursement: ${refundErr.message}`,
-        });
+        return next(refundErr);
       }
     }
 

@@ -85,7 +85,7 @@ function renderInvoice(res, invoice, mode = 'a5') {
 }
 
 // ── GET /api/invoices/public/:token — Public WhatsApp invoice link ──
-router.get('/public/:token', async (req, res) => {
+router.get('/public/:token', async (req, res, next) => {
   try {
     const orderId = verifyInvoicePublicToken(req.params.token);
     if (!orderId) {
@@ -102,25 +102,24 @@ router.get('/public/:token', async (req, res) => {
     if (err.message.includes('non payée')) {
       return res.status(400).json({ error: err.message });
     }
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ── GET /api/invoices — List all invoices (admin) ──
-router.get('/', ...guard, async (req, res) => {
+router.get('/', ...guard, async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const offset = parseInt(req.query.offset) || 0;
     const invoices = await invoiceService.listInvoices({ limit, offset });
     res.json({ ok: true, invoices, count: invoices.length });
   } catch (err) {
-    log.error({ err }, '[INVOICE] List error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ── GET /api/invoices/:orderId — Generate and display invoice HTML ──
-router.get('/:orderId', ...guard, requireInvoiceOrderAccess, async (req, res) => {
+router.get('/:orderId', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     return renderInvoice(res, invoice, req.query.mode || 'a5');
@@ -132,12 +131,12 @@ router.get('/:orderId', ...guard, requireInvoiceOrderAccess, async (req, res) =>
     if (err.message.includes('non payée')) {
       return res.status(400).json({ error: err.message });
     }
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ── GET /api/invoices/:orderId/json — Invoice data as JSON ──
-router.get('/:orderId/json', ...guard, requireInvoiceOrderAccess, async (req, res) => {
+router.get('/:orderId/json', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     res.json({ ok: true, invoice });
@@ -148,7 +147,7 @@ router.get('/:orderId/json', ...guard, requireInvoiceOrderAccess, async (req, re
 });
 
 // ── GET /api/invoices/:orderId/download — Download standalone HTML ──
-router.get('/:orderId/download', ...guard, requireInvoiceOrderAccess, async (req, res) => {
+router.get('/:orderId/download', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
   try {
     const invoice = await invoiceService.getOrCreateInvoice(req.params.orderId);
     const mode = req.query.mode || 'a5';
@@ -159,13 +158,12 @@ router.get('/:orderId/download', ...guard, requireInvoiceOrderAccess, async (req
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(html);
   } catch (err) {
-    log.error({ err }, '[INVOICE] Download error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // ── POST /api/invoices/:orderId/deliver — Mark as delivered ──
-router.post('/:orderId/deliver', ...guard, requireInvoiceOrderAccess, async (req, res) => {
+router.post('/:orderId/deliver', ...guard, requireInvoiceOrderAccess, async (req, res, next) => {
   try {
     const { via } = req.body; // 'print', 'email', 'whatsapp'
     if (!via || !['print', 'email', 'whatsapp'].includes(via)) {
@@ -177,8 +175,7 @@ router.post('/:orderId/deliver', ...guard, requireInvoiceOrderAccess, async (req
     
     res.json({ ok: true, message: `Facture ${invoice.invoice_number} marquée comme délivrée via ${via}` });
   } catch (err) {
-    log.error({ err }, '[INVOICE] Deliver error:');
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
