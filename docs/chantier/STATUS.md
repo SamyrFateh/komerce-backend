@@ -426,20 +426,19 @@ Bonus : `payments.js:89` et `shared-cart.js:337` — fuite `err.message` dans le
 
 ### GOV-02 — 45 routes UNPROTECTED non auditées (A2)
 
-Statut : **ouvert — priorité haute**.
+Statut : **partiellement clos — classification faite, sonde IDOR restante**.
 
-Security 360 recense 45 routes UNPROTECTED. Chacune doit être justifiée (publique légitime documentée) ou corrigée.
-141 routes role-protégées (agent_hub 87 · agent_relais 50 · agent_transitaire 4) ne sont pas encore couvertes par une sonde runtime (seulement analyse statique).
-Actions : sonde multi-rôles + audit IDOR (ressource user A inaccessible par user B).
-DoD : 0 UNPROTECTED non justifiée ; matrice rôle×route verte CI.
+Volet 1 — ✅ **clos 2026-06-22** : les 45 routes UNPROTECTED sont classées et justifiées dans `docs/audit/GOV-02_UNPROTECTED_CLASSIFICATION.md` (18 publiques légitimes, 12 sécurisées par token, 9 auth portée par middleware parent, 1 faux positif, 5 à surveiller documentées). Verdict : 0 route dangereusement ouverte.
+
+Volet 2 — **ouvert** : 141 routes role-protégées (agent_hub 87 · agent_relais 50 · agent_transitaire 4) ne sont couvertes que par analyse statique, pas de sonde runtime. Actions restantes : sonde multi-rôles + audit IDOR (ressource user A inaccessible par user B).
+DoD restant : matrice rôle×route verte CI.
 
 ### GOV-03 — Faille high Nodemailer (CRLF) non gatée (A5)
 
-Statut : **ouvert — script CI prêt, `npm audit fix` requis**.
+Statut : **clos — 2026-06-23**.
 
-`npm audit` remonte au moins une faille high (Nodemailer, injection CRLF). Script CI câblé : `scripts/npm-audit-gate.sh` (mode bloquant + mode observe).
-Action restante : (1) `npm audit fix` dans l'environnement de build. (2) Ajouter dans `package.json` : `"audit:gate": "bash scripts/npm-audit-gate.sh"`. (3) Câbler dans GitHub Actions.
-DoD : 0 high/critical, ou exception datée ; job câblé.
+`nodemailer` patché en `9.0.1` (fix SSRF/bypass `disableFileAccess`, high). Gate npm audit portée en Node (`scripts/npm-audit-gate.js`, plus de dépendance bash) et câblée dans `package.json` (`audit:gate` / `audit:gate:observe`). Job CI câblé dans `.github/workflows/ci.yml` (job `unit`, bloquant sur high/critical à chaque push/PR).
+DoD : 0 high/critical ✅ ; job câblé ✅.
 
 ### GOV-04 — Contrat OpenAPI : 442/468 réponses UNKNOWN (A3)
 
@@ -450,14 +449,14 @@ DoD : UNKNOWN < 50 sur routes critiques ; porte `server_error` bloquante.
 
 ### GOV-05 — Fictions DB actives (drift allowlist)
 
-Statut : **ouvert — arbitrage humain requis**.
+Statut : **clos — 2026-06-23**.
 
-Deux divergences code↔DB sur des flux argent, figées dans `scripts/arch-debt-budget.json#knownDriftAllowlist` :
+Vérification DB live (`SELECT table_name FROM information_schema.tables WHERE table_name IN ('shared_cart_commitments', 'stripe_events_processed')`) : **les deux tables existent en prod**. Confirmé indépendamment par `docs/db/railway-live-schema.sql` (DDL `CREATE TABLE` présent pour les deux). Aucune fiction DB active — `scripts/arch-debt-budget.json#knownDriftAllowlist` ne contenait d'ailleurs déjà aucune entrée nominative pour ces deux tables.
 
-1. **`stripe_events_log`** (`services/shared-cart-queries.js`) — **probablement résolu** (audit 2026-06-22). Le code actuel (L57) lit correctement `SELECT stripe_event_id FROM stripe_events_processed`. La fiction de nom de table et de colonne semble corrigée. Vérification DB live requise pour confirmer et retirer de l'allowlist.
-2. **`shared_cart_commitments`** (`services/shared-cart-commitment-service.js`) — **bloquant** (audit 2026-06-22). 6 requêtes SQL actives (SELECT L148, SELECT L171, UPDATE L182, INSERT L210, UPDATE L255, UPDATE L284). Si la table est absente du dump live, le flow commitment est silencieusement cassé en production. Vérifier `SELECT 1 FROM information_schema.tables WHERE table_name = 'shared_cart_commitments'` en DB live.
+1. **`stripe_events_log`** (`services/shared-cart-queries.js`) — résolu. Le code lit correctement `SELECT stripe_event_id FROM stripe_events_processed`, table confirmée live.
+2. **`shared_cart_commitments`** (`services/shared-cart-commitment-service.js`) — résolu. Table confirmée live, le flow commitment n'est pas cassé.
 
-DoD : retirer l'entrée de la allowlist une fois chaque défaut résolu (le contrôle exige alors que la fiction ait disparu).
+DoD : rien à retirer de la allowlist (vide pour ces entrées). Section conservée à titre d'historique.
 
 ### GOV-06 — Plan tests E2E API (B1)
 
@@ -472,9 +471,9 @@ DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 **P0 — AVANT le push (≤ 1 jour)** :
 
 1. ~~**GOV-01** (73 catches 500 → `next(err)`)~~ — ✅ **clôturé 2026-06-22** (69/73 corrigés, 4 cas spéciaux maintenus).
-2. **GOV-03** (`npm audit fix` Nodemailer + job CI) — script CI prêt (`scripts/npm-audit-gate.sh`), `npm audit fix` requis côté build.
-3. **GOV-05** (vérifier `shared_cart_commitments` en DB live — 15 min) + retirer `stripe_events_log` si confirmé.
-4. **GOV-02** (documenter/justifier 45 routes UNPROTECTED, sonde multi-rôles + IDOR).
+2. ~~**GOV-03** (`npm audit fix` Nodemailer + job CI)~~ — ✅ **clôturé 2026-06-23** (nodemailer 9.0.1, gate Node câblée, job CI actif).
+3. ~~**GOV-05** (vérifier `shared_cart_commitments` en DB live)~~ — ✅ **clôturé 2026-06-23** (les deux tables confirmées en DB live, aucune fiction).
+4. **GOV-02** (volet 2 restant : sonde multi-rôles + IDOR sur 141 routes role-protégées — classification des 45 UNPROTECTED déjà close).
 
 **P1 — H-24h** :
 

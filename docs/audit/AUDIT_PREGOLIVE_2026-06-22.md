@@ -71,17 +71,14 @@ Divergence header↔réalité. Les 6 fichiers `dashboard-clients/finance/hub/ops
 
 ## Findings détaillés
 
-### NEW-001 — 73 `catch { res.status(500) }` court-circuitent l'error-handler global
+### NEW-001 — 73 `catch { res.status(500) }` court-circuitent l'error-handler global (RÉSOLU)
 
-- **Sévérité** : 🔴 Bloquant
+- **Sévérité** : ~~🔴 Bloquant~~ → ✅ Résolu
 - **Bloc** : Sécurité
 - **Fichiers** : 22 fichiers de routes — top contributeurs : `routes/ops-api.js` (12), `routes/shared-cart.js` (8), `routes/shares.js` (4), `routes/admin-dashboard.js` (4)
-- **Défaut** : Les catch locaux renvoient `res.status(500).json({ error: err.message })` au lieu de `next(err)`. L'error-handler global (`middleware/error-handler.js`) qui reclasse `22P02 → 400`, masque les messages internes en production, et trace via monitoring est court-circuité.
-- **Risque concret** : (a) Fuite de `err.message` brut vers le client — `ops-api.js` expose 12 messages d'erreur internes sur des routes authentifiées admin/agent. (b) `22P02` (UUID malformé) renvoie 500 au lieu de 400, déclenchant de fausses alertes monitoring. (c) Métriques `classification` faussées (tous ces cas apparaissent comme `unknown` au lieu de leur vraie nature).
-- **Correction proposée** : Remplacer chaque `catch (err) { res.status(500).json(...) }` par `catch (err) { next(err) }`. Les cas `shared-cart.js` qui font `if (err.status) return res.status(err.status)...` peuvent être simplifiés en laissant l'error-handler les classifier, mais sont moins urgents car ils testent le statut avant de renvoyer.
-- **Effort estimé** : 2-3h (mécanique, fichier par fichier)
-- **Bloque le Golive ?** : Oui — fuite d'information, classification erronée
-- **Réf STATUS.md** : GOV-01 confirmé exact
+- **Résolution** : Même périmètre que GOV-01, clôturé le 2026-06-22 — 69/73 remplacés par `next(err)`, 4 cas spéciaux maintenus délibérément (logique de statut déjà testée avant retour, cf. note GOV-01).
+- **Bloque le Golive ?** : Non — clos.
+- **Réf STATUS.md** : GOV-01 clôturé.
 
 ---
 
@@ -99,17 +96,15 @@ Divergence header↔réalité. Les 6 fichiers `dashboard-clients/finance/hub/ops
 
 ---
 
-### NEW-003 — `shared_cart_commitments` : fiction DB active sur flux argent
+### NEW-003 — `shared_cart_commitments` : vérification DB live (RÉSOLU 2026-06-23)
 
-- **Sévérité** : 🔴 Bloquant
+- **Sévérité** : ~~🔴 Bloquant~~ → ✅ Résolu
 - **Bloc** : Schéma DB
 - **Fichiers** : `services/shared-cart-commitment-service.js:L148-284` (SELECT/INSERT/UPDATE actifs)
-- **Défaut** : Le code fait 6 requêtes SQL actives (SELECT L148, SELECT L171, UPDATE L182, INSERT L210, UPDATE L255, UPDATE L284) sur la table `shared_cart_commitments`. Le STATUS.md indique que cette table est « absente du dump live ». Si c'est le cas, tout le flow commitment (engagement de contribution au panier partagé) crashe silencieusement en production.
-- **Risque concret** : `ERROR: relation "shared_cart_commitments" does not exist` — 500 sur chaque appel au service de commitment. Comme le service est appelé depuis `routes/shared-cart.js`, le panier partagé V4.1 est partiellement cassé.
-- **Correction proposée** : (a) Vérifier en DB live `SELECT 1 FROM information_schema.tables WHERE table_name = 'shared_cart_commitments'`. (b) Si absente : appliquer la migration manquante (080 probable) ou supprimer le dead code. (c) Si présente : retirer de la allowlist drift.
-- **Effort estimé** : 1h
-- **Bloque le Golive ?** : Oui — non vérifié, nécessite accès DB live
-- **Réf STATUS.md** : GOV-05 (#2) confirmé
+- **Vérification effectuée** : `SELECT table_name FROM information_schema.tables WHERE table_name IN ('shared_cart_commitments', 'stripe_events_processed')` exécuté en DB live — **les deux tables existent**. Confirmé également par le dump `docs/db/railway-live-schema.sql` (DDL `CREATE TABLE public.shared_cart_commitments`, PK, FKs et index présents).
+- **Conclusion** : ce n'était pas une fiction DB. Le flow commitment (panier partagé V4.1) n'est pas cassé en production. Le doute venait d'un STATUS.md pas à jour, pas d'un défaut réel.
+- **Bloque le Golive ?** : Non — clos.
+- **Réf STATUS.md** : GOV-05 clôturé.
 
 ---
 
@@ -274,7 +269,7 @@ Divergence header↔réalité. Les 6 fichiers `dashboard-clients/finance/hub/ops
 - **Risque concret** : Information disclosure pour un utilisateur authentifié — messages PostgreSQL, noms de tables/colonnes, chemins internes.
 - **Correction proposée** : Sous-ensemble de NEW-001 — remplacer par `next(err)`.
 - **Effort estimé** : Inclus dans NEW-001
-- **Bloque le Golive ?** : Oui (couvert par NEW-001)
+- **Bloque le Golive ?** : Non — résolu (couvert par NEW-001/GOV-01, clos)
 
 ---
 
@@ -442,9 +437,9 @@ POST /api/payments/paypal/webhook (fallback)
 
 ### Bloc P0 — AVANT le push (≤ 1 jour)
 
-1. **NEW-001** : remplacer les 73 `catch { res.status(500) }` par `next(err)` — 2-3h
+1. ~~**NEW-001** : remplacer les 73 `catch { res.status(500) }` par `next(err)`~~ — ✅ déjà résolu via GOV-01 (69/73, 4 cas spéciaux maintenus)
 2. **NEW-002** : `npm audit fix` Nodemailer + job CI — 30 min
-3. **NEW-003** : vérifier `shared_cart_commitments` en DB live — 15 min (besoin accès DB)
+3. ~~**NEW-003** : vérifier `shared_cart_commitments` en DB live~~ — ✅ résolu 2026-06-23, table confirmée
 4. **NEW-004** : documenter les 45 routes UNPROTECTED (justification ou correction) — 4-6h
 
 ### Bloc P1 — H-24h
