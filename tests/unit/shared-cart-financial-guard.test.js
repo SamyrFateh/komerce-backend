@@ -47,7 +47,7 @@ function makeContribution(overrides = {}) {
 function makeCart(overrides = {}) {
   return {
     id: 'cart-001',
-    status: 'closed',
+    status: 'closed_for_settlement',
     total_kmf_snapshot: 30000,
     contributed_kmf: 10000,
     remaining_kmf: 20000,
@@ -169,12 +169,13 @@ describe('paid_not_counted — panier non ouvert', () => {
   });
 });
 
-describe('paid_not_counted — panier expiré', () => {
+describe('paid_not_counted — panier expiré (statut hors settlement)', () => {
   test('retourne null + marque failed requires_manual_refund', async () => {
-    const pastDate = new Date(Date.now() - 1000).toISOString();
+    // En V4, il n'y a plus de payment_window. Un panier hors settlement
+    // (ex: statut 'ordered') → cart_not_open_for_contribution.
     const client = makeClient([
       { rows: [makeContribution()] },
-      { rows: [makeCart({ payment_window_ends_at: pastDate })] },
+      { rows: [makeCart({ status: 'ordered' })] },
       { rows: [] }, // UPDATE failed
       { rows: [] }, // INSERT event
     ]);
@@ -187,7 +188,7 @@ describe('paid_not_counted — panier expiré', () => {
       /UPDATE shared_cart_contributions/.test(c.sql) && c.sql.includes("status = 'failed'")
     );
     const payload = JSON.parse(updateFailed.params[1]);
-    expect(payload.reason).toBe('cart_payment_window_expired');
+    expect(payload.reason).toBe('cart_not_open_for_contribution');
     expect(payload.requires_manual_refund).toBe(true);
   });
 });
@@ -242,10 +243,10 @@ describe('paid_not_counted — montant dépasse remaining au moment du webhook',
 // Happy paths
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('contribution normale → reste closed (V4.1)', () => {
+describe('contribution normale → settlement_in_progress (V4)', () => {
   test('updates contribution + panier + insère event contribution_paid', async () => {
     const updatedContrib = makeContribution({ status: 'paid' });
-    const updatedCart = makeCart({ contributed_kmf: 20000, remaining_kmf: 10000, status: 'closed' });
+    const updatedCart = makeCart({ contributed_kmf: 20000, remaining_kmf: 10000, status: 'settlement_in_progress' });
 
     const client = makeClient([
       { rows: [makeContribution()] },     // SELECT contributions FOR UPDATE
@@ -253,21 +254,20 @@ describe('contribution normale → reste closed (V4.1)', () => {
       { rows: [updatedContrib] },         // UPDATE contribution → paid RETURNING
       { rows: [updatedCart] },            // UPDATE panier RETURNING
       { rows: [] },                       // INSERT event contribution_paid
-      { rows: [] },                       // INSERT event cart_partially_funded (cart was 'active')
+      { rows: [] },                       // INSERT event cart_partially_funded
     ]);
     db.getClient.mockResolvedValueOnce(client);
 
     const result = await confirmContributionFromStripeSafely(SESSION_PAID);
     expect(result).not.toBeNull();
     expect(result.contribution.status).toBe('paid');
-    expect(result.cart.status).toBe('closed'); // V4.1 : le webhook ne change jamais le statut
+    expect(result.cart.status).toBe('settlement_in_progress');
     expectTransactionCommitted(client);
 
     const updateContrib = client.calls.find(c =>
       /UPDATE shared_cart_contributions/.test(c.sql) && c.sql.includes("status = 'paid'")
     );
     expect(updateContrib).toBeDefined();
-    // stripe_payment_intent_id posé
     expect(updateContrib.params[0]).toBe('pi_test_001');
 
     const eventPaid = client.calls.find(c =>
@@ -278,14 +278,14 @@ describe('contribution normale → reste closed (V4.1)', () => {
   });
 });
 
-describe('dernière contribution → cart_fully_funded (statut reste closed)', () => {
-  test('panier passe fully_funded + event cart_fully_funded inséré', async () => {
+describe('dernière contribution → ready_to_finalize (V4)', () => {
+  test('panier passe ready_to_finalize + event cart_fully_funded inséré', async () => {
     // Contribution = 20 000 KMF, remaining = 20 000 → fully funded
     const contribution = makeContribution({ amount_kmf: 20000 });
     const cart = makeCart({ contributed_kmf: 10000, remaining_kmf: 20000 });
 
     const updatedContrib = { ...contribution, status: 'paid' };
-    const updatedCart = { ...cart, contributed_kmf: 30000, remaining_kmf: 0, status: 'closed' };
+    const updatedCart = { ...cart, contributed_kmf: 30000, remaining_kmf: 0, status: 'ready_to_finalize' };
 
     const client = makeClient([
       { rows: [contribution] },
@@ -298,7 +298,7 @@ describe('dernière contribution → cart_fully_funded (statut reste closed)', (
     db.getClient.mockResolvedValueOnce(client);
 
     const result = await confirmContributionFromStripeSafely(SESSION_PAID);
-    expect(result.cart.status).toBe('closed'); // V4.1 : reste closed, cart_fully_funded émis pour le délai de grâce
+    expect(result.cart.status).toBe('ready_to_finalize');
     expect(result.cart.remaining_kmf).toBe(0);
     expectTransactionCommitted(client);
 

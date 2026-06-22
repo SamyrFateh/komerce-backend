@@ -797,21 +797,25 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     if (!cartRows.length) throw new Error('Panier partagé introuvable ou non autorisé');
     const cart = cartRows[0];
 
-    if (!['closed', 'awaiting_choice'].includes(cart.status)) {
-      throw new Error(`Impossible de finaliser un panier au statut ${cart.status}`);
+    const ALLOWED_FINALIZE_STATUSES = ['settlement_in_progress', 'ready_to_finalize'];
+    if (!ALLOWED_FINALIZE_STATUSES.includes(cart.status)) {
+      throw new Error(
+        `Impossible de finaliser : veuillez d'abord passer au paiement (statut actuel : ${cart.status})`
+      );
     }
     if (cart.finalized_order_id) {
       throw new Error('Ce panier est déjà finalisé');
     }
-    if (r(cart.remaining_kmf) > 0) {
+    const remainingCashKmf = Math.max(0, r(cart.remaining_kmf));
+    if (remainingCashKmf > 0 && !options.creatorCoversGap) {
       throw new Error(
         `Il reste ${cart.remaining_kmf} KMF à financer. ` +
-        'En statut AWAITING_CHOICE, contribuez d\'abord pour couvrir le solde.'
+        'Utilisez l\'option creatorCoversGap pour couvrir le solde restant en cash.'
       );
     }
 
     const prepaidKmf = r(cart.contributed_kmf);
-    const totalKmf = r(cart.total_kmf_snapshot);
+    const totalKmf   = r(cart.total_kmf_snapshot);
     if (totalKmf <= 0) throw new Error('Total panier invalide');
 
     // 2. Charger les items snapshot
@@ -936,8 +940,8 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
          'mixed_shared_cart_cash', 'pending',
          NULL, $9,
          'pending',
-         $10, $11, 0,
-         $12, $13, $14
+         $10, $11, $12,
+         $13, $14, $15
        )
        RETURNING *`,
       [
@@ -945,7 +949,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         recipientPhone || null,
         totalKmf, totalEur,
         pickupCode,
-        sharedCartId, prepaidKmf,
+        sharedCartId, prepaidKmf, remainingCashKmf,
         routing.destination_island,
         routing.routing_mode,
         routing.transit_hub,
@@ -972,35 +976,40 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       );
     }
 
-    // 7. Cycle paiement + stock (100% financé, remaining_kmf = 0 garanti)
-    const cycleResult = await confirmPaymentCycle({
-      orderId: order.id,
-      actor: { id: userId, role: 'system' },
-      source: 'shared_cart_full_payment',
-      dbClient: client,
-      note: 'Paiement intégral via panier partagé V4.1',
-    });
+    // 7. Cycle paiement + stock (cas A : 100% financé — remaining_cash_kmf = 0)
+    //    Cas B (creatorCoversGap, remaining > 0) : pas de confirmPaymentCycle ici,
+    //    le cash résiduel sera encaissé à la livraison (doctrine §5.7).
+    if (remainingCashKmf === 0) {
+      const cycleResult = await confirmPaymentCycle({
+        orderId: order.id,
+        actor: { id: userId, role: 'system' },
+        source: 'shared_cart_full_payment',
+        dbClient: client,
+        note: 'Paiement intégral via panier partagé V4',
+      });
 
-    if (!cycleResult.success && !cycleResult.noop) {
-      throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
-    }
-    if (cycleResult.stockBlocked) {
-      throw new Error(JSON.stringify({
-        code: 'stock_issues',
-        message: 'Stock insuffisant pour finaliser le panier partagé',
-        items: cycleResult.insufficientItems,
-      }));
+      if (!cycleResult.success && !cycleResult.noop) {
+        throw new Error(cycleResult.error || 'Cycle paiement panier partagé échoué');
+      }
+      if (cycleResult.stockBlocked) {
+        throw new Error(JSON.stringify({
+          code: 'stock_issues',
+          message: 'Stock insuffisant pour finaliser le panier partagé',
+          items: cycleResult.insufficientItems,
+        }));
+      }
     }
 
-    // 8. Marquer le panier comme ORDERED
+    // 8. Marquer le panier comme ORDERED (converted_to_order)
     await client.query(
-      `UPDATE shared_carts
+      `UPDATE shared_carts -- converted_to_order
           SET status = 'ordered',
               finalized_order_id = $1,
+              remaining_kmf = $3,
               finalized_at = NOW(),
               updated_at = NOW()
         WHERE id = $2`,
-      [order.id, sharedCartId]
+      [order.id, sharedCartId, remainingCashKmf]
     );
 
     await addEvent(client, sharedCartId, 'cart_converted_to_order',
@@ -1009,6 +1018,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
         order_id: order.id,
         order_reference: order.reference,
         prepaid_kmf: prepaidKmf,
+        remaining_cash_kmf: remainingCashKmf,
       }
     );
 
@@ -1021,6 +1031,7 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
       sharedCart: { ...cart, status: 'ordered', finalized_order_id: order.id },
       order: finalOrder || order,
       prepaidKmf,
+      remainingCashKmf,
     };
   });
 }

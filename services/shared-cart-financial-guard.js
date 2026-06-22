@@ -156,19 +156,10 @@ async function confirmContributionFromStripeSafely(session) {
     const contributed = r(cart.contributed_kmf);
     const remaining = Math.max(0, r(cart.remaining_kmf));
 
-    // V4.1 : statuts acceptant un paiement = 'closed' (fenêtre 48h, participants)
-    // et 'awaiting_choice' (le créateur complète le gap — startContribution
-    // l'autorise déjà pour ce statut). Tout autre statut → non comptabilisé.
-    if (cart.status !== 'closed' && cart.status !== 'awaiting_choice') {
+    // V4 : statuts acceptant un paiement = 'closed_for_settlement' et 'settlement_in_progress'.
+    // Tout autre statut → non comptabilisé.
+    if (cart.status !== 'closed_for_settlement' && cart.status !== 'settlement_in_progress') {
       return markPaidButNotCounted(client, contribution, cart, session, 'cart_not_open_for_contribution');
-    }
-
-    // Vérification fenêtre de paiement : uniquement pertinente en 'closed'.
-    // Un panier 'awaiting_choice' est par définition hors fenêtre — ce n'est
-    // pas un rejet, c'est le cas « créateur complète ».
-    if (cart.status === 'closed' && cart.payment_window_ends_at &&
-        new Date(cart.payment_window_ends_at) < new Date()) {
-      return markPaidButNotCounted(client, contribution, cart, session, 'cart_payment_window_expired');
     }
 
     if (total <= 0) {
@@ -185,12 +176,9 @@ async function confirmContributionFromStripeSafely(session) {
     const newContributed = Math.min(total, contributed + amount);
     const newRemaining = Math.max(0, total - newContributed);
 
-    // V4.1 : le statut du panier n'est jamais forcé par le webhook.
-    // - 'closed'          → reste 'closed' pendant toute la fenêtre de paiement,
-    //   même quand remaining_kmf tombe à 0 ; T3 (cron) gère le délai de grâce.
-    // - 'awaiting_choice' → reste 'awaiting_choice' (le créateur a complété le
-    //   gap) ; remaining_kmf = 0 permet alors POST /:id/finalize.
-    const newStatus = cart.status;
+    // V4 : le webhook fait avancer le statut dans le settlement flow.
+    // remaining > 0 → settlement_in_progress, remaining = 0 → ready_to_finalize
+    const newStatus = newRemaining === 0 ? 'ready_to_finalize' : 'settlement_in_progress';
 
     const { rows: [updatedContribution] } = await client.query(
       `UPDATE shared_cart_contributions
