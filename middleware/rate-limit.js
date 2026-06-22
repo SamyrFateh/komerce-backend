@@ -77,6 +77,12 @@ if (process.env.REDIS_URL) {
 
 // ── Helper pour créer un limiter avec ou sans Redis ───────────────────────────────
 function createLimiter(options, redisPrefix) {
+  // Bypass pour la sonde de conformité P4-1 (Schemathesis émet des centaines de
+  // requêtes → 429 en cascade qui noient le vrai signal). STRICTEMENT hors prod :
+  // même si la variable fuyait en production, le garde NODE_ENV l'empêche d'agir.
+  if (process.env.DISABLE_RATE_LIMIT === '1' && process.env.NODE_ENV !== 'production') {
+    return (req, res, next) => next();
+  }
   if (makeStore) {
     options.store = makeStore(redisPrefix);
   }
