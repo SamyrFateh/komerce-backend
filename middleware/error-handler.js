@@ -49,6 +49,9 @@ function classifyError(err) {
   if (err.code === '23503') return 'foreign_key';
   if (err.code === '23502') return 'not_null';
   if (err.code?.startsWith('23')) return 'db_constraint';
+  // 22P02 = invalid_text_representation (ex: uuid/integer malformé passé en :id ou query).
+  // Entrée client mal formée → 400, pas un 500 (détecté par la sonde P4-1).
+  if (err.code === '22P02') return 'invalid_input';
   if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') return 'network';
   if (err.message?.includes('CORS')) return 'cors';
   return 'unknown';
@@ -64,6 +67,7 @@ function getStatusCode(err, classification) {
     case 'foreign_key':    return 400;
     case 'not_null':       return 400;
     case 'db_constraint':  return 400;
+    case 'invalid_input':  return 400;
     case 'cors':           return 403;
     case 'network':        return 502;
     default:               return 500;
@@ -79,6 +83,7 @@ function getUserMessage(classification, err) {
     case 'foreign_key':    return 'Référence invalide — élément lié introuvable';
     case 'not_null':       return 'Champ obligatoire manquant';
     case 'db_constraint':  return 'Contrainte de données violée';
+    case 'invalid_input':  return 'Identifiant ou paramètre invalide';
     case 'cors':           return 'Origine non autorisée';
     case 'network':        return 'Service externe indisponible';
     default:               return 'Erreur interne du serveur';
