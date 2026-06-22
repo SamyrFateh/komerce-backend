@@ -1,8 +1,8 @@
 # Komerce — Etat operatoire du chantier
 
-> Mis a jour : **2026-06-15**  
+> Mis a jour : **2026-06-22**  
 > Repo : `SamyrFateh/komerce-backend` — branche de reference : `main`  
-> Commit de reference : `71e7efc15290801c40531d6599c9a22ae87401df`  
+> Commit de reference : `71e7efc15290801c40531d6599c9a22ae87401df` (base) — gouvernance ajoutée post-2026-06-16  
 > Role : point de verite operatoire pour Sonnet/agent dev.  
 > Principe : un audit historique est un indice, pas une verite. Une dette est ouverte seulement si le code actuel, la DB live ou une doc active la confirme.
 
@@ -10,20 +10,31 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22**.
 
-Validation effectuee :
+Validation effectuee (2026-06-15) :
 
 - Deploiement relance sans crash apres ajout de `services/payment-paypal-events.js`.
 - Inspection GitHub de `main` au commit `71e7efc15290801c40531d6599c9a22ae87401df`.
 - Verification des invariants livrés : PayPal, cash, fidelite post-commit, facture, notifications, sourcing hub, pickup/scan, suivi reference, catalogue 1000 produits.
 - Aucun run GitHub Actions associe au commit `main` n'a ete detecte via le connecteur ; les tests Jest restent a executer dans un environnement avec checkout complet.
 
+Validation gouvernance ajoutée (2026-06-22) :
+
+- `backend:audit` : 0 violation, 7 avertissements connus (taille fichier, interpolation identifiant SQL).
+- `arch:gate` (hygiène + drift + headers-sql) : EXIT 0. 237 fichiers scannés, 0 sans header.
+- Schema drift : 0 fiction hors allowlist, 0 fantôme, 0 table non documentée (cliquet refermé après ajout de 5 tables live dans SCHEMA.md).
+- Security 360 : 467 routes — 411 PROTECTED · 45 UNPROTECTED · 5 PUBLIC · 6 UNKNOWN. Cliquet anti-régression actif.
+- Contrat OpenAPI : 418 paths / 468 opérations. Dette : 442/468 réponses encore `UNKNOWN`.
+- Suite unit : 52/52 verte.
+- 2 fictions DB ouvertes nommées dans `scripts/arch-debt-budget.json` (voir §11).
+
 Limites du tampon :
 
-- Tampon code + boot, pas tampon metier live complet.
+- Tampon code + boot + gouvernance statique, pas tampon metier live complet.
 - Les tests sandbox/live restent recommandes pour PayPal sandbox, DB live purchase_orders, recu pickup, facture quantite > 1 et parcours notification reel.
 - Couture/variantes reste volontairement hors livraison, en attente `ARCH-COUTURE-00`.
+- Plan d'audit `AUDIT_ET_TESTS_PLAN.md` actif — lots A2/A3/A4/B1 en cours (voir §11).
 
 ---
 
@@ -372,7 +383,85 @@ Quand une dette est traitee :
 
 Aucun nouveau document ne devient operatoire sans etre ajoute a `docs/README.md`.
 
-## 8. Regle de mise a jour
+---
+
+## 11. Gouvernance outillée — état actif (2026-06-22)
+
+> Source : `BLINDAGE_BASE0_2026-06-16.md` · `AUDIT_ET_TESTS_PLAN.md` · baseline Security 360.
+
+### Outils câblés et leur état
+
+| Outil | Script | État | Porte |
+|---|---|---|---|
+| `backend:audit` | `audit-backend-arch.js` | 0 violation, 7 warnings | bloquant |
+| Security 360 | `gen-security-360.js` | cliquet actif (baseline sauvée) | bloquant (`--check`) |
+| Contrat OpenAPI | `contract-generate.js` | 418 paths / 468 ops | drift `git diff` |
+| Conformance Schemathesis | `contract-conformance.yml` | mode observe | CI observe |
+| Schema drift | `arch-schema-drift-check.js` | EXIT 0 (2 fictions allowlistées) | bloquant CI |
+| `arch:gate` | arch:gen + drift + headers-sql | EXIT 0 | bloquant CI |
+| `backend:audit` | I-BACK-* invariants | 0 violation | bloquant |
+
+### GOV-01 — 73 catches locaux `res.status(500)` (A4)
+
+Statut : **ouvert — priorité haute**.
+
+73 `catch { res.status(500) }` dans 22 fichiers de routes court-circuitent l'error-handler global. Conséquence : `22P02 → 400` ne s'applique pas, fuite de message d'erreur brut.
+Action : remplacer par `catch (err) { next(err) }` route par route.
+DoD : 0 `res.status(500)` local hors error-handler ; porte `server_error` Schemathesis bloquante.
+
+### GOV-02 — 45 routes UNPROTECTED non auditées (A2)
+
+Statut : **ouvert — priorité haute**.
+
+Security 360 recense 45 routes UNPROTECTED. Chacune doit être justifiée (publique légitime documentée) ou corrigée.
+141 routes role-protégées (agent_hub 87 · agent_relais 50 · agent_transitaire 4) ne sont pas encore couvertes par une sonde runtime (seulement analyse statique).
+Actions : sonde multi-rôles + audit IDOR (ressource user A inaccessible par user B).
+DoD : 0 UNPROTECTED non justifiée ; matrice rôle×route verte CI.
+
+### GOV-03 — Faille high Nodemailer (CRLF) non gatée (A5)
+
+Statut : **ouvert — gain immédiat**.
+
+`npm audit` remonte au moins une faille high (Nodemailer, injection CRLF). Aucune porte CI.
+Action : job `npm audit --audit-level=high` (observe → bloquant).
+DoD : 0 high/critical, ou exception datée ; job câblé.
+
+### GOV-04 — Contrat OpenAPI : 442/468 réponses UNKNOWN (A3)
+
+Statut : **ouvert — itératif**.
+
+La conformance Schemathesis ne peut pas valider les corps de réponse. Brûler les UNKNOWN par priorité blast-radius (admin + paiement + commandes).
+DoD : UNKNOWN < 50 sur routes critiques ; porte `server_error` bloquante.
+
+### GOV-05 — Fictions DB actives (drift allowlist)
+
+Statut : **ouvert — arbitrage humain requis**.
+
+Deux divergences code↔DB sur des flux argent, figées dans `scripts/arch-debt-budget.json#knownDriftAllowlist` :
+
+1. **`stripe_events_log`** (`services/shared-cart-queries.js`) — table live est `stripe_events_processed`. En plus : `SELECT id` alors que PK est `stripe_event_id`. Chemin d'idempotence Stripe **cassé contre la DB live**. Correctif probable : renommer table + corriger colonne.
+2. **`shared_cart_commitments`** (`services/shared-cart-commitment-service.js`) — table absente du dump live, mais INSERT/UPDATE/SELECT dessus. Migration jamais appliquée ou code mort. À trancher.
+
+DoD : retirer l'entrée de la allowlist une fois chaque défaut résolu (le contrôle exige alors que la fiction ait disparu).
+
+### GOV-06 — Plan tests E2E API (B1)
+
+Statut : **ouvert — infra déjà en place**.
+
+Parcours critiques à couvrir : checkout cash, checkout Stripe/PayPal webhook, remboursement, panier partagé V4 cycle complet, admin commande bout en bout.
+Infra : harness `tests/integration/test-harness/seed-helpers.js`, Postgres jetable CI, `ci-probe-token.js`.
+DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
+
+### Feuille de route priorisée (AUDIT_ET_TESTS_PLAN.md §C)
+
+1. **GOV-01** (catches 500 → `next(err)`) — débloque porte conformance.
+2. **GOV-03** (`npm audit` CI) — faille high ouverte.
+3. **GOV-02** (sonde multi-rôles + IDOR + 45 UNPROTECTED).
+4. **GOV-06** (E2E API parcours critiques).
+5. **GOV-04** (brûler UNKNOWN contrat).
+6. **GOV-05** (trancher les 2 fictions DB).
+
+
 
 Quand une dette est traitee :
 
