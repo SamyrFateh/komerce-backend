@@ -96,6 +96,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Bloque la CI si schema.sql est périmé (colonne absente depuis une migration récente).
+      # Correctif : railway run bash scripts/refresh-schema.sh → commit → push.
+      - name: Check schema.sql freshness
+        run: node scripts/check-schema-freshness.js
+
       - name: Load DB schema
         run: psql "$DATABASE_URL" -f db/schema.sql
 

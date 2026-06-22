@@ -47,7 +47,9 @@
     "security:360": "node scripts/gen-security-360.js",
     "security:360:check": "node scripts/gen-security-360.js --check",
     "security:360:save": "node scripts/gen-security-360.js --save",
-    "backend:audit": "node scripts/audit-backend-arch.js"
+    "backend:audit": "node scripts/audit-backend-arch.js",
+    "schema:check": "node scripts/check-schema-freshness.js",
+    "schema:refresh": "bash scripts/refresh-schema.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
