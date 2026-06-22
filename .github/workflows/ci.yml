@@ -35,6 +35,12 @@ jobs:
       - name: Backend architecture audit (invariants)
         run: npm run backend:audit
 
+      # GOV-03 : npm audit bloquant sur high/critical (node scripts/npm-audit-gate.js).
+      # Exit 1 si une vuln high/critical est détectée — voir le script pour le détail
+      # du mode bloquant vs observe et la procédure d'exception datée.
+      - name: npm audit gate (high/critical)
+        run: npm run audit:gate
+
       # Gate VERTE et bloquante sur toutes les suites unit. Les 9 suites de quarantaine
       # d'origine sont toutes résorbées (8 réparées, 1 supprimée — modèle obsolète,
       # voir docs/KNOWN_FAILING_TESTS.md). Exclut juste tests/integration (job Postgres).
