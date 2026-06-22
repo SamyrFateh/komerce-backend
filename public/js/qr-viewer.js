@@ -1,41 +1,39 @@
-/**
- * AUD-04 — Script QR viewer externalisé (retrait unsafe-inline CSP)
- * Les données dynamiques sont passées via data-* sur le conteneur.
- */
+// AUD-04: script QR externalisé depuis routes/orders/qr.js (retrait unsafe-inline CSP)
 (function () {
-  const container = document.getElementById('qr-container');
-  if (!container) return;
+  const dataEl = document.getElementById('qr-data');
+  if (!dataEl) return;
 
-  const qrData   = atob(container.dataset.qrb64);
-  const ref      = container.dataset.ref;
+  const qrData = atob(dataEl.dataset.qrb64 || '');
+  const ref = dataEl.dataset.ref || '';
+  const container = document.getElementById('qr-container');
 
   try {
     new QRCode(container, {
-      text:         qrData,
-      width:        200,
-      height:       200,
-      colorDark:    '#1e293b',
-      colorLight:   '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H,
+      text: qrData,
+      width: 200, height: 200,
+      colorDark: '#1e293b', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
     });
   } catch (e) {
+    // Pas d'innerHTML avec des données utilisateur — contenu statique via createElement (coffre-fort v1.0)
     const errP = document.createElement('p');
     errP.style.cssText = 'color:#ef4444;font-size:0.8rem';
-    errP.textContent   = 'Erreur QR';
+    errP.textContent = 'Erreur QR';
     container.appendChild(errP);
   }
 
+  // Téléchargement via canvas
   const btnDl = document.getElementById('btn-dl');
   if (btnDl) {
     btnDl.addEventListener('click', () => {
       setTimeout(() => {
         const canvas = container.querySelector('canvas');
         if (!canvas) { alert('QR non disponible'); return; }
-        const link    = document.createElement('a');
-        link.download = `komerce-qr-${ref}.png`;
-        link.href     = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'komerce-qr-' + ref + '.png';
+        link.href = canvas.toDataURL('image/png');
         link.click();
       }, 200);
     });
   }
-}());
+})();
