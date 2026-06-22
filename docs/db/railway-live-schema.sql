@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict LbbrCFDTe439bkbIvznUfj64D0SOxxkr3gUaN4l4aujgxsVDuIkLbYPtcEnmcFb
+\restrict HVWRzSduQfDn2UA5hOjtIa9fFDdzPKKmfOKBMKJOh72ocX0SeVFNLg68Bv5vTDd
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -1733,7 +1733,8 @@ CREATE TABLE public.invoices (
     payment_status text DEFAULT 'paid'::text NOT NULL,
     delivered_via text,
     delivered_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    public_token text
 );
 
 
@@ -6071,6 +6072,13 @@ CREATE INDEX idx_invoices_order ON public.invoices USING btree (order_id);
 
 
 --
+-- Name: idx_invoices_public_token; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_invoices_public_token ON public.invoices USING btree (public_token) WHERE (public_token IS NOT NULL);
+
+
+--
 -- Name: idx_loyalty_rewards_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9074,5 +9082,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict LbbrCFDTe439bkbIvznUfj64D0SOxxkr3gUaN4l4aujgxsVDuIkLbYPtcEnmcFb
+\unrestrict HVWRzSduQfDn2UA5hOjtIa9fFDdzPKKmfOKBMKJOh72ocX0SeVFNLg68Bv5vTDd
 
