@@ -370,7 +370,7 @@
   html.k-mobile-premium-v1 .k-hero-img {
     height: 118px;
     object-fit: cover;
-    object-position: center;
+    object-position: 50% 15%; /* cadre le haut du visuel : lune visible (était center → coupait la lune) */
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
