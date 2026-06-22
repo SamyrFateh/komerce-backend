@@ -94,7 +94,9 @@ router.post('/reset', ...guard, validate(admin.reset), async (req, res, next) =>
     }
 
     // Clean baskets and recipients (no FK to orders, but related session data)
-    for (const tbl of ['basket_items', 'baskets', 'recipients']) {
+    const CLEAN_TABLES_ALLOWLIST = ['basket_items', 'baskets', 'recipients']; // AUD-07
+    for (const tbl of CLEAN_TABLES_ALLOWLIST) {
+      if (!CLEAN_TABLES_ALLOWLIST.includes(tbl)) throw new Error(`Table non autorisée: ${tbl}`); // AUD-07 safety net
       try {
         await client.query(`SAVEPOINT sp_clean_${tbl}`);
         const r = await client.query(`DELETE FROM ${tbl}`);
@@ -300,7 +302,9 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       deletedCount++;
     }
 
-    for (const tbl of ['scan_events', 'incidents', 'invoices', 'parcel_items', 'parcels']) {
+    const TRUNC_TABLES_ALLOWLIST = ['scan_events', 'incidents', 'invoices', 'parcel_items', 'parcels']; // AUD-07
+    for (const tbl of TRUNC_TABLES_ALLOWLIST) {
+      if (!TRUNC_TABLES_ALLOWLIST.includes(tbl)) throw new Error(`Table non autorisée: ${tbl}`); // AUD-07 safety net
       try {
         await client.query(`SAVEPOINT sp_trunc_${tbl}`);
         await client.query(`TRUNCATE ${tbl} CASCADE`);

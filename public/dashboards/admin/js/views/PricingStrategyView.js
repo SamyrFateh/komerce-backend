@@ -41,6 +41,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
 
   /* ── Styles ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
@@ -154,7 +155,7 @@
       await loadStrategy();
       renderHTML();
     } catch (err) {
-      container.innerHTML = `<div class="kmc-error">Erreur : ${err.message}</div>`;
+      container.innerHTML = `<div class="kmc-error">Erreur : ${esc(err.message)}</div>`;
     }
   }
 

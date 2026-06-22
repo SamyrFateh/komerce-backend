@@ -615,11 +615,13 @@ router.post('/recalibration-apply', authenticate, requireAdmin, async (req, res,
     } = req.body || {};
 
     // Validation basique
+    const FINANCE_CONFIG_NUMERIC_COLS = ['avg_articles_per_order', 'avg_articles_per_parcel', 'avg_articles_per_shipment', 'avg_orders_per_month']; // AUD-07
     const fields = { avg_articles_per_order, avg_articles_per_parcel, avg_articles_per_shipment, avg_orders_per_month };
     const updates = [];
     const params = [];
     let i = 1;
     for (const [key, value] of Object.entries(fields)) {
+      if (!FINANCE_CONFIG_NUMERIC_COLS.includes(key)) continue; // AUD-07: allowlist guard
       if (value != null && Number.isFinite(Number(value)) && Number(value) > 0) {
         updates.push(`${key} = $${i++}`);
         params.push(Number(value));

@@ -24,6 +24,8 @@
 (function (global) {
   'use strict';
 
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
+
   async function render(rootEl) {
     rootEl.innerHTML = `
       <h1 class="page-title">Pilotage</h1>
@@ -129,7 +131,7 @@
       (data.principles || []).forEach(p => {
         const li = document.createElement('li');
         li.className = 'principle-item';
-        li.innerHTML = `<span class="principle-item-bullet">•</span><span>${p}</span>`;
+        li.innerHTML = `<span class="principle-item-bullet">•</span><span>${esc(p)}</span>`; // AUD-06
         principlesEl.appendChild(li);
       });
 

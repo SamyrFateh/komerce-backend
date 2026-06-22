@@ -38,6 +38,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
 
   /* ── Styles ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
@@ -144,7 +145,7 @@
       state.partners.forEach(p => { state.counts[p.partner_type] = (state.counts[p.partner_type] || 0) + 1; });
       buildUI();
     }).catch(err => {
-      container.innerHTML = `<div class="kmc-error">Erreur chargement fournisseurs : ${err.message || err}</div>`;
+      container.innerHTML = `<div class="kmc-error">Erreur chargement fournisseurs : ${esc(err.message || err)}</div>`;
     });
   }
 

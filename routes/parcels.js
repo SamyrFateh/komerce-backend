@@ -100,7 +100,7 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
 
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
-    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params);
+    const countResult = await db.query(`SELECT COUNT(*) FROM parcels p LEFT JOIN orders o ON o.id = p.order_id ${where}`, params); /* AUD-07: where = parameterized condition templates, no user-controlled identifiers */
     const total = parseInt(countResult.rows[0].count);
 
     const { rows } = await db.query(`
@@ -110,7 +110,7 @@ router.get('/', ...adminAgentRelais, validate(parcels.list, 'query'), async (req
              (SELECT COUNT(*) FROM parcel_items pi WHERE pi.parcel_id = p.id) AS items_count
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
-      ${where}
+      ${where} /* AUD-07: parameterized condition templates */
       ORDER BY p.created_at DESC
       LIMIT $${idx++} OFFSET $${idx++}
     `, [...params, safeLimit, offset]);

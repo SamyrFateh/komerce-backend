@@ -42,6 +42,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
 
   /* ── Styles ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
@@ -135,7 +136,7 @@
       state.transitaires = Array.isArray(transitairesResp) ? transitairesResp : (transitairesResp.partners || []);
       buildUI(container);
     }).catch(err => {
-      container.innerHTML = `<div class="kmc-error">Erreur chargement douane : ${err.message || err}</div>`;
+      container.innerHTML = `<div class="kmc-error">Erreur chargement douane : ${esc(err.message || err)}</div>`;
     });
   }
 

@@ -85,6 +85,8 @@ const EXPECTED_PAYMENT_COSTS = Object.freeze(['payment']);
  * @returns {{where: string, params: Array, nextParamIndex: number}}
  */
 function buildFiltersClause(filters = {}, orderAlias = 'o') {
+  // AUD-07: orderAlias is an internal constant ('o', 'ord', etc.), never from user input.
+  // All filter values are bound via $N params — no SQL injection risk.
   const where = ['1=1'];
   const params = [];
   let i = 1;

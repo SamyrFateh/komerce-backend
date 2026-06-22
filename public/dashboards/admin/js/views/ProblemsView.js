@@ -46,6 +46,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
 
   // ── Styles ────────────────────────────────────────────────────────────────
   const STYLE_ID = 'kmc-problems-styles';
@@ -539,7 +540,7 @@
     } catch (err) {
       console.error('[ProblemsView] API error:', err.message);
       const cardsEl = rootEl.querySelector('#prob-cards');
-      if (cardsEl) cardsEl.innerHTML = `<div class="error-state">Erreur chargement : ${err.message || 'API indisponible'}</div>`;
+      if (cardsEl) cardsEl.innerHTML = `<div class="error-state">Erreur chargement : ${esc(err.message || 'API indisponible')}</div>`;
     } finally {
       _isLoading = false;
       if (refreshBtn) refreshBtn.disabled = false;
@@ -733,7 +734,7 @@
         });
       });
     } catch (err) {
-      el.innerHTML = `<div class="error-state">❌ Erreur réconciliation colis : ${err.message || err}</div>`;
+      el.innerHTML = `<div class="error-state">❌ Erreur réconciliation colis : ${esc(err.message || err)}</div>`;
     }
   }
 

@@ -204,7 +204,7 @@ const AccountingView = (function () {
       state.data = { finance, charges, reco, uncollected };
       buildUI();
     } catch (err) {
-      _main.innerHTML = `<div class="error-state">❌ Erreur chargement comptabilité : ${err.message || err}</div>`;
+      _main.innerHTML = `<div class="error-state">❌ Erreur chargement comptabilité : ${esc(err.message || err)}</div>`;
     }
   }
 

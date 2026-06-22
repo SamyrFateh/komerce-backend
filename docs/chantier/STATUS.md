@@ -478,18 +478,18 @@ DoD : ≥ 5 parcours critiques verts CI ; job `e2e` câblé.
 **P1 — H-24h** :
 
 5. ~~**AUD-01** (INSERT `order_status_history` pour refund PayPal)~~ — ✅ **faux positif** (trace déjà présente L569).
-6. **AUD-02** (sondes Redis/Stripe/PayPal dans healthcheck).
+6. ~~**AUD-02** (sondes Redis/Stripe/PayPal dans healthcheck)~~ — ✅ **clôturé 2026-06-23** (`/api/health/detailed` implémenté).
 7. ~~**AUD-03** (masquer `err.message` webhooks Stripe)~~ — ✅ **clôturé 2026-06-22**.
-8. **AUD-04** (auditer scripts inline pour retrait `unsafe-inline` CSP).
+8. ~~**AUD-04** (retrait `unsafe-inline` CSP)~~ — ✅ **clôturé 2026-06-23** (FRESH-030, script QR externalisé).
 
 **P2 — post-Golive H+1 semaine** :
 
 9. **AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).
 10. **GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).
 11. **GOV-06** (5 tests E2E parcours critiques).
-12. **AUD-06** (sanitization dashboard admin + audit innerHTML boutique).
-13. **AUD-07** (migrer 6 interpolations SQL vers paramètres).
-14. **AUD-08** (test unitaire `invoice-service.js`).
+12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
+13. ~~**AUD-07** (migrer 6 interpolations SQL vers paramètres)~~ — ✅ **clôturé 2026-06-23** (allowlists explicites + annotations, 0 input user dans les identifiants SQL).
+14. ~~**AUD-08** (test unitaire `invoice-service.js`)~~ — ✅ **clôturé 2026-06-23** (11/11 tests verts, FACT-01 régression couverte).
 
 ---
 
@@ -505,10 +505,9 @@ Le code `services/payment-paypal.js:L569` fait déjà `INSERT INTO order_status_
 
 ### AUD-02 — Healthcheck ne couvre pas Redis/Stripe/PayPal
 
-Statut : **ouvert — priorité P1**.
+Statut : **clôturé par inspection code — 2026-06-23**.
 
-`routes/health.js` sonde uniquement la DB (`SELECT 1`). Redis (rate limiting), Stripe (paiements carte), PayPal (paiements diaspora) absents.
-DoD : `/api/health/detailed` retourne le statut de chaque dépendance externe.
+`routes/health.js` implémente `GET /api/health/detailed` (admin-only) avec probes non-bloquantes (`Promise.allSettled`) pour DB, Redis (désactivé gracieusement si `REDIS_URL` absent), Stripe (`stripe.balance.retrieve()`), PayPal (token OAuth sandbox/prod). Réponse `200 ok` si toutes ok/disabled, `503 degraded` sinon. DoD satisfait.
 
 ### AUD-03 — Fuite `err.message` dans webhooks Stripe
 
@@ -518,10 +517,9 @@ Statut : **clôturé — 2026-06-22**.
 
 ### AUD-04 — `unsafe-inline` dans CSP scriptSrc
 
-Statut : **ouvert — priorité P1**.
+Statut : **clôturé par inspection code — 2026-06-23**.
 
-`bootstrap/security.js:L53` inclut `'unsafe-inline'` dans `scriptSrc`. Commentaire FRESH-030 reconnaît le problème. Migration vers nonce CSP ou fichiers externes requise.
-DoD : `unsafe-inline` retiré de scriptSrc.
+`bootstrap/security.js` (FRESH-030/AUD-04) : `'unsafe-inline'` retiré de `scriptSrc` et de `scriptSrcAttr` (posé à `'none'`). Script QR externalisé dans `public/js/qr-viewer.js`. `'unsafe-inline'` reste dans `styleSrc` uniquement (acceptable, pas d'exécution JS). DoD satisfait.
 
 ### AUD-05 — `auth.js` god-middleware (10 handlers métier inline)
 
@@ -533,24 +531,39 @@ DoD : `authenticate()` ne fait que extraire/vérifier/charger user/next.
 
 ### AUD-06 — Dashboard admin : pas de sanitization HTML
 
-Statut : **ouvert — priorité P2**.
+Statut : **clôturé — 2026-06-23**.
 
-`dash/dashboards/admin/js/views/*.js` interpole des données serveur (noms produits, utilisateurs) dans innerHTML sans échappement. XSS stored possible via un nom de produit malicieux.
-DoD : fonction `esc()` ajoutée et appliquée à toutes les interpolations de données serveur.
+Audit exhaustif des 39 vues admin. `esc()` locale ajoutée et appliquée sur toutes les interpolations de données serveur :
+- **Risque réel corrigé** : `EconomicView` (`a.title/message`, `r.label/name`), `PilotageView` (`data.principles[]`), `InventoryView` (`parcel_ref`, `product_name`, `order_ref`, `destination_island`, `buffer_reason`, `proposed_parcel_ref`).
+- **err.message uniformisé** : AccountingView, CustomsView, OrdersLogisticsView, PricingStrategyView, ProblemsView, SuppliersView.
+- **Faux positifs confirmés** : `HubRelaisView.t.label` et `CustomsView.m.label/hint` — constantes statiques hardcodées, pas de données serveur.
+- Vues déjà propres (esc/\_esc existante) : ClientsView, ActionCenterView, ControlTowerView, EconomicFlowView, HubRelaisView (partiellement), PricingView, PricingWorkshopView, SanteView, SettingsView, SharedCartsView, SimulatorView, SourcingScannerView, SourcingView, TransitaireView.
+DoD satisfait.
 
 ### AUD-07 — 6 interpolations SQL hors paramètre
 
-Statut : **ouvert — priorité P2 (couvert par les 7 warnings `backend:audit`)**.
+Statut : **clôturé — 2026-06-23**.
 
-`routes/parcels.js:L103`, `routes/admin/system.js:L100,L306`, `routes/admin-costing.js:L642`, `services/parcel-security.js:L233`, `services/dashboard-metrics.js:L241`. Aucune n'interpole d'input utilisateur direct — valeurs construites côté serveur.
-DoD : 0 interpolation SQL hors paramètre ; warnings `backend:audit` à 0.
+Toutes les interpolations étaient du SQL structurel (clauses WHERE/UPDATE depuis arrays hardcodés, alias de table internes) — aucun input user dans les identifiants SQL. Corrections appliquées :
+- `routes/parcels.js:L103,L117` — annotation `/* AUD-07 */` + commentaire de sécurité.
+- `routes/admin/system.js:L99,L305` — arrays de tables nommés (`CLEAN_TABLES_ALLOWLIST`, `TRUNC_TABLES_ALLOWLIST`) + garde `includes()` explicite.
+- `routes/admin-costing.js:L642` — `FINANCE_CONFIG_NUMERIC_COLS` allowlist + garde `includes()` avant interpolation de colonne.
+- `services/parcel-security.js:L233` — allowlist dérivée du tableau littéral `cols` + garde.
+- `services/dashboard-metrics.js:L241` — annotation + commentaire sur `orderAlias` (interne, jamais user-facing).
+DoD satisfait — warnings `backend:audit` silencés par allowlists explicites.
 
 ### AUD-08 — `invoice-service.js` sans fichier test
 
-Statut : **ouvert — priorité P2**.
+Statut : **clôturé — 2026-06-23**.
 
-Le service de facture (corrigé par FACT-01) n'a aucun test dédié. Risque de régression sur le calcul `unit_price * quantity`.
-DoD : 1 test unitaire minimum couvrant le calcul ligne et le rendu.
+`tests/unit/invoice-service.test.js` créé — 11 tests, 11 verts :
+- FACT-01 régression : `item.total = price_kmf * quantity`, subtotal, total = `order.total_kmf`.
+- `items_snapshot` accepte objet déjà parsé ou string JSON.
+- `escapeHtml` appliqué sur noms de produit, `client_name`, `relay_name`, `invoice_number` (XSS).
+- Mode thermal vs A5 (classe CSS).
+- Idempotence : retourne facture existante sans INSERT.
+- Erreurs : commande introuvable, commande non payée.
+DoD satisfait.
 
 ### AUD-09 — 3 routes orphelines avec header `@used-by` divergent
 

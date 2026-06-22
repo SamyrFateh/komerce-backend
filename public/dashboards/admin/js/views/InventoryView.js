@@ -50,6 +50,8 @@
 (function (global) {
   'use strict';
 
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
+
   // ── Styles (injectés une seule fois) ─────────────────────────────────────
   const STYLE_ID = 'kmc-inventory-styles';
 
@@ -171,22 +173,22 @@
 
       let infoCell;
       if (type === 'proposed') {
-        infoCell = `<span class="inv-proposed-ref">📦 ${item.proposed_parcel_ref || '?'}</span>`;
+        infoCell = `<span class="inv-proposed-ref">📦 ${esc(item.proposed_parcel_ref || '?')}</span>`;
       } else if (type === 'buffered') {
-        infoCell = `<span class="inv-buffer-reason">${item.buffer_reason || 'En attente'}</span>`;
+        infoCell = `<span class="inv-buffer-reason">${esc(item.buffer_reason || 'En attente')}</span>`;
       } else {
         infoCell = `<span class="inv-wait">⏱ ${waitStr}</span>`;
       }
 
       // Suggested option first if proposed
       const suggestedOpt = (type === 'proposed' && item.proposed_parcel_id)
-        ? `<option value="${item.proposed_parcel_id}" style="font-weight:bold">✅ ${item.proposed_parcel_ref} (suggéré)</option>`
+        ? `<option value="${esc(item.proposed_parcel_id)}" style="font-weight:bold">✅ ${esc(item.proposed_parcel_ref)} (suggéré)</option>`
         : '';
 
       return `<tr data-inv-id="${item.id}">
-        <td title="${item.product_name}">${item.product_name}</td>
-        <td style="font-family:monospace;font-size:11px">${item.order_ref}</td>
-        <td>${item.destination_island || '—'}</td>
+        <td title="${esc(item.product_name)}">${esc(item.product_name)}</td>
+        <td style="font-family:monospace;font-size:11px">${esc(item.order_ref)}</td>
+        <td>${esc(item.destination_island || '—')}</td>
         <td>${infoCell}</td>
         <td style="text-align:right">
           <select class="inv-assign-select" data-item-id="${item.id}" title="Scanner dans un colis">
@@ -226,7 +228,7 @@
           ? 'var(--color-green-50, #f0fdf4)'
           : 'var(--color-amber-50, #fffbeb)';
         const lastTd = row.querySelector('td:last-child');
-        if (lastTd) lastTd.innerHTML = `<span style="font-size:11px;color:var(--color-green-700,#15803d)">✅ ${result.parcel_ref}</span>`;
+        if (lastTd) lastTd.innerHTML = `<span style="font-size:11px;color:var(--color-green-700,#15803d)">✅ ${esc(result.parcel_ref)}</span>`; // AUD-06
         setTimeout(() => row.classList.add('inv-assigned'), 1500);
         setTimeout(() => loadData(rootEl), 2500);
       }

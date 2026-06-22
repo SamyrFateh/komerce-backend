@@ -31,6 +31,7 @@
 
 (function (global) {
   'use strict';
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
 
   async function render(rootEl) {
     rootEl.innerHTML = `
@@ -166,7 +167,7 @@
         orders = data.orders || data.items || data || [];
         if (!Array.isArray(orders)) orders = [];
       } catch (e) {
-        tableEl.innerHTML = `<div class="error-state">Erreur chargement commandes : ${e.message || 'API indisponible'}</div>`;
+        tableEl.innerHTML = `<div class="error-state">Erreur chargement commandes : ${esc(e.message || 'API indisponible')}</div>`;
         return;
       }
 

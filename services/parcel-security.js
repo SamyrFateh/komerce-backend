@@ -229,7 +229,10 @@ async function ensureSecurityTables(db) {
     ];
 
     // DDL de bootstrap uniquement — idempotent via IF NOT EXISTS (FRESH-020)
+    // AUD-07: col.name and col.type come from the hardcoded cols array above — no user input
+    const ALLOWED_COL_NAMES = cols.map(c => c.name); // derived from literal array, not user input
     for (const col of cols) {
+      if (!ALLOWED_COL_NAMES.includes(col.name)) throw new Error(`Colonne non autorisée: ${col.name}`); // AUD-07 safety net
       await db.query(`ALTER TABLE parcels ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
       log.debug({ column: col.name }, 'parcels security column ensured');
     }

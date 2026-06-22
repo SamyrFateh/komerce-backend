@@ -36,6 +36,7 @@
   const _nf = new Intl.NumberFormat('fr-FR');
   const fmt  = n => _nf.format(Math.round(Number(n) || 0)) + ' KMF';
   const fmti = n => _nf.format(Math.round(Number(n) || 0));
+  const esc  = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); // AUD-06
   const fmtp = n => (Number(n) || 0).toFixed(1) + '%';
 
   async function render(rootEl) {
@@ -203,7 +204,7 @@
   function _renderAlerts(el, dash, coherence) {
     const alerts = [].concat((dash && dash.alerts) || [], (coherence && coherence.alerts) || []);
     if (global.AlertList && AlertList.renderList) AlertList.renderList(el, alerts, { limit: 12, emptyText: '✓ Aucune anomalie détectée' });
-    else el.innerHTML = alerts.length ? alerts.map(a => `<div style="padding:6px 0;font-size:0.85rem;">${a.title || a.message || ''}</div>`).join('') : '<div class="empty-state">✓ Aucune anomalie</div>';
+    else el.innerHTML = alerts.length ? alerts.map(a => `<div style="padding:6px 0;font-size:0.85rem;">${esc(a.title || a.message || '')}</div>`).join('') : '<div class="empty-state">✓ Aucune anomalie</div>';
   }
 
   function _renderCharges(el, charges) {
@@ -222,7 +223,7 @@
         rows: list,
       });
     } else {
-      el.innerHTML = list.length ? list.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.85rem;"><span>${r.label || r.name || '—'}</span><span>${fmt(r.amount_kmf || r.amount || 0)}</span></div>`).join('') : '<div class="empty-state">Aucune charge</div>';
+      el.innerHTML = list.length ? list.map(r => `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.85rem;"><span>${esc(r.label || r.name || '—')}</span><span>${fmt(r.amount_kmf || r.amount || 0)}</span></div>`).join('') : '<div class="empty-state">Aucune charge</div>';
     }
   }
 
