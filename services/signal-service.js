@@ -26,6 +26,10 @@
  */
 
 var db = require('../db');
+// Manquait : les 5 catch non-fatals appellent log.warn(...) → sans cet import,
+// une sous-erreur lève "ReferenceError: log is not defined" et transforme un
+// warning non-fatal en 500 (détecté par la sonde de conformité P4-1).
+var log = require('../utils/logger').child({ module: 'signal-service' });
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update a signal (dedup on type+entity)
