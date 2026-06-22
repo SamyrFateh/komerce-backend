@@ -50,8 +50,8 @@
     "backend:audit": "node scripts/audit-backend-arch.js",
     "schema:check": "node scripts/check-schema-freshness.js",
     "schema:refresh": "bash scripts/refresh-schema.sh",
-    "audit:gate": "bash scripts/npm-audit-gate.sh",
-    "audit:gate:observe": "bash scripts/npm-audit-gate.sh --observe"
+    "audit:gate": "node scripts/npm-audit-gate.js",
+    "audit:gate:observe": "node scripts/npm-audit-gate.js --observe"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
