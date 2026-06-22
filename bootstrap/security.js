@@ -50,10 +50,9 @@ function buildHelmetOptions() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc:  ["'self'"],
-        // FRESH-030: 'unsafe-inline' retiré — les inline scripts du frontend doivent migrer vers
-        //   des fichiers externes ou utiliser un nonce CSP généré par le serveur.
-        //   'unsafe-inline' permet aux scripts chargés de créer des enfants de confiance.
-        scriptSrc:   ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
+        // FRESH-030 / AUD-04: 'unsafe-inline' retiré — script QR externalisé dans public/js/qr-viewer.js.
+        //   Si un nouveau script inline est nécessaire, utiliser un nonce CSP généré par le serveur.
+        scriptSrc:   ["'self'", "https://cdnjs.cloudflare.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://js.stripe.com", "https://www.paypal.com", "https://www.paypalobjects.com"],
         styleSrc:    ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc:     ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
         imgSrc:      ["'self'", "data:", "https:", "http:"],

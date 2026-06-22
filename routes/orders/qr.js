@@ -201,37 +201,9 @@ router.get('/retrait/:token', async (req, res, next) => {
     <p class="tip">Présentez ce QR code à l'agent relais lors du retrait.<br>Usage unique · ${expired ? 'Expiré' : 'Expire le ' + expiresStr}</p>
   </div>
 
-  <script>
-    const qrData = atob('${qrDataB64}');
-    const container = document.getElementById('qr-container');
-
-    try {
-      new QRCode(container, {
-        text: qrData,
-        width: 200, height: 200,
-        colorDark: '#1e293b', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.H
-      });
-    } catch(e) {
-      // Pas d'innerHTML avec des données utilisateur — contenu statique via createElement (coffre-fort v1.0)
-      const errP = document.createElement('p');
-      errP.style.cssText = 'color:#ef4444;font-size:0.8rem';
-      errP.textContent   = 'Erreur QR';
-      container.appendChild(errP);
-    }
-
-    // Téléchargement via canvas
-    document.getElementById('btn-dl').addEventListener('click', () => {
-      setTimeout(() => {
-        const canvas = container.querySelector('canvas');
-        if (!canvas) { alert('QR non disponible'); return; }
-        const link = document.createElement('a');
-        link.download = 'komerce-qr-${order.reference}.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      }, 200);
-    });
-  </script>
+  <!-- AUD-04: script externalisé — retrait unsafe-inline CSP -->
+  <div id="qr-data" data-qrb64="${qrDataB64}" data-ref="${order.reference}"></div>
+  <script src="/js/qr-viewer.js"></script>
 </body>
 </html>`;
 
