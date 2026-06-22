@@ -119,6 +119,93 @@ router.get('/metrics', authenticate, requireRole(['admin']), async (req, res, ne
   }
 });
 
+// ── GET /health/detailed — Dépendances externes (admin only) ────────────────
+// AUD-02 : Redis (optionnel), Stripe, PayPal — probe non-bloquante
+
+async function _probeRedis() {
+  if (!process.env.REDIS_URL) return { status: 'disabled', reason: 'REDIS_URL absent' };
+  try {
+    const { createClient } = require('redis');
+    const client = createClient({ url: process.env.REDIS_URL });
+    await client.connect();
+    const start = Date.now();
+    await client.ping();
+    const latency = Date.now() - start;
+    await client.disconnect();
+    return { status: 'ok', latency_ms: latency };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+async function _probeStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) return { status: 'disabled', reason: 'STRIPE_SECRET_KEY absent' };
+  try {
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const start = Date.now();
+    await stripe.balance.retrieve();
+    return { status: 'ok', latency_ms: Date.now() - start };
+  } catch (err) {
+    // Stripe retourne une erreur structurée : on masque le détail
+    return { status: 'error', error: err.type || 'stripe_error' };
+  }
+}
+
+async function _probePaypal() {
+  const id     = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!id || !secret) return { status: 'disabled', reason: 'PAYPAL_CLIENT_ID/SECRET absent' };
+  try {
+    const base = (process.env.PAYPAL_ENV === 'production')
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com';
+    const basic = Buffer.from(`${id}:${secret}`).toString('base64');
+    const start = Date.now();
+    const res = await fetch(`${base}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=client_credentials',
+    });
+    const latency = Date.now() - start;
+    if (!res.ok) return { status: 'error', http_status: res.status };
+    return { status: 'ok', latency_ms: latency };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+router.get('/detailed', authenticate, requireRole(['admin']), async (req, res, next) => {
+  try {
+    const [dbResult, redisResult, stripeResult, paypalResult] = await Promise.allSettled([
+      (async () => {
+        const start = Date.now();
+        await db.query('SELECT 1');
+        return { status: 'ok', latency_ms: Date.now() - start };
+      })(),
+      _probeRedis(),
+      _probeStripe(),
+      _probePaypal(),
+    ]);
+
+    const deps = {
+      db:     dbResult.status     === 'fulfilled' ? dbResult.value     : { status: 'error', error: dbResult.reason?.message },
+      redis:  redisResult.status  === 'fulfilled' ? redisResult.value  : { status: 'error', error: redisResult.reason?.message },
+      stripe: stripeResult.status === 'fulfilled' ? stripeResult.value : { status: 'error', error: stripeResult.reason?.message },
+      paypal: paypalResult.status === 'fulfilled' ? paypalResult.value : { status: 'error', error: paypalResult.reason?.message },
+    };
+
+    const allOk = Object.values(deps).every(d => d.status === 'ok' || d.status === 'disabled');
+
+    res.status(allOk ? 200 : 503).json({
+      status: allOk ? 'ok' : 'degraded',
+      dependencies: deps,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── GET /health/version — Version info (toy route P2-2) ─────────────────────
 
 router.get('/version', (req, res) => {
