@@ -23,19 +23,19 @@
 
 ## §0 — Score global d'avancement
 
-> **Mis à jour 2026-06-23 — session E6/G5** : E6 (tests intégration 8 routes sourcing-engine) et G5 (flow sourcing → enrichissement → mise en vente) clôturés.
+> **Mis à jour 2026-06-23 — session C** : C1 (connecteurs), C4 (audit DB sourcing), C6 (doc moteur), C7 (guard script) clôturés. C2/C3 déjà couverts par E6. Reste C5 (normalisation doublons — approbation humaine requise).
 
 | Bloc | Lots ☐ | Lots 🚧 | Lots ✅ | % |
 |---|---:|---:|---:|---:|
 | A — Hygiène code & DB | 0 | 0 | 7 | 100 % |
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
-| C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
+| C — Sourcing & offre (cible business) | 3 | 0 | 4 | 57 % |
 | D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
 | E — Tests & couverture | 0 | 0 | 6 | 100 % |
 | F — Observabilité & ops | 0 | 0 | 7 | 100 % |
 | G — Flows business critiques | 0 | 0 | 5 | 100 % |
 | H — Gouvernance & garde-fous | 0 | 0 | 5 | 100 % |
-| **TOTAL** | **13** | **0** | **38** | **75 %** |
+| **TOTAL** | **9** | **0** | **42** | **82 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -435,7 +435,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ C1 — Inventorier les connecteurs fournisseurs et leur état
+### ✅ C1 — Inventorier les connecteurs fournisseurs et leur état
 
 **Charge** : 1 j  
 **Risque** : nul (audit + doc)
@@ -489,7 +489,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ C4 — Audit du schéma sourcing en DB
+### ✅ C4 — Audit du schéma sourcing en DB
 
 **Charge** : 1 j  
 **Risque** : nul (lecture)
@@ -535,7 +535,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ C6 — Documentation du moteur sourcing (philosophie & invariants)
+### ✅ C6 — Documentation du moteur sourcing (philosophie & invariants)
 
 **Charge** : 1 j  
 **Risque** : nul
@@ -552,7 +552,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ C7 — Garde-fou sourcing exécutable
+### ✅ C7 — Garde-fou sourcing exécutable
 
 **Charge** : 1 j  
 **Risque** : nul  

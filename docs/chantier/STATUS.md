@@ -823,4 +823,66 @@ Statut : **clôturé par inspection code — 2026-06-23**.
 
 ---
 
-**Lot B complet — tous les lots clôturés au 2026-06-23.** Prochain lot selon le roadmap : **B5b** (si pricing-engine.js 1 483 lignes justifie découpe) ou passage au **Lot C**.
+**Lot B complet — tous les lots clôturés au 2026-06-23.**
+
+---
+
+## 16. Session C — Sourcing & offre (2026-06-23)
+
+> Source : session 2026-06-23 — lots C1, C4, C6, C7 du roadmap `BACKEND_GOLIVE_ROADMAP.md`.
+> C2/C3 déjà couverts (86 tests verts, E6 clos). C5 en attente approbation humaine.
+
+### C1 — Inventaire des connecteurs fournisseurs
+
+Statut : **clôturé — 2026-06-23**.
+
+`docs/SUPPLIERS_CONNECTORS.md` créé. 4 connecteurs documentés :
+
+- `api-connector.base.js` — interface abstraite (`ApiConnectorBase`), fonctionnelle, non instanciée directement.
+- `manual-connector.js` — ✅ production ready, transforme saisie formulaire admin.
+- `csv-connector.js` — ✅ production ready, parse CSV (séparateur auto, 16 alias FR/EN).
+- `noon-connector.js` — ⛔ placeholder inactif (`IS_ACTIVE: false`), checklist d'activation en 5 étapes documentée.
+
+Vérifié : `supplier-catalog-scanner.js` consomme les connecteurs proprement (pas de couplage direct fournisseur). Indexé dans `docs/README.md` §4. DoD satisfait.
+
+### C4 — Audit schéma DB sourcing
+
+Statut : **clôturé — 2026-06-23**.
+
+`docs/_work/SOURCING_DB_AUDIT.md` créé. 7 findings sur 6 tables (`products`, `sourcing_candidates`, `sourcing_candidate_events`, `partners`, `supplier_catalog_imports`, `pricing_components`) :
+
+- **F-01 🔴** `products.cost_kmf` vs `cost_price_kmf` — doublon actif, synchronisation en parallèle dans le code. Lot C5 requis.
+- **F-02 🔴** `products.weight_kg` vs `weight_g` — même problème poids. Lot C5 requis.
+- **F-03 🟡** `partners.partner_type` — texte libre sans CHECK DB (6 valeurs connues).
+- **F-04 🟡** `sourcing_candidates.komerce_category` — pas de FK vers `customs_categories`.
+- **F-05 🟢** Index composite manquant `(state, import_id)` sur `sourcing_candidates` (acceptable < 50k lignes).
+- **F-06 🟢** `products.sourcing_rail` sans CHECK DB (validé dans `sourcing-mutations.js`).
+- **F-07 ℹ️** Pas de FK `partners → sourcing_candidates` (aucun lien prévu, normal).
+
+Aucune correction DB dans ce lot (audit pur). Corrections → C5 et C7. DoD satisfait.
+
+### C6 — Documentation moteur sourcing
+
+Statut : **clôturé — 2026-06-23**.
+
+`docs/SOURCING_ENGINE.md` créé. Couvre philosophie, architecture, pipeline d'analyse 7 étapes, 17 seuils variabilisés (`business_rules`), 4 rails A/B/C/D, décisions sourcing, invariants protégés, dettes actives et évolutions prévues. Indexé dans `docs/README.md` §4. DoD satisfait.
+
+### C7 — Garde-fou sourcing exécutable
+
+Statut : **clôturé — 2026-06-23**.
+
+`scripts/audit-sourcing.js` créé — 7 checks DB (4 violations bloquantes, 3 warnings) :
+
+| Check | Sévérité | Détecte |
+|---|---|---|
+| S-01 | Violation | Produits actifs sans aucun coût renseigné |
+| S-02 | Violation | `cost_kmf ≠ cost_price_kmf` (divergence doublon) |
+| S-03 | Violation | Poids négatif ou > 100 kg |
+| S-04 | Violation | `sourcing_rail` hors `('A','B','C','D')` |
+| S-05 | Violation | `partner_type` hors liste des 6 valeurs valides |
+| S-06 | Warning | `komerce_category` orpheline dans `sourcing_candidates` |
+| S-07 | Warning | `weight_kg` et `weight_g` divergents (> 10 g) |
+
+Câblé dans `package.json` : `npm run sourcing:audit` (bloquant) et `npm run sourcing:audit:observe`. Skip gracieux si `DATABASE_URL` absent (CI sans DB). DoD satisfait.
+
+**Lot C partiel clôturé au 2026-06-23 (C1 ✅, C4 ✅, C6 ✅, C7 ✅). Prochain lot : C5** — normalisation colonnes dupliquées cost_kmf/weight_kg — approbation humaine obligatoire avant merge.

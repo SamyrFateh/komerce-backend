@@ -75,6 +75,9 @@ Une intervention DB est incomplète si `docs/SCHEMA.md`, les headers `@db-read/@
 | Sécurité backend | [`docs/backend/SECURITY-MODEL.md`](./backend/SECURITY-MODEL.md) |
 | Backlog de remédiation pré-golive (lots A-H, scoring, ordre d'exécution) | [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./backend/BACKEND_GOLIVE_ROADMAP.md) |
 | Architecture backend normative (invariants I-BACK-1..10, ownership) | [`docs/backend/BACKEND_ARCHITECTURE.md`](./backend/BACKEND_ARCHITECTURE.md) |
+| Connecteurs fournisseurs (état, interface, activation Noon) | [`docs/SUPPLIERS_CONNECTORS.md`](./SUPPLIERS_CONNECTORS.md) |
+| Moteur sourcing (philosophie, rails, seuils, invariants, évolutions) | [`docs/SOURCING_ENGINE.md`](./SOURCING_ENGINE.md) |
+| Audit schéma DB sourcing (doublons coût/poids, FK, indexes) | [`docs/_work/SOURCING_DB_AUDIT.md`](./_work/SOURCING_DB_AUDIT.md) |
 
 ---
 

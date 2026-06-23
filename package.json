@@ -48,6 +48,8 @@
     "security:360:check": "node scripts/gen-security-360.js --check",
     "security:360:save": "node scripts/gen-security-360.js --save",
     "backend:audit": "node scripts/audit-backend-arch.js",
+    "sourcing:audit": "node scripts/audit-sourcing.js",
+    "sourcing:audit:observe": "node scripts/audit-sourcing.js --observe",
   "backend:arch": "node scripts/gen-backend-arch-live.js",
   "pretest": "npm run backend:audit",
     "schema:check": "node scripts/check-schema-freshness.js",
