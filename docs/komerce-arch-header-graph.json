@@ -20,7 +20,7 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 657,
-    "edges": 2885,
+    "edges": 2887,
     "dbTables": 107,
     "doctrines": 124,
     "impactAreas": 112,
@@ -2595,7 +2595,8 @@
         "wallet_view"
       ],
       "depends": [
-        "b-utils.js"
+        "b-utils.js",
+        "b-identity.js"
       ],
       "usedBy": [
         "b-nav.js",
@@ -2606,7 +2607,8 @@
       "dbTxn": [],
       "doctrine": [
         "wallet_visible_client",
-        "navigation_sans_friction"
+        "navigation_sans_friction",
+        "otp_une_fois"
       ],
       "impactAreas": [
         "wallet",
@@ -18204,6 +18206,12 @@
       "label": "b-utils.js"
     },
     {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "public/boutique/js/b-identity.js",
+      "type": "depends",
+      "label": "b-identity.js"
+    },
+    {
       "from": "public/boutique/js/b-nav.js",
       "to": "public/boutique/js/b-wallet.js",
       "type": "uses",
@@ -18226,6 +18234,12 @@
       "to": "doctrine:navigation_sans_friction",
       "type": "doctrine",
       "label": "navigation_sans_friction"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "doctrine:otp_une_fois",
+      "type": "doctrine",
+      "label": "otp_une_fois"
     },
     {
       "from": "public/boutique/js/b-wallet.js",
@@ -33994,6 +34008,7 @@
         "public/boutique/js/b-phone.js",
         "public/boutique/js/b-share-cart.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-wallet.js",
         "routes/otp.js"
       ]
     },
@@ -35040,7 +35055,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "public/boutique/js/b-utils.js"
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-identity.js"
       ],
       "directUsedBy": [
         "public/boutique/js/b-nav.js",
@@ -35051,7 +35067,8 @@
       "dbWrite": [],
       "doctrines": [
         "wallet_visible_client",
-        "navigation_sans_friction"
+        "navigation_sans_friction",
+        "otp_une_fois"
       ],
       "impactAreas": [
         "wallet",
@@ -35059,9 +35076,11 @@
       ],
       "mustCheck": [
         "doctrine:navigation_sans_friction",
+        "doctrine:otp_une_fois",
         "doctrine:wallet_visible_client",
         "impact:boutique-navigation",
         "impact:wallet",
+        "public/boutique/js/b-identity.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-utils.js",
         "public/boutique/js/boutique.js"

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-23T08:08:16.487Z",
+  "generatedAt": "2026-06-23T11:25:31.540Z",
   "summary": {
     "modules": 70,
     "withHeader": 70,
@@ -1440,10 +1440,12 @@
       "criticality": "medium",
       "doctrine": [
         "wallet_visible_client",
-        "navigation_sans_friction"
+        "navigation_sans_friction",
+        "otp_une_fois"
       ],
       "depends": [
-        "b-utils.js"
+        "b-utils.js",
+        "b-identity.js"
       ],
       "usedBy": [
         "b-nav.js",
@@ -1452,7 +1454,8 @@
       "emits": [],
       "listens": [],
       "imports": [
-        "b-utils"
+        "b-utils",
+        "b-identity"
       ],
       "bodyClasses": []
     },

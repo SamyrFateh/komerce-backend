@@ -137,3 +137,17 @@
 .k-wlt-empty-icon  { font-size: 40px; opacity: .45; }
 .k-wlt-empty-title { font-size: .9rem; font-weight: 700; color: var(--text); }
 .k-wlt-empty-sub   { font-size: .78rem; max-width: 240px; line-height: 1.4; }
+
+/* ── Auth gate button ────────────────────────────────────────── */
+.k-wlt-auth-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ocean-dark) 0%, var(--ocean) 100%);
+  color: var(--white);
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.k-wlt-auth-btn:disabled { opacity: .6; cursor: wait; }

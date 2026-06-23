@@ -6,9 +6,9 @@
  * @criticality   medium
  * @inputs        client_session, wallet_balance, wallet_transactions
  * @outputs       wallet_view
- * @depends       b-utils.js
+ * @depends       b-utils.js, b-identity.js
  * @used-by       b-nav.js, boutique.js
- * @doctrine      wallet_visible_client, navigation_sans_friction
+ * @doctrine      wallet_visible_client, navigation_sans_friction, otp_une_fois
  * @impact-areas  wallet, boutique-navigation
  * @version       2026-06
  */
@@ -17,11 +17,16 @@
  * @module b-wallet
  * @brief Mon porte-monnaie — solde + historique mouvements.
  *
- * Vue simple : carte solde en haut, liste des transactions en dessous.
+ * Même pattern que b-tracking.js :
+ *   1. Tente GET /api/wallet (cookie kmrc_jwt)
+ *   2. Si 401 → écran gate avec requireIdentity()
+ *   3. Après OTP → charge et affiche les données wallet
+ *
  * Consomme GET /api/wallet et GET /api/wallet/transactions.
  */
 
 import { sanitize, fmt, apiGet } from './b-utils.js';
+import { requireIdentity, getCurrentIdentity } from './b-identity.js';
 
 'use strict';
 
@@ -64,7 +69,7 @@ function txLabel(reason) {
   return map[reason] || sanitize(reason) || 'Mouvement';
 }
 
-// ── Render ───────────────────────────────────────────────────────────────────
+// ── Render : point d'entrée ─────────────────────────────────────────────────
 
 export function renderWalletView() {
   let el = document.getElementById('k-wallet-view');
@@ -82,22 +87,53 @@ export function renderWalletView() {
   el.innerHTML = '<div class="k-wlt-loading"><div class="k-wlt-spin"></div><p>Chargement…</p></div>';
 
   (async () => {
-    try {
-      const [balData, txData] = await Promise.all([
-        apiGet('/api/wallet').catch(() => null),
-        apiGet('/api/wallet/transactions?limit=50').catch(() => null),
-      ]);
+    // Même pattern que b-tracking : tenter l'appel, catch silencieux
+    const [balData, txData] = await Promise.all([
+      apiGet('/api/wallet').catch(() => null),
+      apiGet('/api/wallet/transactions?limit=50').catch(() => null),
+    ]);
 
-      const balance = balData?.balance_kmf ?? 0;
-      const transactions = txData?.transactions ?? [];
-
-      el.innerHTML = '';
-      el.appendChild(buildBalanceCard(balance));
-      el.appendChild(buildTransactionList(transactions));
-    } catch (_) {
-      el.innerHTML = '<div class="k-wlt-empty">Impossible de charger le porte-monnaie.</div>';
+    // Pas de données ET pas d'identité → gate OTP (même logique que renderTrackViewSearchMode)
+    if (!balData && !getCurrentIdentity()) {
+      renderAuthGate(el);
+      return;
     }
+
+    const balance = balData?.balance_kmf ?? 0;
+    const transactions = txData?.transactions ?? [];
+
+    el.innerHTML = '';
+    el.appendChild(buildBalanceCard(balance));
+    el.appendChild(buildTransactionList(transactions));
   })();
+}
+
+// ── Gate d'authentification ─────────────────────────────────────────────────
+
+function renderAuthGate(el) {
+  el.innerHTML =
+    '<div class="k-wlt-empty">' +
+      '<div class="k-wlt-empty-icon">🔐</div>' +
+      '<div class="k-wlt-empty-title">Identifiez-vous pour accéder à votre porte-monnaie</div>' +
+      '<div class="k-wlt-empty-sub">Confirmez votre numéro WhatsApp pour consulter votre solde et l\'historique de vos crédits.</div>' +
+      '<button class="k-wlt-auth-btn" id="k-wlt-auth-btn">📲 M\'identifier</button>' +
+    '</div>';
+
+  el.querySelector('#k-wlt-auth-btn').addEventListener('click', async () => {
+    const btn = el.querySelector('#k-wlt-auth-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Identification…';
+
+    const user = await requireIdentity({ reason: 'porte-monnaie', title: 'Accéder à mon porte-monnaie' });
+    if (user) {
+      // OTP réussi → recharger la vue wallet
+      renderWalletView();
+    } else {
+      // Utilisateur a annulé
+      btn.disabled = false;
+      btn.textContent = '📲 M\'identifier';
+    }
+  });
 }
 
 // ── Balance card ─────────────────────────────────────────────────────────────
