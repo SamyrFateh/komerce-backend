@@ -28,19 +28,36 @@ CREATE INDEX IF NOT EXISTS idx_sc_state_supplier
 -- ── F-06 : products.sourcing_rail — CHECK DB ────────────────────────────────
 -- Doit rester synchronisé avec VALID_RAILS dans sourcing-mutations.js
 -- et audit-sourcing.js. NULL reste autorisé (rail pas encore assigné).
-ALTER TABLE products
-  ADD CONSTRAINT chk_products_sourcing_rail
-  CHECK (sourcing_rail IS NULL OR sourcing_rail IN ('A', 'B', 'C', 'D'));
+-- Idempotent : ne fait rien si déjà posé (évite un ROLLBACK si une exécution
+-- précédente a partiellement appliqué cette migration).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_products_sourcing_rail'
+  ) THEN
+    ALTER TABLE products
+      ADD CONSTRAINT chk_products_sourcing_rail
+      CHECK (sourcing_rail IS NULL OR sourcing_rail IN ('A', 'B', 'C', 'D'));
+  END IF;
+END $$;
 
 -- ── F-03 : partners.partner_type — CHECK DB ─────────────────────────────────
 -- Doit rester synchronisé avec la liste dans audit-sourcing.js (check S-05).
 -- partner_type est NOT NULL en base, donc pas de cas NULL à gérer ici.
-ALTER TABLE partners
-  ADD CONSTRAINT chk_partners_partner_type
-  CHECK (partner_type IN (
-    'relais_simple', 'relais_showroom', 'partenaire_avance',
-    'atelier_couture', 'artisan_retouche', 'franchise_s5'
-  ));
+-- Idempotent, même logique que ci-dessus.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_partners_partner_type'
+  ) THEN
+    ALTER TABLE partners
+      ADD CONSTRAINT chk_partners_partner_type
+      CHECK (partner_type IN (
+        'relais_simple', 'relais_showroom', 'partenaire_avance',
+        'atelier_couture', 'artisan_retouche', 'franchise_s5'
+      ));
+  END IF;
+END $$;
 
 COMMIT;
 
