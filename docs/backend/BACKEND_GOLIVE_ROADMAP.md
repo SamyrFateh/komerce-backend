@@ -31,11 +31,11 @@
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
 | D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
-| E — Tests & couverture | 2 | 0 | 4 | 67 % |
+| E — Tests & couverture | 1 | 0 | 5 | 83 % |
 | F — Observabilité & ops | 0 | 0 | 7 | 100 % |
-| G — Flows business critiques | 5 | 0 | 0 | 0 % |
+| G — Flows business critiques | 1 | 0 | 4 | 80 % |
 | H — Gouvernance & garde-fous | 0 | 0 | 5 | 100 % |
-| **TOTAL** | **20** | **0** | **31** | **61 %** |
+| **TOTAL** | **15** | **0** | **36** | **71 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -765,7 +765,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E4 — Tests d'intégration des flows paiement
+### ✅ E4 — Tests d'intégration des flows paiement *(couvert par GOV-06 — 5 flows E2E, 36 assertions + admin-order-refund, audit 2026-06-23)*
 
 **Charge** : 3-4 j  
 **Risque** : nul
@@ -914,7 +914,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ G1 — Flow : création commande → paiement cash → retrait relais
+### ✅ G1 — Flow : création commande → paiement cash → retrait relais *(couvert GOV-06 flows 1+5, audit 2026-06-23)*
 
 **Charge** : 2 j  
 **Risque** : nul (audit)
@@ -936,7 +936,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ G2 — Flow : création commande → paiement Stripe → préparation hub
+### ✅ G2 — Flow : création commande → paiement Stripe → préparation hub *(couvert GOV-06 flows 2+5, audit 2026-06-23)*
 
 **Charge** : 2 j  
 **Risque** : nul
@@ -945,7 +945,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ G3 — Flow : panier collectif → contributions → confirmation
+### ✅ G3 — Flow : panier collectif → contributions → confirmation *(couvert GOV-06 flow 4 + 10 suites shared-cart, audit 2026-06-23)*
 
 **Charge** : 2-3 j  
 **Risque** : nul
@@ -954,7 +954,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ G4 — Flow : annulation commande après paiement
+### ✅ G4 — Flow : annulation commande après paiement *(couvert GOV-06 flow 3 + admin-order-refund, audit 2026-06-23)*
 
 **Charge** : 1-2 j  
 **Risque** : nul

@@ -712,3 +712,27 @@ Livrables :
 - `scripts/audit-boutique-arch.js` — `EXPECTED_BUNDLES` importé depuis `css-bundles.js`.
 
 Aucun changement backend. Gates passées : `deploy:css` ✅, `check:fast` ✅, score risque XSS 0.
+
+### E4 — Tests d'intégration flows paiement
+
+Statut : **clôturé par audit — 2026-06-23**.
+
+GOV-06 (`e2e-critical-flows.test.js`) couvre déjà les 5 flows demandés : checkout cash (flow 1), webhook Stripe (flow 2), annulation/remboursement (flow 3), panier partagé V4 (flow 4), transitions admin bout en bout (flow 5). 36 assertions au total. `admin-order-refund-payment-service.test.js` couvre le refund Stripe spécifiquement.
+
+### E1/E2 — Tests pricing-engine / shared-cart-engine
+
+Statut : **clôturé par audit — 2026-06-23**.
+
+E1 : `pricing-engine.js` (413 lignes post-refactoring) importé par 3 suites directes + 5 connexes (8 fichiers pricing-*.test.js). E2 : `shared-cart-engine.js` (1264 lignes) importé par 6 suites directes + 4 connexes (10 fichiers shared-cart-*.test.js). Couverture mesurée : 35.6% stmts global, seuils jest dépassés.
+
+### E5 — Couverture jest
+
+Statut : **clôturé — 2026-06-23**.
+
+`jest.config.js` avait déjà `collectCoverageFrom` et `coverageThreshold` (20% branches, 30% functions/lines/statements). `--coverage` ajouté au step CI unit tests. Couverture mesurée : 35.6% stmts / 27.5% branches / 33.3% functions / 36.5% lines.
+
+### G1-G4 — Flows business critiques
+
+Statut : **clôturé par audit — 2026-06-23**.
+
+Les 4 flows argent/logistique sont couverts par GOV-06 (5 E2E, 36 assertions) et les suites unitaires associées. G1 = GOV-06 flows 1+5, G2 = GOV-06 flows 2+5, G3 = GOV-06 flow 4 + 10 suites shared-cart, G4 = GOV-06 flow 3 + admin-order-refund. G5 (sourcing) reste bloqué par B1.
