@@ -783,3 +783,19 @@ Note : la structure cible du roadmap (`services/sourcing/{analyzer,reader,enrich
 `scripts/arch-header-sql-check.js` bloquait après B1 : `@db-read` de `services/sourcing-analysis.js` ne déclarait pas `product_variants` (table touchée par `getProductVariants`, ex-route). Header corrigé (`@db-read business_rules, order_items, orders, product_variants, products`) + graphe régénéré (`npm run arch:gen`). `npm run arch:gate` 100% vert (3 portes : db-check, drift, headers-sql, cliquet 0 OK partout).
 
 Point process : `arch:headers-sql` seul ne régénère pas le graphe — toujours lancer `arch:gate` (qui chaîne `arch:gen` + les 3 portes) après une modification de header, pas le sous-script isolé.
+
+## 16. Backend B2 — constat : déjà clos (2026-06-23)
+
+### B2 — Extraire `routes/economic-engine.js` → services
+
+Statut : **clos — déjà fait avant cette session, aucun code modifié**.
+
+Vérification (pas de patch nécessaire) :
+- `routes/economic-engine.js` (173 lignes, 12 routes) — façade pure, 0 `db.query()` direct, chaque handler ≤ 10 lignes, délègue à `services/economic-engine-queries.js`.
+- `services/economic-engine-queries.js` (611 lignes) — toute la logique (variables, charges, cohérence, historique, redistribution). Header `@db-read`/`@db-write` correctement déclaré (`charges, economic_snapshots, economic_variables`).
+- `tests/unit/economic-engine-queries.test.js` — 54/54 verts (déjà présent).
+- `npm run arch:gate` : 100% vert. `tests/unit/` complet : 850/850 verts (inchangé).
+
+Écart cosmétique avec le roadmap : le service s'appelle `economic-engine-queries.js`, pas `economic-engine.js` — même objectif d'architecture atteint (testable, séparé des routes), pattern identique à B1.
+
+Le warning `routes/economic-engine.js — engine en routes/` dans `audit-backend-arch.js` reste affiché : c'est une heuristique de nommage de fichier (le pattern `*-engine.js` dans `routes/`), pas un signal de logique métier inline résiduelle. Idem B1.

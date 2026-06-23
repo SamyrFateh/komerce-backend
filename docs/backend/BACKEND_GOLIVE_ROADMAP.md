@@ -345,7 +345,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B2 — Extraire `routes/economic-engine.js` → `services/economic-engine.js`
+### ✅ B2 — Extraire `routes/economic-engine.js` → `services/economic-engine.js` (déjà clos, voir STATUS.md §16)
 
 **Charge** : 1 j  
 **Risque** : moyen
