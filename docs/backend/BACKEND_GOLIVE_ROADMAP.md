@@ -31,11 +31,11 @@
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
 | D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
-| E — Tests & couverture | 6 | 0 | 0 | 0 % |
+| E — Tests & couverture | 2 | 0 | 4 | 67 % |
 | F — Observabilité & ops | 0 | 0 | 7 | 100 % |
 | G — Flows business critiques | 5 | 0 | 0 | 0 % |
 | H — Gouvernance & garde-fous | 0 | 0 | 5 | 100 % |
-| **TOTAL** | **24** | **0** | **27** | **53 %** |
+| **TOTAL** | **20** | **0** | **31** | **61 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -722,7 +722,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E1 — Tests `services/pricing-engine.js`
+### ✅ E1 — Tests `services/pricing-engine.js` *(déjà couvert — 3 suites directes + 5 connexes, audit 2026-06-23)*
 
 **Charge** : 2-3 j  
 **Risque** : nul
@@ -741,7 +741,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E2 — Tests `services/shared-cart-engine.js`
+### ✅ E2 — Tests `services/shared-cart-engine.js` *(déjà couvert — 6 suites directes + 4 connexes, audit 2026-06-23)*
 
 **Charge** : 2 j  
 **Risque** : nul
@@ -750,7 +750,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E3 — Tests `services/collective-payment-orchestrator.js`
+### ✅ E3 — Tests `services/collective-payment-orchestrator.js` *(2026-06-23 — tombstone 69 lignes, 6/6 tests)*
 
 **Charge** : 2-3 j  
 **Risque** : nul
@@ -779,7 +779,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E5 — Mesure de couverture (jest --coverage)
+### ✅ E5 — Mesure de couverture (jest --coverage) *(2026-06-23 — 35.6% stmts, seuils déjà dans jest.config.js, --coverage câblé CI)*
 
 **Charge** : 1/2 j  
 **Risque** : nul
