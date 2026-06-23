@@ -18,13 +18,14 @@
 'use strict';
 
 const path = require('path');
+const log  = require('../utils/logger').child({ module: 'html-routes' });
 
 function sendHtml(res, filePath, cache = 'no-cache') {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', cache);
   res.sendFile(filePath, (err) => {
     if (err && err.code === 'ENOENT') {
-      console.error('[html-routes] fichier introuvable:', filePath);
+      log.error({ filePath, code: err.code }, 'Fichier HTML introuvable');
       if (!res.headersSent) res.status(404).send('Page introuvable');
     }
   });

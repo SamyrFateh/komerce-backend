@@ -129,7 +129,7 @@ app.get('/*.html', (req, res, next) => {
   if (!filePath.startsWith(publicDir + path.sep)) return next();
   _fs.readFile(filePath, 'utf8', (err, html) => {
     if (err) {
-      if (err.code === 'ENOENT') console.error('[auth-guard] fichier introuvable:', filePath);
+      if (err.code === 'ENOENT') log.error({ filePath, code: err.code }, '[auth-guard] fichier introuvable');
       return next();
     }
     html = html.replace('</body>', '<script src="/js/auth-guard.js"></script>\
@@ -221,8 +221,7 @@ app.get('/api/public/config', (req, res) => {
 
 // ── HTML routes / SPA fallback ─────────────────────────────────────────────
 const fs = require('fs');
-console.log('[boot] dashboards/admin/index.html exists:', fs.existsSync(path.join(__dirname, 'public/dashboards/admin/index.html')));
-console.log('[boot] public dir:', path.join(__dirname, 'public'));
+log.info({ exists: fs.existsSync(path.join(__dirname, 'public/dashboards/admin/index.html')), dir: path.join(__dirname, 'public') }, '[boot] html-routes check');
 mountHtmlRoutes(app, __dirname);
 
 app.use(errorHandler);

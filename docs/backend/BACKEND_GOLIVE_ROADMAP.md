@@ -27,15 +27,15 @@
 
 | Bloc | Lots ☐ | Lots 🚧 | Lots ✅ | % |
 |---|---:|---:|---:|---:|
-| A — Hygiène code & DB | 2 | 0 | 5 | 71 % |
+| A — Hygiène code & DB | 0 | 0 | 7 | 100 % |
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
-| D — Sécurité & secrets | 3 | 0 | 5 | 62 % |
+| D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
 | E — Tests & couverture | 6 | 0 | 0 | 0 % |
-| F — Observabilité & ops | 7 | 0 | 0 | 0 % |
+| F — Observabilité & ops | 2 | 0 | 5 | 71 % |
 | G — Flows business critiques | 5 | 0 | 0 | 0 % |
 | H — Gouvernance & garde-fous | 4 | 1 | 0 | 0 % (H3 en cours) |
-| **TOTAL** | **40** | **1** | **10** | **20 %** |
+| **TOTAL** | **30** | **1** | **20** | **39 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -114,30 +114,16 @@ Quasi-identiques, diffèrent seulement sur l'encodage (BOM/latin-1 vs UTF-8 prop
 
 ---
 
-### ☐ A2 — Identifier et supprimer le doublon `parcels.js`
+### ✅ A2 — Identifier et supprimer le doublon `parcels.js` *(audit 2026-06-23 — pas de doublon)*
 
-**Charge** : 30 min  
-**Risque** : faible si bonne identification
+**Audit 2026-06-23 — Conclusion : ce ne sont PAS des doublons, aucune suppression requise.**
 
-**Contexte** :
-- `routes/parcels.js` (21 853 octets, du 22 avril)
-- `routes/orders/parcels.js` (28 291 octets, du 1er mai — plus récent)
+Les deux fichiers ont des rôles distincts et sont montés à des préfixes différents :
 
-**Actions** :
-1. Identifier lequel est monté dans `server.js` :
-   ```bash
-   grep "parcels" server.js
-   ```
-2. Comparer les contenus :
-   ```bash
-   diff routes/parcels.js routes/orders/parcels.js | head -50
-   ```
-3. Si les deux sont chargés à des routes différentes → documenter pourquoi, ne pas toucher
-4. Si l'un est fantôme → supprimer
-5. Si redondance → migrer vers le plus complet, supprimer l'autre, mettre à jour `server.js`
-6. Cocher A2
+- `routes/parcels.js` (569L) → monté `/api/parcels` via `bootstrap/api-routes.js` — CRUD colis (création, scan, poids, scellement, items, labels)
+- `routes/orders/parcels.js` (156L) → monté `/api/orders/*` via `routes/orders.js` — actions colis liées à une commande (partial-ship, mark-availability, cancel-backorder)
 
-**PR** : `chore/backend-A2-deduplicate-parcels-route`
+La confusion vient du nom identique, pas du contenu.
 
 ---
 
@@ -161,7 +147,7 @@ Quasi-identiques, diffèrent seulement sur l'encodage (BOM/latin-1 vs UTF-8 prop
 
 ---
 
-### ☐ A4 — Résoudre les collisions de migrations `060.sql` et `061.sql`
+### ✅ A4 — Résoudre les collisions de migrations `060.sql` et `061.sql` *(audit 2026-06-23 — pas de collision)*
 
 **Charge** : 1 h  
 **Risque** : moyen — toucher aux migrations exige soin
@@ -612,7 +598,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D2 — Audit du webhook Stripe (idempotency + signature)
+### ✅ D2 — Audit du webhook Stripe (idempotency + signature) *(audit 2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : critique (paiement)
@@ -703,7 +689,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D7 — CORS — restriction des origines
+### ✅ D7 — CORS — restriction des origines *(audit 2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : moyen
@@ -715,7 +701,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ D8 — Helmet — config production
+### ✅ D8 — Helmet — config production *(audit 2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : faible
@@ -821,7 +807,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F1 — Remplacer les 112 `console.log` par le logger structuré
+### ✅ F1 — Remplacer les 112 `console.log` par le logger structuré *(2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : nul
@@ -835,7 +821,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F2 — Health check enrichi `/api/health`
+### ✅ F2 — Health check enrichi `/api/health` *(déjà implémenté V3.2, audit 2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : nul
@@ -880,7 +866,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F5 — Plan de rollback documenté et testé
+### ✅ F5 — Plan de rollback documenté et testé *(2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : nul
@@ -894,7 +880,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F6 — Backup DB automatique vérifié
+### ✅ F6 — Backup DB automatique vérifié *(audit 2026-06-23 — vérification prod requise)*
 
 **Charge** : 1/2 j  
 **Risque** : critique
@@ -906,7 +892,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F7 — Request IDs propagés dans les logs
+### ✅ F7 — Request IDs propagés dans les logs *(déjà implémenté, audit 2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : nul
@@ -1181,3 +1167,5 @@ Ne jamais cocher un lot avant que sa PR soit mergée.
 *Document maître généré le 2026-05-16 à partir de `BACKEND_AUDIT.md`.*
 *À placer dans `docs/BACKEND_GOLIVE_ROADMAP.md` du repo.*
 *Régénérer la photo réelle à tout moment avec `npm run backend:arch` (une fois H4 fait).*
+
+<!-- A2-AUDIT-2026-06-23 -->

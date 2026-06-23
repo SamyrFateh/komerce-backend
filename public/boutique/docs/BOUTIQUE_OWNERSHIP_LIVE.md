@@ -2,7 +2,7 @@
 
 > ⚠️ **NE PAS ÉDITER À LA MAIN.** Généré par `scripts/gen-ownership.js` depuis le code réel.
 > Régénérer après chaque PR : `node scripts/gen-ownership.js`
-> Dernière génération : 2026-06-22
+> Dernière génération : 2026-06-23
 
 Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'impacte ?**
 
