@@ -23,7 +23,7 @@
 
 ## §0 — Score global d'avancement
 
-> **Mis à jour 2026-06-23 — session F/H** : lots F3, F4, H1-H5 clôturés.
+> **Mis à jour 2026-06-23 — session E6/G5** : E6 (tests intégration 8 routes sourcing-engine) et G5 (flow sourcing → enrichissement → mise en vente) clôturés.
 
 | Bloc | Lots ☐ | Lots 🚧 | Lots ✅ | % |
 |---|---:|---:|---:|---:|
@@ -31,11 +31,11 @@
 | B — Architecture modulaire | 6 | 0 | 0 | 0 % |
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
 | D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
-| E — Tests & couverture | 1 | 0 | 5 | 83 % |
+| E — Tests & couverture | 0 | 0 | 6 | 100 % |
 | F — Observabilité & ops | 0 | 0 | 7 | 100 % |
-| G — Flows business critiques | 1 | 0 | 4 | 80 % |
+| G — Flows business critiques | 0 | 0 | 5 | 100 % |
 | H — Gouvernance & garde-fous | 0 | 0 | 5 | 100 % |
-| **TOTAL** | **15** | **0** | **36** | **71 %** |
+| **TOTAL** | **13** | **0** | **38** | **75 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -791,13 +791,15 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ E6 — Tests pour les flows sourcing
+### ✅ E6 — Tests pour les flows sourcing *(2026-06-23)*
 
 **Charge** : 1-2 j  
 **Risque** : nul  
 **Prérequis** : B1, C2, C3
 
 **Actions** : tests d'intégration pour les 8 endpoints sourcing-engine après extraction.
+
+**Livré** : `tests/integration/sourcing-engine-routes.test.js` — 8 groupes, 26 assertions (auth guard + happy path + cas limites sur chaque route).
 
 ---
 
@@ -963,13 +965,15 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ G5 — Flow : sourcing → ajout produit → mise en vente
+### ✅ G5 — Flow : sourcing → ajout produit → mise en vente *(2026-06-23)*
 
 **Charge** : 2 j  
 **Risque** : nul  
 **Prérequis** : B1 ✅
 
 **Actions** : tracer le flow d'enrichissement d'un produit via le moteur sourcing.
+
+**Livré** : `tests/integration/sourcing-flow-g5.test.js` — 6 étapes E2E : analyse initiale → rail → variantes → re-analyse → activation → synthèse.
 
 ---
 

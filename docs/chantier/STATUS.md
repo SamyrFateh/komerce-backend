@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23**.
 
 Validation effectuee (2026-06-15) :
 
@@ -735,4 +735,29 @@ Statut : **clôturé — 2026-06-23**.
 
 Statut : **clôturé par audit — 2026-06-23**.
 
-Les 4 flows argent/logistique sont couverts par GOV-06 (5 E2E, 36 assertions) et les suites unitaires associées. G1 = GOV-06 flows 1+5, G2 = GOV-06 flows 2+5, G3 = GOV-06 flow 4 + 10 suites shared-cart, G4 = GOV-06 flow 3 + admin-order-refund. G5 (sourcing) reste bloqué par B1.
+Les 4 flows argent/logistique sont couverts par GOV-06 (5 E2E, 36 assertions) et les suites unitaires associées. G1 = GOV-06 flows 1+5, G2 = GOV-06 flows 2+5, G3 = GOV-06 flow 4 + 10 suites shared-cart, G4 = GOV-06 flow 3 + admin-order-refund. G5 (sourcing) couvert par `tests/integration/sourcing-flow-g5.test.js` — 6 étapes E2E.
+
+### E6 — Tests d'intégration flows sourcing (8 routes)
+
+Statut : **clôturé — 2026-06-23**.
+
+`tests/integration/sourcing-engine-routes.test.js` — 8 groupes (un par route), 26 assertions couvrant :
+- Auth guard 401 sans token sur les 8 routes
+- Guard 403 client non-admin sur les routes de mutation
+- Happy path 200/204 admin sur chaque route
+- Cas limites : 404 produit inexistant (analysis/:id, products/:id, products/:id/variants), 400 payload invalide (bulk-rail sans product_ids, rail inconnu)
+- Test de persistance round-trip PUT variants → GET variants
+
+Prérequis `B1, C2, C3` considérés satisfaits par l'existant (façade mince `routes/sourcing-engine.js` + services `sourcing-analysis.js`/`sourcing-mutations.js`).
+
+### G5 — Flow : sourcing → enrichissement produit → mise en vente
+
+Statut : **clôturé — 2026-06-23**.
+
+`tests/integration/sourcing-flow-g5.test.js` — 6 étapes bout-en-bout :
+1. GET /analysis/:id — produit brut, rail non assigné
+2. PUT /products/:id — assignation rail A
+3. PUT /products/:id/variants — pose 2 variantes
+4. GET /analysis/:id — rail persisté vérifié
+5. PATCH /api/admin/products/:id — activation is_active=true + vérification DB directe
+6. GET /synthesis — KPI global sans erreur
