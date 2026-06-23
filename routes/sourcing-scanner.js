@@ -637,16 +637,15 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
     }
 
     const weightKg = c.estimated_weight_kg || null;
-    const weightG = weightKg ? Math.round(Number(weightKg) * 1000) : null;
 
     const prodRes = await db.query(
       `INSERT INTO products (
          name, category,
-         cost_kmf, cost_price_kmf,
+         cost_kmf,
          price_kmf,
-         weight_kg, weight_g,
+         weight_kg,
          is_active, lifecycle_status
-       ) VALUES ($1, $2, $3, $3, $4, $5, $6, FALSE, 'candidate')
+       ) VALUES ($1, $2, $3, $4, $5, FALSE, 'candidate')
        RETURNING id`,
       [
         c.product_name,
@@ -654,7 +653,6 @@ router.post('/candidates/:id/import-product', authenticate, requireAdminOrFounde
         c.purchase_price_kmf || 0,
         initialPrice,
         weightKg,
-        weightG,
       ]
     );
     const productId = prodRes.rows[0].id;

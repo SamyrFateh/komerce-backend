@@ -61,26 +61,29 @@ describe('updateProduct', () => {
     expect(result.status).toBe(404);
   });
 
-  test('sync colonnes sœurs : cost_price_kmf écrit aussi cost_kmf', async () => {
+  test('Lot C5 — cost_price_kmf (legacy) est mappé vers cost_kmf, pas de double-write', async () => {
     db.query.mockResolvedValue({ rows: [{ id: 'p1' }] });
     await sourcingMutations.updateProduct('p1', { cost_price_kmf: 500 });
 
-    const sql = db.query.mock.calls[0][0];
-    expect(sql).toMatch('cost_price_kmf');
+    const sql    = db.query.mock.calls[0][0];
+    const params = db.query.mock.calls[0][1];
     expect(sql).toMatch('cost_kmf');
+    expect(sql).not.toMatch('cost_price_kmf');
+    expect(params).toContain(500);
   });
 
-  test('sync colonnes sœurs : weight_g écrit aussi weight_kg converti', async () => {
+  test('Lot C5 — weight_g (legacy) est mappé vers weight_kg converti, pas de double-write', async () => {
     db.query.mockResolvedValue({ rows: [{ id: 'p1' }] });
     await sourcingMutations.updateProduct('p1', { weight_g: 1500 });
 
     const sql    = db.query.mock.calls[0][0];
     const params = db.query.mock.calls[0][1];
-    expect(sql).toMatch('weight_g');
     expect(sql).toMatch('weight_kg');
+    expect(sql).not.toMatch('weight_g');
     // 1500g → 1.50kg
     expect(params).toContain(1.5);
   });
+
 });
 
 // ─── bulkAssignRail ───────────────────────────────────────────────────────────

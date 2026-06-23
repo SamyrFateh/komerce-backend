@@ -198,15 +198,19 @@ Table de référencement des composantes de coût (shipping, customs, hub). Pas 
 
 ## 6. Récapitulatif des actions recommandées
 
-### C5 — Normalisation colonnes dupliquées (priorité haute, risque financier)
+### C5 — Normalisation colonnes dupliquées (priorité haute, risque financier) ✅ Livré 2026-06-23
 
-1. **Confirmer** : `cost_kmf` est la source de vérité (pricing-engine l'utilise).
-2. **Migration** :
+1. **Confirmé** : `cost_kmf` est la source de vérité (pricing-engine l'utilise).
+2. **Migration** (`migrations/087_normalize_sourcing_duplicate_columns.sql`, ⚠️ approbation humaine requise avant exécution) :
    - `UPDATE products SET cost_kmf = cost_price_kmf WHERE cost_kmf IS NULL AND cost_price_kmf IS NOT NULL`
    - `UPDATE products SET weight_kg = weight_g / 1000.0 WHERE weight_kg IS NULL AND weight_g IS NOT NULL`
-   - Annoter les colonnes dépréciées via `COMMENT ON COLUMN`.
-3. **Code** : retirer `cost_price_kmf` et `weight_g` de `ALLOWED_PRODUCT_FIELDS` dans `sourcing-mutations.js` (après migration).
-4. Ne pas supprimer les colonnes tant que la production n'est pas stable N jours.
+   - Colonnes dépréciées annotées via `COMMENT ON COLUMN` (non supprimées).
+3. **Code mis à jour** :
+   - `services/sourcing-mutations.js` : `cost_price_kmf`/`weight_g` retirés de `ALLOWED_PRODUCT_FIELDS` ; un `LEGACY_FIELD_MAP` mappe les entrées API legacy vers `cost_kmf`/`weight_kg` (plus de double-write).
+   - `routes/sourcing-scanner.js` (`import-product`) : n'écrit plus que `cost_kmf`/`weight_kg` à la création produit.
+   - `services/sourcing-analysis.js` : helpers de lecture (`getProductCostKmf`, `getProductWeightKg`, `getProductWeightG`) **inchangés** — ils gardent le fallback sur les colonnes dépréciées pendant la fenêtre de stabilisation.
+   - Tests `tests/unit/sourcing-mutations.test.js` mis à jour pour refléter le mapping simple-write.
+4. **Ne pas supprimer les colonnes** tant que la production n'est pas stable N jours après exécution de la migration 087.
 
 ### C7 — Guard `scripts/audit-sourcing.js`
 

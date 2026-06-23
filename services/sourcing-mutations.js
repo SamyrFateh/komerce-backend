@@ -26,11 +26,12 @@
  *   POST /api/admin/sourcing/bulk-rail            → bulkAssignRail(productIds, rail)
  *   PUT /api/admin/sourcing/products/:id/variants → replaceVariants(id, variants)
  *
- * Note dette colonne (Lot I) : la table `products` a deux paires de colonnes
- * en doublon (cost_kmf/cost_price_kmf, weight_kg/weight_g). Les mutations
- * écrivent les deux colonnes en parallèle pour que pricing-engine reste
- * synchronisé. Ce comportement est préservé iso. Résolution à faire dans
- * une migration dédiée (hors scope R2).
+ * Lot C5 (2026-06) : la table `products` avait deux paires de colonnes en
+ * doublon (cost_kmf/cost_price_kmf, weight_kg/weight_g). Migration 087 a
+ * backfillé cost_kmf/weight_kg comme sources de vérité uniques et annoté
+ * cost_price_kmf/weight_g comme dépréciées (non supprimées, rollback safe).
+ * Ces mutations n'écrivent donc plus que dans les colonnes "principales" :
+ * cost_kmf et weight_kg. Le double-write historique est retiré.
  *
  * Invariant I-08 : pas de coefficient dur ici. La config sourcing est toujours
  * lue via sourcing-analysis.js (loadSourcingConfig).
@@ -42,12 +43,23 @@ const db = require('../db');
 const sourcingAnalysis = require('./sourcing-analysis');
 
 // Champs autorisés pour PUT /products/:id (whitelist iso-comportement)
+// Lot C5 : cost_price_kmf et weight_g retirés (colonnes dépréciées, migration 087).
+// Les clients API continuent d'envoyer `cost_price_kmf` / `weight_g` (compat),
+// mais ils sont mappés vers les colonnes de vérité ci-dessous.
 const ALLOWED_PRODUCT_FIELDS = [
-  'sourcing_rail', 'cost_price_kmf', 'weight_g', 'volume_class',
+  'sourcing_rail', 'volume_class',
   'fragility', 'sale_mode', 'exposure_mode', 'lifecycle_status',
   'quality_validated', 'real_weight_known', 'real_price_validated',
   'delivery_delay_days', 'supplier_notes',
 ];
+
+// Lot C5 : champs d'entrée historiques (compat API) mappés vers les colonnes
+// de vérité. Permet aux clients existants d'envoyer cost_price_kmf/weight_g
+// sans casser l'API, tout en n'écrivant plus que cost_kmf/weight_kg en DB.
+const LEGACY_FIELD_MAP = {
+  cost_price_kmf: 'cost_kmf',
+  weight_g: 'weight_kg',
+};
 
 const VALID_RAILS = ['A', 'B', 'C', 'D'];
 
@@ -55,7 +67,10 @@ const VALID_RAILS = ['A', 'B', 'C', 'D'];
 
 /**
  * Met à jour les métadonnées sourcing d'un produit.
- * Synchronise cost_kmf ↔ cost_price_kmf et weight_kg ↔ weight_g (dette Lot I).
+ * Lot C5 : écrit uniquement dans les colonnes de vérité (cost_kmf, weight_kg).
+ * Les champs legacy (cost_price_kmf, weight_g) restent acceptés en entrée API
+ * (compat clients existants) et sont mappés vers la colonne de vérité — plus
+ * de double-write, plus de risque de divergence.
  * Retourne une analyse fraîche du produit via sourcing-analysis.
  *
  * @param {string} productId
@@ -66,26 +81,35 @@ async function updateProduct(productId, body) {
   const sets = [];
   const vals = [];
   let idx = 1;
+  const written = new Set();
+
+  const writeField = (column, value) => {
+    if (written.has(column)) return; // évite une double clause sur la même colonne
+    written.add(column);
+    sets.push(`${column} = $${idx}`);
+    vals.push(value);
+    idx++;
+  };
 
   for (const key of ALLOWED_PRODUCT_FIELDS) {
     if (body[key] !== undefined) {
-      sets.push(`${key} = $${idx}`);
-      vals.push(body[key]);
-      idx++;
-
-      // Sync colonnes sœurs (dette Lot I)
-      if (key === 'cost_price_kmf') {
-        sets.push(`cost_kmf = $${idx}`);
-        vals.push(body[key]);
-        idx++;
-      }
-      if (key === 'weight_g') {
-        sets.push(`weight_kg = $${idx}`);
-        const w = Number(body[key]);
-        vals.push(isFinite(w) && w > 0 ? Math.round((w / 1000) * 100) / 100 : null);
-        idx++;
-      }
+      writeField(key, body[key]);
     }
+  }
+
+  // Champs legacy (cost_price_kmf, weight_g) → mappés vers la colonne de vérité.
+  for (const [legacyKey, truthColumn] of Object.entries(LEGACY_FIELD_MAP)) {
+    if (body[legacyKey] === undefined) continue;
+    // Si le client envoie aussi la colonne de vérité directement, elle gagne
+    // (déjà écrite ci-dessus) ; on ignore alors la valeur legacy.
+    if (written.has(truthColumn)) continue;
+
+    let value = body[legacyKey];
+    if (legacyKey === 'weight_g') {
+      const w = Number(value);
+      value = isFinite(w) && w > 0 ? Math.round((w / 1000) * 100) / 100 : null;
+    }
+    writeField(truthColumn, value);
   }
 
   if (sets.length === 0) {
