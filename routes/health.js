@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, parcels
+ * @db-read       orders, parcels, products
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -83,35 +83,74 @@ router.get('/metrics', authenticate, requireRole(['admin']), async (req, res, ne
     if (db.pool) {
       poolStats = {
         total: db.pool.totalCount,
-        idle: db.pool.idleCount,
+        idle:  db.pool.idleCount,
         waiting: db.pool.waitingCount,
       };
     }
 
-    // Active orders count
+    // Active orders + conversion breakdown (30 derniers jours)
     const { rows: [orderStats] } = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE status NOT IN ('collected', 'cancelled')) AS active_orders,
+        COUNT(*) FILTER (WHERE status NOT IN ('collected', 'cancelled'))                         AS active_orders,
         COUNT(*) FILTER (WHERE status = 'confirmed' AND payment_mode = 'cash_relais' AND payment_status = 'pending') AS pending_cash,
-        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') AS orders_24h
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours')                        AS orders_24h,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days')                         AS orders_30d,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days' AND payment_mode = 'cash_relais')   AS cash_30d,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days' AND payment_mode = 'stripe_eur')    AS stripe_30d,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days' AND payment_mode = 'paypal_eur')    AS paypal_30d,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days' AND status = 'cancelled') AS cancelled_30d
       FROM orders
     `);
+
+    // Délai médian paiement → expédition (commandes des 30 derniers jours)
+    const { rows: [delayStats] } = await db.query(`
+      SELECT
+        ROUND(AVG(EXTRACT(EPOCH FROM (o.confirmed_at - o.created_at)) / 3600), 1)  AS avg_hours_creation_to_confirm,
+        ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (
+          ORDER BY EXTRACT(EPOCH FROM (o.confirmed_at - o.created_at)) / 3600
+        ), 1) AS median_hours_creation_to_confirm
+      FROM orders o
+      WHERE o.created_at > NOW() - INTERVAL '30 days'
+        AND o.confirmed_at IS NOT NULL
+    `).catch(() => ({ rows: [{ avg_hours_creation_to_confirm: null, median_hours_creation_to_confirm: null }] }));
 
     // Parcel stats
     const { rows: [parcelStats] } = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE status NOT IN ('collected', 'cancelled')) AS active_parcels,
-        COUNT(*) FILTER (WHERE status = 'in_transit') AS in_transit,
+        COUNT(*) FILTER (WHERE status = 'in_transit')                   AS in_transit,
         COUNT(*) FILTER (WHERE type = 'backorder' AND status NOT IN ('collected', 'cancelled')) AS backorders
       FROM parcels
     `);
+
+    // Stock critique : produits avec stock ≤ 2
+    const { rows: stockAlerts } = await db.query(`
+      SELECT id, name, category, stock
+      FROM products
+      WHERE is_active = true AND stock <= 2
+      ORDER BY stock ASC, name ASC
+      LIMIT 20
+    `).catch(() => ({ rows: [] }));
+
+    // Taux conversion (% commandes non annulées sur 30j)
+    const orders30d = Number(orderStats.orders_30d) || 0;
+    const cancelled30d = Number(orderStats.cancelled_30d) || 0;
+    const conversionRate = orders30d > 0 ? Math.round(((orders30d - cancelled30d) / orders30d) * 100) : null;
 
     res.json({
       app: appMetrics,
       db_pool: poolStats,
       business: {
-        orders: orderStats,
+        orders: {
+          ...orderStats,
+          conversion_rate_pct: conversionRate,
+        },
         parcels: parcelStats,
+        delays: delayStats.rows?.[0] ?? delayStats,
+        stock_alerts: {
+          count: stockAlerts.length,
+          products: stockAlerts,
+        },
       },
     });
   } catch (err) {

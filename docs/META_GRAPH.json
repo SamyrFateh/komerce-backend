@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-23T11:25:32.569Z",
+  "generatedAt": "2026-06-23T13:34:22.940Z",
   "sources": {
     "backend": {
       "nodes": 657
@@ -308,7 +308,8 @@
       ],
       "tables": [
         "orders",
-        "parcels"
+        "parcels",
+        "products"
       ]
     },
     "/api/auth/login": {
@@ -1482,6 +1483,7 @@
       "routes": [
         "routes/admin-costing.js",
         "routes/client-tracking.js",
+        "routes/health.js",
         "routes/parcels.js",
         "routes/pricing.js",
         "routes/products.js",

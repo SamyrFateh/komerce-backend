@@ -2,6 +2,11 @@
 
 Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeur.
 
+> **Source de vérité unique (H1, 2026-06-23)** : [`.cursorrules`](./.cursorrules)
+> ne fait que rediriger vers ce fichier. Toute règle de gouvernance se
+> rédige ici, jamais dans `.cursorrules`. Si les deux fichiers semblent en
+> désaccord, c'est `AGENTS.md` qui fait foi.
+
 ---
 
 ## 1. Lecture obligatoire avant modification
@@ -16,7 +21,8 @@ Lire uniquement dans cet ordre :
 6. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
 7. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
 8. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-9. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+9. [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./docs/backend/BACKEND_GOLIVE_ROADMAP.md) — backlog de remédiation pré-golive (lots A-H), source du prochain lot à exécuter si `STATUS.md` y renvoie ;
+10. Les documents actifs listés par `docs/README.md` selon la zone touchée.
 
 Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
 

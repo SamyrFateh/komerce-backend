@@ -49,6 +49,7 @@ const {
 } = require('../services/payment-stripe');
 
 const log = require('../utils/logger').child({ module: 'payments' });
+const monitor = require('../services/monitoring'); // F4 — trace les webhooks Stripe en échec (module 'stripe_webhook')
 
 // ── POST /api/payments/stripe/intent ─────────────────────────────────────────
 router.post('/stripe/intent', authenticate, validate(payments.stripeIntent), async (req, res, next) => {
@@ -86,6 +87,7 @@ router.post('/stripe/webhook',
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
       log.error({ err }, 'Webhook Stripe signature invalide');
+      monitor.trackError(err, { module: 'stripe_webhook', context: 'signature_invalid' });
       return res.status(400).send('Webhook signature invalid');
     }
 

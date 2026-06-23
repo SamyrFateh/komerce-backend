@@ -20,7 +20,7 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 657,
-    "edges": 2887,
+    "edges": 2888,
     "dbTables": 107,
     "doctrines": 124,
     "impactAreas": 112,
@@ -5442,7 +5442,8 @@
       ],
       "dbRead": [
         "orders",
-        "parcels"
+        "parcels",
+        "products"
       ],
       "dbWrite": [],
       "dbTxn": [
@@ -21987,6 +21988,12 @@
     },
     {
       "from": "routes/health.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "routes/health.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -37628,7 +37635,8 @@
       "ownedFiles": [],
       "dbRead": [
         "orders",
-        "parcels"
+        "parcels",
+        "products"
       ],
       "dbWrite": [],
       "doctrines": [
@@ -37641,6 +37649,7 @@
         "bootstrap/api-routes.js",
         "db:orders",
         "db:parcels",
+        "db:products",
         "doctrine:resolve_before_behavior_change",
         "impact:operations",
         "middleware/auth.js"

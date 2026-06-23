@@ -73,6 +73,8 @@ Une intervention DB est incomplète si `docs/SCHEMA.md`, les headers `@db-read/@
 | Personnalisation boutique, suggestions, re-ranking accueil, habitudes de navigation | [`docs/doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md`](./doctrine/BOUTIQUE_PERSONNALISATION_NAVIGATION.md) |
 | Déploiement / production | [`docs/ops/DEPLOYMENT.md`](./ops/DEPLOYMENT.md) |
 | Sécurité backend | [`docs/backend/SECURITY-MODEL.md`](./backend/SECURITY-MODEL.md) |
+| Backlog de remédiation pré-golive (lots A-H, scoring, ordre d'exécution) | [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./backend/BACKEND_GOLIVE_ROADMAP.md) |
+| Architecture backend normative (invariants I-BACK-1..10, ownership) | [`docs/backend/BACKEND_ARCHITECTURE.md`](./backend/BACKEND_ARCHITECTURE.md) |
 
 ---
 

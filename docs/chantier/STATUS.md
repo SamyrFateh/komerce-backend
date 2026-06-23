@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23**.
 
 Validation effectuee (2026-06-15) :
 
@@ -639,3 +639,76 @@ Quand une dette est traitee :
 4. ne jamais reactiver un audit historique sans preuve code/DB.
 
 Aucun nouveau document ne devient operatoire sans etre ajoute a `docs/README.md`.
+
+---
+
+## 13. Session F/H — Observabilité & gouvernance (2026-06-23)
+
+> Source : session Cursor 2026-06-23 — lots F3, F4, H1-H5 de `BACKEND_GOLIVE_ROADMAP.md`.
+
+### F3 — Métriques business exposées
+
+Statut : **clôturé — 2026-06-23**.
+
+`db.js` instrumente maintenant toutes les queries via `monitor.trackDBQuery()` (fonction existante jamais câblée). `services/monitoring.js` alimente `metrics.db.queries` et `metrics.db.slow_queries` en temps réel. Vérifié par smoke test : `db.query('SELECT 1')` → `metrics.db = { queries: 1, slow_queries: 0 }`.
+
+L'endpoint `/api/health/metrics` (admin-only, déjà implémenté V3.2) expose les métriques business : commandes/jour, conversion cash/Stripe/PayPal, délai médian paiement→confirmation, stock critique, parcels actifs.
+
+### F4 — Alerting webhook Stripe
+
+Statut : **clôturé — 2026-06-23**.
+
+`routes/payments.js` instrumente les signatures webhook invalides via `monitor.trackError(err, { module: 'stripe_webhook', context: 'signature_invalid' })`. Avant : une signature invalide renvoyait HTTP 400 mais n'était tracée nulle part côté monitoring. Le catch processing-failure (`next(err)`) reste délégué à `error-handler.js` (module `http`) pour éviter le double-comptage dans `metrics.errors.total`.
+
+Vérifié : `routes/payments.js` charge sans erreur, suite tests 759/773 verte.
+
+### H1 — Réconciliation .cursorrules / AGENTS.md
+
+Statut : **clôturé — 2026-06-23**.
+
+`.cursorrules` réécrit comme pointeur mince (~20 lignes) vers `AGENTS.md`. La liste de lecture obligatoire dupliquée (divergente) est supprimée de `.cursorrules`. `AGENTS.md` enrichi d'une note §0 (relation `.cursorrules`) et d'un item §1.9 (`BACKEND_GOLIVE_ROADMAP.md`). Roadmap indexée dans `docs/README.md` §4.
+
+### H2 — BACKEND_ARCHITECTURE.md normatif
+
+Statut : **clôturé — 2026-06-23**.
+
+`docs/backend/BACKEND_ARCHITECTURE.md` créé sur le pattern boutique : invariants I-BACK-1 à I-BACK-10, structure `routes/` → `services/` → `db.js`, conventions et ownership. Indexé dans `docs/README.md` §4.
+
+### H3 — audit-backend-arch.js finalisé
+
+Statut : **clôturé — 2026-06-23**.
+
+Script déplacé à `scripts/audit-backend-arch.js`. 0 violation, 7 avertissements connus. Câblé en CI (`.github/workflows/ci.yml`, job `unit`).
+
+### H4 — gen-backend-arch-live.js
+
+Statut : **clôturé — 2026-06-23**.
+
+`scripts/gen-backend-arch-live.js` créé. Génère `docs/BACKEND_ARCHITECTURE_LIVE.md` (6 sections). Détection collisions alignée sur règle I-BACK-10 exacte. Score architecture délégué à `audit-backend-arch.js` (pas de réimplémentation — source de vérité unique). Vérifié : 0 collision, 0 console.log, score conforme.
+
+### H5 — Branchement CI
+
+Statut : **clôturé — 2026-06-23**.
+
+`package.json` : `backend:arch` + `pretest: npm run backend:audit` ajoutés. `README.md` racine : commandes documentées. CI : `backend:audit` déjà câblé dans `ci.yml` ; `pretest` couvre l'exécution locale.
+
+---
+
+## 14. Boutique — vue "Mon porte-monnaie" (2026-06-23)
+
+### WALLET-01 — Vue Mon porte-monnaie livrée
+
+Statut : **clôturé — 2026-06-23**.
+
+Le wallet existait côté backend (`GET /api/wallet`, `GET /api/wallet/transactions`) et dans le checkout (`b-checkout.js`), mais l'utilisateur n'avait aucun moyen de consulter son solde ou son historique en dehors du tunnel de commande.
+
+Livrables :
+- `js/b-wallet.js` — module vue wallet, pattern `b-tracking.js`. Carte solde + transactions par mois. Auth gate via `requireIdentity()`. Sanitization XSS via `sanitize()`.
+- `css/wallet.css` — styles dédiés, 100% tokens, header `@komerce-arch-lite`.
+- `js/b-nav.js` — import + tab wallet dans `switchView`/`setupBnav`, `@depends` mis à jour.
+- `index.html` — bouton porte-monnaie bnav (mobile) + header (desktop).
+- `scripts/css-bundles.js` — **nouveau**, source unique de vérité bundles CSS (élimine duplication `deploy-css.js`/`audit-boutique-arch.js`).
+- `scripts/deploy-css.js` — `BUNDLES` importé depuis `css-bundles.js`.
+- `scripts/audit-boutique-arch.js` — `EXPECTED_BUNDLES` importé depuis `css-bundles.js`.
+
+Aucun changement backend. Gates passées : `deploy:css` ✅, `check:fast` ✅, score risque XSS 0.

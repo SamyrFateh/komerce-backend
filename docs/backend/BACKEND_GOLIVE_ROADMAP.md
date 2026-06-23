@@ -23,7 +23,7 @@
 
 ## §0 — Score global d'avancement
 
-> **Mis à jour 17 mai 2026 — lot H-SYNC** : synchronisation avec `docs/chantier/STATUS.md` et vérification dans le code.
+> **Mis à jour 2026-06-23 — session F/H** : lots F3, F4, H1-H5 clôturés.
 
 | Bloc | Lots ☐ | Lots 🚧 | Lots ✅ | % |
 |---|---:|---:|---:|---:|
@@ -32,10 +32,10 @@
 | C — Sourcing & offre (cible business) | 7 | 0 | 0 | 0 % |
 | D — Sécurité & secrets | 0 | 0 | 8 | 100 % |
 | E — Tests & couverture | 6 | 0 | 0 | 0 % |
-| F — Observabilité & ops | 2 | 0 | 5 | 71 % |
+| F — Observabilité & ops | 0 | 0 | 7 | 100 % |
 | G — Flows business critiques | 5 | 0 | 0 | 0 % |
-| H — Gouvernance & garde-fous | 4 | 1 | 0 | 0 % (H3 en cours) |
-| **TOTAL** | **30** | **1** | **20** | **39 %** |
+| H — Gouvernance & garde-fous | 0 | 0 | 5 | 100 % |
+| **TOTAL** | **24** | **0** | **27** | **53 %** |
 
 Mettre à jour ce tableau à chaque PR mergée. **Règle (lot H-SYNC) : ce tableau et `docs/chantier/STATUS.md` doivent être mis à jour dans la même PR que le code.**
 
@@ -837,7 +837,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F3 — Métriques business exposées
+### ✅ F3 — Métriques business exposées *(2026-06-23)*
 
 **Charge** : 1-2 j  
 **Risque** : nul
@@ -852,7 +852,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ F4 — Alerting
+### ✅ F4 — Alerting *(2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : nul
@@ -979,7 +979,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ H1 — Réconcilier `.cursorrules` et `AGENTS.md`
+### ✅ H1 — Réconcilier `.cursorrules` et `AGENTS.md` *(2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : nul
@@ -991,7 +991,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ H2 — Créer `BACKEND_ARCHITECTURE.md` normatif
+### ✅ H2 — Créer `BACKEND_ARCHITECTURE.md` normatif *(2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : nul
@@ -1000,7 +1000,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### 🚧 H3 — Finaliser `audit-backend-arch.js` (garde-fou exécutable)
+### ✅ H3 — Finaliser `audit-backend-arch.js` (garde-fou exécutable) *(2026-06-23)*
 
 **Charge** : 30 min *(script déjà écrit — juste déplacer et brancher)*  
 **Risque** : nul
@@ -1037,7 +1037,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ H4 — Créer `gen-backend-arch-live.js` (photo réelle auto-générée)
+### ✅ H4 — Créer `gen-backend-arch-live.js` (photo réelle auto-générée) *(2026-06-23)*
 
 **Charge** : 1 j  
 **Risque** : nul  
@@ -1062,7 +1062,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ H5 — Brancher audit + gen en CI
+### ✅ H5 — Brancher audit + gen en CI *(2026-06-23)*
 
 **Charge** : 1/2 j  
 **Risque** : nul  
