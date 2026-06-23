@@ -21,7 +21,7 @@
  * Consomme GET /api/wallet et GET /api/wallet/transactions.
  */
 
-import { fmt, apiGet } from './b-utils.js';
+import { sanitize, fmt, apiGet } from './b-utils.js';
 
 'use strict';
 
@@ -61,7 +61,7 @@ function txLabel(reason) {
     reversal:      'Annulation crédit',
     expiration:    'Crédit expiré',
   };
-  return map[reason] || reason || 'Mouvement';
+  return map[reason] || sanitize(reason) || 'Mouvement';
 }
 
 // ── Render ───────────────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ function buildBalanceCard(balance) {
   card.className = 'k-wlt-card';
   card.innerHTML =
     '<div class="k-wlt-card-label">Solde disponible</div>' +
-    '<div class="k-wlt-card-amount">' + fmt(balance, 'KMF') + '</div>' +
+    '<div class="k-wlt-card-amount">' + sanitize(fmt(balance, 'KMF')) + '</div>' +
     (balance > 0
       ? '<div class="k-wlt-card-hint">Utilisable au moment du paiement</div>'
       : '<div class="k-wlt-card-hint">Aucun crédit pour le moment</div>');
@@ -151,7 +151,7 @@ function buildTransactionList(transactions) {
     const isCredit = tx.type === 'credit';
     const sign = isCredit ? '+' : '-';
     const amtCls = isCredit ? 'k-wlt-tx-amt--credit' : 'k-wlt-tx-amt--debit';
-    const ref = tx.order_reference ? '#' + tx.order_reference : '';
+    const ref = tx.order_reference ? '#' + sanitize(tx.order_reference) : '';
 
     const row = document.createElement('div');
     row.className = 'k-wlt-tx-row';
@@ -159,9 +159,9 @@ function buildTransactionList(transactions) {
       '<div class="k-wlt-tx-icon k-wlt-tx-icon--' + icon.cls + '">' + icon.emoji + '</div>' +
       '<div class="k-wlt-tx-info">' +
         '<div class="k-wlt-tx-label">' + txLabel(tx.reason) + '</div>' +
-        '<div class="k-wlt-tx-date">' + fmtDate(tx.created_at) + (ref ? ' · ' + ref : '') + '</div>' +
+        '<div class="k-wlt-tx-date">' + sanitize(fmtDate(tx.created_at)) + (ref ? ' · ' + ref : '') + '</div>' +
       '</div>' +
-      '<div class="k-wlt-tx-amt ' + amtCls + '">' + sign + fmt(tx.amount_kmf, 'KMF') + '</div>';
+      '<div class="k-wlt-tx-amt ' + amtCls + '">' + sign + sanitize(fmt(tx.amount_kmf, 'KMF')) + '</div>';
     wrap.appendChild(row);
   });
 

@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-06-23T07:11:04.372Z
+> Régénération : `npm run boutique:arch`. Date : 2026-06-23T08:07:53.825Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -10,7 +10,7 @@
 
 ## 1. Inventaire CSS
 
-20 fichier(s) sur disque, 20 orphelin(s).
+21 fichier(s) sur disque, 21 orphelin(s).
 
 | Fichier | Lignes | Bundle |
 |---|---:|---|
@@ -34,6 +34,7 @@
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
 | `tokens.css` | 511 | 🔴 **ORPHELIN** |
+| `wallet.css` | 140 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -108,7 +109,7 @@ Aucun. ✅
 
 ## 8. Score architecture
 
-- **CSS orphelins** : 20 (cible : 0)
+- **CSS orphelins** : 21 (cible : 0)
 - **Tokens cassés** : 0 (cible : 0)
 - **Hex hardcodés** : 26 (cible : 0 ou allowlist)
 - **`!important`** : 9 (cible : <10, idéal 0)
