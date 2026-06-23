@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 314,
-    "filesWithFullHeaders": 285,
+    "scannedCodeFiles": 315,
+    "filesWithFullHeaders": 286,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 314,
+    "filesWithAnyHeaders": 315,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 657,
-    "edges": 2889,
+    "graphNodes": 658,
+    "edges": 2908,
     "dbTables": 107,
     "doctrines": 124,
     "impactAreas": 112,
-    "unresolvedCodeEdges": 267
+    "unresolvedCodeEdges": 268
   },
   "byDomain": {
     "bootstrap": 9,
@@ -44,7 +44,7 @@
     "orders": 25,
     "notification": 6,
     "unknown": 35,
-    "logistics": 29,
+    "logistics": 30,
     "operations": 4,
     "inventory": 2,
     "documents": 4,
@@ -76,7 +76,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 104,
+    "service": 105,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -86,7 +86,7 @@
   "byCriticality": {
     "critical": 67,
     "medium": 97,
-    "high": 119,
+    "high": 120,
     "low": 31
   },
   "nodes": [
@@ -10483,6 +10483,60 @@
       ],
       "impactAreas": [
         "payment"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/pickup-secret-service.js",
+      "file": "services/pickup-secret-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "pickup-secret-service",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request_or_service_payload"
+      ],
+      "outputs": [
+        "response_or_domain_result",
+        "side_effects"
+      ],
+      "depends": [
+        "db.js",
+        "services/order-status-machine.js",
+        "utils/pickup-receipt-html.js"
+      ],
+      "usedBy": [
+        "routes/pickup-secret.js",
+        "services/payment-stripe.js",
+        "services/payment-paypal.js",
+        "routes/pickup-pay-cash.js"
+      ],
+      "dbRead": [
+        "orders",
+        "pickup_print_tokens",
+        "pickup_reveal_codes",
+        "order_items",
+        "products",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "pickup_print_tokens",
+        "pickup_reveal_codes"
+      ],
+      "dbTxn": [
+        "resolve_before_behavior_change"
+      ],
+      "doctrine": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "logistics"
       ],
       "version": "2026-06"
     },
@@ -29164,6 +29218,120 @@
       "label": "payment"
     },
     {
+      "from": "services/pickup-secret-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "utils/pickup-receipt-html.js",
+      "type": "depends",
+      "label": "utils/pickup-receipt-html.js"
+    },
+    {
+      "from": "routes/pickup-secret.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "uses",
+      "label": "routes/pickup-secret.js"
+    },
+    {
+      "from": "services/payment-stripe.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "uses",
+      "label": "services/payment-stripe.js"
+    },
+    {
+      "from": "services/payment-paypal.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "uses",
+      "label": "services/payment-paypal.js"
+    },
+    {
+      "from": "routes/pickup-pay-cash.js",
+      "to": "services/pickup-secret-service.js",
+      "type": "uses",
+      "label": "routes/pickup-pay-cash.js"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-read",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-read",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:pickup_print_tokens",
+      "type": "db-write",
+      "label": "pickup_print_tokens"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db:pickup_reveal_codes",
+      "type": "db-write",
+      "label": "pickup_reveal_codes"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "doctrine:resolve_before_behavior_change",
+      "type": "doctrine",
+      "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
       "from": "services/pricing-apply.js",
       "to": "db:products",
       "type": "db-read",
@@ -39027,7 +39195,8 @@
         "bootstrap/api-routes.js",
         "doctrine:resolve_before_behavior_change",
         "impact:payment",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "routes/pickup-secret.js": {
@@ -39079,7 +39248,8 @@
         "impact:logistics",
         "middleware/auth.js",
         "services/payment-paypal.js",
-        "services/payment-stripe.js"
+        "services/payment-stripe.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "routes/pricing-strategy.js": {
@@ -41725,6 +41895,7 @@
         "services/admin-order-refund.js",
         "services/notification-service.js",
         "services/order-payment-confirmation.js",
+        "services/pickup-secret-service.js",
         "services/verify-qr-collection.js"
       ]
     },
@@ -42086,7 +42257,8 @@
         "services/documents/refund-receipt.js",
         "services/order-payment-confirmation.js",
         "services/payment-service.js",
-        "services/paypal-client.js"
+        "services/paypal-client.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "services/payment-service.js": {
@@ -42195,7 +42367,8 @@
         "services/loyalty-service.js",
         "services/notification-service.js",
         "services/order-payment-confirmation.js",
-        "services/payment-service.js"
+        "services/payment-service.js",
+        "services/pickup-secret-service.js"
       ]
     },
     "services/paypal-client.js": {
@@ -42221,6 +42394,63 @@
         "impact:payment",
         "routes/payments-paypal.js",
         "services/payment-paypal.js"
+      ]
+    },
+    "services/pickup-secret-service.js": {
+      "role": "pickup-secret-service",
+      "domain": "logistics",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/order-status-machine.js",
+        "utils/pickup-receipt-html.js"
+      ],
+      "directUsedBy": [
+        "routes/pickup-secret.js",
+        "services/payment-stripe.js",
+        "services/payment-paypal.js",
+        "routes/pickup-pay-cash.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "pickup_print_tokens",
+        "pickup_reveal_codes",
+        "order_items",
+        "products",
+        "relais",
+        "users"
+      ],
+      "dbWrite": [
+        "orders",
+        "pickup_print_tokens",
+        "pickup_reveal_codes"
+      ],
+      "doctrines": [
+        "resolve_before_behavior_change"
+      ],
+      "impactAreas": [
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:order_items",
+        "db:orders",
+        "db:pickup_print_tokens",
+        "db:pickup_reveal_codes",
+        "db:products",
+        "db:relais",
+        "db:users",
+        "doctrine:resolve_before_behavior_change",
+        "impact:logistics",
+        "routes/pickup-pay-cash.js",
+        "routes/pickup-secret.js",
+        "services/order-status-machine.js",
+        "services/payment-paypal.js",
+        "services/payment-stripe.js",
+        "utils/pickup-receipt-html.js"
       ]
     },
     "services/pricing-apply.js": {
@@ -44509,7 +44739,8 @@
       ],
       "mustCheck": [
         "doctrine:resolve_before_behavior_change",
-        "impact:logistics"
+        "impact:logistics",
+        "services/pickup-secret-service.js"
       ]
     },
     "utils/pricing-cache.js": {
@@ -46231,6 +46462,12 @@
       "to": "services/payment-stripe.js",
       "type": "uses",
       "label": "stripe_webhooks"
+    },
+    {
+      "from": "services/pickup-secret-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/refund-service.js",

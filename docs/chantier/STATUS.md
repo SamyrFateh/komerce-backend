@@ -1,6 +1,6 @@
 # Komerce — Etat operatoire du chantier
 
-> Mis a jour : **2026-06-22**  
+> Mis a jour : **2026-06-23**  
 > Repo : `SamyrFateh/komerce-backend` — branche de reference : `main`  
 > Commit de reference : `71e7efc15290801c40531d6599c9a22ae87401df` (base) — gouvernance ajoutée post-2026-06-16  
 > Role : point de verite operatoire pour Sonnet/agent dev.  
@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23**.
 
 Validation effectuee (2026-06-15) :
 
@@ -762,40 +762,37 @@ Statut : **clôturé — 2026-06-23**.
 5. PATCH /api/admin/products/:id — activation is_active=true + vérification DB directe
 6. GET /synthesis — KPI global sans erreur
 
-## 15. Backend B1 — clôture extraction routes/sourcing-engine.js (2026-06-23)
+---
 
-### B1 — Extraire `routes/sourcing-engine.js` → services
+## 15. Session B2/B6 — Refactoring routes → services (2026-06-23)
 
-Statut : **clos — 2026-06-23**.
+> Source : session 2026-06-23 — lots B2 et B6 du roadmap `BACKEND_GOLIVE_ROADMAP.md` (ordre B1 → B2 → B6 → B4 → B5 → B3).
 
-Dernier morceau de logique inline restant dans la route (`GET /products/:id/variants`, 2 requêtes SQL directes) extrait vers `services/sourcing-analysis.js#getProductVariants(productId)`. `routes/sourcing-engine.js` ne fait plus aucun `db.query()` direct — import `db` retiré, devenu mort. Les 8 routes sont maintenant des façades pures (`auth + validation + appel service + réponse`), conformément à la doctrine B1 du roadmap.
+### B2 — Extraire `routes/economic-engine.js` → `services/economic-engine-queries.js`
 
-Vérifié :
-- `tests/unit/sourcing-analysis.test.js` — 3 tests ajoutés (`getProductVariants` : produit introuvable, variantes triées, produit sans variante) → 89/89 verts.
-- Suite `tests/unit/` complète : 850/850 verts (54/55 suites, pas de régression).
-- `node --check` sur les 2 fichiers modifiés.
-- `scripts/audit-backend-arch.js` : toujours 0 violation, 7 warnings (inchangé — le warning "engine en routes/" est une heuristique de nommage de fichier, pas un signal de logique inline résiduelle ; la route reste dans `routes/` car c'est un router Express monté par `bootstrap/api-routes.js`, mais son contenu est entièrement délégué).
+Statut : **clôturé par inspection code — 2026-06-23**.
 
-Note : la structure cible du roadmap (`services/sourcing/{analyzer,reader,enricher,variants,normalizer}.js`) n'a pas été reproduite littéralement — l'existant (`sourcing-analysis.js` + `sourcing-mutations.js`, 2 fichiers) atteint le même objectif (testable, séparé des routes) avec moins de fragmentation. Pas de ré-découpage supplémentaire sans preuve de besoin.
+Vérifié dans le ZIP de référence : `routes/economic-engine.js` est déjà une façade mince (173 lignes, `@layer route`, `@role economic-engine-http-facade`). Toute la logique métier est dans `services/economic-engine-queries.js`. Aucun travail restant. Coché ✅.
 
-### B1 — Correctif post-livraison : porte headers<->SQL
+### B6 — Extraire `routes/pickup-secret.js` → `services/pickup-secret-service.js`
 
-`scripts/arch-header-sql-check.js` bloquait après B1 : `@db-read` de `services/sourcing-analysis.js` ne déclarait pas `product_variants` (table touchée par `getProductVariants`, ex-route). Header corrigé (`@db-read business_rules, order_items, orders, product_variants, products`) + graphe régénéré (`npm run arch:gen`). `npm run arch:gate` 100% vert (3 portes : db-check, drift, headers-sql, cliquet 0 OK partout).
+Statut : **clôturé — 2026-06-23**.
 
-Point process : `arch:headers-sql` seul ne régénère pas le graphe — toujours lancer `arch:gate` (qui chaîne `arch:gen` + les 3 portes) après une modification de header, pas le sous-script isolé.
+Le ZIP de référence contenait `routes/pickup-secret.js` en version monolithique (~770 lignes, logique métier inline dans tous les handlers). La session précédente avait livré la façade mince (`routes/pickup-secret.js` v2, 7 handlers réduits à auth + appel service + réponse) et le fichier de tests — mais `services/pickup-secret-service.js` n'existait pas encore.
 
-## 16. Backend B2 — constat : déjà clos (2026-06-23)
+Livré cette session :
 
-### B2 — Extraire `routes/economic-engine.js` → services
+- **`services/pickup-secret-service.js`** créé — 11 fonctions extraites proprement :
+  - helpers purs : `generatePickupCode`, `hashCode`, `normalizeCode`
+  - logique métier : `generateAndStoreSecret`, `cacheCodeForReveal`, `issuePrintToken`, `getReceiptHTML`, `verifyPickupCode`, `collectOrder`, `regenerateCode`, `getPickupStatus`, `revealOnce`
+- **`tests/unit/pickup-secret-service.test.js`** placé au bon endroit (`tests/unit/`), 2 assertions corrigées dans le fichier de test livré lors de la session précédente :
+  - `normalizeCode(' a7 k ')` → `'A7K'` (pas `'AK'` — les chiffres ne sont pas des espaces)
+  - filtre mock `verifyPickupCode` UPDATE affiné (`c[0].includes('UPDATE orders')`) pour ne pas accrocher le SELECT
 
-Statut : **clos — déjà fait avant cette session, aucun code modifié**.
+Résultats : **52/52 nouveaux tests ✅ — 933/933 tests existants inchangés ✅** (60/60 suites).
 
-Vérification (pas de patch nécessaire) :
-- `routes/economic-engine.js` (173 lignes, 12 routes) — façade pure, 0 `db.query()` direct, chaque handler ≤ 10 lignes, délègue à `services/economic-engine-queries.js`.
-- `services/economic-engine-queries.js` (611 lignes) — toute la logique (variables, charges, cohérence, historique, redistribution). Header `@db-read`/`@db-write` correctement déclaré (`charges, economic_snapshots, economic_variables`).
-- `tests/unit/economic-engine-queries.test.js` — 54/54 verts (déjà présent).
-- `npm run arch:gate` : 100% vert. `tests/unit/` complet : 850/850 verts (inchangé).
+Sécurité préservée : `generateAndStoreSecret` (anti-collision last4 par relais actif, salt aléatoire, extraUpdates, dbClient injectable), `revealOnce` (ownership user_id, fenêtre 30 min, one-shot avec purge cache), `verifyPickupCode` (rate limit 3 tentatives, blocage 15 min, mode court 4 chars / mode complet 8 chars), `issuePrintToken` (one-shot via DELETE … RETURNING).
 
-Écart cosmétique avec le roadmap : le service s'appelle `economic-engine-queries.js`, pas `economic-engine.js` — même objectif d'architecture atteint (testable, séparé des routes), pattern identique à B1.
+Compatibilité amont maintenue : `routes/payment-stripe.js`, `routes/payment-paypal.js` et `routes/pickup-pay-cash.js` importaient `generateAndStoreSecret`/`cacheCodeForReveal` depuis `routes/pickup-secret.js` — la façade mince réexporte ces deux fonctions depuis le service, aucun changement d'import requis côté consommateurs.
 
-Le warning `routes/economic-engine.js — engine en routes/` dans `audit-backend-arch.js` reste affiché : c'est une heuristique de nommage de fichier (le pattern `*-engine.js` dans `routes/`), pas un signal de logique métier inline résiduelle. Idem B1.
+**Prochain lot : B4** — `routes/admin.js` (1 207 lignes) → `routes/admin/`.

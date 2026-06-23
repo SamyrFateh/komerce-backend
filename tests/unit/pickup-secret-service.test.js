@@ -1,0 +1,581 @@
+'use strict';
+
+/**
+ * Tests unitaires — services/pickup-secret-service.js (Lot B6)
+ *
+ * Le secret de retrait ne peut pas avoir de régression — ce fichier couvre
+ * les 11 fonctions exportées, en mockant db.js (jest.mock automock).
+ *
+ * Couverture :
+ *   helpers          — generatePickupCode, hashCode, normalizeCode
+ *   generateAndStoreSecret — anti-collision, saturation, extraUpdates
+ *   cacheCodeForReveal     — INSERT ON CONFLICT
+ *   issuePrintToken        — token + INSERT pickup_print_tokens
+ *   getReceiptHTML         — token manquant / invalide / commande introuvable / nominal
+ *   verifyPickupCode       — code requis / commande introuvable / pas de code / bloqué / expiré /
+ *                            format invalide / mode court / mode complet / échec+compteur / succès
+ *   collectOrder           — introuvable / déjà collecté / transition échouée / nominal
+ *   regenerateCode         — motif manquant / introuvable / saturation / nominal
+ *   getPickupStatus        — introuvable / nominal (masquage last4)
+ *   revealOnce             — introuvable / ownership / pending / déjà révélé / expiré / cache absent / nominal
+ */
+
+jest.mock('../../db', () => ({
+  query: jest.fn(),
+}));
+jest.mock('../../utils/logger', () => ({
+  child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
+}));
+
+const mockTransitionOrderStatus = jest.fn();
+jest.mock('../../services/order-status-machine', () => ({
+  transitionOrderStatus: (...args) => mockTransitionOrderStatus(...args),
+}));
+
+const mockBuildReceiptHTML = jest.fn(() => '<html>reçu</html>');
+jest.mock('../../utils/pickup-receipt-html', () => ({
+  buildReceiptHTML: (...args) => mockBuildReceiptHTML(...args),
+  escapeHTML: (s) => s,
+}));
+
+const db = require('../../db');
+
+const {
+  generatePickupCode,
+  hashCode,
+  normalizeCode,
+  generateAndStoreSecret,
+  cacheCodeForReveal,
+  issuePrintToken,
+  getReceiptHTML,
+  verifyPickupCode,
+  collectOrder,
+  regenerateCode,
+  getPickupStatus,
+  revealOnce,
+} = require('../../services/pickup-secret-service');
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Helpers purs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('generatePickupCode', () => {
+  it('génère un code au format XXX-XXX-XX (8 caractères + 2 tirets)', () => {
+    const code = generatePickupCode();
+    expect(code).toMatch(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{3}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{3}-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{2}$/);
+  });
+
+  it('ne contient jamais 0/O/I/1/l (alphabet sans confusion)', () => {
+    for (let i = 0; i < 50; i++) {
+      const code = generatePickupCode();
+      expect(code).not.toMatch(/[0OI1l]/);
+    }
+  });
+});
+
+describe('hashCode', () => {
+  it('est déterministe pour un même code+salt', () => {
+    expect(hashCode('A7K-3M9-P2', 'salt1')).toBe(hashCode('A7K-3M9-P2', 'salt1'));
+  });
+
+  it('ignore tirets/espaces et la casse', () => {
+    expect(hashCode('a7k3m9p2', 'salt1')).toBe(hashCode('A7K-3M9-P2', 'salt1'));
+  });
+
+  it('change si le salt change', () => {
+    expect(hashCode('A7K-3M9-P2', 'salt1')).not.toBe(hashCode('A7K-3M9-P2', 'salt2'));
+  });
+});
+
+describe('normalizeCode', () => {
+  it('retire tirets et espaces, upper-case', () => {
+    expect(normalizeCode('a7k-3m9-p2')).toBe('A7K3M9P2');
+    expect(normalizeCode(' a7 k ')).toBe('A7K'); // espaces internes aussi retirés
+  });
+
+  it('gère undefined/null sans crasher', () => {
+    expect(normalizeCode(undefined)).toBe('');
+    expect(normalizeCode(null)).toBe('');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// generateAndStoreSecret
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('generateAndStoreSecret', () => {
+  it('lève une erreur si orderId manquant', async () => {
+    await expect(generateAndStoreSecret({ channel: 'cash_relais' })).rejects.toThrow('orderId requis');
+  });
+
+  it('lève une erreur si channel manquant', async () => {
+    await expect(generateAndStoreSecret({ orderId: 'o1' })).rejects.toThrow('channel requis');
+  });
+
+  it('génère un code et UPDATE orders au premier essai (pas de collision)', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT id FROM orders')) return Promise.resolve({ rows: [] }); // pas de doublon
+      if (sql.includes('UPDATE orders SET')) return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
+
+    const result = await generateAndStoreSecret({ orderId: 'o1', relaisId: 'r1', channel: 'cash_relais' });
+
+    expect(result.code).toMatch(/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{2}$/);
+    expect(result.last4).toHaveLength(4);
+
+    const updateCall = db.query.mock.calls.find(c => c[0].includes('UPDATE orders SET'));
+    expect(updateCall).toBeDefined();
+    expect(updateCall[0]).toContain('pickup_secret_channel');
+    expect(updateCall[1]).toContain('o1'); // orderId en dernier param
+  });
+
+  it('réessaie en cas de collision puis réussit', async () => {
+    let selectCount = 0;
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT id FROM orders')) {
+        selectCount++;
+        // 1ère tentative = collision, 2e = libre
+        return Promise.resolve({ rows: selectCount === 1 ? [{ id: 'dup' }] : [] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const result = await generateAndStoreSecret({ orderId: 'o1', channel: 'stripe' });
+    expect(result.code).toBeDefined();
+    expect(selectCount).toBe(2);
+  });
+
+  it('lève une erreur de saturation après 50 tentatives en collision', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT id FROM orders')) return Promise.resolve({ rows: [{ id: 'dup' }] });
+      return Promise.resolve({ rows: [] });
+    });
+
+    await expect(generateAndStoreSecret({ orderId: 'o1', channel: 'wallet' }))
+      .rejects.toThrow('Génération du code impossible (saturation)');
+  });
+
+  it('exclut excludeOrderId de la requête anti-collision (regenerate)', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await generateAndStoreSecret({ orderId: 'o1', channel: 'admin_regenerate', excludeOrderId: 'o1' });
+
+    const selectCall = db.query.mock.calls.find(c => c[0].includes('SELECT id FROM orders'));
+    expect(selectCall[0]).toContain('AND id <> $3');
+    expect(selectCall[1]).toContain('o1');
+  });
+
+  it('fusionne extraUpdates dans les colonnes UPDATE', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await generateAndStoreSecret({
+      orderId: 'o1',
+      channel: 'stripe',
+      extraUpdates: { stripe_payment_intent_id: 'pi_123' },
+    });
+
+    const updateCall = db.query.mock.calls.find(c => c[0].includes('UPDATE orders SET'));
+    expect(updateCall[0]).toContain('stripe_payment_intent_id');
+    expect(updateCall[1]).toContain('pi_123');
+  });
+
+  it('utilise dbClient fourni au lieu du pool global', async () => {
+    const customClient = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    await generateAndStoreSecret({ orderId: 'o1', channel: 'cash_relais', dbClient: customClient });
+
+    expect(customClient.query).toHaveBeenCalled();
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// cacheCodeForReveal
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('cacheCodeForReveal', () => {
+  it('INSERT ... ON CONFLICT DO UPDATE avec orderId et code', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await cacheCodeForReveal('o1', 'A7K-3M9-P2');
+
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO pickup_reveal_codes'),
+      ['o1', 'A7K-3M9-P2']
+    );
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// issuePrintToken
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('issuePrintToken', () => {
+  it('génère un token hex et INSERT pickup_print_tokens', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    const token = await issuePrintToken({ orderId: 'o1', code: 'A7K-3M9-P2', payerName: 'Ali' });
+
+    expect(token).toMatch(/^[a-f0-9]{48}$/); // 24 bytes hex
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO pickup_print_tokens'),
+      [token, 'o1', 'A7K-3M9-P2', 'Ali']
+    );
+  });
+
+  it('payerName absent → null', async () => {
+    db.query.mockResolvedValue({ rows: [] });
+    await issuePrintToken({ orderId: 'o1', code: 'X' });
+    const call = db.query.mock.calls[0];
+    expect(call[1][3]).toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// getReceiptHTML
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('getReceiptHTML', () => {
+  it('400 si token manquant', async () => {
+    const result = await getReceiptHTML({ orderId: 'o1', token: undefined });
+    expect(result).toEqual({ status: 400, error: 'Token manquant' });
+  });
+
+  it('403 si token invalide ou expiré', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] }); // DELETE ... RETURNING vide
+    const result = await getReceiptHTML({ orderId: 'o1', token: 't1' });
+    expect(result).toEqual({ status: 403, error: 'Token invalide ou expiré' });
+  });
+
+  it('404 si commande introuvable après consommation du token', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1', code: 'A7K-3M9-P2', payer_name: 'Ali' }] }) // DELETE token
+      .mockResolvedValueOnce({ rows: [] }); // commande introuvable
+    const result = await getReceiptHTML({ orderId: 'o1', token: 't1' });
+    expect(result).toEqual({ status: 404, error: 'Commande introuvable' });
+  });
+
+  it('200 + html nominal', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ order_id: 'o1', code: 'A7K-3M9-P2', payer_name: 'Ali' }] })
+      .mockResolvedValueOnce({ rows: [{ reference: 'KMC-001', total_kmf: 5000 }] })
+      .mockResolvedValueOnce({ rows: [{ quantity: 2, price_kmf: 2500, product_name: 'Savon' }] });
+
+    const result = await getReceiptHTML({ orderId: 'o1', token: 't1' });
+    expect(result.status).toBe(200);
+    expect(result.html).toBe('<html>reçu</html>');
+    expect(mockBuildReceiptHTML).toHaveBeenCalledWith(expect.objectContaining({ code: 'A7K-3M9-P2' }));
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// verifyPickupCode
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('verifyPickupCode', () => {
+  it('400 si code manquant', async () => {
+    const result = await verifyPickupCode({ orderId: 'o1', code: '', agentId: 'a1' });
+    expect(result).toEqual({ status: 400, body: { error: 'Code requis' } });
+  });
+
+  it('404 si commande introuvable', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '1234', agentId: 'a1' });
+    expect(result.status).toBe(404);
+  });
+
+  it('400 si pas encore de code (paiement non effectué)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: null }] });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '1234', agentId: 'a1' });
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch(/paiement non effectué/);
+  });
+
+  it('429 si bloqué (rate limit actif)', async () => {
+    const future = new Date(Date.now() + 5 * 60 * 1000);
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h', pickup_secret_blocked_until: future }],
+    });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '1234', agentId: 'a1' });
+    expect(result.status).toBe(429);
+    expect(result.body.blocked_until).toEqual(future);
+  });
+
+  it('410 si code expiré', async () => {
+    const past = new Date(Date.now() - 1000);
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h', pickup_secret_expires_at: past }],
+    });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '1234', agentId: 'a1' });
+    expect(result.status).toBe(410);
+  });
+
+  it('400 si longueur de code ni 4 ni 8', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h' }] });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '123', agentId: 'a1' });
+    expect(result.status).toBe(400);
+    expect(result.body.error).toMatch(/4 caractères/);
+  });
+
+  it('mode court (4 chars) : succès si match last4', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h', pickup_secret_last4: 'WXP2' }] })
+      .mockResolvedValueOnce({ rows: [] }); // reset compteur
+    const result = await verifyPickupCode({ orderId: 'o1', code: 'wxp2', agentId: 'a1' });
+    expect(result.status).toBe(200);
+    expect(result.body.success).toBe(true);
+  });
+
+  it('mode complet (8 chars) : succès si hash match', async () => {
+    const salt = 'salt1';
+    const hash = hashCode('A7K3M9P2', salt);
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: hash, pickup_secret_salt: salt }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const result = await verifyPickupCode({ orderId: 'o1', code: 'A7K-3M9-P2', agentId: 'a1' });
+    expect(result.status).toBe(200);
+  });
+
+  it('échec : incrémente le compteur, bloque à la 3e tentative', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h', pickup_secret_last4: 'WXP2', pickup_secret_attempts: 2 }] })
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE attempts
+    const result = await verifyPickupCode({ orderId: 'o1', code: '0000', agentId: 'a1' });
+    expect(result.status).toBe(401);
+    expect(result.body.attempts).toBe(3);
+    expect(result.body.remaining).toBe(0);
+    expect(result.body.blocked_until).not.toBeNull();
+
+    const updateCall = db.query.mock.calls.find(c => c[0].includes('UPDATE orders') && c[0].includes('pickup_secret_attempts'));
+    expect(updateCall[1][0]).toBe(3); // attempts
+  });
+
+  it('échec sous le seuil : pas de blocage', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', pickup_secret_hash: 'h', pickup_secret_last4: 'WXP2', pickup_secret_attempts: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+    const result = await verifyPickupCode({ orderId: 'o1', code: '0000', agentId: 'a1' });
+    expect(result.status).toBe(401);
+    expect(result.body.attempts).toBe(1);
+    expect(result.body.blocked_until).toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// collectOrder
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('collectOrder', () => {
+  it('404 si commande introuvable', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await collectOrder({ orderId: 'o1', agentId: 'a1', role: 'agent_relais' });
+    expect(result.status).toBe(404);
+  });
+
+  it('409 si déjà collecté', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', status: 'collected' }] });
+    const result = await collectOrder({ orderId: 'o1', agentId: 'a1', role: 'agent_relais' });
+    expect(result.status).toBe(409);
+  });
+
+  it('409 si la transition échoue (pas noop)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', status: 'confirmed' }] });
+    mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: false, error: 'transition invalide' });
+    const result = await collectOrder({ orderId: 'o1', agentId: 'a1', role: 'agent_relais' });
+    expect(result.status).toBe(409);
+    expect(result.body.error).toBe('transition invalide');
+  });
+
+  it('200 nominal : transition OK + UPDATE collected_by_name', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE
+    mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
+
+    const result = await collectOrder({ orderId: 'o1', agentId: 'a1', role: 'agent_relais', collectedByName: 'Fatima' });
+    expect(result.status).toBe(200);
+    expect(result.body.success).toBe(true);
+
+    const updateCall = db.query.mock.calls.find(c => c[0].includes('collected_by_name'));
+    expect(updateCall[1]).toEqual(['Fatima', 'o1']);
+  });
+
+  it('accepte un transition.noop=true comme un succès', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'KMC-001', status: 'confirmed' }] })
+      .mockResolvedValueOnce({ rows: [] });
+    mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: true });
+
+    const result = await collectOrder({ orderId: 'o1', agentId: 'a1', role: 'agent_relais' });
+    expect(result.status).toBe(200);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// regenerateCode
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('regenerateCode', () => {
+  it('400 si motif absent ou trop court', async () => {
+    const result = await regenerateCode({ orderId: 'o1', adminId: 'admin1', reason: 'abc' });
+    expect(result.status).toBe(400);
+  });
+
+  it('404 si commande introuvable', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await regenerateCode({ orderId: 'o1', adminId: 'admin1', reason: 'reçu perdu' });
+    expect(result.status).toBe(404);
+  });
+
+  it('500 si saturation anti-collision', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT id, reference, pickup_secret_hash')) {
+        return Promise.resolve({ rows: [{ id: 'o1', reference: 'KMC-001', relais_id: 'r1' }] });
+      }
+      if (sql.includes('SELECT id FROM orders')) return Promise.resolve({ rows: [{ id: 'dup' }] });
+      return Promise.resolve({ rows: [] });
+    });
+    const result = await regenerateCode({ orderId: 'o1', adminId: 'admin1', reason: 'reçu perdu' });
+    expect(result.status).toBe(500);
+  });
+
+  it('200 nominal : nouveau code renvoyé en clair', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('SELECT id, reference, pickup_secret_hash')) {
+        return Promise.resolve({ rows: [{ id: 'o1', reference: 'KMC-001', relais_id: 'r1' }] });
+      }
+      if (sql.includes('SELECT id FROM orders')) return Promise.resolve({ rows: [] });
+      if (sql.includes('UPDATE orders')) return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
+    const result = await regenerateCode({ orderId: 'o1', adminId: 'admin1', reason: 'reçu perdu, pièce vérifiée' });
+    expect(result.status).toBe(200);
+    expect(result.body.code).toMatch(/^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{2}$/);
+    expect(result.body.order_ref).toBe('KMC-001');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// getPickupStatus
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('getPickupStatus', () => {
+  it('404 si commande introuvable', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await getPickupStatus({ orderId: 'o1' });
+    expect(result.status).toBe(404);
+  });
+
+  it('200 : masque le code (last4 visible seulement)', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'o1', reference: 'KMC-001', status: 'confirmed', payment_status: 'paid', total_kmf: '5000',
+        pickup_secret_created_at: new Date(), pickup_secret_last4: 'WXP2',
+      }],
+    });
+    const result = await getPickupStatus({ orderId: 'o1' });
+    expect(result.status).toBe(200);
+    expect(result.body.secret.last4).toBe('WXP2');
+    expect(result.body.secret.masked).toBe('•••-•WX-P2');
+    expect(result.body.total_kmf).toBe(5000);
+    // Le code clair n'est JAMAIS exposé dans le status
+    expect(JSON.stringify(result.body)).not.toContain('pickup_secret_hash');
+  });
+
+  it('200 : secret.exists=false si jamais généré', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', reference: 'KMC-001', status: 'pending', payment_status: 'pending', total_kmf: 0 }],
+    });
+    const result = await getPickupStatus({ orderId: 'o1' });
+    expect(result.body.secret.exists).toBe(false);
+    expect(result.body.secret.masked).toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// revealOnce
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('revealOnce', () => {
+  it('404 si commande introuvable', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(404);
+  });
+
+  it('403 si la commande appartient à un autre utilisateur', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: 'u2' }] });
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(403);
+  });
+
+  it('202 pending si pas encore de hash (webhook en retard)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: 'u1', pickup_secret_hash: null }] });
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(202);
+    expect(result.body.status).toBe('pending');
+  });
+
+  it('410 si déjà révélé', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', user_id: 'u1', pickup_secret_hash: 'h', pickup_secret_revealed_at: new Date(), pickup_secret_last4: 'WXP2' }],
+    });
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(410);
+    expect(result.body.masked).toBe('•••-•••-P2');
+  });
+
+  it('410 si fenêtre de 30 min expirée', async () => {
+    const emitted = new Date(Date.now() - 31 * 60 * 1000);
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'o1', user_id: 'u1', pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted, pickup_secret_last4: 'WXP2' }],
+    });
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(410);
+    expect(result.body.error).toMatch(/Fenêtre de révélation expirée/);
+  });
+
+  it('410 si cache de révélation absent/expiré en DB', async () => {
+    const emitted = new Date();
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: 'o1', user_id: 'u1', pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted, pickup_secret_last4: 'WXP2' }] })
+      .mockResolvedValueOnce({ rows: [] }); // pickup_reveal_codes vide
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(410);
+    expect(result.body.error).toBe('Code non disponible');
+  });
+
+  it('200 nominal : révèle le code, marque revealed_at, purge le cache, génère le QR', async () => {
+    const emitted = new Date();
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 'o1', reference: 'KMC-001', user_id: 'u1', pickup_secret_hash: 'h',
+          pickup_secret_emitted_at: emitted, pickup_secret_channel: 'stripe', total_kmf: 5000,
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [{ code: 'A7K-3M9-P2' }] }) // pickup_reveal_codes
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE revealed_at
+      .mockResolvedValueOnce({ rows: [] }); // DELETE reveal_codes
+
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(200);
+    expect(result.body.code).toBe('A7K-3M9-P2');
+    expect(result.body.qr_payload).toMatch(/^KMR1\./);
+    expect(result.body.total_kmf).toBe(5000);
+  });
+
+  it('autorise la révélation si user_id de la commande est null (invité)', async () => {
+    const emitted = new Date();
+    db.query
+      .mockResolvedValueOnce({
+        rows: [{ id: 'o1', reference: 'KMC-001', user_id: null, pickup_secret_hash: 'h', pickup_secret_emitted_at: emitted, pickup_secret_channel: 'wallet', total_kmf: 1000 }],
+      })
+      .mockResolvedValueOnce({ rows: [{ code: 'X' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const result = await revealOnce({ orderId: 'o1', userId: 'u1' });
+    expect(result.status).toBe(200);
+  });
+});

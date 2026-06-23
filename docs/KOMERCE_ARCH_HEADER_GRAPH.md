@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 314
-- Files with full headers: 285
+- Scanned code files: 315
+- Files with full headers: 286
 - Files with lite headers: 29
-- Files with any headers: 314
+- Files with any headers: 315
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 657
-- Edges: 2889
+- Graph nodes: 658
+- Edges: 2908
 - DB tables: 107
 - Doctrines: 124
 - Impact areas: 112
-- Unresolved code edges: 267
+- Unresolved code edges: 268
 
 ## Domains
 
@@ -31,7 +31,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - documents: 4
 - economic-engine: 24
 - inventory: 2
-- logistics: 29
+- logistics: 30
 - notification: 6
 - notifications: 1
 - operations: 4
@@ -62,7 +62,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 104
+- service: 105
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -241,6 +241,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/parcel-security.js — logistics-parcel-security (logistics, high, full)
 - services/parcel-service.js — logistics-parcel-service (logistics, high, full)
 - services/parcelOptimizationService.js — logistics-parcel-optimization-service (logistics, high, full)
+- services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
 - services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
 - services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
 - services/pricing-dashboard.js — economic-engine-pricing-dashboard (economic-engine, high, full)
