@@ -1,6 +1,6 @@
 # Komerce — Etat operatoire du chantier
 
-> Mis a jour : **2026-06-23**  
+> Mis a jour : **2026-06-24**  
 > Repo : `SamyrFateh/komerce-backend` — branche de reference : `main`  
 > Commit de reference : `71e7efc15290801c40531d6599c9a22ae87401df` (base) — gouvernance ajoutée post-2026-06-16  
 > Role : point de verite operatoire pour Sonnet/agent dev.  
@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24**.
 
 Validation effectuee (2026-06-15) :
 
@@ -453,10 +453,33 @@ DoD : 0 high/critical ✅ ; job câblé ✅.
 
 ### GOV-04 — Contrat OpenAPI : 442/468 réponses UNKNOWN (A3)
 
-Statut : **ouvert — itératif**.
+Statut : **clos — 2026-06-24**.
 
-La conformance Schemathesis ne peut pas valider les corps de réponse. Brûler les UNKNOWN par priorité blast-radius (admin + paiement + commandes).
-DoD : UNKNOWN < 50 sur routes critiques ; porte `server_error` bloquante.
+Le chiffre 442/468 datait du 2026-06-22 et était déjà obsolète. Relance réelle de `node scripts/contract-generate.js` (pas une relecture de doc) : **421 routes · 0 réponse UNKNOWN**.
+
+Bug trouvé en cours de route : `DEBT.md` listait 6 routes UNKNOWN alors que le compteur du script lui-même en annonçait 2 — incohérence causée par `ROUTE_SCHEMA_MAP` (liste statique utilisée pour `DEBT.md`) contenant 4 entrées fantômes/erronées, jamais alignées avec les vraies routes montées :
+
+| Entrée fautive | Réalité |
+|---|---|
+| `GET /api/loyalty` | n'existe pas (`routes/loyalty.js` n'a pas de `GET /` racine) ; en plus le validateur référencé (`validators.loyalty.list`) n'existe pas non plus |
+| `GET /api/dashboard` | n'existe pas (façade qui monte 4 sous-routers, aucune route propre) |
+| `POST /api/pickup/verify` / `/collect` | vraies routes : `/verify/:orderId`, `/collect/:orderId` (param manquant dans la map) |
+| `POST /api/hub-dash/start-prep/{id}` | vraie route : `POST /orders/:id/start-prep` (segments inversés) |
+
+Corrigé dans `scripts/contract-generate.js` (chemins réalignés ou entrées supprimées). `DEBT.md` est maintenant cohérent avec le compteur du script (0 = 0).
+
+Les 2 vraies UNKNOWN restantes (toutes deux admin/paiement, blast-radius critique) ont été fermées par test :
+
+- `POST /api/admin/orders/{id}/refund` — couvert par `tests/integration/admin-order-refund-payment-service.test.js` (déjà existant, juste pas référencé dans `KNOWN_RESPONSES`).
+- `POST /api/admin/purchasing/repair-ordered-without-pos` — nouveau test `tests/unit/repair-ordered-without-purchase-orders.test.js` (6 cas : 403 non-admin, dry-run, succès complet, échec partiel → 207 + alerte, bornes `limit`).
+
+Vérifié : `node scripts/contract-check.js` → 421 routes, 0 UNKNOWN, 0 dérive boutique/dashboards. `npm run arch:gate` et `backend:audit` toujours verts après ces changements (243 fichiers, 0 violation, 7 warnings connus inchangés).
+
+**Non vérifié** : le volet "porte `server_error` bloquante" du DoD (gate Schemathesis CI sur les 5xx non documentés) — pas creusé cette session.
+
+DoD (`UNKNOWN < 50 sur routes critiques`) : largement dépassé (0/421).
+
+Bonus trouvé en chemin : `services/repair-ordered-purchasing.js` était un fichier orphelin (aucun `require()` nulle part, fonction `findOrderedWithoutPurchaseOrders` jamais appelée) — doublon mort de `repair-ordered-without-purchase-orders.js`, même pattern qu'AUD-09. Supprimé.
 
 ### GOV-05 — Fictions DB actives (drift allowlist)
 
@@ -508,7 +531,7 @@ Notes d'implémentation :
 **P2 — post-Golive H+1 semaine** :
 
 9. ~~**AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).~~ — ✅ **clôturé 2026-06-23** (`authenticate()` ne fait plus que auth ; routes ajoutées dans `admin/orders.js` et `admin/system.js` ; handlers collectifs supprimés ZG-3).
-10. **GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).
+10. ~~**GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).~~ — ✅ **clôturé 2026-06-24** (421 routes · 0 UNKNOWN, `ROUTE_SCHEMA_MAP` nettoyé de 4 entrées fantômes, 2 dernières routes fermées par test — détail ci-dessus §GOV-04).
 11. ~~**GOV-06** (5 tests E2E parcours critiques).~~ — ✅ **clôturé 2026-06-23** (`e2e-critical-flows.test.js`, 12 assertions, 5 parcours, câblage CI automatique).
 12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
 13. ~~**AUD-07** (migrer 6 interpolations SQL vers paramètres)~~ — ✅ **clôturé 2026-06-23** (allowlists explicites + annotations, 0 input user dans les identifiants SQL).
@@ -827,10 +850,10 @@ Statut : **clôturé par inspection code — 2026-06-23**.
 
 ---
 
-## 16. Session C — Sourcing & offre (2026-06-23)
+## 16. Session C — Sourcing & offre (2026-06-23/24)
 
-> Source : session 2026-06-23 — lots C1, C4, C6, C7 du roadmap `BACKEND_GOLIVE_ROADMAP.md`.
-> C2/C3 déjà couverts (86 tests verts, E6 clos). C5 en attente approbation humaine.
+> Source : sessions 2026-06-23/24 — lots C1, C4, C5, C6, C7 du roadmap `BACKEND_GOLIVE_ROADMAP.md`.
+> C2/C3 déjà couverts (86 tests verts, E6 clos). C5 clos 2026-06-24 (était noté "en attente approbation" — déjà fait en réalité, voir §C5).
 
 ### C1 — Inventaire des connecteurs fournisseurs
 
@@ -859,7 +882,25 @@ Statut : **clôturé — 2026-06-23**.
 - **F-06 🟢** `products.sourcing_rail` sans CHECK DB (validé dans `sourcing-mutations.js`).
 - **F-07 ℹ️** Pas de FK `partners → sourcing_candidates` (aucun lien prévu, normal).
 
-Aucune correction DB dans ce lot (audit pur). Corrections → C5 et C7. DoD satisfait.
+### C5 — Normalisation colonnes dupliquées cost_kmf/weight_kg
+
+Statut : **clôturé — 2026-06-23/24**.
+
+Contrairement à la mention "prochain lot, approbation requise" encore présente jusqu'ici dans ce document : **déjà fait**, code + DB, vérifié cette session (pas juste relu) :
+
+- `migrations/087_normalize_sourcing_duplicate_columns.sql` — backfill `cost_kmf ← cost_price_kmf` et `weight_kg ← weight_g`, colonnes legacy annotées `DEPRECATED` via `COMMENT ON COLUMN` (pas droppées — rollback safe). **Exécutée en live** (confirmé session précédente : `chk_partners_partner_type` et migration 087 vérifiés sur la DB réelle).
+- `services/sourcing-mutations.js` (`LEGACY_FIELD_MAP`, lignes 56-110) : l'API accepte toujours `cost_price_kmf`/`weight_g` en entrée (compat clients existants) mais mappe vers `cost_kmf`/`weight_kg` — plus de double-write, plus de risque de divergence.
+- Vérifié l'usage réel du code : `cost_price_kmf`/`weight_g` sont désormais confinés à la couche sourcing (mapping legacy) ; `cost_kmf`/`weight_kg` sont la seule vérité utilisée par `pricing-engine.js` et 59 autres fichiers.
+
+**Effet de bord corrigé cette session** : `scripts/audit-sourcing.js` S-02 (violation bloquante) et S-07 (warning) détectaient `cost_kmf ≠ cost_price_kmf` / `weight_kg ≠ weight_g` comme une anomalie — mais depuis 087, cette divergence est **l'état attendu** dès qu'un produit est mis à jour (la colonne dépréciée reste figée à l'ancienne valeur du backfill). Garder S-02 en violation bloquante aurait fait planter `npm run sourcing:audit` sur le premier produit légitimement modifié. Les deux checks ont été retirés (commentés, raison documentée inline), pas juste désactivés silencieusement.
+
+**Bonus corrigé** : `bootstrap/startup-migrations.js` recréait `cost_price_kmf`/`weight_g` via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` à chaque démarrage serveur — ce qui aurait silencieusement annulé un futur `DROP COLUMN` à chaque redéploiement. Lignes retirées.
+
+**Reste à faire, volontairement différé** : `migrations/089_drop_deprecated_cost_weight_columns.sql` créée cette session — `DROP COLUMN` réel de `cost_price_kmf`/`weight_g`, protégée par un garde-fou de date (`RAISE EXCEPTION` si exécutée avant le **2026-07-08**, soit 14 jours de stabilité prod après 087). Ne pas retirer le garde-fou pour aller plus vite ; repousser la date dans le fichier si besoin, avec une raison.
+
+Vérifié après ces changements : suite unit complète (908/908 verts, 56/57 suites), `arch:gate` et `backend:audit` toujours verts (0 violation, 7 warnings connus inchangés).
+
+
 
 ### C6 — Documentation moteur sourcing
 
@@ -876,13 +917,13 @@ Statut : **clôturé — 2026-06-23**.
 | Check | Sévérité | Détecte |
 |---|---|---|
 | S-01 | Violation | Produits actifs sans aucun coût renseigné |
-| S-02 | Violation | `cost_kmf ≠ cost_price_kmf` (divergence doublon) |
+| S-02 | ~~Violation~~ retiré 2026-06-24 | ~~`cost_kmf ≠ cost_price_kmf`~~ — divergence devenue état attendu post-C5 (voir §C5) |
 | S-03 | Violation | Poids négatif ou > 100 kg |
 | S-04 | Violation | `sourcing_rail` hors `('A','B','C','D')` |
 | S-05 | Violation | `partner_type` hors liste des 6 valeurs valides |
 | S-06 | Warning | `komerce_category` orpheline dans `sourcing_candidates` |
-| S-07 | Warning | `weight_kg` et `weight_g` divergents (> 10 g) |
+| S-07 | ~~Warning~~ retiré 2026-06-24 | ~~`weight_kg`/`weight_g` divergents~~ — même raison que S-02 |
 
 Câblé dans `package.json` : `npm run sourcing:audit` (bloquant) et `npm run sourcing:audit:observe`. Skip gracieux si `DATABASE_URL` absent (CI sans DB). DoD satisfait.
 
-**Lot C partiel clôturé au 2026-06-23 (C1 ✅, C4 ✅, C6 ✅, C7 ✅). Prochain lot : C5** — normalisation colonnes dupliquées cost_kmf/weight_kg — approbation humaine obligatoire avant merge.
+**Lot C clôturé au 2026-06-24 (C1 ✅, C4 ✅, C5 ✅, C6 ✅, C7 ✅, incl. retrait S-02/S-07 post-C5). Prochaine étape différée : `migrations/089_drop_deprecated_cost_weight_columns.sql`, exécutable à partir du 2026-07-08 (garde-fou date).**

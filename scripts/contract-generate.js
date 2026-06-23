@@ -153,7 +153,10 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/hub/inventory/buffer', method: 'get',    schema: null },
   { prefix: '/api/hub/inventory/proposals', method: 'get', schema: null },
   // TRACKING
-  { prefix: '/api/tracking',            method: 'get',    schema: null },
+  // CORRIGÉ 2026-06-24 (audit GOV-04) : la route réelle est GET /:token
+  // (routes/tracking.js:113) — '/api/tracking' nu n'existe pas, n'a jamais
+  // été le bon chemin. Entrée phantom listée à tort dans DEBT.md.
+  { prefix: '/api/tracking/{token}',    method: 'get',    schema: null },
   { prefix: '/api/client/tracking',     method: 'get',    schema: null },
   // WALLET
   { prefix: '/api/wallet',              method: 'get',    schema: null },
@@ -166,18 +169,28 @@ const ROUTE_SCHEMA_MAP = [
   // RELAIS
   { prefix: '/api/relais/public',       method: 'get',    schema: null },
   // LOYALTY
-  { prefix: '/api/loyalty',             method: 'get',    schema: validators.loyalty?.list },
+  // SUPPRIMÉ 2026-06-24 (audit GOV-04) : routes/loyalty.js n'a pas de GET '/'
+  // racine (seulement /tiers, /me, /users, /stats) et `validators.loyalty.list`
+  // n'existe même pas (loyalty = { updateTier, recalculate } uniquement) —
+  // entrée doublement phantom, listée à tort dans DEBT.md.
   // PICKUP
-  { prefix: '/api/pickup/verify',       method: 'post',   schema: null },
-  { prefix: '/api/pickup/collect',      method: 'post',   schema: null },
+  // CORRIGÉ 2026-06-24 (audit GOV-04) : les vraies routes prennent :orderId
+  // (routes/pickup-secret.js:323,429) — chemins nus jamais valides.
+  { prefix: '/api/pickup/verify/{orderId}', method: 'post',   schema: null },
+  { prefix: '/api/pickup/collect/{orderId}', method: 'post',  schema: null },
   // ADMIN — surfaces dashboards
   { prefix: '/api/admin/costing/orders',   method: 'get', schema: null },
   { prefix: '/api/admin/costing/products', method: 'get', schema: null },
   { prefix: '/api/admin/costing/relais',   method: 'get', schema: null },
+  // SUPPRIMÉ 2026-06-24 (audit GOV-04) : routes/dashboard.js est une façade
+  // qui monte 4 sous-routers (dashboard-ops/finance/clients/hub), aucune
+  // route GET '/' propre — '/api/dashboard' nu n'a jamais existé.
   { prefix: '/api/admin/radar',            method: 'get', schema: null },
   { prefix: '/api/unsold/stats/summary',   method: 'get', schema: validators.unsold?.statsSummary },
-  { prefix: '/api/dashboard',             method: 'get',  schema: null },
-  { prefix: '/api/hub-dash/start-prep/{id}', method: 'post', schema: null },
+  // CORRIGÉ 2026-06-24 (audit GOV-04) : vraie route POST /orders/:id/start-prep
+  // (routes/hub-dashboard.js:90), montée sous /api/hub-dash — segments inversés
+  // dans l'ancienne entrée ('start-prep/{id}' au lieu de 'orders/{id}/start-prep').
+  { prefix: '/api/hub-dash/orders/{id}/start-prep', method: 'post', schema: null },
   { prefix: '/api/transitaire/parcels',   method: 'get',  schema: null },
   { prefix: '/api/simulator/start',       method: 'post', schema: null },
   { prefix: '/api/simulator/status',      method: 'get',  schema: null },
@@ -1692,6 +1705,28 @@ const KNOWN_RESPONSES = {
   // public.js
   '/api/public/config': {
     get: { fields: ['config'], source: 'route-read' }
+  },
+
+  // ── GOV-04 burn-down final (2026-06-24) — les 2 dernières UNKNOWN, ──────────
+  // toutes deux admin/paiement (blast-radius critique visé par le DoD).
+  //
+  // POST /api/admin/orders/{id}/refund : routes/admin/orders.js fait
+  // `res.status(result.status).json(result.body)` — passthrough direct du
+  // retour de services/admin-order-refund.js::refundCancelledOrder. Le corps
+  // varie selon dryRun/cashMode (200 dry-run, 202 manual_required, 409 erreur,
+  // 200 succès financier) ; le shape documenté ici est le succès financier
+  // (dryRun=false, refund Stripe/wallet), testé dans
+  // tests/integration/admin-order-refund-payment-service.test.js.
+  '/api/admin/orders/{id}/refund': {
+    post: { fields: ['success','order_id','reference','refund','status','payment_status'], source: 'test' }
+  },
+  // POST /api/admin/purchasing/repair-ordered-without-pos : routes/admin/system.js
+  // fait `res.status(result.status).json(result.body)` — passthrough de
+  // services/repair-ordered-without-purchase-orders.js. Shape documenté :
+  // succès non-dry-run (200, tous les candidats réparés), testé dans
+  // tests/unit/repair-ordered-without-purchase-orders.test.js.
+  '/api/admin/purchasing/repair-ordered-without-pos': {
+    post: { fields: ['dry_run','scanned','repaired_count','failed_count','repaired','failed'], source: 'test' }
   },
 };
 

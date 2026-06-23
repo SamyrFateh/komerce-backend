@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 419,
+    "total_routes": 421,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5386,6 +5386,55 @@
         }
       }
     },
+    "/api/admin/purchasing/repair-ordered-without-pos": {
+      "post": {
+        "summary": "POST /api/admin/purchasing/repair-ordered-without-pos",
+        "x-route-file": "routes/admin.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "dry_run": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "scanned": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "repaired_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "failed_count": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "repaired": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "failed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/orders": {
       "get": {
         "summary": "GET /api/admin/orders",
@@ -5448,6 +5497,65 @@
                       "x-observed": true
                     },
                     "deleted": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/refund": {
+      "post": {
+        "summary": "POST /api/admin/orders/{id}/refund",
+        "x-route-file": "routes/admin.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reference": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "refund": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payment_status": {
                       "type": "string",
                       "x-observed": true
                     }

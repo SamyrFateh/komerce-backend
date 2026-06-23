@@ -478,8 +478,10 @@ async function runStartupMigrations({ db, fixAdminHash, fixMissingSchema, runAll
   try {
     await db.query(`
       ALTER TABLE products ADD COLUMN IF NOT EXISTS sourcing_rail TEXT;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price_kmf INTEGER;
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_g INTEGER;
+      -- cost_price_kmf / weight_g RETIRÉS d'ici le 2026-06-24 : dépréciées
+      -- depuis la migration 087 (Lot C5), supprimées par la migration 089
+      -- (garde-fou date, exécutable à partir du 2026-07-08). Les recréer ici
+      -- au boot annulerait silencieusement le drop à chaque redémarrage.
       ALTER TABLE products ADD COLUMN IF NOT EXISTS volume_class TEXT;
       ALTER TABLE products ADD COLUMN IF NOT EXISTS fragility TEXT;
       ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_mode TEXT;

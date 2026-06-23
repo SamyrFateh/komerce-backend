@@ -78,27 +78,18 @@ async function runChecks(client) {
     }
   }
 
-  // ── S-02 : Divergence entre colonnes coût dupliquées ───────────────────────
-  // (quand les deux sont renseignées et non nulles, elles doivent être égales)
-  {
-    const { rows } = await client.query(`
-      SELECT id, name, cost_kmf, cost_price_kmf,
-             ABS(cost_kmf - cost_price_kmf) AS diff_kmf
-      FROM products
-      WHERE cost_kmf IS NOT NULL AND cost_kmf > 0
-        AND cost_price_kmf IS NOT NULL AND cost_price_kmf > 0
-        AND cost_kmf <> cost_price_kmf
-      ORDER BY diff_kmf DESC
-      LIMIT 20
-    `);
-    if (rows.length > 0) {
-      violation(
-        'S-02',
-        `${rows.length} produits avec cost_kmf ≠ cost_price_kmf (divergence doublon — Lot C5 requis)`,
-        rows.map(r => `${r.id} "${r.name}" cost_kmf=${r.cost_kmf} cost_price_kmf=${r.cost_price_kmf} (diff=${r.diff_kmf}KMF)`)
-      );
-    }
-  }
+  // ── S-02 : RETIRÉ 2026-06-24 (post Lot C5) ──────────────────────────────────
+  // Ce check détectait cost_kmf ≠ cost_price_kmf comme un bug de doublon.
+  // Depuis la migration 087 (Lot C5), cost_price_kmf est explicitement
+  // dépréciée et n'est plus jamais écrite par le code applicatif
+  // (services/sourcing-mutations.js::LEGACY_FIELD_MAP — écriture unique sur
+  // cost_kmf). Conséquence directe et VOULUE : dès qu'un produit voit son
+  // cost_kmf modifié après la migration, cost_price_kmf reste figée à
+  // l'ancienne valeur du backfill → divergence garantie, pas une anomalie.
+  // Garder ce check en violation bloquante aurait fait planter
+  // `npm run sourcing:audit` (porte bloquante, voir STATUS.md §11) sur le
+  // premier produit légitimement mis à jour. Aucun remplacement : rien ne
+  // doit plus jamais écrire cost_price_kmf, donc rien à surveiller ici.
 
   // ── S-03 : Poids négatif ou aberrant (> 100 kg) ────────────────────────────
   {
@@ -186,29 +177,12 @@ async function runChecks(client) {
     }
   }
 
-  // ── S-07 : Divergence colonnes poids dupliquées ────────────────────────────
-  // (warn — même pattern que S-02 mais pour le poids, moins critique car
-  //  le pricing utilise weight_kg directement)
-  {
-    const { rows } = await client.query(`
-      SELECT id, name, weight_kg,
-             weight_g,
-             ABS(ROUND(weight_kg::numeric * 1000) - weight_g) AS diff_g
-      FROM products
-      WHERE weight_kg IS NOT NULL AND weight_kg > 0
-        AND weight_g IS NOT NULL AND weight_g > 0
-        AND ABS(ROUND(weight_kg::numeric * 1000) - weight_g) > 10
-      ORDER BY diff_g DESC
-      LIMIT 20
-    `);
-    if (rows.length > 0) {
-      warning(
-        'S-07',
-        `${rows.length} produits avec weight_kg et weight_g divergents (diff > 10g — Lot C5 requis)`,
-        rows.map(r => `${r.id} "${r.name}" weight_kg=${r.weight_kg} weight_g=${r.weight_g} (diff=${r.diff_g}g)`)
-      );
-    }
-  }
+  // ── S-07 : RETIRÉ 2026-06-24 (post Lot C5) ──────────────────────────────────
+  // Même raison que S-02 : weight_g est dépréciée depuis la migration 087,
+  // plus jamais écrite (LEGACY_FIELD_MAP mappe weight_g → weight_kg en entrée,
+  // n'écrit que weight_kg en sortie). Divergence après mise à jour de
+  // weight_kg = comportement attendu, pas un signal utile. Retiré pour ne
+  // pas faire bruiter `npm run sourcing:audit:observe` sans raison.
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
