@@ -507,7 +507,7 @@ Notes d'implémentation :
 
 **P2 — post-Golive H+1 semaine** :
 
-9. **AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).
+9. ~~**AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).~~ — ✅ **clôturé 2026-06-23** (`authenticate()` ne fait plus que auth ; routes ajoutées dans `admin/orders.js` et `admin/system.js` ; handlers collectifs supprimés ZG-3).
 10. **GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).
 11. ~~**GOV-06** (5 tests E2E parcours critiques).~~ — ✅ **clôturé 2026-06-23** (`e2e-critical-flows.test.js`, 12 assertions, 5 parcours, câblage CI automatique).
 12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
@@ -548,11 +548,21 @@ Statut : **clôturé par inspection code — 2026-06-23**.
 
 ### AUD-05 — `auth.js` god-middleware (10 handlers métier inline)
 
-Statut : **ouvert — priorité P2 (dette architecturale)**.
+Statut : **clôturé — 2026-06-23**.
 
-`middleware/auth.js` contient 10 fonctions `is*Request()` + 10 `handle*()`. Le middleware intercepte les requêtes après auth et exécute la logique métier avant le routeur Express.
-Risque : regex de route-matching fragile, middlewares de route contournés, testabilité réduite.
-DoD : `authenticate()` ne fait que extraire/vérifier/charger user/next.
+`authenticate()` ne fait plus que extraire/vérifier/charger `req.user` puis appeler `next()`. Les 10 fonctions `is*Request()` et 10 `handle*()` ont été supprimées du middleware.
+
+Répartition des handlers :
+- `handleSafePickupCash` → déjà dans `routes/pickup-secret.js` (route propre, suppression de l'intercepteur).
+- `handleSafeQrVerify` → déjà dans `routes/scans.js` (route propre, suppression de l'intercepteur).
+- `handleIdempotentStripeIntent` → déjà dans `routes/payments.js` (route propre, suppression de l'intercepteur).
+- `handleTransactionalPoReceive` → déjà dans `routes/purchasing.js` (route propre, suppression de l'intercepteur).
+- `handlePricingApplyPrice` + `handlePricingApplyAll` → déjà dans `routes/pricing.js` (routes propres, suppression des intercepteurs).
+- `handleAdminOrderRefund` → ajouté dans `routes/admin/orders.js` : `POST /orders/:id/refund`.
+- `handlePurchasingRepair` → ajouté dans `routes/admin/system.js` : `POST /purchasing/repair-ordered-without-pos`.
+- `handleCollectiveReadyRepair` + `handleCollectiveStockReservationRepair` → supprimés (système `collective_workspaces` démonté ZG-3, 2026-05-30).
+
+DoD satisfait.
 
 ### AUD-06 — Dashboard admin : pas de sanitization HTML
 

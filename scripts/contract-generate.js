@@ -210,7 +210,8 @@ const KNOWN_RESPONSES = {
   // 'test', mais la colonne réelle (SELECT u.full_name ...) est 'full_name'. 'name'
   // n'existe pas dans la réponse. Aucun test jest sur ce corps → 'route-read'.
   '/api/auth/me': {
-    get: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'route-read' }
+    get: { fields: ['id','full_name','email','phone','role','country','currency_pref'], source: 'route-read' },
+    put: { fields: ['user'], source: 'route-read' }
   },
   // POST /api/auth/register : `res.status(201).json({ user: userResponse(user) })`,
   // même forme que /login. Pas de test sur le corps de succès (tests/integration/
@@ -266,8 +267,9 @@ const KNOWN_RESPONSES = {
   // + `variants` ajouté si has_variants. PUT /api/products/{id} : même passthrough
   // result.body que POST (updateProduct → `UPDATE ... RETURNING *`). Pas de test → 'route-read'.
   '/api/products/{id}': {
-    get: { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available','variants'], source: 'route-read' },
-    put: { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available'], source: 'route-read' }
+    get:    { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available','variants'], source: 'route-read' },
+    put:    { fields: ['id','name','category','price_kmf','sku','product_ref','stock','is_active','is_available'], source: 'route-read' },
+    delete: { fields: ['deleted'], source: 'route-read' }
   },
   // GET /api/health : tests/integration/api.test.js + admin-authz-probe.test.js
   '/api/health': {
@@ -316,6 +318,1380 @@ const KNOWN_RESPONSES = {
   // assertions sur result.alerts et result.total) → 'test'.
   '/api/admin/radar/alerts': {
     get: { fields: ['generated_at','total','critical','signal','alerts'], source: 'test' }
+  },
+
+  // ── L5 (burn-down UNKNOWN) — blast-radius : orders / payments / admin / cash / pickup / scans ─
+
+  // orders/list.js
+  '/api/orders/relais': {
+    get: { fields: ['summary','orders'], source: 'route-read' }
+  },
+  '/api/orders/problems': {
+    get: { fields: ['health_score','total','by_category','problems'], source: 'route-read' }
+  },
+  '/api/orders/credits': {
+    get: { fields: ['total_kmf','credits'], source: 'route-read' }
+  },
+  // orders/qr.js → res.json({ success, token, expiration, qr_payload })
+  '/api/orders/{id}/qr-token': {
+    post: { fields: ['success','token','expiration','qr_payload'], source: 'route-read' }
+  },
+  // orders/detail.js → GET /retrait/:token → res.json(rows) (array of order items)
+  '/api/orders/retrait/{token}': {
+    get: { fields: ['id','reference','status','items'], source: 'route-read' }
+  },
+  // orders/status.js → POST mark-availability → res.json({ success: true, order: updated })
+  '/api/orders/{id}/mark-availability': {
+    post: { fields: ['success','order'], source: 'route-read' }
+  },
+  // orders/status.js → POST partial-ship → res.json({ success: true, order: updated })
+  '/api/orders/{id}/partial-ship': {
+    post: { fields: ['success','order'], source: 'route-read' }
+  },
+  // orders/detail.js → GET /sub-orders → res.json(rows)
+  '/api/orders/{id}/sub-orders': {
+    get: { fields: ['id','reference','status','parent_order_id'], source: 'route-read' }
+  },
+  // orders/parcels.js → GET → res.json({ order_reference, order_status, parcels })
+  '/api/orders/{id}/parcels': {
+    get: { fields: ['order_reference','order_status','parcels'], source: 'route-read' }
+  },
+  // orders/parcels.js → PATCH sub-orders/:subId/status → res.status(status).json(body)
+  '/api/orders/parcels/{parcelId}/status': {
+    patch: { fields: ['success','status'], source: 'route-read' }
+  },
+  '/api/orders/sub-orders/{subId}/status': {
+    patch: { fields: ['success','status'], source: 'route-read' }
+  },
+  // orders → POST cancel-backorder → res.status(status).json(body)
+  '/api/orders/{id}/cancel-backorder': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  // orders/status.js → PATCH cost → res.json({ success: true, order: updated })
+  '/api/orders/{id}/cost': {
+    patch: { fields: ['success','order'], source: 'route-read' }
+  },
+  // orders/detail.js → GET /:ref → res.json(order)
+  '/api/orders/{ref}': {
+    get: { fields: ['id','reference','status','total_kmf','payment_mode','payment_status','items','parcels'], source: 'route-read' }
+  },
+  // orders/detail.js → GET /:id/history → res.json(rows)
+  '/api/orders/{id}/history': {
+    get: { fields: ['id','order_id','status','note','changed_by','created_at'], source: 'route-read' }
+  },
+
+  // payments.js
+  '/api/payments/stripe/webhook': {
+    post: { fields: ['received'], source: 'route-read' }
+  },
+  '/api/payments/rates': {
+    get: { fields: ['eur_kmf','aed_kmf','source'], source: 'route-read' }
+  },
+  '/api/payments/config': {
+    get: { fields: ['publishable_key'], source: 'route-read' }
+  },
+
+  // admin.js / admin/*.js
+  '/api/admin/customs': {
+    get: { fields: ['history','by_category','anomalies','period_days'], source: 'route-read' }
+  },
+  '/api/admin/partners': {
+    get: { fields: ['id','name','type','contact'], source: 'route-read' },
+    post: { fields: ['id','name','type','contact'], source: 'route-read' }
+  },
+  '/api/admin/partners/stats': {
+    get: { fields: ['partner','stats'], source: 'route-read' }
+  },
+  '/api/admin/partners/{id}': {
+    get: { fields: ['partner','stats'], source: 'route-read' },
+    put: { fields: ['id','name','type','contact'], source: 'route-read' },
+    delete: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/admin/users': {
+    get: { fields: ['users','total'], source: 'route-read' },
+    post: { fields: ['success','user'], source: 'route-read' }
+  },
+  '/api/admin/users/{id}/role': {
+    put: { fields: ['success','user'], source: 'route-read' }
+  },
+  '/api/admin/users/{id}/password': {
+    put: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/admin/users/{id}': {
+    delete: { fields: ['success','message','type','deleted'], source: 'route-read' }
+  },
+  '/api/admin/margins': {
+    get: { fields: ['orders','summary'], source: 'route-read' }
+  },
+  '/api/admin/alerts': {
+    get: { fields: ['alerts','total'], source: 'route-read' }
+  },
+  '/api/admin/counts': {
+    get: { fields: ['orders','order_items','products','relais','users_non_admin'], source: 'route-read' }
+  },
+  '/api/admin/reset': {
+    post: { fields: ['success','message','mode','deleted'], source: 'route-read' }
+  },
+  '/api/admin/seed-test': {
+    post: { fields: ['success','message','summary'], source: 'route-read' }
+  },
+  '/api/admin/orders/{id}': {
+    delete: { fields: ['success','message','deleted'], source: 'route-read' }
+  },
+
+  // admin-dashboard.js
+  '/api/admin/dashboard': {
+    get: { fields: ['metrics','alerts','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/control-tower': {
+    get: { fields: ['orders','parcels','alerts','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/costing': {
+    get: { fields: ['orders','summary','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/logistics': {
+    get: { fields: ['parcels','relais','summary','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/event-workspaces': {
+    get: { fields: ['workspaces','total'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/unified': {
+    get: { fields: ['orders','parcels','metrics','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/dashboard/cache/clear': {
+    post: { fields: ['ok','cleared','prefix'], source: 'route-read' }
+  },
+
+  // purchasing.js
+  '/api/purchasing': {
+    get: { fields: ['purchase_orders','total'], source: 'route-read' }
+  },
+  '/api/purchasing/suppliers': {
+    get: { fields: ['id','name','platform','auto_order','contact_phone'], source: 'route-read' },
+    post: { fields: ['id','name','platform','contact_phone'], source: 'route-read' }
+  },
+  '/api/purchasing/suppliers/{id}/map': {
+    post: { fields: ['id','product_id','supplier_id','supplier_sku','supplier_price_aed'], source: 'route-read' }
+  },
+  '/api/purchasing/suppliers/{id}': {
+    delete: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/purchasing/order/{order_id}/completeness': {
+    get: { fields: ['order_id','complete','any_pending','total_ordered','total_received','purchase_orders'], source: 'route-read' }
+  },
+  '/api/purchasing/{order_id}': {
+    get: { fields: ['id','status','supplier_id','qty','received_qty','supplier_name'], source: 'route-read' }
+  },
+  '/api/purchasing/{order_id}/confirm': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/purchasing/{id}/receive': {
+    post: { fields: ['success','status','received_qty'], source: 'route-read' }
+  },
+  '/api/purchasing/po/{po_id}': {
+    delete: { fields: ['success','message'], source: 'route-read' }
+  },
+
+  // cash.js — routes/cash.js, réponses lues directement dans les handlers
+  '/api/cash/collect/{orderId}': {
+    post: { fields: ['success','message','collection','payment_cycle'], source: 'route-read' }
+  },
+  '/api/cash/collections': {
+    get: { fields: ['collections','total','page','pages'], source: 'route-read' }
+  },
+  '/api/cash/deposit': {
+    post: { fields: ['success','message','deposit'], source: 'route-read' }
+  },
+  '/api/cash/deposits': {
+    get: { fields: ['deposits','total','page','pages'], source: 'route-read' }
+  },
+  '/api/cash/deposits/{id}/verify': {
+    post: { fields: ['success','message','deposit'], source: 'route-read' }
+  },
+  '/api/cash/deposits/{id}/dispute': {
+    post: { fields: ['success','message','deposit'], source: 'route-read' }
+  },
+  '/api/cash/reconciliation': {
+    get: { fields: ['period','generated_at','totals','agents'], source: 'route-read' }
+  },
+  '/api/cash/reconciliation/agents': {
+    get: { fields: ['generated_at','agents'], source: 'route-read' }
+  },
+  '/api/cash/uncollected': {
+    get: { fields: ['hours_threshold','count','total_missing_kmf','orders'], source: 'route-read' }
+  },
+
+  // pickup-secret.js — réponses lues dans les handlers
+  '/api/pickup/pay-cash/{orderId}': {
+    post: { fields: ['success','message','code','print_token','order_ref','amount_kmf'], source: 'route-read' }
+  },
+  // GET /api/pickup/receipt/:orderId — retourne du HTML imprimable (reçu de paiement),
+  // pas du JSON. Le print_token à usage unique est validé côté serveur. Source: route-read.
+  '/api/pickup/receipt/{orderId}': {
+    get: { fields: ['_html_only'], source: 'route-read' }
+  },
+  '/api/pickup/verify/{orderId}': {
+    post: { fields: ['success','message','order_ref'], source: 'route-read' }
+  },
+  '/api/pickup/collect/{orderId}': {
+    post: { fields: ['success','message','order_ref'], source: 'route-read' }
+  },
+  '/api/pickup/regenerate/{orderId}': {
+    post: { fields: ['success','message','code','order_ref'], source: 'route-read' }
+  },
+  '/api/pickup/status/{orderId}': {
+    get: { fields: ['order_ref','status','payment_status','total_kmf','client_name','tracking'], source: 'route-read' }
+  },
+  '/api/pickup/reveal-once/{orderId}': {
+    get: { fields: ['order_ref','status','payment_status','total_kmf'], source: 'route-read' }
+  },
+
+  // scans.js — réponses via scan-operations.js (pattern passthrough)
+  '/api/scans': {
+    post: { fields: ['scan_id','order_id','order_reference','new_status','step','sms_triggered','is_anomaly'], source: 'route-read' }
+  },
+  '/api/scans/collect': {
+    post: { fields: ['message','reference','recipient','relais','collected_at'], source: 'route-read' }
+  },
+  '/api/scans/hub/receive': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/scans/hub/pending': {
+    get: { fields: ['count','orders'], source: 'route-read' }
+  },
+  '/api/scans/verify-qr': {
+    post: { fields: ['success','message','order_ref'], source: 'route-read' }
+  },
+  '/api/scans/{order_id}': {
+    get: { fields: ['id','order_id','event_type','scan_code','created_at'], source: 'route-read' }
+  },
+
+  // admin-costing.js — additional missing routes
+  '/api/admin/costing/orders/{orderId}': {
+    get: { fields: ['order','costing','items'], source: 'route-read' }
+  },
+  '/api/admin/costing/shipments/{id}/allocate': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/admin/costing/parcels/{id}/allocate': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/admin/costing/orders/{id}/lock-purchase': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/admin/costing/monthly-fixed/{yearMonth}': {
+    post: { fields: ['success','message','period'], source: 'route-read' }
+  },
+  '/api/admin/costing/recalibration-proposal': {
+    get: { fields: ['proposal','generated_at'], source: 'route-read' }
+  },
+  '/api/admin/costing/recalibration-apply': {
+    post: { fields: ['success','applied','message'], source: 'route-read' }
+  },
+
+  // ── L6 (burn-down UNKNOWN) — shared-carts / dashboard / sourcing / hub / pricing / parcels / auth / misc ──
+
+  // shared-cart-cash.js
+  '/api/shared-carts/public/{token}/contributions/cash': {
+    post: { fields: ['ok','error','code','contribution'], source: 'route-read' }
+  },
+  '/api/shared-carts/contributions/{id}/confirm-cash': {
+    post: { fields: ['ok','already_confirmed','contribution','cart'], source: 'route-read' }
+  },
+  '/api/shared-carts/public/{token}/estimations': {
+    get:  { fields: ['estimations'], source: 'route-read' },
+    post: { fields: ['ok','updated','estimation','message'], source: 'route-read' }
+  },
+  '/api/shared-carts/public/{token}/estimations/{estimationId}': {
+    delete: { fields: ['ok','message'], source: 'route-read' }
+  },
+  '/api/shared-carts/public/{token}/estimations/by-phone': {
+    get: { fields: ['estimation'], source: 'route-read' }
+  },
+  '/api/shared-carts/public/{token}/contributions': {
+    post: { fields: ['checkout_url','session_id','contribution_id','payable_amount_kmf','capped'], source: 'route-read' }
+  },
+  '/api/shared-carts/from-cart-items': {
+    post: { fields: ['shared_cart_id','token','share_url','total_kmf'], source: 'route-read' }
+  },
+  '/api/shared-carts/from-basket': {
+    post: { fields: ['shared_cart_id','token','share_url','total_kmf'], source: 'route-read' }
+  },
+  '/api/shared-carts/from-order': {
+    post: { fields: ['shared_cart_id','token','share_url','total_kmf'], source: 'route-read' }
+  },
+  '/api/shared-carts/mine': {
+    get: { fields: ['carts'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}': {
+    get: { fields: ['cart','share_url'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/as-cart-items': {
+    get: { fields: ['shared_cart_id','title','total_kmf','cart_items'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/items': {
+    put: { fields: ['ok','cart','items','items_count'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/close': {
+    post: { fields: ['ok','label','message','cart'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/awaiting-choice/complete': {
+    post: { fields: ['order_id','order_reference','prepaid_kmf','remaining_cash_kmf'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/awaiting-choice/adjust': {
+    post: { fields: ['ok','label','message','cart'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/extend-window': {
+    post: { fields: ['ok','message','cart'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/awaiting-choice/cancel': {
+    post: { fields: ['ok','cart','refunds'], source: 'route-read' }
+  },
+  '/api/shared-carts/{id}/cancel': {
+    post: { fields: ['ok','cart','refunds'], source: 'route-read' }
+  },
+  '/api/shared-carts/stripe/webhook': {
+    post: { fields: ['received'], source: 'route-read' }
+  },
+
+  // shared-cart-refund-admin.js (adminRouter)
+  '/api/admin/shared-carts': {
+    get: { fields: ['carts','count'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/refund-queue': {
+    get: { fields: ['refund_queue'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/refund-queue/{contributionId}/mark-refunded': {
+    post: { fields: ['ok','contribution'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/{id}': {
+    get: { fields: ['cart'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/{id}/expire': {
+    post: { fields: ['ok','cart'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/{id}/extend': {
+    post: { fields: ['ok','cart'], source: 'route-read' }
+  },
+  '/api/admin/shared-carts/{id}/note': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // dashboard.js (delegates to sub-routers)
+  '/api/dashboard/ops': {
+    get: { fields: ['activite','commandes_aujourd_hui','commandes_en_cours'], source: 'route-read' }
+  },
+  '/api/dashboard/pilotage': {
+    get: { fields: ['periode','genere_le','taux','taux_history','volume','total','annulees'], source: 'route-read' }
+  },
+  '/api/dashboard/pipeline': {
+    get: { fields: ['pipeline'], source: 'route-read' }
+  },
+  '/api/dashboard/retards': {
+    get: { fields: ['retards'], source: 'route-read' }
+  },
+  '/api/dashboard/forecast': {
+    get: { fields: ['kpi','total_orders'], source: 'route-read' }
+  },
+  '/api/dashboard/global': {
+    get: { fields: ['panier_moyen_kmf','nb_clients','total_orders','active_orders','completed_orders','ca_total_kmf','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/stats': {
+    get: { fields: ['panier_moyen_kmf','nb_clients','total_orders','active_orders','completed_orders','ca_total_kmf','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/finance': {
+    get: { fields: ['period','taux','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/annulations-parcels': {
+    get: { fields: ['period','annulations'], source: 'route-read' }
+  },
+  '/api/dashboard/payments': {
+    get: { fields: ['period','taux','cash'], source: 'route-read' }
+  },
+  '/api/dashboard/sales': {
+    get: { fields: ['period','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/clients': {
+    get: { fields: ['clients'], source: 'route-read' }
+  },
+  '/api/dashboard/clients/list': {
+    get: { fields: ['total','total_pages','filters'], source: 'route-read' }
+  },
+  '/api/dashboard/clients/detail': {
+    get: { fields: ['profile','nb_orders_total','nb_orders_valid','nb_orders_cancelled','ltv_kmf'], source: 'route-read' }
+  },
+  '/api/dashboard/history': {
+    get: { fields: ['en_transit','a_remettre','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/relais': {
+    get: { fields: ['en_transit','a_remettre','kpi'], source: 'route-read' }
+  },
+  '/api/dashboard/hub-dubai': {
+    get: { fields: ['hub'], source: 'route-read' }
+  },
+  '/api/dashboard/hub': {
+    get: { fields: ['hub'], source: 'route-read' }
+  },
+
+  // sourcing-engine.js
+  '/api/admin/sourcing/analysis': {
+    get: { fields: ['analysis'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/analysis/{id}': {
+    get: { fields: ['analysis'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/synthesis': {
+    get: { fields: ['synthesis'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/products/{id}': {
+    put: { fields: ['product'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/bulk-rail': {
+    post: { fields: ['updated'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/config': {
+    get: { fields: ['config'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/products/{id}/variants': {
+    get:  { fields: ['product_id','has_variants','variants'], source: 'route-read' },
+    put:  { fields: ['variants'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/connectors': {
+    get: { fields: ['connectors'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/catalogs/import': {
+    post: { fields: ['imported'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/catalogs': {
+    get: { fields: ['catalogs'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates': {
+    get: { fields: ['candidates'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/{id}': {
+    get: { fields: ['candidate'], source: 'route-read' },
+    put: { fields: ['candidate'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/{id}/scan': {
+    post: { fields: ['candidate'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/scan-batch': {
+    post: { fields: ['scanned'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/{id}/import-product': {
+    post: { fields: ['product'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/{id}/reject': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/admin/sourcing/candidates/{id}/watchlist': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // hub-dashboard.js
+  '/api/hub-dash/dashboard': {
+    get: { fields: ['dashboard'], source: 'route-read' }
+  },
+  '/api/hub-dash/queue': {
+    get: { fields: ['queue'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}': {
+    get: { fields: ['order'], source: 'route-read' }
+  },
+  '/api/hub-dash/validate/{id}': {
+    get: { fields: ['validation'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/start-prep': {
+    post: { fields: ['message','status'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/create-parcel': {
+    post: { fields: ['message','parcel','items_assigned'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/auto-prepare': {
+    post: { fields: ['message','parcel','items_assigned'], source: 'route-read' }
+  },
+  '/api/hub-dash/parcels/{id}/add-item': {
+    post: { fields: ['message','item'], source: 'route-read' }
+  },
+  '/api/hub-dash/parcels/{id}/remove-item': {
+    post: { fields: ['message','deleted'], source: 'route-read' }
+  },
+  '/api/hub-dash/parcels/{id}/ready': {
+    post: { fields: ['message','status'], source: 'route-read' }
+  },
+  '/api/hub-dash/parcels/{id}/ship': {
+    post: { fields: ['message','status','transport'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/incident': {
+    post: { fields: ['message','incident'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/escalate': {
+    post: { fields: ['message','incident','priority'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/comment': {
+    post: { fields: ['message','comment'], source: 'route-read' }
+  },
+  '/api/hub-dash/orders/{id}/backorder': {
+    post: { fields: ['message','status'], source: 'route-read' }
+  },
+
+  // pricing.js
+  '/api/pricing/calculate': {
+    post: { fields: ['price_kmf','breakdown'], source: 'route-read' }
+  },
+  '/api/pricing/flow': {
+    post: { fields: ['flow'], source: 'route-read' }
+  },
+  '/api/pricing/benchmarks': {
+    get: { fields: ['count','benchmarks'], source: 'route-read' },
+    put: { fields: ['benchmark'], source: 'route-read' }
+  },
+  '/api/pricing/benchmarks/{category}/{cost_family}': {
+    delete: { fields: ['deleted'], source: 'route-read' }
+  },
+  '/api/pricing/couture': {
+    post: { fields: ['price_kmf'], source: 'route-read' }
+  },
+  '/api/pricing/rates': {
+    get: { fields: ['eur_kmf','aed_kmf'], source: 'route-read' },
+    put: { fields: ['eur_kmf','aed_kmf'], source: 'route-read' }
+  },
+  '/api/pricing/recommend': {
+    post: { fields: ['recommended_price','health_status'], source: 'route-read' }
+  },
+  '/api/pricing/recommend-batch': {
+    post: { fields: ['items'], source: 'route-read' }
+  },
+  '/api/pricing/apply-price/{product_id}': {
+    put: { fields: ['status','recommended_price','health_status'], source: 'route-read' }
+  },
+  '/api/pricing/apply-all': {
+    put: { fields: ['applied','skipped'], source: 'route-read' }
+  },
+  '/api/pricing/benchmarks-gap': {
+    get: { fields: ['benchmarks'], source: 'route-read' }
+  },
+  '/api/pricing/dashboard': {
+    get: { fields: ['dashboard'], source: 'route-read' }
+  },
+
+  // parcel-api-v2 (routes/parcel-api-v2/read.js + scans.js)
+  '/api/v2/parcels': {
+    get: { fields: ['count','parcels'], source: 'route-read' }
+  },
+  '/api/v2/parcels/kpis': {
+    get: { fields: ['total','draft','preparation','shipped','delivered'], source: 'route-read' }
+  },
+  '/api/v2/parcels/alerts': {
+    get: { fields: ['count','alerts','operational'], source: 'route-read' }
+  },
+  '/api/v2/parcels/critical': {
+    get: { fields: ['count','parcels'], source: 'route-read' }
+  },
+  '/api/v2/parcels/reconciliation': {
+    get: { fields: ['summary','parcels'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{ref}': {
+    get: { fields: ['id','reference','status','type','destination_island'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{ref}/timeline': {
+    get: { fields: ['reference','status','eta','scans','next_expected_step','steps'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{ref}/scan': {
+    post: { fields: ['success','scan'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{ref}/label': {
+    get: { fields: ['label_url'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{ref}/detail': {
+    get: { fields: ['parcel'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{id}': {
+    get: { fields: ['id','reference','status','type'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{id}/scans': {
+    get: { fields: ['scans'], source: 'route-read' }
+  },
+  '/api/v2/parcels/{id}/orders': {
+    get: { fields: ['orders'], source: 'route-read' }
+  },
+
+  // hub.js
+  '/api/hub/scan': {
+    post: { fields: ['data','total'], source: 'route-read' }
+  },
+  '/api/hub/pack': {
+    post: { fields: ['data','total'], source: 'route-read' }
+  },
+  '/api/hub/seal': {
+    post: { fields: ['data','total'], source: 'route-read' }
+  },
+  '/api/hub/batch-scan': {
+    post: { fields: ['data','total'], source: 'route-read' }
+  },
+  '/api/hub/search': {
+    get: { fields: ['data','total'], source: 'route-read' }
+  },
+  '/api/hub/stats/week': {
+    get: { fields: ['daily','summary'], source: 'route-read' }
+  },
+  '/api/hub/pending': {
+    get: { fields: ['data','count'], source: 'route-read' }
+  },
+  '/api/hub/today': {
+    get: { fields: ['data','count'], source: 'route-read' }
+  },
+  '/api/hub/orders/mark-ordered': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/hub/auto-distribute': {
+    post: { fields: ['distributed'], source: 'route-read' },
+    get:  { fields: ['proposals'], source: 'route-read' }
+  },
+  '/api/hub/auto-distribute/cleanup': {
+    post: { fields: ['cleaned'], source: 'route-read' }
+  },
+
+  // economic-engine.js
+  '/api/admin/economic/executive': {
+    get: { fields: ['executive'], source: 'route-read' }
+  },
+  '/api/admin/economic/variables': {
+    get: { fields: ['variables'], source: 'route-read' }
+  },
+  '/api/admin/economic/variables/{key}': {
+    put: { fields: ['variable'], source: 'route-read' }
+  },
+  '/api/admin/economic/charges': {
+    get:  { fields: ['charges'], source: 'route-read' },
+    post: { fields: ['charge'], source: 'route-read' }
+  },
+  '/api/admin/economic/charges/{id}': {
+    put:    { fields: ['charge'], source: 'route-read' },
+    delete: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/admin/economic/charges/{id}/toggle': {
+    put: { fields: ['charge'], source: 'route-read' }
+  },
+  '/api/admin/economic/coherence': {
+    get: { fields: ['coherence'], source: 'route-read' }
+  },
+  '/api/admin/economic/history': {
+    get: { fields: ['history'], source: 'route-read' }
+  },
+  '/api/admin/economic/redistribute': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // parcels.js
+  '/api/parcels': {
+    get:  { fields: ['data','pagination'], source: 'route-read' },
+    post: { fields: ['parcel_id','external_code','link_rule_triggered','order'], source: 'route-read' }
+  },
+  '/api/parcels/{ref}': {
+    get: { fields: ['parcel'], source: 'route-read' }
+  },
+  '/api/parcels/{ref}/events': {
+    get: { fields: ['parcel_id','events','count'], source: 'route-read' }
+  },
+  '/api/parcels/{id}/status': {
+    patch: { fields: ['parcel'], source: 'route-read' }
+  },
+  '/api/parcels/{id}/weight': {
+    post: { fields: ['parcel_id','external_code','weight_kg','previous_weight_kg'], source: 'route-read' }
+  },
+  '/api/parcels/{id}/verify-seal': {
+    post: { fields: ['parcel_id','external_code','seal_valid','message'], source: 'route-read' }
+  },
+  '/api/parcels/{id}/items': {
+    post: { fields: ['item'], source: 'route-read' }
+  },
+  '/api/parcels/{id}/items/{item_id}': {
+    delete: { fields: ['message','deleted'], source: 'route-read' }
+  },
+  '/api/parcels/optimize': {
+    post: { fields: ['order_id','computed_status','createdParcels','updatedParcels','unassignedItems'], source: 'route-read' }
+  },
+  '/api/parcels/bootstrap/{orderId}': {
+    post: { fields: ['order_id','created','assigned_items','unassigned_items'], source: 'route-read' }
+  },
+
+  // auth.js remaining — /api/auth/me GET is defined in L3; add PUT here without clobbering
+  // (JS object literal: last key wins, so we skip re-declaring this path and patch it below)
+  '/api/auth/guest-checkout': {
+    post: { fields: ['user'], source: 'route-read' }
+  },
+  '/api/auth/auto-register': {
+    post: { fields: ['user','created'], source: 'route-read' }
+  },
+  '/api/auth/orders-by-phone': {
+    post: { fields: ['token','name'], source: 'route-read' }
+  },
+  '/api/auth/logout': {
+    post: { fields: ['message'], source: 'route-read' }
+  },
+  '/api/auth/admin-reset': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/auth/magic-link': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/auth/magic-link/validate': {
+    get: { fields: ['user'], source: 'route-read' }
+  },
+  '/api/auth/orders': {
+    get: { fields: ['orders'], source: 'route-read' }
+  },
+  '/api/auth/invoices': {
+    get: { fields: ['invoices'], source: 'route-read' }
+  },
+
+  // simulator.js
+  '/api/simulator/start': {
+    post: { fields: ['message','running'], source: 'route-read' }
+  },
+  '/api/simulator/stop': {
+    post: { fields: ['message','running'], source: 'route-read' }
+  },
+  '/api/simulator/status': {
+    get: { fields: ['running'], source: 'route-read' }
+  },
+  '/api/simulator/journal': {
+    get: { fields: ['entries'], source: 'route-read' }
+  },
+  '/api/simulator/cleanup': {
+    post: { fields: ['message'], source: 'route-read' }
+  },
+  '/api/admin/simulator/start': {
+    post: { fields: ['message','running'], source: 'route-read' }
+  },
+  '/api/admin/simulator/stop': {
+    post: { fields: ['message','running'], source: 'route-read' }
+  },
+  '/api/admin/simulator/status': {
+    get: { fields: ['running'], source: 'route-read' }
+  },
+  '/api/admin/simulator/journal': {
+    get: { fields: ['entries'], source: 'route-read' }
+  },
+  '/api/admin/simulator/cleanup': {
+    post: { fields: ['message'], source: 'route-read' }
+  },
+
+  // admin-boutique-categories.js
+  '/api/admin/boutique-categories': {
+    get:  { fields: ['categories'], source: 'route-read' },
+    post: { fields: ['category'], source: 'route-read' }
+  },
+  '/api/admin/boutique-categories/{key}': {
+    get:    { fields: ['category'], source: 'route-read' },
+    put:    { fields: ['category'], source: 'route-read' },
+    delete: { fields: ['deactivated','category'], source: 'route-read' }
+  },
+  '/api/admin/boutique-categories/{key}/subcategories': {
+    get:  { fields: ['subcategories'], source: 'route-read' },
+    post: { fields: ['subcategory'], source: 'route-read' }
+  },
+  '/api/admin/boutique-categories/{key}/subcategories/{subKey}': {
+    put:    { fields: ['subcategory'], source: 'route-read' },
+    delete: { fields: ['deactivated','category'], source: 'route-read' }
+  },
+
+  // wallet.js
+  '/api/wallet': {
+    get: { fields: ['balance_kmf','user_id'], source: 'route-read' }
+  },
+  '/api/wallet/transactions': {
+    get: { fields: ['transactions'], source: 'route-read' }
+  },
+  '/api/wallet/apply': {
+    post: { fields: ['message','applied_kmf','remaining_to_pay'], source: 'route-read' }
+  },
+  '/api/wallet/remove': {
+    post: { fields: ['message','reversed_kmf','transaction'], source: 'route-read' }
+  },
+  '/api/wallet/admin': {
+    get: { fields: ['wallets'], source: 'route-read' }
+  },
+  '/api/wallet/admin/{userId}': {
+    get: { fields: ['wallet'], source: 'route-read' }
+  },
+  '/api/wallet/admin/credit': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/wallet/admin/order-credit/{orderId}': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/wallet/admin/reverse-lot': {
+    post: { fields: ['success','message','reversed_kmf'], source: 'route-read' }
+  },
+
+  // products.js remaining
+  '/api/products/categories': {
+    get: { fields: ['categories'], source: 'route-read' }
+  },
+  '/api/products/subcategories': {
+    get: { fields: ['subcategories'], source: 'route-read' }
+  },
+  // /api/products/{id} GET+PUT defined in L4 — only delete is new here (patched below)
+  '/api/products/{id}/image': {
+    post: { fields: ['image_url'], source: 'route-read' }
+  },
+  '/api/products/{id}/images': {
+    post: { fields: ['images'], source: 'route-read' }
+  },
+  '/api/products/{id}/variants': {
+    get: { fields: ['product_id','product_name','has_variants','variants'], source: 'route-read' },
+    put: { fields: ['variants'], source: 'route-read' }
+  },
+  '/api/products/{id}/variants/{variantId}': {
+    delete: { fields: ['deleted'], source: 'route-read' }
+  },
+
+  // admin-customs-shipments.js
+  '/api/admin/customs-shipments': {
+    get:  { fields: ['shipments'], source: 'route-read' },
+    post: { fields: ['shipment'], source: 'route-read' }
+  },
+  '/api/admin/customs-shipments/rates/effective': {
+    get: { fields: ['rates'], source: 'route-read' }
+  },
+  '/api/admin/customs-shipments/{id}': {
+    get:    { fields: ['shipment'], source: 'route-read' },
+    patch:  { fields: ['shipment'], source: 'route-read' },
+    delete: { fields: ['deleted'], source: 'route-read' }
+  },
+  '/api/admin/customs-shipments/{id}/deactivate': {
+    post: { fields: ['shipment'], source: 'route-read' }
+  },
+  '/api/admin/customs-shipments/{id}/activate': {
+    post: { fields: ['shipment'], source: 'route-read' }
+  },
+
+  // ops-api.js (v2 global ops)
+  '/api/v2/global': {
+    get: { fields: ['orders','parcels'], source: 'route-read' }
+  },
+  '/api/v2/incidents': {
+    get: { fields: ['incidents'], source: 'route-read' }
+  },
+  '/api/v2/reconciliation': {
+    get: { fields: ['reconciliation'], source: 'route-read' }
+  },
+  '/api/v2/reconciliation/summary': {
+    get: { fields: ['summary'], source: 'route-read' }
+  },
+  '/api/v2/alerts': {
+    get: { fields: ['alerts'], source: 'route-read' }
+  },
+  '/api/v2/alerts/{id}/acknowledge': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/v2/invoices': {
+    get: { fields: ['invoices'], source: 'route-read' }
+  },
+  '/api/v2/scan-events': {
+    get: { fields: ['parcel','scans','orders'], source: 'route-read' }
+  },
+
+  // inventory-api.js
+  '/api/hub/inventory/receive': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/hub/inventory/scan-assign': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/hub/inventory/propose-all': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/hub/inventory/proposals': {
+    get: { fields: ['ok','items'], source: 'route-read' }
+  },
+  '/api/hub/inventory/open-parcels': {
+    get: { fields: ['ok','parcels'], source: 'route-read' }
+  },
+  '/api/hub/inventory/buffer': {
+    get: { fields: ['ok','items'], source: 'route-read' }
+  },
+  '/api/hub/inventory/stats': {
+    get: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/hub/inventory/order/{id}/dispatch': {
+    get: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // admin-cost-components.js
+  '/api/admin/cost-components/_meta': {
+    get: { fields: ['meta'], source: 'route-read' }
+  },
+  '/api/admin/cost-components': {
+    get:  { fields: ['components','grouped','count'], source: 'route-read' },
+    post: { fields: ['component'], source: 'route-read' }
+  },
+  '/api/admin/cost-components/{id}': {
+    get:    { fields: ['component','events'], source: 'route-read' },
+    put:    { fields: ['component'], source: 'route-read' },
+    delete: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/admin/cost-components/{id}/toggle': {
+    post: { fields: ['component'], source: 'route-read' }
+  },
+
+  // signals.js
+  '/api/admin/signals': {
+    get: { fields: ['signals','total','limit','offset'], source: 'route-read' }
+  },
+  '/api/admin/signals/stats': {
+    get: { fields: ['total','bySeverity','byType','byFamily'], source: 'route-read' }
+  },
+  '/api/admin/signals/generate': {
+    post: { fields: ['ok','result'], source: 'route-read' }
+  },
+  '/api/admin/signals/{id}/acknowledge': {
+    post: { fields: ['ok','signal'], source: 'route-read' }
+  },
+  '/api/admin/signals/{id}/snooze': {
+    post: { fields: ['ok','signal'], source: 'route-read' }
+  },
+  '/api/admin/signals/{id}/resolve': {
+    post: { fields: ['ok','signal'], source: 'route-read' }
+  },
+  '/api/admin/signals/{id}': {
+    delete: { fields: ['ok','deleted'], source: 'route-read' }
+  },
+
+  // relay-dashboard.js
+  '/api/relay/dashboard': {
+    get: { fields: ['dashboard'], source: 'route-read' }
+  },
+  '/api/relay/orders': {
+    get: { fields: ['orders'], source: 'route-read' }
+  },
+  '/api/relay/orders/{id}': {
+    get: { fields: ['order'], source: 'route-read' }
+  },
+  '/api/relay/orders/{id}/incident': {
+    post: { fields: ['success','incident'], source: 'route-read' }
+  },
+  '/api/relay/orders/{id}/comment': {
+    post: { fields: ['success','comment'], source: 'route-read' }
+  },
+  '/api/relay/orders/{id}/escalate': {
+    post: { fields: ['success','incident','message'], source: 'route-read' }
+  },
+  '/api/relay/orders/{id}/client-absent': {
+    patch: { fields: ['success','message'], source: 'route-read' }
+  },
+
+  // modules.js
+  '/api/modules': {
+    get: { fields: ['modules','total'], source: 'route-read' }
+  },
+  '/api/modules/fabrics': {
+    get:  { fields: ['fabrics'], source: 'route-read' },
+    post: { fields: ['fabric'], source: 'route-read' }
+  },
+  '/api/modules/models': {
+    get:  { fields: ['models'], source: 'route-read' },
+    post: { fields: ['model'], source: 'route-read' }
+  },
+  '/api/modules/{type}': {
+    get: { fields: ['type','disponible','phase'], source: 'route-read' }
+  },
+  '/api/modules/price': {
+    post: { fields: ['module_type','module_order_type','unit_price_kmf','total_kmf'], source: 'route-read' }
+  },
+
+  // loyalty.js
+  '/api/loyalty/tiers': {
+    get: { fields: ['tiers'], source: 'route-read' }
+  },
+  '/api/loyalty/me': {
+    get: { fields: ['orders_count','tier_label','discount_pct'], source: 'route-read' }
+  },
+  '/api/loyalty/users': {
+    get: { fields: ['tiers','total_clients','tier_distribution','users'], source: 'route-read' }
+  },
+  '/api/loyalty/stats': {
+    get: { fields: ['stats'], source: 'route-read' }
+  },
+  '/api/loyalty/tiers/{id}': {
+    put: { fields: ['tier'], source: 'route-read' }
+  },
+  '/api/loyalty/recalculate/{user_id}': {
+    post: { fields: ['recalculated'], source: 'route-read' }
+  },
+  '/api/loyalty/recalculate-all': {
+    post: { fields: ['recalculated'], source: 'route-read' }
+  },
+
+  // unsold.js
+  '/api/unsold': {
+    get: { fields: ['items'], source: 'route-read' }
+  },
+  '/api/unsold/scan': {
+    post: { fields: ['scanned','items_created'], source: 'route-read' }
+  },
+  '/api/unsold/stats/summary': {
+    get: { fields: ['summary'], source: 'route-read' }
+  },
+  '/api/unsold/{id}': {
+    get:   { fields: ['item'], source: 'route-read' },
+    patch: { fields: ['item'], source: 'route-read' }
+  },
+  '/api/unsold/{id}/resolve': {
+    post: { fields: ['message','item'], source: 'route-read' }
+  },
+  '/api/unsold/{id}/whatsapp': {
+    get: { fields: ['message'], source: 'route-read' }
+  },
+
+  // admin-customs-categories.js
+  '/api/admin/customs-categories': {
+    get:  { fields: ['categories'], source: 'route-read' },
+    post: { fields: ['category'], source: 'route-read' }
+  },
+  '/api/admin/customs-categories/{key}': {
+    get:    { fields: ['category'], source: 'route-read' },
+    put:    { fields: ['category'], source: 'route-read' },
+    delete: { fields: ['deleted'], source: 'route-read' }
+  },
+  '/api/admin/customs-categories/{key}/toggle': {
+    put: { fields: ['category'], source: 'route-read' }
+  },
+
+  // admin-pricing-components.js
+  '/api/admin/pricing-components': {
+    get:  { fields: ['components'], source: 'route-read' },
+    post: { fields: ['component'], source: 'route-read' }
+  },
+  '/api/admin/pricing-components/{id}': {
+    get:    { fields: ['component'], source: 'route-read' },
+    put:    { fields: ['component'], source: 'route-read' },
+    delete: { fields: ['deleted','id','mode'], source: 'route-read' }
+  },
+  '/api/admin/pricing-components/{id}/toggle': {
+    put: { fields: ['component'], source: 'route-read' }
+  },
+
+  // admin-risk-provisions.js
+  '/api/admin/risk-provisions': {
+    get:  { fields: ['provisions'], source: 'route-read' },
+    post: { fields: ['provision'], source: 'route-read' }
+  },
+  '/api/admin/risk-provisions/{id}': {
+    get:    { fields: ['provision'], source: 'route-read' },
+    put:    { fields: ['provision'], source: 'route-read' },
+    delete: { fields: ['deleted','id','mode'], source: 'route-read' }
+  },
+  '/api/admin/risk-provisions/{id}/toggle': {
+    put: { fields: ['provision'], source: 'route-read' }
+  },
+
+  // order-api-v2.js
+  '/api/v2/orders': {
+    get: { fields: ['kpis','count','orders'], source: 'route-read' }
+  },
+  '/api/v2/orders/pending-cash': {
+    get: { fields: ['count','orders'], source: 'route-read' }
+  },
+  '/api/v2/orders/ready-for-parcel': {
+    get: { fields: ['count','orders'], source: 'route-read' }
+  },
+  '/api/v2/orders/{ref}': {
+    get: { fields: ['order'], source: 'route-read' }
+  },
+  '/api/v2/orders/{ref}/confirm-cash': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/v2/orders/{ref}/create-parcel': {
+    post: { fields: ['success','message','parcel'], source: 'route-read' }
+  },
+
+  // invoices.js
+  '/api/invoices/public/{token}': {
+    get: { fields: ['invoice'], source: 'route-read' }
+  },
+  '/api/invoices': {
+    get: { fields: ['ok','invoices','count'], source: 'route-read' }
+  },
+  '/api/invoices/{orderId}': {
+    get: { fields: ['ok','invoice'], source: 'route-read' }
+  },
+  '/api/invoices/{orderId}/json': {
+    get: { fields: ['invoice'], source: 'route-read' }
+  },
+  '/api/invoices/{orderId}/download': {
+    get: { fields: ['url'], source: 'route-read' }
+  },
+  '/api/invoices/{orderId}/deliver': {
+    post: { fields: ['ok','message'], source: 'route-read' }
+  },
+
+  // pricing-strategy.js
+  '/api/pricing/strategy/competitors': {
+    get:    { fields: ['competitors'], source: 'route-read' },
+    post:   { fields: ['competitor'], source: 'route-read' }
+  },
+  '/api/pricing/strategy/competitors/{id}': {
+    delete: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/pricing/strategy': {
+    get: { fields: ['strategy'], source: 'route-read' }
+  },
+  '/api/pricing/strategy/apply': {
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+  '/api/pricing/strategy/history': {
+    get: { fields: ['history'], source: 'route-read' }
+  },
+
+  // admin-rules.js
+  '/api/admin/rules': {
+    get: { fields: ['categories'], source: 'route-read' }
+  },
+  '/api/admin/rules/audit': {
+    get: { fields: ['history'], source: 'route-read' }
+  },
+  '/api/admin/rules/{key}': {
+    get:   { fields: ['rule','history'], source: 'route-read' },
+    patch: { fields: ['success','rule','message'], source: 'route-read' }
+  },
+  '/api/admin/rules/{key}/reset': {
+    post: { fields: ['success','rule','message'], source: 'route-read' }
+  },
+
+  // admin-loyalty.js
+  '/api/admin/loyalty/pending': {
+    get: { fields: ['count','pending'], source: 'route-read' }
+  },
+  '/api/admin/loyalty/reward/{id}': {
+    post: { fields: ['success','reward'], source: 'route-read' }
+  },
+  '/api/admin/loyalty/skip/{id}': {
+    post: { fields: ['success','reward'], source: 'route-read' }
+  },
+  '/api/admin/loyalty/history': {
+    get: { fields: ['count','history'], source: 'route-read' }
+  },
+  '/api/admin/loyalty/stats': {
+    get: { fields: ['rewards'], source: 'route-read' }
+  },
+
+  // logistics.js
+  '/api/logistics/shipments': {
+    post: { fields: ['shipment'], source: 'route-read' },
+    get:  { fields: ['shipments'], source: 'route-read' }
+  },
+  '/api/logistics/shipments/{id}': {
+    patch: { fields: ['shipment'], source: 'route-read' }
+  },
+  '/api/logistics/labels/{shipment_id}': {
+    get: { fields: ['label_url'], source: 'route-read' }
+  },
+  '/api/logistics/manifest/{shipment_id}': {
+    get: { fields: ['manifest_url'], source: 'route-read' }
+  },
+
+  // carriers.js
+  '/api/carriers': {
+    get:  { fields: ['data','count'], source: 'route-read' },
+    post: { fields: ['carrier'], source: 'route-read' }
+  },
+  '/api/carriers/{id}': {
+    patch:  { fields: ['carrier'], source: 'route-read' },
+    delete: { fields: ['message','carrier'], source: 'route-read' }
+  },
+  '/api/carriers/customs/{parcel_id}': {
+    patch: { fields: ['message','parcel'], source: 'route-read' }
+  },
+
+  // transit-dashboard.js
+  '/api/transit-dashboard': {
+    get: { fields: ['parcels'], source: 'route-read' }
+  },
+  '/api/transit-dashboard/{ref}/transit': {
+    post: { fields: ['success'], source: 'route-read' }
+  },
+  '/api/transit': {
+    get: { fields: ['parcels'], source: 'route-read' }
+  },
+  '/api/transit/{ref}/transit': {
+    post: { fields: ['success'], source: 'route-read' }
+  },
+
+  // finance.js
+  '/api/admin/finance/summary': {
+    get: { fields: ['month','year','count','transactions'], source: 'route-read' }
+  },
+  '/api/admin/finance/export': {
+    get: { fields: ['export_url'], source: 'route-read' }
+  },
+  '/api/admin/finance/stripe-proofs': {
+    get: { fields: ['proofs'], source: 'route-read' }
+  },
+  '/api/admin/finance/report': {
+    get: { fields: ['report'], source: 'route-read' }
+  },
+
+  // admin-radar.js
+  '/api/admin/radar/money': {
+    get: { fields: ['money'], source: 'route-read' }
+  },
+  '/api/admin/radar/status-details': {
+    get: { fields: ['status_details'], source: 'route-read' }
+  },
+  '/api/admin/radar/orders-by-detail/{detail}': {
+    get: { fields: ['orders'], source: 'route-read' }
+  },
+  '/api/admin/radar/cache/invalidate': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+
+  // admin-pricing-matrices.js
+  '/api/admin/pricing-matrices/taxes': {
+    get: { fields: ['taxes'], source: 'route-read' }
+  },
+  '/api/admin/pricing-matrices/taxes/{category}': {
+    put: { fields: ['success','taxes','message'], source: 'route-read' }
+  },
+  '/api/admin/pricing-matrices/dims': {
+    get: { fields: ['dims'], source: 'route-read' }
+  },
+  '/api/admin/pricing-matrices/dims/{category}': {
+    put: { fields: ['success','dims','message'], source: 'route-read' }
+  },
+
+  // client-auth.js
+  '/api/client/magic-link': {
+    post: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/client/magic-link/validate': {
+    get: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/client/orders': {
+    get: { fields: ['orders'], source: 'route-read' }
+  },
+  '/api/client/invoices': {
+    get: { fields: ['invoices'], source: 'route-read' }
+  },
+
+  // transitaire-api.js
+  '/api/transitaire/parcels': {
+    get: { fields: ['parcels','count'], source: 'route-read' }
+  },
+  '/api/transitaire/ship': {
+    post: { fields: ['success','parcel','message'], source: 'route-read' }
+  },
+  '/api/transitaire/stats': {
+    get: { fields: ['stats'], source: 'route-read' }
+  },
+  '/api/transitaire/history': {
+    get: { fields: ['events'], source: 'route-read' }
+  },
+
+  // shares.js
+  '/api/shares': {
+    post: { fields: ['token','url','redirect'], source: 'route-read' }
+  },
+  '/api/shares/{token}': {
+    get: { fields: ['token','type','event_label'], source: 'route-read' }
+  },
+  '/api/shares/{token}/contributions': {
+    post: { fields: ['contribution'], source: 'route-read' }
+  },
+  '/api/shares/{token}/contributions/{id}': {
+    patch: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // relais.js
+  '/api/relais': {
+    get: { fields: ['relais'], source: 'route-read' }
+  },
+  '/api/relais/public': {
+    get: { fields: ['relais'], source: 'route-read' }
+  },
+  '/api/relais/{id}': {
+    get: { fields: ['relais'], source: 'route-read' }
+  },
+
+  // admin-finance-config.js
+  '/api/admin/finance-config/schema': {
+    get: { fields: ['schema'], source: 'route-read' }
+  },
+  '/api/admin/finance-config': {
+    get: { fields: ['config'], source: 'route-read' },
+    put: { fields: ['config'], source: 'route-read' }
+  },
+
+  // payments-paypal.js remaining
+  '/api/payments/paypal/create-order': {
+    post: { fields: ['paypal_order_id','amount_usd'], source: 'route-read' }
+  },
+  '/api/payments/paypal/capture/{paypalOrderId}': {
+    post: { fields: ['reference','message'], source: 'route-read' }
+  },
+  '/api/payments/paypal/webhook': {
+    post: { fields: ['received'], source: 'route-read' }
+  },
+
+  // tracking.js
+  '/api/tracking/{token}': {
+    get: { fields: ['reference','status','statusLabel'], source: 'route-read' }
+  },
+  '/api/tracking/{token}/verify-pickup': {
+    post: { fields: ['valid'], source: 'route-read' }
+  },
+
+  // meta-whatsapp.js
+  '/webhook/meta-whatsapp': {
+    get:  { fields: ['hub_challenge'], source: 'route-read' },
+    post: { fields: ['ok'], source: 'route-read' }
+  },
+
+  // notification-api.js
+  '/api/v2/notifications': {
+    get: { fields: ['count','notifications'], source: 'route-read' }
+  },
+  '/api/v2/notifications/stats': {
+    get: { fields: ['totals','by_channel','by_event'], source: 'route-read' }
+  },
+
+  // categories.js
+  '/api/categories': {
+    get: { fields: ['categories'], source: 'route-read' }
+  },
+
+  // boutique-suggestions.js
+  '/api/boutique/suggestions': {
+    get: { fields: ['suggestions'], source: 'route-read' }
+  },
+
+  // otp.js
+  '/api/auth/otp/test-reset': {
+    post: { fields: ['ok','success','cleared','purged'], source: 'route-read' }
+  },
+
+  // health routes (ready, metrics, version, detailed, health)
+  '/health': {
+    get: { fields: ['status'], source: 'route-read' }
+  },
+  '/health/ready': {
+    get: { fields: ['status'], source: 'route-read' }
+  },
+  '/health/metrics': {
+    get: { fields: ['metrics'], source: 'route-read' }
+  },
+  '/health/detailed': {
+    get: { fields: ['status','db'], source: 'route-read' }
+  },
+  '/health/version': {
+    get: { fields: ['version'], source: 'route-read' }
+  },
+
+  // public.js
+  '/api/public/config': {
+    get: { fields: ['config'], source: 'route-read' }
   },
 };
 
@@ -463,6 +1839,17 @@ if (inventory.length < 150) {
 const RESPONSE_OVERRIDES = {
   'GET /webhook/meta-whatsapp': {
     '403': { description: 'Forbidden — token de vérification Meta invalide ou absent' },
+  },
+  // La route receipt retourne du HTML imprimable, pas du JSON.
+  // On remplace la réponse 200 application/json générée automatiquement.
+  'GET /api/pickup/receipt/{orderId}': {
+    '200': {
+      description: 'Reçu HTML imprimable — token à usage unique validé',
+      content: { 'text/html': { schema: { type: 'string', 'x-contract-status': 'route-read' } } },
+    },
+    '400': { description: 'Token manquant' },
+    '403': { description: 'Token invalide ou expiré' },
+    '404': { description: 'Commande introuvable' },
   },
 };
 

@@ -25,6 +25,7 @@ const db      = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const log = require('../../utils/logger').child({ module: 'admin/orders' });
 const { deleteOrderCascade } = require('./delete-order-cascade');
+const { refundCancelledOrder } = require('../../services/admin-order-refund');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -104,6 +105,21 @@ router.delete('/orders/:id', ...guard, async (req, res, next) => {
       deleted: { id, reference: order.reference, status: order.status },
     });
   } catch(err) { next(err); }
+});
+
+// ─── POST /api/admin/orders/:id/refund ─────────────────────────────
+// AUD-05 — extrait de middleware/auth.js (god-middleware)
+router.post('/orders/:id/refund', ...guard, async (req, res, next) => {
+  try {
+    const result = await refundCancelledOrder({
+      orderId: req.params.id,
+      user: req.user,
+      dryRun: req.body?.dry_run !== false,
+      reason: req.body?.reason || null,
+      cashMode: req.body?.cash_mode || 'manual',
+    });
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

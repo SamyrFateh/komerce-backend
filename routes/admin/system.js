@@ -27,6 +27,7 @@ const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
 const log = require('../../utils/logger').child({ module: 'admin/system' });
 const { deleteOrderCascade } = require('./delete-order-cascade');
+const { repairOrderedWithoutPurchaseOrders } = require('../../services/repair-ordered-without-purchase-orders');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -635,6 +636,20 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
   } finally {
     client.release();
   }
+});
+
+// ─── POST /api/admin/purchasing/repair-ordered-without-pos ─────────
+// AUD-05 — extrait de middleware/auth.js (god-middleware)
+// Monté sous /api/admin via routes/admin/index.js → app.use('/api/admin', adminRouter)
+router.post('/purchasing/repair-ordered-without-pos', ...guard, async (req, res, next) => {
+  try {
+    const result = await repairOrderedWithoutPurchaseOrders({
+      dryRun: req.body?.dry_run !== false,
+      limit: req.body?.limit || 25,
+      user: req.user,
+    });
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
 });
 
 module.exports = router;
