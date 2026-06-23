@@ -212,6 +212,20 @@ Table de référencement des composantes de coût (shipping, customs, hub). Pas 
    - Tests `tests/unit/sourcing-mutations.test.js` mis à jour pour refléter le mapping simple-write.
 4. **Ne pas supprimer les colonnes** tant que la production n'est pas stable N jours après exécution de la migration 087.
 
+### Corrections individuelles hors lot (F-03, F-05, F-06) ✅ Livré 2026-06-23
+
+Risque faible, pas d'impact financier — regroupées dans `migrations/088_sourcing_standalone_fixes.sql` :
+
+- **F-05** : index composite `(state, import_id)` et `(state, supplier_name)` créés sur `sourcing_candidates`. Sans risque, exécutable sans pré-requis.
+- **F-06** : `CHECK` DB posé sur `products.sourcing_rail` (synchronisé avec `VALID_RAILS` de `sourcing-mutations.js` et `audit-sourcing.js`).
+- **F-03** : `CHECK` DB posé sur `partners.partner_type` (synchronisé avec la liste du check S-05 d'`audit-sourcing.js`).
+
+⚠️ **Pré-requis avant exécution** : lancer `npm run sourcing:audit` et vérifier que S-04 et S-05 ne remontent aucune violation — sinon les `ALTER TABLE ... ADD CONSTRAINT` échoueront sur les lignes existantes hors liste. L'index (F-05) peut être appliqué indépendamment sans ce pré-requis.
+
+**Maintenance** : toute évolution future de la liste des rails ou des `partner_type` doit modifier ce `CHECK` ET le code applicatif (`sourcing-mutations.js`, `audit-sourcing.js`) dans la même PR.
+
+F-04 et F-07 restent sans action (cf. §3.3 et §6 ci-dessus) — couverts par le guard applicatif uniquement, pas de FK DB prévue.
+
 ### C7 — Guard `scripts/audit-sourcing.js`
 
 Checks à implémenter :
