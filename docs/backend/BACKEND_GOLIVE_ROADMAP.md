@@ -308,7 +308,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ✅ B1 — Extraire `routes/sourcing-engine.js` → `services/sourcing/` (clos 2026-06-23, voir STATUS.md §15)
+### ✅ B1 — Extraire `routes/sourcing-engine.js` → `services/sourcing/`
 
 **Charge** : 1-2 j  
 **Risque** : moyen (extraction métier, à tester)
@@ -345,7 +345,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ✅ B2 — Extraire `routes/economic-engine.js` → `services/economic-engine.js` (déjà clos, voir STATUS.md §16)
+### ✅ B2 — Extraire `routes/economic-engine.js` → `services/economic-engine.js`
 
 **Charge** : 1 j  
 **Risque** : moyen
@@ -358,7 +358,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B3 — Découper `routes/dashboard.js` (2 614 lignes)
+### ✅ B3 — Découper `routes/dashboard.js` (2 614 lignes)
 
 **Charge** : 2-3 j  
 **Risque** : moyen-élevé (gros fichier, beaucoup de routes admin)
@@ -377,7 +377,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B4 — Découper `routes/admin.js` (1 207 lignes)
+### ✅ B4 — Découper `routes/admin.js` (1 207 lignes)
 
 **Charge** : 1-2 j  
 **Risque** : moyen
@@ -394,7 +394,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B5 — Découper `routes/pricing.js` (1 316 lignes)
+### ✅ B5 — Découper `routes/pricing.js` (1 316 lignes)
 
 **Charge** : 1 j  
 **Risque** : moyen
@@ -409,7 +409,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B6 — Découper `routes/pickup-secret.js` (1 122 lignes)
+### ✅ B6 — Découper `routes/pickup-secret.js` (1 122 lignes)
 
 **Charge** : 1 j  
 **Risque** : moyen — **flow client critique** (retrait commande)

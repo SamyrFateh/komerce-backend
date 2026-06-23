@@ -796,3 +796,31 @@ Sécurité préservée : `generateAndStoreSecret` (anti-collision last4 par rela
 Compatibilité amont maintenue : `routes/payment-stripe.js`, `routes/payment-paypal.js` et `routes/pickup-pay-cash.js` importaient `generateAndStoreSecret`/`cacheCodeForReveal` depuis `routes/pickup-secret.js` — la façade mince réexporte ces deux fonctions depuis le service, aucun changement d'import requis côté consommateurs.
 
 **Prochain lot : B4** — `routes/admin.js` (1 207 lignes) → `routes/admin/`.
+
+### B3 — Découper `routes/dashboard.js`
+
+Statut : **clôturé par inspection code — 2026-06-23**.
+
+`routes/dashboard.js` est une façade de 61 lignes qui monte 4 sous-routers : `dashboard-ops`, `dashboard-finance`, `dashboard-clients`, `dashboard-hub`. La découpe est déjà faite. Aucun travail restant.
+
+### B4 — Découper `routes/admin.js`
+
+Statut : **clôturé par inspection code — 2026-06-23**.
+
+`routes/admin.js` est une façade de 22 lignes (`module.exports = require('./admin/index')`). Le dossier `routes/admin/` contient 8 fichiers : `index.js`, `customs.js`, `dashboard.js`, `delete-order-cascade.js`, `orders.js`, `partners.js`, `system.js`, `users.js`. `requireAdmin` appliqué dans `index.js`. Aucun travail restant.
+
+### B5 — Découper `routes/pricing.js`
+
+Statut : **clôturé par inspection code — 2026-06-23**.
+
+`routes/pricing.js` fait 280 lignes (contre 1 316 annoncées dans le roadmap — déjà refactoré). 6 queries DB résiduelles simples (CRUD `cost_benchmarks`, lookup produit/fabrics/garment_models). La logique métier est intégralement dans les services `pricing-engine.js`, `pricing-apply.js`, `pricing-rates.js`, `pricing-recommend.js`, `pricing-dashboard.js`. Acceptable en l'état.
+
+### B1 — Extraire `routes/sourcing-engine.js`
+
+Statut : **clôturé par inspection code — 2026-06-23**.
+
+`routes/sourcing-engine.js` fait 132 lignes (contre 960 annoncées). Délègue à `services/sourcing-analysis.js` et `services/sourcing-mutations.js`. 2 queries DB résiduelles mineures. Acceptable en l'état.
+
+---
+
+**Lot B complet — tous les lots clôturés au 2026-06-23.** Prochain lot selon le roadmap : **B5b** (si pricing-engine.js 1 483 lignes justifie découpe) ou passage au **Lot C**.
