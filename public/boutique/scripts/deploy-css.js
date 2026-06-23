@@ -38,25 +38,7 @@ const INDEX_HTML = path.join(ROOT, 'index.html');
 const STATE_FILE = path.join(ROOT, '.cache-buster-state.json');
 const HASH_LEN   = 12;
 
-const BUNDLES = [
-  {
-    out: 'base.css',
-    files: ['tokens', 'reset', 'layout', 'hero'],
-  },
-  {
-    out: 'components.css',
-    files: ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
-            'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal'],
-  },
-  {
-    out: 'desktop.css',
-    files: ['boutique-desktop'],
-  },
-  {
-    out: 'event.css',
-    files: ['tokens', 'event'],
-  },
-];
+const { BUNDLES } = require('./css-bundles.js');
 
 const MIN_BUNDLE_BYTES = 1000;
 

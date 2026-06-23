@@ -13,16 +13,16 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 313,
-    "filesWithFullHeaders": 284,
+    "scannedCodeFiles": 314,
+    "filesWithFullHeaders": 285,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 313,
+    "filesWithAnyHeaders": 314,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 655,
-    "edges": 2877,
+    "graphNodes": 657,
+    "edges": 2885,
     "dbTables": 107,
-    "doctrines": 123,
+    "doctrines": 124,
     "impactAreas": 112,
     "unresolvedCodeEdges": 267
   },
@@ -37,6 +37,7 @@
     "recommendations": 4,
     "payment": 15,
     "tracking": 1,
+    "wallet": 6,
     "collective-workspace": 3,
     "economic-engine": 24,
     "dashboard": 28,
@@ -46,7 +47,6 @@
     "logistics": 29,
     "operations": 4,
     "inventory": 2,
-    "wallet": 5,
     "documents": 4,
     "order-payment": 1,
     "refunds": 1,
@@ -61,7 +61,7 @@
     "ui-component": 39,
     "ui-enhancer": 3,
     "ui-renderer": 6,
-    "ui-page": 6,
+    "ui-page": 7,
     "ui-service": 1,
     "ui-experiment": 1,
     "ui-state": 1,
@@ -85,7 +85,7 @@
   },
   "byCriticality": {
     "critical": 67,
-    "medium": 96,
+    "medium": 97,
     "high": 119,
     "low": 31
   },
@@ -2058,6 +2058,7 @@
         "b-catalog.js",
         "b-favs.js",
         "b-tracking.js",
+        "b-wallet.js",
         "b-group-view.js",
         "b-pager.js",
         "b-scroll-owner.js"
@@ -2571,6 +2572,45 @@
         "checkout",
         "modal",
         "tracking"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "public/boutique/js/b-wallet.js",
+      "file": "public/boutique/js/b-wallet.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "wallet-view",
+      "domain": "wallet",
+      "layer": "ui-page",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "client_session",
+        "wallet_balance",
+        "wallet_transactions"
+      ],
+      "outputs": [
+        "wallet_view"
+      ],
+      "depends": [
+        "b-utils.js"
+      ],
+      "usedBy": [
+        "b-nav.js",
+        "boutique.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbTxn": [],
+      "doctrine": [
+        "wallet_visible_client",
+        "navigation_sans_friction"
+      ],
+      "impactAreas": [
+        "wallet",
+        "boutique-navigation"
       ],
       "version": "2026-06"
     },
@@ -14140,6 +14180,11 @@
       "doctrine": "prix_lisible"
     },
     {
+      "id": "doctrine:wallet_visible_client",
+      "type": "doctrine",
+      "doctrine": "wallet_visible_client"
+    },
+    {
       "id": "doctrine:desktop_mobile_coherence",
       "type": "doctrine",
       "doctrine": "desktop_mobile_coherence"
@@ -14855,6 +14900,11 @@
       "area": "security"
     },
     {
+      "id": "impact:wallet",
+      "type": "impact-area",
+      "area": "wallet"
+    },
+    {
       "id": "impact:boutique-home",
       "type": "impact-area",
       "area": "boutique-home"
@@ -14988,11 +15038,6 @@
       "id": "impact:snapshots",
       "type": "impact-area",
       "area": "snapshots"
-    },
-    {
-      "id": "impact:wallet",
-      "type": "impact-area",
-      "area": "wallet"
     },
     {
       "id": "impact:stock",
@@ -17344,6 +17389,12 @@
     },
     {
       "from": "public/boutique/js/b-nav.js",
+      "to": "public/boutique/js/b-wallet.js",
+      "type": "depends",
+      "label": "b-wallet.js"
+    },
+    {
+      "from": "public/boutique/js/b-nav.js",
       "to": "public/boutique/js/b-group-view.js",
       "type": "depends",
       "label": "b-group-view.js"
@@ -18145,6 +18196,48 @@
       "to": "impact:tracking",
       "type": "impact",
       "label": "tracking"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "public/boutique/js/b-utils.js",
+      "type": "depends",
+      "label": "b-utils.js"
+    },
+    {
+      "from": "public/boutique/js/b-nav.js",
+      "to": "public/boutique/js/b-wallet.js",
+      "type": "uses",
+      "label": "b-nav.js"
+    },
+    {
+      "from": "public/boutique/js/boutique.js",
+      "to": "public/boutique/js/b-wallet.js",
+      "type": "uses",
+      "label": "boutique.js"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "doctrine:wallet_visible_client",
+      "type": "doctrine",
+      "label": "wallet_visible_client"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "doctrine:navigation_sans_friction",
+      "type": "doctrine",
+      "label": "navigation_sans_friction"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "impact:wallet",
+      "type": "impact",
+      "label": "wallet"
+    },
+    {
+      "from": "public/boutique/js/b-wallet.js",
+      "to": "impact:boutique-navigation",
+      "type": "impact",
+      "label": "boutique-navigation"
     },
     {
       "from": "public/boutique/js/boutique.js",
@@ -34385,6 +34478,7 @@
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-favs.js",
         "public/boutique/js/b-tracking.js",
+        "public/boutique/js/b-wallet.js",
         "public/boutique/js/b-group-view.js",
         "public/boutique/js/b-pager.js",
         "public/boutique/js/b-scroll-owner.js"
@@ -34424,6 +34518,7 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-tracking.js",
         "public/boutique/js/b-utils.js",
+        "public/boutique/js/b-wallet.js",
         "public/boutique/js/boutique.js",
         "public/boutique/js/group/group-helpers.js"
       ]
@@ -34931,9 +35026,45 @@
         "public/boutique/js/b-modal-suggestions.js",
         "public/boutique/js/b-nav.js",
         "public/boutique/js/b-tracking.js",
+        "public/boutique/js/b-wallet.js",
         "public/boutique/js/group/group-helpers.js",
         "public/boutique/js/group/group-render-creator.js",
         "public/boutique/js/view-models/modal-view-model.js"
+      ]
+    },
+    "public/boutique/js/b-wallet.js": {
+      "role": "wallet-view",
+      "domain": "wallet",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "public/boutique/js/b-utils.js"
+      ],
+      "directUsedBy": [
+        "public/boutique/js/b-nav.js",
+        "public/boutique/js/boutique.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "doctrines": [
+        "wallet_visible_client",
+        "navigation_sans_friction"
+      ],
+      "impactAreas": [
+        "wallet",
+        "boutique-navigation"
+      ],
+      "mustCheck": [
+        "doctrine:navigation_sans_friction",
+        "doctrine:wallet_visible_client",
+        "impact:boutique-navigation",
+        "impact:wallet",
+        "public/boutique/js/b-nav.js",
+        "public/boutique/js/b-utils.js",
+        "public/boutique/js/boutique.js"
       ]
     },
     "public/boutique/js/boutique.js": {
@@ -35006,6 +35137,7 @@
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
         "public/boutique/js/b-tracking.js",
+        "public/boutique/js/b-wallet.js",
         "public/boutique/js/komerce-api.js",
         "public/boutique/js/main.js",
         "public/boutique/js/product-store.js"

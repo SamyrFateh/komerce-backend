@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-06-23T07:11:06.406Z.
+> Régénéré le 2026-06-23T08:05:50.748Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **69** (69 headés) · Événements bus : **16** · Bundles CSS : **4**
-- Endpoints appelés : **54** — 🔴 0 hors contrat · ⚪ 29 non prouvés · 🔵 28 dynamiques
+- Modules JS : **70** (70 headés) · Événements bus : **16** · Bundles CSS : **0**
+- Endpoints appelés : **55** — 🔴 0 hors contrat · ⚪ 30 non prouvés · 🔵 28 dynamiques
 - Santé bus : 2 émission(s) orpheline(s), 1 écouteur(s) orphelin(s), 7 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -67,7 +67,8 @@
 | `/api/shared-carts/{id}/finalize` | group-api | 🔵 dynamique |
 | `/api/shared-carts/{id}/items` | b-cart | 🔵 dynamique |
 | `/api/shares` | b-cart, b-favs | ⚪ non prouvé |
-| `/api/wallet` | b-checkout | ⚪ non prouvé |
+| `/api/wallet` | b-checkout, b-wallet | ⚪ non prouvé |
+| `/api/wallet/transactions` | b-wallet | ⚪ non prouvé |
 
 ## 2. Topologie du bus
 
@@ -134,10 +135,6 @@ graph LR
 
 | Bundle | Sources |
 |---|---|
-| `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero` |
-| `css/dist/components.css` | `categories`, `products`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `cart`, `interactions`, `hero-cart-proxy`, `group-cart-flow`, `share-cart`, `shared-followup`, `identity`, `paypal` |
-| `css/dist/desktop.css` | `boutique-desktop` |
-| `css/dist/event.css` | `tokens`, `event` |
 
 ---
 *Carte vérifiée en pre-commit par `boutique:360:check` (cliquet bus + endpoints hors contrat).*

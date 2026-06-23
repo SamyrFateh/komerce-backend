@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-23T07:11:07.319Z",
+  "generatedAt": "2026-06-23T08:05:51.418Z",
   "sources": {
     "backend": {
-      "nodes": 655
+      "nodes": 657
     },
     "boutique": {
-      "modules": 69,
-      "endpoints": 54
+      "modules": 70,
+      "endpoints": 55
     },
     "dashboards": {
       "modules": 40,
@@ -17,7 +17,7 @@
     }
   },
   "summary": {
-    "endpointsConsumed": 84,
+    "endpointsConsumed": 85,
     "sharedEndpoints": 2,
     "phantomSeams": 1,
     "sharedTables": 10
@@ -70,7 +70,8 @@
     },
     "/api/wallet": {
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": [],
       "inContract": true,
@@ -271,6 +272,27 @@
         "products",
         "relais",
         "scan_events"
+      ]
+    },
+    "/api/wallet/transactions": {
+      "boutique": [
+        "b-wallet"
+      ],
+      "dashboards": [],
+      "inContract": true,
+      "status": "UNKNOWN",
+      "routeFile": "routes/wallet.js",
+      "services": [
+        "services/wallet-service.js"
+      ],
+      "tables": [
+        "orders",
+        "users",
+        "transaction_documents",
+        "wallet_consumptions",
+        "wallet_credit_lots",
+        "wallet_transactions",
+        "wallets"
       ]
     },
     "/api/health": {
@@ -1529,6 +1551,7 @@
         "b-checkout",
         "b-paypal",
         "b-tracking",
+        "b-wallet",
         "komerce-api"
       ],
       "dashboards": [
@@ -1561,6 +1584,7 @@
         "b-greeting",
         "b-identity",
         "b-tracking",
+        "b-wallet",
         "komerce-api"
       ],
       "dashboards": [
@@ -1576,7 +1600,8 @@
         "routes/wallet.js"
       ],
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": []
     },
@@ -1585,7 +1610,8 @@
         "routes/wallet.js"
       ],
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": []
     },
@@ -1594,7 +1620,8 @@
         "routes/wallet.js"
       ],
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": []
     },
@@ -1603,7 +1630,8 @@
         "routes/wallet.js"
       ],
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": []
     },
@@ -1612,7 +1640,8 @@
         "routes/wallet.js"
       ],
       "boutique": [
-        "b-checkout"
+        "b-checkout",
+        "b-wallet"
       ],
       "dashboards": []
     },

@@ -10698,3 +10698,145 @@ body.k-id-scroll-lock { overflow: hidden; }
   border-color: #0070ba;
   background: #f0f7ff;
 }
+
+
+/* ── wallet.css ──────────────────────────────────────────── */
+/**
+ * @komerce-arch-lite
+ * @role          wallet-view-styles
+ * @domain        wallet
+ * @layer         ui-style
+ * @owner         public/boutique/js/b-wallet.js
+ * @purpose       Styles de la vue Mon porte-monnaie (solde + historique)
+ * @impact-areas  wallet, boutique-navigation
+ * @version       2026-06
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   KOMERCE — wallet.css
+   Mon porte-monnaie — vue client.
+   Mobile-first, tokens.css requis.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Vue container (même pattern que .k-fav-view / .k-track-view) ── */
+.k-wallet-view { display: none; padding: 12px 10px calc(var(--bnav-h) + 96px); min-height: 60vh; }
+.k-wallet-view.show { display: block; }
+
+/* ── Loading ─────────────────────────────────────────────────── */
+.k-wlt-loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.k-wlt-spin {
+  width: 28px; height: 28px; margin: 0 auto 12px;
+  border: 3px solid var(--sand-dark); border-top-color: var(--ocean);
+  border-radius: 50%; animation: k-wlt-spin .7s linear infinite;
+}
+@keyframes k-wlt-spin { to { transform: rotate(360deg); } }
+
+/* ── Balance card ────────────────────────────────────────────── */
+.k-wlt-card {
+  background: linear-gradient(135deg, var(--ocean-dark-deep) 0%, var(--ocean-dark) 50%, var(--ocean) 100%);
+  border-radius: 14px;
+  padding: 18px 16px;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.k-wlt-card-label {
+  font-size: .72rem;
+  opacity: .8;
+  letter-spacing: .3px;
+  margin-bottom: 4px;
+}
+.k-wlt-card-amount {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  line-height: 1.2;
+}
+.k-wlt-card-hint {
+  font-size: .7rem;
+  opacity: .65;
+  margin-top: 6px;
+}
+
+/* ── Section title ───────────────────────────────────────────── */
+.k-wlt-section-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Month header ────────────────────────────────────────────── */
+.k-wlt-month {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  padding: 10px 0 6px;
+}
+
+/* ── Transaction row ─────────────────────────────────────────── */
+.k-wlt-tx-wrap { padding: 0 2px; }
+
+.k-wlt-tx-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--sand-dark);
+}
+.k-wlt-tx-row:last-child { border-bottom: none; }
+
+.k-wlt-tx-icon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.k-wlt-tx-icon--credit { background: var(--green-bg); }
+.k-wlt-tx-icon--debit  { background: var(--status-available-bg); }
+
+.k-wlt-tx-info { flex: 1; min-width: 0; }
+.k-wlt-tx-label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.k-wlt-tx-date {
+  font-size: .68rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.k-wlt-tx-amt {
+  font-size: .82rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.k-wlt-tx-amt--credit { color: var(--cta-green); }
+.k-wlt-tx-amt--debit  { color: var(--coral); }
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.k-wlt-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.k-wlt-empty-icon  { font-size: 40px; opacity: .45; }
+.k-wlt-empty-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+.k-wlt-empty-sub   { font-size: .78rem; max-width: 240px; line-height: 1.4; }

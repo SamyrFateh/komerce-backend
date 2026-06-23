@@ -144,13 +144,9 @@ const HEX_ALLOWLIST = [
   { file: 'layout.css', hex: '#1d5b2a', reason: 'Fallback var(--green-dark-text) – filet navigateurs anciens' },
 ];
 
-// Bundles attendus
-const EXPECTED_BUNDLES = {
-  'base.css':       ['tokens', 'reset', 'layout', 'hero'],
-  'components.css': ['categories', 'products', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid', 'cart', 'interactions', 'hero-cart-proxy', 'group-cart-flow', 'share-cart', 'shared-followup', 'identity', 'paypal'],
-  'desktop.css':    ['boutique-desktop'],
-  'event.css':      ['event'],
-};
+// Bundles attendus — source unique de vérité : scripts/css-bundles.js
+const { BUNDLES: _rawBundles } = require('./css-bundles.js');
+const EXPECTED_BUNDLES = Object.fromEntries(_rawBundles.map(b => [b.out, b.files]));
 
 // I-6 : Variables CSS posées par JS uniquement
 const JS_OWNED_VARS = ['--pager-top', '--pager-h', '--pager-w', '--bnav-h', '--modal-scroll-y'];
@@ -402,21 +398,33 @@ function checkI6_jsOwnedVars() {
 }
 
 // ════════════════════════════════════════════════════════════════
-// CHECK BUNDLE : scripts/bundle-css.js liste bien les fichiers attendus
+// CHECK BUNDLE : deploy-css.js et audit utilisent la même source (css-bundles.js)
 // ════════════════════════════════════════════════════════════════
 function checkBundleConfig() {
   const src = fs.readFileSync(BUNDLER, 'utf8');
-  // Extraction naïve : chaque ligne "out: 'name'," + files: [...]
+  const configPath = path.join(__dirname, 'css-bundles.js');
+
+  // Vérifier que deploy-css.js importe bien css-bundles.js
+  if (!src.includes('css-bundles')) {
+    violate('BUNDLE', `deploy-css.js n'importe pas css-bundles.js`,
+      `La source unique de vérité des bundles doit être scripts/css-bundles.js.`);
+    return;
+  }
+
+  // Vérifier que css-bundles.js existe et est lisible
+  if (!fs.existsSync(configPath)) {
+    violate('BUNDLE', `scripts/css-bundles.js introuvable`,
+      `Ce fichier est la source unique de vérité pour les bundles CSS.`);
+    return;
+  }
+
+  // Vérifier que chaque fichier CSS source référencé existe sur disque
+  const onDisk = new Set(listCssFiles());
   for (const [bundleName, expectedFiles] of Object.entries(EXPECTED_BUNDLES)) {
-    if (!src.includes(`out: '${bundleName}'`)) {
-      violate('BUNDLE', `Bundle "${bundleName}" absent de bundle-css.js`,
-        `Soit ajouter la config, soit retirer du tableau EXPECTED_BUNDLES de audit-arch.js.`);
-      continue;
-    }
     for (const f of expectedFiles) {
-      if (!new RegExp(`['"]${f}['"]`).test(src)) {
-        violate('BUNDLE', `Fichier "${f}" attendu dans bundle "${bundleName}" mais absent de bundle-css.js`,
-          `Vérifier scripts/bundle-css.js.`);
+      if (!onDisk.has(f)) {
+        violate('BUNDLE', `Fichier "${f}" référencé dans bundle "${bundleName}" mais absent de css/`,
+          `Soit créer css/${f}.css, soit retirer de scripts/css-bundles.js.`);
       }
     }
   }
@@ -453,7 +461,7 @@ const RULE_LABELS = {
   'I-3':    'I-3  Aucun hex hors tokens.css',
   'I-4':    'I-4  Aucun token cassé "var(--x)nnn"',
   'I-6':    'I-6  Variables JS-owned non déclarées par CSS',
-  'BUNDLE': 'BUNDLE  Cohérence bundle-css.js',
+  'BUNDLE': 'BUNDLE  Cohérence css-bundles.js',
 };
 
 console.log(`  âŒ  ${violations.length} violation(s) trouvée(s)\n`);
