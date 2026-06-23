@@ -761,3 +761,25 @@ Statut : **clôturé — 2026-06-23**.
 4. GET /analysis/:id — rail persisté vérifié
 5. PATCH /api/admin/products/:id — activation is_active=true + vérification DB directe
 6. GET /synthesis — KPI global sans erreur
+
+## 15. Backend B1 — clôture extraction routes/sourcing-engine.js (2026-06-23)
+
+### B1 — Extraire `routes/sourcing-engine.js` → services
+
+Statut : **clos — 2026-06-23**.
+
+Dernier morceau de logique inline restant dans la route (`GET /products/:id/variants`, 2 requêtes SQL directes) extrait vers `services/sourcing-analysis.js#getProductVariants(productId)`. `routes/sourcing-engine.js` ne fait plus aucun `db.query()` direct — import `db` retiré, devenu mort. Les 8 routes sont maintenant des façades pures (`auth + validation + appel service + réponse`), conformément à la doctrine B1 du roadmap.
+
+Vérifié :
+- `tests/unit/sourcing-analysis.test.js` — 3 tests ajoutés (`getProductVariants` : produit introuvable, variantes triées, produit sans variante) → 89/89 verts.
+- Suite `tests/unit/` complète : 850/850 verts (54/55 suites, pas de régression).
+- `node --check` sur les 2 fichiers modifiés.
+- `scripts/audit-backend-arch.js` : toujours 0 violation, 7 warnings (inchangé — le warning "engine en routes/" est une heuristique de nommage de fichier, pas un signal de logique inline résiduelle ; la route reste dans `routes/` car c'est un router Express monté par `bootstrap/api-routes.js`, mais son contenu est entièrement délégué).
+
+Note : la structure cible du roadmap (`services/sourcing/{analyzer,reader,enricher,variants,normalizer}.js`) n'a pas été reproduite littéralement — l'existant (`sourcing-analysis.js` + `sourcing-mutations.js`, 2 fichiers) atteint le même objectif (testable, séparé des routes) avec moins de fragmentation. Pas de ré-découpage supplémentaire sans preuve de besoin.
+
+### B1 — Correctif post-livraison : porte headers<->SQL
+
+`scripts/arch-header-sql-check.js` bloquait après B1 : `@db-read` de `services/sourcing-analysis.js` ne déclarait pas `product_variants` (table touchée par `getProductVariants`, ex-route). Header corrigé (`@db-read business_rules, order_items, orders, product_variants, products`) + graphe régénéré (`npm run arch:gen`). `npm run arch:gate` 100% vert (3 portes : db-check, drift, headers-sql, cliquet 0 OK partout).
+
+Point process : `arch:headers-sql` seul ne régénère pas le graphe — toujours lancer `arch:gate` (qui chaîne `arch:gen` + les 3 portes) après une modification de header, pas le sous-script isolé.

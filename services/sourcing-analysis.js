@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
  * @used-by       @unknown
- * @db-read       business_rules, order_items, orders, products
+ * @db-read       business_rules, order_items, orders, product_variants, products
  * @db-write      @unknown
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change
@@ -23,14 +23,16 @@
  *
  * Extrait de routes/sourcing-engine.js — GOD-FILES-5 (2026-05-25)
  *
- * Expose les 4 fonctions de lecture (GET) du moteur sourcing :
+ * Expose les fonctions de lecture (GET) du moteur sourcing :
  *   getAnalysis(filters)           → analyse complète du portefeuille
  *   getAnalysisById(productId)     → analyse d'un produit
  *   getSynthesis()                 → synthèse portefeuille (KPIs)
  *   getConfig()                    → seuils sourcing actuels
+ *   getProductVariants(productId)  → variantes d'un produit (B1)
  *
  * Les mutations (PUT products/:id, PUT products/:id/variants, POST bulk-rail)
- * restent dans routes/sourcing-engine.js — non extractibles sans risque dans ce lot.
+ * vivent dans services/sourcing-mutations.js. routes/sourcing-engine.js est
+ * une façade mince : aucune logique métier inline (B1 clos).
  *
  * Règle I-08 : tous les seuils sont lus depuis business_rules (DB).
  * Aucun coefficient dur dans ce fichier.
@@ -665,11 +667,41 @@ async function getConfig() {
   };
 }
 
+/**
+ * getProductVariants(productId) — lecture seule des variantes d'un produit
+ * @param {string} productId
+ * @returns {object|null} — null si produit introuvable
+ */
+async function getProductVariants(productId) {
+  const { rows: prodRows } = await db.query(
+    `SELECT id, has_variants FROM products WHERE id = $1`,
+    [productId]
+  );
+  if (!prodRows.length) return null;
+
+  const { rows } = await db.query(
+    `SELECT id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order,
+            created_at, updated_at
+       FROM product_variants
+      WHERE product_id = $1
+      ORDER BY variant_type ASC, display_order ASC, variant_value ASC`,
+    [productId]
+  );
+
+  return {
+    product_id:   productId,
+    has_variants: prodRows[0].has_variants,
+    variants:     rows,
+    total:        rows.length,
+  };
+}
+
 module.exports = {
   getAnalysis,
   getAnalysisById,
   getSynthesis,
   getConfig,
+  getProductVariants,
   // Exportés aussi pour usage interne (PUT /products/:id renvoie une analyse fraîche)
   loadSourcingConfig,
   getSales30d,

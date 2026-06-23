@@ -308,7 +308,7 @@ Audit `docs/` du 2026-05-17 — 9 fichiers créent du bruit ou contredisent les 
 
 ---
 
-### ☐ B1 — Extraire `routes/sourcing-engine.js` → `services/sourcing/`
+### ✅ B1 — Extraire `routes/sourcing-engine.js` → `services/sourcing/` (clos 2026-06-23, voir STATUS.md §15)
 
 **Charge** : 1-2 j  
 **Risque** : moyen (extraction métier, à tester)

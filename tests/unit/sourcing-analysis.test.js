@@ -30,6 +30,7 @@ const {
   getAnalysisById,
   getSynthesis,
   getConfig,
+  getProductVariants,
 } = require('../../services/sourcing-analysis');
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -889,5 +890,53 @@ describe('getConfig', () => {
     expect(cfg.explanation.rails).toHaveProperty('C');
     expect(cfg.explanation.rails).toHaveProperty('D');
     expect(cfg.explanation.lifecycle).toHaveProperty('star');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 15. getProductVariants — B1 (extrait de routes/sourcing-engine.js)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('getProductVariants', () => {
+  it('retourne null si produit introuvable', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('FROM products WHERE id')) return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
+    const result = await getProductVariants(999);
+    expect(result).toBeNull();
+  });
+
+  it('retourne les variantes triées avec has_variants et total', async () => {
+    const variantRows = [
+      { id: 'v1', variant_type: 'couleur', variant_value: 'rouge', sku: 'SKU-1', stock: 5, price_kmf: 10000, image_url: null, display_order: 1 },
+      { id: 'v2', variant_type: 'couleur', variant_value: 'bleu',  sku: 'SKU-2', stock: 3, price_kmf: 10000, image_url: null, display_order: 2 },
+    ];
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('FROM products WHERE id'))
+        return Promise.resolve({ rows: [{ id: 1, has_variants: true }] });
+      if (sql.includes('FROM product_variants'))
+        return Promise.resolve({ rows: variantRows });
+      return Promise.resolve({ rows: [] });
+    });
+    const result = await getProductVariants(1);
+    expect(result.product_id).toBe(1);
+    expect(result.has_variants).toBe(true);
+    expect(result.variants).toEqual(variantRows);
+    expect(result.total).toBe(2);
+  });
+
+  it('retourne total=0 et variants=[] si produit sans variante', async () => {
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('FROM products WHERE id'))
+        return Promise.resolve({ rows: [{ id: 2, has_variants: false }] });
+      if (sql.includes('FROM product_variants'))
+        return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
+    const result = await getProductVariants(2);
+    expect(result.has_variants).toBe(false);
+    expect(result.variants).toEqual([]);
+    expect(result.total).toBe(0);
   });
 });

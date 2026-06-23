@@ -20,7 +20,7 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 657,
-    "edges": 2888,
+    "edges": 2889,
     "dbTables": 107,
     "doctrines": 124,
     "impactAreas": 112,
@@ -12416,6 +12416,7 @@
         "business_rules",
         "order_items",
         "orders",
+        "product_variants",
         "products"
       ],
       "dbWrite": [],
@@ -31672,6 +31673,12 @@
     },
     {
       "from": "services/sourcing-analysis.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/sourcing-analysis.js",
       "to": "db:products",
       "type": "db-read",
       "label": "products"
@@ -43910,6 +43917,7 @@
         "business_rules",
         "order_items",
         "orders",
+        "product_variants",
         "products"
       ],
       "dbWrite": [],
@@ -43923,6 +43931,7 @@
         "db:business_rules",
         "db:order_items",
         "db:orders",
+        "db:product_variants",
         "db:products",
         "doctrine:resolve_before_behavior_change",
         "impact:unknown"

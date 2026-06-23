@@ -25,15 +25,15 @@
  * PUT  /api/admin/sourcing/products/:id      → sourcingMutations.updateProduct()
  * POST /api/admin/sourcing/bulk-rail         → sourcingMutations.bulkAssignRail()
  * GET  /api/admin/sourcing/config            → sourcingAnalysis.getConfig()
- * GET  /api/admin/sourcing/products/:id/variants → lecture seule (reste ici)
+ * GET  /api/admin/sourcing/products/:id/variants → sourcingAnalysis.getProductVariants()
  * PUT  /api/admin/sourcing/products/:id/variants → sourcingMutations.replaceVariants()
  *
  * Doctrine : route = auth + validation + appel service + réponse.
  * Mutations → services/sourcing-mutations.js
- * Lectures  → services/sourcing-analysis.js (inchangé)
+ * Lectures  → services/sourcing-analysis.js
  *
  * Invariant I-08 : pas de coefficient dur. Config lue via sourcing-analysis.
- * Voir : docs/chantier/REFACTO_ROUTES_STATUS.md (LOT R2)
+ * Voir : docs/chantier/REFACTO_ROUTES_STATUS.md (LOT R2), B1 (BACKEND_GOLIVE_ROADMAP.md)
  */
 
 'use strict';
@@ -41,7 +41,6 @@
 const express = require('express');
 const router  = express.Router();
 
-const db = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const sourcingAnalysis  = require('../services/sourcing-analysis');
 const sourcingMutations = require('../services/sourcing-mutations');
@@ -96,27 +95,9 @@ router.get('/config', authenticate, requireAdmin, async (req, res, next) => {
 // ── GET /products/:id/variants ───────────────────────────────────────────────
 router.get('/products/:id/variants', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows: prodRows } = await db.query(
-      `SELECT id, has_variants FROM products WHERE id = $1`,
-      [req.params.id]
-    );
-    if (!prodRows.length) return res.status(404).json({ error: 'Produit introuvable' });
-
-    const { rows } = await db.query(
-      `SELECT id, variant_type, variant_value, sku, stock, price_kmf, image_url, display_order,
-              created_at, updated_at
-         FROM product_variants
-        WHERE product_id = $1
-        ORDER BY variant_type ASC, display_order ASC, variant_value ASC`,
-      [req.params.id]
-    );
-
-    res.json({
-      product_id:   req.params.id,
-      has_variants: prodRows[0].has_variants,
-      variants:     rows,
-      total:        rows.length,
-    });
+    const result = await sourcingAnalysis.getProductVariants(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Produit introuvable' });
+    res.json(result);
   } catch (err) { next(err); }
 });
 
