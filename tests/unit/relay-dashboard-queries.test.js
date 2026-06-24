@@ -286,7 +286,7 @@ describe('getOrderDetail', () => {
     expect(result.notifications_envoyees).toEqual([]);
   });
 
-  it('cherche la commande par id OU reference', async () => {
+  it("cherche par reference uniquement quand orderId n'est pas un UUID", async () => {
     db.query
       .mockResolvedValueOnce({ rows: [BASE_ORDER] })
       .mockResolvedValueOnce({ rows: [] })
@@ -297,7 +297,26 @@ describe('getOrderDetail', () => {
 
     await relayQueries.getOrderDetail(RELAY_USER, 'CMD-100');
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).toContain('o.id = $1 OR o.reference = $1');
+    // CMD-100 n'est pas un UUID -> branche reference uniquement
+    expect(sql).toContain('o.reference = $1');
+    expect(sql).not.toContain('o.id =');
     expect(params).toEqual(['CMD-100']);
+  });
+
+  it('cherche par id ET reference quand orderId est un UUID', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [BASE_ORDER] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const uuid = 'e3e70682-c209-4cac-629f-6fbed82c07cd';
+    await relayQueries.getOrderDetail(RELAY_USER, uuid);
+    const [sql, params] = db.query.mock.calls[0];
+    // UUID valide -> branche id::uuid OR reference
+    expect(sql).toContain('o.id = $1::uuid OR o.reference = $1');
+    expect(params).toEqual([uuid]);
   });
 });

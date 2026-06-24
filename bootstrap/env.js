@@ -33,6 +33,7 @@ const log = require('../utils/logger').child({ module: 'env' });
  *
  * RECOMMENDED — warn seulement (features dégradées mais app fonctionnelle) :
  *   STRIPE_SHARED_CART_WEBHOOK_SECRET (panier collectif)
+ *   STRIPE_PUBLISHABLE_KEY (sans elle, /api/payments/config renvoie 500 — GOV-04)
  *   PAYPAL_ENV (défaut: 'sandbox' — explicite pour prod)
  */
 
@@ -61,6 +62,7 @@ function loadAndValidateEnv({ exitOnMissing = true } = {}) {
 
   const recommendedEnv = [
     'STRIPE_SHARED_CART_WEBHOOK_SECRET',
+    'STRIPE_PUBLISHABLE_KEY', // sans elle, /api/payments/config renvoie 500 (GOV-04)
     'PAYPAL_ENV', // sandbox | production — défaut sandbox côté code
     'TRANSITAIRE_PASSWORD', // compte opérationnel agent_transitaire — skip seeding si absent
     'AUTHKEY_WEBHOOK_SECRET', // token webhook Authkey — requis en prod, fail-closed si absent

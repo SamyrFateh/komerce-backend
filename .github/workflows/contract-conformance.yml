@@ -7,13 +7,30 @@ name: Contract conformance (P4-1 — bloquant)
 # statut déclaré, pas de 500 inattendu, méthodes supportées, etc.).
 #
 # MODE BLOQUANT (GOV-04 activé) : gate server_error bloquante.
-# Aucun 5xx réel détecté lors du run de validation (run #60, 2026-06-24).
+# Run de validation (run #60, 2026-06-24) : 0 5xx. Run suivant (run
+# 75718588251, 2026-06-24) a trouvé 5 server_error :
+#   - GET /api/dashboard/retards (500) et GET /api/invoices/{orderId}/json
+#     (500) — vrais bugs, corrigés (alias SQL "p" manquant dans
+#     getRetards ; orderId non validé comme UUID avant requête).
+#   - GET /api/payments/config (500 "Stripe non configuré") — faux positif
+#     CI : STRIPE_PUBLISHABLE_KEY manquait dans l'env du job alors que
+#     STRIPE_SECRET_KEY/WEBHOOK_SECRET y sont. Root-cause fix : dummy
+#     ajoutée ci-dessous, pas d'exclusion nécessaire.
+#   - GET /health/detailed (503) et POST /api/auth/auto-register (503) —
+#     faux positifs CI structurels, exclus de la gate ci-dessous (voir
+#     raisons en regard de chaque --exclude-path).
 # Les NetworkError/timeout sur /api/admin/signals/* et /api/payments/paypal/refund
 # sont des ERRORS Schemathesis (appels externes sans secrets réels en CI) —
 # non couverts par not_a_server_error, n'affectent pas la gate.
 # Exclusions calibrées :
 #   - unsupported_method : Express renvoie 404 sur TRACE (pas 405) — comportement
 #     framework non modifiable, pas un bug applicatif.
+#   - GET /health/detailed : sondes Stripe/PayPal réelles (stripe.balance.retrieve(),
+#     OAuth PayPal) échouent forcément avec des clés dummy CI → 503 degraded
+#     attendu, c'est la fonction même du healthcheck (cf. STATUS.md AUD-02).
+#   - POST /api/auth/auto-register : fail-closed intentionnel si INTERNAL_API_KEY
+#     absent (503 "Endpoint désactivé") — endpoint interne, pas activé en CI
+#     par choix (pas de clé interne à fuzzer sans risque).
 # 429 désormais documenté dans le contrat → plus de bruit response_conformance.
 # Path params manquants corrigés dans openapi.json → plus d'erreurs Schema Error.
 
@@ -54,6 +71,7 @@ jobs:
       ADMIN_PASSWORD: ci-dummy
       STRIPE_SECRET_KEY: sk_test_dummy
       STRIPE_WEBHOOK_SECRET: whsec_dummy
+      STRIPE_PUBLISHABLE_KEY: pk_test_dummy
       QR_SECRET: ci-dummy
       AUTHKEY_API_KEY: ci-dummy
       PAYPAL_CLIENT_ID: ci-dummy
@@ -119,6 +137,8 @@ jobs:
           -H "Authorization: Bearer ${PROBE_TOKEN}"
           --continue-on-failure
           --max-examples 5
+          --exclude-path /health/detailed
+          --exclude-path /api/auth/auto-register
           --checks not_a_server_error
           --report junit --report-dir schemathesis-report
 

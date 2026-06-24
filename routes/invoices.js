@@ -50,6 +50,11 @@ async function requireInvoiceOrderAccess(req, res, next) {
       return res.status(400).json({ error: 'orderId requis' });
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(orderId)) {
+      return res.status(400).json({ error: 'orderId invalide — UUID attendu' });
+    }
+
     if (['admin', 'agent_hub', 'agent_relais'].includes(role)) {
       return next();
     }

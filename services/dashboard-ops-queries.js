@@ -286,6 +286,12 @@ async function getRetards(niveau) {
       u.email AS client_email,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 86400 AS age_jours
     FROM orders o
+    LEFT JOIN LATERAL (
+      SELECT recipient_name, recipient_phone
+      FROM parcels
+      WHERE order_id = o.id AND status != 'cancelled'
+      ORDER BY created_at DESC LIMIT 1
+    ) p ON true
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN recipients rc ON rc.id = o.recipient_id
     WHERE o.status NOT IN ('collected','cancelled')
