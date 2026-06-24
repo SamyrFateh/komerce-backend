@@ -1040,7 +1040,9 @@ Statut : **clôturé — 2026-06-24** — renommé `migrations/2026_cost_benchma
 
 ### GOV-09 — AUD-10 script de bascule `schema_migrations` : exécution prod à confirmer
 
-Statut : **script fourni — 2026-06-24 — exécution manuelle requise sur DB live**.
+Statut : **clôturé — 2026-06-24**.
+
+**Résultat :** `schema_migrations` contenait les 8 noms (anciens + nouveaux) — les migrations avaient rejoué sous les nouveaux noms (idempotentes, sans dégât). Les 4 anciens noms orphelins (`014_*`, `072_*`, `073_*`, `074_*`) supprimés via `DELETE FROM schema_migrations WHERE filename IN (...)` — `DELETE 4` confirmé. `schema_migrations` ne contient plus que `083_*`, `084_*`, `085_*`, `086_*`.
 
 **Contexte :** AUD-10 (clos 2026-06-23) a renommé 4 migrations (`014`, `072`, `073`, `074` → `083`, `084`, `085`, `086`). Si `schema_migrations` contient encore les anciens noms, `run-migrations.js` verra les nouveaux comme "non appliqués" et les rejouera (idempotentes — pas de corruption, mais tracking incohérent).
 
@@ -1095,7 +1097,7 @@ Effet : les tests CI voient un schéma qui ne correspond pas à la prod — tout
 
 
 
-Statut : **clôturé par audit — 2026-06-24 — 2 points mineurs, 1 correction requise**.
+Statut : **clôturé — 2026-06-24**.
 
 **Périmètre :** 50+ fichiers `b-*.js`, `event-*.js`, `controllers/*.js` dans `public/boutique/js/`. AUD-06 avait couvert les vues admin ; ce ticket couvre la boutique cliente.
 
