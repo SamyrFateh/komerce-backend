@@ -47,13 +47,13 @@ if (!hasIntegrationEnv) {
   function stripeSign(payload) {
     const secret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy';
     const raw    = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    // Utiliser l'API officielle du SDK — garantit que le HMAC correspond
-    // exactement a ce que stripe.webhooks.constructEvent verifie.
+    // generateTestHeaderString garantit que le HMAC correspond exactement
+    // a ce que stripe.webhooks.constructEvent verifie cote handler.
+    // On passe raw en string — express.raw() le recoit comme Buffer intact.
     const Stripe = require('stripe');
     const stripeClient = new Stripe('sk_test_dummy', { apiVersion: '2023-10-16' });
     const header = stripeClient.webhooks.generateTestHeaderString({ payload: raw, secret });
-    // Envoyer un Buffer pour que supertest ne re-serialise pas le body.
-    return { raw: Buffer.from(raw), header };
+    return { raw, header };
   }
 
   // ── Helper : INSERT commande minimale directement en DB ───────────────────
