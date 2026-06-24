@@ -147,6 +147,7 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
   let triggerPurchasingFor = null;
   let smsContext           = null;
   let stockBlocked         = false;
+  let revealCode           = null;
 
   const client = await db.pool.connect();
   try {
@@ -240,7 +241,7 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
           stripe_receipt_email: stripeEmail,
         },
       });
-      await cacheCodeForReveal(orderId, genResult.code);
+      revealCode = genResult.code;
     } catch (genErr) {
       log.error({ err: genErr }, '[STRIPE-WEBHOOK] génération code échouée');
     }
@@ -267,6 +268,16 @@ async function handleStripeSucceeded(event, intent, db, triggerPurchasing) {
     throw err;
   } finally {
     client.release();
+  }
+
+  // cacheCodeForReveal uses db.query (pool), NOT the tx client.
+  // Must run AFTER COMMIT to avoid FK lock contention on orders row.
+  if (revealCode) {
+    try {
+      await cacheCodeForReveal(orderId, revealCode);
+    } catch (cacheErr) {
+      log.error({ err: cacheErr }, '[STRIPE-WEBHOOK] cacheCodeForReveal échouée');
+    }
   }
 
   // LOY-01 — Hook fidélité gros panier (fire-and-forget, non-bloquant)
