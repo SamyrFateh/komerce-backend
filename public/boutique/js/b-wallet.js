@@ -99,11 +99,13 @@ export function renderWalletView() {
       return;
     }
 
-    const balance = balData?.balance_kmf ?? 0;
+    const balance    = balData?.balance_kmf  ?? 0;
+    const expiresAt  = balData?.expires_at   ?? null;
     const transactions = txData?.transactions ?? [];
 
     el.innerHTML = '';
-    el.appendChild(buildBalanceCard(balance));
+    el.appendChild(buildBalanceCard(balance, expiresAt));
+    if (balance === 0) el.appendChild(buildEmptyState());
     el.appendChild(buildTransactionList(transactions));
   })();
 }
@@ -138,16 +140,81 @@ function renderAuthGate(el) {
 
 // ── Balance card ─────────────────────────────────────────────────────────────
 
-function buildBalanceCard(balance) {
+// ── Expiry helpers ────────────────────────────────────────────────────────────
+
+function fmtExpiry(isoDate) {
+  if (!isoDate) return null;
+  try {
+    const d = new Date(isoDate);
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (_) { return null; }
+}
+
+function daysUntil(isoDate) {
+  if (!isoDate) return Infinity;
+  try {
+    const now  = new Date(); now.setHours(0,0,0,0);
+    const then = new Date(isoDate); then.setHours(0,0,0,0);
+    return Math.round((then - now) / 86400000);
+  } catch (_) { return Infinity; }
+}
+
+// ── Balance card (nouveau design) ─────────────────────────────────────────────
+
+function buildBalanceCard(balance, expiresAt) {
   const card = document.createElement('div');
   card.className = 'k-wlt-card';
+
+  if (balance <= 0) return card; // état vide géré séparément
+
+  const days      = daysUntil(expiresAt);
+  const isUrgent  = days <= 7;
+  const expiryFmt = fmtExpiry(expiresAt);
+
+  let expiryHtml = '';
+  if (expiryFmt) {
+    const label   = days === 0 ? 'Expire aujourd\'hui'
+                  : days === 1 ? 'Expire demain'
+                  : isUrgent   ? 'Expire dans ' + days + ' jours'
+                  :              'Valable jusqu\'au ' + sanitize(expiryFmt);
+    const cls     = isUrgent ? 'k-wlt-expiry k-wlt-expiry--urgent' : 'k-wlt-expiry';
+    expiryHtml    =
+      '<div class="' + cls + '">' +
+        '<svg width="12" height="12" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x="1" y="2" width="11" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M4 1V3M9 1V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M1 5H12" stroke="currentColor" stroke-width="1.4"/></svg>' +
+        '<span>' + sanitize(label) + '</span>' +
+      '</div>';
+  }
+
   card.innerHTML =
-    '<div class="k-wlt-card-label">Solde disponible</div>' +
-    '<div class="k-wlt-card-amount">' + sanitize(fmt(balance, 'KMF')) + '</div>' +
-    (balance > 0
-      ? '<div class="k-wlt-card-hint">Utilisable au moment du paiement</div>'
-      : '<div class="k-wlt-card-hint">Aucun crédit pour le moment</div>');
+    '<div class="k-wlt-eyebrow">On vous rembourse</div>' +
+    '<div class="k-wlt-amount">' + sanitize(fmt(balance, 'KMF')) + '</div>' +
+    '<p class="k-wlt-sub">à utiliser dès maintenant sur la boutique</p>' +
+    expiryHtml +
+    '<button class="k-wlt-cta" id="k-wlt-cta-btn">' +
+      '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 2H3.5L4.5 9.5H12L13 5H5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5.5" cy="12.5" r="1" fill="white"/><circle cx="11.5" cy="12.5" r="1" fill="white"/></svg>' +
+      'Faire mes achats' +
+    '</button>';
+
+  // CTA → retour catalogue
+  card.querySelector('#k-wlt-cta-btn').addEventListener('click', () => {
+    document.querySelector('[data-tab="shop"], [data-nav="shop"]')?.click();
+  });
+
   return card;
+}
+
+// ── État vide (balance = 0) ───────────────────────────────────────────────────
+
+function buildEmptyState() {
+  const wrap = document.createElement('div');
+  wrap.className = 'k-wlt-zero';
+  wrap.innerHTML =
+    '<div class="k-wlt-zero-icon">' +
+      '<svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="3" y="5" width="26" height="22" rx="4" stroke="currentColor" stroke-width="1.8"/><path d="M3 12H29" stroke="currentColor" stroke-width="1.8"/><path d="M10 18H22M10 22H18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+    '</div>' +
+    '<p class="k-wlt-zero-title">Aucun crédit pour l\'instant</p>' +
+    '<p class="k-wlt-zero-sub">En cas de remboursement ou d\'avoir, le montant apparaîtra ici et sera utilisable immédiatement.</p>';
+  return wrap;
 }
 
 // ── Transaction list ─────────────────────────────────────────────────────────

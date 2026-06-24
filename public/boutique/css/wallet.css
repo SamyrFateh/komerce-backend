@@ -28,31 +28,68 @@
 }
 @keyframes k-wlt-spin { to { transform: rotate(360deg); } }
 
-/* ── Balance card ────────────────────────────────────────────── */
+/* ── Balance card (design Crédit Komerce) ────────────────────────────────── */
 .k-wlt-card {
-  background: linear-gradient(135deg, var(--ocean-dark-deep) 0%, var(--ocean-dark) 50%, var(--ocean) 100%);
-  border-radius: 14px;
-  padding: 18px 16px;
-  color: var(--white);
+  background: var(--white);
+  border: 1.5px solid var(--sand-dark);
+  border-radius: 22px;
+  padding: 30px 24px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(46,107,40,.06);
   margin-bottom: 16px;
 }
-.k-wlt-card-label {
-  font-size: .72rem;
-  opacity: .8;
-  letter-spacing: .3px;
-  margin-bottom: 4px;
+.k-wlt-eyebrow {
+  font-size: .72rem; font-weight: 700; letter-spacing: .4px;
+  text-transform: uppercase; color: var(--sage-dark);
+  margin-bottom: 10px;
 }
-.k-wlt-card-amount {
-  font-size: 1.65rem;
-  font-weight: 800;
-  letter-spacing: -.3px;
-  line-height: 1.2;
+.k-wlt-amount {
+  font-family: var(--font-display);
+  font-size: 2.6rem; font-weight: 600;
+  color: var(--ocean-dark-deep);
+  letter-spacing: -.5px; line-height: 1;
+  margin-bottom: 6px;
 }
-.k-wlt-card-hint {
-  font-size: .7rem;
-  opacity: .65;
-  margin-top: 6px;
+.k-wlt-sub {
+  font-size: .85rem; color: var(--text-muted);
+  margin-bottom: 22px;
 }
+.k-wlt-expiry {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .76rem; font-weight: 600; color: var(--sage-dark);
+  background: var(--sage-bg-pale);
+  border-radius: 100px; padding: 5px 12px;
+  margin-bottom: 22px;
+}
+.k-wlt-expiry svg { flex-shrink: 0; opacity: .8; }
+.k-wlt-expiry--urgent { color: var(--terracotta-dark); background: var(--terracotta-bg); }
+.k-wlt-cta {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px 24px;
+  background: var(--ocean-dark-deep);
+  border: none; border-radius: 14px;
+  color: var(--white); font-family: var(--font);
+  font-size: .9rem; font-weight: 700;
+  cursor: pointer; transition: opacity .15s, transform .12s;
+}
+.k-wlt-cta:hover { opacity: .92; }
+.k-wlt-cta:active { transform: scale(.98); }
+
+/* ── État vide (balance = 0) ─────────────────────────────────────────────── */
+.k-wlt-zero {
+  background: var(--white); border: 1.5px solid var(--sand-dark);
+  border-radius: 22px; padding: 44px 28px; text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,.04);
+  margin-bottom: 16px;
+}
+.k-wlt-zero-icon {
+  width: 56px; height: 56px; margin: 0 auto 18px;
+  background: var(--sage-bg-pale); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--sage-dark);
+}
+.k-wlt-zero-title { font-size: .98rem; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.k-wlt-zero-sub   { font-size: .8rem; color: var(--text-muted); line-height: 1.55; max-width: 280px; margin: 0 auto; }
 
 /* ── Section title ───────────────────────────────────────────── */
 .k-wlt-section-title {
