@@ -3024,8 +3024,7 @@ CREATE TABLE public.products (
     compatibility_group text,
     subcategory text,
     sourcing_rail text,
-    cost_price_kmf integer,
-    weight_g integer,
+    -- cost_price_kmf et weight_g supprimées en prod (post-087, voir C5) — absentes ici intentionnellement
     volume_class text,
     fragility text,
     sale_mode text,

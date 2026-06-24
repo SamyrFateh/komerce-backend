@@ -1001,3 +1001,149 @@ Statut : **clôturé — 2026-06-24**.
 
 - **Migration 089** — `DROP COLUMN cost_price_kmf / weight_g` — garde-fou date **2026-07-08**. Ne pas exécuter avant.
 - **ARCH-COUTURE-00** — architecture couture/variantes non arrêtée. En attente de décision produit.
+
+## 18. Session — Audit complémentaire sécurité & dettes (2026-06-24)
+
+### GOV-07 — Incohérence SameSite sur le cookie `kmrc_jwt`
+
+Statut : **clôturé — 2026-06-24** (commentaires GOV-07 ajoutés dans `routes/client-auth.js` ; déjà présents dans `routes/otp.js#jwtCookieOptions`).
+
+**Constat :** `kmrc_jwt` est posé avec `sameSite: 'Strict'` dans `routes/auth.js` et `middleware/auth-guest.js`, mais `sameSite: 'lax'` dans `routes/client-auth.js` (magic link) et `routes/otp.js` (OTP).
+
+**Analyse :**
+
+- **Magic link (`client-auth.js` L147)** — le `lax` est **fonctionnellement requis**. La validation se fait via `GET /api/client/magic-link/validate` déclenché depuis un lien email. Navigation top-level cross-site ; `Strict` bloquerait le cookie et casserait le flow. Pas de surface CSRF (GET sans effet de bord d'écriture).
+- **OTP (`otp.js` L67)** — le `lax` est sans surface exploitable. Le flow est 100 % interne (POST depuis la boutique), `lax` n'envoie pas le cookie sur les POST cross-site — risque CSRF réel nul. `Strict` fonctionnerait aussi, mais la différence pratique est nulle.
+- **Pas de token CSRF** dans l'architecture — exposition entièrement portée par `sameSite`.
+
+**Conclusion :** pas de correction sécurité requise. Seul risque : un futur développeur interprète le `lax` comme un oubli.
+
+**Action :** ajouter un commentaire `/* GOV-07 */` dans `routes/otp.js#jwtCookieOptions` et `routes/client-auth.js#res.cookie` expliquant l'intention. Fermer après commit.
+
+---
+
+### GOV-08 — `migrations/2026_cost_benchmarks.sql` : matche le scanner de migrations
+
+Statut : **clôturé — 2026-06-24** — renommé `migrations/2026_cost_benchmarks.sql` → `migrations/090_cost_benchmarks.sql`. Confirmé : la regex `^\d{3}.*\.sql$` reconnaît `090_cost_benchmarks.sql`, ordre d'exécution correct (après `089_*`). Contenu idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`).
+
+**Constat :** le fichier `migrations/2026_cost_benchmarks.sql` satisfait la regex `^\d{3}.*\.sql$` de `scripts/run-migrations.js` (les 4 premiers chars `2026` commencent par 3 chiffres). Il sera donc pris en charge par le scanner au prochain déploiement.
+
+**Ordre de tri :** tri alphanumérique — `2026_cost_benchmarks.sql` sort après `089_*` (car `'2' > '0'`), soit en dernière position parmi les migrations actuelles. Pas de problème d'ordre.
+
+**Contenu :** idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, INSERTs commentés). Pas de danger si rejoué.
+
+**Risque :** naming hors-convention uniquement — un développeur pourrait croire le fichier hors-scope du scanner.
+
+**Action :** renommer en `090_cost_benchmarks.sql` (prochain numéro disponible après 089). Si déjà appliqué manuellement en prod, ajouter l'entrée dans `schema_migrations` sous le nouveau nom avant déploiement, ou laisser le scanner le rejouer (idempotent).
+
+---
+
+### GOV-09 — AUD-10 script de bascule `schema_migrations` : exécution prod à confirmer
+
+Statut : **script fourni — 2026-06-24 — exécution manuelle requise sur DB live**.
+
+**Contexte :** AUD-10 (clos 2026-06-23) a renommé 4 migrations (`014`, `072`, `073`, `074` → `083`, `084`, `085`, `086`). Si `schema_migrations` contient encore les anciens noms, `run-migrations.js` verra les nouveaux comme "non appliqués" et les rejouera (idempotentes — pas de corruption, mais tracking incohérent).
+
+**Script fourni :** `scripts/gov09-aud10-check.js` — se connecte via `DATABASE_URL`, diagnostique l'état réel, applique les UPDATE si nécessaire.
+
+```bash
+# Diagnostic seul (dry-run — aucune écriture) :
+node scripts/gov09-aud10-check.js
+
+# Fix si nécessaire :
+node scripts/gov09-aud10-check.js --fix
+```
+
+Idempotent — peut être relancé sans risque. Affiche un résumé clair : OK / à corriger / non tracké.
+
+**Action avant prochain déploiement :** lancer sur DB live :
+
+```sql
+-- Vérification :
+SELECT filename FROM schema_migrations WHERE filename IN (
+  '014_transaction_documents.sql',      '072_jwt_revocation.sql',
+  '073_shared_cart_cash_contributions.sql', '074_invoice_public_token.sql',
+  '083_transaction_documents.sql',      '084_jwt_revocation.sql',
+  '085_shared_cart_cash_contributions.sql', '086_invoice_public_token.sql'
+);
+-- Anciens noms présents → lancer migrations/AUD-10_rename_tracking_fix.sql
+-- Nouveaux noms présents → déjà appliqué, rien à faire
+-- 0 résultat         → migrations non trackées, le runner s'en charge
+```
+
+Le script est idempotent — peut être relancé sans risque.
+
+**Vérification croisée depuis `schema_railway.sql` (2026-06-24) :** les tables et colonnes créées par les 4 migrations (083-086) sont toutes présentes en prod — `transaction_documents`, `revoked_tokens`, `invoices.public_token`, colonnes cash sur `shared_cart_contributions`. Les migrations ont bien tourné. Seul l'état de `schema_migrations` (anciens vs nouveaux noms) reste inconnu sans accès aux données — le script `gov09-aud10-check.js` le détermine.
+
+**Findings additionnels issus du dump prod :**
+
+- Migrations 087, 088, 089 (notification_log) : toutes appliquées, confirmées par colonnes/constraints/index présents.
+- `cost_benchmarks` : table déjà présente en prod → `090_cost_benchmarks.sql` sera idempotente au prochain déploiement (`CREATE TABLE IF NOT EXISTS`). Aucune action requise.
+- `cost_price_kmf` et `weight_g` : **absentes de prod** bien que 087 ne les droppe pas et que 089-scheduled n'ait pas encore été déplacé. Supprimées manuellement. → Drift corrigé dans `db/schema.sql` (voir GOV-11).
+
+---
+
+### GOV-11 — Drift `db/schema.sql` : colonnes `cost_price_kmf` / `weight_g` encore présentes
+
+Statut : **clôturé — 2026-06-24**.
+
+`db/schema.sql` (schéma de référence pour les tests CI) contenait encore `cost_price_kmf integer` et `weight_g integer` sur la table `products` (lignes 3027-3028), alors que ces colonnes sont absentes de la DB prod (supprimées manuellement post-C5, confirmé par `schema_railway.sql`).
+
+Effet : les tests CI voient un schéma qui ne correspond pas à la prod — tout test vérifiant la structure de `products` ou testant un INSERT/SELECT sur ces colonnes aurait produit un faux négatif.
+
+**Correction :** colonnes supprimées de `db/schema.sql`, remplacées par un commentaire documentant l'intention (`-- cost_price_kmf et weight_g supprimées en prod (post-087, voir C5)`). Suite de tests à relancer après ce changement pour confirmer 908/908 verts.
+
+
+
+Statut : **clôturé par audit — 2026-06-24 — 2 points mineurs, 1 correction requise**.
+
+**Périmètre :** 50+ fichiers `b-*.js`, `event-*.js`, `controllers/*.js` dans `public/boutique/js/`. AUD-06 avait couvert les vues admin ; ce ticket couvre la boutique cliente.
+
+**Méthode :** scan statique de tous les `innerHTML` avec interpolation de variables, filtré sur les variables non enveloppées dans `sanitize()` / `escHtml()` / `fmt()` / `fmtPrice()` / `fmtDate()`.
+
+**Résultat global :** la boutique est saine. Les données serveur sensibles (noms produits, références commandes, noms utilisateurs, noms relais) passent systématiquement par `sanitize()` (définie dans `b-utils.js:66`) avant injection. `product.name` est rendu via `textContent` (L449 de `b-modal-product.js`). Les modules récents (`b-wallet.js`, `b-group-view.js`) appliquent `sanitize()` sur toutes les interpolations.
+
+**Points identifiés :**
+
+| Ref | Fichier | Ligne | Risque | Verdict |
+|---|---|---|---|---|
+| GOV-10-B1 | `b-favs.js` | 99 | `${favProducts.length}` dans innerHTML | Entier — **nul** |
+| GOV-10-B2 | `b-share-cart.js` | 517 | `cartName` via `.replace(/</g,'&lt;')` | Protection incomplète (`<` seulement) — **faible mais à corriger** |
+
+**GOV-10-B2 détail :** `promptActiveCartChoice(cartName)` injecte `cartName` (nom de groupe, valeur serveur) avec une sanitization partielle qui ne couvre que `<`. Un `cartName` contenant `"`, `'`, `>` ou `&` ne serait pas neutralisé. Aucun attribut dynamique n'entoure ce champ actuellement, mais la protection doit être alignée sur le reste du code.
+
+**Correction GOV-10-B2** — dans `b-share-cart.js` (fichier boutique, pas backend) :
+```js
+// Avant
+'<strong>' + String(cartName || 'Panier groupe').replace(/</g,'&lt;') + '</strong>'
+// Après
+'<strong>' + sanitize(String(cartName || 'Panier groupe')) + '</strong>'
+```
+`sanitize` est importée depuis `b-utils.js` dans ce fichier — pas de nouvel import requis.
+
+**Statut correction B2 :** ✅ **clôturé — 2026-06-24**. `sanitize()` importée depuis `b-utils.js` dans `b-share-cart.js` et appliquée sur `cartName` (`promptActiveCartChoice`, L519). Import ajouté L43.
+
+---
+
+### SRC-03 — Sourcing PO idempotent par fournisseur : état réel du code
+
+Statut : **ouvert P1 — comportement confirmé par code, refactoring requis**.
+
+**Analyse `services/purchasing-trigger-service.js` :**
+
+Le service itère sur les `order_items` et crée **1 PO par ligne** (`INSERT INTO purchase_orders` L227). L'idempotence (I-SWEEP-3B, L205-218) porte sur `(order_id, product_supplier_id)` — elle empêche le doublon de la même ligne, mais n'agrège pas deux lignes du même fournisseur.
+
+**Conséquence concrète :** une commande avec `Produit A (F1, qté 2)` + `Produit B (F1, qté 1)` génère **2 POs distincts** vers le fournisseur F1 — 2 notifications WhatsApp ou 2 appels API séparés. Le fournisseur gère 2 commandes pour 1 livraison.
+
+**Impact opérationnel :** fragmentation des commandes fournisseur, multiplication des suivis, risque d'incohérence de livraison (2 colis pour 1 commande client).
+
+**Lien variantes :** la consolidation multi-SKU est encore plus critique avec les variantes (taille/couleur), où plusieurs `order_items` pointent le même fournisseur avec des SKUs différents. Bloqué sur décision **ARCH-COUTURE-00**.
+
+**Refactoring requis dans `purchasing-trigger-service.js` :**
+1. Grouper les `order_items` par `supplier_id` avant la boucle de création PO.
+2. Créer 1 PO unique par fournisseur avec les lignes agrégées (champ JSON `lines` ou table `purchase_order_items`).
+3. Ajuster les notifications (WhatsApp, API) pour transmettre le paquet consolidé.
+4. Mettre à jour l'idempotence : vérifier sur `(order_id, supplier_id)` plutôt que `(order_id, product_supplier_id)`.
+
+Ne pas implémenter avant la décision ARCH-COUTURE-00 sur les variantes (la structure `lines` doit couvrir les deux cas).
+

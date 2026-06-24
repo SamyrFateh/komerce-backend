@@ -144,8 +144,12 @@ router.get('/magic-link/validate', async (req, res, next) => {
     res.cookie('kmrc_jwt', jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      // GOV-07 : 'lax' requis (pas 'Strict') — cette route est appelée lors d'une
+      // navigation top-level cross-site (lien magic link depuis un email).
+      // 'Strict' supprimerait le cookie sur ce parcours et casserait le flow de connexion.
+      // Pas de surface CSRF : ce GET n'a pas d'effet de bord d'écriture.
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     log.info('[magic-link] Login success', { userId: user.id, phone: maskPhone(user.phone) });

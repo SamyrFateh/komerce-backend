@@ -40,6 +40,7 @@ import {
 // FIX UX — Réutiliser les helpers checkout pour un style uniforme (padding, indicatifs)
 import { makeInput, makeIntlPhoneInput } from './b-checkout.js';
 import { requireIdentity } from './b-identity.js';
+import { sanitize } from './b-utils.js'; // GOV-10-B2
 
 const API_CREATE = '/api/shared-carts/from-cart-items';
 const API_MINE = '/api/shared-carts/mine';
@@ -515,7 +516,7 @@ function promptActiveCartChoice(cartName) {
       </div>
       <p class="k-sm-hint">
         Vous avez déjà un panier groupe actif :
-        <strong>${String(cartName || 'Panier groupe').replace(/</g,'&lt;')}</strong>.
+        <strong>${sanitize(String(cartName || 'Panier groupe'))}</strong>. <!-- GOV-10-B2 -->
       </p>
       <div class="k-sm-choice">
         <button class="k-sm-btn" id="k-sm-view-group">👥 Voir mon groupe actif</button>

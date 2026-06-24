@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict HVWRzSduQfDn2UA5hOjtIa9fFDdzPKKmfOKBMKJOh72ocX0SeVFNLg68Bv5vTDd
+\restrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -1797,8 +1797,8 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 CREATE TABLE public.notification_log (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parcel_ref character varying(30),
-    order_ref character varying(30),
+    parcel_ref text,
+    order_ref text,
     channel character varying(20) NOT NULL,
     event character varying(50) NOT NULL,
     recipient character varying(100),
@@ -2560,6 +2560,7 @@ CREATE TABLE public.partners (
     contact_email text,
     address text,
     zone text,
+    CONSTRAINT chk_partners_partner_type CHECK ((partner_type = ANY (ARRAY['relais_simple'::text, 'relais_showroom'::text, 'partenaire_avance'::text, 'atelier_couture'::text, 'artisan_retouche'::text, 'franchise_s5'::text]))),
     CONSTRAINT partners_rating_check CHECK (((rating IS NULL) OR ((rating >= 1) AND (rating <= 5))))
 );
 
@@ -3024,8 +3025,6 @@ CREATE TABLE public.products (
     compatibility_group text,
     subcategory text,
     sourcing_rail text,
-    cost_price_kmf integer,
-    weight_g integer,
     volume_class text,
     fragility text,
     sale_mode text,
@@ -3040,6 +3039,7 @@ CREATE TABLE public.products (
     has_variants boolean DEFAULT false NOT NULL,
     product_ref text DEFAULT ('KPR-'::text || lpad((nextval('public.product_ref_seq'::regclass))::text, 6, '0'::text)),
     CONSTRAINT chk_products_price CHECK ((price_kmf > 0)),
+    CONSTRAINT chk_products_sourcing_rail CHECK (((sourcing_rail IS NULL) OR (sourcing_rail = ANY (ARRAY['A'::text, 'B'::text, 'C'::text, 'D'::text])))),
     CONSTRAINT chk_products_stock CHECK ((stock >= 0)),
     CONSTRAINT chk_stock_nonneg CHECK (((stock >= 0) OR (stock IS NULL))),
     CONSTRAINT price_eur_positive CHECK (((price_eur IS NULL) OR (price_eur >= (0)::numeric)))
@@ -3214,7 +3214,7 @@ CREATE TABLE public.revoked_tokens (
 -- Name: TABLE revoked_tokens; Type: COMMENT; Schema: public; Owner: -
 --
 
-COMMENT ON TABLE public.revoked_tokens IS 'JWT rÃ©voquÃ©s avant expiration naturelle. Le cron startJwtRevocationCleanupCron purge les lignes dont expires_at < NOW().';
+COMMENT ON TABLE public.revoked_tokens IS 'JWT révoqués avant expiration naturelle. Le cron startJwtRevocationCleanupCron purge les lignes dont expires_at < NOW().';
 
 
 --
@@ -7045,6 +7045,20 @@ CREATE INDEX idx_sc_state ON public.sourcing_candidates USING btree (state);
 
 
 --
+-- Name: idx_sc_state_import; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sc_state_import ON public.sourcing_candidates USING btree (state, import_id);
+
+
+--
+-- Name: idx_sc_state_supplier; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_sc_state_supplier ON public.sourcing_candidates USING btree (state, supplier_name);
+
+
+--
 -- Name: idx_sc_supplier; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -9082,5 +9096,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HVWRzSduQfDn2UA5hOjtIa9fFDdzPKKmfOKBMKJOh72ocX0SeVFNLg68Bv5vTDd
+\unrestrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
 
