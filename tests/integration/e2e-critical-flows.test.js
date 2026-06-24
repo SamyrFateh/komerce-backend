@@ -45,15 +45,14 @@ if (!hasIntegrationEnv) {
 
   // ── Helper : signer un événement Stripe webhook (HMAC local) ─────────────
   function stripeSign(payload) {
-    const rawSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy';
-    // Le SDK Stripe stripe le préfixe `whsec_` avant de calculer le HMAC —
-    // on reproduit ce comportement pour que les signatures correspondent.
-    const secret    = rawSecret.startsWith('whsec_') ? rawSecret.slice(6) : rawSecret;
+    const secret    = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy';
     const timestamp = Math.floor(Date.now() / 1000);
     const raw       = typeof payload === 'string' ? payload : JSON.stringify(payload);
     const signed    = `${timestamp}.${raw}`;
     const sig       = crypto.createHmac('sha256', secret).update(signed).digest('hex');
-    return { raw, header: `t=${timestamp},v1=${sig}` };
+    // Retourner un Buffer — supertest ne re-sérialisera pas un Buffer,
+    // garantissant que le body envoyé correspond exactement au body signé.
+    return { raw: Buffer.from(raw), header: `t=${timestamp},v1=${sig}` };
   }
 
   // ── Helper : INSERT commande minimale directement en DB ───────────────────
