@@ -61,8 +61,8 @@ if (!hasIntegrationEnv) {
 
     // Produit brut : pas de rail, pas de variantes — état "entrant" du flow
     const { rows: [prod] } = await db.query(
-      `INSERT INTO products (name, category, price_kmf, cost_kmf, weight_g, stock, is_active)
-       VALUES ('Produit G5 Flow','test',5000,2500,300,0,false)
+      `INSERT INTO products (name, category, price_kmf, cost_kmf, weight_kg, stock, is_active)
+       VALUES ('Produit G5 Flow','test',5000,2500,0.30,0,false)
        RETURNING id`
     );
     productId = prod.id;
