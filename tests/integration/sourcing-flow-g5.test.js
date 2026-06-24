@@ -87,9 +87,9 @@ if (!hasIntegrationEnv) {
         .set(...bearer(adminUser.token));
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('product');
+      expect(res.body).toHaveProperty('id');
       // Rail n'est pas encore assigné
-      const rail = res.body.product?.rail ?? res.body.analysis?.rail ?? null;
+      const rail = res.body.sourcing?.rail ?? null;
       expect(rail).toBeFalsy();
     });
 
@@ -98,7 +98,7 @@ if (!hasIntegrationEnv) {
       const res = await request(app)
         .put(`${SOURCING}/products/${productId}`)
         .set(...bearer(adminUser.token))
-        .send({ rail: 'A' });
+        .send({ sourcing_rail: 'A' });
 
       expect([200, 204]).toContain(res.status);
     });
@@ -110,8 +110,8 @@ if (!hasIntegrationEnv) {
         .set(...bearer(adminUser.token))
         .send({
           variants: [
-            { variant_type: 'couleur', variant_value: 'Noir', sku: 'G5-BLK', stock: 20, price_kmf: 5000 },
-            { variant_type: 'couleur', variant_value: 'Blanc', sku: 'G5-WHT', stock: 20, price_kmf: 5000 },
+            { type: 'couleur', value: 'Noir', sku: 'G5-BLK', stock: 20, price_kmf: 5000 },
+            { type: 'couleur', value: 'Blanc', sku: 'G5-WHT', stock: 20, price_kmf: 5000 },
           ],
         });
 
@@ -127,7 +127,7 @@ if (!hasIntegrationEnv) {
       expect(res.status).toBe(200);
 
       // Rail A doit maintenant être renseigné
-      const railValue = res.body.product?.rail ?? res.body.analysis?.rail;
+      const railValue = res.body.sourcing?.rail;
       expect(railValue).toBe('A');
     });
 
