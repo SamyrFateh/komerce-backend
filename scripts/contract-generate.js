@@ -438,6 +438,9 @@ const KNOWN_RESPONSES = {
   '/api/admin/orders/{id}': {
     delete: { fields: ['success','message','deleted'], source: 'route-read' }
   },
+  '/api/admin/orders/{id}/refund': {
+    post: { fields: ['success','refund_id','message'], source: 'route-read' }
+  },
 
   // admin-dashboard.js
   '/api/admin/dashboard': {
@@ -1532,6 +1535,11 @@ const KNOWN_RESPONSES = {
   },
   '/api/admin/finance/report': {
     get: { fields: ['report'], source: 'route-read' }
+  },
+
+  // admin/system.js — maintenance tools
+  '/api/admin/purchasing/repair-ordered-without-pos': {
+    post: { fields: ['ok','repaired','errors'], source: 'route-read' }
   },
 
   // admin-radar.js
