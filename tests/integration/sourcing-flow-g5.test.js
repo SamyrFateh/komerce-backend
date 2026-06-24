@@ -48,7 +48,7 @@ if (!hasIntegrationEnv) {
 
   const bearer  = (t) => ['Authorization', `Bearer ${t}`];
   const SOURCING = '/api/admin/sourcing';
-  const PRODUCTS = '/api/admin/products';
+  const PRODUCTS = '/api/products';
 
   beforeAll(async () => {
     process.env.NODE_ENV   = 'test';
