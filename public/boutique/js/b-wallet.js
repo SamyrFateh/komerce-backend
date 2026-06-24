@@ -104,9 +104,14 @@ export function renderWalletView() {
     const transactions = txData?.transactions ?? [];
 
     el.innerHTML = '';
-    el.appendChild(buildBalanceCard(balance, expiresAt));
-    if (balance === 0) el.appendChild(buildEmptyState());
-    el.appendChild(buildTransactionList(transactions));
+    if (balance > 0) {
+      el.appendChild(buildBalanceCard(balance, expiresAt));
+    } else {
+      el.appendChild(buildEmptyState());
+    }
+    if (transactions.length > 0) {
+      el.appendChild(buildTransactionList(transactions));
+    }
   })();
 }
 
