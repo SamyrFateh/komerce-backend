@@ -45,7 +45,10 @@ if (!hasIntegrationEnv) {
 
   // ── Helper : signer un événement Stripe webhook (HMAC local) ─────────────
   function stripeSign(payload) {
-    const secret    = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy';
+    const rawSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy';
+    // Le SDK Stripe stripe le préfixe `whsec_` avant de calculer le HMAC —
+    // on reproduit ce comportement pour que les signatures correspondent.
+    const secret    = rawSecret.startsWith('whsec_') ? rawSecret.slice(6) : rawSecret;
     const timestamp = Math.floor(Date.now() / 1000);
     const raw       = typeof payload === 'string' ? payload : JSON.stringify(payload);
     const signed    = `${timestamp}.${raw}`;
