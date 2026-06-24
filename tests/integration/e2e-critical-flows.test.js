@@ -195,7 +195,7 @@ if (!hasIntegrationEnv) {
       const order = await seedOrder({
         payment_mode:    'stripe_eur',
         payment_status:  'pending',
-        status:          'confirmed',
+        status:          'pending',   // doit être pending pour que pending→confirmed déclenche payment_status=paid
         total_eur:       10.18,
       });
 
