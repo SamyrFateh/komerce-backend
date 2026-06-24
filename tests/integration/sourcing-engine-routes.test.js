@@ -128,12 +128,12 @@ if (!hasIntegrationEnv) {
         .get(`${BASE}/analysis/${productId}`)
         .set(...bearer(adminUser.token));
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('product');
+      expect(res.body).toHaveProperty('id');
     });
 
     test('404 produit inexistant', async () => {
       const res = await request(app)
-        .get(`${BASE}/analysis/999999999`)
+        .get(`${BASE}/analysis/00000000-0000-0000-0000-000000000000`)
         .set(...bearer(adminUser.token));
       expect(res.status).toBe(404);
     });
@@ -166,7 +166,7 @@ if (!hasIntegrationEnv) {
     test('401 sans token', async () => {
       const res = await request(app)
         .put(`${BASE}/products/${productId}`)
-        .send({ rail: 'A' });
+        .send({ sourcing_rail: 'A' });
       expect(res.status).toBe(401);
     });
 
@@ -174,7 +174,7 @@ if (!hasIntegrationEnv) {
       const res = await request(app)
         .put(`${BASE}/products/${productId}`)
         .set(...bearer(clientUser.token))
-        .send({ rail: 'A' });
+        .send({ sourcing_rail: 'A' });
       expect([401, 403]).toContain(res.status);
     });
 
@@ -182,15 +182,15 @@ if (!hasIntegrationEnv) {
       const res = await request(app)
         .put(`${BASE}/products/${productId}`)
         .set(...bearer(adminUser.token))
-        .send({ rail: 'A' });
+        .send({ sourcing_rail: 'A' });
       expect([200, 204]).toContain(res.status);
     });
 
     test('404 produit inexistant', async () => {
       const res = await request(app)
-        .put(`${BASE}/products/999999999`)
+        .put(`${BASE}/products/00000000-0000-0000-0000-000000000000`)
         .set(...bearer(adminUser.token))
-        .send({ rail: 'B' });
+        .send({ sourcing_rail: 'B' });
       expect(res.status).toBe(404);
     });
   });
@@ -270,7 +270,7 @@ if (!hasIntegrationEnv) {
 
     test('404 produit inexistant', async () => {
       const res = await request(app)
-        .get(`${BASE}/products/999999999/variants`)
+        .get(`${BASE}/products/00000000-0000-0000-0000-000000000000/variants`)
         .set(...bearer(adminUser.token));
       expect(res.status).toBe(404);
     });
@@ -281,8 +281,8 @@ if (!hasIntegrationEnv) {
   // ════════════════════════════════════════════════════════════════════════════
   describe('PUT /products/:id/variants', () => {
     const sampleVariants = [
-      { variant_type: 'taille', variant_value: 'S', sku: 'E6-SKU-S', stock: 10, price_kmf: 3000 },
-      { variant_type: 'taille', variant_value: 'M', sku: 'E6-SKU-M', stock: 15, price_kmf: 3000 },
+      { type: 'taille', value: 'S', sku: 'E6-SKU-S', stock: 10, price_kmf: 3000 },
+      { type: 'taille', value: 'M', sku: 'E6-SKU-M', stock: 15, price_kmf: 3000 },
     ];
 
     test('401 sans token', async () => {
