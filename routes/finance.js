@@ -111,7 +111,7 @@ router.get('/export', ...adminOnly, async (req, res, next) => {
       ) er ON TRUE
       WHERE o.created_at >= $1
         AND o.created_at <  $2
-        AND o.status != 'draft'
+        AND o.status != 'cancelled'
       ORDER BY o.created_at ASC
     `, [debut, fin]);
 
