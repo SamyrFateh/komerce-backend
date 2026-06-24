@@ -26,6 +26,15 @@
  * CONVENTION ENUM : ne jamais UTILISER une valeur d'enum dans la même migration
  * qui l'ajoute (ALTER TYPE ... ADD VALUE), car le fichier tourne dans une seule
  * transaction. Scinder en deux migrations si besoin.
+ *
+ * CONVENTION GARDE-FOU (incident 2026-06-24) : ce runner abandonne tout le run
+ * sur le premier échec (comportement voulu pour de vraies erreurs SQL), et
+ * railway.toml l'appelle comme releaseCommand à chaque déploiement touchant
+ * migrations/**. Un fichier qui échoue volontairement (ex. RAISE EXCEPTION si
+ * une date n'est pas atteinte) fait donc échouer le déploiement, pas juste un
+ * warning. Toute migration pas encore prête à s'exécuter doit vivre dans
+ * migrations/scheduled/ (non scanné, voir son README) et n'être déplacée ici
+ * que quand elle est réellement prête à être appliquée au prochain déploiement.
  * ============================================================================
  */
 

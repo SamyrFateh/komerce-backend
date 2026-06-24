@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24 · SESSION C5bis (incident déploiement 089) — 2026-06-24**.
 
 Validation effectuee (2026-06-15) :
 
@@ -509,6 +509,18 @@ Vérifié : `tests/unit/dashboard-ops-queries.test.js` (12/12) et `tests/unit/in
 
 DoD "porte `server_error` bloquante" : **satisfait**. Gate Schemathesis désormais réellement à 0 server_error documenté/justifié sur les 421 routes du contrat.
 
+### C5bis — Incident : migration 089 bloquait tous les déploiements Railway
+
+Statut : **clos — 2026-06-24**.
+
+Signalé comme "erreur SQL 089". Root cause : `railway.toml` lance `node scripts/migrate.js` en `releaseCommand` à chaque déploiement touchant `migrations/**` (089 en fait partie). `scripts/run-migrations.js` scanne `migrations/*.sql`, trouve `089` non encore appliquée, l'exécute — son garde-fou date (`RAISE EXCEPTION` si avant le 2026-07-08, comportement voulu en lui-même) déclenche alors un `throw` qui abandonne tout le run (comportement voulu pour de vraies erreurs SQL), et `migrate.js` fait `process.exit(1)`. **Le releaseCommand Railway échouait donc à chaque déploiement** — pas un simple warning, un vrai blocage de déploiement — depuis la création de `089` en session C5, jusqu'à ce que ce soit remarqué.
+
+Fix : nouveau dossier `migrations/scheduled/` (non scanné par `run-migrations.js` — `fs.readdirSync` n'est pas récursif). `089` y est déplacée avec une procédure de réactivation documentée dans son en-tête (`git mv` vers `migrations/` à partir du 2026-07-08, après la vérification manuelle déjà prévue). README ajouté expliquant la convention pour toute future migration à garde-fou. Pointeur ajouté dans l'en-tête de `run-migrations.js` pour que cette convention soit visible avant qu'une nouvelle migration guardée ne soit créée directement dans `migrations/`.
+
+Vérifié : `listMigrationFiles()` ne retourne plus `089` (81 fichiers scannés, contre 82 avant déplacement).
+
+Note annexe (non traitée, hors scope) : `migrations/2026_cost_benchmarks.sql` matche aussi le pattern numéroté du scanner (`^\d{3}`) — même classe de risque si jamais non encore appliquée en prod. Pas creusé cette session.
+
 ### GOV-05 — Fictions DB actives (drift allowlist)
 
 Statut : **clos — 2026-06-23**.
@@ -561,6 +573,7 @@ Notes d'implémentation :
 9. ~~**AUD-05** (extraire 10 handlers de `auth.js` vers leurs routes).~~ — ✅ **clôturé 2026-06-23** (`authenticate()` ne fait plus que auth ; routes ajoutées dans `admin/orders.js` et `admin/system.js` ; handlers collectifs supprimés ZG-3).
 10. ~~**GOV-04** (brûler UNKNOWN contrat OpenAPI admin+paiement+commandes).~~ — ✅ **clôturé 2026-06-24** (421 routes · 0 UNKNOWN, `ROUTE_SCHEMA_MAP` nettoyé de 4 entrées fantômes, 2 dernières routes fermées par test — détail ci-dessus §GOV-04).
 10bis. ~~**GOV-04bis** (premier run réel gate Schemathesis bloquante — 5 server_error).~~ — ✅ **clôturé 2026-06-24** (2 vrais bugs corrigés : alias SQL manquant `getRetards`, UUID non validé sur `/api/invoices/:orderId/*` ; 3 faux positifs CI traités, voir §GOV-04bis).
+10ter. ~~**C5bis** (migration 089 bloquait tous les déploiements Railway via releaseCommand).~~ — ✅ **clôturé 2026-06-24** (089 relocalisée dans `migrations/scheduled/` non scanné, procédure de réactivation 2026-07-08 documentée, voir §C5bis).
 11. ~~**GOV-06** (5 tests E2E parcours critiques).~~ — ✅ **clôturé 2026-06-23** (`e2e-critical-flows.test.js`, 12 assertions, 5 parcours, câblage CI automatique).
 12. ~~**AUD-06** (sanitization dashboard admin + audit innerHTML boutique)~~ — ✅ **clôturé 2026-06-23** (esc() ajoutée dans 9 vues, faux positifs confirmés).
 13. ~~**AUD-07** (migrer 6 interpolations SQL vers paramètres)~~ — ✅ **clôturé 2026-06-23** (allowlists explicites + annotations, 0 input user dans les identifiants SQL).
