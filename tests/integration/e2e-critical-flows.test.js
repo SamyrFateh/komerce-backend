@@ -22,6 +22,19 @@
  * Sans DATABASE_URL → suite skippée proprement.
  */
 
+// ── Mocks fire-and-forget (évitent les timeouts CI sur appels réseau) ────────
+// notification-service et purchasing-trigger font des appels SMS/WA/DB
+// asynchrones non-awaités — on les neutralise pour les tests d'intégration.
+jest.mock('../../services/notification-service', () => ({
+  notifyPaymentConfirmed:  jest.fn().mockResolvedValue(undefined),
+  notifyOrderCreated:      jest.fn().mockResolvedValue(undefined),
+  notifyCancellation:      jest.fn().mockResolvedValue(undefined),
+  notifySharedCartClosed:  jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('../../services/purchasing-trigger-service', () => ({
+  triggerPurchasing: jest.fn().mockResolvedValue(undefined),
+}));
+
 const crypto = require('crypto');
 
 const hasIntegrationEnv = Boolean(process.env.DATABASE_URL);
