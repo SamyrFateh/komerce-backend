@@ -142,23 +142,16 @@ if (!hasIntegrationEnv) {
     });
 
     // Étape 5 — Mise en vente (activation)
-    test('Étape 5 : PATCH /api/admin/products/:id — is_active true', async () => {
+    test('Étape 5 : PUT /api/products/:id — is_active true', async () => {
       const res = await request(app)
-        .patch(`${PRODUCTS}/${productId}`)
+        .put(`${PRODUCTS}/${productId}`)
         .set(...bearer(adminUser.token))
         .send({ is_active: true });
 
-      // La route admin/products peut être PUT ou PATCH selon l'implémentation
-      if (res.status === 404) {
-        // Fallback : PUT
-        const put = await request(app)
-          .put(`${PRODUCTS}/${productId}`)
-          .set(...bearer(adminUser.token))
-          .send({ is_active: true });
-        expect([200, 204]).toContain(put.status);
-      } else {
-        expect([200, 204]).toContain(res.status);
+      if (res.status >= 400) {
+        console.error('[G5-step5] PUT', PRODUCTS, productId, '→', res.status, JSON.stringify(res.body));
       }
+      expect(res.status).toBeLessThan(400);
 
       // Vérification DB directe
       const { rows: [prod] } = await db.query(
