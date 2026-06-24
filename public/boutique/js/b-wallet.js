@@ -109,7 +109,7 @@ export function renderWalletView() {
     } else {
       el.appendChild(buildEmptyState());
     }
-    if (transactions.length > 0) {
+    if (balance > 0 && transactions.length > 0) {
       el.appendChild(buildTransactionList(transactions));
     }
   })();
@@ -222,6 +222,57 @@ function buildEmptyState() {
   return wrap;
 }
 
+
+// ── Filtrage et regroupement des transactions ────────────────────────────────
+// Masque les écritures techniques (type=reversal, reason inconnu).
+// Groupe les entrées partageant un order_reference → affiche l'impact net.
+// Net zéro (ex. commande payée puis remboursée intégralement) → ligne masquée.
+
+const WALLET_KNOWN_REASONS = new Set([
+  'order_cancel', 'admin_gift', 'order_payment', 'checkout', 'expiration',
+]);
+
+function groupTransactions(transactions) {
+  const visible = transactions.filter(tx =>
+    tx.type !== 'reversal' && WALLET_KNOWN_REASONS.has(tx.reason)
+  );
+
+  const groups  = new Map();
+  const orphans = [];
+
+  visible.forEach(tx => {
+    if (tx.order_reference) {
+      if (!groups.has(tx.order_reference)) groups.set(tx.order_reference, []);
+      groups.get(tx.order_reference).push(tx);
+    } else {
+      orphans.push(tx);
+    }
+  });
+
+  const collapsed = [];
+  groups.forEach((txs, ref) => {
+    const net = txs.reduce((sum, tx) =>
+      sum + (tx.type === 'credit' ? tx.amount_kmf : -tx.amount_kmf), 0
+    );
+    if (net === 0) return; // commande réglée puis remboursée intégralement → caché
+
+    const latest = txs.reduce((a, b) =>
+      new Date(a.created_at) > new Date(b.created_at) ? a : b
+    );
+    collapsed.push({
+      type:            net > 0 ? 'credit' : 'debit',
+      reason:          net > 0 ? 'order_cancel' : 'checkout',
+      amount_kmf:      Math.abs(net),
+      created_at:      latest.created_at,
+      order_reference: ref,
+    });
+  });
+
+  return [...collapsed, ...orphans].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+}
+
 // ── Transaction list ─────────────────────────────────────────────────────────
 
 function buildTransactionList(transactions) {
@@ -245,7 +296,7 @@ function buildTransactionList(transactions) {
 
   let currentMonth = '';
 
-  transactions.forEach(tx => {
+  groupTransactions(transactions).forEach(tx => {
     const month = fmtMonth(tx.created_at);
     if (month !== currentMonth) {
       currentMonth = month;

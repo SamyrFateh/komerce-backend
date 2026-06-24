@@ -519,7 +519,7 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
   const itemsRow = biz === BUSINESS.OPEN
     ? `<div class="k-gc-items-row">
         <span>${itemsCount} article${itemsCount > 1 ? 's' : ''} · <strong>${fmt(total, 'KMF')}</strong></span>
-        <span class="k-gc-items-edit" id="k-group-edit-items-link">✏️ Modifier</span>
+        <span class="k-gc-items-edit" id="k-group-edit-items">✏️ Modifier</span>
        </div>`
     : '';
 
@@ -536,7 +536,6 @@ export function renderCreatorUnifiedCard(cart, estimationsList = [], contributio
     <details class="k-group-accordion k-group-options-acc">
       <summary><span>Options</span></summary>
       <div class="k-group-options-body">
-        ${biz === BUSINESS.OPEN ? '<button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items">✏️ Modifier les articles</button>' : ''}
         <div class="k-group-options-danger">
           <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">🗑 Annuler ce panier</button>
         </div>
@@ -727,20 +726,14 @@ function _phaseBadge(step, fullyPaid = false) {
 
 
 
-function _optionsAccordion(step = 'SHARE_AND_LOCK') {
-  // LOT 5 — Options contient uniquement : Modifier les articles / Annuler ce panier.
-  // En phase CONFIRM les articles sont figés → seul Annuler reste.
-  // Annuler = danger, visuellement séparé, jamais à côté de l'action principale.
-  const editBtn = step === 'SHARE_AND_LOCK' ? `
-        <button class="k-group-btn k-group-btn--ghost" id="k-group-edit-items">
-          ✏️ Modifier les articles
-        </button>` : '';
-
+function _optionsAccordion() {
+  // LOT 5 — Options contient uniquement : Annuler ce panier.
+  // ✏️ Modifier est exposé sur la ligne articles (k-gc-items-row), pas enterré ici.
+  // Seule action destructive reste dans l'accordéon (friction volontaire).
   return `
     <details class="k-group-accordion k-group-options-acc">
       <summary><span>Options</span></summary>
       <div class="k-group-options-body">
-        ${editBtn}
         <div class="k-group-options-danger">
           <button class="k-group-btn k-group-btn--ghost k-group-btn--danger" id="k-group-cancel">
             🗑 Annuler ce panier

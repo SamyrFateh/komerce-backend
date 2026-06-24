@@ -60,8 +60,21 @@ function requireAdmin(req, res, next) {
 // GET /api/wallet — solde
 router.get('/', async (req, res, next) => {
   try {
-    const balance = await walletService.getBalance(req.user.id);
-    res.json({ balance_kmf: balance, user_id: req.user.id });
+    const [balance, expiryRes] = await Promise.all([
+      walletService.getBalance(req.user.id),
+      db.query(
+        `SELECT MIN(wcl.expires_at) AS expires_at
+         FROM wallet_credit_lots wcl
+         JOIN wallets w ON w.id = wcl.wallet_id
+         WHERE w.user_id = $1
+           AND wcl.status = 'active'
+           AND wcl.remaining_kmf > 0
+           AND wcl.expires_at IS NOT NULL`,
+        [req.user.id]
+      ),
+    ]);
+    const expiresAt = expiryRes.rows[0]?.expires_at ?? null;
+    res.json({ balance_kmf: balance, user_id: req.user.id, expires_at: expiresAt });
   } catch (err) { next(err); }
 });
 

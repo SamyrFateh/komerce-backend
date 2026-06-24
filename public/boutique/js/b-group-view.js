@@ -691,7 +691,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
   // conforme à la doctrine v4.2 §Chemin B.
   el.querySelector('#k-group-edit-items')?.addEventListener('click', async () => {
     const btn = el.querySelector('#k-group-edit-items');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Chargement…'; }
+    if (btn) { btn.style.pointerEvents = 'none'; btn.textContent = '⏳ Chargement…'; }
 
     try {
       // SC-EDIT-03 — Toujours reconstruire depuis le snapshot backend
@@ -701,7 +701,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
 
       if (!snap?.cart_items?.length) {
         showToast('Panier collectif vide — impossible de charger les articles.', 'error');
-        if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
+        if (btn) { btn.style.pointerEvents = ''; btn.textContent = '✏️ Modifier'; }
         return;
       }
 
@@ -748,7 +748,7 @@ function bindCreatorActions(el, cart, shareUrl, cartId, onSettlement) {
       showToast('Modifiez les articles, puis cliquez "Mettre à jour le panier collectif".', 'success');
     } catch (err) {
       showToast(err?.message || 'Impossible de charger le panier sauvegardé.', 'error');
-      if (btn) { btn.disabled = false; btn.textContent = '✏️ Modifier les articles'; }
+      if (btn) { btn.style.pointerEvents = ''; btn.textContent = '✏️ Modifier'; }
     }
   });
 }
