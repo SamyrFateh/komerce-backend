@@ -191,7 +191,16 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }) {
 
 // ─── getOrderDetail ───────────────────────────────────────────────────────
 
+// Regex UUID standard — utilisée pour éviter "operator does not exist: text = uuid"
+// quand orderId est une référence (ex. "KOM-1234") et non un uuid.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function getOrderDetail(user, orderId) {
+  const isUuid = UUID_RE.test(orderId);
+  const whereClause = isUuid
+    ? 'o.id = $1::uuid OR o.reference = $1'
+    : 'o.reference = $1';
+
   const { rows: [order] } = await db.query(`
     SELECT
       o.*,
@@ -205,7 +214,7 @@ async function getOrderDetail(user, orderId) {
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN recipients rc ON rc.id = o.recipient_id
     LEFT JOIN relais r ON r.id = o.relais_id
-    WHERE o.id = $1 OR o.reference = $1
+    WHERE ${whereClause}
   `, [orderId]);
 
   if (!order) return null;

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-23T23:20:07.963Z",
+  "generatedAt": "2026-06-24T03:49:52.620Z",
   "sources": {
     "backend": {
       "nodes": 658
@@ -13,7 +13,7 @@
       "callEdges": 111
     },
     "contract": {
-      "endpoints": 421
+      "endpoints": 419
     }
   },
   "summary": {

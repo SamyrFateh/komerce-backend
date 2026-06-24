@@ -1,4 +1,4 @@
-name: Contract conformance (P4-1 — observe)
+name: Contract conformance (P4-1 — bloquant)
 
 # Audit EMPIRIQUE : confronte le vrai comportement de l'app au contrat OpenAPI,
 # par une méthode INDÉPENDANTE de la dérivation qui a produit le contrat
@@ -6,9 +6,11 @@ name: Contract conformance (P4-1 — observe)
 # les envoie à l'app bootée, et vérifie que les réponses sont conformes (code de
 # statut déclaré, pas de 500 inattendu, méthodes supportées, etc.).
 #
-# MODE OBSERVE : remis en observe (rate-limit neutralise) pour voir le vrai
-# signal 5xx sans le bruit 429. Re-promotion en bloquant (scope server_error)
-# une fois les vrais 5xx corriges.
+# MODE BLOQUANT (GOV-04 activé) : gate server_error bloquante.
+# Aucun 5xx réel détecté lors du run de validation (run #60, 2026-06-24).
+# Les NetworkError/timeout sur /api/admin/signals/* et /api/payments/paypal/refund
+# sont des ERRORS Schemathesis (appels externes sans secrets réels en CI) —
+# non couverts par not_a_server_error, n'affectent pas la gate.
 # Exclusions calibrées :
 #   - unsupported_method : Express renvoie 404 sur TRACE (pas 405) — comportement
 #     framework non modifiable, pas un bug applicatif.
@@ -104,19 +106,20 @@ jobs:
           done
           echo "::error::App did not become healthy in time"; cat /tmp/server.log; exit 1
 
-      # Sonde de conformité — BLOQUANT. Le token couvre les endpoints authentifiés ;
+      # Sonde de conformité — BLOQUANT (GOV-04). Le token couvre les endpoints authentifiés ;
       # --continue-on-failure parcourt tout le contrat avant d'échouer (rapport complet).
-      # unsupported_method exclu : Express renvoie 404 sur TRACE, Schemathesis attend 405
-      # → bruit pur non actionnable (244 faux positifs identifiés lors du calibrage).
-      - name: Schemathesis conformance (observe)
-        continue-on-error: true
+      # Scope bloquant : not_a_server_error uniquement (5xx inattendus).
+      # Validé zéro 5xx réel sur run #60 (2026-06-24) avant activation.
+      # NetworkError/timeout (/api/admin/signals/*, /api/payments/paypal/refund) =
+      # classe séparée dans Schemathesis, non couverte par not_a_server_error.
+      - name: Schemathesis conformance (bloquant — server_error)
         run: >-
           schemathesis run docs/contract/openapi.json
           --url http://localhost:3000
           -H "Authorization: Bearer ${PROBE_TOKEN}"
           --continue-on-failure
           --max-examples 5
-          --exclude-checks unsupported_method
+          --checks not_a_server_error
           --report junit --report-dir schemathesis-report
 
       - name: Upload conformance report

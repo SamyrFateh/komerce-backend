@@ -497,8 +497,12 @@ router.post('/orders/:id/lock-purchase', authenticate, requireAdmin, async (req,
 // ═══════════════════════════════════════════════════════════════════════
 router.post('/monthly-fixed/:yearMonth', authenticate, requireAdmin, async (req, res, next) => {
   try {
+    const { yearMonth } = req.params;
+    if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+      return res.status(400).json({ error: 'yearMonth doit être au format YYYY-MM' });
+    }
     const dryRun = !!(req.body && req.body.dryRun);
-    const result = await costAllocation.allocateMonthlyFixedCosts(req.params.yearMonth, { dryRun });
+    const result = await costAllocation.allocateMonthlyFixedCosts(yearMonth, { dryRun });
     if (!dryRun) dashboardCache.invalidateAllDashboards();   // dryRun ne change rien
     res.json({ ok: true, ...result });
   } catch (err) {
