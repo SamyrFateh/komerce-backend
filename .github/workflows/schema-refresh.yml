@@ -19,6 +19,12 @@ concurrency:
   group: schema-refresh
   cancel-in-progress: true
 
+# Permissions explicites requises par peter-evans/create-pull-request
+# et par le git push sur la branche chore/schema-refresh-auto.
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   refresh:
     name: Dump schema Railway → PR
