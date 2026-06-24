@@ -5,15 +5,18 @@ const PFX = 'itest+';
 let db;
 const getDb = () => (db = db || require('../../../db'));
 
+// Hash bcrypt coût 4 de 'ci-placeholder-no-login' — invalide pour tout vrai login
+const CI_PLACEHOLDER_HASH = '$2a$04$AYmAyvzy6sAbPHhY01nPau5qvXBxnD/DFrgbpUzd5QXDR3VgjkISm';
+
 async function createUser(opts = {}) {
   const role = opts.role || 'client';
   const phone = opts.phone || `+2693${Math.floor(1000000 + Math.random()*8999999)}`;
   const email = `${PFX}${role}.${Date.now()}.${Math.random().toString(36).slice(2,8)}@test.local`;
   const { rows } = await getDb().query(
-    `INSERT INTO users (email, full_name, phone, role, relais_id)
-     VALUES ($1,$2,$3,$4::public.user_role,$5)
+    `INSERT INTO users (email, full_name, phone, role, relais_id, password_hash)
+     VALUES ($1,$2,$3,$4::public.user_role,$5,$6)
      RETURNING id, email, phone, role`,
-    [email, `ITest ${role}`, phone, role, opts.relais_id || null]
+    [email, `ITest ${role}`, phone, role, opts.relais_id || null, CI_PLACEHOLDER_HASH]
   );
   const u = rows[0];
   const jti = opts.jti || `itest-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;

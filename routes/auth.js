@@ -118,6 +118,7 @@ router.post('/login', validate(auth.login), async (req, res, next) => {
 
     if (!rows.length) return res.status(401).json({ error: 'Identifiants incorrects' });
     const user = rows[0];
+    if (!user.password_hash) return res.status(401).json({ error: 'Identifiants incorrects' });
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Identifiants incorrects' });
 
