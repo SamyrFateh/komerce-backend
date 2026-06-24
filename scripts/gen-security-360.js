@@ -148,7 +148,8 @@ function buildMounts() {
     for (const m of src.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*['"]([^'"]+)['"]\s*\)/g)) {
       const mm = m[2].match(/routes\/([\w/-]+)/); if (mm) v2f[m[1]] = 'routes/' + mm[1].replace(/\.js$/, '') + '.js';
     }
-    for (const m of src.matchAll(/app\.use\(\s*['"](\/api[^'"]*)['"]\s*,\s*([^\n;]+)/g)) {
+    // Regex étendue à tout préfixe (pas seulement /api) : couvre /health, /webhook, etc.
+    for (const m of src.matchAll(/app\.use\(\s*['"](\/[^'"]*)['"]\s*,\s*([^\n;]+)/g)) {
       const prefix = norm(m[1]); const arg = m[2].trim(); let file = null;
       const inl = arg.match(/require\(\s*['"][^'"]*routes\/([\w/-]+)['"]/);
       if (inl) file = 'routes/' + inl[1].replace(/\.js$/, '') + '.js';

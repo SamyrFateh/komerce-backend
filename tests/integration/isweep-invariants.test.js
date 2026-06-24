@@ -28,8 +28,22 @@ if (!hasIntegrationEnv) {
 } else {
 
 describe('I-SWEEP invariants regression net', () => {
-  // TODO: réactiver quand isPickupPayCashRequest / handleSafePickupCash seront implémentés dans auth.js
-  test.todo('I-01/I-02: pickup cash is routed through payment confirmation cycle, not direct status update');
+  // Approche intercepteur auth.js abandonnée (STATUS.md L621) — logique dans confirm-pickup-cash-payment.js
+  // L'invariant reste : le cash relais passe par confirmPaymentCycle, jamais par UPDATE orders direct.
+  test('I-01/I-02: pickup cash is routed through payment confirmation cycle, not direct status update', () => {
+    const service = read('services/confirm-pickup-cash-payment.js');
+
+    // Passe obligatoirement par le cycle complet
+    expect(service).toContain('confirmPaymentCycle');
+
+    // Jamais de mise à jour directe du statut commande
+    expect(service).not.toMatch(/UPDATE\s+orders\s+SET\s+status/i);
+
+    // La route pickup-secret monte bien ce service
+    const route = read('routes/pickup-secret.js');
+    expect(route).toContain('confirmPickupCashPayment');
+    expect(route).toContain('confirm-pickup-cash-payment');
+  });
 
   test('I-03/I-09: QR verify performs order transition, scan insert and parcel sync before commit', () => {
     const service = read('services/verify-qr-collection.js');
@@ -72,8 +86,30 @@ describe('I-SWEEP invariants regression net', () => {
     expect(manifest).toContain('ZG-3');
   });
 
-  // TODO: réactiver quand isAdminOrderRefundRequest / handleAdminOrderRefund seront implémentés dans auth.js
-  test.todo('G4: cancellation syncs purchase orders and final financial action remains explicit');
+  // Approche intercepteur auth.js abandonnée (STATUS.md L626) — logique dans admin-order-refund.js
+  // L'invariant reste : le remboursement passe par processRefund + transitionOrderStatus (action financière explicite).
+  test('G4: cancellation refund uses explicit financial action before status transition', () => {
+    const service = read('services/admin-order-refund.js');
+
+    // Action financière explicite avant transition
+    expect(service).toContain('processRefund');
+    expect(service).toContain('transitionOrderStatus');
+
+    // La transition passe bien par la machine de statut (pas de UPDATE direct)
+    expect(service).not.toMatch(/UPDATE\s+orders\s+SET\s+status/i);
+
+    // Ordre : processRefund avant transitionOrderStatus
+    const refundIdx = service.indexOf('processRefund(');
+    const transitionIdx = service.indexOf('transitionOrderStatus(');
+    expect(refundIdx).toBeGreaterThan(-1);
+    expect(transitionIdx).toBeGreaterThan(-1);
+    expect(refundIdx).toBeLessThan(transitionIdx);
+
+    // La route admin monte bien ce service
+    const route = read('routes/admin/orders.js');
+    expect(route).toContain('refundCancelledOrder');
+    expect(route).toContain('admin-order-refund');
+  });
 
   test('G5: catalogue and pricing changes are audited and guarded server-side', () => {
     const productAdminService = read('services/product-admin-service.js');

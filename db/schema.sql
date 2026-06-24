@@ -1797,8 +1797,8 @@ ALTER SEQUENCE public.loyalty_tiers_id_seq OWNED BY public.loyalty_tiers.id;
 
 CREATE TABLE public.notification_log (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    parcel_ref character varying(30),
-    order_ref character varying(30),
+    parcel_ref text,
+    order_ref text,
     channel character varying(20) NOT NULL,
     event character varying(50) NOT NULL,
     recipient character varying(100),
