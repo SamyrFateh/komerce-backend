@@ -41,7 +41,7 @@ const productAdminService = require('../services/product-admin-service');
 const log = require('../utils/logger').child({ module: 'products' });
 
 // ─── UUID validation helper ───────────────────────────────────────────────────
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function requireUUID(req, res, next) {
   if (!UUID_RE.test(req.params.id)) {

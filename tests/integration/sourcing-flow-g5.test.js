@@ -148,10 +148,7 @@ if (!hasIntegrationEnv) {
         .set(...bearer(adminUser.token))
         .send({ is_active: true });
 
-      if (res.status >= 400) {
-        console.error('[G5-step5] PUT', PRODUCTS, productId, '→', res.status, JSON.stringify(res.body));
-      }
-      expect(res.status).toBeLessThan(400);
+      expect([200, 204]).toContain(res.status);
 
       // Vérification DB directe
       const { rows: [prod] } = await db.query(
