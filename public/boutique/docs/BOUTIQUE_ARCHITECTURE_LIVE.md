@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-06-24T12:22:26.969Z
+> Régénération : `npm run boutique:arch`. Date : 2026-06-24T16:45:53.098Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -34,7 +34,7 @@
 | `share-cart.css` | 71 | 🔴 **ORPHELIN** |
 | `shared-followup.css` | 3 | 🔴 **ORPHELIN** |
 | `tokens.css` | 511 | 🔴 **ORPHELIN** |
-| `wallet.css` | 154 | 🔴 **ORPHELIN** |
+| `wallet.css` | 191 | 🔴 **ORPHELIN** |
 
 ## 2. Ordre de chargement CSS (index.html)
 
@@ -42,7 +42,7 @@ Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs co
 
 ```
  1. /boutique/css/dist/base.css?v=105
- 2. /boutique/css/dist/components.css?v=120
+ 2. /boutique/css/dist/components.css?v=121
  3. /boutique/css/dist/desktop.css?v=44
  4. /boutique/css/dist/event.css?v=26
 ```
