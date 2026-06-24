@@ -30,6 +30,7 @@ jest.mock('../../services/notification-service', () => ({
   notifyOrderCreated:      jest.fn().mockResolvedValue(undefined),
   notifyCancellation:      jest.fn().mockResolvedValue(undefined),
   notifySharedCartClosed:  jest.fn().mockResolvedValue(undefined),
+  notifyStatusChange:      jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../services/purchasing-trigger-service', () => ({
   triggerPurchasing: jest.fn().mockResolvedValue(undefined),

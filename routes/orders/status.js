@@ -118,7 +118,8 @@ router.patch('/:id/status', authenticate, requireRole(['admin', 'agent_hub', 'ag
     }
 
     // SMS notification (non bloquant)
-    notifyStatusChange(order, status);
+    Promise.resolve().then(() => notifyStatusChange(order, status))
+      .catch(e => log.warn({ err: e, order_id: order.id }, '[status] notifyStatusChange failed (non-fatal)'));
 
     res.json({ success: true, status });
 
