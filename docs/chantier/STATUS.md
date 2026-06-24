@@ -10,7 +10,7 @@
 
 ## 0. Tampon de validation — livraison code
 
-Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24 · SESSION C5bis (incident déploiement 089) — 2026-06-24**.
+Statut : **TAMPON CODE VALIDE — 2026-06-15 · GOUVERNANCE VALIDÉE — 2026-06-22 · AUDIT PREGOLIVE — 2026-06-22 · SESSION F/H — 2026-06-23 · SESSION E6/G5 — 2026-06-23 · SESSION B2/B6 — 2026-06-23 · SESSION GOV-04/C5 — 2026-06-24 · SESSION GOV-04 (gate Schemathesis) — 2026-06-24 · SESSION C5bis (incident déploiement 089) — 2026-06-24 · SESSION N1/N2/N3 (bugs non-bloquants) — 2026-06-24**.
 
 Validation effectuee (2026-06-15) :
 
@@ -969,3 +969,35 @@ Statut : **clôturé — 2026-06-23**.
 Câblé dans `package.json` : `npm run sourcing:audit` (bloquant) et `npm run sourcing:audit:observe`. Skip gracieux si `DATABASE_URL` absent (CI sans DB). DoD satisfait.
 
 **Lot C clôturé au 2026-06-24 (C1 ✅, C4 ✅, C5 ✅, C6 ✅, C7 ✅, incl. retrait S-02/S-07 post-C5). Prochaine étape différée : `migrations/089_drop_deprecated_cost_weight_columns.sql`, exécutable à partir du 2026-07-08 (garde-fou date).**
+
+## 17. Session — Bugs non-bloquants & dettes ouvertes (2026-06-24)
+
+Statut global : **clôturé — 2026-06-24**.
+
+### N1 — `notification_log.event` VARCHAR(30) trop courte
+
+Statut : **clôturé — 2026-06-24**.
+
+`db/schema.sql` corrigé : `notification_log.order_ref` et `parcel_ref` passées de `VARCHAR(30)` à `TEXT`, aligné sur la migration 089 qui faisait déjà ce changement en prod. La CI utilisait `schema.sql` pour créer la DB de test → les tests voyaient `"value too long for type character varying(30)"` quand `notifyPaymentConfirmed` passait un UUID (36 chars) dans `order_ref`.
+
+### N2 — `isweep-invariants` : I-01/I-02 et G4 en `test.todo`
+
+Statut : **clôturé — 2026-06-24**.
+
+Les deux `test.todo` dans `tests/integration/isweep-invariants.test.js` remplacés par de vrais tests statiques :
+
+- **I-01/I-02** : vérifie que `services/confirm-pickup-cash-payment.js` appelle `confirmPaymentCycle` et ne contient aucun `UPDATE orders SET status` direct. Vérifie aussi que `routes/pickup-secret.js` monte bien ce service.
+- **G4** : vérifie que `services/admin-order-refund.js` appelle `processRefund` avant `transitionOrderStatus`, sans UPDATE direct. Vérifie que `routes/admin/orders.js` monte bien le service.
+
+L'approche intercepteur dans `auth.js` (prévue initialement) a été abandonnée au profit des routes dédiées (STATUS.md L621/626) — les assertions ciblent l'implémentation réelle. Les deux invariants étaient déjà satisfaits ; les tests passent en vert immédiatement.
+
+### N3 — Scanner sécurité 360 : faux négatifs sur `routes/health.js`
+
+Statut : **clôturé — 2026-06-24**.
+
+`scripts/gen-security-360.js` corrigé : `buildMounts()` utilisait la regex `\/api[^'"]*` qui ratait le mount `/health` déclaré dans `bootstrap/api-routes.js` (hors préfixe `/api`). Regex étendue à `\/[^'"]*` — couvre désormais tous les préfixes montés (`/health`, `/webhook`, etc.). Après correction, `/health/metrics` et `/health/detailed` ressortiront `PROTECTED` (authenticate + requireRole(['admin'])) au lieu de `UNKNOWN`. Les 3 routes publiques (`/health`, `/health/ready`, `/health/version`) ressortiront `PUBLIC`. **Relancer `npm run security:360:save` après déploiement** pour régénérer la baseline.
+
+### Dettes différées (inchangées)
+
+- **Migration 089** — `DROP COLUMN cost_price_kmf / weight_g` — garde-fou date **2026-07-08**. Ne pas exécuter avant.
+- **ARCH-COUTURE-00** — architecture couture/variantes non arrêtée. En attente de décision produit.
