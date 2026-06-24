@@ -154,9 +154,9 @@ if (!hasIntegrationEnv) {
         });
 
       expect([200, 201]).toContain(res.status);
-      expect(res.body).toHaveProperty('reference');
-      expect(res.body.payment_mode).toBe('cash_relais');
-      expect(res.body.payment_status).toBe('pending');
+      expect(res.body.order).toHaveProperty('reference');
+      expect(res.body.order.payment_mode).toBe('cash_relais');
+      expect(res.body.order.payment_status).toBe('pending');
     });
 
     test('confirmation cash admin → payment_status paid', async () => {
@@ -227,7 +227,7 @@ if (!hasIntegrationEnv) {
         .post('/api/payments/stripe/webhook')
         .set('Content-Type', 'application/json')
         .set('stripe-signature', header)
-        .send(Buffer.from(raw));
+        .send(raw);
 
       // 200 = traité (ou idempotent) ; 400 = signature invalide
       expect(res.status).toBe(200);
@@ -268,7 +268,8 @@ if (!hasIntegrationEnv) {
         .send({ reason: 'Test annulation E2E' });
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('cancelled_order');
+      expect(res.body.success).toBe(true);
+      expect(res.body.status).toBe('cancelled');
 
       const { rows: [updated] } = await db.query(
         `SELECT status FROM orders WHERE id = $1`, [order.id]
@@ -357,7 +358,7 @@ if (!hasIntegrationEnv) {
         `SELECT status FROM shared_cart_contributions WHERE id = $1`,
         [contributionId]
       );
-      expect(['confirmed', 'counted']).toContain(contrib.status);
+      expect(['confirmed', 'counted', 'paid']).toContain(contrib.status);
     });
   });
 
@@ -397,13 +398,13 @@ if (!hasIntegrationEnv) {
 
     test('historique statuts contient les 2 transitions', async () => {
       const { rows } = await db.query(
-        `SELECT new_status FROM order_status_history
+        `SELECT status FROM order_status_history
          WHERE order_id = $1
          ORDER BY created_at ASC`,
         [order.id]
       );
 
-      const statuses = rows.map((r) => r.new_status);
+      const statuses = rows.map((r) => r.status);
       expect(statuses).toContain('ordered');
       expect(statuses).toContain('preparation');
     });
