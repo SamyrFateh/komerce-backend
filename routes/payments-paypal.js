@@ -161,22 +161,25 @@ router.post('/webhook', async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. POST /api/payments/paypal/refund/:orderId  (admin)
 // ─────────────────────────────────────────────────────────────────────────────
-router.post('/refund/:orderId', authenticate, async (req, res) => {
+router.post('/refund/:orderId', authenticate, async (req, res, next) => {
   if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Admin uniquement' });
 
   const { orderId } = req.params;
   const { amount_eur, reason } = req.body || {};
 
-  const result = await refundPaypalOrder({
-    orderId,
-    amountEur:  amount_eur,
-    reason,
-    adminUser:  req.user,
-    paypal,
-    db,
-  });
-
-  return res.status(result.status).json(result.body);
+  try {
+    const result = await refundPaypalOrder({
+      orderId,
+      amountEur:  amount_eur,
+      reason,
+      adminUser:  req.user,
+      paypal,
+      db,
+    });
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

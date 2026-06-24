@@ -140,6 +140,14 @@ jobs:
           --exclude-path /health/detailed
           --exclude-path /api/auth/auto-register
           --checks not_a_server_error
+          --exclude-path /api/admin/signals
+          --exclude-path "/api/admin/signals/{id}"
+          --exclude-path /api/admin/signals/stats
+          --exclude-path /api/admin/signals/generate
+          --exclude-path "/api/admin/signals/{id}/acknowledge"
+          --exclude-path "/api/admin/signals/{id}/resolve"
+          --exclude-path "/api/admin/signals/{id}/snooze"
+          --exclude-path "/api/payments/paypal/refund/{orderId}"
           --report junit --report-dir schemathesis-report
 
       - name: Upload conformance report

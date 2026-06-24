@@ -911,6 +911,9 @@ async function notifyText(phone, message, event, orderId = null) {
   try {
     const result = await callAuthKeyText({ mobile: phone, message });
 
+    // orderId est un UUID (36 chars) — order_ref est désormais text (migration 089)
+    // On le passe tel quel ; les callers qui ont la référence humaine doivent utiliser
+    // logNotification() directement pour stocker la bonne valeur.
     await logNotification({
       orderRef: orderId || null,
       channel: 'whatsapp',

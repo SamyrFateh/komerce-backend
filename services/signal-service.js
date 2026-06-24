@@ -262,14 +262,14 @@ GENERATORS.margin_drift = async function() {
     // Orders where the margin might be too low
     // Simple heuristic: total_kmf / nb_items < threshold
     var rows = (await db.query(`
-      SELECT o.id, o.reference, o.total_amount,
-             COALESCE(o.item_count, 1) AS items,
+      SELECT o.id, o.reference, o.total_kmf,
+             COALESCE(o.items_total, 1) AS items,
              o.created_at
       FROM orders o
       WHERE o.created_at > NOW() - INTERVAL '7 days'
         AND o.status NOT IN ('cancelled')
-        AND o.total_amount > 0
-        AND (o.total_amount / GREATEST(COALESCE(o.item_count, 1), 1)) < 5000
+        AND o.total_kmf > 0
+        AND (o.total_kmf / GREATEST(COALESCE(o.items_total, 1), 1)) < 5000
       ORDER BY o.created_at DESC
       LIMIT 20
     `)).rows;
@@ -278,7 +278,7 @@ GENERATORS.margin_drift = async function() {
     var entityIds = [];
     for (var r of rows) {
       entityIds.push(r.id);
-      var avgPerItem = Math.round(r.total_amount / Math.max(r.items, 1));
+      var avgPerItem = Math.round(r.total_kmf / Math.max(r.items, 1));
       await upsertSignal({
         signal_type:   'margin_drift',
         severity:      'warning',
@@ -293,7 +293,7 @@ GENERATORS.margin_drift = async function() {
         entity_id:     r.id,
         recommendation: 'Vérifier le pricing des produits concernés',
         confidence:    'medium',
-        meta:          { total: r.total_amount, items: r.items, avg_per_item: avgPerItem }
+        meta:          { total: r.total_kmf, items: r.items, avg_per_item: avgPerItem }
       });
       generated++;
     }
@@ -309,7 +309,7 @@ GENERATORS.margin_drift = async function() {
 GENERATORS.dispute_sensitive = async function() {
   try {
     var rows = (await db.query(`
-      SELECT o.id, o.reference, o.status, o.total_amount,
+      SELECT o.id, o.reference, o.status, o.total_kmf,
              EXTRACT(DAY FROM NOW() - o.updated_at)::int AS days_in_status,
              u.full_name AS client_name, u.phone
       FROM orders o
@@ -342,7 +342,7 @@ GENERATORS.dispute_sensitive = async function() {
           ? 'Escalader — le client attend depuis trop longtemps'
           : 'Traiter le litige rapidement',
         confidence:    'high',
-        meta:          { status: r.status, days: r.days_in_status, total: r.total_amount, client: r.client_name }
+        meta:          { status: r.status, days: r.days_in_status, total: r.total_kmf, client: r.client_name }
       });
       generated++;
     }
