@@ -296,11 +296,12 @@ describe('createShipment — guard 400', () => {
     }, 'user-1')).rejects.toMatchObject({ status: 400 });
   });
 
-  it('lève err.status=400 si customs_paid_kmf manquant', async () => {
+  it('lève err.status=400 si cif_value_kmf manquant', async () => {
+    // customs_paid_kmf n'est plus requis à la création (workflow deux étapes —
+    // déclaration via declareCustomsPayment). cif_value_kmf reste requis.
     await expect(createShipment(makePoolDb(), {
       reference: 'ENV-001',
       shipment_date: '2026-01-01',
-      cif_value_kmf: 100,
     }, 'user-1')).rejects.toMatchObject({ status: 400 });
   });
 });

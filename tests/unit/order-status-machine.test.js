@@ -51,7 +51,7 @@ function setupMockForTransition(currentStatus, opts = {}) {
   // Call 2: UPDATE orders SET status...
   mockQuery.mockResolvedValueOnce({ rows: [{}] });
   // Call 3+: Additional queries (cash_relais auto-paid, history, etc.)
-  mockQuery.mockResolvedValue({ rows: [{}] });
+  mockQuery.mockResolvedValue({ rows: [] }); // catch-all : 0 ligne = aucune douane pending (customs gate), historique vide
 
   return order;
 }

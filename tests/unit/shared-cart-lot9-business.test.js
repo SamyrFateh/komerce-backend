@@ -333,7 +333,8 @@ describe('[LOT9-T5] convertSharedCartToOrder — solde restant fidèle', () => {
       { rows: [{ id: 'recipient-001' }] },    // 6. SELECT recipients (existant)
       orderRow,                               // 7. INSERT orders RETURNING
       { rows: [] },                           // 8. INSERT order_status_history
-      { rows: [] },                           // 9. INSERT order_items
+      { rows: [] },                           // 9. resolveFrozenClassification — customs_categories default (manquant → repli zéro, non-bloquant)
+      { rows: [] },                           // 10. INSERT order_items (+ champs clf)
       // remaining > 0 → PAS de confirmPaymentCycle (cas B doctrine §5.7)
       { rows: [] },                           // 10. UPDATE shared_carts → converted_to_order
       { rows: [] },                           // 11. INSERT event cart_converted_to_order
@@ -407,7 +408,8 @@ describe('[LOT9-T5] convertSharedCartToOrder — solde restant fidèle', () => {
       { rows: [{ id: 'recipient-001' }] },
       (sql, params) => ({ rows: [{ id: params[0], reference: params[1], remaining_cash_kmf: params[11] }] }),
       { rows: [] }, // order_status_history
-      { rows: [] }, // order_items
+      { rows: [] }, // resolveFrozenClassification — customs_categories default
+      { rows: [] }, // order_items (+ champs clf)
       { rows: [] }, // UPDATE shared_carts converted
       { rows: [] }, // event
       (sql, params) => ({ rows: [{ id: params[0], reference: 'KMR-TEST-0001', remaining_cash_kmf: 0 }] }),
