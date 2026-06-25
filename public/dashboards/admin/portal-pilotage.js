@@ -111,6 +111,25 @@ const visItems=d=>({ct:(d.ct||[]).filter(can),bo:(d.bo||[]).filter(can)});
 const domainVisible=d=>{const v=visItems(d);return v.ct.length+v.bo.length>0;};
 
 /* ── Rendu ─────────────────────────────────────────────────── */
+// sanitize_before_render : toute donnee-feuille passee dans une template HTML
+// est echappee. Les fragments que NOUS composons (.sub, .metric) restent bruts :
+// ils ne portent pas de donnee externe (HTML d'affichage genere ici).
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function cockpitCtaMarkup(dir){
+  return dir
+    ? '<a class="btn" href="/admin/sante">🏥 Santé business</a><a class="btn amber" href="/admin/pilotage">🎯 Cockpit détaillé</a>'
+    : '<a class="btn amber" href="/admin/problems">⚠️ File à traiter</a>';
+}
+function kpisMarkup(set){
+  return set.map(x=>`<div class="kpi"><span class="kpi-bar" style="background:${x.tone}"></span>
+    <div class="kpi-label">${escapeHtml(x.label)}</div>
+    <div class="kpi-val">${escapeHtml(x.val)}${x.unit?` <small>${escapeHtml(x.unit)}</small>`:''}</div>
+    <div class="kpi-sub">${x.sub}</div></div>`).join('');
+}
 function renderCockpit(){
   const dir=hasCT(ROLE);
   const set=dir?dirKpis():opsKpis();
@@ -119,43 +138,43 @@ function renderCockpit(){
   document.getElementById('cp-lede').textContent=dir
     ?"Les indicateurs qui se parlent, du plus haut vers le détail. Choisissez un maillon de la chaîne pour ouvrir son domaine."
     :"Les files et incidents à traiter en priorité. Ouvrez un domaine pour accéder à vos outils.";
-  const cta=document.getElementById('cp-cta');
-  cta.innerHTML = dir
-    ? '<a class="btn" href="/admin/sante">🏥 Santé business</a><a class="btn amber" href="/admin/pilotage">🎯 Cockpit détaillé</a>'
-    : '<a class="btn amber" href="/admin/problems">⚠️ File à traiter</a>';
+  document.getElementById('cp-cta').innerHTML = cockpitCtaMarkup(dir);
   const k=document.getElementById('kpis');
   k.style.gridTemplateColumns=`repeat(${set.length},1fr)`;
-  k.innerHTML=set.map(x=>`<div class="kpi"><span class="kpi-bar" style="background:${x.tone}"></span>
-    <div class="kpi-label">${x.label}</div>
-    <div class="kpi-val">${x.val}${x.unit?` <small>${x.unit}</small>`:''}</div>
-    <div class="kpi-sub">${x.sub}</div></div>`).join('');
+  k.innerHTML = kpisMarkup(set);
 }
 
-function cardHTML(d){
+function cardMarkup(d){
   const dm=domainMetric(d);const [tone,txt]=dm.status;const v=visItems(d);const n=v.ct.length+v.bo.length;
-  return `<button class="card" data-dom="${d.id}" style="--accent:${d.accent}" aria-expanded="false">
+  return `<button class="card" data-dom="${escapeHtml(d.id)}" style="--accent:${d.accent}" aria-expanded="false">
     <span class="card-rail"></span><div class="card-body">
-      <div class="card-top"><div class="card-ico">${d.icon}</div><div class="card-name">${d.name}</div></div>
-      <div class="card-mission">${d.mission}</div>
+      <div class="card-top"><div class="card-ico">${escapeHtml(d.icon)}</div><div class="card-name">${escapeHtml(d.name)}</div></div>
+      <div class="card-mission">${escapeHtml(d.mission)}</div>
       <div class="card-metric">${dm.metric}</div>
-      <div class="card-foot"><span class="pill ${tone}"><span class="d"></span>${txt}</span>
+      <div class="card-foot"><span class="pill ${tone}"><span class="d"></span>${escapeHtml(txt)}</span>
         <span class="card-count"><b>${n}</b> dashboard${n>1?'s':''}</span></div>
     </div></button>`;
 }
 
+function chainMarkup(doms){
+  return doms.map((d,i)=>
+    (i>0?`<div class="seam"><div class="arrow">→</div><div class="seam-lbl">${escapeHtml(d.seam)}</div></div>`:'')
+    +`<div class="station">${cardMarkup(d)}</div>`).join('');
+}
 function renderChain(){
   const stage=document.getElementById('chain-stage');
   const doms=DOMAINS.filter(d=>d.inChain&&domainVisible(d));
   if(!doms.length){stage.hidden=true;return;}
   stage.hidden=false;
-  let html='';
-  doms.forEach((d,i)=>{
-    if(i>0) html+=`<div class="seam"><div class="arrow">→</div><div class="seam-lbl">${d.seam}</div></div>`;
-    html+=`<div class="station">${cardHTML(d)}</div>`;
-  });
-  document.getElementById('chain').innerHTML=html;
+  document.getElementById('chain').innerHTML = chainMarkup(doms);
 }
 
+function cardsMarkup(cards){ return cards.map(cardMarkup).join(''); }
+function fieldMarkup(fields){
+  return fields.map(f=>`
+    <a class="field" href="${f.route}"><span class="ico">${escapeHtml(f.icon)}</span>
+      <div><b>${escapeHtml(f.name)}</b><span>${escapeHtml(f.desc)}</span></div><span class="ext">↗</span></a>`).join('');
+}
 function renderSupport(){
   const stage=document.getElementById('support-stage');
   const cat=DOMAINS.find(d=>d.id==='catalogue');
@@ -163,10 +182,8 @@ function renderSupport(){
   const fields=FIELD.filter(can);
   if(!cards.length&&!fields.length){stage.hidden=true;return;}
   stage.hidden=false;
-  document.getElementById('support').innerHTML=cards.map(cardHTML).join('');
-  document.getElementById('field').innerHTML=fields.map(f=>`
-    <a class="field" href="${f.route}"><span class="ico">${f.icon}</span>
-      <div><b>${f.name}</b><span>${f.desc}</span></div><span class="ext">↗</span></a>`).join('');
+  document.getElementById('support').innerHTML = cardsMarkup(cards);
+  document.getElementById('field').innerHTML = fieldMarkup(fields);
 }
 
 /* ── Drawer ────────────────────────────────────────────────── */
@@ -174,23 +191,31 @@ const ALL=[...DOMAINS,SYSTEM];
 const drawer=document.getElementById('drawer');
 let openId=null;
 function toggle(id){id===openId?close():open(id);}
+function layerMarkup(title,tag,cls,items){
+  return !items.length?'':`<div><div class="layer-lbl"><span class="tag ${cls}">${tag}</span>${escapeHtml(title)}</div>
+    <div class="dash-grid">${items.map(it=>`<a class="dash" href="${it.route}">
+      <span class="dash-ico">${escapeHtml(it.icon)}</span><span class="dash-txt"><b>${escapeHtml(it.label)}</b><span>${escapeHtml(it.desc)}</span></span>
+      <span class="dash-go">→</span></a>`).join('')}</div></div>`;
+}
+function drawerMarkup(d,v){
+  return `<div class="drawer-inner" style="--accent:${d.accent}">
+    <div class="drawer-head"><div class="card-ico" style="--accent:${d.accent}">${escapeHtml(d.icon)}</div><h3>${escapeHtml(d.name)}</h3>
+      <button class="drawer-close">✕ Fermer</button></div>
+    <p class="drawer-mission">${escapeHtml(d.mission)}</p>
+    <div class="layers">${layerMarkup('Piloter — décider','CT','ct',v.ct)}${layerMarkup('Back-office — exécuter','BO','bo',v.bo)}</div>
+  </div>`;
+}
 function open(id){
   const d=ALL.find(x=>x.id===id);if(!d)return;openId=id;
   document.querySelectorAll('.card[data-dom]').forEach(c=>{const on=c.dataset.dom===id;c.classList.toggle('open',on);c.setAttribute('aria-expanded',on);});
-  const v=visItems(d);
-  const layer=(title,tag,cls,items)=>!items.length?'':`<div><div class="layer-lbl"><span class="tag ${cls}">${tag}</span>${title}</div>
-    <div class="dash-grid">${items.map(it=>`<a class="dash" href="${it.route}">
-      <span class="dash-ico">${it.icon}</span><span class="dash-txt"><b>${it.label}</b><span>${it.desc}</span></span>
-      <span class="dash-go">→</span></a>`).join('')}</div></div>`;
-  drawer.innerHTML=`<div class="drawer-inner" style="--accent:${d.accent}">
-    <div class="drawer-head"><div class="card-ico" style="--accent:${d.accent}">${d.icon}</div><h3>${d.name}</h3>
-      <button class="drawer-close">✕ Fermer</button></div>
-    <p class="drawer-mission">${d.mission}</p>
-    <div class="layers">${layer('Piloter — décider','CT','ct',v.ct)}${layer('Back-office — exécuter','BO','bo',v.bo)}</div>
-  </div>`;
+  drawer.innerHTML = drawerMarkup(d, visItems(d));
   drawer.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-function close(){openId=null;drawer.innerHTML='';document.querySelectorAll('.card[data-dom]').forEach(c=>{c.classList.remove('open');c.setAttribute('aria-expanded','false');});}
+function close(){
+  openId=null;
+  drawer.innerHTML = '';
+  document.querySelectorAll('.card[data-dom]').forEach(c=>{c.classList.remove('open');c.setAttribute('aria-expanded','false');});
+}
 document.addEventListener('click',e=>{const c=e.target.closest('.card[data-dom]');if(c){toggle(c.dataset.dom);return;}if(e.target.closest('.drawer-close'))close();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
 
@@ -253,10 +278,11 @@ async function boot(){
   renderAll();
   setBadge(LIVE?'live':'demo');
 }
+function badgeMarkup(kind){ return '<span class="dot"></span> '+(kind==='live'?'Live':'Démo'); }
 function setBadge(kind){
   const b=document.getElementById('mode');
-  if(kind==='live'){b.className='mode live';b.innerHTML='<span class="dot"></span> Live';}
-  else{b.className='mode demo';b.innerHTML='<span class="dot"></span> Démo';}
+  b.className = kind==='live' ? 'mode live' : 'mode demo';
+  b.innerHTML = badgeMarkup(kind);
 }
 document.getElementById('period').addEventListener('change',async()=>{
   if(!LIVE) return;                                  // en démo : la période ne recharge rien
