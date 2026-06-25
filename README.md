@@ -1,55 +1,46 @@
-# Komerce — Patch Pilotage & Gestion Colis
+# Komerce — Patch Pilotage · Gestion Colis · Gouvernance
 
 Archive à **dézipper par-dessus la racine de votre repo** (le dash vit dans `public/`,
-donc tout est dans le même repo). Les fichiers `.js` sont des **versions complètes**
-patchées : copier-remplacer, pas de merge manuel.
+tout est le même repo). Les `.js`/`.sh` sont des **versions complètes** patchées :
+copier-remplacer, pas de merge manuel.
 
 ```
-public/dashboards/admin/portal-pilotage.html   ← NOUVEAU  Portail de pilotage (porte d'entrée)
-utils/parcelSync.js                            ← MODIFIÉ  + 1 INSERT parcel_events par transition
-routes/hub-dashboard.js                        ← MODIFIÉ  ready/ship corrigés
-migrations/094_parcel_reconciliation_view.sql  ← NOUVEAU  vue de réconciliation (lecture seule)
-CHANGES.diff.md                                ← revue    diff des 2 fichiers .js (à ne PAS copier)
+public/dashboards/admin/portal-pilotage.html   NOUVEAU  Portail (porte d'entrée, rôle-aware, live)
+utils/parcelSync.js                            MODIFIÉ  + 1 INSERT parcel_events (header déclaré)
+routes/hub-dashboard.js                        MODIFIÉ  ready/ship corrigés
+migrations/094_parcel_reconciliation_view.sql  NOUVEAU  vue de réconciliation (lecture seule)
+scripts/setup-hooks.sh                         MODIFIÉ  pre-commit auto-déclare les headers (ferme le trou)
+docs/chantier/GATES_AUDIT.md                   NOUVEAU  audit des gates : chaque écart a une résolution connue
+CHANGES.diff.md                                revue    diffs des fichiers patchés (ne PAS committer)
 ```
-
-> `CHANGES.diff.md` est juste pour la revue de code / le message de commit. Ne le copiez pas dans le repo (ou supprimez-le après lecture).
 
 ---
 
 ## 1. Appliquer
 
 ```bash
-# depuis la racine du repo, archive extraite à côté
-cp -r komerce-pilotage-patch/public      ./
-cp -r komerce-pilotage-patch/utils       ./
-cp -r komerce-pilotage-patch/routes      ./
-cp -r komerce-pilotage-patch/migrations  ./
-
-# jouer la migration (adapter à votre runner habituel)
+# depuis la racine du repo
+cp -r komerce-pilotage-patch/{public,utils,routes,migrations,scripts,docs} ./
+bash scripts/setup-hooks.sh                                   # régénère .git/hooks/pre-commit (auto-déclaration)
 psql "$DATABASE_URL" -f migrations/094_parcel_reconciliation_view.sql
 ```
 
-Vérif rapide : `node --check utils/parcelSync.js && node --check routes/hub-dashboard.js`
+Vérif : `node --check utils/parcelSync.js && node --check routes/hub-dashboard.js && bash -n scripts/setup-hooks.sh`
+
+> `CHANGES.diff.md` est pour la relecture / le message de commit. Ne le versionnez pas.
 
 ---
 
-## 2. Ce qui change, et pourquoi
+## 2. Gestion colis — une seule voie d'écriture, traçage complet
 
-### Gestion colis — une seule voie d'écriture
-- **`parcelSync.js`** : chaque transition de statut écrit désormais **une ligne dans `parcel_events`**
-  (table déjà existante, migration 078). C'est le journal unique du cycle de vie du colis.
-- **`hub-dashboard.js` → `ready`** : ne fait plus d'`UPDATE parcels` brut. Il passe par
-  `safeSyncScanToParcels` (la source de vérité que `ship` utilise déjà) et **vérifie que TOUS
-  les articles de la commande sont emballés**, pas juste « au moins un ».
-- **`hub-dashboard.js` → `ship`** : **refuse un colis resté en `draft`** (le garde-fou que
-  l'ancien commentaire prétendait faire mais ne faisait pas — c'était le seul vrai bug).
-- On **arrête de logger les changements d'état dans `order_comments`** : les commentaires
-  redeviennent humains, l'historique machine vit dans `parcel_events`.
+- **`parcelSync.js`** : chaque transition écrit une ligne `parcel_events` (table existante,
+  mig. 078) -> journal unique. Header `@db-write` mis a jour.
+- **`hub-dashboard.js -> ready`** : passe par `safeSyncScanToParcels` (source de verite que
+  `ship` utilise deja) et verifie que **tous** les articles sont emballes.
+- **`hub-dashboard.js -> ship`** : **refuse un colis reste `draft`** (le vrai bug corrige).
+- Les etats ne sont plus loggues dans `order_comments` -> historique dans `parcel_events`.
 
-Résultat : 3 chemins d'écriture → 1 seul. Moins de code, plus de traçabilité.
-
-### Réconciliation — une vue, pas un job
-`migrations/094` crée `v_parcel_reconciliation`. Aucun cron. La liste de travail :
+Reconciliation = une vue, pas un job (`migrations/094`) :
 
 ```sql
 SELECT parcel_ref, order_ref, parcel_status, order_status, issues
@@ -58,34 +49,53 @@ WHERE  cardinality(issues) > 0
 ORDER  BY last_event_at NULLS FIRST;
 ```
 
-Codes `issues` : `projection_vs_event_drift`, `shipped_incomplete`,
-`order_ahead_of_parcel`, `no_seal`, `no_event_trace`.
+---
+
+## 3. Gouvernance — le trou comble
+
+En ajoutant l'`INSERT parcel_events`, la gate « sous-declaration headers<->SQL » m'a bloque,
+alors qu'un outil maison (`enrich-komerce-arch-db-fields.js`) sait deriver la declaration du
+vrai SQL. Il n'etait pas dans la boucle pre-commit. Ce patch :
+
+1. Ajoute une **etape 0** au pre-commit : `enrich --write` auto-declare les tables et
+   re-stage **uniquement les fichiers du commit** -> sous-declaration auto-resolue.
+2. Corrige le **message** de la gate -> `npm run arch:enrich:write`.
+
+Matrice de **toutes** les gates (chaque ecart -> sa resolution) : **`docs/chantier/GATES_AUDIT.md`**.
+
+Optionnel, un mot-cle pour tout auto-resoudre hors hook -- ajoutez a `package.json` :
+
+```json
+"gov:fix": "node scripts/enrich-komerce-arch-db-fields.js --write && node scripts/generate-komerce-arch-graph.js && node scripts/arch-reconcile.js --write"
+```
 
 ---
 
-## 3. Activer le portail comme porte d'entrée (3 branchements)
+## 4. Verifie contre les vraies gates
 
-Le portail se sert sous `/dashboards/admin/portal-pilotage.html`. Il garde la session,
-s'adapte au rôle (admin/finance/sourcing → cockpit Direction ; hub/relais/support → cockpit
-opérationnel) et tire ses KPI de `/api/dashboard/ops` et `/api/dashboard/finance`
-(repli démo propre si un appel échoue).
+`arch-header-sql-check`, `arch-schema-drift-check`, `arch-db-check`,
+`arch-doctrine-sanitize-check`, `audit-backend-arch` -> **tous verts** sur les fichiers patches.
 
-1. **`server.js`** — ajouter à l'allowlist du guard HTML :
-   ```js
-   '/dashboards/admin/portal-pilotage.html',
-   ```
-2. **`login.html`** — atterrissage post-login des rôles admin → ce portail
-   (`next = '/dashboards/admin/portal-pilotage.html'`).
-3. **SPA `app.js`** (`buildSidebarNav`) — un lien « 🏠 Portail » en tête vers la même URL,
-   pour remonter à la vue d'ensemble depuis n'importe quel domaine.
-
-Test rôles sans backend : `…/portal-pilotage.html?demo=hub` (ou `finance`, `sourcing`, `admin`).
+**Migration 094 (Mode B, objet intended)** : ne pas l'ajouter a `docs/SCHEMA.md` a la main —
+elle y entre apres deploiement via `schema-refresh.yml`. Ordre de deploiement a porter dans
+`docs/chantier/STATUS.md` (texte fourni en fin de `GATES_AUDIT.md`).
 
 ---
 
-## 4. Décision encore ouverte (métier, pas technique)
+## 5. Portail — activer comme porte d'entree (3 branchements manuels)
 
-**Le scellé colis est-il obligatoire ou indicatif ?**
-Aujourd'hui il est généré dans un `try/catch` silencieux : certains colis en ont, d'autres non,
-sans alerte. Par défaut le patch laisse ça **indicatif** — la vue signale juste `no_seal`.
-Si vous le voulez **obligatoire**, on ajoute une contrainte à la création du colis (dites-le).
+Sous `/dashboards/admin/portal-pilotage.html`, role-aware, KPI live via
+`/api/dashboard/ops` + `/api/dashboard/finance` (repli demo propre).
+
+1. **`server.js`** — allowlist guard HTML : `'/dashboards/admin/portal-pilotage.html',`
+2. **`login.html`** — atterrissage post-login admin -> ce portail.
+3. **`app.js` (`buildSidebarNav`)** — lien « Portail » en tete.
+
+Test roles sans backend : `…/portal-pilotage.html?demo=hub` (ou `finance`, `sourcing`, `admin`).
+
+---
+
+## 6. Decision encore ouverte (metier)
+
+**Scelle colis obligatoire ou indicatif ?** Par defaut indicatif (la vue signale `no_seal`
+sans bloquer). Pour l'imposer : contrainte a la creation du colis — dites-le.

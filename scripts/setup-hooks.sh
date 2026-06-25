@@ -183,6 +183,15 @@ GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 echo ""
 echo "🛡️  Komerce — reprise gouvernance (pre-commit)..."
 
+# 0. Auto-declaration des tables dans les headers @db-read/@db-write a partir du
+#    VRAI SQL du fichier (documentation-only, idempotent, additif : ne retire jamais
+#    une declaration manuelle). Resout AUTOMATIQUEMENT la sous-declaration au lieu de
+#    bloquer dessus. Ne re-stage QUE les fichiers deja dans le commit -> aucun effet
+#    de bord sur d'autres fichiers (un enrichissement incident reste visible, non commite).
+STAGED_SRC=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|mjs)$' || true)
+node scripts/enrich-komerce-arch-db-fields.js --write >/dev/null 2>&1 || true
+for f in $STAGED_SRC; do git add "$f" 2>/dev/null || true; done
+
 # 1. Graphe a jour a partir des headers
 node scripts/generate-komerce-arch-graph.js >/dev/null 2>&1 || true
 
@@ -209,8 +218,9 @@ if ! node scripts/arch-schema-drift-check.js >/dev/null 2>&1; then
 fi
 if ! node scripts/arch-header-sql-check.js >/dev/null 2>&1; then
   echo -e "${RED}🚫 Sous-declaration headers<->SQL au-dela du cliquet.${NC}"
-  echo "   Detail : npm run arch:headers-sql"
-  echo "   (declare les tables manquantes dans @db-read/@db-write, ou reconcile si baisse legitime)"
+  echo "   Detail   : npm run arch:headers-sql"
+  echo "   Auto-fix : npm run arch:enrich:write   (declare les tables depuis le vrai SQL, puis re-commit)"
+  echo "   Sinon    : declarer a la main dans @db-read/@db-write, ou npm run arch:reconcile:write si baisse legitime"
   exit 1
 fi
 # 5. Doctrine sanitize_before_render : ne bloque QUE si une source externe (req/params/
