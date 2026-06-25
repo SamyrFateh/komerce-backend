@@ -2110,15 +2110,13 @@ html.k-mobile-premium-v1 .k-hero-img {
    Source de vérité pour la hauteur hero desktop.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  /* Image : 1600×386 (ratio ~4.15:1) — lune + têtes + logo Komerce visibles
-     en intégralité (asset "y165" régénéré, cf. RAPPORT_HERO_DESKTOP.md).
-     object-position:50% 15% : crop horizontal uniquement avec ce ratio,
-     le contenu vertical (lune→logo) n'est pas re-rogné par le navigateur. */
+  /* Image : 1600×525 (ratio ~3:1) — lune + têtes + logo Komerce visibles.
+     Fallback pour pages sans .k-home-premium-v1 (DIRECTION A gagne sinon). */
   .k-hero-img {
-    height: 220px;
-    aspect-ratio: unset;
+    height: auto;
+    aspect-ratio: 1600 / 525;
     object-fit: cover;
-    object-position: 50% 20%;
+    object-position: 50% 35%;
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */
@@ -2477,7 +2475,7 @@ html.k-mobile-premium-v1 .k-hero-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 20%;
+    object-position: 50% 35%;
     aspect-ratio: unset;
     display: block;
   }

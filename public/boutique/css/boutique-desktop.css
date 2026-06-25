@@ -1177,7 +1177,7 @@
   body:has(.k-side-cart.has-items) .k-hero-img,
   body.sc-reserve .k-hero-img {
     max-width: calc(100vw - var(--sc-reserve-w, 240px));
-    object-position: 48% 15%;
+    object-position: 48% 35%;
   }
 }
 @media (min-width: 1200px) {
