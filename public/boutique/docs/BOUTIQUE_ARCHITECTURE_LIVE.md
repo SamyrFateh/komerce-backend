@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-06-25T19:13:14.492Z
+> Régénération : `npm run boutique:arch`. Date : 2026-06-25T20:23:52.110Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.
@@ -20,7 +20,7 @@
 | `event.css` | 860 | 🔴 **ORPHELIN** |
 | `group-cart-flow.css` | 2755 | 🔴 **ORPHELIN** |
 | `hero-cart-proxy.css` | 22 | 🔴 **ORPHELIN** |
-| `hero.css` | 996 | 🔴 **ORPHELIN** |
+| `hero.css` | 998 | 🔴 **ORPHELIN** |
 | `identity.css` | 332 | 🔴 **ORPHELIN** |
 | `interactions.css` | 473 | 🔴 **ORPHELIN** |
 | `layout.css` | 1182 | 🔴 **ORPHELIN** |
@@ -41,7 +41,7 @@
 Cascade : un fichier plus bas écrase ses prédécesseurs sur les sélecteurs communs.
 
 ```
- 1. /boutique/css/dist/base.css?v=105
+ 1. /boutique/css/dist/base.css?v=106
  2. /boutique/css/dist/components.css?v=121
  3. /boutique/css/dist/desktop.css?v=44
  4. /boutique/css/dist/event.css?v=26
