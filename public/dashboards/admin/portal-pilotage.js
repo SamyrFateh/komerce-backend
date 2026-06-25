@@ -216,7 +216,17 @@ function close(){
   drawer.innerHTML = '';
   document.querySelectorAll('.card[data-dom]').forEach(c=>{c.classList.remove('open');c.setAttribute('aria-expanded','false');});
 }
-document.addEventListener('click',e=>{const c=e.target.closest('.card[data-dom]');if(c){toggle(c.dataset.dom);return;}if(e.target.closest('.drawer-close'))close();});
+document.addEventListener('click',e=>{
+  const c=e.target.closest('.card[data-dom]');if(c){toggle(c.dataset.dom);return;}
+  if(e.target.closest('.drawer-close')){close();return;}
+  // Avant toute navigation depuis le portail : poser le flag focus
+  const link=e.target.closest('a[href]');
+  if(link){
+    try{ const p=new URL(link.href,location.origin).pathname;
+      if(p.startsWith('/admin/')){sessionStorage.setItem('kmc_focus_origin','portail');}
+    }catch(_){}
+  }
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
 
 /* ── Hydratation + rendu complet ───────────────────────────── */

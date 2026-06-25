@@ -121,11 +121,26 @@
   let activeShell = 'ct';    // shell courant
 
   // ── Mode focus ────────────────────────────────────────────────────────────
-  // Activé par ?focus=1 dans l'URL (liens depuis le portail).
+  // Activé par 3 mécanismes cumulatifs :
+  //   1. ?focus=1 dans l'URL
+  //   2. document.referrer venant de /portail ou /pilotage
+  //   3. sessionStorage.kmc_focus_origin === 'portail'
   // Masque la sidebar ; affiche uniquement la vue + header minimal.
 
   function isFocusMode() {
-    return new URLSearchParams(window.location.search).get('focus') === '1';
+    if (new URLSearchParams(window.location.search).get('focus') === '1') return true;
+    try {
+      const ref = document.referrer;
+      if (ref) {
+        const refPath = new URL(ref).pathname;
+        if (refPath === '/portail' || refPath === '/pilotage') return true;
+      }
+    } catch (_) {}
+    if (sessionStorage.getItem('kmc_focus_origin') === 'portail') {
+      sessionStorage.removeItem('kmc_focus_origin');
+      return true;
+    }
+    return false;
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
