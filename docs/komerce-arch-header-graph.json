@@ -20,7 +20,7 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 665,
-    "edges": 2956,
+    "edges": 2957,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
@@ -13253,6 +13253,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "parcel_events",
         "parcels",
         "scans"
       ],
@@ -32887,6 +32888,12 @@
     },
     {
       "from": "utils/parcelSync.js",
+      "to": "db:parcel_events",
+      "type": "db-write",
+      "label": "parcel_events"
+    },
+    {
+      "from": "utils/parcelSync.js",
       "to": "db:parcels",
       "type": "db-write",
       "label": "parcels"
@@ -45291,6 +45298,7 @@
       ],
       "dbWrite": [
         "alerts",
+        "parcel_events",
         "parcels",
         "scans"
       ],
@@ -45302,6 +45310,7 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:parcel_events",
         "db:parcel_items",
         "db:parcels",
         "db:scans",

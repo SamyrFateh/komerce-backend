@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portail de Pilotage · Komerce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F1A2E; --navy-2:#16223C; --navy-3:#22304F;
+  --amber:#F4B860; --coral:#C85C2D;
+  --green:#16A34A; --green-soft:#DCFCE7;
+  --orange:#F59E0B; --orange-soft:#FEF3C7;
+  --red:#DC2626; --red-soft:#FEE2E2;
+  --blue:#2563EB; --blue-soft:#DBEAFE;
+  --violet:#7C3AED; --teal:#0D9488;
+  --ink:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+  --line:#E2E8F0; --line-2:#CBD5E1;
+  --paper:#F4F6FA; --card:#FFFFFF;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:14px; --r-sm:9px;
+  --shadow:0 1px 2px rgba(15,26,46,.06), 0 8px 24px -12px rgba(15,26,46,.22);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+.num{font-family:var(--mono);font-feature-settings:"tnum"}
+.boot-hide{visibility:hidden}
+
+/* ── Topbar ── */
+.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;
+  padding:12px 24px;background:rgba(244,246,250,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px}
+.brand svg{width:34px;height:34px;display:block}
+.brand-txt b{font-family:var(--display);font-weight:700;letter-spacing:-.01em;font-size:15px;display:block;line-height:1.1}
+.brand-txt span{font-size:11px;color:var(--ink-3);letter-spacing:.14em;text-transform:uppercase}
+.topbar-spacer{flex:1}
+.period{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);
+  background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-weight:500}
+.period select{font:inherit;border:none;background:none;color:var(--ink);font-weight:600;outline:none;cursor:pointer}
+.mode{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.04em;
+  padding:5px 10px;border-radius:99px;text-transform:uppercase}
+.mode.demo{background:var(--orange-soft);color:#92400E}
+.mode.live{background:var(--green-soft);color:#14532D}
+.mode .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,0,0,.18)}70%{box-shadow:0 0 0 6px rgba(0,0,0,0)}100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}}
+.who{display:flex;align-items:center;gap:9px;font-size:13px}
+.who .av{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--display);font-weight:600;display:grid;place-items:center;font-size:13px}
+.who small{display:block;color:var(--ink-3);font-size:11px;text-transform:capitalize}
+
+/* ── Cockpit ── */
+.cockpit{background:radial-gradient(120% 140% at 88% -10%, #2a3a5e 0%, var(--navy) 52%);
+  color:#E8EEF8;padding:26px 24px 30px;position:relative;overflow:hidden}
+.cockpit::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(60% 80% at 12% 120%, rgba(244,184,96,.10), transparent 60%);pointer-events:none}
+.cockpit-wrap{max-width:1280px;margin:0 auto;position:relative}
+.cockpit-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:7px}
+.cockpit h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;color:#fff}
+.cockpit h1 + p{color:#9FB0C9;font-size:14px;margin-top:5px;max-width:48ch}
+.cockpit-cta{display:flex;gap:9px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;padding:9px 15px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.16);color:#E8EEF8;transition:.16s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
+.btn.amber{background:var(--amber);color:var(--navy);border-color:var(--amber)}
+.btn.amber:hover{background:#ffca7a}
+.kpis{display:grid;gap:1px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.09);border-radius:var(--r);overflow:hidden}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));padding:15px 16px 16px;position:relative}
+.kpi-label{font-size:11px;color:#90A2BE;letter-spacing:.04em;display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.kpi-val{font-family:var(--mono);font-weight:600;font-size:23px;color:#fff;letter-spacing:-.01em;line-height:1}
+.kpi-val small{font-size:13px;color:#9FB0C9;font-weight:500}
+.kpi-sub{font-size:11.5px;margin-top:7px;color:#9FB0C9;display:flex;align-items:center;gap:5px}
+.trend{font-weight:600}.trend.up{color:#5fd58a}.trend.down{color:#ff8a8a}
+.kpi-bar{position:absolute;left:0;top:0;bottom:0;width:3px}
+
+/* ── Chaîne ── */
+.stage{max-width:1280px;margin:0 auto;padding:30px 24px 16px}
+.stage[hidden]{display:none}
+.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+.section-head h2{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.01em}
+.section-head .hint{font-size:13px;color:var(--ink-3)}
+.section-sub{font-size:13.5px;color:var(--ink-2);max-width:72ch;margin:6px 0 22px}
+.chain{display:flex;align-items:stretch;overflow-x:auto;padding:4px 2px 14px;scrollbar-width:thin}
+.station{flex:1 0 200px;min-width:200px;display:flex;flex-direction:column}
+.seam{flex:0 0 64px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 4px;align-self:center}
+.seam .arrow{color:var(--line-2);font-size:18px;line-height:1}
+.seam .seam-lbl{font-size:10px;color:var(--ink-3);text-align:center;margin-top:7px;line-height:1.25;max-width:60px;font-weight:500}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  text-align:left;width:100%;height:100%;display:flex;flex-direction:column;transition:.18s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 14px 30px -14px rgba(15,26,46,.4)}
+.card:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.card.open{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent)}
+.card-rail{height:4px;background:var(--accent)}
+.card-body{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1}
+.card-top{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.card-ico{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+  background:color-mix(in srgb,var(--accent) 13%,#fff);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+.card-name{font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:-.01em}
+.card-mission{font-size:12px;color:var(--ink-2);line-height:1.4;min-height:34px}
+.card-metric{margin-top:13px;font-family:var(--mono);font-weight:600;font-size:18px;letter-spacing:-.01em}
+.card-metric small{font-size:11.5px;color:var(--ink-3);font-weight:500;font-family:var(--mono)}
+.card-foot{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:99px}
+.pill .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--green-soft);color:#14532D}
+.pill.warn{background:var(--orange-soft);color:#92400E}
+.pill.bad{background:var(--red-soft);color:#7F1D1D}
+.card-count{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.card-count b{color:var(--ink-2)}
+
+/* ── Drawer ── */
+.drawer{max-width:1280px;margin:0 auto;padding:0 24px}
+.drawer-inner{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--accent);
+  border-radius:var(--r);box-shadow:var(--shadow);padding:22px 24px 24px;margin-bottom:8px;animation:slide .22s ease}
+@keyframes slide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.drawer-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.drawer-head .card-ico{width:38px;height:38px;font-size:19px}
+.drawer-head h3{font-family:var(--display);font-weight:700;font-size:17px}
+.drawer-close{margin-left:auto;color:var(--ink-3);font-size:13px;display:flex;align-items:center;gap:5px}
+.drawer-close:hover{color:var(--ink)}
+.drawer-mission{font-size:13px;color:var(--ink-2);margin:2px 0 18px;max-width:75ch}
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.layer-lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--ink-3);display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.layer-lbl .tag{font-size:10px;padding:2px 7px;border-radius:5px;letter-spacing:.02em;text-transform:none}
+.tag.ct{background:var(--blue-soft);color:#1E3A8A}
+.tag.bo{background:#CCFBF1;color:#115E59}
+.dash-grid{display:flex;flex-direction:column;gap:8px}
+.dash{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-sm);transition:.14s;background:#fff}
+.dash:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,#fff)}
+.dash-ico{font-size:17px;width:24px;text-align:center;flex-shrink:0}
+.dash-txt b{display:block;font-size:13.5px;font-weight:600}
+.dash-txt span{font-size:11.5px;color:var(--ink-2);line-height:1.35}
+.dash-go{margin-left:auto;color:var(--ink-3);font-size:15px;flex-shrink:0}
+.dash:hover .dash-go{color:var(--accent)}
+
+/* ── Support ── */
+.support{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.support .card-body{padding:14px 15px}
+.field-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.field{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 15px;flex:1 1 220px;transition:.14s;box-shadow:var(--shadow)}
+.field:hover{border-color:var(--navy-3);transform:translateY(-2px)}
+.field .ico{font-size:19px}
+.field b{font-size:13.5px;display:block}
+.field span{font-size:11.5px;color:var(--ink-3)}
+.field .ext{margin-left:auto;color:var(--ink-3);font-size:12px}
+
+footer{max-width:1280px;margin:18px auto 0;padding:24px;color:var(--ink-3);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;border-top:1px solid var(--line)}
+footer code{font-family:var(--mono);background:#fff;border:1px solid var(--line);padding:1px 6px;border-radius:5px}
+
+@media(max-width:1080px){.layers{grid-template-columns:1fr}}
+@media(max-width:720px){
+  .kpis{grid-template-columns:repeat(2,1fr)!important}
+  .chain{flex-direction:column}.station{min-width:0}
+  .seam{flex-direction:row;width:100%;height:44px;gap:10px}
+  .seam .arrow{transform:rotate(90deg)}.seam .seam-lbl{max-width:none}
+  .topbar{padding:10px 16px;gap:12px}.who small{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="boot-hide">
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 210 200" aria-label="Komerce">
+      <g stroke="var(--coral)" stroke-width="16" stroke-linecap="round" fill="none">
+        <path d="M42 54.5V87M42 113v32.5"/><path d="M51.5 91.1 97.1 48.1M51.5 108.9l45.6 43M55 100h68"/>
+      </g>
+      <g fill="none" stroke="var(--coral)" stroke-width="13">
+        <circle cx="42" cy="34" r="14"/><circle cx="42" cy="166" r="14"/><circle cx="112" cy="34" r="14"/><circle cx="112" cy="166" r="14"/>
+      </g>
+      <circle cx="42" cy="100" r="9" fill="var(--amber)"/>
+      <circle cx="160" cy="100" r="30" fill="none" stroke="var(--coral)" stroke-width="14"/>
+      <circle cx="160" cy="100" r="11" fill="var(--amber)"/>
+    </svg>
+    <div class="brand-txt"><b>Komerce</b><span>Pilotage</span></div>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="period">📅 <select id="period">
+    <option value="7">7 derniers jours</option><option value="30">30 derniers jours</option><option value="90">90 derniers jours</option>
+  </select></div>
+  <span class="mode demo" id="mode"><span class="dot"></span> Démo</span>
+  <div class="who"><div class="av" id="av">A</div><div><b id="who-name">—</b><small id="who-role"></small></div></div>
+</header>
+
+<section class="cockpit">
+  <div class="cockpit-wrap">
+    <div class="cockpit-head">
+      <div>
+        <div class="eyebrow" id="cp-eyebrow">Direction · vue d'ensemble</div>
+        <h1 id="cp-title">L'activité, d'un seul coup d'œil</h1>
+        <p id="cp-lede">Les indicateurs qui se parlent, du plus haut vers le détail. Choisissez un maillon de la chaîne pour ouvrir son domaine.</p>
+      </div>
+      <div class="cockpit-cta" id="cp-cta"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+</section>
+
+<section class="stage" id="chain-stage">
+  <div class="section-head"><h2>La chaîne de l'activité</h2><span class="hint">supply → demande → exécution → argent</span></div>
+  <p class="section-sub">Chaque domaine isole un métier mais reste relié au suivant&nbsp;: ce qui se passe à gauche conditionne ce qui arrive à droite. Les libellés entre les blocs sont les <b>coutures</b> — ce qui circule réellement d'un domaine à l'autre.</p>
+  <div class="chain" id="chain"></div>
+</section>
+
+<div class="drawer" id="drawer"></div>
+
+<section class="stage" id="support-stage">
+  <div class="section-head"><h2>Socle &amp; terrain</h2><span class="hint">ce qui alimente et fait tourner la chaîne</span></div>
+  <p class="section-sub">Le catalogue nourrit le haut de la chaîne&nbsp;; le système la paramètre&nbsp;; les applis terrain l'exécutent sur le pont.</p>
+  <div class="support" id="support"></div>
+  <div class="field-strip" id="field"></div>
+</section>
+
+<footer>
+  <span>Portail de pilotage — porte d'entrée au-dessus de la SPA admin.</span>
+  <span>Routes profondes&nbsp;: <code>/admin/&lt;domaine&gt;</code> · données via <code>KmcApi</code></span>
+</footer>
+
+<script>
+'use strict';
+const FMT=new Intl.NumberFormat('fr-FR');
+
+/* ── Rôles (miroir de app.js) ──────────────────────────────── */
+const KNOWN_ROLES=['admin','finance','sourcing','hub','relais','support'];
+const ROLE_SHELLS={admin:['ct','bo'],finance:['ct','bo'],sourcing:['ct','bo'],hub:['bo'],relais:['bo'],support:['bo']};
+const CT_ALL=['admin','finance','sourcing'];                                   // routes CT "tous"
+const BO_ALL=['admin','finance','sourcing','hub','relais','support'];          // routes BO "tous"
+const hasCT=role=>(ROLE_SHELLS[role]||[]).includes('ct');
+
+/* ── Métriques : démo par défaut, remplacées par le live ───────
+   Live mappé sur 2 endpoints réels (cf. services backend) :
+     /api/dashboard/ops     → activite, sla, logistique, alertes
+     /api/dashboard/finance → kpi, marges, evolution
+   Repli propre : tout champ absent garde sa valeur démo.        */
+const DEMO={ caKmf:4_820_000, caPct:11, margePct:22.4, nbSansCost:0,
+  enCours:63, bloquees:4, slaRisque:7, hubAtraiter:18, alertes:3, panier:38500, ruptures:6 };
+let M={...DEMO};
+
+const FR=(n,d=0)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const caM=k=>k==null?'—':FR(k/1e6,2);
+const trend=p=>p==null?'':`<span class="trend ${p>=0?'up':'down'}">${p>=0?'▲':'▼'} ${FR(Math.abs(p),1)}%</span>`;
+
+function dirKpis(){return [
+  {label:'💶 CA période',      val:caM(M.caKmf), unit:'M KMF', sub:M.caPct!=null?trend(M.caPct)+' vs préc.':'période courante', tone:'var(--amber)'},
+  {label:'📊 Marge nette',     val:M.margePct!=null?FR(M.margePct,1):'—', unit:'%', sub:M.nbSansCost?`${M.nbSansCost} cmd sans coût saisi`:'coûts complets', tone:'var(--green)'},
+  {label:'📦 Commandes en cours', val:String(M.enCours), unit:'', sub:'flux en cours', tone:'var(--blue)'},
+  {label:'⛔ Bloquées',        val:String(M.bloquees), unit:'', sub:'&gt; 7 j sans mouvement', tone:M.bloquees?'var(--red)':'var(--green)'},
+  {label:'⏱️ SLA à risque',    val:String(M.slaRisque), unit:'cmd', sub:'late + blocked', tone:M.slaRisque?'var(--orange)':'var(--green)'},
+  {label:'🚨 Alertes ouvertes',val:String(M.alertes), unit:'', sub:'anomalies à traiter', tone:M.alertes?'var(--red)':'var(--green)'},
+];}
+function opsKpis(){return [
+  {label:'📦 Commandes en cours', val:String(M.enCours), unit:'', sub:'flux en cours', tone:'var(--blue)'},
+  {label:'⛔ Bloquées',           val:String(M.bloquees), unit:'', sub:'à débloquer en priorité', tone:M.bloquees?'var(--red)':'var(--green)'},
+  {label:'⏱️ SLA à risque',       val:String(M.slaRisque), unit:'cmd', sub:'late + blocked', tone:M.slaRisque?'var(--orange)':'var(--green)'},
+  {label:'🏭 À traiter au hub',   val:String(M.hubAtraiter), unit:'colis', sub:'réception & tri', tone:'var(--amber)'},
+  {label:'🚨 Alertes ouvertes',   val:String(M.alertes), unit:'', sub:'anomalies à traiter', tone:M.alertes?'var(--red)':'var(--green)'},
+];}
+
+/* Métrique + statut d'une carte domaine (live si dispo, sinon statique) */
+function domainMetric(d){
+  switch(d.id){
+    case 'commercial': return {metric:`${caM(M.caKmf)} M <small>CA · panier ${FR(M.panier)}</small>`, status:['ok','tendance '+(M.caPct>=0?'+':'−')]};
+    case 'ops':        return {metric:`${M.enCours} <small>en cours · ${M.bloquees} bloquées</small>`, status:[M.bloquees?'warn':'ok',`${M.slaRisque} SLA risque`]};
+    case 'finance':    return {metric:`${M.margePct!=null?FR(M.margePct,1):'—'}% <small>marge nette</small>`, status:[M.nbSansCost?'warn':'ok', M.nbSansCost?'coûts partiels':'cash sain']};
+    case 'catalogue':  return {metric:d.metric, status:[M.ruptures?'warn':'ok', `${M.ruptures} ruptures`]};
+    default:           return {metric:d.metric, status:d.status};
+  }
+}
+
+/* ── Domaines ──────────────────────────────────────────────── */
+const DOMAINS=[
+  {id:'catalogue',name:'Catalogue',icon:'🛍️',accent:'var(--teal)',inChain:false,
+   mission:"Une boutique vivante et juste : produits, catégories, disponibilités.",
+   metric:'248 <small>produits actifs</small>',status:['warn','6 ruptures'],
+   ct:[],
+   bo:[{icon:'🏷️',label:'Catégories boutique',desc:'Arborescence & mise en avant',route:'/admin/categories',r:['admin']},
+       {icon:'🛍️',label:'Produits boutique',desc:'Fiches, stock, publication',route:'/admin/products',r:['admin']}]},
+
+  {id:'sourcing',name:'Sourcing & Prix',icon:'🔎',accent:'var(--violet)',inChain:true,seam:'fiche produit → coût & marge cible',
+   mission:"Acheter bien et fixer le juste prix : du fournisseur à la marge cible.",
+   metric:'34% <small>marge cible moy.</small>',status:['warn','12 à repricer'],
+   ct:[{icon:'📈',label:'Stratégie de prix',desc:'Positionnement & marges visées',route:'/admin/pricing-strategy',r:['admin','sourcing','finance']},
+       {icon:'🧮',label:'Construction du prix',desc:'Coûts → prix de vente, pas à pas',route:'/admin/pricing',r:['admin','sourcing','finance']}],
+   bo:[{icon:'🔎',label:'Sourcing',desc:'Pipeline de produits à sourcer',route:'/admin/sourcing',r:['admin','sourcing']},
+       {icon:'📡',label:'Scanner catalogue',desc:"Veille & détection d'opportunités",route:'/admin/sourcing-scanner',r:['admin','sourcing']},
+       {icon:'⚙️',label:'Config des coûts',desc:'Composantes de coût & paramètres',route:'/admin/pricing-workshop',r:['admin']},
+       {icon:'🏭',label:'Fournisseurs',desc:"Comptes & conditions d'achat",route:'/admin/suppliers',r:['admin','sourcing']}]},
+
+  {id:'commercial',name:'Commercial',icon:'📈',accent:'var(--amber)',inChain:true,seam:'prix de vente publié',
+   mission:"Comprendre et faire grandir la demande : ventes, clients, paniers.",
+   metric:'4,82 M <small>CA · panier 38 500</small>',status:['ok','tendance +'],
+   ct:[{icon:'📈',label:'Ventes',desc:'CA, funnel, top produits, cohortes',route:'/admin/sales',r:CT_ALL}],
+   bo:[{icon:'👥',label:'Clients',desc:'Segments, VIP, clients à risque',route:'/admin/clients',r:['admin','support','finance']},
+       {icon:'🛒',label:'Paniers partagés',desc:'Commandes groupées diaspora',route:'/admin/shared-carts',r:['admin','support']}]},
+
+  {id:'ops',name:'Opérationnel',icon:'🚦',accent:'var(--blue)',inChain:true,seam:'commande à exécuter',
+   mission:"Que rien ne bloque entre la commande et le retrait au relais.",
+   metric:'63 <small>en cours · 4 bloquées</small>',status:['warn','SLA 96%'],
+   ct:[{icon:'🗼',label:'Tour de contrôle',desc:'Signal, blocages, arbitrage',route:'/admin/control-tower',r:CT_ALL},
+       {icon:'📦',label:'Commandes & logistique',desc:'Pipeline statuts & flux',route:'/admin/orders-logistics',r:CT_ALL},
+       {icon:'💰',label:'Coût rendu relais',desc:"Coût complet jusqu'au relais",route:'/admin/costing',r:CT_ALL},
+       {icon:'🎉',label:'Panier événement',desc:'Opérations groupées ponctuelles',route:'/admin/event-workspaces',r:CT_ALL}],
+   bo:[{icon:'⚠️',label:'Problèmes',desc:'File des commandes à débloquer',route:'/admin/problems',r:BO_ALL},
+       {icon:'🚨',label:'Alertes & incidents',desc:'Signaux à traiter',route:'/admin/alerts',r:BO_ALL},
+       {icon:'🏭',label:'Hub & Relais',desc:'Réception, tri, distribution',route:'/admin/hub-relais',r:['admin','hub','relais']},
+       {icon:'✈️',label:'Transitaire',desc:'Expéditions vers les Comores',route:'/admin/transitaire',r:['admin','hub']},
+       {icon:'📋',label:'Inventaire Hub',desc:'Stock physique au hub',route:'/admin/inventory',r:['admin','hub']}]},
+
+  {id:'finance',name:'Financier',icon:'💰',accent:'var(--green)',inChain:true,seam:'livraison → encaissement & SLA',
+   mission:"Chaque euro encaissé, dépensé, et la marge expliquée.",
+   metric:'22,4% <small>marge nette</small>',status:['ok','cash sain'],
+   ct:[{icon:'📊',label:'Santé économique',desc:'P&L corrélé, cohérence des chiffres',route:'/admin/economic',r:CT_ALL},
+       {icon:'💹',label:'Projection & Mix',desc:'Prévision CA/marge, mix catégories',route:'/admin/pilotage-fin',r:CT_ALL},
+       {icon:'🔭',label:'Carte économique',desc:'Flux de valeur du prix à la marge',route:'/admin/economic-flow',r:['admin','sourcing','finance']}],
+   bo:[{icon:'🧾',label:'Comptabilité',desc:'Encaissements, cash relais, rappro',route:'/admin/accounting',r:['admin','finance']},
+       {icon:'📄',label:'Factures',desc:'Émission & suivi',route:'/admin/invoices',r:CT_ALL},
+       {icon:'🛃',label:'Douane & shipments',desc:'Droits, taxes, lots import',route:'/admin/customs',r:['admin','finance']}]},
+];
+const SYSTEM={id:'system',name:'Système & outils',icon:'⚙️',accent:'var(--ink-2)',
+  mission:"Paramétrer la mécanique et simuler avant de décider.",metric:'—',status:['ok','stable'],ct:[],
+  bo:[{icon:'⚙️',label:'Paramètres',desc:'Taux, SLA, règles globales',route:'/admin/settings',r:['admin']},
+      {icon:'🧪',label:'Simulateur',desc:'Tester un scénario de bout en bout',route:'/admin/simulator',r:['admin']}]};
+const FIELD=[{icon:'🏭',name:'Application Hub',desc:'Réception & tri — terrain',route:'/hub',r:['admin','hub']},
+             {icon:'📍',name:'Application Relais',desc:'Remise client — terrain',route:'/relais',r:['admin','relais']}];
+
+/* ── Filtrage par rôle ─────────────────────────────────────── */
+let ROLE='admin';
+const can=it=>it.r.includes(ROLE);
+const visItems=d=>({ct:(d.ct||[]).filter(can),bo:(d.bo||[]).filter(can)});
+const domainVisible=d=>{const v=visItems(d);return v.ct.length+v.bo.length>0;};
+
+/* ── Rendu ─────────────────────────────────────────────────── */
+function renderCockpit(){
+  const dir=hasCT(ROLE);
+  const set=dir?dirKpis():opsKpis();
+  document.getElementById('cp-eyebrow').textContent=dir?"Direction · vue d'ensemble":"Opérations · vue d'ensemble";
+  document.getElementById('cp-title').textContent=dir?"L'activité, d'un seul coup d'œil":"Ce qui doit avancer aujourd'hui";
+  document.getElementById('cp-lede').textContent=dir
+    ?"Les indicateurs qui se parlent, du plus haut vers le détail. Choisissez un maillon de la chaîne pour ouvrir son domaine."
+    :"Les files et incidents à traiter en priorité. Ouvrez un domaine pour accéder à vos outils.";
+  const cta=document.getElementById('cp-cta');
+  cta.innerHTML = dir
+    ? '<a class="btn" href="/admin/sante">🏥 Santé business</a><a class="btn amber" href="/admin/pilotage">🎯 Cockpit détaillé</a>'
+    : '<a class="btn amber" href="/admin/problems">⚠️ File à traiter</a>';
+  const k=document.getElementById('kpis');
+  k.style.gridTemplateColumns=`repeat(${set.length},1fr)`;
+  k.innerHTML=set.map(x=>`<div class="kpi"><span class="kpi-bar" style="background:${x.tone}"></span>
+    <div class="kpi-label">${x.label}</div>
+    <div class="kpi-val">${x.val}${x.unit?` <small>${x.unit}</small>`:''}</div>
+    <div class="kpi-sub">${x.sub}</div></div>`).join('');
+}
+
+function cardHTML(d){
+  const dm=domainMetric(d);const [tone,txt]=dm.status;const v=visItems(d);const n=v.ct.length+v.bo.length;
+  return `<button class="card" data-dom="${d.id}" style="--accent:${d.accent}" aria-expanded="false">
+    <span class="card-rail"></span><div class="card-body">
+      <div class="card-top"><div class="card-ico">${d.icon}</div><div class="card-name">${d.name}</div></div>
+      <div class="card-mission">${d.mission}</div>
+      <div class="card-metric">${dm.metric}</div>
+      <div class="card-foot"><span class="pill ${tone}"><span class="d"></span>${txt}</span>
+        <span class="card-count"><b>${n}</b> dashboard${n>1?'s':''}</span></div>
+    </div></button>`;
+}
+
+function renderChain(){
+  const stage=document.getElementById('chain-stage');
+  const doms=DOMAINS.filter(d=>d.inChain&&domainVisible(d));
+  if(!doms.length){stage.hidden=true;return;}
+  stage.hidden=false;
+  let html='';
+  doms.forEach((d,i)=>{
+    if(i>0) html+=`<div class="seam"><div class="arrow">→</div><div class="seam-lbl">${d.seam}</div></div>`;
+    html+=`<div class="station">${cardHTML(d)}</div>`;
+  });
+  document.getElementById('chain').innerHTML=html;
+}
+
+function renderSupport(){
+  const stage=document.getElementById('support-stage');
+  const cat=DOMAINS.find(d=>d.id==='catalogue');
+  const cards=[cat,SYSTEM].filter(domainVisible);
+  const fields=FIELD.filter(can);
+  if(!cards.length&&!fields.length){stage.hidden=true;return;}
+  stage.hidden=false;
+  document.getElementById('support').innerHTML=cards.map(cardHTML).join('');
+  document.getElementById('field').innerHTML=fields.map(f=>`
+    <a class="field" href="${f.route}"><span class="ico">${f.icon}</span>
+      <div><b>${f.name}</b><span>${f.desc}</span></div><span class="ext">↗</span></a>`).join('');
+}
+
+/* ── Drawer ────────────────────────────────────────────────── */
+const ALL=[...DOMAINS,SYSTEM];
+const drawer=document.getElementById('drawer');
+let openId=null;
+function toggle(id){id===openId?close():open(id);}
+function open(id){
+  const d=ALL.find(x=>x.id===id);if(!d)return;openId=id;
+  document.querySelectorAll('.card[data-dom]').forEach(c=>{const on=c.dataset.dom===id;c.classList.toggle('open',on);c.setAttribute('aria-expanded',on);});
+  const v=visItems(d);
+  const layer=(title,tag,cls,items)=>!items.length?'':`<div><div class="layer-lbl"><span class="tag ${cls}">${tag}</span>${title}</div>
+    <div class="dash-grid">${items.map(it=>`<a class="dash" href="${it.route}">
+      <span class="dash-ico">${it.icon}</span><span class="dash-txt"><b>${it.label}</b><span>${it.desc}</span></span>
+      <span class="dash-go">→</span></a>`).join('')}</div></div>`;
+  drawer.innerHTML=`<div class="drawer-inner" style="--accent:${d.accent}">
+    <div class="drawer-head"><div class="card-ico" style="--accent:${d.accent}">${d.icon}</div><h3>${d.name}</h3>
+      <button class="drawer-close">✕ Fermer</button></div>
+    <p class="drawer-mission">${d.mission}</p>
+    <div class="layers">${layer('Piloter — décider','CT','ct',v.ct)}${layer('Back-office — exécuter','BO','bo',v.bo)}</div>
+  </div>`;
+  drawer.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function close(){openId=null;drawer.innerHTML='';document.querySelectorAll('.card[data-dom]').forEach(c=>{c.classList.remove('open');c.setAttribute('aria-expanded','false');});}
+document.addEventListener('click',e=>{const c=e.target.closest('.card[data-dom]');if(c){toggle(c.dataset.dom);return;}if(e.target.closest('.drawer-close'))close();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+
+/* ── Hydratation + rendu complet ───────────────────────────── */
+function hydrateUser(u){
+  const name=u.full_name||u.email||'Utilisateur';
+  document.getElementById('who-name').textContent=name;
+  document.getElementById('who-role').textContent=u.role||'';
+  document.getElementById('av').textContent=(String(name).trim()[0]||'A').toUpperCase();
+}
+function renderAll(){renderCockpit();renderChain();renderSupport();document.body.classList.remove('boot-hide');}
+
+/* ── Récupération des métriques live (ops + finance) ───────── */
+let LIVE=false;
+async function fetchMetrics(){
+  const period=document.getElementById('period').value||30;
+  const m={...DEMO}; let got=false;
+  const get=async u=>{const r=await fetch(u,{credentials:'include',headers:{Accept:'application/json'}});return r.ok?r.json():null;};
+  try{
+    const ops=await get('/api/dashboard/ops');
+    if(ops&&ops.activite){
+      m.enCours=ops.activite.commandes_en_cours; m.bloquees=ops.activite.commandes_bloquees;
+      if(ops.sla)        m.slaRisque=(ops.sla.late||0)+(ops.sla.blocked||0);
+      if(ops.logistique?.hub_preparation) m.hubAtraiter=ops.logistique.hub_preparation.count;
+      if(ops.alertes){   m.alertes=ops.alertes.anomalies; m.ruptures=ops.alertes.low_stock; }
+      got=true;
+    }
+  }catch(_){}
+  try{
+    const fin=await get('/api/dashboard/finance?period='+period);
+    if(fin&&fin.kpi){
+      m.caKmf=fin.kpi.ca_kmf; m.panier=fin.kpi.panier_moyen_kmf;
+      m.caPct=fin.kpi.evolution?fin.kpi.evolution.ca_pct:null;
+      if(fin.marges){ m.margePct=fin.marges.taux_marge_pct; m.nbSansCost=fin.marges.nb_sans_cost; }
+      got=true;
+    }
+  }catch(_){}
+  if(got){ M=m; LIVE=true; }
+  return got;
+}
+
+/* ── Porte d'entrée : garde de session + adaptation rôle ───── */
+async function boot(){
+  const params=new URLSearchParams(location.search);
+  const forced=params.get('demo');                 // ?demo=hub / ?demo=finance / ?demo=1
+  setBadge('demo');
+  if(forced!==null){
+    const role=(forced&&forced!=='1'&&KNOWN_ROLES.includes(forced))?forced:'admin';
+    ROLE=role;hydrateUser({full_name:'Démo',role});renderAll();return;
+  }
+  let res;
+  try{res=await fetch('/api/auth/me',{credentials:'include',headers:{Accept:'application/json'}});}
+  catch(_){ ROLE='admin';hydrateUser({full_name:'Aperçu',role:'admin'});renderAll();return; } // backend injoignable → aperçu
+  if(res.status===401||res.status===403){location.replace('/login.html?next='+encodeURIComponent(location.pathname+location.search));return;}
+  if(!res.ok){ ROLE='admin';hydrateUser({full_name:'Aperçu',role:'admin'});renderAll();return; }
+  const u=await res.json();
+  if(!KNOWN_ROLES.includes(u.role)){location.replace('/');return;}   // rôle hors périmètre → accueil public
+  ROLE=u.role;hydrateUser(u);
+  await fetchMetrics();                              // tente le live ; sinon garde la démo
+  renderAll();
+  setBadge(LIVE?'live':'demo');
+}
+function setBadge(kind){
+  const b=document.getElementById('mode');
+  if(kind==='live'){b.className='mode live';b.innerHTML='<span class="dot"></span> Live';}
+  else{b.className='mode demo';b.innerHTML='<span class="dot"></span> Démo';}
+}
+document.getElementById('period').addEventListener('change',async()=>{
+  if(!LIVE) return;                                  // en démo : la période ne recharge rien
+  await fetchMetrics(); renderCockpit(); renderChain(); renderSupport();
+});
+boot();
+</script>
+</body>
+</html>

@@ -373,29 +373,31 @@ router.post('/parcels/:id/ready', ...hubAuth, async (req, res, next) => {
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
 
-    // Anti-error: check items assigned
-    const { rows: [itemCheck] } = await db.query(
-      'SELECT COUNT(*) AS cnt FROM parcel_items WHERE parcel_id = $1',
-      [parcel.id]
-    );
-    if (parseInt(itemCheck.cnt) === 0) {
+    // Garde de complétude : TOUS les articles de la commande doivent être
+    // dans un colis actif (1 colis = 1 commande). Pas juste "au moins un".
+    const { rows: [cov] } = await db.query(`
+      SELECT COUNT(oi.id) AS total,
+             COUNT(pi.order_item_id) FILTER (WHERE pa.status <> 'cancelled') AS packed
+      FROM order_items oi
+      LEFT JOIN parcel_items pi ON pi.order_item_id = oi.id
+      LEFT JOIN parcels pa ON pa.id = pi.parcel_id
+      WHERE oi.order_id = $1
+    `, [parcel.order_id]);
+    if (parseInt(cov.total) === 0 || parseInt(cov.packed) < parseInt(cov.total)) {
       return res.status(400).json({
-        error: 'Impossible — colis vide',
-        hint: 'Ajoutez des articles avant de marquer prêt'
+        error: 'Colis incomplet',
+        hint: `${cov.packed}/${cov.total} article(s) emballé(s) — emballez tout avant de marquer prêt`
       });
     }
 
-    // Update parcel
-    await db.query(`
-      UPDATE parcels SET status = 'preparation', prepared_at = NOW(), updated_at = NOW()
-      WHERE id = $1
-    `, [parcel.id]);
-
-    // Log
-    await db.query(`
-      INSERT INTO order_comments (order_id, author_id, author_name, text)
-      VALUES ($1, $2, 'Hub', $3)
-    `, [parcel.order_id, req.user.id, `Colis ${parcel.reference} prêt à expédier`]);
+    // Une seule voie d'écriture : parcelSync (statut + order history + parcel_event)
+    await safeSyncScanToParcels({
+      order_id: parcel.order_id,
+      step: 'preparation',
+      scan_id: null,
+      scanned_by: req.user.id,
+      notes: `Colis ${parcel.reference} prêt`
+    });
 
     res.json({ message: `Colis ${parcel.reference} prêt`, status: 'preparation' });
   } catch(e) { next(e); }
@@ -411,6 +413,12 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
       [req.params.id]
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
+    if (parcel.status === 'draft') {
+      return res.status(400).json({
+        error: 'Colis non préparé',
+        hint: 'Marquez le colis prêt avant de l’expédier'
+      });
+    }
 
     // Anti-error: check parcel is ready
     const { rows: [itemCheck] } = await db.query(

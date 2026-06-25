@@ -1,132 +1,91 @@
-# Komerce Backend
+# Komerce — Patch Pilotage & Gestion Colis
 
-> ### ⛔ Un hook te bloque au `commit` / `push` ? Lis ceci AVANT tout.
-> **Avant de committer**, lance la porte en local — ça évite l'écrasante majorité des blocages :
-> ```bash
-> npm run arch:gate            # + npm run arch:doctrine si tu touches au front
-> ```
-> **Si un hook te bloque quand même : ne bypasse pas par réflexe.** Le runbook donne, pour chaque
-> message d'erreur, le diagnostic et la résolution exacte :
-> → [`RUNBOOK_DEBLOCAGE_HOOKS.md`](./RUNBOOK_DEBLOCAGE_HOOKS.md)
->
-> `--no-verify` est une soupape d'urgence (faux positif confirmé ou urgence prod), pas une habitude —
-> la CI (`.github/workflows/governance.yml`) rejoue les mêmes portes de toute façon.
+Archive à **dézipper par-dessus la racine de votre repo** (le dash vit dans `public/`,
+donc tout est dans le même repo). Les fichiers `.js` sont des **versions complètes**
+patchées : copier-remplacer, pas de merge manuel.
 
-> E-commerce Comores — Node.js / Express / PostgreSQL — Railway
-
----
-
-## Point d'entrée unique
-
-La documentation opératoire active vit ici :
-
-```txt
-docs/README.md
+```
+public/dashboards/admin/portal-pilotage.html   ← NOUVEAU  Portail de pilotage (porte d'entrée)
+utils/parcelSync.js                            ← MODIFIÉ  + 1 INSERT parcel_events par transition
+routes/hub-dashboard.js                        ← MODIFIÉ  ready/ship corrigés
+migrations/094_parcel_reconciliation_view.sql  ← NOUVEAU  vue de réconciliation (lecture seule)
+CHANGES.diff.md                                ← revue    diff des 2 fichiers .js (à ne PAS copier)
 ```
 
-Lire dans cet ordre :
-
-1. [`AGENTS.md`](./AGENTS.md) — règles obligatoires agent/dev ;
-2. [`docs/README.md`](./docs/README.md) — index actif, docs à lire, archive ;
-3. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — doctrine obligatoire du graphe ;
-4. [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./docs/KOMERCE_DB_SCHEMA_DOCTRINE.md) — doctrine obligatoire du schéma DB ;
-5. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — état de la cartographie architecture ;
-6. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-7. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
-8. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-9. [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — doctrine produit active du panier partagé ;
-10. [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) — mise en œuvre datée.
-
-Tout autre document non listé par `docs/README.md` est historique, contextuel ou subordonné.
+> `CHANGES.diff.md` est juste pour la revue de code / le message de commit. Ne le copiez pas dans le repo (ou supprimez-le après lecture).
 
 ---
 
-## Doctrine graphe obligatoire
-
-Peu importe où un agent arrive dans le dépôt, toute création, modification ou suppression de feature fonctionnelle doit suivre :
-
-```txt
-docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
-```
-
-Cette doctrine rend obligatoire la mise à jour des headers `@komerce-arch` / `@komerce-arch-lite` et la régénération du graphe quand le contrat fonctionnel change.
-
-Un changement fonctionnel sans cartographie à jour est incomplet.
-
----
-
-## Doctrine DB obligatoire
-
-Tout changement de schéma DB doit suivre :
-
-```txt
-docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
-```
-
-Une migration ou modification DB est incomplète tant que `docs/SCHEMA.md`, les headers DB concernés et le graphe ne racontent pas la même chose.
-
----
-
-## Doctrine produit active
-
-Le panier partagé est désormais **Boutique First**.
-
-```txt
-La négociation appartient aux humains.
-La matérialisation de l'achat appartient à Komerce.
-Le lien partagé ouvre une boutique, jamais un guichet.
-```
-
-Conséquence : les anciennes documentations V4.1, workspace collectif, cagnotte, engagement ou financement collectif ne font plus foi sauf si elles sont explicitement reprises dans les deux documents Boutique First.
-
----
-
-## Quick Start dev
+## 1. Appliquer
 
 ```bash
-npm install
-cp .env.example .env
-# Renseigner DATABASE_URL, JWT_SECRET, STRIPE_*, QR_SECRET, etc.
-npm start
+# depuis la racine du repo, archive extraite à côté
+cp -r komerce-pilotage-patch/public      ./
+cp -r komerce-pilotage-patch/utils       ./
+cp -r komerce-pilotage-patch/routes      ./
+cp -r komerce-pilotage-patch/migrations  ./
+
+# jouer la migration (adapter à votre runner habituel)
+psql "$DATABASE_URL" -f migrations/094_parcel_reconciliation_view.sql
 ```
+
+Vérif rapide : `node --check utils/parcelSync.js && node --check routes/hub-dashboard.js`
 
 ---
 
-## Commandes utiles
+## 2. Ce qui change, et pourquoi
 
-```bash
-# Backend
-npm start
-npm test
+### Gestion colis — une seule voie d'écriture
+- **`parcelSync.js`** : chaque transition de statut écrit désormais **une ligne dans `parcel_events`**
+  (table déjà existante, migration 078). C'est le journal unique du cycle de vie du colis.
+- **`hub-dashboard.js` → `ready`** : ne fait plus d'`UPDATE parcels` brut. Il passe par
+  `safeSyncScanToParcels` (la source de vérité que `ship` utilise déjà) et **vérifie que TOUS
+  les articles de la commande sont emballés**, pas juste « au moins un ».
+- **`hub-dashboard.js` → `ship`** : **refuse un colis resté en `draft`** (le garde-fou que
+  l'ancien commentaire prétendait faire mais ne faisait pas — c'était le seul vrai bug).
+- On **arrête de logger les changements d'état dans `order_comments`** : les commentaires
+  redeviennent humains, l'historique machine vit dans `parcel_events`.
 
-# Frontend Boutique
-cd public/boutique
-npm run deploy:css
-npm run check:all
+Résultat : 3 chemins d'écriture → 1 seul. Moins de code, plus de traçabilité.
+
+### Réconciliation — une vue, pas un job
+`migrations/094` crée `v_parcel_reconciliation`. Aucun cron. La liste de travail :
+
+```sql
+SELECT parcel_ref, order_ref, parcel_status, order_status, issues
+FROM   v_parcel_reconciliation
+WHERE  cardinality(issues) > 0
+ORDER  BY last_event_at NULLS FIRST;
 ```
+
+Codes `issues` : `projection_vs_event_drift`, `shipped_incomplete`,
+`order_ahead_of_parcel`, `no_seal`, `no_event_trace`.
 
 ---
 
-## Règle PR
+## 3. Activer le portail comme porte d'entrée (3 branchements)
 
-Une PR doit :
+Le portail se sert sous `/dashboards/admin/portal-pilotage.html`. Il garde la session,
+s'adapte au rôle (admin/finance/sourcing → cockpit Direction ; hub/relais/support → cockpit
+opérationnel) et tire ses KPI de `/api/dashboard/ops` et `/api/dashboard/finance`
+(repli démo propre si un appel échoue).
 
-- respecter les invariants listés dans `docs/README.md` et `AGENTS.md` ;
-- respecter `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md` ;
-- respecter `docs/KOMERCE_DB_SCHEMA_DOCTRINE.md` si la DB est touchée ;
-- mettre à jour le document actif concerné ;
-- mettre à jour `docs/SCHEMA.md` si le schéma DB change ;
-- mettre à jour la cartographie `@komerce-arch` si le contrat fonctionnel change ;
-- régénérer le graphe architecture après tout ajout, suppression ou changement structurel ;
-- ne pas créer une nouvelle source de vérité sans raison explicite ;
-- laisser les anciens documents en archive ou subordonnés.
+1. **`server.js`** — ajouter à l'allowlist du guard HTML :
+   ```js
+   '/dashboards/admin/portal-pilotage.html',
+   ```
+2. **`login.html`** — atterrissage post-login des rôles admin → ce portail
+   (`next = '/dashboards/admin/portal-pilotage.html'`).
+3. **SPA `app.js`** (`buildSidebarNav`) — un lien « 🏠 Portail » en tête vers la même URL,
+   pour remonter à la vue d'ensemble depuis n'importe quel domaine.
+
+Test rôles sans backend : `…/portal-pilotage.html?demo=hub` (ou `finance`, `sourcing`, `admin`).
 
 ---
 
-## En cas de doute
+## 4. Décision encore ouverte (métier, pas technique)
 
-```txt
-Code de production > DB live pour le schéma > docs actives listées dans docs/README.md > docs historiques.
-```
-
-Pour le panier partagé, la doctrine Boutique First gagne sur tout ancien document collectif ou V4.1.
+**Le scellé colis est-il obligatoire ou indicatif ?**
+Aujourd'hui il est généré dans un `try/catch` silencieux : certains colis en ont, d'autres non,
+sans alerte. Par défaut le patch laisse ça **indicatif** — la vue signale juste `no_seal`.
+Si vous le voulez **obligatoire**, on ajoute une contrainte à la création du colis (dites-le).

@@ -7,7 +7,7 @@
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
  * @depends       @unknown
- * @db-write      alerts, parcels, scans
+ * @db-write      alerts, parcel_events, parcels, scans
  * @db-read      parcel_items, parcels
  * @used-by       @unknown
  * @doctrine      resolve_before_behavior_change
@@ -169,6 +169,15 @@ async function syncScanToParcels({ order_id, step, scan_id, order_item_id = null
       [newStatus, parcel.id]
     );
     parcelsUpdated++;
+
+    // ── TRACE : un événement par transition (journal unique) ──────────────
+    // parcel_events devient la source d'historique du colis (cf. réconciliation).
+    await q.query(
+      `INSERT INTO parcel_events (parcel_id, event_type, actor_id, weight_kg, notes, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [parcel.id, newStatus, scanned_by, newWeight, notes || null,
+       JSON.stringify({ step, from: parcel.status, scan_id })]
+    );
   }
 
   // ── 3. Lier le scan au parcel ─────────────────────────────────────────────
