@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 316,
-    "filesWithFullHeaders": 287,
+    "scannedCodeFiles": 317,
+    "filesWithFullHeaders": 288,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 316,
+    "filesWithAnyHeaders": 317,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 663,
-    "edges": 2918,
+    "graphNodes": 664,
+    "edges": 2933,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
-    "unresolvedCodeEdges": 269
+    "unresolvedCodeEdges": 271
   },
   "byDomain": {
     "bootstrap": 9,
@@ -48,7 +48,7 @@
     "operations": 4,
     "inventory": 2,
     "douane": 1,
-    "documents": 4,
+    "documents": 5,
     "order-payment": 1,
     "refunds": 1,
     "validation": 1
@@ -77,7 +77,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 106,
+    "service": 107,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -87,7 +87,7 @@
   "byCriticality": {
     "critical": 67,
     "medium": 97,
-    "high": 121,
+    "high": 122,
     "low": 31
   },
   "nodes": [
@@ -9096,6 +9096,57 @@
       "impactAreas": [
         "dashboard",
         "admin-dashboard"
+      ],
+      "version": "2026-06"
+    },
+    {
+      "id": "services/documents/customs-invoice.js",
+      "file": "services/documents/customs-invoice.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "customs-invoice",
+      "domain": "documents",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "parcelId",
+        "shipmentId",
+        "issuedBy"
+      ],
+      "outputs": [
+        "transaction_documents row (customs_invoice)"
+      ],
+      "depends": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "usedBy": [
+        "services/customs-shipment-service.js (post-declaration)"
+      ],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "dbTxn": [
+        "caller_transaction_optional"
+      ],
+      "doctrine": [
+        "douane_declaration_pivot"
+      ],
+      "impactAreas": [
+        "douane",
+        "orders"
       ],
       "version": "2026-06"
     },
@@ -27334,6 +27385,96 @@
       "label": "admin-dashboard"
     },
     {
+      "from": "services/documents/customs-invoice.js",
+      "to": "services/documents/document-service.js",
+      "type": "depends",
+      "label": "services/documents/document-service.js"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/customs-shipment-service.js (post-declaration)",
+      "to": "services/documents/customs-invoice.js",
+      "type": "uses",
+      "label": "services/customs-shipment-service.js (post-declaration)"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:parcel_items",
+      "type": "db-read",
+      "label": "parcel_items"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "doctrine:douane_declaration_pivot",
+      "type": "doctrine",
+      "label": "douane_declaration_pivot"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "impact:douane",
+      "type": "impact",
+      "label": "douane"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
       "from": "services/documents/document-service.js",
       "to": "db.js",
       "type": "depends",
@@ -41266,6 +41407,57 @@
         "impact:dashboard"
       ]
     },
+    "services/documents/customs-invoice.js": {
+      "role": "customs-invoice",
+      "domain": "documents",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/documents/document-service.js",
+        "db.js"
+      ],
+      "directUsedBy": [
+        "services/customs-shipment-service.js (post-declaration)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_items",
+        "orders",
+        "parcel_items",
+        "parcels",
+        "products",
+        "users"
+      ],
+      "dbWrite": [
+        "transaction_documents"
+      ],
+      "doctrines": [
+        "douane_declaration_pivot"
+      ],
+      "impactAreas": [
+        "douane",
+        "orders"
+      ],
+      "mustCheck": [
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:order_items",
+        "db:orders",
+        "db:parcel_items",
+        "db:parcels",
+        "db:products",
+        "db:transaction_documents",
+        "db:users",
+        "doctrine:douane_declaration_pivot",
+        "impact:douane",
+        "impact:orders",
+        "services/documents/document-service.js"
+      ]
+    },
     "services/documents/document-service.js": {
       "role": "document-service",
       "domain": "documents",
@@ -41303,6 +41495,7 @@
         "impact:refunds",
         "impact:shared-cart",
         "impact:wallet",
+        "services/documents/customs-invoice.js",
         "services/documents/pickup-proof.js",
         "services/documents/refund-receipt.js",
         "services/documents/wallet-receipt.js"
@@ -46471,6 +46664,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/customs-shipment-service.js (post-declaration)",
+      "to": "services/documents/customs-invoice.js",
+      "type": "uses",
+      "label": "services/customs-shipment-service.js (post-declaration)"
     },
     {
       "from": "services/documents/document-service.js",
