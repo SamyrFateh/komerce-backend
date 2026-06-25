@@ -101,3 +101,39 @@ router.delete('/:id', ...guard, async (req, res, next) => {
 });
 
 module.exports = router;
+
+// POST /api/admin/customs-shipments/:id/declare
+// Deuxième étape du workflow douane : saisie du montant réel payé.
+// Déclenche automatiquement toute la chaîne de ventilation.
+// Corps : { customs_paid_kmf, freight_kmf?, notes? }
+router.post('/:id/declare', ...guard, async (req, res, next) => {
+  try {
+    const result = await svc.declareCustomsPayment(
+      db,
+      req.params.id,
+      req.body,
+      req.user.id
+    );
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+// GET /api/admin/customs-shipments/pending
+// Liste les expéditions en attente de déclaration douanière.
+router.get('/status/pending', ...guard, async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT
+         cs.id, cs.reference, cs.shipment_date, cs.transitaire_name,
+         cs.transport_mode, cs.cif_value_kmf, cs.nb_parcels,
+         cs.created_at,
+         COUNT(csp.parcel_id) AS parcels_linked
+       FROM customs_shipments cs
+       LEFT JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
+       WHERE cs.status = 'pending' AND cs.is_active = TRUE
+       GROUP BY cs.id
+       ORDER BY cs.shipment_date ASC`
+    );
+    res.json({ shipments: rows, count: rows.length });
+  } catch (err) { next(err); }
+});

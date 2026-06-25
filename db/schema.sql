@@ -1180,6 +1180,12 @@ CREATE TABLE public.customs_categories (
 -- Name: customs_shipments; Type: TABLE; Schema: public; Owner: -
 --
 
+CREATE TYPE public.customs_shipment_status AS ENUM (
+    'pending',
+    'declared',
+    'confirmed'
+);
+
 CREATE TABLE public.customs_shipments (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     reference text NOT NULL,
@@ -1187,7 +1193,7 @@ CREATE TABLE public.customs_shipments (
     transitaire_name text,
     transport_mode text,
     cif_value_kmf numeric(12,2) NOT NULL,
-    customs_paid_kmf numeric(12,2) NOT NULL,
+    customs_paid_kmf numeric(12,2),
     freight_kmf numeric(12,2),
     total_weight_kg numeric(10,3),
     nb_parcels integer,
@@ -1198,6 +1204,9 @@ CASE
     WHEN (cif_value_kmf > (0)::numeric) THEN round(((customs_paid_kmf / cif_value_kmf) * (100)::numeric), 2)
     ELSE (0)::numeric
 END) STORED,
+    status public.customs_shipment_status NOT NULL DEFAULT 'pending',
+    declared_at timestamp with time zone,
+    declared_by uuid,
     is_active boolean DEFAULT true NOT NULL,
     deactivated_at timestamp with time zone,
     deactivated_reason text,

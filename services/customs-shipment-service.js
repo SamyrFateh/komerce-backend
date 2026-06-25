@@ -294,10 +294,74 @@ async function createShipment(db, body, userId) {
     supplier_id, parcel_ids,
   } = body;
 
-  if (!reference || !shipment_date || !cif_value_kmf || !customs_paid_kmf) {
-    const e = new Error('Champs requis: reference, shipment_date, cif_value_kmf, customs_paid_kmf');
+  // customs_paid_kmf n'est plus requis à la création (workflow en deux étapes)
+  // Il est saisi lors de la déclaration (declareCustomsPayment).
+  if (!reference || !shipment_date || !cif_value_kmf) {
+    const e = new Error('Champs requis: reference, shipment_date, cif_value_kmf');
     e.status = 400; throw e;
   }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { rows: [shipment] } = await client.query(
+      `INSERT INTO customs_shipments
+        (reference, shipment_date, transitaire_name, transport_mode,
+         cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
+         nb_parcels, allocation_method, allocation_config, notes, supplier_id, created_by,
+         status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pending')
+       RETURNING *`,
+      [
+        reference, shipment_date, transitaire_name || null, transport_mode || null,
+        cif_value_kmf,
+        customs_paid_kmf != null ? customs_paid_kmf : null,
+        freight_kmf || null, total_weight_kg || null,
+        nb_parcels || null, allocation_method || 'by_cif_value',
+        allocation_config ? JSON.stringify(allocation_config) : null,
+        notes || null, supplier_id || null, userId,
+      ]
+    );
+
+    // Ventilation immédiate uniquement si le montant est déjà fourni
+    // (rétrocompatibilité : ancien flow où tout était saisi d'un coup)
+    let allocations = [];
+    if (customs_paid_kmf != null && Number(customs_paid_kmf) > 0 && parcel_ids?.length) {
+      allocations = await _insertAllocations(
+        client,
+        shipment.id,
+        { customs_paid_kmf, allocation_method: allocation_method || 'by_cif_value', allocation_config },
+        parcel_ids
+      );
+      // Marquer comme déclaré immédiatement
+      await client.query(
+        `UPDATE customs_shipments
+            SET status = 'declared', declared_at = NOW(), declared_by = $2
+          WHERE id = $1`,
+        [shipment.id, userId]
+      );
+    } else if (parcel_ids?.length) {
+      // Rattacher les colis sans ventilation (montant inconnu pour l'instant)
+      for (const pid of parcel_ids) {
+        await client.query(
+          `INSERT INTO customs_shipment_parcels (shipment_id, parcel_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [shipment.id, pid]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    return { shipment, allocations };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
   const client = await db.pool.connect();
   try {
@@ -504,6 +568,8 @@ async function deleteShipment(db, id) {
 }
 
 module.exports = {
+  declareCustomsPayment,
+  isCustomsDeclaredForOrder,
   allocateCustoms,
   propagateCostDouane,
   listShipments,
@@ -515,3 +581,160 @@ module.exports = {
   activateShipment,
   deleteShipment,
 };
+
+// ── Déclaration douanière (workflow deux étapes) ──────────────────────────────
+
+/**
+ * Deuxième étape du workflow douane : l'admin saisit le montant réel payé.
+ *
+ * Déclenche automatiquement toute la chaîne de ventilation :
+ *   customs_paid_kmf → customs_shipment_parcels.customs_share_kmf
+ *   → orders.cost_douane_kmf + margin_real_pct
+ *   → order_item_real_cost_allocations (via cost-allocation.js)
+ *   → parcels.customs_cleared_at
+ *
+ * Idempotent : peut être appelé plusieurs fois (recalcule).
+ *
+ * @param {import('pg').Pool} db
+ * @param {string} shipmentId
+ * @param {{ customs_paid_kmf: number, freight_kmf?: number, notes?: string }} payload
+ * @param {string} userId
+ */
+async function declareCustomsPayment(db, shipmentId, payload, userId) {
+  const { customs_paid_kmf, freight_kmf, notes } = payload;
+
+  if (!customs_paid_kmf || Number(customs_paid_kmf) <= 0) {
+    const e = new Error('customs_paid_kmf requis et doit être > 0');
+    e.status = 400; throw e;
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Charger et verrouiller le shipment
+    const { rows: [ship] } = await client.query(
+      `SELECT * FROM customs_shipments WHERE id = $1 FOR UPDATE`,
+      [shipmentId]
+    );
+    if (!ship) {
+      const e = new Error('Expédition introuvable'); e.status = 404; throw e;
+    }
+    if (ship.status === 'confirmed') {
+      const e = new Error('Expédition déjà confirmée — impossible de modifier la déclaration');
+      e.status = 409; throw e;
+    }
+
+    // 2. Mettre à jour le montant + statut
+    const updates = {
+      customs_paid_kmf,
+      status: 'declared',
+      declared_at: new Date(),
+      declared_by: userId,
+    };
+    if (freight_kmf != null) updates.freight_kmf = freight_kmf;
+    if (notes != null) updates.notes = notes;
+
+    const fields = Object.keys(updates);
+    const vals   = Object.values(updates);
+    const setParts = fields.map((f, i) => `${f} = $${i + 2}`).join(', ');
+
+    await client.query(
+      `UPDATE customs_shipments SET ${setParts} WHERE id = $1`,
+      [shipmentId, ...vals]
+    );
+
+    // 3. Charger les colis rattachés
+    const { rows: linked } = await client.query(
+      `SELECT parcel_id FROM customs_shipment_parcels WHERE shipment_id = $1`,
+      [shipmentId]
+    );
+    const parcelIds = linked.map(r => r.parcel_id);
+
+    // 4. Recalculer la ventilation par colis
+    if (parcelIds.length > 0) {
+      await _insertAllocations(
+        client,
+        shipmentId,
+        {
+          customs_paid_kmf,
+          allocation_method: ship.allocation_method || 'by_cif_value',
+          allocation_config: ship.allocation_config,
+        },
+        parcelIds
+      );
+
+      // 5. Propager vers orders.cost_douane_kmf + margin_real_pct
+      await propagateCostDouane(client, parcelIds);
+
+      // 6. Poser customs_cleared_at sur les colis
+      await client.query(
+        `UPDATE parcels
+            SET customs_cleared_at = NOW(),
+                customs_notes      = $2
+          WHERE id = ANY($1::uuid[])
+            AND customs_cleared_at IS NULL`,
+        [parcelIds, notes || null]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    // 7. Ventilation par order_item (hors transaction principale — idempotent)
+    try {
+      const costAllocation = require('./cost-allocation');
+      await costAllocation.allocateShipmentRealCosts(shipmentId);
+    } catch (allocErr) {
+      // Non bloquant : la ventilation items peut être relancée manuellement
+      console.warn('[customs-shipment] allocateShipmentRealCosts partiel:', allocErr.message);
+    }
+
+    return {
+      shipment_id: shipmentId,
+      status: 'declared',
+      customs_paid_kmf,
+      parcels_updated: parcelIds.length,
+    };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Gate : vérifie que tous les colis d'une commande sont rattachés à une
+ * expédition déclarée. Retourne true si la commande peut passer en 'available'.
+ *
+ * Logique : si la commande a des colis liés à un customs_shipment non déclaré,
+ * on bloque. Si aucun colis n'est lié à une expédition (commande locale / hors
+ * groupage), on laisse passer.
+ *
+ * @param {import('pg').Pool | import('pg').PoolClient} q
+ * @param {string} orderId
+ * @returns {Promise<{ allowed: boolean, reason?: string }>}
+ */
+async function isCustomsDeclaredForOrder(q, orderId) {
+  const { rows } = await q.query(
+    `SELECT cs.status, cs.reference
+       FROM parcels p
+       JOIN customs_shipment_parcels csp ON csp.parcel_id = p.id
+       JOIN customs_shipments        cs  ON cs.id = csp.shipment_id
+      WHERE p.order_id = $1
+        AND cs.is_active = TRUE
+        AND cs.status = 'pending'`,
+    [orderId]
+  );
+
+  if (rows.length > 0) {
+    const refs = rows.map(r => r.reference).join(', ');
+    return {
+      allowed: false,
+      reason: `Douane non déclarée pour l'expédition : ${refs}. ` +
+               `Saisissez le montant douane avant de marquer la commande comme reçue.`,
+    };
+  }
+
+  return { allowed: true };
+}

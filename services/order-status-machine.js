@@ -257,6 +257,18 @@ async function transitionOrderStatus({
     setParts.push(`${tsCol} = COALESCE(${tsCol}, NOW())`);
   }
 
+  // ── 4b. Gate douane : bloquer → available si douane non déclarée ─────────
+  // Doctrine DOUANE_DECLARATION_PIVOT : la réception ne peut pas être validée
+  // tant que le montant douane de l'expédition n'a pas été saisi par l'admin.
+  // Commandes sans colis groupage (pas de customs_shipment lié) : laissées passer.
+  if (newStatus === 'available') {
+    const { isCustomsDeclaredForOrder } = require('./customs-shipment-service');
+    const customsCheck = await isCustomsDeclaredForOrder(q, orderId);
+    if (!customsCheck.allowed) {
+      return { success: false, error: customsCheck.reason, code: 'CUSTOMS_NOT_DECLARED' };
+    }
+  }
+
   // Auto-generate pickup_code when → available
   let pickupCode = null;
   if (newStatus === 'available' && !order.pickup_code) {
