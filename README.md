@@ -6,6 +6,7 @@ copier-remplacer, pas de merge manuel.
 
 ```
 public/dashboards/admin/portal-pilotage.html   NOUVEAU  Portail (porte d'entrée, rôle-aware, live)
+public/dashboards/admin/portal-pilotage.js     NOUVEAU  script du portail (externe — requis par la CSP)
 utils/parcelSync.js                            MODIFIÉ  + 1 INSERT parcel_events (header déclaré)
 routes/hub-dashboard.js                        MODIFIÉ  ready/ship corrigés
 migrations/094_parcel_reconciliation_view.sql  NOUVEAU  vue de réconciliation (lecture seule)
@@ -84,6 +85,9 @@ elle y entre apres deploiement via `schema-refresh.yml`. Ordre de deploiement a 
 ---
 
 ## 5. Portail — activer comme porte d'entree (3 branchements manuels)
+
+> CSP : votre `script-src` interdit l'inline (helmet). Le script du portail est donc
+> **externe** (`portal-pilotage.js`, servi en `'self'`). Garder les deux fichiers ensemble.
 
 Sous `/dashboards/admin/portal-pilotage.html`, role-aware, KPI live via
 `/api/dashboard/ops` + `/api/dashboard/finance` (repli demo propre).
