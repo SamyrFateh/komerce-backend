@@ -89,7 +89,7 @@ En cas de divergence détectée entre ce document et la DB, voir §10.
 | Table | Rôle |
 |---|---|
 | `orders` | Commande client (table maîtresse, 60+ colonnes). |
-| `order_items` | Lignes de commande. |
+| `order_items` | Lignes de commande. **Migration 091 (2026-06-25)** : 6 colonnes de classification douanière figées à la création — `customs_category_key`, `sh_code`, `douane_pct`, `tva_pct`, `taxe_add_pct`, `classification_defaulted`. Immuables comme `price_kmf`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. Invariant I-DOUANE-1. |
 | `order_status_history` | Trace immutable des transitions (invariant I-04). |
 | `order_comments` | Commentaires opérationnels. |
 | `order_incidents` | Incidents commande. |

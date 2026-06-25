@@ -1923,6 +1923,12 @@ CREATE TABLE public.order_items (
     qty_received integer DEFAULT 0 NOT NULL,
     qty_collected integer DEFAULT 0 NOT NULL,
     variant_combo jsonb,
+    customs_category_key text,
+    sh_code text,
+    douane_pct numeric(5,2),
+    tva_pct numeric(5,2),
+    taxe_add_pct numeric(5,2),
+    classification_defaulted boolean DEFAULT false NOT NULL,
     CONSTRAINT chk_order_items_price CHECK ((price_kmf > 0)),
     CONSTRAINT chk_order_items_qty CHECK ((quantity > 0))
 );

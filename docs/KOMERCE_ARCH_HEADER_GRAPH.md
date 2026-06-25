@@ -6,18 +6,18 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 315
-- Files with full headers: 286
+- Scanned code files: 316
+- Files with full headers: 287
 - Files with lite headers: 29
-- Files with any headers: 315
+- Files with any headers: 316
 - Files without headers: 0
 - Lite headers without owner: 0
-- Graph nodes: 658
-- Edges: 2908
-- DB tables: 107
-- Doctrines: 124
-- Impact areas: 112
-- Unresolved code edges: 268
+- Graph nodes: 663
+- Edges: 2918
+- DB tables: 108
+- Doctrines: 125
+- Impact areas: 114
+- Unresolved code edges: 269
 
 ## Domains
 
@@ -29,6 +29,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - dashboard: 28
 - documents: 4
+- douane: 1
 - economic-engine: 24
 - inventory: 2
 - logistics: 30
@@ -62,7 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-- service: 105
+- service: 106
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -224,6 +225,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/apply-pricing-updates.js — economic-engine-apply-pricing-updates (economic-engine, high, full)
 - services/authkey-client.js — auth-authkey-client (auth, high, full)
 - services/auto-parcel.js — logistics-auto-parcel (logistics, high, full)
+- services/customs-classification.js — customs-classification (douane, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
 - services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
 - services/dashboard-finance-metrics.js — economic-engine-dashboard-finance-metrics (economic-engine, high, full)
@@ -302,6 +304,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE services/customs-classification.js -> (none)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -421,7 +424,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-auto-create-service.js -> orders
 - WRITE services/parcelOptimizationService.js -> orders
 - WRITE services/payment-cash-confirm.js -> orders
-- WRITE services/payment-paypal.js -> orders
 
 ## Unresolved Code Edges
 

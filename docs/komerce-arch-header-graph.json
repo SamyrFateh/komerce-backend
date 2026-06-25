@@ -13,18 +13,18 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 315,
-    "filesWithFullHeaders": 286,
+    "scannedCodeFiles": 316,
+    "filesWithFullHeaders": 287,
     "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 315,
+    "filesWithAnyHeaders": 316,
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 658,
-    "edges": 2908,
-    "dbTables": 107,
-    "doctrines": 124,
-    "impactAreas": 112,
-    "unresolvedCodeEdges": 268
+    "graphNodes": 663,
+    "edges": 2918,
+    "dbTables": 108,
+    "doctrines": 125,
+    "impactAreas": 114,
+    "unresolvedCodeEdges": 269
   },
   "byDomain": {
     "bootstrap": 9,
@@ -47,6 +47,7 @@
     "logistics": 30,
     "operations": 4,
     "inventory": 2,
+    "douane": 1,
     "documents": 4,
     "order-payment": 1,
     "refunds": 1,
@@ -76,7 +77,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-    "service": 105,
+    "service": 106,
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -86,7 +87,7 @@
   "byCriticality": {
     "critical": 67,
     "medium": 97,
-    "high": 120,
+    "high": 121,
     "low": 31
   },
   "nodes": [
@@ -8787,6 +8788,51 @@
       "version": "2026-06"
     },
     {
+      "id": "services/customs-classification.js",
+      "file": "services/customs-classification.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "customs-classification",
+      "domain": "douane",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "product_category_key (text)",
+        "db_client"
+      ],
+      "outputs": [
+        "frozen_classification_snapshot"
+      ],
+      "depends": [
+        "db.js"
+      ],
+      "usedBy": [
+        "routes/orders/create.js",
+        "services/shared-cart-engine.js",
+        "routes/admin/system.js"
+      ],
+      "dbRead": [
+        "customs_categories"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "dbTxn": [
+        "read_within_caller_transaction"
+      ],
+      "doctrine": [
+        "douane_declaration_pivot"
+      ],
+      "impactAreas": [
+        "orders",
+        "douane",
+        "marge"
+      ],
+      "version": "2026-06"
+    },
+    {
       "id": "services/customs-shipment-service.js",
       "file": "services/customs-shipment-service.js",
       "type": "file",
@@ -13943,6 +13989,11 @@
       "table": "customs_shipment_parcels"
     },
     {
+      "id": "db:(none)",
+      "type": "db-table",
+      "table": "(none)"
+    },
+    {
       "id": "db:customs_effective_rates",
       "type": "db-table",
       "table": "customs_effective_rates"
@@ -14446,6 +14497,11 @@
       "id": "doctrine:static_boutique_served",
       "type": "doctrine",
       "doctrine": "static_boutique_served"
+    },
+    {
+      "id": "doctrine:douane_declaration_pivot",
+      "type": "doctrine",
+      "doctrine": "douane_declaration_pivot"
     },
     {
       "id": "doctrine:DOCTRINE_DOCUMENTS_TRANSACTIONNELS_KOMERCE.md",
@@ -15136,6 +15192,16 @@
       "id": "impact:crons",
       "type": "impact-area",
       "area": "crons"
+    },
+    {
+      "id": "impact:douane",
+      "type": "impact-area",
+      "area": "douane"
+    },
+    {
+      "id": "impact:marge",
+      "type": "impact-area",
+      "area": "marge"
     },
     {
       "id": "impact:admin-economic",
@@ -26794,6 +26860,66 @@
       "label": "checkout"
     },
     {
+      "from": "services/customs-classification.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/orders/create.js",
+      "to": "services/customs-classification.js",
+      "type": "uses",
+      "label": "routes/orders/create.js"
+    },
+    {
+      "from": "services/shared-cart-engine.js",
+      "to": "services/customs-classification.js",
+      "type": "uses",
+      "label": "services/shared-cart-engine.js"
+    },
+    {
+      "from": "routes/admin/system.js",
+      "to": "services/customs-classification.js",
+      "type": "uses",
+      "label": "routes/admin/system.js"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "db:customs_categories",
+      "type": "db-read",
+      "label": "customs_categories"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "doctrine:douane_declaration_pivot",
+      "type": "doctrine",
+      "label": "douane_declaration_pivot"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "impact:douane",
+      "type": "impact",
+      "label": "douane"
+    },
+    {
+      "from": "services/customs-classification.js",
+      "to": "impact:marge",
+      "type": "impact",
+      "label": "marge"
+    },
+    {
       "from": "services/customs-shipment-service.js",
       "to": "db:customs_effective_rates",
       "type": "db-read",
@@ -36979,7 +37105,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/customs-classification.js"
       ]
     },
     "routes/admin/users.js": {
@@ -38489,7 +38616,8 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:orders",
-        "middleware/auth.js"
+        "middleware/auth.js",
+        "services/customs-classification.js"
       ]
     },
     "routes/orders/detail.js": {
@@ -40839,6 +40967,48 @@
         "doctrine:resolve_before_behavior_change",
         "impact:checkout",
         "impact:payment"
+      ]
+    },
+    "services/customs-classification.js": {
+      "role": "customs-classification",
+      "domain": "douane",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js"
+      ],
+      "directUsedBy": [
+        "routes/orders/create.js",
+        "services/shared-cart-engine.js",
+        "routes/admin/system.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "customs_categories"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
+      "doctrines": [
+        "douane_declaration_pivot"
+      ],
+      "impactAreas": [
+        "orders",
+        "douane",
+        "marge"
+      ],
+      "mustCheck": [
+        "db:(none)",
+        "db:customs_categories",
+        "doctrine:douane_declaration_pivot",
+        "impact:douane",
+        "impact:marge",
+        "impact:orders",
+        "routes/admin/system.js",
+        "routes/orders/create.js",
+        "services/shared-cart-engine.js"
       ]
     },
     "services/customs-shipment-service.js": {
@@ -43578,6 +43748,7 @@
         "impact:participant-flow",
         "impact:stock",
         "routes/shared-cart.js",
+        "services/customs-classification.js",
         "services/notification-service.js",
         "services/order-payment-confirmation.js",
         "services/order-service.js",
@@ -46291,6 +46462,12 @@
     },
     {
       "from": "services/cancel-shared-cart-with-refunds.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/customs-classification.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
