@@ -1,7 +1,7 @@
 # Komerce Boutique — Architecture LIVE
 
 > **Document généré automatiquement.** Ne pas éditer à la main.
-> Régénération : `npm run boutique:arch`. Date : 2026-06-25T20:23:52.110Z
+> Régénération : `npm run boutique:arch`. Date : 2026-06-25T20:52:44.360Z
 >
 > Le pendant normatif est `BOUTIQUE_ARCHITECTURE.md` — édité à la main.
 > Comparer les deux montre l'écart entre l'état souhaité et l'état réel.

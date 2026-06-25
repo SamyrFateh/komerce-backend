@@ -1993,14 +1993,14 @@ body:has(#k-page-scroll.k-pager-active) {
    Compatible desktop (non impacté — min-width:900px)
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Image hero mobile : proportions naturelles du webp 1080×220 ── */
+/* ── Image hero mobile : proportions naturelles du webp 1080×260 ── */
 /* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
 @media (max-width: 899px) {
   .k-hero-img {
     /* Affiche le webp à sa vraie proportion sans crop.
-       Sur 390px de large → ~79px de haut (390 × 220/1080). */
+       Sur 390px de large → ~100px de haut (390 × 260/1080). */
     height: auto;
-    aspect-ratio: 1080 / 220;
+    aspect-ratio: 1080 / 260;
     object-fit: cover;
     object-position: 50% 50%;
   }
@@ -2100,7 +2100,7 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /* ══════════════════════════════════════════════════════════════
    HERO DESKTOP OVERRIDE — @min-width:900px
-   Annule le aspect-ratio:1080/220 posé par hero v4 (mobile only).
+   Annule le aspect-ratio:1080/260 posé par hero v4 (mobile only).
    Image réelle : 1456×720 → on cadre à 360px de haut avec object-fit:cover.
    object-position:50% 20% : cadre le haut du visuel (personnages).
    Source de vérité pour la hauteur hero desktop.
