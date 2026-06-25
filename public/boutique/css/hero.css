@@ -318,8 +318,10 @@
    Source de vérité pour la hauteur hero desktop.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  /* Image : 2804×561 (ratio 5:1) — on cadre à 320px de haut.
-     object-position:50% 45% : centre vertical sur les personnages. */
+  /* Image : 1600×386 (ratio ~4.15:1) — lune + têtes + logo Komerce visibles
+     en intégralité (asset "y165" régénéré, cf. RAPPORT_HERO_DESKTOP.md).
+     object-position:50% 15% : crop horizontal uniquement avec ce ratio,
+     le contenu vertical (lune→logo) n'est pas re-rogné par le navigateur. */
   .k-hero-img {
     height: 150px;
     aspect-ratio: unset;
