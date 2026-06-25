@@ -50,7 +50,10 @@ const { parcels } = require('../validators');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { PARCEL_STATUSES } = require('../utils/parcels');
-const { DEFAULT_CONFIG: DEFAULT_OPTIM_CONFIG } = require('../services/parcelOptimizationService');
+// parcelOptimizationService retiré — doctrine DOUANE_DECLARATION_PIVOT (2026-06-25)
+// Moteur de bin-packing démantelé : optimise le calage physique, axe que ni le
+// transporteur (volume) ni l'agent douanier (facture déclarée) ne regardent.
+// Actif phase Avion uniquement — à réécrire à neuf si ce besoin revient.
 const { evaluateOrderParcelLinkRules } = require('../utils/orderParcelLinkRules');
 const log = require('../utils/logger').child({ module: 'parcels' });
 
@@ -421,147 +424,24 @@ router.delete('/:id/items/:item_id', ...adminAgent, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-// POST /api/parcels/optimize
-router.post('/optimize', ...adminAgent, async (req, res, next) => {
-  try {
-    const { order_id, config: userConfig } = req.body;
-    if (!order_id) return res.status(400).json({ error: 'order_id requis' });
-
-    const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [order_id]);
-    if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const { rows: items } = await db.query(`
-      SELECT
-        oi.id                               AS order_item_id,
-        oi.product_id,
-        oi.quantity                         AS quantity_available,
-        oi.price_kmf                        AS unit_value,
-        COALESCE(p.weight_kg, 0)            AS unit_weight,
-        COALESCE(p.volume_cm3, 0)           AS unit_volume,
-        p.category,
-        COALESCE(p.is_fragile, false)       AS is_fragile,
-        COALESCE(p.is_bulky, false)         AS is_bulky,
-        p.compatibility_group
-      FROM order_items oi
-      LEFT JOIN products p ON p.id = oi.product_id
-      WHERE oi.order_id = $1
-    `, [order_id]);
-
-    const { rows: existingParcels } = await db.query(`
-      SELECT id,
-             COALESCE(weight_kg, 0)::float  AS current_weight,
-             COALESCE(volume_cm3, 0)::float AS current_volume,
-             0::float                       AS current_value,
-             $2::float                      AS max_weight,
-             $3::float                      AS max_volume,
-             status
-      FROM parcels
-      WHERE order_id = $1
-        AND status IN ('draft', 'preparation')
-    `, [order_id, DEFAULT_OPTIM_CONFIG.maxParcelWeightKg, DEFAULT_OPTIM_CONFIG.maxParcelVolumeCm3]);
-
-    const { buildParcelsFromAvailableItems } = require('../services/parcelOptimizationService');
-    const cfg = userConfig ? { ...DEFAULT_OPTIM_CONFIG, ...userConfig } : DEFAULT_OPTIM_CONFIG;
-
-    const result = buildParcelsFromAvailableItems({ items, existingParcels, config: cfg });
-
-    const createdParcels = [];
-
-    for (const cp of result.createdParcels) {
-      const reference = await generateParcelRef(db);
-      const external_code = generateExternalCode();
-      const seal_code = generateSealCode();
-      const type = result.createdParcels.length > 1 ? 'partial' : 'standard';
-
-      const { rows: [parcel] } = await db.query(`
-        INSERT INTO parcels (reference, external_code, seal_code, order_id, type, status, weight_kg, notes)
-        VALUES ($1, $2, $3, $4, $5, 'draft', $6, $7)
-        RETURNING *
-      `, [reference, external_code, seal_code, order_id, type, cp.total_weight || null, cp.warnings.join('; ') || null]);
-
-      for (const item of cp.items) {
-        await db.query(`
-          INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-          VALUES ($1, $2, $3, $4)
-          ON CONFLICT DO NOTHING
-        `, [parcel.id, item.order_item_id, item.product_id, item.quantity_available]);
-      }
-
-      // [S2] Logger la création via optimize
-      await logParcelEvent(db, {
-        parcel_id: parcel.id,
-        event_type: 'created',
-        notes: `Colis créé via optimize — type: ${type}`,
-        metadata: { order_id, type, external_code, items_count: cp.items.length },
-      });
-
-      createdParcels.push({ ...parcel, items: cp.items, warnings: cp.warnings });
-    }
-
-    const updatedParcels = [];
-    for (const up of result.updatedParcels) {
-      for (const item of up.addedItems) {
-        await db.query(`
-          INSERT INTO parcel_items (parcel_id, order_item_id, product_id, quantity)
-          VALUES ($1, $2, $3, $4)
-          ON CONFLICT DO NOTHING
-        `, [up.parcelId, item.order_item_id, item.product_id, item.quantity_available]);
-      }
-      updatedParcels.push(up);
-    }
-
-    const { computeOrderStatus } = require('../utils/parcels');
-    const { rows: allParcels } = await db.query(
-      'SELECT status, type FROM parcels WHERE order_id = $1',
-      [order_id]
-    );
-    const logisticView = computeOrderStatus(allParcels);
-    await db.query(
-      'UPDATE orders SET computed_status = $1, updated_at = NOW() WHERE id = $2',
-      [logisticView, order_id]
-    );
-
-    res.json({
-      order_id,
-      computed_status: logisticView,
-      createdParcels,
-      updatedParcels,
-      unassignedItems: result.unassignedItems,
-    });
-  } catch(e) { next(e); }
+// POST /api/parcels/optimize — DÉMANTELÉ (doctrine DOUANE_DECLARATION_PIVOT, 2026-06-25)
+// Moteur de bin-packing retiré. Le droit douanier est non-déterministe et se
+// joue sur la facture déclarée, pas sur le calage physique du colis.
+router.post('/optimize', ...adminAgent, (req, res) => {
+  res.status(410).json({
+    error: 'Endpoint retiré',
+    reason: 'Moteur de bin-packing démantelé (doctrine DOUANE_DECLARATION_PIVOT). ' +
+            'Le colisage est une décision de déclaration, pas un algorithme.',
+  });
 });
 
-// POST /api/parcels/bootstrap/:orderId
-router.post('/bootstrap/:orderId', ...adminAgent, async (req, res, next) => {
-  try {
-    const { orderId } = req.params;
-
-    const orderCheck = await db.query('SELECT id FROM orders WHERE id = $1', [orderId]);
-    if (!orderCheck.rows.length) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const existingCheck = await db.query(
-      `SELECT COUNT(*) FROM parcels WHERE order_id = $1 AND status != 'cancelled'`,
-      [orderId]
-    );
-    if (parseInt(existingCheck.rows[0].count) > 0) {
-      return res.status(409).json({
-        error: 'La commande a déjà des colis actifs. Utilisez /optimize pour enrichir.',
-        hint: 'Annulez les colis existants avant de bootstrapper.',
-      });
-    }
-
-    const { bootstrapOrderParcels } = require('../services/parcelOptimizationService');
-    const result = await bootstrapOrderParcels(orderId, db);
-
-    res.status(201).json({
-      order_id: orderId,
-      created: result.createdParcels.length,
-      assigned_items: result.assignedItems,
-      unassigned_items: result.unassignedItems.length,
-      parcels: result.createdParcels,
-      unassigned: result.unassignedItems,
-    });
-  } catch(e) { next(e); }
+// POST /api/parcels/bootstrap/:orderId — DÉMANTELÉ (doctrine DOUANE_DECLARATION_PIVOT, 2026-06-25)
+router.post('/bootstrap/:orderId', ...adminAgent, (req, res) => {
+  res.status(410).json({
+    error: 'Endpoint retiré',
+    reason: 'Moteur de bin-packing démantelé (doctrine DOUANE_DECLARATION_PIVOT). ' +
+            'Le colisage est une décision de déclaration, pas un algorithme.',
+  });
 });
 
 
