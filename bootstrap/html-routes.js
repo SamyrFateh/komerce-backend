@@ -108,6 +108,8 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin',
     '/admin/invoices',
     '/admin/sante',
+    '/admin/shared-carts',
+    '/admin/economic-flow',
     // ── Vues manquantes (absentes du legacy → fallback boutique) ──
     '/admin/accounting',   // FIX: AccountingView non chargée — servait boutique/index.html
     '/admin/settings',     // FIX: Paramètres business non chargés — servait boutique/index.html
