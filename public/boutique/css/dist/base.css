@@ -2104,10 +2104,10 @@ html.k-mobile-premium-v1 .k-hero-img {
 
 /* ══════════════════════════════════════════════════════════════
    HERO DESKTOP OVERRIDE — @min-width:900px
-   Annule le aspect-ratio:1080/220 posé par hero v4 (mobile only).
-   Image réelle : 1456×720 → on cadre à 360px de haut avec object-fit:cover.
-   object-position:50% 20% : cadre le haut du visuel (personnages).
-   Source de vérité pour la hauteur hero desktop.
+   Annule le aspect-ratio:1080/260 posé par hero v4 (mobile only).
+   Image réelle : 1600×525 (ratio ~3:1) — recadrée depuis la source PNG.
+   NOTE : cette règle est écrasée par DIRECTION A (spécificité supérieure)
+   quand html.k-home-premium-v1 est actif. Gardée pour les pages non-premium.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* Image : 1600×525 (ratio ~3:1) — lune + têtes + logo Komerce visibles.
