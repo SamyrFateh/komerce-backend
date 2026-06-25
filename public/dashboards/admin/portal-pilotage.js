@@ -81,7 +81,7 @@ const DOMAINS=[
        {icon:'📦',label:'Commandes & logistique',desc:'Pipeline statuts & flux',route:'/admin/orders-logistics',r:CT_ALL},
        {icon:'💰',label:'Coût rendu relais',desc:"Coût complet jusqu'au relais",route:'/admin/costing',r:CT_ALL},
        {icon:'🎉',label:'Panier événement',desc:'Opérations groupées ponctuelles',route:'/admin/event-workspaces',r:CT_ALL}],
-   bo:[{icon:'⚠️',label:'Problèmes',desc:'File des commandes à débloquer',route:'/admin/problems',r:BO_ALL},
+   bo:[{icon:'⚠️',label:'Problèmes',desc:'File des commandes à débloquer',route:'/admin/problems?focus=1',r:BO_ALL},
        {icon:'🚨',label:'Alertes & incidents',desc:'Signaux à traiter',route:'/admin/alerts',r:BO_ALL},
        {icon:'🏭',label:'Hub & Relais',desc:'Réception, tri, distribution',route:'/admin/hub-relais',r:['admin','hub','relais']},
        {icon:'✈️',label:'Transitaire',desc:'Expéditions vers les Comores',route:'/admin/transitaire',r:['admin','hub']},
@@ -122,7 +122,7 @@ function escapeHtml(s){
 function cockpitCtaMarkup(dir){
   return dir
     ? '<a class="btn" href="/admin/sante">🏥 Santé business</a><a class="btn amber" href="/admin/pilotage">🎯 Cockpit détaillé</a>'
-    : '<a class="btn amber" href="/admin/problems">⚠️ File à traiter</a>';
+    : '<a class="btn amber" href="/admin/problems?focus=1">⚠️ File à traiter</a>';
 }
 function kpisMarkup(set){
   return set.map(x=>`<div class="kpi"><span class="kpi-bar" style="background:${x.tone}"></span>

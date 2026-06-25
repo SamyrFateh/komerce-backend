@@ -120,6 +120,14 @@
   let currentUser = null;
   let activeShell = 'ct';    // shell courant
 
+  // ── Mode focus ────────────────────────────────────────────────────────────
+  // Activé par ?focus=1 dans l'URL (liens depuis le portail).
+  // Masque la sidebar ; affiche uniquement la vue + header minimal.
+
+  function isFocusMode() {
+    return new URLSearchParams(window.location.search).get('focus') === '1';
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   function loginUrl() {
@@ -190,9 +198,63 @@
     if (descEl) descEl.textContent = s.description;
   }
 
+  // ── Render shell focus ────────────────────────────────────────────────────
+  // Shell minimaliste sans sidebar (mode ?focus=1).
+
+  function renderFocusShell() {
+    const path  = window.location.pathname;
+    const route = ROUTES.find(r => r.path === path);
+    const label = route ? `${route.icon} ${route.label}` : 'Back Office';
+
+    document.body.innerHTML = `
+      <div class="app-shell app-shell--focus">
+        <header class="header header--focus">
+          <a class="focus-back-btn" href="/portail" title="Retour au portail">← Portail</a>
+          <div class="focus-route-label">${label}</div>
+          <div class="header-actions" style="position:relative">
+            <div class="header-user" id="header-user-btn" style="cursor:pointer" title="Compte">
+              <div class="header-user-avatar" id="user-avatar">A</div>
+              <div>
+                <div class="header-user-name" id="user-name">Admin</div>
+                <div class="header-user-role" id="user-role-label">—</div>
+              </div>
+            </div>
+            <div id="user-menu-popup" style="display:none;position:fixed;top:56px;right:16px;z-index:200;background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5);min-width:180px">
+              <div style="padding:8px 10px 10px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:6px">
+                <div style="font-size:13px;font-weight:600;color:#f1f5f9" id="user-menu-name">—</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px" id="user-menu-role">—</div>
+              </div>
+              <button id="logout-btn" style="width:100%;padding:9px 10px;border-radius:6px;border:none;background:transparent;color:#f87171;font-size:13px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px">🚪 Se déconnecter</button>
+            </div>
+          </div>
+        </header>
+        <main class="main main--focus" id="main-content">
+          <div class="loading-state"><span class="loader"></span> Chargement...</div>
+        </main>
+      </div>
+    `;
+
+    // Wiring user menu + logout
+    hydrateHeaderUser();
+    const userBtn   = document.getElementById('header-user-btn');
+    const userPopup = document.getElementById('user-menu-popup');
+    if (userBtn && userPopup) {
+      userBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        const isOpen = userPopup.style.display === 'block';
+        closeAllPopups();
+        if (!isOpen) userPopup.style.display = 'block';
+      });
+    }
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', e => { e.stopPropagation(); _logout(); });
+    document.addEventListener('click', () => closeAllPopups());
+  }
+
   // ── Render shell ──────────────────────────────────────────────────────────
 
   function renderShell() {
+    if (isFocusMode()) { renderFocusShell(); return; }
     const shell = SHELLS[activeShell];
     const userShells = shellsForUser();
     const showSwitcher = userShells.length > 1;
