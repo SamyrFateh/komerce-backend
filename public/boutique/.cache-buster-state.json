@@ -6,12 +6,12 @@
     "event.css": 26
   },
   "hashes": {
-    "base.css": "0acba3dd71c4",
+    "base.css": "09a4335ceba2",
     "components.css": "c4f430a286a2",
     "desktop.css": "c51e6726d89b",
     "event.css": "41df58408999"
   },
-  "updatedAt": "2026-06-25T21:26:54.171Z",
+  "updatedAt": "2026-06-25T21:55:31.362Z",
   "changedBundles": [
     "base.css"
   ]

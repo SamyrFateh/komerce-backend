@@ -2159,7 +2159,7 @@ body:has(#k-page-scroll.k-pager-active) {
     height: auto;
     aspect-ratio: 1080 / 260;
     object-fit: cover;
-    object-position: 50% 50%; /* centré sur la composition smart recompose 1080×260 */
+    object-position: 50% 50%; /* centré — smart recompose 1080×260 */
   }
 
   html.k-mobile-premium-v1 .k-hero-mini-slogan--premium {
