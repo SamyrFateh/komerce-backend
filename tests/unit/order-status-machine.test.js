@@ -48,10 +48,18 @@ function setupMockForTransition(currentStatus, opts = {}) {
 
   // Call 1: SELECT order FOR UPDATE
   mockQuery.mockResolvedValueOnce({ rows: [order] });
-  // Call 2: UPDATE orders SET status...
+
+  // Call 2 (in_transit only): customs gate SELECT — doit précéder l'UPDATE
+  // isCustomsDeclaredForOrder() fait un SELECT supplémentaire avant l'UPDATE.
+  // rows: [] = aucun colis en douane pending → allowed: true → gate passé.
+  if (currentStatus === 'in_transit') {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+  }
+
+  // Call 2/3: UPDATE orders SET status...
   mockQuery.mockResolvedValueOnce({ rows: [{}] });
   // Call 3+: Additional queries (cash_relais auto-paid, history, etc.)
-  mockQuery.mockResolvedValue({ rows: [] }); // catch-all : 0 ligne = aucune douane pending (customs gate), historique vide
+  mockQuery.mockResolvedValue({ rows: [] }); // catch-all : historique, etc.
 
   return order;
 }
