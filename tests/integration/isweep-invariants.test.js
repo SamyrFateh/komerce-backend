@@ -157,12 +157,15 @@ describe('I-SWEEP invariants regression net', () => {
 
     expect(clf).toContain('resolveFrozenClassification');
     expect(clf).toContain('customs_categories');
-    // /optim/i retiré : le mot apparaît légitimement dans les commentaires de doctrine
-    expect(clf).not.toMatch(/minimiz|minimize/i);
-    expect(clf).not.toMatch(/minimis/i);
-    expect(clf).not.toMatch(/calcul.*droit/i);
-    expect(clf).not.toMatch(/predict/i);
 
+    // Vérifie l'absence de logique algorithmique (patterns de code, pas mots dans commentaires)
+    expect(clf).not.toMatch(/Math\.(min|max|floor|ceil|round)\s*\(/);
+    expect(clf).not.toMatch(/\.reduce\s*\(/);
+    expect(clf).not.toMatch(/\.sort\s*\(/);
+    expect(clf).not.toMatch(/predict\s*\(/i);
+    expect(clf).not.toMatch(/score\s*[=+*]/i);
+
+    // Jamais bloquant : pas de throw
     const throwCount = (clf.match(/\bthrow\b/g) || []).length;
     expect(throwCount).toBe(0);
   });
