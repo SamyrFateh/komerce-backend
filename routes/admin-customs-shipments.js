@@ -137,3 +137,41 @@ router.get('/status/pending', ...guard, async (req, res, next) => {
     res.json({ shipments: rows, count: rows.length });
   } catch (err) { next(err); }
 });
+
+// ── Lot C : analytics écart déclaré/payé ─────────────────────────────────────
+// Doctrine DOUANE_DECLARATION_PIVOT — §4 "Côté mesure"
+// Lecture seule. Disponible uniquement sur expéditions declared/confirmed.
+
+const analytics = require('../services/customs-analytics');
+
+// GET /api/admin/customs-shipments/analytics
+// Liste toutes les expéditions déclarées avec leur écart attendu/réel.
+// Query params : from (date), to (date), transitaire (string partiel)
+router.get('/analytics', ...guard, async (req, res, next) => {
+  try {
+    const { from, to, transitaire } = req.query;
+    const rows = await analytics.listShipmentsAnalytics(db, { from, to, transitaire });
+    res.json({ shipments: rows, count: rows.length });
+  } catch (err) { next(err); }
+});
+
+// GET /api/admin/customs-shipments/analytics/trends
+// Agrégats mensuels : variance moyenne, taux effectif moyen.
+// Query param : months (défaut 12)
+router.get('/analytics/trends', ...guard, async (req, res, next) => {
+  try {
+    const months = parseInt(req.query.months) || 12;
+    const rows = await analytics.getTrendAnalytics(db, { months });
+    res.json({ trends: rows, months });
+  } catch (err) { next(err); }
+});
+
+// GET /api/admin/customs-shipments/:id/analytics
+// Écart détaillé pour une expédition spécifique.
+router.get('/:id/analytics', ...guard, async (req, res, next) => {
+  try {
+    const result = await analytics.getShipmentAnalytics(db, req.params.id);
+    if (!result) return res.status(404).json({ error: 'Expédition introuvable ou non déclarée' });
+    res.json(result);
+  } catch (err) { next(err); }
+});
