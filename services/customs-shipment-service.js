@@ -363,43 +363,6 @@ async function createShipment(db, body, userId) {
   }
 }
 
-  const client = await db.pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    const { rows: [shipment] } = await client.query(
-      `INSERT INTO customs_shipments
-        (reference, shipment_date, transitaire_name, transport_mode,
-         cif_value_kmf, customs_paid_kmf, freight_kmf, total_weight_kg,
-         nb_parcels, allocation_method, allocation_config, notes, supplier_id, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       RETURNING *`,
-      [
-        reference, shipment_date, transitaire_name || null, transport_mode || null,
-        cif_value_kmf, customs_paid_kmf, freight_kmf || null, total_weight_kg || null,
-        nb_parcels || null, allocation_method || 'by_cif_value',
-        allocation_config ? JSON.stringify(allocation_config) : null,
-        notes || null, supplier_id || null, userId,
-      ]
-    );
-
-    const allocations = await _insertAllocations(
-      client,
-      shipment.id,
-      { customs_paid_kmf, allocation_method: allocation_method || 'by_cif_value', allocation_config },
-      parcel_ids
-    );
-
-    await client.query('COMMIT');
-    return { shipment, allocations };
-  } catch (err) {
-    await client.query('ROLLBACK').catch(() => {});
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
 /**
  * Met à jour les métadonnées d'un envoi (sans recalcul de ventilation).
  *
@@ -687,6 +650,17 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
     } catch (allocErr) {
       // Non bloquant : la ventilation items peut être relancée manuellement
       console.warn('[customs-shipment] allocateShipmentRealCosts partiel:', allocErr.message);
+    }
+
+    // 8. Émettre la facture classifiée par colis (Lot B — DOUANE_DECLARATION_PIVOT)
+    // Non bloquant : la facture peut être régénérée via l'endpoint admin.
+    if (parcelIds.length > 0) {
+      try {
+        const customsInvoice = require('./documents/customs-invoice');
+        await customsInvoice.issueForShipment(parcelIds, shipmentId, userId);
+      } catch (invErr) {
+        console.warn('[customs-shipment] customs-invoice partiel:', invErr.message);
+      }
     }
 
     return {

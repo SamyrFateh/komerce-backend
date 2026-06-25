@@ -3829,7 +3829,7 @@ CREATE TABLE public.transaction_documents (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT transaction_documents_status_check CHECK ((status = ANY (ARRAY['generated'::text, 'delivered'::text, 'error'::text]))),
-    CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text])))
+    CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text, 'customs_invoice'::text])))
 );
 
 
