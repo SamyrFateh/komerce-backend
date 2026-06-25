@@ -1809,7 +1809,7 @@ body:has(#k-page-scroll.k-pager-active) {
   width: 100%;
   height: clamp(110px, 28vw, 140px);
   object-fit: cover;
-  object-position: 50% 0%;
+  /* object-position défini par contexte : @max-899px → 50% 50% (HERO v4), @min-900px → 50% 20% */
   display: block;
 }
 .k-hero-mini-slogan {
@@ -2111,10 +2111,10 @@ body:has(#k-page-scroll.k-pager-active) {
      object-position:50% 15% : crop horizontal uniquement avec ce ratio,
      le contenu vertical (lune→logo) n'est pas re-rogné par le navigateur. */
   .k-hero-img {
-    height: 150px;
+    height: 220px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 15%;
+    object-position: 50% 20%;
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */
