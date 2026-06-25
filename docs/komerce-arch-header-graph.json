@@ -13,7 +13,6 @@
     "public/boutique/js"
   ],
   "totals": {
-<<<<<<< HEAD
     "scannedCodeFiles": 318,
     "filesWithFullHeaders": 289,
     "filesWithLiteHeaders": 29,
@@ -26,20 +25,6 @@
     "doctrines": 125,
     "impactAreas": 114,
     "unresolvedCodeEdges": 272
-=======
-    "scannedCodeFiles": 317,
-    "filesWithFullHeaders": 288,
-    "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 317,
-    "filesWithoutHeaders": 0,
-    "liteWithoutOwner": 0,
-    "graphNodes": 664,
-    "edges": 2933,
-    "dbTables": 108,
-    "doctrines": 125,
-    "impactAreas": 114,
-    "unresolvedCodeEdges": 271
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
   },
   "byDomain": {
     "bootstrap": 9,
@@ -62,11 +47,7 @@
     "logistics": 30,
     "operations": 4,
     "inventory": 2,
-<<<<<<< HEAD
     "douane": 2,
-=======
-    "douane": 1,
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
     "documents": 5,
     "order-payment": 1,
     "refunds": 1,
@@ -96,11 +77,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-<<<<<<< HEAD
     "service": 108,
-=======
-    "service": 107,
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -111,11 +88,7 @@
     "critical": 67,
     "medium": 97,
     "high": 122,
-<<<<<<< HEAD
     "low": 32
-=======
-    "low": 31
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
   },
   "nodes": [
     {
