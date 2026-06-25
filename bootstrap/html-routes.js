@@ -120,6 +120,15 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
+  // ── Raccourci portail de pilotage ───────────────────────────────────────
+  // URL courte vers public/dashboards/admin/portal-pilotage.html.
+  // Le portail garde lui-même la session (fetch /api/auth/me -> /login.html).
+  ['/portail', '/pilotage'].forEach(routePath => {
+    app.get(routePath, (req, res) => {
+      sendHtml(res, path.join(publicDir, 'dashboards', 'admin', 'portal-pilotage.html'));
+    });
+  });
+
   app.get('/control-tower.html', (req, res) => {
     if (process.env.ADMIN_LEGACY_ENABLED === '1') {
       res.setHeader('X-Deprecated', 'control-tower.html — migrer vers /admin/pilotage');

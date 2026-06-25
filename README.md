@@ -10,6 +10,7 @@ utils/parcelSync.js                            MODIFIÉ  + 1 INSERT parcel_event
 routes/hub-dashboard.js                        MODIFIÉ  ready/ship corrigés
 migrations/094_parcel_reconciliation_view.sql  NOUVEAU  vue de réconciliation (lecture seule)
 scripts/setup-hooks.sh                         MODIFIÉ  pre-commit auto-déclare les headers (ferme le trou)
+bootstrap/html-routes.js                       MODIFIÉ  raccourci URL /portail (et /pilotage)
 docs/chantier/GATES_AUDIT.md                   NOUVEAU  audit des gates : chaque écart a une résolution connue
 CHANGES.diff.md                                revue    diffs des fichiers patchés (ne PAS committer)
 ```
@@ -20,7 +21,7 @@ CHANGES.diff.md                                revue    diffs des fichiers patch
 
 ```bash
 # depuis la racine du repo
-cp -r komerce-pilotage-patch/{public,utils,routes,migrations,scripts,docs} ./
+cp -r komerce-pilotage-patch/{public,utils,routes,migrations,scripts,docs,bootstrap} ./
 bash scripts/setup-hooks.sh                                   # régénère .git/hooks/pre-commit (auto-déclaration)
 psql "$DATABASE_URL" -f migrations/094_parcel_reconciliation_view.sql
 ```
@@ -91,7 +92,10 @@ Sous `/dashboards/admin/portal-pilotage.html`, role-aware, KPI live via
 2. **`login.html`** — atterrissage post-login admin -> ce portail.
 3. **`app.js` (`buildSidebarNav`)** — lien « Portail » en tete.
 
-Test roles sans backend : `…/portal-pilotage.html?demo=hub` (ou `finance`, `sourcing`, `admin`).
+**Raccourci URL** (déjà inclus, `bootstrap/html-routes.js`) : le portail est servi sur
+`https://komerce.co/portail` (alias `/pilotage`), en plus du chemin long.
+
+Test roles sans backend : `…/portail?demo=hub` (ou `finance`, `sourcing`, `admin`).
 
 ---
 
