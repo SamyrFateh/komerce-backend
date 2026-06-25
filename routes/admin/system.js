@@ -214,7 +214,7 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
 
     // ── Fetch existing data ────────────────────────────────────────
     const { rows: products } = await client.query(
-      'SELECT id, name, price_kmf FROM products WHERE is_active = TRUE ORDER BY name LIMIT 10'
+      'SELECT id, name, price_kmf, category FROM products WHERE is_active = TRUE ORDER BY name LIMIT 10'
     );
     if (!products.length) {
       await client.query('ROLLBACK');
@@ -355,13 +355,28 @@ router.post('/seed-test', ...guard, async (req, res, next) => {
       );
 
       const orderItemIds = [];
+      const { resolveFrozenClassification } = require('../../services/customs-classification');
+
       for (const item of s.iq) {
         const prod = pickProduct(item.pi);
         const oiId = crypto.randomUUID();
+        const clf = await resolveFrozenClassification(client, prod.category);
+
         await client.query(
-          `INSERT INTO order_items (id, order_id, product_id, quantity, price_kmf, scan_code)
-           VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6)`,
-          [oiId, orderId, prod.id, item.q, prod.price_kmf, genScanCode()]
+          `INSERT INTO order_items (
+             id, order_id, product_id, quantity, price_kmf, scan_code,
+             customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
+             classification_defaulted
+           ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          [
+            oiId, orderId, prod.id, item.q, prod.price_kmf, genScanCode(),
+            clf.customs_category_key,
+            clf.sh_code,
+            clf.douane_pct,
+            clf.tva_pct,
+            clf.taxe_add_pct,
+            clf.classification_defaulted,
+          ]
         );
         orderItemIds.push({ id: oiId, productId: prod.id, productName: prod.name, qty: item.q });
       }

@@ -21,6 +21,8 @@ Pour toute nouvelle session, lire uniquement dans cet ordre :
 | 8 | [`docs/chantier/STATUS.md`](./chantier/STATUS.md) | État opératoire actuel, dettes ouvertes, tests à faire |
 | 9 | [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Doctrine produit active du panier partagé |
 | 10 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
+| 11 | [`docs/doctrine/DOUANE_DECLARATION_PIVOT.md`](./doctrine/DOUANE_DECLARATION_PIVOT.md) | **Doctrine douane** — la déclaration est le pivot ; on instrumente, on n'optimise pas |
+| 12 | [`docs/specs/SPEC_KEYSTONE_DOUANE.md`](./specs/SPEC_KEYSTONE_DOUANE.md) | Spec fonctionnelle Keystone douane (Gap A clôturé, B et C ouverts) |
 
 Ces documents suffisent pour reprendre le projet sans lire l'historique.
 

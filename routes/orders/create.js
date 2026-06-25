@@ -371,17 +371,24 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
       );
     }
 
+    const { resolveFrozenClassification } = require('../../services/customs-classification');
+
     for (const item of items) {
       const product = productMap[item.product_id];
       const qty = parseInt(item.quantity, 10) || 1;
+
+      // Gel de la classification douanière — I-DOUANE-1
+      const clf = await resolveFrozenClassification(client, product.category);
 
       await client.query(
         `INSERT INTO order_items (
            order_id, product_id, quantity, price_kmf,
            module_type, module_fabric_id, module_fabric_type,
            module_size, module_retouche, module_qty_meters, module_accessories,
-           variant_combo
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+           variant_combo,
+           customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
+           classification_defaulted
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
         [
           order.id,
           item.product_id,
@@ -400,6 +407,12 @@ router.post('/', authenticateOrCreateGuest, validate(orders.create), async (req,
           item.variant_combo && typeof item.variant_combo === 'object' && !Array.isArray(item.variant_combo)
             ? JSON.stringify(item.variant_combo)
             : null,
+          clf.customs_category_key,
+          clf.sh_code,
+          clf.douane_pct,
+          clf.tva_pct,
+          clf.taxe_add_pct,
+          clf.classification_defaulted,
         ]
       );
     }

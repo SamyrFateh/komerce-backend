@@ -963,15 +963,29 @@ async function convertSharedCartToOrder(sharedCartId, userId, options = {}) {
     );
 
     // 6. Créer les order_items depuis le snapshot figé
+    // Gel de la classification douanière — I-DOUANE-1 (doctrine DOUANE_DECLARATION_PIVOT)
+    const { resolveFrozenClassification } = require('./customs-classification');
+
     for (const it of items) {
+      const clf = await resolveFrozenClassification(client, it.product_category_snapshot);
+
       await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity, price_kmf)
-         VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO order_items (
+           order_id, product_id, quantity, price_kmf,
+           customs_category_key, sh_code, douane_pct, tva_pct, taxe_add_pct,
+           classification_defaulted
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           order.id,
           it.product_id,
           r(it.quantity),
           r(it.unit_price_kmf_snapshot),
+          clf.customs_category_key,
+          clf.sh_code,
+          clf.douane_pct,
+          clf.tva_pct,
+          clf.taxe_add_pct,
+          clf.classification_defaulted,
         ]
       );
     }

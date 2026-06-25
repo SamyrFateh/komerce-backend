@@ -1149,3 +1149,33 @@ Le service itère sur les `order_items` et crée **1 PO par ligne** (`INSERT INT
 
 Ne pas implémenter avant la décision ARCH-COUTURE-00 sur les variantes (la structure `lines` doit couvrir les deux cas).
 
+
+---
+
+### DOUANE-KEYSTONE — Keystone douane : instrumenter la déclaration
+
+Statut : **Lot A clôturé — 2026-06-25**
+
+Doctrine de référence : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`
+Spec fonctionnelle : `docs/specs/SPEC_KEYSTONE_DOUANE.md`
+
+**Contexte.** La classification douanière d'un produit détermine le taux de droit (0-80 %, discrétionnaire par agent). Elle n'était pas figée sur la ligne `order_items` : la déclaration par colis était reconstruite depuis l'état courant du produit, donc sujette à dérive. La douane est non déterministe (agent décide méthode + catégorie) — on instrumente l'écart déclaré → payé, on n'optimise pas.
+
+**Décisions actées (2026-06-25) :**
+- Grain appliqué = montant global expédition (l'agent ne ventile pas par colis)
+- Lignes déclarées = `order_items` figés regroupés par colis — pas de nouvelle table
+- `defaulted` : non bloquant, repli `'default'` + drapeau
+- Pas de backfill (en build, pas en prod)
+
+**Lot A — gel classification (clôturé) :**
+- Migration `091_freeze_customs_classification_order_items.sql` : 6 colonnes additives sur `order_items`
+- Service `services/customs-classification.js` : `resolveFrozenClassification()` — résolution pure, jamais bloquant, repli `'default'`
+- Câblage aux 3 sites INSERT `order_items` : `routes/orders/create.js`, `services/shared-cart-engine.js`, `routes/admin/system.js`
+- Invariants `I-DOUANE-1` et `I-DOUANE-6` dans `tests/integration/isweep-invariants.test.js`
+- `db/schema.sql` mis à jour (CI drift)
+
+**Lot B — facture classifiée par colis :** ouvert — `services/documents/customs-invoice.js` à créer.
+
+**Lot C — droit attendu vs payé global :** ouvert — dérivation calculée depuis lignes figées → `customs_shipments.customs_paid_kmf`.
+
+**Moteur colisage (`parcelOptimizationService.js`) :** démantelé. Rationnel douane fermé — douane non déterministe, agent lit le papier pas le carton.

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
+\restrict hA03A0ti1wWTDfE4BlftcJBM6o5H5iq0JYlgcSjZezOK7KmTxb0OCKKcjfRw9P7
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -1974,6 +1974,48 @@ COMMENT ON COLUMN public.order_items.module_qty_meters IS 'QuantitÃ© tissu en 
 --
 
 COMMENT ON COLUMN public.order_items.module_accessories IS 'Accessoires pour cet article';
+
+
+--
+-- Name: COLUMN order_items.customs_category_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.customs_category_key IS 'Clé customs_categories figée à la création — immuable comme price_kmf. Source : product.category → customs_categories.key.';
+
+
+--
+-- Name: COLUMN order_items.sh_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.sh_code IS 'Code SH (nomenclature douanière) figé à la création.';
+
+
+--
+-- Name: COLUMN order_items.douane_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.douane_pct IS 'Taux de droit de douane (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.tva_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.tva_pct IS 'Taux TVA (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.taxe_add_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.taxe_add_pct IS 'Taux taxe additionnelle (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.classification_defaulted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.classification_defaulted IS 'true si product.category ne matchait aucune customs_categories.key et que la catégorie "default" a été utilisée en repli.';
 
 
 --
@@ -9102,5 +9144,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
+\unrestrict hA03A0ti1wWTDfE4BlftcJBM6o5H5iq0JYlgcSjZezOK7KmTxb0OCKKcjfRw9P7
 

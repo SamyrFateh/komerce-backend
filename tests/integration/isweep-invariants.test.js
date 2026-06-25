@@ -126,6 +126,45 @@ describe('I-SWEEP invariants regression net', () => {
     expect(guard).toContain('product_stock_audit');
     expect(audit).toContain('price_history');
   });
+
+  // ── Keystone douane — Lot A (migration 091) ─────────────────────────────
+  // Doctrine : DOUANE_DECLARATION_PIVOT.md
+  // Spec     : docs/specs/SPEC_KEYSTONE_DOUANE.md
+
+  test('I-DOUANE-1: tous les sites INSERT order_items gèlent la classification douanière', () => {
+    const create   = read('routes/orders/create.js');
+    const engine   = read('services/shared-cart-engine.js');
+    const adminSys = read('routes/admin/system.js');
+    const clf      = read('services/customs-classification.js');
+
+    expect(create).toContain('resolveFrozenClassification');
+    expect(engine).toContain('resolveFrozenClassification');
+    expect(adminSys).toContain('resolveFrozenClassification');
+
+    for (const src of [create, engine, adminSys]) {
+      expect(src).toContain('customs_category_key');
+      expect(src).toContain('classification_defaulted');
+      expect(src).toContain('sh_code');
+      expect(src).toContain('douane_pct');
+    }
+
+    expect(clf).toContain('resolveFrozenClassification');
+    expect(clf).toContain('module.exports');
+  });
+
+  test('I-DOUANE-6: customs-classification.js ne contient aucune logique d\'optimisation de droit', () => {
+    const clf = read('services/customs-classification.js');
+
+    expect(clf).toContain('resolveFrozenClassification');
+    expect(clf).toContain('customs_categories');
+    expect(clf).not.toMatch(/optim/i);
+    expect(clf).not.toMatch(/minimis/i);
+    expect(clf).not.toMatch(/calcul.*droit/i);
+    expect(clf).not.toMatch(/predict/i);
+
+    const throwCount = (clf.match(/\bthrow\b/g) || []).length;
+    expect(throwCount).toBe(0);
+  });
 });
 
 } // end hasIntegrationEnv guard
