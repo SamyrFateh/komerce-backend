@@ -37,8 +37,9 @@
  * Invariant I-DOUANE-1 : tous les sites d'INSERT order_items appellent
  * cette fonction. Sans ça, la classification manque sur la ligne et
  * la déclaration par colis est aveugle.
- * Invariant I-DOUANE-6 : ce service ne contient aucun calcul, optimisation
- * ou prédiction de droit. Pure résolution + lecture customs_categories.
+ * Invariant I-DOUANE-6 : pure résolution de nomenclature — lecture
+ * customs_categories et retour du snapshot. Aucun calcul de droit,
+ * aucune prédiction de taux, aucune logique d'influence sur le résultat.
  *
  * Exports :
  *   resolveFrozenClassification(client, productCategory)
