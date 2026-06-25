@@ -17,11 +17,15 @@
   overflow: hidden;
   box-shadow: 0 14px 28px var(--border-text-10);
 }
-.k-hero-img {
+:not(html.k-mobile-premium-v1) .k-hero-img {
   width: 100%;
   height: clamp(110px, 28vw, 140px);
   object-fit: cover;
-  object-position: 50% 0%;
+  /* object-position par contexte : @max-899px mobile-premium → 50% 50%, @min-900px → 50% 20% */
+  display: block;
+}
+html.k-mobile-premium-v1 .k-hero-img {
+  width: 100%;
   display: block;
 }
 .k-hero-mini-slogan {
@@ -141,7 +145,7 @@
 .k-hero-card, .k-hero-banner { overflow: hidden; border-radius: var(--radius-lg); }
 .k-hero img, .k-hero-card img, .k-hero-banner img { display: block; width: 100%; background: transparent; }
 /* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
-.k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
+:not(html.k-mobile-premium-v1) .k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
 /* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
 /* @900px override final → boutique-desktop.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,160px) !important) */
 
@@ -163,7 +167,7 @@
    Gain mesuré : ~12px @390px · ~18px @430px · ~22px @767px
    object-fit:cover + object-position:50% 0% inchangés → personnages préservés.
    Desktop non impacté (bloc max-width:767px uniquement). */
-.k-hero-img {
+:not(html.k-mobile-premium-v1) .k-hero-img {
   height: clamp(100px, 26vw, 118px);
 }
 
@@ -210,9 +214,9 @@
 @media (max-width: 899px) {
   .k-hero-img {
     /* Affiche le webp à sa vraie proportion sans crop.
-       Sur 390px de large → ~79px de haut (390 × 220/1080). */
+       Sur 390px de large → ~94px de haut (390 × 260/1080). */
     height: auto;
-    aspect-ratio: 1080 / 220;
+    aspect-ratio: 1080 / 260;
     object-fit: cover;
     object-position: 50% 50%;
   }
@@ -323,10 +327,10 @@
      object-position:50% 15% : crop horizontal uniquement avec ce ratio,
      le contenu vertical (lune→logo) n'est pas re-rogné par le navigateur. */
   .k-hero-img {
-    height: 150px;
+    height: 220px;
     aspect-ratio: unset;
     object-fit: cover;
-    object-position: 50% 15%;
+    object-position: 50% 20%;
   }
 
   /* Retire le border-radius et marges mobiles sur desktop */
