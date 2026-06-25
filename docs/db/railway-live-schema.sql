@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
+\restrict JqkdjKrY6B9OVCg7nw1ehlgdr9HHccsfoFiSPyiDrVwfhtQdg6BFUAehvWXT3JL
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -117,6 +117,17 @@ CREATE TYPE public.collective_workspace_status AS ENUM (
     'order_created',
     'session_ended',
     'archived'
+);
+
+
+--
+-- Name: customs_shipment_status; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public.customs_shipment_status AS ENUM (
+    'pending',
+    'declared',
+    'confirmed'
 );
 
 
@@ -1180,12 +1191,6 @@ CREATE TABLE public.customs_categories (
 -- Name: customs_shipments; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TYPE public.customs_shipment_status AS ENUM (
-    'pending',
-    'declared',
-    'confirmed'
-);
-
 CREATE TABLE public.customs_shipments (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     reference text NOT NULL,
@@ -1193,7 +1198,7 @@ CREATE TABLE public.customs_shipments (
     transitaire_name text,
     transport_mode text,
     cif_value_kmf numeric(12,2) NOT NULL,
-    customs_paid_kmf numeric(12,2),
+    customs_paid_kmf numeric(12,2) DEFAULT NULL::numeric,
     freight_kmf numeric(12,2),
     total_weight_kg numeric(10,3),
     nb_parcels integer,
@@ -1204,9 +1209,6 @@ CASE
     WHEN (cif_value_kmf > (0)::numeric) THEN round(((customs_paid_kmf / cif_value_kmf) * (100)::numeric), 2)
     ELSE (0)::numeric
 END) STORED,
-    status public.customs_shipment_status NOT NULL DEFAULT 'pending',
-    declared_at timestamp with time zone,
-    declared_by uuid,
     is_active boolean DEFAULT true NOT NULL,
     deactivated_at timestamp with time zone,
     deactivated_reason text,
@@ -1215,6 +1217,9 @@ END) STORED,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     supplier_id uuid,
+    status public.customs_shipment_status DEFAULT 'pending'::public.customs_shipment_status NOT NULL,
+    declared_at timestamp with time zone,
+    declared_by uuid,
     CONSTRAINT customs_shipments_allocation_method_check CHECK ((allocation_method = ANY (ARRAY['by_cif_value'::text, 'by_weight'::text, 'by_volume'::text, 'mixed'::text, 'manual'::text]))),
     CONSTRAINT customs_shipments_transport_mode_check CHECK ((transport_mode = ANY (ARRAY['sea'::text, 'air'::text, 'land'::text])))
 );
@@ -1334,6 +1339,18 @@ COMMENT ON COLUMN public.customs_history.customs_agent_id IS 'Identifiant ou nom
 --
 
 COMMENT ON COLUMN public.customs_history.is_anomaly IS 'true si customs_real > 2Ã— customs_estimated â€” alerte back-office automatique';
+
+
+--
+-- Name: customs_invoice_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.customs_invoice_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
 --
@@ -1983,6 +2000,48 @@ COMMENT ON COLUMN public.order_items.module_qty_meters IS 'QuantitÃ© tissu en 
 --
 
 COMMENT ON COLUMN public.order_items.module_accessories IS 'Accessoires pour cet article';
+
+
+--
+-- Name: COLUMN order_items.customs_category_key; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.customs_category_key IS 'Clé customs_categories figée à la création — immuable comme price_kmf. Source : product.category → customs_categories.key.';
+
+
+--
+-- Name: COLUMN order_items.sh_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.sh_code IS 'Code SH (nomenclature douanière) figé à la création.';
+
+
+--
+-- Name: COLUMN order_items.douane_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.douane_pct IS 'Taux de droit de douane (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.tva_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.tva_pct IS 'Taux TVA (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.taxe_add_pct; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.taxe_add_pct IS 'Taux taxe additionnelle (%) figé à la création depuis customs_categories.';
+
+
+--
+-- Name: COLUMN order_items.classification_defaulted; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.order_items.classification_defaulted IS 'true si product.category ne matchait aucune customs_categories.key et que la catégorie "default" a été utilisée en repli.';
 
 
 --
@@ -4309,18 +4368,6 @@ CREATE SEQUENCE public.wallet_receipt_seq
 
 
 --
--- Name: customs_invoice_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.customs_invoice_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
 -- Name: wallet_transactions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -5893,6 +5940,13 @@ CREATE INDEX idx_customs_ship_ref ON public.customs_shipments USING btree (refer
 --
 
 CREATE INDEX idx_customs_shipment ON public.customs_history USING btree (shipment_id) WHERE (shipment_id IS NOT NULL);
+
+
+--
+-- Name: idx_customs_shipments_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_customs_shipments_status ON public.customs_shipments USING btree (status) WHERE (status = 'pending'::public.customs_shipment_status);
 
 
 --
@@ -8128,6 +8182,14 @@ ALTER TABLE ONLY public.customs_shipments
 
 
 --
+-- Name: customs_shipments customs_shipments_declared_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customs_shipments
+    ADD CONSTRAINT customs_shipments_declared_by_fkey FOREIGN KEY (declared_by) REFERENCES public.users(id);
+
+
+--
 -- Name: customs_shipments customs_shipments_supplier_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -9123,5 +9185,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
+\unrestrict JqkdjKrY6B9OVCg7nw1ehlgdr9HHccsfoFiSPyiDrVwfhtQdg6BFUAehvWXT3JL
 

@@ -8,8 +8,8 @@
  * @outputs       signed_public_invoice_token, verified_order_id
  * @depends       crypto
  * @used-by       routes/invoices.js, services/authkey-client.js
- * @db-read       none
- * @db-write      none
+ * @db-read       (none)
+ * @db-write      (none)
  * @db-txn        none
  * @doctrine      lien_facture_public_non_devinable, facture_apres_paiement_confirme
  * @impact-areas  orders, invoices, whatsapp, customer-support

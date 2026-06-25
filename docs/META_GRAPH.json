@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-06-24T21:08:39.673Z",
+  "generatedAt": "2026-06-25T08:34:50.927Z",
   "sources": {
     "backend": {
-      "nodes": 658
+      "nodes": 665
     },
     "boutique": {
       "modules": 70,
@@ -20,7 +20,7 @@
     "endpointsConsumed": 85,
     "sharedEndpoints": 2,
     "phantomSeams": 1,
-    "sharedTables": 10
+    "sharedTables": 11
   },
   "endpoints": {
     "/api/shares": {
@@ -223,7 +223,8 @@
         "services/payment-paypal.js"
       ],
       "tables": [
-        "orders"
+        "orders",
+        "(none)"
       ]
     },
     "/api/shared-carts/from-cart-items": {
@@ -843,7 +844,14 @@
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "transaction_documents"
+      ]
     },
     "/api/admin/customs-shipments/rates/effective": {
       "boutique": [],
@@ -857,7 +865,14 @@
       "services": [
         "services/*"
       ],
-      "tables": []
+      "tables": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "transaction_documents"
+      ]
     },
     "/api/admin/partners": {
       "boutique": [],
@@ -1455,6 +1470,7 @@
       "products",
       "relais",
       "scan_events",
+      "transaction_documents",
       "users"
     ]
   },
@@ -1534,6 +1550,7 @@
     "orders": {
       "routes": [
         "routes/admin-costing.js",
+        "routes/admin-customs-shipments.js",
         "routes/admin-dashboard.js",
         "routes/cash.js",
         "routes/client-tracking.js",
@@ -1560,6 +1577,7 @@
         "AccountingView",
         "ControlTowerView",
         "CostingView",
+        "CustomsView",
         "EventWorkspacesView",
         "HubRelaisView",
         "InvoicesView",
@@ -1599,13 +1617,17 @@
     },
     "transaction_documents": {
       "routes": [
+        "routes/admin-customs-shipments.js",
         "routes/wallet.js"
       ],
       "boutique": [
         "b-checkout",
         "b-wallet"
       ],
-      "dashboards": []
+      "dashboards": [
+        "CustomsView",
+        "SanteView"
+      ]
     },
     "wallet_consumptions": {
       "routes": [
@@ -1686,6 +1708,15 @@
       ],
       "dashboards": []
     },
+    "(none)": {
+      "routes": [
+        "routes/payments-paypal.js"
+      ],
+      "boutique": [
+        "b-paypal"
+      ],
+      "dashboards": []
+    },
     "invoices": {
       "routes": [
         "routes/client-tracking.js",
@@ -1716,6 +1747,7 @@
     "parcels": {
       "routes": [
         "routes/admin-costing.js",
+        "routes/admin-customs-shipments.js",
         "routes/admin-dashboard.js",
         "routes/carriers.js",
         "routes/client-tracking.js",
@@ -1732,10 +1764,12 @@
       "dashboards": [
         "ControlTowerView",
         "CostingView",
+        "CustomsView",
         "EventWorkspacesView",
         "HubRelaisView",
         "OrdersLogisticsView",
         "PilotageView",
+        "SanteView",
         "TransitaireView"
       ]
     },
@@ -1916,15 +1950,18 @@
     "customs_shipments": {
       "routes": [
         "routes/admin-costing.js",
+        "routes/admin-customs-shipments.js",
         "routes/admin-dashboard.js"
       ],
       "boutique": [],
       "dashboards": [
         "ControlTowerView",
         "CostingView",
+        "CustomsView",
         "EventWorkspacesView",
         "OrdersLogisticsView",
-        "PilotageView"
+        "PilotageView",
+        "SanteView"
       ]
     },
     "order_item_cost_imputations": {
@@ -1944,15 +1981,18 @@
     "order_item_real_cost_allocations": {
       "routes": [
         "routes/admin-costing.js",
+        "routes/admin-customs-shipments.js",
         "routes/admin-dashboard.js"
       ],
       "boutique": [],
       "dashboards": [
         "ControlTowerView",
         "CostingView",
+        "CustomsView",
         "EventWorkspacesView",
         "OrdersLogisticsView",
-        "PilotageView"
+        "PilotageView",
+        "SanteView"
       ]
     },
     "finance_config": {
@@ -1963,6 +2003,16 @@
       "boutique": [],
       "dashboards": [
         "CostingView",
+        "SanteView"
+      ]
+    },
+    "customs_shipment_parcels": {
+      "routes": [
+        "routes/admin-customs-shipments.js"
+      ],
+      "boutique": [],
+      "dashboards": [
+        "CustomsView",
         "SanteView"
       ]
     },

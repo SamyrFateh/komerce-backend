@@ -6,7 +6,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-<<<<<<< HEAD
 - Scanned code files: 318
 - Files with full headers: 289
 - Files with lite headers: 29
@@ -14,25 +13,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Lite headers without owner: 0
 - Graph nodes: 665
-- Edges: 2944
+- Edges: 2956
 - DB tables: 108
 - Doctrines: 125
 - Impact areas: 114
 - Unresolved code edges: 272
-=======
-- Scanned code files: 317
-- Files with full headers: 288
-- Files with lite headers: 29
-- Files with any headers: 317
-- Files without headers: 0
-- Lite headers without owner: 0
-- Graph nodes: 664
-- Edges: 2933
-- DB tables: 108
-- Doctrines: 125
-- Impact areas: 114
-- Unresolved code edges: 271
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 
 ## Domains
 
@@ -44,11 +29,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - dashboard: 28
 - documents: 5
-<<<<<<< HEAD
 - douane: 2
-=======
-- douane: 1
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 - economic-engine: 24
 - inventory: 2
 - logistics: 30
@@ -82,11 +63,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
-<<<<<<< HEAD
 - service: 108
-=======
-- service: 107
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 - state: 1
 - state-store: 1
 - ui-component: 39
@@ -328,8 +305,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## DB Write Edges
 
+- WRITE routes/payments-paypal.js -> (none)
 - WRITE services/customs-analytics.js -> (none)
 - WRITE services/customs-classification.js -> (none)
+- WRITE services/invoice-public-token.js -> (none)
 - WRITE services/admin-order-refund.js -> alerts
 - WRITE services/cancel-order-purchase-orders.js -> alerts
 - WRITE services/cash-operations.js -> alerts
@@ -378,7 +357,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/admin-cost-components.js -> cost_components
 - WRITE routes/admin-customs-categories.js -> customs_categories
 - WRITE routes/orders/status.js -> customs_history
+- WRITE routes/admin-customs-shipments.js -> customs_shipment_parcels
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
+- WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE bootstrap/crons.js -> economic_snapshots
@@ -414,6 +395,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/hub-dashboard.js -> order_incidents
 - WRITE routes/relay-dashboard.js -> order_incidents
 - WRITE services/order-cost-snapshot.js -> order_item_cost_imputations
+- WRITE routes/admin-customs-shipments.js -> order_item_real_cost_allocations
 - WRITE services/cost-allocation.js -> order_item_real_cost_allocations
 - WRITE routes/admin/delete-order-cascade.js -> order_items
 - WRITE routes/admin/system.js -> order_items
@@ -430,6 +412,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/parcel-operations.js -> order_status_history
 - WRITE services/payment-paypal.js -> order_status_history
 - WRITE services/shared-cart-engine.js -> order_status_history
+- WRITE routes/admin-customs-shipments.js -> orders
 - WRITE routes/admin/delete-order-cascade.js -> orders
 - WRITE routes/admin/system.js -> orders
 - WRITE routes/orders/cancel.js -> orders
@@ -442,12 +425,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/admin-order-refund.js -> orders
 - WRITE services/cash-reminder-service.js -> orders
 - WRITE services/create-stripe-order-intent.js -> orders
-- WRITE services/customs-shipment-service.js -> orders
-- WRITE services/inventory-service.js -> orders
-- WRITE services/order-cost-snapshot.js -> orders
-- WRITE services/order-status-machine.js -> orders
-- WRITE services/parcel-auto-create-service.js -> orders
-- WRITE services/parcelOptimizationService.js -> orders
 
 ## Unresolved Code Edges
 

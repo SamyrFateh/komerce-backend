@@ -13,7 +13,6 @@
     "public/boutique/js"
   ],
   "totals": {
-<<<<<<< HEAD
     "scannedCodeFiles": 318,
     "filesWithFullHeaders": 289,
     "filesWithLiteHeaders": 29,
@@ -21,25 +20,11 @@
     "filesWithoutHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 665,
-    "edges": 2944,
+    "edges": 2956,
     "dbTables": 108,
     "doctrines": 125,
     "impactAreas": 114,
     "unresolvedCodeEdges": 272
-=======
-    "scannedCodeFiles": 317,
-    "filesWithFullHeaders": 288,
-    "filesWithLiteHeaders": 29,
-    "filesWithAnyHeaders": 317,
-    "filesWithoutHeaders": 0,
-    "liteWithoutOwner": 0,
-    "graphNodes": 664,
-    "edges": 2933,
-    "dbTables": 108,
-    "doctrines": 125,
-    "impactAreas": 114,
-    "unresolvedCodeEdges": 271
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
   },
   "byDomain": {
     "bootstrap": 9,
@@ -62,11 +47,7 @@
     "logistics": 30,
     "operations": 4,
     "inventory": 2,
-<<<<<<< HEAD
     "douane": 2,
-=======
-    "douane": 1,
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
     "documents": 5,
     "order-payment": 1,
     "refunds": 1,
@@ -96,11 +77,7 @@
     "view-model": 3,
     "route": 97,
     "entrypoint": 1,
-<<<<<<< HEAD
     "service": 108,
-=======
-    "service": 107,
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
     "machine": 2,
     "policy": 1,
     "data-service": 1,
@@ -111,11 +88,7 @@
     "critical": 67,
     "medium": 97,
     "high": 122,
-<<<<<<< HEAD
     "low": 32
-=======
-    "low": 31
->>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
   },
   "nodes": [
     {
@@ -3744,8 +3717,18 @@
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels"
+      ],
+      "dbWrite": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "transaction_documents"
+      ],
       "dbTxn": [
         "resolve_before_behavior_change"
       ],
@@ -6858,7 +6841,9 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "(none)"
+      ],
       "dbTxn": [],
       "doctrine": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
@@ -9208,6 +9193,7 @@
         "parcel_items",
         "parcels",
         "products",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -9660,8 +9646,12 @@
         "routes/invoices.js",
         "services/authkey-client.js"
       ],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
       "dbTxn": [],
       "doctrine": [
         "lien_facture_public_non_devinable",
@@ -13765,6 +13755,16 @@
       "table": "customs_categories"
     },
     {
+      "id": "db:customs_shipment_parcels",
+      "type": "db-table",
+      "table": "customs_shipment_parcels"
+    },
+    {
+      "id": "db:transaction_documents",
+      "type": "db-table",
+      "table": "transaction_documents"
+    },
+    {
       "id": "db:collective_workspaces",
       "type": "db-table",
       "table": "collective_workspaces"
@@ -13955,11 +13955,6 @@
       "table": "refunds"
     },
     {
-      "id": "db:transaction_documents",
-      "type": "db-table",
-      "table": "transaction_documents"
-    },
-    {
       "id": "db:product_variants",
       "type": "db-table",
       "table": "product_variants"
@@ -13983,6 +13978,11 @@
       "id": "db:parcel_events",
       "type": "db-table",
       "table": "parcel_events"
+    },
+    {
+      "id": "db:(none)",
+      "type": "db-table",
+      "table": "(none)"
     },
     {
       "id": "db:stripe_events_processed",
@@ -14108,16 +14108,6 @@
       "id": "db:collective_workspace_events",
       "type": "db-table",
       "table": "collective_workspace_events"
-    },
-    {
-      "id": "db:customs_shipment_parcels",
-      "type": "db-table",
-      "table": "customs_shipment_parcels"
-    },
-    {
-      "id": "db:(none)",
-      "type": "db-table",
-      "table": "(none)"
     },
     {
       "id": "db:customs_effective_rates",
@@ -19877,6 +19867,54 @@
     },
     {
       "from": "routes/admin-customs-shipments.js",
+      "to": "db:customs_shipments",
+      "type": "db-read",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-read",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:customs_shipments",
+      "type": "db-write",
+      "label": "customs_shipments"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:customs_shipment_parcels",
+      "type": "db-write",
+      "label": "customs_shipment_parcels"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:order_item_real_cost_allocations",
+      "type": "db-write",
+      "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:orders",
+      "type": "db-write",
+      "label": "orders"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:parcels",
+      "type": "db-write",
+      "label": "parcels"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
+      "to": "db:transaction_documents",
+      "type": "db-write",
+      "label": "transaction_documents"
+    },
+    {
+      "from": "routes/admin-customs-shipments.js",
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
@@ -24347,6 +24385,12 @@
     },
     {
       "from": "routes/payments-paypal.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
+    },
+    {
+      "from": "routes/payments-paypal.js",
       "to": "doctrine:route = auth + ownership + validate + appel service + réponse HTTP",
       "type": "doctrine",
       "label": "route = auth + ownership + validate + appel service + réponse HTTP"
@@ -27587,6 +27631,12 @@
     },
     {
       "from": "services/documents/customs-invoice.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/documents/customs-invoice.js",
       "to": "db:users",
       "type": "db-read",
       "label": "users"
@@ -28196,6 +28246,18 @@
       "to": "services/invoice-public-token.js",
       "type": "uses",
       "label": "services/authkey-client.js"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "db:(none)",
+      "type": "db-read",
+      "label": "(none)"
+    },
+    {
+      "from": "services/invoice-public-token.js",
+      "to": "db:(none)",
+      "type": "db-write",
+      "label": "(none)"
     },
     {
       "from": "services/invoice-public-token.js",
@@ -36696,8 +36758,18 @@
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "customs_shipments",
+        "customs_shipment_parcels"
+      ],
+      "dbWrite": [
+        "customs_shipments",
+        "customs_shipment_parcels",
+        "order_item_real_cost_allocations",
+        "orders",
+        "parcels",
+        "transaction_documents"
+      ],
       "doctrines": [
         "resolve_before_behavior_change"
       ],
@@ -36707,6 +36779,12 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:customs_shipment_parcels",
+        "db:customs_shipments",
+        "db:order_item_real_cost_allocations",
+        "db:orders",
+        "db:parcels",
+        "db:transaction_documents",
         "doctrine:resolve_before_behavior_change",
         "impact:admin-dashboard",
         "impact:dashboard",
@@ -39500,7 +39578,9 @@
       "dbRead": [
         "orders"
       ],
-      "dbWrite": [],
+      "dbWrite": [
+        "(none)"
+      ],
       "doctrines": [
         "route = auth + ownership + validate + appel service + réponse HTTP"
       ],
@@ -39510,6 +39590,7 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:(none)",
         "db:orders",
         "doctrine:route = auth + ownership + validate + appel service + réponse HTTP",
         "impact:checkout",
@@ -41616,6 +41697,7 @@
         "parcel_items",
         "parcels",
         "products",
+        "relais",
         "users"
       ],
       "dbWrite": [
@@ -41636,6 +41718,7 @@
         "db:parcel_items",
         "db:parcels",
         "db:products",
+        "db:relais",
         "db:transaction_documents",
         "db:users",
         "doctrine:douane_declaration_pivot",
@@ -42035,8 +42118,12 @@
         "services/authkey-client.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
-      "dbWrite": [],
+      "dbRead": [
+        "(none)"
+      ],
+      "dbWrite": [
+        "(none)"
+      ],
       "doctrines": [
         "lien_facture_public_non_devinable",
         "facture_apres_paiement_confirme"
@@ -42048,6 +42135,7 @@
         "customer-support"
       ],
       "mustCheck": [
+        "db:(none)",
         "doctrine:facture_apres_paiement_confirme",
         "doctrine:lien_facture_public_non_devinable",
         "impact:customer-support",
