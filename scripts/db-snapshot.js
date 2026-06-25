@@ -22,6 +22,10 @@
  * Garde-fous :
  *   - neutralise les jetons aleatoires \restrict/\unrestrict de pg_dump >= 18
  *     (sinon chaque snapshot produit un diff parasite) ;
+ *   - neutralise les GUC apparus dans une version de Postgres plus recente
+ *     que les environnements qui rechargent le dump (ex. transaction_timeout,
+ *     PG17+ ; cf. neutralizeFutureGucs) — sinon `psql -f` echoue sur tout
+ *     Postgres plus ancien (CI, postes locaux) ;
  *   - REFUSE d'ecraser le dump committe si le nouveau contient moins de MIN_TABLES
  *     tables (protege contre un dump partiel / une connexion qui echoue a mi-chemin) ;
  *   - ecriture atomique (temp + rename) ;
@@ -55,6 +59,30 @@ function neutralizeRandomTokens(sql) {
   return sql
     .split(/\r?\n/)
     .filter(line => !/^\\(restrict|unrestrict)\b/.test(line))
+    .join('\n');
+}
+
+/**
+ * Retire les GUC apparus dans une version de PostgreSQL plus recente que
+ * celle des environnements qui rechargent ce dump (CI, postes locaux).
+ *
+ * Constat 2026-06-25 : la prod Railway est passee en PG18 ; pg_dump y emet
+ * desormais `SET transaction_timeout = 0;` (GUC introduit en PG17). Cette
+ * ligne fait echouer `psql -f` sur tout PostgreSQL <= 16 ("unrecognized
+ * configuration parameter"), y compris potentiellement le service postgres
+ * de la CI. On la neutralise comme les jetons \restrict : elle ne sert a
+ * rien dans un simple schema-only dump (aucune transaction n'y est ouverte).
+ *
+ * Si une nouvelle version de Postgres introduit un autre GUC de ce type,
+ * l'ajouter a cette liste plutot que de regenerer le dump a la main.
+ */
+const FUTURE_ONLY_GUCS = ['transaction_timeout'];
+
+function neutralizeFutureGucs(sql) {
+  const pattern = new RegExp(`^SET\\s+(${FUTURE_ONLY_GUCS.join('|')})\\s*=.*;\\s*$`);
+  return sql
+    .split(/\r?\n/)
+    .filter(line => !pattern.test(line.trim()))
     .join('\n');
 }
 
@@ -103,7 +131,7 @@ function main() {
     }
   }
 
-  const cleaned = neutralizeRandomTokens(raw).replace(/\s*$/, '') + '\n';
+  const cleaned = neutralizeFutureGucs(neutralizeRandomTokens(raw)).replace(/\s*$/, '') + '\n';
   const newTables = tableSet(cleaned);
 
   // ---- Garde-fou : ne pas ecraser un bon dump par un dump suspect ----

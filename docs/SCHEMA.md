@@ -1,9 +1,9 @@
 # Schéma DB Komerce
 
 > **Statut** : schéma canonique de la base de production
-> **Source** : `pg_dump` PostgreSQL 18.4 — Railway — 26 mai 2026
-> **Méthode** : ce document est généré contre la DB live. Il fait foi contre `db/schema.sql` (obsolète, mars 2026) et les fichiers `migrations/*.sql` (référence manuelle, non exécutés automatiquement).
-> **Rappel** : 3 mécanismes de migration coexistent (cf. `SCHEMA_GAP_KOMERCE.md` §Architecture). `db/schema.sql` ne reflète pas l'état live.
+> **Source** : `pg_dump` PostgreSQL 18 — Railway — rafraîchi automatiquement par `schema-refresh.yml` à chaque merge de migration
+> **Méthode** : `node scripts/db-snapshot.js` — dump Railway nettoyé des artefacts PG18, écrit dans `docs/db/railway-live-schema.sql`, committé via PR automatique.
+> **Rappel** : `db/schema.sql` est supprimé depuis juin 2026. La source unique est `docs/db/railway-live-schema.sql`.
 
 ---
 
@@ -363,16 +363,47 @@ Voir `AGENTS.md` § "Règle de divergence". En résumé :
 
 ---
 
-## 11. Procédure de régénération
+## 11. Pipeline de régénération du dump (depuis juin 2026)
 
-Pour mettre à jour ce document après une migration DB :
+Le dump Railway n'est plus jamais généré à la main. Le pipeline est entièrement automatisé.
+
+### Déclenchement automatique
+
+À chaque merge d'une migration sur `main`, GitHub Actions lance `schema-refresh.yml` :
+
+1. `node scripts/db-snapshot.js` — se connecte à Railway via `RAILWAY_DATABASE_URL` (secret GitHub), exécute `pg_dump --schema-only`, neutralise les artefacts PG18 (`\restrict`, `transaction_timeout`), écrit atomiquement dans `docs/db/railway-live-schema.sql`.
+2. `node scripts/check-schema-freshness.js` — vérifie que toutes les colonnes déclarées dans `migrations/*.sql` sont présentes dans le dump. Bloque si le dump est partiel.
+3. PR automatique `chore/schema-refresh-auto` créée si le dump a changé — à merger sans délai.
+
+### Déclenchement manuel
 
 ```bash
-pg_dump --schema-only --no-owner --no-privileges \
-  "$DATABASE_URL_PROD" > /tmp/db_schema.sql
+# Depuis GitHub Actions → schema-refresh.yml → Run workflow
+# ou en local si RAILWAY_DATABASE_URL est disponible :
+npm run db:snapshot
+node scripts/check-schema-freshness.js
 ```
 
-Puis confronter les nouvelles tables, nouveaux ENUMs et colonnes critiques à ce document.
+### Ce qui NE doit plus jamais être fait
+
+```bash
+# ❌ SUPPRIMÉ — ne plus utiliser
+pg_dump "$DATABASE_URL_PROD" > db/schema.sql
+scripts/refresh-schema.sh
+```
+
+`db/schema.sql` est supprimé du repo. `docs/db/railway-live-schema.sql` est la seule source.
+
+### Utilisation en CI (ci.yml)
+
+Le job `integration` charge le dump committé et applique les migrations post-snapshot :
+
+```bash
+psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
+node scripts/ci-migrate.js   # baseline git dynamique + migrations nouvelles
+```
+
+`ci-migrate.js` calcule via `git log/ls-tree` les migrations déjà présentes dans le dump au moment de son dernier commit — il ne rejoue jamais une migration déjà dans le dump.
 
 ---
 

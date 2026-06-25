@@ -1,18 +1,24 @@
 'use strict';
 
 /**
- * KOMERCE — Check fraîcheur de db/schema.sql (scripts/check-schema-freshness.js)
+ * KOMERCE — Check fraîcheur du dump de schéma live (scripts/check-schema-freshness.js)
  * ============================================================================
- * Vérifie que db/schema.sql (dump Railway) contient toutes les colonnes
- * ajoutées par les migrations numérotées. Bloque la CI si schema.sql est
- * périmé (dump non rejoué après une migration récente).
+ * Vérifie que docs/db/railway-live-schema.sql (dump Railway, source unique —
+ * cf. docs/SCHEMA.md) contient toutes les colonnes ajoutées par les migrations
+ * numérotées. Bloque la CI si le dump est périmé (non rejoué après une
+ * migration récente).
+ *
+ * Avant juin 2026, ce script vérifiait db/schema.sql, un second dump maintenu
+ * en parallèle (rafraîchi par scripts/refresh-schema.sh). Les deux fichiers
+ * avaient déjà divergé silencieusement. Retiré : il n'existe plus qu'une
+ * seule source de vérité, rafraîchie par `npm run db:snapshot`.
  *
  * Usage :
  *   node scripts/check-schema-freshness.js        # exit 1 si périmé
  *   node scripts/check-schema-freshness.js --warn # exit 0 mais affiche les manques
  *
  * Intégration ci.yml :
- *   - name: Check schema.sql freshness
+ *   - name: Check schema freshness
  *     run: node scripts/check-schema-freshness.js
  * ============================================================================
  */
@@ -22,7 +28,7 @@ const path = require('path');
 
 const ROOT           = path.join(__dirname, '..');
 const MIGRATIONS_DIR = path.join(ROOT, 'migrations');
-const SCHEMA_FILE    = path.join(ROOT, 'db', 'schema.sql');
+const SCHEMA_FILE    = path.join(ROOT, 'docs', 'db', 'railway-live-schema.sql');
 const WARN_ONLY      = process.argv.includes('--warn');
 
 // ALTER TABLE [ONLY] [public.]table ADD COLUMN [IF NOT EXISTS] colname
@@ -75,18 +81,18 @@ function main() {
   }
 
   if (missing.length === 0) {
-    console.log('✅ schema.sql est à jour — toutes les colonnes de migration sont présentes.');
+    console.log('✅ Dump de schéma à jour — toutes les colonnes de migration sont présentes.');
     process.exit(0);
   }
 
-  console.error(`\n❌ schema.sql PÉRIMÉ — ${missing.length} colonne(s) manquante(s) :\n`);
+  console.error(`\n❌ Dump de schéma PÉRIMÉ — ${missing.length} colonne(s) manquante(s) :\n`);
   for (const { fname, table, col } of missing) {
     console.error(`   [${fname}]  ${table}.${col}`);
   }
   console.error(`
 Action requise :
-   railway run bash scripts/refresh-schema.sh
-   git add db/schema.sql && git commit -m "chore(schema): refresh prod" && git push
+   npm run db:snapshot
+   git add docs/db/railway-live-schema.sql && git commit -m "chore(schema): refresh depuis Railway prod" && git push
 `);
 
   process.exit(WARN_ONLY ? 0 : 1);

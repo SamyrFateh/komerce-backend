@@ -13,7 +13,6 @@ concurrency:
 jobs:
   # ─────────────────────────────────────────────────────────────
   # Job 1 — Tests unitaires : rapides, aucune base de données.
-  # C'est le filet qui doit être vert sur CHAQUE push/PR.
   # ─────────────────────────────────────────────────────────────
   unit:
     name: Unit tests + backend audit (no DB)
@@ -29,21 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Porte d'architecture statique (invariants I-BACK-*) : SQL non paramétré,
-      # owner unique payment_status, auth admin, etc. 100% statique → pas de DB.
-      # Était câblée NULLE PART avant — désormais bloquante sur chaque PR.
       - name: Backend architecture audit (invariants)
         run: npm run backend:audit
 
-      # GOV-03 : npm audit bloquant sur high/critical (node scripts/npm-audit-gate.js).
-      # Exit 1 si une vuln high/critical est détectée — voir le script pour le détail
-      # du mode bloquant vs observe et la procédure d'exception datée.
       - name: npm audit gate (high/critical)
         run: npm run audit:gate
 
-      # Gate VERTE et bloquante sur toutes les suites unit. Les 9 suites de quarantaine
-      # d'origine sont toutes résorbées (8 réparées, 1 supprimée — modèle obsolète,
-      # voir docs/KNOWN_FAILING_TESTS.md). Exclut juste tests/integration (job Postgres).
       - name: Run unit tests + coverage (enforced)
         run: >-
           npx jest --testPathPatterns="tests/unit" --ci --runInBand
@@ -51,7 +41,9 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────
   # Job 2 — Tests d'intégration : Postgres jetable (service container).
-  # Charge le schéma db/schema.sql puis lance les tests integration.
+  # Charge docs/db/railway-live-schema.sql via ci-migrate.js,
+  # qui baseline dynamiquement (git) les migrations déjà dans le dump
+  # et n'applique que les migrations post-snapshot.
   # ─────────────────────────────────────────────────────────────
   integration:
     name: Integration tests (Postgres)
@@ -66,7 +58,6 @@ jobs:
           POSTGRES_DB: komerce_test
         ports:
           - 5432:5432
-        # Attend que Postgres soit prêt avant de lancer les tests
         options: >-
           --health-cmd "pg_isready -U komerce"
           --health-interval 10s
@@ -78,10 +69,6 @@ jobs:
       JWT_SECRET: ci-test-secret-not-for-prod
       ADMIN_PASSWORD: ci-test-admin
       NODE_ENV: test
-      # P4-2 : bootstrap/env.js exige déjà toute cette liste (requiredEnv) —
-      # sans elles server.js fait process.exit(1) avant même de monter les
-      # routes, donc tests/integration/*.test.js ne pouvait pas booter
-      # l'app réellement. Valeurs factices, jamais des vraies (cf. contract.yml).
       STRIPE_SECRET_KEY: sk_test_dummy
       STRIPE_WEBHOOK_SECRET: whsec_dummy
       QR_SECRET: ci-test-qr-secret
@@ -102,18 +89,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Bloque la CI si schema.sql est périmé (colonne absente depuis une migration récente).
-      # Correctif : railway run bash scripts/refresh-schema.sh → commit → push.
-      - name: Check schema.sql freshness
+      # Vérifie que docs/db/railway-live-schema.sql est frais avant tout.
+      # Bloque si une migration récente a ajouté une colonne absente du dump.
+      # Correctif : merger le PR auto créé par schema-refresh.yml.
+      - name: Check schema freshness
         run: node scripts/check-schema-freshness.js
 
-      - name: Load DB schema
-        run: psql "$DATABASE_URL" -f db/schema.sql
+      # Charge le dump Railway (schéma complet) dans le Postgres CI,
+      # puis baseline dynamiquement les migrations déjà présentes dans le dump
+      # (via git log/ls-tree — plus de liste hardcodée).
+      # N'applique que les migrations vraiment nouvelles (post-snapshot).
+      - name: Load DB schema + run pending migrations
+        run: |
+          psql "$DATABASE_URL" -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
 
       - name: Run integration tests (one suite per process)
-        # Chaque suite d'intégration importe server.js et partage la même DB.
-        # On les lance dans des process Jest séparés pour éviter toute pollution
-        # d'état entre suites (pool DB / cache de modules). Déterministe.
         run: |
           for f in tests/integration/*.test.js; do
             echo "── $f ──"

@@ -1,0 +1,7 @@
+[
+  {
+    "package": "exemple-a-supprimer",
+    "expires": "2026-12-31",
+    "reason": "Exemple de format — supprimer cette entrée. Une exception doit toujours avoir une date d'expiration et une justification écrite."
+  }
+]

@@ -1,4 +1,4 @@
-name: Refresh db/schema.sql
+name: Refresh docs/db/railway-live-schema.sql
 
 # Déclenché automatiquement quand une migration est mergée sur main,
 # ou manuellement depuis l'UI GitHub.
@@ -19,70 +19,68 @@ concurrency:
   group: schema-refresh
   cancel-in-progress: true
 
-# Permissions explicites requises par peter-evans/create-pull-request
-# et par le git push sur la branche chore/schema-refresh-auto.
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
   refresh:
-    name: Dump schema Railway → PR
+    name: Dump schema Railway → docs/db/ → PR
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
-          # Token avec droits push + PR (PAT ou GITHUB_TOKEN si permissions ok)
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install postgresql-client
         run: sudo apt-get install -y --no-install-recommends postgresql-client
 
-      - name: Dump schema from Railway prod
-        env:
-          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-        run: |
-          pg_dump \
-            --schema-only \
-            --no-owner \
-            --no-acl \
-            --no-privileges \
-            --encoding=UTF8 \
-            "$DATABASE_URL" \
-            > db/schema.sql
-          echo "✅ Dump terminé — $(wc -l < db/schema.sql) lignes"
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Verify freshness
+      - name: Install dependencies
+        run: npm ci
+
+      # db-snapshot.js fait : pg_dump → neutralize PG18 artifacts → write atomiquement
+      # Il remplace l'ancien pg_dump manuel du shell — et neutralise \restrict +
+      # transaction_timeout que pg_dump PG18/Railway émet et qui cassent psql PG16 en CI.
+      - name: Dump + clean schema from Railway prod
+        env:
+          DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+        run: node scripts/db-snapshot.js
+
+      # Vérifie que le dump fraîchement généré contient bien toutes les colonnes
+      # déclarées dans migrations/*.sql — protection contre dump partiel ou connexion coupée.
+      - name: Verify dump freshness
         run: node scripts/check-schema-freshness.js
 
       - name: Check for changes
         id: diff
         run: |
-          git diff --quiet db/schema.sql && echo "changed=false" >> $GITHUB_OUTPUT || echo "changed=true" >> $GITHUB_OUTPUT
+          git diff --quiet docs/db/railway-live-schema.sql \
+            && echo "changed=false" >> $GITHUB_OUTPUT \
+            || echo "changed=true" >> $GITHUB_OUTPUT
 
       - name: Create PR if schema changed
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'chore(schema): refresh db/schema.sql depuis Railway prod'
+          commit-message: 'chore(schema): refresh docs/db/railway-live-schema.sql depuis Railway prod'
           branch: chore/schema-refresh-auto
           delete-branch: true
-          title: '🗄️ Refresh db/schema.sql (post-migration)'
+          title: '🗄️ Refresh railway-live-schema.sql (post-migration)'
           body: |
-            Refresh automatique de `db/schema.sql` après merge d'une migration.
+            Refresh automatique de `docs/db/railway-live-schema.sql` après merge d'une migration.
 
-            Ce dump est généré par `pg_dump --schema-only` sur la base Railway prod.
-            Il garantit que la CI d'intégration dispose d'un schéma complet.
+            Généré par `node scripts/db-snapshot.js` (pg_dump --schema-only sur Railway prod,
+            artefacts PG18 neutralisés — `\restrict`, `transaction_timeout`).
 
             **À merger sans délai** — la CI d'intégration peut échouer tant que ce PR est ouvert.
           labels: schema,automated
 
       - name: No changes
         if: steps.diff.outputs.changed == 'false'
-        run: echo "ℹ️ schema.sql déjà à jour — aucune PR créée."
+        run: echo "ℹ️ railway-live-schema.sql déjà à jour — aucune PR créée."

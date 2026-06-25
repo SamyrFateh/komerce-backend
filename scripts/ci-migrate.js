@@ -3,65 +3,104 @@
 /**
  * KOMERCE — CI Database Setup (scripts/ci-migrate.js)
  * ============================================================================
- * Résout le trou de schéma CI identifié le 2026-06-22 :
+ * Charge le schéma CI et applique les migrations en attente.
  *
- *   ci.yml charge db/schema.sql (figé à ~migration 052) puis lance les tests
- *   sans rejouer les migrations 053+. Résultat : colonnes post-052 absentes
- *   (ex. products.product_ref depuis 081) → 500 sur GET /api/products et
- *   toute route touchant shared_carts, orders, parcels, wallet_consumptions…
+ * MODÈLE (depuis juin 2026) :
+ *   La source de vérité est docs/db/railway-live-schema.sql (dump Railway,
+ *   rafraîchi par `npm run db:snapshot`, garanti frais par la porte CI
+ *   check-schema-freshness.js). Puisque la fraîcheur est une invariante
+ *   structurelle, TOUTES les migrations présentes au dernier rafraîchissement
+ *   du dump sont déjà reflétées dans ce fichier — les rejouer casserait tout
+ *   (conflits "already exists", énumérations manquantes…).
  *
- * Ce script fait le pont :
- *   1) Crée schema_migrations si absente
- *   2) Baseline les migrations ≤ 052 (structures déjà dans schema.sql)
- *   3) Appelle run-migrations.js pour appliquer les 053+ normalement
+ * Ce que fait ce script :
+ *   1) Crée schema_migrations si absente.
+ *   2) Baseline automatique = toutes les migrations présentes dans le git-tree
+ *      au commit qui a produit le dump actuel. Calculé dynamiquement via git :
+ *      pas de liste à maintenir à la main.
+ *   3) Appelle run-migrations.js pour appliquer les seules migrations
+ *      vraiment nouvelles (ajoutées APRÈS le dernier snapshot).
+ *   4) Les migrations CI_EXCLUDED sont aussi baselinées, mais leur raison
+ *      d'exclusion est différente et documentée : elles ne sont pas rejouables
+ *      par le runner générique (dépendance données ou CONCURRENTLY hors txn).
  *
  * Usage (ci.yml uniquement — NE PAS utiliser en prod) :
  *   node scripts/ci-migrate.js
  * ============================================================================
  */
 
+const path = require('path');
+const { execSync } = require('child_process');
 const db   = require('../db');
 const { run, listMigrationFiles } = require('./run-migrations');
 
-// Migrations couvertes par db/schema.sql.
-// À mettre à jour si schema.sql est regénéré depuis prod.
-// (Long terme : regénérer schema.sql depuis prod → ce fichier devient trivial.)
-const SCHEMA_SQL_BASELINE = new Set([
-  '014_parcels_final_cleanup.sql',
-  '014_transaction_documents.sql',
-  '015_add_backorder_reminder_sent.sql',
-  '016_add_missing_indexes.sql',
-  '017_hub_safety_constraints.sql',
-  '018_schema_reconciliation.sql',
-  '019_finance_columns.sql',
-  '020_parcel_optimization_schema.sql',
-  '021_products_weight_kg.sql',
-  '022_parcel_first_refactor.sql',
-  '023_invoices.sql',
-  '024_notification_log.sql',
-  '025_add_subcategory.sql',
-  '033_parametres_extension.sql',
-  '034_customs_shipments.sql',
-  '035_partners_enrichment.sql',
-  '036_finance_config_unification.sql',
-  '036b_seed_customs_categories.sql',
-  '037_pricing_components_risk_provisions.sql',
-  '038_price_history.sql',
-  '039_pricing_benchmarks.sql',
-  '040_pricing_strategies.sql',
-  '041_sourcing_candidates.sql',
-  '042_sync_products_columns.sql',
-  '043_cost_components.sql',
-  '044_shared_cart.sql',
-  '045_allocation_averages.sql',
-  '046_price_history_scenarios.sql',
-  '047_calibrage_transitaire_charges.sql',
-  '048_collective_workspaces.sql',
-  '049_pickup_secret_attempts.sql',
-  '050_order_item_cost_imputations.sql',
-  '051_order_item_real_cost_allocations.sql',
-  '052_contributions_optional_amount.sql',
+const ROOT      = path.join(__dirname, '..');
+const DUMP_FILE = path.join(ROOT, 'docs', 'db', 'railway-live-schema.sql');
+
+/**
+ * Migrations non rejouables par le runner générique — raisons documentées.
+ * Ces fichiers sont aussi baselinés (jamais appliqués par run()), mais leur
+ * exclusion tient à une incompatibilité structurelle, pas à leur présence
+ * dans le dump.
+ *
+ * 064_enrich_test_products.sql :
+ *   INSERT/UPDATE sur des UUID de produits codés en dur (Caftan eb75a33d-…,
+ *   Sneakers 63db5b3a-…, etc.) qui n'existent qu'en prod. Plante en FK
+ *   violation sur toute base fraîche (aucune donnée). Aucun test ne dépend
+ *   de ces lignes — vérifié 2026-06-25.
+ *
+ * 069_analytical_indexes.sql :
+ *   Utilise CREATE INDEX CONCURRENTLY. Son propre en-tête dit explicitement
+ *   "ne doit JAMAIS être exécuté dans une transaction". run-migrations.js
+ *   wrap chaque migration dans BEGIN/COMMIT → incompatible par construction.
+ *   À appliquer manuellement via : psql $DATABASE_URL -f migrations/069_analytical_indexes.sql
+ */
+const CI_EXCLUDED = new Set([
+  '064_enrich_test_products.sql',
+  '069_analytical_indexes.sql',
 ]);
+
+/**
+ * Retourne l'ensemble des fichiers de migrations/ présents dans le commit git
+ * qui a produit le dump actuel. Ce sont les migrations "déjà dans le dump" :
+ * les rejouer ferait des conflits.
+ *
+ * Si git n'est pas disponible (edge case), retourne un Set vide → run() tente
+ * tout → échoue vite sur les conflits connus → on s'en rend compte immédiatement.
+ */
+function baselineFromDumpCommit() {
+  try {
+    // Hash du dernier commit qui a touché le dump
+    const dumpRel    = path.relative(ROOT, DUMP_FILE).replace(/\\/g, '/');
+    const commitHash = execSync(
+      `git log --format="%H" -1 -- "${dumpRel}"`,
+      { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+    ).trim();
+
+    if (!commitHash) {
+      console.warn('[ci-migrate] WARN: git log sur le dump n\'a retourné aucun commit — baseline vide.');
+      return new Set();
+    }
+
+    // Fichiers de migrations/ dans cet arbre git
+    const listing = execSync(
+      `git ls-tree -r --name-only "${commitHash}" -- migrations/`,
+      { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+
+    const NUMERIC = /^\d{3}/;
+    const files = listing
+      .split('\n')
+      .map(p => path.basename(p))
+      .filter(f => NUMERIC.test(f) && f.endsWith('.sql'));
+
+    console.log(`[ci-migrate] Baseline git : ${files.length} migration(s) au commit ${commitHash.slice(0, 8)}`);
+    return new Set(files);
+  } catch (e) {
+    console.warn(`[ci-migrate] WARN: impossible de calculer la baseline git (${e.message}) — baseline vide.`);
+    return new Set();
+  }
+}
 
 async function main() {
   const client = await db.getClient();
@@ -75,32 +114,38 @@ async function main() {
       )
     `);
 
-    // 2. Baseline : migrations déjà couvertes par schema.sql
-    const all = listMigrationFiles();
-    const toBaseline = all.filter(f => SCHEMA_SQL_BASELINE.has(f));
+    // 2. Calculer la baseline dynamiquement depuis git + CI_EXCLUDED
+    const gitBaseline  = baselineFromDumpCommit();
+    const fullBaseline = new Set([...gitBaseline, ...CI_EXCLUDED]);
+
+    const all        = listMigrationFiles();
+    const toBaseline = all.filter(f => fullBaseline.has(f));
+    const toApply    = all.filter(f => !fullBaseline.has(f));
+
     let baselined = 0;
     for (const f of toBaseline) {
+      const reason = CI_EXCLUDED.has(f) ? 'ci-excluded' : 'ci-dump-baseline';
       const { rowCount } = await client.query(
         `INSERT INTO schema_migrations (filename, checksum)
-         VALUES ($1, 'ci-schema-sql-baseline')
+         VALUES ($1, $2)
          ON CONFLICT (filename) DO NOTHING`,
-        [f]
+        [f, reason]
       );
       if (rowCount > 0) baselined++;
     }
-    console.log(`[ci-migrate] Baseline : ${baselined} migration(s) marquées (couvertes par schema.sql)`);
 
-    // 3. Migrations présentes sur disque mais absentes du Set → avertissement
-    const unknown = all.filter(f => !SCHEMA_SQL_BASELINE.has(f));
-    if (unknown.length > 0) {
-      // Ces fichiers seront appliqués par run() ci-dessous — c'est attendu.
-      console.log(`[ci-migrate] À appliquer : ${unknown.length} migration(s) post-schema.sql`);
+    console.log(`[ci-migrate] Baselinées : ${baselined} (${gitBaseline.size} dump + ${CI_EXCLUDED.size} ci-excluded)`);
+    if (toApply.length > 0) {
+      console.log(`[ci-migrate] À appliquer : ${toApply.length} migration(s) post-snapshot`);
+      for (const f of toApply) console.log(`   • ${f}`);
+    } else {
+      console.log('[ci-migrate] Rien à appliquer — dump à jour.');
     }
   } finally {
     client.release();
   }
 
-  // 4. Appliquer les migrations en attente (053+)
+  // 3. Appliquer les migrations vraiment nouvelles (post-snapshot)
   const { applied } = await run();
   console.log(`[ci-migrate] ✅ ${applied.length} migration(s) appliquée(s).`);
 }
