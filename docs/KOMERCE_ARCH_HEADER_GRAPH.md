@@ -6,6 +6,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
+<<<<<<< HEAD
 - Scanned code files: 318
 - Files with full headers: 289
 - Files with lite headers: 29
@@ -18,6 +19,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Doctrines: 125
 - Impact areas: 114
 - Unresolved code edges: 272
+=======
+- Scanned code files: 317
+- Files with full headers: 288
+- Files with lite headers: 29
+- Files with any headers: 317
+- Files without headers: 0
+- Lite headers without owner: 0
+- Graph nodes: 664
+- Edges: 2933
+- DB tables: 108
+- Doctrines: 125
+- Impact areas: 114
+- Unresolved code edges: 271
+>>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 
 ## Domains
 
@@ -29,7 +44,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - collective-workspace: 3
 - dashboard: 28
 - documents: 5
+<<<<<<< HEAD
 - douane: 2
+=======
+- douane: 1
+>>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 - economic-engine: 24
 - inventory: 2
 - logistics: 30
@@ -63,7 +82,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 97
 - route-manifest: 1
 - schema: 1
+<<<<<<< HEAD
 - service: 108
+=======
+- service: 107
+>>>>>>> ed71d8b1b10cd290b46594de3461cf32c637af4d
 - state: 1
 - state-store: 1
 - ui-component: 39

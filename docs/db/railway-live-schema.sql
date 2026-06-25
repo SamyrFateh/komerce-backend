@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict hA03A0ti1wWTDfE4BlftcJBM6o5H5iq0JYlgcSjZezOK7KmTxb0OCKKcjfRw9P7
+\restrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
 
 -- Dumped from database version 18.4 (Debian 18.4-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -1180,6 +1180,12 @@ CREATE TABLE public.customs_categories (
 -- Name: customs_shipments; Type: TABLE; Schema: public; Owner: -
 --
 
+CREATE TYPE public.customs_shipment_status AS ENUM (
+    'pending',
+    'declared',
+    'confirmed'
+);
+
 CREATE TABLE public.customs_shipments (
     id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
     reference text NOT NULL,
@@ -1187,7 +1193,7 @@ CREATE TABLE public.customs_shipments (
     transitaire_name text,
     transport_mode text,
     cif_value_kmf numeric(12,2) NOT NULL,
-    customs_paid_kmf numeric(12,2) NOT NULL,
+    customs_paid_kmf numeric(12,2),
     freight_kmf numeric(12,2),
     total_weight_kg numeric(10,3),
     nb_parcels integer,
@@ -1198,6 +1204,9 @@ CASE
     WHEN (cif_value_kmf > (0)::numeric) THEN round(((customs_paid_kmf / cif_value_kmf) * (100)::numeric), 2)
     ELSE (0)::numeric
 END) STORED,
+    status public.customs_shipment_status NOT NULL DEFAULT 'pending',
+    declared_at timestamp with time zone,
+    declared_by uuid,
     is_active boolean DEFAULT true NOT NULL,
     deactivated_at timestamp with time zone,
     deactivated_reason text,
@@ -1974,48 +1983,6 @@ COMMENT ON COLUMN public.order_items.module_qty_meters IS 'QuantitÃ© tissu en 
 --
 
 COMMENT ON COLUMN public.order_items.module_accessories IS 'Accessoires pour cet article';
-
-
---
--- Name: COLUMN order_items.customs_category_key; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.customs_category_key IS 'Clé customs_categories figée à la création — immuable comme price_kmf. Source : product.category → customs_categories.key.';
-
-
---
--- Name: COLUMN order_items.sh_code; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.sh_code IS 'Code SH (nomenclature douanière) figé à la création.';
-
-
---
--- Name: COLUMN order_items.douane_pct; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.douane_pct IS 'Taux de droit de douane (%) figé à la création depuis customs_categories.';
-
-
---
--- Name: COLUMN order_items.tva_pct; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.tva_pct IS 'Taux TVA (%) figé à la création depuis customs_categories.';
-
-
---
--- Name: COLUMN order_items.taxe_add_pct; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.taxe_add_pct IS 'Taux taxe additionnelle (%) figé à la création depuis customs_categories.';
-
-
---
--- Name: COLUMN order_items.classification_defaulted; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.order_items.classification_defaulted IS 'true si product.category ne matchait aucune customs_categories.key et que la catégorie "default" a été utilisée en repli.';
 
 
 --
@@ -3861,7 +3828,7 @@ CREATE TABLE public.transaction_documents (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT transaction_documents_status_check CHECK ((status = ANY (ARRAY['generated'::text, 'delivered'::text, 'error'::text]))),
-    CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text])))
+    CONSTRAINT transaction_documents_type_check CHECK ((document_type = ANY (ARRAY['refund_receipt'::text, 'contribution_receipt'::text, 'wallet_receipt'::text, 'pickup_proof'::text, 'purchase_order'::text, 'customs_invoice'::text])))
 );
 
 
@@ -4334,6 +4301,18 @@ CREATE TABLE public.wallet_credit_lots (
 --
 
 CREATE SEQUENCE public.wallet_receipt_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: customs_invoice_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.customs_invoice_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -9144,5 +9123,5 @@ ALTER TABLE ONLY public.wallets
 -- PostgreSQL database dump complete
 --
 
-\unrestrict hA03A0ti1wWTDfE4BlftcJBM6o5H5iq0JYlgcSjZezOK7KmTxb0OCKKcjfRw9P7
+\unrestrict ZM0sd93QFHH7BtrbXF5bS2bmTF2RlHvlRCvpCu8ISZcDqUP7N57getaTlgAXHLg
 

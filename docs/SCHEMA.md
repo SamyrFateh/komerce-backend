@@ -150,7 +150,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `disputes` | Litiges. |
 | `stripe_events_processed` | Idempotence webhooks Stripe (anti-double-traitement). |
 | `paypal_events_processed` | Idempotence webhooks PayPal (PK `event_id`, `status` ∈ processed/ignored/rejected/noop). Pendant PayPal de `stripe_events_processed`. |
-| `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`. Migration 014. |
+| `transaction_documents` | Documents transactionnels hors facture : reçu remboursement (`refund_receipt`), reçu contribution panier partagé (`contribution_receipt`), reçu wallet (`wallet_receipt`), preuve retrait (`pickup_proof`), bon fournisseur (`purchase_order`), **facture douane classifiée** (`customs_invoice` — migration 093, Lot B keystone douane). Idempotence UNIQUE(document_type, subject_type, subject_id). Séquences dédiées : `refund_receipt_seq`, `wallet_receipt_seq`, `pickup_proof_seq`, `customs_invoice_seq`. |
 
 ### 4.5 Paniers et catalogue (7 tables)
 
@@ -218,7 +218,7 @@ Source de vérité : `services/collective-workspace-engine.js` + `services/colle
 | Table | Rôle |
 |---|---|
 | `customs_categories` | Catégories douane. |
-| `customs_shipments` | Shipments douane. |
+| `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. |
 | `customs_shipment_parcels` | Lien shipment ↔ colis. |
 | `customs_history` | Historique taux effectifs. |
 
