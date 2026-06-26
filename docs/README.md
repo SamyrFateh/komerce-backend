@@ -91,7 +91,7 @@ Les doctrines sans gate sont des guides de décision, pas des contraintes automa
 |----------|------|
 | [`public/boutique/README.md`](../public/boutique/README.md) | Index boutique |
 | Ownership auto-généré | `BOUTIQUE_OWNERSHIP_LIVE.md` + `BOUTIQUE_COMPONENT_OWNERSHIP.md` |
-| CSS Guardian | `scripts/css-guard.js` (baseline 0, câblé Railway) |
+| CSS Guardian | `public/boutique/scripts/css-guard.js` (baseline 0, câblé Railway) |
 
 ---
 

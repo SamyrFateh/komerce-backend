@@ -63,7 +63,7 @@
     "feature:registry:report": "node scripts/feature-registry-check.js",
     "feature:registry:orphans": "node scripts/feature-registry-check.js --orphans",
     "feature:check": "node scripts/feature-guard.js --strict",
-    "css:guard": "node scripts/css-guard.js"
+    "css:guard": "node public/boutique/scripts/css-guard.js --strict"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

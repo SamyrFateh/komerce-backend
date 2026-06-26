@@ -5,10 +5,15 @@
  * Usage:
  *   npm run audit:gate          // bloquant (exit 1 si high/critical)
  *   npm run audit:gate:observe  // observatoire (exit 0 toujours, log seulement)
+ *   node scripts/npm-audit-gate.js --cwd=public/boutique   // audite un autre package.json du repo
  *
  * Câblage package.json :
  *   "audit:gate":         "node scripts/npm-audit-gate.js",
  *   "audit:gate:observe": "node scripts/npm-audit-gate.js --observe"
+ *
+ * Câblage public/boutique/package.json (dépendances isolées : stylelint,
+ * @playwright/test — jamais auditées par le gate racine) :
+ *   "audit:gate": "node ../../scripts/npm-audit-gate.js --cwd=."
  *
  * Note: utilise --json pour éviter la dépendance à l'endpoint legacy npm
  * /v1/security/audits/quick (retiré juin 2026). L'API bulk advisory reste
@@ -26,7 +31,12 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+// --cwd=<path> permet de réutiliser ce même script sur un autre package.json
+// du repo (ex. public/boutique, dépendances isolées : stylelint, playwright)
+// sans dupliquer le fichier. Par défaut : racine repo (comportement historique
+// inchangé).
+const cwdArg = process.argv.find(a => a.startsWith('--cwd='));
+const ROOT = cwdArg ? path.resolve(cwdArg.slice('--cwd='.length)) : path.join(__dirname, '..');
 const PKG_PATH = path.join(ROOT, 'package.json');
 const EXCEPTIONS_PATH = path.join(ROOT, 'scripts', 'npm-audit-exceptions.json');
 

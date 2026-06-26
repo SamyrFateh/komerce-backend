@@ -129,7 +129,7 @@ Gate : `npm run quality:gate`
 
 ## 7. CSS Boutique
 
-Baseline verrouillé à **0 conflit**. Scanner : `scripts/css-guard.js`.
+Baseline verrouillé à **0 conflit**. Scanner : `public/boutique/scripts/css-guard.js`.
 Gate : `npm run css:guard` (câblé dans le build Railway).
 
 ---

@@ -45,6 +45,9 @@ jobs:
           npx jest --testPathPatterns="tests/unit" --ci --runInBand
           --testPathIgnorePatterns="tests/integration" --coverage
 
+      - name: "Niveau 5 — Feature Slice Guard (périmètre complet, montage/démontage)"
+        run: npm run feature:check
+
   # ─────────────────────────────────────────────────────────────
   # Job 2 — Tests d'intégration : Postgres jetable (service container).
   # Charge docs/db/railway-live-schema.sql via ci-migrate.js,
@@ -127,6 +130,9 @@ jobs:
   # par Actions. check:fast = même suite que le hook pre-commit
   # local (scripts/setup-hooks.sh, étape 6), moins l'e2e Playwright
   # (nécessite un serveur + DB — hors périmètre de ce job statique).
+  # N1 (audit:gate) ajouté : scripts/npm-audit-gate.js --cwd=. réutilise
+  # le gate racine sans le dupliquer ; jusqu'ici les deps boutique
+  # (stylelint, @playwright/test) n'étaient jamais auditées.
   # ─────────────────────────────────────────────────────────────
   boutique-quality:
     name: "🛡️ Boutique Quality Gates"
@@ -145,6 +151,9 @@ jobs:
 
       - name: Install dependencies (boutique)
         run: npm ci
+
+      - name: "N1 — npm audit gate boutique (high/critical)"
+        run: npm run audit:gate
 
       - name: "Garde-fous boutique (= check:fast : N2 quality + invariants + carte 360, statique)"
         run: npm run check:fast

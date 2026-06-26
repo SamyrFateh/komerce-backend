@@ -198,14 +198,12 @@ if ! node scripts/code-quality-gate.js --strict >/dev/null 2>&1; then
   exit 1
 fi
 
-# 0c. CSS Guardian — 0 conflit cascade dans les bundles boutique.
-if [ -f scripts/css-guard.js ]; then
-  if ! node scripts/css-guard.js >/dev/null 2>&1; then
-    echo -e "${RED}🚫 CSS Guard : conflit de cascade détecté.${NC}"
-    echo "   Détail : npm run css:guard"
-    exit 1
-  fi
-fi
+# 0c. CSS Guardian — couvert par l'étape 6b (check:fast côté boutique, après
+# rebuild des bundles dist par deploy-css.js). Un doublon vivait ici
+# (scripts/css-guard.js, racine) : même rôle, mêmes fichiers scannés
+# (public/boutique/css/dist/*.css), mais tournait AVANT le rebuild de l'étape
+# 6a -> vérifiait des bundles potentiellement périmés. Supprimé ; voir
+# public/boutique/scripts/css-guard.js (canonique, --strict/--save).
 
 # 0. Auto-declaration des tables dans les headers @db-read/@db-write a partir du
 #    VRAI SQL du fichier (documentation-only, idempotent, additif : ne retire jamais

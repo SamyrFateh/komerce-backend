@@ -10,6 +10,8 @@
     "lint:css": "stylelint \"css/*.css\" --ignore-path .stylelintignore",
     "lint:css:fix": "stylelint \"css/*.css\" --fix",
     "lint:css:report": "stylelint \"css/*.css\" --formatter json > stylelint-report.json || true",
+    "audit:gate": "node ../../scripts/npm-audit-gate.js --cwd=.",
+    "audit:gate:observe": "node ../../scripts/npm-audit-gate.js --cwd=. --observe",
     "audit:arch": "node scripts/audit-boutique-arch.js",
     "audit:arch:live": "node scripts/gen-boutique-arch-live.js",
     "check:html": "node scripts/check-html-balance.js",

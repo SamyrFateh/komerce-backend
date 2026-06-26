@@ -95,6 +95,18 @@ function exists(rel) {
   return fs.existsSync(path.join(ROOT, rel));
 }
 
+// Les fichiers déclarés en catégorie `boutique` / `dash` dans files.* sont
+// relatifs à leur racine front (public/boutique, public/), pas à la racine
+// repo. Sans ce préfixe, exists() cherchait "ROOT/js/b-catalog.js" au lieu de
+// "ROOT/public/boutique/js/b-catalog.js" -> faux "absent du disque" sur la
+// quasi-totalité des fichiers boutique/dash déclarés (22 + 8 sur 33 erreurs
+// observées avant correctif).
+const CATEGORY_PREFIX = { boutique: 'public/boutique', dash: 'public' };
+function resolveRel(category, rel) {
+  const prefix = CATEGORY_PREFIX[category];
+  return prefix ? `${prefix}/${rel}` : rel;
+}
+
 /**
  * Extrait le numéro de préfixe d'un fichier migration.
  * "migrations/044_shared_cart.sql" → 44
@@ -177,8 +189,9 @@ function checkSlice(slice, allMigNums) {
   for (const [category, files] of Object.entries(slice.files)) {
     if (!Array.isArray(files)) { errors.push(`files.${category} doit être un tableau`); continue; }
     for (const rel of files) {
-      allDeclared.push(rel);
-      if (!exists(rel)) {
+      const fullRel = resolveRel(category, rel);
+      allDeclared.push(fullRel);
+      if (!exists(fullRel)) {
         errors.push(`Fichier déclaré absent du disque [${category}] : ${rel}`);
       }
     }

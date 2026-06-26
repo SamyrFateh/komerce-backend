@@ -29,9 +29,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - checkout: 2
 - collective-workspace: 3
 - customs: 1
-- dashboard: 28
+- dashboard: 25
 - documents: 5
-- douane: 2
+- douane: 5
 - economic-engine: 28
 - inventory: 3
 - logistics: 34
@@ -180,8 +180,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-boutique-categories.js — boutique-taxonomy-admin-api (catalog, high, full)
 - routes/admin-cost-components.js — economic-engine-admin-cost-components (economic-engine, high, full)
 - routes/admin-costing.js — economic-engine-admin-costing (economic-engine, high, full)
-- routes/admin-customs-categories.js — dashboard-admin-customs-categories (dashboard, high, full)
-- routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (dashboard, high, full)
+- routes/admin-customs-categories.js — dashboard-admin-customs-categories (douane, high, full)
+- routes/admin-customs-shipments.js — dashboard-admin-customs-shipments (douane, high, full)
 - routes/admin-dashboard.js — dashboard-admin-dashboard (dashboard, high, full)
 - routes/admin-finance-config.js — economic-engine-admin-finance-config (economic-engine, high, full)
 - routes/admin-loyalty.js — dashboard-admin-loyalty (dashboard, high, full)
@@ -191,7 +191,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin-risk-provisions.js — dashboard-admin-risk-provisions (dashboard, high, full)
 - routes/admin-rules.js — dashboard-admin-rules (dashboard, high, full)
 - routes/admin.js — dashboard-admin (dashboard, high, full)
-- routes/admin/customs.js — dashboard-customs (dashboard, high, full)
+- routes/admin/customs.js — dashboard-customs (douane, high, full)
 - routes/admin/dashboard.js — dashboard-dashboard (dashboard, high, full)
 - routes/admin/index.js — dashboard-index (dashboard, high, full)
 - routes/admin/partners.js — dashboard-partners (dashboard, high, full)

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          dashboard-admin-customs-categories
- * @domain        dashboard
+ * @domain        douane
  * @layer         route
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload

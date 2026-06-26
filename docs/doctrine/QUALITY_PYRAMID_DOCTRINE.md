@@ -74,6 +74,11 @@ dépendances d'un code dont on ignore encore à quelle feature il appartient.
 Ce que ça vérifie : vulnérabilités `high` ou `critical` dans les dépendances npm.
 Déjà en place et bloquant. Ne rien changer.
 
+Étendu à `public/boutique` (dépendances isolées : `stylelint`, `@playwright/test`,
+jamais couvertes par l'audit racine) : `public/boutique/package.json#audit:gate`
+réutilise le même script via `--cwd=.` (pas de duplication). CI : job
+`boutique-quality`.
+
 ---
 
 ## Niveau 2 — Code Quality Gate
