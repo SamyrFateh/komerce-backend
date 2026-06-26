@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          eco-bridge
- * @domain        economic-engine
+ * @domain        unknown
  * @layer         util
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

@@ -39,10 +39,6 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/eco-bridge.js',
-    
-      'utils/pricing-cache.js',],
     services: [
       'services/pricing-apply.js',
       'services/pricing-dashboard.js',
@@ -57,9 +53,7 @@ module.exports = {
       'services/pricing-strategy-service.js',
       'services/pricing-engine.js',
       'services/pricing-cdr.js',
-    
-      'services/sourcing-analysis.js',
-      'services/sourcing-mutations.js',],
+    ],
     routes: [
       'routes/pricing-strategy.js',
       'routes/pricing.js',
@@ -71,8 +65,7 @@ module.exports = {
       'routes/economic-engine.js',
       'routes/admin-finance-config.js',
       'routes/admin-pricing-components.js',
-    
-      'routes/sourcing-engine.js',],
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

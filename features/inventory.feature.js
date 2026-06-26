@@ -41,8 +41,7 @@ module.exports = {
     ],
     routes: [
       'routes/inventory-api.js',
-    
-      'routes/unsold.js',],
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

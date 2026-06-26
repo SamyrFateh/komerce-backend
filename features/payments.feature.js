@@ -51,8 +51,7 @@ module.exports = {
       'services/confirm-pickup-cash-payment.js',
       'services/payment-paypal-events.js',
       'services/cash-operations.js',
-    
-      'services/reconciliation-service.js',],
+    ],
     routes: [
       'routes/cash.js',
       'routes/payments.js',

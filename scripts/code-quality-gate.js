@@ -350,7 +350,7 @@ function stripCommentAndString(line) {
 
 /** Trouve la fin du bloc de commentaire initial (header @komerce-arch). */
 function findHeaderEnd(src) {
-  const m = src.match(/^(#!.*\n)?(\/\*[\s\S]*?\*\/\s*\n)/);
+  const m = src.match(/^(#!.*\n(?:[ \t]*\n)*)?(\/\*[\s\S]*?\*\/\s*\n)/);
   return m ? m[0].length : 0;
 }
 

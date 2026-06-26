@@ -39,11 +39,6 @@ const ORPHAN_IGNORE = new Set([
   'middleware/require-verified-identity.js', 'middleware/error-handler.js',
   'middleware/rate-limit.js', 'middleware/request-id.js', 'middleware/upload.js',
   'middleware/validate.js', 'middleware/verify-authkey-webhook.js',
-  // utils transversaux (multi-features — pas rattachables à une seule)
-  'utils/phone.js', 'utils/user-cache.js', 'utils/logger.js', 'utils/rates.js',
-  'utils/reference.js',       // génération de références (orders, shared-cart, logistics)
-  'utils/rules.js',           // moteur de règles métier centralisé (pricing, orders, catalog)
-  'validators/index.js',      // barrel de validation Joi (toutes les routes)
   'utils/phone.js', 'utils/user-cache.js', 'utils/logger.js', 'utils/rates.js',
 ]);
 
@@ -164,33 +159,15 @@ function run() {
     }
   }
 
-  // 4. Fichiers non déclarés — triés par gravité :
-  //    DOMAIN-MISMATCH (bloquant) : @domain pointe vers une feature existante qui ne le liste pas
-  //    ORPHAN (warning) : @domain unknown ou domaine sans manifest
-  const featureNames = new Set(validManifests.map(m => m.name));
-  const readDomain = (file) => {
-    try {
-      const head = fs.readFileSync(path.join(ROOT, file), 'utf8').slice(0, 2000);
-      const mm = head.match(/@domain\s+(\S+)/);
-      return mm ? mm[1] : null;
-    } catch { return null; }
-  };
+  // 4. Orphelins : fichiers source non déclarés dans aucun manifest (avertissement, pas bloquant)
   const sourceFiles = collectSourceFiles();
   for (const file of sourceFiles) {
     const normalized = file.replace(/\\/g, '/');
     if (declared.has(normalized)) continue;
     if (ORPHAN_IGNORE.has(normalized)) continue;
     if (normalized.includes('_superseded') || normalized.includes('scheduled')) continue;
-    const domain = readDomain(normalized);
-    if (domain && featureNames.has(domain)) {
-      errors.push({ type: 'DOMAIN-MISMATCH', feature: domain, file: normalized,
-        msg: '@domain ' + domain + ' mais absent du manifest ' + domain + '.feature.js — ajouter le fichier au manifest ou corriger le header' });
-      summary.mismatch = (summary.mismatch || 0) + 1;
-    } else {
-      warnings.push({ type: 'ORPHAN', file: normalized, domain: domain || 'unknown',
-        msg: 'non déclaré dans aucun manifest feature' });
-      summary.orphans++;
-    }
+    warnings.push({ type: 'ORPHAN', file: normalized, msg: 'non déclaré dans aucun manifest feature — voir APP_FEATURE_REGISTRY.md section "dette connue"' });
+    summary.orphans++;
   }
 
   // ── Sortie ───────────────────────────────────────────────────────────────

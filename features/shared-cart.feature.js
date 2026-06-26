@@ -56,24 +56,13 @@ module.exports = {
       'services/shared-cart-v4-settlement.js',
       'services/shared-cart-v41-transitions.js',
       'services/cancel-shared-cart-with-refunds.js',
-    
-      'services/collective-close-order-service.js',
-      'services/collective-payment-orchestrator.js',
-      'services/collective-ready-to-order-orchestrator.js',
-      'services/collective-stock-reservation-service.js',
-      'services/collective-workspace-engine.js',
-      'services/repair-collective-ready-to-capture.js',
-      'services/repair-collective-stock-reservations.js',],
+    ],
     routes: [
       'routes/shared-cart.js',
       'routes/shared-cart-cash.js',
       'routes/shared-cart-from-order.js',
       'routes/shared-cart-refund-admin.js',
-    
-      'routes/admin-collective-repairs.js',
-      'routes/baskets.js',
-      'routes/collective-workspaces.js',
-      'routes/shares.js',],
+    ],
     migrations: [
       'migrations/044_shared_cart.sql',
       'migrations/059_group_order.sql',

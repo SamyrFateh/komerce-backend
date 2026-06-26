@@ -43,9 +43,6 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/orderParcelLinkRules.js',
-    ],
     services: [
       'services/order-service.js',
       'services/verify-qr-collection.js',
@@ -58,10 +55,7 @@ module.exports = {
       'services/repair-ordered-purchasing.js',
       'services/admin-order-refund.js',
       'services/cancel-order-purchase-orders.js',
-    
-      'services/order-payment-confirmation.js',
-      'services/purchasing-receive-service.js',
-      'services/purchasing-trigger-service.js',],
+    ],
     routes: [
       'routes/admin/orders.js',
       'routes/admin/delete-order-cascade.js',
@@ -76,8 +70,7 @@ module.exports = {
       'routes/hub-mark-ordered.js',
       'routes/invoices.js',
       'routes/order-api-v2.js',
-    
-      'routes/purchasing.js',],
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

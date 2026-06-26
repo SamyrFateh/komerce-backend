@@ -15,6 +15,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * KOMERCE — Taux de change & paramètres financiers (utils/rates.js)
  *

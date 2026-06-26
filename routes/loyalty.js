@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 // routes/loyalty.js — Komerce v8
 // Fidélité client : paliers, remises, historique
 const express = require('express');

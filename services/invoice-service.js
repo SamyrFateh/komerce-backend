@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * Invoice Service — Komerce v1.1
  * Generates mini-invoices for client payments

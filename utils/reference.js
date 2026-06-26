@@ -15,6 +15,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * KOMERCE — Générateurs de références uniques (sécurisé)
  *

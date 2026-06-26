@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 // routes/ops-api.js — v2.2 — Fix: reconciliation alias + cash_relais enum — Endpoints opérationnels pour Control Tower
 // RequÀªte directement la DB — pas de dépendance aux services v2
 const express = require('express');

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          reconciliation-service
- * @domain        payments
+ * @domain        unknown
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

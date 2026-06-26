@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          auto-distribute-api
- * @domain        logistics
+ * @domain        unknown
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

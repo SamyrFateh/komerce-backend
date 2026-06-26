@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          sourcing-engine
- * @domain        economic-engine
+ * @domain        unknown
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

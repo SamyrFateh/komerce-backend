@@ -41,7 +41,7 @@ const labelAuth = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relai
 // ── Helper: format date ──
 function fmtDate(d) {
   if (!d) return '—';
-  let dt = new Date(d);
+  var dt = new Date(d);
   return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 

@@ -36,22 +36,13 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    services: [
-      'services/incident-service.js',
-    
-      'services/monitoring.js',
-      'services/simulator/cleanup.js',
-      'services/simulator/engine.js',
-      'services/simulator/journal.js',
-      'services/simulator/scenarios.js',
-      'services/simulator/state-advancer.js',],
+    services: [],
     routes: [
       'routes/modules.js',
       'routes/health.js',
       'routes/ops-api.js',
       'routes/config.js',
-    
-      'routes/simulator.js',],
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

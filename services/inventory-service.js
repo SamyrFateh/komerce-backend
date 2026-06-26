@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * ═══════════════════════════════════════════════════════════════
  * INVENTORY SERVICE v3 — Proposals as GUIDANCE, scan-driven

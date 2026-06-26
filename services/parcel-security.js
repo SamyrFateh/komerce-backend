@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * KOMERCE — Sécurité Logistique v1.0
  *

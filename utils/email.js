@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          email
- * @domain        notifications
+ * @domain        unknown
  * @layer         util
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

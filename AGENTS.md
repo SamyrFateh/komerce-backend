@@ -14,21 +14,86 @@ Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeu
 Lire uniquement dans cet ordre :
 
 1. [`docs/README.md`](./docs/README.md) — index documentaire actif ;
-2. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — doctrine obligatoire du graphe ;
-3. [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./docs/KOMERCE_DB_SCHEMA_DOCTRINE.md) — doctrine obligatoire du schéma DB ;
-4. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
-5. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-6. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
-7. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
-8. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-9. [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./docs/backend/BACKEND_GOLIVE_ROADMAP.md) — backlog de remédiation pré-golive (lots A-H), source du prochain lot à exécuter si `STATUS.md` y renvoie ;
-10. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+2. [`docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`](./docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md) — **pyramide qualité N0→N5**, ordre d'exécution complet des gates CI (la mécanique, à lire avant tout le reste) ;
+3. [`docs/doctrine/FEATURE_DOCTRINE.md`](./docs/doctrine/FEATURE_DOCTRINE.md) — N0, sommet : qu'est-ce qu'une feature ;
+4. [`docs/doctrine/APP_FEATURE_REGISTRY.md`](./docs/doctrine/APP_FEATURE_REGISTRY.md) — N0, registre exhaustif des features réelles ;
+5. [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./docs/doctrine/FEATURE_SLICE_DOCTRINE.md) — N5, périmètre technique par feature ;
+6. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — N4, doctrine obligatoire du graphe ;
+7. [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./docs/KOMERCE_DB_SCHEMA_DOCTRINE.md) — N4, doctrine obligatoire du schéma DB ;
+8. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
+9. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
+10. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
+11. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
+12. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
+13. [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./docs/backend/BACKEND_GOLIVE_ROADMAP.md) — backlog de remédiation pré-golive (lots A-H), source du prochain lot à exécuter si `STATUS.md` y renvoie ;
+14. Les documents actifs listés par `docs/README.md` selon la zone touchée.
 
 Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
 
+> L'ordre d'exécution complet des gates CI (jobs `unit`/`integration`/`governance`/`conformance`,
+> avec script et commande pour chaque niveau N0→N5) vit dans `QUALITY_PYRAMID_DOCTRINE.md` —
+> non dupliqué ici pour éviter toute divergence. Les sections 2 et 3 ci-dessous ne couvrent que
+> la gouvernance Feature (N0/N5), qui n'a pas d'autre point d'entrée dans ce fichier.
+
 ---
 
-## 2. Gouvernance architecture obligatoire
+## 2. Gouvernance Feature (N0 — sommet, lire avant toute intervention fonctionnelle)
+
+Avant de toucher la moindre logique métier backend, vérifier que la feature concernée
+existe dans le registre canonique :
+
+```txt
+docs/doctrine/FEATURE_DOCTRINE.md        ← qu'est-ce qu'une feature, règles du registre
+docs/doctrine/APP_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
+```
+
+1. trouver la feature dans le registre ;
+2. lire son manifest `features/<feature>.feature.js` pour connaître service rendu,
+   périmètre `in`/`out`, interfaces, autorité, invariants ;
+3. si la modification sort de `perimeter.in` ou touche `perimeter.out`, s'arrêter et
+   renégocier le périmètre dans le registre — ne jamais contourner silencieusement ;
+4. `node scripts/feature-registry-check.js --strict` (= `npm run feature:registry`) doit passer avant tout le reste.
+
+Une feature absente du registre n'a pas l'autorisation de recevoir de nouvelle logique
+métier tant qu'elle n'y est pas inscrite.
+
+---
+
+## 3. Gouvernance Feature Slice (N5)
+
+Toute feature fonctionnelle d'une certaine envergure (> 3 fichiers propres) doit disposer d'un Feature Slice manifest dans `features/`.
+
+Ce manifest est le même fichier que celui exigé par la gouvernance Feature (section 2) —
+`features/<feature>.feature.js` porte à la fois les propriétés métier (service, périmètre,
+autorité, invariants) et le détail technique du slice (fichiers, contrat, migrations, tests).
+
+La règle détaillée vit dans :
+
+```txt
+docs/doctrine/FEATURE_SLICE_DOCTRINE.md
+```
+
+Avant modification d'une feature :
+
+1. lire `features/<feature>.feature.js` pour connaître le périmètre complet ;
+2. vérifier la cohérence avec `node scripts/feature-guard.js --feature <name>`.
+
+Pendant modification :
+
+- tout fichier ajouté au périmètre doit être déclaré dans le slice ;
+- tout fichier supprimé doit être retiré du slice dans la même PR.
+
+Après modification :
+
+```bash
+node scripts/feature-guard.js --strict
+```
+
+Une intervention fonctionnelle sur une feature slicée qui ne met pas à jour son manifest est incomplète.
+
+---
+
+## 4. Gouvernance architecture obligatoire (N4)
 
 Toute création, modification ou suppression de feature fonctionnelle doit maintenir la cartographie `@komerce-arch`.
 
@@ -70,7 +135,7 @@ Une intervention fonctionnelle sans mise à jour du header et du graphe est inco
 
 ---
 
-## 3. Gouvernance DB obligatoire
+## 5. Gouvernance DB obligatoire (N4)
 
 Tout changement de schéma DB doit suivre :
 
@@ -88,7 +153,7 @@ Règle : une migration, un changement de table, colonne, enum, index, trigger, f
 
 ---
 
-## 4. Doctrine produit active — panier partagé
+## 6. Doctrine produit active — panier partagé
 
 Le modèle actif est **Boutique First**.
 
@@ -109,7 +174,7 @@ Toute documentation V4.1, collective workspace, cagnotte, engagement ou financem
 
 ---
 
-## 5. Hiérarchie documentaire
+## 7. Hiérarchie documentaire
 
 En cas de conflit :
 
@@ -125,7 +190,7 @@ Une doc ancienne qui contredit `docs/README.md` ou la doctrine Boutique First es
 
 ---
 
-## 6. Règle de divergence
+## 8. Règle de divergence
 
 Si code, DB et docs ne racontent pas la même chose :
 
@@ -135,7 +200,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 7. Règles techniques non négociables
+## 9. Règles techniques non négociables
 
 - Statuts commande : passer par `services/order-status-machine.js`.
 - Paiements Stripe/cash/wallet/shared-cart : passer par les services propriétaires documentés.
@@ -146,7 +211,7 @@ Si code, DB et docs ne racontent pas la même chose :
 
 ---
 
-## 8. Règle Boutique
+## 10. Règle Boutique
 
 Si une modification touche :
 
@@ -166,7 +231,7 @@ Interdits Boutique :
 
 ---
 
-## 9. Règle de fin de session
+## 11. Règle de fin de session
 
 Avant commit ou PR :
 
@@ -176,59 +241,5 @@ Avant commit ou PR :
 - mettre à jour les headers `@komerce-arch` / `@komerce-arch-lite` concernés ;
 - régénérer `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` si la cartographie change ;
 - ne pas ajouter de nouveau document hors index sans l'ajouter à `docs/README.md` ;
-- laisser les anciens documents en archive/subordination plutôt que les réactiver implicitement.
----
-
-## 0. Gouvernance Feature (sommet — lire avant toute intervention fonctionnelle)
-
-Avant de toucher la moindre logique métier backend, vérifier que la feature concernée
-existe dans le registre canonique :
-
-```txt
-docs/doctrine/FEATURE_DOCTRINE.md            ← qu'est-ce qu'une feature, règles du registre
-docs/doctrine/APP_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
-```
-
-1. trouver la feature dans le registre ;
-2. lire son manifest `features/<feature>.feature.js` pour connaître service rendu,
-   périmètre `in`/`out`, interfaces, autorité, invariants ;
-3. si la modification sort de `perimeter.in` ou touche `perimeter.out`, s'arrêter et
-   renégocier le périmètre dans le registre — ne jamais contourner silencieusement ;
-4. `node scripts/feature-registry-check.js --strict` doit passer avant tout le reste.
-
-Une feature absente du registre n'a pas l'autorisation de recevoir de nouvelle logique
-métier tant qu'elle n'y est pas inscrite.
-
----
-
-## 10. Gouvernance Feature Slice
-
-Toute feature fonctionnelle d'une certaine envergure (> 3 fichiers propres) doit disposer d'un Feature Slice manifest dans `features/`.
-
-Ce manifest est le même fichier que celui exigé par la gouvernance Feature (section 0) —
-`features/<feature>.feature.js` porte à la fois les propriétés métier (service, périmètre,
-autorité, invariants) et le détail technique du slice (fichiers, contrat, migrations, tests).
-
-La règle détaillée vit dans :
-
-```txt
-docs/doctrine/FEATURE_SLICE_DOCTRINE.md
-```
-
-Avant modification d'une feature :
-
-1. lire `features/<feature>.feature.js` pour connaître le périmètre complet ;
-2. vérifier la cohérence avec `node scripts/feature-guard.js --feature <name>`.
-
-Pendant modification :
-
-- tout fichier ajouté au périmètre doit être déclaré dans le slice ;
-- tout fichier supprimé doit être retiré du slice dans la même PR.
-
-Après modification :
-
-```bash
-node scripts/feature-guard.js --strict
-```
-
-Une intervention fonctionnelle sur une feature slicée qui ne met pas à jour son manifest est incomplète.
+- laisser les anciens documents en archive/subordination plutôt que les réactiver implicitement ;
+- faire passer `npm run feature:registry` et `npm run feature:check` si une feature ou son manifest a changé.

@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * TRANSITAIRE API — Transit agent endpoints
  * Mounted at /api/transitaire

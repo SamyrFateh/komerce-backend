@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * KOMERCE — Routes admin pour customs_categories (Étape 0 audit)
  *

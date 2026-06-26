@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * Notification API — View notification logs
  * GET /api/v2/notifications       → List recent notifications

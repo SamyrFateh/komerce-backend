@@ -232,7 +232,7 @@ async function getCAEncaisse(filters = {}) {
 
 async function getCmdsCreees(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
-  const sql = `SELECT COUNT(*)::int AS value FROM orders o WHERE ${where}`; // quality-disable N2-SQL-INJECTION — where is parameterized via buildFiltersClause
+  const sql = `SELECT COUNT(*)::int AS value FROM orders o WHERE ${where}`;
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
@@ -240,7 +240,7 @@ async function getCmdsCreees(filters = {}) {
   const prev = buildPreviousPeriod(filters);
   if (prev) {
     const prevQuery = buildFiltersClause(prev);
-    const prevR = await db.query(`SELECT COUNT(*)::int AS value FROM orders o WHERE ${prevQuery.where}`, prevQuery.params); // quality-disable N2-SQL-INJECTION
+    const prevR = await db.query(`SELECT COUNT(*)::int AS value FROM orders o WHERE ${prevQuery.where}`, prevQuery.params);
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
 

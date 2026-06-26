@@ -12,20 +12,21 @@ Pour toute nouvelle session, lire uniquement dans cet ordre :
 | Ordre | Document | Rôle |
 |---:|---|---|
 | 1 | [`AGENTS.md`](../AGENTS.md) | Règles obligatoires pour agent/dev |
-| 2 | [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./KOMERCE_ARCH_GRAPH_DOCTRINE.md) | Doctrine obligatoire du graphe avant toute intervention fonctionnelle |
-| 3 | [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./KOMERCE_DB_SCHEMA_DOCTRINE.md) | Doctrine obligatoire du schéma DB |
-| 4 | [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) | Couverture et dette active de cartographie |
-| 5 | [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./KOMERCE_ARCH_HEADER_GRAPH.md) | Graphe lisible d'intervention |
-| 6 | [`docs/komerce-arch-header-graph.json`](./komerce-arch-header-graph.json) | Graphe machine-readable et `interventionIndex` |
-| 7 | [`docs/SCHEMA.md`](./SCHEMA.md) | Schéma DB canonique |
-| 8 | [`docs/chantier/STATUS.md`](./chantier/STATUS.md) | État opératoire actuel, dettes ouvertes, tests à faire |
-| 9 | [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Doctrine produit active du panier partagé |
-| 10 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
-| 11 | [`docs/doctrine/DOUANE_DECLARATION_PIVOT.md`](./doctrine/DOUANE_DECLARATION_PIVOT.md) | **Doctrine douane** — la déclaration est le pivot ; on instrumente, on n'optimise pas |
-| 12 | [`docs/specs/SPEC_KEYSTONE_DOUANE.md`](./specs/SPEC_KEYSTONE_DOUANE.md) | Spec fonctionnelle Keystone douane (Gap A clôturé, B et C ouverts) |
-| 13 | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) | Doctrine Feature Slice — périmètre, guard, workflow montage/démontage |
-| 14 | [`docs/doctrine/FEATURE_DOCTRINE.md`](./doctrine/FEATURE_DOCTRINE.md) | **Doctrine Feature — sommet de la pyramide.** Ce qu'est une feature métier, gouverne toutes les autres doctrines |
-| 15 | [`docs/doctrine/APP_FEATURE_REGISTRY.md`](./doctrine/APP_FEATURE_REGISTRY.md) | Registre canonique exhaustif des features backend réelles |
+| 2 | [`docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`](./doctrine/QUALITY_PYRAMID_DOCTRINE.md) | **Pyramide qualité N0→N5** — ordre d'exécution complet des gates CI, script + commande par niveau |
+| 3 | [`docs/doctrine/FEATURE_DOCTRINE.md`](./doctrine/FEATURE_DOCTRINE.md) | N0, sommet — qu'est-ce qu'une feature métier, gouverne toutes les autres doctrines |
+| 4 | [`docs/doctrine/APP_FEATURE_REGISTRY.md`](./doctrine/APP_FEATURE_REGISTRY.md) | N0 — registre canonique exhaustif des features backend réelles |
+| 5 | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) | N5 — périmètre, guard, workflow montage/démontage |
+| 6 | [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./KOMERCE_ARCH_GRAPH_DOCTRINE.md) | N4 — doctrine obligatoire du graphe avant toute intervention fonctionnelle |
+| 7 | [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./KOMERCE_DB_SCHEMA_DOCTRINE.md) | N4 — doctrine obligatoire du schéma DB |
+| 8 | [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) | Couverture et dette active de cartographie |
+| 9 | [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./KOMERCE_ARCH_HEADER_GRAPH.md) | Graphe lisible d'intervention |
+| 10 | [`docs/komerce-arch-header-graph.json`](./komerce-arch-header-graph.json) | Graphe machine-readable et `interventionIndex` |
+| 11 | [`docs/SCHEMA.md`](./SCHEMA.md) | Schéma DB canonique |
+| 12 | [`docs/chantier/STATUS.md`](./chantier/STATUS.md) | État opératoire actuel, dettes ouvertes, tests à faire |
+| 13 | [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Doctrine produit active du panier partagé |
+| 14 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
+| 15 | [`docs/doctrine/DOUANE_DECLARATION_PIVOT.md`](./doctrine/DOUANE_DECLARATION_PIVOT.md) | **Doctrine douane** — la déclaration est le pivot ; on instrumente, on n'optimise pas |
+| 16 | [`docs/specs/SPEC_KEYSTONE_DOUANE.md`](./specs/SPEC_KEYSTONE_DOUANE.md) | Spec fonctionnelle Keystone douane (Gap A clôturé, B et C ouverts) |
 
 Ces documents suffisent pour reprendre le projet sans lire l'historique.
 
@@ -80,7 +81,6 @@ Une intervention DB est incomplète si `docs/SCHEMA.md`, les headers `@db-read/@
 | Sécurité backend | [`docs/backend/SECURITY-MODEL.md`](./backend/SECURITY-MODEL.md) |
 | Backlog de remédiation pré-golive (lots A-H, scoring, ordre d'exécution) | [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./backend/BACKEND_GOLIVE_ROADMAP.md) |
 | Architecture backend normative (invariants I-BACK-1..10, ownership) | [`docs/backend/BACKEND_ARCHITECTURE.md`](./backend/BACKEND_ARCHITECTURE.md) |
-| Pyramide qualité (N1→N5) — gates code, architecture, feature slice | [`docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`](./doctrine/QUALITY_PYRAMID_DOCTRINE.md) |
 | Feature Slice — périmètre par feature, guard CI | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) |
 | Connecteurs fournisseurs (état, interface, activation Noon) | [`docs/SUPPLIERS_CONNECTORS.md`](./SUPPLIERS_CONNECTORS.md) |
 | Moteur sourcing (philosophie, rails, seuils, invariants, évolutions) | [`docs/SOURCING_ENGINE.md`](./SOURCING_ENGINE.md) |

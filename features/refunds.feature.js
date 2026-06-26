@@ -37,9 +37,6 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
-    utils: [
-      'utils/refunds.js',
-    ],
     services: [
       'services/refund-service.js',
     ],

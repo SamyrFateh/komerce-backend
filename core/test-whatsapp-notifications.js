@@ -17,6 +17,8 @@
  * @doctrine     none
  * @impact-areas whatsapp, notifications, otp
  */
+'use strict';
+
 /**
  * KOMERCE — Test complet des notifications WhatsApp
  * ═══════════════════════════════════════════════════════════════════════

@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * ═══════════════════════════════════════════════════════════════
  * ORDER API v2.3 — Komerce (COLIS-FIRST) — AUTO-PARCEL

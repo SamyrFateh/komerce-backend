@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * ═══════════════════════════════════════════════════════════════
  * INVENTORY API v3 — Scan-driven, proposals as guidance

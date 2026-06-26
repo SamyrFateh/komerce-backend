@@ -40,13 +40,10 @@ module.exports = {
   files: {
     services: [
       'services/boutique-ranking-engine.js',
-    
-      'services/radar-queries.js',
-      'services/signal-service.js',],
+    ],
     routes: [
       'routes/boutique-suggestions.js',
-    
-      'routes/signals.js',],
+    ],
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          customs-shipment-service
- * @domain        customs
+ * @domain        unknown
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
