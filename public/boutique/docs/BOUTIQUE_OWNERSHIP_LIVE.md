@@ -14,13 +14,13 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 
 | Composant | Fichiers CSS (sélecteurs) | Owners | État |
 |-----------|---------------------------|:------:|:----:|
-| **Modal produit** `.k-modal*` | modal-shell.css (18), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
-| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (10), hero.css (1) | 3 | 🔴 |
-| **Carte produit** `.k-card*` | products.css (23), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
-| **Grille produits** `.k-grid*` | products.css (16), layout.css (6), interactions.css (3), cart.css (2) | 4 | 🔴 |
-| **Header** `.k-header*` | layout.css (21), hero.css (2), tokens.css (1) | 3 | 🔴 |
-| **Hero** `.k-hero*` | hero.css (8), cart.css (1) | 2 | 🔴 |
-| **Chips catégories** `.k-chip*` | categories.css (62), layout.css (2), interactions.css (1) | 3 | 🔴 |
+| **Modal produit** `.k-modal*` | modal-shell.css (14), modal-product.css (4), interactions.css (2), boutique-desktop.css (1) | 4 | 🔴 |
+| **Side-cart desktop** `.k-side-cart*` | boutique-desktop.css (20), layout.css (7), hero.css (1) | 3 | 🔴 |
+| **Carte produit** `.k-card*` | products.css (20), categories.css (9), boutique-desktop.css (4), layout.css (1) | 4 | 🔴 |
+| **Grille produits** `.k-grid*` | products.css (16), layout.css (4), interactions.css (3), cart.css (2) | 4 | 🔴 |
+| **Header** `.k-header*` | layout.css (20), hero.css (1), tokens.css (1) | 3 | 🔴 |
+| **Hero** `.k-hero*` | hero.css (5), cart.css (1) | 2 | 🔴 |
+| **Chips catégories** `.k-chip*` | categories.css (55), layout.css (2), interactions.css (1) | 3 | 🔴 |
 | **Bottom-nav mobile** `.k-bnav*` | interactions.css (2), layout.css (2) | 2 | 🔴 |
 
 ---
@@ -111,11 +111,11 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 
 ## 4. Dette CSS
 
-### `!important` — total : 23
+### `!important` — total : 21
 
 | Fichier | Occurrences |
 |---------|:-----------:|
-| hero.css | 7 |
+| hero.css | 5 |
 | boutique-desktop.css | 4 |
 | share-cart.css | 4 |
 | categories.css | 2 |
@@ -141,6 +141,6 @@ Charte projet : **un seul breakpoint, 900px** (1200px toléré). Tout le reste e
 | Modules JS écrivant le DOM | 41 | ≤ 5 |
 | Breakpoints distincts | 7 | ≤ 2 |
 | Violations breakpoint | 12 | 0 |
-| `!important` | 23 | < 5 |
+| `!important` | 21 | < 5 |
 
 *Quand toutes les cibles sont vertes, la boutique est sous contrôle : chaque composant a un owner unique et un seul système de breakpoints.*

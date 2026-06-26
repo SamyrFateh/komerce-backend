@@ -23,6 +23,9 @@ Pour toute nouvelle session, lire uniquement dans cet ordre :
 | 10 | [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md) | Mise en œuvre datée du panier partagé |
 | 11 | [`docs/doctrine/DOUANE_DECLARATION_PIVOT.md`](./doctrine/DOUANE_DECLARATION_PIVOT.md) | **Doctrine douane** — la déclaration est le pivot ; on instrumente, on n'optimise pas |
 | 12 | [`docs/specs/SPEC_KEYSTONE_DOUANE.md`](./specs/SPEC_KEYSTONE_DOUANE.md) | Spec fonctionnelle Keystone douane (Gap A clôturé, B et C ouverts) |
+| 13 | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) | Doctrine Feature Slice — périmètre, guard, workflow montage/démontage |
+| 14 | [`docs/doctrine/FEATURE_DOCTRINE.md`](./doctrine/FEATURE_DOCTRINE.md) | **Doctrine Feature — sommet de la pyramide.** Ce qu'est une feature métier, gouverne toutes les autres doctrines |
+| 15 | [`docs/doctrine/BACKEND_FEATURE_REGISTRY.md`](./doctrine/BACKEND_FEATURE_REGISTRY.md) | Registre canonique exhaustif des features backend réelles |
 
 Ces documents suffisent pour reprendre le projet sans lire l'historique.
 
@@ -77,6 +80,8 @@ Une intervention DB est incomplète si `docs/SCHEMA.md`, les headers `@db-read/@
 | Sécurité backend | [`docs/backend/SECURITY-MODEL.md`](./backend/SECURITY-MODEL.md) |
 | Backlog de remédiation pré-golive (lots A-H, scoring, ordre d'exécution) | [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./backend/BACKEND_GOLIVE_ROADMAP.md) |
 | Architecture backend normative (invariants I-BACK-1..10, ownership) | [`docs/backend/BACKEND_ARCHITECTURE.md`](./backend/BACKEND_ARCHITECTURE.md) |
+| Pyramide qualité (N1→N5) — gates code, architecture, feature slice | [`docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`](./doctrine/QUALITY_PYRAMID_DOCTRINE.md) |
+| Feature Slice — périmètre par feature, guard CI | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) |
 | Connecteurs fournisseurs (état, interface, activation Noon) | [`docs/SUPPLIERS_CONNECTORS.md`](./SUPPLIERS_CONNECTORS.md) |
 | Moteur sourcing (philosophie, rails, seuils, invariants, évolutions) | [`docs/SOURCING_ENGINE.md`](./SOURCING_ENGINE.md) |
 | Audit schéma DB sourcing (doublons coût/poids, FK, indexes) | [`docs/_work/SOURCING_DB_AUDIT.md`](./_work/SOURCING_DB_AUDIT.md) |

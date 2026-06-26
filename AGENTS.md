@@ -177,3 +177,58 @@ Avant commit ou PR :
 - régénérer `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` si la cartographie change ;
 - ne pas ajouter de nouveau document hors index sans l'ajouter à `docs/README.md` ;
 - laisser les anciens documents en archive/subordination plutôt que les réactiver implicitement.
+---
+
+## 0. Gouvernance Feature (sommet — lire avant toute intervention fonctionnelle)
+
+Avant de toucher la moindre logique métier backend, vérifier que la feature concernée
+existe dans le registre canonique :
+
+```txt
+docs/doctrine/FEATURE_DOCTRINE.md            ← qu'est-ce qu'une feature, règles du registre
+docs/doctrine/BACKEND_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
+```
+
+1. trouver la feature dans le registre ;
+2. lire son manifest `features/<feature>.feature.js` pour connaître service rendu,
+   périmètre `in`/`out`, interfaces, autorité, invariants ;
+3. si la modification sort de `perimeter.in` ou touche `perimeter.out`, s'arrêter et
+   renégocier le périmètre dans le registre — ne jamais contourner silencieusement ;
+4. `node scripts/feature-registry-check.js --strict` doit passer avant tout le reste.
+
+Une feature absente du registre n'a pas l'autorisation de recevoir de nouvelle logique
+métier tant qu'elle n'y est pas inscrite.
+
+---
+
+## 10. Gouvernance Feature Slice
+
+Toute feature fonctionnelle d'une certaine envergure (> 3 fichiers propres) doit disposer d'un Feature Slice manifest dans `features/`.
+
+Ce manifest est le même fichier que celui exigé par la gouvernance Feature (section 0) —
+`features/<feature>.feature.js` porte à la fois les propriétés métier (service, périmètre,
+autorité, invariants) et le détail technique du slice (fichiers, contrat, migrations, tests).
+
+La règle détaillée vit dans :
+
+```txt
+docs/doctrine/FEATURE_SLICE_DOCTRINE.md
+```
+
+Avant modification d'une feature :
+
+1. lire `features/<feature>.feature.js` pour connaître le périmètre complet ;
+2. vérifier la cohérence avec `node scripts/feature-guard.js --feature <name>`.
+
+Pendant modification :
+
+- tout fichier ajouté au périmètre doit être déclaré dans le slice ;
+- tout fichier supprimé doit être retiré du slice dans la même PR.
+
+Après modification :
+
+```bash
+node scripts/feature-guard.js --strict
+```
+
+Une intervention fonctionnelle sur une feature slicée qui ne met pas à jour son manifest est incomplète.
