@@ -39,6 +39,9 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    utils: [
+      'utils/categories-cache.js',
+    ],
     services: [
       'services/product-publication-guard.js',
       'services/product-admin-service.js',
@@ -53,7 +56,8 @@ module.exports = {
     routes: [
       'routes/products.js',
       'routes/admin-boutique-categories.js',
-    ],
+    
+      'routes/categories.js',],
     boutique: [
       'js/b-catalog.js',
       'js/b-catalog-desktop-enhancers.js',

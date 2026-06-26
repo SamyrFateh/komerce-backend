@@ -38,6 +38,12 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    tests: [
+      'core/test-whatsapp-notifications.js',
+    ],
+    utils: [
+      'utils/email.js',
+    ],
     services: [
       'services/whatsapp-meta.js',
       'services/notification-service.js',

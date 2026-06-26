@@ -24,26 +24,28 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - auth: 18
 - bootstrap: 9
 - boutique: 36
-- catalog: 25
+- catalog: 27
 - checkout: 2
 - collective-workspace: 3
+- customs: 1
 - dashboard: 28
 - documents: 5
 - douane: 2
-- economic-engine: 24
-- inventory: 2
-- logistics: 30
+- economic-engine: 28
+- inventory: 3
+- logistics: 34
 - notification: 6
-- notifications: 1
+- notifications: 2
 - operations: 4
-- order-payment: 1
-- orders: 25
+- orders: 29
 - payment: 15
-- recommendations: 4
-- refunds: 1
-- shared-cart: 34
+- payments: 1
+- platform-ops: 8
+- recommendations: 7
+- refunds: 2
+- shared-cart: 35
 - tracking: 1
-- unknown: 35
+- unknown: 5
 - validation: 1
 - wallet: 6
 
@@ -127,7 +129,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
 - services/inventory-service.js — inventory-inventory-service (inventory, critical, full)
 - services/order-cost-snapshot.js — orders-order-cost-snapshot (orders, critical, full)
-- services/order-payment-confirmation.js — payment-to-stock-single-entry (order-payment, critical, full)
+- services/order-payment-confirmation.js — payment-to-stock-single-entry (orders, critical, full)
 - services/order-status-machine.js — order-status-state-machine (orders, critical, full)
 - services/payment-cash-confirm.js — cash-payment-confirmation-service (payment, critical, full)
 - services/payment-paypal-events.js — payment-payment-paypal-events (payment, critical, full)
