@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — base.css (2026-06-26)
+   KOMERCE — base.css (2026-06-25)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── tokens.css ──────────────────────────────────────────── */
@@ -75,8 +75,6 @@
   --checkout-sel-bg:        #FFF0E8;                   /* fond état sélectionné (coral pâle)*/
   --checkout-chip-active-bg:#FFF4EE;                   /* fond chip paiement actif          */
   --checkout-chip-active-text: #5A3010;                /* texte chip paiement actif         */
-
-
 
 
   --terracotta:        #C47A5A;  /* accent chaud, badge prix, CTA secondaire */
@@ -391,128 +389,6 @@
    :root (accolade fermée l.357) → variables jamais définies + la règle
    universelle du reset (box-sizing/margin/padding) était avalée par le
    parseur dans le bundle base.css. Ré-englobées dans :root ci-dessous. */
-:root {
-
-  /* Overlays noirs complémentaires */
-  --overlay-black-10:      rgba(0,0,0,.10);
-  --overlay-black-22:      rgba(0,0,0,.22);
-  --overlay-black-45:      rgba(0,0,0,.45);
-
-  /* Surface blanche semi-transparente */
-  --surface-white-10:      rgba(255,255,255,.10);
-
-  /* Overlay groupe (fond sheet flow panier partagé) */
-  --overlay-group-dark:    rgba(31,48,36,.52);
-
-  /* CTA green (42,122,62) — ombres boutons */
-  --shadow-cta-22:         rgba(42,122,62,.22);
-  --shadow-cta-30:         rgba(42,122,62,.3);
-  --shadow-cta-40:         rgba(42,122,62,.4);
-
-  /* WhatsApp (37,211,102) — ombres boutons */
-  --shadow-wa-24:          rgba(37,211,102,.24);
-  --shadow-wa-25:          rgba(37,211,102,.25);
-  --shadow-wa-28:          rgba(37,211,102,.28);
-  --shadow-wa-38:          rgba(37,211,102,.38);
-
-  /* Coral (200,92,45) — focus rings et ombres */
-  --coral-focus-08:        rgba(200,92,45,.08);
-  --coral-focus-10:        rgba(200,92,45,.1);
-  --coral-focus-12:        rgba(200,92,45,.12);
-  --coral-shadow-25:       rgba(200,92,45,.25);
-
-  /* Coral orange (255,107,53) — pay chips */
-  --coral-chip-07:         rgba(255,107,53,.07);
-  --coral-chip-10:         rgba(255,107,53,.10);
-  --coral-chip-16:         rgba(255,107,53,.16);
-  --coral-chip-18:         rgba(255,107,53,.18);
-
-  /* Salmon btn back (255,163,122) */
-  --coral-light-28:        rgba(255,163,122,.28);
-
-  /* Ocean (100,175,90) — bordures complémentaires */
-  --border-ocean-16:       rgba(100,175,90,.16);
-  --border-ocean-18:       rgba(100,175,90,.18);
-
-  /* Sand border (103,77,45) — dashed empty state */
-  --sand-border-25:        rgba(103,77,45,.25);
-
-  /* Forest shadows (49,81,30) */
-  --shadow-forest-07:      rgba(49,81,30,.07);
-
-  /* Green pay option (67,160,71) */
-  --green-pay-06:          rgba(67,160,71,.06);
-
-  /* Ring pulse alert (255,90,70) */
-  --ring-pulse-50:         rgba(255,90,70,.5);
-  --ring-pulse-0:          rgba(255,90,70,0);
-
-  /* Dark card shadows (30,40,25) */
-  --shadow-card-04:        rgba(30,40,25,.04);
-  --shadow-card-05:        rgba(30,40,25,.05);
-
-  /* Violet shadow */
-  --violet-shadow-30:      rgba(108,63,197,.3);
-
-  /* Coral settlement (239,125,95) */
-  --coral-sett-22:         rgba(239,125,95,.22);
-
-  /* Green alpha 08 (groupe mini-guide fond) */
-  --green-alpha-08:        rgba(31,122,84,.08);
-
-  /* ── PR-G6 suite : tokens rgba boutique-desktop + modal + layout ─────── */
-
-  /* Ocean alpha complémentaires */
-  --border-ocean-04:       rgba(100,175,90,.04);
-  --border-ocean-06:       rgba(100,175,90,.06);
-  --border-ocean-12:       rgba(100,175,90,.12);
-  --border-ocean-20:       rgba(100,175,90,.20);
-  --border-ocean-50:       rgba(100,175,90,.50);
-
-  /* Gold/sable doré (198,168,93) — desktop cards premium */
-  --gold-border-12:        rgba(198,168,93,.12);
-  --gold-border-16:        rgba(198,168,93,.16);
-  --gold-border-28:        rgba(198,168,93,.28);
-  --gold-border-36:        rgba(198,168,93,.36);
-  --gold-border-50:        rgba(198,168,93,.5);
-  --gold-border-62:        rgba(198,168,93,.62);
-  --gold-border-74:        rgba(198,168,93,.74);
-
-  /* Coral focus/shadow complémentaires */
-  --coral-focus-40:        rgba(200,92,45,.4);
-  --coral-focus-45:        rgba(200,92,45,.45);
-  --coral-shadow-18:       rgba(200,92,45,.18);
-
-  /* Surface sable desktop (248,246,241) */
-  --surface-sand-desktop:  rgba(248,246,241,0.82);
-
-  /* Surface blanche complémentaires */
-  --surface-white-18:      rgba(255,255,255,.18);
-  --surface-white-55:      rgba(255,255,255,.55);
-  --surface-white-62:      rgba(255,255,255,.62);
-  --surface-white-80:      rgba(255,255,255,.8);
-  --surface-white-85:      rgba(255,255,255,.85);
-  --surface-white-98:      rgba(255,255,255,.98);
-
-  /* WhatsApp shadow complémentaire */
-  --shadow-wa-30:          rgba(37,211,102,.30);
-
-  /* CTA green focus outline */
-  --focus-cta-45:          rgba(42,122,62,.45);
-
-  /* Pink complémentaire */
-  --pink-shadow-30:        rgba(233,30,99,.30);
-
-  /* Rouge mic pulse (220,38,38) */
-  --red-pulse-35:          rgba(220,38,38,.35);
-  --red-pulse-0:           rgba(220,38,38,0);
-
-  /* Overlay noir complémentaire */
-  --overlay-black-18:      rgba(0,0,0,.18);
-
-  /* Gradient transparent sable (244,241,236) */
-  --sand-gradient-0:       rgba(244,241,236,0);
-}
 
 
 /* ── reset.css ───────────────────────────────────────────── */
@@ -543,19 +419,6 @@ html {
   html { scroll-behavior: auto; }
 }
 
-body {
-  font-family: var(--font);
-  background: var(--sand);
-  color: var(--text);
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
-  overscroll-behavior-y: none;
-  max-width: 100vw;
-  width: 100%;
-  position: relative;
-  padding-bottom: calc(var(--bnav-h) + 90px);
-}
 
 button  { font: inherit; border: none; background: none; cursor: pointer; }
 input   { font: inherit; border: none; outline: none; }
@@ -610,9 +473,6 @@ body:has(#k-page-scroll.k-pager-active) {
 
 /* ── Fond global boutique ───────────────────────────────────── */
 html,
-body {
-  background: var(--page-bg);
-}
 
 #k-page-scroll,
 #k-catalog-section {
@@ -705,7 +565,6 @@ body {
   .k-logo-svg  { display: none; }
   /* width fixe : viewBox élargi (K+O) → contraint pour ne pas écraser la search */
   .k-logo-mini { display: block; height: 28px; width: 68px; flex-shrink: 0; }
-  .k-logo      { min-width: 0; flex-shrink: 0; }
 }
 
 /* ── Signature mobile : K + "Komerce" empilés (affinage premium) ──
@@ -966,23 +825,6 @@ body {
 }
 .k-bnav-btn.active, .k-bnav-item.active { color: var(--ocean-dark); }
 .k-bnav-btn svg, .k-bnav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
-.k-bnav-badge {
-  position: absolute;
-  top: 4px;
-  right: calc(50% - 18px);
-  min-width: 16px;
-  height: 16px;
-  background: var(--coral);
-  color: var(--white);
-  font-size: 9px;
-  font-weight: 800;
-  border-radius: 99px;
-  padding: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--white);
-}
 
 /* ── LOADING + SKELETON ──────────────────────────────────────── */
 .k-loading { display: none; padding: 40px; text-align: center; }
@@ -1007,12 +849,6 @@ body {
 .k-skeleton-img,
 .k-skel-line,
 .k-skeleton-title,
-.k-skeleton-price {
-  background: linear-gradient(90deg, var(--sand-dark) 25%, var(--sand-warm) 50%, var(--sand-dark) 75%);
-  background-size: 200% 100%;
-  animation: k-shimmer 1.4s ease-in-out infinite;
-  border-radius: var(--radius);
-}
 .k-skel-card,
 .k-card-skeleton {
   border-radius: var(--radius);
@@ -1024,7 +860,6 @@ body {
 .k-skeleton-img { width: 100%; aspect-ratio: 1/1; border-radius: 0; }
 .k-skel-line,
 .k-skeleton-title,
-.k-skeleton-price { margin: 6px 6px 0; border-radius: 4px; height: 10px; }
 .k-skel-line.short,
 .k-skeleton-price { width: 55%; margin-bottom: 8px; }
 .k-skeleton-title  { width: 72%; }
@@ -1106,7 +941,6 @@ body:has(#k-page-scroll.k-pager-active) {
      et .k-grid (cf. lignes ~610, 635, 655). Si une scrollbar horizontale
      parasite apparaît, identifier l'élément débordant et lui appliquer
      overflow-x: clip plutôt que de remettre cette règle. */
-  html { overflow-x: visible; }
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 
@@ -1116,7 +950,6 @@ body:has(#k-page-scroll.k-pager-active) {
      (typique Windows 125% → viewport effectif ~1520px → 1266px dispo < 1400), margin:0 auto
      part en marges négatives → clip gauche (logo + titre + 1ère carte). Solution : caper la
      largeur des conteneurs centrés à l'espace réellement disponible quand le panier est docké. */
-  :root { --sc-reserve-w: 240px; }
 
   /* ROOT CAUSE FIX : le max-width de #k-catalog-section a UN SEUL owner
      (#k-desktop-catalog-wrap #k-catalog-section, plus bas). On ne se bat plus
@@ -1142,27 +975,7 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   /* ── Header desktop (fusionné) ───────────────────────────── */
-  .k-header {
-    height: 68px;
-    position: sticky;
-    top: 0;
-    left: auto;   /* reset PATCH header-fixed */
-    right: auto;  /* reset PATCH header-fixed */
-    z-index: 200;
-    background: var(--surface-sand-94);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--border-text-08);
-    box-shadow: 0 10px 28px var(--border-text-06);
-  }
 
-  .k-header-inner {
-    height: 68px;
-    max-width: var(--container);
-    margin: 0 auto;
-    gap: 18px;
-    padding-inline: clamp(24px, 3vw, 32px);
-  }
 
   .k-logo { min-width: 148px; }
   .k-logo-img, .k-logo-svg { height: 44px; }
@@ -1225,10 +1038,6 @@ body:has(#k-page-scroll.k-pager-active) {
   /* .k-chip desktop → source de vérité : categories.css (Sprint 4 — S4.2) */
 
   /* Section titre catégorie */
-  .k-sec-header {
-    padding: 18px 0 10px;
-    font-size: 1.15rem;
-  }
 
   /* ── Grille produits desktop ─────────────────────────────── */
   .k-section {
@@ -1278,7 +1087,6 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 1200px) {
 
   /* VIS-1 FIX — token réserve 254px aligné sur boutique-desktop.css (@1200px) */
-  :root { --sc-reserve-w: 254px; }
 
   .k-header { height: 72px; }
   .k-header-inner { height: 72px; }
@@ -1306,18 +1114,9 @@ body:has(#k-page-scroll.k-pager-active) {
        On utilise visible ici — le clip horizontal est assuré par body (overflow-x:clip). */
     overflow-x: visible;
   }
-  body {
-    height: auto;
-    overflow-y: auto;
-    /* overflow-x:clip retiré ici : créait un containing block qui ancrait
-       .k-side-cart (position:fixed) au body au lieu du viewport. Le clip
-       horizontal est désormais assuré par #k-catalog-section/.k-section/.k-grid. */
-    overflow-x: visible;
-  }
 
   /* Neutraliser tout overflow blocking hérité */
   body.modal-open { overflow: hidden; }
-  body.cart-open  { overflow: hidden; }
 
   /* #k-page-scroll reset desktop — source de vérité : body:not(.modal-open):not(.cart-open) #k-page-scroll @media 900px (ligne ~756) */
 }
@@ -1334,20 +1133,6 @@ body:has(#k-page-scroll.k-pager-active) {
      side-cart (240px réservé par body padding-right). Marges
      latérales visuelles ~20px de chaque côté pour respirer.
      PR-SC2 v3.3 (chantier 1, marges symétriques). */
-  #k-desktop-catalog-wrap {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    max-width: none;
-    /* FIX décalage gauche :
-       body:has(.k-side-cart.has-items) pose padding-right:240px sur body.
-       margin:0 auto centrait dans (100vw - 240px) → contenu décalé à gauche de 120px.
-       On supprime margin:0 auto et on laisse le wrap s'étirer naturellement
-       dans l'espace utile du body (width:100% implicite suffit).
-       Le side-cart fixed reste collé à droite, hors du flux. */
-    margin: 0;
-    padding: 12px 20px 0;
-  }
 
   /* ── Catalogue : prend le reste de la largeur ─────────────── */
   #k-desktop-catalog-wrap #k-catalog-section {
@@ -1382,7 +1167,6 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 
 
-
 /* PATCH #227 — desktop stabilization (consolidé) */
 @media (min-width: 900px) {
 
@@ -1391,14 +1175,6 @@ body:has(#k-page-scroll.k-pager-active) {
     width: 100%;
     max-width: 100%;
     /* overflow-x sur html casse position:sticky — géré séparément ligne ~396 */
-  }
-  body {
-    width: 100%;
-    max-width: 100%;
-    /* overflow-x:clip retiré : créait un containing block sur body qui
-       ancrait .k-side-cart (position:fixed) au body au lieu du viewport.
-       Le clip est assuré par #k-catalog-section/.k-section/.k-grid. */
-    overflow-x: visible;
   }
 
   body:not(.modal-open):not(.cart-open) #k-page-scroll {
@@ -1429,11 +1205,6 @@ body:has(#k-page-scroll.k-pager-active) {
   /* Fix sticky side-cart: #k-desktop-catalog-wrap NE DOIT PAS avoir overflow-x:clip
      car cela crée un scroll container qui casse position:sticky des enfants.
      On utilise overflow-x:visible — le clip horizontal est géré par html/body. */
-  #k-desktop-catalog-wrap {
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-x: visible;
-  }
 
   /* 3. Zoom modal — curseur zoom-in (source de vérité : boutique-desktop.css) */
   /* Note : tap-highlight, focus, perf cartes → boutique-desktop.css */
@@ -1469,8 +1240,6 @@ body:has(#k-page-scroll.k-pager-active) {
    lignes ~610, 635, 655).
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
-  html { overflow-x: visible; overflow-y: auto; }
-  body { overflow-x: visible; overflow-y: visible; }
   #k-page-scroll,
   #k-desktop-catalog-wrap { overflow: visible; }
   /* #k-catalog-section RETIRÉ de ce bloc (était un bug : overflow:visible
@@ -1805,28 +1574,9 @@ body:has(#k-page-scroll.k-pager-active) {
   overflow: hidden;
   box-shadow: 0 14px 28px var(--border-text-10);
 }
-:not(html.k-mobile-premium-v1) .k-hero-img {
-  width: 100%;
-  height: clamp(110px, 28vw, 140px);
-  object-fit: cover;
-  /* object-position par contexte : @max-899px mobile-premium → 50% 50%, @min-900px → 50% 20% */
-  display: block;
-}
 html.k-mobile-premium-v1 .k-hero-img {
   width: 100%;
   display: block;
-}
-.k-hero-mini-slogan {
-  display: flex;
-  position: absolute;
-  inset: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: center;
-  z-index: 5;
-  padding: 6px 28% 0;
-  pointer-events: none;
 }
 .k-hero-mini-slogan .k-line-1 {
   display: block;
@@ -1849,57 +1599,12 @@ html.k-mobile-premium-v1 .k-hero-img {
 
 /* Bulle hero mobile : conteneur neutre.
    L'avatar panier appartient à hero-cart-proxy.css quand JS ajoute .k-hero-cart-proxy. */
-.k-hero-bubble {
-  display: flex;
-  position: absolute;
-  right: 14px;
-  top: 12px;
-  z-index: 12;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--surface-sand-90);
-  border: 1px solid rgba(198,168,93,.24);
-  box-shadow: 0 4px 12px var(--border-text-10);
-  overflow: hidden;
-  color: transparent;
-  font-size: 0;
-  line-height: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
 .k-hero-bubble:active { transform: scale(.94); }
 
 /* Éléments masqués mobile */
 .k-hero-overlay, .k-hero-badge, .k-hero-sub, .k-hero-cta-row,
 .k-hero-trust, .k-hero-pills, .k-hero-text-left, .k-hero-tag { display: none; }
 
-.k-hero-cats-sticky {
-  background: transparent;
-  box-shadow: none;
-  margin-top: -42px;
-  position: relative;
-  /* z-index doit être > .k-header (z-index:100 dans layout.css) pour ne pas
-     passer derrière le header lors du scroll. Valeur 110 = cohérente avec
-     .k-cats-shell @900px dans boutique-desktop.css (z-index:110). */
-  z-index: 110;
-}
-.k-hero-cats-sticky::after { content: ''; display: block; height: 4px; }
-.k-cats-shell {
-  margin: -14px 12px 0;
-  padding: 0;
-  /* POLISH — fond lumineux au lieu de sand-warm, séparation visuelle du hero */
-  background: var(--sand-bright);
-  border: 1px solid rgba(198,168,93,.13);
-  border-radius: 18px;
-  /* Ombre chaude ambre + légère touche ocean */
-  box-shadow:
-    0 8px 20px rgba(198,168,93,.10),
-    0 2px 6px rgba(100,175,90,.06);
-  overflow: clip;
-}
 
 /* ── EVENT BANNER ─────────────────────────────────────────────── */
 .k-event-banner {
@@ -1933,7 +1638,6 @@ html.k-mobile-premium-v1 .k-hero-img {
 .k-hero-card, .k-hero-banner { overflow: hidden; border-radius: var(--radius-lg); }
 .k-hero img, .k-hero-card img, .k-hero-banner img { display: block; width: 100%; background: transparent; }
 /* ── Empêcher l'image hero de dépasser sa hauteur définie ── */
-:not(html.k-mobile-premium-v1) .k-hero-img { height: clamp(110px, 28vw, 140px); object-fit: cover; }
 /* @900px k-hero-img height → premier bloc @media ci-dessus (source de vérité : clamp(140px,14vw,188px)) */
 /* @900px override final → boutique-desktop.css #k-hero-fixed-wrap .k-hero-img (clamp(130px,13vw,160px) !important) */
 
@@ -1961,24 +1665,11 @@ html.k-mobile-premium-v1 .k-hero-img {
 
 /* 1. Supprime le padding au-dessus du rail catégories (-6px).
       Valeur premium injectée par b-mobile-premium-v1.js : 6px → 0. */
-.k-hero-cats-sticky {
-  padding-top: 0;
-  /* 2. Remonte le rail de 12px supplémentaires pour coller à la nouvelle hauteur hero.
-        Base hero.css : margin-top:-42px. Override précédent : -50px. v3 : -56px.
-        Compensé aussi par la photo chip plus haute (36px). Chevauchement propre. */
-  margin-top: -56px;
-}
 
 /* 3. Supprime le pseudo-spacer sous le rail (-4px). */
-.k-hero-cats-sticky::after {
-  height: 0;
-}
 
 /* 4. Remonte le shell catégories dans le sticky (-4px).
       Base hero.css : margin: -14px 12px 0. Override : -18px. */
-.k-cats-shell {
-  margin-top: -18px;
-}
 
 /* 5. Slot réservé pour le futur rail de sous-catégories.
       Actuellement height:0 + overflow:hidden → aucun impact visuel.
@@ -2001,7 +1692,7 @@ html.k-mobile-premium-v1 .k-hero-img {
 /* GUARD mobile uniquement — desktop @900px override ci-dessous prend le relais. */
 @media (max-width: 899px) {
   .k-hero-img {
-    /* Asset 1080×310, affiché à 1080/260 : object-fit:cover rogne le surplus.
+    /* Asset 1080×310, affiché à 1080/260 : object-fit:cover rogne ~50px.
        object-position 50% 30% : lune visible en haut, logo K visible en bas. */
     height: auto;
     aspect-ratio: 1080 / 260;
@@ -2020,7 +1711,6 @@ html.k-mobile-premium-v1 .k-hero-img {
 
 /* Slogan mobile : masqué — remplacé par .k-search-slogan (bandeau sous la recherche, ci-dessous) */
 .k-hero-mini-slogan { display: none; }
-.k-hero-bubble       { display: none; }
 
 /* ── Bandeau slogan recherche — mobile uniquement ───────────────
    Premier enfant de #k-hero-fixed-wrap (index.html) : mesuré par
@@ -2104,10 +1794,10 @@ html.k-mobile-premium-v1 .k-hero-img {
 
 /* ══════════════════════════════════════════════════════════════
    HERO DESKTOP OVERRIDE — @min-width:900px
-   Annule le aspect-ratio:1080/220 posé par hero v4 (mobile only).
-   Image réelle : 1456×720 → on cadre à 360px de haut avec object-fit:cover.
-   object-position:50% 20% : cadre le haut du visuel (personnages).
-   Source de vérité pour la hauteur hero desktop.
+   Annule le aspect-ratio:1080/260 posé par hero v4 (mobile only).
+   Image réelle : 1600×525 (ratio ~3:1) — recadrée depuis la source PNG.
+   NOTE : cette règle est écrasée par DIRECTION A (spécificité supérieure)
+   quand html.k-home-premium-v1 est actif. Gardée pour les pages non-premium.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   /* Image : 1600×525 (ratio ~3:1) — lune + têtes + logo Komerce visibles.
@@ -2311,48 +2001,10 @@ html.k-mobile-premium-v1 .k-hero-img {
       linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
   }
 
-  html.k-home-premium-v1 .k-hero-inner {
-    max-width: none;
-    padding-inline: clamp(26px, 3.6vw, 60px);
-  }
-
-  html.k-home-premium-v1 .k-hero-media {
-    border-radius: 0 0 28px 28px;
-    overflow: hidden;
-    box-shadow: 0 18px 50px var(--border-text-06);
-  }
 
   html.k-home-premium-v1 .k-hero-mini-slogan--premium { max-width: 510px; }
 
-  html.k-home-premium-v1 .k-hero-badge { letter-spacing: .06em; }
 
-  html.k-home-premium-v1 .k-hero-sub {
-    margin-top: 14px;
-    max-width: 470px;
-    font-size: 15px;
-    line-height: 1.55;
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-primary {
-    min-height: 44px;
-    border-radius: 14px;
-    box-shadow: 0 16px 32px color-mix(in srgb, var(--coral) 22%, transparent);
-  }
-
-  html.k-home-premium-v1 .k-hero-cta-ghost {
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--white) 78%, transparent);
-  }
-
-  html.k-home-premium-v1 .k-hero-trust {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 78%, transparent);
-    border: 1px solid var(--border-text-06);
-  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2439,10 +2091,6 @@ html.k-mobile-premium-v1 .k-hero-img {
     overflow: visible;
   }
   /* ── Hero lui-même : hauteur compacte ── */
-  html.k-home-premium-v1 .k-hero {
-    height: 220px;
-    overflow: clip;
-  }
 
   html.k-home-premium-v1 .k-hero-inner {
     height: 100%;
@@ -2611,14 +2259,6 @@ html.k-mobile-premium-v1 .k-hero-img {
   }
 
   /* Trust bar */
-  html.k-home-premium-v1 .k-hero-trust {
-    display: flex !important;
-    align-items: center;
-    gap: 5px;
-    font-size: 10.5px;
-    color: var(--hero-text-soft);
-    flex-wrap: wrap;
-  }
   html.k-home-premium-v1 .k-hero-trust .k-trust-sep {
     color: var(--hero-text-faint);
   }
@@ -2647,10 +2287,6 @@ html.k-mobile-premium-v1 .k-hero-img {
   /* ── Sticky bar enfant de #k-hero-fixed-wrap ──
      #k-hero-fixed-wrap est overflow:visible → les chips ne sont plus clippées.
      top = header premium (72px) au lieu de 68px base. */
-  html.k-home-premium-v1 .k-hero-cats-sticky {
-    margin-top: 0;
-    top: 72px; /* header premium h = 72px (règle ci-dessous dans CORRECTIONS) */
-  }
 }
 /* ══ FIN DIRECTION A DESKTOP SPLIT ════════════════════════════ */
 
@@ -2673,9 +2309,6 @@ html.k-mobile-premium-v1 .k-hero-img {
   /* ── 2. Gap navbar→hero : supprimer l'espace blanc entre les deux ── */
   html.k-home-premium-v1 #k-header-spacer {
     height: var(--header-h, 72px) !important;
-  }
-  html.k-home-premium-v1 .k-hero {
-    margin-top: 0;
   }
 
   /* ── 3. Texte du hero aligné à gauche ── */
@@ -2740,11 +2373,6 @@ html.k-mobile-premium-v1 .k-hero-img {
   html.k-home-premium-v1 #k-hero-fixed-wrap.u-hidden { display: none; }
 
   /* Fond premium rapatrié du wrap (perdu avec display:contents). */
-  html.k-home-premium-v1 .k-hero {
-    background:
-      radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--ocean-bg-08) 66%, transparent), transparent 24%),
-      linear-gradient(180deg, var(--sand) 0%, color-mix(in srgb, var(--sand-warm) 55%, var(--white)) 100%);
-  }
 
   /* Barre nav épinglée sous le header, sur tout le scroll catalogue.
      (Owner unique de position/top/z-index/background de la barre desktop
