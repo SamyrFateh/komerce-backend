@@ -186,7 +186,7 @@ existe dans le registre canonique :
 
 ```txt
 docs/doctrine/FEATURE_DOCTRINE.md            ← qu'est-ce qu'une feature, règles du registre
-docs/doctrine/BACKEND_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
+docs/doctrine/APP_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
 ```
 
 1. trouver la feature dans le registre ;

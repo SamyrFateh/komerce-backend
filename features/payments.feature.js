@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-09
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -58,6 +58,18 @@ module.exports = {
       'routes/pickup-pay-cash.js',
       'routes/payments-paypal.js',
     ],
+    boutique: [
+      'js/b-checkout.js',
+      'js/b-checkout-render.js',
+      'js/b-paypal.js',
+      'js/event-pay.js',
+    ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/b-checkout*.js + js/b-paypal.js + js/event-pay.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

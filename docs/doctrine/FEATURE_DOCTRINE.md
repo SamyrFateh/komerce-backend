@@ -3,7 +3,7 @@
 > **Version** : 1.0 — 2026-06
 > **Statut** : doctrine active — **sommet de la pyramide**
 > **Hiérarchie** : complète `AGENTS.md` — en cas de conflit, `AGENTS.md` fait foi.
-> **Registre** : `docs/doctrine/BACKEND_FEATURE_REGISTRY.md`
+> **Registre** : `docs/doctrine/APP_FEATURE_REGISTRY.md`
 > **Commande** : `node scripts/feature-registry-check.js`
 
 ---
@@ -79,7 +79,7 @@ dette de gouvernance, au même titre qu'une route sans test est une dette de qua
 
 ## Le registre canonique — source de vérité unique
 
-`docs/doctrine/BACKEND_FEATURE_REGISTRY.md` est la liste exhaustive et datée de toutes
+`docs/doctrine/APP_FEATURE_REGISTRY.md` est la liste exhaustive et datée de toutes
 les features métier du backend Komerce. Chaque ligne du registre pointe vers un manifest
 `features/<feature>.feature.js` qui porte le détail technique.
 
@@ -170,7 +170,7 @@ qui finira par se chevaucher avec sa voisine.
 
 Pour un agent IA ou un développeur qui doit toucher une feature :
 
-1. Ouvrir `docs/doctrine/BACKEND_FEATURE_REGISTRY.md` → trouver la feature concernée.
+1. Ouvrir `docs/doctrine/APP_FEATURE_REGISTRY.md` → trouver la feature concernée.
 2. Lire son manifest `features/<feature>.feature.js` → connaître service rendu, périmètre
    exact, interfaces avec le reste, autorité, invariants.
 3. Modifier en restant dans `perimeter.in` ; si la modification touche `perimeter.out`,
@@ -190,7 +190,7 @@ pas pendant qu'il le modifie.
 ## Ordre de gouvernance complet (rappel)
 
 ```
-0. FEATURE_DOCTRINE.md + BACKEND_FEATURE_REGISTRY.md   ← la feature existe, est unique, a un périmètre
+0. FEATURE_DOCTRINE.md + APP_FEATURE_REGISTRY.md   ← la feature existe, est unique, a un périmètre
    node scripts/feature-registry-check.js --strict
 
 5. FEATURE_SLICE_DOCTRINE.md + features/<x>.feature.js  ← le slice est cohérent et complet

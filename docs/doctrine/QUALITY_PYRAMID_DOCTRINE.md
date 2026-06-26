@@ -43,7 +43,7 @@ Le niveau 0 n'est pas un niveau technique comme les autres : c'est la question p
 **avant** d'écrire la première ligne — *à quelle feature métier reconnue ce code
 appartient-il ?* Sans réponse positive à cette question, les niveaux 1 à 5 valident un
 code qui ne devrait pas exister à cet endroit. Voir `docs/doctrine/FEATURE_DOCTRINE.md`
-pour la doctrine complète et `docs/doctrine/BACKEND_FEATURE_REGISTRY.md` pour le registre.
+pour la doctrine complète et `docs/doctrine/APP_FEATURE_REGISTRY.md` pour le registre.
 
 ---
 
@@ -53,7 +53,7 @@ pour la doctrine complète et `docs/doctrine/BACKEND_FEATURE_REGISTRY.md` pour l
 **Commande** : `npm run feature:registry`
 **CI** : job `unit` (step 1 — avant même l'audit dépendances)
 **Doctrine** : `docs/doctrine/FEATURE_DOCTRINE.md`
-**Registre** : `docs/doctrine/BACKEND_FEATURE_REGISTRY.md`
+**Registre** : `docs/doctrine/APP_FEATURE_REGISTRY.md`
 
 Ce que ça vérifie : que toute feature déclarée dans `features/*.feature.js` porte ses
 propriétés métier obligatoires (service rendu, périmètre `in`/`out`, autorité,

@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-10
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 

@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-08
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -73,6 +73,15 @@ module.exports = {
       'routes/relais.js',
       'routes/logistics.js',
     ],
+    boutique: [
+      'js/b-tracking.js',
+    ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/b-tracking.js — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md pour le détail DOM/CSS',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

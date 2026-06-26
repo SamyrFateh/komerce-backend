@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-09
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -54,6 +54,19 @@ module.exports = {
       'routes/products.js',
       'routes/admin-boutique-categories.js',
     ],
+    boutique: [
+      'js/b-catalog.js',
+      'js/b-catalog-desktop-enhancers.js',
+      'js/render/render-categories.js',
+      'js/render/render-home-sections.js',
+      'js/render/render-product-card.js',
+    ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/b-catalog*.js + js/render/render-*.js — dépôt "bout", gouverné en détail par docs/BOUTIQUE_COMPONENT_OWNERSHIP.md (table de propriété catalogue/rendu)',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

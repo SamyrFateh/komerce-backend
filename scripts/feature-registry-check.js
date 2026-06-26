@@ -63,12 +63,21 @@ function loadManifests() {
 
 // ─── Collecte des fichiers déclarés ───────────────────────────────────────
 
+// Komerce est multi-dépôt (backend / bout / dash). Ce script tourne dans le contexte
+// du dépôt backend : il vérifie les chemins backend déclarés (services/routes/...) et
+// ignore en silence les groupes de fichiers d'autres dépôts (boutique/dash) — leur
+// existence est vérifiée par leur propre outillage (ex. scripts/gen-ownership.js côté
+// bout). Un manifest qui déclare repos.boutique / repos.dash documente l'intention
+// cross-repo ; ce script ne la valide pas, il ne ferait que produire de faux positifs.
+const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests']);
+
 function declaredFiles(manifests) {
   const declared = new Map(); // file → feature name
   for (const m of manifests) {
     if (m._loadError) continue;
     const categories = m.files || {};
-    for (const [, files] of Object.entries(categories)) {
+    for (const [group, files] of Object.entries(categories)) {
+      if (!BACKEND_FILE_GROUPS.has(group)) continue; // boutique/dash/autres dépôts — non vérifiés ici
       if (!Array.isArray(files)) continue;
       for (const f of files) {
         if (f && !f.endsWith('/')) declared.set(f, m.name);
@@ -157,7 +166,7 @@ function run() {
     if (declared.has(normalized)) continue;
     if (ORPHAN_IGNORE.has(normalized)) continue;
     if (normalized.includes('_superseded') || normalized.includes('scheduled')) continue;
-    warnings.push({ type: 'ORPHAN', file: normalized, msg: 'non déclaré dans aucun manifest feature — voir BACKEND_FEATURE_REGISTRY.md section "dette connue"' });
+    warnings.push({ type: 'ORPHAN', file: normalized, msg: 'non déclaré dans aucun manifest feature — voir APP_FEATURE_REGISTRY.md section "dette connue"' });
     summary.orphans++;
   }
 

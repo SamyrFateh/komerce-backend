@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-08
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -67,6 +67,23 @@ module.exports = {
       'routes/dashboard-ops.js',
       'routes/relay-dashboard.js',
     ],
+    dash: [
+      'dashboards/admin/index.html',
+      'dashboards/admin/portal-pilotage.html',
+      'dashboards/admin/portal-pilotage.js',
+      'hub/index.html',
+      'relais/index.html',
+      'js/auth-guard.js',
+      'js/parcel-components.js',
+      'js/qr-viewer.js',
+    ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    dash: 'dépôt "dash" — pas encore de doctrine d\'ownership équivalente à la boutique ; ' +
+          'dette connue, à construire sur le même modèle que docs/BOUTIQUE_OWNERSHIP_LIVE.md',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

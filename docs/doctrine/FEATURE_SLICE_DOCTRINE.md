@@ -4,7 +4,7 @@
 > **Statut** : doctrine active
 > **Hiérarchie** : complète `AGENTS.md` — en cas de conflit, `AGENTS.md` fait foi.
 > **Gouvernée par** : `docs/doctrine/FEATURE_DOCTRINE.md` (niveau 0) — cette doctrine
-> définit *comment* une feature déjà reconnue par `BACKEND_FEATURE_REGISTRY.md` se
+> définit *comment* une feature déjà reconnue par `APP_FEATURE_REGISTRY.md` se
 > découpe techniquement ; elle ne définit pas *ce qu'est* une feature, c'est le rôle
 > du document parent.
 > **Commande** : `node scripts/feature-guard.js`

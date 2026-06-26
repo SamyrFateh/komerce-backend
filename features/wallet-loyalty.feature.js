@@ -6,7 +6,7 @@
  * @owner         backend-core
  * @since         2025-10
  * @doctrine      docs/doctrine/FEATURE_DOCTRINE.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -48,6 +48,16 @@ module.exports = {
       'routes/wallet.js',
       'routes/loyalty.js',
     ],
+    boutique: [
+      'js/b-wallet.js',
+      'css/wallet.css',
+    ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/b-wallet.js + css/wallet.css — dépôt "bout", voir docs/BOUTIQUE_OWNERSHIP_LIVE.md pour le détail DOM/CSS',
   },
 
   // ── Contrat d'interface ──────────────────────────────────────────────────

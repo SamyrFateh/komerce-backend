@@ -25,7 +25,7 @@ Pour toute nouvelle session, lire uniquement dans cet ordre :
 | 12 | [`docs/specs/SPEC_KEYSTONE_DOUANE.md`](./specs/SPEC_KEYSTONE_DOUANE.md) | Spec fonctionnelle Keystone douane (Gap A clôturé, B et C ouverts) |
 | 13 | [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./doctrine/FEATURE_SLICE_DOCTRINE.md) | Doctrine Feature Slice — périmètre, guard, workflow montage/démontage |
 | 14 | [`docs/doctrine/FEATURE_DOCTRINE.md`](./doctrine/FEATURE_DOCTRINE.md) | **Doctrine Feature — sommet de la pyramide.** Ce qu'est une feature métier, gouverne toutes les autres doctrines |
-| 15 | [`docs/doctrine/BACKEND_FEATURE_REGISTRY.md`](./doctrine/BACKEND_FEATURE_REGISTRY.md) | Registre canonique exhaustif des features backend réelles |
+| 15 | [`docs/doctrine/APP_FEATURE_REGISTRY.md`](./doctrine/APP_FEATURE_REGISTRY.md) | Registre canonique exhaustif des features backend réelles |
 
 Ces documents suffisent pour reprendre le projet sans lire l'historique.
 

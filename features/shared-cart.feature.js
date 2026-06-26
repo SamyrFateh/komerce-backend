@@ -5,7 +5,7 @@
  * @owner         backend-core
  * @since         2026-03
  * @doctrine      docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md
- * @registry      docs/doctrine/BACKEND_FEATURE_REGISTRY.md
+ * @registry      docs/doctrine/APP_FEATURE_REGISTRY.md
  */
 'use strict';
 
@@ -87,11 +87,27 @@ module.exports = {
       'tests/unit/shared-cart-v41-reconciliation.test.js',
     ],
     boutique: [
-      'public/boutique/js/b-group-cart-flow.js',
-      'public/boutique/js/b-share-cart.js',
-      'public/boutique/css/group-cart-flow.css',
-      'public/boutique/css/share-cart.css',
+      'js/b-group-cart-flow.js',
+      'js/b-share-cart.js',
+      'js/b-group-view.js',
+      'js/b-group-banner.js',
+      'js/b-friendly-group-redirect.js',
+      'js/b-share-phone-guard.js',
+      'css/group-cart-flow.css',
+      'css/share-cart.css',
+      'css/hero-cart-proxy.css',
+      'css/shared-followup.css',
     ],
+  },
+
+  // ── Dépôts ───────────────────────────────────────────────────────────────
+  // Cette feature est répartie sur 2 dépôts distincts (pas un monorepo) :
+  repos: {
+    backend: 'services/ + routes/ ci-dessus',
+    boutique: 'js/ + css/ ci-dessus — dépôt "bout", gouverné en détail par ' +
+              'docs/BOUTIQUE_COMPONENT_OWNERSHIP.md et docs/BOUTIQUE_OWNERSHIP_LIVE.md ' +
+              '(auto-généré par scripts/gen-ownership.js du dépôt bout — source de vérité ' +
+              'pour le détail CSS/DOM, ne pas dupliquer ici)',
   },
 
   // ── Contrat d'interface ───────────────────────────────────────────────────
