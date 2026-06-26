@@ -27,6 +27,8 @@
  *     (ex: vip_threshold, period) sont passés dans `extra`.
  */
 
+'use strict';
+
 (function (global) {
   'use strict';
 
@@ -215,6 +217,8 @@
   function getCustomsRatesEffective()          { return fetchJSON(apiUrl('/admin/customs-shipments/rates/effective')); }
   function createCustomsShipment(body)         { return fetchMutation(apiUrl('/admin/customs-shipments'), 'POST', body); }
   function updateCustomsShipment(id, body)     { return fetchMutation(apiUrl('/admin/customs-shipments/' + id), 'POST', body); }
+  function deactivateCustomsShipment(id, body) { return fetchMutation(apiUrl('/admin/customs-shipments/' + id + '/deactivate'), 'POST', body); }
+  function activateCustomsShipment(id, body)   { return fetchMutation(apiUrl('/admin/customs-shipments/' + id + '/activate'), 'POST', body); }
 
   // Suppliers / Partners
   function getPartners(params)                 { return fetchJSON(apiUrl('/admin/partners', params)); }
@@ -226,6 +230,14 @@
 
   // Products (catalogue, utilisé par pricing/sourcing)
   function getProducts(params)                 { return fetchJSON(apiUrl('/products', { limit: 500, ...params })); }
+
+  // Boutique categories / subcategories (migré depuis fetch brut de CategoriesView)
+  function getBoutiqueCategories()                       { return fetchJSON(apiUrl('/admin/boutique-categories')); }
+  function createBoutiqueCategory(body)                  { return fetchMutation(apiUrl('/admin/boutique-categories'), 'POST', body); }
+  function updateBoutiqueCategory(key, body)              { return fetchMutation(apiUrl('/admin/boutique-categories/' + encodeURIComponent(key)), 'PUT', body); }
+  function createBoutiqueSubcategory(catKey, body)        { return fetchMutation(apiUrl('/admin/boutique-categories/' + encodeURIComponent(catKey) + '/subcategories'), 'POST', body); }
+  function updateBoutiqueSubcategory(catKey, subKey, body){ return fetchMutation(apiUrl('/admin/boutique-categories/' + encodeURIComponent(catKey) + '/subcategories/' + encodeURIComponent(subKey)), 'PUT', body); }
+  function deleteBoutiqueSubcategory(catKey, subKey)      { return fetchMutation(apiUrl('/admin/boutique-categories/' + encodeURIComponent(catKey) + '/subcategories/' + encodeURIComponent(subKey)), 'DELETE'); }
 
   // ── Pricing Strategy (ADR-013) — manquait dans KmcApi, vues jamais branchées ──
   function getPricingStrategy(params)           { return fetchJSON(apiUrl('/pricing/strategy', params)); }
@@ -694,6 +706,8 @@
     getCustomsRatesEffective,
     createCustomsShipment,
     updateCustomsShipment,
+    deactivateCustomsShipment,
+    activateCustomsShipment,
     getPartners,
     getPartnersLogistique,
     getPartnersStats,
@@ -701,6 +715,12 @@
     updatePartner,
     deletePartner,
     getProducts,
+    getBoutiqueCategories,
+    createBoutiqueCategory,
+    updateBoutiqueCategory,
+    createBoutiqueSubcategory,
+    updateBoutiqueSubcategory,
+    deleteBoutiqueSubcategory,
     getPricingStrategy,
     applyPricingStrategy,
     getPricingCompetitors,

@@ -15,6 +15,8 @@
  * @impact-areas  customs, customs-shipments, finance, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Douane /admin/customs
  * ═══════════════════════════════════════════════════════════════════════════
@@ -37,7 +39,8 @@
  *   KmcApi.getCustomsShipment(id)         → détail + colis ventilés
  *   KmcApi.createCustomsShipment(body)    → créer un envoi
  *   KmcApi.updateCustomsShipment(id, b)   → mettre à jour
- *   + fetch local pour /deactivate et /activate
+ *   KmcApi.deactivateCustomsShipment(id)  → désactiver (retire la ventilation)
+ *   KmcApi.activateCustomsShipment(id)    → réactiver
  */
 
 (function (global) {
@@ -104,18 +107,6 @@
     if (n < 15) return 'cv-rate-low';
     if (n <= 25) return 'cv-rate-mid';
     return 'cv-rate-high';
-  }
-
-  /* ── Fetch local pour les routes non couvertes par KmcApi ───────────── */
-  function _apiPost(path, body) {
-    return fetch('/api' + path, {
-      method: 'POST', credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(r => {
-      if (!r.ok) return r.text().then(t => { throw new Error(t.slice(0, 200)); });
-      return r.json();
-    });
   }
 
   /* ── State ───────────────────────────────────────────────────────────── */
@@ -395,14 +386,14 @@
   function handleDeactivate(sid, container) {
     const reason = prompt('Raison de la désactivation (optionnel) :\n\nLa ventilation sera retirée des colis liés.');
     if (reason === null) return;
-    _apiPost('/admin/customs-shipments/' + sid + '/deactivate', { reason: reason || null })
+    global.KmcApi.deactivateCustomsShipment(sid, { reason: reason || null })
       .then(r => { alert('✅ ' + (r.message || 'Envoi désactivé')); render(container); })
       .catch(err => alert('❌ ' + (err.message || err)));
   }
 
   function handleActivate(sid, container) {
     if (!confirm('Réactiver cet envoi ?\n\nLa ventilation sera recalculée pour les colis liés.')) return;
-    _apiPost('/admin/customs-shipments/' + sid + '/activate', { parcel_ids: [] })
+    global.KmcApi.activateCustomsShipment(sid, { parcel_ids: [] })
       .then(r => { alert('✅ ' + (r.message || 'Envoi réactivé')); render(container); })
       .catch(err => alert('❌ ' + (err.message || err)));
   }

@@ -15,6 +15,8 @@
  * @impact-areas  pricing, cost-components, economic-engine, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /* ═══════════════════════════════════════════════════════════════════════════
  *  PricingView.js — Komerce Control Tower
  *  🧮 Construction du Prix — Atelier de décision produit

@@ -15,6 +15,8 @@
  * @impact-areas  catalog, products, boutique, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue /admin/products
  * ════════════════════════════════════════════════════════════════════════
@@ -100,7 +102,7 @@
    */
   function buildPreviewHTML(p, catObj) {
     // ── Résolution via KProductCardModel (no-code card config) ────────────────
-    var model;
+    let model;
     if (window.KProductCardModel) {
       model = window.KProductCardModel.resolve(p || {}, catObj || {});
     } else {
@@ -118,20 +120,20 @@
     }
 
     // ── Rendu des badges ──────────────────────────────────────────────────────
-    var badgesHTML = model.badges.map(function (b) {
-      var cls = b.type === 'promo' ? 'k-card--badge k-card--badge-promo'
+    const badgesHTML = model.badges.map(function (b) {
+      const cls = b.type === 'promo' ? 'k-card--badge k-card--badge-promo'
               : b.type === 'stock' ? 'k-card--badge k-card--badge-stock'
               : 'k-card--badge';
       return '<span class="' + cls + '">' + b.label + '</span>';
     }).join('');
 
     // ── Style thème (si token dispo) ──────────────────────────────────────────
-    var accentStyle = model.accentToken
+    const accentStyle = model.accentToken
       ? 'color:' + model.accentToken + ';'
       : 'color:var(--primary,#6366f1);';
 
     // ── Sous-titre ────────────────────────────────────────────────────────────
-    var subtitleHTML = model.subtitle
+    const subtitleHTML = model.subtitle
       ? '<div style="font-size:var(--fs-xs);color:var(--text-secondary,#6b7280);margin-top:4px;">' + model.subtitle + '</div>'
       : '';
 

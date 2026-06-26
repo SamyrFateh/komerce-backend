@@ -15,6 +15,8 @@
  * @impact-areas  admin-dashboard, date-filtering, all-views
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Filters Store
  * ════════════════════════════════════════════════════════════════════════

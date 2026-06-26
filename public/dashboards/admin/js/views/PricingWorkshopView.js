@@ -15,6 +15,8 @@
  * @impact-areas  pricing, config, cost-components, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /* ═══════════════════════════════════════════════════════════════════════════
  *  PricingWorkshopView.js — Komerce Control Tower
  *  ⚙️ Configuration des coûts (cost_components)

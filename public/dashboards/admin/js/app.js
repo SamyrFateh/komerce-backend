@@ -15,6 +15,8 @@
  * @impact-areas  admin-dashboard, auth, all-spa-routes
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — App
  * Routing SPA (pushState) + shell CT/BO + dispatch.

@@ -15,6 +15,8 @@
  * @impact-areas  settings, config, finance-config, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — SettingsView /admin/settings
  * ════════════════════════════════════════════════════════════════════════

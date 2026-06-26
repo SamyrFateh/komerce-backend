@@ -15,6 +15,8 @@
  * @impact-areas  logistics, transitaire, customs, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Transitaire /admin/transitaire
  * ════════════════════════════════════════════════════════════════════════

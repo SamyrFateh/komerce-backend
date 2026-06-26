@@ -15,6 +15,8 @@
  * @impact-areas  finance, projection, product-mix, admin-dashboard
  * @version       2026-06
  */
+
+'use strict';
 /**
  * KOMERCE Dashboard — Vue Pilotage Financier /admin/pilotage-fin
  * ════════════════════════════════════════════════════════════════════════
