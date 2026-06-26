@@ -18,7 +18,7 @@
     "seed": "node scripts/seed.js",
     "check:boutique": "node scripts/check-boutique.mjs",
     "analyze:boutique-css": "node scripts/analyze-boutique-css.mjs",
-    "build": "node public/boutique/scripts/deploy-css.js",
+    "build": "node public/boutique/scripts/deploy-css.js && npm run css:guard",
     "boutique:audit": "node public/boutique/scripts/audit-boutique-arch.js",
     "boutique:arch": "node public/boutique/scripts/gen-boutique-arch-live.js",
     "arch:drift": "node scripts/arch-schema-drift-check.js",
@@ -62,7 +62,8 @@
     "feature:registry": "node scripts/feature-registry-check.js --strict",
     "feature:registry:report": "node scripts/feature-registry-check.js",
     "feature:registry:orphans": "node scripts/feature-registry-check.js --orphans",
-    "feature:check": "node scripts/feature-guard.js --strict"
+    "feature:check": "node scripts/feature-guard.js --strict",
+    "css:guard": "node scripts/css-guard.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

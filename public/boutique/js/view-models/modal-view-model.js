@@ -12,6 +12,7 @@
  * @impact-areas  product-modal, layout-contract, product-discovery
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module modal-view-model

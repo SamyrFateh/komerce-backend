@@ -12,6 +12,7 @@
  * @impact-areas  otp, checkout, tracking, shared-cart-access, identity
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-phone

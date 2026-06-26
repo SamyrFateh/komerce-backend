@@ -12,6 +12,7 @@
  * @impact-areas  desktop-catalog, category-navigation, home-layout, side-cart-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-catalog-desktop-enhancers
@@ -57,16 +58,16 @@ import { isDesktop, scrollPageToTop, getScrollY, scrollToPosition } from './b-sc
 function setupSubcatOnHover() {
   if (!isDesktop()) return;
 
-  var catsEl = document.querySelector('.k-cats');
+  let catsEl = document.querySelector('.k-cats');
   if (!catsEl) return;
 
-  var _hoverTimer = null;
-  var _previewActive = false; // true = on est en mode aperçu (pas en sélection)
+  let _hoverTimer = null;
+  let _previewActive = false; // true = on est en mode aperçu (pas en sélection)
 
   catsEl.addEventListener('mouseenter', function(e) {
-    var chip = e.target.closest('.k-chip');
+    let chip = e.target.closest('.k-chip');
     if (!chip) return;
-    var cat = chip.dataset.cat;
+    let cat = chip.dataset.cat;
     if (!cat || cat === 'all') return;
 
     // Même univers que l'actif → pas d'aperçu, c'est déjà le bon rendu
@@ -108,13 +109,13 @@ function setupPromoStrip() {
   // "450+ produits · Paiement cash · Retrait relais"). Page d'accueil simplifiée
   // pour aller direct aux sections produits.
   return;
-  var existingStrip = document.querySelector('.k-promo-strip');
+  let existingStrip = document.querySelector('.k-promo-strip');
   if (existingStrip) return; // already mounted
 
-  var catalogWrap = document.getElementById('k-desktop-catalog-wrap');
+  let catalogWrap = document.getElementById('k-desktop-catalog-wrap');
   if (!catalogWrap) return;
 
-  var strip = document.createElement('div');
+  let strip = document.createElement('div');
   strip.className = 'k-promo-strip';
   strip.innerHTML =
     '<div class="k-promo-strip-inner">' +
@@ -155,10 +156,10 @@ function setupHomepageMerchandising() {
   return;
   if (document.querySelector('.k-home-merch')) return;
 
-  var anchor = document.getElementById('k-desktop-catalog-wrap');
+  let anchor = document.getElementById('k-desktop-catalog-wrap');
   if (!anchor || !anchor.parentNode) return;
 
-  var merch = document.createElement('section');
+  let merch = document.createElement('section');
   merch.className = 'k-home-merch';
 
   // Head — fixe
@@ -173,7 +174,7 @@ function setupHomepageMerchandising() {
 
   // Grid — générée depuis shop-schema, source de vérité unique.
   // Ajouter un pilier dans shop-schema suffit — aucune modif ici requise.
-  var _MERCH_DESC = {
+  let _MERCH_DESC = {
     'Soldes':                 'Prix doux, arrivages malins, sélection rapide.',
     'Mode & Beauté':          'Les indispensables à offrir ou à se faire livrer.',
     'Maison':                 'Des produits concrets pour la famille.',
@@ -182,12 +183,12 @@ function setupHomepageMerchandising() {
     'Créations personnelles': 'Tenues de cérémonie et cadeaux sur-mesure.',
     'Auto':                   'Pièces légères Toyota & Moto, sourcing Dubaï.',
   };
-  var _grid = document.createElement('div');
+  let _grid = document.createElement('div');
   _grid.className = 'k-home-merch-grid';
   getRailCategories()
     .filter(function(c) { return c.key !== 'all'; })
     .forEach(function(c) {
-      var btn = document.createElement('button');
+      let btn = document.createElement('button');
       btn.className = 'k-home-merch-card' + (c.filterType === 'promo' ? ' k-home-merch-card--hot' : '');
       btn.type = 'button';
       btn.dataset.cat = c.key;
@@ -203,7 +204,7 @@ function setupHomepageMerchandising() {
 
   merch.querySelectorAll('[data-cat]').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var cat = btn.dataset.cat || 'all';
+      let cat = btn.dataset.cat || 'all';
 
       if (!state.sectionSubcats) state.sectionSubcats = {};
       Object.keys(state.sectionSubcats).forEach(function(k) {
@@ -212,7 +213,7 @@ function setupHomepageMerchandising() {
 
       setActiveCat(cat);
 
-      var top = anchor.getBoundingClientRect().top + getScrollY() - 84;
+      let top = anchor.getBoundingClientRect().top + getScrollY() - 84;
       scrollToPosition(Math.max(0, top), 'smooth');
     });
   });
@@ -244,9 +245,9 @@ function setupCardHoverOverlay() {
   function buildOverlayAddBtn(realAddBtn) {
     if (realAddBtn && realAddBtn.classList.contains('in-cart')) {
       // Stepper dans l'overlay — même structure que markAllCartButtons()
-      var pid = realAddBtn.dataset.add || '';
-      var qtyEl = realAddBtn.querySelector('.k-add-qty');
-      var qty = qtyEl ? qtyEl.textContent : '1';
+      let pid = realAddBtn.dataset.add || '';
+      let qtyEl = realAddBtn.querySelector('.k-add-qty');
+      let qty = qtyEl ? qtyEl.textContent : '1';
       return '<div class="k-card-hover-add k-card-hover-add--stepper" data-pid="' + pid + '">' +
                '<span class="k-hover-add-minus" data-pid="' + pid + '">−</span>' +
                '<span class="k-hover-add-qty">' + qty + '</span>' +
@@ -261,17 +262,17 @@ function setupCardHoverOverlay() {
   document.querySelectorAll('.k-card').forEach(function(card) {
     if (card.querySelector('.k-card-hover-overlay')) return;
 
-    var id = card.dataset.id || '';
-    var nameEl = card.querySelector('.k-card-name');
-    var priceEl = card.querySelector('.k-card-price');
-    var descEl = card.querySelector('.k-card-desc');
-    var realAddBtn = card.querySelector('.k-card-add');
-    var name = nameEl ? nameEl.textContent.trim() : '';
-    var price = priceEl ? priceEl.textContent.trim() : '';
-    var desc = descEl ? descEl.textContent.trim() : '';
-    var liked = !!card.querySelector('.k-card-fav.liked, .k-card-fav.is-liked');
+    let id = card.dataset.id || '';
+    let nameEl = card.querySelector('.k-card-name');
+    let priceEl = card.querySelector('.k-card-price');
+    let descEl = card.querySelector('.k-card-desc');
+    let realAddBtn = card.querySelector('.k-card-add');
+    let name = nameEl ? nameEl.textContent.trim() : '';
+    let price = priceEl ? priceEl.textContent.trim() : '';
+    let desc = descEl ? descEl.textContent.trim() : '';
+    let liked = !!card.querySelector('.k-card-fav.liked, .k-card-fav.is-liked');
 
-    var overlay = document.createElement('div');
+    let overlay = document.createElement('div');
     overlay.className = 'k-card-hover-overlay';
     overlay.innerHTML =
       '<div class="k-card-hover-content">' +
@@ -289,13 +290,13 @@ function setupCardHoverOverlay() {
     // Sync de l'état overlay → mise à jour du bouton add quand le DOM de
     // .k-card-add change (markAllCartButtons modifie son innerHTML/className).
     if (realAddBtn) {
-      var addObserver = new MutationObserver(function() {
-        var addWrap = overlay.querySelector('.k-card-hover-add, .k-card-hover-add--stepper');
+      let addObserver = new MutationObserver(function() {
+        let addWrap = overlay.querySelector('.k-card-hover-add, .k-card-hover-add--stepper');
         if (!addWrap) return;
-        var fresh = buildOverlayAddBtn(realAddBtn);
-        var tmp = document.createElement('div');
+        let fresh = buildOverlayAddBtn(realAddBtn);
+        let tmp = document.createElement('div');
         tmp.innerHTML = fresh;
-        var newNode = tmp.firstElementChild;
+        let newNode = tmp.firstElementChild;
         if (newNode) addWrap.parentNode.replaceChild(newNode, addWrap);
       });
       addObserver.observe(realAddBtn, { attributes: true, childList: true, subtree: true });
@@ -306,38 +307,38 @@ function setupCardHoverOverlay() {
     window.__komerceCardHoverOverlayBound = true;
 
     document.addEventListener('click', function(e) {
-      var fav    = e.target.closest('.k-card-hover-fav');
-      var add    = e.target.closest('.k-card-hover-add');
-      var minus  = e.target.closest('.k-hover-add-minus');
-      var plus   = e.target.closest('.k-hover-add-plus');
+      let fav    = e.target.closest('.k-card-hover-fav');
+      let add    = e.target.closest('.k-card-hover-add');
+      let minus  = e.target.closest('.k-hover-add-minus');
+      let plus   = e.target.closest('.k-hover-add-plus');
 
       if (!fav && !add) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      var card = e.target.closest('.k-card');
+      let card = e.target.closest('.k-card');
       if (!card) return;
 
       if (fav) {
-        var realFav = card.querySelector('.k-card-fav');
+        let realFav = card.querySelector('.k-card-fav');
         if (realFav) realFav.click();
         fav.classList.toggle('liked');
         return;
       }
 
       if (add) {
-        var realAdd = card.querySelector('.k-card-add');
+        let realAdd = card.querySelector('.k-card-add');
         if (!realAdd) return;
 
         if (minus) {
           // Clic sur − dans le stepper overlay → quickRemove
-          var minusEl = realAdd.querySelector('.k-add-minus');
+          let minusEl = realAdd.querySelector('.k-add-minus');
           if (minusEl) minusEl.click();
           else realAdd.click(); // fallback si structure inattendue
         } else if (plus) {
           // Clic sur + dans le stepper overlay → quickAdd
-          var plusEl = realAdd.querySelector('.k-add-plus-ic');
+          let plusEl = realAdd.querySelector('.k-add-plus-ic');
           if (plusEl) plusEl.click();
           else realAdd.click();
         } else {
@@ -353,7 +354,7 @@ function setupCardHoverOverlay() {
 function setupCardHoverObserver() {
   if (!isDesktop()) return;
 
-  var grid = document.getElementById('k-grid');
+  let grid = document.getElementById('k-grid');
   if (!grid || grid.__komerceHoverObserver) return;
 
   grid.__komerceHoverObserver = new MutationObserver(function() {
@@ -384,24 +385,24 @@ function setupHeroSearchBar() {
 
   if (!isDesktop()) return;
 
-  var media = document.querySelector('#k-hero-fixed-wrap .k-hero-media');
+  let media = document.querySelector('#k-hero-fixed-wrap .k-hero-media');
   if (!media) return;
 
   // Éviter double-injection
   if (document.getElementById('k-optionb-search')) return;
 
-  var wrap = document.createElement('div');
+  let wrap = document.createElement('div');
   wrap.id = 'k-optionb-search';
   wrap.setAttribute('role', 'search');
   wrap.setAttribute('aria-label', 'Rechercher dans la boutique');
 
-  var input = document.createElement('input');
+  let input = document.createElement('input');
   input.type = 'text';
   input.placeholder = 'Envoyez ce qui compte, partout aux Comores…';
   input.setAttribute('autocomplete', 'off');
   input.setAttribute('aria-label', 'Recherche produits');
 
-  var btn = document.createElement('button');
+  let btn = document.createElement('button');
   btn.type = 'button';
   btn.setAttribute('aria-label', 'Lancer la recherche');
   btn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
@@ -412,7 +413,7 @@ function setupHeroSearchBar() {
 
   // Délégation : synchroniser avec le champ de recherche du header si présent
   function _delegateSearch(val) {
-    var headerInput = document.getElementById('k-search-input') ||
+    let headerInput = document.getElementById('k-search-input') ||
                       document.querySelector('.k-header-search input') ||
                       document.querySelector('[data-search-input]');
     if (headerInput) {
@@ -435,10 +436,10 @@ function setupHeroSearchBar() {
 function _setupViewChangedGuard() {
   // Masquer les éléments desktop exclusifs à la vue shop sur Favoris / Suivi
   bus.on('view:changed', function(tab) {
-    var isShop = tab === 'shop';
-    var merch    = document.querySelector('.k-home-merch');
-    var strip    = document.querySelector('.k-promo-strip');
-    var scrollTop = document.querySelector('.k-scroll-top');
+    let isShop = tab === 'shop';
+    let merch    = document.querySelector('.k-home-merch');
+    let strip    = document.querySelector('.k-promo-strip');
+    let scrollTop = document.querySelector('.k-scroll-top');
     if (merch)     merch.style.display        = isShop ? '' : 'none';
     if (strip)     strip.style.display        = isShop ? '' : 'none';
     if (scrollTop) scrollTop.classList.toggle('is-visible', isShop && getScrollY() > 600);
@@ -456,17 +457,17 @@ function _setupViewChangedGuard() {
 function setupNavStackVar() {
   if (!isDesktop()) return;
 
-  var bar    = document.getElementById('k-sticky-bar');   // .k-hero-cats-sticky
-  var header = document.querySelector('.k-header');
+  let bar    = document.getElementById('k-sticky-bar');   // .k-hero-cats-sticky
+  let header = document.querySelector('.k-header');
   if (!bar) return;
 
-  var root = document.documentElement;
-  var raf  = 0;
+  let root = document.documentElement;
+  let raf  = 0;
 
   function measure() {
     raf = 0;
-    var headerH = header ? header.getBoundingClientRect().height : 72;
-    var barH    = bar.getBoundingClientRect().height;
+    let headerH = header ? header.getBoundingClientRect().height : 72;
+    let barH    = bar.getBoundingClientRect().height;
     root.style.setProperty('--nav-stack-h', Math.round(headerH + barH) + 'px');
   }
   function update() {
@@ -477,7 +478,7 @@ function setupNavStackVar() {
   update();
 
   if (typeof ResizeObserver !== 'undefined') {
-    var ro = new ResizeObserver(update);
+    let ro = new ResizeObserver(update);
     ro.observe(bar);
     if (header) ro.observe(header);
   }

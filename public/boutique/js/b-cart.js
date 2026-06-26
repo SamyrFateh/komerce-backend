@@ -12,6 +12,7 @@
  * @impact-areas  checkout-entry, side-cart, shared-cart-editing, participant-flow, responsive-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-cart.js — Module ES · §7 CART INTERACTIONS + §10 CART PANEL & SHARE + §14 STEPPER
@@ -265,7 +266,7 @@ import { getCategoryIcon, normalizeCategoryKey } from './shop-schema.js';
         bus.emit('modal:close');
         // Desktop : le side-cart est déjà visible — on ne rouvre pas le tiroir
         if (isDesktop()) {
-          var sc = document.getElementById('k-side-cart');
+          let sc = document.getElementById('k-side-cart');
           if (sc) { sc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
         } else {
           setTimeout(openCart, 150);
@@ -783,7 +784,7 @@ function quickRemove(productId, btnEl) {
      Stubs conservés pour compatibilité exports. À supprimer en nettoyage PR-event. */
 
   function _closeShareModal() {
-    var ov = document.getElementById('k-share-overlay');
+    let ov = document.getElementById('k-share-overlay');
     if (ov) ov.remove();
   }
 
@@ -807,10 +808,10 @@ function quickRemove(productId, btnEl) {
  * @param {string} token - Token de partage
  */
   function loadSharedCart() {
-    var params = new URLSearchParams(window.location.search);
+    let params = new URLSearchParams(window.location.search);
 
     // Nouveau : ?share=token → API
-    var shareToken = params.get('share');
+    let shareToken = params.get('share');
     if (shareToken) {
       state.shareToken = shareToken;
       _loadSharedCartFromAPI(shareToken);
@@ -818,23 +819,23 @@ function quickRemove(productId, btnEl) {
     }
 
     // Legacy : ?cart=id1:qty1,id2:qty2
-    var cartParam = params.get('cart');
+    let cartParam = params.get('cart');
     if (!cartParam) return;
 
-    var entries = cartParam.split(',').map(function(e) {
-      var parts = e.split(':');
+    let entries = cartParam.split(',').map(function(e) {
+      let parts = e.split(':');
       return { id: parts[0], qty: parseInt(parts[1]) || 1 };
     }).filter(function(e) { return e.id; });
 
     if (entries.length === 0) return;
 
-    var checkProducts = setInterval(function() {
+    let checkProducts = setInterval(function() {
       if (!state.products || state.products.length === 0) return;
       clearInterval(checkProducts);
 
       state.cart = [];
       entries.forEach(function(entry) {
-        var product = state.products.find(function(p) { return p.id === entry.id; });
+        let product = state.products.find(function(p) { return p.id === entry.id; });
         if (product) state.cart.push({ product: product, qty: entry.qty });
       });
 
@@ -868,16 +869,16 @@ function quickRemove(productId, btnEl) {
     try {
       const data = await apiGet('/api/shares/' + encodeURIComponent(token));
 
-      var checkProducts = setInterval(function() {
+      let checkProducts = setInterval(function() {
         if (!state.products || state.products.length === 0) return;
         clearInterval(checkProducts);
 
         state.cart = [];
-        var items = data.items || data.cart_items || [];
+        let items = data.items || data.cart_items || [];
         items.forEach(function(item) {
           // Le back peut retourner product_id ou product.id
-          var pid = item.product_id || (item.product && item.product.id);
-          var product = state.products.find(function(p) { return p.id === pid; });
+          let pid = item.product_id || (item.product && item.product.id);
+          let product = state.products.find(function(p) { return p.id === pid; });
           if (product) state.cart.push({ product: product, qty: item.qty || 1 });
         });
 
@@ -885,13 +886,13 @@ function quickRemove(productId, btnEl) {
           saveCart();
           renderCartBody();
           setTimeout(function() {
-            var sharerName = data.sharer_name || data.shared_by || null;
+            let sharerName = data.sharer_name || data.shared_by || null;
             if (!isDesktop()) {
               dom.cartDrawer.classList.add('open');
               dom.cartOverlay.classList.add('open');
               document.body.classList.add('cart-open');
             }
-            var msg = sharerName
+            let msg = sharerName
               ? '🎁 ' + sharerName + " t'a partagé son panier !"
               : '🧺 Panier partagé chargé !';
             showToast(msg, 'success');
@@ -1194,13 +1195,13 @@ function quickRemove(productId, btnEl) {
     // Skip on mobile pager (horizontal scroll handles sync)
     if (!isDesktop() && dom.pageScroll &&
         dom.pageScroll.classList.contains('k-pager-active')) return;
-    var scroller = dom.pageScroll;
+    let scroller = dom.pageScroll;
     if (scroller) {
       _sectionObserver = new IntersectionObserver(function(entries) {
         if (scroll.scrollingToSection) return;
         entries.forEach(function(entry) {
           if (!entry.isIntersecting) return;
-          var cat = entry.target.dataset.cat;
+          let cat = entry.target.dataset.cat;
           if (!cat) return;
           // Floating index buttons
           document.querySelectorAll('.k-section-index-btn').forEach(function(b) {
@@ -1211,12 +1212,12 @@ function quickRemove(productId, btnEl) {
             document.querySelectorAll('.k-chip').forEach(function(c) {
               c.classList.toggle('active', c.dataset.cat === cat);
             });
-            var activeChip = document.querySelector('.k-chip.active');
+            let activeChip = document.querySelector('.k-chip.active');
             if (activeChip && typeof centerActiveChip === 'function') centerActiveChip(activeChip);
           }
         });
       }, { root: scroller, threshold: 0.3 });
-      var sections = document.querySelectorAll('.k-cat-section');
+      let sections = document.querySelectorAll('.k-cat-section');
       sections.forEach(function(sec) { _sectionObserver.observe(sec); });
     }
   }

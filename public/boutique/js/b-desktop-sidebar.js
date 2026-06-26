@@ -8,6 +8,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-desktop-sidebar.js — Sidebar catégories Temu-style (≥ 900px uniquement)

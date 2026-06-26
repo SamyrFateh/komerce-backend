@@ -12,6 +12,7 @@
  * @impact-areas  product-modal, cart, shared-cart-creation, checkout-entry
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-approche-c-hybrid

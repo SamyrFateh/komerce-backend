@@ -7,6 +7,7 @@
  *
  * Diffère de docs/ARCHITECTURE.md (normatif, édité à la main).
  */
+'use strict';
 
 const fs   = require('fs');
 const path = require('path');

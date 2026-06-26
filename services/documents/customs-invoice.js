@@ -8,7 +8,7 @@
  * @outputs       transaction_documents row (customs_invoice)
  * @depends       services/documents/document-service.js, db.js
  * @used-by       services/customs-shipment-service.js (post-declaration)
- * @db-read       customs_shipments, customs_shipment_parcels, order_items, orders, parcel_items, parcels, products, relais, users
+ * @db-read       customs_shipment_parcels, customs_shipments, order_items, orders, parcel_items, parcels, products, relais, users
  * @db-write      transaction_documents
  * @db-txn        caller_transaction_optional
  * @doctrine      douane_declaration_pivot

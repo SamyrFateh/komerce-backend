@@ -2,244 +2,184 @@
 
 Ce fichier est l'instruction racine du dépôt pour tout agent IA ou développeur.
 
-> **Source de vérité unique (H1, 2026-06-23)** : [`.cursorrules`](./.cursorrules)
-> ne fait que rediriger vers ce fichier. Toute règle de gouvernance se
-> rédige ici, jamais dans `.cursorrules`. Si les deux fichiers semblent en
-> désaccord, c'est `AGENTS.md` qui fait foi.
+> **Source de vérité unique** : [`.cursorrules`](./.cursorrules) redirige vers ce fichier.
+> En cas de désaccord, `AGENTS.md` fait foi.
 
 ---
 
-## 1. Lecture obligatoire avant modification
+## 0. AVANT DE CODER — la pyramide de gouvernance
 
-Lire uniquement dans cet ordre :
+**Ne pas coder puis corriger. Coder avec l'analyse en tête.**
 
-1. [`docs/README.md`](./docs/README.md) — index documentaire actif ;
-2. [`docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md`](./docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md) — **pyramide qualité N0→N5**, ordre d'exécution complet des gates CI (la mécanique, à lire avant tout le reste) ;
-3. [`docs/doctrine/FEATURE_DOCTRINE.md`](./docs/doctrine/FEATURE_DOCTRINE.md) — N0, sommet : qu'est-ce qu'une feature ;
-4. [`docs/doctrine/APP_FEATURE_REGISTRY.md`](./docs/doctrine/APP_FEATURE_REGISTRY.md) — N0, registre exhaustif des features réelles ;
-5. [`docs/doctrine/FEATURE_SLICE_DOCTRINE.md`](./docs/doctrine/FEATURE_SLICE_DOCTRINE.md) — N5, périmètre technique par feature ;
-6. [`docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`](./docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md) — N4, doctrine obligatoire du graphe ;
-7. [`docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`](./docs/KOMERCE_DB_SCHEMA_DOCTRINE.md) — N4, doctrine obligatoire du schéma DB ;
-8. [`docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md`](./docs/KOMERCE_ARCH_CARTOGRAPHY_STATUS.md) — statut de la cartographie architecture ;
-9. [`docs/KOMERCE_ARCH_HEADER_GRAPH.md`](./docs/KOMERCE_ARCH_HEADER_GRAPH.md) — graphe d'intervention généré ;
-10. [`docs/komerce-arch-header-graph.json`](./docs/komerce-arch-header-graph.json) — graphe machine-readable ;
-11. [`docs/SCHEMA.md`](./docs/SCHEMA.md) — schéma DB canonique ;
-12. [`docs/chantier/STATUS.md`](./docs/chantier/STATUS.md) — état courant ;
-13. [`docs/backend/BACKEND_GOLIVE_ROADMAP.md`](./docs/backend/BACKEND_GOLIVE_ROADMAP.md) — backlog de remédiation pré-golive (lots A-H), source du prochain lot à exécuter si `STATUS.md` y renvoie ;
-14. Les documents actifs listés par `docs/README.md` selon la zone touchée.
+Avant d'ouvrir un fichier source, traverser la pyramide de haut en bas :
 
-Ne pas démarrer une modification depuis un audit, un ancien prompt, un changelog ou un fichier non listé par `docs/README.md`.
-
-> L'ordre d'exécution complet des gates CI (jobs `unit`/`integration`/`governance`/`conformance`,
-> avec script et commande pour chaque niveau N0→N5) vit dans `QUALITY_PYRAMID_DOCTRINE.md` —
-> non dupliqué ici pour éviter toute divergence. Les sections 2 et 3 ci-dessous ne couvrent que
-> la gouvernance Feature (N0/N5), qui n'a pas d'autre point d'entrée dans ce fichier.
-
----
-
-## 2. Gouvernance Feature (N0 — sommet, lire avant toute intervention fonctionnelle)
-
-Avant de toucher la moindre logique métier backend, vérifier que la feature concernée
-existe dans le registre canonique :
-
-```txt
-docs/doctrine/FEATURE_DOCTRINE.md        ← qu'est-ce qu'une feature, règles du registre
-docs/doctrine/APP_FEATURE_REGISTRY.md    ← liste exhaustive des features réelles
+```
+ ╔═══════════════════════════════════════════════════════════════════════╗
+ ║  PYRAMIDE DE GOUVERNANCE KOMERCE                                     ║
+ ║  Ordre de lecture = ordre d'exécution = ordre de vérification        ║
+ ╠═══════════════════════════════════════════════════════════════════════╣
+ ║                                                                       ║
+ ║  N0  FEATURE ──── De quelle feature s'agit-il ?                      ║
+ ║      docs/doctrine/FEATURE_DOCTRINE.md                                ║
+ ║      docs/doctrine/APP_FEATURE_REGISTRY.md (14 métier + 2 transv.)   ║
+ ║      features/<feature>.feature.js → service, périmètre, autorité    ║
+ ║      🔒 npm run feature:registry                                     ║
+ ║                                                                       ║
+ ║  N5  SLICE ────── Le découpage technique est-il cohérent ?           ║
+ ║      docs/doctrine/FEATURE_SLICE_DOCTRINE.md                          ║
+ ║      🔒 npm run feature:guard (→ node scripts/feature-guard.js)      ║
+ ║                                                                       ║
+ ║  N4  ARCHI ────── Headers @komerce-arch à jour ? Graphe régénéré ?   ║
+ ║      docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md                              ║
+ ║      🔒 npm run arch:gate                                            ║
+ ║                                                                       ║
+ ║  N3  DB ───────── Schéma DB aligné ?                                 ║
+ ║      docs/KOMERCE_DB_SCHEMA_DOCTRINE.md                               ║
+ ║      🔒 npm run arch:drift                                           ║
+ ║                                                                       ║
+ ║  N2  QUALITÉ ──── use strict, const/let, pas de SQL concat, etc.     ║
+ ║      docs/doctrine/QUALITY_PYRAMID_DOCTRINE.md                        ║
+ ║      🔒 npm run quality:gate                                         ║
+ ║                                                                       ║
+ ║  N1  DEPS+TESTS ─ npm audit, jest                                    ║
+ ║      🔒 npm run audit:gate + npm test                                ║
+ ║                                                                       ║
+ ║  CSS BOUTIQUE ─── 0 conflit CSS (baseline verrouillé)                ║
+ ║      🔒 npm run css:guard (câblé dans le build Railway)              ║
+ ╚═══════════════════════════════════════════════════════════════════════╝
 ```
 
-1. trouver la feature dans le registre ;
-2. lire son manifest `features/<feature>.feature.js` pour connaître service rendu,
-   périmètre `in`/`out`, interfaces, autorité, invariants ;
-3. si la modification sort de `perimeter.in` ou touche `perimeter.out`, s'arrêter et
-   renégocier le périmètre dans le registre — ne jamais contourner silencieusement ;
-4. `node scripts/feature-registry-check.js --strict` (= `npm run feature:registry`) doit passer avant tout le reste.
-
-Une feature absente du registre n'a pas l'autorisation de recevoir de nouvelle logique
-métier tant qu'elle n'y est pas inscrite.
+Chaque 🔒 est un gate automatisé. Le CI les exécute dans cet ordre.
+Un gate rouge **bloque le merge** — pas de contournement silencieux.
 
 ---
 
-## 3. Gouvernance Feature Slice (N5)
+## 1. Pipeline CI — ce qui tourne automatiquement sur chaque PR
 
-Toute feature fonctionnelle d'une certaine envergure (> 3 fichiers propres) doit disposer d'un Feature Slice manifest dans `features/`.
+| Job | Step | Gate | Bloquant |
+|-----|------|------|----------|
+| unit | 1 | `npm run feature:registry` — Registre N0 | ✅ oui |
+| unit | 2 | `npm run quality:gate` — Pyramide N2 | ✅ oui |
+| unit | 3 | `npm run backend:audit` — Architecture N4 | ✅ oui |
+| unit | 4 | `npm run audit:gate` — npm audit | ✅ oui |
+| unit | 5 | `npx jest tests/unit` — Tests unitaires | ✅ oui |
+| integration | 1 | `npm run arch:drift` — Schema drift N3 | ✅ oui |
+| integration | 2 | `npx jest tests/integration` | ✅ oui |
+| governance | - | `npm run arch:gate` — Headers + graph | ✅ oui |
+| **deploy** | build | `npm run css:guard` — CSS 0 conflit | ✅ oui |
 
-Ce manifest est le même fichier que celui exigé par la gouvernance Feature (section 2) —
-`features/<feature>.feature.js` porte à la fois les propriétés métier (service, périmètre,
-autorité, invariants) et le détail technique du slice (fichiers, contrat, migrations, tests).
+Si un seul gate échoue, le merge ou le deploy est bloqué.
 
-La règle détaillée vit dans :
+---
 
-```txt
-docs/doctrine/FEATURE_SLICE_DOCTRINE.md
-```
+## 2. Feature (N0) — toujours en premier
 
-Avant modification d'une feature :
+Avant de toucher la moindre logique métier :
 
-1. lire `features/<feature>.feature.js` pour connaître le périmètre complet ;
-2. vérifier la cohérence avec `node scripts/feature-guard.js --feature <name>`.
+1. Trouver la feature dans `docs/doctrine/APP_FEATURE_REGISTRY.md`.
+2. Lire son manifest `features/<feature>.feature.js` : `service`, `perimeter.in`, `perimeter.out`.
+3. Si la modification sort du périmètre → **s'arrêter**, renégocier dans le registre.
+4. Tout fichier ajouté → le déclarer dans le manifest (même PR).
+5. Tout header `@domain` doit correspondre au manifest de sa feature.
 
-Pendant modification :
+Gate : `node scripts/feature-registry-check.js --strict`
 
-- tout fichier ajouté au périmètre doit être déclaré dans le slice ;
-- tout fichier supprimé doit être retiré du slice dans la même PR.
+---
 
-Après modification :
+## 3. Feature Slice (N5)
 
+Le manifest porte le détail technique : fichiers, contrat, migrations, tests.
+
+Doctrine : `docs/doctrine/FEATURE_SLICE_DOCTRINE.md`
+Gate : `node scripts/feature-guard.js --strict`
+
+---
+
+## 4. Architecture (N4)
+
+Tout fichier source naît avec un header `@komerce-arch`.
+Après modification : `node scripts/generate-komerce-arch-graph.js && npm run arch:gate`
+
+⚠️ Fichier avec shebang (`#!/usr/bin/env node`) : ordre obligatoire = shebang en ligne 1 → header `@komerce-arch` → `'use strict'` → reste. Tout code avant le shebang casse la detection du header (gate le signale comme "Header mal placé", distinct de "Sans header" — voir `docs/KOMERCE_ARCHITECTURE_HEADERS.md#header-placement-files-with-a-shebang`).
+
+Doctrine : `docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md`
+
+---
+
+## 5. DB (N3)
+
+Toute migration met à jour `docs/SCHEMA.md` et les headers `@db-read/@db-write/@db-txn`.
+
+Doctrine : `docs/KOMERCE_DB_SCHEMA_DOCTRINE.md`
+
+---
+
+## 6. Code Quality (N2)
+
+Conventions vérifiées automatiquement par `scripts/code-quality-gate.js` :
+- `'use strict'` en première ligne effective
+- `const`/`let` (jamais `var`)
+- Pas de SQL concaténé avec input utilisateur
+- Pas de secrets en dur
+
+Auto-fix : `node scripts/code-quality-gate.js --fix`
+Gate : `npm run quality:gate`
+
+---
+
+## 7. CSS Boutique
+
+Baseline verrouillé à **0 conflit**. Scanner : `scripts/css-guard.js`.
+Gate : `npm run css:guard` (câblé dans le build Railway).
+
+---
+
+## 8. Règles techniques non négociables
+
+- Statuts commande : `services/order-status-machine.js`.
+- Paiements Stripe/cash/wallet/shared-cart : services propriétaires.
+- Webhooks Stripe : body brut avant `express.json`.
+- Wallet : créditer, débiter, contre-passer (jamais supprimer).
+- Pricing : composantes DB, jamais de coefficient dur.
+- Toute transition laisse une trace.
+
+---
+
+## 9. Règle Boutique
+
+Si la modification touche `public/boutique/**` :
+- Lire `public/boutique/README.md`.
+- Ne pas éditer `css/dist/*.css` directement.
+- Ne pas casser le hero fixed + `#k-page-scroll`.
+- Ne pas mélanger panier perso et panier partagé.
+
+---
+
+## 10. Fin de session
+
+Avant commit : mettre à jour headers `@komerce-arch`, manifest `features/`, `SCHEMA.md`, `STATUS.md` selon ce qui a changé.
+
+Vérification minimale :
 ```bash
-node scripts/feature-guard.js --strict
+npm run feature:registry && npm run quality:gate
 ```
-
-Une intervention fonctionnelle sur une feature slicée qui ne met pas à jour son manifest est incomplète.
 
 ---
 
-## 4. Gouvernance architecture obligatoire (N4)
+## 11. Hiérarchie documentaire
 
-Toute création, modification ou suppression de feature fonctionnelle doit maintenir la cartographie `@komerce-arch`.
-
-La règle détaillée vit dans :
-
-```txt
-docs/KOMERCE_ARCH_GRAPH_DOCTRINE.md
 ```
-
-Avant modification :
-
-1. lire le header `@komerce-arch` ou `@komerce-arch-lite` de chaque fichier touché ;
-2. lire `interventionIndex["<file>"]` dans `docs/komerce-arch-header-graph.json` pour identifier les fichiers, tables, doctrines et zones d'impact à vérifier ;
-3. si un fichier touché contient `@unknown` ou `resolve_before_behavior_change` sur le champ concerné, résoudre ce point avant de changer le comportement.
-
-Pendant modification :
-
-- tout nouveau fichier source doit naître avec un header ;
-- utiliser `@komerce-arch` si le fichier porte une responsabilité autonome ;
-- utiliser `@komerce-arch-lite` si le fichier est un support possédé par un owner explicite ;
-- mettre à jour `@inputs`, `@outputs`, `@depends`, `@used-by`, `@db-read`, `@db-write`, `@db-txn`, `@doctrine`, `@impact-areas` dès que le contrat fonctionnel change ;
-- en cas de suppression ou fusion, supprimer ou transférer les références `@depends`, `@used-by`, `@owner`.
-
-Après modification :
-
-```bash
-node scripts/generate-komerce-arch-graph.js
-```
-
-Vérifier obligatoirement :
-
-- `files without headers: 0` ;
-- `lite headers without owner: 0` ;
-- les nouveaux edges du graphe sont cohérents ;
-- les accès DB nouveaux ou modifiés sont déclarés ;
-- les champs incertains restent explicitement en `@unknown` ou `resolve_before_behavior_change`, jamais inventés.
-
-Une intervention fonctionnelle sans mise à jour du header et du graphe est incomplète.
-
----
-
-## 5. Gouvernance DB obligatoire (N4)
-
-Tout changement de schéma DB doit suivre :
-
-```txt
-docs/KOMERCE_DB_SCHEMA_DOCTRINE.md
-```
-
-Règle : une migration, un changement de table, colonne, enum, index, trigger, fonction ou contrainte est incomplet tant que :
-
-- la migration ou le chemin startup est explicite ;
-- `docs/SCHEMA.md` est mis à jour ;
-- les headers des fichiers lecteurs/écrivains sont mis à jour ;
-- le graphe est régénéré si les headers changent ;
-- l'ordre migration/deploy/rollback est documenté si la production est impactée.
-
----
-
-## 6. Doctrine produit active — panier partagé
-
-Le modèle actif est **Boutique First**.
-
-Lire :
-
-- [`docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/doctrine/PANIER_PARTAGE_BOUTIQUE_FIRST.md)
-- [`docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md`](./docs/implementation/PANIER_PARTAGE_BOUTIQUE_FIRST.md)
-
-Règle :
-
-```txt
-Le lien partagé ouvre une boutique, jamais un guichet.
-Le participant consulte le panier en lecture seule.
-Il règle sa part seulement si le panier est payable.
-```
-
-Toute documentation V4.1, collective workspace, cagnotte, engagement ou financement collectif est historique sauf si elle est explicitement reprise dans ces deux documents.
-
----
-
-## 7. Hiérarchie documentaire
-
-En cas de conflit :
-
-```txt
 1. Code de production
-2. DB live pour le schéma
-3. docs/README.md
-4. Documents actifs listés dans docs/README.md
-5. Docs historiques / archives / audits
+2. DB live
+3. AGENTS.md (ce fichier)
+4. docs/README.md
+5. Documents actifs listés dans docs/README.md
+6. Archives / audits
 ```
 
-Une doc ancienne qui contredit `docs/README.md` ou la doctrine Boutique First est subordonnée, même si elle est plus détaillée.
-
 ---
 
-## 8. Règle de divergence
+## 12. Divergence
 
-Si code, DB et docs ne racontent pas la même chose :
-
-1. ne pas corriger silencieusement ;
-2. noter la divergence dans `docs/chantier/STATUS.md` ;
-3. corriger le document actif concerné dans la même PR que le code, ou créer une dette explicite.
-
----
-
-## 9. Règles techniques non négociables
-
-- Statuts commande : passer par `services/order-status-machine.js`.
-- Paiements Stripe/cash/wallet/shared-cart : passer par les services propriétaires documentés.
-- Webhooks Stripe : conserver le body brut avant `express.json`.
-- Wallet : jamais de suppression destructive ; créditer, débiter, contre-passer.
-- Pricing : lire les composantes DB, jamais de coefficient dur.
-- Toute transition effective doit laisser une trace.
-
----
-
-## 10. Règle Boutique
-
-Si une modification touche :
-
-- `public/boutique/**` ;
-- `docs/boutique/**` ;
-- un script racine qui affecte la Boutique ;
-
-alors lire les documents Boutique actifs listés dans `docs/README.md` et [`public/boutique/README.md`](./public/boutique/README.md).
-
-Interdits Boutique :
-
-- ne pas créer une deuxième source de vérité ;
-- ne pas éditer `public/boutique/css/dist/*.css` directement ;
-- ne pas casser le moteur mobile hero fixed + `#k-page-scroll` ;
-- ne pas corriger le desktop avec un hack mobile ;
-- ne pas mélanger panier personnel et panier partagé.
-
----
-
-## 11. Règle de fin de session
-
-Avant commit ou PR :
-
-- mettre à jour `docs/chantier/STATUS.md` si l'état courant change ;
-- mettre à jour le document actif concerné ;
-- mettre à jour `docs/SCHEMA.md` si le schéma DB change ;
-- mettre à jour les headers `@komerce-arch` / `@komerce-arch-lite` concernés ;
-- régénérer `docs/KOMERCE_ARCH_HEADER_GRAPH.md` et `docs/komerce-arch-header-graph.json` si la cartographie change ;
-- ne pas ajouter de nouveau document hors index sans l'ajouter à `docs/README.md` ;
-- laisser les anciens documents en archive/subordination plutôt que les réactiver implicitement ;
-- faire passer `npm run feature:registry` et `npm run feature:check` si une feature ou son manifest a changé.
+Si code, DB et docs divergent : ne pas corriger silencieusement.
+Noter dans `docs/chantier/STATUS.md`, corriger dans la même PR ou créer une dette explicite.

@@ -12,6 +12,7 @@
  * @impact-areas  shared-cart-creation, checkout, participant-flow, creator-flow, local-cart
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-share-cart

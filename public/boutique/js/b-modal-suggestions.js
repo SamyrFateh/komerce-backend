@@ -12,6 +12,7 @@
  * @impact-areas  product-discovery, modal, personalization, catalog-navigation
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-suggestions
@@ -281,32 +282,32 @@ function _bindCardActions(card) {
 
     // ── Modal infini : auto-advance subcats quand fin de scroll ──
     if (window.innerWidth < 900) {
-      var _mScrollEl = modalZone('.k-modal-scroll');
+      let _mScrollEl = modalZone('.k-modal-scroll');
       if (_mScrollEl) {
         if (_mScrollEl._sugInfinite) {
           _mScrollEl.removeEventListener('scrollend', _mScrollEl._sugInfinite);
           clearTimeout(_mScrollEl._sugInfTimer);
         }
-        var _mAdv = false;
+        let _mAdv = false;
         _mScrollEl._sugInfinite = function() {
           if (_mAdv) return;
-          var rem = _mScrollEl.scrollHeight - _mScrollEl.scrollTop - _mScrollEl.clientHeight;
+          let rem = _mScrollEl.scrollHeight - _mScrollEl.scrollTop - _mScrollEl.clientHeight;
           if (rem > 80) return;
           _mAdv = true;
-          var chipBtns = Array.from(dom.sugRail.querySelectorAll('.k-sug-chip'));
+          let chipBtns = Array.from(dom.sugRail.querySelectorAll('.k-sug-chip'));
           if (chipBtns.length < 2) { _mAdv = false; return; }
-          var activeIdx = chipBtns.findIndex(function(c) { return c.classList.contains('is-active'); });
-          var nextIdx = (activeIdx + 1) % chipBtns.length;
+          let activeIdx = chipBtns.findIndex(function(c) { return c.classList.contains('is-active'); });
+          let nextIdx = (activeIdx + 1) % chipBtns.length;
           // Reshuffle si on revient à Tout (wrap)
           if (nextIdx === 0) {
-            var _sg = dom.sugRail.querySelector('.k-sug-grid--same');
+            let _sg = dom.sugRail.querySelector('.k-sug-grid--same');
             if (_sg) {
-              var _sc = Array.from(_sg.children);
-              for (var _si = _sc.length - 1; _si > 0; _si--) {
-                var _sj = Math.floor(Math.random() * (_si + 1));
-                var _st = _sc[_si]; _sc[_si] = _sc[_sj]; _sc[_sj] = _st;
+              let _sc = Array.from(_sg.children);
+              for (let _si = _sc.length - 1; _si > 0; _si--) {
+                let _sj = Math.floor(Math.random() * (_si + 1));
+                let _st = _sc[_si]; _sc[_si] = _sc[_sj]; _sc[_sj] = _st;
               }
-              var _sf = document.createDocumentFragment();
+              let _sf = document.createDocumentFragment();
               _sc.forEach(function(c) { _sf.appendChild(c); });
               _sg.appendChild(_sf);
             }
@@ -314,7 +315,7 @@ function _bindCardActions(card) {
           chipBtns[nextIdx].click();
           // Scroll doux vers le titre des suggestions
           setTimeout(function() {
-            var sugTitle = dom.sugRail.querySelector('.k-sug-title');
+            let sugTitle = dom.sugRail.querySelector('.k-sug-title');
             if (sugTitle) sugTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setTimeout(function() { _mAdv = false; }, 600);
           }, 150);

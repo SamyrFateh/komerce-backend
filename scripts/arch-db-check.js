@@ -101,6 +101,7 @@ function main() {
 
   // ---- BLOQUANT ----
   const noHeaders = graph.filesWithoutHeaders || [];
+  const misplacedHeaders = graph.filesWithMisplacedHeaders || [];
   const liteNoOwner = graph.liteWithoutOwner || [];
 
   const noiseHits = [];
@@ -132,6 +133,9 @@ function main() {
   if (noHeaders.length > 0) {
     hard.push(`Fichiers sans header: ${noHeaders.length}\n  - ` + noHeaders.slice(0, 40).join('\n  - '));
   }
+  if (misplacedHeaders.length > 0) {
+    hard.push(`Headers @komerce-arch mal places (shebang/code avant le bloc /** */): ${misplacedHeaders.length}\n  Fix : shebang en ligne 1 -> header @komerce-arch juste apres -> 'use strict' apres le header.\n  - ` + misplacedHeaders.slice(0, 40).join('\n  - '));
+  }
   if (liteNoOwner.length > 0) {
     hard.push(`Lite sans owner: ${liteNoOwner.length}\n  - ` + liteNoOwner.slice(0, 40).join('\n  - '));
   }
@@ -149,6 +153,7 @@ function main() {
   console.log('');
   console.log('--- TIER BLOQUANT ---');
   console.log(`Sans header             : ${noHeaders.length}`);
+  console.log(`Header mal place        : ${misplacedHeaders.length}`);
   console.log(`Lite sans owner         : ${liteNoOwner.length}`);
   console.log(`Mots-clefs SQL          : ${noiseHits.length}`);
   console.log('');

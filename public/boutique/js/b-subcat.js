@@ -12,6 +12,7 @@
  * @impact-areas  category-navigation, product-grid, header-position, responsive-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-subcat.js — Module ES · §5 FLAT SUBCAT
@@ -74,8 +75,8 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @returns {Array<{label:string, slug:string, count:number}>}
    */
   function _subcatMeta(cat, subKey) {
-    var subs = getSubcategories(cat) || [];
-    for (var i = 0; i < subs.length; i++) {
+    let subs = getSubcategories(cat) || [];
+    for (let i = 0; i < subs.length; i++) {
       if (subs[i].key === subKey) return subs[i];
     }
     return { key: subKey, label: subKey, icon: '✨' };
@@ -90,8 +91,8 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @returns {string|null} Subcat suivante
    */
   function _nextSubcat(cat, currentSub) {
-    var subs = getSubcategories(cat) || [];
-    for (var i = 0; i < subs.length - 1; i++) {
+    let subs = getSubcategories(cat) || [];
+    for (let i = 0; i < subs.length - 1; i++) {
       if (subs[i].key === currentSub) return subs[i + 1].key;
     }
     return null;
@@ -134,12 +135,12 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @param {string|null} subcatSlug - Filtre actif (null = tout)
    */
   function _renderFlatSubcat() {
-    var fs = state.flatSubcat;
+    let fs = state.flatSubcat;
     if (!fs) return '';
-    var subs = getSubcategories(fs.cat) || [];
+    let subs = getSubcategories(fs.cat) || [];
 
     // Chrome (header + tabs) — stocké pour _mountFlatSubcatChrome
-    var headerHtml =
+    let headerHtml =
       '<div class="k-flat-subcat-header">' +
         '<button class="k-flat-subcat-close" id="k-flat-subcat-close" aria-label="Fermer">' +
           '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
@@ -162,11 +163,11 @@ import { isDesktop }               from './b-scroll-owner.js';
 
     // Pages du pager (1 par sous-cat) — classe DÉDIÉE .k-flat-subcat-page
     // (indépendante de .k-cat-section pour éviter les collisions avec le pager principal)
-    var pagesHtml = subs.map(function(s) {
-      var prods = _productsForSubcat(fs.cat, s.key);
-      var total = prods.length;
-      var firstPage = prods.slice(0, state.pageSize);
-      var gridHtml = firstPage.length > 0
+    let pagesHtml = subs.map(function(s) {
+      let prods = _productsForSubcat(fs.cat, s.key);
+      let total = prods.length;
+      let firstPage = prods.slice(0, state.pageSize);
+      let gridHtml = firstPage.length > 0
         ? ('<div class="k-sec-grid">' + firstPage.map(_renderCard).join('') + '</div>')
         : ('<div class="k-flat-subcat-empty">' +
             '<div class="k-flat-subcat-empty-emoji">🔎</div>' +
@@ -194,10 +195,10 @@ import { isDesktop }               from './b-scroll-owner.js';
     // Couper le pager principal AVANT de monter le flat subcat
     destroyMobilePager();
     _unmountFlatSubcatChrome();
-    var sec = document.getElementById('k-catalog-section');
-    var grid = document.getElementById('k-grid');
+    let sec = document.getElementById('k-catalog-section');
+    let grid = document.getElementById('k-grid');
     if (!sec || !grid) return;
-    var wrapper = document.createElement('div');
+    let wrapper = document.createElement('div');
     wrapper.id = 'k-flat-subcat-chrome';
     wrapper.innerHTML = state._flatSubcatHeaderHtml || '';
     sec.insertBefore(wrapper, grid);
@@ -207,7 +208,7 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @param {HTMLElement} section - Élément section catégorie
    */
   function _unmountFlatSubcatChrome() {
-    var old = document.getElementById('k-flat-subcat-chrome');
+    let old = document.getElementById('k-flat-subcat-chrome');
     if (old) old.remove();
   }
 
@@ -217,7 +218,7 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Gère les chips, le swipe horizontal et la synchronisation de l'onglet actif.
    */
   function _bindFlatSubcatControls() {
-    var closeBtn = document.getElementById('k-flat-subcat-close');
+    let closeBtn = document.getElementById('k-flat-subcat-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -225,7 +226,7 @@ import { isDesktop }               from './b-scroll-owner.js';
         state.flatSubcat = null;
         state.page = 0;
         renderGrid();
-        var _sc = dom.pageScroll;
+        let _sc = dom.pageScroll;
         if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
       });
     }
@@ -244,9 +245,9 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @param {string} sub - Slug de la sous-catégorie cible
    */
   function _scrollFlatPagerToSub(sub) {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid || !sub) return;
-    var page = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + sub + '"]');
+    let page = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + sub + '"]');
     if (!page) return;
     grid.scrollTo({ left: page.offsetLeft, behavior: 'smooth' });
     _syncFlatActiveTab(sub);
@@ -260,24 +261,24 @@ import { isDesktop }               from './b-scroll-owner.js';
   function _syncFlatActiveTab(sub) {
     if (!state.flatSubcat) return;
     state.flatSubcat.sub = sub;
-    var fs = state.flatSubcat;
-    var meta = _subcatMeta(fs.cat, sub);
-    var lbl = document.getElementById('k-flat-subcat-sub-label');
+    let fs = state.flatSubcat;
+    let meta = _subcatMeta(fs.cat, sub);
+    let lbl = document.getElementById('k-flat-subcat-sub-label');
     if (lbl) lbl.innerHTML = meta.icon + ' ' + sanitize(meta.label);
-    var total = _productsForSubcat(fs.cat, sub).length;
-    var cnt = document.getElementById('k-flat-subcat-count');
+    let total = _productsForSubcat(fs.cat, sub).length;
+    let cnt = document.getElementById('k-flat-subcat-count');
     if (cnt) cnt.textContent = total + ' produit' + (total > 1 ? 's' : '');
-    var tabs = document.querySelectorAll('.k-flat-subcat-tab');
-    var activeTab = null;
+    let tabs = document.querySelectorAll('.k-flat-subcat-tab');
+    let activeTab = null;
     tabs.forEach(function(t) {
-      var on = t.dataset.flatSub === sub;
+      let on = t.dataset.flatSub === sub;
       t.classList.toggle('is-active', on);
       if (on) activeTab = t;
     });
     if (activeTab) {
-      var bar = document.getElementById('k-flat-subcat-tabs');
+      let bar = document.getElementById('k-flat-subcat-tabs');
       if (bar) {
-        var left = activeTab.offsetLeft - bar.clientWidth / 2 + activeTab.clientWidth / 2;
+        let left = activeTab.offsetLeft - bar.clientWidth / 2 + activeTab.clientWidth / 2;
         bar.scrollTo({ left: left, behavior: 'smooth' });
       }
     }
@@ -289,10 +290,10 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Utilise offsetHeight pour mesurer le header/nav runtime.
    */
   function _recalcPagerHeight() {
-    var hdr = document.querySelector('.k-header');
-    var hero = document.getElementById('k-hero');
-    var cats = document.querySelector('.k-cats-shell');
-    var usedH = (hdr ? hdr.offsetHeight : 0)
+    let hdr = document.querySelector('.k-header');
+    let hero = document.getElementById('k-hero');
+    let cats = document.querySelector('.k-cats-shell');
+    let usedH = (hdr ? hdr.offsetHeight : 0)
               + (hero ? hero.offsetHeight : 0)
               + (cats ? cats.offsetHeight : 0);
     document.documentElement.style.setProperty('--pager-h', (window.innerHeight - usedH) + 'px');
@@ -308,7 +309,7 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Nettoie les styles inline du pager principal, ajoute les classes nécessaires.
    */
   function _prepareFlatSubcatLayout() {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid) return;
     // Nettoyer les styles inline laissés par b-pager.js (translateX, etc.)
     grid.style.transform  = '';
@@ -324,12 +325,12 @@ import { isDesktop }               from './b-scroll-owner.js';
   }
 
   function _setupFlatSubcatPager() {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid || !state.flatSubcat) return;
     _prepareFlatSubcatLayout();
 
-    var fs = state.flatSubcat;
-    var initialPage = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + fs.sub + '"]');
+    let fs = state.flatSubcat;
+    let initialPage = grid.querySelector('.k-flat-subcat-page[data-flat-sub="' + fs.sub + '"]');
     if (initialPage) {
       requestAnimationFrame(function() {
         grid.scrollLeft = initialPage.offsetLeft;
@@ -341,16 +342,16 @@ import { isDesktop }               from './b-scroll-owner.js';
     if (grid._flatScrollBound) {
       grid.removeEventListener('scroll', grid._flatScrollHandler);
     }
-    var syncRaf = null;
+    let syncRaf = null;
     grid._flatScrollHandler = function() {
       if (syncRaf) cancelAnimationFrame(syncRaf);
       syncRaf = requestAnimationFrame(function() {
-        var pages = grid.querySelectorAll('.k-flat-subcat-page');
-        var scrollL = grid.scrollLeft;
-        var bestPage = null;
-        var bestDist = Infinity;
+        let pages = grid.querySelectorAll('.k-flat-subcat-page');
+        let scrollL = grid.scrollLeft;
+        let bestPage = null;
+        let bestDist = Infinity;
         pages.forEach(function(p) {
-          var d = Math.abs(p.offsetLeft - scrollL);
+          let d = Math.abs(p.offsetLeft - scrollL);
           if (d < bestDist) { bestDist = d; bestPage = p; }
         });
         if (bestPage && state.flatSubcat && bestPage.dataset.flatSub !== state.flatSubcat.sub) {
@@ -377,7 +378,7 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @returns {boolean}
    */
     function _isFlatActive() {
-    var _g = document.getElementById('k-grid');
+    let _g = document.getElementById('k-grid');
     return window.innerWidth < 900 &&
       !!state.flatSubcat &&
       !!_g &&
@@ -389,18 +390,18 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Calcule la vélocité et déclenche la navigation subcat si seuil atteint.
    */
   function _setupFlatSubcatTouchSwipe() {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid || grid._flatTouchBound) return;
     grid._flatTouchBound = true;
-    var active = false;
-    var dragging = false;
-    var startX = 0, startY = 0, startScrollLeft = 0;
+    let active = false;
+    let dragging = false;
+    let startX = 0, startY = 0, startScrollLeft = 0;
 
 
     grid.addEventListener('touchstart', function(e) {
       if (!_isFlatActive()) return;
       if (e.touches.length !== 1) return;
-      var t = e.touches[0];
+      let t = e.touches[0];
       // Respecter les vrais boutons
       if (e.target.closest(
         'button, a, input, textarea, select, .k-card-add, .k-card-fav, .k-flat-subcat-tab, .k-flat-subcat-close'
@@ -414,9 +415,9 @@ import { isDesktop }               from './b-scroll-owner.js';
 
     grid.addEventListener('touchmove', function(e) {
       if (!active || !_isFlatActive()) return;
-      var t = e.touches[0];
-      var dx = t.clientX - startX;
-      var dy = t.clientY - startY;
+      let t = e.touches[0];
+      let dx = t.clientX - startX;
+      let dy = t.clientY - startY;
       if (!dragging) {
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         // Geste vertical → on laisse la page interne scroller
@@ -456,14 +457,14 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Permet de faire glisser le pager avec la souris comme un doigt.
    */
   function _setupFlatSubcatDragScroll() {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid || grid._flatDragBound) return;
     grid._flatDragBound = true;
-    var down = false;
-    var dragging = false;
-    var startX = 0;
-    var startY = 0;
-    var startScrollLeft = 0;
+    let down = false;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
     grid.addEventListener('pointerdown', function(e) {
       if (!_isFlatActive()) return;
       /* Ne pas voler les vrais boutons */
@@ -478,8 +479,8 @@ import { isDesktop }               from './b-scroll-owner.js';
     }, true);
     grid.addEventListener('pointermove', function(e) {
       if (!down || !_isFlatActive()) return;
-      var dx = e.clientX - startX;
-      var dy = e.clientY - startY;
+      let dx = e.clientX - startX;
+      let dy = e.clientY - startY;
       if (!dragging) {
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         /* Geste vertical : on laisse la page interne scroller */
@@ -528,13 +529,13 @@ import { isDesktop }               from './b-scroll-owner.js';
    * Charge la page suivante automatiquement quand l'utilisateur atteint le bas.
    */
   function _setupFlatSubcatInfiniteScroll() {
-    var grid = document.getElementById('k-grid');
+    let grid = document.getElementById('k-grid');
     if (!grid) return;
     grid.querySelectorAll('.k-flat-subcat-page').forEach(function(page) {
       if (page._flatIO) { try { page._flatIO.disconnect(); } catch(e){} page._flatIO = null; }
-      var sentinel = page.querySelector('.k-flat-page-sentinel');
+      let sentinel = page.querySelector('.k-flat-page-sentinel');
       if (!sentinel) return;
-      var io = new IntersectionObserver(function(entries) {
+      let io = new IntersectionObserver(function(entries) {
         if (entries[0].isIntersecting) _appendNextToFlatPage(page);
       }, { root: page, rootMargin: '0px 0px 300px 0px', threshold: 0.01 });
       io.observe(sentinel);
@@ -548,17 +549,17 @@ import { isDesktop }               from './b-scroll-owner.js';
    * @param {number} page - Index de page à charger (0-indexed)
    */
   function _appendNextToFlatPage(page) {
-    var sub = page.dataset.flatSub;
-    var fs = state.flatSubcat;
+    let sub = page.dataset.flatSub;
+    let fs = state.flatSubcat;
     if (!fs) return;
-    var currentPage = parseInt(page.dataset.flatPage || '0', 10);
-    var list = _productsForSubcat(fs.cat, sub);
-    var start = (currentPage + 1) * state.pageSize;
+    let currentPage = parseInt(page.dataset.flatPage || '0', 10);
+    let list = _productsForSubcat(fs.cat, sub);
+    let start = (currentPage + 1) * state.pageSize;
 
     if (start >= list.length) {
       if (!page.querySelector('.k-flat-page-end')) {
-        var nextSub = _nextSubcat(fs.cat, sub);
-        var endHtml =
+        let nextSub = _nextSubcat(fs.cat, sub);
+        let endHtml =
           '<div class="k-flat-page-end">' +
             '<div class="k-flat-page-end-emoji">✨</div>' +
             '<div class="k-flat-page-end-title">Tout vu dans ' + sanitize(_subcatMeta(fs.cat, sub).label) + '</div>' +
@@ -568,14 +569,14 @@ import { isDesktop }               from './b-scroll-owner.js';
                   ' →</button>'
               : '<div class="k-flat-page-end-sub">Dernière sous-catégorie !</div>') +
           '</div>';
-        var gridEl = page.querySelector('.k-sec-grid');
+        let gridEl = page.querySelector('.k-sec-grid');
         if (gridEl) {
           gridEl.insertAdjacentHTML('afterend', endHtml);
         } else {
-          var sent = page.querySelector('.k-flat-page-sentinel');
+          let sent = page.querySelector('.k-flat-page-sentinel');
           if (sent) sent.insertAdjacentHTML('beforebegin', endHtml);
         }
-        var nextBtn = page.querySelector('.k-flat-page-end-next');
+        let nextBtn = page.querySelector('.k-flat-page-end-next');
         if (nextBtn) {
           nextBtn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -588,13 +589,13 @@ import { isDesktop }               from './b-scroll-owner.js';
     }
 
     page.dataset.flatPage = String(currentPage + 1);
-    var nextItems = list.slice(start, start + state.pageSize);
-    var fragment = nextItems.map(_renderCard).join('');
-    var gridEl = page.querySelector('.k-sec-grid');
+    let nextItems = list.slice(start, start + state.pageSize);
+    let fragment = nextItems.map(_renderCard).join('');
+    let gridEl = page.querySelector('.k-sec-grid');
     if (gridEl) {
       gridEl.insertAdjacentHTML('beforeend', fragment);
     } else {
-      var sent = page.querySelector('.k-flat-page-sentinel');
+      let sent = page.querySelector('.k-flat-page-sentinel');
       if (sent) sent.insertAdjacentHTML('beforebegin', '<div class="k-sec-grid">' + fragment + '</div>');
     }
     _bindAppendedCards();
@@ -617,16 +618,16 @@ import { isDesktop }               from './b-scroll-owner.js';
    */
   function _installSubchipListener() {
     document.addEventListener('click', function(e) {
-      var chip = e.target.closest('.k-sec-subchip');
+      let chip = e.target.closest('.k-sec-subchip');
       if (!chip) return;
       // Laisser passer les chips flat-cat (data-flat-sub) — gérées par b-catalog.js
       if ('flatSub' in chip.dataset || 'flatSubAll' in chip.dataset) return;
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
-      var cat = chip.dataset.secCat;
-      var sub = chip.dataset.secSub;
-      var isAll = chip.dataset.secSubAll === '1';
+      let cat = chip.dataset.secCat;
+      let sub = chip.dataset.secSub;
+      let isAll = chip.dataset.secSubAll === '1';
       if (!cat) return;
       if (!isAll && !sub) return;
       if (!isDesktop()) {
@@ -640,7 +641,7 @@ import { isDesktop }               from './b-scroll-owner.js';
         state.flatSubcat = { cat: cat, sub: sub };
         state.page = 0;
         renderGrid();
-        var _sc = dom.pageScroll;
+        let _sc = dom.pageScroll;
         if (_sc) _sc.scrollTo({ top: 0, behavior: 'auto' });
       } else {
         if (!state.sectionSubcats) state.sectionSubcats = {};

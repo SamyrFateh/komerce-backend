@@ -12,6 +12,7 @@
  * @impact-areas  product-discovery, category-navigation, modal-entry, side-cart-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-catalog.js — Module ES · §4 CATALOG + §6 GRID SECTIONS + §8 CATS & SEARCH
@@ -103,7 +104,7 @@ bus.on('catalog:cat-changed', function(cat) {
   $$('.k-chip').forEach(function(c) {
     c.classList.toggle('active', c.dataset.cat === cat);
   });
-  var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+  let chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
   if (chip) centerActiveChip(chip);
   // Bug 2 fix : mettre à jour le rail de sous-catégories (desktop uniquement)
   if (isDesktop()) {
@@ -305,7 +306,7 @@ function _triggerGridEnterAnim() {
   }, 520);
 
   if (state.activeCat) {
-    var chip = document.querySelector('.k-chip[data-cat="' + state.activeCat + '"]');
+    let chip = document.querySelector('.k-chip[data-cat="' + state.activeCat + '"]');
     if (chip) {
       chip.classList.remove('chip-pop');
       void chip.offsetWidth;
@@ -347,7 +348,7 @@ function renderGrid() {
     _mountFlatSubcatChrome();
     _bindGridEvents();
     _bindFlatSubcatControls();
-    var _psf = dom.pageScroll;
+    let _psf = dom.pageScroll;
     if (_psf) _psf.classList.add('k-pager-active');
     _recalcPagerHeight();
     _setupFlatSubcatPager();
@@ -393,7 +394,7 @@ function renderGrid() {
     _triggerGridEnterAnim();
     _bindGridEvents();
     if (_isMobile) {
-      var _ps = dom.pageScroll;
+      let _ps = dom.pageScroll;
       // Poser --pager-top/--pager-h AVANT k-pager-active (variables CSS requises
       // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()
       // — pas _setupMobilePager() entier — pour ne pas attacher les scroll
@@ -410,7 +411,7 @@ function renderGrid() {
         }
       });
     } else {
-      var _ps2 = dom.pageScroll;
+      let _ps2 = dom.pageScroll;
       if (_ps2) _ps2.classList.remove('k-pager-active');
       dom.grid.classList.remove('k-grid-cat-pager');
 
@@ -428,7 +429,7 @@ function renderGrid() {
   }
 
   dom.grid.classList.remove('k-grid-has-sections');
-  var _ps3 = dom.pageScroll;
+  let _ps3 = dom.pageScroll;
   if (_ps3) _ps3.classList.remove('k-pager-active');
 
   if (!_isMobile) {
@@ -463,9 +464,9 @@ function renderGrid() {
 /* ── HELPERS PAGINATION ─────────────────────────────────────────── */
 
 function _shuffle(arr) {
-  for (var i = arr.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  for (let i = arr.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    let tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
   }
   return arr;
 }
@@ -617,7 +618,7 @@ export function scrollToCategorySection(cat) {
   if (!isDesktop() && dom.pageScroll &&
       dom.pageScroll.classList.contains('k-pager-active')) {
     if (!cat || cat === 'all') {
-      var _g = document.getElementById('k-grid');
+      let _g = document.getElementById('k-grid');
       if (_g) _g.scrollTo({ left: 0, behavior: 'smooth' });
     } else {
       _scrollPagerToCat(cat);
@@ -628,8 +629,8 @@ export function scrollToCategorySection(cat) {
     scrollPageToTop('smooth');
     return;
   }
-  var anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
-  var el = document.getElementById(anchorId);
+  let anchorId = 'k-sec-' + cat.replace(/[^a-zA-Z0-9]/g, '-');
+  let el = document.getElementById(anchorId);
   if (!el) return;
   scroll.scrollingToSection = true;
   scrollPageToElement(el, -8, 'smooth');

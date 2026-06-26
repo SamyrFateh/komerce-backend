@@ -8,6 +8,7 @@
  * @impact-areas  recommendations
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-pdp-curation-suggestions

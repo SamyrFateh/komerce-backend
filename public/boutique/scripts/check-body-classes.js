@@ -35,6 +35,7 @@
  *
  * Sortie : exit 0 si tout passe, exit 1 sinon.
  */
+'use strict';
 
 'use strict';
 

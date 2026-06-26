@@ -12,6 +12,7 @@
  * @impact-areas  product-modal, product-discovery, participant-verification, media-carousel
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-product
@@ -53,23 +54,23 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
    * @param {HTMLElement} container - Conteneur carousel
    */
   function buildCarouselSlides(product) {
-    var track = dom.modalCarouselTrack;
-    var dots = dom.modalDots;
-    var images = product.images || [product.image_url];
+    let track = dom.modalCarouselTrack;
+    let dots = dom.modalDots;
+    let images = product.images || [product.image_url];
     images = images.filter(Boolean);
     if (!images.length) images = [product.image_url || ''];
 
     // ── Slides principales ─────────────────────────────────────
     track.innerHTML = '';
     // Reset skeleton state — ne redémarre le shimmer que si la première image change
-    var imgWrapForSkeleton = dom.modal.querySelector('.k-modal-img-wrap');
-    var _existingFirstSrc = track.querySelector('.k-modal-slide') ? track.querySelector('.k-modal-slide').src : '';
-    var _newFirstSrc = optimizeImgUrl(images[0], 800);
+    let imgWrapForSkeleton = dom.modal.querySelector('.k-modal-img-wrap');
+    let _existingFirstSrc = track.querySelector('.k-modal-slide') ? track.querySelector('.k-modal-slide').src : '';
+    let _newFirstSrc = optimizeImgUrl(images[0], 800);
     if (imgWrapForSkeleton && _existingFirstSrc !== _newFirstSrc) {
       imgWrapForSkeleton.classList.remove('is-image-loaded');
     }
     images.forEach(function(url, i) {
-      var img = document.createElement('img');
+      let img = document.createElement('img');
       img.className = 'k-modal-slide';
       img.src = optimizeImgUrl(url, 800);
       img.alt = product.name || '';
@@ -77,7 +78,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       img.loading = i < 3 ? 'eager' : 'lazy';
       // Première image : on coupe le shimmer dès qu'elle est chargée
       if (i === 0 && imgWrapForSkeleton) {
-        var killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
+        let killShimmer = function() { imgWrapForSkeleton.classList.add('is-image-loaded'); };
         img.addEventListener('load', killShimmer, { once: true });
         img.addEventListener('error', killShimmer, { once: true });
         // Si l'image est déjà en cache (load déjà tiré), on rattrape
@@ -92,12 +93,12 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     // ── Dots mobile ────────────────────────────────────────────
     // Au-delà de 5 images, les dots deviennent illisibles (largeur insuffisante)
     // → on bascule sur un compteur "X/Y" (Temu-style) à droite de l'image.
-    var DOTS_MAX = 5;
-    var useCounter = images.length > DOTS_MAX;
+    let DOTS_MAX = 5;
+    let useCounter = images.length > DOTS_MAX;
     dots.innerHTML = '';
     if (images.length > 1 && !useCounter) {
       images.forEach(function(_, i) {
-        var dot = document.createElement('span');
+        let dot = document.createElement('span');
         dot.className = 'k-modal-dot' + (i === 0 ? ' is-active' : '');
         dot.addEventListener('click', function() { goToSlide(i); });
         dots.appendChild(dot);
@@ -107,8 +108,8 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     // ── Compteur "3/12" mobile (s'affiche si > DOTS_MAX images) ─
     // Toujours créé/mis-à-jour pour pouvoir refléter l'état du carousel.
     // Visibilité contrôlée par la classe .is-visible (CSS).
-    var imgWrapForCounter = dom.modal.querySelector('.k-modal-img-wrap');
-    var counter = imgWrapForCounter ? imgWrapForCounter.querySelector('.k-modal-counter') : null;
+    let imgWrapForCounter = dom.modal.querySelector('.k-modal-img-wrap');
+    let counter = imgWrapForCounter ? imgWrapForCounter.querySelector('.k-modal-counter') : null;
     if (!counter && imgWrapForCounter) {
       counter = document.createElement('div');
       counter.className = 'k-modal-counter';
@@ -120,19 +121,19 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     }
 
     // ── Miniatures desktop (colonne gauche) ────────────────────
-    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    let imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
     // Supprimer ancienne colonne miniatures
-    var oldThumbs = dom.modal.querySelector('.k-modal-thumbs');
+    let oldThumbs = dom.modal.querySelector('.k-modal-thumbs');
     if (oldThumbs) oldThumbs.remove();
 
     if (images.length > 1) {
-      var thumbs = document.createElement('div');
+      let thumbs = document.createElement('div');
       thumbs.className = 'k-modal-thumbs';
       images.forEach(function(url, i) {
-        var thumb = document.createElement('button');
+        let thumb = document.createElement('button');
         thumb.className = 'k-modal-thumb' + (i === 0 ? ' is-active' : '');
         thumb.setAttribute('aria-label', 'Image ' + (i + 1));
-        var tImg = document.createElement('img');
+        let tImg = document.createElement('img');
         tImg.src = optimizeImgUrl(url, 120);
         tImg.alt = '';
         tImg.loading = 'lazy';
@@ -164,21 +165,21 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
   function goToSlide(index) {
     if (index < 0 || index >= state.carouselCount) return;
     state.carouselIndex = index;
-    var track = dom.modalCarouselTrack;
+    let track = dom.modalCarouselTrack;
     track.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
     track.style.transform = 'translateX(-' + (index * 100) + '%)';
     // Sync dots mobile
-    var allDots = dom.modalDots.querySelectorAll('.k-modal-dot');
+    let allDots = dom.modalDots.querySelectorAll('.k-modal-dot');
     allDots.forEach(function(d, i) {
       d.classList.toggle('is-active', i === index);
     });
     // Sync miniatures desktop
-    var allThumbs = dom.modal.querySelectorAll('.k-modal-thumb');
+    let allThumbs = dom.modal.querySelectorAll('.k-modal-thumb');
     allThumbs.forEach(function(t, i) {
       t.classList.toggle('is-active', i === index);
     });
     // Sync compteur mobile "3/12"
-    var counter = dom.modal.querySelector('.k-modal-counter');
+    let counter = dom.modal.querySelector('.k-modal-counter');
     if (counter) counter.textContent = (index + 1) + '/' + state.carouselCount;
     // PR-3 — notifier b-modal-image-ux du changement de slide
     bus.emit('carousel:changed', index);
@@ -200,26 +201,26 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
    * @param {Object} product   Produit complet (fallback price_kmf + images)
    */
   function _renderVariants(variants, product) {
-    var container = dom.modalVariants || document.getElementById('k-modal-variants');
+    let container = dom.modalVariants || document.getElementById('k-modal-variants');
     if (!container) return;
     container.innerHTML = '';
 
     Object.keys(variants).forEach(function(type) {
-      var options = variants[type];
+      let options = variants[type];
       if (!options || !options.length) return;
 
       // Les couleurs sont portées par les SKUs/images produit — on ne les ré-affiche pas ici.
       if (/couleur|color|coloris|teinte/i.test(type)) return;
 
-      var isTaille = /taille|pointure/i.test(type);
+      let isTaille = /taille|pointure/i.test(type);
 
-      var group = document.createElement('div');
+      let group = document.createElement('div');
       group.className = 'k-vg';
 
       // Label "Taille · M  [📏 Guide des tailles]"
-      var labelRow = document.createElement('div');
+      let labelRow = document.createElement('div');
       labelRow.className = 'k-vg-label';
-      var guideHTML = isTaille
+      let guideHTML = isTaille
         ? '<button type="button" class="k-vg-size-guide" data-size-type="' +
             (/pointure/i.test(type) ? 'shoes' : 'clothes') +
             '">📏 Guide des tailles</button>'
@@ -229,9 +230,9 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
         '<span class="k-vg-label-sep">·</span>' +
         '<span class="k-vg-label-val"></span>' +
         guideHTML;
-      var labelVal = labelRow.querySelector('.k-vg-label-val');
+      let labelVal = labelRow.querySelector('.k-vg-label-val');
 
-      var guideBtn = labelRow.querySelector('.k-vg-size-guide');
+      let guideBtn = labelRow.querySelector('.k-vg-size-guide');
       if (guideBtn) {
         guideBtn.addEventListener('click', function(e) {
           e.stopPropagation();
@@ -241,12 +242,12 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
 
       group.appendChild(labelRow);
 
-      var wrap = document.createElement('div');
+      let wrap = document.createElement('div');
       wrap.className = 'k-vg-sizes';
 
       options.forEach(function(opt) {
-        var isOut = (opt.stock === 0);
-        var btn   = document.createElement('button');
+        let isOut = (opt.stock === 0);
+        let btn   = document.createElement('button');
         btn.type  = 'button';
         btn.className = 'k-vp' + (isOut ? ' k-vp--out' : '');
         btn.textContent = opt.value;
@@ -284,19 +285,18 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
      (_injectMobileTrust, _injectMobileDelivery) soient reflowées. */
   function _syncScrollPadding() {
     if (window.innerWidth >= 900) return;
-    var actBar = dom.modal && dom.modal.querySelector('.k-modal-actions');
+    let actBar = dom.modal && dom.modal.querySelector('.k-modal-actions');
     // FIX v5: si .k-modal-actions est enfant direct de #k-modal (architecture statique),
-    // le layout flex gère l'ancrage. On expose quand même la hauteur mesurée en CSS var
-    // pour que le padding-bottom du scroll soit toujours exact (VIS-3D).
+    // le layout flex gère l'ancrage. On expose quand même la hauteur mesurée en CSS let // pour que le padding-bottom du scroll soit toujours exact (VIS-3D).
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
         if (!actBar) return;
-        var h = actBar.offsetHeight || 0;
-        // Source unique : var CSS mesurée → consommée par modal.css
+        let h = actBar.offsetHeight || 0;
+        // Source unique : let CSS mesurée → consommée par modal.css
         document.documentElement.style.setProperty('--k-modal-cta-h', h + 'px');
         // Fallback legacy si actions pas encore en flex statique (position:fixed)
         if (actBar.parentNode !== dom.modal) {
-          var scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+          let scrollEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
           if (scrollEl) scrollEl.style.paddingBottom = (h + 20) + 'px';
         }
       });
@@ -310,14 +310,14 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
   function _injectMobileDelivery(product) {
     if (!dom.modal) return;
     // Retirer l'ancien si présent (changement de produit)
-    var old = dom.modal.querySelector('[data-mobile-delivery]');
+    let old = dom.modal.querySelector('[data-mobile-delivery]');
     if (old) old.remove();
 
-    var info = dom.modal.querySelector('.k-modal-info');
+    let info = dom.modal.querySelector('.k-modal-info');
     if (!info) return;
 
-    var delay = (product && product.delivery_delay) || '3 à 5 semaines';
-    var el = document.createElement('div');
+    let delay = (product && product.delivery_delay) || '3 à 5 semaines';
+    let el = document.createElement('div');
     el.className = 'k-modal-delivery-mobile';
     el.setAttribute('data-mobile-delivery', '1');
     el.innerHTML =
@@ -328,7 +328,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
       '</span>';
 
     // Insérer après .k-modal-meta (juste après les badges social proof)
-    var meta = info.querySelector('.k-modal-meta');
+    let meta = info.querySelector('.k-modal-meta');
     if (meta && meta.nextSibling) {
       info.insertBefore(el, meta.nextSibling);
     } else {
@@ -346,13 +346,13 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
      toujours dans le scroll), masqué ≥900px par modal.css.                   */
   function _injectMobileTrust() {
     if (!dom.modal) return;
-    var old = dom.modal.querySelector('[data-mobile-trust]');
+    let old = dom.modal.querySelector('[data-mobile-trust]');
     if (old) old.remove();
 
-    var info = dom.modal.querySelector('.k-modal-info'); /* ancre STABLE dans le scroll */
+    let info = dom.modal.querySelector('.k-modal-info'); /* ancre STABLE dans le scroll */
     if (!info) return;
 
-    var el = document.createElement('div');
+    let el = document.createElement('div');
     el.className = 'k-modal-trust-mobile';
     el.setAttribute('data-mobile-trust', '1');
     el.innerHTML =
@@ -520,7 +520,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
    * @param {'clothes'|'shoes'|'kids'} type - Type de guide à afficher par défaut
    */
   function openSizeGuide(type) {
-    var overlay = document.getElementById('k-size-guide-overlay');
+    let overlay = document.getElementById('k-size-guide-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.id = 'k-size-guide-overlay';
@@ -640,7 +640,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
           overlay.querySelectorAll('.k-sg-tab').forEach(function(t) { t.classList.remove('is-active'); });
           overlay.querySelectorAll('.k-sg-section').forEach(function(s) { s.classList.add('u-hidden'); });
           tab.classList.add('is-active');
-          var section = overlay.querySelector('.k-sg-section[data-section="' + tab.dataset.tab + '"]');
+          let section = overlay.querySelector('.k-sg-section[data-section="' + tab.dataset.tab + '"]');
           if (section) section.classList.remove('u-hidden');
         });
       });
@@ -649,8 +649,8 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
     // Activer le bon onglet
     overlay.querySelectorAll('.k-sg-tab').forEach(function(t) { t.classList.remove('is-active'); });
     overlay.querySelectorAll('.k-sg-section').forEach(function(s) { s.classList.add('u-hidden'); });
-    var activeTab = overlay.querySelector('.k-sg-tab[data-tab="' + (type || 'clothes') + '"]');
-    var activeSection = overlay.querySelector('.k-sg-section[data-section="' + (type || 'clothes') + '"]');
+    let activeTab = overlay.querySelector('.k-sg-tab[data-tab="' + (type || 'clothes') + '"]');
+    let activeSection = overlay.querySelector('.k-sg-section[data-section="' + (type || 'clothes') + '"]');
     if (activeTab) activeTab.classList.add('is-active');
     if (activeSection) activeSection.classList.remove('u-hidden');
 
@@ -660,7 +660,7 @@ import { optimizeImgUrl, fmtPrice } from './b-utils.js';
   }
 
   function closeSizeGuide() {
-    var overlay = document.getElementById('k-size-guide-overlay');
+    let overlay = document.getElementById('k-size-guide-overlay');
     if (overlay) {
       overlay.classList.remove('is-open');
       document.body.classList.remove('k-sg-open');

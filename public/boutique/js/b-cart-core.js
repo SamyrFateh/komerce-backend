@@ -12,6 +12,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-cart-core.js — Module ES · §3 TOAST & CART CORE

@@ -12,6 +12,7 @@
  * @impact-areas  participant-flow, creator-flow, checkout, notifications, side-cart
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-group-view

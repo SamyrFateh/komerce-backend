@@ -12,6 +12,7 @@
  * @impact-areas  collective-workspaces, event-flow, creator-management
  * @version       2026-06
  */
+'use strict';
 
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page ORGANISATEUR (boutique)

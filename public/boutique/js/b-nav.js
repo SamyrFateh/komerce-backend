@@ -12,6 +12,7 @@
  * @impact-areas  boutique-navigation, view-switching, drawer, infinite-scroll
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-nav

@@ -22,6 +22,7 @@
  *     de CHAQUE bundle et la bumpe individuellement
  *   - Aucune édition manuelle de index.html ne peut casser le système
  */
+'use strict';
 
 'use strict';
 

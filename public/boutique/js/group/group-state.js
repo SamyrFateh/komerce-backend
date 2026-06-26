@@ -8,6 +8,7 @@
  * @impact-areas  shared-cart
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module group/group-state.js

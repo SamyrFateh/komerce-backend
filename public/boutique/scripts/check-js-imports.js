@@ -36,6 +36,7 @@
  *
  * Sortie : exit 0 si tout passe, exit 1 sinon.
  */
+'use strict';
 
 'use strict';
 
@@ -112,7 +113,7 @@ function extractExports(filepath) {
   const exported = new Set();
 
   // export function foo / export async function foo / export class Foo
-  // export const foo / export let foo / export var foo
+  // export const foo / export let foo / export let foo
   {
     const re = /^export\s+(?:async\s+)?(?:function\*?|class|const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/gm;
     let m;

@@ -37,6 +37,7 @@
  *
  * Sortie : exit 0 si en sync ou si --fix/--init réussit, exit 1 si désync.
  */
+'use strict';
 
 'use strict';
 

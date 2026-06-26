@@ -8,6 +8,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-social-proof
@@ -51,17 +52,17 @@ function _fmtCount(n) {
 // ═══════════════════════════════════════════════════════════════
 
 function injectSocialProof() {
-  var meta = modalZone('.k-modal-meta');
+  let meta = modalZone('.k-modal-meta');
   if (!meta) return;
 
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   meta.innerHTML = '';
 
   if (!product) return;
 
   // ── Rang Bestseller ───────────────────────────────────────
   if (product.rank) {
-    var rankEl = document.createElement('span');
+    let rankEl = document.createElement('span');
     rankEl.className = 'k-modal-meta-rank';
     rankEl.textContent = '#' + product.rank + '\u202fBestseller';
     meta.appendChild(rankEl);
@@ -69,7 +70,7 @@ function injectSocialProof() {
 
   // ── Vendus ────────────────────────────────────────────────
   if (product.sold_count && product.sold_count > 0) {
-    var soldEl = document.createElement('span');
+    let soldEl = document.createElement('span');
     soldEl.innerHTML =
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
         '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>' +
@@ -82,8 +83,8 @@ function injectSocialProof() {
 
   // ── Note + avis ───────────────────────────────────────────
   if (product.rating && product.rating > 0) {
-    var ratingEl = document.createElement('span');
-    var reviewPart = product.review_count
+    let ratingEl = document.createElement('span');
+    let reviewPart = product.review_count
       ? '\u00a0\u00b7\u00a0' + _fmtCount(product.review_count) + ' avis'
       : '';
     ratingEl.innerHTML =

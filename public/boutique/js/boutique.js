@@ -12,6 +12,7 @@
  * @impact-areas  boutique-home, product-discovery, side-cart, checkout, shared-cart, responsive-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module boutique
@@ -100,7 +101,7 @@ import './b-group-banner.js'; // chargé pour init auto si token actif
 (function resetDesktopScroll() {
   function applyDesktopReset() {
     if (window.innerWidth >= 900) {
-      var ps = document.getElementById('k-page-scroll');
+      let ps = document.getElementById('k-page-scroll');
       if (ps) {
         ps.style.top      = '';
         ps.style.position = '';
@@ -157,8 +158,8 @@ function setupFooterLinks() {
   document.querySelectorAll('[data-footer-cat]').forEach(function(a) {
     a.addEventListener('click', function(e) {
       e.preventDefault();
-      var cat = a.dataset.footerCat;
-      var chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
+      let cat = a.dataset.footerCat;
+      let chip = document.querySelector('.k-chip[data-cat="' + cat + '"]');
       if (chip) {
         chip.click();
       } else {
@@ -167,7 +168,7 @@ function setupFooterLinks() {
           if (m.setActiveCat) m.setActiveCat(cat);
         });
       }
-      var grid = document.getElementById('k-grid');
+      let grid = document.getElementById('k-grid');
       if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
@@ -181,7 +182,7 @@ bus.on('checkout:open', checkoutCart);
 if (document.readyState === 'loading') {
   // Listener global cart:setqty (stepper) — enregistré UNE SEULE FOIS
   document.addEventListener('cart:setqty', function(e) {
-    var d = e.detail || {};
+    let d = e.detail || {};
     if (d.pid !== undefined && d.qty !== undefined) {
       setQty(d.pid, d.qty);
     }
@@ -195,14 +196,14 @@ if (document.readyState === 'loading') {
 // ARCH-1 : checkout désormais via bus.on('checkout:open') — voir plus haut.
 // â”€â”€ Listener global délégué : modal carousel dots â”€â”€
 document.addEventListener('click', function(e) {
-  var dot = e.target.closest('.k-modal-dot');
+  let dot = e.target.closest('.k-modal-dot');
   if (!dot) return;
   e.preventDefault();
   e.stopPropagation();
-  var idx = parseInt(dot.dataset.index || dot.getAttribute('data-index') || '0', 10);
-  var track = document.querySelector('.k-modal-carousel-track');
+  let idx = parseInt(dot.dataset.index || dot.getAttribute('data-index') || '0', 10);
+  let track = document.querySelector('.k-modal-carousel-track');
   if (!track) return;
-  var slides = track.querySelectorAll('.k-modal-slide');
+  let slides = track.querySelectorAll('.k-modal-slide');
   if (!slides.length) return;
   track.style.transform = 'translateX(-' + (idx * 100) + '%)';
   document.querySelectorAll('.k-modal-dot').forEach(function(d, i) {

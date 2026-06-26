@@ -10,6 +10,7 @@
  *
  * Sortie : exit 0 si tout passe, exit 1 sinon.
  */
+'use strict';
 
 const fs   = require('fs');
 const path = require('path');

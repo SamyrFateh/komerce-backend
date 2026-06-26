@@ -12,6 +12,7 @@
  * @impact-areas  all-boutique, cart, checkout, catalog, modal, shared-cart, tracking
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-store

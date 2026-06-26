@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          refunds
- * @domain        unknown
+ * @domain        refunds
  * @layer         util
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

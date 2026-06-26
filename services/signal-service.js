@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          signal-service
- * @domain        unknown
+ * @domain        recommendations
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
@@ -27,17 +27,17 @@
  * and upserts signals with deduplication (type + entity).
  */
 
-var db = require('../db');
+let db = require('../db');
 // Manquait : les 5 catch non-fatals appellent log.warn(...) → sans cet import,
 // une sous-erreur lève "ReferenceError: log is not defined" et transforme un
 // warning non-fatal en 500 (détecté par la sonde de conformité P4-1).
-var log = require('../utils/logger').child({ module: 'signal-service' });
+let log = require('../utils/logger').child({ module: 'signal-service' });
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update a signal (dedup on type+entity)
    ═══════════════════════════════════════════════════════════════ */
 async function upsertSignal(sig) {
-  var sql = `
+  let sql = `
     INSERT INTO signals (
       signal_type, severity, title, summary,
       source_module, target_shell, target_view, target_filters,
@@ -54,7 +54,7 @@ async function upsertSignal(sig) {
       updated_at = NOW()
     RETURNING id
   `;
-  var result = await db.query(sql, [
+  let result = await db.query(sql, [
     sig.signal_type,
     sig.severity || 'warning',
     sig.title,
@@ -98,7 +98,7 @@ async function autoResolveSignals(signalType, stillActiveEntityIds) {
    EXPIRE — close signals past their expiration date
    ═══════════════════════════════════════════════════════════════ */
 async function expireOldSignals() {
-  var result = await db.query(`
+  let result = await db.query(`
     UPDATE signals SET status = 'expired', updated_at = NOW()
     WHERE status IN ('open','acknowledged','snoozed')
       AND expires_at IS NOT NULL AND expires_at < NOW()
@@ -111,12 +111,12 @@ async function expireOldSignals() {
    Each returns { generated: N, resolved: N }
    ═══════════════════════════════════════════════════════════════ */
 
-var GENERATORS = {};
+let GENERATORS = {};
 
 /* ── 1. parcel_blocked: colis bloqué > 3 jours dans un statut ── */
 GENERATORS.parcel_blocked = async function() {
   try {
-    var rows = (await db.query(`
+    let rows = (await db.query(`
       SELECT p.id, p.tracking_number, p.status, p.order_id,
              EXTRACT(DAY FROM NOW() - p.updated_at)::int AS days_stuck,
              o.reference
@@ -128,11 +128,11 @@ GENERATORS.parcel_blocked = async function() {
       LIMIT 50
     `)).rows;
 
-    var generated = 0;
-    var entityIds = [];
-    for (var r of rows) {
+    let generated = 0;
+    let entityIds = [];
+    for (let r of rows) {
       entityIds.push(r.id);
-      var severity = r.days_stuck > 7 ? 'critical' : r.days_stuck > 5 ? 'warning' : 'info';
+      let severity = r.days_stuck > 7 ? 'critical' : r.days_stuck > 5 ? 'warning' : 'info';
       await upsertSignal({
         signal_type:   'parcel_blocked',
         severity:      severity,
@@ -163,7 +163,7 @@ GENERATORS.parcel_blocked = async function() {
 /* ── 2. cash_expiring: réconciliation cash en attente > 5 jours ── */
 GENERATORS.cash_expiring = async function() {
   try {
-    var rows = (await db.query(`
+    let rows = (await db.query(`
       SELECT cc.id, cc.order_id, cc.amount, cc.relay_id,
              EXTRACT(DAY FROM NOW() - cc.created_at)::int AS days_pending,
              o.reference
@@ -175,11 +175,11 @@ GENERATORS.cash_expiring = async function() {
       LIMIT 50
     `)).rows;
 
-    var generated = 0;
-    var entityIds = [];
-    for (var r of rows) {
+    let generated = 0;
+    let entityIds = [];
+    for (let r of rows) {
       entityIds.push(r.id);
-      var severity = r.days_pending > 10 ? 'critical' : 'warning';
+      let severity = r.days_pending > 10 ? 'critical' : 'warning';
       await upsertSignal({
         signal_type:   'cash_expiring',
         severity:      severity,
@@ -211,7 +211,7 @@ GENERATORS.cash_expiring = async function() {
 GENERATORS.stock_rupture = async function() {
   try {
     // Products active but with 0 orders in last 30 days = potential dead stock
-    var rows = (await db.query(`
+    let rows = (await db.query(`
       SELECT p.id, p.name, p.category, p.price_kmf,
              COALESCE(recent.cnt, 0) AS recent_orders
       FROM products p
@@ -228,9 +228,9 @@ GENERATORS.stock_rupture = async function() {
       LIMIT 30
     `)).rows;
 
-    var generated = 0;
-    var entityIds = [];
-    for (var r of rows) {
+    let generated = 0;
+    let entityIds = [];
+    for (let r of rows) {
       entityIds.push(r.id);
       await upsertSignal({
         signal_type:   'stock_rupture',
@@ -263,7 +263,7 @@ GENERATORS.margin_drift = async function() {
   try {
     // Orders where the margin might be too low
     // Simple heuristic: total_kmf / nb_items < threshold
-    var rows = (await db.query(`
+    let rows = (await db.query(`
       SELECT o.id, o.reference, o.total_kmf,
              COALESCE(o.items_total, 1) AS items,
              o.created_at
@@ -276,11 +276,11 @@ GENERATORS.margin_drift = async function() {
       LIMIT 20
     `)).rows;
 
-    var generated = 0;
-    var entityIds = [];
-    for (var r of rows) {
+    let generated = 0;
+    let entityIds = [];
+    for (let r of rows) {
       entityIds.push(r.id);
-      var avgPerItem = Math.round(r.total_kmf / Math.max(r.items, 1));
+      let avgPerItem = Math.round(r.total_kmf / Math.max(r.items, 1));
       await upsertSignal({
         signal_type:   'margin_drift',
         severity:      'warning',
@@ -310,7 +310,7 @@ GENERATORS.margin_drift = async function() {
 /* ── 5. dispute_sensitive: commandes avec statut problématique ── */
 GENERATORS.dispute_sensitive = async function() {
   try {
-    var rows = (await db.query(`
+    let rows = (await db.query(`
       SELECT o.id, o.reference, o.status, o.total_kmf,
              EXTRACT(DAY FROM NOW() - o.updated_at)::int AS days_in_status,
              u.full_name AS client_name, u.phone
@@ -322,11 +322,11 @@ GENERATORS.dispute_sensitive = async function() {
       LIMIT 20
     `)).rows;
 
-    var generated = 0;
-    var entityIds = [];
-    for (var r of rows) {
+    let generated = 0;
+    let entityIds = [];
+    for (let r of rows) {
       entityIds.push(r.id);
-      var severity = r.days_in_status > 5 ? 'critical' : 'warning';
+      let severity = r.days_in_status > 5 ? 'critical' : 'warning';
       await upsertSignal({
         signal_type:   'dispute_sensitive',
         severity:      severity,
@@ -360,11 +360,11 @@ GENERATORS.dispute_sensitive = async function() {
    MAIN GENERATOR — runs all or specific generators
    ═══════════════════════════════════════════════════════════════ */
 async function generateSignals(types) {
-  var expired = await expireOldSignals();
-  var results = { expired: expired, generators: {} };
+  let expired = await expireOldSignals();
+  let results = { expired: expired, generators: {} };
 
-  var toRun = types || Object.keys(GENERATORS);
-  for (var type of toRun) {
+  let toRun = types || Object.keys(GENERATORS);
+  for (let type of toRun) {
     if (GENERATORS[type]) {
       results.generators[type] = await GENERATORS[type]();
     } else {

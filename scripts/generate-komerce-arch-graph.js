@@ -66,9 +66,20 @@ function walk(relativePath, out) {
 function parseHeader(src) {
   // Retire un BOM puis un shebang (#!...) eventuel : un script CLI ne doit pas
   // pouvoir echapper au scan simplement parce qu'il commence par #!/usr/bin/env.
+  // IMPORTANT : le shebang n'est reconnu que s'il est en TOUTE PREMIERE ligne du
+  // fichier (exigence Node elle-meme). 'use strict' ou tout autre code avant le
+  // shebang invalide a la fois le shebang et la detection du header qui suit.
   const firstMeaningful = src.replace(/^\uFEFF/, '').replace(/^#![^\n]*\n/, '').trimStart();
   const start = firstMeaningful.indexOf('/**');
-  if (start !== 0) return null;
+  if (start !== 0) {
+    // Diagnostic dedie : un header existe plus bas mais n'est pas en position
+    // valide (shebang deplace, code avant le bloc, etc.) -> erreur actionnable
+    // au lieu d'un simple "sans header" qui laisse croire qu'il faut en creer un.
+    if (firstMeaningful.slice(0, 400).includes(ARCH_MARKER) || src.includes(ARCH_MARKER)) {
+      return { __headerType: 'misplaced' };
+    }
+    return null;
+  }
 
   const end = firstMeaningful.indexOf('*/', start);
   if (end < 0) return null;
@@ -142,6 +153,7 @@ function main() {
   const fileSet = new Set(files);
   const basenameToFiles = new Map();
   const filesWithoutHeaders = [];
+  const filesWithMisplacedHeaders = [];
 
   for (const file of files) {
     const base = path.basename(file);
@@ -154,6 +166,10 @@ function main() {
     const fields = parseHeader(src);
     if (!fields) {
       filesWithoutHeaders.push(file);
+      continue;
+    }
+    if (fields.__headerType === 'misplaced') {
+      filesWithMisplacedHeaders.push(file);
       continue;
     }
 
@@ -330,6 +346,7 @@ function main() {
       filesWithLiteHeaders: liteNodes.length,
       filesWithAnyHeaders: nodes.length,
       filesWithoutHeaders: filesWithoutHeaders.length,
+      filesWithMisplacedHeaders: filesWithMisplacedHeaders.length,
       liteWithoutOwner: liteWithoutOwner.length,
       graphNodes: allNodes.length,
       edges: edges.length,
@@ -346,6 +363,7 @@ function main() {
     interventionIndex,
     unresolvedCodeEdges,
     filesWithoutHeaders,
+    filesWithMisplacedHeaders,
     liteWithoutOwner
   };
 
@@ -377,6 +395,10 @@ function main() {
     .slice(0, 160)
     .map(file => `- ${file}`);
 
+  const misplacedRows = filesWithMisplacedHeaders
+    .slice(0, 160)
+    .map(file => `- ${file} — header @komerce-arch present mais shebang/code place avant le bloc. Fix : shebang en ligne 1, header juste apres, 'use strict' apres le header.`);
+
   const md = [];
   md.push('# Komerce Architecture Header Graph');
   md.push('');
@@ -391,6 +413,7 @@ function main() {
   md.push(`- Files with lite headers: ${graph.totals.filesWithLiteHeaders}`);
   md.push(`- Files with any headers: ${graph.totals.filesWithAnyHeaders}`);
   md.push(`- Files without headers: ${graph.totals.filesWithoutHeaders}`);
+  md.push(`- Files with misplaced headers (shebang/code before block): ${graph.totals.filesWithMisplacedHeaders}`);
   md.push(`- Lite headers without owner: ${graph.totals.liteWithoutOwner}`);
   md.push(`- Graph nodes: ${graph.totals.graphNodes}`);
   md.push(`- Edges: ${graph.totals.edges}`);
@@ -407,6 +430,7 @@ function main() {
   pushSortedList(md, 'DB Write Edges', dbWrites);
   pushSortedList(md, 'Unresolved Code Edges', unresolvedRows);
   pushSortedList(md, 'Files Still Without Headers Or Aggregation', uncoveredRows);
+  pushSortedList(md, 'Files With Misplaced Headers (Shebang/Code Before Block)', misplacedRows);
 
   md.push('## Intervention Rule');
   md.push('');
@@ -419,7 +443,7 @@ function main() {
 
   fs.writeFileSync(path.join(DOCS, 'KOMERCE_ARCH_HEADER_GRAPH.md'), md.join('\n'));
 
-  console.log(`Generated graph: ${fullNodes.length} full, ${liteNodes.length} lite, ${edges.length} edges, ${filesWithoutHeaders.length} uncovered`);
+  console.log(`Generated graph: ${fullNodes.length} full, ${liteNodes.length} lite, ${edges.length} edges, ${filesWithoutHeaders.length} uncovered, ${filesWithMisplacedHeaders.length} misplaced`);
 }
 
 main();

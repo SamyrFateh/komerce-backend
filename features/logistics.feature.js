@@ -42,6 +42,11 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    utils: [
+      'utils/parcelSync.js',
+    
+      'utils/parcels.js',
+      'utils/pickup-receipt-html.js',],
     services: [
       'services/parcel-operations.js',
       'services/parcel-security.js',
@@ -53,7 +58,9 @@ module.exports = {
       'services/parcel-guards.js',
       'services/parcelOptimizationService.js',
       'services/parcel-service.js',
-    ],
+    
+      'services/hub-operations.js',
+      'services/routing.js',],
     routes: [
       'routes/parcels.js',
       'routes/parcel-api-v2/read.js',
@@ -72,7 +79,9 @@ module.exports = {
       'routes/parcel-api-v2.js',
       'routes/relais.js',
       'routes/logistics.js',
-    ],
+    
+      'routes/auto-distribute-api.js',
+      'routes/hub.js',],
     boutique: [
       'js/b-tracking.js',
     ],

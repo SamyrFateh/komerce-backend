@@ -34,6 +34,7 @@
  *
  * Usage : node scripts/check-no-css-injection.js
  */
+'use strict';
 
 'use strict';
 

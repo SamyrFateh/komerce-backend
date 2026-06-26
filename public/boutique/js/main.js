@@ -8,6 +8,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 import './b-utils.js';
 import { bus } from './b-bus.js';
@@ -47,8 +48,8 @@ if (typeof window !== 'undefined') {
     setupBoutiqueRuntime();
   }
 
-  var _desktopUpgradeDone = isDesktop();
-  var _resizeTimer = null;
+  let _desktopUpgradeDone = isDesktop();
+  let _resizeTimer = null;
   window.addEventListener('resize', function() {
     if (_desktopUpgradeDone) return;
     clearTimeout(_resizeTimer);

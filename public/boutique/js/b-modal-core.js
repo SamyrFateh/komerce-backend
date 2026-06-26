@@ -12,6 +12,7 @@
  * @impact-areas  product-discovery, participant-flow, creator-flow, modal-layout, cart, suggestions
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-core
@@ -172,12 +173,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // HOTFIX #213 — Reset la barre de recherche interne à chaque ouverture
     if (state._modalSearchInput) {
       state._modalSearchInput.value = '';
-      var _wrap = state._modalSearchInput.closest('.k-modal-inner-search');
+      let _wrap = state._modalSearchInput.closest('.k-modal-inner-search');
       if (_wrap) _wrap.classList.remove('has-value');
       document.getElementById('k-sug-rail') &&
         document.getElementById('k-sug-rail').querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
       // Fermer le dropdown résultats
-      var _dd = document.getElementById('k-modal-search-dropdown');
+      let _dd = document.getElementById('k-modal-search-dropdown');
       if (_dd) _dd.classList.remove('open');
     }
 
@@ -213,10 +214,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     buildCarouselSlides(product);
 
     // Variants — fetch full product if has_variants (lazy, non-blocking)
-    var _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
+    let _variantContainer = dom.modalVariants || document.getElementById('k-modal-variants');
     if (_variantContainer) _variantContainer.innerHTML = '';
     if (product.has_variants) {
-      var _variantProductId = product.id;
+      let _variantProductId = product.id;
       fetch('/api/products/' + _variantProductId, { credentials: 'include' })
         .then(function(r) { return r.json(); })
         .then(function(full) {
@@ -300,7 +301,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     if (_scrollEl) _scrollEl.scrollTop = 0;
     requestAnimationFrame(function() {
       if (dom.modalDetails) dom.modalDetails.scrollTop = 0;
-      var _sEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
+      let _sEl = dom.modal && dom.modal.querySelector('.k-modal-scroll');
       if (_sEl) _sEl.scrollTop = 0;
     });
 
@@ -309,7 +310,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // puis on push à la fin pour que "le plus récent" reste en queue.
     // Limité à 30 entrées pour éviter l'inflation localStorage.
     try {
-      var vh = state.viewedHistory.filter(function(x) { return x !== product.id; });
+      let vh = state.viewedHistory.filter(function(x) { return x !== product.id; });
       vh.push(product.id);
       if (vh.length > 30) vh = vh.slice(-30);
       state.viewedHistory = vh;
@@ -344,7 +345,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // On garde la classe k-pager-active intacte (état logique) mais on efface
     // les propriétés physiques bloquantes pour la durée de la modal.
     if (window.innerWidth < 900) {
-      var _ps = dom.pageScroll;
+      let _ps = dom.pageScroll;
       if (_ps) {
         state._savedPagerInlineStyles = {
           position:  _ps.style.position,
@@ -378,7 +379,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // on voit la page 2 du pager horizontal en arrière-plan. On le ramène
     // à 0 pour la durée de la modal, on restaure dans closeModal.
     if (window.innerWidth < 900) {
-      var _grid = document.getElementById('k-grid');
+      let _grid = document.getElementById('k-grid');
       if (_grid && _grid.classList.contains('k-grid-flat-subcat')) {
         state._savedGridScrollLeft = _grid.scrollLeft;
         _grid.style.scrollSnapType = 'none'; // évite l'animation de snap visible
@@ -431,9 +432,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     // MOBILE SCROLL FIX — restaurer les styles inline du pager
     if (window.innerWidth < 900 && state._savedPagerInlineStyles) {
-      var _ps = dom.pageScroll;
+      let _ps = dom.pageScroll;
       if (_ps) {
-        var s = state._savedPagerInlineStyles;
+        let s = state._savedPagerInlineStyles;
         _ps.style.position  = s.position  || '';
         _ps.style.top       = s.top       || '';
         _ps.style.left      = s.left      || '';
@@ -452,9 +453,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // rAF : on laisse le browser repeindre l'overlay disparu AVANT de scroller,
     // sinon flash visuel du décalage.
     if (window.innerWidth < 900 && typeof state._savedGridScrollLeft === 'number') {
-      var _gridRestore = document.getElementById('k-grid');
+      let _gridRestore = document.getElementById('k-grid');
       if (_gridRestore && _gridRestore.classList.contains('k-grid-flat-subcat')) {
-        var _restoreLeft = state._savedGridScrollLeft;
+        let _restoreLeft = state._savedGridScrollLeft;
         requestAnimationFrame(function() {
           _gridRestore.scrollLeft = _restoreLeft;
           _gridRestore.style.scrollSnapType = '';
@@ -495,7 +496,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // Solution: deplacer .k-modal-actions en enfant flex direct de #k-modal
     // (display:flex flex-direction:column). Flex l'ancre en bas sans position:fixed.
     if (window.innerWidth < 900) {
-      var _act = dom.modal && dom.modal.querySelector('.k-modal-actions');
+      let _act = dom.modal && dom.modal.querySelector('.k-modal-actions');
       if (_act && _act.parentNode !== dom.modal) {
         dom.modal.appendChild(_act);
       }
@@ -595,11 +596,11 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         '<span class="k-modal-inner-search-hint">\u21b5 Catalogue</span>';
 
       // Insert search bar inside .k-modal-details (desktop: suggestions are now outside)
-      var searchParent = dom.modal.querySelector('.k-modal-details') || sugSection.parentElement;
+      let searchParent = dom.modal.querySelector('.k-modal-details') || sugSection.parentElement;
       searchParent.appendChild(searchWrap);
 
       // ── Dropdown container ──
-      var dropdown = document.createElement('div');
+      let dropdown = document.createElement('div');
       dropdown.className = 'k-modal-search-dropdown';
       dropdown.id = 'k-modal-search-dropdown';
       /* FIX: attacher au modal root (pas à .k-modal-details) pour sortir
@@ -613,18 +614,18 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       // ── Filtrage suggestions + dropdown résultats globaux ──
       // Factorisé pour être appelé depuis input ET keyup (fallback mobile)
       function _handleSearchInput() {
-        var q = searchInput.value.trim().toLowerCase();
+        let q = searchInput.value.trim().toLowerCase();
         searchWrap.classList.toggle('has-value', q.length > 0);
 
         // 1. Filtrage suggestions existantes (non-régression)
-        var sugRailEl = document.getElementById('k-sug-rail');
+        let sugRailEl = document.getElementById('k-sug-rail');
         if (sugRailEl) {
           sugRailEl.querySelectorAll('.k-sug-card').forEach(function(card) {
             if (q.length < 2) { card.classList.remove('search-hidden'); return; }
-            var pid = card.dataset.id;
-            var p = state.products.find(function(x) { return String(x.id) === String(pid); });
+            let pid = card.dataset.id;
+            let p = state.products.find(function(x) { return String(x.id) === String(pid); });
             if (!p) { card.classList.add('search-hidden'); return; }
-            var match =
+            let match =
               (p.name || '').toLowerCase().includes(q) ||
               (p.category || '').toLowerCase().includes(q) ||
               (p.description || '').toLowerCase().includes(q);
@@ -639,7 +640,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           return;
         }
         state._modalSearchTimeout = setTimeout(function() {
-          var results = state.products.filter(function(p) {
+          let results = state.products.filter(function(p) {
             return (p.name || '').toLowerCase().includes(q) ||
                    (p.category || '').toLowerCase().includes(q) ||
                    (p.description || '').toLowerCase().includes(q);
@@ -665,8 +666,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       });
 
       // ── Sprint 3 : Recherches récentes ──────────────────────────
-      var RECENTS_KEY = 'k_recent_searches';
-      var RECENTS_MAX = 5;
+      let RECENTS_KEY = 'k_recent_searches';
+      let RECENTS_MAX = 5;
 
       function _getRecents() {
         try { return JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]'); }
@@ -675,19 +676,19 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
       function _saveRecent(term) {
         if (!term || term.length < 2) return;
-        var recents = _getRecents().filter(function(r) { return r !== term; });
+        let recents = _getRecents().filter(function(r) { return r !== term; });
         recents.unshift(term);
         if (recents.length > RECENTS_MAX) recents = recents.slice(0, RECENTS_MAX);
         try { localStorage.setItem(RECENTS_KEY, JSON.stringify(recents)); } catch(e) {}
       }
 
       function _removeRecent(term) {
-        var recents = _getRecents().filter(function(r) { return r !== term; });
+        let recents = _getRecents().filter(function(r) { return r !== term; });
         try { localStorage.setItem(RECENTS_KEY, JSON.stringify(recents)); } catch(e) {}
       }
 
       function _renderRecents() {
-        var recents = _getRecents();
+        let recents = _getRecents();
         if (!recents.length) { _closeDropdown(); return; }
         dropdown.innerHTML =
           '<div class="k-msearch-recents-header">' +
@@ -707,7 +708,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         dropdown.querySelectorAll('.k-msearch-recent-item').forEach(function(item) {
           item.addEventListener('click', function(e) {
             if (e.target.closest('.k-msearch-recent-remove')) return;
-            var t = item.dataset.term;
+            let t = item.dataset.term;
             searchInput.value = t;
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
           });
@@ -723,7 +724,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         });
 
         // Effacer tout
-        var clearAll = dropdown.querySelector('.k-msearch-recents-clear');
+        let clearAll = dropdown.querySelector('.k-msearch-recents-clear');
         if (clearAll) {
           clearAll.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -743,18 +744,18 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       // ── Enter → catalogue (existant + sauvegarde récent Sprint 3) ──
       searchInput.addEventListener('keydown', function(e) {
         if (e.key !== 'Enter') return;
-        var q = searchInput.value.trim();
+        let q = searchInput.value.trim();
         if (q.length < 1) { e.preventDefault(); return; }
         e.preventDefault();
         _saveRecent(q);
         _resetSearchState();
         closeModal();
-        var mainInput = dom.searchInput || document.getElementById('k-search-input');
+        let mainInput = dom.searchInput || document.getElementById('k-search-input');
         if (mainInput) {
           mainInput.value = q;
           mainInput.dispatchEvent(new Event('input', { bubbles: true }));
           setTimeout(function() {
-            var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+            let pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
             if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
           }, 200);
         }
@@ -771,18 +772,18 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       /* FIX: dropdown est maintenant position:fixed, attaché au modal root.
          _positionDropdown() calcule la position sous l'input actif (inline ou topbar).
          _liftDetails() garde le bump z-index en sécurité additionnelle. */
-      var _detailsEl = dom.modal.querySelector('.k-modal-details');
+      let _detailsEl = dom.modal.querySelector('.k-modal-details');
       function _liftDetails()   { if (_detailsEl) _detailsEl.style.zIndex = '35'; }
       function _unliftDetails() { if (_detailsEl) _detailsEl.style.zIndex = ''; }
 
       function _positionDropdown() {
-        var topbarActive = document.querySelector('.k-topbar-search-expanded.is-active');
-        var refEl = topbarActive || searchWrap;
-        var rect = refEl.getBoundingClientRect();
+        let topbarActive = document.querySelector('.k-topbar-search-expanded.is-active');
+        let refEl = topbarActive || searchWrap;
+        let rect = refEl.getBoundingClientRect();
         dropdown.style.top = (rect.bottom + 4) + 'px';
         // Sur desktop, aligner avec la barre de recherche
         if (window.innerWidth >= 900) {
-          var searchRect = searchWrap.getBoundingClientRect();
+          let searchRect = searchWrap.getBoundingClientRect();
           dropdown.style.left = searchRect.left + 'px';
           dropdown.style.right = (window.innerWidth - searchRect.right) + 'px';
         }
@@ -795,7 +796,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }
 
       // Repositionner pendant le scroll
-      var _mScrollDropdown = dom.modal.querySelector('.k-modal-scroll');
+      let _mScrollDropdown = dom.modal.querySelector('.k-modal-scroll');
       if (_mScrollDropdown) {
         _mScrollDropdown.addEventListener('scroll', function() {
           if (dropdown.classList.contains('open')) _positionDropdown();
@@ -813,13 +814,13 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           return;
         }
 
-        var totalCount = results.length;
+        let totalCount = results.length;
 
         // ── Grouper par catégorie ──
-        var groups = {};
-        var groupOrder = [];
+        let groups = {};
+        let groupOrder = [];
         results.forEach(function(p) {
-          var catKey = normalizeCategoryKey(p.category) || p.category || 'Autres';
+          let catKey = normalizeCategoryKey(p.category) || p.category || 'Autres';
           if (!groups[catKey]) {
             groups[catKey] = [];
             groupOrder.push(catKey);
@@ -828,13 +829,13 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         });
 
         // ── Construire le HTML ──
-        var html = '<div class="k-msearch-count">' + totalCount + ' r\u00e9sultat' + (totalCount > 1 ? 's' : '') + '</div>';
+        let html = '<div class="k-msearch-count">' + totalCount + ' r\u00e9sultat' + (totalCount > 1 ? 's' : '') + '</div>';
 
         groupOrder.forEach(function(catKey) {
-          var items = groups[catKey];
-          var emoji = getCategorySectionEmoji(catKey) || '';
-          var shown = items.slice(0, 3);
-          var remaining = items.length - shown.length;
+          let items = groups[catKey];
+          let emoji = getCategorySectionEmoji(catKey) || '';
+          let shown = items.slice(0, 3);
+          let remaining = items.length - shown.length;
 
           html += '<div class="k-msearch-group" data-cat="' + sanitize(catKey) + '">';
           html += '<div class="k-msearch-group-header">' +
@@ -844,7 +845,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           '</div>';
 
           html += shown.map(function(p) {
-            var promo = p.promo_pct ? '<span class="k-msearch-item-promo">-' + p.promo_pct + '%</span>' : '';
+            let promo = p.promo_pct ? '<span class="k-msearch-item-promo">-' + p.promo_pct + '%</span>' : '';
             return '<div class="k-msearch-item" data-id="' + p.id + '">' +
               '<img class="k-msearch-item-img" src="' + optimizeImgUrl(p.image_url, 88) + '" alt="" loading="lazy">' +
               '<div class="k-msearch-item-info">' +
@@ -877,7 +878,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         dropdown.querySelectorAll('.k-msearch-item').forEach(function(item) {
           item.addEventListener('click', function(e) {
             e.stopPropagation();
-            var pid = item.dataset.id;
+            let pid = item.dataset.id;
             _saveRecent(query);
             _resetSearchState();
             openModal(pid, false);
@@ -888,40 +889,40 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         dropdown.querySelectorAll('.k-msearch-group-more').forEach(function(btn) {
           btn.addEventListener('click', function(e) {
             e.stopPropagation();
-            var cat = btn.dataset.cat;
-            var q = btn.dataset.query || '';
+            let cat = btn.dataset.cat;
+            let q = btn.dataset.query || '';
             _saveRecent(q);
             _resetSearchState();
             closeModal();
             // FIX BUG-M4 : remplace l'import direct setActiveCat (dépendance
             // circulaire b-modal↔b-catalog). b-catalog.js écoute 'cat:select'.
             bus.emit('cat:select', cat);
-            var mainInput = dom.searchInput || document.getElementById('k-search-input');
+            let mainInput = dom.searchInput || document.getElementById('k-search-input');
             if (mainInput) {
               mainInput.value = q;
               mainInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
             setTimeout(function() {
-              var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+              let pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
               if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
             }, 200);
           });
         });
 
         // ── Footer : lancer la recherche catalogue globale ──
-        var footer = dropdown.querySelector('.k-msearch-footer');
+        let footer = dropdown.querySelector('.k-msearch-footer');
         if (footer) {
           footer.addEventListener('click', function() {
-            var q = footer.dataset.query || '';
+            let q = footer.dataset.query || '';
             _saveRecent(q);
             _resetSearchState();
             closeModal();
-            var mainInput = dom.searchInput || document.getElementById('k-search-input');
+            let mainInput = dom.searchInput || document.getElementById('k-search-input');
             if (mainInput) {
               mainInput.value = q;
               mainInput.dispatchEvent(new Event('input', { bubbles: true }));
               setTimeout(function() {
-                var pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
+                let pageScroll = document.querySelector('.k-page-scroll') || document.scrollingElement;
                 if (pageScroll) pageScroll.scrollTo({ top: 0, behavior: 'smooth' });
               }, 200);
             }
@@ -934,7 +935,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         searchInput.value = '';
         searchWrap.classList.remove('has-value');
         _closeDropdown();
-        var sugRailEl = document.getElementById('k-sug-rail');
+        let sugRailEl = document.getElementById('k-sug-rail');
         if (sugRailEl) sugRailEl.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
       }
 
@@ -951,14 +952,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     (function setupTopbarSearch() {
       if (window.innerWidth >= 900) return; // desktop only uses inline search
 
-      var topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
+      let topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
       if (!topbar) return;
 
       // Ne pas injecter 2 fois
       if (topbar.querySelector('.k-topbar-search-trigger')) return;
 
       // ── Bouton loupe trigger ──
-      var trigger = document.createElement('button');
+      let trigger = document.createElement('button');
       trigger.className = 'k-topbar-search-trigger';
       trigger.type = 'button';
       trigger.setAttribute('aria-label', 'Rechercher');
@@ -968,7 +969,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         '</svg>';
 
       // ── Barre expanded ──
-      var expandedBar = document.createElement('div');
+      let expandedBar = document.createElement('div');
       expandedBar.className = 'k-topbar-search-expanded';
       expandedBar.innerHTML =
         '<button class="k-topbar-search-back" type="button" aria-label="Fermer la recherche">' +
@@ -978,7 +979,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         '<button class="k-topbar-search-clear-btn" type="button" aria-label="Effacer">\u00d7</button>';
 
       // Insert trigger before topbar-right
-      var topbarRight = topbar.querySelector('.k-modal-topbar-right');
+      let topbarRight = topbar.querySelector('.k-modal-topbar-right');
       if (topbarRight) {
         topbar.insertBefore(trigger, topbarRight);
       } else {
@@ -986,9 +987,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       }
       topbar.appendChild(expandedBar);
 
-      var tbInput = expandedBar.querySelector('.k-topbar-search-input');
-      var tbBack = expandedBar.querySelector('.k-topbar-search-back');
-      var tbClear = expandedBar.querySelector('.k-topbar-search-clear-btn');
+      let tbInput = expandedBar.querySelector('.k-topbar-search-input');
+      let tbBack = expandedBar.querySelector('.k-topbar-search-back');
+      let tbClear = expandedBar.querySelector('.k-topbar-search-clear-btn');
 
       function _expandSearch() {
         expandedBar.classList.add('is-active');
@@ -1004,13 +1005,13 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         // Also reset the main inline search + dropdown
         if (state._modalSearchInput) {
           state._modalSearchInput.value = '';
-          var wrap = state._modalSearchInput.closest('.k-modal-inner-search');
+          let wrap = state._modalSearchInput.closest('.k-modal-inner-search');
           if (wrap) wrap.classList.remove('has-value');
         }
-        var dd = document.getElementById('k-modal-search-dropdown');
+        let dd = document.getElementById('k-modal-search-dropdown');
         if (dd) dd.classList.remove('open');
         // Restore suggestions
-        var rail = document.getElementById('k-sug-rail');
+        let rail = document.getElementById('k-sug-rail');
         if (rail) rail.querySelectorAll('.k-sug-card.search-hidden').forEach(function(c) { c.classList.remove('search-hidden'); });
       }
 
@@ -1038,7 +1039,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
       // Sync typing → inject into the inline search (which does the real work)
       tbInput.addEventListener('input', function() {
-        var q = tbInput.value;
+        let q = tbInput.value;
         tbClear.classList.toggle('is-visible', q.length > 0);
         // Sync with the inline search input
         if (state._modalSearchInput) {
@@ -1071,14 +1072,14 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     // ── Sprint 5 : Recherche vocale (Web Speech API) ──────────────
     // Bouton micro dans la barre inline. Feature-detected : masqué si non supporté.
     (function setupVoiceSearch() {
-      var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) return;
 
-      var searchWrapEl = document.querySelector('.k-modal-inner-search');
+      let searchWrapEl = document.querySelector('.k-modal-inner-search');
       if (!searchWrapEl) return;
       if (searchWrapEl.querySelector('.k-modal-search-mic')) return;
 
-      var mic = document.createElement('button');
+      let mic = document.createElement('button');
       mic.className = 'k-modal-search-mic';
       mic.type = 'button';
       mic.setAttribute('aria-label', '\u00c9couter');
@@ -1090,15 +1091,15 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
           '<line x1="8" y1="21" x2="16" y2="21"/>' +
         '</svg>';
 
-      var clearEl = searchWrapEl.querySelector('.k-modal-search-clear');
+      let clearEl = searchWrapEl.querySelector('.k-modal-search-clear');
       if (clearEl) {
         searchWrapEl.insertBefore(mic, clearEl);
       } else {
         searchWrapEl.appendChild(mic);
       }
 
-      var recognition = null;
-      var isListening = false;
+      let recognition = null;
+      let isListening = false;
 
       mic.addEventListener('click', function(e) {
         e.preventDefault();
@@ -1119,7 +1120,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
         isListening = true;
 
         recognition.addEventListener('result', function(event) {
-          var transcript = event.results[0][0].transcript.trim();
+          let transcript = event.results[0][0].transcript.trim();
           if (transcript && state._modalSearchInput) {
             state._modalSearchInput.value = transcript;
             state._modalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1155,15 +1156,15 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     (function setupKeyboardNavHint() {
       if (window.innerWidth < 900) return;
       if (document.getElementById('k-modal-keyboard-hint')) return;
-      var topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
+      let topbar = dom.modal ? dom.modal.querySelector('.k-modal-topbar') : null;
       if (!topbar) return;
-      var hint = document.createElement('div');
+      let hint = document.createElement('div');
       hint.id = 'k-modal-keyboard-hint';
       hint.className = 'k-modal-keyboard-hint';
       hint.innerHTML =
         '<kbd>←</kbd><span>produit précédent</span>' +
         '<kbd>→</kbd><span>produit suivant</span>';
-      var right = topbar.querySelector('.k-modal-topbar-right');
+      let right = topbar.querySelector('.k-modal-topbar-right');
       if (right) topbar.insertBefore(hint, right);
       else topbar.appendChild(hint);
     })();
@@ -1183,15 +1184,15 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    * le zoom-on-hover existant.
    */
   function setupImageZoneDesktopClick() {
-    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    let imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
     if (!imgWrap) return;
     imgWrap.addEventListener('click', function(e) {
       if (window.innerWidth < 900) return;
       if (state.carouselCount <= 1) return;
       // Évite de tirer si le click est sur une miniature ou sur le zoom preview
       if (e.target.closest('.k-modal-thumb, .k-modal-zoom-preview, .k-modal-zoom-lens')) return;
-      var rect = imgWrap.getBoundingClientRect();
-      var clickedLeft = (e.clientX - rect.left) < rect.width / 2;
+      let rect = imgWrap.getBoundingClientRect();
+      let clickedLeft = (e.clientX - rect.left) < rect.width / 2;
       if (clickedLeft && state.carouselIndex > 0) {
         goToSlide(state.carouselIndex - 1);
       } else if (!clickedLeft && state.carouselIndex < state.carouselCount - 1) {
@@ -1208,10 +1209,10 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    * @param {HTMLElement} carousel - Élément carousel
    */
   function setupImageZoneTouch() {
-    var imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
-    var track = dom.modalCarouselTrack;
-    var modal = dom.modal;
-    var startX, startY, isDragging, direction; // 'h' | 'v' | null
+    let imgWrap = dom.modal.querySelector('.k-modal-img-wrap');
+    let track = dom.modalCarouselTrack;
+    let modal = dom.modal;
+    let startX, startY, isDragging, direction; // 'h' | 'v' | null
 
     imgWrap.addEventListener('touchstart', function(e) {
       startX = e.touches[0].clientX;
@@ -1222,8 +1223,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     imgWrap.addEventListener('touchmove', function(e) {
       if (!isDragging) return;
-      var dx = e.touches[0].clientX - startX;
-      var dy = e.touches[0].clientY - startY;
+      let dx = e.touches[0].clientX - startX;
+      let dy = e.touches[0].clientY - startY;
 
       // Lock direction on first 8px movement
       if (!direction && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
@@ -1234,7 +1235,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
       if (direction === 'h' && state.carouselCount > 1) {
         e.preventDefault();
         track.style.transition = 'none';
-        var offset = -state.carouselIndex * 100 + (dx / imgWrap.offsetWidth) * 100;
+        let offset = -state.carouselIndex * 100 + (dx / imgWrap.offsetWidth) * 100;
         track.style.transform = 'translateX(' + offset + '%)';
       }
       // Vertical down → pull-to-close
@@ -1248,8 +1249,8 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     imgWrap.addEventListener('touchend', function(e) {
       if (!isDragging) return;
       isDragging = false;
-      var dx = e.changedTouches[0].clientX - startX;
-      var dy = e.changedTouches[0].clientY - startY;
+      let dx = e.changedTouches[0].clientX - startX;
+      let dy = e.changedTouches[0].clientY - startY;
 
       if (direction === 'h' && state.carouselCount > 1) {
         // Carousel snap
@@ -1284,12 +1285,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
    */
   function openImageFullscreen(startIndex) {
     if (!state.modalProduct) return;
-    var images = state.modalProduct.images || [state.modalProduct.image_url];
+    let images = state.modalProduct.images || [state.modalProduct.image_url];
     images = images.filter(Boolean);
     if (!images.length) return;
 
     // Réutilise un overlay existant si présent
-    var overlay = document.getElementById('k-modal-fullscreen');
+    let overlay = document.getElementById('k-modal-fullscreen');
     if (overlay) overlay.remove();
 
     overlay = document.createElement('div');
@@ -1309,9 +1310,9 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
 
     document.body.appendChild(overlay);
 
-    var track = overlay.querySelector('.k-modal-fullscreen-track');
-    var counter = overlay.querySelector('.k-modal-fullscreen-counter');
-    var idx = Math.max(0, Math.min(startIndex || 0, images.length - 1));
+    let track = overlay.querySelector('.k-modal-fullscreen-track');
+    let counter = overlay.querySelector('.k-modal-fullscreen-counter');
+    let idx = Math.max(0, Math.min(startIndex || 0, images.length - 1));
 
     function updateCounter() {
       counter.textContent = (idx + 1) + ' / ' + images.length;
@@ -1339,7 +1340,7 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     overlay.querySelector('.k-modal-fullscreen-close').addEventListener('click', close);
 
     // Swipe horizontal sur fullscreen pour changer d'image (sans bloquer le pinch-zoom)
-    var fsStartX = null, fsMoved = false, fsLocked = null;
+    let fsStartX = null, fsMoved = false, fsLocked = null;
     track.addEventListener('touchstart', function(e) {
       // Si plus d'un doigt = pinch-zoom, on n'intercepte rien
       if (e.touches.length !== 1) { fsStartX = null; return; }
@@ -1349,12 +1350,12 @@ bus.on('modal:open', function({ id, pushHistory }) { openModal(String(id), pushH
     }, { passive: true });
     track.addEventListener('touchmove', function(e) {
       if (fsStartX == null || e.touches.length !== 1) return;
-      var dx = e.touches[0].clientX - fsStartX;
+      let dx = e.touches[0].clientX - fsStartX;
       if (Math.abs(dx) > 6) fsMoved = true;
     }, { passive: true });
     track.addEventListener('touchend', function(e) {
       if (fsStartX == null) { fsStartX = null; return; }
-      var dx = (e.changedTouches[0] || {}).clientX != null
+      let dx = (e.changedTouches[0] || {}).clientX != null
         ? e.changedTouches[0].clientX - fsStartX : 0;
       if (!fsMoved) {
         // tap simple → ferme

@@ -12,6 +12,7 @@
  * @impact-areas  event-flow, participant-flow, public-sharing
  * @version       2026-06
  */
+'use strict';
 
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page PUBLIQUE / PARTICIPER (boutique)

@@ -12,6 +12,7 @@
  * @impact-areas  home, catalog, product-grid, category-navigation
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module render-home-sections

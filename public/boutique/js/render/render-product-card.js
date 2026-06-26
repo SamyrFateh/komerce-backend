@@ -8,6 +8,7 @@
  * @impact-areas  catalog, product-discovery
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module render-product-card

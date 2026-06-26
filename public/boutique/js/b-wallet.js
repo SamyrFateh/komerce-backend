@@ -12,6 +12,7 @@
  * @impact-areas  wallet, boutique-navigation
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-wallet

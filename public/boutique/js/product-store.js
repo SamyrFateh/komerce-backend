@@ -12,6 +12,7 @@
  * @impact-areas  catalog, product-discovery, suggestions, offline-fallback
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module product-store

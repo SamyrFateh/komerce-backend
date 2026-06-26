@@ -12,6 +12,7 @@
  * @impact-areas  modal-desktop, product-discovery, side-cart-layout, responsive-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-desktop-enhancers
@@ -58,10 +59,10 @@ let _zoomPreview = null;
 function setupZoom() {
   if (!isDesktop()) return;
 
-  var imgWrap = modalZone('.k-modal-img-wrap');
+  let imgWrap = modalZone('.k-modal-img-wrap');
   if (!imgWrap) return;
 
-  var carousel = imgWrap.querySelector('.k-modal-carousel');
+  let carousel = imgWrap.querySelector('.k-modal-carousel');
   if (!carousel) return;
 
   imgWrap.querySelectorAll('.k-modal-zoom-lens, .k-modal-zoom-preview').forEach(function(el) {
@@ -86,26 +87,26 @@ function setupZoom() {
 function _onZoomMove(e) {
   if (!_zoomPreview) return;
 
-  var carousel = e.currentTarget;
-  var rect = carousel.getBoundingClientRect();
-  var x = e.clientX - rect.left;
-  var y = e.clientY - rect.top;
+  let carousel = e.currentTarget;
+  let rect = carousel.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  let y = e.clientY - rect.top;
 
-  var track = carousel.querySelector('.k-modal-carousel-track');
+  let track = carousel.querySelector('.k-modal-carousel-track');
   if (!track) return;
 
-  var slides = track.querySelectorAll('.k-modal-slide');
-  var idx = state.carouselIndex || 0;
-  var img = slides[idx];
+  let slides = track.querySelectorAll('.k-modal-slide');
+  let idx = state.carouselIndex || 0;
+  let img = slides[idx];
   if (!img || !img.src) return;
 
   // Toujours utiliser la version haute résolution pour le zoom (sinon flou)
   // Cloudinary format : ,w_800/ → ,w_1600/
-  var zoomSrc = img.src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
+  let zoomSrc = img.src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
   if (zoomSrc === img.src && img.dataset.zoomSrc) zoomSrc = img.dataset.zoomSrc;
 
-  var px = Math.max(0, Math.min(100, (x / rect.width) * 100));
-  var py = Math.max(0, Math.min(100, (y / rect.height) * 100));
+  let px = Math.max(0, Math.min(100, (x / rect.width) * 100));
+  let py = Math.max(0, Math.min(100, (y / rect.height) * 100));
 
   _zoomPreview.style.backgroundImage = 'url(' + zoomSrc + ')';
   _zoomPreview.style.backgroundPosition = px + '% ' + py + '%';
@@ -114,10 +115,10 @@ function _onZoomMove(e) {
   // Lentille : centrée sur le curseur, clampée dans le conteneur.
   // Sa taille est 36% du wrap (cohérent avec --zoom-bg-size 280%).
   if (_zoomLens) {
-    var lensW = rect.width  * 0.36;
-    var lensH = rect.height * 0.36;
-    var lx = Math.max(0, Math.min(rect.width  - lensW, x - lensW / 2));
-    var ly = Math.max(0, Math.min(rect.height - lensH, y - lensH / 2));
+    let lensW = rect.width  * 0.36;
+    let lensH = rect.height * 0.36;
+    let lx = Math.max(0, Math.min(rect.width  - lensW, x - lensW / 2));
+    let ly = Math.max(0, Math.min(rect.height - lensH, y - lensH / 2));
     _zoomLens.style.width  = lensW + 'px';
     _zoomLens.style.height = lensH + 'px';
     _zoomLens.style.left   = lx + 'px';
@@ -137,19 +138,19 @@ function _onZoomLeave() {
 
 function injectBreadcrumb() {
   if (!isDesktop()) return;
-  var topbar = modalZone('.k-modal-topbar');
+  let topbar = modalZone('.k-modal-topbar');
   if (!topbar) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
   // Remove old breadcrumb
-  var old = topbar.querySelector('.k-modal-breadcrumb');
+  let old = topbar.querySelector('.k-modal-breadcrumb');
   if (old) old.remove();
 
-  var cat = product.category || '';
-  var name = product.name || '';
+  let cat = product.category || '';
+  let name = product.name || '';
 
-  var bc = document.createElement('div');
+  let bc = document.createElement('div');
   bc.className = 'k-modal-breadcrumb';
   bc.innerHTML =
     '<span class="k-modal-breadcrumb-cat" data-cat="' + cat + '">Boutique</span>' +
@@ -159,7 +160,7 @@ function injectBreadcrumb() {
     '<span class="k-modal-breadcrumb-name">' + name + '</span>';
 
   // Insert after the back button
-  var backBtn = topbar.querySelector('.k-modal-back');
+  let backBtn = topbar.querySelector('.k-modal-back');
   if (backBtn && backBtn.nextSibling) {
     topbar.insertBefore(bc, backBtn.nextSibling);
   } else {
@@ -169,9 +170,9 @@ function injectBreadcrumb() {
   // Click on breadcrumb cat → close modal, filter catalog
   bc.querySelectorAll('.k-modal-breadcrumb-cat').forEach(function(el) {
     el.addEventListener('click', function() {
-      var c = el.dataset.cat;
+      let c = el.dataset.cat;
       if (c) {
-        var _cat = normalizeCategoryKey(c) || c;
+        let _cat = normalizeCategoryKey(c) || c;
         bus.emit('modal:close');
         setActiveCat(_cat);
       }
@@ -185,22 +186,22 @@ function injectBreadcrumb() {
 
 function injectShareRow() {
   if (!isDesktop()) return;
-  var info = modalZone('.k-modal-info');
+  let info = modalZone('.k-modal-info');
   if (!info) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
   // Remove old
-  var old = info.querySelector('.k-modal-share-row');
+  let old = info.querySelector('.k-modal-share-row');
   if (old) old.remove();
 
-  var url = window.location.origin + '/?p=' + product.id;
-  var text = encodeURIComponent(
+  let url = window.location.origin + '/?p=' + product.id;
+  let text = encodeURIComponent(
     '👀 Regarde ce que j\'ai trouvé sur Komerce !\n' +
     (product.name || '') + ' — ' + fmtPrice(product.price_kmf) + '\n' + url
   );
 
-  var row = document.createElement('div');
+  let row = document.createElement('div');
   row.className = 'k-modal-share-row';
   row.innerHTML =
     '<button class="k-modal-share-btn k-modal-share-btn--wa" data-href="https://wa.me/?text=' + text + '">' +
@@ -231,19 +232,19 @@ function injectShareRow() {
 
 function injectSpecs() {
   if (!isDesktop()) return;
-  var info = modalZone('.k-modal-info');
+  let info = modalZone('.k-modal-info');
   if (!info) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
-  var old = info.querySelector('.k-modal-specs');
+  let old = info.querySelector('.k-modal-specs');
   if (old) old.remove();
 
-  var stockVal = Number(product.stock || 0);
-  var cat = product.category || 'Non catégorisé';
-  var weight = product.weight_kg ? (product.weight_kg + ' kg') : '—';
+  let stockVal = Number(product.stock || 0);
+  let cat = product.category || 'Non catégorisé';
+  let weight = product.weight_kg ? (product.weight_kg + ' kg') : '—';
 
-  var specs = document.createElement('div');
+  let specs = document.createElement('div');
   specs.className = 'k-modal-specs';
   // PR-D 2.1 : ouvert par défaut sur desktop (les specs sont la zone d'info
   // technique, on évite à l'utilisateur de cliquer pour voir des données utiles).
@@ -263,17 +264,17 @@ function injectSpecs() {
     '</div>';
 
   // Insert before share row if exists, otherwise append
-  var shareRow = info.querySelector('.k-modal-share-row');
+  let shareRow = info.querySelector('.k-modal-share-row');
   if (shareRow) {
     info.insertBefore(specs, shareRow);
   } else {
     info.appendChild(specs);
   }
 
-  var toggle = specs.querySelector('.k-modal-spec-toggle');
-  var body = specs.querySelector('.k-modal-spec-body');
+  let toggle = specs.querySelector('.k-modal-spec-toggle');
+  let body = specs.querySelector('.k-modal-spec-body');
   toggle.addEventListener('click', function() {
-    var open = toggle.classList.toggle('is-open');
+    let open = toggle.classList.toggle('is-open');
     body.classList.toggle('is-open', open);
   });
 }
@@ -284,13 +285,13 @@ function injectSpecs() {
 
 function injectTrustBadges() {
   if (!isDesktop()) return;
-  var info = modalZone('.k-modal-info');
+  let info = modalZone('.k-modal-info');
   if (!info) return;
 
-  var old = info.querySelector('.k-modal-trust');
+  let old = info.querySelector('.k-modal-trust');
   if (old) old.remove();
 
-  var trust = document.createElement('div');
+  let trust = document.createElement('div');
   trust.className = 'k-modal-trust';
   trust.innerHTML =
     '<span class="k-modal-trust-item">' +
@@ -307,7 +308,7 @@ function injectTrustBadges() {
     '</span>';
 
   // Insert before specs
-  var specsEl = info.querySelector('.k-modal-specs');
+  let specsEl = info.querySelector('.k-modal-specs');
   if (specsEl) {
     info.insertBefore(trust, specsEl);
   } else {
@@ -321,13 +322,13 @@ function injectTrustBadges() {
 // Remplace injectAedPrice (dual-currency AED, inutile pour le marché comorien).
 // Taux KMF → EUR : 1 KMF ≈ 0.00204 EUR (approximatif, à remplacer par API de change).
 
-var _KMF_TO_EUR = 0.00204;
+let _KMF_TO_EUR = 0.00204;
 
 function injectPriceHero() {
   if (!isDesktop()) return;
-  var el = document.getElementById('k-modal-aed-price');
+  let el = document.getElementById('k-modal-aed-price');
   if (!el) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   // PR-M3 : visibilité gérée par CSS via .k-modal--has-promo (ModalViewModel).
   // Ne pas poser de style.display inline — le CSS fait le travail.
   if (!product || !product.price_kmf) { el.innerHTML = ''; return; }
@@ -336,15 +337,15 @@ function injectPriceHero() {
 
   // Ligne unique : "≈ 6 €" + badge promo si présent
   // Le prix KMF est déjà affiché par k-modal-price-row — on ne le duplique pas.
-  var eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
+  let eurVal = Math.round(product.price_kmf * _KMF_TO_EUR);
 
   if (eurVal > 0) {
-    var eurEl = document.createElement('span');
+    let eurEl = document.createElement('span');
     eurEl.className = 'k-modal-eur-ref';
 
     // Prix barré EUR si promo
     if (product.original_price_kmf && product.original_price_kmf > product.price_kmf) {
-      var oldEur = Math.round(product.original_price_kmf * _KMF_TO_EUR);
+      let oldEur = Math.round(product.original_price_kmf * _KMF_TO_EUR);
       eurEl.innerHTML =
         '≈ <strong>' + eurVal + ' €</strong>'
         + '<s>' + oldEur + ' €</s>';
@@ -356,7 +357,7 @@ function injectPriceHero() {
 
   // Badge % sobre si promo_pct
   if (product.promo_pct) {
-    var pctEl = document.createElement('span');
+    let pctEl = document.createElement('span');
     pctEl.className = 'k-modal-aed-pct';
     pctEl.textContent = '-' + product.promo_pct + '%';
     el.appendChild(pctEl);
@@ -366,10 +367,10 @@ function injectPriceHero() {
   // L'ancien prix dérive de promo_pct via la même formule que b-modal.js
   // openModal : Math.round(price / (1 - promo_pct / 100)). Source unique.
   if (product.promo_pct && product.price_kmf) {
-    var oldPrice = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
-    var saving = oldPrice - product.price_kmf;
+    let oldPrice = Math.round(product.price_kmf / (1 - product.promo_pct / 100));
+    let saving = oldPrice - product.price_kmf;
     if (saving > 0) {
-      var saveEl = document.createElement('span');
+      let saveEl = document.createElement('span');
       saveEl.className = 'k-modal-price-saving';
       saveEl.innerHTML = '<span class="k-modal-price-saving-sep" aria-hidden="true">·</span>'
                        + 'économie ' + new Intl.NumberFormat('fr-FR').format(saving) + ' KMF';
@@ -395,12 +396,12 @@ function _stopFlashTimer() {
 
 function _startFlashTimer(totalSeconds) {
   _stopFlashTimer();
-  var remaining = totalSeconds;
+  let remaining = totalSeconds;
   function _tick() {
-    var el = document.getElementById('k-modal-flash-timer');
+    let el = document.getElementById('k-modal-flash-timer');
     if (!el) { _stopFlashTimer(); return; }
-    var m = Math.floor(remaining / 60);
-    var s = remaining % 60;
+    let m = Math.floor(remaining / 60);
+    let s = remaining % 60;
     el.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     if (remaining <= 0) { _stopFlashTimer(); return; }
     remaining--;
@@ -411,14 +412,14 @@ function _startFlashTimer(totalSeconds) {
 
 function injectFlashAndStock() {
   if (!isDesktop()) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
   // FIX 2026-05-20 — Bandeau promo sobre, SANS timer aléatoire.
   // Conditionné sur product.promo_pct (donnée réelle backend).
   // Pour un vrai compte à rebours lié à une offre datée :
   //   conditionner sur product.flash_end_at et calculer la durée restante.
-  var flashEl = document.getElementById('k-modal-flash-bar');
+  let flashEl = document.getElementById('k-modal-flash-bar');
   if (flashEl) {
     flashEl.innerHTML = '';
     if (product.promo_pct) {
@@ -433,10 +434,10 @@ function injectFlashAndStock() {
   // FIX 2026-05-20 — Stock réel, texte sobre, PAS de barre ni de % simulé.
   // Affiché uniquement si product.stock est connu (> 0) et faible (≤ 20).
   // Le seuil 20 est ajustable selon les réalités du catalogue.
-  var stockBarEl = document.getElementById('k-modal-stock-bar');
+  let stockBarEl = document.getElementById('k-modal-stock-bar');
   if (stockBarEl) {
     stockBarEl.innerHTML = '';
-    var stockVal = Number(product.stock || 0);
+    let stockVal = Number(product.stock || 0);
     if (stockVal > 0 && stockVal <= 20) {
       stockBarEl.innerHTML =
         '<span class="k-modal-stock-line-icon" aria-hidden="true"></span>' +
@@ -452,7 +453,7 @@ function injectFlashAndStock() {
 
 function injectDelivery() {
   if (!isDesktop()) return;
-  var el = document.getElementById('k-modal-delivery');
+  let el = document.getElementById('k-modal-delivery');
   if (!el) return;
   el.innerHTML = '';
 
@@ -482,11 +483,11 @@ function injectDelivery() {
 
 function injectPayment() {
   if (!isDesktop()) return;
-  var el = document.getElementById('k-modal-payment');
+  let el = document.getElementById('k-modal-payment');
   if (!el) return;
   el.innerHTML = '';
 
-  var opts = [
+  let opts = [
     {
       key: 'stripe',
       icon: '💳',
@@ -521,7 +522,7 @@ function injectPayment() {
     },
   ];
 
-  var html = '<div class="k-modal-section-title">Paiement</div><div class="k-modal-payment-opts">';
+  let html = '<div class="k-modal-section-title">Paiement</div><div class="k-modal-payment-opts">';
   opts.forEach(function(o) {
     html +=
       '<div class="k-modal-payment-opt' + (o.active ? ' is-active' : '') + '" data-pay="' + o.key + '">' +
@@ -554,15 +555,15 @@ function injectPayment() {
 
 function updateSubtotal() {
   // Visible sur mobile ET desktop : sous-total dynamique dans les actions modal
-  var actions = modalZone('.k-modal-actions');
+  let actions = modalZone('.k-modal-actions');
   if (!actions) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
-  var qty = state.modalQty || 1;
-  var sub = product.price_kmf * qty;
+  let qty = state.modalQty || 1;
+  let sub = product.price_kmf * qty;
 
-  var el = actions.querySelector('.k-modal-subtotal');
+  let el = actions.querySelector('.k-modal-subtotal');
   if (!el) {
     el = document.createElement('div');
     el.className = 'k-modal-subtotal';
@@ -583,28 +584,28 @@ function updateSubtotal() {
  */
 function injectRecentlyViewed() {
   if (!isDesktop()) return;
-  var scrollEl = modalZone('.k-modal-scroll');
+  let scrollEl = modalZone('.k-modal-scroll');
   if (!scrollEl) return;
-  var product = state.modalProduct;
+  let product = state.modalProduct;
   if (!product) return;
 
   // Reconstruit la liste : IDs récents, hors le courant, croisés avec products dispo,
   // puis on garde les 8 derniers (les plus récents en queue de viewedHistory).
-  var history = (state.viewedHistory || []).slice();
-  var recentIds = history.filter(function(id) { return id !== product.id; });
+  let history = (state.viewedHistory || []).slice();
+  let recentIds = history.filter(function(id) { return id !== product.id; });
   // On les renverse pour avoir le plus récent en premier
   recentIds.reverse();
-  var recents = recentIds
+  let recents = recentIds
     .map(function(id) { return state.products.find(function(p) { return p.id === id; }); })
     .filter(Boolean)
     .slice(0, 8);
 
   // Si rien à afficher, on retire l'éventuelle ancienne section
-  var old = scrollEl.querySelector('.k-modal-recent');
+  let old = scrollEl.querySelector('.k-modal-recent');
   if (old) old.remove();
   if (recents.length === 0) return;
 
-  var section = document.createElement('div');
+  let section = document.createElement('div');
   section.className = 'k-modal-recent';
   section.innerHTML =
     '<h3 class="k-modal-recent-title">Vu récemment</h3>' +
@@ -625,7 +626,7 @@ function injectRecentlyViewed() {
   // Click → ouvrir la fiche du produit
   section.querySelectorAll('.k-modal-recent-card').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var id = btn.getAttribute('data-pid');
+      let id = btn.getAttribute('data-pid');
       if (id) openModal(id, true);
     });
   });
@@ -696,9 +697,9 @@ function _onModalOpened() {
 // Listen for qty changes to update subtotal
 function _setupQtyObserver() {
   if (!isDesktop()) return;
-  var qtyVal = document.getElementById('k-qty-val');
+  let qtyVal = document.getElementById('k-qty-val');
   if (!qtyVal) return;
-  var obs = new MutationObserver(function() {
+  let obs = new MutationObserver(function() {
     updateSubtotal();
   });
   obs.observe(qtyVal, { childList: true, characterData: true, subtree: true });

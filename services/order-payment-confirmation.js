@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          payment-to-stock-single-entry
- * @domain        order-payment
+ * @domain        orders
  * @layer         service
  * @criticality   critical
  * @inputs        orderId, actor, source, dbClient

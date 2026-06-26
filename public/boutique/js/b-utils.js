@@ -12,6 +12,7 @@
  * @impact-areas  all-boutique, security, catalog, checkout, modal, tracking
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-utils

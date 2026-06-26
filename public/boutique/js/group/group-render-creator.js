@@ -12,6 +12,7 @@
  * @impact-areas  creator-flow, shared-cart-dashboard, participant-summary, gap-resolution
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module group/group-render-creator.js

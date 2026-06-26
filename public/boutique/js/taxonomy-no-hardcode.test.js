@@ -8,6 +8,7 @@
  * @impact-areas  catalog
  * @version       2026-06
  */
+'use strict';
 
 /**
  * DSC-A3 — Tests de garde taxonomie

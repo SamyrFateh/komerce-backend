@@ -17,6 +17,7 @@
  * @doctrine     none
  * @impact-areas whatsapp, notifications, otp
  */
+
 'use strict';
 
 /**

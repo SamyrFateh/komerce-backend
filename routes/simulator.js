@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          simulator
- * @domain        unknown
+ * @domain        platform-ops
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

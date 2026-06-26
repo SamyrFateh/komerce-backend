@@ -12,6 +12,7 @@
  * @impact-areas  home-navigation, category-rail, product-discovery, desktop-catalog
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @component Boutique / Home Controller

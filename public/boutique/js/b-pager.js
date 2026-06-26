@@ -12,6 +12,7 @@
  * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-pager.js — Pager horizontal catégories principales mobile

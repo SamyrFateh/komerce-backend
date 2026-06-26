@@ -8,6 +8,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @component Boutique / Polish Bootstrap

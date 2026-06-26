@@ -12,6 +12,7 @@
  * @impact-areas  responsive-layout, modal, category-navigation, side-cart-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-scroll-owner.js — Source de vérité du scroll boutique
@@ -56,8 +57,8 @@ export function clearInlinePagerStyles(el) {
 export function ensureDesktopScrollOwner() {
   if (!isDesktop()) return;
 
-  var ps = document.getElementById('k-page-scroll');
-  var grid = document.getElementById('k-grid');
+  let ps = document.getElementById('k-page-scroll');
+  let grid = document.getElementById('k-grid');
 
   if (ps) {
     ps.classList.remove('k-pager-active');
@@ -81,8 +82,8 @@ export function ensureDesktopScrollOwner() {
   // du side cart. Mobile non concerné (guard isDesktop() en entrée).
   requestAnimationFrame(function() {
     if (!isDesktop()) return;
-    var ps2 = document.getElementById('k-page-scroll');
-    var grid2 = document.getElementById('k-grid');
+    let ps2 = document.getElementById('k-page-scroll');
+    let grid2 = document.getElementById('k-grid');
     if (ps2) clearInlinePagerStyles(ps2);
     if (grid2) clearInlinePagerStyles(grid2);
   });
@@ -101,7 +102,7 @@ export function ensureDesktopScrollOwner() {
  * @returns {HTMLElement|null} le conteneur, ou null si window est le scroller
  */
 export function getMobileScrollContainer() {
-  var ps = document.getElementById('k-page-scroll');
+  let ps = document.getElementById('k-page-scroll');
   return (ps && ps.classList.contains('k-pager-active')) ? ps : null;
 }
 
@@ -112,7 +113,7 @@ export function getMobileScrollContainer() {
  */
 export function getScrollY() {
   if (isDesktop()) return window.scrollY;
-  var c = getMobileScrollContainer();
+  let c = getMobileScrollContainer();
   return c ? c.scrollTop : window.scrollY;
 }
 
@@ -127,7 +128,7 @@ export function scrollToPosition(top, behavior = 'auto') {
     window.scrollTo({ top, behavior });
     return;
   }
-  var c = getMobileScrollContainer();
+  let c = getMobileScrollContainer();
   if (c) c.scrollTo({ top, behavior });
   else window.scrollTo({ top, behavior });
 }
@@ -138,7 +139,7 @@ export function scrollPageToTop(behavior = 'smooth') {
     return;
   }
 
-  var c = getMobileScrollContainer();
+  let c = getMobileScrollContainer();
   if (c) c.scrollTo({ top: 0, behavior });
   // Toujours remettre window à zéro aussi : en sortie de pager, un scroll
   // window résiduel peut exister (clavier, focus, restauration navigateur).
@@ -149,20 +150,20 @@ export function scrollPageToElement(el, offset = 0, behavior = 'smooth') {
   if (!el) return;
 
   if (isDesktop()) {
-    var top = el.getBoundingClientRect().top + window.scrollY + offset;
+    let top = el.getBoundingClientRect().top + window.scrollY + offset;
     window.scrollTo({ top: Math.max(0, top), behavior });
     return;
   }
 
-  var c = getMobileScrollContainer();
+  let c = getMobileScrollContainer();
   if (c && c.contains(el)) {
-    var cRect = c.getBoundingClientRect();
-    var elRect = el.getBoundingClientRect();
-    var localTop = elRect.top - cRect.top + c.scrollTop + offset;
+    let cRect = c.getBoundingClientRect();
+    let elRect = el.getBoundingClientRect();
+    let localTop = elRect.top - cRect.top + c.scrollTop + offset;
     c.scrollTo({ top: Math.max(0, localTop), behavior });
   } else {
     // Hors pager : window est le scroller (mêmes maths que desktop)
-    var top2 = el.getBoundingClientRect().top + window.scrollY + offset;
+    let top2 = el.getBoundingClientRect().top + window.scrollY + offset;
     window.scrollTo({ top: Math.max(0, top2), behavior });
   }
 }
@@ -189,7 +190,7 @@ export function installScrollOwner() {
     if (document.body.classList.contains('modal-open')) return;
     if (document.body.classList.contains('cart-open')) return;
 
-    var target = e.target;
+    let target = e.target;
     if (!target || !target.closest) return;
 
     if (target.closest('.k-modal, .k-cart-drawer, .k-search-dropdown, .k-modal-search-dropdown, .k-desktop-sidebar')) {
@@ -210,10 +211,10 @@ export function installScrollOwner() {
       return;
     }
 
-    var ps = document.getElementById('k-page-scroll');
+    let ps = document.getElementById('k-page-scroll');
     if (!ps || !ps.contains(target)) return;
 
-    var maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    let maxScroll = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     if (maxScroll <= 0) return;
 
     // Scroll natif : on respecte le deltaY du navigateur tel quel

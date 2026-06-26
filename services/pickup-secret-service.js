@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, services/order-status-machine.js, utils/pickup-receipt-html.js
  * @used-by       routes/pickup-secret.js, services/payment-stripe.js, services/payment-paypal.js, routes/pickup-pay-cash.js
- * @db-read       orders, pickup_print_tokens, pickup_reveal_codes, order_items, products, relais, users
+ * @db-read       order_items, orders, pickup_print_tokens, pickup_reveal_codes, products, relais, users
  * @db-write      orders, pickup_print_tokens, pickup_reveal_codes
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change

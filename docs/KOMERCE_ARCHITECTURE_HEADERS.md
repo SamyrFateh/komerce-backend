@@ -63,6 +63,27 @@ Rules:
 - `@owner` is mandatory for lite headers.
 - If no clear owner exists, the file is not lite; give it a full header or mark it as architecture debt.
 
+## Header Placement (Files With A Shebang)
+
+The parser only strips a shebang (`#!/usr/bin/env node`) when it is the **absolute first line of the file** (Node's own requirement). Anything before it — including `'use strict';`, a BOM, or any code — breaks shebang stripping, which then also breaks header detection, even if the `@komerce-arch` block itself is syntactically correct.
+
+Required order for any file that needs a shebang:
+
+```js
+#!/usr/bin/env node
+
+/**
+ * @komerce-arch
+ * ...
+ */
+
+'use strict';
+
+// rest of the file
+```
+
+`'use strict'` must come **after** the header, never before. A misplaced shebang/header is reported by `npm run arch:gen` as a distinct `misplaced` finding (not `filesWithoutHeaders`) — if you see "Header mal placé" in the gate output, reorder the lines above; do not write a new header.
+
 ## Database Fields
 
 Database fields are optional, but mandatory for high/critical backend files that touch persistent state.

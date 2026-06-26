@@ -12,6 +12,7 @@
  * @impact-areas  all-boutique-api, checkout, catalog, tracking, shared-cart
  * @version       2026-06
  */
+'use strict';
 
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — API Unifiée v1.1

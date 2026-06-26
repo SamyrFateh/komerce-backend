@@ -8,6 +8,7 @@
  * @impact-areas  boutique
  * @version       2026-06
  */
+'use strict';
 
 /**
  * b-desktop-upgrade.js — Orchestrateur des enrichissements desktop ≥ 900px.
@@ -41,7 +42,7 @@ function setupScrollToTop() {
   if (!isDesktop()) return;
   if (document.querySelector('.k-scroll-top')) return;
 
-  var btn = document.createElement('button');
+  let btn = document.createElement('button');
   btn.className = 'k-scroll-top';
   btn.setAttribute('aria-label', 'Retour en haut');
   btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>';
@@ -52,7 +53,7 @@ function setupScrollToTop() {
   });
 
   // Show/hide on scroll
-  var _ticking = false;
+  let _ticking = false;
   window.addEventListener('scroll', function() {
     if (_ticking) return;
     _ticking = true;
@@ -88,12 +89,12 @@ function setupSideCartFooterGuard() {
   return;
 
   // eslint-disable-next-line no-unreachable
-  var footer = document.getElementById('k-footer');
-  var sc     = document.getElementById('k-side-cart');
+  let footer = document.getElementById('k-footer');
+  let sc     = document.getElementById('k-side-cart');
   if (!footer || !sc || typeof IntersectionObserver === 'undefined') return;
 
-  var observer = new IntersectionObserver(function(entries) {
-    var footerVisible = entries[0].isIntersecting;
+  let observer = new IntersectionObserver(function(entries) {
+    let footerVisible = entries[0].isIntersecting;
     sc.style.transition = 'opacity .2s ease, transform .2s ease';
     sc.style.opacity    = footerVisible ? '0'    : '';
     sc.style.pointerEvents = footerVisible ? 'none' : '';

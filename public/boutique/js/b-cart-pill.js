@@ -12,6 +12,7 @@
  * @impact-areas  cart, checkout-entry, mobile-layout, desktop-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-cart-pill

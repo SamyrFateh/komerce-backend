@@ -259,22 +259,22 @@ function buildReceiptHTML({ code, order, items }) {
   // Payload du QR : JSON encodé en base64url pour dissuader la lecture directe
   // par une app caméra standard. Le hub relais décode et parse le JSON.
   // Format interne : { c: code, o: orderRef }
-  var qrPayloadRaw = JSON.stringify({
+  let qrPayloadRaw = JSON.stringify({
     c: ${JSON.stringify(code)},
     o: ${JSON.stringify(order.reference)}
   });
   // base64url (sans padding, - et _ au lieu de + et /)
-  var qrPayload = 'KMR1.' + btoa(qrPayloadRaw)
+  let qrPayload = 'KMR1.' + btoa(qrPayloadRaw)
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   function renderQR() {
     if (typeof QRious === 'undefined') {
       // Fallback API externe si la lib n'a pas chargé (offline relais)
-      var img = document.createElement('img');
+      let img = document.createElement('img');
       img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' +
                 encodeURIComponent(qrPayload);
       img.width = 160; img.height = 160;
-      var canvas = document.getElementById('pickup-qr');
+      let canvas = document.getElementById('pickup-qr');
       canvas.parentNode.replaceChild(img, canvas);
       return;
     }

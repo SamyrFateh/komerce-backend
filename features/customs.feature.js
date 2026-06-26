@@ -42,7 +42,8 @@ module.exports = {
     services: [
       'services/customs-classification.js',
       'services/customs-analytics.js',
-    ],
+    
+      'services/customs-shipment-service.js',],
     routes: [
       'routes/admin/customs.js',
       'routes/admin-customs-shipments.js',

@@ -68,6 +68,18 @@ const INVARIANTS = new Set([
   'overflow-y', 'z-index', 'object-fit', 'object-position', 'aspect-ratio',
 ]);
 
+// ── Whitelist : overrides inter-bundles intentionnels ────────────────────────
+// Format : 'sélecteur|||média|||propriété'
+// Ces conflits sont légitimes par design et ne doivent jamais bloquer :
+//   - event.css est une page autonome qui redéfinit body (typo + fond propres)
+//   - .k-sec-header desktop : surcharge responsive dans components.css
+const WHITELIST = new Set([
+  'body|||global|||background',
+  'body|||global|||font-family',
+  'body|||global|||line-height',
+  '.k-sec-header|||@media (min-width: 900px) {|||padding',
+]);
+
 // ── Parser CSS avec tracking @media par profondeur de braces ──────────────────
 
 function parseCSS(content, filename) {
@@ -148,6 +160,8 @@ function analyze(allRules) {
 
     const cProps = [];
     for (const prop of allProps) {
+      const wkey = key.split('|||')[0] + '|||' + group[0].media + '|||' + prop;
+      if (WHITELIST.has(wkey)) continue;
       const vals = group.filter(function (r) { return prop in r.props; })
                         .map(function (r) { return { file: r.file, line: r.line, val: r.props[prop] }; });
       if (vals.length > 1 && new Set(vals.map(function (v) { return v.val; })).size > 1) {

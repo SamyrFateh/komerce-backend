@@ -12,6 +12,7 @@
  * @impact-areas  product-modal, media-carousel, product-discovery
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-modal-image-ux
@@ -60,7 +61,7 @@ let _installed   = false;
 // ═══════════════════════════════════════════════════════════════
 
 function _getSlides() {
-  var track = modalZone('.k-modal-carousel-track');
+  let track = modalZone('.k-modal-carousel-track');
   if (!track) return [];
   return Array.from(track.querySelectorAll('.k-modal-slide'));
 }
@@ -70,19 +71,19 @@ function _getSlides() {
 // ═══════════════════════════════════════════════════════════════
 
 function _refreshCounter(idx) {
-  var counterEl = modalZone('.k-modal-counter');
+  let counterEl = modalZone('.k-modal-counter');
   if (!counterEl) return;
-  var total = _fsImages.length;
+  let total = _fsImages.length;
   if (total > COUNTER_THRESHOLD) {
     counterEl.textContent = (idx + 1) + '\u202f/\u202f' + total;
     counterEl.classList.add('is-visible');
     // Masquer les dots — illisibles quand il y en a > 5
-    var dots = modalZone('.k-modal-dots');
+    let dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = 'none';
   } else {
     counterEl.classList.remove('is-visible');
     // Réafficher les dots si on revient sur un produit avec peu d'images
-    var dots = modalZone('.k-modal-dots');
+    let dots = modalZone('.k-modal-dots');
     if (dots) dots.style.display = '';
   }
 }
@@ -92,14 +93,14 @@ function _refreshCounter(idx) {
 // ═══════════════════════════════════════════════════════════════
 
 function _injectViewFullBtn() {
-  var imgWrap = modalZone('.k-modal-img-wrap');
+  let imgWrap = modalZone('.k-modal-img-wrap');
   if (!imgWrap) return;
 
   // Éviter les doublons à chaque ouverture
-  var existing = imgWrap.querySelector('.k-modal-view-full');
+  let existing = imgWrap.querySelector('.k-modal-view-full');
   if (existing) existing.remove();
 
-  var btn = document.createElement('button');
+  let btn = document.createElement('button');
   btn.className = 'k-modal-view-full';
   btn.setAttribute('aria-label', 'Voir en grand');
   btn.type = 'button';
@@ -125,9 +126,9 @@ function _buildFsSlides() {
   if (!_fsTrack) return;
   _fsTrack.innerHTML = '';
   _fsImages.forEach(function(src) {
-    var slide = document.createElement('div');
+    let slide = document.createElement('div');
     slide.className = 'k-modal-fullscreen-slide';
-    var img = document.createElement('img');
+    let img = document.createElement('img');
     // Haute résolution pour le fullscreen : ,w_800/ → ,w_1600/
     img.src = src.replace(/(,w_)\d+(\/|,)/, '$11600$2');
     img.alt = '';
@@ -150,7 +151,7 @@ function _openFs(startIdx) {
   _fsOpen = true;
   _buildFsSlides();
   _goTo(startIdx);
-  var fs = document.querySelector('.k-modal-fullscreen');
+  let fs = document.querySelector('.k-modal-fullscreen');
   if (fs) fs.classList.add('is-open');
   document.body.style.overflow = 'hidden';
 }
@@ -158,19 +159,19 @@ function _openFs(startIdx) {
 function _closeFs() {
   if (!_fsOpen) return;
   _fsOpen = false;
-  var fs = document.querySelector('.k-modal-fullscreen');
+  let fs = document.querySelector('.k-modal-fullscreen');
   if (fs) fs.classList.remove('is-open');
   document.body.style.overflow = '';
 }
 
 function _setupFsHandlers() {
-  var fs = document.querySelector('.k-modal-fullscreen');
+  let fs = document.querySelector('.k-modal-fullscreen');
   if (!fs) return;
 
   _fsTrack   = fs.querySelector('.k-modal-fullscreen-track');
   _fsCounter = fs.querySelector('.k-modal-fullscreen-counter');
 
-  var closeBtn = fs.querySelector('.k-modal-fullscreen-close');
+  let closeBtn = fs.querySelector('.k-modal-fullscreen-close');
   if (closeBtn) closeBtn.addEventListener('click', _closeFs);
 
   // Swipe horizontal pour changer d'image
@@ -179,7 +180,7 @@ function _setupFsHandlers() {
   }, { passive: true });
 
   fs.addEventListener('touchend', function(e) {
-    var dx = e.changedTouches[0].clientX - _fsTouchX;
+    let dx = e.changedTouches[0].clientX - _fsTouchX;
     if (Math.abs(dx) > 44) {
       _goTo(_fsIdx + (dx < 0 ? 1 : -1));
     }
@@ -206,7 +207,7 @@ function _setupFsHandlers() {
 // ═══════════════════════════════════════════════════════════════
 
 function _setupCarouselTap() {
-  var carousel = modalZone('.k-modal-carousel');
+  let carousel = modalZone('.k-modal-carousel');
   if (!carousel) return;
   // cursor:zoom-in piloté par CSS sur mobile ; pas de cursor sur desktop
   // (le zoom loupe est géré par setupZoom dans b-modal-desktop-enhancers.js)
@@ -243,7 +244,7 @@ function _setupCarouselSync() {
 export function setupImageUX() {
   // Reconstruire à chaque ouverture (nouveau produit, nouvelles images)
   requestAnimationFrame(function() {
-    var slides = _getSlides();
+    let slides = _getSlides();
     _fsImages = slides.map(function(s) {
       return s.src || s.getAttribute('src') || '';
     });

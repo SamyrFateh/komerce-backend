@@ -1,0 +1,49 @@
+# .github/workflows/ci.yml — Komerce Boutique
+# =============================================
+# Scan automatique sur chaque PR touchant le code boutique.
+# Aucun check ne tourne localement seulement — tout est vérifié en CI.
+
+name: Boutique CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: "🛡️ Boutique Quality Gates"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: "N2 — Code Quality (use strict, const/let)"
+        run: npm run quality:gate
+
+      - name: "Garde-fous boutique (HTML, imports, CSS, arch)"
+        run: |
+          npm run check:group-wording
+          npm run check:html
+          npm run check:imports
+          npm run check:body-classes
+          npm run check:no-injection
+          npm run check:important
+          npm run check:css-guard
+          npm run check:css-dist-only
+          npm run check:breakpoints
+
+      - name: "Architecture boutique (audit + ownership)"
+        run: |
+          npm run audit:arch
+          npm run audit:arch:live
+          npm run audit:ownership

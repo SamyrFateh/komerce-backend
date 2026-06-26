@@ -12,6 +12,7 @@
  * @impact-areas  shared-cart, participant-flow, creator-flow, navigation
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-group-banner

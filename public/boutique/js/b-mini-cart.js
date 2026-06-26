@@ -12,6 +12,7 @@
  * @impact-areas  cart, side-cart, checkout-entry, responsive-layout
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-mini-cart

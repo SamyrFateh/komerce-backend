@@ -12,6 +12,7 @@
  * @impact-areas  tracking, auth, orders, participant-flow, customer-support
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-tracking

@@ -46,10 +46,10 @@ if [ ! -f "scripts/impact-config.json" ]; then
 fi
 
 # gen-dashboards-360.js est optionnel a l'installation : le hook le gere lui-meme
-# (garde "if [ -d public/dashboards/admin/js ]"), donc non bloquant ici si absent pour
+# (garde "if [ -d dashboards/admin/js ]"), donc non bloquant ici si absent pour
 # l'instant — juste un avertissement pour ne pas le perdre de vue.
-if [ -d "public/dashboards/admin/js" ] && [ ! -f "scripts/gen-dashboards-360.js" ]; then
-  echo "⚠️  public/dashboards/admin/js present mais scripts/gen-dashboards-360.js absent"
+if [ -d "dashboards/admin/js" ] && [ ! -f "scripts/gen-dashboards-360.js" ]; then
+  echo "⚠️  dashboards/admin/js present mais scripts/gen-dashboards-360.js absent"
   echo "   Le bloc 7 du hook pre-commit (carte 360 dashboards) sera silencieusement inactif."
 fi
 
@@ -183,6 +183,30 @@ GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 echo ""
 echo "🛡️  Komerce — reprise gouvernance (pre-commit)..."
 
+# 0a. Registre features (N0) — tout fichier doit appartenir à une feature déclarée.
+if ! node scripts/feature-registry-check.js --strict >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Registre features : orphelin ou désaccord header↔manifest.${NC}"
+  echo "   Détail : npm run feature:registry"
+  exit 1
+fi
+
+# 0b. Code quality (N2) — use strict, const/let, pas de SQL concat.
+if ! node scripts/code-quality-gate.js --strict >/dev/null 2>&1; then
+  echo -e "${RED}🚫 Qualité code : violation N2 (strict/var/SQL).${NC}"
+  echo "   Auto-fix : node scripts/code-quality-gate.js --fix"
+  echo "   Détail   : npm run quality:gate"
+  exit 1
+fi
+
+# 0c. CSS Guardian — 0 conflit cascade dans les bundles boutique.
+if [ -f scripts/css-guard.js ]; then
+  if ! node scripts/css-guard.js >/dev/null 2>&1; then
+    echo -e "${RED}🚫 CSS Guard : conflit de cascade détecté.${NC}"
+    echo "   Détail : npm run css:guard"
+    exit 1
+  fi
+fi
+
 # 0. Auto-declaration des tables dans les headers @db-read/@db-write a partir du
 #    VRAI SQL du fichier (documentation-only, idempotent, additif : ne retire jamais
 #    une declaration manuelle). Resout AUTOMATIQUEMENT la sous-declaration au lieu de
@@ -272,7 +296,7 @@ fi
 #    une regression reelle au-dela du cliquet fige (route orpheline, methode API manquante
 #    -> crash garanti, methode API morte, violation de la doctrine kmc_api_only).
 #    Les contrats non prouves (UNKNOWN) restent informatifs, jamais bloquants.
-if [ -d public/dashboards/admin/js ]; then
+if [ -d dashboards/admin/js ]; then
   node scripts/gen-dashboards-360.js >/dev/null 2>&1 || true
   git add docs/DASHBOARDS_360.json docs/DASHBOARDS_360.md 2>/dev/null || true
 
@@ -323,27 +347,6 @@ if [ -f docs/komerce-arch-header-graph.json ] && [ -f docs/BOUTIQUE_360.json ] &
     exit 1
   fi
   rm -f /tmp/meta-check.log
-fi
-
-# 9. Code quality gate (N2) : couvre backend + public/dashboards/admin/js
-#    Vérifie : 'use strict', pas de var, pas de console.log, pas d'eval,
-#    pas de secret en dur, SQL paramétré, routes async avec try/catch.
-#    Ne tourne que sur les fichiers JS stagés pour rester rapide.
-STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.js$' | grep -E '^(services|routes|middleware|utils|validators|core|public/dashboards/admin/js)/' || true)
-if [ -n "$STAGED_JS" ]; then
-  CQ_FAIL=0
-  for f in $STAGED_JS; do
-    if ! node scripts/code-quality-gate.js --strict --file "$f" >/dev/null 2>&1; then
-      CQ_FAIL=1
-      node scripts/code-quality-gate.js --file "$f" 2>&1 | grep -E "❌|⚠️" | sed "s|^|   $f : |"
-    fi
-  done
-  if [ "$CQ_FAIL" -eq 1 ]; then
-    echo -e "${RED}🚫 Code Quality Gate (N2) : violations bloquantes.${NC}"
-    echo "   Auto-fix partiel : node scripts/code-quality-gate.js --fix"
-    echo "   Rapport complet  : node scripts/code-quality-gate.js"
-    exit 1
-  fi
 fi
 
 echo -e "${GREEN}✅ Gouvernance OK (graphe + budget, portes vertes, boutique verte, 360 x3 + meta).${NC}"

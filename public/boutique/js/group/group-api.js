@@ -12,6 +12,7 @@
  * @impact-areas  shared-cart, participant-flow, creator-flow, checkout, payments
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module group/group-api.js

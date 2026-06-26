@@ -12,6 +12,7 @@
  * @impact-areas  checkout, otp, relais, payment-ui, order-success
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-checkout-render

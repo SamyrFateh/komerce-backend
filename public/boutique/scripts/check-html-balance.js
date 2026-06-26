@@ -32,6 +32,7 @@
  * Sortie : exit 0 si tout passe, exit 1 sinon.
  * Chaque erreur indique fichier + ligne + contexte.
  */
+'use strict';
 
 'use strict';
 

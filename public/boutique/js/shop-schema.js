@@ -12,6 +12,7 @@
  * @impact-areas  catalog, category-navigation, product-grid, admin-category-config
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module shop-schema

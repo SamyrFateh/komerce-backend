@@ -12,6 +12,7 @@
  * @impact-areas  checkout, shared-cart, tracking, auth, participant-flow
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-identity

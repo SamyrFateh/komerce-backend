@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          shares
- * @domain        unknown
+ * @domain        shared-cart
  * @layer         route
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

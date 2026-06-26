@@ -12,6 +12,7 @@
  * @impact-areas  collective-workspaces, payments, participant-flow
  * @version       2026-06
  */
+'use strict';
 
 /* ═══════════════════════════════════════════════════════════════════════
    Komerce — Panier Événement : Page PAIEMENT CASH (boutique)

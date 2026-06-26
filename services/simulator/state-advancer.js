@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          state-advancer
- * @domain        unknown
+ * @domain        platform-ops
  * @layer         service
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload

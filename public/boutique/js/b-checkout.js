@@ -12,6 +12,7 @@
  * @impact-areas  checkout, payments, otp, order-creation, cart, shared-cart
  * @version       2026-06
  */
+'use strict';
 
 /**
  * @module b-checkout
