@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   KOMERCE — desktop.css (2026-06-25)
+   KOMERCE — desktop.css (2026-06-26)
    Généré par deploy-css.js — éditer les sources CSS.
    ═══════════════════════════════════════════════════════════════ */
 /* ── boutique-desktop.css ────────────────────────────────── */
@@ -60,6 +60,7 @@
     min-height: 220px;
   }
 }
+
 
 
 /* .k-mega-dropdown et classes associées supprimées (lot NAV-DESKTOP-01, 2026-05-17)
@@ -350,8 +351,44 @@
    ══════════════════════════════════════════════════════════════════ */
 @media (min-width: 900px) {
 
+  .k-sec-subcats {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 4px 0 14px;
+    margin: 0 0 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, var(--black) 16px, var(--black) calc(100% - 16px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, var(--black) 16px, var(--black) calc(100% - 16px), transparent 100%);
+  }
   .k-sec-subcats::-webkit-scrollbar { display: none; }
 
+  .k-sec-subchip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 11px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1.5px solid var(--sand-dark);
+    background: var(--white);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -.005em;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background .15s var(--ease), border-color .15s, color .15s, transform .12s;
+  }
   .k-sec-subchip:hover {
     background: var(--sand-warm);
     border-color: var(--text-muted);
@@ -381,6 +418,9 @@
     border-color: var(--border);
   }
 }
+
+
+
 
 
 /* CATÉGORIES DESKTOP / CHIPS → migrés vers categories.css (Sprint 4 — S4.2) */
