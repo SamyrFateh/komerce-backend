@@ -15,6 +15,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /*  utils/email.js — Brevo REST API v3
     Envoie des emails transactionnels pour chaque étape de commande.
     Variable requise : BREVO_API_KEY (commence par xkeysib-)

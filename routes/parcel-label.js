@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 // ─── Parcel Label Generator ─────────────────────────────────
 // GET /api/v2/parcels/:ref/label  → HTML imprimable avec QR code
 // GET /api/v2/parcels/:ref/label?format=thermal → optimisé 80mm
@@ -39,7 +41,7 @@ const labelAuth = [authenticate, requireRole(['admin', 'agent_hub', 'agent_relai
 // ── Helper: format date ──
 function fmtDate(d) {
   if (!d) return '—';
-  var dt = new Date(d);
+  let dt = new Date(d);
   return dt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 

@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 // routes/shares.js — v2 (event shares + contributions)
 const express = require('express');
 const router  = express.Router();

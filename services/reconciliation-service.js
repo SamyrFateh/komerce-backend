@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 /**
  * reconciliation-service.js — Moteur de réconciliation Komerce
  * 

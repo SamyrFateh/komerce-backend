@@ -16,6 +16,8 @@
  * @version       2026-06
  */
 
+
+'use strict';
 // routes/unsold.js — Komerce v8
 // Gestion des invendus : listing, résolution, WhatsApp broadcast, revendeurs
 const express = require('express');
