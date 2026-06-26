@@ -116,3 +116,35 @@ jobs:
             echo "── $f ──"
             npx jest "$f" --ci --forceExit || exit 1
           done
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3 — Gates boutique (frontend) : périmètre et dépendances
+  # propres à public/boutique (stylelint, playwright), absentes du
+  # package.json racine -> npm ci dédié, working-directory dédié.
+  # Reprend le job qui vivait (mort, jamais déclenché par GitHub
+  # Actions) dans public/boutique/.github/workflows/ci.yml : seul
+  # un fichier sous .github/workflows/ à la RACINE du repo est lu
+  # par Actions. check:fast = même suite que le hook pre-commit
+  # local (scripts/setup-hooks.sh, étape 6), moins l'e2e Playwright
+  # (nécessite un serveur + DB — hors périmètre de ce job statique).
+  # ─────────────────────────────────────────────────────────────
+  boutique-quality:
+    name: "🛡️ Boutique Quality Gates"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: public/boutique
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install dependencies (boutique)
+        run: npm ci
+
+      - name: "Garde-fous boutique (= check:fast : N2 quality + invariants + carte 360, statique)"
+        run: npm run check:fast
