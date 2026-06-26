@@ -325,6 +325,27 @@ if [ -f docs/komerce-arch-header-graph.json ] && [ -f docs/BOUTIQUE_360.json ] &
   rm -f /tmp/meta-check.log
 fi
 
+# 9. Code quality gate (N2) : couvre backend + dashboards/admin/js
+#    Vérifie : 'use strict', pas de var, pas de console.log, pas d'eval,
+#    pas de secret en dur, SQL paramétré, routes async avec try/catch.
+#    Ne tourne que sur les fichiers JS stagés pour rester rapide.
+STAGED_JS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.js$' | grep -E '^(services|routes|middleware|utils|validators|core|dashboards/admin/js)/' || true)
+if [ -n "$STAGED_JS" ]; then
+  CQ_FAIL=0
+  for f in $STAGED_JS; do
+    if ! node scripts/code-quality-gate.js --strict --file "$f" >/dev/null 2>&1; then
+      CQ_FAIL=1
+      node scripts/code-quality-gate.js --file "$f" 2>&1 | grep -E "❌|⚠️" | sed "s|^|   $f : |"
+    fi
+  done
+  if [ "$CQ_FAIL" -eq 1 ]; then
+    echo -e "${RED}🚫 Code Quality Gate (N2) : violations bloquantes.${NC}"
+    echo "   Auto-fix partiel : node scripts/code-quality-gate.js --fix"
+    echo "   Rapport complet  : node scripts/code-quality-gate.js"
+    exit 1
+  fi
+fi
+
 echo -e "${GREEN}✅ Gouvernance OK (graphe + budget, portes vertes, boutique verte, 360 x3 + meta).${NC}"
 exit 0
 PCHOOK

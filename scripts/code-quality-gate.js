@@ -36,7 +36,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-const SCAN_DIRS = ['services', 'routes', 'middleware', 'utils', 'validators', 'core'];
+const SCAN_DIRS = ['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'dashboards/admin/js'];
 
 const IGNORE_PATTERNS = [
   /node_modules/,
